@@ -52,3 +52,7 @@ venv/
 Thumbs.db
 .idea/
 .vscode/
+
+# Deterministic release/build artifacts (regenerate with scripts/generate_registry.py)
+/generated/
+/docs/build/
