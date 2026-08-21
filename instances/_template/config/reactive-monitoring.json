@@ -1,0 +1,15 @@
+{
+  "format_version": "1.0",
+  "enabled": true,
+  "provider_preference": "viraltrac",
+  "delivery_preference": "event_when_ready_else_poll",
+  "materiality_mode": "adaptive",
+  "event_family_allowlist": [],
+  "event_family_blocklist": [],
+  "coalesce_window_seconds": 300,
+  "max_reaction_depth": 8,
+  "status": "not_configured",
+  "subscription_ref": null,
+  "last_configured_at": null,
+  "notes": null
+}

@@ -1,0 +1,20 @@
+{
+  "id": "ofr_b2b-saas",
+  "object_type": "Offer",
+  "schema_version": "1.0.0",
+  "business_id": "b2b-saas",
+  "created_at": "2026-08-18T00:00:00Z",
+  "updated_at": "2026-08-18T00:00:00Z",
+  "lineage": [],
+  "name": "Annual SaaS subscription",
+  "product_service_refs": [
+    "prd_b2b-saas"
+  ],
+  "audience_refs": [
+    "aud_b2b-saas"
+  ],
+  "pricing": {},
+  "terms": {},
+  "conversion_action": "purchase_or_contact",
+  "status": "active"
+}

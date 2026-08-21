@@ -1,0 +1,86 @@
+{
+  "version": "1.3.0",
+  "system": "industry-intelligence",
+  "activities": [
+    {
+      "id": "monitoring-plan",
+      "entry_contract": "industry.research.monitoring-plan",
+      "result": "Define decision-relevant external monitoring."
+    },
+    {
+      "id": "priority-sources",
+      "entry_contract": "industry.source-mapping.priority-sources",
+      "result": "Map reliable priority industry sources."
+    },
+    {
+      "id": "news-monitoring",
+      "entry_contract": "industry.monitoring.news",
+      "result": "Detect material news developments."
+    },
+    {
+      "id": "regulatory-monitoring",
+      "entry_contract": "industry.monitoring.regulation",
+      "result": "Detect and interpret material regulation/standards changes."
+    },
+    {
+      "id": "research-monitoring",
+      "entry_contract": "industry.monitoring.research",
+      "result": "Detect and evaluate important research."
+    },
+    {
+      "id": "technology-monitoring",
+      "entry_contract": "industry.monitoring.technology",
+      "result": "Detect important technology/platform changes."
+    },
+    {
+      "id": "social-discussion",
+      "entry_contract": "industry.monitoring.social-discussion",
+      "result": "Use social discussion as early signal without treating popularity as fact."
+    },
+    {
+      "id": "event-detection",
+      "entry_contract": "industry.event.detect",
+      "result": "Create/update the correct canonical IndustryEvent."
+    },
+    {
+      "id": "event-verification",
+      "entry_contract": "industry.analysis.event-verification",
+      "result": "Verify material Event facts."
+    },
+    {
+      "id": "factual-summary",
+      "entry_contract": "industry.event.factual-summary",
+      "result": "Maintain a clean factual Event layer."
+    },
+    {
+      "id": "event-evolution",
+      "entry_contract": "industry.analysis.event-evolution",
+      "result": "Track meaningful Event changes and future checkpoints."
+    },
+    {
+      "id": "materiality",
+      "entry_contract": "industry.analysis.materiality",
+      "result": "Determine whether the Event can change a business decision."
+    },
+    {
+      "id": "impact-analysis",
+      "entry_contract": "industry.analysis.business-impact",
+      "result": "Determine scoped business impact."
+    },
+    {
+      "id": "trend-validation",
+      "entry_contract": "industry.analysis.trend-validation",
+      "result": "Validate sustained trends vs temporary attention."
+    },
+    {
+      "id": "scenario-analysis",
+      "entry_contract": "industry.analysis.scenario",
+      "result": "Model plausible uncertain futures with indicators."
+    },
+    {
+      "id": "rapid-response",
+      "entry_contract": "industry.analysis.rapid-response",
+      "result": "Turn a time-sensitive material Event into verified downstream decision support."
+    }
+  ]
+}

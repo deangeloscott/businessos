@@ -1,0 +1,16 @@
+{
+  "id": "biz_local-service",
+  "object_type": "Business",
+  "schema_version": "1.0.0",
+  "business_id": "local-service",
+  "created_at": "2026-08-18T00:00:00Z",
+  "updated_at": "2026-08-18T00:00:00Z",
+  "lineage": [],
+  "name": "Harbor HVAC",
+  "business_models": [
+    "Local service"
+  ],
+  "industries": [
+    "HVAC services"
+  ]
+}

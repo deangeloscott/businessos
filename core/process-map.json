@@ -1,0 +1,41 @@
+{
+  "version": "1.8.2",
+  "system": "core",
+  "activities": [
+    {
+      "id": "bootstrap-business",
+      "entry_contract": "core.context.bootstrap-business",
+      "result": "Create evidence-backed initial business context from minimal identity, first-party sources, and user-provided information."
+    },
+    {
+      "id": "owned-business-discovery",
+      "entry_contract": "core.context.owned-business-discovery",
+      "result": "Adaptively map owned/official business surfaces and evidence at the depth needed for the current job."
+    },
+    {
+      "id": "brand-profile",
+      "entry_contract": "core.context.brand-profile",
+      "result": "Capture durable brand voice, visual, content, channel, reference, and prohibited-style rules."
+    },
+    {
+      "id": "query-business-truth",
+      "entry_contract": "core.data.query-business-truth",
+      "result": "Query connected first-party business truth through the best governed/provider-neutral data surface and preserve evidence-linked BusinessOS references."
+    },
+    {
+      "id": "react-to-business-event",
+      "entry_contract": "core.monitoring.react-to-business-event",
+      "result": "Turn an authorized business occurrence into a deduplicated BusinessOS evaluation trigger without bypassing routing or approval."
+    },
+    {
+      "id": "configure-reactive-monitoring",
+      "entry_contract": "core.monitoring.configure-reactive-monitoring",
+      "result": "Configure an event-driven BusinessOS monitoring path only when provider runtime readiness and host delivery are actually available, with explicit fallback otherwise."
+    },
+    {
+      "id": "diagnose-event-trace",
+      "entry_contract": "core.monitoring.diagnose-event-trace",
+      "result": "Explain and repair reason-coded reactive-event failures or no-action outcomes without guessing or unsafe replay."
+    }
+  ]
+}

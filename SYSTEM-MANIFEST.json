@@ -1,0 +1,51 @@
+{
+  "version": "1.8.2",
+  "edition": "full",
+  "display_name": "ViralTrac's BusinessOS",
+  "brand": "ViralTrac",
+  "startup_message": "WELCOME.md",
+  "host_capability_discovery": true,
+  "publisher": {
+    "id": "umegro-llc",
+    "name": "Umegro, LLC",
+    "metadata": "PUBLISHER.json"
+  },
+  "portable_first": true,
+  "default_environment": "local",
+  "state_locations": {
+    "canonical_business": "instances/<business-id>/",
+    "run": "runtime/runs/<business-id>/<run-id>/"
+  },
+  "installed_modules": [
+    "competitor-intelligence",
+    "content-synthesis",
+    "core",
+    "customer-intelligence",
+    "customer-optimization",
+    "industry-intelligence",
+    "marketing-synthesis",
+    "seo-aeo"
+  ],
+  "systems": [
+    "competitor-intelligence",
+    "content-synthesis",
+    "core",
+    "customer-intelligence",
+    "customer-optimization",
+    "industry-intelligence",
+    "marketing-synthesis",
+    "seo-aeo"
+  ],
+  "contract_count": 497,
+  "schema_count": 48,
+  "capability_count": 91,
+  "scheduled_contract_count": 25,
+  "entrypoints": {
+    "welcome": "WELCOME.md",
+    "human": "START-HERE.md",
+    "task_navigator": "TASK-NAVIGATOR.md",
+    "agent": "CONTEXT.md",
+    "glossary": "GLOSSARY.md"
+  },
+  "generated_from": "scripts/generate_registry.py"
+}

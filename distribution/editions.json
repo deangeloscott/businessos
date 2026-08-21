@@ -1,0 +1,107 @@
+{
+  "format_version": "1.0",
+  "editions": [
+    {
+      "id": "full",
+      "display_name": "ViralTrac's BusinessOS",
+      "modules": [
+        "customer-intelligence",
+        "competitor-intelligence",
+        "industry-intelligence",
+        "seo-aeo",
+        "content-synthesis",
+        "marketing-synthesis",
+        "customer-optimization"
+      ],
+      "description": "Complete ViralTrac's BusinessOS with all current specialized systems."
+    },
+    {
+      "id": "content",
+      "display_name": "ViralTrac's Content OS",
+      "modules": [
+        "content-synthesis"
+      ],
+      "description": "Standalone content intelligence, strategy, production, adaptation, publishing, and learning with Core."
+    },
+    {
+      "id": "seo-aeo",
+      "display_name": "ViralTrac's SEO/AEO OS",
+      "modules": [
+        "seo-aeo"
+      ],
+      "description": "Standalone SEO/AEO operating system with bounded upstream research fallbacks."
+    },
+    {
+      "id": "customer-intelligence",
+      "display_name": "ViralTrac's Customer Intelligence OS",
+      "modules": [
+        "customer-intelligence"
+      ],
+      "description": "Standalone customer/prospect research and insight operating system with Core."
+    },
+    {
+      "id": "competitor-intelligence",
+      "display_name": "ViralTrac's Competitor Intelligence OS",
+      "modules": [
+        "competitor-intelligence"
+      ],
+      "description": "Standalone adaptive competitor research, entity resolution, website/funnel traversal, advertising/content/customer-sentiment analysis, monitoring, tactic validation, and strategy intelligence with Core."
+    },
+    {
+      "id": "industry-intelligence",
+      "display_name": "ViralTrac's Industry Intelligence OS",
+      "modules": [
+        "industry-intelligence"
+      ],
+      "description": "Standalone industry/news/regulation/research/technology intelligence with Core."
+    },
+    {
+      "id": "marketing",
+      "display_name": "ViralTrac's Marketing OS",
+      "modules": [
+        "marketing-synthesis"
+      ],
+      "description": "Standalone commercial persuasion, Offer presentation, positioning, messaging, and conversion-asset operating system with Core."
+    },
+    {
+      "id": "customer-optimization",
+      "display_name": "ViralTrac's Customer Optimization OS",
+      "modules": [
+        "customer-optimization"
+      ],
+      "description": "Standalone customer-journey diagnosis and optimization operating system with Core."
+    },
+    {
+      "id": "research",
+      "display_name": "ViralTrac's Business Intelligence OS",
+      "modules": [
+        "customer-intelligence",
+        "competitor-intelligence",
+        "industry-intelligence"
+      ],
+      "description": "Customer, competitor, and industry intelligence with shared Core evidence and learning."
+    },
+    {
+      "id": "marketing-content",
+      "display_name": "ViralTrac's Marketing + Content OS",
+      "modules": [
+        "customer-intelligence",
+        "competitor-intelligence",
+        "industry-intelligence",
+        "content-synthesis",
+        "marketing-synthesis"
+      ],
+      "description": "Research-informed marketing persuasion and content production without SEO or customer-journey optimization modules."
+    },
+    {
+      "id": "customer-growth",
+      "display_name": "ViralTrac's Customer Growth OS",
+      "modules": [
+        "customer-intelligence",
+        "marketing-synthesis",
+        "customer-optimization"
+      ],
+      "description": "Customer understanding, persuasion, and journey optimization with Core."
+    }
+  ]
+}

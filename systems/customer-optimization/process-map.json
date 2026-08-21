@@ -1,0 +1,146 @@
+{
+  "version": "1.3.0",
+  "system": "customer-optimization",
+  "activities": [
+    {
+      "id": "journey-mapping",
+      "entry_contract": "customer-optimization.journey.mapping",
+      "result": "Define the business-specific customer journey and measurable transitions."
+    },
+    {
+      "id": "instrumentation",
+      "entry_contract": "customer-optimization.journey.instrumentation",
+      "result": "Instrument journey states and transitions."
+    },
+    {
+      "id": "data-quality",
+      "entry_contract": "customer-optimization.instrumentation.data-quality",
+      "result": "Verify journey measurement is trustworthy."
+    },
+    {
+      "id": "transition-analysis",
+      "entry_contract": "customer-optimization.journey.transition-analysis",
+      "result": "Find progression/drop-off/delay patterns."
+    },
+    {
+      "id": "bottleneck-prioritization",
+      "entry_contract": "customer-optimization.diagnosis.bottleneck-prioritization",
+      "result": "Prioritize the journey bottleneck worth solving."
+    },
+    {
+      "id": "root-cause",
+      "entry_contract": "customer-optimization.diagnosis.root-cause",
+      "result": "Diagnose why a transition is failing before intervention."
+    },
+    {
+      "id": "conversion",
+      "entry_contract": "customer-optimization.intervention.conversion",
+      "result": "Improve pre-purchase progression where journey mechanics are limiting."
+    },
+    {
+      "id": "qualification",
+      "entry_contract": "customer-optimization.intervention.qualification",
+      "result": "Improve qualification process and customer fit."
+    },
+    {
+      "id": "sales-handoff",
+      "entry_contract": "customer-optimization.intervention.sales-handoff",
+      "result": "Reduce lead/customer handoff loss."
+    },
+    {
+      "id": "scheduling",
+      "entry_contract": "customer-optimization.intervention.scheduling",
+      "result": "Improve scheduling/attendance progression."
+    },
+    {
+      "id": "checkout",
+      "entry_contract": "customer-optimization.intervention.checkout",
+      "result": "Improve purchase/checkout progression."
+    },
+    {
+      "id": "onboarding",
+      "entry_contract": "customer-optimization.intervention.onboarding",
+      "result": "Move customers from purchase/start to meaningful value."
+    },
+    {
+      "id": "activation",
+      "entry_contract": "customer-optimization.intervention.activation",
+      "result": "Increase successful activation/value milestones."
+    },
+    {
+      "id": "time-to-value",
+      "entry_contract": "customer-optimization.measurement.time-to-value",
+      "result": "Measure and reduce time to meaningful customer value."
+    },
+    {
+      "id": "adoption",
+      "entry_contract": "customer-optimization.intervention.adoption",
+      "result": "Build sustained value-driving adoption."
+    },
+    {
+      "id": "customer-success",
+      "entry_contract": "customer-optimization.intervention.customer-success",
+      "result": "Improve customer-success process mechanics."
+    },
+    {
+      "id": "churn",
+      "entry_contract": "customer-optimization.intervention.churn",
+      "result": "Diagnose and reduce avoidable churn."
+    },
+    {
+      "id": "retention",
+      "entry_contract": "customer-optimization.intervention.retention",
+      "result": "Improve durable retention through customer value."
+    },
+    {
+      "id": "renewal",
+      "entry_contract": "customer-optimization.intervention.renewal",
+      "result": "Improve healthy renewal readiness/progression."
+    },
+    {
+      "id": "repeat-purchase",
+      "entry_contract": "customer-optimization.intervention.repeat-purchase",
+      "result": "Increase appropriate repeat purchase."
+    },
+    {
+      "id": "upsell-cross-sell",
+      "entry_contract": "customer-optimization.intervention.upsell-cross-sell",
+      "result": "Improve appropriate additional purchase progression."
+    },
+    {
+      "id": "expansion",
+      "entry_contract": "customer-optimization.intervention.expansion",
+      "result": "Expand successful customer relationships when eligible."
+    },
+    {
+      "id": "referral",
+      "entry_contract": "customer-optimization.intervention.referral",
+      "result": "Generate advocacy at appropriate value moments."
+    },
+    {
+      "id": "service-recovery",
+      "entry_contract": "customer-optimization.intervention.service-recovery",
+      "result": "Recover active failures and prevent recurrence."
+    },
+    {
+      "id": "risk-monitoring",
+      "entry_contract": "customer-optimization.monitoring.churn-risk",
+      "result": "Detect interpretable churn risk early."
+    },
+    {
+      "id": "lifecycle-experiment",
+      "entry_contract": "customer-optimization.experimentation.lifecycle-test",
+      "result": "Test a journey intervention with guardrails."
+    },
+    {
+      "id": "cohort-retention",
+      "entry_contract": "customer-optimization.measurement.cohort-retention",
+      "result": "Understand retention patterns across cohorts."
+    },
+    {
+      "id": "journey-health",
+      "entry_contract": "customer-optimization.monitoring.journey-health",
+      "result": "Monitor journey health and detect material change."
+    }
+  ]
+}

@@ -1,0 +1,133 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PlatformProfile",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^plt_[A-Za-z0-9_-]+$"
+    },
+    "object_type": {
+      "const": "PlatformProfile"
+    },
+    "schema_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "business_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$"
+    },
+    "owner_system": {
+      "enum": [
+        "core",
+        "customer-intelligence",
+        "competitor-intelligence",
+        "industry-intelligence",
+        "seo-aeo",
+        "content-synthesis",
+        "marketing-synthesis",
+        "customer-optimization"
+      ]
+    },
+    "platform": {
+      "type": "string",
+      "minLength": 1
+    },
+    "surface": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "market_refs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    },
+    "observed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "review_after": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "source_refs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    },
+    "native_behavior": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "format_constraints": {
+      "type": "object"
+    },
+    "attention_patterns": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "interaction_patterns": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "distribution_notes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "business_specific_learning_refs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "status": {
+      "enum": [
+        "active",
+        "stale",
+        "superseded",
+        "archived"
+      ]
+    },
+    "extensions": {
+      "type": "object"
+    }
+  },
+  "required": [
+    "id",
+    "object_type",
+    "schema_version",
+    "business_id",
+    "owner_system",
+    "platform",
+    "observed_at",
+    "source_refs",
+    "native_behavior",
+    "confidence",
+    "status"
+  ]
+}

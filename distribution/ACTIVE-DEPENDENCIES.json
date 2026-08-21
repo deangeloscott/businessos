@@ -1,0 +1,121 @@
+{
+  "format_version": "1.0",
+  "modules": [
+    {
+      "module": "competitor-intelligence",
+      "required_modules": [
+        "core"
+      ],
+      "optional_installed": [
+        "customer-intelligence",
+        "industry-intelligence",
+        "seo-aeo",
+        "content-synthesis",
+        "marketing-synthesis"
+      ],
+      "optional_not_installed": [],
+      "standalone": true
+    },
+    {
+      "module": "content-synthesis",
+      "required_modules": [
+        "core"
+      ],
+      "optional_installed": [
+        "customer-intelligence",
+        "competitor-intelligence",
+        "industry-intelligence",
+        "seo-aeo",
+        "marketing-synthesis",
+        "customer-optimization"
+      ],
+      "optional_not_installed": [],
+      "standalone": true
+    },
+    {
+      "module": "core",
+      "required_modules": [],
+      "optional_installed": [],
+      "optional_not_installed": [],
+      "standalone": false
+    },
+    {
+      "module": "customer-intelligence",
+      "required_modules": [
+        "core"
+      ],
+      "optional_installed": [
+        "competitor-intelligence",
+        "industry-intelligence",
+        "seo-aeo",
+        "content-synthesis",
+        "marketing-synthesis",
+        "customer-optimization"
+      ],
+      "optional_not_installed": [],
+      "standalone": true
+    },
+    {
+      "module": "customer-optimization",
+      "required_modules": [
+        "core"
+      ],
+      "optional_installed": [
+        "customer-intelligence",
+        "content-synthesis",
+        "marketing-synthesis",
+        "industry-intelligence"
+      ],
+      "optional_not_installed": [],
+      "standalone": true
+    },
+    {
+      "module": "industry-intelligence",
+      "required_modules": [
+        "core"
+      ],
+      "optional_installed": [
+        "customer-intelligence",
+        "competitor-intelligence",
+        "seo-aeo",
+        "content-synthesis",
+        "marketing-synthesis",
+        "customer-optimization"
+      ],
+      "optional_not_installed": [],
+      "standalone": true
+    },
+    {
+      "module": "marketing-synthesis",
+      "required_modules": [
+        "core"
+      ],
+      "optional_installed": [
+        "customer-intelligence",
+        "competitor-intelligence",
+        "industry-intelligence",
+        "seo-aeo",
+        "content-synthesis",
+        "customer-optimization"
+      ],
+      "optional_not_installed": [],
+      "standalone": true
+    },
+    {
+      "module": "seo-aeo",
+      "required_modules": [
+        "core"
+      ],
+      "optional_installed": [
+        "customer-intelligence",
+        "competitor-intelligence",
+        "industry-intelligence",
+        "content-synthesis",
+        "marketing-synthesis",
+        "customer-optimization"
+      ],
+      "optional_not_installed": [],
+      "standalone": true
+    }
+  ]
+}

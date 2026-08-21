@@ -1,0 +1,59 @@
+{
+  "format_version": "1.0",
+  "provider_id": "viraltrac",
+  "rules": [
+    {
+      "provider_object": "semantic_query_result_or_artifact",
+      "businessos_targets": [
+        "SourceRecord",
+        "Observation"
+      ],
+      "rule": "Persist a SourceRecord pointing to the ViralTrac query/run/artifact/export and its evidence/coverage metadata; create only bounded Observations needed by the active job. Do not bulk-copy ViralTrac operational history into the BusinessOS workspace."
+    },
+    {
+      "provider_object": "semantic_measurement_result",
+      "businessos_targets": [
+        "SourceRecord",
+        "MetricObservation",
+        "OutcomeEvaluation"
+      ],
+      "rule": "Use the authoritative ViralTrac result as SourceRecord evidence; publish canonical MetricObservation values only through the owning MetricDefinition, and let core.measurement.evaluate-outcome form the BusinessOS conclusion with causal limits."
+    },
+    {
+      "provider_object": "governed_action_proposal_or_preview",
+      "businessos_targets": [
+        "ActionPacket",
+        "Approval"
+      ],
+      "rule": "Attach ViralTrac proposal/preview references in ActionPacket/Approval extensions; do not create ChangeEvent until execution/effect evidence exists."
+    },
+    {
+      "provider_object": "action_or_external_execution_receipt",
+      "businessos_targets": [
+        "ChangeEvent",
+        "VerificationRecord"
+      ],
+      "rule": "Map the receipt/effect reference into ChangeEvent extensions and verification evidence; distinguish proposed, provider-accepted, executed, delivered/exposed, and outcome-observed states."
+    },
+    {
+      "provider_object": "recommendation_packet",
+      "businessos_targets": [
+        "SourceRecord",
+        "Observation",
+        "Insight",
+        "Opportunity"
+      ],
+      "rule": "Treat the packet as evidence/advice. Preserve its evidence brief, constraints, confidence and measurement plan; the semantic owner decides whether to promote an Insight or Opportunity."
+    },
+    {
+      "provider_object": "event_occurrence",
+      "businessos_targets": [
+        "Event",
+        "EventReactionDecision",
+        "SourceRecord",
+        "Observation"
+      ],
+      "rule": "Treat the occurrence as a trigger/evidence object only. Preserve authoritative event/trace/root/parent/subscription/evaluation identities in Event and EventReactionDecision, deduplicate/loop-check before routing, and never interpret delivery as permission to mutate external state."
+    }
+  ]
+}

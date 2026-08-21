@@ -1,0 +1,14 @@
+{
+  "business_id": "replace-me",
+  "name": "Replace Me",
+  "created_at": "",
+  "enabled_systems": [
+    "competitor-intelligence",
+    "content-synthesis",
+    "customer-intelligence",
+    "customer-optimization",
+    "industry-intelligence",
+    "marketing-synthesis",
+    "seo-aeo"
+  ]
+}
