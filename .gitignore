@@ -1,0 +1,54 @@
+# BusinessOS public-repository safety defaults
+# Keep templates and empty runtime README placeholders in source; keep live business/runtime state out of Git.
+
+# Business instances created from instances/_template/
+/instances/*
+!/instances/_template/
+!/instances/_template/**
+
+# Runtime state (retain documentation placeholders)
+/runtime/*/*
+!/runtime/*/README.md
+
+# Local secrets and environment files
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cer
+*.jks
+secrets/
+credentials/
+
+# Local archives / exports / backups
+*.bak
+*.backup
+*.tmp
+*.swp
+*.swo
+*.log
+*.sqlite
+*.sqlite3
+*.db
+*.csv
+*.parquet
+*.arrow
+*.ndjson
+*.zip
+*.tar
+*.tar.gz
+
+# Python / editors / OS
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
