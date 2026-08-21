@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.8.3 — Natural-Language Orchestration Hardening
+
+- Added workspace-native Core intent resolution so users can state ordinary business goals/problems without knowing BusinessOS systems or contract names.
+- Added broad business diagnosis, next-best-work discovery, and multi-domain coordination entry processes while preserving semantic ownership and module independence.
+- Changed deterministic routing so weak/ambiguous lexical matches escalate to Core semantic resolution instead of forcing an unrelated atomic contract.
+- Preserved high-confidence direct routing for clear jobs such as webinars, competitor pricing, SEO declines, onboarding, and other explicit tasks.
+- Added natural-language routing acceptance tests covering direct tasks, diagnosis vs intervention, broad prioritization/growth, compound work, and semantic fallback.
+- Restored the canonical `tests/run_all.py` release gate so `scripts/package_release.py` can validate and build a release from the public source tree.
+
 ## 1.8.2 — Public Distribution Hardening
 
 - Added the ViralTrac BusinessOS Source-Available License v1.0: internal/commercial business use and agency/client use are permitted, while white-label resale or repackaging BusinessOS as a third party's standalone product is prohibited.
