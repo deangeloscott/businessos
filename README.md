@@ -46,8 +46,8 @@ An agency or consultant can keep a separate BusinessOS copy or business instance
 
 ## Getting started
 
-1. **Get the full BusinessOS.** This is the recommended default.
-2. Unzip it or clone this repository into a workspace your AI/agent can access.
+1. **Download the full BusinessOS ZIP from Releases.** This is the recommended default and is ready to use as-is.
+2. Unzip it into a workspace your AI/agent can access. Advanced users who clone the source repository instead should run `python scripts/generate_registry.py` once to rebuild deterministic release indexes.
 3. Tell the AI your business name, website, and goal. For example:
 
 > My business is Acme. Our website is acme.com. I want to grow profitably. Use BusinessOS to figure out what we should do next.
