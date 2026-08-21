@@ -1,7 +1,27 @@
 {
-  "version": "1.8.2",
+  "version": "1.8.3",
   "system": "core",
   "activities": [
+    {
+      "id": "resolve-intent",
+      "entry_contract": "core.routing.resolve-intent",
+      "result": "Interpret an ordinary-language request and choose the smallest valid direct, diagnostic, prioritization, or multi-domain route without forcing an uncertain lexical match."
+    },
+    {
+      "id": "diagnose-business-problem",
+      "entry_contract": "core.diagnosis.business-problem",
+      "result": "Narrow a broad unexplained business symptom to evidence-backed likely mechanisms and correctly owned next work before intervention."
+    },
+    {
+      "id": "discover-next-best-work",
+      "entry_contract": "core.opportunity.discover-next-best-work",
+      "result": "Turn a broad growth/prioritization goal into the highest-value next work supported by current evidence and installed modules."
+    },
+    {
+      "id": "coordinate-multi-domain-request",
+      "entry_contract": "core.coordination.multi-domain-request",
+      "result": "Decompose and sequence one compound request across several semantic owners while preserving ownership, lineage, and efficient handoffs."
+    },
     {
       "id": "bootstrap-business",
       "entry_contract": "core.context.bootstrap-business",
