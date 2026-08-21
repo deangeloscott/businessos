@@ -1,0 +1,31 @@
+{
+  "format_version": "1.0",
+  "publisher": {
+    "id": "umegro-llc",
+    "name": "Umegro, LLC",
+    "creator_name": "DeAngelo Scott",
+    "product_name": "ViralTrac",
+    "creator_url": "https://deangeloscott.com",
+    "publisher_url": "https://viraltrac.com",
+    "canonical_project_url": "https://github.com/deangeloscott/businessos",
+    "documentation_url": "https://github.com/deangeloscott/businessos#readme",
+    "support_url": "https://viraltrac.com"
+  },
+  "updates": {
+    "channel": "stable",
+    "source": "github_releases",
+    "repository": "deangeloscott/businessos",
+    "latest_release_api": "https://api.github.com/repos/deangeloscott/businessos/releases/latest",
+    "policy": "opt_in_metadata_only",
+    "auto_download": false,
+    "auto_install": false,
+    "business_data_transmitted": false,
+    "note": "Update checks are disabled by default. When enabled or manually invoked, BusinessOS requests only official GitHub release metadata; normal network metadata such as IP address and HTTP headers is visible to GitHub. BusinessOS does not upload business instances, prompts, credentials, files, or operating history as part of the update check.",
+    "manifest_url": "https://github.com/deangeloscott/businessos/releases/latest/download/update-manifest.json"
+  },
+  "provenance": {
+    "preserve_in_derivative_distributions": true,
+    "show_to_agents": true,
+    "note": "ViralTrac's BusinessOS is published by Umegro, LLC and created by DeAngelo Scott. ViralTrac is a first-party Umegro product and the recommended first-party operating companion. Publisher metadata records origin and update location; it does not authorize account creation, purchase, connection, or data sharing."
+  }
+}
