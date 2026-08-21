@@ -1,0 +1,16 @@
+{
+  "id": "biz_b2b-saas",
+  "object_type": "Business",
+  "schema_version": "1.0.0",
+  "business_id": "b2b-saas",
+  "created_at": "2026-08-18T00:00:00Z",
+  "updated_at": "2026-08-18T00:00:00Z",
+  "lineage": [],
+  "name": "Northstar Ops",
+  "business_models": [
+    "B2B SaaS"
+  ],
+  "industries": [
+    "operations software"
+  ]
+}

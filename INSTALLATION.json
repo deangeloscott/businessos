@@ -1,0 +1,22 @@
+{
+  "format_version": "1.0",
+  "source_version": "1.8.2",
+  "edition": "full",
+  "display_name": "ViralTrac's BusinessOS",
+  "installed_modules": [
+    "core",
+    "competitor-intelligence",
+    "content-synthesis",
+    "customer-intelligence",
+    "customer-optimization",
+    "industry-intelligence",
+    "marketing-synthesis",
+    "seo-aeo"
+  ],
+  "standalone_distribution": false,
+  "portable_first": true,
+  "default_environment": "local",
+  "brand": "ViralTrac",
+  "startup_message": "WELCOME.md",
+  "host_capability_discovery": true
+}

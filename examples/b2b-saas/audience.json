@@ -1,0 +1,13 @@
+{
+  "id": "aud_b2b-saas",
+  "object_type": "AudienceSegment",
+  "schema_version": "1.0.0",
+  "business_id": "b2b-saas",
+  "created_at": "2026-08-18T00:00:00Z",
+  "updated_at": "2026-08-18T00:00:00Z",
+  "lineage": [],
+  "name": "Midmarket operations leaders",
+  "description": "Midmarket operations leaders",
+  "priority": 1,
+  "attributes": {}
+}

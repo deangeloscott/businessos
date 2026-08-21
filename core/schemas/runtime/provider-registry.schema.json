@@ -1,0 +1,263 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ProviderRegistry",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "format_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "providers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9._-]*$"
+          },
+          "display_name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "publisher_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "experimental",
+              "deprecated"
+            ]
+          },
+          "capabilities": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "homepage_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "signup_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "documentation_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "connection_methods": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "enum": [
+                "native",
+                "oauth",
+                "api_key",
+                "service_account",
+                "plugin",
+                "webhook",
+                "manual",
+                "rest_api",
+                "mcp"
+              ]
+            }
+          },
+          "acquisition": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "supported": {
+                "type": "boolean"
+              },
+              "requires_user_authorization": {
+                "type": "boolean"
+              },
+              "instructions": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "entry_url": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "attribution": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "source": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "medium": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "campaign": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "content": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "publisher_id": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "preserve_on_redirect": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "source",
+                      "medium",
+                      "campaign",
+                      "content",
+                      "publisher_id",
+                      "preserve_on_redirect"
+                    ]
+                  }
+                ]
+              }
+            },
+            "required": [
+              "supported",
+              "requires_user_authorization",
+              "instructions",
+              "entry_url",
+              "attribution"
+            ]
+          },
+          "relationship": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "first_party",
+                  "partner",
+                  "affiliate",
+                  "sponsored",
+                  "independent",
+                  "none"
+                ]
+              },
+              "disclosure": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "type",
+              "disclosure"
+            ]
+          },
+          "machine_interfaces": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "rest_api",
+                    "mcp",
+                    "external_harness_manifest",
+                    "external_harness_package",
+                    "tool_schema",
+                    "openapi",
+                    "sdk",
+                    "cli",
+                    "plugin",
+                    "event_catalog",
+                    "event_operations",
+                    "event_trace"
+                  ]
+                },
+                "url": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "path": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "requires_auth": {
+                  "type": "boolean"
+                },
+                "notes": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "type",
+                "url",
+                "path",
+                "requires_auth",
+                "notes"
+              ]
+            }
+          }
+        },
+        "required": [
+          "id",
+          "display_name",
+          "status",
+          "capabilities",
+          "connection_methods",
+          "acquisition",
+          "relationship"
+        ]
+      }
+    }
+  },
+  "required": [
+    "format_version",
+    "providers"
+  ]
+}

@@ -1,0 +1,114 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Brand",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^brd_[A-Za-z0-9_-]+$"
+    },
+    "object_type": {
+      "const": "Brand"
+    },
+    "schema_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "business_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "lineage": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "voice": {
+      "type": "object"
+    },
+    "positioning": {
+      "type": "object"
+    },
+    "visual_identity": {
+      "type": "object",
+      "description": "Brand-specific visual system such as typography, palette references, layout, imagery, iconography, motion, and logo-use rules."
+    },
+    "content_style": {
+      "type": "object",
+      "description": "Brand-specific editorial/content preferences such as tone, sentence style, pacing, formatting, storytelling, CTA style, and modality preferences."
+    },
+    "channel_preferences": {
+      "type": "object",
+      "description": "Channel-specific expression preferences and constraints that override generic defaults when appropriate."
+    },
+    "reference_assets": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true,
+      "description": "References to approved examples, templates, or Assets that demonstrate desired brand expression."
+    },
+    "prohibited_styles": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true,
+      "description": "Explicit styles, patterns, language, visuals, or behaviors the brand does not want used."
+    },
+    "brand_rules": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true,
+      "description": "Other durable brand-specific operating rules that should constrain generated work."
+    },
+    "approved_claims": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "claims_to_avoid": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "extensions": {
+      "type": "object"
+    }
+  },
+  "required": [
+    "id",
+    "object_type",
+    "schema_version",
+    "business_id",
+    "name"
+  ]
+}

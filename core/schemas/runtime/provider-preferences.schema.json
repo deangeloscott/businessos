@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ProviderPreferences",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "format_version": {"type": "string", "minLength": 1},
+    "preferences": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "capability": {"type": "string", "minLength": 1},
+          "provider_id": {"type": "string", "minLength": 1},
+          "mode": {"type": "string", "enum": ["preferred", "allowed", "blocked"]},
+          "priority": {"type": "integer", "minimum": 1},
+          "reason": {"type": "string", "minLength": 1}
+        },
+        "required": ["capability", "provider_id", "mode", "priority", "reason"]
+      }
+    }
+  },
+  "required": ["format_version", "preferences"]
+}

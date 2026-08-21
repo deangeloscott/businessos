@@ -1,0 +1,40 @@
+{
+  "format_version": "1.0",
+  "business_id": null,
+  "inherit_operator_profile": true,
+  "use_business_context_when_truthful": true,
+  "identity": {
+    "name": null,
+    "organization": null,
+    "email": null,
+    "phone": null,
+    "location": null,
+    "website": null
+  },
+  "allowed_without_additional_approval": [
+    "public_navigation",
+    "public_calculator_or_tool",
+    "newsletter_signup",
+    "public_download",
+    "webinar_registration"
+  ],
+  "requires_approval": [
+    "sales_demo_request",
+    "sales_contact_form",
+    "free_trial_account_creation",
+    "booking_or_calendar_submission",
+    "payment_method_submission",
+    "purchase_or_paid_transaction",
+    "legally_binding_acceptance"
+  ],
+  "prohibited": [
+    "false_identity",
+    "impersonation",
+    "false_company_or_employment_claim",
+    "deceptive_purchase_intent",
+    "unauthorized_transaction",
+    "bypass_access_controls",
+    "misrepresentation_to_obtain_restricted_access"
+  ],
+  "notes": null
+}

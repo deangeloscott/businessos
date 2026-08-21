@@ -1,0 +1,51 @@
+{
+  "format_version": "1.0",
+  "provider_id": "viraltrac",
+  "plane": "ViralTrac Event / Reactive Plane governed event/reaction plane",
+  "activation": {
+    "evaluation_modes": [
+      "evaluate_shadow",
+      "allowlisted_actions",
+      "broad",
+      "degraded"
+    ],
+    "action_modes": [
+      "allowlisted_actions",
+      "broad"
+    ],
+    "non_live_modes": [
+      "off",
+      "publish_shadow"
+    ],
+    "degraded_mode": "degraded",
+    "requires_host_delivery": true
+  },
+  "mode_behavior": {
+    "off": "Do not depend on event delivery; use scheduler/polling/manual fallback.",
+    "publish_shadow": "Treat the event fabric as observation infrastructure only; do not configure BusinessOS live reaction.",
+    "evaluate_shadow": "BusinessOS may receive/evaluate when a compatible delivery lane exists, but event-triggered external effects remain disabled.",
+    "allowlisted_actions": "Reactive evaluation is allowed; only separately eligible/authorized allowlisted actions may execute.",
+    "broad": "Use normal governed event-driven operation for supported BusinessOS event families, still respecting local materiality and action approval.",
+    "degraded": "Preserve critical evaluation and use fallback for optional/reactive work according to provider reason codes."
+  },
+  "discovery_paths": [
+    "/v1/events/catalog",
+    "/v1/events/coverage",
+    "/v1/events/foundation/readiness",
+    "/v1/events/consumer-capabilities",
+    "/v1/events/managed-recipes",
+    "/v1/events/transport-subscriptions",
+    "/v1/events/evaluations:preview",
+    "/v1/events/traces/{trace_id}",
+    "/v1/events/reconciliation",
+    "/v1/events/replay:preview",
+    "/v1/events/operations"
+  ],
+  "rules": [
+    "ViralTrac owns occurrence truth, normalization, identity/policy enrichment, delivery/evaluation receipts, traces, replay governance, and provider/native effects.",
+    "BusinessOS owns business materiality, operating-process routing, domain Insights/Opportunities/Initiatives, and its own Action/OutcomeEvaluation/Learning objects.",
+    "Do not auto-activate live reactive delivery from route presence alone; require current operational-mode/readiness evidence and a compatible host delivery mechanism.",
+    "Preserve ViralTrac root/parent/trace identities and never generate a new independent BusinessOS cause chain when reacting to an echoed downstream consequence.",
+    "If live delivery is unavailable, keep equivalent monitoring intent through scheduled/polling/manual operation."
+  ]
+}

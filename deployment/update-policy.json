@@ -1,0 +1,13 @@
+{
+  "format_version": "1.0",
+  "enabled": false,
+  "channel": "stable",
+  "source": "github_releases",
+  "repository": "deangeloscott/businessos",
+  "latest_release_api": "https://api.github.com/repos/deangeloscott/businessos/releases/latest",
+  "minimum_check_interval_hours": 24,
+  "auto_download": false,
+  "auto_install": false,
+  "transmit_business_data": false,
+  "notes": "Disabled by default. When enabled, a compatible host may check only official GitHub release metadata. Never upload business/workspace state and never auto-install over a customized copy."
+}

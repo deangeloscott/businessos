@@ -1,0 +1,524 @@
+# Playbook Index
+
+Generated from contract frontmatter. Do not maintain a second manual list.
+
+## competitor-intelligence
+
+- `competitor.analysis.advertising` — Advertising Intelligence: Observe competitor paid creative/message patterns, destinations, and persistence across relevant public advertising surfaces without equating visibility with profitability.
+- `competitor.analysis.benchmark` — Competitive Benchmark: Compare the business and competitors on decision-relevant dimensions using transparent measures.
+- `competitor.analysis.capability-comparison` — Competitor Capability Comparison: Compare product/service capabilities in the customer context that makes them valuable.
+- `competitor.analysis.competitive-implications` — Competitive Implication Analysis: Translate supported competitor changes and strengths/weaknesses into implications for this business without deciding foreign-domain actions.
+- `competitor.analysis.competitor-brief` — Current Competitor Brief: Assemble a concise current view of a priority competitor from canonical state and active Insights.
+- `competitor.analysis.content-strategy` — Competitor Content Strategy: Understand the narratives, topics, formats, cadence, distribution, and apparent audience role of competitor content.
+- `competitor.analysis.customer-sentiment` — Competitor Customer Sentiment: Understand what customers praise, dislike, expect, and compare about competitors.
+- `competitor.analysis.funnel-capture` — Competitor Funnel Capture: Experience and document the legitimately observable path a prospect can take through a competitor acquisition flow.
+- `competitor.analysis.funnel-comparison` — Competitor Funnel Comparison: Compare observed competitor funnels by customer path, persuasion, friction, qualification, and offer transition.
+- `competitor.analysis.funnels` — Funnel Intelligence: Map observable competitor acquisition/conversion pathways and major friction/strategy signals using actual legitimate traversal where relevant.
+- `competitor.analysis.messaging` — Messaging Intelligence: Map competitor message hierarchy, claims, proof, objections, and creative themes without copying their messaging.
+- `competitor.analysis.offer-comparison` — Competitor Offer Comparison: Compare what customers actually receive, risk, commit to, and must do across competing offers.
+- `competitor.analysis.offers` — Offer Intelligence: Understand how competitors package commercial value, risk reversal, incentives, CTA, and buying path.
+- `competitor.analysis.packaging` — Packaging Intelligence: Understand how competitors bundle capabilities, service levels, access, and constraints across offers.
+- `competitor.analysis.positioning` — Positioning Intelligence: Determine the audience, problem frame, category, alternatives, differentiated value, and proof competitors emphasize.
+- `competitor.analysis.price-normalization` — Competitor Price Normalization: Convert observed competitor prices into comparable economic units without erasing meaningful packaging differences.
+- `competitor.analysis.pricing` — Pricing Intelligence: Track competitor price, pricing model, discount/commitment terms, and material pricing changes accurately.
+- `competitor.analysis.product-release` — Product & Release Intelligence: Track material competitor product/service launches, feature movement, deprecations, and delivery changes.
+- `competitor.analysis.profiling` — Competitor Profile: Build a current evidence-backed competitor state without turning the summary object into a copy of raw evidence.
+- `competitor.analysis.review-patterns` — Competitor Review Pattern Analysis: Analyze recurring competitor praise, complaints, expectations, and switching evidence from public/customer sources.
+- `competitor.analysis.strategic-change` — Strategic Change Detection: Determine whether multiple competitor observations indicate a meaningful shift rather than isolated execution noise.
+- `competitor.analysis.strategy-hypothesis` — Competitor Strategy Hypothesis: Infer a competitor’s likely strategic direction from multiple observable changes while preserving uncertainty.
+- `competitor.analysis.strength-weakness` — Competitor Strength and Weakness Assessment: Synthesize evidence into scoped competitive strengths and weaknesses tied to customer and business context.
+- `competitor.analysis.tactic-mechanism` — Competitor Tactic Mechanism Extraction: Determine the plausible mechanism behind a competitor tactic and what parts may transfer to this business.
+- `competitor.analysis.tactic-validation` — Competitor Tactic Validation: Assess whether an observed competitor tactic has credible evidence of effectiveness before imitation.
+- `competitor.analysis.whitespace` — Competitive Whitespace Analysis: Identify customer needs, positions, offers, or market spaces that relevant competitors serve poorly.
+- `competitor.discovery.competitive-set` — Competitor Discovery: Identify actual direct, substitute, emerging, and attention competitors relevant to defined business decisions.
+- `competitor.discovery.emerging-competitors` — Emerging Competitor Discovery: Detect new or previously peripheral alternatives becoming strategically relevant.
+- `competitor.discovery.entity-resolution` — Competitor Entity Resolution: Resolve domains, aliases, social/review/advertising profiles, and other public identities to the correct canonical competitor before evidence is merged.
+- `competitor.intelligence.relevance-evaluation` — Competitor Relevance Evaluation: Evaluate whether shared intelligence from another semantic domain materially affects understanding persistent competitors and competitive strategy without duplicating the upstream Insight or launching expensive work automatically.
+- `competitor.learning.domain-learning` — Competitor Intelligence Learning: Improve competitor monitoring, change detection, source reliability, tactic interpretation, and strategic inference.
+- `competitor.monitoring.material-change` — Competitor Material-Change Monitoring: Detect decision-relevant competitor changes with snapshot comparison and semantic review.
+- `competitor.monitoring.positioning-message-change` — Competitor Positioning and Message Change Watch: Detect material competitor positioning, claims, audience, or messaging changes against the last verified state.
+- `competitor.monitoring.pricing-offer-change` — Competitor Pricing and Offer Change Watch: Detect material competitor price, packaging, terms, or offer changes against the last verified state.
+- `competitor.monitoring.product-release-watch` — Competitor Product Release Watch: Detect material competitor product, capability, release, or integration changes against the last verified state.
+- `competitor.research.adaptive-source-coverage` — Adaptive Competitive Source Coverage: Achieve decision-appropriate competitive evidence coverage without forcing every research run through the same fixed list of websites or allowing shallow model discretion to declare research complete too early.
+- `competitor.research.baseline-snapshot` — Competitor Baseline Snapshot: Establish a dated, evidence-backed current-state baseline for a priority competitor.
+- `competitor.research.plan` — Competitor Research Plan: Turn a competitive decision or uncertainty into an adaptive, bounded research plan with explicit depth and evidence-coverage expectations.
+- `competitor.research.source-map` — Competitor Source Map: Map authoritative, corroborating, and high-value recurring evidence surfaces to a correctly resolved competitor identity.
+
+## content-synthesis
+
+- `content.adaptation.platform-native` — Platform-Native Adaptation: Transform a validated core idea into genuinely native expressions for selected platforms rather than superficial reformatting.
+- `content.intake.content-brief` — Content Brief: Convert an Opportunity, WorkRequest, or Insight into a precise communication brief before creative production.
+- `content.intake.work-request` — Content Work Request Intake: Accept delegated content production while preserving the originating Opportunity and exact success criteria.
+- `content.intelligence.content-performance-analysis` — Content Performance Pattern Analysis: Learn which topics, formats, hooks, structures, depths, and creative mechanisms work for this business while separating content quality from distribution and commercial effects.
+- `content.intelligence.creative-pattern-extraction` — Creative Pattern Extraction: Extract the reusable mechanism behind strong content so the business can learn from it without imitating the source's protected expression, identity, or exact creative.
+- `content.intelligence.creator-monitoring` — Creator Content Monitoring: Monitor selected creators in similar and dissimilar niches for new content mechanisms, topics, and format shifts that can inform original business content.
+- `content.intelligence.cross-niche-pattern-transfer` — Cross-Niche Creative Pattern Transfer: Adapt a validated creative mechanism from another niche or category to the business's own audience and subject without copying the original content.
+- `content.intelligence.performance-normalization` — Content Performance Normalization: Normalize observed content performance so unusually large distribution or creator baseline does not masquerade as creative effectiveness.
+- `content.intelligence.relevance-evaluation` — Content Relevance Evaluation: Evaluate whether shared intelligence from another semantic domain materially affects audience communication and platform-native content without duplicating the upstream Insight or launching expensive work automatically.
+- `content.intelligence.trend-scan-plan` — Content Trend Scan Plan: Define what creator/content signals should be monitored to discover useful creative patterns without chasing every viral item.
+- `content.intelligence.trend-validation` — Content Trend Validation: Determine whether a suspected content trend is a real, relevant pattern or an isolated viral/outlier event before the business invests in it.
+- `content.intelligence.trending-content-discovery` — Trending Content Discovery: Identify genuinely emerging topics, formats, creative structures, and audience conversations worth studying without mistaking one viral post for a durable trend.
+- `content.learning.domain-learning` — Content Domain Learning: Improve platform-native format, angle, structure, depth, pacing, creative, and production choices from content outcomes.
+- `content.measurement.content-performance` — Content Performance Learning: Interpret content response in the context of platform, format, audience, objective, and distribution rather than one universal engagement score.
+- `content.opportunity.independent-content` — Independent Content Opportunity: Identify when communication itself is a valuable business intervention rather than delegated production.
+- `content.opportunity.signal-to-content` — Signal to Content Opportunity: Evaluate whether a customer comment, proof item, Industry Insight, competitor/search signal, trend, or other canonical intelligence should become useful content—and what kind of content response is justified.
+- `content.production.animation` — Animation / Motion Production: Use motion to explain change, sequence, causality, demonstration, or attention hierarchy.
+- `content.production.article` — Article Production: Produce a useful, evidence-backed article with appropriate depth, structure, and reader progression.
+- `content.production.audio` — Audio Asset Production: Produce voiceover, narration, clip, or other audio asset optimized for its actual use context.
+- `content.production.audio-direction` — Content Audio Direction: Plan voice, music, sound, pacing, and silence as communication elements rather than afterthoughts.
+- `content.production.avatar-video` — AI Avatar Video Production: Produce an approved avatar-presented video when synthetic presentation is appropriate, transparent, and efficient for the communication job.
+- `content.production.bullet-script` — Bulletized Content Script: Convert an approved structure/full script into concise speaking beats for a presenter who should sound unscripted.
+- `content.production.captions` — Captions and On-Screen Text: Design captions/on-screen text that improve comprehension and accessibility without overwhelming the visual.
+- `content.production.carousel` — Carousel / Slideshow Production: Turn an idea into a sequential visual argument where each frame earns the next.
+- `content.production.case-study` — Customer Case Study: Turn verified customer evidence and ProofRecords into a useful, accurate account of context, intervention, mechanism, and outcome.
+- `content.production.clip-extraction` — Long-Form Clip Extraction: Identify self-contained short clips from a longer Asset without distorting the original meaning.
+- `content.production.demo` — Demonstration Asset Production: Execute an approved demonstration plan and produce a clear, verifiable demonstration Asset.
+- `content.production.demo-plan` — Demonstration Plan: Design a demonstration that visibly proves or teaches the intended mechanism, use case, or result.
+- `content.production.derivative-package` — Derivative Asset Package: Create only the useful supporting or derivative forms of an approved core Asset—such as full/bullet scripts, shot list, captions, clips, thumbnail concepts, audio, or graphics—without creating unnecessary variants.
+- `content.production.faq` — FAQ Content Production: Create evidence-backed answers to recurring audience questions in a form that is easy to find and understand.
+- `content.production.full-script` — Full Content Script: Write a complete spoken or presentation script from an approved brief/structure with natural language and production cues.
+- `content.production.gif` — GIF / Looping Motion Production: Create a short looping motion Asset that demonstrates, emphasizes, or explains one idea more effectively than a static image.
+- `content.production.image` — Image / Graphic Production: Create a visual asset whose composition communicates the intended idea rather than adding decoration.
+- `content.production.infographic` — Infographic Production: Turn evidence or a structured idea into a clear visual explanation whose information hierarchy works even when the viewer only scans it.
+- `content.production.linkedin` — LinkedIn Native Content: Create professional-network content that is native to feed behavior rather than an article pasted into a post.
+- `content.production.long-video` — Long-Form Video Production: Create sustained video communication with narrative/educational progression, demonstrations, and retention-aware structure.
+- `content.production.newsletter` — Newsletter Production: Create a relationship-oriented email/newsletter suited to inbox context and the audience expectation.
+- `content.production.outline` — Content Outline: Translate the approved brief and narrative structure into an executable section-by-section production outline.
+- `content.production.podcast` — Podcast Episode Production: Create an audio-first episode whose structure and delivery fit listening context.
+- `content.production.presentation` — Presentation / Slideshow Production: Build a presentation that supports a live or asynchronous audience journey instead of turning a document into slides.
+- `content.production.short-video` — Short-Form Video Production: Express one useful idea quickly through platform-native visual/audio pacing and proof.
+- `content.production.shot-list` — Video Shot List: Convert the storyboard into an executable capture/generation list with coverage, continuity, and evidence requirements.
+- `content.production.storyboard` — Content Storyboard: Map audiovisual content beat-by-beat so visuals, audio, text, and action jointly communicate the message.
+- `content.production.thumbnail` — Content Thumbnail Concept: Design a thumbnail/cover image that quickly communicates the content’s real subject, tension, or outcome at browsing scale.
+- `content.production.title-headline` — Content Title and Headline: Create a truthful, platform-appropriate title/headline that accurately signals the content’s value to the intended audience.
+- `content.production.visual-direction` — Content Visual Direction: Define a coherent visual language that supports the message, brand, and platform before asset generation.
+- `content.publishing.distribution-package` — Content Distribution Package: Prepare the platform-specific publication components needed to distribute an Asset cleanly across approved destinations.
+- `content.publishing.publish-asset` — Publish or Schedule Content Asset: Publish or schedule an approved content Asset to the intended owned/distribution surface while preserving metadata, timing, tracking, and verification.
+- `content.publishing.schedule` — Content Scheduling: Choose and create an appropriate publication time based on audience/platform needs, dependencies, and campaign/event constraints.
+- `content.qa.accessibility` — Content Accessibility QA: Check whether the Asset can be perceived and understood by relevant users across common accessibility needs.
+- `content.qa.brand` — Brand Voice & Policy QA: Ensure content applies canonical Brand communication without inventing new brand rules or sacrificing clarity.
+- `content.qa.editorial` — Editorial QA: Ensure the finished communication is clear, coherent, useful, non-repetitive, and appropriate to audience/context.
+- `content.qa.fact-check` — Fact & Source QA: Verify consequential factual claims against valid evidence and preserve uncertainty/attribution.
+- `content.qa.originality` — Content Originality QA: Ensure inspiration and pattern learning have not become copying of another creator’s distinctive expression.
+- `content.qa.platform` — Platform-Native QA: Verify that the final Asset actually conforms to the intended platform’s consumption behavior and technical constraints.
+- `content.qa.pre-publish` — Content Pre-Publish QA: Perform the final integrated check that the correct Asset is accurate, complete, native, accessible, and ready for the intended destination.
+- `content.rendering.package-asset` — Render & Package Content Asset: Turn approved source content/design instructions into the final deliverable formats required by the target medium/platform.
+- `content.research.research-plan` — Content Research Plan: Determine what additional factual/contextual research is required to create an accurate, useful asset after reusing existing intelligence.
+- `content.research.source-support` — Content Source & Evidence Support: Fill source/evidence gaps needed to communicate an already valid idea accurately without recreating broad customer/competitor/industry research.
+- `content.strategy.angle` — Angle Development: Find the most useful/interesting truthful framing of an idea for the defined audience and objective.
+- `content.strategy.audience-context` — Content Audience and Consumption Context: Define who is consuming the content, what state they are in, and how the platform/medium changes what will work.
+- `content.strategy.core-message` — Content Core Message: Distill the source intelligence into the single central idea the audience should retain.
+- `content.strategy.desired-action` — Content Desired Action: Define the appropriate next behavior or takeaway for content based on its communication objective.
+- `content.strategy.evidence-proof-plan` — Content Evidence and Proof Plan: Match material factual claims and illustrative examples to appropriate sources and ProofRecords before production.
+- `content.strategy.format-platform` — Platform & Format Selection: Choose how the idea should be expressed based on audience behavior and consumption context rather than default repurposing.
+- `content.strategy.hook` — Content Hook Design: Create an opening that earns attention by making the content’s real value, tension, novelty, consequence, or curiosity immediately clear.
+- `content.strategy.narrative-structure` — Content Narrative Structure: Sequence ideas, evidence, examples, and payoff so the audience can follow and retain the message.
+- `content.strategy.platform-profile-refresh` — Platform Profile Refresh: Build or refresh a sourced PlatformProfile so content decisions use current platform behavior instead of model memory or stale best-practice assumptions.
+
+## core
+
+- `core.action-control.authorize-action` — Authorize Action: Calculate effective action authorization from capability, autonomy, risk, permissions, evidence, compliance, scale, reversibility, and approval requirements.
+- `core.action-control.build-action-packet` — Build Action Packet: Convert a committed Opportunity into explicit executable Actions.
+- `core.action-control.delegate-work` — Delegate Work: Request another operating system to perform specialized execution without duplicating the originating Opportunity.
+- `core.action-control.record-change` — Record Change Event: Record what external state was intentionally changed and how.
+- `core.action-control.return-work` — Return Delegated Work: Complete a WorkRequest by returning valid outputs and execution evidence to the originating system without transferring Opportunity ownership.
+- `core.context.bootstrap-business` — Bootstrap Business Context: Turn minimal business identity and available evidence into a usable initial Business Context, using adaptive owned-business discovery before asking the user for information that can be safely obtained.
+- `core.context.brand-profile` — Capture Brand Profile: Turn explicit brand preferences, approved examples, and observable first-party patterns into durable generation constraints for every installed module.
+- `core.context.owned-business-discovery` — Adaptive Owned Business Discovery: Build an evidence-backed map of the business and its official/public surfaces at the depth needed for the current job, instead of repeatedly asking the user for information the system can safely discover.
+- `core.context.propose-update` — Propose Canonical Context Update: Convert evidence that conflicts with or materially extends canonical Business Context into a controlled proposed change.
+- `core.coordination.create-initiative` — Create Initiative: Coordinate genuinely distinct domain Opportunities toward one shared business outcome.
+- `core.data.query-business-truth` — Query Governed Business Truth: Answer a decision-relevant question from the active business's authoritative/connected data without making the model re-derive provider-specific joins, metrics, identity, or attribution semantics when a governed semantic plane is available.
+- `core.incident.manage` — Manage Incident: Coordinate detection, containment, correction, verification, communication, and postmortem for material incidents while the domain owns technical diagnosis.
+- `core.intelligence.evaluate-relevance` — Evaluate Cross-System Relevance: Determine whether a newly published Insight materially intersects a specialized system without launching expensive work by default.
+- `core.intelligence.manage-insight` — Manage Insight: Create, strengthen, narrow, contradict, supersede, or archive an evidence-supported interpretation.
+- `core.intelligence.publish-observation` — Publish Observation: Capture a direct observation with source provenance without overstating interpretation.
+- `core.intelligence.register-proof` — Register Reusable Proof: Turn direct evidence into one reusable ProofRecord without overstating what the evidence proves or losing source, permission, and usage constraints.
+- `core.intelligence.request-refresh` — Request Intelligence Refresh: Ask the canonical semantic owner to refresh stale, incomplete, contradictory, or insufficiently specific intelligence instead of building a duplicate research store.
+- `core.learning.promote-learning` — Promote Learning: Turn repeated or sufficiently strong outcome evidence into scoped future decision guidance.
+- `core.measurement.design-experiment` — Design Experiment: Provide a shared disciplined experiment contract while allowing domains to define their intervention and mechanism.
+- `core.measurement.evaluate-outcome` — Evaluate Outcome: Determine what happened after an intervention and how confidently it can be attributed.
+- `core.measurement.publish-metric` — Publish Metric Observation: Create comparable metric observations from external or derived measurements using canonical definitions.
+- `core.monitoring.configure-reactive-monitoring` — Configure Reactive Monitoring: Prepare an active business to use a governed event/reaction plane for continuous BusinessOS evaluation without making live event delivery a hidden dependency.
+- `core.monitoring.diagnose-event-trace` — Diagnose Reactive Event Trace: Explain why an expected reactive BusinessOS path acted, declined, blocked, duplicated, degraded, or produced no outcome without guessing from event proximity.
+- `core.monitoring.react-to-business-event` — React to Governed Business Event: Turn an authorized business occurrence/event into a bounded BusinessOS evaluation trigger without treating event delivery as a command, action authorization, or proof of outcome.
+- `core.opportunity.qualify` — Qualify Opportunity: Turn domain diagnosis into a comparable, evidence-backed potential intervention.
+- `core.verification.verify-change` — Verify Change: Independently determine whether intended external state exists and guardrails remain acceptable.
+
+## customer-intelligence
+
+- `customer.analysis.before-after-proof` — Before/After and Proof Extraction: Extract credible proof, testimonial language, and before/after states from customer evidence without exaggerating the customer's actual experience.
+- `customer.analysis.buying-criteria` — Buying Criteria & Trigger Analysis: Determine which criteria and events materially shape customer decisions.
+- `customer.analysis.churn` — Churn Reason Analysis: Understand customer-stated and evidenced reasons for leaving without conflating correlation with customer motivation.
+- `customer.analysis.decision-drivers` — Customer Decision Driver Analysis: Identify the factors that materially influence customer choice and how their importance varies by context.
+- `customer.analysis.feature-needs` — Customer Feature Need Analysis: Interpret feature requests as evidence of underlying customer needs, workflows, and desired outcomes.
+- `customer.analysis.hypothesis-validation` — Customer Hypothesis Validation: Test a strategically important belief about customers before downstream systems build on it.
+- `customer.analysis.insight-refresh` — Customer Insight Refresh: Re-evaluate an existing Customer Insight against new, stale, or contradictory evidence.
+- `customer.analysis.jobs-outcomes` — Customer Job and Desired Outcome Analysis: Identify the progress customers are trying to make and the outcomes they use to judge success.
+- `customer.analysis.language` — Customer Language & Terminology: Maintain how customers naturally describe problems, outcomes, products, alternatives, and category concepts.
+- `customer.analysis.objections` — Objection Analysis: Understand what prevents qualified buyers from acting and what evidence would resolve or reduce uncertainty.
+- `customer.analysis.pain-desire` — Pain, Desire & Outcome Analysis: Determine which problems and desired outcomes materially matter to defined customer segments.
+- `customer.analysis.segment-brief` — Customer Segment Intelligence Brief: Assemble the current evidence-backed understanding of a canonical AudienceSegment without creating a duplicate segment definition.
+- `customer.analysis.segmentation` — Customer Segmentation Intelligence: Identify evidence-backed customer differences that warrant distinct treatment rather than inventing personas.
+- `customer.analysis.sentiment-themes` — Sentiment and Theme Analysis: Explain what public or first-party customer evidence is positive, negative, mixed, or changing at the level of specific experiences and topics rather than reducing people to a single sentiment score.
+- `customer.analysis.subject-linkage` — Customer Subject Linkage: Link a public or first-party customer signal to an existing authorized CRM/customer record only when the identity match is sufficiently explicit and useful.
+- `customer.analysis.theme-coding` — Customer Theme Coding: Group customer evidence into stable, interpretable themes without losing contradictory or segment-specific meaning.
+- `customer.analysis.voice-of-customer` — Voice-of-Customer Synthesis: Build a reusable evidence-backed language and theme map for a defined customer scope.
+- `customer.analysis.win-loss` — Win/Loss Analysis: Explain why qualified opportunities are won or lost using direct and behavioral evidence, not CRM reason codes alone.
+- `customer.bootstrap.knowledge-map` — Customer Knowledge Map: Establish what customer questions matter, what evidence already exists, and which unknowns materially affect decisions.
+- `customer.evidence-collection.behavioral` — Customer Behavioral Evidence Collection: Convert customer behavior into scoped observations that can support or challenge customer hypotheses without pretending behavior directly reveals motive.
+- `customer.evidence-collection.cancellation-feedback` — Cancellation Feedback Collection: Collect direct cancellation/churn explanations and preserve context needed to distinguish stated reasons from contributing conditions.
+- `customer.evidence-collection.communities` — Community & Social Listening: Discover emerging customer language, questions, alternatives, and concerns from public communities without treating unverified posters as representative customers.
+- `customer.evidence-collection.crm-notes` — CRM Customer Evidence Collection: Extract customer evidence from CRM records while separating direct customer statements from internal summaries and administrative fields.
+- `customer.evidence-collection.interview-coding` — Customer Interview Coding: Convert completed interviews into comparable evidence while preserving direct language and context.
+- `customer.evidence-collection.interview-guide` — Customer Interview Guide Design: Create a neutral interview guide that elicits concrete customer experience before abstract preference.
+- `customer.evidence-collection.interview-participants` — Customer Interview Participant Selection: Select interview participants from the correct population and contrast groups.
+- `customer.evidence-collection.interviews` — Customer Interview Intelligence: Collect and interpret interviews without turning individual anecdotes into broad customer truth.
+- `customer.evidence-collection.public-conversation` — Public Conversation Collection: Collect public comments, discussions, reviews, and posts that reveal real customer or market experiences while preserving context, source, and privacy boundaries.
+- `customer.evidence-collection.reviews` — Review Intelligence: Extract what customers praise, dislike, compare, and expect from first- and third-party reviews.
+- `customer.evidence-collection.sales-conversations` — Sales Conversation Evidence Collection: Extract direct customer language, objections, criteria, questions, and outcomes from sales conversations without treating seller interpretations as customer statements.
+- `customer.evidence-collection.sales-lost` — Sales & Lost-Deal Mining: Extract customer-stated buying criteria, objections, alternatives, and loss reasons from sales evidence while separating seller assumptions.
+- `customer.evidence-collection.site-search` — Site Search Evidence Collection: Use internal search behavior as evidence of customer questions, terminology, and unmet information needs without inferring motive from queries alone.
+- `customer.evidence-collection.support` — Support Intelligence Mining: Turn support interactions into customer understanding without confusing operational frequency with strategic importance.
+- `customer.evidence-collection.survey-design` — Customer Survey Design: Design a survey whose questions, scales, sample, and analysis can answer the defined customer research question.
+- `customer.evidence-collection.survey-fielding` — Customer Survey Fielding: Launch and monitor a customer survey while protecting sample quality and response integrity.
+- `customer.evidence-collection.surveys` — Survey Intelligence: Analyze structured and open-ended surveys while accounting for sampling and question-design limitations.
+- `customer.intelligence.relevance-evaluation` — Customer Relevance Evaluation: Evaluate whether shared intelligence from another semantic domain materially affects understanding what customers want, believe, choose, reject, say, and experience without duplicating the upstream Insight or launching expensive work automatically.
+- `customer.learning.domain-learning` — Customer Intelligence Learning: Improve which customer evidence sources, methods, segment scopes, and assumptions produce reliable customer understanding.
+- `customer.monitoring.public-signal-watch` — Public Customer Signal Watch: Continuously detect meaningful changes in public customer questions, praise, complaints, needs, and experience without treating every mention as important.
+- `customer.monitoring.research-gaps` — Customer Research Gap Monitoring: Continuously identify important customer decisions that rely on missing, stale, narrow, or weak evidence.
+- `customer.monitoring.theme-change` — Customer Theme Change Monitoring: Detect material changes in customer concerns, language, criteria, or expectations without overreacting to noise.
+- `customer.research.evidence-coverage` — Customer Evidence Coverage Audit: Determine whether available customer evidence is sufficiently representative, current, and direct for the decision being made.
+- `customer.research.plan` — Customer Research Plan: Turn a business decision, uncertainty, or customer hypothesis into a bounded evidence plan.
+- `customer.research.sample-design` — Customer Research Sample Design: Select research participants or records that represent the decision population and useful contrast cases.
+- `customer.research.source-prioritization` — Customer Evidence Source Prioritization: Choose the customer evidence sources most capable of answering a specific question before collecting more data.
+
+## customer-optimization
+
+- `customer-optimization.adoption.path-design` — Adoption Path Design: Define how customers progress from first value to sustained use of the capabilities/actions required for their desired outcomes.
+- `customer-optimization.checkout.payment-failure` — Checkout Payment Failure Diagnosis: Identify and resolve avoidable payment failures without hiding legitimate declines or creating unsafe payment workarounds.
+- `customer-optimization.conversion.form-friction` — Form Friction Optimization: Reduce unnecessary form effort/errors while preserving required qualification, consent, and operational data.
+- `customer-optimization.diagnosis.bottleneck-prioritization` — Journey Bottleneck Prioritization: Identify which customer journey transition is most worth improving now.
+- `customer-optimization.diagnosis.friction` — Customer Friction Diagnosis: Determine why a material customer progression problem occurs before choosing an intervention.
+- `customer-optimization.diagnosis.friction-quantification` — Journey Friction Quantification: Measure the size, location, and customer/business cost of a known friction condition.
+- `customer-optimization.diagnosis.root-cause` — Journey Root-Cause Diagnosis: Determine why a journey transition is failing, delayed, or producing poor customer outcomes before designing an intervention.
+- `customer-optimization.diagnosis.segment-difference` — Journey Segment Difference Analysis: Determine whether journey performance/friction differs meaningfully across customer groups and why.
+- `customer-optimization.expansion.eligibility` — Customer Expansion Eligibility: Identify when an existing customer has achieved enough value and has a genuine additional need for expanded scope/capability.
+- `customer-optimization.experimentation.lifecycle-test` — Lifecycle Experiment Design: Test a customer-journey intervention while protecting customer outcomes and business guardrails.
+- `customer-optimization.instrumentation.data-quality` — Journey Instrumentation Data Quality: Verify that journey events, identities, states, and metrics are trustworthy enough for optimization decisions.
+- `customer-optimization.intelligence.relevance-evaluation` — Customer Optimization Relevance Evaluation: Evaluate whether shared intelligence from another semantic domain materially affects customer progression and value realization without duplicating the upstream Insight or launching expensive work automatically.
+- `customer-optimization.intervention.activation` — Activation Optimization: Increase the share of acquired customers reaching an evidence-backed early value behavior predictive of durable success.
+- `customer-optimization.intervention.adoption` — Adoption Optimization: Help customers use the capabilities/behaviors necessary to realize ongoing value rather than maximizing feature clicks.
+- `customer-optimization.intervention.checkout` — Checkout Optimization: Reduce preventable purchase friction while preserving trust, economics, compliance, and order quality.
+- `customer-optimization.intervention.churn` — Churn Diagnosis & Prevention: Identify actionable churn risk mechanisms and intervene before avoidable customer loss while respecting non-fit churn.
+- `customer-optimization.intervention.conversion` — Conversion Optimization: Reduce non-persuasive process/UX friction between qualified intent and the intended conversion action.
+- `customer-optimization.intervention.customer-success` — Customer Success Process Optimization: Improve proactive success processes that help customers achieve defined outcomes with appropriate human/automated support.
+- `customer-optimization.intervention.design` — Customer Journey Intervention Design: Design the smallest intervention likely to remove the diagnosed cause while protecting customer quality and downstream outcomes.
+- `customer-optimization.intervention.expansion` — Account / Customer Expansion Optimization: Coordinate broader expansion within existing customer relationships based on demonstrated value and new eligible use cases.
+- `customer-optimization.intervention.onboarding` — Onboarding Optimization: Help new customers reach the first meaningful value state with less confusion, delay, and avoidable effort.
+- `customer-optimization.intervention.qualification` — Lead Qualification Optimization: Improve how the right prospects are identified/routed while minimizing false rejection and wasted effort.
+- `customer-optimization.intervention.referral` — Referral Optimization: Make it easy and appropriate for successful customers to recommend the business when genuine value exists.
+- `customer-optimization.intervention.renewal` — Renewal Optimization: Make renewal decisions timely, informed, low-friction, and connected to demonstrated value.
+- `customer-optimization.intervention.repeat-purchase` — Repeat Purchase Optimization: Increase appropriate repeat purchases by making replenishment/reuse timing and value clear without over-contacting.
+- `customer-optimization.intervention.retention` — Retention Optimization: Increase sustained customer value/continuation by improving the experience and outcomes that drive durable retention.
+- `customer-optimization.intervention.rollout` — Journey Intervention Rollout: Deploy a validated or approved journey change safely from test to broader operation.
+- `customer-optimization.intervention.sales-handoff` — Sales Handoff Optimization: Reduce delay, context loss, ownership ambiguity, and customer effort when qualified leads move between systems/people.
+- `customer-optimization.intervention.scheduling` — Scheduling & No-Show Optimization: Make scheduling easy for qualified customers and reduce avoidable no-shows without coercive reminders.
+- `customer-optimization.intervention.service-recovery` — Service Recovery: Resolve significant customer failures in a way that restores appropriate value/trust and prevents recurrence.
+- `customer-optimization.intervention.upsell-cross-sell` — Upsell / Cross-Sell Optimization: Identify when an additional offer genuinely improves customer outcomes and present it at the right lifecycle moment.
+- `customer-optimization.journey.instrumentation` — Journey Instrumentation: Ensure customer transitions can be observed reliably enough to diagnose progression.
+- `customer-optimization.journey.mapping` — Customer Journey Mapping: Create an operational customer progression model with measurable stages/transitions and expected customer/business state.
+- `customer-optimization.journey.transition-analysis` — Journey Transition Analysis: Quantify where customers fail, delay, regress, or succeed between journey states.
+- `customer-optimization.learning.domain-learning` — Customer Optimization Learning: Improve journey definitions, friction diagnosis, intervention timing, lifecycle thresholds, and progression strategies from verified outcomes.
+- `customer-optimization.measurement.baseline` — Journey Intervention Baseline: Establish the pre-intervention customer and business state required to evaluate a journey change.
+- `customer-optimization.measurement.cohort-retention` — Cohort Retention Analysis: Compare retention/renewal behavior across cohorts and lifecycle experiences to locate durable drivers and risks.
+- `customer-optimization.measurement.time-to-value` — Time-to-Value Analysis: Measure how long it takes customers to reach a genuinely meaningful value milestone and what delays it.
+- `customer-optimization.measurement.transition` — Journey Transition Measurement: Measure progression from one defined customer state to the next with consistent eligibility, timing, and outcome rules.
+- `customer-optimization.monitoring.activation-risk` — Activation Risk Monitoring: Detect new customers/users likely to miss the value/activation path while there is still time to help.
+- `customer-optimization.monitoring.churn-risk` — Customer Churn Risk Monitoring: Detect observable lifecycle conditions associated with elevated churn so the business can investigate and respond appropriately.
+- `customer-optimization.monitoring.journey-health` — Customer Journey Health Monitoring: Continuously detect material deterioration or improvement in customer progression, delays, failure states, or downstream value.
+- `customer-optimization.monitoring.renewal-risk` — Renewal Risk Monitoring: Identify customer conditions that could prevent a healthy renewal before the decision deadline.
+- `customer-optimization.onboarding.escalation` — Onboarding Escalation Design: Define when stalled onboarding should move from automated guidance to human/technical/customer-success intervention.
+- `customer-optimization.onboarding.guidance` — Onboarding Guidance Requirements: Define the instructions, examples, decisions, and support a customer needs at each onboarding milestone.
+- `customer-optimization.onboarding.milestone-design` — Onboarding Milestone Design: Define the minimum customer states/milestones required to reach meaningful value and how progress is verified.
+- `customer-optimization.onboarding.qa` — Onboarding End-to-End QA: Test the complete onboarding path as an actual customer across milestones, communications, handoffs, failures, and measurement.
+- `customer-optimization.onboarding.sequence-design` — Onboarding Sequence Design: Sequence onboarding milestones, communications, handoffs, and waiting states to minimize unnecessary time/effort.
+- `customer-optimization.referral.eligibility-timing` — Referral Eligibility and Timing: Identify appropriate moments to ask satisfied customers for a referral, review, or advocacy action.
+- `customer-optimization.renewal.readiness` — Renewal Readiness Assessment: Determine whether a customer is ready to renew and what legitimate issues must be resolved before the decision.
+- `customer-optimization.repeat-purchase.eligibility` — Repeat Purchase Eligibility: Determine when an existing customer has a legitimate need and readiness for another purchase of the same/replenishable offering.
+- `customer-optimization.retention.intervention-plan` — Retention Intervention Plan: Design mechanism-specific actions that restore value, resolve friction, or improve fit for customers at genuine churn risk.
+- `customer-optimization.retention.risk-segmentation` — Retention Risk Segmentation: Group retention risk by interpretable mechanism so interventions can address the actual reason for risk.
+- `customer-optimization.scheduling.no-show` — Appointment No-Show Optimization: Reduce avoidable missed appointments while preserving easy rescheduling/cancellation and customer respect.
+- `customer-optimization.service-recovery.prevention` — Service Failure Prevention Review: Turn recurring or material service recovery cases into systemic journey/process improvements.
+- `customer-optimization.service-recovery.triage` — Service Recovery Triage: Stabilize an active customer failure by understanding impact, urgency, ownership, and immediate next action.
+
+## industry-intelligence
+
+- `industry.analysis.audience-implication` — Audience Implication of an Industry Event: Separate “what happened” from “why this matters to this audience/business” so downstream communication can be useful without distorting the underlying event.
+- `industry.analysis.business-impact` — Business Impact Analysis: Translate a verified external event into evidence-backed implications for this specific business.
+- `industry.analysis.competitor-response` — Industry Event Competitor Response Analysis: Track how material competitors respond to an external Event without duplicating canonical competitor strategy.
+- `industry.analysis.event-deduplication` — Event Deduplication & Clustering: Resolve many articles/updates into one evolving underlying IndustryEvent.
+- `industry.analysis.event-evolution` — Event Evolution Tracking: Maintain one coherent evolving event state as new facts, dates, interpretations, and impacts emerge.
+- `industry.analysis.event-verification` — Industry Event Verification: Verify high-impact event claims before the Business OS treats them as decision facts.
+- `industry.analysis.impact-pathway` — Industry Impact Pathway Analysis: Trace how an external development could cause concrete effects on customers, competitors, operations, economics, compliance, or discovery.
+- `industry.analysis.materiality` — Materiality Assessment: Determine whether an external development is important enough to change business attention or decisions.
+- `industry.analysis.narrative-vs-fact` — Industry Narrative vs Fact Analysis: Separate what is objectively changing from what the market is repeatedly saying or believing about it.
+- `industry.analysis.opportunity` — External Opportunity Analysis: Identify business upside created by an industry development without claiming another domain owns the response.
+- `industry.analysis.post-event-outcome-review` — Industry Event Outcome Review: Compare predicted impact pathways and scenarios with what actually occurred after an Event matured.
+- `industry.analysis.rapid-response` — Rapid Response Intelligence: Produce a verified bounded intelligence packet quickly when a developing event demands business communication or action.
+- `industry.analysis.regulatory-obligation` — Regulatory Requirement Extraction: Extract what a rule, regulator action, standard, or policy explicitly requires, permits, changes, and when.
+- `industry.analysis.research-quality` — Industry Research Quality Assessment: Evaluate whether a study, report, benchmark, or dataset supports the conclusion being considered.
+- `industry.analysis.scenario` — Scenario Analysis: Model materially different plausible futures when uncertainty is too high for one-point prediction.
+- `industry.analysis.threat` — Threat Analysis: Assess external developments that could damage business outcomes, compliance, customer trust, capability, or market position.
+- `industry.analysis.trend-validation` — Industry Trend Validation: Determine whether a perceived trend reflects a sustained underlying change rather than repeated coverage, seasonality, or a short-lived spike.
+- `industry.event.detect` — Industry Event Detection: Determine whether new external observations represent a new material Event, an update to an existing Event, or noise.
+- `industry.event.factual-summary` — Industry Event Factual Summary: Produce a source-grounded account of what happened before adding business or audience interpretation.
+- `industry.event.follow-up` — Industry Event Follow-Up: Determine and monitor the unresolved facts or future milestones that could change an Event’s relevance.
+- `industry.event.timeline` — Industry Event Timeline: Maintain the sequence of meaningful developments in an evolving IndustryEvent.
+- `industry.event.update-diff` — Industry Event Update Diff: Identify exactly what changed since the last verified Event state.
+- `industry.handoff.content-response` — Industry Event to Content WorkRequest: Delegate an approved Industry-owned communication action to Content Synthesis with a clean separation between verified facts, Industry interpretation, audience value, and creative execution.
+- `industry.handoff.decision-brief` — Industry Decision Brief: Package the minimum verified facts, implications, uncertainty, deadlines, and decision relevance needed by a downstream domain.
+- `industry.intelligence.relevance-evaluation` — Industry Relevance Evaluation: Evaluate whether shared intelligence from another semantic domain materially affects understanding material external environment change without duplicating the upstream Insight or launching expensive work automatically.
+- `industry.learning.domain-learning` — Industry Intelligence Learning: Improve source coverage, materiality thresholds, event clustering, and response timing based on observed outcomes.
+- `industry.monitoring.market` — Market & Category Monitoring: Detect structural category/economic shifts relevant to demand, supply, pricing, customer behavior, or competitive conditions.
+- `industry.monitoring.news` — News Monitoring: Detect materially relevant current industry developments while suppressing duplicate/low-value coverage.
+- `industry.monitoring.regulation` — Regulatory Monitoring: Track proposed, adopted, effective, and enforced regulatory changes with exact jurisdiction/status distinctions.
+- `industry.monitoring.research` — Research Monitoring: Identify credible new research that could change customer, product, market, or strategy assumptions.
+- `industry.monitoring.social-discussion` — Industry Social Discussion Monitoring: Detect meaningful category/industry discussion emerging across public social, communities, and feeds while filtering memes, isolated virality, and repeated copies of the same story.
+- `industry.monitoring.source-health` — Industry Source Health Monitoring: Detect when priority industry sources stop updating, move, degrade, or become unreliable.
+- `industry.monitoring.technology` — Technology & Platform Monitoring: Detect technology/platform changes that alter capabilities, customer expectations, channel behavior, or business risk.
+- `industry.research.monitoring-plan` — Industry Monitoring Plan: Define what external developments matter, where to monitor them, and how quickly they must be surfaced.
+- `industry.research.source-validation` — Industry Source Validation: Evaluate whether an industry source is suitable for discovering or supporting a specific fact.
+- `industry.source-mapping.priority-sources` — Industry Source Map: Define authoritative and useful sources by event type so monitoring coverage is deliberate rather than news-volume driven.
+
+## marketing-synthesis
+
+- `marketing.ads.angle-matrix` — Advertising Angle Matrix: Generate distinct persuasion hypotheses for an ad campaign rather than cosmetic creative variants.
+- `marketing.ads.copy` — Advertising Copy: Write concise ad copy that earns qualified attention and creates accurate intent for the destination.
+- `marketing.ads.creative-brief` — Advertising Creative Brief: Specify the visual/audio demonstration required to express an approved ad angle in the placement.
+- `marketing.ads.message-match` — Ad-to-Destination Message Match: Ensure the destination immediately continues the specific promise and intent created by each ad angle.
+- `marketing.ads.qa` — Advertising Launch QA: Verify ads, creative, claims, Offer, destinations, tracking, and variant mapping before activation.
+- `marketing.ads.variant-plan` — Advertising Variant Test Plan: Define creative/copy variants so each comparison teaches something interpretable.
+- `marketing.assets.ads` — Advertising Creative & Copy: Create persuasive ad concepts/copy/creative requirements matched to audience, awareness, channel context, and destination.
+- `marketing.assets.advertorial` — Advertorial: Create clearly compliant editorial-style persuasion that educates while transparently serving a commercial objective.
+- `marketing.assets.comparison` — Comparison & Alternative Persuasion: Help qualified buyers evaluate alternatives honestly using customer decision criteria and current competitive evidence.
+- `marketing.assets.email-sequence` — Commercial Email Sequence: Design a multi-email persuasion sequence where each message has a distinct job and builds appropriately on prior context.
+- `marketing.assets.landing-page` — Landing Page Persuasion: Design a landing-page persuasion structure that continues acquisition intent and moves the right visitor toward the desired action.
+- `marketing.assets.lead-magnet` — Lead Magnet: Create an exchange-worthy asset that solves a bounded valuable problem and naturally relates to the next commercial step.
+- `marketing.assets.nurture` — Lead Nurture Strategy: Move not-yet-ready prospects toward a better-informed decision over time rather than repeatedly asking for the sale.
+- `marketing.assets.quiz-assessment` — Quiz / Assessment Conversion Asset: Create a diagnostic experience that gives the participant useful feedback while qualifying/segmenting toward a relevant next action.
+- `marketing.assets.sales-enablement` — Sales Enablement Asset: Create persuasive evidence/tools that help sellers and buyers resolve real decision questions consistently.
+- `marketing.assets.sales-letter` — Sales Letter: Create long-form written persuasion appropriate to audience sophistication and Offer complexity.
+- `marketing.assets.vsl` — Video Sales Letter: Build a sustained video persuasion narrative tied to an offer and measurable commercial action.
+- `marketing.assets.webinar` — Webinar Persuasion: Design a webinar that creates genuine understanding/value while logically leading qualified attendees to an offer.
+- `marketing.campaigns.campaign-concept` — Campaign Concept Development: Create a coherent commercial campaign concept linking audience, Insight, offer, message, creative mechanism, channels/assets, and measurable action.
+- `marketing.diagnosis.persuasion-barrier` — Persuasion Barrier Diagnosis: Determine why the current commercial communication may not move the right audience toward the desired action before generating new copy.
+- `marketing.email.branching` — Email Sequence Branching: Define how observed recipient state changes the next message or exits the sequence.
+- `marketing.email.message-draft` — Marketing Email Draft: Write one email to perform its assigned job in an approved sequence.
+- `marketing.email.qa` — Email Sequence QA: Verify the complete email sequence, logic, content, links, consent, and terminal behavior before sending.
+- `marketing.email.sequence-strategy` — Email Sequence Strategy: Define entry, exit, message jobs, timing, branches, and success for a commercial email sequence.
+- `marketing.email.subject-preview` — Email Subject and Preview: Create subject/preview combinations that accurately signal the email’s value and context.
+- `marketing.experimentation.message-test` — Marketing Experiment Design: Design interpretable tests of messages, offers, proof, creative concepts, or persuasion structures.
+- `marketing.intake.persuasion-brief` — Persuasion Brief: Translate a Marketing Opportunity or delegated commercial WorkRequest into the complete persuasion problem before asset creation.
+- `marketing.intelligence.relevance-evaluation` — Marketing Relevance Evaluation: Evaluate whether shared intelligence from another semantic domain materially affects commercial persuasion without duplicating the upstream Insight or launching expensive work automatically.
+- `marketing.landing-page.copy` — Landing Page Copy: Write the complete evidence-backed copy for an approved landing-page persuasion architecture.
+- `marketing.landing-page.form-cta` — Landing Page Form and CTA Persuasion Requirements: Define what information and expectation-setting should surround the conversion action while leaving mechanics/friction ownership to Customer Optimization.
+- `marketing.landing-page.information-architecture` — Landing Page Information Architecture: Sequence the beliefs, proof, offer information, objections, and action components needed to convert the intended visitor.
+- `marketing.landing-page.message-match` — Landing Page Message Match: Ensure the landing page immediately continues the promise, intent, and expectations created by its acquisition source.
+- `marketing.landing-page.proof-objections` — Landing Page Proof and Objection Architecture: Place the right evidence and objection resolution into the landing page at the moments of highest doubt.
+- `marketing.landing-page.qa` — Landing Page Persuasion QA: Verify the final rendered landing page preserves message match, evidence, Offer accuracy, persuasion flow, and action integrity.
+- `marketing.learning.domain-learning` — Marketing Domain Learning: Improve positioning, message, proof, offer presentation, objection handling, creative concepts, and persuasion structure from commercial evidence.
+- `marketing.measurement.commercial-response` — Marketing Outcome Analysis: Interpret commercial response and return scoped marketing/customer evidence without overclaiming causality.
+- `marketing.offer.bonuses` — Offer Bonus Design: Evaluate whether complementary additions can remove implementation barriers or accelerate value without cluttering the Offer.
+- `marketing.offer.context-proposal` — Offer Context Change Proposal: Package a Marketing-supported Offer change for controlled business review and canonical context update.
+- `marketing.offer.diagnosis` — Offer Diagnosis: Determine whether weak commercial response is caused by the actual Offer structure rather than only its presentation.
+- `marketing.offer.guarantee` — Offer Guarantee Design: Turn validated risk-reversal strategy into precise proposed guarantee terms the business can actually administer.
+- `marketing.offer.packaging` — Offer Packaging Design: Design how approved products/services/outcomes are bundled, tiered, scoped, and sequenced into an offer proposal.
+- `marketing.offer.terms` — Offer Terms Optimization: Evaluate whether commitment, payment, cancellation, trial, eligibility, or contractual terms are blocking otherwise-qualified customers.
+- `marketing.social.profile-audit` — Conversion-Oriented Social Profile Audit: Evaluate whether a social profile clearly communicates who the business helps, why it matters, why to trust it, and what qualified visitors should do next.
+- `marketing.social.profile-optimization` — Conversion-Oriented Social Profile Optimization: Implement an evidence-backed social profile that converts qualified profile interest into the intended next action.
+- `marketing.strategy.awareness` — Audience Awareness and Sophistication: Determine what the audience already knows/believes about the problem, solutions, brand, alternatives, and Offer.
+- `marketing.strategy.claim-validation` — Marketing Claim Validation: Verify that consequential marketing claims are true, appropriately scoped, current, and supported before publication.
+- `marketing.strategy.cta` — Commercial CTA Strategy: Choose and phrase the next commercial action that best advances qualified prospects without unnecessary friction or premature commitment.
+- `marketing.strategy.ethical-urgency` — Urgency and Scarcity Validation: Use genuine timing, capacity, availability, or consequence only when it is real and relevant.
+- `marketing.strategy.guarantee-risk-reversal` — Guarantee and Risk-Reversal Design: Evaluate how legitimate risk reversal can reduce a real purchase barrier without creating unsustainable or deceptive commitments.
+- `marketing.strategy.mechanism` — Persuasion Mechanism Explanation: Develop the credible explanation for how the product/service/approach creates the promised outcome and why alternatives may fail.
+- `marketing.strategy.messaging` — Messaging Architecture: Define what the audience needs to understand/believe in what order across a commercial experience.
+- `marketing.strategy.objection-handling` — Objection Handling Strategy: Address evidence-backed buyer objections honestly without manipulative dismissal.
+- `marketing.strategy.offer-presentation` — Offer Presentation Strategy: Present an existing canonical Offer so value, terms, risk, proof, and next action are understandable and compelling.
+- `marketing.strategy.positioning` — Commercial Positioning Synthesis: Translate business/customer/competitive truth into a defensible commercial position for a defined audience and context.
+- `marketing.strategy.pricing-presentation` — Pricing Presentation: Present approved price, payment structure, and value context so qualified prospects can evaluate the Offer accurately.
+- `marketing.strategy.proof` — Proof Architecture: Determine which claims require what proof and how proof should be sequenced to reduce uncertainty.
+- `marketing.strategy.proof-selection` — Marketing Proof Selection: Select the proof most capable of resolving the audience’s specific doubt at each persuasion point.
+- `marketing.strategy.value-proposition` — Value Proposition Synthesis: Express why the defined audience should choose the offer relative to alternatives using supported value and proof.
+- `marketing.vsl.offer-cta` — VSL Offer and CTA Section: Design the exact transition from education/persuasion into Offer, terms, fit, risk, and next action.
+- `marketing.vsl.persuasion-architecture` — VSL Persuasion Architecture: Design the ordered belief progression that moves a qualified viewer from current understanding to the Offer and action.
+- `marketing.vsl.qa` — VSL Persuasion QA: Review the final VSL as consumed—not only the script—for persuasion integrity, evidence, pacing, and action accuracy.
+- `marketing.vsl.script` — VSL Script: Write the complete conversion-focused VSL script from an approved persuasion architecture.
+- `marketing.vsl.visual-brief` — VSL Visual Brief: Specify the visual proof, demonstrations, diagrams, text, and production needs required by the VSL persuasion sequence.
+- `marketing.webinar.follow-up` — Webinar Follow-Up Sequence: Follow up based on attendance/engagement/action so people receive the appropriate next step after the webinar.
+- `marketing.webinar.objective` — Webinar Objective and Audience: Define the commercial and educational job of a webinar before building teaching or slides.
+- `marketing.webinar.offer-transition` — Webinar Offer Transition: Design the transition from teaching into the commercial Offer so it follows logically from what attendees just learned.
+- `marketing.webinar.persuasion-architecture` — Webinar Persuasion Architecture: Overlay the necessary belief, proof, objection, and Offer progression onto the educational structure without corrupting it.
+- `marketing.webinar.qa` — Webinar End-to-End QA: Verify the complete webinar system—registration, session, teaching, slides, Offer, links, reminders, and follow-up—before live delivery.
+- `marketing.webinar.registration` — Webinar Registration Experience: Design the registration persuasion and expectation-setting needed to attract the right attendees.
+- `marketing.webinar.reminders` — Webinar Reminder Sequence: Create a reminder sequence that helps registered people attend without spam or manufactured urgency.
+- `marketing.webinar.script` — Webinar Script and Presenter Notes: Turn the approved teaching/persuasion architecture into a complete deliverable presenter script or structured notes.
+- `marketing.webinar.slide-brief` — Webinar Slide Brief: Define what each webinar slide/visual must communicate so Content can produce the presentation without reconstructing persuasion strategy.
+- `marketing.webinar.teaching-architecture` — Webinar Teaching Architecture: Design the educational framework, sequence, examples, and exercises that deliver the webinar’s promised transformation.
+
+## seo-aeo
+
+- `seo.aeo.learning.domain-learning` — SEO/AEO Domain Learning: Convert verified organic-discovery outcomes into better future diagnosis, thresholds, intervention selection, and measurement.
+- `seo.bootstrap.asset-state-inventory` — SEO Asset State Inventory: Attach SEO-specific state to canonical Assets without creating duplicate asset identities.
+- `seo.bootstrap.baseline.ai-baseline` — AI / Answer Visibility Baseline: Establish initial brand/competitor answer presence across a weighted prompt universe.
+- `seo.bootstrap.baseline.authority-baseline` — Authority and Reputation Baseline: Establish external references, mentions, reviews, trust sources, and competitor context.
+- `seo.bootstrap.baseline.local-baseline` — Local Baseline: Establish local entity/profile/site/review/visibility state for applicable businesses.
+- `seo.bootstrap.baseline.search-baseline` — Search Performance Baseline: Establish current organic query/page/surface performance and business-value linkage.
+- `seo.bootstrap.baseline.technical-baseline` — Technical Baseline: Measure current technical search accessibility and site architecture before changes.
+- `seo.bootstrap.domain-discovery` — SEO Domain Discovery: Initialize SEO-specific scope from minimal business information without recreating general Business Context.
+- `seo.bootstrap.instrumentation-coverage` — SEO Instrumentation Coverage: Assess whether available capabilities/data are sufficient to observe, diagnose, execute, and measure organic discovery.
+- `seo.diagnosis.detector.organic-experience-alignment` — Organic Experience Alignment Detector: Detect when organic acquisition intent, ranking destination, search promise, or landing experience is misaligned; route general persuasion or journey friction to the correct OS.
+- `seo.diagnosis.detector.search-reputation-risk` — Search Reputation Risk Detector: Detect reputation/review conditions that materially affect organic/local discovery or search-result trust, without owning broad sentiment/reputation management.
+- `seo.diagnosis.detectors.ai-citation-gap` — AI Citation / Recommendation Gap Detector: Find high-value prompts where relevant competitors/sources appear but the brand is absent or poorly represented.
+- `seo.diagnosis.detectors.backlink-gap` — Authority / Backlink Gap Detector: Find relevant authority relationships/assets competitors or the topic ecosystem have that the brand can legitimately earn.
+- `seo.diagnosis.detectors.cannibalization` — Cannibalization / Intent Ownership Detector: Find multiple owned assets competing/confusing intent ownership where consolidation or differentiation may improve outcomes.
+- `seo.diagnosis.detectors.content-gap` — Content / Information Gap Detector: Find high-value buyer needs or answer components not adequately served by an owned asset.
+- `seo.diagnosis.detectors.indexing` — Indexing Opportunity Detector: Find assets whose observed index/canonical/serving state conflicts with intended business/search state.
+- `seo.diagnosis.detectors.local-gap` — Local Visibility Gap Detector: Find material local discovery/conversion gaps by location, service, query, profile, or reputation state.
+- `seo.diagnosis.detectors.low-ctr` — Low CTR / Search Presentation Detector: Find pages whose observed clicks are materially below an appropriate expectation for their visibility and intent.
+- `seo.diagnosis.detectors.new-demand` — New Demand Detector: Detect newly observable or newly relevant demand with a credible business pathway.
+- `seo.diagnosis.detectors.ranking-decay` — Ranking Decay Detector: Detect sustained loss of position/visibility for valuable demand and identify the likely scope.
+- `seo.diagnosis.detectors.ranking-upside` — Ranking Upside Detector: Find pages already visible for valuable demand where a realistic relevance/quality/authority improvement could materially increase business value.
+- `seo.diagnosis.detectors.serp-feature` — SERP / Discovery Feature Opportunity Detector: Find valuable result formats or surface features the brand could legitimately qualify for or better serve.
+- `seo.diagnosis.detectors.technical` — Technical Opportunity Detector: Convert crawl/index/performance observations into prioritized, root-cause technical opportunities.
+- `seo.diagnosis.detectors.traffic-decay` — Organic Traffic Decay Detector: Separate traffic decline into demand, visibility, CTR, analytics, conversion-path, and technical causes.
+- `seo.execution.aeo.aeo-content-optimization` — Answer-Oriented Content Optimization: Improve owned information so it is clear, useful, evidence-rich, retrievable, and appropriate for both human search and answer systems.
+- `seo.execution.aeo.ai-referral-measurement` — AI Referral and Assisted Conversion Measurement: Measure observable visits and business outcomes from answer surfaces without treating unobservable influence as zero.
+- `seo.execution.aeo.answer-observation` — AI Answer Observation: Record reproducible observations of how relevant answer systems respond to priority questions.
+- `seo.execution.aeo.citation-extraction` — AI Citation and Link Extraction: Determine which sources and owned assets are cited/linked in answers and for which question contexts.
+- `seo.execution.aeo.competitive-answer-share` — Competitive Answer Share: Measure relative brand/competitor representation across a controlled prompt universe.
+- `seo.execution.aeo.factual-accuracy` — AI Factual Accuracy: Detect high-value incorrect, outdated, or ambiguous claims about the brand and route corrections to authoritative information sources.
+- `seo.execution.aeo.question-universe` — Question / Prompt Universe: Build and continuously refresh the high-value questions and conversational prompts through which buyers may discover or evaluate the brand/category.
+- `seo.execution.aeo.source-gap` — AI Source Gap Analysis: Identify what information sources answer systems repeatedly rely on and what owned/earned information is missing or uncompetitive.
+- `seo.execution.aeo.surface-configuration` — Answer Surface Configuration: Define which AI/generative/answer surfaces matter for a brand and how each can be observed without assuming identical behavior.
+- `seo.execution.architecture.crawl-depth` — Crawl Depth Optimization: Reduce unnecessary path depth for high-value assets while preserving meaningful information architecture.
+- `seo.execution.architecture.ecommerce-architecture` — Ecommerce Architecture: Organize categories, subcategories, products, filters, and merchandising paths for users and organic discovery.
+- `seo.execution.architecture.hub-spoke` — Hub-and-Spoke Architecture: Create coherent topic/service hubs that help users traverse a subject and concentrate internal discovery signals.
+- `seo.execution.architecture.local-architecture` — Local Site Architecture: Represent locations and service areas without producing thin, duplicative doorway pages.
+- `seo.execution.architecture.multilingual-architecture` — Multilingual / Multiregional Architecture: Represent languages and markets so each audience reaches the intended localized experience.
+- `seo.execution.architecture.navigation` — Navigation Architecture: Make important user and crawler pathways discoverable without bloating global navigation or flattening meaningful hierarchy.
+- `seo.execution.architecture.taxonomy` — Taxonomy Design: Design durable content/product/service classifications that reflect user tasks, business offerings, and discovery demand.
+- `seo.execution.authority.backlink-profile` — Backlink Profile Analysis: Build an evidence-based view of external links, referring domains, anchors, destinations, quality, risk, and business relevance.
+- `seo.execution.authority.broken-link-acquisition` — Broken Link Acquisition: Find dead external resources where the brand has a genuinely relevant replacement or can create one.
+- `seo.execution.authority.competitor-link-gap` — Competitor Link Gap: Find external sources that credibly reference competitors or the topic but not the owned brand.
+- `seo.execution.authority.digital-pr` — Digital PR: Create newsworthy, evidence-backed stories/assets that can earn relevant editorial coverage and citations.
+- `seo.execution.authority.directories-citations` — Directories and Citations: Create or correct authoritative business listings where presence helps users, local verification, or industry discovery.
+- `seo.execution.authority.guest-expert-contribution` — Guest / Expert Contribution: Contribute genuine expertise to third-party audiences when the contribution itself has business/editorial value.
+- `seo.execution.authority.link-monitoring` — Link and Mention Monitoring: Detect new, changed, lost, redirected, or harmful external references and decide whether action is needed.
+- `seo.execution.authority.opportunity-qualification` — Authority Opportunity Qualification: Decide whether an off-page opportunity is worth pursuing and which legitimate strategy fits it.
+- `seo.execution.authority.outreach` — Authority Outreach: Execute personalized, ethical outreach for already-qualified authority opportunities.
+- `seo.execution.authority.partnerships` — Authority Partnerships: Use legitimate partner ecosystems to create useful co-marketing, references, integrations, directories, or resources.
+- `seo.execution.authority.resource-page-acquisition` — Resource Page Acquisition: Earn inclusion on curated resources/directories when the owned resource genuinely belongs.
+- `seo.execution.authority.response-negotiation` — Outreach Response and Negotiation: Handle replies to authority outreach while protecting brand, editorial integrity, budget, and policy boundaries.
+- `seo.execution.authority.unlinked-mentions` — Unlinked Brand Mention Recovery: Turn legitimate existing brand references into accurate links where a link would improve the source for its audience.
+- `seo.execution.indexing.deindex-removal` — Deindexing and Removal: Remove or consolidate URLs from discovery/indexes intentionally while protecting users, links, legal requirements, and replacements.
+- `seo.execution.indexing.index-status` — Index Status Tracking: Track whether priority assets move through expected discovery, crawl, canonical, and index states.
+- `seo.execution.indexing.index-troubleshooting` — Indexing Troubleshooting: Diagnose why a material asset is not being indexed/served rather than repeatedly resubmitting it.
+- `seo.execution.indexing.indexnow` — IndexNow Notification: Notify participating search engines of eligible URL additions, updates, or deletions when an IndexNow-capable adapter is configured.
+- `seo.execution.indexing.publish-discovery` — Publish and Discovery Signaling: Ensure newly published or materially changed assets are accessible, linked, represented in discovery files, and handed to monitoring.
+- `seo.execution.internal-linking.anchor-text` — Internal Anchor Text: Use descriptive, varied, context-appropriate internal anchor text that clarifies destination purpose.
+- `seo.execution.internal-linking.authority-routing` — Internal Authority Routing: Route internal prominence toward strategically important pages without harming navigation or creating manipulative link patterns.
+- `seo.execution.internal-linking.broken-internal-links` — Broken Internal Links: Detect and resolve internal links that lead to errors, redirects, wrong canonicals, or retired assets.
+- `seo.execution.internal-linking.contextual-linking` — Contextual Linking: Add useful links where one asset naturally answers the next question or advances the buyer journey.
+- `seo.execution.internal-linking.ongoing-link-automation` — Ongoing Internal Link Automation: Continuously propose or execute high-confidence internal links as content changes, with controls against spam and duplication.
+- `seo.execution.internal-linking.orphan-recovery` — Orphan Page Recovery: Find valuable assets with no meaningful internal discovery path and either reconnect, consolidate, or retire them.
+- `seo.execution.local.categories-services` — Local Categories and Services: Choose accurate categories, services, and product descriptors that match real offerings and local demand.
+- `seo.execution.local.local-citations-links` — Local Citations and Links: Earn/correct locally meaningful references that reinforce discoverability and trust.
+- `seo.execution.local.local-content` — Local Content: Create market-specific information only where local differences, events, expertise, or customer needs justify it.
+- `seo.execution.local.local-eligibility-model` — Local Eligibility and Market Model: Determine whether local discovery is relevant and represent locations/service areas/franchise relationships accurately.
+- `seo.execution.local.local-media` — Local Media Optimization: Maintain useful, accurate visual assets for local profiles and location pages.
+- `seo.execution.local.location-pages` — Location Page Optimization: Create or improve location pages that provide unique local utility and connect local discovery to conversion.
+- `seo.execution.local.map-visibility` — Map Visibility Monitoring and Optimization: Measure local result presence and diagnose why visibility/conversion differs by query and geography.
+- `seo.execution.local.multi-location-franchise` — Multi-Location and Franchise Governance: Scale local optimization while preserving per-location truth, ownership, quality, and exception handling.
+- `seo.execution.local.nap-consistency` — Business Identity / NAP Consistency: Maintain a canonical business identity across owned and important third-party sources.
+- `seo.execution.local.profile-completeness` — Local Profile Completeness: Ensure each authorized local profile accurately and comprehensively represents the business.
+- `seo.execution.on-page.cannibalization` — Cannibalization: Resolve harmful overlap among owned pages without assuming every multi-URL ranking is a problem.
+- `seo.execution.on-page.direct-answers-faq` — Direct Answers Faq: Answer recurring user questions directly while keeping the page natural and useful.
+- `seo.execution.on-page.entities-evidence` — Entities Evidence: Clarify important entities, relationships, facts, and proof.
+- `seo.execution.on-page.freshness` — Freshness: Refresh content when changed facts, market conditions, user expectations, or competitive quality make it stale.
+- `seo.execution.on-page.headings-information-architecture` — Headings Information Architecture: Make page structure easy to scan, understand, and navigate.
+- `seo.execution.on-page.intent-alignment` — Intent Alignment: Align an existing page with the actual high-value user intent it should satisfy.
+- `seo.execution.on-page.organic-conversion-alignment` — Conversion Alignment: Align organic intent and search promise with the landing experience; delegate general persuasion or journey mechanics when they are the true cause.
+- `seo.execution.on-page.prune-consolidate` — Prune Consolidate: Remove or consolidate low-value content only when evidence shows it should not remain independently available.
+- `seo.execution.on-page.title-snippet` — Title Snippet: Improve qualified result CTR without misrepresenting page content.
+- `seo.execution.on-page.topical-coverage` — Topical Coverage: Close meaningful content gaps without padding or duplicating other pages.
+- `seo.execution.technical.canonicals` — Canonicals: Consolidate duplicate/near-duplicate URL signals without suppressing legitimately distinct pages.
+- `seo.execution.technical.core-web-vitals` — Core Web Vitals: Improve real-user loading, interaction, and visual stability when it materially affects experience/business outcomes.
+- `seo.execution.technical.crawl-access` — Crawl Access: Ensure valuable assets can be discovered and fetched by intended crawlers without exposing unwanted/private areas.
+- `seo.execution.technical.crawl-budget` — Crawl Budget: Improve discovery efficiency on very large or frequently changing sites when crawl capacity is a demonstrated constraint.
+- `seo.execution.technical.duplicate-content` — Duplicate Content: Reduce waste/confusion from duplicate and near-duplicate assets while preserving useful variants.
+- `seo.execution.technical.faceted-navigation` — Faceted Navigation: Control combinatorial filter URLs while preserving valuable filtered landing pages.
+- `seo.execution.technical.indexability` — Indexability: Diagnose whether valuable pages are eligible for indexing and why eligible pages may still be absent.
+- `seo.execution.technical.international-hreflang` — International Hreflang: Represent market/language variants correctly and avoid cross-market canonical conflicts.
+- `seo.execution.technical.javascript-rendering` — Javascript Rendering: Ensure important content, links, metadata, and directives survive the rendering path.
+- `seo.execution.technical.media-seo` — Media Seo: Make important image/video assets discoverable, descriptive, performant, and connected to relevant pages.
+- `seo.execution.technical.mobile` — Mobile: Ensure mobile users/crawlers receive complete, usable core content and metadata.
+- `seo.execution.technical.page-speed` — Page Speed: Reduce unnecessary latency and page weight beyond named CWV thresholds.
+- `seo.execution.technical.pagination` — Pagination: Maintain discoverable multi-page sequences without losing deep items or creating duplicate traps.
+- `seo.execution.technical.redirects` — Redirects: Design and validate redirects that preserve user journeys, discovery, and historical value.
+- `seo.execution.technical.robots` — Robots: Safely manage robots.txt crawler controls.
+- `seo.execution.technical.site-migration` — Site Migration: Plan and execute domain/CMS/architecture/URL migrations without avoidable discovery or attribution loss.
+- `seo.execution.technical.sitemaps` — Sitemaps: Maintain accurate discovery sitemaps for canonical, index-worthy URLs.
+- `seo.execution.technical.status-codes` — Status Codes: Correct HTTP response behavior that interferes with users, discovery, or diagnosis.
+- `seo.execution.technical.structured-data` — Structured Data: Implement accurate supported structured data that matches visible content and real business facts.
+- `seo.execution.technical.url-hygiene` — Url Hygiene: Keep URLs stable, canonical, and free from uncontrolled variant explosion.
+- `seo.incidents.local-profile-suspension` — Local Profile Suspension Incident: Handle loss/restriction of an important local business profile without making risky repeated edits.
+- `seo.incidents.manual-action-or-policy` — Manual Action / Policy Incident: Handle search/platform policy notices or credible evidence of a policy-related visibility problem with documented remediation.
+- `seo.incidents.mass-deindexing` — Mass Deindexing Incident: Respond to unexpected loss of indexed/served pages across a material site segment.
+- `seo.incidents.organic-traffic-collapse` — Organic Traffic Collapse Incident: Diagnose severe qualified organic traffic loss while protecting measurement and revenue pathways.
+- `seo.incidents.ranking-collapse` — Ranking Collapse Incident: Rapidly stabilize and diagnose a broad or high-value ranking/visibility collapse.
+- `seo.incidents.site-migration` — Site Migration Incident / Command: Coordinate planned or emergency domain/URL/platform migrations as a controlled high-risk program.
+- `seo.intelligence.ecosystem.claim-extraction` — SEO Strategy Claim Extraction: Convert articles, announcements, experiments, and observed outcomes into atomic, testable SEO/AEO claims with explicit source lineage and applicability.
+- `seo.intelligence.ecosystem.evidence-grading` — SEO Strategy Evidence Assessment: Assess the strength, relevance, confidence, applicability, and uncertainty of evidence supporting or contradicting an SEO/AEO strategy claim without collapsing those dimensions into one grade.
+- `seo.intelligence.ecosystem.official-contradiction-check` — SEO Official Policy / Guidance Contradiction Check: Check proposed SEO/AEO tactics against current authoritative platform rules, technical eligibility requirements, and Core/business policy while keeping policy status distinct from evidence strength.
+- `seo.intelligence.ecosystem.source-monitoring` — SEO Ecosystem Source Monitoring: Continuously capture material official search/answer-engine changes and credible SEO/AEO research as reusable sources and observations without automatically changing operating rules.
+- `seo.intelligence.organic-competition.discover-answer` — Answer Competitor / Source Discovery: Identify/search-analyze organic competitors and answer sources without maintaining a duplicate broad business competitor profile.
+- `seo.intelligence.organic-competition.discover-search` — Search Competitor Discovery: Identify/search-analyze organic competitors and answer sources without maintaining a duplicate broad business competitor profile.
+- `seo.intelligence.organic-competition.domain-analysis` — Competitor Domain Analysis: Build an interpretable domain-level model of how a competitor wins discovery and business attention.
+- `seo.intelligence.organic-competition.gap-analysis` — Competitive Gap Analysis: Convert competitor observations into specific, business-relevant opportunities rather than a list of things competitors have.
+- `seo.intelligence.organic-competition.movement-monitoring` — Competitor Movement Monitoring: Detect material changes in competitor visibility, assets, authority, answers, reputation, and offers.
+- `seo.intelligence.organic-competition.page-analysis` — Competitor Page Analysis: Compare a specific competing page/asset against the owned or missing asset for a defined intent.
+- `seo.intelligence.organic-demand.ai-prompt-expansion` — AI Prompt Expansion: Translate buyer needs into realistic conversational question/prompt families and discover follow-up constraints.
+- `seo.intelligence.organic-demand.business-value-mapping` — Demand Business-Value Mapping: Connect every pursued demand unit to a plausible business-value pathway.
+- `seo.intelligence.organic-demand.first-party-query-mining` — First-Party Query Mining: Mine actual search/site/customer language for opportunities that generic keyword tools may miss.
+- `seo.intelligence.organic-demand.intent-classification` — Intent and Journey Classification: Classify demand by what the user is trying to accomplish, not only by keyword syntax.
+- `seo.intelligence.organic-demand.refresh-rerank` — Demand Refresh and Rerank: Continuously update demand observations and priorities as markets, search behavior, products, and outcomes change.
+- `seo.intelligence.organic-demand.seed-generation` — Demand Seed Generation: Generate an initial comprehensive but business-filtered set of topics, needs, questions, entities, and queries.
+- `seo.intelligence.organic-demand.semantic-clustering` — Semantic Demand Clustering: Group demand by shared underlying need while preserving distinct intents that deserve separate assets.
+- `seo.intelligence.organic-demand.serp-expansion` — Search Result Expansion: Use observed search-result ecosystems to discover adjacent queries, intents, entities, result formats, and competitors.
+- `seo.intelligence.relevance-evaluation` — SEO/AEO Relevance Evaluation: Evaluate whether shared intelligence from another semantic domain materially affects valuable organic discovery without duplicating the upstream Insight or launching expensive work automatically.
+- `seo.learning.strategy-experiment-design` — SEO Strategy Experiment Design: Design a controlled or defensible quasi-experimental test for an uncertain SEO/AEO tactic so its causal/business effect can update domain learning.
+- `seo.learning.tactic-deprecation` — SEO Tactic Deprecation: Constrain, contradict, supersede, or deprecate SEO Domain Learning and dependent guidance when evidence weakens, policy changes, or measured outcomes are consistently harmful.
+- `seo.learning.tactic-promotion` — SEO Tactic Promotion: Promote an SEO Domain Learning to a stronger maturity and, when justified, update standard operating contracts without overgeneralizing its evidence.
+- `seo.learning.tactic-registry` — SEO Tactic Learning Registry Maintenance: Maintain SEO/AEO tactics as SEO Domain Learning objects with explicit mechanisms, evidence, applicability, maturity, status, policy constraints, and linked implementation contracts.
+- `seo.measurement.attribution` — Organic Attribution: Connect observed organic discovery to business outcomes using the strongest available evidence while labeling uncertainty.
+- `seo.measurement.change-evaluation` — Change Event Evaluation: Determine whether a specific optimization likely helped, harmed, or was inconclusive.
+- `seo.measurement.experiment-analysis` — SEO/AEO Experiment Analysis: Analyze controlled or quasi-controlled experiments without overstating causality.
+- `seo.measurement.monthly-business` — Monthly Organic Discovery Business Review: Connect SEO/AEO operations to business outcomes and strategic decisions.
+- `seo.measurement.quarterly-strategy` — Quarterly Organic Discovery Strategy Review: Reassess markets, demand, competitors, asset portfolio, strategy evidence, and resource direction.
+- `seo.measurement.scorecard` — Unified SEO/AEO Scorecard: Maintain a layered scorecard where intermediate metrics remain visible but never replace business value.
+- `seo.measurement.weekly-tactical` — Weekly Tactical Report: Produce an action-oriented weekly view of changes, risks, opportunities, and work performed.
+- `seo.monitoring.ai-visibility` — AI / Answer Visibility Monitoring: Refresh high-value prompt observations and detect changes in brand representation, citations, competitors, and factual accuracy.
+- `seo.monitoring.backlinks` — Backlink and Mention Monitoring: Track meaningful new/lost/changed external references and authority opportunities.
+- `seo.monitoring.competitors` — Competitor Monitoring: Refresh business/search/answer competitor movements that materially affect priority opportunities.
+- `seo.monitoring.ctr` — CTR Monitoring: Track click-through behavior relative to query/page position and result context.
+- `seo.monitoring.data-health` — Data Health Monitoring: Detect broken, stale, partial, duplicated, or materially changed inputs before the system makes decisions from them.
+- `seo.monitoring.ecosystem-updates` — Search / Answer Ecosystem Update Monitoring: Detect official platform changes and credible industry developments that may require strategy review.
+- `seo.monitoring.indexing` — Indexing Monitoring: Track priority assets for unexpected changes in accessibility, canonical, indexed, and serving states.
+- `seo.monitoring.local` — Local Discovery Monitoring: Track profile state, local visibility, local actions, location pages, citations, and location-specific issues.
+- `seo.monitoring.organic-outcome-alignment` — Organic Conversion and Value Monitoring: Track downstream business outcomes from organic discovery and detect quality/value changes.
+- `seo.monitoring.ranking-visibility` — Ranking and Search Visibility Monitoring: Track material query/page/cluster visibility changes across relevant search surfaces.
+- `seo.monitoring.search-reputation` — Reputation Monitoring: Track review, rating, sentiment, profile, and high-visibility brand-claim changes.
+- `seo.monitoring.technical` — Technical Health Monitoring: Continuously detect changes in technical conditions likely to affect discovery, user experience, or measurement.
+- `seo.monitoring.traffic` — Organic Traffic Monitoring: Detect material changes in qualified organic site/app traffic and landing behavior.
+- `seo.planning.organic-content-requirements` — Organic Content Requirements: Translate a qualified SEO content Opportunity into a complete organic-discovery requirement set that Content Synthesis can execute without rediscovering SEO strategy.

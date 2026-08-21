@@ -1,0 +1,121 @@
+{
+  "format_version": "1.0",
+  "principle": "Examples are non-exhaustive. Select sources by decision value, relevance, authority, accessibility, and freshness; discover additional credible sources when likely to change the decision.",
+  "depth_modes": {
+    "rapid": "Resolve a narrow competitive question with the minimum credible evidence.",
+    "standard": "Cover the major evidence classes relevant to the decision and deepen material signals.",
+    "comprehensive": "Systematically evaluate all relevant evidence classes, document gaps, and deepen until additional evidence is unlikely to change the strategic conclusion.",
+    "continuous": "Reuse a validated baseline and monitor material changes; deepen only changed/high-value areas."
+  },
+  "source_classes": [
+    {
+      "id": "first_party",
+      "examples": [
+        "official website",
+        "product/service pages",
+        "pricing/offers",
+        "docs/help",
+        "release notes/changelog",
+        "legal/terms",
+        "newsroom",
+        "careers",
+        "case studies"
+      ],
+      "default_priority": "high"
+    },
+    {
+      "id": "funnel",
+      "examples": [
+        "ad/search/social/profile entry",
+        "landing pages",
+        "forms",
+        "lead magnets",
+        "booking/demo",
+        "trial",
+        "checkout",
+        "legitimately received follow-up"
+      ],
+      "default_priority": "decision-dependent"
+    },
+    {
+      "id": "advertising",
+      "examples": [
+        "Meta Ad Library",
+        "Google Ads Transparency Center",
+        "LinkedIn Ad Library",
+        "TikTok Commercial Content Library",
+        "other current public advertising transparency/library surfaces"
+      ],
+      "default_priority": "when paid acquisition matters"
+    },
+    {
+      "id": "social_content",
+      "examples": [
+        "LinkedIn",
+        "YouTube",
+        "Instagram",
+        "TikTok",
+        "Facebook",
+        "X",
+        "Reddit/community presence",
+        "podcasts/webinars/creator collaborations"
+      ],
+      "default_priority": "when audience/content/distribution strategy matters"
+    },
+    {
+      "id": "customer_public",
+      "examples": [
+        "review platforms",
+        "marketplaces/app stores",
+        "forums",
+        "public communities",
+        "support discussions",
+        "public comments"
+      ],
+      "default_priority": "when customer perception/experience matters"
+    },
+    {
+      "id": "independent",
+      "examples": [
+        "news",
+        "analyst/category sources",
+        "research",
+        "directories",
+        "partners/integration listings"
+      ],
+      "default_priority": "for corroboration and strategic interpretation"
+    },
+    {
+      "id": "strategic_signals",
+      "examples": [
+        "hiring/careers",
+        "leadership changes",
+        "funding",
+        "partnerships",
+        "integrations",
+        "product releases",
+        "geographic expansion/contraction"
+      ],
+      "default_priority": "when strategic movement matters"
+    },
+    {
+      "id": "organic_discovery",
+      "examples": [
+        "search results",
+        "backlinks",
+        "AI/answer citations",
+        "local visibility"
+      ],
+      "default_priority": "route deep organic analysis to SEO/AEO when installed"
+    }
+  ],
+  "coverage_statuses": [
+    "checked",
+    "partial",
+    "not_relevant",
+    "unavailable",
+    "blocked",
+    "deferred",
+    "unknown"
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "id": "prd_professional-service",
+  "object_type": "ProductService",
+  "schema_version": "1.0.0",
+  "business_id": "professional-service",
+  "created_at": "2026-08-18T00:00:00Z",
+  "updated_at": "2026-08-18T00:00:00Z",
+  "lineage": [],
+  "name": "Operational transformation consulting",
+  "kind": "service",
+  "description": "Operational transformation consulting",
+  "status": "active"
+}

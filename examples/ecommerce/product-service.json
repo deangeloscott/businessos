@@ -1,0 +1,13 @@
+{
+  "id": "prd_ecommerce",
+  "object_type": "ProductService",
+  "schema_version": "1.0.0",
+  "business_id": "ecommerce",
+  "created_at": "2026-08-18T00:00:00Z",
+  "updated_at": "2026-08-18T00:00:00Z",
+  "lineage": [],
+  "name": "Premium cookware",
+  "kind": "product",
+  "description": "Premium cookware",
+  "status": "active"
+}

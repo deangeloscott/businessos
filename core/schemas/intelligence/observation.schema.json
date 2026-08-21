@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Observation",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^obs_[A-Za-z0-9_-]+$"
+    },
+    "object_type": {
+      "const": "Observation"
+    },
+    "schema_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "business_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "lineage": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "producer_system": {
+      "enum": [
+        "core",
+        "customer-intelligence",
+        "competitor-intelligence",
+        "industry-intelligence",
+        "seo-aeo",
+        "content-synthesis",
+        "marketing-synthesis",
+        "customer-optimization"
+      ]
+    },
+    "observation_type": {
+      "type": "string",
+      "minLength": 1
+    },
+    "subject_refs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "statement": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_refs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "observed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "method": {
+      "type": "string",
+      "minLength": 1
+    },
+    "extraction_confidence": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 1
+    },
+    "extensions": {
+      "type": "object"
+    }
+  },
+  "required": [
+    "id",
+    "object_type",
+    "schema_version",
+    "business_id",
+    "producer_system",
+    "observation_type",
+    "statement",
+    "source_refs",
+    "observed_at",
+    "method"
+  ]
+}

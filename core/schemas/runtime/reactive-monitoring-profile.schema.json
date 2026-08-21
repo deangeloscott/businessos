@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ReactiveMonitoringProfile",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "format_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "enabled": {
+      "type": "boolean"
+    },
+    "provider_preference": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "delivery_preference": {
+      "enum": [
+        "event_when_ready_else_poll",
+        "events_only",
+        "polling_preferred",
+        "manual_only"
+      ]
+    },
+    "materiality_mode": {
+      "enum": [
+        "adaptive",
+        "critical_only",
+        "all_valid_events"
+      ]
+    },
+    "event_family_allowlist": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "event_family_blocklist": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "coalesce_window_seconds": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 86400
+    },
+    "max_reaction_depth": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 32
+    },
+    "status": {
+      "enum": [
+        "not_configured",
+        "ready",
+        "degraded",
+        "fallback",
+        "disabled"
+      ]
+    },
+    "subscription_ref": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "last_configured_at": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "notes": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "format_version",
+    "enabled",
+    "provider_preference",
+    "delivery_preference",
+    "materiality_mode",
+    "event_family_allowlist",
+    "event_family_blocklist",
+    "coalesce_window_seconds",
+    "max_reaction_depth",
+    "status",
+    "subscription_ref",
+    "last_configured_at",
+    "notes"
+  ]
+}

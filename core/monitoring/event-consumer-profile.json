@@ -1,0 +1,217 @@
+{
+  "format_version": "1.0",
+  "consumer_id": "viraltrac-businessos",
+  "role": "External business-operations evaluator. Receives bounded governed occurrences, evaluates materiality, routes to installed operating processes, and never treats delivery as authorization.",
+  "principles": [
+    "Event catalog semantics and authority beat provider-name pattern matching; examples are non-exhaustive hints only.",
+    "Subscribe to material operating signals, not raw high-volume firehoses.",
+    "An occurrence permits evaluation only; every mutation still uses the ordinary BusinessOS authorization and governed action path.",
+    "Preserve root/parent/trace identity and idempotency so retries, replay, echoes, and cascades do not duplicate work.",
+    "If an owning domain module is not installed, do not impersonate it; route only to Core-safe analysis or the module-independence fallback."
+  ],
+  "event_families": [
+    {
+      "id": "operational_tracking_health",
+      "owner_system": "core",
+      "semantic_intents": [
+        "tracking health",
+        "connector health",
+        "operational degradation",
+        "data quality change"
+      ],
+      "provider_examples": [
+        "tracking degradation",
+        "connector readiness change",
+        "operational detector event"
+      ],
+      "materiality_triggers": [
+        "loss of trusted measurement",
+        "persistent or material connection failure",
+        "business-critical data quality degradation"
+      ],
+      "preferred_contracts": [
+        "core.data.query-business-truth",
+        "core.monitoring.diagnose-event-trace"
+      ],
+      "side_effect_posture": "evaluate_only",
+      "notes": "Routine retries or transient low-impact noise should normally be ignored/coalesced."
+    },
+    {
+      "id": "measurement_outcome",
+      "owner_system": "core",
+      "semantic_intents": [
+        "measurement completed",
+        "action outcome observed",
+        "experiment evidence changed",
+        "material performance shift"
+      ],
+      "provider_examples": [
+        "measurement action-outcome",
+        "experiment result",
+        "attribution/measurement evidence"
+      ],
+      "materiality_triggers": [
+        "new evidence can change an Initiative or Opportunity decision",
+        "material deviation from expected outcome",
+        "evidence ceiling changes materially"
+      ],
+      "preferred_contracts": [
+        "core.measurement.evaluate-outcome",
+        "core.data.query-business-truth"
+      ],
+      "side_effect_posture": "evaluate_only",
+      "notes": "Do not convert correlation or attribution into causal proof."
+    },
+    {
+      "id": "customer_journey_conversion",
+      "owner_system": "customer-optimization",
+      "semantic_intents": [
+        "lead lifecycle",
+        "journey transition",
+        "checkout/purchase",
+        "booking",
+        "membership/entitlement",
+        "conversion quality"
+      ],
+      "provider_examples": [
+        "lead submitted",
+        "checkout started",
+        "purchase completed",
+        "booking changed",
+        "membership changed"
+      ],
+      "materiality_triggers": [
+        "rate/quality/transition materially changes",
+        "terminal or risk state affects active initiative",
+        "cohort/journey health crosses an operating threshold"
+      ],
+      "preferred_contracts": [
+        "customer-optimization.monitoring.journey-health",
+        "customer-optimization.journey.transition-analysis"
+      ],
+      "side_effect_posture": "governed_handoff_possible",
+      "notes": "Individual routine occurrences normally feed aggregate/journey state rather than launching separate AI runs."
+    },
+    {
+      "id": "customer_research_signal",
+      "owner_system": "customer-intelligence",
+      "semantic_intents": [
+        "customer feedback signal",
+        "support/sales evidence",
+        "churn reason evidence",
+        "customer-language change"
+      ],
+      "provider_examples": [
+        "customer feedback evidence",
+        "conversation outcome",
+        "support signal"
+      ],
+      "materiality_triggers": [
+        "new repeated pattern",
+        "high-severity customer evidence",
+        "evidence contradicts current customer Insight"
+      ],
+      "preferred_contracts": [
+        "customer.analysis.insight-refresh",
+        "customer.monitoring.research-gaps"
+      ],
+      "side_effect_posture": "evaluate_only",
+      "notes": "Only use first-party event evidence within its consent/purpose boundary."
+    },
+    {
+      "id": "content_social_performance",
+      "owner_system": "content-synthesis",
+      "semantic_intents": [
+        "content performance change",
+        "social performance signal",
+        "distribution response"
+      ],
+      "provider_examples": [
+        "social/content performance observation"
+      ],
+      "materiality_triggers": [
+        "material performance anomaly",
+        "repeatable winning/losing creative pattern",
+        "active content experiment reaches decision evidence"
+      ],
+      "preferred_contracts": [
+        "content.intelligence.content-performance-analysis"
+      ],
+      "side_effect_posture": "evaluate_only",
+      "notes": "Visible engagement alone is not total business ROI."
+    },
+    {
+      "id": "marketing_growth_action",
+      "owner_system": "marketing-synthesis",
+      "semantic_intents": [
+        "growth recommendation/action state",
+        "offer/funnel response",
+        "campaign opportunity signal"
+      ],
+      "provider_examples": [
+        "growth coordination signal",
+        "recommendation changed",
+        "funnel outcome signal"
+      ],
+      "materiality_triggers": [
+        "evidence changes commercial persuasion decision",
+        "approved experiment/action needs a marketing response",
+        "material opportunity/leakage is detected"
+      ],
+      "preferred_contracts": [
+        "marketing.diagnosis.persuasion-barrier",
+        "marketing.campaigns.campaign-concept"
+      ],
+      "side_effect_posture": "governed_handoff_possible",
+      "notes": "Performance evidence should be grounded through Core/ViralTrac truth before creative or persuasion changes."
+    },
+    {
+      "id": "organic_site_signal",
+      "owner_system": "seo-aeo",
+      "semantic_intents": [
+        "site health",
+        "organic discovery change",
+        "search/indexing signal"
+      ],
+      "provider_examples": [
+        "site-health change",
+        "tracking/search evidence relevant to owned discovery"
+      ],
+      "materiality_triggers": [
+        "technical issue blocks discovery",
+        "material organic-performance change",
+        "owned-site change invalidates current SEO state"
+      ],
+      "preferred_contracts": [
+        "seo.monitoring.data-health",
+        "seo.measurement.change-evaluation"
+      ],
+      "side_effect_posture": "governed_handoff_possible",
+      "notes": "Use the closest installed SEO/AEO contract and avoid inventing unavailable search evidence."
+    },
+    {
+      "id": "privacy_identity_terminal",
+      "owner_system": "core",
+      "semantic_intents": [
+        "consent withdrawal",
+        "suppression",
+        "deletion",
+        "identity merge/split",
+        "terminal correction"
+      ],
+      "provider_examples": [
+        "consent/suppression change",
+        "deletion event",
+        "identity correction"
+      ],
+      "materiality_triggers": [
+        "pending BusinessOS work or action eligibility is affected"
+      ],
+      "preferred_contracts": [
+        "core.monitoring.react-to-business-event"
+      ],
+      "side_effect_posture": "evaluate_only",
+      "notes": "Primary reaction is to invalidate/reevaluate pending work safely; never broaden identity or contact eligibility."
+    }
+  ]
+}
