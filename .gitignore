@@ -1,16 +1,20 @@
 # BusinessOS public-repository safety defaults
-# Keep templates and empty runtime README placeholders in source; keep live business/runtime state out of Git.
+# Keep product templates/source in Git; keep live user/business workspace state out of the public product repository.
 
 # Business instances created from instances/_template/
 /instances/*
 !/instances/_template/
 !/instances/_template/**
 
-# Runtime state (retain documentation placeholders)
+# Runtime state (retain documentation placeholders when present)
 /runtime/*/*
 !/runtime/*/README.md
 
-# Local workspace pointer. External workspaces keep their own portable profile.
+# Product-local human knowledge and attachments are user/workspace state.
+/knowledge/
+/attachments/
+
+# Local workspace selection/profile metadata. External workspaces keep their own portable profile.
 /.businessos/workspace.json
 
 # Local secrets and environment files
