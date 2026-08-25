@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """End-to-end regression checks for playbook evolution, extensions, innovation packages, and community evidence."""
 from pathlib import Path
-import json,shutil,sys,tempfile
+import json,re,shutil,sys,tempfile
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'scripts'))
 
@@ -20,6 +20,12 @@ from browse_innovation_exchange_index import browse
 from route_and_resolve import route_and_resolve
 
 A='test-evolution-a';B='test-evolution-b'
+NEW_CONTRACTS=[
+    'core/contracts/learning/playbook-evolution/CONTEXT.md',
+    'core/contracts/learning/adopt-process-extension/CONTEXT.md',
+    'core/contracts/intelligence/innovation-exchange/CONTEXT.md',
+    'core/contracts/intelligence/community-evidence-review/CONTEXT.md',
+]
 
 def fail(msg):raise AssertionError(msg)
 
@@ -30,9 +36,20 @@ def learning(base,bid):
     obj={'id':'lrn_evolution_test','object_type':'Learning','schema_version':'1.0.0','business_id':bid,'owner_scope':'business','owner_system':'marketing-synthesis','statement':'Proof-first landing structure improved qualified conversion in the tested context.','maturity':'validated','status':'active','applies_when':['Evidence-backed landing page work'],'does_not_apply_when':[],'evidence_refs':[],'confidence':0.9,'system_learning_eligible':False,'extensions':{}}
     p=base/'learning'/'lrn_evolution_test.json';p.parent.mkdir(parents=True,exist_ok=True);p.write_text(json.dumps(obj,indent=2)+'\n');return obj
 
+def _check_contract_shape(rel):
+    text=(ROOT/rel).read_text()
+    body=text.split('\n---\n',1)[1] if '\n---\n' in text else text
+    for heading in ['## Purpose','## Business Outcome','## Run When','## Process']:
+        if heading not in body:fail(f'{rel} missing required section {heading}')
+    proc=re.search(r'## Process\n(.*?)(?=\n## |\Z)',body,re.S)
+    steps=re.findall(r'^\d+\.\s+',proc.group(1),re.M) if proc else []
+    if len(steps)<5:fail(f'{rel} has fewer than 5 process steps')
+    if not re.search(r'\[(AI|DETERMINISTIC|INTEGRATION|HUMAN|HYBRID)\]',proc.group(1) if proc else ''):fail(f'{rel} has no executor labels')
+
 def main():
-    for rel in ['core/policies/playbook-evolution.md','core/policies/process-extensions.md','core/policies/innovation-exchange.md','core/contracts/learning/playbook-evolution/CONTEXT.md','core/contracts/learning/adopt-process-extension/CONTEXT.md','core/contracts/intelligence/innovation-exchange/CONTEXT.md','core/contracts/intelligence/community-evidence-review/CONTEXT.md','core/schemas/learning/playbook-evolution-proposal.schema.json','core/schemas/learning/process-extension.schema.json','core/schemas/intelligence/innovation-package.schema.json','core/schemas/intelligence/innovation-exchange-entry.schema.json','core/schemas/config/innovation-sharing.schema.json','core/schemas/intelligence/innovation-exchange-index.schema.json']:
+    for rel in ['core/policies/playbook-evolution.md','core/policies/process-extensions.md','core/policies/innovation-exchange.md',*NEW_CONTRACTS,'core/schemas/learning/playbook-evolution-proposal.schema.json','core/schemas/learning/process-extension.schema.json','core/schemas/intelligence/innovation-package.schema.json','core/schemas/intelligence/innovation-exchange-entry.schema.json','core/schemas/config/innovation-sharing.schema.json','core/schemas/intelligence/innovation-exchange-index.schema.json']:
         if not (ROOT/rel).exists():fail(f'missing {rel}')
+    for rel in NEW_CONTRACTS:_check_contract_shape(rel)
     policy=(ROOT/'core/policies/innovation-exchange.md').read_text()
     for phrase in ['No automatic sharing','workflow_only','anonymized_evidence','full_case_study','anonymous','pseudonymous','named']:
         if phrase not in policy:fail(f'innovation policy missing {phrase}')
