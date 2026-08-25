@@ -9,6 +9,7 @@ Create and improve positioning, messaging, offers, ads, landing pages, email, we
 ## Common jobs
 
 - **[Persuasion Barrier Diagnosis](../../systems/marketing-synthesis/contracts/diagnosis/persuasion-barrier/CONTEXT.md)** — Determine whether and why persuasion is limiting qualified action.
+- **[Marketing Ecosystem Tactic Radar](../../systems/marketing-synthesis/contracts/intelligence/ecosystem-radar/CONTEXT.md)** — Discover emerging marketing tactics and measured findings, triangulate them, and route applicable uncertainty into bounded tests rather than copycat implementation.
 - **[Commercial Positioning Synthesis](../../systems/marketing-synthesis/contracts/strategy/positioning/CONTEXT.md)** — Define commercial position relative to customer needs and alternatives.
 - **[Messaging Architecture](../../systems/marketing-synthesis/contracts/strategy/messaging/CONTEXT.md)** — Create audience-specific message architecture.
 - **[Value Proposition Synthesis](../../systems/marketing-synthesis/contracts/strategy/value-proposition/CONTEXT.md)** — Express differentiated value clearly.
@@ -69,6 +70,10 @@ These are smaller, specific playbooks BusinessOS can use inside the larger jobs 
 ### Intake and briefs
 
 - [Persuasion Brief](../../systems/marketing-synthesis/contracts/intake/persuasion-brief/CONTEXT.md)
+
+### Intelligence and research
+
+- [Marketing Ecosystem Tactic Radar](../../systems/marketing-synthesis/contracts/intelligence/ecosystem-radar/CONTEXT.md) *(main entry playbook)*
 
 ### Landing pages
 

@@ -10,6 +10,7 @@ Find the competitors that matter, study what they do, compare them with the busi
 
 - **[Competitor Research Plan](../../systems/competitor-intelligence/contracts/research/plan/CONTEXT.md)** — Resolve a competitive question with bounded evidence.
 - **[Adaptive Competitive Source Coverage](../../systems/competitor-intelligence/contracts/research/adaptive-source-coverage/CONTEXT.md)** — Adapt research depth and evidence-source coverage to the competitive decision.
+- **[Competitive Ecosystem Radar](../../systems/competitor-intelligence/contracts/intelligence/ecosystem-radar/CONTEXT.md)** — Discover important competitive movements and tactic claims, verify what is observed versus effective, and route material implications.
 - **[Competitor Discovery](../../systems/competitor-intelligence/contracts/discovery/competitive-set/CONTEXT.md)** — Identify current direct/substitute competitors.
 - **[Competitor Entity Resolution](../../systems/competitor-intelligence/contracts/discovery/entity-resolution/CONTEXT.md)** — Make sure websites, social profiles, review pages, ad profiles, and other sources belong to the correct competitor before combining the evidence.
 - **[Emerging Competitor Discovery](../../systems/competitor-intelligence/contracts/discovery/emerging-competitors/CONTEXT.md)** — Detect new competitors entering the relevant customer choice set.
@@ -65,6 +66,10 @@ These are smaller, specific playbooks BusinessOS can use inside the larger jobs 
 - [Competitor Discovery](../../systems/competitor-intelligence/contracts/discovery/competitive-set/CONTEXT.md) *(main entry playbook)*
 - [Competitor Entity Resolution](../../systems/competitor-intelligence/contracts/discovery/entity-resolution/CONTEXT.md) *(main entry playbook)*
 - [Emerging Competitor Discovery](../../systems/competitor-intelligence/contracts/discovery/emerging-competitors/CONTEXT.md) *(main entry playbook)*
+
+### Intelligence and research
+
+- [Competitive Ecosystem Radar](../../systems/competitor-intelligence/contracts/intelligence/ecosystem-radar/CONTEXT.md) *(main entry playbook)*
 
 ### Learning and improvement
 

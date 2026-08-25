@@ -11,6 +11,7 @@ Find and improve problems in the customer journey, from conversion and purchase 
 - **[Customer Journey Mapping](../../systems/customer-optimization/contracts/journey/mapping/CONTEXT.md)** — Define the business-specific customer journey and measurable transitions.
 - **[Journey Instrumentation](../../systems/customer-optimization/contracts/journey/instrumentation/CONTEXT.md)** — Set up tracking so BusinessOS can see how customers move from one important journey stage to another.
 - **[Journey Instrumentation Data Quality](../../systems/customer-optimization/contracts/instrumentation/data-quality/CONTEXT.md)** — Check that customer-journey tracking and measurements are reliable enough to use for decisions.
+- **[Customer Optimization Ecosystem Tactic Radar](../../systems/customer-optimization/contracts/intelligence/ecosystem-radar/CONTEXT.md)** — Discover external customer-journey tactics, verify the evidence and applicability, and route promising low-enough-risk interventions into guarded tests.
 - **[Journey Transition Analysis](../../systems/customer-optimization/contracts/journey/transition-analysis/CONTEXT.md)** — Find progression/drop-off/delay patterns.
 - **[Journey Bottleneck Prioritization](../../systems/customer-optimization/contracts/diagnosis/bottleneck-prioritization/CONTEXT.md)** — Prioritize the journey bottleneck worth solving.
 - **[Journey Root-Cause Diagnosis](../../systems/customer-optimization/contracts/diagnosis/root-cause/CONTEXT.md)** — Diagnose why a transition is failing before intervention.
@@ -96,6 +97,10 @@ These are smaller, specific playbooks BusinessOS can use inside the larger jobs 
 ### Experiments
 
 - [Lifecycle Experiment Design](../../systems/customer-optimization/contracts/experimentation/lifecycle-test/CONTEXT.md) *(main entry playbook)*
+
+### Intelligence and research
+
+- [Customer Optimization Ecosystem Tactic Radar](../../systems/customer-optimization/contracts/intelligence/ecosystem-radar/CONTEXT.md) *(main entry playbook)*
 
 ### Learning and improvement
 

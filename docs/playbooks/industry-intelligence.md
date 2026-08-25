@@ -10,6 +10,7 @@ Track news, research, regulation, technology, market changes, and other outside 
 
 - **[Industry Monitoring Plan](../../systems/industry-intelligence/contracts/research/monitoring-plan/CONTEXT.md)** — Define relevant external monitoring.
 - **[Industry Source Map](../../systems/industry-intelligence/contracts/source-mapping/priority-sources/CONTEXT.md)** — Map reliable priority industry sources.
+- **[Industry Ecosystem Radar](../../systems/industry-intelligence/contracts/intelligence/ecosystem-radar/CONTEXT.md)** — Discover and triangulate material industry changes, research, regulation, technologies, market shifts, and emerging practices before routing them to business impact.
 - **[News Monitoring](../../systems/industry-intelligence/contracts/monitoring/news/CONTEXT.md)** — Find important news developments that could affect the business.
 - **[Regulatory Monitoring](../../systems/industry-intelligence/contracts/monitoring/regulation/CONTEXT.md)** — Find and explain important regulation or standards changes that could affect the business.
 - **[Research Monitoring](../../systems/industry-intelligence/contracts/monitoring/research/CONTEXT.md)** — Detect and evaluate important research.
@@ -61,6 +62,10 @@ These are smaller, specific playbooks BusinessOS can use inside the larger jobs 
 
 - [Industry Decision Brief](../../systems/industry-intelligence/contracts/handoff/decision-brief/CONTEXT.md)
 - [Industry Event to Content WorkRequest](../../systems/industry-intelligence/contracts/handoff/content-response/CONTEXT.md)
+
+### Intelligence and research
+
+- [Industry Ecosystem Radar](../../systems/industry-intelligence/contracts/intelligence/ecosystem-radar/CONTEXT.md) *(main entry playbook)*
 
 ### Learning and improvement
 
