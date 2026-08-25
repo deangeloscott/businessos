@@ -45,8 +45,8 @@ def main():
         logical=str((dest/'instance.json').relative_to(common.ROOT))
         if logical!=f'instances/{BID}/instance.json': fail(f'external state did not preserve portable logical ref: {logical}')
         # Existing stateful helper should inherit workspace redirection without special knowledge of the deployment.
-        innovation,_=configure_innovation(BID,'ask_when_noteworthy','workflow_only','anonymous',True,[],None)
-        if not (dest/'config/innovation-sharing.json').exists() or innovation.get('business_id')!=BID: fail('existing stateful helper did not write into external workspace')
+        innovation,innovation_path=configure_innovation(BID,'ask_when_noteworthy','workflow_only','anonymous',True,[],None)
+        if innovation_path.resolve()!=dest.joinpath('config/innovation-sharing.json').resolve() or innovation.get('exchange_discovery_enabled') is not True: fail('existing stateful helper did not write into external workspace')
         learning={'id':'lrn_workspace_regression','object_type':'Learning','schema_version':'1.0.0','business_id':BID,'owner_scope':'business','owner_system':'core','statement':'A generated human view should remain derived from canonical state.','maturity':'validated','status':'active','evidence_refs':[],'confidence':0.9,'system_learning_eligible':False,'extensions':{}}
         lp=dest/'learning/business/lrn_workspace_regression.json';lp.parent.mkdir(parents=True,exist_ok=True);lp.write_text(json.dumps(learning,indent=2)+'\n')
         notes=tmp/'knowledge'/BID/'notes';notes.mkdir(parents=True,exist_ok=True);human_note=notes/'keep-me.md';human_note.write_text('# Human note\nDo not overwrite me.\n')
