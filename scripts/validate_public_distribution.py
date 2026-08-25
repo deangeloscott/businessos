@@ -9,9 +9,7 @@ EXPECTED_EXPANSION='Agentic Understanding and Reinforcement Architecture'
 REQUIRED=['LICENSE.md','TRADEMARKS.md','SECURITY.md','PUBLIC-DISTRIBUTION.md','PUBLISHER.json','BRANDING.md','DEPLOYMENT.md','distribution/deployment-profiles.json','core/policies/workspace-and-human-knowledge.md','core/schemas/runtime/workspace-profile.schema.json','scripts/configure_workspace.py','scripts/migrate_workspace.py','scripts/workspace_status.py','scripts/generate_knowledge_layer.py','scripts/register_human_note.py','deployment/update-policy.json']
 CURRENT_BRAND_FILES=['README.md','START-HERE.md','WELCOME.md','LICENSE.md','TRADEMARKS.md','SECURITY.md','PUBLIC-DISTRIBUTION.md','DEPLOYMENT.md','INSTALLATION.json','distribution/editions.json']
 LEGACY_PUBLIC_NAMES=["ViralTrac's BusinessOS",'ViralTrac BusinessOS']
-FORBIDDEN_PATH_PARTS=[
-    'apps/api/src','packages/contracts','infra/d1','DIRECTIVES_STATUS.md',
-]
+FORBIDDEN_PATH_PARTS=['apps/api/src','packages/contracts','infra/d1','DIRECTIVES_STATUS.md']
 FORBIDDEN_TEXT=[
     (re.compile(r'\bDirective\s+\d+(?:\.\d+)?\b',re.I),'internal engineering directive numbering'),
     (re.compile(r'\bGAP-\d+\b',re.I),'internal roadmap gap id'),
@@ -45,8 +43,7 @@ def validate_public_distribution():
     for p in ROOT.rglob('*'):
         if not p.is_file(): continue
         rel=p.relative_to(ROOT).as_posix()
-        if rel == 'scripts/validate_public_distribution.py':
-            continue
+        if rel == 'scripts/validate_public_distribution.py': continue
         if any(x.lower() in rel.lower() for x in FORBIDDEN_PATH_PARTS): errors.append(f'forbidden internal path included: {rel}')
         if p.name.startswith('.env') or p.suffix.lower() in {'.pem','.key','.p12','.pfx'}:
             errors.append(f'sensitive credential/config file included: {rel}')
@@ -91,8 +88,14 @@ def validate_public_distribution():
 
     inst_meta=ROOT/'INSTALLATION.json'
     if inst_meta.exists():
-        d=json.loads(inst_meta.read_text())
-        if d.get('display_name')!=EXPECTED_NAME or d.get('public_name')!=EXPECTED_NAME: errors.append('INSTALLATION.json must expose ViralTrac AURA as display/public name')
+        d=json.loads(inst_meta.read_text()); edition=d.get('edition')
+        display=str(d.get('display_name','')); public=str(d.get('public_name',''))
+        if edition=='full':
+            if display!=EXPECTED_NAME or public!=EXPECTED_NAME:
+                errors.append('full INSTALLATION.json must expose ViralTrac AURA as exact display/public name')
+        else:
+            if not display.startswith(EXPECTED_NAME) or public!=display:
+                errors.append('component/custom INSTALLATION.json must expose a ViralTrac AURA family display/public name')
         if d.get('name_expansion')!=EXPECTED_EXPANSION: errors.append('INSTALLATION.json AURA expansion is missing/incorrect')
         if d.get('descriptor')!='AI-native BusinessOS': errors.append('INSTALLATION.json descriptor must remain AI-native BusinessOS')
         if d.get('configurable_workspace_root') is not True: errors.append('INSTALLATION.json must declare configurable_workspace_root=true')
@@ -105,7 +108,7 @@ def validate_public_distribution():
         full=next((x for x in ed if x.get('id')=='full'),None)
         if not full or full.get('display_name')!=EXPECTED_NAME: errors.append('full edition must be named ViralTrac AURA')
         for item in ed:
-            if not str(item.get('display_name','')).startswith('ViralTrac AURA'): errors.append(f"edition {item.get('id')} is outside the ViralTrac AURA naming family")
+            if not str(item.get('display_name','')).startswith(EXPECTED_NAME): errors.append(f"edition {item.get('id')} is outside the ViralTrac AURA naming family")
 
     if errors:
         print(f'Public distribution validation errors: {len(errors)}')
