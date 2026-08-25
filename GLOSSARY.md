@@ -23,8 +23,12 @@ Use these terms consistently.
 - **Fan-out** — One Insight independently creates distinct Opportunities in multiple domains.
 - **Delegation** — One Opportunity uses another system's specialized execution through a WorkRequest.
 - **Capability** — Provider-neutral ability such as `crm.opportunity.read` or `cms.page.publish`.
+- **AttentionItem** — A deduplicated, business-scoped condition that currently needs user/harness awareness because work is blocked, approval/input/capability is required, or a material change needs review. It is not a notification channel.
+- **PlatformChange** — The current/versioned verified state of an external platform/topic, independently refreshable from BusinessOS software releases and explicitly separated from measured business outcomes.
 - **Event** — A bounded reference to an authoritative occurrence that may trigger evaluation; it is not an action command, permission, exposure, or outcome.
 - **EventReactionDecision** — The idempotent BusinessOS disposition of an Event (ignore, defer, coalesce, evaluate, block, or fallback), including materiality, route, trace lineage, and reason codes.
+- **PreferenceProfile** — Business-scoped durable preferences for a business, team, role, or operator. Preferences guide valid choices but do not override mandatory rules, authorize actions, or become business truth.
+- **Operator ref** — A stable, potentially opaque workspace/session label recorded on a Run for attribution and preference resolution; it does not grant authority and need not contain personal information.
 - **Run** — A bounded execution of one contract for one active business.
 - **Context Plan** — The smallest set of rules, objects, schemas, and references needed for the active contract.
 

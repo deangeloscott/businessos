@@ -32,6 +32,54 @@
       },
       "uniqueItems": true
     },
+    "operator_ref": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1,
+      "description": "Stable workspace-local operator identifier for attribution/personalization; does not grant authority."
+    },
+    "team_ref": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1,
+      "description": "Optional team context used for preference resolution; does not grant authority."
+    },
+    "role_ref": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1,
+      "description": "Optional role context used for preference resolution; does not grant authority."
+    },
+    "preference_output_type": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1,
+      "description": "Optional output-type context used only for preference applicability."
+    },
+    "preference_channel": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1,
+      "description": "Optional channel context used only for preference applicability."
+    },
+    "preference_snapshot_ref": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1,
+      "description": "Run-local effective-preference snapshot used for reproducible execution context."
+    },
     "correlation_id": {
       "type": "string",
       "minLength": 1

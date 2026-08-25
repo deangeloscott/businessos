@@ -25,3 +25,7 @@ Use `[AI]`, `[DETERMINISTIC]`, `[INTEGRATION]`, `[HUMAN]`, or `[HYBRID]` on mean
 
 ## Separate contract vs step
 Create a contract when work is independently routable/reusable, has materially different context/capability/risk/output/fallback behavior, or is shared by several parents. Keep small mechanical actions as steps or deterministic utilities.
+
+
+## Specify invariants, not incidental implementation
+Contracts should state the business outcome, evidence, constraints, required outputs, capabilities, risk/approval boundary, and validation needed for reliable completion. Do not hardcode a renderer, model, vendor, file-generation technique, exact creative structure, or other implementation detail unless it is itself a genuine requirement. `core/policies/preferences-and-adaptation.md` governs scoped preferences and method substitution.

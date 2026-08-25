@@ -14,6 +14,7 @@ writes:
 - Observation
 - IndustryEvent
 - Insight
+- PlatformChange
 capabilities:
   required:
   - research.web.read
@@ -54,4 +55,4 @@ Run when a decision or monitoring signal requires current technology & platform 
 3. [HYBRID] Separate announced future capability from generally available current state and marketing claims from verified functionality.
 4. [AI] Map business/customer/competitor/channel implications and dependencies.
 5. [HYBRID] Assess urgency based on effective dates, competitive impact, operational exposure, and strategic upside.
-6. [DETERMINISTIC] Create/update IndustryEvent/Insight and notify affected systems.
+6. [DETERMINISTIC] For platform/vendor topics, create/update the current PlatformChange through the shared versioned state path; unchanged rechecks refresh verification rather than creating duplicates. Create/update IndustryEvent/Insight as needed and notify affected systems only for meaningful deltas.

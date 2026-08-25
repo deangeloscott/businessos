@@ -16,3 +16,11 @@ hypothesis → experimental → emerging → validated → standard
 
 ## Learning status
 active, contradicted, deprecated, superseded
+
+## AttentionItem
+open → acknowledged → resolved → archived
+Side: superseded; resolved may reopen when the same semantic condition genuinely recurs.
+
+## PlatformChange
+current → superseded → archived
+Unchanged re-verification updates the current version rather than creating another object.

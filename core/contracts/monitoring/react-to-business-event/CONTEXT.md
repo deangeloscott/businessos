@@ -14,6 +14,7 @@ writes:
 - EventReactionDecision
 - SourceRecord
 - Observation
+- AttentionItem
 capabilities:
   required:
   - none
@@ -43,10 +44,10 @@ When an authorized provider/harness delivers or reliably surfaces a business occ
 4. [HYBRID] Treat the event only as evidence. Using the provider event-catalog semantics plus `core/monitoring/event-consumer-profile.json`, determine materiality for the active objectives/initiatives: evaluate now, coalesce, defer, ignore, block, or use fallback. Routine high-volume occurrences should normally feed aggregate/provider-native state rather than launch one AI run per event.
 5. [DETERMINISTIC] Persist the bounded Event with authoritative event/trace/root/parent/subscription references and persist an EventReactionDecision for the disposition/materiality/routed contract. Where evidence must remain external, save a SourceRecord reference rather than copying sensitive/raw event payloads.
 6. [AI] For a material `evaluate` disposition, route to the smallest installed BusinessOS contract capable of deciding what the occurrence means. Do not create a domain Insight/Opportunity in Core when another installed system owns that semantic meaning; if the owner is omitted, follow module-independence rather than impersonating it.
-7. [HYBRID] If evaluation proposes a mutation, route through the ordinary ActionPacket, capability preflight, authorization/approval, execution, ChangeEvent, and VerificationRecord lifecycle. Provider `evaluate_shadow` never permits event-triggered external effects, and an event in any mode grants no execution authority by itself.
+7. [HYBRID] If evaluation proposes a mutation, route through the ordinary ActionPacket, capability preflight, authorization/approval, execution, ChangeEvent, and VerificationRecord lifecycle. If material work cannot proceed because approval/input/credential/capability is missing, create/update one deduplicated AttentionItem; do not emit a fresh alert for every redelivery/poll. Provider `evaluate_shadow` never permits event-triggered external effects, and an event in any mode grants no execution authority by itself.
 8. [DETERMINISTIC] Link resulting Run/Action/Change/Verification references back to the EventReactionDecision and preserve the originating provider trace/root chain so later OutcomeEvaluation can distinguish action, exposure, correlated outcome, and causal evidence.
 9. [HYBRID] If delivery/result is surprising, degraded, receipt-incomplete, or apparently duplicated, route to `core.monitoring.diagnose-event-trace` before retrying. Do not blindly replay after a possible external mutation.
-10. [HYBRID] When no trustworthy live event delivery exists, preserve equivalent monitoring intent through scheduler/polling/manual fallback and record the fallback disposition; BusinessOS continuous goals must remain functional without one provider's event plane.
+10. [HYBRID] When no trustworthy live event delivery exists, preserve equivalent monitoring intent through scheduler/polling/manual fallback and record the fallback disposition; create Attention only when the fallback itself requires material user action, not merely because live delivery is unavailable; BusinessOS continuous goals must remain functional without one provider's event plane.
 
 ## Verification
 A material occurrence is business-scoped, idempotent, loop-safe, evidence-linked, correctly routed, and unable to bypass provider mode, BusinessOS authorization, or domain ownership; irrelevant/repeated events do not create unnecessary runs, and the same monitoring goal has an explicit fallback when event delivery is unavailable.

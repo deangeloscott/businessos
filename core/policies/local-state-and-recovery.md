@@ -16,6 +16,8 @@ Use the filesystem workspace as the default portable persistence layer. Preserve
 ## Start/resume behavior
 Before creating a new Run for work that may already be in progress, inspect the active business and relevant existing run state. Resume compatible unfinished work when its task, contract, inputs, and intended outcome still match; otherwise create a new bounded Run and preserve the prior Run for history.
 
+**Destructive cleanup is not recovery.** Never delete an existing business instance, Run, or canonical artifact merely because its name/status suggests failure, staleness, or testing. Ignore/preserve unrelated prior state unless the user/administrator explicitly authorizes deletion or a deterministic test owns a documented disposable path.
+
 On interruption or failure:
 1. Preserve completed outputs that already validate and remain based on valid inputs.
 2. Record enough run/checkpoint/log state for another compatible agent to determine what completed, what failed, and what remains.

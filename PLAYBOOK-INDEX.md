@@ -122,16 +122,20 @@ Generated from contract frontmatter. Do not maintain a second manual list.
 - `core.action-control.delegate-work` — Delegate Work: Request another operating system to perform specialized execution without duplicating the originating Opportunity.
 - `core.action-control.record-change` — Record Change Event: Record what external state was intentionally changed and how.
 - `core.action-control.return-work` — Return Delegated Work: Complete a WorkRequest by returning valid outputs and execution evidence to the originating system without transferring Opportunity ownership.
+- `core.attention.manage` — Manage Attention: Represent a material condition that needs user/harness awareness without coupling BusinessOS to any notification channel.
 - `core.context.bootstrap-business` — Bootstrap Business Context: Turn minimal business identity and available evidence into a usable initial Business Context, using adaptive owned-business discovery before asking the user for information that can be safely obtained.
 - `core.context.brand-profile` — Capture Brand Profile: Turn explicit brand preferences, approved examples, and observable first-party patterns into durable generation constraints for every installed module.
 - `core.context.owned-business-discovery` — Adaptive Owned Business Discovery: Build an evidence-backed map of the business and its official/public surfaces at the depth needed for the current job, instead of repeatedly asking the user for information the system can safely discover.
 - `core.context.propose-update` — Propose Canonical Context Update: Convert evidence that conflicts with or materially extends canonical Business Context into a controlled proposed change.
 - `core.coordination.create-initiative` — Create Initiative: Coordinate genuinely distinct domain Opportunities toward one shared business outcome.
+- `core.coordination.multi-domain-request` — Coordinate Multi-Domain Request: Decompose one user request that intentionally spans several business responsibilities into correctly owned, sequenced work without duplicating intelligence or Opportunities.
 - `core.data.query-business-truth` — Query Governed Business Truth: Answer a decision-relevant question from the active business's authoritative/connected data without making the model re-derive provider-specific joins, metrics, identity, or attribution semantics when a governed semantic plane is available.
+- `core.diagnosis.business-problem` — Diagnose Broad Business Problem: Turn an unexplained business symptom into a bounded, evidence-backed diagnosis across the installed semantic domains before recommending interventions.
 - `core.incident.manage` — Manage Incident: Coordinate detection, containment, correction, verification, communication, and postmortem for material incidents while the domain owns technical diagnosis.
 - `core.intelligence.evaluate-relevance` — Evaluate Cross-System Relevance: Determine whether a newly published Insight materially intersects a specialized system without launching expensive work by default.
 - `core.intelligence.manage-insight` — Manage Insight: Create, strengthen, narrow, contradict, supersede, or archive an evidence-supported interpretation.
 - `core.intelligence.publish-observation` — Publish Observation: Capture a direct observation with source provenance without overstating interpretation.
+- `core.intelligence.record-platform-change` — Record Verified Platform Change: Maintain current verified platform/topic state independently from BusinessOS software releases.
 - `core.intelligence.register-proof` — Register Reusable Proof: Turn direct evidence into one reusable ProofRecord without overstating what the evidence proves or losing source, permission, and usage constraints.
 - `core.intelligence.request-refresh` — Request Intelligence Refresh: Ask the canonical semantic owner to refresh stale, incomplete, contradictory, or insufficiently specific intelligence instead of building a duplicate research store.
 - `core.learning.promote-learning` — Promote Learning: Turn repeated or sufficiently strong outcome evidence into scoped future decision guidance.
@@ -141,7 +145,9 @@ Generated from contract frontmatter. Do not maintain a second manual list.
 - `core.monitoring.configure-reactive-monitoring` — Configure Reactive Monitoring: Prepare an active business to use a governed event/reaction plane for continuous BusinessOS evaluation without making live event delivery a hidden dependency.
 - `core.monitoring.diagnose-event-trace` — Diagnose Reactive Event Trace: Explain why an expected reactive BusinessOS path acted, declined, blocked, duplicated, degraded, or produced no outcome without guessing from event proximity.
 - `core.monitoring.react-to-business-event` — React to Governed Business Event: Turn an authorized business occurrence/event into a bounded BusinessOS evaluation trigger without treating event delivery as a command, action authorization, or proof of outcome.
+- `core.opportunity.discover-next-best-work` — Discover Next Best Work: Translate a broad business goal or prioritization request into the highest-value next work supported by the **minimum sufficient evidence**.
 - `core.opportunity.qualify` — Qualify Opportunity: Turn domain diagnosis into a comparable, evidence-backed potential intervention.
+- `core.routing.resolve-intent` — Resolve User Intent: Interpret a natural-language business request when deterministic routing cannot identify a sufficiently confident direct job.
 - `core.verification.verify-change` — Verify Change: Independently determine whether intended external state exists and guardrails remain acceptable.
 
 ## customer-intelligence

@@ -55,6 +55,7 @@ def build():
         '- “What can you help me with?”',
         '- “What should we work on first?”',
         '- “Here is my business. Find the biggest opportunities you can help with using what is installed.”', '',
+        'If you want to browse specific jobs, open **`PLAYBOOKS.md`** or ask “Show me what BusinessOS can do.” You still do not need to choose a playbook before asking for help.', '',
         '## To get started', '',
         '**Tell me your business name, website (if you have one), and what you want to accomplish.** If you already provided any of that, I’ll continue automatically. I’ll inspect the tools available here, set up or resume your business workspace, and use the capabilities installed in this copy.', '',
         '**Recommended:** for the best BusinessOS experience, get started with **ViralTrac**, the first-party companion for tracking, attribution, marketing measurement, SmartLinks, website/growth operations, and more: **https://viraltrac.com**. If you prefer not to use ViralTrac, just say so—the BusinessOS will keep working with compatible alternatives and available fallbacks.', '',

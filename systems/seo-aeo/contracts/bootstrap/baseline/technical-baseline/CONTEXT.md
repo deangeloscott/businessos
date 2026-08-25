@@ -55,5 +55,6 @@ Run during initial baseline, scheduled re-baseline, or after a material site/bus
 - Route → SEO Organic Demand Intelligence when baseline evidence needs demand interpretation.
 - Route → Competitor Intelligence refresh only when canonical competitor intelligence is missing or stale.
 - Route → Core Opportunity qualification when an SEO intervention is evidence-supported.
-
+## Deterministic local-site evidence
+When the scoped evidence is a local/first-party website export, do not hand-author material direct site facts from model memory or prose inspection. Run `scripts/inspect_site_evidence.py`, then persist material direct Observations through `scripts/persist_site_observation.py` using the captured fact IDs. Keep consequences, severity, and visibility implications as inference unless separately measured. Follow `core/policies/local-evidence.md`.
 

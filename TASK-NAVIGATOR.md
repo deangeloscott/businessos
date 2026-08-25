@@ -185,6 +185,10 @@ Core supplies shared business context, evidence/provenance, Opportunities, Actio
 
 | Activity | Result | Entry contract |
 |---|---|---|
+| `resolve-intent` | Interpret an ordinary-language request and choose the smallest valid direct, diagnostic, prioritization, or multi-domain route without forcing an uncertain lexical match. | `core.routing.resolve-intent` |
+| `diagnose-business-problem` | Narrow a broad unexplained business symptom to evidence-backed likely mechanisms and correctly owned next work before intervention. | `core.diagnosis.business-problem` |
+| `discover-next-best-work` | Turn a broad growth/prioritization goal into the highest-value next work supported by current evidence and installed modules. | `core.opportunity.discover-next-best-work` |
+| `coordinate-multi-domain-request` | Decompose and sequence one compound request across several semantic owners while preserving ownership, lineage, and efficient handoffs. | `core.coordination.multi-domain-request` |
 | `bootstrap-business` | Create evidence-backed initial business context from minimal identity, first-party sources, and user-provided information. | `core.context.bootstrap-business` |
 | `owned-business-discovery` | Adaptively map owned/official business surfaces and evidence at the depth needed for the current job. | `core.context.owned-business-discovery` |
 | `brand-profile` | Capture durable brand voice, visual, content, channel, reference, and prohibited-style rules. | `core.context.brand-profile` |
@@ -192,3 +196,13 @@ Core supplies shared business context, evidence/provenance, Opportunities, Actio
 | `react-to-business-event` | Turn an authorized business occurrence into a deduplicated BusinessOS evaluation trigger without bypassing routing or approval. | `core.monitoring.react-to-business-event` |
 | `configure-reactive-monitoring` | Configure an event-driven BusinessOS monitoring path only when provider runtime readiness and host delivery are actually available, with explicit fallback otherwise. | `core.monitoring.configure-reactive-monitoring` |
 | `diagnose-event-trace` | Explain and repair reason-coded reactive-event failures or no-action outcomes without guessing or unsafe replay. | `core.monitoring.diagnose-event-trace` |
+## Attention / platform state
+- Current attention needing awareness: `python3 scripts/list_attention.py <business-id> --json`
+- Create/update one semantic attention condition: `python3 scripts/upsert_attention.py <business-id> --help`
+- Acknowledge/resolve/supersede attention: `python3 scripts/set_attention_status.py <business-id> <attention-id> <status> --help`
+- Current verified platform/topic state: `python3 scripts/list_platform_state.py <business-id> --json`
+- Record/reverify platform state: `python3 scripts/record_platform_change.py <business-id> --help`
+- Archive old terminal attention/platform versions from active folders: `python3 scripts/maintain_lifecycle.py <business-id> --apply`
+
+These are portable state interfaces, not notification/scheduler implementations.
+

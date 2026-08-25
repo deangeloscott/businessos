@@ -1,3 +1,0 @@
-# Temp
-
-Disposable temporary files.

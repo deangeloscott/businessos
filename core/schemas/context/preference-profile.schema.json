@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PreferenceProfile",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^prf_[A-Za-z0-9_-]+$"
+    },
+    "object_type": {
+      "const": "PreferenceProfile"
+    },
+    "schema_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "business_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "lineage": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1},
+      "uniqueItems": true
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "scope": {
+      "type": "string",
+      "enum": ["business", "team", "role", "operator"]
+    },
+    "subject_ref": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Stable business/team/role/operator identifier to which this profile applies. Operator refs may be opaque workspace-local labels and need not contain personal information."
+    },
+    "status": {
+      "type": "string",
+      "enum": ["active", "inactive"]
+    },
+    "priority": {
+      "type": "integer",
+      "description": "Optional precedence inside the same scope. Higher values override lower values. Equal-precedence conflicting leaves are not silently resolved."
+    },
+    "source_kind": {
+      "type": "string",
+      "enum": ["explicit_user", "explicit_organization", "imported_configuration"]
+    },
+    "source_refs": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1},
+      "uniqueItems": true
+    },
+    "applies_to": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "systems": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "uniqueItems": true
+        },
+        "contracts": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "uniqueItems": true
+        },
+        "output_types": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "uniqueItems": true
+        },
+        "channels": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "uniqueItems": true
+        }
+      }
+    },
+    "preferences": {
+      "type": "object",
+      "description": "Nested reusable preference values for style, presentation, workflow, tool, or other optional choice customization. Authorization, approval, permission, publishing/deployment/spend/contact boundaries, and other action-control state are not preferences and must not be stored here."
+    },
+    "notes": {
+      "type": ["string", "null"]
+    },
+    "extensions": {
+      "type": "object"
+    }
+  },
+  "required": [
+    "id", "object_type", "schema_version", "business_id", "name",
+    "scope", "subject_ref", "status", "priority", "source_kind", "preferences"
+  ]
+}

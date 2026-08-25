@@ -6,3 +6,7 @@ Each business is isolated under `instances/<business-id>/`. Canonical business s
 
 ## Shared operator identity vs business state
 `deployment/operator-profile.json` is workspace/operator-scoped convenience state, not canonical business truth. It may supply only operator identity fields explicitly marked `reuse_across_businesses`. Brand/company facts remain isolated under their `business_id`, and a business research-profile value overrides an inherited operator value. This avoids repeat questions without allowing one brand's facts to leak into another.
+
+
+## Preferences and operators
+Durable work/expression preferences belong under `instances/<business-id>/context/preferences/` as `PreferenceProfile` objects so they cannot leak across businesses by accident. A profile may target the business, a team, a role, or a stable operator label. Operator labels need not contain personal information. Runs can record `operator_ref`, `team_ref`, and `role_ref`, and their effective preference snapshot lives under the Run's artifacts for reproducibility. The existing `deployment/operator-profile.json` remains workspace-level identity convenience for external research; it is not the business preference store.
