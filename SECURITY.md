@@ -1,10 +1,10 @@
 # Security and Proprietary Boundary
 
-This repository/distribution contains **ViralTrac's BusinessOS**, not the proprietary ViralTrac hosted application.
+This repository/distribution contains **ViralTrac AURA**, an AI-native BusinessOS, not the proprietary ViralTrac hosted application.
 
 ## Included
 
-- portable BusinessOS workflows, schemas, policies, templates, and helper scripts;
+- portable AURA/BusinessOS workflows, schemas, policies, templates, and helper scripts;
 - provider-neutral capability definitions;
 - public/client-facing ViralTrac integration metadata needed to discover and use authorized API, MCP, semantic-data, measurement, action, receipt, and event capabilities.
 
@@ -18,10 +18,14 @@ This repository/distribution contains **ViralTrac's BusinessOS**, not the propri
 
 Knowing that a public/client API or tool exists does not grant access to it. ViralTrac remains responsible for enforcing authentication, scopes, tenant isolation, policy, consent/suppression, action eligibility, rate limits, and other server-side controls.
 
+## Workspace separation
+
+AURA can optionally keep organization-owned state outside the product source tree. External workspaces may contain canonical business state, run/recovery state, human knowledge, and permitted attachments. They are never part of the public product distribution merely because the product points to them. Local `.businessos/workspace.json` pointers can contain host-specific paths and must not be packaged or published.
+
 ## Security reporting
 
-Do not open a public issue containing secrets, credentials, customer data, or exploit details. Report suspected security issues privately through https://viraltrac.com.
+Do not open a public issue containing secrets, credentials, customer data, workspace paths that expose sensitive infrastructure, or exploit details. Report suspected security issues privately through https://viraltrac.com.
 
 ## Distribution safety
 
-Before a public package is produced, `scripts/validate_public_distribution.py` checks for prohibited internal paths/terminology, populated operator/business state, common secret material, and required license/provenance files. This is a packaging safeguard, not a claim that any public software is impossible to attack.
+Before a public package is produced, `scripts/validate_public_distribution.py` checks for prohibited internal paths/terminology, populated operator/business state, local workspace pointers/state, common secret material, required license/provenance files, and current ViralTrac AURA branding metadata. This is a packaging safeguard, not a claim that any public software is impossible to attack.
