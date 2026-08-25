@@ -36,6 +36,9 @@ Evaluate accumulated BusinessOS community contributions and local replications a
 ## Business Outcome
 Convert useful community experimentation into safer faster learning without creating an echo chamber or allowing private cross-business state to leak.
 
+## Run When
+Run when an imported InnovationExchangeEntry becomes decision-relevant, receives new local OutcomeEvaluation evidence, accumulates meaningful support or contradiction, or may justify adoption/evolution beyond simple discovery.
+
 ## Process
 1. [DETERMINISTIC] Load the InnovationExchangeEntry, its package/source records, linked candidate Insight, local OutcomeEvaluations, existing Learning, and overlapping innovations.
 2. [AI] Separate reported community counts from independently inspectable evidence and from the active business's own measured outcomes.
