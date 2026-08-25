@@ -6,12 +6,17 @@ from resolve_contract import resolve_contract
 from process_extensions import route_local_playbook,resolve_effective
 from growth_baseline_gate import assess as assess_growth_baseline
 
-FEATURE_HINTS=[(r'\b(make|turn|promote|formalize|formalise).*(playbook|process|workflow|standard operating|part of businessos)|\b(playbook|process).*(evolve|evolution|improve businessos)', 'core.learning.playbook-evolution'),(r'\binnovation exchange\b|\bshare.*(playbook|workflow|process)\b|\b(import|browse|community).*(playbook|workflow|businessos innovation)', 'core.intelligence.innovation-exchange')]
+FEATURE_HINTS=[
+ (r'\b(make|turn|promote|formalize|formalise).*(playbook|process|workflow|standard operating|part of businessos)|\b(playbook|process).*(evolve|evolution|improve businessos)', 'core.learning.playbook-evolution'),
+ (r'\binnovation exchange\b|\bshare.*(playbook|workflow|process)\b|\b(import|browse|community).*(playbook|workflow|businessos innovation)', 'core.intelligence.innovation-exchange'),
+ (r'\b(workspace|state root|external state|deployment profile|private git|github organization|gitlab|forgejo).*(businessos|set ?up|configure|host|store|deploy|version)|\b(store|host|deploy|version).*(businessos).*(git|github|gitlab|forgejo|workspace)', 'core.workspace.configure'),
+ (r'\b(obsidian|second brain|human knowledge|knowledge layer|human-readable knowledge|human view).*(businessos|workspace|refresh|generate|open)|\b(refresh|generate|update).*(knowledge layer|obsidian|second brain)', 'core.knowledge.refresh-human-layer')
+]
 
 def route_and_resolve(task,business_id=None,team_ref=None,role_ref=None,operator_ref=None):
     hinted=None
     for pat,cid in FEATURE_HINTS:
-        if re.search(pat,task,re.I):hinted={'score':100,'system_score':100,'contract_id':cid,'owner_system':'core','status':'available','reason':'matched explicit BusinessOS evolution/exchange request'};break
+        if re.search(pat,task,re.I):hinted={'score':100,'system_score':100,'contract_id':cid,'owner_system':'core','status':'available','reason':'matched explicit BusinessOS product/workspace feature request'};break
     local=route_local_playbook(task,business_id,team_ref,role_ref,operator_ref) if business_id else None;rows=[hinted] if hinted else ([local] if local else route(task,5))
     if not rows:raise ValueError('No route returned')
     first=rows[0]
