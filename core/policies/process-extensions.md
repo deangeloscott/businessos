@@ -16,12 +16,13 @@ Canonical contracts remain the portable upgrade base. A `ProcessExtension` can a
 1. Higher-level BusinessOS safety, truth, approval, evidence, lifecycle, privacy, and validation policies always win.
 2. An extension may not lower a canonical contract's risk, autonomy ceiling, approval, evidence, claim, or verification requirements.
 3. Augmenting a contract never deletes the canonical instructions. Effective resolution is base contract plus applicable active extensions.
-4. Local playbooks may use canonical object types and provider-neutral capabilities, but they may not invent replacement persistence rules or bypass deterministic helpers.
-5. Capability requirements describe what the job needs, not which vendor/model must provide it. Provider preferences and bindings remain separate.
-6. Business-scoped extensions never become another business's private state. Cross-business/system reuse requires explicit eligible evidence and normal Core learning governance.
-7. BusinessOS version compatibility must be checked before applying an extension. Incompatible extensions remain inspectable but inactive.
-8. Retiring/deactivating an extension must leave the canonical contract intact and restore normal base behavior.
-9. Canonical BusinessOS product changes remain explicit BusinessOS development work and require the normal repository regression/release path.
+4. An `augment_contract` extension may not introduce canonical write types the base contract does not already declare; use a new local playbook or explicit canonical revision when a genuinely new lifecycle/output is needed.
+5. Local playbooks may use canonical object types and provider-neutral capabilities, but they may not invent replacement persistence rules or bypass deterministic helpers.
+6. Capability requirements describe what the job needs, not which vendor/model must provide it. Provider preferences and bindings remain separate.
+7. Business-scoped extensions never become another business's private state. Cross-business/system reuse requires explicit eligible evidence and normal Core learning governance.
+8. BusinessOS version compatibility must be checked before applying an extension. Incompatible extensions remain inspectable but inactive.
+9. Retiring/deactivating an extension must leave the canonical contract intact and restore normal base behavior.
+10. Canonical BusinessOS product changes remain explicit BusinessOS development work and require the normal repository regression/release path.
 
 ## Scope precedence
 
