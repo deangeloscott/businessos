@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Configure the active BusinessOS organization workspace without changing product source."""
+"""Configure the active ViralTrac AURA organization workspace without changing product source."""
 from _common import *
 import argparse,json
 from jsonschema import Draft202012Validator
@@ -25,11 +25,11 @@ def _business_ids(root):
 
 
 def _workspace_gitignore():
-    return """# BusinessOS organization-workspace safety defaults\n# Canonical state is intentionally versionable; secrets and ephemeral logs are not.\n.env\n.env.*\nsecrets/\ncredentials/\n*.pem\n*.key\n*.p12\n*.pfx\n*.jks\n.DS_Store\nThumbs.db\nruntime/runs/**/logs/\nruntime/tmp/\nattachments/private/\n"""
+    return """# ViralTrac AURA organization-workspace safety defaults\n# Canonical state is intentionally versionable; secrets and ephemeral logs are not.\n.env\n.env.*\nsecrets/\ncredentials/\n*.pem\n*.key\n*.p12\n*.pfx\n*.jks\n.DS_Store\nThumbs.db\nruntime/runs/**/logs/\nruntime/tmp/\nattachments/private/\n"""
 
 
 def _workspace_readme(profile):
-    return f"""# BusinessOS Organization Workspace\n\nDeployment profile: **{profile['name']}** (`{profile['id']}`).\n\nThis directory is organization/user-owned state, not a copy of the BusinessOS product source.\n\n- `instances/` — canonical durable BusinessOS state.\n- `runtime/` — bounded run/recovery state.\n- `knowledge/` — human-facing generated Markdown plus clearly noncanonical notes.\n- `attachments/` — optional workspace-owned files; keep large/sensitive authoritative data in the governing external system when appropriate.\n\nGit/version control is optional. If this workspace is stored in Git, use a private repository appropriate to the organization and never commit credentials or secrets.\n\nOpen `knowledge/` directly in Obsidian or another Markdown tool if desired; BusinessOS does not require Obsidian.\n"""
+    return f"""# ViralTrac AURA Organization Workspace\n\nAURA = Agentic Understanding and Reinforcement Architecture.\n\nDeployment profile: **{profile['name']}** (`{profile['id']}`).\n\nThis directory is organization/user-owned AURA state, not a copy of the AURA product source.\n\n- `instances/` — canonical durable BusinessOS state.\n- `runtime/` — bounded run/recovery state.\n- `knowledge/` — human-facing generated Markdown plus clearly noncanonical notes.\n- `attachments/` — optional workspace-owned files; keep large/sensitive authoritative data in the governing external system when appropriate.\n\nGit/version control is optional. If this workspace is stored in Git, use a private repository appropriate to the organization and never commit credentials or secrets.\n\nOpen `knowledge/` directly in Obsidian or another Markdown tool if desired; AURA does not require Obsidian.\n"""
 
 
 def configure(root_value,profile_value='simple',knowledge_enabled=True,write_link=True,force=False,allow_state_switch=False):
@@ -72,7 +72,7 @@ def configure(root_value,profile_value='simple',knowledge_enabled=True,write_lin
     if knowledge_enabled:
         kr=root/'knowledge'; readme=kr/'README.md'
         if not readme.exists():
-            readme.write_text('# BusinessOS Human Knowledge Layer\n\nOpen this folder in Obsidian, VS Code, or any Markdown tool. Generated pages are derived from canonical BusinessOS objects; human notes are noncanonical until explicitly incorporated through normal BusinessOS evidence/truth governance.\n')
+            readme.write_text('# ViralTrac AURA Human Knowledge Layer\n\nOpen this folder in Obsidian, VS Code, or any Markdown tool. Generated pages are derived from canonical BusinessOS objects; human notes are noncanonical until explicitly incorporated through normal AURA evidence/truth governance.\n')
     link_path=workspace_config_path(); link_written=False
     # When the product root itself is the workspace, profile_path and link_path are the
     # same local file. The profile already implies product-local/default selection, so do
@@ -86,7 +86,7 @@ def configure(root_value,profile_value='simple',knowledge_enabled=True,write_lin
 
 
 def main():
-    p=argparse.ArgumentParser(description='Configure a BusinessOS workspace. No external workspace is required; omit the path to keep state with the product folder.')
+    p=argparse.ArgumentParser(description='Configure a ViralTrac AURA workspace. No external workspace is required; omit the path to keep state with the product folder.')
     p.add_argument('workspace_root',nargs='?',default=str(PRODUCT_ROOT))
     p.add_argument('--profile',default='simple',help='simple | power_user | organization')
     p.add_argument('--no-knowledge',action='store_true')
@@ -103,6 +103,6 @@ def main():
         print(f"profile={r['profile']} external_state={str(r['external_state']).lower()} knowledge={str(r['knowledge_enabled']).lower()}")
         print(f"git_strategy={r['git_strategy']} collaboration={r['collaboration']}")
         if r['local_link']: print(f"local_pointer={r['local_link']}")
-        print('NEXT: initialize or use a business normally; stateful BusinessOS helpers now resolve the configured workspace automatically.')
+        print('NEXT: initialize or use a business normally; stateful AURA/BusinessOS helpers now resolve the configured workspace automatically.')
 
 if __name__=='__main__': main()
