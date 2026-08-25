@@ -4,68 +4,24 @@
   "type": "object",
   "additionalProperties": false,
   "properties": {
-    "format_version": {
-      "type": "string",
-      "minLength": 1
-    },
+    "format_version": {"type": "string", "minLength": 1},
     "publisher": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "id": {
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "name": {
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "canonical_project_url": {
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "documentation_url": {
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "support_url": {
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "creator_name": {
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "product_name": {
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "creator_url": {
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "publisher_url": {
-          "type": [
-            "string",
-            "null"
-          ]
-        }
+        "id": {"type": ["string", "null"]},
+        "name": {"type": ["string", "null"]},
+        "canonical_project_url": {"type": ["string", "null"]},
+        "documentation_url": {"type": ["string", "null"]},
+        "support_url": {"type": ["string", "null"]},
+        "creator_name": {"type": ["string", "null"]},
+        "product_name": {"type": ["string", "null"]},
+        "product_acronym": {"type": ["string", "null"]},
+        "product_name_expansion": {"type": ["string", "null"]},
+        "product_descriptor": {"type": ["string", "null"]},
+        "legacy_public_name": {"type": ["string", "null"]},
+        "creator_url": {"type": ["string", "null"]},
+        "publisher_url": {"type": ["string", "null"]}
       },
       "required": [
         "id",
@@ -75,6 +31,10 @@
         "documentation_url",
         "support_url",
         "product_name",
+        "product_acronym",
+        "product_name_expansion",
+        "product_descriptor",
+        "legacy_public_name",
         "creator_url",
         "publisher_url"
       ]
@@ -83,53 +43,16 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "manifest_url": {
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "policy": {
-          "type": "string",
-          "enum": [
-            "disabled",
-            "manual_or_host_check",
-            "opt_in_metadata_only"
-          ]
-        },
-        "channel": {
-          "type": "string",
-          "enum": [
-            "stable"
-          ]
-        },
-        "source": {
-          "type": "string",
-          "enum": [
-            "github_releases"
-          ]
-        },
-        "repository": {
-          "type": "string",
-          "minLength": 1
-        },
-        "latest_release_api": {
-          "type": "string",
-          "minLength": 1
-        },
-        "auto_download": {
-          "type": "boolean"
-        },
-        "auto_install": {
-          "type": "boolean"
-        },
-        "business_data_transmitted": {
-          "type": "boolean"
-        },
-        "note": {
-          "type": "string",
-          "minLength": 1
-        }
+        "manifest_url": {"type": ["string", "null"]},
+        "policy": {"type": "string", "enum": ["disabled", "manual_or_host_check", "opt_in_metadata_only"]},
+        "channel": {"type": "string", "enum": ["stable"]},
+        "source": {"type": "string", "enum": ["github_releases"]},
+        "repository": {"type": "string", "minLength": 1},
+        "latest_release_api": {"type": "string", "minLength": 1},
+        "auto_download": {"type": "boolean"},
+        "auto_install": {"type": "boolean"},
+        "business_data_transmitted": {"type": "boolean"},
+        "note": {"type": "string", "minLength": 1}
       },
       "required": [
         "manifest_url",
@@ -148,28 +71,12 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "preserve_in_derivative_distributions": {
-          "type": "boolean"
-        },
-        "show_to_agents": {
-          "type": "boolean"
-        },
-        "note": {
-          "type": "string",
-          "minLength": 1
-        }
+        "preserve_in_derivative_distributions": {"type": "boolean"},
+        "show_to_agents": {"type": "boolean"},
+        "note": {"type": "string", "minLength": 1}
       },
-      "required": [
-        "preserve_in_derivative_distributions",
-        "show_to_agents",
-        "note"
-      ]
+      "required": ["preserve_in_derivative_distributions", "show_to_agents", "note"]
     }
   },
-  "required": [
-    "format_version",
-    "publisher",
-    "updates",
-    "provenance"
-  ]
+  "required": ["format_version", "publisher", "updates", "provenance"]
 }
