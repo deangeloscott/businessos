@@ -61,12 +61,16 @@ def configure(root_value,profile_value='simple',knowledge_enabled=True,write_lin
         kr=root/'knowledge'; readme=kr/'README.md'
         if not readme.exists():
             readme.write_text('# BusinessOS Human Knowledge Layer\n\nOpen this folder in Obsidian, VS Code, or any Markdown tool. Generated pages are derived from canonical BusinessOS objects; human notes are noncanonical until explicitly incorporated through normal BusinessOS evidence/truth governance.\n')
-    link_path=workspace_config_path()
-    if write_link:
+    link_path=workspace_config_path(); link_written=False
+    # When the product root itself is the workspace, profile_path and link_path are the
+    # same local file. The profile already implies product-local/default selection, so do
+    # not overwrite it with a pointer object. For external workspaces, write the local
+    # untracked product pointer unless the host will select via BUSINESSOS_WORKSPACE.
+    if write_link and root!=PRODUCT_ROOT.resolve():
         link_path.parent.mkdir(parents=True,exist_ok=True)
         link={'format_version':'1.0','workspace_root':str(root),'profile':profile_id,'knowledge_enabled':bool(knowledge_enabled)}
-        link_path.write_text(json.dumps(link,indent=2)+'\n')
-    return {'workspace_root':str(root),'profile':profile_id,'external_state':data['external_state'],'knowledge_enabled':bool(knowledge_enabled),'workspace_profile':str(profile_path),'local_link':str(link_path) if write_link else None,'git_strategy':profile['git_strategy'],'collaboration':profile['collaboration']}
+        link_path.write_text(json.dumps(link,indent=2)+'\n');link_written=True
+    return {'workspace_root':str(root),'profile':profile_id,'external_state':data['external_state'],'knowledge_enabled':bool(knowledge_enabled),'workspace_profile':str(profile_path),'local_link':str(link_path) if link_written else None,'git_strategy':profile['git_strategy'],'collaboration':profile['collaboration']}
 
 
 def main():
