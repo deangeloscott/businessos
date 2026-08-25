@@ -1,53 +1,38 @@
 #!/usr/bin/env python3
 from _common import *
-import argparse, json
+import argparse,json,re
 from route_task import route
 from resolve_contract import resolve_contract
+from process_extensions import route_local_playbook,resolve_effective
 from growth_baseline_gate import assess as assess_growth_baseline
 
+FEATURE_HINTS=[(r'\b(make|turn|promote|formalize|formalise).*(playbook|process|workflow|standard operating|part of businessos)|\b(playbook|process).*(evolve|evolution|improve businessos)', 'core.learning.playbook-evolution'),(r'\binnovation exchange\b|\bshare.*(playbook|workflow|process)\b|\b(import|browse|community).*(playbook|workflow|businessos innovation)', 'core.intelligence.innovation-exchange')]
 
-def route_and_resolve(task,business_id=None):
-    rows = route(task, 5)
-    if not rows:
-        raise ValueError('No route returned')
-    first = rows[0]
-    if first.get('status') != 'available' or not first.get('contract_id'):
-        result={**first, 'task': task, 'path': None, 'executable': False}
+def route_and_resolve(task,business_id=None,team_ref=None,role_ref=None,operator_ref=None):
+    hinted=None
+    for pat,cid in FEATURE_HINTS:
+        if re.search(pat,task,re.I):hinted={'score':100,'system_score':100,'contract_id':cid,'owner_system':'core','status':'available','reason':'matched explicit BusinessOS evolution/exchange request'};break
+    local=route_local_playbook(task,business_id,team_ref,role_ref,operator_ref) if business_id else None;rows=[hinted] if hinted else ([local] if local else route(task,5))
+    if not rows:raise ValueError('No route returned')
+    first=rows[0]
+    if first.get('status')!='available' or not first.get('contract_id'):result={**first,'task':task,'path':None,'executable':False}
+    elif business_id:
+        path,meta,_,exts=resolve_effective(first['contract_id'],business_id,team_ref,role_ref,operator_ref);result={'task':task,'contract_id':first['contract_id'],'owner_system':first.get('owner_system') or meta.get('owner_system'),'status':first.get('status'),'reason':first.get('reason'),'path':str(path.relative_to(ROOT)) if path else None,'process_extension_ids':[x['id'] for x in exts],'local_playbook':bool(meta.get('local_playbook')),'executable':False}
     else:
-        path, meta = resolve_contract(first['contract_id'])
-        result={
-            'task': task,
-            'contract_id': first['contract_id'],
-            'owner_system': first.get('owner_system') or meta.get('owner_system'),
-            'status': first.get('status'),
-            'reason': first.get('reason'),
-            'path': str(path.relative_to(ROOT)),
-            'executable': False,
-        }
+        path,meta=resolve_contract(first['contract_id']);result={'task':task,'contract_id':first['contract_id'],'owner_system':first.get('owner_system') or meta.get('owner_system'),'status':first.get('status'),'reason':first.get('reason'),'path':str(path.relative_to(ROOT)),'executable':False}
     if business_id:
         result['business_id']=business_id
-        if result.get('contract_id')=='core.opportunity.discover-next-best-work':
-            result['broad_growth_precheck']=assess_growth_baseline(business_id)
+        if result.get('contract_id')=='core.opportunity.discover-next-best-work':result['broad_growth_precheck']=assess_growth_baseline(business_id)
     return result
 
-
 def main():
-    ap = argparse.ArgumentParser(
-        description='Route ONE natural-language business request and resolve the selected BusinessOS contract to its CONTEXT.md. The task argument is natural language, never a contract ID. Optional --business-id adds business-aware prechecks without changing routing semantics.'
-    )
-    ap.add_argument('task', help='The user/residual request in natural language, e.g. "What should we work on first to grow profitably?"')
-    ap.add_argument('--business-id',help='Optional active business ID. For broad next-best-work routes this emits the deterministic first-party growth-baseline precheck.')
-    ap.add_argument('--show', action='store_true', help='Print the resolved contract instructions after routing metadata.')
-    a = ap.parse_args()
-    try:
-        result = route_and_resolve(a.task,a.business_id)
-    except ValueError as e:
-        raise SystemExit(str(e))
-    print(json.dumps(result, indent=2))
-    if a.show and result.get('path'):
+    ap=argparse.ArgumentParser(description='Route one natural-language request and resolve the selected canonical/business-local BusinessOS playbook.');ap.add_argument('task');ap.add_argument('--business-id');ap.add_argument('--team-ref');ap.add_argument('--role-ref');ap.add_argument('--operator-ref');ap.add_argument('--show',action='store_true');a=ap.parse_args()
+    try:result=route_and_resolve(a.task,a.business_id,a.team_ref,a.role_ref,a.operator_ref)
+    except ValueError as e:raise SystemExit(str(e))
+    print(json.dumps(result,indent=2))
+    if a.show and result.get('contract_id'):
         print('\n--- RESOLVED CONTRACT ---\n')
-        print((ROOT / result['path']).read_text(), end='')
-
-
-if __name__ == '__main__':
-    main()
+        if a.business_id:
+            _,_,content,_=resolve_effective(result['contract_id'],a.business_id,a.team_ref,a.role_ref,a.operator_ref);print(content,end='' if content.endswith('\n') else '\n')
+        elif result.get('path'):print((ROOT/result['path']).read_text(),end='')
+if __name__=='__main__':main()
