@@ -18,6 +18,12 @@ def _profiles():
     return {x['id']:x for x in data.get('profiles',[])}
 
 
+def _business_ids(root):
+    ir=Path(root)/'instances'
+    if not ir.exists(): return []
+    return sorted(p.name for p in ir.iterdir() if p.is_dir() and p.name!='_template')
+
+
 def _workspace_gitignore():
     return """# BusinessOS organization-workspace safety defaults\n# Canonical state is intentionally versionable; secrets and ephemeral logs are not.\n.env\n.env.*\nsecrets/\ncredentials/\n*.pem\n*.key\n*.p12\n*.pfx\n*.jks\n.DS_Store\nThumbs.db\nruntime/runs/**/logs/\nruntime/tmp/\nattachments/private/\n"""
 
@@ -26,10 +32,16 @@ def _workspace_readme(profile):
     return f"""# BusinessOS Organization Workspace\n\nDeployment profile: **{profile['name']}** (`{profile['id']}`).\n\nThis directory is organization/user-owned state, not a copy of the BusinessOS product source.\n\n- `instances/` — canonical durable BusinessOS state.\n- `runtime/` — bounded run/recovery state.\n- `knowledge/` — human-facing generated Markdown plus clearly noncanonical notes.\n- `attachments/` — optional workspace-owned files; keep large/sensitive authoritative data in the governing external system when appropriate.\n\nGit/version control is optional. If this workspace is stored in Git, use a private repository appropriate to the organization and never commit credentials or secrets.\n\nOpen `knowledge/` directly in Obsidian or another Markdown tool if desired; BusinessOS does not require Obsidian.\n"""
 
 
-def configure(root_value,profile_value='simple',knowledge_enabled=True,write_link=True,force=False):
+def configure(root_value,profile_value='simple',knowledge_enabled=True,write_link=True,force=False,allow_state_switch=False):
     profile_id=_profile_id(profile_value); profiles=_profiles(); profile=profiles[profile_id]
+    current=workspace_root().resolve()
     root=Path(os.path.expanduser(os.path.expandvars(str(root_value or PRODUCT_ROOT))))
     root=root.resolve() if root.is_absolute() else (Path.cwd()/root).resolve()
+    if root!=current and not allow_state_switch:
+        current_businesses=_business_ids(current);target_businesses=_business_ids(root)
+        missing=[x for x in current_businesses if x not in target_businesses]
+        if missing:
+            raise ValueError('Current workspace contains business state not present at the target ('+', '.join(missing)+'). Use scripts/migrate_workspace.py to copy/verify state first, or --allow-state-switch only when intentionally selecting a different workspace.')
     root.mkdir(parents=True,exist_ok=True)
     for rel in ['.businessos','instances','runtime/runs','attachments']:
         (root/rel).mkdir(parents=True,exist_ok=True)
@@ -79,10 +91,11 @@ def main():
     p.add_argument('--profile',default='simple',help='simple | power_user | organization')
     p.add_argument('--no-knowledge',action='store_true')
     p.add_argument('--no-link',action='store_true',help='Create the workspace but do not write the local untracked product pointer; use BUSINESSOS_WORKSPACE instead.')
+    p.add_argument('--allow-state-switch',action='store_true',help='Select a different workspace even when current businesses are not present there. Use migrate_workspace.py instead when moving existing state.')
     p.add_argument('--force',action='store_true')
     p.add_argument('--json',action='store_true')
     a=p.parse_args()
-    try:r=configure(a.workspace_root,a.profile,not a.no_knowledge,not a.no_link,a.force)
+    try:r=configure(a.workspace_root,a.profile,not a.no_knowledge,not a.no_link,a.force,a.allow_state_switch)
     except ValueError as e: raise SystemExit(str(e))
     if a.json: print(json.dumps(r,indent=2))
     else:
