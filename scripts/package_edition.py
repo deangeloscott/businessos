@@ -40,10 +40,11 @@ def dependency_manifest(modules):
 def _copy_clean(dest):
     def ignore(path,names):
         ignored={'__pycache__','.git','.DS_Store','.businessos'} & set(names)
-        # Generated indexes are rebuilt for the edition; full-suite tests do not belong in subset distributions.
+        # Generated indexes are rebuilt for the edition; product-local user/workspace state
+        # never belongs in a packaged distribution even when Git already ignores it.
         rel=Path(path).resolve().relative_to(ROOT.resolve()) if Path(path).resolve()!=ROOT.resolve() else Path('.')
         if rel==Path('.'):
-            ignored |= {'generated','dist'} & set(names)
+            ignored |= {'generated','dist','.businessos','runtime','knowledge','attachments'} & set(names)
         if rel==Path('instances'):
             ignored |= {n for n in names if n!='_template'}
         if rel==Path('tests'):
