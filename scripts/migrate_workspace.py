@@ -2,8 +2,8 @@
 """Copy and verify organization-owned AURA/BusinessOS state into another workspace.
 
 Migration is intentionally non-destructive: source state is never deleted. Conflicting
-non-identical target files abort before copying. The active workspace pointer is changed
-only after every migrated file verifies by SHA-256.
+non-identical target state files abort before copying. The active workspace pointer is
+changed only after every migrated file verifies by SHA-256.
 """
 from _common import *
 from configure_workspace import configure, _profile_id
@@ -40,7 +40,7 @@ def _source_files(source):
     return sorted(rows,key=lambda x:x[0].as_posix())
 
 
-def _preflight(source,target,rows):
+def _preflight(target,rows):
     conflicts=[]; identical=[]; pending=[]
     for rel,src,digest,size in rows:
         dst=target/rel
@@ -51,7 +51,7 @@ def _preflight(source,target,rows):
         else:
             pending.append((rel,src,digest,size))
     if conflicts:
-        raise ValueError('Workspace migration conflict(s); no files were copied:\n- '+'\n- '.join(conflicts))
+        raise ValueError('Workspace migration conflict(s); no state files were copied:\n- '+'\n- '.join(conflicts))
     return identical,pending
 
 
@@ -71,6 +71,16 @@ def _copy_verified(target,pending):
     return copied
 
 
+def _verify_target(target,rows):
+    failures=[]
+    for rel,src,digest,_ in rows:
+        dst=target/rel
+        if not dst.exists() or not dst.is_file() or _sha256(dst)!=digest:
+            failures.append(rel.as_posix())
+    if failures:
+        raise ValueError('Workspace verification failed; source remains unchanged. Failed: '+', '.join(failures))
+
+
 def migrate(target_value,profile_value=None,knowledge_enabled=None,activate=True,write_link=True):
     source=workspace_root().resolve()
     target=Path(os.path.expanduser(os.path.expandvars(str(target_value))))
@@ -83,17 +93,19 @@ def migrate(target_value,profile_value=None,knowledge_enabled=None,activate=True
 
     rows=_source_files(source)
     target.mkdir(parents=True,exist_ok=True)
-    # Create the target workspace shell/profile without changing the active pointer yet.
-    configure(target,profile,knowledge_enabled,write_link=False,force=False,allow_state_switch=True)
-    identical,pending=_preflight(source,target,rows)
-    copied=_copy_verified(target,pending)
 
-    failures=[]
-    for rel,src,digest,_ in rows:
-        dst=target/rel
-        if not dst.exists() or not dst.is_file() or _sha256(dst)!=digest:
-            failures.append(rel.as_posix())
-    if failures: raise ValueError('Workspace verification failed; source remains unchanged. Failed: '+', '.join(failures))
+    # Preflight/copy organization state BEFORE bootstrapping target defaults. This avoids
+    # a generated default (for example knowledge/README.md) conflicting with a customized
+    # source-owned file that should win during migration.
+    identical,pending=_preflight(target,rows)
+    copied=_copy_verified(target,pending)
+    _verify_target(target,rows)
+
+    # Now create only missing workspace scaffolding/profile. configure_workspace never
+    # replaces existing workspace README/.gitignore/knowledge README unless explicitly
+    # needed, so migrated user content remains authoritative as workspace content.
+    configure(target,profile,knowledge_enabled,write_link=False,force=False,allow_state_switch=True)
+    _verify_target(target,rows)
 
     activated=False; activation_instruction=None
     if activate:
@@ -105,10 +117,13 @@ def migrate(target_value,profile_value=None,knowledge_enabled=None,activate=True
                 activation_instruction=f'BUSINESSOS_WORKSPACE is set and overrides local pointers. Set BUSINESSOS_WORKSPACE={target} (or unset it) to activate the migrated workspace.'
             else:
                 activated=True
-        if not env_root or activated:
+        if not env_root:
             configure(target,profile,knowledge_enabled,write_link=write_link,force=True,allow_state_switch=True)
-            if not env_root:
-                activated=workspace_root().resolve()==target
+            activated=workspace_root().resolve()==target
+        elif activated:
+            # Environment already selects target; refresh target profile without claiming
+            # to change the parent shell. No local pointer is needed for this process.
+            configure(target,profile,knowledge_enabled,write_link=False,force=True,allow_state_switch=True)
         if not activated and activation_instruction is None:
             activation_instruction=f'Set BUSINESSOS_WORKSPACE={target} or configure the local workspace pointer to activate this verified workspace.'
 
