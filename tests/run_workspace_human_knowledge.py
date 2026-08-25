@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""End-to-end regression for external workspace resolution, deployment profiles, human knowledge views, and component packaging."""
+"""End-to-end regression for external workspace resolution, deployment profiles, human knowledge views, note ingestion, and component packaging."""
 from pathlib import Path
 import json,os,shutil,subprocess,sys,tempfile
 ROOT=Path(__file__).resolve().parents[1]
@@ -10,6 +10,7 @@ from configure_workspace import configure
 from init_business import init_business
 from configure_innovation_sharing import configure as configure_innovation
 from generate_knowledge_layer import generate
+from register_human_note import register_note
 from workspace_status import status
 from route_and_resolve import route_and_resolve
 from package_edition import build_distribution
@@ -21,8 +22,8 @@ def fail(msg): raise AssertionError(msg)
 def main():
     required=[
         'DEPLOYMENT.md','distribution/deployment-profiles.json','core/policies/workspace-and-human-knowledge.md',
-        'core/contracts/workspace/configure/CONTEXT.md','core/contracts/knowledge/refresh-human-layer/CONTEXT.md',
-        'core/schemas/runtime/workspace-profile.schema.json','scripts/configure_workspace.py','scripts/workspace_status.py','scripts/generate_knowledge_layer.py'
+        'core/contracts/workspace/configure/CONTEXT.md','core/contracts/knowledge/refresh-human-layer/CONTEXT.md','core/contracts/knowledge/ingest-human-note/CONTEXT.md',
+        'core/schemas/runtime/workspace-profile.schema.json','scripts/configure_workspace.py','scripts/workspace_status.py','scripts/generate_knowledge_layer.py','scripts/register_human_note.py'
     ]
     for rel in required:
         if not (ROOT/rel).exists(): fail(f'missing {rel}')
@@ -30,6 +31,11 @@ def main():
     ids=[x['id'] for x in profiles.get('profiles',[])]
     if ids!=['simple','power_user','organization']: fail(f'unexpected deployment profiles: {ids}')
     if 'optional' not in profiles.get('invariant','').lower(): fail('deployment profiles do not preserve optional adapter invariant')
+    for rel in ['core/contracts/workspace/configure/CONTEXT.md','core/contracts/knowledge/refresh-human-layer/CONTEXT.md','core/contracts/knowledge/ingest-human-note/CONTEXT.md']:
+        text=(ROOT/rel).read_text()
+        for section in ['## Purpose','## Business Outcome','## Run When','## Process']:
+            if section not in text: fail(f'{rel} missing {section}')
+        if text.count('\n1. [')<1 or sum(text.count(f'\n{i}. [') for i in range(1,9))<5: fail(f'{rel} lacks five labeled process steps')
     prior=os.environ.get('BUSINESSOS_WORKSPACE'); tmp=Path(tempfile.mkdtemp(prefix='businessos-workspace-regression-'))
     try:
         cfg=configure(tmp,'organization',knowledge_enabled=True,write_link=False,force=True)
@@ -50,15 +56,21 @@ def main():
         if innovation_path.resolve()!=dest.joinpath('config/innovation-sharing.json').resolve() or innovation.get('exchange_discovery_enabled') is not True: fail('existing stateful helper did not write into external workspace')
         learning={'id':'lrn_workspace_regression','object_type':'Learning','schema_version':'1.0.0','business_id':BID,'owner_scope':'business','owner_system':'core','statement':'A generated human view should remain derived from canonical state.','maturity':'validated','status':'active','evidence_refs':[],'confidence':0.9,'system_learning_eligible':False,'extensions':{}}
         lp=dest/'learning/business/lrn_workspace_regression.json';lp.parent.mkdir(parents=True,exist_ok=True);lp.write_text(json.dumps(learning,indent=2)+'\n')
-        notes=tmp/'knowledge'/BID/'notes';notes.mkdir(parents=True,exist_ok=True);human_note=notes/'keep-me.md';human_note.write_text('# Human note\nDo not overwrite me.\n')
+        notes=tmp/'knowledge'/BID/'notes';notes.mkdir(parents=True,exist_ok=True);human_note=notes/'keep-me.md';human_note.write_text('# Human note\nPossible customer concern: handoff time may be too long.\n')
         out=generate(BID)
         home=Path(out['generated_root'])/'Home.md';learn=Path(out['generated_root'])/'Learning.md'
         if not home.exists() or not learn.exists(): fail('human knowledge pages were not generated')
         text=learn.read_text()
         if 'businessos_generated: true' not in text or 'canonical: false' not in text or 'lrn_workspace_regression' not in text: fail('generated Learning view lacks derived-state/source markers')
-        generate(BID)
-        if human_note.read_text()!='# Human note\nDo not overwrite me.\n': fail('knowledge refresh overwrote human-authored notes')
+        before_note=human_note.read_text();generate(BID)
+        if human_note.read_text()!=before_note: fail('knowledge refresh overwrote human-authored notes')
         if common.PRODUCT_ROOT.joinpath('knowledge',BID).exists(): fail('human knowledge leaked into product tree during external deployment')
+        src,src_path,created=register_note(BID,'keep-me.md')
+        if not created or src.get('source_type')!='human_knowledge_note' or src.get('source_reference')!=f'knowledge/{BID}/notes/keep-me.md': fail('human note was not registered as portable source material')
+        if (src.get('extensions') or {}).get('businessos',{}).get('canonical_truth') is not False: fail('human note registration did not preserve noncanonical truth boundary')
+        src2,_,created2=register_note(BID,'keep-me.md')
+        if created2 or src2['id']!=src['id']: fail('identical human note registration was not idempotent')
+        if any(obj.get('object_type') in {'Observation','Insight','Business'} and obj.get('lineage')==[src['id']] for obj,_ in common.iter_instance_objects(BID)): fail('note registration silently promoted note contents to canonical truth')
         ref=common.storage_ref(lp)
         if ref!=f'instances/{BID}/learning/business/lrn_workspace_regression.json': fail(f'nonportable external state ref: {ref}')
         if common.resolve_storage_ref(ref).resolve()!=lp.resolve(): fail('workspace-relative state ref did not resolve back to external workspace')
@@ -68,14 +80,16 @@ def main():
         if st['workspace_root']!=str(tmp.resolve()) or BID not in st['businesses']: fail('workspace status did not reflect external business state')
         if route_and_resolve('Configure BusinessOS for a private GitHub organization workspace')['contract_id']!='core.workspace.configure': fail('workspace deployment natural-language route missing')
         if route_and_resolve('Refresh our BusinessOS human knowledge layer for Obsidian',BID)['contract_id']!='core.knowledge.refresh-human-layer': fail('human knowledge natural-language route missing')
+        if route_and_resolve('Use my Obsidian note in BusinessOS',BID)['contract_id']!='core.knowledge.ingest-human-note': fail('human note ingestion natural-language route missing')
 
         # Prove standalone/component packaging preserves the same Core deployment layer.
         pkg=build_distribution('content',output_dir=tmp/'packages',keep_folder=True)
         pdir=Path(pkg['folder']);pinst=json.loads((pdir/'INSTALLATION.json').read_text())
         if pinst.get('configurable_workspace_root') is not True or pinst.get('human_knowledge_layer') is not True: fail('component edition lost workspace/knowledge installation declarations')
         if pinst.get('deployment_profiles')!='distribution/deployment-profiles.json': fail('component edition lost deployment profile reference')
-        for rel in ['DEPLOYMENT.md','scripts/configure_workspace.py','scripts/generate_knowledge_layer.py','core/policies/workspace-and-human-knowledge.md','core/contracts/workspace/configure/CONTEXT.md','core/contracts/knowledge/refresh-human-layer/CONTEXT.md']:
+        for rel in ['DEPLOYMENT.md','scripts/configure_workspace.py','scripts/generate_knowledge_layer.py','scripts/register_human_note.py','core/policies/workspace-and-human-knowledge.md','core/contracts/workspace/configure/CONTEXT.md','core/contracts/knowledge/refresh-human-layer/CONTEXT.md','core/contracts/knowledge/ingest-human-note/CONTEXT.md']:
             if not (pdir/rel).exists(): fail(f'component edition lost deployment component: {rel}')
+        if (pdir/'.businessos/workspace.json').exists(): fail('component package leaked a local workspace pointer/profile')
         if 'DEPLOYMENT.md' not in (pdir/'README.md').read_text() or 'configure_workspace.py' not in (pdir/'START-HERE.md').read_text(): fail('component navigation does not expose deployment architecture')
         cws=tmp/'component-workspace';env=dict(os.environ);env['BUSINESSOS_WORKSPACE']=str(cws);env['PYTHONDONTWRITEBYTECODE']='1'
         subprocess.run([sys.executable,str(pdir/'scripts/configure_workspace.py'),str(cws),'--profile','power_user','--no-link'],cwd=pdir,env=env,check=True,capture_output=True,text=True)
@@ -84,7 +98,7 @@ def main():
         subprocess.run([sys.executable,str(pdir/'scripts/generate_knowledge_layer.py'),'component-workspace-test'],cwd=pdir,env=env,check=True,capture_output=True,text=True)
         if not (cws/'knowledge/component-workspace-test/_generated/Home.md').exists(): fail('component edition did not generate external human knowledge layer')
         if (pdir/'instances/component-workspace-test').exists(): fail('component edition external state leaked into product package')
-        print('workspace + human knowledge deployment regressions passed end to end, including component edition')
+        print('workspace + human knowledge deployment regressions passed end to end, including governed notes and component edition')
     finally:
         if prior is None: os.environ.pop('BUSINESSOS_WORKSPACE',None)
         else: os.environ['BUSINESSOS_WORKSPACE']=prior
