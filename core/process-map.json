@@ -1,11 +1,16 @@
 {
-  "version": "1.8.3",
+  "version": "1.8.4",
   "system": "core",
   "activities": [
     {
       "id": "resolve-intent",
       "entry_contract": "core.routing.resolve-intent",
       "result": "Interpret an ordinary-language request and choose the smallest valid direct, diagnostic, prioritization, or multi-domain route without forcing an uncertain lexical match."
+    },
+    {
+      "id": "scan-external-ecosystem",
+      "entry_contract": "core.intelligence.ecosystem-radar",
+      "result": "Discover important external changes, tactics, findings, and signals; verify what is real and relevant; and route promising items to investigation, testing, or learning."
     },
     {
       "id": "diagnose-business-problem",

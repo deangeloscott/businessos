@@ -9,6 +9,7 @@ Figure out what the business needs, keep business facts organized, choose the ri
 ## Common jobs
 
 - **[Resolve User Intent](../../core/contracts/routing/resolve-intent/CONTEXT.md)** — Interpret an ordinary-language request and choose the smallest valid direct, diagnostic, prioritization, or multi-domain route without forcing an uncertain lexical match.
+- **[External Ecosystem Intelligence Radar](../../core/contracts/intelligence/ecosystem/radar/CONTEXT.md)** — Discover important external changes, tactics, findings, and signals; verify what is real and relevant; and route promising items to investigation, testing, or learning.
 - **[Diagnose Broad Business Problem](../../core/contracts/diagnosis/business-problem/CONTEXT.md)** — Find the most likely causes of a broad business problem and decide what should be investigated or done next before jumping to a fix.
 - **[Discover Next Best Work](../../core/contracts/opportunity/discover-next-best-work/CONTEXT.md)** — Turn a broad growth/prioritization goal into the highest-value next work supported by current evidence and installed modules.
 - **[Coordinate Multi-Domain Request](../../core/contracts/coordination/multi-domain-request/CONTEXT.md)** — Break one larger request into the right BusinessOS areas, put the work in the right order, and keep the handoffs clear.
@@ -56,8 +57,12 @@ These are smaller, specific playbooks BusinessOS can use inside the larger jobs 
 ### Intelligence and research
 
 - [Evaluate Cross-System Relevance](../../core/contracts/intelligence/evaluate-relevance/CONTEXT.md)
+- [External Ecosystem Intelligence Radar](../../core/contracts/intelligence/ecosystem/radar/CONTEXT.md) *(main entry playbook)*
+- [External Evidence Triangulation](../../core/contracts/intelligence/ecosystem/evidence-triangulation/CONTEXT.md)
+- [External Source and Signal Discovery](../../core/contracts/intelligence/ecosystem/source-discovery/CONTEXT.md)
 - [Register Reusable Proof](../../core/contracts/intelligence/register-proof/CONTEXT.md)
 - [Request Intelligence Refresh](../../core/contracts/intelligence/request-refresh/CONTEXT.md)
+- [Route External Evidence to Action or Learning](../../core/contracts/intelligence/ecosystem/route-learning/CONTEXT.md)
 
 ### Measurement
 

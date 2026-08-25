@@ -1,96 +1,25 @@
 {
-  "version": "1.7.0",
+  "version": "1.8.0",
   "system": "competitor-intelligence",
   "activities": [
-    {
-      "id": "research-plan",
-      "entry_contract": "competitor.research.plan",
-      "result": "Resolve a competitive question with bounded evidence."
-    },
-    {
-      "id": "source-coverage",
-      "entry_contract": "competitor.research.adaptive-source-coverage",
-      "result": "Adapt research depth and evidence-source coverage to the competitive decision."
-    },
-    {
-      "id": "competitor-discovery",
-      "entry_contract": "competitor.discovery.competitive-set",
-      "result": "Identify current direct/substitute competitors."
-    },
-    {
-      "id": "entity-resolution",
-      "entry_contract": "competitor.discovery.entity-resolution",
-      "result": "Resolve competitor domains and public profiles to the correct canonical entity."
-    },
-    {
-      "id": "emerging-competitors",
-      "entry_contract": "competitor.discovery.emerging-competitors",
-      "result": "Detect new competitors entering the relevant customer choice set."
-    },
-    {
-      "id": "full-profile",
-      "entry_contract": "competitor.analysis.profiling",
-      "result": "Build a current evidence-backed competitor profile."
-    },
-    {
-      "id": "pricing",
-      "entry_contract": "competitor.analysis.pricing",
-      "result": "Understand current competitor pricing and material changes."
-    },
-    {
-      "id": "offer-comparison",
-      "entry_contract": "competitor.analysis.offer-comparison",
-      "result": "Compare customer-facing offer economics and risk."
-    },
-    {
-      "id": "capabilities",
-      "entry_contract": "competitor.analysis.capability-comparison",
-      "result": "Compare capabilities in customer context."
-    },
-    {
-      "id": "positioning",
-      "entry_contract": "competitor.analysis.positioning",
-      "result": "Understand competitor positioning and message."
-    },
-    {
-      "id": "funnels",
-      "entry_contract": "competitor.analysis.funnels",
-      "result": "Capture and compare observable acquisition funnels."
-    },
-    {
-      "id": "advertising",
-      "entry_contract": "competitor.analysis.advertising",
-      "result": "Understand observable competitor advertising patterns."
-    },
-    {
-      "id": "content-strategy",
-      "entry_contract": "competitor.analysis.content-strategy",
-      "result": "Understand competitor content strategy."
-    },
-    {
-      "id": "customer-sentiment",
-      "entry_contract": "competitor.analysis.customer-sentiment",
-      "result": "Understand recurring customer praise/complaints."
-    },
-    {
-      "id": "tactic-validation",
-      "entry_contract": "competitor.analysis.tactic-validation",
-      "result": "Determine whether a tactic likely works and why."
-    },
-    {
-      "id": "strength-weakness",
-      "entry_contract": "competitor.analysis.strength-weakness",
-      "result": "Assess scoped competitor strengths and vulnerabilities."
-    },
-    {
-      "id": "strategy-change",
-      "entry_contract": "competitor.analysis.strategic-change",
-      "result": "Detect and interpret strategic movement."
-    },
-    {
-      "id": "competitive-implications",
-      "entry_contract": "competitor.analysis.competitive-implications",
-      "result": "Route evidence-backed implications to downstream domains."
-    }
+    {"id":"research-plan","entry_contract":"competitor.research.plan","result":"Resolve a competitive question with bounded evidence."},
+    {"id":"source-coverage","entry_contract":"competitor.research.adaptive-source-coverage","result":"Adapt research depth and evidence-source coverage to the competitive decision."},
+    {"id":"ecosystem-radar","entry_contract":"competitor.intelligence.ecosystem-radar","result":"Discover important competitive movements and tactic claims, verify what is observed versus effective, and route material implications."},
+    {"id":"competitor-discovery","entry_contract":"competitor.discovery.competitive-set","result":"Identify current direct/substitute competitors."},
+    {"id":"entity-resolution","entry_contract":"competitor.discovery.entity-resolution","result":"Resolve competitor domains and public profiles to the correct canonical entity."},
+    {"id":"emerging-competitors","entry_contract":"competitor.discovery.emerging-competitors","result":"Detect new competitors entering the relevant customer choice set."},
+    {"id":"full-profile","entry_contract":"competitor.analysis.profiling","result":"Build a current evidence-backed competitor profile."},
+    {"id":"pricing","entry_contract":"competitor.analysis.pricing","result":"Understand current competitor pricing and material changes."},
+    {"id":"offer-comparison","entry_contract":"competitor.analysis.offer-comparison","result":"Compare customer-facing offer economics and risk."},
+    {"id":"capabilities","entry_contract":"competitor.analysis.capability-comparison","result":"Compare capabilities in customer context."},
+    {"id":"positioning","entry_contract":"competitor.analysis.positioning","result":"Understand competitor positioning and message."},
+    {"id":"funnels","entry_contract":"competitor.analysis.funnels","result":"Capture and compare observable acquisition funnels."},
+    {"id":"advertising","entry_contract":"competitor.analysis.advertising","result":"Understand observable competitor advertising patterns."},
+    {"id":"content-strategy","entry_contract":"competitor.analysis.content-strategy","result":"Understand competitor content strategy."},
+    {"id":"customer-sentiment","entry_contract":"competitor.analysis.customer-sentiment","result":"Understand recurring customer praise/complaints."},
+    {"id":"tactic-validation","entry_contract":"competitor.analysis.tactic-validation","result":"Determine whether a tactic likely works and why."},
+    {"id":"strength-weakness","entry_contract":"competitor.analysis.strength-weakness","result":"Assess scoped competitor strengths and vulnerabilities."},
+    {"id":"strategy-change","entry_contract":"competitor.analysis.strategic-change","result":"Detect and interpret strategic movement."},
+    {"id":"competitive-implications","entry_contract":"competitor.analysis.competitive-implications","result":"Route evidence-backed implications to downstream domains."}
   ]
 }

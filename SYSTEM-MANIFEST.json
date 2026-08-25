@@ -36,10 +36,10 @@
     "marketing-synthesis",
     "seo-aeo"
   ],
-  "contract_count": 503,
-  "schema_count": 52,
+  "contract_count": 515,
+  "schema_count": 53,
   "capability_count": 91,
-  "scheduled_contract_count": 25,
+  "scheduled_contract_count": 26,
   "entrypoints": {
     "welcome": "WELCOME.md",
     "human": "START-HERE.md",

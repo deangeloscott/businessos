@@ -9,6 +9,7 @@ Learn what customers want, dislike, expect, say, buy, avoid, and experience usin
 ## Common jobs
 
 - **[Customer Research Plan](../../systems/customer-intelligence/contracts/research/plan/CONTEXT.md)** — Resolve a customer knowledge need with evidence sufficient for the decision.
+- **[Customer Signal Ecosystem Radar](../../systems/customer-intelligence/contracts/intelligence/ecosystem-radar/CONTEXT.md)** — Detect changing customer needs, language, objections, expectations, and use cases; corroborate them; and compare external signals with first-party evidence when needed.
 - **[Customer Interview Intelligence](../../systems/customer-intelligence/contracts/evidence-collection/interviews/CONTEXT.md)** — Collect and code neutral, relevant customer interview evidence.
 - **[Survey Intelligence](../../systems/customer-intelligence/contracts/evidence-collection/surveys/CONTEXT.md)** — Design, run, and interpret a survey with enough reliable responses for the question being asked.
 - **[Sales Conversation Evidence Collection](../../systems/customer-intelligence/contracts/evidence-collection/sales-conversations/CONTEXT.md)** — Extract direct customer evidence from sales conversations.
@@ -70,6 +71,10 @@ These are smaller, specific playbooks BusinessOS can use inside the larger jobs 
 - [Site Search Evidence Collection](../../systems/customer-intelligence/contracts/evidence-collection/site-search/CONTEXT.md)
 - [Support Intelligence Mining](../../systems/customer-intelligence/contracts/evidence-collection/support/CONTEXT.md) *(main entry playbook)*
 - [Survey Intelligence](../../systems/customer-intelligence/contracts/evidence-collection/surveys/CONTEXT.md) *(main entry playbook)*
+
+### Intelligence and research
+
+- [Customer Signal Ecosystem Radar](../../systems/customer-intelligence/contracts/intelligence/ecosystem-radar/CONTEXT.md) *(main entry playbook)*
 
 ### Learning and improvement
 

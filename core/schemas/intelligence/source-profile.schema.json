@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SourceProfile",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "id": {"type":"string","pattern":"^sprof_[A-Za-z0-9_-]+$"},
+    "object_type": {"const":"SourceProfile"},
+    "schema_version": {"type":"string","pattern":"^\\d+\\.\\d+\\.\\d+$"},
+    "business_id": {"type":"string","pattern":"^[a-z0-9][a-z0-9_-]{0,63}$"},
+    "created_at": {"type":"string","format":"date-time"},
+    "updated_at": {"type":"string","format":"date-time"},
+    "lineage": {"type":"array","items":{"type":"string","minLength":1},"uniqueItems":true},
+    "source_reference": {"type":"string","minLength":1},
+    "display_name": {"type":["string","null"]},
+    "source_kind": {"enum":["official","regulator","primary_researcher","academic","publication","practitioner","vendor","data_provider","community","social_account","other"]},
+    "owner_systems": {"type":"array","items":{"enum":["core","customer-intelligence","competitor-intelligence","industry-intelligence","seo-aeo","content-synthesis","marketing-synthesis","customer-optimization"]},"uniqueItems":true},
+    "topic_tags": {"type":"array","items":{"type":"string","minLength":1},"uniqueItems":true},
+    "watch_status": {"enum":["seed","candidate","active","deprioritized","blocked","unavailable"]},
+    "attention_priority": {"enum":["low","medium","high"]},
+    "discovery_reason": {"type":["string","null"]},
+    "commercial_context": {"type":["string","null"]},
+    "fact_type_assessments": {
+      "type":"array",
+      "items": {
+        "type":"object",
+        "additionalProperties":false,
+        "properties": {
+          "fact_type":{"type":"string","minLength":1},
+          "sample_count":{"type":"integer","minimum":0},
+          "original_source_count":{"type":"integer","minimum":0},
+          "later_supported_count":{"type":"integer","minimum":0},
+          "later_contradicted_count":{"type":"integer","minimum":0},
+          "method_quality":{"enum":["unknown","weak","mixed","strong"]},
+          "last_evaluated_at":{"type":["string","null"],"format":"date-time"},
+          "notes":{"type":["string","null"]}
+        },
+        "required":["fact_type","sample_count","original_source_count","later_supported_count","later_contradicted_count","method_quality"]
+      }
+    },
+    "last_checked_at":{"type":["string","null"],"format":"date-time"},
+    "next_check_at":{"type":["string","null"],"format":"date-time"},
+    "extensions":{"type":"object"}
+  },
+  "required":["id","object_type","schema_version","business_id","source_reference","source_kind","owner_systems","topic_tags","watch_status","attention_priority","fact_type_assessments"]
+}

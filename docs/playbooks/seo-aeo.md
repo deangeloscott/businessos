@@ -8,6 +8,10 @@ Improve how the business is found in search engines, local search, AI answers, a
 
 ## Common jobs
 
+- **[SEO/AEO Ecosystem Tactic Radar](../../systems/seo-aeo/contracts/intelligence/ecosystem/tactic-radar/CONTEXT.md)** — Discover new SEO/AEO tactics and platform findings, corroborate or invalidate them, test promising uncertainty, and update SEO learning only when evidence supports it.
+- **[SEO Strategy Experiment Design](../../systems/seo-aeo/contracts/learning/strategy-experiment-design/CONTEXT.md)** — Design a controlled or defensible quasi-experimental test for an uncertain SEO/AEO tactic.
+- **[SEO/AEO Experiment Analysis](../../systems/seo-aeo/contracts/measurement/experiment-analysis/CONTEXT.md)** — Analyze an SEO/AEO experiment without overstating causality and route the result into domain learning.
+- **[SEO/AEO Domain Learning](../../systems/seo-aeo/contracts/learning/domain-learning/CONTEXT.md)** — Convert verified organic-discovery outcomes into reusable context-specific SEO/AEO learning.
 
 ## More detailed playbooks
 
@@ -15,7 +19,7 @@ These are smaller, specific playbooks BusinessOS can use inside the larger jobs 
 
 ### AI / answer-engine visibility
 
-- [SEO/AEO Domain Learning](../../systems/seo-aeo/contracts/learning/domain-learning/CONTEXT.md)
+- [SEO/AEO Domain Learning](../../systems/seo-aeo/contracts/learning/domain-learning/CONTEXT.md) *(main entry playbook)*
 
 ### Execution
 
@@ -117,13 +121,14 @@ These are smaller, specific playbooks BusinessOS can use inside the larger jobs 
 - [SEO Official Policy / Guidance Contradiction Check](../../systems/seo-aeo/contracts/intelligence/ecosystem/official-contradiction-check/CONTEXT.md)
 - [SEO Strategy Claim Extraction](../../systems/seo-aeo/contracts/intelligence/ecosystem/claim-extraction/CONTEXT.md)
 - [SEO Strategy Evidence Assessment](../../systems/seo-aeo/contracts/intelligence/ecosystem/evidence-grading/CONTEXT.md)
+- [SEO/AEO Ecosystem Tactic Radar](../../systems/seo-aeo/contracts/intelligence/ecosystem/tactic-radar/CONTEXT.md) *(main entry playbook)*
 - [Search Competitor Discovery](../../systems/seo-aeo/contracts/intelligence/organic-competition/discover-search/CONTEXT.md)
 - [Search Result Expansion](../../systems/seo-aeo/contracts/intelligence/organic-demand/serp-expansion/CONTEXT.md)
 - [Semantic Demand Clustering](../../systems/seo-aeo/contracts/intelligence/organic-demand/semantic-clustering/CONTEXT.md)
 
 ### Learning and improvement
 
-- [SEO Strategy Experiment Design](../../systems/seo-aeo/contracts/learning/strategy-experiment-design/CONTEXT.md)
+- [SEO Strategy Experiment Design](../../systems/seo-aeo/contracts/learning/strategy-experiment-design/CONTEXT.md) *(main entry playbook)*
 - [SEO Tactic Deprecation](../../systems/seo-aeo/contracts/learning/tactic-deprecation/CONTEXT.md)
 - [SEO Tactic Learning Registry Maintenance](../../systems/seo-aeo/contracts/learning/tactic-registry/CONTEXT.md)
 - [SEO Tactic Promotion](../../systems/seo-aeo/contracts/learning/tactic-promotion/CONTEXT.md)
@@ -134,7 +139,7 @@ These are smaller, specific playbooks BusinessOS can use inside the larger jobs 
 - [Monthly Organic Discovery Business Review](../../systems/seo-aeo/contracts/measurement/monthly-business/CONTEXT.md)
 - [Organic Attribution](../../systems/seo-aeo/contracts/measurement/attribution/CONTEXT.md)
 - [Quarterly Organic Discovery Strategy Review](../../systems/seo-aeo/contracts/measurement/quarterly-strategy/CONTEXT.md)
-- [SEO/AEO Experiment Analysis](../../systems/seo-aeo/contracts/measurement/experiment-analysis/CONTEXT.md)
+- [SEO/AEO Experiment Analysis](../../systems/seo-aeo/contracts/measurement/experiment-analysis/CONTEXT.md) *(main entry playbook)*
 - [Unified SEO/AEO Scorecard](../../systems/seo-aeo/contracts/measurement/scorecard/CONTEXT.md)
 - [Weekly Tactical Report](../../systems/seo-aeo/contracts/measurement/weekly-tactical/CONTEXT.md)
 

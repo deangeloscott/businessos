@@ -1,131 +1,32 @@
 {
-  "version": "1.3.0",
+  "version": "1.4.0",
   "system": "content-synthesis",
   "activities": [
-    {
-      "id": "content-brief",
-      "entry_contract": "content.intake.content-brief",
-      "result": "Define a complete content production job."
-    },
-    {
-      "id": "audience-context",
-      "entry_contract": "content.strategy.audience-context",
-      "result": "Define audience and consumption context."
-    },
-    {
-      "id": "angle",
-      "entry_contract": "content.strategy.angle",
-      "result": "Choose a useful angle for the source idea."
-    },
-    {
-      "id": "platform-format",
-      "entry_contract": "content.strategy.format-platform",
-      "result": "Select platform/format based on communication job."
-    },
-    {
-      "id": "platform-native-adaptation",
-      "entry_contract": "content.adaptation.platform-native",
-      "result": "Express an idea natively for a specific platform."
-    },
-    {
-      "id": "trend-discovery",
-      "entry_contract": "content.intelligence.trending-content-discovery",
-      "result": "Find and contextualize unusually strong/trending content."
-    },
-    {
-      "id": "creator-monitoring",
-      "entry_contract": "content.intelligence.creator-monitoring",
-      "result": "Track creator patterns over time."
-    },
-    {
-      "id": "creative-pattern",
-      "entry_contract": "content.intelligence.creative-pattern-extraction",
-      "result": "Extract reusable creative mechanisms without copying expression."
-    },
-    {
-      "id": "cross-niche-transfer",
-      "entry_contract": "content.intelligence.cross-niche-pattern-transfer",
-      "result": "Adapt a validated mechanism from another niche."
-    },
-    {
-      "id": "content-performance",
-      "entry_contract": "content.intelligence.content-performance-analysis",
-      "result": "Learn what this business content actually does well."
-    },
-    {
-      "id": "article",
-      "entry_contract": "content.production.article",
-      "result": "Produce a complete article."
-    },
-    {
-      "id": "newsletter",
-      "entry_contract": "content.production.newsletter",
-      "result": "Produce a complete newsletter."
-    },
-    {
-      "id": "short-video",
-      "entry_contract": "content.production.short-video",
-      "result": "Produce platform-native short video."
-    },
-    {
-      "id": "long-video",
-      "entry_contract": "content.production.long-video",
-      "result": "Produce complete long-form video."
-    },
-    {
-      "id": "podcast",
-      "entry_contract": "content.production.podcast",
-      "result": "Produce audio/podcast content."
-    },
-    {
-      "id": "carousel",
-      "entry_contract": "content.production.carousel",
-      "result": "Produce a sequential visual carousel."
-    },
-    {
-      "id": "presentation",
-      "entry_contract": "content.production.presentation",
-      "result": "Produce a clear presentation/slideshow."
-    },
-    {
-      "id": "infographic",
-      "entry_contract": "content.production.infographic",
-      "result": "Produce an evidence-backed infographic."
-    },
-    {
-      "id": "image",
-      "entry_contract": "content.production.image",
-      "result": "Produce an image/graphic."
-    },
-    {
-      "id": "animation",
-      "entry_contract": "content.production.animation",
-      "result": "Produce explanatory animation."
-    },
-    {
-      "id": "gif",
-      "entry_contract": "content.production.gif",
-      "result": "Produce concise looping motion/GIF."
-    },
-    {
-      "id": "avatar-video",
-      "entry_contract": "content.production.avatar-video",
-      "result": "Produce an authorized AI-avatar video."
-    },
-    {
-      "id": "case-study",
-      "entry_contract": "content.production.case-study",
-      "result": "Produce a verified customer case study."
-    },
-    {
-      "id": "demo",
-      "entry_contract": "content.production.demo",
-      "result": "Produce a credible demonstration."
-    },
-    {
-      "id": "publish",
-      "entry_contract": "content.publishing.publish-asset",
-      "result": "Publish an approved content Asset and verify it."
-    }
+    {"id":"content-brief","entry_contract":"content.intake.content-brief","result":"Define a complete content production job."},
+    {"id":"audience-context","entry_contract":"content.strategy.audience-context","result":"Define audience and consumption context."},
+    {"id":"angle","entry_contract":"content.strategy.angle","result":"Choose a useful angle for the source idea."},
+    {"id":"platform-format","entry_contract":"content.strategy.format-platform","result":"Select platform/format based on communication job."},
+    {"id":"platform-native-adaptation","entry_contract":"content.adaptation.platform-native","result":"Express an idea natively for a specific platform."},
+    {"id":"ecosystem-radar","entry_contract":"content.intelligence.ecosystem-radar","result":"Discover emerging content formats, creator patterns, distribution mechanics, and communication tactics; validate what is durable enough to test or learn from."},
+    {"id":"trend-discovery","entry_contract":"content.intelligence.trending-content-discovery","result":"Find and contextualize unusually strong/trending content."},
+    {"id":"creator-monitoring","entry_contract":"content.intelligence.creator-monitoring","result":"Track creator patterns over time."},
+    {"id":"creative-pattern","entry_contract":"content.intelligence.creative-pattern-extraction","result":"Extract reusable creative mechanisms without copying expression."},
+    {"id":"cross-niche-transfer","entry_contract":"content.intelligence.cross-niche-pattern-transfer","result":"Adapt a validated mechanism from another niche."},
+    {"id":"content-performance","entry_contract":"content.intelligence.content-performance-analysis","result":"Learn what this business content actually does well."},
+    {"id":"article","entry_contract":"content.production.article","result":"Produce a complete article."},
+    {"id":"newsletter","entry_contract":"content.production.newsletter","result":"Produce a complete newsletter."},
+    {"id":"short-video","entry_contract":"content.production.short-video","result":"Produce platform-native short video."},
+    {"id":"long-video","entry_contract":"content.production.long-video","result":"Produce complete long-form video."},
+    {"id":"podcast","entry_contract":"content.production.podcast","result":"Produce audio/podcast content."},
+    {"id":"carousel","entry_contract":"content.production.carousel","result":"Produce a sequential visual carousel."},
+    {"id":"presentation","entry_contract":"content.production.presentation","result":"Produce a clear presentation/slideshow."},
+    {"id":"infographic","entry_contract":"content.production.infographic","result":"Produce an evidence-backed infographic."},
+    {"id":"image","entry_contract":"content.production.image","result":"Produce an image/graphic."},
+    {"id":"animation","entry_contract":"content.production.animation","result":"Produce explanatory animation."},
+    {"id":"gif","entry_contract":"content.production.gif","result":"Produce concise looping motion/GIF."},
+    {"id":"avatar-video","entry_contract":"content.production.avatar-video","result":"Produce an authorized AI-avatar video."},
+    {"id":"case-study","entry_contract":"content.production.case-study","result":"Produce a verified customer case study."},
+    {"id":"demo","entry_contract":"content.production.demo","result":"Produce a credible demonstration."},
+    {"id":"publish","entry_contract":"content.publishing.publish-asset","result":"Publish an approved content Asset and verify it."}
   ]
 }

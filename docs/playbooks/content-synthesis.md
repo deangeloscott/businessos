@@ -13,6 +13,7 @@ Turn useful ideas, research, proof, and source material into content made for th
 - **[Angle Development](../../systems/content-synthesis/contracts/strategy/angle/CONTEXT.md)** — Choose a useful angle for the source idea.
 - **[Platform & Format Selection](../../systems/content-synthesis/contracts/strategy/format-platform/CONTEXT.md)** — Select platform/format based on communication job.
 - **[Platform-Native Adaptation](../../systems/content-synthesis/contracts/adaptation/platform-native/CONTEXT.md)** — Express an idea natively for a specific platform.
+- **[Content Ecosystem Radar](../../systems/content-synthesis/contracts/intelligence/ecosystem-radar/CONTEXT.md)** — Discover emerging content formats, creator patterns, distribution mechanics, and communication tactics; validate what is durable enough to test or learn from.
 - **[Trending Content Discovery](../../systems/content-synthesis/contracts/intelligence/trending-content-discovery/CONTEXT.md)** — Find and contextualize unusually strong/trending content.
 - **[Creator Content Monitoring](../../systems/content-synthesis/contracts/intelligence/creator-monitoring/CONTEXT.md)** — Track creator patterns over time.
 - **[Creative Pattern Extraction](../../systems/content-synthesis/contracts/intelligence/creative-pattern-extraction/CONTEXT.md)** — Find the reusable idea or structure behind strong content without copying the original creator.
@@ -82,6 +83,7 @@ These are smaller, specific playbooks BusinessOS can use inside the larger jobs 
 
 ### Intelligence and research
 
+- [Content Ecosystem Radar](../../systems/content-synthesis/contracts/intelligence/ecosystem-radar/CONTEXT.md) *(main entry playbook)*
 - [Content Performance Normalization](../../systems/content-synthesis/contracts/intelligence/performance-normalization/CONTEXT.md)
 - [Content Performance Pattern Analysis](../../systems/content-synthesis/contracts/intelligence/content-performance-analysis/CONTEXT.md) *(main entry playbook)*
 - [Content Trend Scan Plan](../../systems/content-synthesis/contracts/intelligence/trend-scan-plan/CONTEXT.md)
