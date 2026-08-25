@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Generate an Obsidian/Markdown-friendly human view from canonical BusinessOS state."""
+"""Generate an Obsidian/Markdown-friendly human view from canonical AURA/BusinessOS state."""
 from _common import *
 import argparse,json,shutil
 
 PAGES=[
     ('Business','Business, Brand, products, offers, markets, audiences and other durable context.'),
     ('Priorities','Objectives, opportunities, initiatives, work requests and active attention.'),
-    ('Learning','Current BusinessOS Learning and its maturity/status.'),
+    ('Learning','Current AURA/BusinessOS Learning and its maturity/status.'),
     ('Experiments','Experiments, outcome evaluations and measured learning state.'),
     ('Customers','Customer Intelligence and customer-understanding state.'),
     ('Competitors','Competitor Intelligence state.'),
@@ -75,7 +75,8 @@ def _page_for(obj):
 
 
 def _frontmatter(business_id,title,generated_at,count):
-    return f"---\nbusinessos_generated: true\ncanonical: false\nbusiness_id: {business_id}\ntitle: {json.dumps(title)}\ngenerated_at: {generated_at}\nobject_count: {count}\n---\n\n"
+    # businessos_generated is a stable compatibility marker; public branding is AURA.
+    return f"---\nbusinessos_generated: true\ncanonical: false\nproduct: ViralTrac AURA\nbusiness_id: {business_id}\ntitle: {json.dumps(title)}\ngenerated_at: {generated_at}\nobject_count: {count}\n---\n\n"
 
 
 def generate(business_id):
@@ -92,18 +93,18 @@ def generate(business_id):
     for obj,path in objects: grouped[_page_for(obj)].append((obj,path))
     for name,description in PAGES:
         vals=sorted(grouped[name],key=lambda x:(x[0].get('object_type',''),_title(x[0]),x[0].get('id','')))
-        body=_frontmatter(business_id,name,ts,len(vals))+f"# {name}\n\n{description}\n\n> Generated view only. Canonical BusinessOS truth remains under `instances/{business_id}/`. Human edits here may be overwritten.\n\n"
+        body=_frontmatter(business_id,name,ts,len(vals))+f"# {name}\n\n{description}\n\n> Generated view only. Canonical AURA/BusinessOS truth remains under `instances/{business_id}/`. Human edits here may be overwritten.\n\n"
         body += '\n'.join(_entry(obj,path) for obj,path in vals) if vals else '_No current canonical objects in this view._\n'
         (generated/f'{name}.md').write_text(body)
     links='\n'.join(f"- [{name}](_generated/{name}.md) — {desc}" for name,desc in PAGES)
-    home=_frontmatter(business_id,'Home',ts,len(objects))+f"# {business_id} — BusinessOS Knowledge\n\nThis is the human-facing view of the active BusinessOS workspace. It can be opened directly in Obsidian, VS Code, or any Markdown tool.\n\n**Canonical truth:** `instances/{business_id}/`  \n**Human notes:** `knowledge/{business_id}/notes/` (noncanonical until explicitly incorporated through BusinessOS governance)\n\n## Views\n{links}\n"
+    home=_frontmatter(business_id,'Home',ts,len(objects))+f"# {business_id} — ViralTrac AURA Knowledge\n\nThis is the human-facing view of the active AURA workspace. It can be opened directly in Obsidian, VS Code, or any Markdown tool.\n\n**Canonical truth:** `instances/{business_id}/`  \n**Human notes:** `knowledge/{business_id}/notes/` (noncanonical until explicitly incorporated through AURA evidence/context governance)\n\n## Views\n{links}\n"
     (generated/'Home.md').write_text(home)
     readme=kbase/'README.md'
     if not readme.exists():
-        readme.write_text(f"# {business_id} Knowledge\n\nStart with [`_generated/Home.md`](_generated/Home.md). Generated files are derived views and may be replaced on refresh. Put human-authored working notes in `notes/`; those notes are not canonical BusinessOS truth unless explicitly incorporated through normal evidence/truth workflows.\n")
+        readme.write_text(f"# {business_id} — ViralTrac AURA Knowledge\n\nStart with [`_generated/Home.md`](_generated/Home.md). Generated files are derived views and may be replaced on refresh. Put human-authored working notes in `notes/`; those notes are not canonical BusinessOS truth unless explicitly incorporated through normal AURA evidence/truth workflows.\n")
     notes_readme=notes/'README.md'
     if not notes_readme.exists():
-        notes_readme.write_text('# Human Notes\n\nWrite working notes here. These files are intentionally noncanonical. BusinessOS must not treat a note as verified business truth merely because it exists in this folder.\n')
+        notes_readme.write_text('# Human Notes\n\nWrite working notes here. These files are intentionally noncanonical. AURA must not treat a note as verified business truth merely because it exists in this folder.\n')
     return {'business_id':business_id,'knowledge_root':str(kbase),'generated_root':str(generated),'canonical_object_count':len(objects),'pages':1+len(PAGES),'generated_at':ts}
 
 
@@ -111,6 +112,6 @@ def main():
     p=argparse.ArgumentParser();p.add_argument('business_id');p.add_argument('--json',action='store_true');a=p.parse_args()
     try:r=generate(a.business_id)
     except ValueError as e:raise SystemExit(str(e))
-    print(json.dumps(r,indent=2) if a.json else f"generated human knowledge: {r['pages']} pages from {r['canonical_object_count']} canonical objects -> {r['generated_root']}")
+    print(json.dumps(r,indent=2) if a.json else f"generated AURA human knowledge: {r['pages']} pages from {r['canonical_object_count']} canonical objects -> {r['generated_root']}")
 
 if __name__=='__main__':main()
