@@ -7,8 +7,8 @@ EXPECTED_NAME='ViralTrac AURA'
 EXPECTED_EXPANSION='Agentic Understanding and Reinforcement Architecture'
 
 REQUIRED=['LICENSE.md','TRADEMARKS.md','SECURITY.md','PUBLIC-DISTRIBUTION.md','PUBLISHER.json','BRANDING.md','DEPLOYMENT.md','distribution/deployment-profiles.json','core/policies/workspace-and-human-knowledge.md','core/schemas/runtime/workspace-profile.schema.json','scripts/configure_workspace.py','scripts/migrate_workspace.py','scripts/workspace_status.py','scripts/generate_knowledge_layer.py','scripts/register_human_note.py','deployment/update-policy.json']
-CURRENT_BRAND_FILES=['README.md','START-HERE.md','WELCOME.md','LICENSE.md','TRADEMARKS.md','SECURITY.md','PUBLIC-DISTRIBUTION.md','DEPLOYMENT.md','INSTALLATION.json','distribution/editions.json']
 LEGACY_PUBLIC_NAMES=["ViralTrac's BusinessOS",'ViralTrac BusinessOS']
+LEGACY_BRAND_ALLOW={'CHANGELOG.md','BRANDING.md','PUBLISHER.json','scripts/validate_public_distribution.py'}
 FORBIDDEN_PATH_PARTS=['apps/api/src','packages/contracts','infra/d1','DIRECTIVES_STATUS.md']
 FORBIDDEN_TEXT=[
     (re.compile(r'\bDirective\s+\d+(?:\.\d+)?\b',re.I),'internal engineering directive numbering'),
@@ -26,15 +26,6 @@ def validate_public_distribution():
     for rel in REQUIRED:
         if not (ROOT/rel).exists(): errors.append(f'missing required public-distribution file: {rel}')
 
-    # Current public-facing surfaces must use the new composite mark. Historical changelog
-    # entries and explicit legacy-name metadata are intentionally outside this list.
-    for rel in CURRENT_BRAND_FILES:
-        p=ROOT/rel
-        if not p.exists(): continue
-        text=p.read_text(errors='replace')
-        for legacy in LEGACY_PUBLIC_NAMES:
-            if legacy in text: errors.append(f'{rel}: current public surface still uses legacy public name {legacy!r}')
-
     # The product-local workspace pointer/profile is operator-specific runtime configuration,
     # not distributable source. It may contain an absolute private workspace path.
     local_workspace=ROOT/'.businessos/workspace.json'
@@ -43,15 +34,18 @@ def validate_public_distribution():
     for p in ROOT.rglob('*'):
         if not p.is_file(): continue
         rel=p.relative_to(ROOT).as_posix()
-        if rel == 'scripts/validate_public_distribution.py': continue
         if any(x.lower() in rel.lower() for x in FORBIDDEN_PATH_PARTS): errors.append(f'forbidden internal path included: {rel}')
         if p.name.startswith('.env') or p.suffix.lower() in {'.pem','.key','.p12','.pfx'}:
             errors.append(f'sensitive credential/config file included: {rel}')
         if p.suffix.lower() not in TEXT_SUFFIXES and p.name not in {'VERSION'}: continue
         try: text=p.read_text(errors='strict')
         except (UnicodeDecodeError,OSError): continue
-        for rx,label in FORBIDDEN_TEXT:
-            if rx.search(text): errors.append(f'{rel}: contains {label}')
+        if rel not in LEGACY_BRAND_ALLOW:
+            for legacy in LEGACY_PUBLIC_NAMES:
+                if legacy in text: errors.append(f'{rel}: legacy public name {legacy!r} is historical-only; use ViralTrac AURA')
+        if rel != 'scripts/validate_public_distribution.py':
+            for rx,label in FORBIDDEN_TEXT:
+                if rx.search(text): errors.append(f'{rel}: contains {label}')
 
     # No packaged business state.
     inst=ROOT/'instances'
