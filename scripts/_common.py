@@ -15,6 +15,12 @@ def workspace_config_path():
     return PRODUCT_ROOT/'.businessos/workspace.json'
 
 
+def workspace_selection_source():
+    if os.environ.get(_WORKSPACE_ENV): return 'environment'
+    if workspace_config_path().exists(): return 'local_link'
+    return 'default_product_root'
+
+
 def _read_workspace_link():
     p=workspace_config_path()
     if not p.exists(): return {}
@@ -97,7 +103,7 @@ def workspace_profile():
             d=json.loads(p.read_text())
             if isinstance(d,dict): return d
         except Exception: pass
-    link=_read_workspace_link()
+    link={} if workspace_selection_source()=='environment' else _read_workspace_link()
     return {'profile':link.get('profile','simple'),'workspace_root':str(root),'knowledge_enabled':link.get('knowledge_enabled',True)}
 
 
@@ -113,8 +119,9 @@ def resolve_storage_ref(ref):
     if s.startswith('product:'): return PRODUCT_ROOT/s[len('product:'):]
     p=Path(s)
     if p.is_absolute(): return p
+    if p.parts and p.parts[0] in _STATE_NAMESPACES: return workspace_root()/p
     candidate=workspace_root()/p
-    if candidate.exists() or workspace_is_external(): return candidate
+    if candidate.exists(): return candidate
     return PRODUCT_ROOT/p
 
 
