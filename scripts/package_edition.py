@@ -39,7 +39,7 @@ def dependency_manifest(modules):
 
 def _copy_clean(dest):
     def ignore(path,names):
-        ignored={'__pycache__','.git','.DS_Store'} & set(names)
+        ignored={'__pycache__','.git','.DS_Store','.businessos'} & set(names)
         # Generated indexes are rebuilt for the edition; full-suite tests do not belong in subset distributions.
         rel=Path(path).resolve().relative_to(ROOT.resolve()) if Path(path).resolve()!=ROOT.resolve() else Path('.')
         if rel==Path('.'):
