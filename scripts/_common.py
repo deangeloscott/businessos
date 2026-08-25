@@ -159,7 +159,7 @@ def installation():
     if p.exists():
         return json.loads(p.read_text())
     installed=['core']+[p.name for p in sorted((PRODUCT_ROOT/'systems').iterdir()) if p.is_dir()] if (PRODUCT_ROOT/'systems').exists() else ['core']
-    return {'format_version':'1.0','source_version':os_version(),'edition':'unmanaged','display_name':"ViralTrac's BusinessOS",'installed_modules':installed,'standalone_distribution':False}
+    return {'format_version':'1.0','source_version':os_version(),'edition':'unmanaged','display_name':'ViralTrac AURA','public_name':'ViralTrac AURA','name_expansion':'Agentic Understanding and Reinforcement Architecture','descriptor':'AI-native BusinessOS','installed_modules':installed,'standalone_distribution':False}
 
 def installed_modules():
     return set(installation().get('installed_modules',[]))
