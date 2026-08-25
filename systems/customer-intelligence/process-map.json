@@ -1,96 +1,24 @@
 {
-  "version": "1.3.0",
+  "version": "1.4.0",
   "system": "customer-intelligence",
   "activities": [
-    {
-      "id": "customer-research",
-      "entry_contract": "customer.research.plan",
-      "result": "Resolve a customer knowledge need with evidence sufficient for the decision.",
-      "supporting_contracts": [
-        "customer.research.source-prioritization",
-        "customer.research.sample-design",
-        "customer.research.evidence-coverage"
-      ]
-    },
-    {
-      "id": "interviews",
-      "entry_contract": "customer.evidence-collection.interviews",
-      "result": "Collect and code neutral, decision-relevant customer interview evidence."
-    },
-    {
-      "id": "surveys",
-      "entry_contract": "customer.evidence-collection.surveys",
-      "result": "Design, field, and interpret a survey with defensible coverage."
-    },
-    {
-      "id": "sales-conversation-mining",
-      "entry_contract": "customer.evidence-collection.sales-conversations",
-      "result": "Extract direct customer evidence from sales conversations."
-    },
-    {
-      "id": "support-mining",
-      "entry_contract": "customer.evidence-collection.support",
-      "result": "Extract recurring customer problems/questions from support evidence."
-    },
-    {
-      "id": "public-conversation-mining",
-      "entry_contract": "customer.evidence-collection.public-conversation",
-      "result": "Monitor and interpret public customer/audience signals."
-    },
-    {
-      "id": "voice-of-customer",
-      "entry_contract": "customer.analysis.voice-of-customer",
-      "result": "Produce reusable customer language and themes."
-    },
-    {
-      "id": "pain-desire",
-      "entry_contract": "customer.analysis.pain-desire",
-      "result": "Identify pains, desires, and desired outcomes."
-    },
-    {
-      "id": "objections",
-      "entry_contract": "customer.analysis.objections",
-      "result": "Identify and scope customer objections."
-    },
-    {
-      "id": "decision-drivers",
-      "entry_contract": "customer.analysis.decision-drivers",
-      "result": "Identify decision criteria, triggers, tradeoffs, and disqualifiers."
-    },
-    {
-      "id": "jobs-outcomes",
-      "entry_contract": "customer.analysis.jobs-outcomes",
-      "result": "Identify customer jobs and desired progress."
-    },
-    {
-      "id": "win-loss",
-      "entry_contract": "customer.analysis.win-loss",
-      "result": "Explain why comparable opportunities are won or lost."
-    },
-    {
-      "id": "churn",
-      "entry_contract": "customer.analysis.churn",
-      "result": "Explain customer-stated and evidence-backed reasons for leaving."
-    },
-    {
-      "id": "feature-needs",
-      "entry_contract": "customer.analysis.feature-needs",
-      "result": "Interpret feature requests as underlying needs rather than roadmap commands."
-    },
-    {
-      "id": "segmentation",
-      "entry_contract": "customer.analysis.segmentation",
-      "result": "Identify meaningful customer differences and propose segment refinement where justified."
-    },
-    {
-      "id": "insight-refresh",
-      "entry_contract": "customer.analysis.insight-refresh",
-      "result": "Keep Customer Insights current and contradiction-aware."
-    },
-    {
-      "id": "research-gap-monitoring",
-      "entry_contract": "customer.monitoring.research-gaps",
-      "result": "Find and prioritize decision-critical customer knowledge gaps."
-    }
+    {"id":"customer-research","entry_contract":"customer.research.plan","result":"Resolve a customer knowledge need with evidence sufficient for the decision.","supporting_contracts":["customer.research.source-prioritization","customer.research.sample-design","customer.research.evidence-coverage"]},
+    {"id":"ecosystem-radar","entry_contract":"customer.intelligence.ecosystem-radar","result":"Detect changing customer needs, language, objections, expectations, and use cases; corroborate them; and compare external signals with first-party evidence when needed."},
+    {"id":"interviews","entry_contract":"customer.evidence-collection.interviews","result":"Collect and code neutral, decision-relevant customer interview evidence."},
+    {"id":"surveys","entry_contract":"customer.evidence-collection.surveys","result":"Design, field, and interpret a survey with defensible coverage."},
+    {"id":"sales-conversation-mining","entry_contract":"customer.evidence-collection.sales-conversations","result":"Extract direct customer evidence from sales conversations."},
+    {"id":"support-mining","entry_contract":"customer.evidence-collection.support","result":"Extract recurring customer problems/questions from support evidence."},
+    {"id":"public-conversation-mining","entry_contract":"customer.evidence-collection.public-conversation","result":"Monitor and interpret public customer/audience signals."},
+    {"id":"voice-of-customer","entry_contract":"customer.analysis.voice-of-customer","result":"Produce reusable customer language and themes."},
+    {"id":"pain-desire","entry_contract":"customer.analysis.pain-desire","result":"Identify pains, desires, and desired outcomes."},
+    {"id":"objections","entry_contract":"customer.analysis.objections","result":"Identify and scope customer objections."},
+    {"id":"decision-drivers","entry_contract":"customer.analysis.decision-drivers","result":"Identify decision criteria, triggers, tradeoffs, and disqualifiers."},
+    {"id":"jobs-outcomes","entry_contract":"customer.analysis.jobs-outcomes","result":"Identify customer jobs and desired progress."},
+    {"id":"win-loss","entry_contract":"customer.analysis.win-loss","result":"Explain why comparable opportunities are won or lost."},
+    {"id":"churn","entry_contract":"customer.analysis.churn","result":"Explain customer-stated and evidence-backed reasons for leaving."},
+    {"id":"feature-needs","entry_contract":"customer.analysis.feature-needs","result":"Interpret feature requests as underlying needs rather than roadmap commands."},
+    {"id":"segmentation","entry_contract":"customer.analysis.segmentation","result":"Identify meaningful customer differences and propose segment refinement where justified."},
+    {"id":"insight-refresh","entry_contract":"customer.analysis.insight-refresh","result":"Keep Customer Insights current and contradiction-aware."},
+    {"id":"research-gap-monitoring","entry_contract":"customer.monitoring.research-gaps","result":"Find and prioritize decision-critical customer knowledge gaps."}
   ]
 }

@@ -1,0 +1,26 @@
+{
+  "version": "1.0.0",
+  "system": "seo-aeo",
+  "activities": [
+    {
+      "id": "ecosystem-tactic-radar",
+      "entry_contract": "seo.intelligence.ecosystem.tactic-radar",
+      "result": "Discover new SEO/AEO tactics and platform findings, corroborate or invalidate them, test promising uncertainty, and update SEO learning only when evidence supports it."
+    },
+    {
+      "id": "seo-aeo-experiment",
+      "entry_contract": "seo.learning.strategy-experiment-design",
+      "result": "Design a controlled or defensible quasi-experimental test for an uncertain SEO/AEO tactic."
+    },
+    {
+      "id": "seo-aeo-experiment-analysis",
+      "entry_contract": "seo.measurement.experiment-analysis",
+      "result": "Analyze an SEO/AEO experiment without overstating causality and route the result into domain learning."
+    },
+    {
+      "id": "seo-aeo-domain-learning",
+      "entry_contract": "seo.aeo.learning.domain-learning",
+      "result": "Convert verified organic-discovery outcomes into reusable context-specific SEO/AEO learning."
+    }
+  ]
+}
