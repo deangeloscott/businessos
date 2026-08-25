@@ -4,7 +4,7 @@ import json, re
 
 ROOT=Path(__file__).resolve().parents[1]
 
-REQUIRED=['LICENSE.md','TRADEMARKS.md','SECURITY.md','PUBLIC-DISTRIBUTION.md','PUBLISHER.json','deployment/update-policy.json']
+REQUIRED=['LICENSE.md','TRADEMARKS.md','SECURITY.md','PUBLIC-DISTRIBUTION.md','PUBLISHER.json','DEPLOYMENT.md','distribution/deployment-profiles.json','core/policies/workspace-and-human-knowledge.md','core/schemas/runtime/workspace-profile.schema.json','scripts/configure_workspace.py','scripts/workspace_status.py','scripts/generate_knowledge_layer.py','deployment/update-policy.json']
 FORBIDDEN_PATH_PARTS=[
     'apps/api/src','packages/contracts','infra/d1','DIRECTIVES_STATUS.md',
 ]
@@ -23,6 +23,10 @@ def validate_public_distribution():
     errors=[]
     for rel in REQUIRED:
         if not (ROOT/rel).exists(): errors.append(f'missing required public-distribution file: {rel}')
+    # The product-local workspace pointer/profile is operator-specific runtime configuration,
+    # not distributable source. It may contain an absolute private workspace path.
+    local_workspace=ROOT/'.businessos/workspace.json'
+    if local_workspace.exists(): errors.append('contains local .businessos/workspace.json; never distribute an operator workspace pointer/profile')
     for p in ROOT.rglob('*'):
         if not p.is_file(): continue
         rel=p.relative_to(ROOT).as_posix()
@@ -61,6 +65,12 @@ def validate_public_distribution():
         if not (d.get('publisher') or {}).get('canonical_project_url'): errors.append('canonical public project URL missing')
         if (d.get('updates') or {}).get('auto_install') is not False: errors.append('publisher update metadata must prohibit auto-install')
         if (d.get('updates') or {}).get('business_data_transmitted') is not False: errors.append('publisher update metadata must declare no BusinessOS business-data transmission')
+    inst_meta=ROOT/'INSTALLATION.json'
+    if inst_meta.exists():
+        d=json.loads(inst_meta.read_text())
+        if d.get('configurable_workspace_root') is not True: errors.append('INSTALLATION.json must declare configurable_workspace_root=true')
+        if d.get('human_knowledge_layer') is not True: errors.append('INSTALLATION.json must declare human_knowledge_layer=true')
+        if d.get('deployment_profiles')!='distribution/deployment-profiles.json': errors.append('INSTALLATION.json deployment_profiles path is missing/incorrect')
     if errors:
         print(f'Public distribution validation errors: {len(errors)}')
         for e in errors: print('ERROR',e)
