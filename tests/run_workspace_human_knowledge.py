@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""End-to-end regression for external workspace resolution, deployment profiles, and human knowledge views."""
+"""End-to-end regression for external workspace resolution, deployment profiles, human knowledge views, and component packaging."""
 from pathlib import Path
-import json,os,shutil,sys,tempfile
+import json,os,shutil,subprocess,sys,tempfile
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'scripts'))
 
@@ -12,6 +12,7 @@ from configure_innovation_sharing import configure as configure_innovation
 from generate_knowledge_layer import generate
 from workspace_status import status
 from route_and_resolve import route_and_resolve
+from package_edition import build_distribution
 
 BID='test-workspace-deployment'
 
@@ -67,7 +68,23 @@ def main():
         if st['workspace_root']!=str(tmp.resolve()) or BID not in st['businesses']: fail('workspace status did not reflect external business state')
         if route_and_resolve('Configure BusinessOS for a private GitHub organization workspace')['contract_id']!='core.workspace.configure': fail('workspace deployment natural-language route missing')
         if route_and_resolve('Refresh our BusinessOS human knowledge layer for Obsidian',BID)['contract_id']!='core.knowledge.refresh-human-layer': fail('human knowledge natural-language route missing')
-        print('workspace + human knowledge deployment regressions passed end to end')
+
+        # Prove standalone/component packaging preserves the same Core deployment layer.
+        pkg=build_distribution('content',output_dir=tmp/'packages',keep_folder=True)
+        pdir=Path(pkg['folder']);pinst=json.loads((pdir/'INSTALLATION.json').read_text())
+        if pinst.get('configurable_workspace_root') is not True or pinst.get('human_knowledge_layer') is not True: fail('component edition lost workspace/knowledge installation declarations')
+        if pinst.get('deployment_profiles')!='distribution/deployment-profiles.json': fail('component edition lost deployment profile reference')
+        for rel in ['DEPLOYMENT.md','scripts/configure_workspace.py','scripts/generate_knowledge_layer.py','core/policies/workspace-and-human-knowledge.md','core/contracts/workspace/configure/CONTEXT.md','core/contracts/knowledge/refresh-human-layer/CONTEXT.md']:
+            if not (pdir/rel).exists(): fail(f'component edition lost deployment component: {rel}')
+        if 'DEPLOYMENT.md' not in (pdir/'README.md').read_text() or 'configure_workspace.py' not in (pdir/'START-HERE.md').read_text(): fail('component navigation does not expose deployment architecture')
+        cws=tmp/'component-workspace';env=dict(os.environ);env['BUSINESSOS_WORKSPACE']=str(cws);env['PYTHONDONTWRITEBYTECODE']='1'
+        subprocess.run([sys.executable,str(pdir/'scripts/configure_workspace.py'),str(cws),'--profile','power_user','--no-link'],cwd=pdir,env=env,check=True,capture_output=True,text=True)
+        subprocess.run([sys.executable,str(pdir/'scripts/init_business.py'),'component-workspace-test','--name','Component Workspace Test'],cwd=pdir,env=env,check=True,capture_output=True,text=True)
+        if not (cws/'instances/component-workspace-test/instance.json').exists(): fail('component edition did not initialize into external workspace')
+        subprocess.run([sys.executable,str(pdir/'scripts/generate_knowledge_layer.py'),'component-workspace-test'],cwd=pdir,env=env,check=True,capture_output=True,text=True)
+        if not (cws/'knowledge/component-workspace-test/_generated/Home.md').exists(): fail('component edition did not generate external human knowledge layer')
+        if (pdir/'instances/component-workspace-test').exists(): fail('component edition external state leaked into product package')
+        print('workspace + human knowledge deployment regressions passed end to end, including component edition')
     finally:
         if prior is None: os.environ.pop('BUSINESSOS_WORKSPACE',None)
         else: os.environ['BUSINESSOS_WORKSPACE']=prior
