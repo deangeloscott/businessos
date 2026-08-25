@@ -1,6 +1,6 @@
 # Host Capability Discovery
 
-A fresh copy of ViralTrac's BusinessOS should use capabilities the current host already provides before concluding that a required capability is unavailable. Host discovery is part of startup and may also run when the environment changes.
+A fresh copy of **ViralTrac AURA** should use capabilities the current host already provides before concluding that a required capability is unavailable. Host discovery is part of startup and may also run when the environment changes.
 
 ## Startup behavior
 1. Inspect the tools/functions/connectors/filesystem/code/browser/MCP or other interfaces exposed by the current AI/agent/harness.
@@ -18,4 +18,4 @@ Capability preflight should treat a valid discovered host binding exactly like a
 An agent may write a small host-tool manifest and run `python scripts/bootstrap_environment.py <environment> --manifest <path>`. The helper validates declared capability IDs and compiles the non-secret inventory/bindings. The agent remains responsible for conservatively deciding which visible host tools genuinely satisfy which capabilities.
 
 ## Portability rule
-Host discovery improves plug-and-play setup but is not a required proprietary service. A basic recipient can still configure bindings manually or operate through fallbacks.
+Host discovery improves AURA's plug-and-play setup but is not a required proprietary service. A basic recipient can still configure bindings manually or operate through fallbacks.
