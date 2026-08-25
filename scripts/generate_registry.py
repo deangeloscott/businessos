@@ -73,14 +73,25 @@ def main():
         'publisher':{'id':publisher.get('id'),'name':publisher.get('name'),'metadata':'PUBLISHER.json'},
         'portable_first':bool(installation().get('portable_first',False)),
         'default_environment':installation().get('default_environment','local'),
-        'state_locations':{'canonical_business':'instances/<business-id>/','run':'runtime/runs/<business-id>/<run-id>/'},
+        'workspace':{
+            'default_root':'product_root',
+            'external_root_supported':True,
+            'selectors':['BUSINESSOS_WORKSPACE','.businessos/workspace.json'],
+            'deployment_profiles':'distribution/deployment-profiles.json'
+        },
+        'state_locations':{
+            'canonical_business':'instances/<business-id>/',
+            'run':'runtime/runs/<business-id>/<run-id>/',
+            'human_knowledge':'knowledge/<business-id>/',
+            'attachments':'attachments/'
+        },
         'installed_modules':sorted(installed_modules()),
         'systems':sorted(by_system),
         'contract_count':len(contracts),
         'schema_count':len(sreg),
         'capability_count':len(json.loads((ROOT/'core/capabilities/catalog.json').read_text()).get('capabilities',[])),
         'scheduled_contract_count':len(schedules),
-        'entrypoints':{'welcome':'WELCOME.md','human':'START-HERE.md','playbooks':'PLAYBOOKS.md','task_navigator':'TASK-NAVIGATOR.md','agent':'CONTEXT.md','glossary':'GLOSSARY.md'},
+        'entrypoints':{'welcome':'WELCOME.md','human':'START-HERE.md','deployment':'DEPLOYMENT.md','playbooks':'PLAYBOOKS.md','task_navigator':'TASK-NAVIGATOR.md','agent':'CONTEXT.md','glossary':'GLOSSARY.md'},
         'generated_from':'scripts/generate_registry.py'
     }
     (ROOT/'SYSTEM-MANIFEST.json').write_text(json.dumps(manifest_root,indent=2)+'\n')
