@@ -61,21 +61,25 @@ def main():
     # Build the plain-language human catalog from the same contract/process metadata.
     import generate_playbooks
     generate_playbooks.main()
-    pub=publisher_metadata()
-    publisher=pub.get('publisher',{}) if pub else {}
+    inst=installation();pub=publisher_metadata();publisher=pub.get('publisher',{}) if pub else {}
     manifest_root={
         'version':os_version(),
-        'edition':installation().get('edition','unmanaged'),
-        'display_name':installation().get('display_name',"ViralTrac's BusinessOS"),
-        'brand':installation().get('brand','ViralTrac'),
-        'startup_message':installation().get('startup_message','WELCOME.md'),
-        'host_capability_discovery':bool(installation().get('host_capability_discovery',True)),
+        'edition':inst.get('edition','unmanaged'),
+        'display_name':inst.get('display_name','ViralTrac AURA'),
+        'public_name':inst.get('public_name',publisher.get('product_name','ViralTrac AURA')),
+        'name_expansion':inst.get('name_expansion',publisher.get('product_name_expansion','Agentic Understanding and Reinforcement Architecture')),
+        'descriptor':inst.get('descriptor',publisher.get('product_descriptor','AI-native BusinessOS')),
+        'brand':inst.get('brand','ViralTrac'),
+        'branding':'BRANDING.md',
+        'startup_message':inst.get('startup_message','WELCOME.md'),
+        'host_capability_discovery':bool(inst.get('host_capability_discovery',True)),
         'publisher':{'id':publisher.get('id'),'name':publisher.get('name'),'metadata':'PUBLISHER.json'},
-        'portable_first':bool(installation().get('portable_first',False)),
-        'default_environment':installation().get('default_environment','local'),
+        'portable_first':bool(inst.get('portable_first',False)),
+        'default_environment':inst.get('default_environment','local'),
         'workspace':{
             'default_root':'product_root',
             'external_root_supported':True,
+            'migration_helper':'scripts/migrate_workspace.py',
             'selectors':['BUSINESSOS_WORKSPACE','.businessos/workspace.json'],
             'deployment_profiles':'distribution/deployment-profiles.json'
         },
@@ -91,14 +95,14 @@ def main():
         'schema_count':len(sreg),
         'capability_count':len(json.loads((ROOT/'core/capabilities/catalog.json').read_text()).get('capabilities',[])),
         'scheduled_contract_count':len(schedules),
-        'entrypoints':{'welcome':'WELCOME.md','human':'START-HERE.md','deployment':'DEPLOYMENT.md','playbooks':'PLAYBOOKS.md','task_navigator':'TASK-NAVIGATOR.md','agent':'CONTEXT.md','glossary':'GLOSSARY.md'},
+        'entrypoints':{'welcome':'WELCOME.md','human':'START-HERE.md','deployment':'DEPLOYMENT.md','branding':'BRANDING.md','playbooks':'PLAYBOOKS.md','task_navigator':'TASK-NAVIGATOR.md','agent':'CONTEXT.md','glossary':'GLOSSARY.md'},
         'generated_from':'scripts/generate_registry.py'
     }
     (ROOT/'SYSTEM-MANIFEST.json').write_text(json.dumps(manifest_root,indent=2)+'\n')
     manifest=[]
     for p in sorted([x for x in ROOT.rglob('*') if x.is_file() and 'generated/' not in x.as_posix() and '__pycache__' not in x.as_posix()]):
         manifest.append({'path':str(p.relative_to(ROOT)),'sha256':hashlib.sha256(p.read_bytes()).hexdigest(),'bytes':p.stat().st_size})
-    (gen/'workspace-manifest.json').write_text(json.dumps({'version':os_version(),'edition':installation().get('edition','unmanaged'),'files':manifest},indent=2)+'\n')
+    (gen/'workspace-manifest.json').write_text(json.dumps({'version':os_version(),'edition':inst.get('edition','unmanaged'),'files':manifest},indent=2)+'\n')
     (gen/'checksums.txt').write_text('\n'.join(f"{x['sha256']}  {x['path']}" for x in manifest)+'\n')
     print(f'Generated registry for {len(contracts)} contracts, {len(sreg)} schemas, {len(caps)} used capabilities.')
 if __name__=='__main__': main()
