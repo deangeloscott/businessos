@@ -1,11 +1,11 @@
 # Host Capability Discovery
 
-ViralTrac's BusinessOS is designed to be dropped into different AI/agent environments. A fresh agent should inspect its own visible tools before treating the built-in empty `local` environment as the final capability state.
+**ViralTrac AURA** is designed to be dropped into different AI/agent environments. A fresh agent should inspect its own visible tools before treating the built-in empty `local` environment as the final capability state.
 
 Typical startup:
 
 ```text
-open workspace
+open AURA workspace
 → show WELCOME.md once
 → inspect host tools/connectors/MCP/filesystem/code/browser
 → conservatively map clear abilities to BusinessOS capabilities
