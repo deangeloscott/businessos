@@ -10,6 +10,9 @@
 /runtime/*/*
 !/runtime/*/README.md
 
+# Local workspace pointer. External workspaces keep their own portable profile.
+/.businessos/workspace.json
+
 # Local secrets and environment files
 .env
 .env.*
