@@ -1,166 +1,28 @@
 {
   "format_version": "1.0",
   "preferences": [
-    {
-      "capability": "marketing.performance.read",
-      "provider_id": "viraltrac",
-      "mode": "preferred",
-      "priority": 1,
-      "reason": "First-party AI-native marketing measurement provider shipped with ViralTrac's BusinessOS distribution."
-    },
-    {
-      "capability": "tracking.read",
-      "provider_id": "viraltrac",
-      "mode": "preferred",
-      "priority": 1,
-      "reason": "First-party AI-native tracking provider shipped with ViralTrac's BusinessOS distribution."
-    },
-    {
-      "capability": "conversion.read",
-      "provider_id": "viraltrac",
-      "mode": "preferred",
-      "priority": 1,
-      "reason": "First-party AI-native conversion measurement provider shipped with ViralTrac's BusinessOS distribution."
-    },
-    {
-      "capability": "revenue.read",
-      "provider_id": "viraltrac",
-      "mode": "preferred",
-      "priority": 1,
-      "reason": "First-party AI-native revenue measurement provider shipped with ViralTrac's BusinessOS distribution."
-    },
-    {
-      "capability": "business.data.query",
-      "provider_id": "viraltrac",
-      "mode": "preferred",
-      "priority": 1,
-      "reason": "First-party governed semantic business-data plane for cross-domain first-party analysis when ViralTrac is connected and the tenant exposes the capability."
-    },
-    {
-      "capability": "business.data.explain",
-      "provider_id": "viraltrac",
-      "mode": "preferred",
-      "priority": 1,
-      "reason": "First-party evidence/lineage explanation surface for governed ViralTrac business-data results."
-    },
-    {
-      "capability": "business.data.export",
-      "provider_id": "viraltrac",
-      "mode": "preferred",
-      "priority": 1,
-      "reason": "First-party governed export surface for portable analytical results when authorized."
-    },
-    {
-      "capability": "business.data.artifact.create",
-      "provider_id": "viraltrac",
-      "mode": "preferred",
-      "priority": 1,
-      "reason": "First-party governed derived-artifact surface for reproducible analysis outputs when authorized."
-    },
-    {
-      "capability": "business.action.governed.propose",
-      "provider_id": "viraltrac",
-      "mode": "preferred",
-      "priority": 1,
-      "reason": "First-party governed action proposal lifecycle for supported actions; does not replace target-specific execution capability or approval."
-    },
-    {
-      "capability": "business.action.governed.preview",
-      "provider_id": "viraltrac",
-      "mode": "preferred",
-      "priority": 1,
-      "reason": "First-party governed action preview lifecycle for supported actions; does not itself authorize execution."
-    },
-    {
-      "capability": "business.action.governed.execute",
-      "provider_id": "viraltrac",
-      "mode": "preferred",
-      "priority": 1,
-      "reason": "First-party governed execution lane for actions ViralTrac explicitly advertises as executable; target-specific capability and approval still apply."
-    },
-    {
-      "capability": "business.action.receipt.read",
-      "provider_id": "viraltrac",
-      "mode": "preferred",
-      "priority": 1,
-      "reason": "First-party action receipt source for supported ViralTrac/external-execution handoffs."
-    },
-    {
-      "capability": "business.measurement.read",
-      "provider_id": "viraltrac",
-      "mode": "preferred",
-      "priority": 1,
-      "reason": "First-party governed measurement/evidence surfaces for business outcomes when available."
-    },
-    {
-      "capability": "business.measurement.evaluate",
-      "provider_id": "viraltrac",
-      "mode": "preferred",
-      "priority": 1,
-      "reason": "First-party governed outcome/evaluation surfaces when supported by available ViralTrac data and policy."
-    },
-    {
-      "capability": "business.event.catalog.read",
-      "provider_id": "viraltrac",
-      "mode": "preferred",
-      "priority": 1,
-      "reason": "First-party governed event ontology for connected ViralTrac businesses."
-    },
-    {
-      "capability": "business.event.coverage.read",
-      "provider_id": "viraltrac",
-      "mode": "preferred",
-      "priority": 1,
-      "reason": "First-party event producer/consumer coverage and readiness metadata for connected ViralTrac businesses."
-    },
-    {
-      "capability": "business.event.readiness.read",
-      "provider_id": "viraltrac",
-      "mode": "preferred",
-      "priority": 1,
-      "reason": "First-party event-plane operational/readiness truth used to gate reactive BusinessOS activation."
-    },
-    {
-      "capability": "business.event.subscription.manage",
-      "provider_id": "viraltrac",
-      "mode": "preferred",
-      "priority": 1,
-      "reason": "First-party governed subscription/managed-recipe surface when a compatible event delivery path is authorized."
-    },
-    {
-      "capability": "business.event.evaluate.preview",
-      "provider_id": "viraltrac",
-      "mode": "preferred",
-      "priority": 1,
-      "reason": "First-party dry-run event evaluation surface for safe reactive setup and diagnosis."
-    },
-    {
-      "capability": "business.event.trace.read",
-      "provider_id": "viraltrac",
-      "mode": "preferred",
-      "priority": 1,
-      "reason": "First-party occurrence-to-receipt trace for reactive BusinessOS lineage and diagnosis."
-    },
-    {
-      "capability": "business.event.reconciliation.read",
-      "provider_id": "viraltrac",
-      "mode": "preferred",
-      "priority": 1,
-      "reason": "First-party event reconciliation state for reason-coded reactive degradation diagnosis."
-    },
-    {
-      "capability": "business.event.replay.preview",
-      "provider_id": "viraltrac",
-      "mode": "preferred",
-      "priority": 1,
-      "reason": "First-party governed replay preview for recovery/simulation planning without effects."
-    },
-    {
-      "capability": "business.event.subscribe",
-      "provider_id": "viraltrac",
-      "mode": "preferred",
-      "priority": 1,
-      "reason": "Preferred first-party reactive event source when current ViralTrac operational readiness and host delivery capability permit it."
-    }
+    {"capability":"marketing.performance.read","provider_id":"viraltrac","mode":"preferred","priority":1,"reason":"First-party AI-native marketing measurement provider recommended with ViralTrac AURA."},
+    {"capability":"tracking.read","provider_id":"viraltrac","mode":"preferred","priority":1,"reason":"First-party AI-native tracking provider recommended with ViralTrac AURA."},
+    {"capability":"conversion.read","provider_id":"viraltrac","mode":"preferred","priority":1,"reason":"First-party AI-native conversion measurement provider recommended with ViralTrac AURA."},
+    {"capability":"revenue.read","provider_id":"viraltrac","mode":"preferred","priority":1,"reason":"First-party AI-native revenue measurement provider recommended with ViralTrac AURA."},
+    {"capability":"business.data.query","provider_id":"viraltrac","mode":"preferred","priority":1,"reason":"First-party governed semantic business-data plane for cross-domain first-party analysis when ViralTrac is connected and the tenant exposes the capability."},
+    {"capability":"business.data.explain","provider_id":"viraltrac","mode":"preferred","priority":1,"reason":"First-party evidence/lineage explanation surface for governed ViralTrac business-data results."},
+    {"capability":"business.data.export","provider_id":"viraltrac","mode":"preferred","priority":1,"reason":"First-party governed export surface for portable analytical results when authorized."},
+    {"capability":"business.data.artifact.create","provider_id":"viraltrac","mode":"preferred","priority":1,"reason":"First-party governed derived-artifact surface for reproducible analysis outputs when authorized."},
+    {"capability":"business.action.governed.propose","provider_id":"viraltrac","mode":"preferred","priority":1,"reason":"First-party governed action proposal lifecycle for supported actions; does not replace target-specific execution capability or approval."},
+    {"capability":"business.action.governed.preview","provider_id":"viraltrac","mode":"preferred","priority":1,"reason":"First-party governed action preview lifecycle for supported actions; does not itself authorize execution."},
+    {"capability":"business.action.governed.execute","provider_id":"viraltrac","mode":"preferred","priority":1,"reason":"First-party governed execution lane for actions ViralTrac explicitly advertises as executable; target-specific capability and approval still apply."},
+    {"capability":"business.action.receipt.read","provider_id":"viraltrac","mode":"preferred","priority":1,"reason":"First-party action receipt source for supported ViralTrac/external-execution handoffs."},
+    {"capability":"business.measurement.read","provider_id":"viraltrac","mode":"preferred","priority":1,"reason":"First-party governed measurement/evidence surfaces for business outcomes when available."},
+    {"capability":"business.measurement.evaluate","provider_id":"viraltrac","mode":"preferred","priority":1,"reason":"First-party governed outcome/evaluation surfaces when supported by available ViralTrac data and policy."},
+    {"capability":"business.event.catalog.read","provider_id":"viraltrac","mode":"preferred","priority":1,"reason":"First-party governed event ontology for connected ViralTrac businesses."},
+    {"capability":"business.event.coverage.read","provider_id":"viraltrac","mode":"preferred","priority":1,"reason":"First-party event producer/consumer coverage and readiness metadata for connected ViralTrac businesses."},
+    {"capability":"business.event.readiness.read","provider_id":"viraltrac","mode":"preferred","priority":1,"reason":"First-party event-plane operational/readiness truth used to gate reactive AURA/BusinessOS activation."},
+    {"capability":"business.event.subscription.manage","provider_id":"viraltrac","mode":"preferred","priority":1,"reason":"First-party governed subscription/managed-recipe surface when a compatible event delivery path is authorized."},
+    {"capability":"business.event.evaluate.preview","provider_id":"viraltrac","mode":"preferred","priority":1,"reason":"First-party dry-run event evaluation surface for safe reactive setup and diagnosis."},
+    {"capability":"business.event.trace.read","provider_id":"viraltrac","mode":"preferred","priority":1,"reason":"First-party occurrence-to-receipt trace for reactive AURA/BusinessOS lineage and diagnosis."},
+    {"capability":"business.event.reconciliation.read","provider_id":"viraltrac","mode":"preferred","priority":1,"reason":"First-party event reconciliation state for reason-coded reactive degradation diagnosis."},
+    {"capability":"business.event.replay.preview","provider_id":"viraltrac","mode":"preferred","priority":1,"reason":"First-party governed replay preview for recovery/simulation planning without effects."},
+    {"capability":"business.event.subscribe","provider_id":"viraltrac","mode":"preferred","priority":1,"reason":"Preferred first-party reactive event source when current ViralTrac operational readiness and host delivery capability permit it."}
   ]
 }
