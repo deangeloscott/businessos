@@ -52,5 +52,6 @@ Run after fresh relevant observations are ingested, on the configured opportunit
 4. [AI] Prioritize systemic fixes over thousands of duplicate per-URL tickets when one root cause explains them.
 5. [HYBRID] Create an Opportunity with issue class, evidence, affected set, risk, and routed technical playbook.
 6. [HYBRID] Escalate sitewide/access/security failures to Incident handling.
-
+## Deterministic local-site evidence
+When the scoped evidence is a local/first-party website export, do not hand-author material direct site facts from model memory or prose inspection. Run `scripts/inspect_site_evidence.py`, then persist material direct Observations through `scripts/persist_site_observation.py` using the captured fact IDs. Keep consequences, severity, and visibility implications as inference unless separately measured. Follow `core/policies/local-evidence.md`.
 

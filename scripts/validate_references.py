@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from _common import *
 import argparse,json,re
-PAT=re.compile(r'\b(?:src|obs|ins|prf|opp|ini|act|wrk|apr|chg|ver|ast|mdef|mobs|exp|eval|lrn|inc|cup|cmp|plt|jrn|iev|ocs|odm|sas|aud|brd|biz|eco|mkt|obj|off|ofr|prd)_[A-Za-z0-9_-]+\b')
+PAT=re.compile(r'(?<![A-Za-z0-9_-])(?:src|obs|ins|prf|opp|ini|act|wrk|apr|chg|ver|ast|mdef|mobs|exp|eval|lrn|inc|att|plc|clm|cup|cmp|plt|jrn|iev|ocs|odm|sas|aud|brd|biz|eco|mkt|obj|off|ofr|prd)_[A-Za-z0-9_-]+(?![A-Za-z0-9_-])')
 
 def reference_errors(business_id):
     base=ROOT/'instances'/business_id

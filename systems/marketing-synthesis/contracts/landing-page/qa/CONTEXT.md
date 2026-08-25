@@ -1,7 +1,7 @@
 ---
 id: marketing.landing-page.qa
 type: playbook
-version: 1.3.0
+version: 1.4.0
 owner_system: marketing-synthesis
 risk: medium
 autonomy_ceiling: 2
@@ -53,3 +53,4 @@ Run before launch and after material landing-page changes.
 5. [AI] Identify persuasion problems versus UX/technical friction and route Customer Optimization issues.
 6. [DETERMINISTIC] Block launch on material errors; capture pass/fail and before-state baseline.
 7. [DETERMINISTIC] After launch verify live page/version and measurement instrumentation.
+8. [DETERMINISTIC] Save a JSON pass/fail record under the active Run (for example `runtime/runs/<business-id>/<run-id>/artifacts/landing-page-qa.json`) with `contract_id: "marketing.landing-page.qa"`, `status: "pass"|"fail"`, checks performed, unresolved blockers, and tested Asset/version. Record completion with `scripts/record_contract_completion.py`; do not substitute a generic claim grep for this integrated QA record.

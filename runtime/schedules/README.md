@@ -1,3 +1,0 @@
-# Schedules
-
-Compiled scheduler plans.

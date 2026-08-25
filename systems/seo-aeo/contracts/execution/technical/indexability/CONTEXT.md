@@ -44,3 +44,6 @@ Run only when an approved Action Packet routes to **Indexability**, or when an a
 7. [HYBRID] Verify eligibility and schedule index-state recheck.
 
 
+
+## Customer-Facing Mutation Guardrail
+If an indexability fix changes visible/customer-facing text (including broken-link remediation, CTA text, navigation, headings, or page creation), follow `core/policies/customer-facing-mutations.md`. Prefer removal/narrowing when a broken target refers to a service/capability not established in canonical business truth.

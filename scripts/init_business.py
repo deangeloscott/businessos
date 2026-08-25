@@ -12,7 +12,7 @@ def init_business(business_id,name):
     rp=dest/'config/external-research-profile.json'
     if rp.exists():
         rpd=json.loads(rp.read_text());rpd['business_id']=business_id;rp.write_text(json.dumps(rpd,indent=2)+'\n')
-    dirs=['context/products','context/offers','context/audiences','context/markets','context/objectives','context/economics','context/constraints','intelligence/sources','intelligence/observations','intelligence/insights','intelligence/proof','decisions/opportunities','decisions/initiatives','operations/action-packets','operations/work-requests','operations/approvals','operations/change-events','operations/verifications','operations/incidents','assets','measurement/metric-definitions','measurement/metric-observations','measurement/experiments','measurement/outcome-evaluations','learning/business']
+    dirs=['context/brand','context/products','context/offers','context/audiences','context/markets','context/objectives','context/economics','context/constraints','context/preferences','intelligence/sources','intelligence/observations','intelligence/insights','intelligence/proof','decisions/opportunities','decisions/initiatives','operations/action-packets','operations/work-requests','operations/approvals','operations/change-events','operations/verifications','operations/incidents','operations/attention','intelligence/platform-changes','history/attention','history/platform-changes','assets','measurement/metric-definitions','measurement/metric-observations','measurement/experiments','measurement/outcome-evaluations','learning/business']
     for d in dirs:(dest/d).mkdir(parents=True,exist_ok=True)
     for sysid in data.get('enabled_systems',[]):
         (dest/'learning/domain'/sysid).mkdir(parents=True,exist_ok=True);(dest/'domains'/sysid).mkdir(parents=True,exist_ok=True)
@@ -23,4 +23,5 @@ def main():
     try: dest=init_business(a.business_id,a.name)
     except (ValueError,FileExistsError) as e: raise SystemExit(str(e))
     print(dest)
+    print(f'NEXT: run `python3 scripts/bootstrap_explicit_context.py {a.business_id} --help`. Preserve the full original request: if anything remains after setup, pass it with `--residual-request "<remaining natural-language request>"`; use `--initialization-only` only when setup/persistence was the entire request. Prefer relative runtime facts files + --source-text, then validate with `python3 scripts/validate_business.py {a.business_id} --require-context`. Do not create replacement BusinessOS scripts if a helper invocation fails.')
 if __name__=='__main__':main()

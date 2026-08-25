@@ -39,6 +39,11 @@ def main():
             if isinstance(sel,dict) and set(sel)-{'type','owner_system','owner_scope'}: errors.append(f'{rel}: unsupported read selector keys {sel}')
         for typ in meta.get('writes',[]):
             if not isinstance(typ,str) or typ not in sreg:errors.append(f'{rel}: non-canonical write type {typ}')
+        role=meta.get('artifact_role')
+        if role not in {None,'customer_facing_production_root'}: errors.append(f'{rel}: unsupported artifact_role {role}')
+        if role=='customer_facing_production_root':
+            if meta.get('owner_system') not in {'content-synthesis','marketing-synthesis'}: errors.append(f'{rel}: customer-facing production root must belong to Content or Marketing')
+            if 'Asset' not in meta.get('writes',[]): errors.append(f'{rel}: customer-facing production root must write Asset')
         for typ in meta.get('context',[]):
             if typ not in CONTEXT_TYPES:errors.append(f'{rel}: invalid context type {typ}')
         if re.search(r'\b(TODO|TBD|LOREM|PLACEHOLDER)\b',body,re.I):errors.append(f'{rel}: placeholder marker')
@@ -95,9 +100,27 @@ def main():
             for e in __import__('jsonschema').Draft202012Validator(rs).iter_errors(rd): errors.append(f'{rmp.relative_to(ROOT)}: {e.message}')
         except Exception as e: errors.append(f'{rmp.relative_to(ROOT)} invalid: {e}')
     if not (ROOT/'instances/_template/instance.json').exists():errors.append('missing instance template')
-    for f in ['GLOSSARY.md','TASK-NAVIGATOR.md']:
+    for f in ['GLOSSARY.md','TASK-NAVIGATOR.md','PLAYBOOKS.md']:
         if not (ROOT/f).exists():errors.append(f'missing human navigation {f}')
-    for f in ['core/policies/portable-first.md','core/policies/local-state-and-recovery.md','core/policies/capability-preflight.md','core/policies/host-capability-discovery.md','scripts/bootstrap_environment.py','WELCOME.md','scripts/preflight_capabilities.py','deployment/environments/local/tool-inventory.json','deployment/environments/local/capability-bindings.json','deployment/environments/local/provider-preferences.json','core/policies/external-research-interaction.md','core/policies/context-reuse-and-question-minimization.md','instances/_template/config/external-research-profile.json','core/schemas/runtime/external-research-profile.schema.json','deployment/operator-profile.json','core/schemas/runtime/operator-profile.schema.json','scripts/update_research_profile.py','scripts/resolve_research_profile.py','core/policies/viraltrac-native-companion.md','core/providers/viraltrac/companion-profile.json','core/providers/viraltrac/object-mapping.json','core/schemas/runtime/provider-companion-profile.schema.json','core/schemas/runtime/provider-capability-snapshot.schema.json','scripts/sync_viraltrac_capabilities.py','core/providers/viraltrac/event-interoperability.json','core/schemas/runtime/provider-event-interoperability.schema.json','core/monitoring/event-consumer-profile.json','core/schemas/runtime/businessos-event-consumer-profile.schema.json','core/schemas/runtime/event-reaction-decision.schema.json','core/schemas/runtime/reactive-monitoring-profile.schema.json','instances/_template/config/reactive-monitoring.json','scripts/activate_viraltrac_event_plane.py','scripts/event_reaction_key.py']:
+
+    # Human playbook catalog is generated from the canonical contract/process metadata.
+    installed=set(installation().get('installed_modules',[]))
+    expected_pages={'core': ROOT/'docs/playbooks/core.md'}
+    for mid in installed - {'core'}:
+        expected_pages[mid]=ROOT/'docs/playbooks'/f'{mid}.md'
+    for mid,page in expected_pages.items():
+        if not page.exists(): errors.append(f'missing human playbook page for {mid}: {page.relative_to(ROOT)}')
+    if 'customer-intelligence' in installed and not (ROOT/'docs/playbooks/examples/research-public-reviews.md').exists():
+        errors.append('missing human playbook example docs/playbooks/examples/research-public-reviews.md')
+    catalog_pages=[ROOT/'PLAYBOOKS.md'] + (list((ROOT/'docs/playbooks').rglob('*.md')) if (ROOT/'docs/playbooks').exists() else [])
+    for page in catalog_pages:
+        if not page.exists(): continue
+        for target in re.findall(r'\[[^\]]+\]\(([^)]+)\)', page.read_text()):
+            clean=target.split('#',1)[0].strip()
+            if not clean or clean.startswith(('http://','https://','mailto:','#')): continue
+            resolved=(page.parent/clean).resolve()
+            if not resolved.exists(): errors.append(f'{page.relative_to(ROOT)}: broken local link {target}')
+    for f in ['core/policies/portable-first.md','core/policies/local-state-and-recovery.md','core/policies/capability-preflight.md','core/policies/host-capability-discovery.md','scripts/bootstrap_environment.py','WELCOME.md','scripts/preflight_capabilities.py','deployment/environments/local/tool-inventory.json','deployment/environments/local/capability-bindings.json','deployment/environments/local/provider-preferences.json','core/policies/external-research-interaction.md','core/policies/context-reuse-and-question-minimization.md','instances/_template/config/external-research-profile.json','core/schemas/runtime/external-research-profile.schema.json','deployment/operator-profile.json','core/schemas/runtime/operator-profile.schema.json','scripts/update_research_profile.py','scripts/resolve_research_profile.py','core/policies/viraltrac-native-companion.md','core/providers/viraltrac/companion-profile.json','core/providers/viraltrac/object-mapping.json','core/schemas/runtime/provider-companion-profile.schema.json','core/schemas/runtime/provider-capability-snapshot.schema.json','scripts/sync_viraltrac_capabilities.py','core/providers/viraltrac/event-interoperability.json','core/schemas/runtime/provider-event-interoperability.schema.json','core/monitoring/event-consumer-profile.json','core/schemas/runtime/businessos-event-consumer-profile.schema.json','core/schemas/runtime/event-reaction-decision.schema.json','core/schemas/runtime/reactive-monitoring-profile.schema.json','instances/_template/config/reactive-monitoring.json','scripts/activate_viraltrac_event_plane.py','scripts/event_reaction_key.py','core/policies/agent-execution.md','core/policies/active-business-truth.md','core/policies/preferences-and-adaptation.md','core/policies/shared-workspace-coordination.md','core/schemas/context/preference-profile.schema.json','scripts/resolve_preferences.py','scripts/upsert_preference_profile.py','scripts/migrate_preference_profiles.py','scripts/resolve_contract.py','scripts/bootstrap_explicit_context.py','scripts/validate_business.py','core/policies/attention-lifecycle.md','core/policies/platform-intelligence.md','core/schemas/action/attention-item.schema.json','core/schemas/intelligence/platform-change.schema.json','scripts/upsert_attention.py','scripts/list_attention.py','scripts/set_attention_status.py','scripts/record_platform_change.py','scripts/list_platform_state.py','scripts/maintain_lifecycle.py','scripts/validate_attention_lifecycle.py']:
         if not (ROOT/f).exists(): errors.append(f'missing portable-first component {f}')
     if installation().get('portable_first') is not True: errors.append('INSTALLATION.json must declare portable_first=true')
     if installation().get('default_environment')!='local': errors.append('INSTALLATION.json default_environment must be local')

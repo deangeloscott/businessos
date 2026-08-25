@@ -16,3 +16,6 @@ The Business OS optimizes **business outcome → evidence → opportunity → ac
 11. Create narrowly scoped Learning and reprioritize.
 
 Monitoring, incidents, research refreshes, and external events can enter the loop at the appropriate point rather than following a fixed sequential stage architecture.
+
+## Preference and method layer
+Before execution, resolve mandatory requirements separately from optional preferences. Durable preferences resolve business → team → role → operator, then one-task optional preferences may override those choices. They never override BusinessOS/business/Brand/compliance/approval/contract requirements. A better renderer, model strategy, provider, or implementation technique may be used without a BusinessOS release when the required outcome/evidence/authorization/validation contract remains satisfied.

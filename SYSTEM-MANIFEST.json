@@ -1,5 +1,5 @@
 {
-  "version": "1.8.2",
+  "version": "1.8.4",
   "edition": "full",
   "display_name": "ViralTrac's BusinessOS",
   "brand": "ViralTrac",
@@ -36,13 +36,14 @@
     "marketing-synthesis",
     "seo-aeo"
   ],
-  "contract_count": 497,
-  "schema_count": 48,
+  "contract_count": 503,
+  "schema_count": 52,
   "capability_count": 91,
   "scheduled_contract_count": 25,
   "entrypoints": {
     "welcome": "WELCOME.md",
     "human": "START-HERE.md",
+    "playbooks": "PLAYBOOKS.md",
     "task_navigator": "TASK-NAVIGATOR.md",
     "agent": "CONTEXT.md",
     "glossary": "GLOSSARY.md"

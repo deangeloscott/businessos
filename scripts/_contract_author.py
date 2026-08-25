@@ -8,7 +8,7 @@ BASE_META = {
     'autonomy_ceiling':2,
 }
 
-def write_contract(system, relpath, cid, title, purpose, outcome, run_when, steps, *, reads=None, writes=None, capabilities=None, context=None, risk='low', autonomy=2, ctype='playbook', subcontracts=None, evidence_inputs=None, events=None, schedule=None):
+def write_contract(system, relpath, cid, title, purpose, outcome, run_when, steps, *, reads=None, writes=None, capabilities=None, context=None, risk='low', autonomy=2, ctype='playbook', subcontracts=None, evidence_inputs=None, events=None, schedule=None, artifact_role=None):
     p=ROOT/'systems'/system/'contracts'/relpath/'CONTEXT.md'
     p.parent.mkdir(parents=True,exist_ok=True)
     meta={
@@ -17,6 +17,7 @@ def write_contract(system, relpath, cid, title, purpose, outcome, run_when, step
         'reads':reads or [],'writes':writes or [],
         'capabilities':capabilities or {'required':['none'],'optional':[]},
     }
+    if artifact_role: meta['artifact_role']=artifact_role
     if context: meta['context']=context
     if subcontracts: meta['subcontracts']=subcontracts
     if evidence_inputs: meta['evidence_inputs']=evidence_inputs

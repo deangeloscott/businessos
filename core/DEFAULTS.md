@@ -10,10 +10,18 @@ These rules apply to every contract unless a stricter business, system, family, 
 
 ## Execution
 - Use deterministic software for exact calculation, parsing, validation, comparison, state transition, scheduling, and other mechanical work.
+- Resolve durable customization through `core/policies/preferences-and-adaptation.md`: mandatory BusinessOS/business/Brand/contract/task requirements outrank preferences; preferences guide valid choices but do not authorize claims/actions.
+- Prefer better/faster/easier implementation methods when they satisfy the same required outputs, evidence, authorization, capability, and validation boundaries; do not freeze incidental technique into BusinessOS.
+- Shared-state use across sessions/workers follows `core/policies/shared-workspace-coordination.md`: sequential resume is supported, while arbitrary simultaneous writes to the same state are not assumed conflict-safe.
 - Use AI for ambiguity, interpretation, diagnosis, synthesis, planning, and creative reasoning.
 - Tool availability is not permission. Apply business policy, action risk, reversibility, autonomy ceiling, and required approval before execution.
 - Before executing an atomic job, preflight its required capabilities. Missing automation changes the executor, not the required business process. Create human-executable work when a required capability is unavailable, and preserve a blocker when no safe fallback exists.
 - Preserve validated canonical business state and resumable run state according to `core/policies/local-state-and-recovery.md`; an agent restart is not a reason to discard valid work.
+- Use minimum sufficient work: conserve user waiting, tokens/context, tool/API spend, compute, agent cycles, and human attention while doing all work needed for a reliable outcome. Deepen or fan out only when it is likely to materially improve the decision, reduce important uncertainty, mitigate risk, or satisfy required verification.
+- Do not invent implementation time, staffing, cost, or resource availability. When those are unknown, keep them unknown and do not overweight presumed manual-development effort where automation may execute the work.
+- Truth rules apply to every artifact/answer that represents the active business, not only canonical state. Unknown/not-found is not the same as absent; external patterns and hypotheses must not become unsupported business claims.
+- Stay within the user's requested scope. A request to analyze/diagnose/prioritize authorizes decision work, not implementation of the recommended intervention; silence or timeout never grants approval.
+- Protect BusinessOS product files during normal business operation. Use supported helpers and business/runtime paths; do not patch `scripts/`, `core/`, `systems/`, `tests/`, schemas, or manifests to work around a failed operation. Product changes are appropriate only when the user's request itself concerns BusinessOS development/repair/configuration.
 
 ## External Research
 - Public/third-party research may use browser/crawl/email tools only within legitimate access and a truthful authorized research identity. Never fabricate identity, company facts, purchase intent, or authority to obtain restricted information.
@@ -22,7 +30,7 @@ These rules apply to every contract unless a stricter business, system, family, 
 ## Evidence and Uncertainty
 - Reuse current canonical intelligence before repeating research.
 - Never invent missing evidence. When evidence is insufficient, stale, biased, or contradictory, preserve the uncertainty and create or maintain the knowledge gap.
-- Use ranges when value, cost, impact, or causal effect cannot be estimated precisely.
+- Use ranges when value, cost, impact, or causal effect cannot be estimated precisely. External benchmarks may support hypotheses or scenarios but do not become active-business forecasts without business-specific inputs.
 
 ## Verification
 - Validate written objects, business isolation, references, schema, semantic ownership, and applicable lifecycle transitions before persistence.

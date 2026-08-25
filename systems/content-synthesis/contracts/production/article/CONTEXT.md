@@ -1,8 +1,9 @@
 ---
 id: content.production.article
 type: playbook
-version: 1.3.0
+version: 1.4.0
 owner_system: content-synthesis
+artifact_role: customer_facing_production_root
 risk: low
 autonomy_ceiling: 4
 reads:
@@ -60,3 +61,6 @@ Run when an Opportunity or WorkRequest requires article production and existing 
 6. [HYBRID] Apply Brand voice and audience terminology without forcing brand phrases that reduce clarity.
 7. [HYBRID] Fact-check claims, test internal consistency, remove unsupported filler/repetition, and satisfy upstream SEO/Marketing requirements where delegated.
 8. [DETERMINISTIC] Produce versioned Asset metadata and route to editorial/brand/fact QA.
+
+## Completion Evidence
+When this production work is executed in a Run, execute and record every required subcontract. Customer-facing article Assets must use the claim-manifest flow in `core/policies/context-provenance-and-claims.md`; `content.qa.pre-publish` must leave a JSON pass record and the Run must be completed with `scripts/complete_run.py` before reporting the workflow complete.

@@ -3,6 +3,7 @@ id: marketing.assets.comparison
 type: playbook
 version: 1.2.0
 owner_system: marketing-synthesis
+artifact_role: customer_facing_production_root
 risk: low
 autonomy_ceiling: 3
 reads:

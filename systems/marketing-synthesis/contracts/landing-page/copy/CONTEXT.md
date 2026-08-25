@@ -1,7 +1,7 @@
 ---
 id: marketing.landing-page.copy
 type: playbook
-version: 1.3.0
+version: 1.4.0
 owner_system: marketing-synthesis
 risk: medium
 autonomy_ceiling: 2
@@ -43,7 +43,7 @@ Write the complete evidence-backed copy for an approved landing-page persuasion 
 Communicate the right promise, mechanism, proof, Offer, fit, objections, and CTA clearly enough for qualified visitors to decide.
 
 ## Run When
-Run after landing-page architecture, message match, proof, and Offer facts are resolved.
+Run after landing-page architecture, message match, proof, and Offer facts are resolved. When the requested deliverable is a standalone customer-facing homepage/landing-page draft, do **not** create the bounded Run with this leaf contract as the root; execute it as the required subcontract of `marketing.assets.landing-page`.
 
 ## Process
 1. [AI] Draft headline/subheadline/opening from source-message match and audience desired outcome without unsupported superlatives.

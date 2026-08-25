@@ -59,7 +59,7 @@ def module_catalog():
 
 
 SYSTEMS={'core','customer-intelligence','competitor-intelligence','industry-intelligence','seo-aeo','content-synthesis','marketing-synthesis','customer-optimization'}
-CONTEXT_TYPES={'Business','Brand','ProductService','Offer','AudienceSegment','Market','Objective','EconomicContext'}
+CONTEXT_TYPES={'Business','Brand','ProductService','Offer','AudienceSegment','Market','Objective','EconomicContext','BusinessClaim','PreferenceProfile'}
 
 def selector_type(sel):
     return sel.get('type') if isinstance(sel,dict) else sel
@@ -100,5 +100,5 @@ def object_matches(obj,selector):
     return True
 
 def refs_in_object(obj):
-    pat=re.compile(r'\b(?:src|obs|ins|prf|opp|ini|act|wrk|apr|chg|ver|ast|mdef|mobs|exp|eval|lrn|inc|cup|cmp|plt|jrn|iev|ocs|odm|sas|aud|brd|biz|eco|mkt|obj|off|prd)_[A-Za-z0-9_-]+\b')
+    pat=re.compile(r'\b(?:src|obs|ins|prf|opp|ini|act|wrk|apr|chg|ver|ast|mdef|mobs|exp|eval|lrn|inc|att|plc|cup|cmp|plt|jrn|iev|ocs|odm|sas|aud|brd|biz|eco|mkt|obj|off|prd|clm)_[A-Za-z0-9_-]+\b')
     return set(pat.findall(json.dumps(obj)))

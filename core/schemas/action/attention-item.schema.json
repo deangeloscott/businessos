@@ -1,0 +1,198 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AttentionItem",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^att_[A-Za-z0-9_-]+$"
+    },
+    "object_type": {
+      "const": "AttentionItem"
+    },
+    "schema_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "business_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "lineage": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "owner_system": {
+      "enum": [
+        "core",
+        "customer-intelligence",
+        "competitor-intelligence",
+        "industry-intelligence",
+        "seo-aeo",
+        "content-synthesis",
+        "marketing-synthesis",
+        "customer-optimization"
+      ]
+    },
+    "dedupe_key": {
+      "type": "string",
+      "minLength": 1
+    },
+    "attention_type": {
+      "type": "string",
+      "minLength": 1
+    },
+    "severity": {
+      "enum": [
+        "informational",
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ]
+    },
+    "status": {
+      "enum": [
+        "open",
+        "acknowledged",
+        "resolved",
+        "superseded",
+        "archived"
+      ]
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "reason": {
+      "type": "string",
+      "minLength": 1
+    },
+    "recommended_action": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "source_refs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "evidence_refs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "blocking_conditions": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "first_seen": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "last_seen": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "occurrence_count": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "next_review_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "acknowledged_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "resolved_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "resolution_refs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "supersedes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^att_[A-Za-z0-9_-]+$"
+      },
+      "uniqueItems": true
+    },
+    "superseded_by": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^att_[A-Za-z0-9_-]+$"
+    },
+    "retention_class": {
+      "enum": [
+        "operational",
+        "durable"
+      ]
+    },
+    "extensions": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  },
+  "required": [
+    "id",
+    "object_type",
+    "schema_version",
+    "business_id",
+    "owner_system",
+    "dedupe_key",
+    "attention_type",
+    "severity",
+    "status",
+    "title",
+    "reason",
+    "first_seen",
+    "last_seen",
+    "occurrence_count",
+    "retention_class"
+  ]
+}

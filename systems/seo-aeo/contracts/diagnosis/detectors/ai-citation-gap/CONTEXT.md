@@ -61,5 +61,6 @@ Run after fresh relevant observations are ingested, on the configured opportunit
 
 ## Verification
 - Store the exact prompt/question, surface, timestamp, answer evidence and citation/mention status so observations are reproducible.
-
+## Deterministic local-site evidence
+When the scoped evidence is a local/first-party website export, do not hand-author material direct site facts from model memory or prose inspection. Run `scripts/inspect_site_evidence.py`, then persist material direct Observations through `scripts/persist_site_observation.py` using the captured fact IDs. Keep consequences, severity, and visibility implications as inference unless separately measured. Follow `core/policies/local-evidence.md`.
 

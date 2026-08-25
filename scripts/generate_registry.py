@@ -58,6 +58,9 @@ def main():
             lines.append(f"- `{c['id']}` — {c.get('title',c['id'])}" + (f": {purpose}" if purpose else ''))
         lines.append('')
     (ROOT/'PLAYBOOK-INDEX.md').write_text('\n'.join(lines).rstrip()+'\n')
+    # Build the plain-language human catalog from the same contract/process metadata.
+    import generate_playbooks
+    generate_playbooks.main()
     pub=publisher_metadata()
     publisher=pub.get('publisher',{}) if pub else {}
     manifest_root={
@@ -77,7 +80,7 @@ def main():
         'schema_count':len(sreg),
         'capability_count':len(json.loads((ROOT/'core/capabilities/catalog.json').read_text()).get('capabilities',[])),
         'scheduled_contract_count':len(schedules),
-        'entrypoints':{'welcome':'WELCOME.md','human':'START-HERE.md','task_navigator':'TASK-NAVIGATOR.md','agent':'CONTEXT.md','glossary':'GLOSSARY.md'},
+        'entrypoints':{'welcome':'WELCOME.md','human':'START-HERE.md','playbooks':'PLAYBOOKS.md','task_navigator':'TASK-NAVIGATOR.md','agent':'CONTEXT.md','glossary':'GLOSSARY.md'},
         'generated_from':'scripts/generate_registry.py'
     }
     (ROOT/'SYSTEM-MANIFEST.json').write_text(json.dumps(manifest_root,indent=2)+'\n')

@@ -171,5 +171,42 @@
         "validated"
       ]
     }
+  },
+  "AttentionItem": {
+    "field": "status",
+    "transitions": {
+      "open": [
+        "acknowledged",
+        "resolved",
+        "superseded"
+      ],
+      "acknowledged": [
+        "open",
+        "resolved",
+        "superseded"
+      ],
+      "resolved": [
+        "open",
+        "archived"
+      ],
+      "superseded": [
+        "archived"
+      ],
+      "archived": [
+        "open"
+      ]
+    }
+  },
+  "PlatformChange": {
+    "field": "status",
+    "transitions": {
+      "current": [
+        "superseded"
+      ],
+      "superseded": [
+        "archived"
+      ],
+      "archived": []
+    }
   }
 }

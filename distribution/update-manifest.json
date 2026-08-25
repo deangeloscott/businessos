@@ -1,11 +1,11 @@
 {
   "format_version": "1.0",
   "product": "ViralTrac BusinessOS",
-  "version": "1.8.3",
-  "tag": "v1.8.3",
+  "version": "1.8.4",
+  "tag": "v1.8.4",
   "channel": "stable",
   "repository": "deangeloscott/businessos",
-  "release_url": "https://github.com/deangeloscott/businessos/releases/tag/v1.8.3",
+  "release_url": "https://github.com/deangeloscott/businessos/releases/tag/v1.8.4",
   "license": "ViralTrac BusinessOS Source-Available License v1.0",
   "auto_install_supported": false,
   "notes": "Official release metadata. Verify release assets/checksums before manually migrating a customized BusinessOS copy."
