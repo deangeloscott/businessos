@@ -5,6 +5,7 @@ import json, sys, yaml
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"scripts"))
 from _common import read_frontmatter
+from upsert_source_profile import _normalized_reference, _profile_id
 
 CORE_IDS = {
     "core.intelligence.ecosystem-radar",
@@ -71,6 +72,22 @@ def main():
     htext=helper.read_text()
     for phrase in ["outcome_events","event_key","Source history changes discovery attention only"]:
         if phrase not in htext: fail(f"source profile helper missing {phrase}")
+
+    # Equivalent URL spellings must resolve to one profile, while path case stays distinct.
+    a="HTTPS://Example.COM:443/Research/Article/"
+    b="https://example.com/Research/Article"
+    if _normalized_reference(a) != b:
+        fail("SourceProfile URL normalization must collapse scheme/host casing, default HTTPS port, and trailing slash")
+    if _profile_id("test-business",a) != _profile_id("test-business",b):
+        fail("equivalent SourceProfile URLs must generate the same deterministic id")
+    if _profile_id("test-business",b) == _profile_id("test-business","https://example.com/research/article"):
+        fail("SourceProfile normalization must preserve potentially case-sensitive URL paths")
+    try:
+        _normalized_reference("https://user:secret@example.com/research")
+    except ValueError:
+        pass
+    else:
+        fail("SourceProfile references must reject embedded URL credentials")
 
     for cid,phrases in REQUIRED_PHRASES.items():
         body=cs[cid][2]
