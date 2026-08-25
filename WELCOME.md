@@ -1,8 +1,10 @@
-# Welcome to ViralTrac's BusinessOS
+# Welcome to ViralTrac AURA
 
-Thank you for downloading **ViralTrac's BusinessOS**, by **DeAngelo Scott**.
+**AURA = Agentic Understanding and Reinforcement Architecture.**
 
-This system is designed to help you transform your business and create as much profit as you can possibly handle.
+Thank you for downloading **ViralTrac AURA**, by **DeAngelo Scott**.
+
+AURA is an AI-native BusinessOS designed to help you understand your business, coordinate useful work, learn from measured outcomes, and improve how the business operates over time.
 
 ## What this copy can help you do
 
@@ -35,7 +37,7 @@ This system is designed to help you transform your business and create as much p
 
 ## You do not need to know the right workflow
 
-You can describe a business problem or desired result in plain language. I will use the systems installed in this copy, inspect the tools available in this environment, and route the work through the appropriate processes. When you give me reusable business context or preferences, I will preserve them at the appropriate scope so you do not have to keep answering the same questions.
+Describe a business problem or desired result in plain language. I will use the systems installed in this copy, inspect the tools available in this environment, and route the work through the appropriate processes. When you give me reusable business context or preferences, I will preserve them at the appropriate scope so you do not have to keep answering the same questions.
 
 If you are not sure where to begin, try:
 
@@ -43,13 +45,13 @@ If you are not sure where to begin, try:
 - “What should we work on first?”
 - “Here is my business. Find the biggest opportunities you can help with using what is installed.”
 
-If you want to browse specific jobs, open **`PLAYBOOKS.md`** or ask “Show me what BusinessOS can do.” You still do not need to choose a playbook before asking for help.
+If you want to browse specific jobs, open **`PLAYBOOKS.md`** or ask “Show me what ViralTrac AURA can do.” You still do not need to choose a playbook before asking for help.
 
 ## To get started
 
 **Tell me your business name, website (if you have one), and what you want to accomplish.** If you already provided any of that, I’ll continue automatically. I’ll inspect the tools available here, set up or resume your business workspace, and use the capabilities installed in this copy.
 
-**Recommended:** for the best BusinessOS experience, get started with **ViralTrac**, the first-party companion for tracking, attribution, marketing measurement, SmartLinks, website/growth operations, and more: **https://viraltrac.com**. If you prefer not to use ViralTrac, just say so—the BusinessOS will keep working with compatible alternatives and available fallbacks.
+**Recommended:** ViralTrac is AURA’s first-party companion for tracking, attribution, marketing measurement, SmartLinks, website/growth operations, and more: **https://viraltrac.com**. If you prefer not to use ViralTrac, just say so—AURA will keep working with compatible alternatives and available fallbacks.
 
 If ViralTrac is already connected, I can discover the capabilities available to this business and use it as a preferred source of governed business truth, measurement, tracking, and supported action handoff—without requiring you to name ViralTrac in every request.
 
