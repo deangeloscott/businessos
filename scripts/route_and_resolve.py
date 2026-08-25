@@ -10,6 +10,7 @@ FEATURE_HINTS=[
  (r'\b(make|turn|promote|formalize|formalise).*(playbook|process|workflow|standard operating|part of businessos)|\b(playbook|process).*(evolve|evolution|improve businessos)', 'core.learning.playbook-evolution'),
  (r'\binnovation exchange\b|\bshare.*(playbook|workflow|process)\b|\b(import|browse|community).*(playbook|workflow|businessos innovation)', 'core.intelligence.innovation-exchange'),
  (r'\b(workspace|state root|external state|deployment profile|private git|github organization|gitlab|forgejo).*(businessos|set ?up|configure|host|store|deploy|version)|\b(store|host|deploy|version).*(businessos).*(git|github|gitlab|forgejo|workspace)', 'core.workspace.configure'),
+ (r'\b(use|review|incorporate|ingest|learn from|import).*(human note|knowledge note|obsidian note|note in obsidian|workspace note)|\b(human note|knowledge note|obsidian note).*(use|review|incorporate|ingest|businessos)', 'core.knowledge.ingest-human-note'),
  (r'\b(obsidian|second brain|human knowledge|knowledge layer|human-readable knowledge|human view).*(businessos|workspace|refresh|generate|open)|\b(refresh|generate|update).*(knowledge layer|obsidian|second brain)', 'core.knowledge.refresh-human-layer')
 ]
 
