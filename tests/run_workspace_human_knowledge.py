@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""End-to-end regression for external workspace resolution, deployment profiles, human knowledge views, note ingestion, and component packaging."""
+"""End-to-end regression for external workspace resolution, deployment profiles, human knowledge views, note ingestion, migration, and component packaging."""
 from pathlib import Path
 import json,os,shutil,subprocess,sys,tempfile
 ROOT=Path(__file__).resolve().parents[1]
@@ -7,6 +7,7 @@ sys.path.insert(0,str(ROOT/'scripts'))
 
 import _common as common
 from configure_workspace import configure
+from migrate_workspace import migrate
 from init_business import init_business
 from configure_innovation_sharing import configure as configure_innovation
 from generate_knowledge_layer import generate
@@ -23,7 +24,7 @@ def main():
     required=[
         'DEPLOYMENT.md','distribution/deployment-profiles.json','core/policies/workspace-and-human-knowledge.md',
         'core/contracts/workspace/configure/CONTEXT.md','core/contracts/knowledge/refresh-human-layer/CONTEXT.md','core/contracts/knowledge/ingest-human-note/CONTEXT.md',
-        'core/schemas/runtime/workspace-profile.schema.json','scripts/configure_workspace.py','scripts/workspace_status.py','scripts/generate_knowledge_layer.py','scripts/register_human_note.py'
+        'core/schemas/runtime/workspace-profile.schema.json','scripts/configure_workspace.py','scripts/migrate_workspace.py','scripts/workspace_status.py','scripts/generate_knowledge_layer.py','scripts/register_human_note.py'
     ]
     for rel in required:
         if not (ROOT/rel).exists(): fail(f'missing {rel}')
@@ -36,7 +37,7 @@ def main():
         for section in ['## Purpose','## Business Outcome','## Run When','## Process']:
             if section not in text: fail(f'{rel} missing {section}')
         if text.count('\n1. [')<1 or sum(text.count(f'\n{i}. [') for i in range(1,9))<5: fail(f'{rel} lacks five labeled process steps')
-    prior=os.environ.get('BUSINESSOS_WORKSPACE'); tmp=Path(tempfile.mkdtemp(prefix='businessos-workspace-regression-'))
+    prior=os.environ.get('BUSINESSOS_WORKSPACE');prior_cfg=os.environ.get('BUSINESSOS_WORKSPACE_CONFIG');tmp=Path(tempfile.mkdtemp(prefix='businessos-workspace-regression-'))
     try:
         cfg=configure(tmp,'organization',knowledge_enabled=True,write_link=False,force=True)
         if not cfg['external_state'] or cfg['profile']!='organization': fail('external organization workspace was not configured')
@@ -82,12 +83,28 @@ def main():
         if route_and_resolve('Refresh our BusinessOS human knowledge layer for Obsidian',BID)['contract_id']!='core.knowledge.refresh-human-layer': fail('human knowledge natural-language route missing')
         if route_and_resolve('Use my Obsidian note in BusinessOS',BID)['contract_id']!='core.knowledge.ingest-human-note': fail('human note ingestion natural-language route missing')
 
+        # Migrate the complete organization-owned state non-destructively and verify the copy.
+        migrated=tmp.parent/(tmp.name+'-migrated')
+        if migrated.exists(): shutil.rmtree(migrated)
+        mig=migrate(migrated,'organization',True,activate=False,write_link=False)
+        if not mig.get('verified') or not mig.get('source_retained') or mig.get('activated'): fail('copy-only workspace migration result is incorrect')
+        if mig.get('file_count',0)<3 or not (migrated/'instances'/BID/'instance.json').exists(): fail('workspace migration did not copy canonical business state')
+        if not (migrated/'knowledge'/BID/'notes/keep-me.md').exists(): fail('workspace migration did not preserve human knowledge notes')
+        if not (tmp/'instances'/BID/'instance.json').exists() or not human_note.exists(): fail('workspace migration modified/deleted source state')
+        # A repeat migration over identical content should be idempotent rather than duplicating or failing.
+        mig2=migrate(migrated,'organization',True,activate=False,write_link=False)
+        if not mig2.get('verified') or mig2.get('copied_file_count')!=0 or mig2.get('identical_existing_file_count')!=mig2.get('file_count'): fail('repeat workspace migration was not idempotent')
+        os.environ['BUSINESSOS_WORKSPACE']=str(migrated)
+        if common.workspace_root().resolve()!=migrated.resolve() or BID not in status()['businesses']: fail('migrated workspace could not be selected and resumed')
+        if common.resolve_storage_ref(ref).resolve()!=migrated.joinpath(ref).resolve(): fail('portable state reference did not survive workspace migration')
+        os.environ['BUSINESSOS_WORKSPACE']=str(tmp)
+
         # Prove standalone/component packaging preserves the same Core deployment layer.
         pkg=build_distribution('content',output_dir=tmp/'packages',keep_folder=True)
         pdir=Path(pkg['folder']);pinst=json.loads((pdir/'INSTALLATION.json').read_text())
         if pinst.get('configurable_workspace_root') is not True or pinst.get('human_knowledge_layer') is not True: fail('component edition lost workspace/knowledge installation declarations')
         if pinst.get('deployment_profiles')!='distribution/deployment-profiles.json': fail('component edition lost deployment profile reference')
-        for rel in ['DEPLOYMENT.md','scripts/configure_workspace.py','scripts/generate_knowledge_layer.py','scripts/register_human_note.py','core/policies/workspace-and-human-knowledge.md','core/contracts/workspace/configure/CONTEXT.md','core/contracts/knowledge/refresh-human-layer/CONTEXT.md','core/contracts/knowledge/ingest-human-note/CONTEXT.md']:
+        for rel in ['DEPLOYMENT.md','scripts/configure_workspace.py','scripts/migrate_workspace.py','scripts/generate_knowledge_layer.py','scripts/register_human_note.py','core/policies/workspace-and-human-knowledge.md','core/contracts/workspace/configure/CONTEXT.md','core/contracts/knowledge/refresh-human-layer/CONTEXT.md','core/contracts/knowledge/ingest-human-note/CONTEXT.md']:
             if not (pdir/rel).exists(): fail(f'component edition lost deployment component: {rel}')
         if (pdir/'.businessos/workspace.json').exists(): fail('component package leaked a local workspace pointer/profile')
         if 'DEPLOYMENT.md' not in (pdir/'README.md').read_text() or 'configure_workspace.py' not in (pdir/'START-HERE.md').read_text(): fail('component navigation does not expose deployment architecture')
@@ -98,10 +115,14 @@ def main():
         subprocess.run([sys.executable,str(pdir/'scripts/generate_knowledge_layer.py'),'component-workspace-test'],cwd=pdir,env=env,check=True,capture_output=True,text=True)
         if not (cws/'knowledge/component-workspace-test/_generated/Home.md').exists(): fail('component edition did not generate external human knowledge layer')
         if (pdir/'instances/component-workspace-test').exists(): fail('component edition external state leaked into product package')
-        print('workspace + human knowledge deployment regressions passed end to end, including governed notes and component edition')
+        print('workspace + human knowledge deployment regressions passed end to end, including verified migration, governed notes, and component edition')
     finally:
         if prior is None: os.environ.pop('BUSINESSOS_WORKSPACE',None)
         else: os.environ['BUSINESSOS_WORKSPACE']=prior
+        if prior_cfg is None: os.environ.pop('BUSINESSOS_WORKSPACE_CONFIG',None)
+        else: os.environ['BUSINESSOS_WORKSPACE_CONFIG']=prior_cfg
+        migrated=tmp.parent/(tmp.name+'-migrated')
+        shutil.rmtree(migrated,ignore_errors=True)
         shutil.rmtree(tmp,ignore_errors=True)
 
 if __name__=='__main__':main()
