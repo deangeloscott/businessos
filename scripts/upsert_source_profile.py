@@ -2,6 +2,7 @@
 """Create or update a business-scoped external SourceProfile deterministically."""
 from _common import *
 from jsonschema import Draft202012Validator
+from urllib.parse import urlsplit, urlunsplit
 import argparse, hashlib, json, os
 
 KINDS = {
@@ -15,15 +16,35 @@ METHOD_QUALITY = {"unknown","weak","mixed","strong"}
 QUALITY_RANK = {"unknown":0,"weak":1,"mixed":2,"strong":3}
 
 def _normalized_reference(value):
+    """Normalize only URL components that are semantically case-insensitive.
+
+    Scheme/host casing, default ports, and trailing path slashes should not create
+    duplicate SourceProfiles. Path/query/fragment casing is preserved because it
+    can be semantically meaningful on real web servers.
+    """
     value = " ".join(str(value or "").strip().split())
     if not value:
         raise ValueError("source_reference is required")
-    if value.startswith(("http://","https://")):
-        value = value.rstrip("/")
+    parts = urlsplit(value)
+    if parts.scheme.lower() in {"http", "https"} and parts.netloc:
+        if parts.username or parts.password:
+            raise ValueError("source_reference URL must not contain embedded credentials")
+        scheme = parts.scheme.lower()
+        hostname = (parts.hostname or "").lower()
+        try:
+            port = parts.port
+        except ValueError as e:
+            raise ValueError(f"invalid source_reference URL: {e}") from e
+        host = f"[{hostname}]" if ":" in hostname and not hostname.startswith("[") else hostname
+        if port and not ((scheme == "http" and port == 80) or (scheme == "https" and port == 443)):
+            host = f"{host}:{port}"
+        path = parts.path.rstrip("/")
+        return urlunsplit((scheme, host, path, parts.query, parts.fragment))
     return value
 
 def _profile_id(business_id, source_reference):
-    seed = f"{business_id}:{source_reference.lower()}".encode("utf-8")
+    canonical = _normalized_reference(source_reference)
+    seed = f"{business_id}:{canonical}".encode("utf-8")
     return "sprof_" + hashlib.sha256(seed).hexdigest()[:16]
 
 def _schema():
@@ -87,6 +108,8 @@ def upsert(args):
         obj = json.loads(path.read_text())
         if _normalized_reference(obj.get("source_reference")) != ref:
             raise ValueError("existing SourceProfile reference mismatch")
+        # Canonicalize older equivalent representations on the next safe upsert.
+        obj["source_reference"] = ref
     else:
         obj = {
             "id":profile_id,"object_type":"SourceProfile","schema_version":"1.0.0",
