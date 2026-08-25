@@ -3,7 +3,7 @@
   "modules": [
     {
       "id": "core",
-      "display_name": "ViralTrac's BusinessOS Core",
+      "display_name": "ViralTrac AURA Core",
       "kind": "kernel",
       "required_modules": [],
       "optional_modules": [],
@@ -11,183 +11,28 @@
       "description": "Canonical business context, evidence, decisions, actions, measurement, learning, governance, runtime contracts, schemas, capabilities, and shared policies.",
       "smoke_task": "Coordinate several opportunities toward one business outcome",
       "welcome_summary": "Coordinate business context, evidence, opportunities, actions, verification, measurement, learning, tools, and cross-system work.",
-      "example_prompts": [
-        "What should we work on first?",
-        "What are the highest-value opportunities you can identify with what is installed?"
-      ]
+      "example_prompts": ["What should we work on first?","What are the highest-value opportunities you can identify with what is installed?"]
     },
     {
-      "id": "customer-intelligence",
-      "display_name": "Customer Intelligence",
-      "kind": "domain",
-      "required_modules": [
-        "core"
-      ],
-      "optional_modules": [
-        "competitor-intelligence",
-        "industry-intelligence",
-        "seo-aeo",
-        "content-synthesis",
-        "marketing-synthesis",
-        "customer-optimization"
-      ],
-      "standalone": true,
-      "description": "Research and maintain evidence-backed understanding of customers, prospects, pains, desires, objections, decision drivers, language, experiences, and outcomes.",
-      "smoke_task": "Analyze why customers are cancelling",
-      "welcome_summary": "Understand customers and prospects: what they want, why they buy or leave, their pains, objections, decision drivers, language, and experiences.",
-      "example_prompts": [
-        "Why are customers leaving?",
-        "What objections are stopping prospects from buying?",
-        "What do our best customers value most?"
-      ]
+      "id":"customer-intelligence","display_name":"Customer Intelligence","kind":"domain","required_modules":["core"],"optional_modules":["competitor-intelligence","industry-intelligence","seo-aeo","content-synthesis","marketing-synthesis","customer-optimization"],"standalone":true,"description":"Research and maintain evidence-backed understanding of customers, prospects, pains, desires, objections, decision drivers, language, experiences, and outcomes.","smoke_task":"Analyze why customers are cancelling","welcome_summary":"Understand customers and prospects: what they want, why they buy or leave, their pains, objections, decision drivers, language, and experiences.","example_prompts":["Why are customers leaving?","What objections are stopping prospects from buying?","What do our best customers value most?"]
     },
     {
-      "id": "competitor-intelligence",
-      "display_name": "Competitor Intelligence",
-      "kind": "domain",
-      "required_modules": [
-        "core"
-      ],
-      "optional_modules": [
-        "customer-intelligence",
-        "industry-intelligence",
-        "seo-aeo",
-        "content-synthesis",
-        "marketing-synthesis"
-      ],
-      "standalone": true,
-      "description": "Adaptively discover, resolve, observe, traverse, compare, and interpret competitor identity, websites/funnels, pricing, offers, ads, content/social, customer sentiment, tactics, strategy, strengths, weaknesses, and material changes.",
-      "smoke_task": "Analyze competitor pricing",
-      "welcome_summary": "Understand competitors deeply: identity, websites/funnels, pricing, offers, ads, content/social, customer sentiment, tactics, strengths, weaknesses, and important changes—with research depth adapted to the decision.",
-      "example_prompts": [
-        "What are our competitors doing better than us?",
-        "Do a comprehensive competitive analysis of our top competitors.",
-        "Trace our main competitor funnels and advertising themes.",
-        "What competitor weaknesses can we take advantage of?"
-      ]
+      "id":"competitor-intelligence","display_name":"Competitor Intelligence","kind":"domain","required_modules":["core"],"optional_modules":["customer-intelligence","industry-intelligence","seo-aeo","content-synthesis","marketing-synthesis"],"standalone":true,"description":"Adaptively discover, resolve, observe, traverse, compare, and interpret competitor identity, websites/funnels, pricing, offers, ads, content/social, customer sentiment, tactics, strategy, strengths, weaknesses, and material changes.","smoke_task":"Analyze competitor pricing","welcome_summary":"Understand competitors deeply: identity, websites/funnels, pricing, offers, ads, content/social, customer sentiment, tactics, strengths, weaknesses, and important changes—with research depth adapted to the decision.","example_prompts":["What are our competitors doing better than us?","Do a comprehensive competitive analysis of our top competitors.","Trace our main competitor funnels and advertising themes.","What competitor weaknesses can we take advantage of?"]
     },
     {
-      "id": "industry-intelligence",
-      "display_name": "Industry Intelligence",
-      "kind": "domain",
-      "required_modules": [
-        "core"
-      ],
-      "optional_modules": [
-        "customer-intelligence",
-        "competitor-intelligence",
-        "seo-aeo",
-        "content-synthesis",
-        "marketing-synthesis",
-        "customer-optimization"
-      ],
-      "standalone": true,
-      "description": "Monitor, verify, interpret, and track material regulation, research, technology, market, category, cultural, platform, and news developments.",
-      "smoke_task": "Analyze an important new regulation in our industry",
-      "welcome_summary": "Track important external developments such as news, regulation, research, technology, market shifts, platform changes, and category trends.",
-      "example_prompts": [
-        "What changed in our industry that matters to us?",
-        "How does this new regulation affect our business?",
-        "What emerging trends should we act on?"
-      ]
+      "id":"industry-intelligence","display_name":"Industry Intelligence","kind":"domain","required_modules":["core"],"optional_modules":["customer-intelligence","competitor-intelligence","seo-aeo","content-synthesis","marketing-synthesis","customer-optimization"],"standalone":true,"description":"Monitor, verify, interpret, and track material regulation, research, technology, market, category, cultural, platform, and news developments.","smoke_task":"Analyze an important new regulation in our industry","welcome_summary":"Track important external developments such as news, regulation, research, technology, market shifts, platform changes, and category trends.","example_prompts":["What changed in our industry that matters to us?","How does this new regulation affect our business?","What emerging trends should we act on?"]
     },
     {
-      "id": "seo-aeo",
-      "display_name": "SEO/AEO",
-      "kind": "domain",
-      "required_modules": [
-        "core"
-      ],
-      "optional_modules": [
-        "customer-intelligence",
-        "competitor-intelligence",
-        "industry-intelligence",
-        "content-synthesis",
-        "marketing-synthesis",
-        "customer-optimization"
-      ],
-      "standalone": true,
-      "description": "Diagnose, plan, execute, verify, and learn from organic discovery across search, answer engines, AI interfaces, local, and related organic surfaces.",
-      "smoke_task": "Diagnose why our organic rankings dropped",
-      "welcome_summary": "Improve organic discovery across search engines, AI/answer engines, local search, technical SEO, content, authority, and related visibility.",
-      "example_prompts": [
-        "What are our biggest SEO/AEO opportunities?",
-        "Why did our organic traffic or rankings decline?",
-        "Create the highest-value organic page we are missing."
-      ]
+      "id":"seo-aeo","display_name":"SEO/AEO","kind":"domain","required_modules":["core"],"optional_modules":["customer-intelligence","competitor-intelligence","industry-intelligence","content-synthesis","marketing-synthesis","customer-optimization"],"standalone":true,"description":"Diagnose, plan, execute, verify, and learn from organic discovery across search, answer engines, AI interfaces, local, and related organic surfaces.","smoke_task":"Diagnose why our organic rankings dropped","welcome_summary":"Improve organic discovery across search engines, AI/answer engines, local search, technical SEO, content, authority, and related visibility.","example_prompts":["What are our biggest SEO/AEO opportunities?","Why did our organic traffic or rankings decline?","Create the highest-value organic page we are missing."]
     },
     {
-      "id": "content-synthesis",
-      "display_name": "Content Synthesis",
-      "kind": "domain",
-      "required_modules": [
-        "core"
-      ],
-      "optional_modules": [
-        "customer-intelligence",
-        "competitor-intelligence",
-        "industry-intelligence",
-        "seo-aeo",
-        "marketing-synthesis",
-        "customer-optimization"
-      ],
-      "standalone": true,
-      "description": "Research content patterns and turn validated ideas, evidence, and source material into platform-native text, image, carousel, presentation, audio, video, animation, and derivative assets.",
-      "smoke_task": "Create a LinkedIn post from this source for our audience",
-      "welcome_summary": "Research what works and create platform-native content across articles, social posts, newsletters, carousels, video, audio, presentations, and more.",
-      "example_prompts": [
-        "Turn this idea into a strong LinkedIn post.",
-        "Create a content plan from our best customer insights.",
-        "Turn this source into native content for several platforms."
-      ]
+      "id":"content-synthesis","display_name":"Content Synthesis","kind":"domain","required_modules":["core"],"optional_modules":["customer-intelligence","competitor-intelligence","industry-intelligence","seo-aeo","marketing-synthesis","customer-optimization"],"standalone":true,"description":"Research content patterns and turn validated ideas, evidence, and source material into platform-native text, image, carousel, presentation, audio, video, animation, and derivative assets.","smoke_task":"Create a LinkedIn post from this source for our audience","welcome_summary":"Research what works and create platform-native content across articles, social posts, newsletters, carousels, video, audio, presentations, and more.","example_prompts":["Turn this idea into a strong LinkedIn post.","Create a content plan from our best customer insights.","Turn this source into native content for several platforms."]
     },
     {
-      "id": "marketing-synthesis",
-      "display_name": "Marketing Synthesis",
-      "kind": "domain",
-      "required_modules": [
-        "core"
-      ],
-      "optional_modules": [
-        "customer-intelligence",
-        "competitor-intelligence",
-        "industry-intelligence",
-        "seo-aeo",
-        "content-synthesis",
-        "customer-optimization"
-      ],
-      "standalone": true,
-      "description": "Diagnose and create commercial persuasion: positioning, messaging, proof architecture, Offer presentation, ads, landing pages, VSLs, webinars, email, and related conversion assets.",
-      "smoke_task": "Create a conversion-focused landing page",
-      "welcome_summary": "Create and improve persuasive marketing: positioning, messaging, offers, proof, ads, landing pages, VSLs, webinars, email, and conversion assets.",
-      "example_prompts": [
-        "Create a campaign around our biggest customer objection.",
-        "Improve this landing page so more people convert.",
-        "Build a webinar to sell this offer."
-      ]
+      "id":"marketing-synthesis","display_name":"Marketing Synthesis","kind":"domain","required_modules":["core"],"optional_modules":["customer-intelligence","competitor-intelligence","industry-intelligence","seo-aeo","content-synthesis","customer-optimization"],"standalone":true,"description":"Diagnose and create commercial persuasion: positioning, messaging, proof architecture, Offer presentation, ads, landing pages, VSLs, webinars, email, and related conversion assets.","smoke_task":"Create a conversion-focused landing page","welcome_summary":"Create and improve persuasive marketing: positioning, messaging, offers, proof, ads, landing pages, VSLs, webinars, email, and conversion assets.","example_prompts":["Create a campaign around our biggest customer objection.","Improve this landing page so more people convert.","Build a webinar to sell this offer."]
     },
     {
-      "id": "customer-optimization",
-      "display_name": "Customer Optimization",
-      "kind": "domain",
-      "required_modules": [
-        "core"
-      ],
-      "optional_modules": [
-        "customer-intelligence",
-        "content-synthesis",
-        "marketing-synthesis",
-        "industry-intelligence"
-      ],
-      "standalone": true,
-      "description": "Diagnose and improve conversion, purchase, onboarding, activation, success, retention, repeat, expansion, referral, and other customer-journey transitions.",
-      "smoke_task": "Improve customer onboarding activation",
-      "welcome_summary": "Improve the customer journey from conversion through purchase, onboarding, activation, retention, repeat purchase, expansion, and referral.",
-      "example_prompts": [
-        "Why are customers dropping out before buying?",
-        "Improve our onboarding and time-to-value.",
-        "Find the biggest causes of churn and what to change."
-      ]
+      "id":"customer-optimization","display_name":"Customer Optimization","kind":"domain","required_modules":["core"],"optional_modules":["customer-intelligence","content-synthesis","marketing-synthesis","industry-intelligence"],"standalone":true,"description":"Diagnose and improve conversion, purchase, onboarding, activation, success, retention, repeat, expansion, referral, and other customer-journey transitions.","smoke_task":"Improve customer onboarding activation","welcome_summary":"Improve the customer journey from conversion through purchase, onboarding, activation, retention, repeat purchase, expansion, and referral.","example_prompts":["Why are customers dropping out before buying?","Improve our onboarding and time-to-value.","Find the biggest causes of churn and what to change."]
     }
   ]
 }
