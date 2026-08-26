@@ -99,30 +99,46 @@ def normalized_text(path):
     return text
 
 
-def artifact_similarity_flags(results,threshold=0.88):
+def artifact_similarity_flags(results,threshold=0.88,max_examples=5):
+    """Return one compressed similarity warning per affected event.
+
+    Pairwise comparisons are still performed so templated/mass-generated work is
+    detected, but thousands of mirrored pair flags are collapsed into a count,
+    maximum similarity, and a few strongest examples for human/AI review.
+    """
     samples=[]
     for r in results:
         if r.get('kind')!='contract_acceptance': continue
         paths=[Path(p) for p in r.get('actual_artifacts') or []]
-        text=''
-        chosen=None
+        text=''; chosen=None
         for p in paths:
             text=normalized_text(p)
             if len(text)>=180:
                 chosen=str(p); break
         if chosen: samples.append((r['event_id'],r.get('contract_id'),chosen,text))
-    flags={eid:[] for eid,_,_,_ in samples}
+
+    matches={eid:[] for eid,_,_,_ in samples}
     for i in range(len(samples)):
         e1,c1,p1,t1=samples[i]
         for j in range(i+1,len(samples)):
             e2,c2,p2,t2=samples[j]
             if c1==c2: continue
             ratio=difflib.SequenceMatcher(None,t1,t2,autojunk=True).ratio()
-            if ratio>=threshold:
-                detail={'type':'high_artifact_similarity','other_event':e2,'other_contract':c2,'similarity':round(ratio,3),'artifact':p1,'other_artifact':p2}
-                flags[e1].append(detail)
-                flags[e2].append({**detail,'other_event':e1,'other_contract':c1,'artifact':p2,'other_artifact':p1})
-    return {k:v for k,v in flags.items() if v}
+            if ratio< threshold: continue
+            matches[e1].append({'other_event':e2,'other_contract':c2,'similarity':round(ratio,3),'artifact':p1,'other_artifact':p2})
+            matches[e2].append({'other_event':e1,'other_contract':c1,'similarity':round(ratio,3),'artifact':p2,'other_artifact':p1})
+
+    out={}
+    for eid,items in matches.items():
+        if not items: continue
+        ranked=sorted(items,key=lambda x:(-x['similarity'],x['other_event']))
+        out[eid]=[{
+            'type':'high_artifact_similarity',
+            'match_count':len(items),
+            'max_similarity':ranked[0]['similarity'],
+            'examples':ranked[:max_examples],
+        }]
+    return out
 
 
 def exact_duplicate_artifact_flags(results):
