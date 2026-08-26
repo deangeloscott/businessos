@@ -23,9 +23,16 @@ def smoke_prepare():
             req((rd/'workspace/runtime/qualification-bootstrap'/f'{fixture}-bootstrap-audit.json').exists(),f'{fixture}: canonical bootstrap audit missing')
         req((rd/'evaluator/hidden-fixtures/atlasops-saas-releases.json').exists(),'AtlasOps later-period release not staged')
         req((rd/'evaluator/hidden-fixtures/harbor-hvac-releases.json').exists(),'Harbor HVAC later-period release not staged')
+        env=dict(os.environ); env['BUSINESSOS_WORKSPACE']=meta['workspace']; env['AURA_QUALIFICATION_RUN']=str(rd); env['PYTHONDONTWRITEBYTECODE']='1'
+        create=subprocess.run([sys.executable,str(rd/'product/scripts/create_run.py'),'qa-atlasops-saas','core.intelligence.ecosystem-radar','qualification object-form subcontract smoke'],cwd=rd/'product',env=env,capture_output=True,text=True)
+        req(create.returncode==0,f'create_run object-form subcontract smoke failed: {create.stdout}\n{create.stderr}')
+        rid=create.stdout.strip().splitlines()[-1]; manifest=rd/'workspace/runtime/runs/qa-atlasops-saas'/rid/'contract-execution.json'
+        req(manifest.exists(),'create_run smoke did not persist contract-execution manifest')
+        md=json.loads(manifest.read_text()); required=md.get('required_subcontracts') or []
+        req(required and all(isinstance(x,str) for x in required),'create_run must normalize required subcontract metadata to contract-id strings')
+        req('core.intelligence.ecosystem.source-discovery' in required,'object-form required subcontract id was not normalized into the Run manifest')
         release_event={'event_id':'SMOKE-RELEASE','kind':'marathon_mission','business_id':'qa-atlasops-saas','fixture':'atlasops-saas','release_fixture':'later_period','contract_id':None,'task':'smoke timed release'}
         queue_path.write_text(json.dumps({'format_version':'1.0','run_id':'smoke','profile':'smoke','event_count':1,'events':[release_event]},indent=2)+'\n')
-        env=dict(os.environ); env['BUSINESSOS_WORKSPACE']=meta['workspace']; env['AURA_QUALIFICATION_RUN']=str(rd); env['PYTHONDONTWRITEBYTECODE']='1'
         before=subprocess.run([sys.executable,str(rd/'product/qualification/checkpoint.py'),'SMOKE-RELEASE','before','--business-id','qa-atlasops-saas'],cwd=rd/'product',env=env,capture_output=True,text=True)
         req(before.returncode==0,f'timed release before-checkpoint failed: {before.stdout}\n{before.stderr}')
         release=subprocess.run([sys.executable,str(rd/'product/qualification/release_fixture.py'),'SMOKE-RELEASE'],cwd=rd/'product',env=env,capture_output=True,text=True)
@@ -42,6 +49,8 @@ def main():
     req(len(ids)==len(set(ids)),'duplicate contract qualification tests')
     req(all(not t['unknown_required_subcontracts'] for t in suite['contract_tests']),'unknown required subcontracts in qualification suite')
     req(all(t['hard_gates'] and t['rubric_dimensions'] and t['candidate_task'] for t in suite['contract_tests']),'every contract needs gates, rubric, and candidate task')
+    ecosystem=next(t for t in suite['contract_tests'] if t['contract_id']=='core.intelligence.ecosystem-radar')
+    req(ecosystem['required_subcontracts'] and all(isinstance(x,str) for x in ecosystem['required_subcontracts']),'qualification suite must normalize object-form subcontract metadata to ids')
     customer=[t for t in suite['contract_tests'] if t.get('artifact_role')=='customer_facing_production_root']
     req(customer,'expected customer-facing production contracts')
     req(all(t['output_policy']['artifact_required'] and 'actual_artifact_exists' in t['hard_gates'] for t in customer),'customer-facing roots must require actual artifacts')
@@ -64,5 +73,5 @@ def main():
     released=[m for m in suite['cross_domain_missions']+suite['marathon_missions'] if m.get('release_fixture')]
     req(len(released)>=2 and {'CROSS-MARKET-CHANGE-001','MARATHON-002'}.issubset({m['id'] for m in released}),'expected longitudinal evidence-release missions missing')
     smoke_prepare()
-    print(f"qualification framework regressions passed: {suite['contract_count']} contract tests, {suite['capability_count']} capability mappings, {len(suite['domain_missions'])} domain missions, {len(suite['cross_domain_missions'])} cross-domain missions, {len(suite['marathon_missions'])} marathon missions, {len(suite.get('concurrency_missions',[]))} concurrency missions, {len(fixture_paths)} grounded fixtures, {len(released)} timed evidence releases, preparation/release smoke passed")
+    print(f"qualification framework regressions passed: {suite['contract_count']} contract tests, {suite['capability_count']} capability mappings, {len(suite['domain_missions'])} domain missions, {len(suite['cross_domain_missions'])} cross-domain missions, {len(suite['marathon_missions'])} marathon missions, {len(suite.get('concurrency_missions',[]))} concurrency missions, {len(fixture_paths)} grounded fixtures, {len(released)} timed evidence releases, preparation/release/run-creation smoke passed")
 if __name__=='__main__': main()
