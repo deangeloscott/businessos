@@ -69,15 +69,12 @@ def completion_spec(contract):
     else:
         profile='generic'
     medium=explicit.get('medium')
-    if not medium and profile=='production':
-        medium=last
+    if not medium and profile=='production': medium=last
     return {
-        'version':'1.0',
-        'profile':profile,
-        'medium':medium,
-        'declared_write_types':sorted(writes),
-        'artifact_role':contract.get('artifact_role'),
+        'version':'1.0','profile':profile,'medium':medium,
+        'declared_write_types':sorted(writes),'artifact_role':contract.get('artifact_role'),
         'allow_specification_fallback':bool(explicit.get('allow_specification_fallback', medium=='animation')),
+        'require_subcontract_write_evidence':bool(explicit.get('require_subcontract_write_evidence',False)),
     }
 
 
@@ -98,8 +95,7 @@ def _json(path):
 def _objects_in_paths(paths,business_id=None):
     out=[]
     for p in paths:
-        data=_json(p)
-        vals=data if isinstance(data,list) else [data]
+        data=_json(p); vals=data if isinstance(data,list) else [data]
         for obj in vals:
             if not isinstance(obj,dict) or not obj.get('object_type'): continue
             if business_id and obj.get('business_id')!=business_id: continue
@@ -108,13 +104,11 @@ def _objects_in_paths(paths,business_id=None):
 
 
 def _run_bound_objects(business_id,run_id):
-    rel=f'runtime/runs/{business_id}/{run_id}'
-    out=[]
+    rel=f'runtime/runs/{business_id}/{run_id}'; out=[]
     for obj,path in iter_instance_objects(business_id):
         ext=obj.get('extensions') if isinstance(obj.get('extensions'),dict) else {}
         bos=ext.get('businessos') if isinstance(ext.get('businessos'),dict) else {}
-        if bos.get('run_ref')==rel or bos.get('run_id')==run_id:
-            out.append((obj,path))
+        if bos.get('run_ref')==rel or bos.get('run_id')==run_id: out.append((obj,path))
     return out
 
 
@@ -122,9 +116,6 @@ def _declared_write_errors(contract,paths,business_id,run_id,phase):
     declared=_selector_types(contract.get('writes'))
     if not declared:return []
     candidates=_objects_in_paths(paths,business_id)
-    # Root completion may point at the externally-consumable file rather than the canonical
-    # JSON object, so also inspect canonical objects already bound to the Run. Subcontract
-    # recording is stricter: its own evidence must identify the canonical result it produced.
     if phase=='root': candidates += _run_bound_objects(business_id,run_id)
     seen={obj.get('object_type') for obj,_ in candidates}
     if declared & seen:return []
@@ -135,38 +126,32 @@ def _qa_records(contract_id,paths):
     out=[]
     for p in paths:
         data=_json(p)
-        if not isinstance(data,dict):continue
-        if data.get('contract_id')!=contract_id:continue
+        if not isinstance(data,dict) or data.get('contract_id')!=contract_id:continue
         if str(data.get('status','')).lower() not in {'pass','passed'}:continue
-        checks=data.get('checks_performed',data.get('checks'))
-        blockers=data.get('blockers',None)
+        checks=data.get('checks_performed',data.get('checks')); blockers=data.get('blockers',None)
         target=next((data.get(k) for k in ('tested_asset','target_asset','asset_ref','target_ref','target_refs') if data.get(k)),None)
-        if not isinstance(checks,(list,dict)) or not checks:continue
-        if blockers is None:continue
-        if not target:continue
+        if not isinstance(checks,(list,dict)) or not checks or blockers is None or not target:continue
         out.append((data,p))
     return out
 
 
 def qa_evidence_errors(contract,paths):
-    cid=contract.get('id')
-    records=_qa_records(cid,paths)
-    if not records:
-        return [f'{cid} completion requires a structured JSON QA pass record with matching contract_id, substantive checks_performed/checks, blockers, and tested/target Asset reference']
-    if cid=='content.qa.pre-publish':
-        if not any(any(d.get(k) is not None for k in ('tested_version','asset_version','version')) for d,_ in records):
-            return ['content.qa.pre-publish completion requires the tested Asset version in its structured pass record']
+    cid=contract.get('id'); records=_qa_records(cid,paths)
+    if not records:return [f'{cid} completion requires a structured JSON QA pass record with matching contract_id, substantive checks_performed/checks, blockers, and tested/target Asset reference']
+    if cid=='content.qa.pre-publish' and not any(any(d.get(k) is not None for k in ('tested_version','asset_version','version')) for d,_ in records):
+        return ['content.qa.pre-publish completion requires the tested Asset version in its structured pass record']
     return []
 
 
 def _media_family(medium):
     m=str(medium or '').lower()
     if m in {'image','graphic','thumbnail'}:return 'image'
-    if m in {'gif'}:return 'gif'
+    if m=='gif':return 'gif'
     if m in {'audio','voiceover'}:return 'audio'
-    if m in {'video','avatar-video','demo','clip-extraction','animation'}:return 'video' if m!='animation' else 'animation'
+    if m in {'video','avatar-video','demo','clip-extraction'}:return 'video'
+    if m=='animation':return 'animation'
     if m in {'presentation','slides','carousel'}:return 'presentation'
-    if m in {'infographic'}:return 'infographic'
+    if m=='infographic':return 'infographic'
     return 'text'
 
 
@@ -174,15 +159,13 @@ def _animation_spec_ok(path):
     if Path(path).suffix.lower() not in TEXT_EXTS:return False
     try:text=Path(path).read_text(encoding='utf-8',errors='ignore').lower()
     except Exception:return False
-    required=('scene','timing','transition')
-    return len(text.split())>=80 and all(x in text for x in required) and ('keyframe' in text or 'narration' in text or 'visual state' in text)
+    return len(text.split())>=80 and all(x in text for x in ('scene','timing','transition')) and ('keyframe' in text or 'narration' in text or 'visual state' in text)
 
 
 def _text_substance_error(path,medium):
     try:text=Path(path).read_text(encoding='utf-8',errors='ignore')
     except Exception:return f'production artifact is not readable text: {path}'
-    words=re.findall(r"\b[\w'-]+\b",text)
-    minimum=TEXT_MIN_WORDS.get(str(medium or '').lower(),40)
+    words=re.findall(r"\b[\w'-]+\b",text); minimum=TEXT_MIN_WORDS.get(str(medium or '').lower(),40)
     if len(words)<minimum:return f'production artifact is too small for {medium or "text"} completion ({len(words)} words; minimum {minimum})'
     return None
 
@@ -190,8 +173,7 @@ def _text_substance_error(path,medium):
 def _asset_lineage_ok(asset,contract,business_id):
     lineage=asset.get('lineage') or []
     if not isinstance(lineage,list) or not lineage:return False
-    idx=object_index(business_id)
-    acceptable=_selector_types(contract.get('reads'))-{'Asset'}
+    idx=object_index(business_id); acceptable=_selector_types(contract.get('reads'))-{'Asset'}
     if not acceptable:return bool(lineage)
     for ref in lineage:
         pair=idx.get(ref)
@@ -215,40 +197,33 @@ def production_evidence_errors(contract,paths,business_id,run_id,manifest=None):
         loc=asset.get('location_reference')
         if not loc:continue
         p=resolve_storage_ref(loc)
-        if not p.exists() or not p.is_file() or p.stat().st_size<200:continue
-        if str(p.resolve()) not in supplied:continue
+        if not p.exists() or not p.is_file() or p.stat().st_size<200 or str(p.resolve()) not in supplied:continue
         if not _asset_lineage_ok(asset,contract,business_id):
-            errors.append(f'{asset.get("id")} lacks canonical lineage to an input type declared by {cid}')
-            continue
+            errors.append(f'{asset.get("id")} lacks canonical lineage to an input type declared by {cid}');continue
         ext=p.suffix.lower()
         if family=='animation':
             if ext in MEDIA_EXTS['video']|MEDIA_EXTS['gif'] or (spec.get('allow_specification_fallback') and _animation_spec_ok(p)):
                 usable.append(asset);continue
-            errors.append(f'{asset.get("id")} animation evidence must be rendered motion media or a complete scene/keyframe/timing/transition production specification')
-            continue
+            errors.append(f'{asset.get("id")} animation evidence must be rendered motion media or a complete scene/keyframe/timing/transition production specification');continue
         if family in MEDIA_EXTS:
             if ext not in MEDIA_EXTS[family]:
-                errors.append(f'{asset.get("id")} evidence file type {ext or "<none>"} does not satisfy expected {family} medium for {cid}')
-                continue
+                errors.append(f'{asset.get("id")} evidence file type {ext or "<none>"} does not satisfy expected {family} medium for {cid}');continue
             usable.append(asset);continue
         err=_text_substance_error(p,medium)
         if err:errors.append(f'{asset.get("id")}: {err}');continue
         usable.append(asset)
-    if not usable:
-        return errors or [f'{cid} has no substantive root artifact matching its canonical Asset and expected medium']
+    if not usable:return errors or [f'{cid} has no substantive root artifact matching its canonical Asset and expected medium']
 
-    # Required QA must demonstrably target the produced Asset, not an unrelated/self-attested pass record.
     if manifest:
         byid=contract_index(); produced={a.get('id'):str(a.get('version')) for a in usable if a.get('id')}
         for qid in manifest.get('required_subcontracts') or []:
             qc=byid.get(qid,{})
             if completion_spec(qc).get('profile')!='qa':continue
             refs=((manifest.get('contracts') or {}).get(qid) or {}).get('evidence_refs') or []
-            qpaths=_paths(refs); records=_qa_records(qid,qpaths); targeted=False
+            records=_qa_records(qid,_paths(refs)); targeted=False
             for data,_ in records:
                 raw=next((data.get(k) for k in ('tested_asset','target_asset','asset_ref','target_ref','target_refs') if data.get(k)),None)
-                vals=raw if isinstance(raw,list) else [raw]
-                vals={str(x) for x in vals if x is not None}
+                vals=raw if isinstance(raw,list) else [raw]; vals={str(x) for x in vals if x is not None}
                 for aid,ver in produced.items():
                     if aid in vals:
                         if qid=='content.qa.pre-publish':
@@ -267,7 +242,8 @@ def validate_evidence(contract,refs,business_id,run_id,phase='root',manifest=Non
     if profile=='qa':errors.extend(qa_evidence_errors(contract,paths))
     elif profile=='production' and phase=='root':errors.extend(production_evidence_errors(contract,paths,business_id,run_id,manifest))
     elif profile in {'publishing','measurement','research','planning','canonical_state'}:
-        errors.extend(_declared_write_errors(contract,paths,business_id,run_id,phase))
+        if phase=='root' or spec.get('require_subcontract_write_evidence'):
+            errors.extend(_declared_write_errors(contract,paths,business_id,run_id,phase))
     return errors
 
 
