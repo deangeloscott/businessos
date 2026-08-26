@@ -86,6 +86,8 @@ def migrate(target_value,profile_value=None,knowledge_enabled=None,activate=True
     target=Path(os.path.expanduser(os.path.expandvars(str(target_value))))
     target=target.resolve() if target.is_absolute() else (Path.cwd()/target).resolve()
     if source==target: raise ValueError('Source and target workspace are the same')
+    if target.is_relative_to(source) or source.is_relative_to(target):
+        raise ValueError('Source and target workspaces must be separate, non-nested directories')
 
     current_profile=workspace_profile()
     profile=_profile_id(profile_value or current_profile.get('profile','simple'))
