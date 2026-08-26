@@ -20,7 +20,7 @@ def validate_workspace(product_root,workspace,business_id):
     out={}
     for name,cmd in {
         'workspace':[sys.executable,str(product_root/'scripts/validate_workspace.py')],
-        'business':[sys.executable,str(product_root/'scripts/validate_business.py'),business_id]
+        'business':[sys.executable,str(product_root/'scripts/validate_business.py'),business_id,'--require-context']
     }.items():
         p=subprocess.run(cmd,cwd=product_root,env=env,capture_output=True,text=True)
         out[name]={'ok':p.returncode==0,'returncode':p.returncode,'stdout':p.stdout[-8000:],'stderr':p.stderr[-8000:]}
@@ -84,7 +84,8 @@ def main():
         judge=judgments.get(eid); scores=(judge or {}).get('scores') or {}; required_dims=(test or {}).get('rubric_dimensions') or event.get('rubric_dimensions') or [x['id'] for x in RUBRICS['base']]; missing_dims=[d for d in required_dims if d not in scores]; invalid_scores=[v for v in scores.values() if not isinstance(v,(int,float)) or v<0 or v>5]; review_complete=bool(scores) and not missing_dims and not invalid_scores; overall=(sum(scores[d] for d in required_dims)/len(required_dims)) if review_complete else None
         floor=min(scores[d] for d in required_dims) if review_complete else None
         blocker=(receipt or {}).get('blocker'); blocked_class=blocker.get('classification') if isinstance(blocker,dict) else None
-        if (receipt or {}).get('status')=='blocked' and blocked_class in {'external_capability','authorization','missing_required_data','external_service'}: verdict='BLOCKED-EXTERNAL'
+        if (receipt or {}).get('status')=='blocked' and blocked_class=='qualification_fixture': verdict='BLOCKED-QUALIFICATION-FIXTURE'
+        elif (receipt or {}).get('status')=='blocked' and blocked_class in {'external_capability','authorization','missing_required_data','external_service'}: verdict='BLOCKED-EXTERNAL'
         elif not hard_pass: verdict='FAIL'
         elif scores and not review_complete: verdict='HARD-PASS / REVIEW-INCOMPLETE'
         elif overall is None: verdict='HARD-PASS / REVIEW-PENDING'
