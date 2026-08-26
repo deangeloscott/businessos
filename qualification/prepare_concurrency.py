@@ -23,7 +23,9 @@ export AURA_QUALIFICATION_RUN='{run_dir}'
 export BUSINESSOS_OPERATOR_REF='qualification-{lane.lower()}'
 ```
 
-Process your {len(events)} events continuously. For every event, create before/after checkpoints with `qualification/checkpoint.py`, execute the real business work through AURA, write the receipt to the run-relative `receipt_path` with `event_id`, `business_id`, `status`, `root_run_ids`, `artifact_refs`, `canonical_refs`, `source_refs`, `field_snapshot_refs`, `summary`, `blocker`, and `quality_notes`, and immediately continue. A blocker must be classified as `external_capability`, `authorization`, `missing_required_data`, `external_service`, or `aura_process`. Expect overlapping evidence and problems. Reuse/deduplicate canonical state, preserve semantic ownership and operator provenance, and never resolve concurrency by editing AURA product source or overwriting another operator's work blindly.
+AtlasOps starting context has already been grounded into canonical AURA state. Current controlled first-party evidence is at `attachments/qualification-inputs/atlasops-saas.json`; do not redo onboarding or invent missing business facts. If a required controlled condition is absent, record `qualification_fixture` rather than creating an easy synthetic scenario.
+
+Process your {len(events)} events continuously. For every event, create before/after checkpoints with `qualification/checkpoint.py`, execute the real business work through AURA, write the receipt to the run-relative `receipt_path` with `event_id`, `business_id`, `status`, `root_run_ids`, `artifact_refs`, `canonical_refs`, `source_refs`, `field_snapshot_refs`, `released_fixture_refs`, `summary`, `blocker`, and `quality_notes`, and immediately continue. A blocker must be classified as `external_capability`, `authorization`, `missing_required_data`, `external_service`, `qualification_fixture`, or `aura_process`. Expect overlapping evidence and problems. Reuse/deduplicate canonical state, preserve semantic ownership and operator provenance, and never resolve concurrency by editing AURA product source or overwriting another operator's work blindly.
 '''
 
 def main():
@@ -44,6 +46,6 @@ def main():
     (run_dir/'candidate').mkdir(exist_ok=True); write_json(run_dir/'candidate/queue.json',master)
     for lane in ('A','B'):
         lane_events=[e for e in events if e['lane']==lane]; ld=run_dir/f'candidate-{lane.lower()}'; write_json(ld/'queue.json',{'format_version':'1.0','run_id':run_id,'lane':lane,'events':lane_events,'event_count':len(lane_events)}); (ld/'RUN-INSTRUCTIONS.md').write_text(lane_instructions(product_root,run_dir,workspace,lane,lane_events),encoding='utf-8')
-    write_json(run_dir/'evaluator/suite.json',suite); write_json(run_dir/'run.json',{'run_id':run_id,'created_at':now(),'product_root':str(product_root),'workspace':str(workspace),'profile':'concurrency','event_count':len(events),'status':'prepared'})
+    write_json(run_dir/'evaluator/suite.json',suite); write_json(run_dir/'run.json',{'run_id':run_id,'created_at':now(),'product_root':str(product_root),'workspace':str(workspace),'profile':'concurrency','event_count':len(events),'status':'prepared','benchmark_context_seeded':True})
     print(json.dumps({'run_id':run_id,'run_dir':str(run_dir),'product_root':str(product_root),'workspace':str(workspace),'lane_a':str(run_dir/'candidate-a/RUN-INSTRUCTIONS.md'),'lane_b':str(run_dir/'candidate-b/RUN-INSTRUCTIONS.md')},indent=2))
 if __name__=='__main__': main()
