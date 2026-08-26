@@ -1,0 +1,132 @@
+#!/usr/bin/env python3
+from pathlib import Path
+import datetime, hashlib, json, os, re, sys
+
+ROOT=Path(__file__).resolve().parents[1]
+SCRIPTS=ROOT/'scripts'
+if str(SCRIPTS) not in sys.path:
+    sys.path.insert(0,str(SCRIPTS))
+from _common import PRODUCT_ROOT, contract_files, read_frontmatter
+
+SECTION_RE=re.compile(r'^##\s+(.+?)\s*$',re.M)
+
+def now():
+    return datetime.datetime.now(datetime.timezone.utc).isoformat()
+
+def read_json(path, default=None):
+    p=Path(path)
+    if not p.exists(): return default
+    return json.loads(p.read_text(encoding='utf-8'))
+
+def write_json(path,obj):
+    p=Path(path); p.parent.mkdir(parents=True,exist_ok=True)
+    p.write_text(json.dumps(obj,indent=2,sort_keys=True)+'\n',encoding='utf-8')
+    return p
+
+def section(body,name):
+    matches=list(SECTION_RE.finditer(body))
+    target=name.strip().lower()
+    for i,m in enumerate(matches):
+        if m.group(1).strip().lower()==target:
+            start=m.end(); end=matches[i+1].start() if i+1<len(matches) else len(body)
+            return body[start:end].strip()
+    return ''
+
+def parse_process(text):
+    out=[]
+    for line in text.splitlines():
+        m=re.match(r'^\s*(\d+)\.\s*(.*)$',line)
+        if m: out.append(m.group(2).strip())
+    return out
+
+def parse_contract(path):
+    meta,body=read_frontmatter(path)
+    cid=meta.get('id')
+    if not cid: raise ValueError(f'Contract missing id: {path}')
+    return {
+        'contract_id':cid,
+        'path':str(Path(path).relative_to(PRODUCT_ROOT)),
+        'type':meta.get('type'),
+        'version':meta.get('version'),
+        'owner_system':meta.get('owner_system') or cid.split('.')[0],
+        'risk':meta.get('risk'),
+        'autonomy_ceiling':meta.get('autonomy_ceiling'),
+        'artifact_role':meta.get('artifact_role'),
+        'reads':meta.get('reads') or [],
+        'writes':meta.get('writes') or [],
+        'capabilities':meta.get('capabilities') or {},
+        'context':meta.get('context') or [],
+        'subcontracts':meta.get('subcontracts') or {},
+        'title': next((ln[2:].strip() for ln in body.splitlines() if ln.startswith('# ')),cid),
+        'purpose':section(body,'Purpose'),
+        'business_outcome':section(body,'Business Outcome'),
+        'run_when':section(body,'Run When'),
+        'process':parse_process(section(body,'Process')),
+        'completion_evidence':section(body,'Completion Evidence'),
+    }
+
+def load_contracts():
+    return [parse_contract(p) for p in contract_files()]
+
+def family_for(contract_id):
+    parts=contract_id.split('.')
+    return '.'.join(parts[:2]) if len(parts)>1 else contract_id
+
+def fixture_for(contract_id,owner):
+    s=contract_id.lower()
+    if 'local' in s or 'gbp' in s or 'service-area' in s: return 'harbor-hvac'
+    if any(k in s for k in ('product','shopping','cart','checkout','merch','ecommerce')): return 'northline-commerce'
+    return 'atlasops-saas'
+
+def competitive_profile(contract):
+    cid=contract['contract_id'].lower(); owner=contract['owner_system']
+    if owner=='seo-aeo':
+        return 'search_live_field' if any(k in cid for k in ('content','page','query','keyword','serp','aeo','answer','citation','opportunity','strategy','brief')) else 'search_technical'
+    if owner=='marketing-synthesis':
+        return 'paid_and_persuasion_field' if any(k in cid for k in ('ad','creative','landing','campaign','offer','vsl','webinar','email','quiz','advertorial')) else 'marketing_outcome'
+    if owner=='content-synthesis':
+        return 'organic_attention_field' if any(k in cid for k in ('trend','creator','platform','content-performance','adaptation')) else 'artifact_excellence'
+    if owner=='competitor-intelligence': return 'competitive_intelligence'
+    if owner=='customer-intelligence': return 'customer_truth'
+    if owner=='industry-intelligence': return 'ecosystem_truth'
+    if owner=='customer-optimization': return 'first_party_outcomes'
+    return 'governance_and_state'
+
+def output_policy(contract):
+    cid=contract['contract_id'].lower(); role=contract.get('artifact_role')
+    artifact_words=('article','newsletter','video','podcast','carousel','presentation','infographic','image','animation','gif','case-study','demo','landing-page','vsl','webinar','ad','creative','email','quiz','advertorial','asset')
+    artifact_required=bool(role=='customer_facing_production_root' or any(k in cid for k in artifact_words))
+    return {
+        'artifact_required':artifact_required,
+        'declared_writes':contract.get('writes') or [],
+        'write_expectation':'at_least_one_declared_type' if contract.get('writes') else 'no_specific_object_type_required',
+        'actual_output_not_description':artifact_required,
+    }
+
+def tree_snapshot(root):
+    root=Path(root); files=[]
+    if not root.exists(): return {'root':str(root),'files':[],'digest':hashlib.sha256(b'').hexdigest()}
+    for p in sorted(x for x in root.rglob('*') if x.is_file()):
+        rel=str(p.relative_to(root)); h=hashlib.sha256()
+        try:
+            with p.open('rb') as f:
+                for chunk in iter(lambda:f.read(1024*1024),b''): h.update(chunk)
+            files.append({'path':rel,'sha256':h.hexdigest(),'bytes':p.stat().st_size})
+        except OSError:
+            files.append({'path':rel,'error':'unreadable'})
+    digest=hashlib.sha256(json.dumps(files,sort_keys=True).encode()).hexdigest()
+    return {'root':str(root),'files':files,'digest':digest}
+
+def snapshot_diff(before,after):
+    b={x['path']:x.get('sha256') for x in before.get('files',[])}; a={x['path']:x.get('sha256') for x in after.get('files',[])}
+    return {'created':sorted(set(a)-set(b)),'deleted':sorted(set(b)-set(a)),'modified':sorted(k for k in set(a)&set(b) if a[k]!=b[k])}
+
+def workspace_from_env():
+    raw=os.environ.get('BUSINESSOS_WORKSPACE')
+    if not raw: raise SystemExit('BUSINESSOS_WORKSPACE must point to the qualification workspace')
+    return Path(raw).expanduser().resolve()
+
+def run_root_from_env():
+    raw=os.environ.get('AURA_QUALIFICATION_RUN')
+    if not raw: raise SystemExit('AURA_QUALIFICATION_RUN must point to the qualification run directory')
+    return Path(raw).expanduser().resolve()
