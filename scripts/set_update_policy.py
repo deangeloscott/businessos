@@ -6,7 +6,7 @@ ROOT=Path(__file__).resolve().parents[1]
 POLICY=ROOT/'deployment/update-policy.json'
 
 def main():
-    ap=argparse.ArgumentParser(description='Opt in or out of metadata-only ViralTrac BusinessOS stable-release checks.')
+    ap=argparse.ArgumentParser(description='Opt in or out of metadata-only ViralTrac AURA stable-release checks.')
     g=ap.add_mutually_exclusive_group(required=True)
     g.add_argument('--enable',action='store_true')
     g.add_argument('--disable',action='store_true')
