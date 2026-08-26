@@ -20,8 +20,10 @@ def mission_dimensions(m,kind):
     return base + list(RUBRICS['profiles'].get(profile,[]))
 
 def event_from_mission(m,kind):
-    return {'event_id':m['id'],'kind':kind,'business_id':'qa-'+m['fixture'].replace('_','-'),'fixture':m['fixture'],'contract_id':None,'task':m['task'],
-            'competitive_profile':'mission','rubric_dimensions':mission_dimensions(m,kind),'required_output':{'actual_output_not_description':True},'receipt_path':f"candidate-results/{m['id']}.json"}
+    event={'event_id':m['id'],'kind':kind,'business_id':'qa-'+m['fixture'].replace('_','-'),'fixture':m['fixture'],'contract_id':None,'task':m['task'],
+           'competitive_profile':'mission','rubric_dimensions':mission_dimensions(m,kind),'required_output':{'actual_output_not_description':True},'receipt_path':f"candidate-results/{m['id']}.json"}
+    if m.get('release_fixture'): event['release_fixture']=m['release_fixture']
+    return event
 
 def copy_product(src,dst):
     src=Path(src); dst=Path(dst)
@@ -51,7 +53,11 @@ def init_business(product_root,workspace,fixture):
     env=dict(os.environ); env['BUSINESSOS_WORKSPACE']=str(workspace); env['PYTHONDONTWRITEBYTECODE']='1'
     _run([sys.executable,str(product_root/'scripts/init_business.py'),bid,'--name',name],product_root,env)
     inputs=workspace/'attachments'/'qualification-inputs'; inputs.mkdir(parents=True,exist_ok=True)
-    source_path=inputs/f'{fixture}.json'; shutil.copy2(FIXTURES/f'{fixture}.json',source_path)
+    initial={k:v for k,v in data.items() if k!='timeline'}
+    source_path=inputs/f'{fixture}.json'; source_path.write_text(json.dumps(initial,indent=2)+'\n',encoding='utf-8')
+    if data.get('timeline'):
+        hidden=workspace.parent/'evaluator'/'hidden-fixtures'; hidden.mkdir(parents=True,exist_ok=True)
+        write_json(hidden/f'{fixture}-releases.json',data['timeline'])
     seed_dir=workspace/'runtime'/'qualification-bootstrap'; seed_dir.mkdir(parents=True,exist_ok=True)
     facts_path=seed_dir/f'{fixture}-facts.json'; facts_path.write_text(json.dumps(bootstrap,indent=2)+'\n',encoding='utf-8')
     boot=_run([
@@ -60,7 +66,7 @@ def init_business(product_root,workspace,fixture):
         '--source-reference',f'qualification fixture {fixture}','--initialization-only'
     ],product_root,env)
     validation=_run([sys.executable,str(product_root/'scripts/validate_business.py'),bid,'--require-context'],product_root,env)
-    audit={'fixture':fixture,'business_id':bid,'source_path':str(source_path),'facts_path':str(facts_path),'bootstrapped_at':now(),
+    audit={'fixture':fixture,'business_id':bid,'source_path':str(source_path),'facts_path':str(facts_path),'future_evidence_hidden':bool(data.get('timeline')),'bootstrapped_at':now(),
            'bootstrap_stdout':boot.stdout,'bootstrap_stderr':boot.stderr,'validation_stdout':validation.stdout,'validation_stderr':validation.stderr}
     write_json(seed_dir/f'{fixture}-bootstrap-audit.json',audit)
     return bid
@@ -82,21 +88,22 @@ export BUSINESSOS_WORKSPACE='{workspace}'
 export AURA_QUALIFICATION_RUN='{run_dir}'
 ```
 
-The benchmark businesses have already been initialized and their explicit starting context has been grounded into canonical AURA state. Their richer controlled first-party evidence is available at `attachments/qualification-inputs/<fixture>.json`. Treat that file as supplied first-party evidence for the qualification business; ingest/persist relevant evidence through normal AURA processes as the event requires. Do not redo onboarding or ask for basic benchmark facts already present in canonical state or the supplied fixture.
+The benchmark businesses have already been initialized and their explicit starting context has been grounded into canonical AURA state. Their current controlled first-party evidence is available at `attachments/qualification-inputs/<fixture>.json`. Treat that file as supplied first-party evidence for the qualification business; ingest/persist relevant evidence through normal AURA processes as the event requires. Do not redo onboarding or ask for basic benchmark facts already present in canonical state or the supplied fixture. Later-period evidence is deliberately withheld until an event explicitly releases it; do not inspect evaluator/hidden files.
 
 Process every queue event in order and continue directly to the next event. Do not stop between events to ask whether to continue. A genuine external blocker should be recorded for that event, then continue with later events when safe.
 
 For EVERY event:
-1. Read the event, the controlled fixture for that event, existing accumulated AURA state, and relevant AURA contract/process material. Do not modify canonical AURA product source.
+1. Read the event, the controlled current fixture for that event, existing accumulated AURA state, and relevant AURA contract/process material. Do not modify canonical AURA product source.
 2. Run `python3 qualification/checkpoint.py <EVENT_ID> before --business-id <BUSINESS_ID>` before doing event work.
-3. Execute the business work fully. If the benchmark does not naturally contain the condition needed to exercise an atomic contract, create a clearly labeled qualification-only synthetic input under the qualification attachments; do not silently promote that synthetic input into a real business fact. If AURA says an artifact is creatable, create the actual artifact; a description, outline, or proposed version is not a substitute unless that is the contract's promised output.
-4. Where the competitive environment is material, inspect it. For SEO/AEO inspect current leaders/surfaces and compare multiple leaders; for ads use relevant transparency/creative centers and landing paths; for organic content use visible performance proxies and normalize them when possible. Treat proxies as proxies, not proof of profit or causality. Save enough timestamped source/evidence references in `field_snapshot_refs` that a reviewer can reconstruct the competitive field you evaluated.
-5. Aim for outcome readiness: do the research, competitive analysis, strategy, execution, QA, integration, and measurement preparation a strong practitioner would reasonably expect to maximize the intended business result.
-6. Follow AURA evidence, provenance, semantic ownership, authorization, required-subcontract, customer-facing claim, and completion rules. Never report a draft as executed or an unmeasured result as proven.
-7. Persist the real business result and state through AURA. Reuse existing evidence/state instead of redoing work without reason.
-8. Write the event receipt to the exact `receipt_path` relative to the qualification run directory. It must be JSON with: `event_id`, `business_id`, `status` (`completed` or `blocked`), `root_run_ids`, `artifact_refs`, `canonical_refs`, `source_refs`, `field_snapshot_refs`, `summary`, `blocker` (null if completed; otherwise an object with `classification` and `detail`), and `quality_notes`. Valid blocker classifications are `external_capability`, `authorization`, `missing_required_data`, `external_service`, or `aura_process`.
-9. Run `python3 qualification/checkpoint.py <EVENT_ID> after --business-id <BUSINESS_ID>` after the receipt and AURA work are persisted.
-10. Immediately continue to the next queue item.
+3. If the event has a `release_fixture` field, run `python3 qualification/release_fixture.py <EVENT_ID>` now. This simulates new evidence arriving after the before-checkpoint. Use the released path as new supplied evidence and preserve its provenance.
+4. Execute the business work fully. If the benchmark does not naturally contain the condition needed to exercise an atomic contract, create a clearly labeled qualification-only synthetic input under the qualification attachments; do not silently promote that synthetic input into a real business fact. If AURA says an artifact is creatable, create the actual artifact; a description, outline, or proposed version is not a substitute unless that is the contract's promised output.
+5. Where the competitive environment is material, inspect it. For SEO/AEO inspect current leaders/surfaces and compare multiple leaders; for ads use relevant transparency/creative centers and landing paths; for organic content use visible performance proxies and normalize them when possible. Treat proxies as proxies, not proof of profit or causality. Save enough timestamped source/evidence references in `field_snapshot_refs` that a reviewer can reconstruct the competitive field you evaluated.
+6. Aim for outcome readiness: do the research, competitive analysis, strategy, execution, QA, integration, and measurement preparation a strong practitioner would reasonably expect to maximize the intended business result.
+7. Follow AURA evidence, provenance, semantic ownership, authorization, required-subcontract, customer-facing claim, and completion rules. Never report a draft as executed or an unmeasured result as proven.
+8. Persist the real business result and state through AURA. Reuse existing evidence/state instead of redoing work without reason.
+9. Write the event receipt to the exact `receipt_path` relative to the qualification run directory. It must be JSON with: `event_id`, `business_id`, `status` (`completed` or `blocked`), `root_run_ids`, `artifact_refs`, `canonical_refs`, `source_refs`, `field_snapshot_refs`, `released_fixture_refs`, `summary`, `blocker` (null if completed; otherwise an object with `classification` and `detail`), and `quality_notes`. Valid blocker classifications are `external_capability`, `authorization`, `missing_required_data`, `external_service`, or `aura_process`.
+10. Run `python3 qualification/checkpoint.py <EVENT_ID> after --business-id <BUSINESS_ID>` after the receipt and AURA work are persisted.
+11. Immediately continue to the next queue item.
 
 There are {len(events)} events in this run. Completion means the queue is exhausted, not merely that one event succeeded.
 '''
@@ -121,7 +128,7 @@ def main():
     if a.profile in ('cross-domain','full'): events += [event_from_mission(m,'cross_domain_mission') for m in suite['cross_domain_missions']]
     if a.profile in ('marathon','full'): events += [event_from_mission(m,'marathon_mission') for m in suite['marathon_missions']]
     queue={'format_version':'1.0','run_id':run_id,'created_at':now(),'profile':a.profile,'domain_filter':a.domain,'event_count':len(events),'events':events}
-    write_json(run_dir/'candidate/queue.json',queue); write_json(run_dir/'evaluator/suite.json',suite); write_json(run_dir/'run.json',{'run_id':run_id,'created_at':now(),'product_root':str(product_root),'workspace':str(workspace),'profile':a.profile,'event_count':len(events),'status':'prepared','benchmark_context_seeded':True})
+    write_json(run_dir/'candidate/queue.json',queue); write_json(run_dir/'evaluator/suite.json',suite); write_json(run_dir/'run.json',{'run_id':run_id,'created_at':now(),'product_root':str(product_root),'workspace':str(workspace),'profile':a.profile,'event_count':len(events),'status':'prepared','benchmark_context_seeded':True,'future_evidence_staged':True})
     (run_dir/'candidate/RUN-INSTRUCTIONS.md').write_text(instructions(product_root,run_dir,workspace,events),encoding='utf-8')
     print(json.dumps({'run_id':run_id,'run_dir':str(run_dir),'product_root':str(product_root),'workspace':str(workspace),'event_count':len(events),'instructions':str(run_dir/'candidate/RUN-INSTRUCTIONS.md'),'queue':str(run_dir/'candidate/queue.json')},indent=2))
 if __name__=='__main__': main()
