@@ -84,7 +84,14 @@ def main():
         if not product_ref.startswith('product:') or common.resolve_storage_ref(product_ref).resolve()!=common.PRODUCT_ROOT.joinpath('core/policies/portable-first.md').resolve(): fail('product reference boundary failed')
         st=status()
         if st['workspace_root']!=str(tmp.resolve()) or BID not in st['businesses']: fail('workspace status did not reflect external business state')
-        if route_and_resolve('Configure ViralTrac AURA for a private GitHub organization workspace')['contract_id']!='core.workspace.configure': fail('workspace deployment natural-language route missing')
+        deployment_requests=[
+            'Configure ViralTrac AURA for a private GitHub organization workspace',
+            'Set up AURA with an external workspace for our team',
+            'Store BusinessOS state in a private GitLab workspace',
+            'We want a Forgejo-hosted organization workspace for ViralTrac AURA'
+        ]
+        for request in deployment_requests:
+            if route_and_resolve(request)['contract_id']!='core.workspace.configure': fail(f'workspace deployment natural-language route missing: {request}')
         if route_and_resolve('Refresh our AURA human knowledge layer for Obsidian',BID)['contract_id']!='core.knowledge.refresh-human-layer': fail('human knowledge natural-language route missing')
         if route_and_resolve('Use my Obsidian note in AURA',BID)['contract_id']!='core.knowledge.ingest-human-note': fail('human note ingestion natural-language route missing')
 
