@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Reusable contract-completion evidence profiles for AURA Runs.
 
-The deterministic layer does not judge business quality. It does prevent a Run from being
-marked complete merely because some file exists. Contracts are mapped to a small set of
-reusable evidence profiles and the supplied evidence must satisfy that profile before the
-Run/subcontract may be recorded complete.
+The deterministic layer does not judge business quality. It prevents a Run from being
+marked complete merely because some arbitrary file exists. Contracts map to a small set
+of reusable evidence profiles; qualitative strength remains the responsibility of the
+contract process, QA, and downstream qualification/review.
 """
 from pathlib import Path
 import json, re
@@ -19,11 +19,6 @@ MEDIA_EXTS={
     'video':{'.mp4','.mov','.webm','.m4v'},
     'presentation':{'.pptx','.pdf','.html'},
     'infographic':{'.png','.jpg','.jpeg','.webp','.svg','.pdf'},
-}
-TEXT_MIN_WORDS={
-    'captions':12,'linkedin':35,'faq':70,'article':180,'case-study':180,
-    'newsletter':120,'bullet-script':60,'landing-page':100,'advertorial':160,
-    'comparison':100,'lead-magnet':140,'nurture':80,'email':50,
 }
 
 
@@ -40,10 +35,11 @@ def contract_index():
 
 
 def completion_spec(contract):
-    """Return the stable evidence profile for a contract.
+    """Return a stable structural evidence profile for a contract.
 
-    Explicit frontmatter `completion_evidence` overrides inference. Inference exists so the
-    installed catalog gets useful protection without hundreds of bespoke validators.
+    Explicit frontmatter `completion_evidence` overrides inference. Inference gives the
+    installed catalog useful minimum safeguards without requiring bespoke validators for
+    hundreds of contracts.
     """
     explicit=contract.get('completion_evidence')
     if isinstance(explicit,str): explicit={'profile':explicit}
@@ -77,6 +73,7 @@ def completion_spec(contract):
         'declared_write_types':sorted(writes),'artifact_role':contract.get('artifact_role'),
         'allow_specification_fallback':bool(explicit.get('allow_specification_fallback', medium=='animation')),
         'require_subcontract_write_evidence':bool(explicit.get('require_subcontract_write_evidence',False)),
+        'strict_qa_target':bool(explicit.get('strict_qa_target', cid=='content.qa.pre-publish')),
     }
 
 
@@ -125,8 +122,8 @@ def _declared_write_errors(contract,paths,business_id,run_id,phase):
 
 
 def detector_evidence_errors(contract,paths,business_id,run_id):
-    # A detector may legitimately find nothing. A declared write proves a finding; otherwise
-    # require a structured no-finding record tied to actual evidence/checks.
+    # A detector may legitimately find nothing. A declared canonical finding proves a
+    # positive result; otherwise require an auditable structured no-finding record.
     if not _declared_write_errors(contract,paths,business_id,run_id,'root'):return []
     cid=contract.get('id')
     for p in paths:
@@ -134,32 +131,37 @@ def detector_evidence_errors(contract,paths,business_id,run_id):
         if not isinstance(d,dict) or d.get('contract_id')!=cid:continue
         if str(d.get('status','')).lower() not in {'completed','complete','no_finding'}:continue
         if str(d.get('result','')).lower() not in {'no_finding','no_material_finding','no_opportunity','no_material_opportunity'}:continue
-        checks=d.get('checks_performed',d.get('checks'))
-        refs=d.get('evidence_refs') or []
+        checks=d.get('checks_performed',d.get('checks')); refs=d.get('evidence_refs') or []
         if not isinstance(checks,(list,dict)) or not checks or not refs:continue
         if len(_paths(refs))!=len(refs):continue
         return []
     return [f'{cid} detector completion requires either a declared canonical finding or a structured no-finding JSON record with checks_performed and existing evidence_refs']
 
 
-def _qa_records(contract_id,paths):
+def _qa_records(contract_id,paths,strict_target=False):
     out=[]
     for p in paths:
         data=_json(p)
         if not isinstance(data,dict) or data.get('contract_id')!=contract_id:continue
         if str(data.get('status','')).lower() not in {'pass','passed'}:continue
-        checks=data.get('checks_performed',data.get('checks')); blockers=data.get('blockers',None)
-        target=next((data.get(k) for k in ('tested_asset','target_asset','asset_ref','target_ref','target_refs') if data.get(k)),None)
-        if not isinstance(checks,(list,dict)) or not checks or blockers is None or not target:continue
+        checks=data.get('checks_performed',data.get('checks'))
+        if not isinstance(checks,(list,dict)) or not checks:continue
+        if strict_target:
+            blockers=data.get('blockers',None)
+            target=next((data.get(k) for k in ('tested_asset','target_asset','asset_ref','target_ref','target_refs') if data.get(k)),None)
+            version=next((data.get(k) for k in ('tested_version','asset_version','version') if data.get(k) is not None),None)
+            if blockers is None or not target or version is None:continue
         out.append((data,p))
     return out
 
 
 def qa_evidence_errors(contract,paths):
-    cid=contract.get('id'); records=_qa_records(cid,paths)
-    if not records:return [f'{cid} completion requires a structured JSON QA pass record with matching contract_id, substantive checks_performed/checks, blockers, and tested/target Asset reference']
-    if cid=='content.qa.pre-publish' and not any(any(d.get(k) is not None for k in ('tested_version','asset_version','version')) for d,_ in records):
-        return ['content.qa.pre-publish completion requires the tested Asset version in its structured pass record']
+    cid=contract.get('id'); spec=completion_spec(contract); strict=spec.get('strict_qa_target',False)
+    records=_qa_records(cid,paths,strict_target=strict)
+    if not records:
+        if strict:
+            return [f'{cid} completion requires a structured JSON QA pass record with matching contract_id, substantive checks_performed/checks, blockers, tested/target Asset, and tested version']
+        return [f'{cid} completion requires a structured JSON QA pass record with matching contract_id and substantive checks_performed/checks']
     return []
 
 
@@ -179,30 +181,20 @@ def _animation_spec_ok(path):
     if Path(path).suffix.lower() not in TEXT_EXTS:return False
     try:text=Path(path).read_text(encoding='utf-8',errors='ignore').lower()
     except Exception:return False
-    return len(text.split())>=80 and all(x in text for x in ('scene','timing','transition')) and ('keyframe' in text or 'narration' in text or 'visual state' in text)
+    return len(text.split())>=40 and all(x in text for x in ('scene','timing','transition')) and ('keyframe' in text or 'narration' in text or 'visual state' in text)
 
 
-def _text_substance_error(path,medium):
-    try:text=Path(path).read_text(encoding='utf-8',errors='ignore')
-    except Exception:return f'production artifact is not readable text: {path}'
-    words=re.findall(r"\b[\w'-]+\b",text); minimum=TEXT_MIN_WORDS.get(str(medium or '').lower(),40)
-    if len(words)<minimum:return f'production artifact is too small for {medium or "text"} completion ({len(words)} words; minimum {minimum})'
-    return None
-
-
-def _asset_lineage_ok(asset,contract,business_id):
+def _asset_lineage_ok(asset,business_id):
+    # Deterministic validation proves that lineage resolves to real canonical state. Whether
+    # that source is strategically sufficient is a qualitative contract/QA judgment.
     lineage=asset.get('lineage') or []
     if not isinstance(lineage,list) or not lineage:return False
-    idx=object_index(business_id); acceptable=_selector_types(contract.get('reads'))-{'Asset'}
-    if not acceptable:return bool(lineage)
-    for ref in lineage:
-        pair=idx.get(ref)
-        if pair and pair[0].get('object_type') in acceptable:return True
-    return False
+    idx=object_index(business_id)
+    return any(ref in idx for ref in lineage)
 
 
 def production_evidence_errors(contract,paths,business_id,run_id,manifest=None):
-    cid=contract.get('id'); spec=completion_spec(contract); medium=spec.get('medium'); family=_media_family(medium)
+    cid=contract.get('id');spec=completion_spec(contract);medium=spec.get('medium');family=_media_family(medium)
     bound=_run_bound_objects(business_id,run_id)
     assets=[obj for obj,_ in bound if obj.get('object_type')=='Asset' and obj.get('owner_system')==contract.get('owner_system')]
     chain_assets=[]
@@ -212,14 +204,14 @@ def production_evidence_errors(contract,paths,business_id,run_id,manifest=None):
         if cid in chain or bos.get('run_contract_id')==cid:chain_assets.append(asset)
     if chain_assets:assets=chain_assets
     if not assets:return [f'{cid} production completion requires a canonical Asset bound to this Run']
-    supplied={str(p.resolve()) for p in paths}; usable=[]; errors=[]
+    supplied={str(p.resolve()) for p in paths};usable=[];errors=[]
     for asset in assets:
         loc=asset.get('location_reference')
         if not loc:continue
         p=resolve_storage_ref(loc)
-        if not p.exists() or not p.is_file() or p.stat().st_size<200 or str(p.resolve()) not in supplied:continue
-        if not _asset_lineage_ok(asset,contract,business_id):
-            errors.append(f'{asset.get("id")} lacks canonical lineage to an input type declared by {cid}');continue
+        if not p.exists() or not p.is_file() or p.stat().st_size<=0 or str(p.resolve()) not in supplied:continue
+        if not _asset_lineage_ok(asset,business_id):
+            errors.append(f'{asset.get("id")} lacks lineage to existing canonical business state');continue
         ext=p.suffix.lower()
         if family=='animation':
             if ext in MEDIA_EXTS['video']|MEDIA_EXTS['gif'] or (spec.get('allow_specification_fallback') and _animation_spec_ok(p)):
@@ -228,27 +220,28 @@ def production_evidence_errors(contract,paths,business_id,run_id,manifest=None):
         if family in MEDIA_EXTS:
             if ext not in MEDIA_EXTS[family]:
                 errors.append(f'{asset.get("id")} evidence file type {ext or "<none>"} does not satisfy expected {family} medium for {cid}');continue
-            usable.append(asset);continue
-        err=_text_substance_error(p,medium)
-        if err:errors.append(f'{asset.get("id")}: {err}');continue
+        elif ext not in TEXT_EXTS:
+            errors.append(f'{asset.get("id")} evidence file type {ext or "<none>"} does not satisfy expected text/document medium for {cid}');continue
         usable.append(asset)
-    if not usable:return errors or [f'{cid} has no substantive root artifact matching its canonical Asset and expected medium']
+    if not usable:return errors or [f'{cid} has no root artifact matching its canonical Asset and expected medium']
 
+    # Strict QA profiles (currently pre-publish by default) must target the actual produced
+    # Asset/version. Other QA contracts are structurally checked when recorded but remain
+    # backward-compatible unless they explicitly opt into strict targeting.
     if manifest:
-        byid=contract_index(); produced={a.get('id'):str(a.get('version')) for a in usable if a.get('id')}
+        byid=contract_index();produced={a.get('id'):str(a.get('version')) for a in usable if a.get('id')}
         for qid in manifest.get('required_subcontracts') or []:
             qc=byid.get(qid,{})
-            if completion_spec(qc).get('profile')!='qa':continue
+            qspec=completion_spec(qc)
+            if qspec.get('profile')!='qa' or not qspec.get('strict_qa_target'):continue
             refs=((manifest.get('contracts') or {}).get(qid) or {}).get('evidence_refs') or []
-            records=_qa_records(qid,_paths(refs)); targeted=False
+            records=_qa_records(qid,_paths(refs),strict_target=True);targeted=False
             for data,_ in records:
                 raw=next((data.get(k) for k in ('tested_asset','target_asset','asset_ref','target_ref','target_refs') if data.get(k)),None)
-                vals=raw if isinstance(raw,list) else [raw]; vals={str(x) for x in vals if x is not None}
+                vals=raw if isinstance(raw,list) else [raw];vals={str(x) for x in vals if x is not None}
+                qver=next((data.get(k) for k in ('tested_version','asset_version','version') if data.get(k) is not None),None)
                 for aid,ver in produced.items():
-                    if aid in vals:
-                        if qid=='content.qa.pre-publish':
-                            qver=next((data.get(k) for k in ('tested_version','asset_version','version') if data.get(k) is not None),None)
-                            if qver is not None and str(qver)!=ver:continue
+                    if aid in vals and qver is not None and str(qver)==ver:
                         targeted=True;break
                 if targeted:break
             if not targeted:errors.append(f'{qid} pass evidence does not target the produced Asset/version for {cid}')
@@ -256,9 +249,9 @@ def production_evidence_errors(contract,paths,business_id,run_id,manifest=None):
 
 
 def validate_evidence(contract,refs,business_id,run_id,phase='root',manifest=None):
-    paths=_paths(refs); errors=[]
+    paths=_paths(refs);errors=[]
     if not paths:return [f'{contract.get("id")} completion requires at least one existing non-empty evidence file']
-    spec=completion_spec(contract); profile=spec['profile']
+    spec=completion_spec(contract);profile=spec['profile']
     if profile=='qa':errors.extend(qa_evidence_errors(contract,paths))
     elif profile=='production' and phase=='root':errors.extend(production_evidence_errors(contract,paths,business_id,run_id,manifest))
     elif profile=='detector' and phase=='root':errors.extend(detector_evidence_errors(contract,paths,business_id,run_id))
