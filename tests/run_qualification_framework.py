@@ -1,12 +1,28 @@
 #!/usr/bin/env python3
 from pathlib import Path
-import inspect, json, sys
+import inspect, json, subprocess, sys, tempfile
 ROOT=Path(__file__).resolve().parents[1]; sys.path.insert(0,str(ROOT/'qualification'))
 from build_suite import build
 from prepare_run import init_business, copy_product
 
 def req(c,m):
     if not c: raise AssertionError(m)
+
+def smoke_prepare():
+    with tempfile.TemporaryDirectory(prefix='aura-qualification-smoke-') as td:
+        p=subprocess.run([sys.executable,str(ROOT/'qualification/prepare_run.py'),'--profile','atomic','--domain','core','--run-root',td,'--run-id','smoke'],cwd=ROOT,capture_output=True,text=True)
+        req(p.returncode==0,f'qualification prepare smoke failed:\nSTDOUT:\n{p.stdout}\nSTDERR:\n{p.stderr}')
+        rd=Path(td)/'smoke'; meta=json.loads((rd/'run.json').read_text()); queue=json.loads((rd/'candidate/queue.json').read_text())
+        req(meta.get('benchmark_context_seeded') is True,'prepared run must record grounded benchmark context')
+        req(meta.get('future_evidence_staged') is True,'prepared run must record staged future evidence')
+        req(queue.get('event_count',0)>0 and all(x.get('kind')=='contract_acceptance' for x in queue.get('events',[])),'atomic core smoke queue missing contract events')
+        req(not (rd/'product/qualification/fixtures').exists(),'raw benchmark fixtures leaked into staged candidate product')
+        for fixture in ('atlasops-saas','harbor-hvac','northline-commerce'):
+            src=rd/'workspace/attachments/qualification-inputs'/f'{fixture}.json'; req(src.exists(),f'{fixture}: sanitized candidate fixture missing')
+            data=json.loads(src.read_text()); req('timeline' not in data,f'{fixture}: future timeline leaked into initial candidate fixture')
+            req((rd/'workspace/runtime/qualification-bootstrap'/f'{fixture}-bootstrap-audit.json').exists(),f'{fixture}: canonical bootstrap audit missing')
+        req((rd/'evaluator/hidden-fixtures/atlasops-saas-releases.json').exists(),'AtlasOps later-period release not staged')
+        req((rd/'evaluator/hidden-fixtures/harbor-hvac-releases.json').exists(),'Harbor HVAC later-period release not staged')
 
 def main():
     suite=build(); manifest=json.loads((ROOT/'SYSTEM-MANIFEST.json').read_text())
@@ -38,5 +54,6 @@ def main():
     req((ROOT/'qualification/release_fixture.py').exists(),'timed fixture release helper missing')
     released=[m for m in suite['cross_domain_missions']+suite['marathon_missions'] if m.get('release_fixture')]
     req(len(released)>=2 and {'CROSS-MARKET-CHANGE-001','MARATHON-002'}.issubset({m['id'] for m in released}),'expected longitudinal evidence-release missions missing')
-    print(f"qualification framework regressions passed: {suite['contract_count']} contract tests, {suite['capability_count']} capability mappings, {len(suite['domain_missions'])} domain missions, {len(suite['cross_domain_missions'])} cross-domain missions, {len(suite['marathon_missions'])} marathon missions, {len(suite.get('concurrency_missions',[]))} concurrency missions, {len(fixture_paths)} grounded fixtures, {len(released)} timed evidence releases")
+    smoke_prepare()
+    print(f"qualification framework regressions passed: {suite['contract_count']} contract tests, {suite['capability_count']} capability mappings, {len(suite['domain_missions'])} domain missions, {len(suite['cross_domain_missions'])} cross-domain missions, {len(suite['marathon_missions'])} marathon missions, {len(suite.get('concurrency_missions',[]))} concurrency missions, {len(fixture_paths)} grounded fixtures, {len(released)} timed evidence releases, preparation smoke passed")
 if __name__=='__main__': main()
