@@ -1,16 +1,31 @@
 #!/usr/bin/env python3
 from pathlib import Path
-import argparse
+import argparse, json
 from common import read_json
 
+
 def main():
-    ap=argparse.ArgumentParser(); ap.add_argument('run_dir'); a=ap.parse_args(); rd=Path(a.run_dir).expanduser().resolve()
+    ap=argparse.ArgumentParser()
+    ap.add_argument('run_dir')
+    ap.add_argument('--include-hard-failures',action='store_true',help='Also send deterministic hard-fail events to the quality judge for diagnostic scoring')
+    a=ap.parse_args(); rd=Path(a.run_dir).expanduser().resolve()
     packets=read_json(rd/'evaluator/review-packets.json')
     if packets is None: raise SystemExit('review-packets.json missing; run evaluate_run.py first')
+
+    if a.include_hard_failures:
+        selected=packets
+    else:
+        selected=[p for p in packets if p.get('hard_pass') is True]
+
+    packet_out=rd/'evaluator/review-packets-to-judge.json'
+    packet_out.write_text(json.dumps(selected,indent=2,sort_keys=True)+'\n',encoding='utf-8')
     out=rd/'evaluator/JUDGE-INSTRUCTIONS.md'
+    excluded=len(packets)-len(selected)
     out.write_text(f'''# Independent AURA Business-Quality Review
 
-You are judging AURA's actual business work, not grading how eloquently the candidate explained itself and not trusting a mechanical hard-pass as proof of quality. Review all {len(packets)} packets in `{rd/'evaluator/review-packets.json'}`.
+You are judging AURA's actual business work, not grading how eloquently the candidate explained itself and not trusting a mechanical hard-pass as proof of quality. Review all {len(selected)} packets in `{packet_out}`.
+
+{excluded} event(s) were excluded from this normal quality pass because they already failed deterministic hard gates; their final verdict remains FAIL without spending judge capacity on them. Use `--include-hard-failures` when building these instructions only if diagnostic quality scores for those failures are specifically needed.
 
 For each event:
 1. Inspect the packet's **actual contract process steps and completion-evidence requirement**, then inspect the actual artifacts, cited evidence/source records, candidate receipt, relevant before/after state diff, integrity flags, and Run/contract-execution records in `{rd/'evaluator/hard-and-merged-results.json'}`.
@@ -36,5 +51,6 @@ Write a JSON array to `{rd/'evaluator/judgments.json'}`. Each item must be:
 
 Do not modify AURA state or candidate artifacts while judging.
 ''',encoding='utf-8')
-    print(out)
+    print(json.dumps({'instructions':str(out),'packets':str(packet_out),'events_to_judge':len(selected),'hard_failures_excluded':excluded},indent=2))
+
 if __name__=='__main__': main()
