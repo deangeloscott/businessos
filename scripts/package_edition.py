@@ -41,16 +41,18 @@ def _copy_clean(dest):
     def ignore(path,names):
         ignored={'__pycache__','.git','.DS_Store','.businessos'} & set(names)
         # Generated indexes are rebuilt for the edition; product-local user/workspace state
-        # never belongs in a packaged distribution even when Git already ignores it.
+        # and maintainer-only qualification infrastructure never belong in a packaged distribution.
         rel=Path(path).resolve().relative_to(ROOT.resolve()) if Path(path).resolve()!=ROOT.resolve() else Path('.')
         if rel==Path('.'):
-            ignored |= {'generated','dist','.businessos','runtime','knowledge','attachments'} & set(names)
+            ignored |= {'generated','dist','.businessos','runtime','knowledge','attachments','qualification'} & set(names)
         if rel==Path('instances'):
             ignored |= {n for n in names if n!='_template'}
         if rel==Path('tests'):
             ignored |= set(names)
         return ignored
     shutil.copytree(ROOT,dest,ignore=ignore)
+    if (dest/'qualification').exists():
+        raise RuntimeError('Packaged distribution contains maintainer-only qualification infrastructure')
     (dest/'generated').mkdir(exist_ok=True)
     (dest/'tests').mkdir(exist_ok=True)
 
