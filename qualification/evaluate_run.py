@@ -34,28 +34,32 @@ def hard_grade(event,test,before,after,receipt,workspace,product_root):
     gates={}
     gates['checkpoint_before_exists']=before is not None; gates['checkpoint_after_exists']=after is not None; gates['candidate_receipt_exists']=receipt is not None
     run_ids=(receipt or {}).get('root_run_ids') or []; gates['root_run_exists']=bool(run_ids)
-    matching=False; completed=False; subs=True; run_audit=[]
+    matching=False; matching_complete=False; any_complete=False; all_subcontracts_ok=True; matching_subcontracts_ok=True; run_audit=[]
     for rid in run_ids:
         r,m=run_details(workspace,event['business_id'],rid); run_audit.append({'run_id':rid,'run':r,'manifest':m})
-        if event.get('contract_id') and r.get('contract_id')==event['contract_id']: matching=True
-        if r.get('status')=='completed' and m.get('root_status')=='completed': completed=True
-        if any(v.get('status')!='completed' for v in (m.get('contracts') or {}).values()): subs=False
+        complete=bool(r.get('status')=='completed' and m.get('root_status')=='completed' and m.get('root_evidence_refs'))
+        sub_ok=not any(v.get('status')!='completed' or not v.get('evidence_refs') for v in (m.get('contracts') or {}).values())
+        any_complete=any_complete or complete; all_subcontracts_ok=all_subcontracts_ok and sub_ok
+        if event.get('contract_id') and r.get('contract_id')==event['contract_id']:
+            matching=True; matching_complete=matching_complete or complete; matching_subcontracts_ok=matching_subcontracts_ok and sub_ok
     gates['root_run_contract_matches']=matching if event.get('contract_id') else bool(run_ids)
-    gates['root_run_completed']=completed; gates['required_subcontracts_completed']=subs and bool(run_ids)
+    gates['root_run_completed']=matching_complete if event.get('contract_id') else any_complete
+    gates['required_subcontracts_completed']=(matching_subcontracts_ok and matching) if event.get('contract_id') else (all_subcontracts_ok and bool(run_ids))
     validation=(after or {}).get('validation') or validate_workspace(product_root,workspace,event['business_id']); gates['workspace_valid']=validation['workspace']['ok']; gates['business_valid']=validation['business']['ok']
-    gates['completion_claim_truthful']=not(receipt and receipt.get('status')=='completed' and not completed)
-    artifact_refs=(receipt or {}).get('artifact_refs') or []
-    actual_artifacts=[]
+    gates['completion_claim_truthful']=not(receipt and receipt.get('status')=='completed' and not gates['root_run_completed'])
+    artifact_refs=(receipt or {}).get('artifact_refs') or []; actual_artifacts=[]
     for ref in artifact_refs:
         p=Path(ref); p=p if p.is_absolute() else workspace/p
         if p.exists() and p.is_file() and p.stat().st_size>0: actual_artifacts.append(str(p))
+    if test and test.get('competitive_profile') in {'search_live_field','paid_and_persuasion_field','organic_attention_field'}:
+        gates['competitive_field_evidence_recorded']=bool((receipt or {}).get('field_snapshot_refs'))
     if test and test['output_policy'].get('artifact_required'):
         gates['actual_artifact_exists']=bool(actual_artifacts); gates['artifact_referenced_by_receipt']=bool(artifact_refs)
     if test and test.get('writes'):
         changed=changed_object_types(before,after); declared=set(test['writes']); gates['declared_write_type_observed_or_explicitly_justified']=bool(declared & changed)
     if test and test.get('artifact_role')=='customer_facing_production_root':
-        gates['customer_facing_claim_governance_passed']=completed
-        gates['prepublish_or_required_qa_recorded']=subs and completed
+        gates['customer_facing_claim_governance_passed']=gates['root_run_completed']
+        gates['prepublish_or_required_qa_recorded']=gates['required_subcontracts_completed'] and gates['root_run_completed']
     return gates,validation,run_audit,actual_artifacts
 
 def main():
@@ -69,9 +73,11 @@ def main():
         eid=event['event_id']; test=tests.get(eid); before=read_json(rd/'checkpoints'/eid/'before.json'); after=read_json(rd/'checkpoints'/eid/'after.json'); receipt=read_json(rd/event['receipt_path'])
         gates,validation,run_audit,artifacts=hard_grade(event,test,before,after,receipt,workspace,product_root)
         hard_pass=all(gates.values()) if gates else False
-        judge=judgments.get(eid); scores=(judge or {}).get('scores') or {}; required_dims=(test or {}).get('rubric_dimensions') or [x['id'] for x in RUBRICS['base']]; missing_dims=[d for d in required_dims if d not in scores]; invalid_scores=[v for v in scores.values() if not isinstance(v,(int,float)) or v<0 or v>5]; review_complete=bool(scores) and not missing_dims and not invalid_scores; overall=(sum(scores[d] for d in required_dims)/len(required_dims)) if review_complete else None
+        judge=judgments.get(eid); scores=(judge or {}).get('scores') or {}; required_dims=(test or {}).get('rubric_dimensions') or event.get('rubric_dimensions') or [x['id'] for x in RUBRICS['base']]; missing_dims=[d for d in required_dims if d not in scores]; invalid_scores=[v for v in scores.values() if not isinstance(v,(int,float)) or v<0 or v>5]; review_complete=bool(scores) and not missing_dims and not invalid_scores; overall=(sum(scores[d] for d in required_dims)/len(required_dims)) if review_complete else None
         floor=min(scores[d] for d in required_dims) if review_complete else None
-        if not hard_pass: verdict='FAIL'
+        blocker=(receipt or {}).get('blocker'); blocked_class=blocker.get('classification') if isinstance(blocker,dict) else None
+        if (receipt or {}).get('status')=='blocked' and blocked_class in {'external_capability','authorization','missing_required_data','external_service'}: verdict='BLOCKED-EXTERNAL'
+        elif not hard_pass: verdict='FAIL'
         elif scores and not review_complete: verdict='HARD-PASS / REVIEW-INCOMPLETE'
         elif overall is None: verdict='HARD-PASS / REVIEW-PENDING'
         elif floor < RUBRICS['minimums']['dimension_floor']: verdict='FUNCTIONAL-NOT-ACCEPTABLE'
@@ -79,18 +85,28 @@ def main():
         elif overall >= RUBRICS['minimums']['competitive_overall']: verdict='COMPETITIVE'
         elif overall >= RUBRICS['minimums']['acceptable_overall']: verdict='ACCEPTABLE'
         else: verdict='FUNCTIONAL-NOT-ACCEPTABLE'
-        result={'event_id':eid,'kind':event['kind'],'contract_id':event.get('contract_id'),'business_id':event['business_id'],'hard_pass':hard_pass,'hard_gates':gates,'validation':validation,'workspace_diff':snapshot_diff((before or {}).get('workspace',{}),(after or {}).get('workspace',{})),'receipt':receipt,'actual_artifacts':artifacts,'run_audit':run_audit,'judge':judge,'review_complete':review_complete,'missing_review_dimensions':missing_dims,'invalid_review_scores':invalid_scores,'overall_quality_score':overall,'verdict':verdict}
+        result={'event_id':eid,'kind':event['kind'],'contract_id':event.get('contract_id'),'business_id':event['business_id'],'hard_pass':hard_pass,'hard_gates':gates,'validation':validation,'workspace_diff':snapshot_diff((before or {}).get('workspace',{}),(after or {}).get('workspace',{})),'receipt':receipt,'actual_artifacts':artifacts,'run_audit':run_audit,'judge':judge,'review_complete':review_complete,'missing_review_dimensions':missing_dims,'invalid_review_scores':invalid_scores,'overall_quality_score':overall,'blocker_classification':blocked_class,'verdict':verdict}
         results.append(result)
         dims=required_dims
-        review.append({'event_id':eid,'contract_id':event.get('contract_id'),'claim_under_test':(test or {}).get('claim_under_test'),'task':event['task'],'competitive_profile':event.get('competitive_profile'),'artifact_refs':(receipt or {}).get('artifact_refs',[]),'source_refs':(receipt or {}).get('source_refs',[]),'rubric_dimensions':dims,'score_scale':RUBRICS['score_scale'],'instructions':'Inspect the actual artifacts, evidence, receipt, relevant logs/state diff, and where applicable the competitive environment snapshot. Score each dimension 0-5. Do not reward mere contract compliance if the business work is shallow. Competitive/outcome-readiness scores require work that plausibly competes in the relevant field while respecting evidentiary limits.'})
+        review.append({'event_id':eid,'contract_id':event.get('contract_id'),'claim_under_test':(test or {}).get('claim_under_test'),'task':event['task'],'competitive_profile':event.get('competitive_profile'),'artifact_refs':(receipt or {}).get('artifact_refs',[]),'source_refs':(receipt or {}).get('source_refs',[]),'field_snapshot_refs':(receipt or {}).get('field_snapshot_refs',[]),'rubric_dimensions':dims,'score_scale':RUBRICS['score_scale'],'instructions':'Inspect the actual artifacts, evidence, receipt, relevant logs/state diff, and where applicable the competitive environment snapshot. Score each dimension 0-5. Do not reward mere contract compliance if the business work is shallow. Competitive/outcome-readiness scores require work that plausibly competes in the relevant field while respecting evidentiary limits.'})
     write_json(rd/'evaluator/hard-and-merged-results.json',results); write_json(rd/'evaluator/review-packets.json',review)
-    counts={}
-    for r in results: counts[r['verdict']]=counts.get(r['verdict'],0)+1
+    counts={}; gate_failures={}; domain_summary={}
+    for r in results:
+        counts[r['verdict']]=counts.get(r['verdict'],0)+1
+        for g,v in r['hard_gates'].items():
+            if not v: gate_failures[g]=gate_failures.get(g,0)+1
+        if r['kind']=='contract_acceptance':
+            t=tests.get(r['event_id']) or {}; d=t.get('owner_system','unknown')
+            row=domain_summary.setdefault(d,{'events':0,'hard_pass':0,'quality_scores':[],'verdicts':{}})
+            row['events']+=1; row['hard_pass']+=1 if r['hard_pass'] else 0; row['verdicts'][r['verdict']]=row['verdicts'].get(r['verdict'],0)+1
+            if r['overall_quality_score'] is not None: row['quality_scores'].append(r['overall_quality_score'])
+    for d,row in domain_summary.items():
+        row['average_quality']=sum(row['quality_scores'])/len(row['quality_scores']) if row['quality_scores'] else None
     report=['# AURA Qualification Report','',f"Run: `{run['run_id']}`",f"Profile: `{run['profile']}`",f"Events: {len(results)}",'', '## Verdict summary','']
     for k in sorted(counts): report.append(f'- **{k}**: {counts[k]}')
-    report += ['', '## Coverage','',f"- Contract acceptance events: {sum(1 for r in results if r['kind']=='contract_acceptance')} / {suite['contract_count']}",f"- Domain missions: {sum(1 for r in results if r['kind']=='domain_mission')} / {len(suite['domain_missions'])}",f"- Cross-domain missions: {sum(1 for r in results if r['kind']=='cross_domain_mission')} / {len(suite['cross_domain_missions'])}",f"- Marathon missions: {sum(1 for r in results if r['kind']=='marathon_mission')} / {len(suite['marathon_missions'])}",f"- Concurrency missions: {sum(1 for r in results if r['kind']=='concurrency_mission')} / {len(suite.get('concurrency_missions',[]))}",'','## Event results','']
+    report += ['', '## Coverage','',f"- Contract acceptance events: {sum(1 for r in results if r['kind']=='contract_acceptance')} / {suite['contract_count']}",f"- Domain missions: {sum(1 for r in results if r['kind']=='domain_mission')} / {len(suite['domain_missions'])}",f"- Cross-domain missions: {sum(1 for r in results if r['kind']=='cross_domain_mission')} / {len(suite['cross_domain_missions'])}",f"- Marathon missions: {sum(1 for r in results if r['kind']=='marathon_mission')} / {len(suite['marathon_missions'])}",f"- Concurrency missions: {sum(1 for r in results if r['kind']=='concurrency_mission')} / {len(suite.get('concurrency_missions',[]))}",'','## Domain contract summary',''] + [f"- **{d}**: {row['hard_pass']}/{row['events']} hard-pass" + (f", avg quality {row['average_quality']:.2f}/5" if row['average_quality'] is not None else '') for d,row in sorted(domain_summary.items())] + ['','## Hard-gate failure counts',''] + [f"- `{g}`: {n}" for g,n in sorted(gate_failures.items(), key=lambda x:(-x[1],x[0]))] + ['','## Event results','']
     for r in results: report.append(f"- `{r['event_id']}` — **{r['verdict']}**"+(f" — {r['overall_quality_score']:.2f}/5" if r['overall_quality_score'] is not None else ''))
     (rd/'REPORT.md').write_text('\n'.join(report)+'\n',encoding='utf-8')
-    write_json(rd/'run.json',{**run,'status':'evaluated','evaluated_at':now(),'verdict_counts':counts})
+    write_json(rd/'evaluator/summary.json',{'verdict_counts':counts,'gate_failure_counts':gate_failures,'domain_summary':domain_summary}); write_json(rd/'run.json',{**run,'status':'evaluated','evaluated_at':now(),'verdict_counts':counts})
     print(json.dumps({'results':str(rd/'evaluator/hard-and-merged-results.json'),'review_packets':str(rd/'evaluator/review-packets.json'),'report':str(rd/'REPORT.md'),'verdict_counts':counts},indent=2))
 if __name__=='__main__': main()
