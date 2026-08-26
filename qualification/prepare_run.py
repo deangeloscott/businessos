@@ -37,12 +37,32 @@ def copy_product(src,dst):
         q=dst/rel; q.parent.mkdir(parents=True,exist_ok=True); shutil.copy2(p,q)
     return dst
 
+def _run(cmd,product_root,env):
+    p=subprocess.run(cmd,cwd=product_root,env=env,capture_output=True,text=True)
+    if p.returncode!=0:
+        raise SystemExit(f"Qualification preparation command failed ({p.returncode}): {' '.join(map(str,cmd))}\nSTDOUT:\n{p.stdout}\nSTDERR:\n{p.stderr}")
+    return p
+
 def init_business(product_root,workspace,fixture):
     data=json.loads((FIXTURES/f'{fixture}.json').read_text()); bid=data['business_id']; name=data['name']
+    bootstrap=data.get('bootstrap_facts')
+    if not isinstance(bootstrap,dict) or not bootstrap:
+        raise SystemExit(f'Qualification fixture {fixture} requires non-empty bootstrap_facts so Level-2 tests begin from grounded canonical context')
     env=dict(os.environ); env['BUSINESSOS_WORKSPACE']=str(workspace); env['PYTHONDONTWRITEBYTECODE']='1'
-    subprocess.run([sys.executable,str(product_root/'scripts/init_business.py'),bid,'--name',name],cwd=product_root,env=env,check=True,capture_output=True,text=True)
+    _run([sys.executable,str(product_root/'scripts/init_business.py'),bid,'--name',name],product_root,env)
     inputs=workspace/'attachments'/'qualification-inputs'; inputs.mkdir(parents=True,exist_ok=True)
-    shutil.copy2(FIXTURES/f'{fixture}.json',inputs/f'{fixture}.json')
+    source_path=inputs/f'{fixture}.json'; shutil.copy2(FIXTURES/f'{fixture}.json',source_path)
+    seed_dir=workspace/'runtime'/'qualification-bootstrap'; seed_dir.mkdir(parents=True,exist_ok=True)
+    facts_path=seed_dir/f'{fixture}-facts.json'; facts_path.write_text(json.dumps(bootstrap,indent=2)+'\n',encoding='utf-8')
+    boot=_run([
+        sys.executable,str(product_root/'scripts/bootstrap_explicit_context.py'),bid,
+        '--facts-file',str(facts_path),'--source-file',str(source_path),
+        '--source-reference',f'qualification fixture {fixture}','--initialization-only'
+    ],product_root,env)
+    validation=_run([sys.executable,str(product_root/'scripts/validate_business.py'),bid,'--require-context'],product_root,env)
+    audit={'fixture':fixture,'business_id':bid,'source_path':str(source_path),'facts_path':str(facts_path),'bootstrapped_at':now(),
+           'bootstrap_stdout':boot.stdout,'bootstrap_stderr':boot.stderr,'validation_stdout':validation.stdout,'validation_stderr':validation.stderr}
+    write_json(seed_dir/f'{fixture}-bootstrap-audit.json',audit)
     return bid
 
 def instructions(product_root,run_dir,workspace,events):
@@ -62,10 +82,12 @@ export BUSINESSOS_WORKSPACE='{workspace}'
 export AURA_QUALIFICATION_RUN='{run_dir}'
 ```
 
+The benchmark businesses have already been initialized and their explicit starting context has been grounded into canonical AURA state. Their richer controlled first-party evidence is available at `attachments/qualification-inputs/<fixture>.json`. Treat that file as supplied first-party evidence for the qualification business; ingest/persist relevant evidence through normal AURA processes as the event requires. Do not redo onboarding or ask for basic benchmark facts already present in canonical state or the supplied fixture.
+
 Process every queue event in order and continue directly to the next event. Do not stop between events to ask whether to continue. A genuine external blocker should be recorded for that event, then continue with later events when safe.
 
 For EVERY event:
-1. Read the event and relevant AURA contract/process material. Do not modify canonical AURA product source.
+1. Read the event, the controlled fixture for that event, existing accumulated AURA state, and relevant AURA contract/process material. Do not modify canonical AURA product source.
 2. Run `python3 qualification/checkpoint.py <EVENT_ID> before --business-id <BUSINESS_ID>` before doing event work.
 3. Execute the business work fully. If the benchmark does not naturally contain the condition needed to exercise an atomic contract, create a clearly labeled qualification-only synthetic input under the qualification attachments; do not silently promote that synthetic input into a real business fact. If AURA says an artifact is creatable, create the actual artifact; a description, outline, or proposed version is not a substitute unless that is the contract's promised output.
 4. Where the competitive environment is material, inspect it. For SEO/AEO inspect current leaders/surfaces and compare multiple leaders; for ads use relevant transparency/creative centers and landing paths; for organic content use visible performance proxies and normalize them when possible. Treat proxies as proxies, not proof of profit or causality. Save enough timestamped source/evidence references in `field_snapshot_refs` that a reviewer can reconstruct the competitive field you evaluated.
@@ -87,7 +109,7 @@ def main():
         run_dir.relative_to(ROOT.resolve()); raise SystemExit('Qualification run root must be outside the AURA product tree to prevent recursive staging or product contamination')
     except ValueError:
         pass
-    product_root=copy_product(ROOT,run_dir/'product'); subprocess.run([sys.executable,str(product_root/'scripts/generate_registry.py')],cwd=product_root,check=True,capture_output=True,text=True); workspace=run_dir/'workspace'; workspace.mkdir(parents=True); (run_dir/'candidate').mkdir(); (run_dir/'evaluator').mkdir(); (run_dir/'candidate-results').mkdir(); (run_dir/'checkpoints').mkdir()
+    product_root=copy_product(ROOT,run_dir/'product'); _run([sys.executable,str(product_root/'scripts/generate_registry.py')],product_root,dict(os.environ)); workspace=run_dir/'workspace'; workspace.mkdir(parents=True); (run_dir/'candidate').mkdir(); (run_dir/'evaluator').mkdir(); (run_dir/'candidate-results').mkdir(); (run_dir/'checkpoints').mkdir()
     fixtures={t['fixture'] for t in suite['contract_tests']}|{m['fixture'] for k in ('domain_missions','cross_domain_missions','marathon_missions') for m in suite[k]}
     for f in sorted(fixtures): init_business(product_root,workspace,f)
     events=[]
@@ -99,7 +121,7 @@ def main():
     if a.profile in ('cross-domain','full'): events += [event_from_mission(m,'cross_domain_mission') for m in suite['cross_domain_missions']]
     if a.profile in ('marathon','full'): events += [event_from_mission(m,'marathon_mission') for m in suite['marathon_missions']]
     queue={'format_version':'1.0','run_id':run_id,'created_at':now(),'profile':a.profile,'domain_filter':a.domain,'event_count':len(events),'events':events}
-    write_json(run_dir/'candidate/queue.json',queue); write_json(run_dir/'evaluator/suite.json',suite); write_json(run_dir/'run.json',{'run_id':run_id,'created_at':now(),'product_root':str(product_root),'workspace':str(workspace),'profile':a.profile,'event_count':len(events),'status':'prepared'})
+    write_json(run_dir/'candidate/queue.json',queue); write_json(run_dir/'evaluator/suite.json',suite); write_json(run_dir/'run.json',{'run_id':run_id,'created_at':now(),'product_root':str(product_root),'workspace':str(workspace),'profile':a.profile,'event_count':len(events),'status':'prepared','benchmark_context_seeded':True})
     (run_dir/'candidate/RUN-INSTRUCTIONS.md').write_text(instructions(product_root,run_dir,workspace,events),encoding='utf-8')
-    print(json.dumps({'run_id':run_id,'run_dir':str(run_dir),'workspace':str(workspace),'event_count':len(events),'instructions':str(run_dir/'candidate/RUN-INSTRUCTIONS.md'),'queue':str(run_dir/'candidate/queue.json')},indent=2))
+    print(json.dumps({'run_id':run_id,'run_dir':str(run_dir),'product_root':str(product_root),'workspace':str(workspace),'event_count':len(events),'instructions':str(run_dir/'candidate/RUN-INSTRUCTIONS.md'),'queue':str(run_dir/'candidate/queue.json')},indent=2))
 if __name__=='__main__': main()
