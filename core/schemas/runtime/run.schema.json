@@ -80,6 +80,11 @@
       "minLength": 1,
       "description": "Run-local effective-preference snapshot used for reproducible execution context."
     },
+    "completion_policy_ref": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Optional reference to the completion-evidence policy snapshot governing this Run."
+    },
     "correlation_id": {
       "type": "string",
       "minLength": 1
