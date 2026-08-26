@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from pathlib import Path
-import inspect, json, subprocess, sys, tempfile
+import inspect, json, os, subprocess, sys, tempfile
 ROOT=Path(__file__).resolve().parents[1]; sys.path.insert(0,str(ROOT/'qualification'))
 from build_suite import build
 from prepare_run import init_business, copy_product
@@ -12,7 +12,7 @@ def smoke_prepare():
     with tempfile.TemporaryDirectory(prefix='aura-qualification-smoke-') as td:
         p=subprocess.run([sys.executable,str(ROOT/'qualification/prepare_run.py'),'--profile','atomic','--domain','core','--run-root',td,'--run-id','smoke'],cwd=ROOT,capture_output=True,text=True)
         req(p.returncode==0,f'qualification prepare smoke failed:\nSTDOUT:\n{p.stdout}\nSTDERR:\n{p.stderr}')
-        rd=Path(td)/'smoke'; meta=json.loads((rd/'run.json').read_text()); queue=json.loads((rd/'candidate/queue.json').read_text())
+        rd=Path(td)/'smoke'; meta=json.loads((rd/'run.json').read_text()); queue_path=rd/'candidate/queue.json'; queue=json.loads(queue_path.read_text())
         req(meta.get('benchmark_context_seeded') is True,'prepared run must record grounded benchmark context')
         req(meta.get('future_evidence_staged') is True,'prepared run must record staged future evidence')
         req(queue.get('event_count',0)>0 and all(x.get('kind')=='contract_acceptance' for x in queue.get('events',[])),'atomic core smoke queue missing contract events')
@@ -23,6 +23,15 @@ def smoke_prepare():
             req((rd/'workspace/runtime/qualification-bootstrap'/f'{fixture}-bootstrap-audit.json').exists(),f'{fixture}: canonical bootstrap audit missing')
         req((rd/'evaluator/hidden-fixtures/atlasops-saas-releases.json').exists(),'AtlasOps later-period release not staged')
         req((rd/'evaluator/hidden-fixtures/harbor-hvac-releases.json').exists(),'Harbor HVAC later-period release not staged')
+        release_event={'event_id':'SMOKE-RELEASE','kind':'marathon_mission','business_id':'qa-atlasops-saas','fixture':'atlasops-saas','release_fixture':'later_period','contract_id':None,'task':'smoke timed release'}
+        queue_path.write_text(json.dumps({'format_version':'1.0','run_id':'smoke','profile':'smoke','event_count':1,'events':[release_event]},indent=2)+'\n')
+        env=dict(os.environ); env['BUSINESSOS_WORKSPACE']=meta['workspace']; env['AURA_QUALIFICATION_RUN']=str(rd); env['PYTHONDONTWRITEBYTECODE']='1'
+        before=subprocess.run([sys.executable,str(rd/'product/qualification/checkpoint.py'),'SMOKE-RELEASE','before','--business-id','qa-atlasops-saas'],cwd=rd/'product',env=env,capture_output=True,text=True)
+        req(before.returncode==0,f'timed release before-checkpoint failed: {before.stdout}\n{before.stderr}')
+        release=subprocess.run([sys.executable,str(rd/'product/qualification/release_fixture.py'),'SMOKE-RELEASE'],cwd=rd/'product',env=env,capture_output=True,text=True)
+        req(release.returncode==0,f'timed release helper failed: {release.stdout}\n{release.stderr}')
+        released=rd/'workspace/attachments/qualification-inputs/atlasops-saas-later_period.json'; req(released.exists(),'timed release did not create candidate-visible evidence')
+        rel=json.loads(released.read_text()); req(rel.get('release_fixture')=='later_period' and rel.get('evidence'),'timed release payload invalid')
 
 def main():
     suite=build(); manifest=json.loads((ROOT/'SYSTEM-MANIFEST.json').read_text())
@@ -55,5 +64,5 @@ def main():
     released=[m for m in suite['cross_domain_missions']+suite['marathon_missions'] if m.get('release_fixture')]
     req(len(released)>=2 and {'CROSS-MARKET-CHANGE-001','MARATHON-002'}.issubset({m['id'] for m in released}),'expected longitudinal evidence-release missions missing')
     smoke_prepare()
-    print(f"qualification framework regressions passed: {suite['contract_count']} contract tests, {suite['capability_count']} capability mappings, {len(suite['domain_missions'])} domain missions, {len(suite['cross_domain_missions'])} cross-domain missions, {len(suite['marathon_missions'])} marathon missions, {len(suite.get('concurrency_missions',[]))} concurrency missions, {len(fixture_paths)} grounded fixtures, {len(released)} timed evidence releases, preparation smoke passed")
+    print(f"qualification framework regressions passed: {suite['contract_count']} contract tests, {suite['capability_count']} capability mappings, {len(suite['domain_missions'])} domain missions, {len(suite['cross_domain_missions'])} cross-domain missions, {len(suite['marathon_missions'])} marathon missions, {len(suite.get('concurrency_missions',[]))} concurrency missions, {len(fixture_paths)} grounded fixtures, {len(released)} timed evidence releases, preparation/release smoke passed")
 if __name__=='__main__': main()
