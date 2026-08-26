@@ -18,17 +18,23 @@ def main():
     for p in [BASE,RUNS]:
         if p.exists():shutil.rmtree(p)
     try:
+        req((ROOT/'core/policies/completion-evidence.md').exists(),'completion evidence policy missing')
         req(run(S/'init_business.py',BID,'--name','Completion Evidence Integrity').returncode==0,'init failed')
         contracts=contract_index()
         req(completion_spec(contracts['content.production.article'])['profile']=='production','article should use production profile')
         req(completion_spec(contracts['content.qa.pre-publish'])['profile']=='qa','pre-publish should use QA profile')
+        req(completion_spec(contracts['content.qa.pre-publish'])['strict_qa_target'] is True,'pre-publish should require target Asset/version')
         req(completion_spec(contracts['content.measurement.content-performance'])['profile']=='measurement','content performance should use measurement profile')
         req(completion_spec(contracts['content.research.source-support'])['profile']=='research','source support should use research profile')
         req(completion_spec(contracts['seo.diagnosis.detectors.indexing'])['profile']=='detector','detector profile inference failed')
+        req(completion_spec(contracts['content.production.short-video'])['allow_specification_fallback'] is True,'short video should support complete production packet fallback')
 
         rid=run(S/'create_run.py',BID,'content.production.article','Produce a real evidence-backed article').stdout.strip()
         req(rid.startswith('run_'),f'create_run failed: {rid}')
         manifest=json.loads((RUNS/rid/'contract-execution.json').read_text())
+        runmeta=json.loads((RUNS/rid/'run.json').read_text())
+        req(manifest.get('completion_policy_ref')=='core/policies/completion-evidence.md','Run manifest must expose completion evidence policy')
+        req(runmeta.get('completion_policy_ref')=='core/policies/completion-evidence.md','Run metadata must expose completion evidence policy')
         req(manifest.get('root_completion_evidence_spec',{}).get('profile')=='production','Run must snapshot root completion evidence profile')
         req((manifest.get('contracts',{}).get('content.qa.pre-publish') or {}).get('completion_evidence_spec',{}).get('profile')=='qa','Run must snapshot subcontract completion evidence profile')
 
@@ -51,6 +57,19 @@ def main():
         asset['location_reference']=str(article.relative_to(ROOT));write(ap,json.dumps(asset,indent=2)+'\n')
         errs=validate_evidence(contracts['content.production.article'],[str(article.relative_to(ROOT))],BID,rid,phase='root')
         req(not errs,f'lineage-bound article document should satisfy deterministic structural minimums: {errs}')
+
+        # A non-rendered video may satisfy graceful degradation only when it is a real
+        # production packet, not arbitrary prose.
+        vidrid='run_video_fixture';vfile=BASE/'assets'/'video-packet.md';write(vfile,'generic operations guide with no production detail\n')
+        vasset={**asset,'id':f'ast_{BID}_video','asset_type':'short-video','location_reference':str(vfile.relative_to(ROOT)),'extensions':{'businessos':{'run_ref':f'runtime/runs/{BID}/{vidrid}','run_id':vidrid,'run_contract_id':'content.production.short-video','customer_facing':True,'contract_chain':['content.production.short-video']}}}
+        vap=BASE/'assets'/f"{vasset['id']}.json";write(vap,json.dumps(vasset,indent=2)+'\n')
+        errs=validate_evidence(contracts['content.production.short-video'],[str(vfile.relative_to(ROOT))],BID,vidrid,phase='root')
+        req(errs,f'generic prose must not count as a short-video production packet: {errs}')
+        write(vfile,('# Short video production packet\n\nVisual plan and duration: 45 seconds. Audio direction supports comprehension. '\
+                    'Scene 1 establishes the dispatch problem; scene 2 shows the workflow; scene 3 delivers proof and CTA. '\
+                    'Visual safe areas and captions are specified for the platform. Audio pacing, shot transitions, on-screen text, '\
+                    'duration, final CTA, and rendering notes are included. ')*3)
+        req(not validate_evidence(contracts['content.production.short-video'],[str(vfile.relative_to(ROOT))],BID,vidrid,phase='root'),'complete video production packet should satisfy graceful-degradation structure')
 
         # Bare QA self-attestation must be rejected by record_contract_completion.py.
         bad=RUNS/rid/'artifacts'/'bad-prepublish.json';write(bad,json.dumps({'contract_id':'content.qa.pre-publish','status':'pass'})+'\n')
