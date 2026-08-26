@@ -29,6 +29,7 @@ TESTS=[
     'tests/run_customer_facing_completion_gate.py',
     'tests/run_claim_manifest_operational_promises.py',
     'tests/run_qualification_framework.py',
+    'tests/run_qualification_resume.py',
 ]
 for rel in TESTS:
     print(f'== {rel} ==')
