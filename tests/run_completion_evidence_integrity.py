@@ -32,26 +32,25 @@ def main():
         req(manifest.get('root_completion_evidence_spec',{}).get('profile')=='production','Run must snapshot root completion evidence profile')
         req((manifest.get('contracts',{}).get('content.qa.pre-publish') or {}).get('completion_evidence_spec',{}).get('profile')=='qa','Run must snapshot subcontract completion evidence profile')
 
-        # Build one canonical input and a Run-bound production Asset.
-        wrk={
-            'id':f'wrk_{BID}_source','object_type':'WorkRequest','business_id':BID,
-            'extensions':{}
-        }
+        # Build one canonical input and a Run-bound production Asset. A file can exist and
+        # still be structurally wrong for the promised medium.
+        wrk={'id':f'wrk_{BID}_source','object_type':'WorkRequest','business_id':BID,'extensions':{}}
         wp=BASE/'work'/'request.json';write(wp,json.dumps(wrk,indent=2)+'\n')
-        short=BASE/'assets'/'article.md';write(short,'# Generic placeholder\n\n'+('generic filler words ' * 35))
+        wrong=BASE/'assets'/'article.png';write(wrong,'not actually an article document\n')
         aid=f'ast_{BID}_article'
         asset={
             'id':aid,'object_type':'Asset','business_id':BID,'owner_system':'content-synthesis',
             'asset_type':'article','business_role':'customer_facing_article','version':'1','status':'draft',
-            'lineage':[wrk['id']],'location_reference':str(short.relative_to(ROOT)),
+            'lineage':[wrk['id']],'location_reference':str(wrong.relative_to(ROOT)),
             'extensions':{'businessos':{'run_ref':f'runtime/runs/{BID}/{rid}','run_id':rid,'run_contract_id':'content.production.article','customer_facing':True,'contract_chain':['content.production.article']}}
         }
         ap=BASE/'assets'/f'{aid}.json';write(ap,json.dumps(asset,indent=2)+'\n')
-        errs=validate_evidence(contracts['content.production.article'],[str(short.relative_to(ROOT))],BID,rid,phase='root')
-        req(any('too small' in e for e in errs),f'short generic production placeholder must fail substance check: {errs}')
-        write(short,'# Field-service implementation transparency\n\n'+('AtlasOps field service leaders need implementation visibility, workflow continuity, rollout evidence, and practical dispatch guidance. ' * 28))
-        errs=validate_evidence(contracts['content.production.article'],[str(short.relative_to(ROOT))],BID,rid,phase='root')
-        req(not errs,f'substantive lineage-bound article evidence should satisfy deterministic production minimums: {errs}')
+        errs=validate_evidence(contracts['content.production.article'],[str(wrong.relative_to(ROOT))],BID,rid,phase='root')
+        req(any('expected text/document medium' in e for e in errs),f'wrong-medium production placeholder must fail: {errs}')
+        article=BASE/'assets'/'article.md';write(article,'# Field-service implementation transparency\n\nA grounded article draft tied to the active WorkRequest.\n')
+        asset['location_reference']=str(article.relative_to(ROOT));write(ap,json.dumps(asset,indent=2)+'\n')
+        errs=validate_evidence(contracts['content.production.article'],[str(article.relative_to(ROOT))],BID,rid,phase='root')
+        req(not errs,f'lineage-bound article document should satisfy deterministic structural minimums: {errs}')
 
         # Bare QA self-attestation must be rejected by record_contract_completion.py.
         bad=RUNS/rid/'artifacts'/'bad-prepublish.json';write(bad,json.dumps({'contract_id':'content.qa.pre-publish','status':'pass'})+'\n')
