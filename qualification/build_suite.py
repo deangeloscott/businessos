@@ -35,6 +35,8 @@ def hard_gates(c):
         gates += ['actual_artifact_exists','artifact_referenced_by_receipt']
     if c.get('writes'):
         gates += ['declared_write_type_observed_or_explicitly_justified']
+    if competitive_profile(c) in {'search_live_field','paid_and_persuasion_field','organic_attention_field'}:
+        gates += ['competitive_field_evidence_recorded']
     if c.get('artifact_role')=='customer_facing_production_root':
         gates += ['customer_facing_claim_governance_passed','prepublish_or_required_qa_recorded']
     return gates
@@ -53,7 +55,17 @@ def build():
             'output_policy':output_policy(c),'competitive_profile':competitive_profile(c),'rubric_dimensions':dimensions_for(competitive_profile(c)),
             'hard_gates':hard_gates(c),'artifact_role':c.get('artifact_role'),'risk':c.get('risk'),'autonomy_ceiling':c.get('autonomy_ceiling')
         })
+    catalog=json.loads((ROOT/'core/capabilities/catalog.json').read_text()).get('capabilities',[])
+    coverage={}
+    for cap in catalog:
+        capid=cap['id']; required=[]; optional=[]
+        for t in tests:
+            cm=t.get('capabilities') or {}
+            if capid in (cm.get('required') or []): required.append(t['test_id'])
+            if capid in (cm.get('optional') or []): optional.append(t['test_id'])
+        coverage[capid]={'description':cap.get('description'),'required_by':required,'optional_by':optional,'covered_by_contract_tests':sorted(set(required+optional))}
     return {'format_version':'1.0','suite_name':'AURA Business Capability Qualification Suite','contract_count':len(contracts),'contract_tests':tests,
+            'capability_count':len(catalog),'capability_coverage':coverage,'unreferenced_capabilities':sorted(k for k,v in coverage.items() if not v['covered_by_contract_tests']),
             'domain_missions':MISSIONS['domain_missions'],'cross_domain_missions':MISSIONS['cross_domain_missions'],'marathon_missions':MISSIONS['marathon_missions'],'concurrency_missions':MISSIONS.get('concurrency_missions',[])}
 
 def main():
