@@ -5,14 +5,23 @@ from build_suite import build
 from common import ROOT, now, write_json
 
 FIXTURES=ROOT/'qualification/fixtures'
+RUBRICS=json.loads((ROOT/'qualification/rubrics/rubrics.json').read_text())
 
 def event_from_contract(t):
     return {'event_id':t['test_id'],'kind':'contract_acceptance','business_id':'qa-'+t['fixture'].replace('_','-'),'fixture':t['fixture'],'contract_id':t['contract_id'],
             'task':t['candidate_task'],'competitive_profile':t['competitive_profile'],'required_output':t['output_policy'],'receipt_path':f"candidate-results/{t['test_id']}.json"}
 
+def mission_dimensions(m,kind):
+    base=[x['id'] for x in RUBRICS['base']]
+    if kind=='cross_domain_mission': profile='cross_domain_system'
+    elif kind=='marathon_mission': profile='marathon_system'
+    else:
+        owner=m.get('owner_system'); profile={'core':'governance_and_state','customer-intelligence':'customer_truth','competitor-intelligence':'competitive_intelligence','industry-intelligence':'ecosystem_truth','seo-aeo':'search_live_field','content-synthesis':'artifact_excellence','marketing-synthesis':'paid_and_persuasion_field','customer-optimization':'first_party_outcomes'}.get(owner,'cross_domain_system')
+    return base + list(RUBRICS['profiles'].get(profile,[]))
+
 def event_from_mission(m,kind):
     return {'event_id':m['id'],'kind':kind,'business_id':'qa-'+m['fixture'].replace('_','-'),'fixture':m['fixture'],'contract_id':None,'task':m['task'],
-            'competitive_profile':'mission','required_output':{'actual_output_not_description':True},'receipt_path':f"candidate-results/{m['id']}.json"}
+            'competitive_profile':'mission','rubric_dimensions':mission_dimensions(m,kind),'required_output':{'actual_output_not_description':True},'receipt_path':f"candidate-results/{m['id']}.json"}
 
 def copy_product(src,dst):
     src=Path(src); dst=Path(dst)
@@ -59,11 +68,11 @@ For EVERY event:
 1. Read the event and relevant AURA contract/process material. Do not modify canonical AURA product source.
 2. Run `python3 qualification/checkpoint.py <EVENT_ID> before --business-id <BUSINESS_ID>` before doing event work.
 3. Execute the business work fully. If the benchmark does not naturally contain the condition needed to exercise an atomic contract, create a clearly labeled qualification-only synthetic input under the qualification attachments; do not silently promote that synthetic input into a real business fact. If AURA says an artifact is creatable, create the actual artifact; a description, outline, or proposed version is not a substitute unless that is the contract's promised output.
-4. Where the competitive environment is material, inspect it. For SEO/AEO inspect current leaders/surfaces and compare multiple leaders; for ads use relevant transparency/creative centers and landing paths; for organic content use visible performance proxies and normalize them when possible. Treat proxies as proxies, not proof of profit or causality.
+4. Where the competitive environment is material, inspect it. For SEO/AEO inspect current leaders/surfaces and compare multiple leaders; for ads use relevant transparency/creative centers and landing paths; for organic content use visible performance proxies and normalize them when possible. Treat proxies as proxies, not proof of profit or causality. Save enough timestamped source/evidence references in `field_snapshot_refs` that a reviewer can reconstruct the competitive field you evaluated.
 5. Aim for outcome readiness: do the research, competitive analysis, strategy, execution, QA, integration, and measurement preparation a strong practitioner would reasonably expect to maximize the intended business result.
 6. Follow AURA evidence, provenance, semantic ownership, authorization, required-subcontract, customer-facing claim, and completion rules. Never report a draft as executed or an unmeasured result as proven.
 7. Persist the real business result and state through AURA. Reuse existing evidence/state instead of redoing work without reason.
-8. Write the event receipt to the exact `receipt_path` relative to the qualification run directory. It must be JSON with: `event_id`, `business_id`, `status` (`completed` or `blocked`), `root_run_ids`, `artifact_refs`, `canonical_refs`, `source_refs`, `summary`, `blocker` (null if completed), and `quality_notes`.
+8. Write the event receipt to the exact `receipt_path` relative to the qualification run directory. It must be JSON with: `event_id`, `business_id`, `status` (`completed` or `blocked`), `root_run_ids`, `artifact_refs`, `canonical_refs`, `source_refs`, `field_snapshot_refs`, `summary`, `blocker` (null if completed; otherwise an object with `classification` and `detail`), and `quality_notes`. Valid blocker classifications are `external_capability`, `authorization`, `missing_required_data`, `external_service`, or `aura_process`.
 9. Run `python3 qualification/checkpoint.py <EVENT_ID> after --business-id <BUSINESS_ID>` after the receipt and AURA work are persisted.
 10. Immediately continue to the next queue item.
 
@@ -92,5 +101,5 @@ def main():
     queue={'format_version':'1.0','run_id':run_id,'created_at':now(),'profile':a.profile,'domain_filter':a.domain,'event_count':len(events),'events':events}
     write_json(run_dir/'candidate/queue.json',queue); write_json(run_dir/'evaluator/suite.json',suite); write_json(run_dir/'run.json',{'run_id':run_id,'created_at':now(),'product_root':str(product_root),'workspace':str(workspace),'profile':a.profile,'event_count':len(events),'status':'prepared'})
     (run_dir/'candidate/RUN-INSTRUCTIONS.md').write_text(instructions(product_root,run_dir,workspace,events),encoding='utf-8')
-    print(json.dumps({'run_id':run_id,'run_dir':str(run_dir),'product_root':str(product_root),'workspace':str(workspace),'event_count':len(events),'instructions':str(run_dir/'candidate/RUN-INSTRUCTIONS.md'),'queue':str(run_dir/'candidate/queue.json')},indent=2))
+    print(json.dumps({'run_id':run_id,'run_dir':str(run_dir),'workspace':str(workspace),'event_count':len(events),'instructions':str(run_dir/'candidate/RUN-INSTRUCTIONS.md'),'queue':str(run_dir/'candidate/queue.json')},indent=2))
 if __name__=='__main__': main()
