@@ -16,6 +16,8 @@ Use tagged GitHub Releases for stable versions. A normal user can download a ZIP
 
 The **full ViralTrac AURA ZIP is the primary and recommended release asset**. Specialized AURA component editions are optional smaller downloads generated from the same canonical source for users who intentionally want a bounded subsystem. The source repository itself represents the full AURA BusinessOS; editions should not be maintained as separate source branches or competing codebases.
 
+The source repository may also contain maintainer/developer verification infrastructure such as regression tests and the AURA business-capability qualification gauntlet. Those materials exist to prove and improve the product and are not part of the ordinary operating experience. Curated release ZIPs should contain the AURA runtime/source needed by users plus the minimal public distribution validation entrypoint, while excluding maintainer-only qualification fixtures, hidden evaluator material, marathon runners, and other test infrastructure. GitHub's automatically generated source-code archives may still reflect the full repository because they are source snapshots rather than the curated end-user distribution.
+
 Organization-owned state may optionally live in a separate workspace configured through `scripts/configure_workspace.py`. Existing populated state should move through the verified, non-destructive `scripts/migrate_workspace.py` path. Local workspace pointers, live business state, human knowledge, attachments, and other user-specific workspace material must not be bundled into a public release.
 
 ## Updates
