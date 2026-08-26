@@ -33,6 +33,16 @@ context:
 - Offer
 - Objective
 - EconomicContext
+completion_evidence:
+  required_text_components:
+  - id: sequence-position-or-job
+    any_of: [sequence position, message job, email 1, email 2]
+  - id: subject
+    any_of: [subject line, "subject:"]
+  - id: body
+    any_of: [body copy, "body:"]
+  - id: call-to-action
+    any_of: [cta, call to action]
 ---
 # Marketing Email Draft
 

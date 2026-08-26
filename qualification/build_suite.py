@@ -33,13 +33,13 @@ def candidate_task(c):
     return f"Execute AURA contract {c['contract_id']} for the active qualification business as a real production task. Intended outcome: {outcome} {run_when}{extra} Follow the contract's actual process and completion-evidence requirements, AURA governance, required subcontracts, evidence/provenance, and completion rules. Deterministic automation may assist bookkeeping, but it may not fabricate or mass-generate generic evidence/artifacts in place of contract-specific work. Continue until the contract is genuinely complete or record a specific external blocker."
 
 def hard_gates(c):
-    gates=['checkpoint_before_exists','checkpoint_after_exists','candidate_receipt_exists','root_run_exists','root_run_contract_matches','root_run_completed','required_subcontracts_completed','workspace_valid','business_valid','completion_claim_truthful']
+    gates=['checkpoint_before_exists','checkpoint_after_exists','candidate_receipt_exists','root_run_exists','root_run_contract_matches','root_run_completed','root_completion_evidence_valid','required_subcontracts_completed','required_subcontract_evidence_valid','workspace_valid','business_valid','completion_claim_truthful']
     if output_policy(c)['artifact_required']:
-        gates += ['actual_artifact_exists','artifact_referenced_by_receipt','artifact_nontrivial']
+        gates += ['actual_artifact_exists','artifact_referenced_by_receipt','artifact_nontrivial','artifact_contract_specific']
     if c.get('writes'):
         gates += ['declared_write_type_observed_or_explicitly_justified']
     if competitive_profile(c) in {'search_live_field','paid_and_persuasion_field','organic_attention_field'}:
-        gates += ['competitive_field_evidence_recorded','competitive_field_evidence_exists','competitive_field_evidence_event_specific']
+        gates += ['competitive_field_evidence_recorded','competitive_field_evidence_exists','competitive_field_evidence_event_specific','competitive_field_evidence_reconstructable']
     if c.get('artifact_role')=='customer_facing_production_root':
         gates += ['customer_facing_claim_governance_passed','prepublish_or_required_qa_recorded']
     return gates

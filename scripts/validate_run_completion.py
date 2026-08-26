@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from _common import *
 from run_provenance import RUN_BOUND_TYPES, LEGACY_ORIGINS
-from completion_evidence import qa_record_ok, validate_evidence
+from completion_evidence import qa_record_ok, subcontract_manifest_errors, validate_evidence
 import json
 
 CUSTOMER_FACING_ROLE='customer_facing_production_root'
@@ -69,6 +69,8 @@ def _semantic_run_errors(business_id,objects,contracts):
         if not root or not rid:continue
         sem=validate_evidence(root,m.get('root_evidence_refs') or [],business_id,rid,phase='root',manifest=m)
         errors.extend(f'{rr} completion evidence invalid for {root_id}: {e}' for e in sem)
+        sub=subcontract_manifest_errors(m,business_id,rid,contracts)
+        errors.extend(f'{rr} required subcontract evidence invalid: {e}' for e in sub)
     return errors
 
 

@@ -6,7 +6,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'qualification'))
 from integrity import (
     artifact_similarity_flags, event_specific_ref_paths, is_structured_prepublish_record,
-    run_control_flags, selector_types,
+    integrity_hard_failure, is_reconstructable_field_snapshot, run_control_flags, selector_types,
 )
 from build_suite import build
 
@@ -26,6 +26,11 @@ def main():
         same_before={'workspace':{'files':[{'path':'attachments/field.json','sha256':'abc'}]}}
         req(not event_specific_ref_paths(['attachments/field.json'],same_before,after,ws),'unchanged recycled field snapshot must not count as event-specific evidence')
 
+        bad_field=root/'bad-field.json';bad_field.write_text(json.dumps({'captured_at':'2026-08-26T00:00:00Z','competitive_set':[{'name':'Industry benchmark'},{'name':'Category competitor'}]}))
+        req(not is_reconstructable_field_snapshot(bad_field,ws),'unnamed/source-free synthetic field evidence must not be reconstructable')
+        good_field=root/'good-field.json';good_field.write_text(json.dumps({'captured_at':'2026-08-26T00:00:00Z','query':'field service software','sources':[{'name':'A','source_url':'https://example.com/a'},{'name':'B','source_url':'https://example.com/b'}]}))
+        req(is_reconstructable_field_snapshot(good_field,ws),'source-linked field evidence should be reconstructable')
+
         bad=root/'bad-qa.json'; bad.write_text(json.dumps({'contract_id':'content.qa.pre-publish','status':'passed','notes':'QA passed'}))
         req(not is_structured_prepublish_record(bad),'self-attested QA must not pass structural pre-publish evidence check')
         good=root/'good-qa.json'; good.write_text(json.dumps({'contract_id':'content.qa.pre-publish','status':'pass','checks_performed':[{'check':'links','passed':True}],'blockers':[],'tested_asset':'ast_1','tested_version':'1.0'}))
@@ -43,14 +48,17 @@ def main():
         req('E1' in flags and 'E2' in flags and 'E3' in flags,'highly similar artifacts across distinct contracts must be flagged')
         req(len(flags['E1'])==1 and flags['E1'][0]['type']=='high_artifact_similarity','similarity matches must be compressed to one warning per event')
         req(flags['E1'][0]['match_count']==2 and len(flags['E1'][0]['examples'])==1,'compressed similarity warning must preserve match count and bounded strongest examples')
+        req(integrity_hard_failure(flags['E1']),'mass-similar artifacts across distinct contracts must fail qualification integrity')
 
         runner=root/'run_remaining_queue.py'; runner.write_text('print("mass runner")\n')
         req(run_control_flags(root),'candidate-authored run control script must be surfaced as integrity warning')
 
     suite=build(); customer=[t for t in suite['contract_tests'] if t.get('artifact_role')=='customer_facing_production_root']
+    evaluator=(ROOT/'qualification/evaluate_run.py').read_text()
+    req("gates['root_completion_evidence_valid']" in evaluator and "gates['required_subcontract_evidence_valid']" in evaluator,'qualification evaluator must independently revalidate completed Run evidence')
     req(customer and all('prepublish_or_required_qa_recorded' in t['hard_gates'] for t in customer),'customer-facing roots must require structured QA evidence')
     competitive=[t for t in suite['contract_tests'] if t.get('competitive_profile') in {'search_live_field','paid_and_persuasion_field','organic_attention_field'}]
-    req(competitive and all('competitive_field_evidence_event_specific' in t['hard_gates'] for t in competitive),'competitive tests must require event-specific field evidence')
+    req(competitive and all({'competitive_field_evidence_event_specific','competitive_field_evidence_reconstructable'} <= set(t['hard_gates']) for t in competitive),'competitive tests must require event-specific reconstructable field evidence')
     req(all('generic' in t['candidate_task'].lower() or not t['output_policy'].get('artifact_required') for t in suite['contract_tests']),'artifact tasks must explicitly reject generic substitutes')
 
     print('qualification adversarial integrity regressions passed')

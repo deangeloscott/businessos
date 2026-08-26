@@ -2,7 +2,7 @@
 from _common import *
 from run_provenance import bind_evidence_paths
 from validate_business_claims import claim_errors
-from completion_evidence import contract_index, completion_spec, validate_evidence
+from completion_evidence import contract_index, completion_spec, subcontract_manifest_errors, validate_evidence
 import argparse,json
 
 CUSTOMER_FACING_ROLE='customer_facing_production_root'
@@ -51,6 +51,8 @@ def main():
     if not mp.exists() or not rp.exists():raise SystemExit('Run files missing')
     m=json.loads(mp.read_text());pending=[k for k,v in m.get('contracts',{}).items() if v.get('status')!='completed']
     if pending:raise SystemExit('Cannot complete Run; required subcontract(s) incomplete: '+', '.join(pending))
+    subcontract_errors=subcontract_manifest_errors(m,a.business_id,a.run_id)
+    if subcontract_errors:raise SystemExit('Cannot complete Run; required subcontract evidence is invalid:\n- '+'\n- '.join(subcontract_errors))
     if not a.evidence:raise SystemExit('Run completion requires at least one --evidence path for the root deliverable/result')
     rels=[]
     for e in a.evidence:

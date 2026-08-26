@@ -3,7 +3,7 @@
 from pathlib import Path
 import json, shutil, subprocess, sys
 ROOT=Path(__file__).resolve().parents[1];S=ROOT/'scripts';sys.path.insert(0,str(S))
-from completion_evidence import contract_index, completion_spec, validate_evidence
+from completion_evidence import contract_index, completion_spec, subcontract_evidence_reuse_errors, validate_evidence
 
 BID='completion-evidence-integrity';BASE=ROOT/'instances'/BID;RUNS=ROOT/'runtime'/'runs'/BID
 
@@ -28,6 +28,7 @@ def main():
         req(completion_spec(contracts['content.research.source-support'])['profile']=='research','source support should use research profile')
         req(completion_spec(contracts['seo.diagnosis.detectors.indexing'])['profile']=='detector','detector profile inference failed')
         req(completion_spec(contracts['content.production.short-video'])['allow_specification_fallback'] is True,'short video should support complete production packet fallback')
+        req(completion_spec(contracts['marketing.email.qa'])['strict_qa_target'] is True,'production email QA should identify the exact tested Asset/version')
 
         rid=run(S/'create_run.py',BID,'content.production.article','Produce a real evidence-backed article').stdout.strip()
         req(rid.startswith('run_'),f'create_run failed: {rid}')
@@ -57,6 +58,10 @@ def main():
         asset['location_reference']=str(article.relative_to(ROOT));write(ap,json.dumps(asset,indent=2)+'\n')
         errs=validate_evidence(contracts['content.production.article'],[str(article.relative_to(ROOT))],BID,rid,phase='root')
         req(not errs,f'lineage-bound article document should satisfy deterministic structural minimums: {errs}')
+        write(article,'# Deliverable: content.production.article\n\nThis is qualification-facing completion prose, not an article.\n')
+        errs=validate_evidence(contracts['content.production.article'],[str(article.relative_to(ROOT))],BID,rid,phase='root')
+        req(any('internal contract/qualification identifiers' in e for e in errs),f'internal completion metadata must not pass as a customer-facing article: {errs}')
+        write(article,'# Field-service implementation transparency\n\nA grounded article draft tied to the active WorkRequest.\n')
 
         # A non-rendered video may satisfy graceful degradation only when it is a real
         # production packet, not arbitrary prose.
@@ -71,10 +76,21 @@ def main():
                     'duration, final CTA, and rendering notes are included. ')*3)
         req(not validate_evidence(contracts['content.production.short-video'],[str(vfile.relative_to(ROOT))],BID,vidrid,phase='root'),'complete video production packet should satisfy graceful-degradation structure')
 
+        fake_mp4=BASE/'assets'/'fake.mp4';write(fake_mp4,'ftyp placeholder mdat without a playable movie index\n'*40)
+        vasset['location_reference']=str(fake_mp4.relative_to(ROOT));write(vap,json.dumps(vasset,indent=2)+'\n')
+        errs=validate_evidence(contracts['content.production.short-video'],[str(fake_mp4.relative_to(ROOT))],BID,vidrid,phase='root')
+        req(any('structurally decodable' in e for e in errs),f'extension-only fake media must fail: {errs}')
+
         # Bare QA self-attestation must be rejected by record_contract_completion.py.
         bad=RUNS/rid/'artifacts'/'bad-prepublish.json';write(bad,json.dumps({'contract_id':'content.qa.pre-publish','status':'pass'})+'\n')
         r=run(S/'record_contract_completion.py',BID,rid,'content.qa.pre-publish','--evidence',str(bad.relative_to(ROOT)))
         req(r.returncode!=0 and 'structured JSON QA pass record' in (r.stderr+r.stdout),f'bare QA self-attestation must fail: {r.stderr+r.stdout}')
+        strings=RUNS/rid/'artifacts'/'string-prepublish.json';write(strings,json.dumps({
+            'contract_id':'content.qa.pre-publish','status':'pass','tested_asset':aid,'tested_version':'1',
+            'checks_performed':['checked claims','checked links','checked accessibility'],'blockers':[]
+        })+'\n')
+        r=run(S/'record_contract_completion.py',BID,rid,'content.qa.pre-publish','--evidence',str(strings.relative_to(ROOT)))
+        req(r.returncode!=0 and 'per-check outcomes' in (r.stderr+r.stdout),f'generic string QA assertions must fail: {r.stderr+r.stdout}')
         good=RUNS/rid/'artifacts'/'good-prepublish.json';write(good,json.dumps({
             'contract_id':'content.qa.pre-publish','status':'pass','tested_asset':aid,'tested_version':'1',
             'checks_performed':[{'check':'claims','status':'pass'},{'check':'links','status':'pass'},{'check':'accessibility','status':'pass'}],
@@ -82,6 +98,40 @@ def main():
         },indent=2)+'\n')
         r=run(S/'record_contract_completion.py',BID,rid,'content.qa.pre-publish','--evidence',str(good.relative_to(ROOT)))
         req(r.returncode==0,f'structured QA record should be recordable: {r.stderr+r.stdout}')
+
+        # Regression from the preserved CrewBeacon run: an email sequence cannot prove
+        # subject/preview or branching completion when those components are absent.
+        old_email=RUNS/rid/'artifacts'/'crewbeacon-style-email.md';write(old_email,"""# Demo nurture sequence
+
+### Email 1: Confirmation
+**Headline:** See how the product works.
+**Body Copy:** A short confirmation message.
+**CTA:** Book a demo
+
+### Email 2: Reminder
+**Headline:** Prioritize the work that needs attention.
+**Body Copy:** A short reminder message.
+**CTA:** Book a demo
+""")
+        subject_errors=validate_evidence(contracts['marketing.email.subject-preview'],[str(old_email.relative_to(ROOT))],BID,rid,phase='subcontract')
+        branch_errors=validate_evidence(contracts['marketing.email.branching'],[str(old_email.relative_to(ROOT))],BID,rid,phase='subcontract')
+        req(any('required component' in e and ('subject' in e or 'preview' in e) for e in subject_errors),f'absent subject/preview work must fail: {subject_errors}')
+        req(any('required component' in e for e in branch_errors),f'absent branching/suppression work must fail: {branch_errors}')
+
+        integrated=RUNS/rid/'artifacts'/'integrated-email.md';write(integrated,"""# Integrated email package
+Email 1 sequence position and message job. Subject line: A useful update. Preview text: What to expect next.
+Body copy: useful detail. CTA: Book a demo.
+Branch condition: booked demo. Default path: no action. Suppression: exit condition stops the sequence.
+""")
+        shared_manifest={
+            'required_subcontracts':['marketing.email.message-draft','marketing.email.subject-preview'],
+            'contracts':{
+                cid:{'status':'completed','evidence_refs':[str(integrated.relative_to(ROOT))]}
+                for cid in ('marketing.email.message-draft','marketing.email.subject-preview')
+            }
+        }
+        reuse=subcontract_evidence_reuse_errors(shared_manifest,contracts)
+        req(any('reuse the same evidence reference set' in e for e in reuse),f'distinct subcontracts must not all point at one undifferentiated file: {reuse}')
 
         # Standalone measurement/research Runs cannot complete on unrelated prose alone.
         note=RUNS/rid/'artifacts'/'note.md';write(note,'This file merely says the workflow ran.\n')

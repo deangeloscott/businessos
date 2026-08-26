@@ -21,7 +21,7 @@ def main():
         m=json.loads((RUNS/rid/'contract-execution.json').read_text())
         for cid in m.get('required_subcontracts',[]):
             e=RUNS/rid/'artifacts'/((cid.replace('.','-'))+'.json');e.parent.mkdir(parents=True,exist_ok=True)
-            payload={'status':'pass','contract_id':cid,'checks':['fixture completion check']} if '.qa' in cid or cid.endswith('.qa') else {'status':'completed','contract_id':cid}
+            payload={'status':'pass','contract_id':cid,'checks':[{'check':'fixture completion check','status':'pass'}]} if '.qa' in cid or cid.endswith('.qa') else {'status':'completed','contract_id':cid}
             e.write_text(json.dumps(payload)+'\n')
             r=run(S/'record_contract_completion.py',BID,rid,cid,'--evidence',str(e.relative_to(ROOT)))
             req(r.returncode==0,f'completion recording failed {cid}: {r.stderr or r.stdout}')

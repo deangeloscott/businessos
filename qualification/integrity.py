@@ -50,6 +50,35 @@ def event_specific_ref_paths(refs,before,after,workspace):
     return out
 
 
+def _source_locator(value,workspace):
+    if isinstance(value,dict):
+        value=next((value.get(k) for k in ('source_url','url','source_ref','evidence_ref','reference') if value.get(k)),None)
+    if not isinstance(value,str) or not value.strip():return False
+    if re.match(r'^https?://',value.strip(),re.I):return True
+    p=resolve_workspace_ref(value,workspace)
+    return bool(p and p.exists() and p.is_file())
+
+
+def is_reconstructable_field_snapshot(path,workspace):
+    try:data=json.loads(Path(path).read_text(encoding='utf-8'))
+    except Exception:return False
+    if not isinstance(data,dict) or not data.get('captured_at'):return False
+    context=any(data.get(k) for k in ('query','surface','method','scope','research_question','channel'))
+    sources=[]
+    for key in ('sources','source_refs','evidence_refs'):
+        value=data.get(key)
+        if isinstance(value,list):sources.extend(value)
+    for key in ('competitive_set','comparisons','results','examples'):
+        value=data.get(key)
+        if isinstance(value,list):sources.extend(value)
+    locators=[x for x in sources if _source_locator(x,workspace)]
+    return bool(context and len(locators)>=2)
+
+
+def reconstructable_field_snapshot_paths(refs,before,after,workspace):
+    return [p for p in event_specific_ref_paths(refs,before,after,workspace) if is_reconstructable_field_snapshot(p,workspace)]
+
+
 def is_structured_prepublish_record(path):
     try: data=json.loads(Path(path).read_text(encoding='utf-8'))
     except Exception: return False
@@ -57,7 +86,11 @@ def is_structured_prepublish_record(path):
     if data.get('contract_id')!='content.qa.pre-publish': return False
     if str(data.get('status','')).lower() not in {'pass','passed'}: return False
     checks=data.get('checks_performed',data.get('checks'))
-    if not isinstance(checks,(list,dict)) or not checks: return False
+    if not isinstance(checks,list) or not checks: return False
+    for item in checks:
+        if not isinstance(item,dict):return False
+        if not any(item.get(k) for k in ('check','name','criterion','test')):return False
+        if not any(item.get(k) is not None for k in ('status','result','outcome','passed')):return False
     if 'blockers' not in data: return False
     target=any(data.get(k) for k in ('tested_asset','target_asset','asset_ref','target_refs'))
     version=any(data.get(k) is not None for k in ('tested_version','asset_version','version'))
@@ -157,6 +190,13 @@ def exact_duplicate_artifact_flags(results):
             others=[{'event_id':oe,'contract_id':oc,'artifact':op} for oe,oc,op in items if oe!=eid]
             if others: flags.setdefault(eid,[]).append({'type':'exact_artifact_reuse','sha256':digest,'artifact':path,'others':others})
     return flags
+
+
+def integrity_hard_failure(flags):
+    for flag in flags or []:
+        if flag.get('type')=='exact_artifact_reuse':return True
+        if flag.get('type')=='high_artifact_similarity' and flag.get('match_count',0)>=2:return True
+    return False
 
 
 def run_control_flags(run_dir):

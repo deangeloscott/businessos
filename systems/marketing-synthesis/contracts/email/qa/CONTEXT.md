@@ -33,6 +33,18 @@ context:
 - Offer
 - Objective
 - EconomicContext
+completion_evidence:
+  profile: qa
+  strict_qa_target: true
+  required_text_components:
+  - id: audience-entry-consent
+    any_of: [audience, entry, consent]
+  - id: subject-preview-content
+    all_of: [subject, preview]
+  - id: branching-suppression-exits
+    all_of: [branch, suppression, exit]
+  - id: links-or-dynamic-fields
+    any_of: [link, dynamic field, personalization]
 ---
 # Email Sequence QA
 

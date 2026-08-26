@@ -176,6 +176,8 @@ This creates:
 
 The hard evaluator checks checkpoint/receipt existence, real AURA Runs, root-contract match, root completion evidence, required subcontract evidence, workspace/business context validation, truthful completion, actual artifact creation when promised, declared state writes, customer-facing completion governance, reconstructable competitive-field evidence, and timed-release evidence when applicable.
 
+Cross-event integrity is also a hard qualification boundary when it demonstrates mass templating rather than legitimate reuse: exact artifact reuse across distinct contracts fails, and an artifact that is highly similar to two or more distinct contract outputs fails `artifact_contract_specific`. This does not make textual novelty a product law; it prevents a multi-contract qualification from counting one generic template as many different promised results.
+
 A human or independent judge then reviews the **actual business output**, evidence, state diff, and competitive field. Build ready-to-use judge instructions with:
 
 ```bash

@@ -169,9 +169,9 @@ def main():
         qmanifest=json.loads((qrdir/'contract-execution.json').read_text())
         qevidence=str(html.relative_to(ROOT))
         for cid in qmanifest.get('required_subcontracts',[]):
-            ev=qevidence
+            e=qrdir/'artifacts'/f'{cid.replace(".","-")}-evidence.json';e.parent.mkdir(parents=True,exist_ok=True);e.write_text(json.dumps({'contract_id':cid,'status':'completed','result':f'contract-specific regression evidence for {cid}'},indent=2));ev=str(e.relative_to(ROOT))
             if '.qa' in cid or cid.endswith('.qa'):
-                q=qrdir/'artifacts'/f'{cid.replace(".","-")}-qa.json';q.parent.mkdir(parents=True,exist_ok=True);q.write_text(json.dumps({'contract_id':cid,'status':'pass','checks':['regression']},indent=2));ev=str(q.relative_to(ROOT))
+                q=qrdir/'artifacts'/f'{cid.replace(".","-")}-qa.json';q.parent.mkdir(parents=True,exist_ok=True);q.write_text(json.dumps({'contract_id':cid,'status':'pass','checks':[{'check':'regression','status':'pass'}],'tested_asset':asset['id'],'tested_version':asset.get('version'),'blockers':[]},indent=2));ev=str(q.relative_to(ROOT))
             run(SCRIPTS/'record_contract_completion.py',BID,qrid,cid,'--evidence',ev)
         asset['extensions']['businessos']['run_ref']=str(qrdir.relative_to(ROOT));asset['extensions']['businessos']['contract_chain']=['marketing.assets.quiz-assessment']+qmanifest.get('required_subcontracts',[]);apath.write_text(json.dumps(asset,indent=2)+'\n')
         bad=run(SCRIPTS/'complete_run.py',BID,qrid,'--evidence',str((BASE/'context/business.json').relative_to(ROOT)),check=False)
@@ -185,9 +185,9 @@ def main():
         require(any('required subcontract not completed' in e for e in errors),f'production Asset must not pass with implied subcontracts, got {errors}')
         manifest=json.loads((rdir/'contract-execution.json').read_text());evidence=str(html.relative_to(ROOT))
         for cid in manifest['required_subcontracts']:
-            ev=evidence
+            e=rdir/'artifacts'/f'{cid.replace(".","-")}-evidence.json';e.write_text(json.dumps({'contract_id':cid,'status':'completed','result':f'contract-specific regression evidence for {cid}'},indent=2));ev=str(e.relative_to(ROOT))
             if '.qa' in cid or cid.endswith('.qa'):
-                q=rdir/'artifacts'/'qa-pass.json';q.write_text(json.dumps({'contract_id':cid,'status':'pass','checks':['regression']},indent=2));ev=str(q.relative_to(ROOT))
+                q=rdir/'artifacts'/'qa-pass.json';q.write_text(json.dumps({'contract_id':cid,'status':'pass','checks':[{'check':'regression','status':'pass'}],'tested_asset':asset['id'],'tested_version':asset.get('version'),'blockers':[]},indent=2));ev=str(q.relative_to(ROOT))
             run(SCRIPTS/'record_contract_completion.py',BID,rid,cid,'--evidence',ev)
         asset['extensions']['businessos']['contract_chain']=['marketing.assets.landing-page']+manifest['required_subcontracts'];apath.write_text(json.dumps(asset,indent=2)+'\n')
         run(SCRIPTS/'complete_run.py',BID,rid,'--evidence',evidence)

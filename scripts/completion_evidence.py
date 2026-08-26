@@ -7,7 +7,8 @@ of reusable evidence profiles; qualitative strength remains the responsibility o
 contract process, QA, and downstream qualification/review.
 """
 from pathlib import Path
-import json, re
+import hashlib, json, re, struct
+import xml.etree.ElementTree as ET
 from _common import *
 
 CUSTOMER_FACING_ROLE='customer_facing_production_root'
@@ -29,6 +30,8 @@ PACKET_FALLBACKS={
     'carousel':(('slide','sequence','visual'),('cover','frame','platform','dimensions')),
     'demo':(('product','step','state'),('narration','visual','interaction','screen')),
 }
+
+MIN_MEDIA_BYTES={'image':256,'gif':256,'audio':1024,'video':1024,'presentation':512,'infographic':256}
 
 
 def _selector_types(items):
@@ -82,7 +85,9 @@ def completion_spec(contract):
         'version':'1.0','profile':profile,'medium':medium,
         'declared_write_types':sorted(writes),'artifact_role':contract.get('artifact_role'),
         'allow_specification_fallback':bool(explicit.get('allow_specification_fallback',default_fallback)),
+        'allow_shared_subcontract_evidence':bool(explicit.get('allow_shared_subcontract_evidence',False)),
         'require_subcontract_write_evidence':bool(explicit.get('require_subcontract_write_evidence',False)),
+        'required_text_components':explicit.get('required_text_components') or [],
         'strict_qa_target':bool(explicit.get('strict_qa_target', cid=='content.qa.pre-publish')),
     }
 
@@ -146,6 +151,23 @@ def detector_evidence_errors(contract,paths,business_id,run_id):
     return [f'{cid} detector completion requires either a declared canonical finding or a structured no-finding JSON record with checks_performed and existing evidence_refs']
 
 
+def _structured_check(item):
+    if not isinstance(item,dict):return False
+    label=next((item.get(k) for k in ('check','name','criterion','test') if item.get(k)),None)
+    outcome=next((item.get(k) for k in ('status','result','outcome','passed') if item.get(k) is not None),None)
+    return bool(label and outcome is not None)
+
+
+def _structured_checks(checks):
+    if isinstance(checks,list):return bool(checks) and all(_structured_check(x) for x in checks)
+    if isinstance(checks,dict):
+        return bool(checks) and all(
+            _structured_check(v) if isinstance(v,dict) else isinstance(v,(bool,int,float))
+            for v in checks.values()
+        )
+    return False
+
+
 def _qa_records(contract_id,paths,strict_target=False):
     out=[]
     for p in paths:
@@ -153,7 +175,7 @@ def _qa_records(contract_id,paths,strict_target=False):
         if not isinstance(data,dict) or data.get('contract_id')!=contract_id:continue
         if str(data.get('status','')).lower() not in {'pass','passed'}:continue
         checks=data.get('checks_performed',data.get('checks'))
-        if not isinstance(checks,(list,dict)) or not checks:continue
+        if not _structured_checks(checks):continue
         if strict_target:
             blockers=data.get('blockers',None)
             target=next((data.get(k) for k in ('tested_asset','target_asset','asset_ref','target_ref','target_refs') if data.get(k)),None)
@@ -167,8 +189,8 @@ def qa_evidence_errors(contract,paths):
     cid=contract.get('id'); spec=completion_spec(contract); strict=spec.get('strict_qa_target',False)
     records=_qa_records(cid,paths,strict_target=strict)
     if not records:
-        if strict:return [f'{cid} completion requires a structured JSON QA pass record with matching contract_id, substantive checks_performed/checks, blockers, tested/target Asset, and tested version']
-        return [f'{cid} completion requires a structured JSON QA pass record with matching contract_id and substantive checks_performed/checks']
+        if strict:return [f'{cid} completion requires a structured JSON QA pass record with matching contract_id, per-check outcomes, blockers, tested/target Asset, and tested version']
+        return [f'{cid} completion requires a structured JSON QA pass record with matching contract_id and structured per-check outcomes']
     return []
 
 
@@ -186,11 +208,124 @@ def _media_family(medium):
     return 'text'
 
 
-def _packet_fallback_ok(path,medium):
+def _text(path):
+    try:return Path(path).read_text(encoding='utf-8',errors='ignore')
+    except Exception:return ''
+
+
+def _required_text_component_errors(contract,paths):
+    """Verify contract-authored, machine-checkable components without special-casing IDs."""
+    components=completion_spec(contract).get('required_text_components') or []
+    if not components:return []
+    text='\n'.join(_text(p) for p in paths if Path(p).suffix.lower() in TEXT_EXTS|{'.svg'}).lower()
+    errors=[]
+    for raw in components:
+        if isinstance(raw,str):
+            label=raw;any_of=[raw];all_of=[]
+        elif isinstance(raw,dict):
+            label=str(raw.get('id') or raw.get('label') or raw.get('name') or 'unnamed component')
+            any_of=raw.get('any_of') or raw.get('terms') or []
+            all_of=raw.get('all_of') or []
+            if isinstance(any_of,str):any_of=[any_of]
+            if isinstance(all_of,str):all_of=[all_of]
+        else:
+            errors.append(f'{contract.get("id")} has invalid required_text_components metadata: {raw!r}');continue
+        any_terms=[str(x).strip().lower() for x in any_of if str(x).strip()]
+        all_terms=[str(x).strip().lower() for x in all_of if str(x).strip()]
+        if not any_terms and not all_terms:
+            errors.append(f'{contract.get("id")} required component {label!r} has no match terms');continue
+        if any_terms and not any(term in text for term in any_terms):
+            errors.append(f'{contract.get("id")} evidence is missing required component {label!r} (expected one of: {", ".join(any_terms)})')
+        missing=[term for term in all_terms if term not in text]
+        if missing:
+            errors.append(f'{contract.get("id")} evidence is missing required component {label!r} terms: {", ".join(missing)}')
+    return errors
+
+
+def _contains_internal_completion_markers(path,contract_id):
+    if Path(path).suffix.lower() not in TEXT_EXTS|{'.svg'}:return False
+    text=_text(path).lower()
+    cid=str(contract_id or '').lower()
+    if cid and cid in text:return True
+    return bool(re.search(r'\bcontract-[a-z0-9-]{8,}\b|\baura_qualification_run\b|\bqualification event\b',text))
+
+
+def _png_dimensions(data):
+    if len(data)>=24 and data[:8]==b'\x89PNG\r\n\x1a\n':return struct.unpack('>II',data[16:24])
+    return None
+
+
+def _gif_dimensions(data):
+    if len(data)>=10 and data[:6] in {b'GIF87a',b'GIF89a'}:return struct.unpack('<HH',data[6:10])
+    return None
+
+
+def _jpeg_dimensions(data):
+    if not data.startswith(b'\xff\xd8'):return None
+    i=2
+    while i+9<len(data):
+        if data[i]!=0xff:i+=1;continue
+        marker=data[i+1];i+=2
+        if marker in {0xd8,0xd9} or 0xd0<=marker<=0xd7:continue
+        if i+2>len(data):break
+        n=int.from_bytes(data[i:i+2],'big')
+        if n<2 or i+n>len(data):break
+        if marker in {0xc0,0xc1,0xc2,0xc3,0xc5,0xc6,0xc7,0xc9,0xca,0xcb,0xcd,0xce,0xcf} and n>=7:
+            return int.from_bytes(data[i+5:i+7],'big'),int.from_bytes(data[i+3:i+5],'big')
+        i+=n
+    return None
+
+
+def _svg_dimensions(path):
+    try:root=ET.parse(path).getroot()
+    except Exception:return None
+    def number(v):
+        m=re.match(r'\s*([0-9]+(?:\.[0-9]+)?)',str(v or ''))
+        return float(m.group(1)) if m else None
+    w=number(root.get('width'));h=number(root.get('height'))
+    if (not w or not h) and root.get('viewBox'):
+        try:_,_,w,h=[float(x) for x in re.split(r'[ ,]+',root.get('viewBox').strip())]
+        except Exception:return None
+    return (w,h) if w and h else None
+
+
+def _media_integrity_errors(path,family,contract_id):
+    p=Path(path);ext=p.suffix.lower();data=p.read_bytes();errors=[]
+    if len(data)<MIN_MEDIA_BYTES.get(family,1):return [f'{p.name} is too small to be a usable {family} artifact']
+    if _contains_internal_completion_markers(p,contract_id):
+        errors.append(f'{p.name} exposes internal contract/qualification identifiers instead of the promised audience-facing artifact')
+    if ext=='.svg':
+        dims=_svg_dimensions(p)
+        if not dims or dims[0]<64 or dims[1]<64:errors.append(f'{p.name} is not a valid usable-size SVG')
+    elif ext=='.png':
+        dims=_png_dimensions(data)
+        if not dims or dims[0]<64 or dims[1]<64:errors.append(f'{p.name} is not a valid usable-size PNG')
+    elif ext in {'.jpg','.jpeg'}:
+        dims=_jpeg_dimensions(data)
+        if not dims or dims[0]<64 or dims[1]<64:errors.append(f'{p.name} is not a valid usable-size JPEG')
+    elif ext=='.gif':
+        dims=_gif_dimensions(data);frames=data.count(b'\x2c')
+        if not dims or dims[0]<64 or dims[1]<64 or frames<2:errors.append(f'{p.name} must be a valid animated GIF with usable dimensions and multiple frames')
+    elif ext in {'.mp4','.mov','.m4v'}:
+        if not all(atom in data for atom in (b'ftyp',b'moov',b'mdat')):errors.append(f'{p.name} is not a structurally decodable MP4/MOV artifact')
+    elif ext=='.webm':
+        if not data.startswith(b'\x1a\x45\xdf\xa3'):errors.append(f'{p.name} is not a structurally valid WebM artifact')
+    elif ext=='.wav':
+        if not (data.startswith(b'RIFF') and data[8:12]==b'WAVE'):errors.append(f'{p.name} is not a structurally valid WAV artifact')
+    elif ext=='.flac':
+        if not data.startswith(b'fLaC'):errors.append(f'{p.name} is not a structurally valid FLAC artifact')
+    elif ext=='.ogg':
+        if not data.startswith(b'OggS'):errors.append(f'{p.name} is not a structurally valid OGG artifact')
+    elif ext=='.mp3':
+        if not any(data[i]==0xff and data[i+1]&0xe0==0xe0 for i in range(max(0,len(data)-1))):errors.append(f'{p.name} contains no MPEG audio frames')
+    return errors
+
+
+def _packet_fallback_ok(path,medium,contract_id=None):
     m=str(medium or '').lower();rules=PACKET_FALLBACKS.get(m)
     if not rules or Path(path).suffix.lower() not in TEXT_EXTS:return False
-    try:text=Path(path).read_text(encoding='utf-8',errors='ignore').lower()
-    except Exception:return False
+    if _contains_internal_completion_markers(path,contract_id):return False
+    text=_text(path).lower()
     if len(re.findall(r'\b\w+\b',text))<40:return False
     required,alternatives=rules
     return all(x in text for x in required) and any(x in text for x in alternatives)
@@ -226,13 +361,18 @@ def production_evidence_errors(contract,paths,business_id,run_id,manifest=None):
         if family in MEDIA_EXTS or family=='animation':
             accepted_exts=(MEDIA_EXTS['video']|MEDIA_EXTS['gif']) if family=='animation' else MEDIA_EXTS[family]
             if ext in accepted_exts:
-                usable.append(asset);continue
-            if spec.get('allow_specification_fallback') and _packet_fallback_ok(p,medium):
+                media_errors=_media_integrity_errors(p,family,cid)
+                if not media_errors:usable.append(asset)
+                else:errors.extend(f'{asset.get("id")}: {x}' for x in media_errors)
+                continue
+            if spec.get('allow_specification_fallback') and _packet_fallback_ok(p,medium,cid):
                 usable.append(asset);continue
             fallback=' or a complete production packet/specification' if spec.get('allow_specification_fallback') else ''
             errors.append(f'{asset.get("id")} evidence file type {ext or "<none>"} does not satisfy expected {family} medium for {cid}{fallback}');continue
         if ext not in TEXT_EXTS:
             errors.append(f'{asset.get("id")} evidence file type {ext or "<none>"} does not satisfy expected text/document medium for {cid}');continue
+        if _contains_internal_completion_markers(p,cid):
+            errors.append(f'{asset.get("id")} root artifact exposes internal contract/qualification identifiers instead of the promised audience-facing result');continue
         usable.append(asset)
     if not usable:return errors or [f'{cid} has no root artifact matching its canonical Asset and expected medium']
 
@@ -240,7 +380,7 @@ def production_evidence_errors(contract,paths,business_id,run_id,manifest=None):
         byid=contract_index();produced={a.get('id'):str(a.get('version')) for a in usable if a.get('id')}
         for qid in manifest.get('required_subcontracts') or []:
             qc=byid.get(qid,{});qspec=completion_spec(qc)
-            if qspec.get('profile')!='qa' or not qspec.get('strict_qa_target'):continue
+            if qspec.get('profile')!='qa':continue
             refs=((manifest.get('contracts') or {}).get(qid) or {}).get('evidence_refs') or []
             records=_qa_records(qid,_paths(refs),strict_target=True);targeted=False
             for data,_ in records:
@@ -255,6 +395,70 @@ def production_evidence_errors(contract,paths,business_id,run_id,manifest=None):
     return errors
 
 
+def _ref_signatures(refs):
+    paths=_paths(refs)
+    locs=tuple(sorted(str(p.resolve()) for p in paths))
+    hashes=[]
+    for p in paths:
+        try:hashes.append(hashlib.sha256(p.read_bytes()).hexdigest())
+        except Exception:continue
+    return locs,tuple(sorted(hashes))
+
+
+def subcontract_evidence_reuse_errors(manifest,contracts=None):
+    """Reject distinct required jobs that merely cite the same evidence package.
+
+    One integrated artifact may be shared only when every involved contract explicitly
+    opts in and declares machine-checkable component requirements. That keeps reuse a
+    contract-authored decision instead of an agent-selected completion shortcut.
+    """
+    contracts=contracts or contract_index();steps=manifest.get('contracts') or {}
+    entries=[]
+    for cid in manifest.get('required_subcontracts') or []:
+        step=steps.get(cid) or {}
+        if step.get('status')!='completed' or not step.get('evidence_refs'):continue
+        locs,hashes=_ref_signatures(step.get('evidence_refs') or [])
+        if locs:entries.append((cid,locs,hashes))
+    groups=[];seen=set()
+    for signature_index,kind in ((1,'same evidence reference set'),(2,'byte-identical evidence package')):
+        bysig={}
+        for entry in entries:bysig.setdefault(entry[signature_index],[]).append(entry[0])
+        for sig,cids in bysig.items():
+            unique=sorted(set(cids))
+            if len(unique)<2:continue
+            key=tuple(unique)
+            if key in seen:continue
+            seen.add(key);groups.append((kind,unique))
+    errors=[]
+    for kind,cids in groups:
+        specs=[completion_spec(contracts.get(cid,{'id':cid})) for cid in cids]
+        authored_share=all(s.get('allow_shared_subcontract_evidence') and s.get('required_text_components') for s in specs)
+        if not authored_share:
+            errors.append(
+                f'distinct required subcontracts reuse the {kind} without contract-authored shared-evidence component rules: {", ".join(cids)}'
+            )
+    return errors
+
+
+def subcontract_manifest_errors(manifest,business_id,run_id,contracts=None,require_complete=True):
+    """Independently validate every declared required subcontract and evidence package."""
+    contracts=contracts or contract_index();steps=manifest.get('contracts') or {};errors=[]
+    for cid in manifest.get('required_subcontracts') or []:
+        step=steps.get(cid) or {}
+        if require_complete and step.get('status')!='completed':
+            errors.append(f'{cid}: required subcontract is not completed');continue
+        refs=step.get('evidence_refs') or []
+        if require_complete and not refs:
+            errors.append(f'{cid}: completed subcontract lacks evidence refs');continue
+        if not refs:continue
+        contract=contracts.get(cid)
+        if not contract:
+            errors.append(f'{cid}: contract missing from installed registry');continue
+        errors.extend(f'{cid}: {x}' for x in validate_evidence(contract,refs,business_id,run_id,phase='subcontract',manifest=manifest))
+    errors.extend(subcontract_evidence_reuse_errors(manifest,contracts))
+    return errors
+
+
 def validate_evidence(contract,refs,business_id,run_id,phase='root',manifest=None):
     paths=_paths(refs);errors=[]
     if not paths:return [f'{contract.get("id")} completion requires at least one existing non-empty evidence file']
@@ -265,6 +469,7 @@ def validate_evidence(contract,refs,business_id,run_id,phase='root',manifest=Non
     elif profile in {'publishing','measurement','research','planning','canonical_state'}:
         if phase=='root' or spec.get('require_subcontract_write_evidence'):
             errors.extend(_declared_write_errors(contract,paths,business_id,run_id,phase))
+    errors.extend(_required_text_component_errors(contract,paths))
     return errors
 
 

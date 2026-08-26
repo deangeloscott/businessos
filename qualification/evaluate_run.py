@@ -2,13 +2,17 @@
 from pathlib import Path
 import argparse, json, os, subprocess, sys
 from common import ROOT, read_json, snapshot_diff, write_json, now
+sys.path.insert(0,str(ROOT/'scripts'))
+from completion_evidence import contract_index, subcontract_manifest_errors, validate_evidence
 from integrity import (
     artifact_similarity_flags, exact_duplicate_artifact_flags, existing_ref_paths,
-    event_specific_ref_paths, run_control_flags, selector_types,
+    event_specific_ref_paths, integrity_hard_failure, reconstructable_field_snapshot_paths,
+    run_control_flags, selector_types,
     structured_prepublish_refs,
 )
 
 RUBRICS=json.loads((ROOT/'qualification/rubrics/rubrics.json').read_text())
+CONTRACTS=contract_index()
 
 def idx(items,key): return {x.get(key):x for x in items if isinstance(x,dict) and x.get(key)}
 def object_types(snap): return {x.get('object_type') for x in snap.get('objects',[]) if x.get('object_type')}
@@ -40,6 +44,7 @@ def hard_grade(event,test,before,after,receipt,workspace,product_root):
     gates['checkpoint_before_exists']=before is not None; gates['checkpoint_after_exists']=after is not None; gates['candidate_receipt_exists']=receipt is not None
     run_ids=(receipt or {}).get('root_run_ids') or []; gates['root_run_exists']=bool(run_ids)
     matching=False; matching_complete=False; any_complete=False; all_subcontracts_ok=True; matching_subcontracts_ok=True; run_audit=[]
+    matching_root_evidence_valid=False;matching_subcontract_evidence_valid=False
     for rid in run_ids:
         r,m=run_details(workspace,event['business_id'],rid); run_audit.append({'run_id':rid,'run':r,'manifest':m})
         complete=bool(r.get('status')=='completed' and m.get('root_status')=='completed' and m.get('root_evidence_refs'))
@@ -47,9 +52,16 @@ def hard_grade(event,test,before,after,receipt,workspace,product_root):
         any_complete=any_complete or complete; all_subcontracts_ok=all_subcontracts_ok and sub_ok
         if event.get('contract_id') and r.get('contract_id')==event['contract_id']:
             matching=True; matching_complete=matching_complete or complete; matching_subcontracts_ok=matching_subcontracts_ok and sub_ok
+            root=CONTRACTS.get(event['contract_id']);root_errors=['contract missing from evaluator registry'] if not root else validate_evidence(root,m.get('root_evidence_refs') or [],event['business_id'],rid,phase='root',manifest=m)
+            subcontract_errors=subcontract_manifest_errors(m,event['business_id'],rid,CONTRACTS)
+            matching_root_evidence_valid=matching_root_evidence_valid or (complete and not root_errors)
+            matching_subcontract_evidence_valid=matching_subcontract_evidence_valid or (sub_ok and not subcontract_errors)
     gates['root_run_contract_matches']=matching if event.get('contract_id') else bool(run_ids)
     gates['root_run_completed']=matching_complete if event.get('contract_id') else any_complete
     gates['required_subcontracts_completed']=(matching_subcontracts_ok and matching) if event.get('contract_id') else (all_subcontracts_ok and bool(run_ids))
+    if event.get('contract_id'):
+        gates['root_completion_evidence_valid']=matching_root_evidence_valid
+        gates['required_subcontract_evidence_valid']=matching_subcontract_evidence_valid
     validation=(after or {}).get('validation') or validate_workspace(product_root,workspace,event['business_id']); gates['workspace_valid']=validation['workspace']['ok']; gates['business_valid']=validation['business']['ok']
     gates['completion_claim_truthful']=not(receipt and receipt.get('status')=='completed' and not gates['root_run_completed'])
     artifact_refs=(receipt or {}).get('artifact_refs') or []; actual_artifacts=[str(p) for p in existing_ref_paths(artifact_refs,workspace)]
@@ -58,6 +70,7 @@ def hard_grade(event,test,before,after,receipt,workspace,product_root):
         gates['competitive_field_evidence_recorded']=bool(field_refs)
         gates['competitive_field_evidence_exists']=bool(existing_ref_paths(field_refs,workspace))
         gates['competitive_field_evidence_event_specific']=bool(event_specific_ref_paths(field_refs,before,after,workspace))
+        gates['competitive_field_evidence_reconstructable']=bool(reconstructable_field_snapshot_paths(field_refs,before,after,workspace))
     if event.get('release_fixture'):
         released_refs=(receipt or {}).get('released_fixture_refs') or []
         gates['released_fixture_recorded']=bool(released_refs)
@@ -75,6 +88,7 @@ def hard_grade(event,test,before,after,receipt,workspace,product_root):
 def main():
     ap=argparse.ArgumentParser(); ap.add_argument('run_dir'); ap.add_argument('--judgments'); a=ap.parse_args(); rd=Path(a.run_dir).expanduser().resolve()
     run=read_json(rd/'run.json'); queue=read_json(rd/'candidate/queue.json'); suite=read_json(rd/'evaluator/suite.json'); workspace=Path(run['workspace']); product_root=Path(run['product_root'])
+    os.environ['BUSINESSOS_WORKSPACE']=str(workspace)
     tests=idx(suite['contract_tests'],'test_id'); judgments={}
     jp=Path(a.judgments).expanduser() if a.judgments else rd/'evaluator/judgments.json'
     if jp.exists(): judgments=idx(read_json(jp,[]),'event_id')
@@ -101,6 +115,11 @@ def main():
     similarity=artifact_similarity_flags(results); duplicates=exact_duplicate_artifact_flags(results); run_flags=run_control_flags(rd)
     for r in results:
         r['integrity_flags']=(similarity.get(r['event_id']) or [])+(duplicates.get(r['event_id']) or [])
+        if r.get('actual_artifacts'):
+            r['hard_gates']['artifact_contract_specific']=not integrity_hard_failure(r['integrity_flags'])
+            if not r['hard_gates']['artifact_contract_specific']:
+                r['hard_pass']=False
+                if r.get('verdict') not in {'BLOCKED-EXTERNAL','BLOCKED-QUALIFICATION-FIXTURE'}:r['verdict']='FAIL'
 
     review=[]
     for r,event in zip(results,queue['events']):

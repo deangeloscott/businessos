@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from _common import *
 from run_provenance import bind_evidence_paths
-from completion_evidence import contract_index, completion_spec, validate_evidence
+from completion_evidence import contract_index, completion_spec, subcontract_evidence_reuse_errors, validate_evidence
 import argparse,json
 
 def _run_dir(bid,rid):return ROOT/'runtime/runs'/bid/rid
@@ -23,9 +23,11 @@ def main():
     if not contract:raise SystemExit(f'Installed contract metadata missing for {a.contract_id}')
     errors=validate_evidence(contract,rels,a.business_id,a.run_id,phase='subcontract',manifest=m)
     if errors:raise SystemExit('Cannot record subcontract completion; evidence does not satisfy contract completion profile:\n- '+'\n- '.join(errors))
-    bind_evidence_paths(a.business_id,a.run_id,rels,'subcontract_evidence')
     previous=steps.get(a.contract_id,{})
     steps[a.contract_id]={**previous,'status':'completed','evidence_refs':rels,'note':a.note,'updated_at':now(),'completion_evidence_spec':previous.get('completion_evidence_spec') or completion_spec(contract)}
+    reuse_errors=subcontract_evidence_reuse_errors(m)
+    if reuse_errors:raise SystemExit('Cannot record subcontract completion; evidence is not distinct or contract-verifiable:\n- '+'\n- '.join(reuse_errors))
+    bind_evidence_paths(a.business_id,a.run_id,rels,'subcontract_evidence')
     m['updated_at']=now();mp.write_text(json.dumps(m,indent=2)+'\n')
     print(json.dumps({'run_id':a.run_id,'contract_id':a.contract_id,'status':'completed','evidence_refs':rels,'completion_evidence_spec':steps[a.contract_id]['completion_evidence_spec']},indent=2))
 if __name__=='__main__':main()

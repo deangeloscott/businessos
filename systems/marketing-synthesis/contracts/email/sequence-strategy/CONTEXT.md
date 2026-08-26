@@ -33,6 +33,18 @@ context:
 - Offer
 - Objective
 - EconomicContext
+completion_evidence:
+  required_text_components:
+  - id: entry-and-eligibility
+    any_of: [entry trigger, eligibility, eligible audience]
+  - id: exit-and-suppression
+    any_of: [exit condition, suppression, stop sending]
+  - id: distinct-message-jobs
+    any_of: [message job, email job, sequence map]
+  - id: timing-or-cadence
+    any_of: [timing, cadence, delay]
+  - id: success-or-terminal-state
+    any_of: [success event, tracking event, terminal state]
 ---
 # Email Sequence Strategy
 
