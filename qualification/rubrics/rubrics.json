@@ -22,7 +22,10 @@
     "organic_attention_field":["field_sampling","performance_proxy_calibration","baseline_normalization","mechanism_extraction","platform_native_fit","competitive_attention_readiness"],
     "paid_and_persuasion_field":["ad_library_or_market_sampling","proxy_calibration","message_and_offer_analysis","creative_mechanism_analysis","persuasion_quality","funnel_continuity","competitive_marketing_readiness"],
     "marketing_outcome":["customer_insight_use","offer_and_message_fit","persuasion_quality","measurement_readiness"],
-    "first_party_outcomes":["bottleneck_diagnosis","causal_discipline","intervention_quality","measurement_design","commercial_relevance"]
+    "first_party_outcomes":["bottleneck_diagnosis","causal_discipline","intervention_quality","measurement_design","commercial_relevance"],
+    "cross_domain_system":["cross_domain_coordination","semantic_ownership","evidence_reuse","next_best_work_quality","execution_completeness"],
+    "marathon_system":["long_horizon_coherence","state_compounding","evidence_reuse","contradiction_handling","priority_adaptation","process_learning","operating_efficiency"],
+    "concurrency_system":["concurrent_state_integrity","deduplication","semantic_ownership","operator_provenance","collision_recovery","shared_context_quality"]
   },
   "profile_descriptions":{
     "live_serp_or_answer_environment":"Inspects the current search/AI-answer field rather than relying only on model memory.",
@@ -33,6 +36,12 @@
     "baseline_normalization":"Normalizes visible content performance against creator/account baseline, age, format, audience size, and distribution where possible.",
     "mechanism_extraction":"Extracts transferable mechanisms rather than copying protected expression, branding, or exact creative.",
     "appropriate_detail":"Uses the level of detail the audience and communication task require; more detail is not automatically better.",
-    "artifact_usability":"Produces the actual promised artifact in an immediately usable form rather than a description of what could be produced."
+    "artifact_usability":"Produces the actual promised artifact in an immediately usable form rather than a description of what could be produced.",
+    "cross_domain_coordination":"Uses the right semantic owners and handoffs across domains instead of duplicating the same problem or research in multiple systems.",
+    "state_compounding":"Later work becomes better informed by accumulated AURA state instead of repeatedly starting from scratch.",
+    "contradiction_handling":"Later contradictory evidence revises confidence, hypotheses, or Learning rather than being ignored to preserve a convenient narrative.",
+    "concurrent_state_integrity":"Shared workspace remains valid and reconstructable while multiple operators act at the same time.",
+    "deduplication":"Overlapping evidence, Insights, Opportunities, and Assets are resolved/reused rather than multiplied into competing canonical copies.",
+    "operator_provenance":"Concurrent work remains attributable to the correct operator/run without collapsing identity or authority."
   }
 }
