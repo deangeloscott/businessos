@@ -32,6 +32,7 @@ def copy_product(src,dst):
         rel=p.relative_to(src); parts=rel.parts
         if any(x in {'.git','__pycache__','.pytest_cache','.venv','venv'} for x in parts): continue
         if parts and parts[0] in {'generated','knowledge','attachments'}: continue
+        if len(parts)>=2 and parts[0]=='qualification' and parts[1]=='fixtures': continue
         if parts and parts[0]=='instances' and (len(parts)<2 or parts[1] != '_template'): continue
         if parts and parts[0]=='runtime' and not (len(parts)==2 and parts[1]=='README.md'): continue
         if rel.as_posix()=='.businessos/workspace.json': continue
