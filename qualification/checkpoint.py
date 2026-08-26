@@ -29,7 +29,7 @@ def main():
     ws=workspace_from_env(); rr=run_root_from_env()
     env=dict(os.environ); env['BUSINESSOS_WORKSPACE']=str(ws); env['PYTHONDONTWRITEBYTECODE']='1'
     validation={}
-    for name,cmd in {'workspace':[sys.executable,str(Path(__file__).resolve().parents[1]/'scripts/validate_workspace.py')],'business':[sys.executable,str(Path(__file__).resolve().parents[1]/'scripts/validate_business.py'),a.business_id]}.items():
+    for name,cmd in {'workspace':[sys.executable,str(Path(__file__).resolve().parents[1]/'scripts/validate_workspace.py')],'business':[sys.executable,str(Path(__file__).resolve().parents[1]/'scripts/validate_business.py'),a.business_id,'--require-context']}.items():
         proc=subprocess.run(cmd,cwd=Path(__file__).resolve().parents[1],env=env,capture_output=True,text=True)
         validation[name]={'ok':proc.returncode==0,'returncode':proc.returncode,'stdout':proc.stdout[-4000:],'stderr':proc.stderr[-4000:]}
     snap={'event_id':a.event_id,'phase':a.phase,'business_id':a.business_id,'captured_at':now(),'workspace':tree_snapshot(ws),'objects':collect_objects(ws,a.business_id),'runs':collect_runs(ws,a.business_id),'validation':validation}
