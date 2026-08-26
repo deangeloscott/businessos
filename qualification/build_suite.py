@@ -10,6 +10,20 @@ def dimensions_for(profile):
     base=[x['id'] for x in RUBRICS['base']]
     return base + list(RUBRICS['profiles'].get(profile,[]))
 
+def subcontract_ids(items, contract_id):
+    out=[]
+    for item in items or []:
+        if isinstance(item,str):
+            cid=item
+        elif isinstance(item,dict):
+            cid=item.get('id')
+        else:
+            cid=None
+        if not isinstance(cid,str) or not cid.strip():
+            raise ValueError(f'{contract_id}: invalid required subcontract metadata {item!r}')
+        out.append(cid.strip())
+    return out
+
 def candidate_task(c):
     outcome=c.get('business_outcome') or c.get('purpose') or c['title']
     run_when=c.get('run_when') or ''
@@ -44,7 +58,7 @@ def hard_gates(c):
 def build():
     contracts=load_contracts(); ids={c['contract_id'] for c in contracts}; tests=[]
     for c in contracts:
-        req=list((c.get('subcontracts') or {}).get('required') or [])
+        req=subcontract_ids((c.get('subcontracts') or {}).get('required') or [],c['contract_id'])
         tests.append({
             'test_id':'CONTRACT-'+c['contract_id'].replace('.','-').upper(),
             'kind':'contract_acceptance','contract_id':c['contract_id'],'contract_path':c['path'],
