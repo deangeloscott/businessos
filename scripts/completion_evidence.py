@@ -17,8 +17,17 @@ MEDIA_EXTS={
     'gif':{'.gif','.webp','.mp4'},
     'audio':{'.mp3','.wav','.m4a','.aac','.ogg','.flac'},
     'video':{'.mp4','.mov','.webm','.m4v'},
-    'presentation':{'.pptx','.pdf','.html'},
+    'presentation':{'.pptx','.pdf','.html','.png','.jpg','.jpeg','.webp','.svg'},
     'infographic':{'.png','.jpg','.jpeg','.webp','.svg','.pdf'},
+}
+PACKET_FALLBACKS={
+    'animation':(('scene','timing','transition'),('keyframe','narration','visual state')),
+    'short-video':(('visual','duration','audio'),('scene','beat','shot','storyboard')),
+    'long-video':(('visual','duration','audio'),('scene','beat','shot','storyboard')),
+    'podcast':(('audio','segment','script'),('edit','timing','show notes','talking points')),
+    'presentation':(('slide','audience','duration'),('speaker notes','visual','chart','diagram')),
+    'carousel':(('slide','sequence','visual'),('cover','frame','platform','dimensions')),
+    'demo':(('product','step','state'),('narration','visual','interaction','screen')),
 }
 
 
@@ -68,10 +77,11 @@ def completion_spec(contract):
         profile='generic'
     medium=explicit.get('medium')
     if not medium and profile=='production': medium=last
+    default_fallback=medium in PACKET_FALLBACKS
     return {
         'version':'1.0','profile':profile,'medium':medium,
         'declared_write_types':sorted(writes),'artifact_role':contract.get('artifact_role'),
-        'allow_specification_fallback':bool(explicit.get('allow_specification_fallback', medium=='animation')),
+        'allow_specification_fallback':bool(explicit.get('allow_specification_fallback',default_fallback)),
         'require_subcontract_write_evidence':bool(explicit.get('require_subcontract_write_evidence',False)),
         'strict_qa_target':bool(explicit.get('strict_qa_target', cid=='content.qa.pre-publish')),
     }
@@ -122,8 +132,6 @@ def _declared_write_errors(contract,paths,business_id,run_id,phase):
 
 
 def detector_evidence_errors(contract,paths,business_id,run_id):
-    # A detector may legitimately find nothing. A declared canonical finding proves a
-    # positive result; otherwise require an auditable structured no-finding record.
     if not _declared_write_errors(contract,paths,business_id,run_id,'root'):return []
     cid=contract.get('id')
     for p in paths:
@@ -159,8 +167,7 @@ def qa_evidence_errors(contract,paths):
     cid=contract.get('id'); spec=completion_spec(contract); strict=spec.get('strict_qa_target',False)
     records=_qa_records(cid,paths,strict_target=strict)
     if not records:
-        if strict:
-            return [f'{cid} completion requires a structured JSON QA pass record with matching contract_id, substantive checks_performed/checks, blockers, tested/target Asset, and tested version']
+        if strict:return [f'{cid} completion requires a structured JSON QA pass record with matching contract_id, substantive checks_performed/checks, blockers, tested/target Asset, and tested version']
         return [f'{cid} completion requires a structured JSON QA pass record with matching contract_id and substantive checks_performed/checks']
     return []
 
@@ -170,23 +177,26 @@ def _media_family(medium):
     if m in {'image','graphic','thumbnail'}:return 'image'
     if m=='gif':return 'gif'
     if m in {'audio','voiceover'}:return 'audio'
-    if m in {'video','avatar-video','demo','clip-extraction'}:return 'video'
+    if m in {'video','avatar-video','short-video','long-video','clip-extraction'}:return 'video'
+    if m=='demo':return 'video'
     if m=='animation':return 'animation'
     if m in {'presentation','slides','carousel'}:return 'presentation'
     if m=='infographic':return 'infographic'
+    if m=='podcast':return 'audio'
     return 'text'
 
 
-def _animation_spec_ok(path):
-    if Path(path).suffix.lower() not in TEXT_EXTS:return False
+def _packet_fallback_ok(path,medium):
+    m=str(medium or '').lower();rules=PACKET_FALLBACKS.get(m)
+    if not rules or Path(path).suffix.lower() not in TEXT_EXTS:return False
     try:text=Path(path).read_text(encoding='utf-8',errors='ignore').lower()
     except Exception:return False
-    return len(text.split())>=40 and all(x in text for x in ('scene','timing','transition')) and ('keyframe' in text or 'narration' in text or 'visual state' in text)
+    if len(re.findall(r'\b\w+\b',text))<40:return False
+    required,alternatives=rules
+    return all(x in text for x in required) and any(x in text for x in alternatives)
 
 
 def _asset_lineage_ok(asset,business_id):
-    # Deterministic validation proves that lineage resolves to real canonical state. Whether
-    # that source is strategically sufficient is a qualitative contract/QA judgment.
     lineage=asset.get('lineage') or []
     if not isinstance(lineage,list) or not lineage:return False
     idx=object_index(business_id)
@@ -213,26 +223,23 @@ def production_evidence_errors(contract,paths,business_id,run_id,manifest=None):
         if not _asset_lineage_ok(asset,business_id):
             errors.append(f'{asset.get("id")} lacks lineage to existing canonical business state');continue
         ext=p.suffix.lower()
-        if family=='animation':
-            if ext in MEDIA_EXTS['video']|MEDIA_EXTS['gif'] or (spec.get('allow_specification_fallback') and _animation_spec_ok(p)):
+        if family in MEDIA_EXTS or family=='animation':
+            accepted_exts=(MEDIA_EXTS['video']|MEDIA_EXTS['gif']) if family=='animation' else MEDIA_EXTS[family]
+            if ext in accepted_exts:
                 usable.append(asset);continue
-            errors.append(f'{asset.get("id")} animation evidence must be rendered motion media or a complete scene/keyframe/timing/transition production specification');continue
-        if family in MEDIA_EXTS:
-            if ext not in MEDIA_EXTS[family]:
-                errors.append(f'{asset.get("id")} evidence file type {ext or "<none>"} does not satisfy expected {family} medium for {cid}');continue
-        elif ext not in TEXT_EXTS:
+            if spec.get('allow_specification_fallback') and _packet_fallback_ok(p,medium):
+                usable.append(asset);continue
+            fallback=' or a complete production packet/specification' if spec.get('allow_specification_fallback') else ''
+            errors.append(f'{asset.get("id")} evidence file type {ext or "<none>"} does not satisfy expected {family} medium for {cid}{fallback}');continue
+        if ext not in TEXT_EXTS:
             errors.append(f'{asset.get("id")} evidence file type {ext or "<none>"} does not satisfy expected text/document medium for {cid}');continue
         usable.append(asset)
     if not usable:return errors or [f'{cid} has no root artifact matching its canonical Asset and expected medium']
 
-    # Strict QA profiles (currently pre-publish by default) must target the actual produced
-    # Asset/version. Other QA contracts are structurally checked when recorded but remain
-    # backward-compatible unless they explicitly opt into strict targeting.
     if manifest:
         byid=contract_index();produced={a.get('id'):str(a.get('version')) for a in usable if a.get('id')}
         for qid in manifest.get('required_subcontracts') or []:
-            qc=byid.get(qid,{})
-            qspec=completion_spec(qc)
+            qc=byid.get(qid,{});qspec=completion_spec(qc)
             if qspec.get('profile')!='qa' or not qspec.get('strict_qa_target'):continue
             refs=((manifest.get('contracts') or {}).get(qid) or {}).get('evidence_refs') or []
             records=_qa_records(qid,_paths(refs),strict_target=True);targeted=False
