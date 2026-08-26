@@ -11,6 +11,7 @@ TESTS=[
     'tests/run_ecosystem_intelligence.py',
     'tests/run_playbook_evolution_exchange.py',
     'tests/run_workspace_human_knowledge.py',
+    'tests/run_workspace_migration_path_guard.py',
     'tests/run_agent_hardening.py',
     'tests/run_bootstrap_reference_ids.py',
     'tests/run_preferences_multioperator.py',
