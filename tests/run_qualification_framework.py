@@ -3,7 +3,7 @@ from pathlib import Path
 import inspect, json, sys
 ROOT=Path(__file__).resolve().parents[1]; sys.path.insert(0,str(ROOT/'qualification'))
 from build_suite import build
-from prepare_run import init_business
+from prepare_run import init_business, copy_product
 
 def req(c,m):
     if not c: raise AssertionError(m)
@@ -32,5 +32,11 @@ def main():
         f=json.loads(p.read_text()); req(isinstance(f.get('bootstrap_facts'),dict) and f['bootstrap_facts'],f'{p.name}: bootstrap_facts required')
     seed_source=inspect.getsource(init_business)
     req('bootstrap_explicit_context.py' in seed_source and '--require-context' in seed_source,'qualification preparation must ground fixture context canonically and validate required context before Level-2 testing')
-    print(f"qualification framework regressions passed: {suite['contract_count']} contract tests, {suite['capability_count']} capability mappings, {len(suite['domain_missions'])} domain missions, {len(suite['cross_domain_missions'])} cross-domain missions, {len(suite['marathon_missions'])} marathon missions, {len(suite.get('concurrency_missions',[]))} concurrency missions, {len(fixture_paths)} grounded fixtures")
+    req("k!='timeline'" in seed_source and 'hidden-fixtures' in seed_source,'later-period fixture evidence must be withheld from initial candidate inputs')
+    copy_source=inspect.getsource(copy_product)
+    req("parts[0]=='qualification' and parts[1]=='fixtures'" in copy_source,'raw benchmark fixtures must not be copied into the staged candidate product')
+    req((ROOT/'qualification/release_fixture.py').exists(),'timed fixture release helper missing')
+    released=[m for m in suite['cross_domain_missions']+suite['marathon_missions'] if m.get('release_fixture')]
+    req(len(released)>=2 and {'CROSS-MARKET-CHANGE-001','MARATHON-002'}.issubset({m['id'] for m in released}),'expected longitudinal evidence-release missions missing')
+    print(f"qualification framework regressions passed: {suite['contract_count']} contract tests, {suite['capability_count']} capability mappings, {len(suite['domain_missions'])} domain missions, {len(suite['cross_domain_missions'])} cross-domain missions, {len(suite['marathon_missions'])} marathon missions, {len(suite.get('concurrency_missions',[]))} concurrency missions, {len(fixture_paths)} grounded fixtures, {len(released)} timed evidence releases")
 if __name__=='__main__': main()
