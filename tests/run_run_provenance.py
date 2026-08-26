@@ -39,8 +39,13 @@ def main():
 
         # A completed but unrelated Run is not enough merely because an object points at it.
         unrelated=run(S/'create_run.py',BID,'seo.diagnosis.detectors.indexing','Unrelated SEO fixture Run').stdout.strip()
-        note=ROOT/'runtime'/BID/'unrelated.txt'; note.parent.mkdir(parents=True,exist_ok=True); note.write_text('unrelated evidence\n')
-        run(S/'complete_run.py',BID,unrelated,'--evidence',str(note.relative_to(ROOT)))
+        note=ROOT/'runtime'/BID/'unrelated.txt'; note.parent.mkdir(parents=True,exist_ok=True); note.write_text('fixture index inspection evidence\n')
+        nofind=ROOT/'runtime'/BID/'unrelated-no-finding.json'
+        nofind.write_text(json.dumps({
+            'contract_id':'seo.diagnosis.detectors.indexing','status':'completed','result':'no_finding',
+            'checks_performed':['fixture index-state comparison'],'evidence_refs':[str(note.relative_to(ROOT))]
+        },indent=2)+'\n')
+        run(S/'complete_run.py',BID,unrelated,'--evidence',str(nofind.relative_to(ROOT)))
         o=json.loads(opp.read_text()); bos=o.setdefault('extensions',{}).setdefault('businessos',{}); bos.update({'run_ref':f'runtime/runs/{BID}/{unrelated}','run_id':unrelated,'run_contract_id':'seo.diagnosis.detectors.indexing'}); opp.write_text(json.dumps(o,indent=2)+'\n')
         errs=run_completion_errors(BID,objects([opp]))
         req(any('owner_system does not match' in e for e in errs),f'unrelated owner Run must fail: {errs}')
