@@ -30,6 +30,16 @@ subcontracts:
   conditional:
   - id: content.qa.platform
     when: a final platform-specific Asset is produced
+completion_evidence:
+  required_text_components:
+  - id: selected-platform-surface
+    any_of: [target platform, selected platform, target surface, selected surface]
+  - id: consumption-context
+    any_of: [consumption context, attention pattern, interaction behavior]
+  - id: native-expression-grammar
+    any_of: [format grammar, native behavior, platform-native]
+  - id: proof-or-source-needs
+    any_of: [proof needs, source needs, evidence needs, creative needs]
 ---
 # Platform-Native Adaptation
 

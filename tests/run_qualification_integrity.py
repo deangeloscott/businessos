@@ -58,6 +58,11 @@ def main():
         mass=scratch/'run_gauntlet.py';mass.write_text("queue='queue.json'\nfor event in events:\n print('checkpoint.py', 'complete_run.py', 'record_contract_completion.py', 'candidate-results', 'receipt_path')\n")
         control=run_control_flags(root,ws)
         req(any(x.get('type')=='mass_completion_runner' and Path(x['path'])==mass for x in control),f'workspace mass-completion runner must be a critical integrity flag: {control}')
+        logs=root/'candidate-logs';logs.mkdir()
+        log=logs/'candidate.stdout.log';log.write_text('{"tool":"python private/scratch/run_event.py 0"}\nProcessing Event 1/69\nCreated AURA Run: run_fake\nqualification/evaluate_run.py\n')
+        logged=run_control_flags(root,ws)
+        req(any(x.get('type')=='mass_completion_runner' and x.get('source')=='captured_tool_log' for x in logged),f'private-harness mass runner must be detected from canonical logs: {logged}')
+        req(any(x.get('type')=='candidate_evaluator_spec_access' for x in logged),f'evaluator invocation must be detected from canonical logs: {logged}')
 
     suite=build(); customer=[t for t in suite['contract_tests'] if t.get('artifact_role')=='customer_facing_production_root']
     evaluator=(ROOT/'qualification/evaluate_run.py').read_text()

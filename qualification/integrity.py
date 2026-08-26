@@ -219,7 +219,7 @@ def run_control_flags(run_dir,workspace=None):
         'queue.json','checkpoint.py','complete_run.py','record_contract_completion.py',
         'candidate-results','receipt_path','required_subcontracts',
     )
-    evaluator_markers=('evaluator/suite.json','evaluator\\suite.json')
+    evaluator_markers=('evaluator/suite.json','evaluator\\suite.json','qualification/evaluate_run.py','qualification\\evaluate_run.py')
     for root in roots:
         if not root.exists():continue
         for p in sorted(x for x in root.rglob('*') if x.is_file() and x.suffix.lower() in {'.py','.ps1','.sh','.bat','.cmd','.js','.ts'}):
@@ -237,5 +237,6 @@ def run_control_flags(run_dir,workspace=None):
             except OSError:continue
             if any(marker in text for marker in evaluator_markers):
                 flags.append({'type':'candidate_evaluator_spec_access','path':str(p)})
-                break
+            if re.search(r'run_event\.py',text) and re.search(r'processing event \d+/\d+',text) and 'created aura run' in text:
+                flags.append({'type':'mass_completion_runner','path':str(p),'source':'captured_tool_log'})
     return flags

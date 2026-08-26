@@ -33,6 +33,10 @@ def copy_product(src,dst):
         if any(x in {'.git','__pycache__','.pytest_cache','.venv','venv'} for x in parts): continue
         if parts and parts[0] in {'generated','knowledge','attachments','aura-qualification-runs'}: continue
         if len(parts)>=2 and parts[0]=='qualification' and parts[1]=='fixtures': continue
+        if len(parts)>=2 and parts[0]=='qualification' and parts[1] in {
+            'evaluate_run.py','build_judge_prompt.py','compare_runs.py','integrity.py'
+        }: continue
+        if len(parts)>=2 and parts[0]=='qualification' and parts[1] in {'evaluator','rubrics'}: continue
         if parts and parts[0]=='instances' and (len(parts)<2 or parts[1] != '_template'): continue
         if parts and parts[0]=='runtime' and not (len(parts)==2 and parts[1]=='README.md'): continue
         if rel.as_posix()=='.businessos/workspace.json': continue

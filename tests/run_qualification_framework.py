@@ -70,6 +70,7 @@ def main():
     copy_source=inspect.getsource(copy_product)
     req("parts[0]=='qualification' and parts[1]=='fixtures'" in copy_source,'raw benchmark fixtures must not be copied into the staged candidate product')
     req("'aura-qualification-runs'" in copy_source,'historical qualification run archives must not be copied into staged candidate products')
+    req("'evaluate_run.py'" in copy_source and "'integrity.py'" in copy_source,'evaluator-only executables must be excluded from staged candidate products')
     req((ROOT/'qualification/release_fixture.py').exists(),'timed fixture release helper missing')
     released=[m for m in suite['cross_domain_missions']+suite['marathon_missions'] if m.get('release_fixture')]
     req(len(released)>=2 and {'CROSS-MARKET-CHANGE-001','MARATHON-002'}.issubset({m['id'] for m in released}),'expected longitudinal evidence-release missions missing')

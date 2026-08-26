@@ -161,6 +161,8 @@ def _structured_check(item):
     if detail is None:return False
     normalized=re.sub(r'\s+',' ',str(detail).lower()).strip()
     if re.fullmatch(r'(?:passed|pass(?:ed)? all)(?: the)? required (?:quality )?checks?(?: for .+)?\.?',normalized):return False
+    if re.fullmatch(r'all .{0,100}(?:verified|checked|validated)(?: successfully)?\.?',normalized):return False
+    if re.fullmatch(r'.{0,100}(?:requirements?|standards?|rules?) (?:were )?(?:met|passed|verified|satisfied)(?: successfully)?\.?',normalized):return False
     return len(re.findall(r'\b\w+\b',normalized))>=3
 
 

@@ -91,6 +91,13 @@ def main():
         })+'\n')
         r=run(S/'record_contract_completion.py',BID,rid,'content.qa.pre-publish','--evidence',str(strings.relative_to(ROOT)))
         req(r.returncode!=0 and 'per-check outcomes' in (r.stderr+r.stdout),f'generic string QA assertions must fail: {r.stderr+r.stdout}')
+        tautology=RUNS/rid/'artifacts'/'tautological-prepublish.json';write(tautology,json.dumps({
+            'contract_id':'content.qa.pre-publish','status':'pass','tested_asset':aid,'tested_version':'1',
+            'checks_performed':[{'check':'brand and claims','status':'pass','result':'All brand positioning and claim rules verified successfully.'}],
+            'blockers':[]
+        })+'\n')
+        r=run(S/'record_contract_completion.py',BID,rid,'content.qa.pre-publish','--evidence',str(tautology.relative_to(ROOT)))
+        req(r.returncode!=0 and 'per-check outcomes' in (r.stderr+r.stdout),f'tautological QA result must fail: {r.stderr+r.stdout}')
         good=RUNS/rid/'artifacts'/'good-prepublish.json';write(good,json.dumps({
             'contract_id':'content.qa.pre-publish','status':'pass','tested_asset':aid,'tested_version':'1',
             'checks_performed':[
