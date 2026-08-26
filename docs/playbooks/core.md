@@ -9,6 +9,9 @@ Figure out what the business needs, keep business facts organized, choose the ri
 ## Common jobs
 
 - **[Resolve User Intent](../../core/contracts/routing/resolve-intent/CONTEXT.md)** — Interpret an ordinary-language request and choose the smallest valid direct, diagnostic, prioritization, or multi-domain route without forcing an uncertain lexical match.
+- **[Configure AURA Workspace](../../core/contracts/workspace/configure/CONTEXT.md)** — Choose simple, power-user, or organization deployment; optionally separate organization-owned state from product source; and keep versioning/Obsidian as optional adapters.
+- **[Refresh Human Knowledge Layer](../../core/contracts/knowledge/refresh-human-layer/CONTEXT.md)** — Generate a traceable Markdown/Obsidian-friendly human view from canonical BusinessOS state without creating a competing truth store.
+- **[Ingest Human Knowledge Note](../../core/contracts/knowledge/ingest-human-note/CONTEXT.md)** — Register a human-authored workspace note as noncanonical source material and route useful claims through normal evidence/context governance.
 - **[External Ecosystem Intelligence Radar](../../core/contracts/intelligence/ecosystem/radar/CONTEXT.md)** — Discover important external changes, tactics, findings, and signals; verify what is real and relevant; and route promising items to investigation, testing, or learning.
 - **[Playbook Evolution and System Improvement](../../core/contracts/learning/playbook-evolution/CONTEXT.md)** — Turn strong reusable Learning into a governed business process extension, new local playbook, or canonical BusinessOS revision candidate without overgeneralizing evidence.
 - **[BusinessOS Innovation Exchange](../../core/contracts/intelligence/innovation-exchange/CONTEXT.md)** — Prepare, import, browse, and evaluate portable BusinessOS process innovations with explicit sharing consent and no required central service.
@@ -68,6 +71,11 @@ These are smaller, specific playbooks BusinessOS can use inside the larger jobs 
 - [Register Reusable Proof](../../core/contracts/intelligence/register-proof/CONTEXT.md)
 - [Request Intelligence Refresh](../../core/contracts/intelligence/request-refresh/CONTEXT.md)
 - [Route External Evidence to Action or Learning](../../core/contracts/intelligence/ecosystem/route-learning/CONTEXT.md)
+
+### Knowledge
+
+- [Ingest Human Knowledge Note](../../core/contracts/knowledge/ingest-human-note/CONTEXT.md) *(main entry playbook)*
+- [Refresh Human Knowledge Layer](../../core/contracts/knowledge/refresh-human-layer/CONTEXT.md) *(main entry playbook)*
 
 ### Learning and improvement
 

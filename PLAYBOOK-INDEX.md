@@ -147,6 +147,8 @@ Generated from contract frontmatter. Do not maintain a second manual list.
 - `core.intelligence.record-platform-change` — Record Verified Platform Change: Maintain current verified platform/topic state independently from BusinessOS software releases.
 - `core.intelligence.register-proof` — Register Reusable Proof: Turn direct evidence into one reusable ProofRecord without overstating what the evidence proves or losing source, permission, and usage constraints.
 - `core.intelligence.request-refresh` — Request Intelligence Refresh: Ask the canonical semantic owner to refresh stale, incomplete, contradictory, or insufficiently specific intelligence instead of building a duplicate research store.
+- `core.knowledge.ingest-human-note` — Ingest Human Knowledge Note: Bring a human-authored Markdown/text note into BusinessOS as provenance-backed source material without assuming the note is verified canonical business truth.
+- `core.knowledge.refresh-human-layer` — Refresh Human Knowledge Layer: Generate an easy-to-browse Markdown view of canonical BusinessOS state for humans without creating a second source of truth.
 - `core.learning.adopt-process-extension` — Adopt Business Process Extension: Apply an explicitly approved business-scoped PlaybookEvolutionProposal as a reversible ProcessExtension without modifying the canonical BusinessOS source tree.
 - `core.learning.playbook-evolution` — Playbook Evolution and System Improvement: Turn sufficiently strong reusable Learning into the narrowest justified operating-process improvement without converting one successful result into universal BusinessOS behavior.
 - `core.learning.promote-learning` — Promote Learning: Turn repeated or sufficiently strong outcome evidence into scoped future decision guidance and, when justified, a candidate operating-process improvement.
@@ -160,6 +162,7 @@ Generated from contract frontmatter. Do not maintain a second manual list.
 - `core.opportunity.qualify` — Qualify Opportunity: Turn domain diagnosis into a comparable, evidence-backed potential intervention.
 - `core.routing.resolve-intent` — Resolve User Intent: Interpret a natural-language business request when deterministic routing cannot identify a sufficiently confident direct job.
 - `core.verification.verify-change` — Verify Change: Independently determine whether intended external state exists and guardrails remain acceptable.
+- `core.workspace.configure` — Configure AURA Workspace: Configure where organization-owned ViralTrac AURA state lives and which deployment experience is being used without changing AURA's operating semantics or making Git, Obsidian, or hosted infrastructure mandatory.
 
 ## customer-intelligence
 
