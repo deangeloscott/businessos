@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 from pathlib import Path
-import json, sys
+import inspect, json, sys
 ROOT=Path(__file__).resolve().parents[1]; sys.path.insert(0,str(ROOT/'qualification'))
 from build_suite import build
+from prepare_run import init_business
 
 def req(c,m):
     if not c: raise AssertionError(m)
@@ -26,5 +27,10 @@ def main():
     req(len(suite.get('concurrency_missions',[]))>=4,'concurrency mission coverage too small')
     live=[t for t in suite['contract_tests'] if t['competitive_profile']=='search_live_field']; req(live,'SEO/AEO live-field tests missing')
     ads=[t for t in suite['contract_tests'] if t['competitive_profile']=='paid_and_persuasion_field']; req(ads,'competitive marketing tests missing')
-    print(f"qualification framework regressions passed: {suite['contract_count']} contract tests, {suite['capability_count']} capability mappings, {len(suite['domain_missions'])} domain missions, {len(suite['cross_domain_missions'])} cross-domain missions, {len(suite['marathon_missions'])} marathon missions, {len(suite.get('concurrency_missions',[]))} concurrency missions")
+    fixture_paths=sorted((ROOT/'qualification/fixtures').glob('*.json')); req(fixture_paths,'qualification fixtures missing')
+    for p in fixture_paths:
+        f=json.loads(p.read_text()); req(isinstance(f.get('bootstrap_facts'),dict) and f['bootstrap_facts'],f'{p.name}: bootstrap_facts required')
+    seed_source=inspect.getsource(init_business)
+    req('bootstrap_explicit_context.py' in seed_source and '--require-context' in seed_source,'qualification preparation must ground fixture context canonically and validate required context before Level-2 testing')
+    print(f"qualification framework regressions passed: {suite['contract_count']} contract tests, {suite['capability_count']} capability mappings, {len(suite['domain_missions'])} domain missions, {len(suite['cross_domain_missions'])} cross-domain missions, {len(suite['marathon_missions'])} marathon missions, {len(suite.get('concurrency_missions',[]))} concurrency missions, {len(fixture_paths)} grounded fixtures")
 if __name__=='__main__': main()
