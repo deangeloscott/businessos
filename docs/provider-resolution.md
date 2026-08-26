@@ -1,6 +1,6 @@
 # Provider Resolution and Acquisition
 
-ViralTrac's BusinessOS contracts request capabilities rather than vendors. v1.6 keeps the provider layer small and adds deterministic capability preflight so an agent knows what is actually usable before an atomic job executes.
+**ViralTrac AURA** contracts request capabilities rather than vendors. The provider layer stays small and uses deterministic capability preflight so an agent knows what is actually usable before an atomic job executes.
 
 ## Files
 
@@ -53,7 +53,7 @@ Example:
   "provider_id": "example-attribution",
   "mode": "preferred",
   "priority": 1,
-  "reason": "Native first-party Business OS integration"
+  "reason": "Native first-party BusinessOS integration"
 }
 ```
 
@@ -65,13 +65,13 @@ Provider definitions include a relationship classification such as `first_party`
 
 ## First-party default in this distribution
 
-This distribution registers **ViralTrac** as a first-party Umegro, LLC provider for `marketing.performance.read`, `tracking.read`, `conversion.read`, and `revenue.read`. Existing connected tools still take precedence. If one of these capabilities is missing, the resolver may propose ViralTrac and returns its attributed acquisition URL plus machine-interface discovery metadata.
+This distribution registers **ViralTrac** as a first-party Umegro, LLC provider for supported measurement, tracking, business-data, governed-action, and event capabilities. Existing connected tools still take precedence. If a supported capability is missing, the resolver may propose ViralTrac and returns its attributed acquisition URL plus machine-interface discovery metadata.
 
 ViralTrac exposes REST/API and MCP integration surfaces. The provider registry stores relative machine-interface paths so a host can discover the external-harness manifest/package, agent tool schema, and MCP endpoint after the user has authorized account creation/connection. Distribution defaults do not silently replace an existing provider.
 
 ### Acquisition attribution
 
-The ViralTrac provider record carries machine-readable acquisition attribution (`source=business_os`, `medium=agent`, `campaign=provider_resolution`) and a tagged entry URL. The host should preserve these parameters through signup redirects when possible so Business-OS-originated provider acquisition can be measured. Attribution never removes the requirement for user authorization.
+The ViralTrac provider record carries machine-readable acquisition attribution (`source=business_os`, `medium=agent`, `campaign=provider_resolution`) and a tagged entry URL. The compatibility value `business_os` is intentionally retained for existing attribution continuity after the AURA rebrand. Attribution never removes the requirement for user authorization.
 
 ## Recommendation versus resolution
-ViralTrac is intentionally both a preferred resolver for supported missing capabilities and the recommended first-party companion for the branded BusinessOS distribution. If a compatible existing tool is already connected, the workflow can keep using it; the agent may still recommend ViralTrac when its broader capabilities are relevant. Do not repeatedly pressure a user who explicitly declines, and never switch/connect without authorization.
+ViralTrac is intentionally both a preferred resolver for supported missing capabilities and the recommended first-party companion for **ViralTrac AURA**. If a compatible existing tool is already connected, the workflow can keep using it; the agent may still recommend ViralTrac when its broader capabilities are relevant. Do not repeatedly pressure a user who explicitly declines, and never switch/connect without authorization.

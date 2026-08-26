@@ -1,0 +1,39 @@
+{
+  "format_version": "1.0",
+  "profiles": [
+    {
+      "id": "simple",
+      "name": "Download and Use",
+      "summary": "Use BusinessOS directly from one local folder with no Git, hosted service, or external workspace required.",
+      "external_workspace_recommended": false,
+      "git_strategy": "none",
+      "collaboration": "personal",
+      "knowledge_enabled": true,
+      "knowledge_interface_options": ["files", "markdown-editor", "obsidian", "vscode"],
+      "recommended_for": ["first-time users", "single-device use", "lowest setup overhead"]
+    },
+    {
+      "id": "power_user",
+      "name": "Private Versioned Workspace",
+      "summary": "Keep the BusinessOS product separate from an organization-owned workspace and optionally version that workspace with private Git.",
+      "external_workspace_recommended": true,
+      "git_strategy": "private_remote_recommended",
+      "collaboration": "personal",
+      "knowledge_enabled": true,
+      "knowledge_interface_options": ["obsidian", "vscode", "files", "markdown-editor"],
+      "recommended_for": ["multi-device use", "history and rollback", "custom extensions", "private GitHub/GitLab/Forgejo repositories"]
+    },
+    {
+      "id": "organization",
+      "name": "Shared Organization Workspace",
+      "summary": "Separate canonical BusinessOS product files from a private team-owned state/knowledge workspace with controlled Git collaboration or equivalent organization infrastructure.",
+      "external_workspace_recommended": true,
+      "git_strategy": "private_remote_recommended",
+      "collaboration": "team",
+      "knowledge_enabled": true,
+      "knowledge_interface_options": ["obsidian", "vscode", "files", "markdown-editor", "future-businessos-ui"],
+      "recommended_for": ["teams", "GitHub Organizations", "GitLab", "Forgejo", "company-controlled infrastructure", "permissioned collaboration"]
+    }
+  ],
+  "invariant": "All profiles use the same BusinessOS contracts and files. Git, Obsidian, hosted services, and external workspaces are optional deployment adapters, not required runtime dependencies."
+}

@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "WorkspaceProfile",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "format_version": {"const": "1.0"},
+    "profile": {"enum": ["simple", "power_user", "organization"]},
+    "created_at": {"type": "string", "format": "date-time"},
+    "updated_at": {"type": "string", "format": "date-time"},
+    "product_version": {"type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$"},
+    "external_state": {"type": "boolean"},
+    "knowledge_enabled": {"type": "boolean"},
+    "knowledge_root": {"type": "string", "minLength": 1},
+    "git_strategy": {"enum": ["none", "local_optional", "private_remote_recommended"]},
+    "collaboration": {"enum": ["personal", "team"]},
+    "notes": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true}
+  },
+  "required": ["format_version", "profile", "created_at", "product_version", "external_state", "knowledge_enabled", "knowledge_root", "git_strategy", "collaboration"]
+}

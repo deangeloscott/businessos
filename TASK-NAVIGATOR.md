@@ -1,6 +1,8 @@
 # Task Navigator
 
-Installed edition: **ViralTrac's BusinessOS**.
+Installed edition: **ViralTrac AURA**.
+
+ViralTrac AURA is an AI-native BusinessOS. You can ask for an outcome in plain language; this file is a human browse view, not a requirement to select a playbook manually.
 
 ## Competitor Intelligence
 
@@ -10,6 +12,7 @@ Adaptively discover, resolve, observe, traverse, compare, and interpret competit
 |---|---|---|
 | `research-plan` | Resolve a competitive question with bounded evidence. | `competitor.research.plan` |
 | `source-coverage` | Adapt research depth and evidence-source coverage to the competitive decision. | `competitor.research.adaptive-source-coverage` |
+| `ecosystem-radar` | Discover important competitive movements and tactic claims, verify what is observed versus effective, and route material implications. | `competitor.intelligence.ecosystem-radar` |
 | `competitor-discovery` | Identify current direct/substitute competitors. | `competitor.discovery.competitive-set` |
 | `entity-resolution` | Resolve competitor domains and public profiles to the correct canonical entity. | `competitor.discovery.entity-resolution` |
 | `emerging-competitors` | Detect new competitors entering the relevant customer choice set. | `competitor.discovery.emerging-competitors` |
@@ -38,6 +41,7 @@ Research content patterns and turn validated ideas, evidence, and source materia
 | `angle` | Choose a useful angle for the source idea. | `content.strategy.angle` |
 | `platform-format` | Select platform/format based on communication job. | `content.strategy.format-platform` |
 | `platform-native-adaptation` | Express an idea natively for a specific platform. | `content.adaptation.platform-native` |
+| `ecosystem-radar` | Discover emerging content formats, creator patterns, distribution mechanics, and communication tactics; validate what is durable enough to test or learn from. | `content.intelligence.ecosystem-radar` |
 | `trend-discovery` | Find and contextualize unusually strong/trending content. | `content.intelligence.trending-content-discovery` |
 | `creator-monitoring` | Track creator patterns over time. | `content.intelligence.creator-monitoring` |
 | `creative-pattern` | Extract reusable creative mechanisms without copying expression. | `content.intelligence.creative-pattern-extraction` |
@@ -66,6 +70,7 @@ Research and maintain evidence-backed understanding of customers, prospects, pai
 | Activity | Result | Entry contract |
 |---|---|---|
 | `customer-research` | Resolve a customer knowledge need with evidence sufficient for the decision. | `customer.research.plan` |
+| `ecosystem-radar` | Detect changing customer needs, language, objections, expectations, and use cases; corroborate them; and compare external signals with first-party evidence when needed. | `customer.intelligence.ecosystem-radar` |
 | `interviews` | Collect and code neutral, decision-relevant customer interview evidence. | `customer.evidence-collection.interviews` |
 | `surveys` | Design, field, and interpret a survey with defensible coverage. | `customer.evidence-collection.surveys` |
 | `sales-conversation-mining` | Extract direct customer evidence from sales conversations. | `customer.evidence-collection.sales-conversations` |
@@ -92,6 +97,7 @@ Diagnose and improve conversion, purchase, onboarding, activation, success, rete
 | `journey-mapping` | Define the business-specific customer journey and measurable transitions. | `customer-optimization.journey.mapping` |
 | `instrumentation` | Instrument journey states and transitions. | `customer-optimization.journey.instrumentation` |
 | `data-quality` | Verify journey measurement is trustworthy. | `customer-optimization.instrumentation.data-quality` |
+| `ecosystem-radar` | Discover external customer-journey tactics, verify the evidence and applicability, and route promising low-enough-risk interventions into guarded tests. | `customer-optimization.intelligence.ecosystem-radar` |
 | `transition-analysis` | Find progression/drop-off/delay patterns. | `customer-optimization.journey.transition-analysis` |
 | `bottleneck-prioritization` | Prioritize the journey bottleneck worth solving. | `customer-optimization.diagnosis.bottleneck-prioritization` |
 | `root-cause` | Diagnose why a transition is failing before intervention. | `customer-optimization.diagnosis.root-cause` |
@@ -126,6 +132,7 @@ Monitor, verify, interpret, and track material regulation, research, technology,
 |---|---|---|
 | `monitoring-plan` | Define decision-relevant external monitoring. | `industry.research.monitoring-plan` |
 | `priority-sources` | Map reliable priority industry sources. | `industry.source-mapping.priority-sources` |
+| `ecosystem-radar` | Discover and triangulate material industry changes, research, regulation, technologies, market shifts, and emerging practices before routing them to business impact. | `industry.intelligence.ecosystem-radar` |
 | `news-monitoring` | Detect material news developments. | `industry.monitoring.news` |
 | `regulatory-monitoring` | Detect and interpret material regulation/standards changes. | `industry.monitoring.regulation` |
 | `research-monitoring` | Detect and evaluate important research. | `industry.monitoring.research` |
@@ -148,6 +155,7 @@ Diagnose and create commercial persuasion: positioning, messaging, proof archite
 | Activity | Result | Entry contract |
 |---|---|---|
 | `persuasion-diagnosis` | Determine whether and why persuasion is limiting qualified action. | `marketing.diagnosis.persuasion-barrier` |
+| `ecosystem-radar` | Discover emerging marketing tactics and measured findings, triangulate them, and route applicable uncertainty into bounded tests rather than copycat implementation. | `marketing.intelligence.ecosystem-radar` |
 | `positioning` | Define commercial position relative to customer needs and alternatives. | `marketing.strategy.positioning` |
 | `messaging` | Create audience-specific message architecture. | `marketing.strategy.messaging` |
 | `value-proposition` | Express differentiated value clearly. | `marketing.strategy.value-proposition` |
@@ -178,14 +186,25 @@ Diagnose, plan, execute, verify, and learn from organic discovery across search,
 
 | Activity | Result | Entry contract |
 |---|---|---|
+| `ecosystem-tactic-radar` | Discover new SEO/AEO tactics and platform findings, corroborate or invalidate them, test promising uncertainty, and update SEO learning only when evidence supports it. | `seo.intelligence.ecosystem.tactic-radar` |
+| `seo-aeo-experiment` | Design a controlled or defensible quasi-experimental test for an uncertain SEO/AEO tactic. | `seo.learning.strategy-experiment-design` |
+| `seo-aeo-experiment-analysis` | Analyze an SEO/AEO experiment without overstating causality and route the result into domain learning. | `seo.measurement.experiment-analysis` |
+| `seo-aeo-domain-learning` | Convert verified organic-discovery outcomes into reusable context-specific SEO/AEO learning. | `seo.aeo.learning.domain-learning` |
 
 ## Core
 
-Core supplies shared business context, evidence/provenance, Opportunities, Actions, verification, measurement, Learning, capability abstraction, and module-independence rules.
+Core supplies shared business context, evidence/provenance, Opportunities, Actions, verification, measurement, Learning, playbook evolution, workspace/knowledge governance, capability abstraction, and module-independence rules.
 
 | Activity | Result | Entry contract |
 |---|---|---|
 | `resolve-intent` | Interpret an ordinary-language request and choose the smallest valid direct, diagnostic, prioritization, or multi-domain route without forcing an uncertain lexical match. | `core.routing.resolve-intent` |
+| `configure-workspace` | Choose simple, power-user, or organization deployment; optionally separate organization-owned state from product source; and keep versioning/Obsidian as optional adapters. | `core.workspace.configure` |
+| `refresh-human-knowledge` | Generate a traceable Markdown/Obsidian-friendly human view from canonical BusinessOS state without creating a competing truth store. | `core.knowledge.refresh-human-layer` |
+| `ingest-human-note` | Register a human-authored workspace note as noncanonical source material and route useful claims through normal evidence/context governance. | `core.knowledge.ingest-human-note` |
+| `scan-external-ecosystem` | Discover important external changes, tactics, findings, and signals; verify what is real and relevant; and route promising items to investigation, testing, or learning. | `core.intelligence.ecosystem-radar` |
+| `evolve-operating-process` | Turn strong reusable Learning into a governed business process extension, new local playbook, or canonical BusinessOS revision candidate without overgeneralizing evidence. | `core.learning.playbook-evolution` |
+| `use-innovation-exchange` | Prepare, import, browse, and evaluate portable BusinessOS process innovations with explicit sharing consent and no required central service. | `core.intelligence.innovation-exchange` |
+| `review-community-innovation` | Separate community reports from independent/local evidence and route promising innovations to test, adopt, or playbook evolution. | `core.intelligence.community-evidence-review` |
 | `diagnose-business-problem` | Narrow a broad unexplained business symptom to evidence-backed likely mechanisms and correctly owned next work before intervention. | `core.diagnosis.business-problem` |
 | `discover-next-best-work` | Turn a broad growth/prioritization goal into the highest-value next work supported by current evidence and installed modules. | `core.opportunity.discover-next-best-work` |
 | `coordinate-multi-domain-request` | Decompose and sequence one compound request across several semantic owners while preserving ownership, lineage, and efficient handoffs. | `core.coordination.multi-domain-request` |
@@ -196,13 +215,5 @@ Core supplies shared business context, evidence/provenance, Opportunities, Actio
 | `react-to-business-event` | Turn an authorized business occurrence into a deduplicated BusinessOS evaluation trigger without bypassing routing or approval. | `core.monitoring.react-to-business-event` |
 | `configure-reactive-monitoring` | Configure an event-driven BusinessOS monitoring path only when provider runtime readiness and host delivery are actually available, with explicit fallback otherwise. | `core.monitoring.configure-reactive-monitoring` |
 | `diagnose-event-trace` | Explain and repair reason-coded reactive-event failures or no-action outcomes without guessing or unsafe replay. | `core.monitoring.diagnose-event-trace` |
-## Attention / platform state
-- Current attention needing awareness: `python3 scripts/list_attention.py <business-id> --json`
-- Create/update one semantic attention condition: `python3 scripts/upsert_attention.py <business-id> --help`
-- Acknowledge/resolve/supersede attention: `python3 scripts/set_attention_status.py <business-id> <attention-id> <status> --help`
-- Current verified platform/topic state: `python3 scripts/list_platform_state.py <business-id> --json`
-- Record/reverify platform state: `python3 scripts/record_platform_change.py <business-id> --help`
-- Archive old terminal attention/platform versions from active folders: `python3 scripts/maintain_lifecycle.py <business-id> --apply`
 
-These are portable state interfaces, not notification/scheduler implementations.
-
+See `DEPLOYMENT.md` for Simple / Power User / Organization deployment and `BRANDING.md` for public naming.

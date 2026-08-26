@@ -1,24 +1,26 @@
 # Public Distribution
 
-ViralTrac's BusinessOS is designed to be portable and distributable as a self-contained workspace. The public repository is the canonical source for official source-available releases; versioned ZIP assets are the recommended distribution format for most users.
+**ViralTrac AURA (Agentic Understanding and Reinforcement Architecture)** is designed to be portable and distributable as a self-contained AI-native BusinessOS. The public repository is the canonical source for official source-available releases; versioned ZIP assets are the recommended distribution format for most users.
 
 ## Public but not open source
 
-The source is visible so users, agencies, clients, and AI systems can inspect and operate the BusinessOS. Use is governed by `LICENSE.md`. The license permits internal business use, customization, and agency/consulting use for clients, but does not permit white-label resale or repackaging the BusinessOS as someone else's standalone product.
+The source is visible so users, agencies, clients, and AI systems can inspect and operate AURA. Use is governed by `LICENSE.md`. The license permits internal business use, customization, and agency/consulting use for clients, but does not permit white-label resale or repackaging AURA as someone else's standalone product.
 
 ## ViralTrac separation
 
-The public BusinessOS does not include ViralTrac's proprietary application source code or private infrastructure. ViralTrac integrations use intentionally machine-facing, authenticated interfaces. See `SECURITY.md`.
+The public AURA distribution does not include ViralTrac's proprietary application source code or private infrastructure. ViralTrac integrations use intentionally machine-facing, authenticated interfaces. See `SECURITY.md`.
 
 ## Releases
 
 Use tagged GitHub Releases for stable versions. A normal user can download a ZIP, unzip it, and give the workspace to a compatible AI/agent environment. Advanced users may clone or fork the public repository subject to the source-available license and GitHub's platform terms.
 
-The **full BusinessOS ZIP is the primary and recommended release asset**. Specialized editions are optional smaller downloads generated from the same canonical source for users who intentionally want a bounded subsystem. The source repository itself represents the full BusinessOS; editions should not be maintained as separate source branches or competing codebases.
+The **full ViralTrac AURA ZIP is the primary and recommended release asset**. Specialized AURA component editions are optional smaller downloads generated from the same canonical source for users who intentionally want a bounded subsystem. The source repository itself represents the full AURA BusinessOS; editions should not be maintained as separate source branches or competing codebases.
+
+Organization-owned state may optionally live in a separate workspace configured through `scripts/configure_workspace.py`. Existing populated state should move through the verified, non-destructive `scripts/migrate_workspace.py` path. Local workspace pointers, live business state, human knowledge, attachments, and other user-specific workspace material must not be bundled into a public release.
 
 ## Updates
 
-Update checks are optional and disabled by default. When enabled, BusinessOS can request the official GitHub Releases metadata and compare the latest stable version with the local `VERSION`. It never auto-downloads or auto-installs an update because BusinessOS copies may contain business-specific state or user modifications.
+Update checks are optional and disabled by default. When enabled, AURA can request the official GitHub Releases metadata and compare the latest stable version with the local `VERSION`. It never auto-downloads or auto-installs an update because AURA copies/workspaces may contain business-specific state or user modifications.
 
 Use:
 
@@ -35,3 +37,5 @@ python scripts/set_update_policy.py --enable
 to allow a compatible host/agent to perform bounded stable-release checks according to `deployment/update-policy.json`.
 
 The update request does not upload business instances, prompts, credentials, local files, or operating history. GitHub will still receive ordinary connection metadata associated with an HTTPS request.
+
+See `BRANDING.md` for the current public name. Stable technical compatibility identifiers such as the `businessos` repository path and `BUSINESSOS_*` environment variables remain intentionally unchanged.

@@ -5,9 +5,10 @@ import shutil,argparse,json
 def init_business(business_id,name):
     if not re.fullmatch(r'[a-z0-9][a-z0-9_-]{0,63}',business_id):
         raise ValueError('business_id must be lowercase letters/numbers plus - or _')
-    dest=ROOT/'instances'/business_id
+    dest=instance_dir(business_id)
     if dest.exists(): raise FileExistsError('Business already exists')
-    shutil.copytree(ROOT/'instances/_template',dest)
+    dest.parent.mkdir(parents=True,exist_ok=True)
+    shutil.copytree(product_instance_template(),dest)
     data=json.loads((dest/'instance.json').read_text());data.update({'business_id':business_id,'name':name,'created_at':now(),'enabled_systems':sorted(installed_modules()-{'core'})});(dest/'instance.json').write_text(json.dumps(data,indent=2)+'\n')
     rp=dest/'config/external-research-profile.json'
     if rp.exists():

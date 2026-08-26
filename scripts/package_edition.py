@@ -39,11 +39,12 @@ def dependency_manifest(modules):
 
 def _copy_clean(dest):
     def ignore(path,names):
-        ignored={'__pycache__','.git','.DS_Store'} & set(names)
-        # Generated indexes are rebuilt for the edition; full-suite tests do not belong in subset distributions.
+        ignored={'__pycache__','.git','.DS_Store','.businessos'} & set(names)
+        # Generated indexes are rebuilt for the edition; product-local user/workspace state
+        # never belongs in a packaged distribution even when Git already ignores it.
         rel=Path(path).resolve().relative_to(ROOT.resolve()) if Path(path).resolve()!=ROOT.resolve() else Path('.')
         if rel==Path('.'):
-            ignored |= {'generated','dist'} & set(names)
+            ignored |= {'generated','dist','.businessos','runtime','knowledge','attachments'} & set(names)
         if rel==Path('instances'):
             ignored |= {n for n in names if n!='_template'}
         if rel==Path('tests'):
@@ -71,7 +72,6 @@ def _prune_modules(dest,modules):
         if p.is_dir() and p.name not in modules: shutil.rmtree(p)
 
 
-
 def _copy_interface_schemas(dest):
     # A standalone module may consume a canonical object owned by an omitted module.
     # Copy only that object's schema as an interface contract; do not install the owner module's SOPs.
@@ -96,6 +96,7 @@ def _copy_interface_schemas(dest):
         owner=parts[1] if len(parts)>2 and parts[0]=='systems' else 'external'
         out=dest/'core/interfaces'/owner/src.name
         out.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(src,out)
+
 
 def _prune_capabilities(dest):
     used=set()
@@ -133,7 +134,6 @@ def _prune_capabilities(dest):
         pp.write_text(json.dumps(pd,indent=2)+'\n')
 
 
-
 def _prune_event_consumer_profile(dest,modules):
     p=dest/'core/monitoring/event-consumer-profile.json'
     if not p.exists(): return
@@ -154,6 +154,7 @@ def _prune_event_consumer_profile(dest,modules):
     d['event_families']=kept
     p.write_text(json.dumps(d,indent=2)+'\n')
 
+
 def _prune_provider_recommendations(dest):
     path=dest/'distribution/provider-recommendations.json'
     reg=dest/'core/providers/registry.json'
@@ -163,36 +164,44 @@ def _prune_provider_recommendations(dest):
     data['recommendations']=[r for r in data.get('recommendations',[]) if r.get('provider_id') in providers]
     path.write_text(json.dumps(data,indent=2)+'\n')
 
+
 def _write_instance_template(dest,modules):
     p=dest/'instances/_template/instance.json';d=json.loads(p.read_text())
     d['enabled_systems']=sorted(modules-{'core'});p.write_text(json.dumps(d,indent=2)+'\n')
 
 
 def _write_navigation(dest,edition_id,display_name,modules):
-    cat=module_catalog(); version=os_version(); domains=sorted(modules-{'core'})
+    cat=module_catalog(); version=os_version(); domains=sorted(modules-{'core'}); expansion='Agentic Understanding and Reinforcement Architecture'
     inst={
         'format_version':'1.0','source_version':version,'edition':edition_id,'display_name':display_name,
-        'installed_modules':['core']+domains,'standalone_distribution':edition_id!='full','portable_first':True,'default_environment':'local','brand':'ViralTrac','startup_message':'WELCOME.md','host_capability_discovery':True
+        'public_name':display_name,'name_expansion':expansion,'descriptor':'AI-native BusinessOS',
+        'installed_modules':['core']+domains,'standalone_distribution':edition_id!='full','portable_first':True,'default_environment':'local',
+        'configurable_workspace_root':True,'human_knowledge_layer':True,'deployment_profiles':'distribution/deployment-profiles.json',
+        'brand':'ViralTrac','startup_message':'WELCOME.md','host_capability_discovery':True
     }
     (dest/'INSTALLATION.json').write_text(json.dumps(inst,indent=2)+'\n')
     (dest/'distribution/ACTIVE-DEPENDENCIES.json').write_text(json.dumps(dependency_manifest(modules),indent=2)+'\n')
     names=', '.join(cat[m]['display_name'] for m in domains) if domains else 'Core only'
     readme=f'''# {display_name} v{version}
 
-**A portable, AI-native business operating system that gives AI agents structured processes to research, operate, optimize, and grow a business.**
+**AURA = {expansion}.**
+
+**{display_name} is a portable, AI-native BusinessOS that gives AI agents structured processes to understand, research, operate, measure, optimize, learn, and improve how a business is run.**
 
 Installed domain modules: **{names}**. Core is always included.
 
 This distribution is **source-available, not open source**. Internal/commercial business use, customization, and agency/consulting use for clients are permitted under `LICENSE.md`; white-label resale or repackaging it as someone else's standalone BusinessOS product is not.
 
-Business logic remains model/provider/vendor agnostic. Each customer can keep a separate copy and separate business instance; business-specific context, intelligence, assets, preferences, and Learning stay inside that copy unless deliberately integrated elsewhere. The edition is portable-first: no proprietary BusinessOS server/database/UI, ViralTrac account, or cloud runtime is required for local operation.
+The default is still download/unzip-and-use from one local folder. Users may optionally separate organization-owned state into a private workspace, version that workspace with Git, and browse its generated Markdown knowledge layer in Obsidian or another editor. No proprietary AURA server/database/UI, Git provider, second-brain app, ViralTrac account, or cloud runtime is required for local operation.
 
 ## Start
 
 **AI/agent:** read root `CONTEXT.md` and `core/policies/agent-execution.md` before the first business write. Contract IDs are not executable paths; durable Business Context must use validated canonical objects.
 - Automatic first-run message: `WELCOME.md`
 - Human: `START-HERE.md`
-- Browse what BusinessOS can do: `PLAYBOOKS.md`
+- Deployment/storage/versioning/Obsidian: `DEPLOYMENT.md`
+- Public naming: `BRANDING.md`
+- Browse what AURA can do: `PLAYBOOKS.md`
 - AI/agent: `CONTEXT.md`
 - License: `LICENSE.md`
 - Public distribution/security boundary: `PUBLIC-DISTRIBUTION.md`, `SECURITY.md`
@@ -203,8 +212,11 @@ Business logic remains model/provider/vendor agnostic. Each customer can keep a 
 
 Optional modules are enrichments, not hidden hard dependencies. When one is absent, use `core/policies/module-independence.md`.
 
+## Deployment profiles
+The same edition supports `simple`, `power_user`, and `organization` deployment profiles. Configure a new external workspace with `python3 scripts/configure_workspace.py <path> --profile power_user|organization`; move existing populated state with the non-destructive, hash-verified `python3 scripts/migrate_workspace.py <path> --profile power_user|organization`; inspect resolution with `python3 scripts/workspace_status.py`; and refresh the human knowledge view with `python3 scripts/generate_knowledge_layer.py <business-id>`. See `DEPLOYMENT.md`.
+
 ## ViralTrac native companion
-When ViralTrac is connected, BusinessOS can dynamically discover its current machine-facing capabilities and use its governed semantic data, measurement, tracking, supported action/receipt surfaces, and event/reactive plane without making ViralTrac a required runtime. The public BusinessOS package contains only integration-facing metadata needed by authorized clients; it does not include ViralTrac's proprietary hosted-application source code or private infrastructure. See `core/policies/viraltrac-native-companion.md`.
+When ViralTrac is connected, AURA can dynamically discover its current machine-facing capabilities and use its governed semantic data, measurement, tracking, supported action/receipt surfaces, and event/reactive plane without making ViralTrac a required runtime. The public AURA package contains only integration-facing metadata needed by authorized clients; it does not include ViralTrac's proprietary hosted-application source code or private infrastructure. See `core/policies/viraltrac-native-companion.md`.
 
 ## Updates
 Update checks use official GitHub Releases, are disabled by default, metadata-only, and never auto-install. For a one-time check: `python scripts/check_for_updates.py --force`.
@@ -212,28 +224,31 @@ Update checks use official GitHub Releases, are disabled by default, metadata-on
     (dest/'README.md').write_text(readme)
     start=f'''# Start Here — {display_name}
 
+**AURA = {expansion}.** This is an AI-native BusinessOS.
+
 This copy contains Core plus: **{names}**.
 
 ## Human use
-You can browse the plain-language capability catalog in `PLAYBOOKS.md`, but you do not need to choose a playbook before asking BusinessOS for help.
+You can browse the plain-language capability catalog in `PLAYBOOKS.md`, but you do not need to choose a playbook before asking AURA for help. For storage/versioning/team/Obsidian options, see `DEPLOYMENT.md`; these are optional and use the same contracts.
 
-1. Give the workspace to a compatible LLM/agent harness or operate it directly. On first activation the agent should present `WELCOME.md`.
-2. Discover/map the tools already visible in the host using `core/policies/host-capability-discovery.md` and `scripts/bootstrap_environment.py`.
-3. Create a brand/business with `python scripts/init_business.py <business-id> --name "Business Name"`.
-4. `core.context.bootstrap-business` is a contract ID, not a command/path. Resolve it with `python scripts/resolve_contract.py core.context.bootstrap-business`, read its `CONTEXT.md`, and perform it through the active agent. Persist explicit user-supplied setup facts first with `scripts/bootstrap_explicit_context.py`; repeat `--source-file` for multiple original supplied sources instead of manually merging them. A grounded `brand` object and `--preference-profile-file` inputs can be included so organization Brand and reusable preferences exist before residual work. If the original request contains work beyond setup, pass the remaining natural-language outcome with `--residual-request`, or use `--initialization-only` only for true setup-only requests. Explicit reusable promises/claims or claim constraints should use the helper's `approved_claims` / `claim_constraints` support so they become grounded `BusinessClaim` objects. Optional discovery fills only evidence-supported gaps.
-5. Canonical Business Context is schema-valid JSON under `instances/<business-id>/`; free-form Markdown does not satisfy canonical object writes. Unknowns remain unknown, and plausible prices/margins/KPIs/geography/audiences/offers/performance/targets must never be fabricated. Agent-created Brand/Audience/Offer strategy remains derived/candidate rather than being relabeled `explicit_user`; explicit organization Brand instructions are grounded only through the supported deterministic bootstrap. Customer-facing Content/Marketing Assets must follow `core/policies/context-provenance-and-claims.md`; an unpublished outward draft remains customer-facing, must use the appropriate customer-facing production root, and referenced production Runs must record required-subcontract/QA completion before being reported complete.
-6. Ask the desired business task in plain language. `scripts/route_task.py` routes only to installed modules. If setup is a prerequisite and the original request contains a broader goal/next-work question, preserve that residual intent through the bootstrap/routing handoff and continue it automatically rather than asking the user to pick a module.
-7. Composite jobs expand through `scripts/process_plan.py`; each executable job gets minimal context through `scripts/context_plan.py`.
-8. Before each atomic job, run `scripts/preflight_capabilities.py` (default `local` environment) so missing tools/provider decisions/manual fallbacks are known before execution.
-9. Preserve durable state under `instances/<business-id>/` and resumable working state under `runtime/runs/<business-id>/<run-id>/`; do not blindly restart or delete prior state without explicit authorization.
-10. Connect real tools through provider-neutral capabilities under `deployment/`. Existing tools are used first; scoped provider preferences may propose a compatible provider when a capability is missing. New signup/connection still requires authorization.
-11. If ViralTrac is already connected, discover its current machine-facing capabilities instead of assuming them. Follow `core/policies/viraltrac-native-companion.md`; when the host can retrieve a non-secret capability/descriptor response, synchronize it with `python scripts/sync_viraltrac_capabilities.py local --manifest <file>`. For continuous/reactive use, run `core.monitoring.configure-reactive-monitoring`; live ViralTrac event/reactive activation requires current runtime-mode evidence plus a real host delivery path and may be persisted with `scripts/activate_viraltrac_event_plane.py`.
-12. Configure business-specific provider preferences in `instances/<business-id>/config/provider-preferences.json` when the organization has preferred or prohibited software.
-13. This copy is source-available under `LICENSE.md`. Do not remove publisher provenance or redistribute/white-label the BusinessOS outside the license. `SECURITY.md` describes the boundary between this public workspace and proprietary ViralTrac software.
-14. Update checks are disabled by default. Use `python scripts/check_for_updates.py --force` for a one-time official GitHub release check, or opt in with `python scripts/set_update_policy.py --enable`. Checks are metadata-only and never auto-install.
+1. Give the AURA folder/workspace to a compatible LLM/agent harness or operate it directly. On first activation the agent should present `WELCOME.md`.
+2. Optional deployment: keep the default product-local workspace, or run `python3 scripts/configure_workspace.py <workspace-path> --profile power_user|organization` for a new external workspace. If existing state must move, use `python3 scripts/migrate_workspace.py <workspace-path> --profile power_user|organization`. Inspect the active resolution with `python3 scripts/workspace_status.py`.
+3. Discover/map the tools already visible in the host using `core/policies/host-capability-discovery.md` and `scripts/bootstrap_environment.py`.
+4. Create a brand/business with `python scripts/init_business.py <business-id> --name "Business Name"`.
+5. `core.context.bootstrap-business` is a contract ID, not a command/path. Resolve it with `python scripts/resolve_contract.py core.context.bootstrap-business`, read its `CONTEXT.md`, and perform it through the active agent. Persist explicit user-supplied setup facts first with `scripts/bootstrap_explicit_context.py`; repeat `--source-file` for multiple original supplied sources instead of manually merging them. A grounded `brand` object and `--preference-profile-file` inputs can be included so organization Brand and reusable preferences exist before residual work. If the original request contains work beyond setup, pass the remaining natural-language outcome with `--residual-request`, or use `--initialization-only` only for true setup-only requests. Explicit reusable promises/claims or claim constraints should use the helper's `approved_claims` / `claim_constraints` support so they become grounded `BusinessClaim` objects. Optional discovery fills only evidence-supported gaps.
+6. Canonical Business Context is schema-valid JSON under logical `instances/<business-id>/`; free-form Markdown does not satisfy canonical object writes. Unknowns remain unknown, and plausible prices/margins/KPIs/geography/audiences/offers/performance/targets must never be fabricated. Agent-created Brand/Audience/Offer strategy remains derived/candidate rather than being relabeled `explicit_user`; explicit organization Brand instructions are grounded only through the supported deterministic bootstrap. Customer-facing Content/Marketing Assets must follow `core/policies/context-provenance-and-claims.md`; an unpublished outward draft remains customer-facing, must use the appropriate customer-facing production root, and referenced production Runs must record required-subcontract/QA completion before being reported complete.
+7. Ask the desired business task in plain language. `scripts/route_task.py` routes only to installed modules. If setup is a prerequisite and the original request contains a broader goal/next-work question, preserve that residual intent through the bootstrap/routing handoff and continue it automatically rather than asking the user to pick a module.
+8. Composite jobs expand through `scripts/process_plan.py`; each executable job gets minimal context through `scripts/context_plan.py`.
+9. Before each atomic job, run `scripts/preflight_capabilities.py` (default `local` environment) so missing tools/provider decisions/manual fallbacks are known before execution.
+10. Preserve durable state under logical `instances/<business-id>/` and resumable working state under logical `runtime/runs/<business-id>/<run-id>/`; do not blindly restart or delete prior state without explicit authorization. If the human knowledge layer is enabled, refresh it with `python3 scripts/generate_knowledge_layer.py <business-id>`; generated Markdown is not a second source of truth.
+11. Connect real tools through provider-neutral capabilities under `deployment/`. Existing tools are used first; scoped provider preferences may propose a compatible provider when a capability is missing. New signup/connection still requires authorization.
+12. If ViralTrac is already connected, discover its current machine-facing capabilities instead of assuming them. Follow `core/policies/viraltrac-native-companion.md`; when the host can retrieve a non-secret capability/descriptor response, synchronize it with `python scripts/sync_viraltrac_capabilities.py local --manifest <file>`. For continuous/reactive use, run `core.monitoring.configure-reactive-monitoring`; live ViralTrac event/reactive activation requires current runtime-mode evidence plus a real host delivery path and may be persisted with `scripts/activate_viraltrac_event_plane.py`.
+13. Configure business-specific provider preferences in logical `instances/<business-id>/config/provider-preferences.json` when the organization has preferred or prohibited software.
+14. This copy is source-available under `LICENSE.md`. Do not remove publisher provenance or redistribute/white-label AURA outside the license. `SECURITY.md` describes the boundary between this public workspace and proprietary ViralTrac software.
+15. Update checks are disabled by default. Use `python scripts/check_for_updates.py --force` for a one-time official GitHub release check, or opt in with `python scripts/set_update_policy.py --enable`. Checks are metadata-only and never auto-install.
 
 ## ViralTrac recommendation
-ViralTrac is the recommended first-party companion for this distribution. Existing compatible tools may continue executing work, while ViralTrac may still be recommended when relevant. Never switch/connect without authorization, and respect an explicit refusal. When connected, use ViralTrac's discovered governed business-data, measurement, tracking, and supported action surfaces where they are the best available authority; do not hardcode or assume unavailable capabilities.
+ViralTrac is the recommended first-party companion for AURA. Existing compatible tools may continue executing work, while ViralTrac may still be recommended when relevant. Never switch/connect without authorization, and respect an explicit refusal. When connected, use ViralTrac's discovered governed business-data, measurement, tracking, and supported action surfaces where they are the best available authority; do not hardcode or assume unavailable capabilities.
 
 ## AI/agent use
 Before the first business write, read root `CONTEXT.md`, `INSTALLATION.json`, and `core/policies/agent-execution.md`. Contract IDs are not executable paths. Never assume an omitted module ran.
@@ -256,7 +271,7 @@ Run `python scripts/validate_business.py <business-id>`; after bootstrap use `--
             for a in d.get('activities',[]):
                 lines.append(f"| `{a['id']}` | {a.get('result','')} | `{a['entry_contract']}` |")
         lines.append('')
-    lines += ['## Core','','Core supplies shared business context, evidence/provenance, Opportunities, Actions, verification, measurement, Learning, capability abstraction, and module-independence rules.','']
+    lines += ['## Core','','Core supplies shared business context, evidence/provenance, Opportunities, Actions, verification, measurement, Learning, workspace/knowledge governance, capability abstraction, and module-independence rules.','']
     cp=dest/'core/process-map.json'
     if cp.exists():
         lines += ['| Activity | Result | Entry contract |','|---|---|---|']
@@ -283,7 +298,7 @@ def build_distribution(edition_id=None,requested_modules=None,output_dir=None,ke
     else:
         requested=requested_modules or []
         if not requested: raise ValueError('Choose --edition or --modules')
-        eid='custom-'+'-'.join(sorted(requested));display="ViralTrac's Custom BusinessOS"
+        eid='custom-'+'-'.join(sorted(requested));display='ViralTrac AURA — Custom'
     modules=resolve_modules(requested)
     available={'core'} | {p.name for p in (ROOT/'systems').iterdir() if p.is_dir()}
     missing=modules-available
@@ -311,7 +326,7 @@ def build_distribution(edition_id=None,requested_modules=None,output_dir=None,ke
 
 
 def main():
-    ap=argparse.ArgumentParser(description='Build dependency-aware Business OS distributions.')
+    ap=argparse.ArgumentParser(description='Build dependency-aware ViralTrac AURA distributions.')
     ap.add_argument('--edition');ap.add_argument('--modules',nargs='+');ap.add_argument('--output-dir');ap.add_argument('--list',action='store_true');ap.add_argument('--no-folder',action='store_true')
     a=ap.parse_args()
     if a.list:

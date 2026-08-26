@@ -6,12 +6,18 @@ from resolve_contract import resolve_contract
 from process_extensions import route_local_playbook,resolve_effective
 from growth_baseline_gate import assess as assess_growth_baseline
 
-FEATURE_HINTS=[(r'\b(make|turn|promote|formalize|formalise).*(playbook|process|workflow|standard operating|part of businessos)|\b(playbook|process).*(evolve|evolution|improve businessos)', 'core.learning.playbook-evolution'),(r'\binnovation exchange\b|\bshare.*(playbook|workflow|process)\b|\b(import|browse|community).*(playbook|workflow|businessos innovation)', 'core.intelligence.innovation-exchange')]
+FEATURE_HINTS=[
+ (r'\b(make|turn|promote|formalize|formalise).*(playbook|process|workflow|standard operating|part of businessos)|\b(playbook|process).*(evolve|evolution|improve businessos)', 'core.learning.playbook-evolution'),
+ (r'\binnovation exchange\b|\bshare.*(playbook|workflow|process)\b|\b(import|browse|community).*(playbook|workflow|businessos innovation)', 'core.intelligence.innovation-exchange'),
+ (r'\b(?:configure|set ?up|deploy|host|store|version|move|migrate).*(?:viraltrac aura|aura|businessos).*(?:workspace|state root|external state|deployment profile|private git|github organization|gitlab|forgejo)|\b(?:viraltrac aura|aura|businessos).*(?:workspace|state root|external state|deployment profile|private git|github organization|gitlab|forgejo)|\b(?:workspace|state root|external state|deployment profile|private git|github organization|gitlab|forgejo).*(?:viraltrac aura|aura|businessos|set ?up|configure|host|store|deploy|version)', 'core.workspace.configure'),
+ (r'\b(use|review|incorporate|ingest|learn from|import).*(human note|knowledge note|obsidian note|note in obsidian|workspace note)|\b(human note|knowledge note|obsidian note).*(use|review|incorporate|ingest|businessos|aura)', 'core.knowledge.ingest-human-note'),
+ (r'\b(obsidian|second brain|human knowledge|knowledge layer|human-readable knowledge|human view).*(businessos|aura|workspace|refresh|generate|open)|\b(refresh|generate|update).*(knowledge layer|obsidian|second brain)', 'core.knowledge.refresh-human-layer')
+]
 
 def route_and_resolve(task,business_id=None,team_ref=None,role_ref=None,operator_ref=None):
     hinted=None
     for pat,cid in FEATURE_HINTS:
-        if re.search(pat,task,re.I):hinted={'score':100,'system_score':100,'contract_id':cid,'owner_system':'core','status':'available','reason':'matched explicit BusinessOS evolution/exchange request'};break
+        if re.search(pat,task,re.I):hinted={'score':100,'system_score':100,'contract_id':cid,'owner_system':'core','status':'available','reason':'matched explicit AURA/BusinessOS product or workspace feature request'};break
     local=route_local_playbook(task,business_id,team_ref,role_ref,operator_ref) if business_id else None;rows=[hinted] if hinted else ([local] if local else route(task,5))
     if not rows:raise ValueError('No route returned')
     first=rows[0]
@@ -26,7 +32,7 @@ def route_and_resolve(task,business_id=None,team_ref=None,role_ref=None,operator
     return result
 
 def main():
-    ap=argparse.ArgumentParser(description='Route one natural-language request and resolve the selected canonical/business-local BusinessOS playbook.');ap.add_argument('task');ap.add_argument('--business-id');ap.add_argument('--team-ref');ap.add_argument('--role-ref');ap.add_argument('--operator-ref');ap.add_argument('--show',action='store_true');a=ap.parse_args()
+    ap=argparse.ArgumentParser(description='Route one natural-language request and resolve the selected canonical/business-local AURA/BusinessOS playbook.');ap.add_argument('task');ap.add_argument('--business-id');ap.add_argument('--team-ref');ap.add_argument('--role-ref');ap.add_argument('--operator-ref');ap.add_argument('--show',action='store_true');a=ap.parse_args()
     try:result=route_and_resolve(a.task,a.business_id,a.team_ref,a.role_ref,a.operator_ref)
     except ValueError as e:raise SystemExit(str(e))
     print(json.dumps(result,indent=2))

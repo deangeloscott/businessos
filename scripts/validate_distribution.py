@@ -10,7 +10,7 @@ from context_plan import build_plan
 from validate_public_distribution import validate_public_distribution
 
 
-def validate_distribution():
+def _validate_distribution_product_local():
     errors=[]
     inst=installation(); installed=installed_modules(); catalog=module_catalog()
     if 'core' not in installed: errors.append('core is not installed')
@@ -79,5 +79,17 @@ def validate_distribution():
         for e in errors: print('ERROR',e)
         raise SystemExit(1)
     print(f"distribution validation passed: edition={inst.get('edition')} modules={','.join(sorted(installed))} contracts={len(reg)}")
+
+
+def validate_distribution():
+    # Distribution/release validation belongs to the product tree, never the user's active
+    # external organization workspace. Environment selection outranks the local workspace link.
+    prior=os.environ.get('BUSINESSOS_WORKSPACE')
+    os.environ['BUSINESSOS_WORKSPACE']=str(PRODUCT_ROOT)
+    try:
+        _validate_distribution_product_local()
+    finally:
+        if prior is None: os.environ.pop('BUSINESSOS_WORKSPACE',None)
+        else: os.environ['BUSINESSOS_WORKSPACE']=prior
 
 if __name__=='__main__': validate_distribution()

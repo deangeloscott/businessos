@@ -2,6 +2,25 @@
 from _common import *
 import json, re
 
+
+def _write_task_navigator(process_maps,inst):
+    cat=module_catalog(); installed=sorted(installed_modules()-{'core'})
+    maps={d.get('system'):d for d in process_maps if isinstance(d,dict)}
+    lines=['# Task Navigator','',f"Installed edition: **{inst.get('display_name','ViralTrac AURA')}**.",'',
+           'ViralTrac AURA is an AI-native BusinessOS. You can ask for an outcome in plain language; this file is a human browse view, not a requirement to select a playbook manually.','']
+    for mid in installed:
+        meta=cat.get(mid,{})
+        lines += [f"## {meta.get('display_name',mid)}",'',meta.get('description',''),'','| Activity | Result | Entry contract |','|---|---|---|']
+        for a in (maps.get(mid) or {}).get('activities',[]):
+            lines.append(f"| `{a.get('id','')}` | {a.get('result','')} | `{a.get('entry_contract','')}` |")
+        lines.append('')
+    lines += ['## Core','','Core supplies shared business context, evidence/provenance, Opportunities, Actions, verification, measurement, Learning, playbook evolution, workspace/knowledge governance, capability abstraction, and module-independence rules.','','| Activity | Result | Entry contract |','|---|---|---|']
+    for a in (maps.get('core') or {}).get('activities',[]):
+        lines.append(f"| `{a.get('id','')}` | {a.get('result','')} | `{a.get('entry_contract','')}` |")
+    lines += ['','See `DEPLOYMENT.md` for Simple / Power User / Organization deployment and `BRANDING.md` for public naming.','']
+    (ROOT/'TASK-NAVIGATOR.md').write_text('\n'.join(lines))
+
+
 def main():
     gen=ROOT/'generated'; gen.mkdir(exist_ok=True)
     contracts=[]; ids=set(); event_consumers={}; caps={}; deps={}; routes=[]; schedules=[]
@@ -47,7 +66,7 @@ def main():
         d=json.loads(p.read_text());sreg.append({'title':d.get('title'),'path':str(p.relative_to(ROOT))})
     (gen/'schema-registry.json').write_text(json.dumps(sreg,indent=2)+'\n')
     (gen/'object-type-registry.json').write_text(json.dumps({x.get('title'):x.get('path') for x in sreg if x.get('title')},indent=2)+'\n')
-    # Human-readable index and root manifest are generated from the same authored contract metadata to prevent drift.
+    # Human-readable indexes and root manifest are generated from authored metadata to prevent drift.
     by_system={}
     for c in contracts: by_system.setdefault(c.get('owner_system','unknown'),[]).append(c)
     lines=['# Playbook Index','','Generated from contract frontmatter. Do not maintain a second manual list.','']
@@ -58,36 +77,48 @@ def main():
             lines.append(f"- `{c['id']}` — {c.get('title',c['id'])}" + (f": {purpose}" if purpose else ''))
         lines.append('')
     (ROOT/'PLAYBOOK-INDEX.md').write_text('\n'.join(lines).rstrip()+'\n')
-    # Build the plain-language human catalog from the same contract/process metadata.
     import generate_playbooks
     generate_playbooks.main()
-    pub=publisher_metadata()
-    publisher=pub.get('publisher',{}) if pub else {}
+    inst=installation(); _write_task_navigator(process_maps,inst)
+    pub=publisher_metadata();publisher=pub.get('publisher',{}) if pub else {}
     manifest_root={
         'version':os_version(),
-        'edition':installation().get('edition','unmanaged'),
-        'display_name':installation().get('display_name',"ViralTrac's BusinessOS"),
-        'brand':installation().get('brand','ViralTrac'),
-        'startup_message':installation().get('startup_message','WELCOME.md'),
-        'host_capability_discovery':bool(installation().get('host_capability_discovery',True)),
+        'edition':inst.get('edition','unmanaged'),
+        'display_name':inst.get('display_name','ViralTrac AURA'),
+        'public_name':inst.get('public_name',publisher.get('product_name','ViralTrac AURA')),
+        'name_expansion':inst.get('name_expansion',publisher.get('product_name_expansion','Agentic Understanding and Reinforcement Architecture')),
+        'descriptor':inst.get('descriptor',publisher.get('product_descriptor','AI-native BusinessOS')),
+        'brand':inst.get('brand','ViralTrac'),
+        'branding':'BRANDING.md',
+        'startup_message':inst.get('startup_message','WELCOME.md'),
+        'host_capability_discovery':bool(inst.get('host_capability_discovery',True)),
         'publisher':{'id':publisher.get('id'),'name':publisher.get('name'),'metadata':'PUBLISHER.json'},
-        'portable_first':bool(installation().get('portable_first',False)),
-        'default_environment':installation().get('default_environment','local'),
-        'state_locations':{'canonical_business':'instances/<business-id>/','run':'runtime/runs/<business-id>/<run-id>/'},
+        'portable_first':bool(inst.get('portable_first',False)),
+        'default_environment':inst.get('default_environment','local'),
+        'workspace':{
+            'default_root':'product_root','external_root_supported':True,
+            'migration_helper':'scripts/migrate_workspace.py',
+            'selectors':['BUSINESSOS_WORKSPACE','.businessos/workspace.json'],
+            'deployment_profiles':'distribution/deployment-profiles.json'
+        },
+        'state_locations':{
+            'canonical_business':'instances/<business-id>/','run':'runtime/runs/<business-id>/<run-id>/',
+            'human_knowledge':'knowledge/<business-id>/','attachments':'attachments/'
+        },
         'installed_modules':sorted(installed_modules()),
         'systems':sorted(by_system),
         'contract_count':len(contracts),
         'schema_count':len(sreg),
         'capability_count':len(json.loads((ROOT/'core/capabilities/catalog.json').read_text()).get('capabilities',[])),
         'scheduled_contract_count':len(schedules),
-        'entrypoints':{'welcome':'WELCOME.md','human':'START-HERE.md','playbooks':'PLAYBOOKS.md','task_navigator':'TASK-NAVIGATOR.md','agent':'CONTEXT.md','glossary':'GLOSSARY.md'},
+        'entrypoints':{'welcome':'WELCOME.md','human':'START-HERE.md','deployment':'DEPLOYMENT.md','branding':'BRANDING.md','playbooks':'PLAYBOOKS.md','task_navigator':'TASK-NAVIGATOR.md','agent':'CONTEXT.md','glossary':'GLOSSARY.md'},
         'generated_from':'scripts/generate_registry.py'
     }
     (ROOT/'SYSTEM-MANIFEST.json').write_text(json.dumps(manifest_root,indent=2)+'\n')
     manifest=[]
     for p in sorted([x for x in ROOT.rglob('*') if x.is_file() and 'generated/' not in x.as_posix() and '__pycache__' not in x.as_posix()]):
         manifest.append({'path':str(p.relative_to(ROOT)),'sha256':hashlib.sha256(p.read_bytes()).hexdigest(),'bytes':p.stat().st_size})
-    (gen/'workspace-manifest.json').write_text(json.dumps({'version':os_version(),'edition':installation().get('edition','unmanaged'),'files':manifest},indent=2)+'\n')
+    (gen/'workspace-manifest.json').write_text(json.dumps({'version':os_version(),'edition':inst.get('edition','unmanaged'),'files':manifest},indent=2)+'\n')
     (gen/'checksums.txt').write_text('\n'.join(f"{x['sha256']}  {x['path']}" for x in manifest)+'\n')
     print(f'Generated registry for {len(contracts)} contracts, {len(sreg)} schemas, {len(caps)} used capabilities.')
 if __name__=='__main__': main()

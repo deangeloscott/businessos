@@ -4,7 +4,7 @@ This is the plain-language guide to the work BusinessOS can help with.
 
 **You do not need to choose a playbook before asking for help.** Tell BusinessOS what you want to accomplish in normal language. It should choose the right work for you. Use this guide when you want to browse what is possible or understand how a job works.
 
-This copy currently includes **474 detailed playbooks** across the installed BusinessOS areas. The contracts and process maps remain the source of truth; this guide is only a simpler view of them.
+This copy currently includes **476 detailed playbooks** across the installed BusinessOS areas. The contracts and process maps remain the source of truth; this guide is only a simpler view of them.
 
 ## How to use this guide
 
@@ -19,7 +19,7 @@ This copy currently includes **474 detailed playbooks** across the installed Bus
 
 Figure out what the business needs, keep business facts organized, choose the right work, and coordinate work across BusinessOS.
 
-**27 detailed playbooks.**  
+**29 detailed playbooks.**  
 *Try:* “What should we work on first?”
 
 ### [Competitor Intelligence](docs/playbooks/competitor-intelligence.md)

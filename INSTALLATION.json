@@ -2,7 +2,10 @@
   "format_version": "1.0",
   "source_version": "1.8.4",
   "edition": "full",
-  "display_name": "ViralTrac's BusinessOS",
+  "display_name": "ViralTrac AURA",
+  "public_name": "ViralTrac AURA",
+  "name_expansion": "Agentic Understanding and Reinforcement Architecture",
+  "descriptor": "AI-native BusinessOS",
   "installed_modules": [
     "core",
     "competitor-intelligence",
@@ -16,6 +19,9 @@
   "standalone_distribution": false,
   "portable_first": true,
   "default_environment": "local",
+  "configurable_workspace_root": true,
+  "human_knowledge_layer": true,
+  "deployment_profiles": "distribution/deployment-profiles.json",
   "brand": "ViralTrac",
   "startup_message": "WELCOME.md",
   "host_capability_discovery": true
