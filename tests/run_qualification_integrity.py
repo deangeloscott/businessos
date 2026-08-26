@@ -31,12 +31,18 @@ def main():
         good=root/'good-qa.json'; good.write_text(json.dumps({'contract_id':'content.qa.pre-publish','status':'pass','checks_performed':[{'check':'links','passed':True}],'blockers':[],'tested_asset':'ast_1','tested_version':'1.0'}))
         req(is_structured_prepublish_record(good),'structured pre-publish evidence should pass')
 
-        a=root/'a.md'; b=root/'b.md'
-        a.write_text('# Deliverable\n\n## Context\nGeneric operational guidance for the target audience.\n\n## Steps\n1. Review the workflow.\n2. Apply the process.\n3. Validate the result.\n'*5)
-        b.write_text('# Deliverable\n\n## Context\nGeneric operational guidance for the target audience.\n\n## Steps\n1. Review the workflow.\n2. Apply the process.\n3. Validate the result.\n'*5)
-        results=[{'event_id':'E1','kind':'contract_acceptance','contract_id':'content.production.article','actual_artifacts':[str(a)]},{'event_id':'E2','kind':'contract_acceptance','contract_id':'content.production.animation','actual_artifacts':[str(b)]}]
-        flags=artifact_similarity_flags(results)
-        req('E1' in flags and 'E2' in flags,'highly similar artifacts across distinct contracts must be flagged')
+        a=root/'a.md'; b=root/'b.md'; c=root/'c.md'
+        body='# Deliverable\n\n## Context\nGeneric operational guidance for the target audience.\n\n## Steps\n1. Review the workflow.\n2. Apply the process.\n3. Validate the result.\n'*5
+        a.write_text(body); b.write_text(body); c.write_text(body)
+        results=[
+            {'event_id':'E1','kind':'contract_acceptance','contract_id':'content.production.article','actual_artifacts':[str(a)]},
+            {'event_id':'E2','kind':'contract_acceptance','contract_id':'content.production.animation','actual_artifacts':[str(b)]},
+            {'event_id':'E3','kind':'contract_acceptance','contract_id':'content.production.carousel','actual_artifacts':[str(c)]},
+        ]
+        flags=artifact_similarity_flags(results,max_examples=1)
+        req('E1' in flags and 'E2' in flags and 'E3' in flags,'highly similar artifacts across distinct contracts must be flagged')
+        req(len(flags['E1'])==1 and flags['E1'][0]['type']=='high_artifact_similarity','similarity matches must be compressed to one warning per event')
+        req(flags['E1'][0]['match_count']==2 and len(flags['E1'][0]['examples'])==1,'compressed similarity warning must preserve match count and bounded strongest examples')
 
         runner=root/'run_remaining_queue.py'; runner.write_text('print("mass runner")\n')
         req(run_control_flags(root),'candidate-authored run control script must be surfaced as integrity warning')
