@@ -146,7 +146,7 @@ def _load_brand_profile_files(paths):
         spec=_normalize_brand(spec)
         if not spec: raise ValueError(f'Brand profile manifest {raw!r} contains no Brand fields')
         brand=_merge_brand_values(brand,spec)
-        try: loaded.append(str(p.resolve().relative_to(ROOT.resolve())))
+        try: loaded.append(p.resolve().relative_to(ROOT.resolve()).as_posix())
         except Exception: loaded.append(str(p))
     return brand,loaded
 
@@ -161,10 +161,12 @@ def _load_source_members(source_texts=None,source_files=None):
     for raw in source_files or []:
         fp=Path(raw); fp=fp if fp.is_absolute() else ROOT/fp
         if not fp.exists() or not fp.is_file(): raise ValueError(f'Could not read --source-file {raw!r}: file not found')
-        txt=fp.read_text()
-        try: ref=str(fp.resolve().relative_to(ROOT.resolve()))
+        raw_bytes=fp.read_bytes();txt=raw_bytes.decode('utf-8')
+        try: ref=fp.resolve().relative_to(ROOT.resolve()).as_posix()
         except Exception: ref=str(fp)
-        members.append(_source_member(ref,txt,'user_supplied_file'))
+        member=_source_member(ref,txt,'user_supplied_file')
+        member['content_hash']=hashlib.sha256(raw_bytes).hexdigest()
+        members.append(member)
     if not members: raise ValueError('Explicit-user bootstrap requires at least one --source-text or --source-file grounding source.')
     return members
 
@@ -291,7 +293,7 @@ def _path(base,obj):
 def persist_explicit_context(business_id, **kwargs):
     objs=build_objects(business_id,**kwargs); base=ROOT/'instances'/business_id
     paths=[_path(base,o) for o in objs]
-    existing=[str(p.relative_to(ROOT)) for p in paths if p.exists()]
+    existing=[p.relative_to(ROOT).as_posix() for p in paths if p.exists()]
     if existing: raise FileExistsError('Refusing to overwrite existing canonical bootstrap object(s): '+', '.join(existing))
     for o,p in zip(objs,paths): p.parent.mkdir(parents=True,exist_ok=True); p.write_text(json.dumps(o,indent=2)+'\n')
     return objs,paths
@@ -379,10 +381,10 @@ The business ID is normally positional. --business-id is accepted as an agent-fr
                     spec.get('source_kind') or 'explicit_user',spec.get('source_refs') or ([canonical_source] if canonical_source else []),
                     applies.get('systems') or [],applies.get('contracts') or [],applies.get('output_types') or [],applies.get('channels') or [],spec.get('notes'))
             except Exception as e: raise SystemExit(f'Could not persist preference profile {raw!r}: {e}')
-            preference_written.append({'id':obj['id'],'scope':obj['scope'],'subject_ref':obj['subject_ref'],'path':str(path.relative_to(ROOT))})
+            preference_written.append({'id':obj['id'],'scope':obj['scope'],'subject_ref':obj['subject_ref'],'path':path.relative_to(ROOT).as_posix()})
     payload={
       'business_id':business_id,
-      'objects_written':[{'id':o['id'],'object_type':o['object_type'],'path':str(p.relative_to(ROOT))} for o,p in zip(objs,paths)],
+      'objects_written':[{'id':o['id'],'object_type':o['object_type'],'path':p.relative_to(ROOT).as_posix()} for o,p in zip(objs,paths)],
       'preference_profiles_written':preference_written,
       'brand_profile_files_used':brand_profile_files,
       'truth_rule':'only grounded explicit facts were persisted; omitted fields remain unknown',

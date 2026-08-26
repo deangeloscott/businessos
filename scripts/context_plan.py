@@ -30,7 +30,7 @@ def build_plan(business_id,contract_id,focus=None,operator_ref=None,team_ref=Non
             snap=ROOT/run['preference_snapshot_ref']
             if snap.exists():
                 preference_resolution=json.loads(snap.read_text())
-                rel=str(snap.relative_to(ROOT))
+                rel=snap.relative_to(ROOT).as_posix()
                 if rel not in files: files.append(rel)
     else:
         operator_ref=operator_ref or os.environ.get('BUSINESSOS_OPERATOR_REF')
@@ -49,7 +49,7 @@ def build_plan(business_id,contract_id,focus=None,operator_ref=None,team_ref=Non
     for parent in parents:
         if parent==stop: break
         d=parent/'DEFAULTS.md'
-        if d.exists(): chain.append(str(d.relative_to(ROOT)))
+        if d.exists(): chain.append(d.relative_to(ROOT).as_posix())
     for x in reversed(chain):
         if x not in files: files.append(x)
     files.append(match['path'])
@@ -151,27 +151,27 @@ def build_plan(business_id,contract_id,focus=None,operator_ref=None,team_ref=Non
     if {'browser.interact','email.read'} & set(all_caps):
         rp=base/'config/external-research-profile.json'
         if rp.exists():
-            rel=str(rp.relative_to(ROOT))
+            rel=rp.relative_to(ROOT).as_posix()
             if rel not in files: files.append(rel)
         op=ROOT/'deployment/operator-profile.json'
         if op.exists():
-            rel=str(op.relative_to(ROOT))
+            rel=op.relative_to(ROOT).as_posix()
             if rel not in files: files.append(rel)
 
     if event_job:
         for ep in [ROOT/'core/monitoring/event-consumer-profile.json', base/'config/reactive-monitoring.json']:
             if ep.exists():
-                rel=str(ep.relative_to(ROOT))
+                rel=ep.relative_to(ROOT).as_posix()
                 if rel not in files: files.append(rel)
         if any_vt:
             vp=ROOT/'core/providers/viraltrac/event-interoperability.json'
             if vp.exists():
-                rel=str(vp.relative_to(ROOT))
+                rel=vp.relative_to(ROOT).as_posix()
                 if rel not in files: files.append(rel)
 
     object_files=[]
     for oid,(obj,op) in selected.items():
-        rel=str(op.relative_to(ROOT))
+        rel=op.relative_to(ROOT).as_posix()
         if rel not in object_files:object_files.append(rel)
     sreg=json.loads((ROOT/'generated/schema-registry.json').read_text());spath={s.get('title'):s['path'] for s in sreg if s.get('title')}
     schema_files=[]

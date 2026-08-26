@@ -55,7 +55,7 @@ def main():
         dest=init_business(BID,'Workspace Regression Business')
         if dest.resolve()!=tmp.joinpath('instances',BID).resolve(): fail('business initialized outside selected workspace')
         if common.PRODUCT_ROOT.joinpath('instances',BID).exists(): fail('external initialization leaked business state into product tree')
-        logical=str((dest/'instance.json').relative_to(common.ROOT))
+        logical=(dest/'instance.json').relative_to(common.ROOT).as_posix()
         if logical!=f'instances/{BID}/instance.json': fail(f'external state did not preserve portable logical ref: {logical}')
 
         innovation,innovation_path=configure_innovation(BID,'ask_when_noteworthy','workflow_only','anonymous',True,[],None)

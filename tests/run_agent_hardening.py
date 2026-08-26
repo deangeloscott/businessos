@@ -158,7 +158,7 @@ def main():
         # The strategy contract declares an Asset write, so use the canonical Asset object as
         # its structural completion evidence rather than unrelated loose prose.
         run(SCRIPTS/'complete_run.py',BID,srid,'--evidence',str(apath.relative_to(ROOT)))
-        asset=json.loads(apath.read_text());asset['extensions']['businessos'].pop('origin',None);asset['extensions']['businessos']['run_ref']=str(srdir.relative_to(ROOT));asset['extensions']['businessos']['contract_chain']=['content.strategy.format-platform'];apath.write_text(json.dumps(asset,indent=2)+'\n')
+        asset=json.loads(apath.read_text());asset['extensions']['businessos'].pop('origin',None);asset['extensions']['businessos']['run_ref']=srdir.relative_to(ROOT).as_posix();asset['extensions']['businessos']['contract_chain']=['content.strategy.format-platform'];apath.write_text(json.dumps(asset,indent=2)+'\n')
         errors,_,_=validate_business(BID,True)
         require(any('customer-facing Asset must reference a Run whose root contract is marked' in e for e in errors),f'strategy-only root contract must not validate as customer-facing production, got {errors}')
         shutil.rmtree(srdir)
@@ -173,14 +173,14 @@ def main():
             if '.qa' in cid or cid.endswith('.qa'):
                 q=qrdir/'artifacts'/f'{cid.replace(".","-")}-qa.json';q.parent.mkdir(parents=True,exist_ok=True);q.write_text(json.dumps({'contract_id':cid,'status':'pass','checks':[{'check':'regression','status':'pass'}],'tested_asset':asset['id'],'tested_version':asset.get('version'),'blockers':[]},indent=2));ev=str(q.relative_to(ROOT))
             run(SCRIPTS/'record_contract_completion.py',BID,qrid,cid,'--evidence',ev)
-        asset['extensions']['businessos']['run_ref']=str(qrdir.relative_to(ROOT));asset['extensions']['businessos']['contract_chain']=['marketing.assets.quiz-assessment']+qmanifest.get('required_subcontracts',[]);apath.write_text(json.dumps(asset,indent=2)+'\n')
+        asset['extensions']['businessos']['run_ref']=qrdir.relative_to(ROOT).as_posix();asset['extensions']['businessos']['contract_chain']=['marketing.assets.quiz-assessment']+qmanifest.get('required_subcontracts',[]);apath.write_text(json.dumps(asset,indent=2)+'\n')
         bad=run(SCRIPTS/'complete_run.py',BID,qrid,'--evidence',str((BASE/'context/business.json').relative_to(ROOT)),check=False)
         require(bad.returncode!=0 and 'Asset file must be supplied as root --evidence' in (bad.stderr+bad.stdout),f'production Run must reject unrelated root evidence before completion, got {bad.stderr+bad.stdout}')
         shutil.rmtree(qrdir)
 
         # Required subcontract/QA completion must be auditable for production Assets that reference a Run.
         rr=run(SCRIPTS/'create_run.py',BID,'marketing.assets.landing-page','claim/run completion regression'); rid=rr.stdout.strip(); rdir=ROOT/'runtime/runs'/BID/rid
-        asset['extensions']['businessos'].pop('origin',None);asset['extensions']['businessos']['run_ref']=str(rdir.relative_to(ROOT));asset['extensions']['businessos']['contract_chain']=['marketing.assets.landing-page'];apath.write_text(json.dumps(asset,indent=2)+'\n')
+        asset['extensions']['businessos'].pop('origin',None);asset['extensions']['businessos']['run_ref']=rdir.relative_to(ROOT).as_posix();asset['extensions']['businessos']['contract_chain']=['marketing.assets.landing-page'];apath.write_text(json.dumps(asset,indent=2)+'\n')
         errors,_,_=validate_business(BID,True)
         require(any('required subcontract not completed' in e for e in errors),f'production Asset must not pass with implied subcontracts, got {errors}')
         manifest=json.loads((rdir/'contract-execution.json').read_text());evidence=str(html.relative_to(ROOT))

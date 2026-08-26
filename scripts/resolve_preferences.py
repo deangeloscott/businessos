@@ -145,7 +145,7 @@ def resolve_for_run(business_id,run_id,task_preferences=None,output_type=None,ch
     )
     out.parent.mkdir(parents=True,exist_ok=True)
     out.write_text(json.dumps(result,indent=2)+'\n')
-    run['preference_snapshot_ref']=str(out.relative_to(ROOT));run['updated_at']=now()
+    run['preference_snapshot_ref']=out.relative_to(ROOT).as_posix();run['updated_at']=now()
     rp.write_text(json.dumps(run,indent=2)+'\n')
     return result,out
 
@@ -180,7 +180,7 @@ def main():
                 contract=run.get('contract_id');rc=load_registry_contract(contract);system=a.system or ((rc or {}).get('owner_system'))
                 result=resolve_effective_preferences(a.business_id,run.get('operator_ref'),run.get('team_ref'),run.get('role_ref'),system,contract,run.get('preference_output_type'),run.get('preference_channel'),task)
                 out.parent.mkdir(parents=True,exist_ok=True);out.write_text(json.dumps(result,indent=2)+'\n')
-                run['preference_snapshot_ref']=str(out.relative_to(ROOT));run['updated_at']=now();rp.write_text(json.dumps(run,indent=2)+'\n')
+                run['preference_snapshot_ref']=out.relative_to(ROOT).as_posix();run['updated_at']=now();rp.write_text(json.dumps(run,indent=2)+'\n')
         else:
             operator=a.operator_ref or os.environ.get('BUSINESSOS_OPERATOR_REF')
             team=a.team_ref or os.environ.get('BUSINESSOS_TEAM_REF');role=a.role_ref or os.environ.get('BUSINESSOS_ROLE_REF')
@@ -190,7 +190,7 @@ def main():
         if a.output:
             op=Path(a.output);op=op if op.is_absolute() else ROOT/op;op.parent.mkdir(parents=True,exist_ok=True);op.write_text(text);print(op)
         else: print(text,end='')
-        if out: print(f'preference_snapshot_ref={out.relative_to(ROOT)}')
+        if out: print(f'preference_snapshot_ref={out.relative_to(ROOT).as_posix()}')
     except (ValueError,json.JSONDecodeError) as e: raise SystemExit(str(e))
 
 if __name__=='__main__':main()

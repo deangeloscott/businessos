@@ -59,7 +59,7 @@ def main():
                '--source-file',overview,'--source-file',brand_notes,
                '--brand-profile-file',brand_path,'--initialization-only')
         payload=json.loads(cp.stdout)
-        req(payload.get('brand_profile_files_used')==[str(brand_path.relative_to(ROOT))],f'brand profile file not reported: {payload}')
+        req(payload.get('brand_profile_files_used')==[brand_path.relative_to(ROOT).as_posix()],f'brand profile file not reported: {payload}')
 
         bp=ROOT/'instances'/BID/'context/brand'/f'brd_{BID}.json'
         req(bp.exists(),'first-class Brand object missing after explicit Brand onboarding')
@@ -75,7 +75,7 @@ def main():
 
         rid=run(S/'create_run.py',BID,'marketing.assets.landing-page','Draft a local homepage').stdout.strip().splitlines()[-1]
         plan=build_plan(BID,'marketing.assets.landing-page',run_id=rid)
-        brand_rel=str(bp.relative_to(ROOT))
+        brand_rel=bp.relative_to(ROOT).as_posix()
         req(f'brd_{BID}' in plan.get('object_refs',[]),f'downstream Run did not resolve Brand object: {plan.get("object_refs")}')
         req(brand_rel in plan.get('files',[]),f'downstream context plan omitted Brand file: {plan.get("files")}')
 

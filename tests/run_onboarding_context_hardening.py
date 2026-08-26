@@ -66,7 +66,7 @@ def main():
         req(len(members)==3,f'expected 3 original source members, got {members}')
         byref={m['reference']:m for m in members}
         for fp in [overview,brand]:
-            rel=str(fp.relative_to(ROOT))
+            rel=fp.relative_to(ROOT).as_posix()
             req(rel in byref,f'original source ref not preserved: {rel}')
             req(byref[rel]['content_hash']==hashlib.sha256(fp.read_bytes()).hexdigest(),f'original source hash mismatch: {rel}')
 

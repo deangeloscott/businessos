@@ -109,8 +109,8 @@ def workspace_profile():
 
 def storage_ref(path):
     p=Path(path).resolve(); ws=workspace_root().resolve(); prod=PRODUCT_ROOT.resolve()
-    if p.is_relative_to(ws): return str(p.relative_to(ws))
-    if p.is_relative_to(prod): return 'product:'+str(p.relative_to(prod))
+    if p.is_relative_to(ws): return p.relative_to(ws).as_posix()
+    if p.is_relative_to(prod): return 'product:'+p.relative_to(prod).as_posix()
     return str(p)
 
 

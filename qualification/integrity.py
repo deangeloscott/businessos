@@ -43,7 +43,7 @@ def event_specific_ref_paths(refs,before,after,workspace):
     before_files=_snapshot_files(before); after_files=_snapshot_files(after); out=[]
     ws=Path(workspace).resolve()
     for p in existing_ref_paths(refs,workspace):
-        try: rel=str(p.resolve().relative_to(ws))
+        try: rel=p.resolve().relative_to(ws).as_posix()
         except ValueError: continue
         b=before_files.get(rel); a=after_files.get(rel)
         if a and (not b or b.get('sha256')!=a.get('sha256')): out.append(p)
