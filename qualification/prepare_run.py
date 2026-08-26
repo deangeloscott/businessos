@@ -61,14 +61,9 @@ def init_business(product_root,workspace,fixture):
         write_json(hidden/f'{fixture}-releases.json',data['timeline'])
     seed_dir=workspace/'runtime'/'qualification-bootstrap'; seed_dir.mkdir(parents=True,exist_ok=True)
     facts_path=seed_dir/f'{fixture}-facts.json'; facts_path.write_text(json.dumps(bootstrap,indent=2)+'\n',encoding='utf-8')
-    boot=_run([
-        sys.executable,str(product_root/'scripts/bootstrap_explicit_context.py'),bid,
-        '--facts-file',str(facts_path),'--source-file',str(source_path),
-        '--source-reference',f'qualification fixture {fixture}','--initialization-only'
-    ],product_root,env)
+    boot=_run([sys.executable,str(product_root/'scripts/bootstrap_explicit_context.py'),bid,'--facts-file',str(facts_path),'--source-file',str(source_path),'--source-reference',f'qualification fixture {fixture}','--initialization-only'],product_root,env)
     validation=_run([sys.executable,str(product_root/'scripts/validate_business.py'),bid,'--require-context'],product_root,env)
-    audit={'fixture':fixture,'business_id':bid,'source_path':str(source_path),'facts_path':str(facts_path),'future_evidence_hidden':bool(data.get('timeline')),'bootstrapped_at':now(),
-           'bootstrap_stdout':boot.stdout,'bootstrap_stderr':boot.stderr,'validation_stdout':validation.stdout,'validation_stderr':validation.stderr}
+    audit={'fixture':fixture,'business_id':bid,'source_path':str(source_path),'facts_path':str(facts_path),'future_evidence_hidden':bool(data.get('timeline')),'bootstrapped_at':now(),'bootstrap_stdout':boot.stdout,'bootstrap_stderr':boot.stderr,'validation_stdout':validation.stdout,'validation_stderr':validation.stderr}
     write_json(seed_dir/f'{fixture}-bootstrap-audit.json',audit)
     return bid
 
@@ -93,18 +88,21 @@ The benchmark businesses have already been initialized and their explicit starti
 
 Process every queue event in order and continue directly to the next event. Do not stop between events to ask whether to continue. A genuine blocker should be recorded for that event, then continue with later events when safe.
 
+**Qualification integrity rule:** automation may help with deterministic bookkeeping, file handling, validation, or repeated mechanical steps, but it may not replace the substantive contract-specific business work. Do not create a generic mass-completion runner that manufactures placeholder artifacts, generic subcontract files, self-attested QA, fake evidence, or receipts merely to satisfy gates. Each event must stand on its own actual contract process, evidence, and deliverable.
+
 For EVERY event:
-1. Read the event, the controlled current fixture for that event, existing accumulated AURA state, and relevant AURA contract/process material. Do not modify canonical AURA product source.
+1. Read the event, controlled current fixture, accumulated AURA state, and the relevant AURA contract including its Process and Completion Evidence. Do not modify canonical AURA product source.
 2. Run `python3 qualification/checkpoint.py <EVENT_ID> before --business-id <BUSINESS_ID>` before doing event work.
-3. If the event has a `release_fixture` field, run `python3 qualification/release_fixture.py <EVENT_ID>` now. This simulates new evidence arriving after the before-checkpoint. Use the released path as new supplied evidence and preserve its provenance.
-4. Execute the business work fully using controlled evidence, accumulated AURA state, and legitimate current research/tool access. Do **not** invent a missing business condition or easy synthetic scenario merely to make the contract pass. If the required controlled input is absent and cannot legitimately be obtained from current research or accumulated state, record a blocker with classification `qualification_fixture`; that means the benchmark needs enrichment, not that AURA passed or failed. If AURA says an artifact is creatable, create the actual artifact; a description, outline, or proposed version is not a substitute unless that is the contract's promised output.
-5. Where the competitive environment is material, inspect it. For SEO/AEO inspect current leaders/surfaces and compare multiple leaders; for ads use relevant transparency/creative centers and landing paths; for organic content use visible performance proxies and normalize them when possible. Treat proxies as proxies, not proof of profit or causality. Save enough timestamped source/evidence references in `field_snapshot_refs` that a reviewer can reconstruct the competitive field you evaluated.
-6. Aim for outcome readiness: do the research, competitive analysis, strategy, execution, QA, integration, and measurement preparation a strong practitioner would reasonably expect to maximize the intended business result.
-7. Follow AURA evidence, provenance, semantic ownership, authorization, required-subcontract, customer-facing claim, and completion rules. Never report a draft as executed or an unmeasured result as proven.
-8. Persist the real business result and state through AURA. Reuse existing evidence/state instead of redoing work without reason.
-9. Write the event receipt to the exact `receipt_path` relative to the qualification run directory. It must be JSON with: `event_id`, `business_id`, `status` (`completed` or `blocked`), `root_run_ids`, `artifact_refs`, `canonical_refs`, `source_refs`, `field_snapshot_refs`, `released_fixture_refs`, `summary`, `blocker` (null if completed; otherwise an object with `classification` and `detail`), and `quality_notes`. Valid blocker classifications are `external_capability`, `authorization`, `missing_required_data`, `external_service`, `qualification_fixture`, or `aura_process`.
-10. Run `python3 qualification/checkpoint.py <EVENT_ID> after --business-id <BUSINESS_ID>` after the receipt and AURA work are persisted.
-11. Immediately continue to the next queue item.
+3. If the event has a `release_fixture` field, run `python3 qualification/release_fixture.py <EVENT_ID>` now. Preserve the released evidence provenance.
+4. Execute the business work fully. Do **not** invent a missing business condition or easy synthetic scenario merely to make the contract pass. If required controlled input is absent and cannot legitimately be obtained, record blocker `qualification_fixture`. If AURA says an artifact is creatable, create the actual promised medium. If a contract explicitly allows a production specification when rendering is unavailable, that fallback must be complete enough for human production (for example, real scenes/keyframes/timing/narration/transition specs rather than generic prose).
+5. Where the competitive environment is material, inspect it for this event. Save a **new or materially updated timestamped local snapshot for this event** in `field_snapshot_refs`; do not reuse an unrelated prior event's snapshot as if it were current research. The snapshot must be reconstructable and include the relevant sources/comparisons.
+6. Perform real QA. A file that merely declares `status: passed` is not QA. For pre-publish QA, record the actual checks performed, tested Asset and version, blockers/unresolved issues, evidence, and corrections/results required by the contract.
+7. Aim for outcome readiness: perform the research, strategy, execution, QA, integration, and measurement preparation a strong practitioner would reasonably expect.
+8. Follow AURA evidence, provenance, semantic ownership, authorization, required-subcontract, customer-facing claim, and completion rules. Reusing prior state/evidence is encouraged only when it is substantively applicable; do not relabel unrelated evidence as subcontract completion.
+9. Persist the real business result and state through AURA. Never report a draft as executed or an unmeasured result as proven.
+10. Write the event receipt to the exact `receipt_path` relative to the qualification run directory. It must be JSON with: `event_id`, `business_id`, `status` (`completed` or `blocked`), `root_run_ids`, `artifact_refs`, `canonical_refs`, `source_refs`, `field_snapshot_refs`, `released_fixture_refs`, `summary`, `blocker` (null if completed; otherwise an object with `classification` and `detail`), and `quality_notes`. Valid blocker classifications are `external_capability`, `authorization`, `missing_required_data`, `external_service`, `qualification_fixture`, or `aura_process`.
+11. Run `python3 qualification/checkpoint.py <EVENT_ID> after --business-id <BUSINESS_ID>` after the receipt and AURA work are persisted.
+12. Immediately continue to the next queue item.
 
 There are {len(events)} events in this run. Completion means the queue is exhausted, not merely that one event succeeded.
 '''
@@ -115,8 +113,7 @@ def main():
     if run_dir.exists(): raise SystemExit(f'Run already exists: {run_dir}')
     try:
         run_dir.relative_to(ROOT.resolve()); raise SystemExit('Qualification run root must be outside the AURA product tree to prevent recursive staging or product contamination')
-    except ValueError:
-        pass
+    except ValueError: pass
     product_root=copy_product(ROOT,run_dir/'product'); _run([sys.executable,str(product_root/'scripts/generate_registry.py')],product_root,dict(os.environ)); workspace=run_dir/'workspace'; workspace.mkdir(parents=True); (run_dir/'candidate').mkdir(); (run_dir/'evaluator').mkdir(); (run_dir/'candidate-results').mkdir(); (run_dir/'checkpoints').mkdir()
     fixtures={t['fixture'] for t in suite['contract_tests']}|{m['fixture'] for k in ('domain_missions','cross_domain_missions','marathon_missions') for m in suite[k]}
     for f in sorted(fixtures): init_business(product_root,workspace,f)
@@ -124,8 +121,7 @@ def main():
     if a.profile in ('atomic','full'):
         for t in suite['contract_tests']:
             if not a.domain or t['owner_system']==a.domain: events.append(event_from_contract(t))
-    if a.profile in ('domains','full'):
-        events += [event_from_mission(m,'domain_mission') for m in suite['domain_missions'] if not a.domain or m['owner_system']==a.domain]
+    if a.profile in ('domains','full'): events += [event_from_mission(m,'domain_mission') for m in suite['domain_missions'] if not a.domain or m['owner_system']==a.domain]
     if a.profile in ('cross-domain','full'): events += [event_from_mission(m,'cross_domain_mission') for m in suite['cross_domain_missions']]
     if a.profile in ('marathon','full'): events += [event_from_mission(m,'marathon_mission') for m in suite['marathon_missions']]
     queue={'format_version':'1.0','run_id':run_id,'created_at':now(),'profile':a.profile,'domain_filter':a.domain,'event_count':len(events),'events':events}

@@ -16,12 +16,13 @@ def main():
     try:
         req(run(S/'init_business.py',BID,'--name','Completion Gate').returncode==0,'init failed')
         rid=run(S/'create_run.py',BID,'marketing.assets.landing-page','Draft landing page').stdout.strip()
-        # Mark all declared subcontracts complete with simple existing evidence files.
+        # Mark declared subcontracts complete with structurally valid fixture evidence. This
+        # regression is testing the separate root-Asset gate, not QA-content quality.
         m=json.loads((RUNS/rid/'contract-execution.json').read_text())
-        ev=RUNS/rid/'artifacts/evidence.json';ev.parent.mkdir(parents=True,exist_ok=True);ev.write_text(json.dumps({'status':'pass','contract_id':'placeholder'})+'\n')
         for cid in m.get('required_subcontracts',[]):
-            e=RUNS/rid/'artifacts'/((cid.replace('.','-'))+'.json')
-            e.write_text(json.dumps({'status':'pass','contract_id':cid})+'\n')
+            e=RUNS/rid/'artifacts'/((cid.replace('.','-'))+'.json');e.parent.mkdir(parents=True,exist_ok=True)
+            payload={'status':'pass','contract_id':cid,'checks':['fixture completion check']} if '.qa' in cid or cid.endswith('.qa') else {'status':'completed','contract_id':cid}
+            e.write_text(json.dumps(payload)+'\n')
             r=run(S/'record_contract_completion.py',BID,rid,cid,'--evidence',str(e.relative_to(ROOT)))
             req(r.returncode==0,f'completion recording failed {cid}: {r.stderr or r.stdout}')
         draft=BASE/'assets/homepage.md';draft.parent.mkdir(parents=True,exist_ok=True);draft.write_text('CrewBeacon helps teams prioritize inbound leads.\n')

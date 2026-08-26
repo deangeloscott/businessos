@@ -2,6 +2,11 @@
 from pathlib import Path
 import argparse, json, os, subprocess, sys
 from common import ROOT, read_json, snapshot_diff, write_json, now
+from integrity import (
+    artifact_similarity_flags, exact_duplicate_artifact_flags, existing_ref_paths,
+    event_specific_ref_paths, run_control_flags, selector_types,
+    structured_prepublish_refs,
+)
 
 RUBRICS=json.loads((ROOT/'qualification/rubrics/rubrics.json').read_text())
 
@@ -30,13 +35,6 @@ def run_details(workspace,business_id,run_id):
     d=workspace/'runtime'/'runs'/business_id/run_id
     return read_json(d/'run.json',{}),read_json(d/'contract-execution.json',{})
 
-def existing_refs(refs,workspace):
-    out=[]
-    for ref in refs or []:
-        p=Path(ref); p=p if p.is_absolute() else workspace/p
-        if p.exists() and p.is_file() and p.stat().st_size>0: out.append(str(p))
-    return out
-
 def hard_grade(event,test,before,after,receipt,workspace,product_root):
     gates={}
     gates['checkpoint_before_exists']=before is not None; gates['checkpoint_after_exists']=after is not None; gates['candidate_receipt_exists']=receipt is not None
@@ -54,20 +52,24 @@ def hard_grade(event,test,before,after,receipt,workspace,product_root):
     gates['required_subcontracts_completed']=(matching_subcontracts_ok and matching) if event.get('contract_id') else (all_subcontracts_ok and bool(run_ids))
     validation=(after or {}).get('validation') or validate_workspace(product_root,workspace,event['business_id']); gates['workspace_valid']=validation['workspace']['ok']; gates['business_valid']=validation['business']['ok']
     gates['completion_claim_truthful']=not(receipt and receipt.get('status')=='completed' and not gates['root_run_completed'])
-    artifact_refs=(receipt or {}).get('artifact_refs') or []; actual_artifacts=existing_refs(artifact_refs,workspace)
+    artifact_refs=(receipt or {}).get('artifact_refs') or []; actual_artifacts=[str(p) for p in existing_ref_paths(artifact_refs,workspace)]
     if test and test.get('competitive_profile') in {'search_live_field','paid_and_persuasion_field','organic_attention_field'}:
-        gates['competitive_field_evidence_recorded']=bool((receipt or {}).get('field_snapshot_refs'))
+        field_refs=(receipt or {}).get('field_snapshot_refs') or []
+        gates['competitive_field_evidence_recorded']=bool(field_refs)
+        gates['competitive_field_evidence_exists']=bool(existing_ref_paths(field_refs,workspace))
+        gates['competitive_field_evidence_event_specific']=bool(event_specific_ref_paths(field_refs,before,after,workspace))
     if event.get('release_fixture'):
         released_refs=(receipt or {}).get('released_fixture_refs') or []
         gates['released_fixture_recorded']=bool(released_refs)
-        gates['released_fixture_exists']=bool(existing_refs(released_refs,workspace))
+        gates['released_fixture_exists']=bool(existing_ref_paths(released_refs,workspace))
     if test and test['output_policy'].get('artifact_required'):
         gates['actual_artifact_exists']=bool(actual_artifacts); gates['artifact_referenced_by_receipt']=bool(artifact_refs)
+        gates['artifact_nontrivial']=any(Path(p).stat().st_size>=200 for p in actual_artifacts)
     if test and test.get('writes'):
-        changed=changed_object_types(before,after); declared=set(test['writes']); gates['declared_write_type_observed_or_explicitly_justified']=bool(declared & changed)
+        changed=changed_object_types(before,after); declared=selector_types(test['writes']); gates['declared_write_type_observed_or_explicitly_justified']=bool(declared & changed)
     if test and test.get('artifact_role')=='customer_facing_production_root':
         gates['customer_facing_claim_governance_passed']=gates['root_run_completed']
-        gates['prepublish_or_required_qa_recorded']=gates['required_subcontracts_completed'] and gates['root_run_completed']
+        gates['prepublish_or_required_qa_recorded']=bool(structured_prepublish_refs(workspace,event['business_id'],before,after,run_audit))
     return gates,validation,run_audit,actual_artifacts
 
 def main():
@@ -76,7 +78,7 @@ def main():
     tests=idx(suite['contract_tests'],'test_id'); judgments={}
     jp=Path(a.judgments).expanduser() if a.judgments else rd/'evaluator/judgments.json'
     if jp.exists(): judgments=idx(read_json(jp,[]),'event_id')
-    results=[]; review=[]
+    results=[]
     for event in queue['events']:
         eid=event['event_id']; test=tests.get(eid); before=read_json(rd/'checkpoints'/eid/'before.json'); after=read_json(rd/'checkpoints'/eid/'after.json'); receipt=read_json(rd/event['receipt_path'])
         gates,validation,run_audit,artifacts=hard_grade(event,test,before,after,receipt,workspace,product_root)
@@ -94,28 +96,37 @@ def main():
         elif overall >= RUBRICS['minimums']['competitive_overall']: verdict='COMPETITIVE'
         elif overall >= RUBRICS['minimums']['acceptable_overall']: verdict='ACCEPTABLE'
         else: verdict='FUNCTIONAL-NOT-ACCEPTABLE'
-        result={'event_id':eid,'kind':event['kind'],'contract_id':event.get('contract_id'),'business_id':event['business_id'],'hard_pass':hard_pass,'hard_gates':gates,'validation':validation,'workspace_diff':snapshot_diff((before or {}).get('workspace',{}),(after or {}).get('workspace',{})),'receipt':receipt,'actual_artifacts':artifacts,'run_audit':run_audit,'judge':judge,'review_complete':review_complete,'missing_review_dimensions':missing_dims,'invalid_review_scores':invalid_scores,'overall_quality_score':overall,'blocker_classification':blocked_class,'verdict':verdict}
-        results.append(result)
-        dims=required_dims
-        review.append({'event_id':eid,'contract_id':event.get('contract_id'),'claim_under_test':(test or {}).get('claim_under_test'),'task':event['task'],'competitive_profile':event.get('competitive_profile'),'artifact_refs':(receipt or {}).get('artifact_refs',[]),'source_refs':(receipt or {}).get('source_refs',[]),'field_snapshot_refs':(receipt or {}).get('field_snapshot_refs',[]),'released_fixture_refs':(receipt or {}).get('released_fixture_refs',[]),'rubric_dimensions':dims,'score_scale':RUBRICS['score_scale'],'instructions':'Inspect the actual artifacts, evidence, receipt, relevant logs/state diff, any newly released evidence, and where applicable the competitive environment snapshot. Score each dimension 0-5. Do not reward mere contract compliance if the business work is shallow. Competitive/outcome-readiness scores require work that plausibly competes in the relevant field while respecting evidentiary limits.'})
+        results.append({'event_id':eid,'kind':event['kind'],'contract_id':event.get('contract_id'),'business_id':event['business_id'],'hard_pass':hard_pass,'hard_gates':gates,'validation':validation,'workspace_diff':snapshot_diff((before or {}).get('workspace',{}),(after or {}).get('workspace',{})),'receipt':receipt,'actual_artifacts':artifacts,'run_audit':run_audit,'judge':judge,'review_complete':review_complete,'missing_review_dimensions':missing_dims,'invalid_review_scores':invalid_scores,'overall_quality_score':overall,'blocker_classification':blocked_class,'integrity_flags':[],'verdict':verdict})
+
+    similarity=artifact_similarity_flags(results); duplicates=exact_duplicate_artifact_flags(results); run_flags=run_control_flags(rd)
+    for r in results:
+        r['integrity_flags']=(similarity.get(r['event_id']) or [])+(duplicates.get(r['event_id']) or [])
+
+    review=[]
+    for r,event in zip(results,queue['events']):
+        test=tests.get(r['event_id']) or {}; receipt=r.get('receipt') or {}; dims=(test or {}).get('rubric_dimensions') or event.get('rubric_dimensions') or [x['id'] for x in RUBRICS['base']]
+        review.append({'event_id':r['event_id'],'contract_id':event.get('contract_id'),'claim_under_test':test.get('claim_under_test'),'task':event['task'],'process_steps':test.get('process_steps',[]),'completion_evidence':(test.get('claim_under_test') or {}).get('completion_evidence'),'competitive_profile':event.get('competitive_profile'),'hard_pass':r['hard_pass'],'hard_gates':r['hard_gates'],'integrity_flags':r['integrity_flags'],'run_integrity_flags':run_flags,'artifact_refs':receipt.get('artifact_refs',[]),'actual_artifacts':r.get('actual_artifacts',[]),'source_refs':receipt.get('source_refs',[]),'field_snapshot_refs':receipt.get('field_snapshot_refs',[]),'released_fixture_refs':receipt.get('released_fixture_refs',[]),'rubric_dimensions':dims,'score_scale':RUBRICS['score_scale'],'instructions':'Inspect the actual contract process/completion requirement and the actual artifacts/evidence. Generic contract-shaped placeholders, boilerplate substituted for distinct deliverables, self-attested QA without demonstrated checks, recycled unrelated competitive snapshots, or automation that manufactures qualification paperwork instead of performing the business work must be scored as materially incomplete. A hard-pass proves structural bookkeeping only, not professional quality.'})
     write_json(rd/'evaluator/hard-and-merged-results.json',results); write_json(rd/'evaluator/review-packets.json',review)
-    counts={}; gate_failures={}; domain_summary={}
+    counts={}; gate_failures={}; domain_summary={}; integrity_counts={}
     for r in results:
         counts[r['verdict']]=counts.get(r['verdict'],0)+1
         for g,v in r['hard_gates'].items():
             if not v: gate_failures[g]=gate_failures.get(g,0)+1
+        for flag in r.get('integrity_flags',[]): integrity_counts[flag.get('type','unknown')]=integrity_counts.get(flag.get('type','unknown'),0)+1
         if r['kind']=='contract_acceptance':
             t=tests.get(r['event_id']) or {}; d=t.get('owner_system','unknown')
             row=domain_summary.setdefault(d,{'events':0,'hard_pass':0,'quality_scores':[],'verdicts':{}})
             row['events']+=1; row['hard_pass']+=1 if r['hard_pass'] else 0; row['verdicts'][r['verdict']]=row['verdicts'].get(r['verdict'],0)+1
             if r['overall_quality_score'] is not None: row['quality_scores'].append(r['overall_quality_score'])
-    for d,row in domain_summary.items():
-        row['average_quality']=sum(row['quality_scores'])/len(row['quality_scores']) if row['quality_scores'] else None
+    for d,row in domain_summary.items(): row['average_quality']=sum(row['quality_scores'])/len(row['quality_scores']) if row['quality_scores'] else None
     report=['# AURA Qualification Report','',f"Run: `{run['run_id']}`",f"Profile: `{run['profile']}`",f"Events: {len(results)}",'', '## Verdict summary','']
     for k in sorted(counts): report.append(f'- **{k}**: {counts[k]}')
-    report += ['', '## Coverage','',f"- Contract acceptance events: {sum(1 for r in results if r['kind']=='contract_acceptance')} / {suite['contract_count']}",f"- Domain missions: {sum(1 for r in results if r['kind']=='domain_mission')} / {len(suite['domain_missions'])}",f"- Cross-domain missions: {sum(1 for r in results if r['kind']=='cross_domain_mission')} / {len(suite['cross_domain_missions'])}",f"- Marathon missions: {sum(1 for r in results if r['kind']=='marathon_mission')} / {len(suite['marathon_missions'])}",f"- Concurrency missions: {sum(1 for r in results if r['kind']=='concurrency_mission')} / {len(suite.get('concurrency_missions',[]))}",'','## Domain contract summary',''] + [f"- **{d}**: {row['hard_pass']}/{row['events']} hard-pass" + (f", avg quality {row['average_quality']:.2f}/5" if row['average_quality'] is not None else '') for d,row in sorted(domain_summary.items())] + ['','## Hard-gate failure counts',''] + [f"- `{g}`: {n}" for g,n in sorted(gate_failures.items(), key=lambda x:(-x[1],x[0]))] + ['','## Event results','']
-    for r in results: report.append(f"- `{r['event_id']}` — **{r['verdict']}**"+(f" — {r['overall_quality_score']:.2f}/5" if r['overall_quality_score'] is not None else ''))
+    report += ['', '## Coverage','',f"- Contract acceptance events: {sum(1 for r in results if r['kind']=='contract_acceptance')} / {suite['contract_count']}",f"- Domain missions: {sum(1 for r in results if r['kind']=='domain_mission')} / {len(suite['domain_missions'])}",f"- Cross-domain missions: {sum(1 for r in results if r['kind']=='cross_domain_mission')} / {len(suite['cross_domain_missions'])}",f"- Marathon missions: {sum(1 for r in results if r['kind']=='marathon_mission')} / {len(suite['marathon_missions'])}",f"- Concurrency missions: {sum(1 for r in results if r['kind']=='concurrency_mission')} / {len(suite.get('concurrency_missions',[]))}",'','## Domain contract summary',''] + [f"- **{d}**: {row['hard_pass']}/{row['events']} hard-pass" + (f", avg quality {row['average_quality']:.2f}/5" if row['average_quality'] is not None else '') for d,row in sorted(domain_summary.items())] + ['','## Hard-gate failure counts',''] + [f"- `{g}`: {n}" for g,n in sorted(gate_failures.items(), key=lambda x:(-x[1],x[0]))]
+    report += ['','## Integrity flags',''] + ([f"- `{k}`: {n}" for k,n in sorted(integrity_counts.items())] if integrity_counts else ['- None'])
+    if run_flags: report += ['','## Run-level integrity flags',''] + [f"- `{x['type']}`: {x['path']}" for x in run_flags]
+    report += ['','## Event results','']
+    for r in results: report.append(f"- `{r['event_id']}` — **{r['verdict']}**"+(f" — {r['overall_quality_score']:.2f}/5" if r['overall_quality_score'] is not None else '')+(f" — integrity flags: {len(r['integrity_flags'])}" if r['integrity_flags'] else ''))
     (rd/'REPORT.md').write_text('\n'.join(report)+'\n',encoding='utf-8')
-    write_json(rd/'evaluator/summary.json',{'verdict_counts':counts,'gate_failure_counts':gate_failures,'domain_summary':domain_summary}); write_json(rd/'run.json',{**run,'status':'evaluated','evaluated_at':now(),'verdict_counts':counts})
-    print(json.dumps({'results':str(rd/'evaluator/hard-and-merged-results.json'),'review_packets':str(rd/'evaluator/review-packets.json'),'report':str(rd/'REPORT.md'),'verdict_counts':counts},indent=2))
+    write_json(rd/'evaluator/summary.json',{'verdict_counts':counts,'gate_failure_counts':gate_failures,'integrity_flag_counts':integrity_counts,'run_integrity_flags':run_flags,'domain_summary':domain_summary}); write_json(rd/'run.json',{**run,'status':'evaluated','evaluated_at':now(),'verdict_counts':counts})
+    print(json.dumps({'results':str(rd/'evaluator/hard-and-merged-results.json'),'review_packets':str(rd/'evaluator/review-packets.json'),'report':str(rd/'REPORT.md'),'verdict_counts':counts,'integrity_flag_counts':integrity_counts,'run_integrity_flags':run_flags},indent=2))
 if __name__=='__main__': main()

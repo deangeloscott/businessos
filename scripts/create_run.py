@@ -2,6 +2,9 @@
 from _common import *
 import argparse,json,secrets,os
 from resolve_preferences import resolve_effective_preferences, _load_task_preferences
+from completion_evidence import completion_spec
+
+COMPLETION_POLICY='core/policies/completion-evidence.md'
 
 def _required_subcontract_ids(contract):
     out=[]
@@ -35,9 +38,19 @@ except (ValueError,json.JSONDecodeError) as e:
 rid='run_'+secrets.token_hex(8);corr='cor_'+secrets.token_hex(8);ts=now();d=ROOT/'runtime/runs'/a.business_id/rid;d.mkdir(parents=True)
 obj={'run_id':rid,'business_id':a.business_id,'task':a.task,'contract_id':a.contract_id,'status':'active','focus_refs':a.focus,
      'operator_ref':operator_ref,'team_ref':team_ref,'role_ref':role_ref,'preference_output_type':a.output_type,'preference_channel':a.channel,'preference_snapshot_ref':f'runtime/runs/{a.business_id}/{rid}/artifacts/effective-preferences.json',
-     'correlation_id':corr,'causation_id':None,'created_at':ts,'updated_at':ts}
+     'completion_policy_ref':COMPLETION_POLICY,'correlation_id':corr,'causation_id':None,'created_at':ts,'updated_at':ts}
 (d/'run.json').write_text(json.dumps(obj,indent=2)+'\n');(d/'artifacts').mkdir();(d/'checkpoints').mkdir();(d/'logs').mkdir()
 (d/'artifacts'/'effective-preferences.json').write_text(json.dumps(pref,indent=2)+'\n')
 required=_required_subcontract_ids(byid[a.contract_id])
-manifest={'format_version':'1.0','run_id':rid,'business_id':a.business_id,'root_contract_id':a.contract_id,'root_status':'active','required_subcontracts':required,'contracts':{cid:{'status':'pending','evidence_refs':[],'note':None,'updated_at':ts} for cid in required},'created_at':ts,'updated_at':ts}
-(d/'contract-execution.json').write_text(json.dumps(manifest,indent=2)+'\n');(d/'README.md').write_text('Run-local working/recovery state. Preserve validated outputs and resume according to core/policies/local-state-and-recovery.md. The effective-preferences snapshot is execution context only and does not override mandatory BusinessOS/business/Brand/contract/approval rules.\n');print(rid)
+manifest={
+    'format_version':'1.1','run_id':rid,'business_id':a.business_id,
+    'root_contract_id':a.contract_id,'root_status':'active','completion_policy_ref':COMPLETION_POLICY,
+    'root_completion_evidence_spec':completion_spec(byid[a.contract_id]),
+    'required_subcontracts':required,
+    'contracts':{cid:{
+        'status':'pending','evidence_refs':[],'note':None,'updated_at':ts,
+        'completion_evidence_spec':completion_spec(byid[cid])
+    } for cid in required},
+    'created_at':ts,'updated_at':ts
+}
+(d/'contract-execution.json').write_text(json.dumps(manifest,indent=2)+'\n');(d/'README.md').write_text(f'Run-local working/recovery state. Preserve validated outputs and resume according to core/policies/local-state-and-recovery.md. Follow {COMPLETION_POLICY}: completion evidence profiles are deterministic minimums, not substitutes for contract-specific business quality. The effective-preferences snapshot is execution context only and does not override mandatory BusinessOS/business/Brand/contract/approval rules.\n');print(rid)

@@ -155,8 +155,10 @@ def main():
         # A strategy/helper Run cannot masquerade as the production provenance for a finished customer-facing Asset.
         asset['owner_system']='content-synthesis';apath.write_text(json.dumps(asset,indent=2)+'\n')
         sr=run(SCRIPTS/'create_run.py',BID,'content.strategy.format-platform','strategy-root must not prove production'); srid=sr.stdout.strip(); srdir=ROOT/'runtime/runs'/BID/srid
-        run(SCRIPTS/'complete_run.py',BID,srid,'--evidence',str(html.relative_to(ROOT)))
-        asset['extensions']['businessos'].pop('origin',None);asset['extensions']['businessos']['run_ref']=str(srdir.relative_to(ROOT));asset['extensions']['businessos']['contract_chain']=['content.strategy.format-platform'];apath.write_text(json.dumps(asset,indent=2)+'\n')
+        # The strategy contract declares an Asset write, so use the canonical Asset object as
+        # its structural completion evidence rather than unrelated loose prose.
+        run(SCRIPTS/'complete_run.py',BID,srid,'--evidence',str(apath.relative_to(ROOT)))
+        asset=json.loads(apath.read_text());asset['extensions']['businessos'].pop('origin',None);asset['extensions']['businessos']['run_ref']=str(srdir.relative_to(ROOT));asset['extensions']['businessos']['contract_chain']=['content.strategy.format-platform'];apath.write_text(json.dumps(asset,indent=2)+'\n')
         errors,_,_=validate_business(BID,True)
         require(any('customer-facing Asset must reference a Run whose root contract is marked' in e for e in errors),f'strategy-only root contract must not validate as customer-facing production, got {errors}')
         shutil.rmtree(srdir)
@@ -234,6 +236,7 @@ def main():
         require(any(x.get('type')=='BusinessClaim' for x in mplan.get('unresolved_selectors',[]) if isinstance(x,dict)),'marketing context plan should request reusable BusinessClaim context when none exists')
         agent=(ROOT/'core/policies/agent-execution.md').read_text()
         require('Required-contract completion evidence' in agent and 'build_claim_manifest.py' in agent,'agent execution must enforce auditable production/claim controls')
+        require((ROOT/'core/policies/completion-evidence.md').exists(),'contract-aware completion evidence policy missing')
         reg=json.loads((ROOT/'generated/contract-registry.json').read_text()); byid={c['id']:c for c in reg['contracts']}
         require(byid['content.production.article'].get('artifact_role')=='customer_facing_production_root','content production root role metadata missing')
         require(byid['marketing.assets.quiz-assessment'].get('artifact_role')=='customer_facing_production_root','marketing asset production root role metadata missing')

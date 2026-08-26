@@ -1,0 +1,108 @@
+#!/usr/bin/env python3
+"""Regression coverage for contract-aware Run completion evidence."""
+from pathlib import Path
+import json, shutil, subprocess, sys
+ROOT=Path(__file__).resolve().parents[1];S=ROOT/'scripts';sys.path.insert(0,str(S))
+from completion_evidence import contract_index, completion_spec, validate_evidence
+
+BID='completion-evidence-integrity';BASE=ROOT/'instances'/BID;RUNS=ROOT/'runtime'/'runs'/BID
+
+def req(c,m):
+    if not c:raise AssertionError(m)
+def run(*args):
+    return subprocess.run([sys.executable,*map(str,args)],cwd=ROOT,capture_output=True,text=True)
+def write(path,text):
+    path.parent.mkdir(parents=True,exist_ok=True);path.write_text(text,encoding='utf-8');return path
+
+def main():
+    for p in [BASE,RUNS]:
+        if p.exists():shutil.rmtree(p)
+    try:
+        req((ROOT/'core/policies/completion-evidence.md').exists(),'completion evidence policy missing')
+        req(run(S/'init_business.py',BID,'--name','Completion Evidence Integrity').returncode==0,'init failed')
+        contracts=contract_index()
+        req(completion_spec(contracts['content.production.article'])['profile']=='production','article should use production profile')
+        req(completion_spec(contracts['content.qa.pre-publish'])['profile']=='qa','pre-publish should use QA profile')
+        req(completion_spec(contracts['content.qa.pre-publish'])['strict_qa_target'] is True,'pre-publish should require target Asset/version')
+        req(completion_spec(contracts['content.measurement.content-performance'])['profile']=='measurement','content performance should use measurement profile')
+        req(completion_spec(contracts['content.research.source-support'])['profile']=='research','source support should use research profile')
+        req(completion_spec(contracts['seo.diagnosis.detectors.indexing'])['profile']=='detector','detector profile inference failed')
+        req(completion_spec(contracts['content.production.short-video'])['allow_specification_fallback'] is True,'short video should support complete production packet fallback')
+
+        rid=run(S/'create_run.py',BID,'content.production.article','Produce a real evidence-backed article').stdout.strip()
+        req(rid.startswith('run_'),f'create_run failed: {rid}')
+        manifest=json.loads((RUNS/rid/'contract-execution.json').read_text())
+        runmeta=json.loads((RUNS/rid/'run.json').read_text())
+        req(manifest.get('completion_policy_ref')=='core/policies/completion-evidence.md','Run manifest must expose completion evidence policy')
+        req(runmeta.get('completion_policy_ref')=='core/policies/completion-evidence.md','Run metadata must expose completion evidence policy')
+        req(manifest.get('root_completion_evidence_spec',{}).get('profile')=='production','Run must snapshot root completion evidence profile')
+        req((manifest.get('contracts',{}).get('content.qa.pre-publish') or {}).get('completion_evidence_spec',{}).get('profile')=='qa','Run must snapshot subcontract completion evidence profile')
+
+        # Build one canonical input and a Run-bound production Asset. A file can exist and
+        # still be structurally wrong for the promised medium.
+        wrk={'id':f'wrk_{BID}_source','object_type':'WorkRequest','business_id':BID,'extensions':{}}
+        wp=BASE/'work'/'request.json';write(wp,json.dumps(wrk,indent=2)+'\n')
+        wrong=BASE/'assets'/'article.png';write(wrong,'not actually an article document\n')
+        aid=f'ast_{BID}_article'
+        asset={
+            'id':aid,'object_type':'Asset','business_id':BID,'owner_system':'content-synthesis',
+            'asset_type':'article','business_role':'customer_facing_article','version':'1','status':'draft',
+            'lineage':[wrk['id']],'location_reference':str(wrong.relative_to(ROOT)),
+            'extensions':{'businessos':{'run_ref':f'runtime/runs/{BID}/{rid}','run_id':rid,'run_contract_id':'content.production.article','customer_facing':True,'contract_chain':['content.production.article']}}
+        }
+        ap=BASE/'assets'/f'{aid}.json';write(ap,json.dumps(asset,indent=2)+'\n')
+        errs=validate_evidence(contracts['content.production.article'],[str(wrong.relative_to(ROOT))],BID,rid,phase='root')
+        req(any('expected text/document medium' in e for e in errs),f'wrong-medium production placeholder must fail: {errs}')
+        article=BASE/'assets'/'article.md';write(article,'# Field-service implementation transparency\n\nA grounded article draft tied to the active WorkRequest.\n')
+        asset['location_reference']=str(article.relative_to(ROOT));write(ap,json.dumps(asset,indent=2)+'\n')
+        errs=validate_evidence(contracts['content.production.article'],[str(article.relative_to(ROOT))],BID,rid,phase='root')
+        req(not errs,f'lineage-bound article document should satisfy deterministic structural minimums: {errs}')
+
+        # A non-rendered video may satisfy graceful degradation only when it is a real
+        # production packet, not arbitrary prose.
+        vidrid='run_video_fixture';vfile=BASE/'assets'/'video-packet.md';write(vfile,'generic operations guide with no production detail\n')
+        vasset={**asset,'id':f'ast_{BID}_video','asset_type':'short-video','location_reference':str(vfile.relative_to(ROOT)),'extensions':{'businessos':{'run_ref':f'runtime/runs/{BID}/{vidrid}','run_id':vidrid,'run_contract_id':'content.production.short-video','customer_facing':True,'contract_chain':['content.production.short-video']}}}
+        vap=BASE/'assets'/f"{vasset['id']}.json";write(vap,json.dumps(vasset,indent=2)+'\n')
+        errs=validate_evidence(contracts['content.production.short-video'],[str(vfile.relative_to(ROOT))],BID,vidrid,phase='root')
+        req(errs,f'generic prose must not count as a short-video production packet: {errs}')
+        write(vfile,('# Short video production packet\n\nVisual plan and duration: 45 seconds. Audio direction supports comprehension. '\
+                    'Scene 1 establishes the dispatch problem; scene 2 shows the workflow; scene 3 delivers proof and CTA. '\
+                    'Visual safe areas and captions are specified for the platform. Audio pacing, shot transitions, on-screen text, '\
+                    'duration, final CTA, and rendering notes are included. ')*3)
+        req(not validate_evidence(contracts['content.production.short-video'],[str(vfile.relative_to(ROOT))],BID,vidrid,phase='root'),'complete video production packet should satisfy graceful-degradation structure')
+
+        # Bare QA self-attestation must be rejected by record_contract_completion.py.
+        bad=RUNS/rid/'artifacts'/'bad-prepublish.json';write(bad,json.dumps({'contract_id':'content.qa.pre-publish','status':'pass'})+'\n')
+        r=run(S/'record_contract_completion.py',BID,rid,'content.qa.pre-publish','--evidence',str(bad.relative_to(ROOT)))
+        req(r.returncode!=0 and 'structured JSON QA pass record' in (r.stderr+r.stdout),f'bare QA self-attestation must fail: {r.stderr+r.stdout}')
+        good=RUNS/rid/'artifacts'/'good-prepublish.json';write(good,json.dumps({
+            'contract_id':'content.qa.pre-publish','status':'pass','tested_asset':aid,'tested_version':'1',
+            'checks_performed':[{'check':'claims','status':'pass'},{'check':'links','status':'pass'},{'check':'accessibility','status':'pass'}],
+            'blockers':[]
+        },indent=2)+'\n')
+        r=run(S/'record_contract_completion.py',BID,rid,'content.qa.pre-publish','--evidence',str(good.relative_to(ROOT)))
+        req(r.returncode==0,f'structured QA record should be recordable: {r.stderr+r.stdout}')
+
+        # Standalone measurement/research Runs cannot complete on unrelated prose alone.
+        note=RUNS/rid/'artifacts'/'note.md';write(note,'This file merely says the workflow ran.\n')
+        mrun='run_measurement_fixture'
+        errs=validate_evidence(contracts['content.measurement.content-performance'],[str(note.relative_to(ROOT))],BID,mrun,phase='root')
+        req(any('declared canonical write type' in e for e in errs),f'measurement must require a declared canonical result: {errs}')
+        result=RUNS/rid/'artifacts'/'evaluation.json';write(result,json.dumps({'id':'eval_fixture','object_type':'OutcomeEvaluation','business_id':BID})+'\n')
+        req(not validate_evidence(contracts['content.measurement.content-performance'],[str(result.relative_to(ROOT))],BID,mrun,phase='root'),'typed measurement result should satisfy structural completion evidence')
+
+        # Detectors may validly find nothing, but only with an auditable no-finding record.
+        crawl=RUNS/rid/'artifacts'/'crawl.txt';write(crawl,'index inspection evidence\n')
+        nofind=RUNS/rid/'artifacts'/'no-finding.json';write(nofind,json.dumps({
+            'contract_id':'seo.diagnosis.detectors.indexing','status':'completed','result':'no_finding',
+            'checks_performed':[{'check':'index state comparison','status':'pass'}],
+            'evidence_refs':[str(crawl.relative_to(ROOT))]
+        },indent=2)+'\n')
+        req(not validate_evidence(contracts['seo.diagnosis.detectors.indexing'],[str(nofind.relative_to(ROOT))],BID,'run_detector_fixture',phase='root'),'structured detector no-finding evidence should be valid')
+
+        print('contract-aware completion evidence regressions passed')
+    finally:
+        for p in [BASE,RUNS]:
+            if p.exists():shutil.rmtree(p)
+
+if __name__=='__main__':main()

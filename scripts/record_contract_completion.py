@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from _common import *
 from run_provenance import bind_evidence_paths
+from completion_evidence import contract_index, completion_spec, validate_evidence
 import argparse,json
 
 def _run_dir(bid,rid):return ROOT/'runtime/runs'/bid/rid
@@ -15,20 +16,16 @@ def main():
     if not a.evidence:raise SystemExit('Completed contracts require at least one --evidence path to an existing output/pass record')
     rels=[]
     for e in a.evidence:
-        p=Path(e);p=p if p.is_absolute() else ROOT/p
+        p=resolve_storage_ref(e)
         if not p.exists():raise SystemExit(f'Evidence path does not exist: {e}')
-        rels.append(str(p.relative_to(ROOT)))
-    if '.qa' in a.contract_id or a.contract_id.endswith('.qa'):
-        ok=False
-        for rel in rels:
-            p=ROOT/rel
-            if p.suffix.lower()=='.json':
-                try:q=json.loads(p.read_text())
-                except Exception:continue
-                if q.get('contract_id')==a.contract_id and str(q.get('status','')).lower() in {'pass','passed'}:ok=True
-        if not ok:raise SystemExit('QA contract completion requires a JSON pass record with matching contract_id and status=pass')
+        rels.append(storage_ref(p))
+    contract=contract_index().get(a.contract_id)
+    if not contract:raise SystemExit(f'Installed contract metadata missing for {a.contract_id}')
+    errors=validate_evidence(contract,rels,a.business_id,a.run_id,phase='subcontract',manifest=m)
+    if errors:raise SystemExit('Cannot record subcontract completion; evidence does not satisfy contract completion profile:\n- '+'\n- '.join(errors))
     bind_evidence_paths(a.business_id,a.run_id,rels,'subcontract_evidence')
-    steps[a.contract_id]={'status':'completed','evidence_refs':rels,'note':a.note,'updated_at':now()}
+    previous=steps.get(a.contract_id,{})
+    steps[a.contract_id]={**previous,'status':'completed','evidence_refs':rels,'note':a.note,'updated_at':now(),'completion_evidence_spec':previous.get('completion_evidence_spec') or completion_spec(contract)}
     m['updated_at']=now();mp.write_text(json.dumps(m,indent=2)+'\n')
-    print(json.dumps({'run_id':a.run_id,'contract_id':a.contract_id,'status':'completed','evidence_refs':rels},indent=2))
+    print(json.dumps({'run_id':a.run_id,'contract_id':a.contract_id,'status':'completed','evidence_refs':rels,'completion_evidence_spec':steps[a.contract_id]['completion_evidence_spec']},indent=2))
 if __name__=='__main__':main()
