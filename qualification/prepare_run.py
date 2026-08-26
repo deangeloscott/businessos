@@ -74,6 +74,10 @@ def main():
     ap=argparse.ArgumentParser(); ap.add_argument('--profile',choices=['atomic','domains','cross-domain','marathon','full'],default='full'); ap.add_argument('--domain'); ap.add_argument('--run-root'); ap.add_argument('--run-id'); a=ap.parse_args()
     suite=build(); run_id=a.run_id or ('aura-qualification-'+uuid.uuid4().hex[:10]); root=Path(a.run_root).expanduser().resolve() if a.run_root else Path(tempfile.gettempdir())/'aura-qualification-runs'; run_dir=root/run_id
     if run_dir.exists(): raise SystemExit(f'Run already exists: {run_dir}')
+    try:
+        run_dir.relative_to(ROOT.resolve()); raise SystemExit('Qualification run root must be outside the AURA product tree to prevent recursive staging or product contamination')
+    except ValueError:
+        pass
     product_root=copy_product(ROOT,run_dir/'product'); subprocess.run([sys.executable,str(product_root/'scripts/generate_registry.py')],cwd=product_root,check=True,capture_output=True,text=True); workspace=run_dir/'workspace'; workspace.mkdir(parents=True); (run_dir/'candidate').mkdir(); (run_dir/'evaluator').mkdir(); (run_dir/'candidate-results').mkdir(); (run_dir/'checkpoints').mkdir()
     fixtures={t['fixture'] for t in suite['contract_tests']}|{m['fixture'] for k in ('domain_missions','cross_domain_missions','marathon_missions') for m in suite[k]}
     for f in sorted(fixtures): init_business(product_root,workspace,f)
