@@ -30,6 +30,13 @@ def run_details(workspace,business_id,run_id):
     d=workspace/'runtime'/'runs'/business_id/run_id
     return read_json(d/'run.json',{}),read_json(d/'contract-execution.json',{})
 
+def existing_refs(refs,workspace):
+    out=[]
+    for ref in refs or []:
+        p=Path(ref); p=p if p.is_absolute() else workspace/p
+        if p.exists() and p.is_file() and p.stat().st_size>0: out.append(str(p))
+    return out
+
 def hard_grade(event,test,before,after,receipt,workspace,product_root):
     gates={}
     gates['checkpoint_before_exists']=before is not None; gates['checkpoint_after_exists']=after is not None; gates['candidate_receipt_exists']=receipt is not None
@@ -47,12 +54,13 @@ def hard_grade(event,test,before,after,receipt,workspace,product_root):
     gates['required_subcontracts_completed']=(matching_subcontracts_ok and matching) if event.get('contract_id') else (all_subcontracts_ok and bool(run_ids))
     validation=(after or {}).get('validation') or validate_workspace(product_root,workspace,event['business_id']); gates['workspace_valid']=validation['workspace']['ok']; gates['business_valid']=validation['business']['ok']
     gates['completion_claim_truthful']=not(receipt and receipt.get('status')=='completed' and not gates['root_run_completed'])
-    artifact_refs=(receipt or {}).get('artifact_refs') or []; actual_artifacts=[]
-    for ref in artifact_refs:
-        p=Path(ref); p=p if p.is_absolute() else workspace/p
-        if p.exists() and p.is_file() and p.stat().st_size>0: actual_artifacts.append(str(p))
+    artifact_refs=(receipt or {}).get('artifact_refs') or []; actual_artifacts=existing_refs(artifact_refs,workspace)
     if test and test.get('competitive_profile') in {'search_live_field','paid_and_persuasion_field','organic_attention_field'}:
         gates['competitive_field_evidence_recorded']=bool((receipt or {}).get('field_snapshot_refs'))
+    if event.get('release_fixture'):
+        released_refs=(receipt or {}).get('released_fixture_refs') or []
+        gates['released_fixture_recorded']=bool(released_refs)
+        gates['released_fixture_exists']=bool(existing_refs(released_refs,workspace))
     if test and test['output_policy'].get('artifact_required'):
         gates['actual_artifact_exists']=bool(actual_artifacts); gates['artifact_referenced_by_receipt']=bool(artifact_refs)
     if test and test.get('writes'):
@@ -88,7 +96,7 @@ def main():
         result={'event_id':eid,'kind':event['kind'],'contract_id':event.get('contract_id'),'business_id':event['business_id'],'hard_pass':hard_pass,'hard_gates':gates,'validation':validation,'workspace_diff':snapshot_diff((before or {}).get('workspace',{}),(after or {}).get('workspace',{})),'receipt':receipt,'actual_artifacts':artifacts,'run_audit':run_audit,'judge':judge,'review_complete':review_complete,'missing_review_dimensions':missing_dims,'invalid_review_scores':invalid_scores,'overall_quality_score':overall,'blocker_classification':blocked_class,'verdict':verdict}
         results.append(result)
         dims=required_dims
-        review.append({'event_id':eid,'contract_id':event.get('contract_id'),'claim_under_test':(test or {}).get('claim_under_test'),'task':event['task'],'competitive_profile':event.get('competitive_profile'),'artifact_refs':(receipt or {}).get('artifact_refs',[]),'source_refs':(receipt or {}).get('source_refs',[]),'field_snapshot_refs':(receipt or {}).get('field_snapshot_refs',[]),'rubric_dimensions':dims,'score_scale':RUBRICS['score_scale'],'instructions':'Inspect the actual artifacts, evidence, receipt, relevant logs/state diff, and where applicable the competitive environment snapshot. Score each dimension 0-5. Do not reward mere contract compliance if the business work is shallow. Competitive/outcome-readiness scores require work that plausibly competes in the relevant field while respecting evidentiary limits.'})
+        review.append({'event_id':eid,'contract_id':event.get('contract_id'),'claim_under_test':(test or {}).get('claim_under_test'),'task':event['task'],'competitive_profile':event.get('competitive_profile'),'artifact_refs':(receipt or {}).get('artifact_refs',[]),'source_refs':(receipt or {}).get('source_refs',[]),'field_snapshot_refs':(receipt or {}).get('field_snapshot_refs',[]),'released_fixture_refs':(receipt or {}).get('released_fixture_refs',[]),'rubric_dimensions':dims,'score_scale':RUBRICS['score_scale'],'instructions':'Inspect the actual artifacts, evidence, receipt, relevant logs/state diff, any newly released evidence, and where applicable the competitive environment snapshot. Score each dimension 0-5. Do not reward mere contract compliance if the business work is shallow. Competitive/outcome-readiness scores require work that plausibly competes in the relevant field while respecting evidentiary limits.'})
     write_json(rd/'evaluator/hard-and-merged-results.json',results); write_json(rd/'evaluator/review-packets.json',review)
     counts={}; gate_failures={}; domain_summary={}
     for r in results:
