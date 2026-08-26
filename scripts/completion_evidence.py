@@ -56,6 +56,8 @@ def completion_spec(contract):
         profile='qa'
     elif contract.get('artifact_role')==CUSTOMER_FACING_ROLE:
         profile='production'
+    elif contract.get('type')=='detector':
+        profile='detector'
     elif '.publishing.' in cid or last in {'publish','publish-asset','schedule','distribution'}:
         profile='publishing'
     elif '.measurement.' in cid or 'OutcomeEvaluation' in writes or 'MetricObservation' in writes:
@@ -120,6 +122,24 @@ def _declared_write_errors(contract,paths,business_id,run_id,phase):
     seen={obj.get('object_type') for obj,_ in candidates}
     if declared & seen:return []
     return [f"completion evidence for {contract.get('id')} must include or bind at least one declared canonical write type ({', '.join(sorted(declared))}); observed {', '.join(sorted(x for x in seen if x)) or 'none'}"]
+
+
+def detector_evidence_errors(contract,paths,business_id,run_id):
+    # A detector may legitimately find nothing. A declared write proves a finding; otherwise
+    # require a structured no-finding record tied to actual evidence/checks.
+    if not _declared_write_errors(contract,paths,business_id,run_id,'root'):return []
+    cid=contract.get('id')
+    for p in paths:
+        d=_json(p)
+        if not isinstance(d,dict) or d.get('contract_id')!=cid:continue
+        if str(d.get('status','')).lower() not in {'completed','complete','no_finding'}:continue
+        if str(d.get('result','')).lower() not in {'no_finding','no_material_finding','no_opportunity','no_material_opportunity'}:continue
+        checks=d.get('checks_performed',d.get('checks'))
+        refs=d.get('evidence_refs') or []
+        if not isinstance(checks,(list,dict)) or not checks or not refs:continue
+        if len(_paths(refs))!=len(refs):continue
+        return []
+    return [f'{cid} detector completion requires either a declared canonical finding or a structured no-finding JSON record with checks_performed and existing evidence_refs']
 
 
 def _qa_records(contract_id,paths):
@@ -241,6 +261,7 @@ def validate_evidence(contract,refs,business_id,run_id,phase='root',manifest=Non
     spec=completion_spec(contract); profile=spec['profile']
     if profile=='qa':errors.extend(qa_evidence_errors(contract,paths))
     elif profile=='production' and phase=='root':errors.extend(production_evidence_errors(contract,paths,business_id,run_id,manifest))
+    elif profile=='detector' and phase=='root':errors.extend(detector_evidence_errors(contract,paths,business_id,run_id))
     elif profile in {'publishing','measurement','research','planning','canonical_state'}:
         if phase=='root' or spec.get('require_subcontract_write_evidence'):
             errors.extend(_declared_write_errors(contract,paths,business_id,run_id,phase))
