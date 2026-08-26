@@ -1,0 +1,8 @@
+{
+  "format_version":"1.0","business_id":"qa-harbor-hvac","name":"Harbor HVAC","category":"Residential HVAC service business","market":"Baltimore metro","objective":"Grow profitable booked service and replacement jobs while protecting review quality and technician capacity.",
+  "brand":{"voice":["plainspoken","helpful","local","trustworthy"],"avoid":["fear tactics","fake urgency","unsupported same-day guarantees"]},
+  "services":["AC repair","heating repair","maintenance","system replacement"],
+  "first_party":{"monthly":{"organic_sessions":12800,"calls":940,"booked_jobs":602,"replacement_estimates":74,"replacement_sales":22},"reviews":["Technician explained the options without pressure.","The office gave me a window but the technician arrived outside it.","I appreciated seeing the repair price before work started.","They fixed the AC, but I wasn't sure whether the maintenance plan was worth it."],"call_patterns":[{"pattern":"price before visit","count":38},{"pattern":"same-day availability","count":31},{"pattern":"financing for replacement","count":19},{"pattern":"service area confirmation","count":17}]},
+  "competitive_seed":{"instruction":"Use live local search, maps/review evidence, local-service competitors, and current SERP features when available. Distinguish local-pack visibility, organic ranking, paid presence, and review evidence."},
+  "timeline":{"later_period":{"monthly":{"organic_sessions":12100,"calls":812,"booked_jobs":501,"replacement_estimates":81,"replacement_sales":23},"events":["One local competitor begins prominently advertising a low diagnostic fee; verify it live before adopting any inference."]}}
+}
