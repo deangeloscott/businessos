@@ -93,11 +93,24 @@ def main():
         req(r.returncode!=0 and 'per-check outcomes' in (r.stderr+r.stdout),f'generic string QA assertions must fail: {r.stderr+r.stdout}')
         good=RUNS/rid/'artifacts'/'good-prepublish.json';write(good,json.dumps({
             'contract_id':'content.qa.pre-publish','status':'pass','tested_asset':aid,'tested_version':'1',
-            'checks_performed':[{'check':'claims','status':'pass'},{'check':'links','status':'pass'},{'check':'accessibility','status':'pass'}],
+            'checks_performed':[
+                {'check':'claims','status':'pass','result':'Three candidate claims matched approved support references.'},
+                {'check':'links','status':'pass','result':'Two destination links returned successful responses.'},
+                {'check':'accessibility','status':'pass','result':'Heading order and descriptive link labels were verified.'}
+            ],
             'blockers':[]
         },indent=2)+'\n')
         r=run(S/'record_contract_completion.py',BID,rid,'content.qa.pre-publish','--evidence',str(good.relative_to(ROOT)))
         req(r.returncode==0,f'structured QA record should be recordable: {r.stderr+r.stdout}')
+
+        # A declared-write subcontract cannot complete on a generic status/summary stub.
+        generic_sub=RUNS/rid/'artifacts'/'generic-audience-context.json';write(generic_sub,json.dumps({
+            'contract_id':'content.strategy.audience-context','business_id':BID,'status':'completed',
+            'subcontract_summary':'Completed required subcontract content.strategy.audience-context.',
+            'target_audience':'Operations leaders','core_objective':'Increase qualified demand'
+        },indent=2)+'\n')
+        sub_errors=validate_evidence(contracts['content.strategy.audience-context'],[str(generic_sub.relative_to(ROOT))],BID,rid,phase='subcontract')
+        req(any('declared canonical write type' in e for e in sub_errors),f'generic subcontract summary must not satisfy a declared-write contract: {sub_errors}')
 
         # Regression from the preserved CrewBeacon run: an email sequence cannot prove
         # subject/preview or branching completion when those components are absent.

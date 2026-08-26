@@ -165,13 +165,26 @@ def main():
 
         # A legitimate customer-facing production root must now reject unrelated root evidence before completion.
         asset['owner_system']='marketing-synthesis';apath.write_text(json.dumps(asset,indent=2)+'\n')
+        def subcontract_evidence(run_dir,run_id,cid):
+            if '.qa' in cid or cid.endswith('.qa'):
+                q=run_dir/'artifacts'/f'{cid.replace(".","-")}-qa.json';q.parent.mkdir(parents=True,exist_ok=True)
+                q.write_text(json.dumps({
+                    'contract_id':cid,'status':'pass',
+                    'checks':[{'check':'regression evidence linkage','status':'pass','result':'The named fixture Asset and exact version were inspected.'}],
+                    'tested_asset':asset['id'],'tested_version':asset.get('version'),'blockers':[]
+                },indent=2));return str(q.relative_to(ROOT))
+            e=run_dir/'artifacts'/f'{cid.replace(".","-")}-evidence.json';e.parent.mkdir(parents=True,exist_ok=True)
+            sub_asset={
+                **asset,'id':f'ast_{BID}_{cid.replace(".","-")}_{run_id}','name':f'Regression evidence for {cid}',
+                'description':f'Contract-specific regression evidence for {cid}','location_reference':str(html.relative_to(ROOT)),
+                'extensions':{'businessos':{'customer_facing':False,'run_ref':run_dir.relative_to(ROOT).as_posix(),'run_id':run_id,'run_contract_id':cid,'contract_chain':[cid]}}
+            }
+            e.write_text(json.dumps(sub_asset,indent=2)+'\n');return str(e.relative_to(ROOT))
         qr=run(SCRIPTS/'create_run.py',BID,'marketing.assets.quiz-assessment','root evidence must include deliverable'); qrid=qr.stdout.strip(); qrdir=ROOT/'runtime/runs'/BID/qrid
         qmanifest=json.loads((qrdir/'contract-execution.json').read_text())
         qevidence=str(html.relative_to(ROOT))
         for cid in qmanifest.get('required_subcontracts',[]):
-            e=qrdir/'artifacts'/f'{cid.replace(".","-")}-evidence.json';e.parent.mkdir(parents=True,exist_ok=True);e.write_text(json.dumps({'contract_id':cid,'status':'completed','result':f'contract-specific regression evidence for {cid}'},indent=2));ev=str(e.relative_to(ROOT))
-            if '.qa' in cid or cid.endswith('.qa'):
-                q=qrdir/'artifacts'/f'{cid.replace(".","-")}-qa.json';q.parent.mkdir(parents=True,exist_ok=True);q.write_text(json.dumps({'contract_id':cid,'status':'pass','checks':[{'check':'regression','status':'pass'}],'tested_asset':asset['id'],'tested_version':asset.get('version'),'blockers':[]},indent=2));ev=str(q.relative_to(ROOT))
+            ev=subcontract_evidence(qrdir,qrid,cid)
             run(SCRIPTS/'record_contract_completion.py',BID,qrid,cid,'--evidence',ev)
         asset['extensions']['businessos']['run_ref']=qrdir.relative_to(ROOT).as_posix();asset['extensions']['businessos']['contract_chain']=['marketing.assets.quiz-assessment']+qmanifest.get('required_subcontracts',[]);apath.write_text(json.dumps(asset,indent=2)+'\n')
         bad=run(SCRIPTS/'complete_run.py',BID,qrid,'--evidence',str((BASE/'context/business.json').relative_to(ROOT)),check=False)
@@ -185,9 +198,7 @@ def main():
         require(any('required subcontract not completed' in e for e in errors),f'production Asset must not pass with implied subcontracts, got {errors}')
         manifest=json.loads((rdir/'contract-execution.json').read_text());evidence=str(html.relative_to(ROOT))
         for cid in manifest['required_subcontracts']:
-            e=rdir/'artifacts'/f'{cid.replace(".","-")}-evidence.json';e.write_text(json.dumps({'contract_id':cid,'status':'completed','result':f'contract-specific regression evidence for {cid}'},indent=2));ev=str(e.relative_to(ROOT))
-            if '.qa' in cid or cid.endswith('.qa'):
-                q=rdir/'artifacts'/'qa-pass.json';q.write_text(json.dumps({'contract_id':cid,'status':'pass','checks':[{'check':'regression','status':'pass'}],'tested_asset':asset['id'],'tested_version':asset.get('version'),'blockers':[]},indent=2));ev=str(q.relative_to(ROOT))
+            ev=subcontract_evidence(rdir,rid,cid)
             run(SCRIPTS/'record_contract_completion.py',BID,rid,cid,'--evidence',ev)
         asset['extensions']['businessos']['contract_chain']=['marketing.assets.landing-page']+manifest['required_subcontracts'];apath.write_text(json.dumps(asset,indent=2)+'\n')
         run(SCRIPTS/'complete_run.py',BID,rid,'--evidence',evidence)
@@ -207,34 +218,34 @@ def main():
         require('core/policies/active-business-truth.md' in plan['files'],'active-business truth policy missing from context plan')
         require('core/policies/operating-scope.md' in plan['files'],'operating-scope policy missing from context plan')
 
-        truth=(ROOT/'core/policies/active-business-truth.md').read_text()
+        truth=(ROOT/'core/policies/active-business-truth.md').read_text(encoding='utf-8')
         require('Unknown is not absent' in truth,'unknown-vs-absent rule missing')
         require('determine what to do next' in truth,'recommendation-vs-execution scope rule missing')
-        agent=(ROOT/'core/policies/agent-execution.md').read_text()
+        agent=(ROOT/'core/policies/agent-execution.md').read_text(encoding='utf-8')
         require('clarification timeout' in agent,'clarification-timeout rule missing')
         require('BusinessOS system-integrity boundary' in agent,'system-integrity execution rule missing')
         require('Supplementary-artifact restraint' in agent,'supplementary-artifact restraint missing')
         require('--residual-request' in agent and 'required handoff' in agent,'post-bootstrap residual routing rule missing')
 
-        scope=(ROOT/'core/policies/operating-scope.md').read_text()
+        scope=(ROOT/'core/policies/operating-scope.md').read_text(encoding='utf-8')
         require('protected infrastructure' in scope and 'scripts/' in scope and 'failed deterministic helper is not permission to bypass it' in scope,'operating-scope protection incomplete')
         require('Do not expose technical "modes"' in scope,'nontechnical-user scope inference rule missing')
 
-        resource=(ROOT/'core/policies/resource-aware-execution.md').read_text()
+        resource=(ROOT/'core/policies/resource-aware-execution.md').read_text(encoding='utf-8')
         require('user-effort duration' in resource and 'specific number of minutes/hours' in resource,'unsupported user-time estimate rule missing')
         require('Contextual questions are encouraged' in resource and 'decision-critical unknown' in resource,'contextual diagnostic question rule missing')
 
-        nb=(ROOT/'core/contracts/opportunity/discover-next-best-work/CONTEXT.md').read_text()
+        nb=(ROOT/'core/contracts/opportunity/discover-next-best-work/CONTEXT.md').read_text(encoding='utf-8')
         require('growth_baseline_gate.py' in nb and 'hard first-pass gate' in nb,'deterministic profitable-growth baseline gate missing')
         require('one bounded discovery loop' in nb,'bounded discovery-loop rule missing')
         require('Do **not** implement' in nb,'next-best-work execution boundary missing')
 
-        claim_policy=(ROOT/'core/policies/context-provenance-and-claims.md').read_text()
+        claim_policy=(ROOT/'core/policies/context-provenance-and-claims.md').read_text(encoding='utf-8')
         require('BusinessClaim' in claim_policy and 'claim_manifest' in claim_policy,'context provenance/claim policy missing core controls')
         mplan=build_plan(BID,'marketing.assets.landing-page')
         require('core/policies/context-provenance-and-claims.md' in mplan['files'],'marketing production context must load claim/provenance policy')
         require(any(x.get('type')=='BusinessClaim' for x in mplan.get('unresolved_selectors',[]) if isinstance(x,dict)),'marketing context plan should request reusable BusinessClaim context when none exists')
-        agent=(ROOT/'core/policies/agent-execution.md').read_text()
+        agent=(ROOT/'core/policies/agent-execution.md').read_text(encoding='utf-8')
         require('Required-contract completion evidence' in agent and 'build_claim_manifest.py' in agent,'agent execution must enforce auditable production/claim controls')
         require((ROOT/'core/policies/completion-evidence.md').exists(),'contract-aware completion evidence policy missing')
         reg=json.loads((ROOT/'generated/contract-registry.json').read_text()); byid={c['id']:c for c in reg['contracts']}
@@ -242,7 +253,7 @@ def main():
         require(byid['marketing.assets.quiz-assessment'].get('artifact_role')=='customer_facing_production_root','marketing asset production root role metadata missing')
         require(byid['content.strategy.format-platform'].get('artifact_role') is None,'strategy contract must not be marked as a customer-facing production root')
 
-        research_policy=(ROOT/'core/policies/research-evidence.md').read_text()
+        research_policy=(ROOT/'core/policies/research-evidence.md').read_text(encoding='utf-8')
         require('Search results are discovery, not evidence' in research_policy,'research evidence discovery-vs-support rule missing')
         require('persist_research_bundle.py' in research_policy,'research persistence helper missing from policy')
         require('Acquisition method vs. capture method' in research_policy,'research acquisition-vs-capture boundary missing')
@@ -250,7 +261,7 @@ def main():
 
         cplan=build_plan(BID,'competitor.analysis.customer-sentiment')
         require('core/policies/research-evidence.md' in cplan['files'],'research-writing contracts must load research-evidence policy')
-        cctx=(ROOT/'systems/competitor-intelligence/contracts/analysis/customer-sentiment/CONTEXT.md').read_text()
+        cctx=(ROOT/'systems/competitor-intelligence/contracts/analysis/customer-sentiment/CONTEXT.md').read_text(encoding='utf-8')
         require('persist_research_bundle.py' in cctx and 'Search snippets' in cctx,'competitor sentiment should use shared evidence-preserving persistence path')
 
         # Discovery-only public sources may be indexed, but cannot support Observations -- even if text was copied from search results.
@@ -299,7 +310,7 @@ def main():
         re_errs,re_warn=evidence_errors(BID); require(not re_errs,f'captured research evidence should validate, got {re_errs}')
         errors,_,_=validate_business(BID,True); require(not errors,f'business validation should include and pass research evidence semantics, got {errors}')
         good_bundle.unlink(missing_ok=True)
-        approval=(ROOT/'core/policies/approval.md').read_text()
+        approval=(ROOT/'core/policies/approval.md').read_text(encoding='utf-8')
         require('Silence is not approval' in approval,'silence-not-approval rule missing')
         print('agent hardening regressions passed')
     finally:

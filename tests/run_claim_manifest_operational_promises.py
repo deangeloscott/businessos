@@ -34,6 +34,11 @@ def main():
         general=[{'text':x,'classification':'general_guidance','support_refs':[]} for x in cands]
         errs2=validate_manifest_sentences(general,cands,idx,'CrewBeacon','asset.json')
         req(all(any(x in e and 'general_guidance' in e for e in errs2) for x in cands),'scanner candidates must not escape as general guidance')
+        minted=claim('clm_minted','CrewBeacon guarantees every lead receives a response')
+        minted['authority']='verified_first_party';minted['lineage']=['src_fixture']
+        sentence='CrewBeacon guarantees every lead receives a response.'
+        errs3=validate_manifest_sentences([{'text':sentence,'classification':'approved_business_claim','support_refs':['clm_minted']}],[sentence],{'clm_minted':(minted,Path('minted.json'))},'CrewBeacon','asset.json')
+        req(any('missing/untrusted support refs' in e for e in errs3),'self-stamped verified_first_party claim without source_ref/support_quote must not authorize customer-facing copy')
         print('claim operational-promise regressions passed')
     finally:
         if BASE.exists(): shutil.rmtree(BASE)

@@ -5,6 +5,7 @@ import os, subprocess, sys
 ROOT=Path(__file__).resolve().parents[1]
 env=dict(os.environ)
 env['PYTHONDONTWRITEBYTECODE']='1'
+env['PYTHONUTF8']='1'
 TESTS=[
     'tests/run_distribution.py',
     'tests/run_routing_acceptance.py',

@@ -112,7 +112,8 @@ def main():
         else: verdict='FUNCTIONAL-NOT-ACCEPTABLE'
         results.append({'event_id':eid,'kind':event['kind'],'contract_id':event.get('contract_id'),'business_id':event['business_id'],'hard_pass':hard_pass,'hard_gates':gates,'validation':validation,'workspace_diff':snapshot_diff((before or {}).get('workspace',{}),(after or {}).get('workspace',{})),'receipt':receipt,'actual_artifacts':artifacts,'run_audit':run_audit,'judge':judge,'review_complete':review_complete,'missing_review_dimensions':missing_dims,'invalid_review_scores':invalid_scores,'overall_quality_score':overall,'blocker_classification':blocked_class,'integrity_flags':[],'verdict':verdict})
 
-    similarity=artifact_similarity_flags(results); duplicates=exact_duplicate_artifact_flags(results); run_flags=run_control_flags(rd)
+    similarity=artifact_similarity_flags(results); duplicates=exact_duplicate_artifact_flags(results); run_flags=run_control_flags(rd,workspace)
+    critical_run_flags=[x for x in run_flags if x.get('type') in {'mass_completion_runner','candidate_evaluator_spec_access'}]
     for r in results:
         r['integrity_flags']=(similarity.get(r['event_id']) or [])+(duplicates.get(r['event_id']) or [])
         if r.get('actual_artifacts'):
@@ -120,6 +121,10 @@ def main():
             if not r['hard_gates']['artifact_contract_specific']:
                 r['hard_pass']=False
                 if r.get('verdict') not in {'BLOCKED-EXTERNAL','BLOCKED-QUALIFICATION-FIXTURE'}:r['verdict']='FAIL'
+        if critical_run_flags:
+            r['hard_gates']['qualification_integrity_clean']=False
+            r['hard_pass']=False
+            if r.get('verdict') not in {'BLOCKED-EXTERNAL','BLOCKED-QUALIFICATION-FIXTURE'}:r['verdict']='FAIL'
 
     review=[]
     for r,event in zip(results,queue['events']):

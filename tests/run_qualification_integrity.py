@@ -28,7 +28,9 @@ def main():
 
         bad_field=root/'bad-field.json';bad_field.write_text(json.dumps({'captured_at':'2026-08-26T00:00:00Z','competitive_set':[{'name':'Industry benchmark'},{'name':'Category competitor'}]}))
         req(not is_reconstructable_field_snapshot(bad_field,ws),'unnamed/source-free synthetic field evidence must not be reconstructable')
-        good_field=root/'good-field.json';good_field.write_text(json.dumps({'captured_at':'2026-08-26T00:00:00Z','query':'field service software','sources':[{'name':'A','source_url':'https://example.com/a'},{'name':'B','source_url':'https://example.com/b'}]}))
+        placeholder_field=root/'placeholder-field.json';placeholder_field.write_text(json.dumps({'captured_at':'2026-08-26T00:00:00Z','query':'field service software','sources':[{'name':'A','source_url':'https://example.invalid/a'},{'name':'B','source_url':'https://example.invalid/b'}]}))
+        req(not is_reconstructable_field_snapshot(placeholder_field,ws),'reserved placeholder URLs must not count as reconstructable field evidence')
+        good_field=root/'good-field.json';good_field.write_text(json.dumps({'captured_at':'2026-08-26T00:00:00Z','query':'field service software','sources':[{'name':'A','source_url':'https://www.servicetitan.com/'},{'name':'B','source_url':'https://www.housecallpro.com/'}]}))
         req(is_reconstructable_field_snapshot(good_field,ws),'source-linked field evidence should be reconstructable')
 
         bad=root/'bad-qa.json'; bad.write_text(json.dumps({'contract_id':'content.qa.pre-publish','status':'passed','notes':'QA passed'}))
@@ -52,6 +54,10 @@ def main():
 
         runner=root/'run_remaining_queue.py'; runner.write_text('print("mass runner")\n')
         req(run_control_flags(root),'candidate-authored run control script must be surfaced as integrity warning')
+        scratch=ws/'scratch';scratch.mkdir()
+        mass=scratch/'run_gauntlet.py';mass.write_text("queue='queue.json'\nfor event in events:\n print('checkpoint.py', 'complete_run.py', 'record_contract_completion.py', 'candidate-results', 'receipt_path')\n")
+        control=run_control_flags(root,ws)
+        req(any(x.get('type')=='mass_completion_runner' and Path(x['path'])==mass for x in control),f'workspace mass-completion runner must be a critical integrity flag: {control}')
 
     suite=build(); customer=[t for t in suite['contract_tests'] if t.get('artifact_role')=='customer_facing_production_root']
     evaluator=(ROOT/'qualification/evaluate_run.py').read_text()

@@ -72,7 +72,12 @@ def _support_text(obj):
 
 def _trusted(obj):
     if obj.get('object_type')=='BusinessClaim':
-        return obj.get('status')=='approved' and obj.get('claim_kind')=='approved_business_claim' and obj.get('authority') in {'explicit_user','verified_first_party'}
+        authority=obj.get('authority')
+        trusted=bool(obj.get('status')=='approved' and obj.get('claim_kind')=='approved_business_claim' and authority in {'explicit_user','verified_first_party'})
+        # verified_first_party is an evidence-backed authority class, not a label an
+        # execution may self-assign to a newly authored claim.
+        if authority=='verified_first_party':trusted=trusted and bool(obj.get('source_ref') and obj.get('support_quote'))
+        return trusted
     ext=obj.get('extensions',{}) if isinstance(obj.get('extensions'),dict) else {}
     bos=ext.get('businessos',{}) if isinstance(ext.get('businessos'),dict) else {}
     return bos.get('authority') in {'explicit_user','verified_first_party'}

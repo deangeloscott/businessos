@@ -86,7 +86,9 @@ def completion_spec(contract):
         'declared_write_types':sorted(writes),'artifact_role':contract.get('artifact_role'),
         'allow_specification_fallback':bool(explicit.get('allow_specification_fallback',default_fallback)),
         'allow_shared_subcontract_evidence':bool(explicit.get('allow_shared_subcontract_evidence',False)),
-        'require_subcontract_write_evidence':bool(explicit.get('require_subcontract_write_evidence',False)),
+        # A required subcontract that declares canonical writes must leave one of those
+        # results as evidence.  A generic status/summary file is not the promised work.
+        'require_subcontract_write_evidence':bool(explicit.get('require_subcontract_write_evidence',bool(writes))),
         'required_text_components':explicit.get('required_text_components') or [],
         'strict_qa_target':bool(explicit.get('strict_qa_target', cid=='content.qa.pre-publish')),
     }
@@ -130,7 +132,6 @@ def _declared_write_errors(contract,paths,business_id,run_id,phase):
     declared=_selector_types(contract.get('writes'))
     if not declared:return []
     candidates=_objects_in_paths(paths,business_id)
-    if phase=='root': candidates += _run_bound_objects(business_id,run_id)
     seen={obj.get('object_type') for obj,_ in candidates}
     if declared & seen:return []
     return [f"completion evidence for {contract.get('id')} must include or bind at least one declared canonical write type ({', '.join(sorted(declared))}); observed {', '.join(sorted(x for x in seen if x)) or 'none'}"]
@@ -155,7 +156,12 @@ def _structured_check(item):
     if not isinstance(item,dict):return False
     label=next((item.get(k) for k in ('check','name','criterion','test') if item.get(k)),None)
     outcome=next((item.get(k) for k in ('status','result','outcome','passed') if item.get(k) is not None),None)
-    return bool(label and outcome is not None)
+    if not label or outcome is None:return False
+    detail=next((item.get(k) for k in ('result','outcome','evidence','finding','correction','notes') if item.get(k) not in (None,'')),None)
+    if detail is None:return False
+    normalized=re.sub(r'\s+',' ',str(detail).lower()).strip()
+    if re.fullmatch(r'(?:passed|pass(?:ed)? all)(?: the)? required (?:quality )?checks?(?: for .+)?\.?',normalized):return False
+    return len(re.findall(r'\b\w+\b',normalized))>=3
 
 
 def _structured_checks(checks):
