@@ -19,7 +19,7 @@ def version_tuple(value):
 
 
 def main():
-    ap=argparse.ArgumentParser(description='Check the official ViralTrac BusinessOS GitHub Releases channel for a newer stable release. No business/workspace data is uploaded and no update is installed.')
+    ap=argparse.ArgumentParser(description='Check the official ViralTrac AURA GitHub Releases channel for a newer stable release. No business/workspace data is uploaded and no update is installed.')
     ap.add_argument('--force',action='store_true',help='Perform one check even when recurring update checks are disabled.')
     ap.add_argument('--json',action='store_true',help='Print machine-readable JSON.')
     ap.add_argument('--timeout',type=int,default=10,help='Network timeout in seconds (default: 10).')
@@ -29,6 +29,7 @@ def main():
     current=VERSION.read_text().strip()
     result={
         'format_version':'1.0',
+        'product':'ViralTrac AURA',
         'current_version':current,
         'enabled':bool(policy.get('enabled',False)),
         'source':policy.get('source'),
@@ -58,7 +59,7 @@ def main():
         return 2
     req=urllib.request.Request(url,headers={
         'Accept':'application/vnd.github+json',
-        'User-Agent':'ViralTrac-BusinessOS-Update-Checker',
+        'User-Agent':'ViralTrac-AURA-Update-Checker',
         'X-GitHub-Api-Version':'2022-11-28',
     })
     try:
@@ -91,9 +92,9 @@ def main():
         'asset_names':[x.get('name') for x in payload.get('assets',[]) if isinstance(x,dict) and x.get('name')],
     })
     if available:
-        result['message']=f'BusinessOS {latest} is available; this copy is {current}. Review the release before updating. No files were downloaded or installed.'
+        result['message']=f'ViralTrac AURA {latest} is available; this copy is {current}. Review the release before updating. No files were downloaded or installed.'
     else:
-        result['message']=f'BusinessOS {current} is current on the configured stable release channel.'
+        result['message']=f'ViralTrac AURA {current} is current on the configured stable release channel.'
     print(json.dumps(result,indent=2) if a.json else result['message'] + (f"\n{result['release_url']}" if available and result.get('release_url') else ''))
     return 0
 
