@@ -141,7 +141,9 @@ There are {len(events)} tasks in this run. Completing the queue only means the w
 '''
 
 def main():
-    ap=argparse.ArgumentParser(); ap.add_argument('--profile',choices=['atomic','domains','cross-domain','marathon','full'],default='full'); ap.add_argument('--domain'); ap.add_argument('--contract',action='append',default=[],help='Exact contract ID to include in an atomic representative run; repeat for multiple contracts.'); ap.add_argument('--run-root'); ap.add_argument('--run-id'); a=ap.parse_args()
+    ap=argparse.ArgumentParser(); ap.add_argument('--profile',choices=['atomic','domains','cross-domain','marathon','full'],default='atomic'); ap.add_argument('--domain'); ap.add_argument('--contract',action='append',default=[],help='Exact contract ID to include in an atomic representative run; repeat for multiple contracts.'); ap.add_argument('--run-root'); ap.add_argument('--run-id'); a=ap.parse_args()
+    if a.profile=='atomic' and not a.domain and not a.contract:
+        raise SystemExit('Atomic qualification requires --contract <exact-contract-id> or --domain <installed-domain>; use --profile full explicitly only for an intentional broad endurance run')
     suite=build(); selected=select_events(suite,a.profile,a.domain,a.contract); evaluator_events,candidate_events=publicize_events(selected)
     run_id=a.run_id or ('aura-qualification-'+uuid.uuid4().hex[:10]); root=Path(a.run_root).expanduser().resolve() if a.run_root else Path(tempfile.gettempdir())/'aura-qualification-runs'; run_dir=root/run_id
     if run_dir.exists(): raise SystemExit(f'Run already exists: {run_dir}')
