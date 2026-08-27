@@ -17,11 +17,20 @@ def smoke_prepare():
         p=subprocess.run(cmd,cwd=ROOT,capture_output=True,text=True,env=prep_env)
         req(p.returncode==0,f'qualification prepare smoke failed:\nSTDOUT:\n{p.stdout}\nSTDERR:\n{p.stderr}')
         rd=Path(td)/'smoke'; meta=json.loads((rd/'run.json').read_text()); queue_path=rd/'candidate/queue.json'; queue=json.loads(queue_path.read_text())
+        evaluator_queue=json.loads((rd/'evaluator/queue.json').read_text()); prep=json.loads((rd/'evaluator/preparation.json').read_text())
         req(meta.get('benchmark_context_seeded') is True,'prepared run must record grounded benchmark context')
         req(meta.get('future_evidence_staged') is True,'prepared run must record staged future evidence')
-        queued=[x.get('contract_id') for x in queue.get('events',[])]
-        req(queue.get('event_count')==len(selected) and set(queued)==set(selected) and all(x.get('kind')=='contract_acceptance' for x in queue.get('events',[])),f'atomic representative smoke queue mismatch: {queued}')
-        req(queue.get('contract_filter')==sorted(selected) and meta.get('contract_filter')==sorted(selected),'prepared run must preserve its exact representative contract filter')
+        events=queue.get('events',[])
+        req(queue.get('event_count')==len(selected) and len(events)==len(selected),f'candidate representative smoke queue count mismatch: {events}')
+        req(all(x.get('kind')=='business_task' and str(x.get('event_id','')).startswith('TASK-') for x in events),f'candidate queue should contain opaque ordinary business tasks: {events}')
+        hidden_keys={'contract_id','evaluation_id','competitive_profile','required_output','rubric_dimensions'}
+        req(all(not (hidden_keys & set(x)) for x in events),f'candidate queue leaked evaluator target metadata: {events}')
+        req(all('execute aura contract' not in str(x.get('task','')).lower() for x in events),'candidate task must not tell the model to execute a qualification contract')
+        req(all(not any(cid.lower() in str(x.get('task','')).lower() for cid in selected) for x in events),'candidate task leaked selected contract id')
+        evaluator_contracts={x.get('contract_id') for x in evaluator_queue.get('events',[])}
+        req(evaluator_contracts==set(selected),f'evaluator queue lost the hidden target contracts: {evaluator_contracts}')
+        req(evaluator_queue.get('contract_filter')==sorted(selected) and prep.get('contract_filter')==sorted(selected),'evaluator metadata must preserve exact representative contract filter')
+        req('contract_filter' not in queue and 'contract_filter' not in meta,'candidate-visible queue/run metadata must not expose contract filter')
         catalog_pages=[rd/'product/PLAYBOOK-INDEX.md',rd/'product/PLAYBOOKS.md',*(rd/'product/docs/playbooks').rglob('*.md')]
         for page in catalog_pages:
             page.read_text(encoding='utf-8')
@@ -40,8 +49,8 @@ def smoke_prepare():
         md=json.loads(manifest.read_text()); required=md.get('required_subcontracts') or []
         req(required and all(isinstance(x,str) for x in required),'create_run must normalize required subcontract metadata to contract-id strings')
         req('core.intelligence.ecosystem.source-discovery' in required,'object-form required subcontract id was not normalized into the Run manifest')
-        release_event={'event_id':'SMOKE-RELEASE','kind':'marathon_mission','business_id':'qa-atlasops-saas','fixture':'atlasops-saas','release_fixture':'later_period','contract_id':None,'task':'smoke timed release'}
-        queue_path.write_text(json.dumps({'format_version':'1.0','run_id':'smoke','profile':'smoke','event_count':1,'events':[release_event]},indent=2)+'\n')
+        release_event={'event_id':'SMOKE-RELEASE','kind':'business_task','business_id':'qa-atlasops-saas','fixture':'atlasops-saas','release_fixture':'later_period','task':'smoke timed release','receipt_path':'candidate-results/SMOKE-RELEASE.json'}
+        queue_path.write_text(json.dumps({'format_version':'1.1','run_id':'smoke','event_count':1,'events':[release_event]},indent=2)+'\n')
         before=subprocess.run([sys.executable,str(rd/'product/qualification/checkpoint.py'),'SMOKE-RELEASE','before','--business-id','qa-atlasops-saas'],cwd=rd/'product',env=env,capture_output=True,text=True)
         req(before.returncode==0,f'timed release before-checkpoint failed: {before.stdout}\n{before.stderr}')
         release=subprocess.run([sys.executable,str(rd/'product/qualification/release_fixture.py'),'SMOKE-RELEASE'],cwd=rd/'product',env=env,capture_output=True,text=True)
@@ -58,6 +67,7 @@ def main():
     req(len(ids)==len(set(ids)),'duplicate contract qualification tests')
     req(all(not t['unknown_required_subcontracts'] for t in suite['contract_tests']),'unknown required subcontracts in qualification suite')
     req(all(t['hard_gates'] and t['rubric_dimensions'] and t['candidate_task'] for t in suite['contract_tests']),'every contract needs gates, rubric, and candidate task')
+    req(all('execute aura contract' not in t['candidate_task'].lower() and t['contract_id'].lower() not in t['candidate_task'].lower() for t in suite['contract_tests']),'contract acceptance requests must be production-like and hide target contract ids')
     ecosystem=next(t for t in suite['contract_tests'] if t['contract_id']=='core.intelligence.ecosystem-radar')
     req(ecosystem['required_subcontracts'] and all(isinstance(x,str) for x in ecosystem['required_subcontracts']),'qualification suite must normalize object-form subcontract metadata to ids')
     customer=[t for t in suite['contract_tests'] if t.get('artifact_role')=='customer_facing_production_root']
@@ -84,5 +94,5 @@ def main():
     released=[m for m in suite['cross_domain_missions']+suite['marathon_missions'] if m.get('release_fixture')]
     req(len(released)>=2 and {'CROSS-MARKET-CHANGE-001','MARATHON-002'}.issubset({m['id'] for m in released}),'expected longitudinal evidence-release missions missing')
     smoke_prepare()
-    print(f"qualification framework regressions passed: {suite['contract_count']} contract tests, {suite['capability_count']} capability mappings, {len(suite['domain_missions'])} domain missions, {len(suite['cross_domain_missions'])} cross-domain missions, {len(suite['marathon_missions'])} marathon missions, {len(suite.get('concurrency_missions',[]))} concurrency missions, {len(fixture_paths)} grounded fixtures, {len(released)} timed evidence releases, preparation/release/run-creation smoke passed")
+    print(f"qualification framework regressions passed: {suite['contract_count']} contract tests, {suite['capability_count']} capability mappings, {len(suite['domain_missions'])} domain missions, {len(suite['cross_domain_missions'])} cross-domain missions, {len(suite['marathon_missions'])} marathon missions, {len(suite.get('concurrency_missions',[]))} concurrency missions, {len(fixture_paths)} grounded fixtures, {len(released)} timed evidence releases, production-like preparation/release/run-creation smoke passed")
 if __name__=='__main__': main()
