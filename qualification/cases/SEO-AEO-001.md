@@ -5,7 +5,7 @@ Primary layers: **1 — atomic job quality** and **2 — competitive/field readi
 
 ## Why this is first
 
-This is a narrow, externally observable SEO/AEO job with a clear real-world standard. It lets us verify that AURA can inspect the live search field, understand why strong pages are competitive, compare that evidence against the active business, and persist useful gaps without yet introducing the extra variables of full content production.
+This is a narrow, externally observable SEO/AEO job with a clear real-world standard. It lets us verify that AURA can inspect the live search field, understand why a strong page is competitive, connect that evidence to the active business, and persist useful gaps without yet introducing the extra variables of full content production.
 
 Target playbook (evaluator-side only):
 
@@ -15,19 +15,26 @@ The candidate must not be told the target contract or given this file.
 
 ## Candidate experience
 
-Prepare the normal blind atomic run and give the candidate only the staged AURA product/workspace plus the ordinary business request printed by `task_controller.py start`.
+Prepare the normal blind atomic run with the maintainer-authored ordinary request below. Give the candidate only the staged AURA product/workspace plus the request printed by `task_controller.py start`.
 
 The candidate should have a capable model/harness and reasonable web/search access. The required contract capability is `search.serp.read`; general web reading and AI-answer observation are useful when available.
 
-AURA should use minimum-sufficient current research. It does not need to exhaust the web. It should inspect enough of the live field to understand the relevant intent, strong result patterns, meaningful differences, and material gaps for the business; it should expand only if more evidence could materially change the analysis.
+AURA should use minimum-sufficient current research. It does not need to exhaust the web. It should inspect enough of the live field to establish that the chosen page is a meaningful strong reference, understand the relevant intent and competitive pattern, and identify material gaps for AtlasOps; it should expand only if more evidence could materially change the analysis.
+
+## Ordinary business request
+
+> For AtlasOps, analyze one strong current organic page you find for the intent “field service scheduling software for multi-location teams” as preparation for a new or materially differentiated AtlasOps asset. Explain why that page appears useful and competitive in the live search field, what users and search/AI-answer systems are getting from it, and what AtlasOps would need to provide to be more useful and differentiated. Use enough current evidence to establish the pattern, but stop when more research is unlikely to change the analysis. Persist the useful evidence and gaps in AURA. Do not invent rankings, traffic, or competitor performance you cannot verify.
+
+This task is deliberately specific enough to define the intent while still leaving AURA free to choose its sources, research depth, comparison page, and analysis method.
 
 ## Evaluator investigation
 
 Independently inspect the same general search/answer field without copying AURA's research path.
 
 Start small:
-- identify the relevant intent/query context;
+- inspect the current result set for the defined intent or a clearly equivalent query formulation;
 - inspect a few strong current results/pages;
+- verify that AURA's selected reference is genuinely relevant/strong enough to learn from;
 - note recurring expectations and meaningful differentiators;
 - inspect additional results only if the field remains ambiguous or another sample could materially change the judgment.
 
@@ -45,7 +52,7 @@ The evaluator is checking whether AURA's evidence set and conclusions were suffi
 A competent SEO/AEO practitioner could use the analysis without rebuilding the core investigation.
 
 ### Competitive readiness
-The analysis correctly explains important mechanisms that make strong current pages useful/competitive for the intended search/answer context, distinguishes expected/common patterns from meaningful differences, and identifies material gaps/opportunities for the active business without copying expression or relying on superficial word counts.
+The analysis correctly explains important mechanisms that make the selected strong current page useful/competitive for the intended search/answer context, distinguishes expected/common patterns from meaningful differences where relevant, and identifies material gaps/opportunities for AtlasOps without copying expression or relying on superficial word counts.
 
 ## Minimal external comparison
 
@@ -82,7 +89,8 @@ python3 tests/run_all.py
 
 python3 qualification/prepare_run.py \
   --profile atomic \
-  --contract seo.intelligence.organic-competition.page-analysis
+  --contract seo.intelligence.organic-competition.page-analysis \
+  --request 'For AtlasOps, analyze one strong current organic page you find for the intent “field service scheduling software for multi-location teams” as preparation for a new or materially differentiated AtlasOps asset. Explain why that page appears useful and competitive in the live search field, what users and search/AI-answer systems are getting from it, and what AtlasOps would need to provide to be more useful and differentiated. Use enough current evidence to establish the pattern, but stop when more research is unlikely to change the analysis. Persist the useful evidence and gaps in AURA. Do not invent rankings, traffic, or competitor performance you cannot verify.'
 
 python3 qualification/task_controller.py start /path/to/run
 ```
