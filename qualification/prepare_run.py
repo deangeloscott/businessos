@@ -44,6 +44,18 @@ def select_events(suite,profile,domain=None,contract_ids=None):
     if not events: raise SystemExit('Qualification filters selected no events')
     return events
 
+def publicize_events(events):
+    """Give the evaluator full metadata while the candidate sees ordinary opaque business tasks."""
+    evaluator=[]; candidate=[]
+    for i,event in enumerate(events,1):
+        public_id=f'TASK-{i:04d}'
+        full=dict(event);full['evaluation_id']=event['event_id'];full['event_id']=public_id;full['receipt_path']=f'candidate-results/{public_id}.json'
+        evaluator.append(full)
+        visible={'event_id':public_id,'kind':'business_task','business_id':full['business_id'],'fixture':full['fixture'],'task':full['task'],'receipt_path':full['receipt_path']}
+        if full.get('release_fixture'):visible['release_fixture']=full['release_fixture']
+        candidate.append(visible)
+    return evaluator,candidate
+
 def copy_product(src,dst):
     src=Path(src); dst=Path(dst)
     for p in src.rglob('*'):
@@ -91,14 +103,14 @@ def init_business(product_root,workspace,fixture):
     return bid
 
 def instructions(product_root,run_dir,workspace,events):
-    return f'''# AURA Qualification Gauntlet — Candidate Instructions
+    return f'''# AURA Representative Business Work Run
 
-You are operating ViralTrac AURA as a real business tool. This is an uninterrupted qualification run, not a discussion or architecture review.
+Operate ViralTrac AURA the way a real user would use it. The business tasks in the queue are intentionally phrased as ordinary requests. Do not try to infer a hidden target contract, scoring rule, or evaluator expectation; route each request through AURA normally and focus on producing useful professional work.
 
 Product root: `{product_root}`
-External qualification workspace: `{workspace}`
-Qualification run directory: `{run_dir}`
-Queue: `{run_dir/'candidate/queue.json'}`
+External workspace: `{workspace}`
+Run directory: `{run_dir}`
+Task queue: `{run_dir/'candidate/queue.json'}`
 
 Set/retain these environment variables for all work:
 
@@ -107,35 +119,31 @@ export BUSINESSOS_WORKSPACE='{workspace}'
 export AURA_QUALIFICATION_RUN='{run_dir}'
 ```
 
-The benchmark businesses have already been initialized and their explicit starting context has been grounded into canonical AURA state. Their current controlled first-party evidence is available at `attachments/qualification-inputs/<fixture>.json`. Treat that file as supplied first-party evidence for the qualification business; ingest/persist relevant evidence through normal AURA processes as the event requires. Do not redo onboarding or ask for basic benchmark facts already present in canonical state or the supplied fixture. Later-period evidence is deliberately withheld until an event explicitly releases it; do not inspect evaluator/hidden files.
+The benchmark businesses have already been initialized and their explicit starting context has been grounded into canonical AURA state. Their current supplied first-party evidence is available at `attachments/qualification-inputs/<fixture>.json`. Treat it exactly as you would treat material a real user supplied. Do not redo onboarding or ask for facts already present in canonical state or the supplied material. Later-period evidence may be released during a task; do not inspect evaluator or hidden files.
 
-Process every queue event in order and continue directly to the next event. Do not stop between events to ask whether to continue. A genuine blocker should be recorded for that event, then continue with later events when safe.
+Process every task in order and continue directly to the next task. A genuine blocker is a valid work outcome when required evidence, authorization, data, or capability is actually unavailable. Never invent a source, business fact, tool action, artifact, measurement, or completed execution in order to avoid blocking.
 
-**Qualification integrity rules:**
-- Automation may help with deterministic bookkeeping, file handling, validation, or repeated mechanical steps, but it may not replace the substantive contract-specific business work. Do not create a generic mass-completion runner that manufactures placeholder artifacts, generic subcontract files, self-attested QA, fake evidence, or receipts merely to satisfy gates. Each event must stand on its own actual contract process, evidence, and deliverable.
-- The staged AURA product at `{product_root}` is immutable for the entire run. Do not create, modify, or delete files anywhere under that product root. Put legitimate temporary working files under the external workspace instead, subject to the same no-mass-completion rule.
-- Queue exhaustion, receipts, and checkpoints prove only that execution was attempted/completed. They are **not** a qualification pass. Do not claim a pass rate, qualification success, or professional-quality verdict. Only the independent evaluator/judge may assign those outcomes after the run.
+The checkpoint and receipt steps below are external run bookkeeping. They are not the definition of quality and should not influence the substance or format of the work you produce.
 
-For EVERY event:
-1. Read the event, controlled current fixture, accumulated AURA state, and the relevant AURA contract including its Process and Completion Evidence. Do not modify canonical or staged AURA product source.
-2. Run `python3 qualification/checkpoint.py <EVENT_ID> before --business-id <BUSINESS_ID>` before doing event work.
-3. If the event has a `release_fixture` field, run `python3 qualification/release_fixture.py <EVENT_ID>` now. Preserve the released evidence provenance.
-4. Execute the business work fully. Do **not** invent a missing business condition or easy synthetic scenario merely to make the contract pass. If required controlled input is absent and cannot legitimately be obtained, record blocker `qualification_fixture`. If AURA says an artifact is creatable, create the actual promised medium. If a contract explicitly allows a production specification when rendering is unavailable, that fallback must be complete enough for human production (for example, real scenes/keyframes/timing/narration/transition specs rather than generic prose).
-5. Where the competitive environment is material, inspect it for this event. Save a **new or materially updated timestamped local snapshot for this event** in `field_snapshot_refs`; do not reuse an unrelated prior event's snapshot as if it were current research. The snapshot must be reconstructable and include the relevant sources/comparisons.
-6. Perform real QA. A file that merely declares `status: passed` is not QA. For pre-publish QA, record the actual checks performed, tested Asset and version, blockers/unresolved issues, evidence, and corrections/results required by the contract.
-7. Aim for outcome readiness: perform the research, strategy, execution, QA, integration, and measurement preparation a strong practitioner would reasonably expect.
-8. Follow AURA evidence, provenance, semantic ownership, authorization, required-subcontract, customer-facing claim, and completion rules. Reusing prior state/evidence is encouraged only when it is substantively applicable; do not relabel unrelated evidence as subcontract completion.
-9. Persist the real business result and state through AURA. Never report a draft as executed or an unmeasured result as proven.
-10. Write the event receipt to the exact `receipt_path` relative to the qualification run directory. It must be JSON with: `event_id`, `business_id`, `status` (`completed` or `blocked`), `root_run_ids`, `artifact_refs`, `canonical_refs`, `source_refs`, `field_snapshot_refs`, `released_fixture_refs`, `summary`, `blocker` (null if completed; otherwise an object with `classification` and `detail`), and `quality_notes`. Valid blocker classifications are `external_capability`, `authorization`, `missing_required_data`, `external_service`, `qualification_fixture`, or `aura_process`.
-11. Run `python3 qualification/checkpoint.py <EVENT_ID> after --business-id <BUSINESS_ID>` after the receipt and AURA work are persisted.
-12. Immediately continue to the next queue item.
+For EVERY task:
+1. Read the ordinary business request, current supplied material, and accumulated AURA state. Route the request from natural language through AURA as you would for a real user; do not search for a hidden contract under test.
+2. Run `python3 qualification/checkpoint.py <TASK_ID> before --business-id <BUSINESS_ID>` before doing task work.
+3. If the task has a `release_fixture` field, run `python3 qualification/release_fixture.py <TASK_ID>` now and treat the released material as newly supplied evidence.
+4. Do the real business work. Research when research is required, use available tools when they materially improve or are necessary for the task, create the actual requested deliverable, and use graceful degradation only when the environment truly cannot render/execute the requested medium.
+5. Use current external/competitive evidence when the business decision genuinely depends on it. Preserve enough evidence that important claims can be checked later, but do not gather research merely to satisfy bookkeeping.
+6. Perform the QA a competent practitioner would actually perform for this result. Do not claim checks, scans, rendered media, publication, or execution that did not happen.
+7. Persist the useful business result and relevant AURA state. Keep unknowns and limitations honest, and do not report a draft as executed or an unmeasured outcome as proven.
+8. Write a compact receipt to the exact `receipt_path` in the queue. It must be JSON with: `event_id`, `business_id`, `status` (`completed` or `blocked`), `root_run_ids`, `artifact_refs`, `canonical_refs`, `source_refs`, `field_snapshot_refs`, `released_fixture_refs`, `summary`, `blocker` (null if completed; otherwise an object with `classification` and `detail`), and `quality_notes`. Valid blocker classifications are `external_capability`, `authorization`, `missing_required_data`, `external_service`, `qualification_fixture`, or `aura_process`.
+9. Run `python3 qualification/checkpoint.py <TASK_ID> after --business-id <BUSINESS_ID>` after the receipt and AURA work are persisted.
+10. Immediately continue to the next task.
 
-There are {len(events)} events in this run. Execution completion means the queue is exhausted. Qualification status remains `NOT_EVALUATED` until the independent evaluator runs.
+There are {len(events)} tasks in this run. Completing the queue only means the work run ended; quality is assessed afterward from the actual business outputs.
 '''
 
 def main():
     ap=argparse.ArgumentParser(); ap.add_argument('--profile',choices=['atomic','domains','cross-domain','marathon','full'],default='full'); ap.add_argument('--domain'); ap.add_argument('--contract',action='append',default=[],help='Exact contract ID to include in an atomic representative run; repeat for multiple contracts.'); ap.add_argument('--run-root'); ap.add_argument('--run-id'); a=ap.parse_args()
-    suite=build(); events=select_events(suite,a.profile,a.domain,a.contract); run_id=a.run_id or ('aura-qualification-'+uuid.uuid4().hex[:10]); root=Path(a.run_root).expanduser().resolve() if a.run_root else Path(tempfile.gettempdir())/'aura-qualification-runs'; run_dir=root/run_id
+    suite=build(); selected=select_events(suite,a.profile,a.domain,a.contract); evaluator_events,candidate_events=publicize_events(selected)
+    run_id=a.run_id or ('aura-qualification-'+uuid.uuid4().hex[:10]); root=Path(a.run_root).expanduser().resolve() if a.run_root else Path(tempfile.gettempdir())/'aura-qualification-runs'; run_dir=root/run_id
     if run_dir.exists(): raise SystemExit(f'Run already exists: {run_dir}')
     try:
         run_dir.relative_to(ROOT.resolve()); raise SystemExit('Qualification run root must be outside the AURA product tree to prevent recursive staging or product contamination')
@@ -145,8 +153,11 @@ def main():
     for f in sorted(fixtures): init_business(product_root,workspace,f)
     baseline=product_snapshot(product_root); write_json(run_dir/'evaluator/product-snapshot.json',baseline)
     contract_filter=sorted(set(a.contract))
-    queue={'format_version':'1.0','run_id':run_id,'created_at':now(),'profile':a.profile,'domain_filter':a.domain,'contract_filter':contract_filter,'event_count':len(events),'events':events}
-    write_json(run_dir/'candidate/queue.json',queue); write_json(run_dir/'evaluator/suite.json',suite); write_json(run_dir/'run.json',{'run_id':run_id,'created_at':now(),'product_root':str(product_root),'workspace':str(workspace),'profile':a.profile,'domain_filter':a.domain,'contract_filter':contract_filter,'event_count':len(events),'status':'prepared','execution_status':'prepared','qualification_status':'NOT_EVALUATED','product_snapshot_digest':baseline['digest'],'benchmark_context_seeded':True,'future_evidence_staged':True})
-    (run_dir/'candidate/RUN-INSTRUCTIONS.md').write_text(instructions(product_root,run_dir,workspace,events),encoding='utf-8')
-    print(json.dumps({'run_id':run_id,'run_dir':str(run_dir),'product_root':str(product_root),'workspace':str(workspace),'event_count':len(events),'instructions':str(run_dir/'candidate/RUN-INSTRUCTIONS.md'),'queue':str(run_dir/'candidate/queue.json')},indent=2))
+    candidate_queue={'format_version':'1.1','run_id':run_id,'event_count':len(candidate_events),'events':candidate_events}
+    evaluator_queue={'format_version':'1.1','run_id':run_id,'profile':a.profile,'domain_filter':a.domain,'contract_filter':contract_filter,'event_count':len(evaluator_events),'events':evaluator_events}
+    write_json(run_dir/'candidate/queue.json',candidate_queue); write_json(run_dir/'evaluator/queue.json',evaluator_queue); write_json(run_dir/'evaluator/suite.json',suite)
+    write_json(run_dir/'evaluator/preparation.json',{'profile':a.profile,'domain_filter':a.domain,'contract_filter':contract_filter,'prepared_at':now()})
+    write_json(run_dir/'run.json',{'run_id':run_id,'created_at':now(),'product_root':str(product_root),'workspace':str(workspace),'profile':a.profile,'domain_filter':a.domain,'event_count':len(candidate_events),'status':'prepared','execution_status':'prepared','qualification_status':'NOT_EVALUATED','product_snapshot_digest':baseline['digest'],'benchmark_context_seeded':True,'future_evidence_staged':True})
+    (run_dir/'candidate/RUN-INSTRUCTIONS.md').write_text(instructions(product_root,run_dir,workspace,candidate_events),encoding='utf-8')
+    print(json.dumps({'run_id':run_id,'run_dir':str(run_dir),'product_root':str(product_root),'workspace':str(workspace),'event_count':len(candidate_events),'instructions':str(run_dir/'candidate/RUN-INSTRUCTIONS.md'),'queue':str(run_dir/'candidate/queue.json')},indent=2))
 if __name__=='__main__': main()
