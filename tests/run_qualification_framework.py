@@ -6,6 +6,7 @@ from build_suite import build
 from prepare_run import init_business, copy_product
 from checkpoint import capture_checkpoint
 from release_fixture import release_event
+from common import fixture_for
 
 
 def req(c,m):
@@ -82,6 +83,9 @@ def main():
     req(all(not t['unknown_required_subcontracts'] for t in suite['contract_tests']),'unknown required subcontracts in qualification suite')
     req(all(t['hard_gates'] and t['rubric_dimensions'] and t['candidate_task'] for t in suite['contract_tests']),'every contract needs gates, rubric, and candidate task')
     req(all('execute aura contract' not in t['candidate_task'].lower() and t['contract_id'].lower() not in t['candidate_task'].lower() for t in suite['contract_tests']),'contract acceptance requests must be production-like and hide target contract ids')
+    req(fixture_for('content.production.article','content-synthesis')=='atlasops-saas','fixture router must not mistake production for ecommerce product work')
+    req(fixture_for('seo-aeo.execution.product-page','seo-aeo')=='northline-commerce','fixture router must still map explicit product work to ecommerce')
+    req(fixture_for('seo-aeo.local.service-area','seo-aeo')=='harbor-hvac','fixture router must still map explicit local/service-area work to HVAC')
     ecosystem=next(t for t in suite['contract_tests'] if t['contract_id']=='core.intelligence.ecosystem-radar')
     req(ecosystem['required_subcontracts'] and all(isinstance(x,str) for x in ecosystem['required_subcontracts']),'qualification suite must normalize object-form subcontract metadata to ids')
     customer=[t for t in suite['contract_tests'] if t.get('artifact_role')=='customer_facing_production_root']; req(customer,'expected customer-facing production contracts')
