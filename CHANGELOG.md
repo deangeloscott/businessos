@@ -5,6 +5,14 @@
 - Final multi-operator acceptance proved separate operator preferences and Run attribution on one shared business while keeping task authorization out of durable PreferenceProfile state.
 - No concurrency runtime, worker pool, scheduler, lock manager, or model/harness-specific fork was added.
 
+### Native Content execution family hardening
+
+- Added inherited Content Intelligence and Content QA family defaults and expanded Production defaults so native execution requires auditable evidence/comparison/mechanism analysis, real medium-native deliverables, and target-specific inspection/correction records. Optional specialist Skills and tools remain selectable enhancements; they are not prerequisites for a complete native result.
+- Added a reusable Content-intelligence work-record completion profile. A concise canonical Observation/Insight/Learning can no longer stand in for the sample, comparison, method, limitations, and mechanism analysis that produced it.
+- Strengthened promised-medium fallback validation for podcast and presentation. Calibration-F-style keyword Markdown shells now fail, while substantive recording packets and multi-slide production specifications remain portable local fallbacks when rendering is unavailable.
+- Strengthened Asset QA across Content/Marketing: each check now needs a concrete method and finding, overall pass state must preserve issues/corrections/limitations and have no blockers, and the record must target an existing exact Asset version rather than a QA wrapper created by the same Run.
+- Added `tests/run_content_native_execution.py` with representative intelligence, podcast, presentation, and accessibility-QA regressions derived from Calibration F. The full 69-event qualification is intentionally deferred until representative native execution receives fresh independent quality review.
+
 ### RC18 candidate: Legacy PreferenceProfile migration hardening
 
 - Added deterministic `scripts/migrate_preference_profiles.py` for businesses upgraded from RC16/earlier state that already contains authorization/approval semantics inside otherwise legitimate `PreferenceProfile` objects.

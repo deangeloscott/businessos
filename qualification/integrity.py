@@ -94,9 +94,16 @@ def is_structured_prepublish_record(path):
     if not isinstance(checks,list) or not checks: return False
     for item in checks:
         if not isinstance(item,dict):return False
-        if not any(item.get(k) for k in ('check','name','criterion','test')):return False
+        label=next((item.get(k) for k in ('check','name','criterion','test') if item.get(k)),None)
+        if not label:return False
+        normalized_label=re.sub(r'[^a-z0-9]+',' ',str(label).lower()).strip()
+        if normalized_label in {'check','qa','quality assurance','quality check','compliance','compliance validation','validation','review'}:return False
         if not any(item.get(k) is not None for k in ('status','result','outcome','passed')):return False
-    if 'blockers' not in data: return False
+        method=next((item.get(k) for k in ('method','procedure','tool','inspection') if item.get(k)),None)
+        finding=next((item.get(k) for k in ('finding','evidence','observed','actual','result') if item.get(k)),None)
+        if len(re.findall(r'\b\w+\b',str(method or '')))<3 or len(re.findall(r'\b\w+\b',str(finding or '')))<3:return False
+    if not isinstance(data.get('blockers'),list) or data['blockers']: return False
+    if any(not isinstance(data.get(k),list) for k in ('issues_found','corrections_made','limitations')):return False
     target=any(data.get(k) for k in ('tested_asset','target_asset','asset_ref','target_refs'))
     version=any(data.get(k) is not None for k in ('tested_version','asset_version','version'))
     return bool(target and version)

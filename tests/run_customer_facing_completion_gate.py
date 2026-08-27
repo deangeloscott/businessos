@@ -16,13 +16,20 @@ def main():
     try:
         req(run(S/'init_business.py',BID,'--name','Completion Gate').returncode==0,'init failed')
         rid=run(S/'create_run.py',BID,'marketing.assets.landing-page','Draft landing page').stdout.strip()
+        prior=BASE/'assets/prior.md';prior.parent.mkdir(parents=True,exist_ok=True);prior.write_text('Prior imported page used only as the QA fixture target.\n')
+        prior_asset={'id':f'ast_{BID}_prior','object_type':'Asset','business_id':BID,'owner_system':'marketing-synthesis',
+            'asset_type':'landing-page','business_role':'customer_facing_production','version':'1','status':'draft',
+            'lineage':[],'location_reference':str(prior.relative_to(ROOT)),'extensions':{'businessos':{'origin':'preexisting'}}}
+        (BASE/'assets'/f"{prior_asset['id']}.json").write_text(json.dumps(prior_asset)+'\n')
         # Mark declared subcontracts complete with structurally valid fixture evidence. This
         # regression is testing the separate root-Asset gate, not QA-content quality.
         m=json.loads((RUNS/rid/'contract-execution.json').read_text())
         for cid in m.get('required_subcontracts',[]):
             e=RUNS/rid/'artifacts'/((cid.replace('.','-'))+'.json');e.parent.mkdir(parents=True,exist_ok=True)
             payload=(
-                {'status':'pass','contract_id':cid,'checks':[{'check':'fixture completion check','status':'pass','result':'The dedicated fixture evidence was inspected and matched.'}]}
+                {'status':'pass','contract_id':cid,'tested_asset':prior_asset['id'],'tested_version':'1',
+                 'checks':[{'check':'fixture target inspection','status':'pass','method':'Read the saved prior Asset text from its location reference','finding':'The prior fixture contains one complete visible sentence.'}],
+                 'issues_found':[],'corrections_made':[],'limitations':[],'blockers':[]}
                 if '.qa' in cid or cid.endswith('.qa') else
                 {'id':f'ast_{BID}_{cid.replace(".","-")}','object_type':'Asset','business_id':BID,'status':'completed','contract_id':cid,'extensions':{}}
             )

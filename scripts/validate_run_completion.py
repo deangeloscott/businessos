@@ -112,7 +112,7 @@ def run_completion_errors(business_id,objects):
             if not refs:errors.append(f'{path} completed subcontract lacks evidence refs: {cid}')
             for rel in refs:
                 if not resolve_storage_ref(rel).exists():errors.append(f'{path} subcontract evidence ref missing: {cid} -> {rel}')
-            if ('.qa' in cid or cid.endswith('.qa')) and not qa_record_ok(cid,refs):errors.append(f'{path} QA subcontract lacks structured matching JSON pass evidence: {cid}')
+            if ('.qa' in cid or cid.endswith('.qa')) and not qa_record_ok(cid,refs,business_id,r.get('run_id')):errors.append(f'{path} QA subcontract lacks structured matching JSON pass evidence: {cid}')
         if m.get('root_status')!='completed' or r.get('status')!='completed':errors.append(f'{path} production Asset references a Run that is not completed: {rr}')
         root_refs=m.get('root_evidence_refs') or []
         if not root_refs:errors.append(f'{path} completed production Run lacks root deliverable evidence: {rr}')

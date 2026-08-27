@@ -101,10 +101,11 @@ def main():
         good=RUNS/rid/'artifacts'/'good-prepublish.json';write(good,json.dumps({
             'contract_id':'content.qa.pre-publish','status':'pass','tested_asset':aid,'tested_version':'1',
             'checks_performed':[
-                {'check':'claims','status':'pass','result':'Three candidate claims matched approved support references.'},
-                {'check':'links','status':'pass','result':'Two destination links returned successful responses.'},
-                {'check':'accessibility','status':'pass','result':'Heading order and descriptive link labels were verified.'}
+                {'check':'claims','status':'pass','method':'Compared each extracted claim with the Asset claim manifest','finding':'Three candidate claims matched approved support references.'},
+                {'check':'links','status':'pass','method':'Requested both saved destination URLs from the final draft','finding':'Two destination links returned successful responses.'},
+                {'check':'accessibility','status':'pass','method':'Inspected heading sequence and link labels in the final HTML','finding':'Heading order and descriptive link labels were verified.'}
             ],
+            'issues_found':[],'corrections_made':[],'limitations':[],
             'blockers':[]
         },indent=2)+'\n')
         r=run(S/'record_contract_completion.py',BID,rid,'content.qa.pre-publish','--evidence',str(good.relative_to(ROOT)))

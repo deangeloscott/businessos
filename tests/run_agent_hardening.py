@@ -170,8 +170,9 @@ def main():
                 q=run_dir/'artifacts'/f'{cid.replace(".","-")}-qa.json';q.parent.mkdir(parents=True,exist_ok=True)
                 q.write_text(json.dumps({
                     'contract_id':cid,'status':'pass',
-                    'checks':[{'check':'regression evidence linkage','status':'pass','result':'The named fixture Asset and exact version were inspected.'}],
-                    'tested_asset':asset['id'],'tested_version':asset.get('version'),'blockers':[]
+                    'checks':[{'check':'regression evidence linkage','status':'pass','method':'Opened the named fixture Asset location and compared its saved version','finding':'The named fixture Asset and exact version contain the expected regression sentence.'}],
+                    'tested_asset':asset['id'],'tested_version':asset.get('version'),
+                    'issues_found':[],'corrections_made':[],'limitations':[],'blockers':[]
                 },indent=2));return str(q.relative_to(ROOT))
             e=run_dir/'artifacts'/f'{cid.replace(".","-")}-evidence.json';e.parent.mkdir(parents=True,exist_ok=True)
             sub_asset={

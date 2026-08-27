@@ -35,7 +35,9 @@ def main():
 
         bad=root/'bad-qa.json'; bad.write_text(json.dumps({'contract_id':'content.qa.pre-publish','status':'passed','notes':'QA passed'}))
         req(not is_structured_prepublish_record(bad),'self-attested QA must not pass structural pre-publish evidence check')
-        good=root/'good-qa.json'; good.write_text(json.dumps({'contract_id':'content.qa.pre-publish','status':'pass','checks_performed':[{'check':'links','passed':True}],'blockers':[],'tested_asset':'ast_1','tested_version':'1.0'}))
+        good=root/'good-qa.json'; good.write_text(json.dumps({'contract_id':'content.qa.pre-publish','status':'pass',
+            'checks_performed':[{'check':'destination links','passed':True,'method':'Requested every saved destination URL','finding':'Both destination URLs returned successful HTTP responses.'}],
+            'issues_found':[],'corrections_made':[],'limitations':[],'blockers':[],'tested_asset':'ast_1','tested_version':'1.0'}))
         req(is_structured_prepublish_record(good),'structured pre-publish evidence should pass')
 
         a=root/'a.md'; b=root/'b.md'; c=root/'c.md'
