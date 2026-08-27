@@ -9,6 +9,9 @@ if str(SCRIPTS) not in sys.path:
 from _common import PRODUCT_ROOT, contract_files, read_frontmatter
 
 SECTION_RE=re.compile(r'^##\s+(.+?)\s*$',re.M)
+PRODUCT_SNAPSHOT_IGNORED_DIRS={'.git','__pycache__','.pytest_cache','.venv','venv'}
+PRODUCT_SNAPSHOT_IGNORED_FILES={'.DS_Store'}
+PRODUCT_SNAPSHOT_IGNORED_SUFFIXES={'.pyc','.pyo'}
 
 def now():
     return datetime.datetime.now(datetime.timezone.utc).isoformat()
@@ -116,6 +119,28 @@ def tree_snapshot(root):
             files.append({'path':rel,'error':'unreadable'})
     digest=hashlib.sha256(json.dumps(files,sort_keys=True).encode()).hexdigest()
     return {'root':str(root),'files':files,'digest':digest}
+
+def product_snapshot(root):
+    """Stable qualification snapshot of staged product source.
+
+    Transient interpreter/editor files are ignored. Everything else under the staged
+    product is immutable during a qualification run and is therefore hashed.
+    """
+    root=Path(root); files=[]
+    if not root.exists(): return {'root':str(root),'files':[],'digest':hashlib.sha256(b'').hexdigest(),'format_version':'1.0'}
+    for p in sorted(x for x in root.rglob('*') if x.is_file()):
+        rel=p.relative_to(root); parts=rel.parts
+        if any(part in PRODUCT_SNAPSHOT_IGNORED_DIRS for part in parts): continue
+        if p.name in PRODUCT_SNAPSHOT_IGNORED_FILES or p.suffix.lower() in PRODUCT_SNAPSHOT_IGNORED_SUFFIXES: continue
+        h=hashlib.sha256()
+        try:
+            with p.open('rb') as f:
+                for chunk in iter(lambda:f.read(1024*1024),b''): h.update(chunk)
+            files.append({'path':rel.as_posix(),'sha256':h.hexdigest(),'bytes':p.stat().st_size})
+        except OSError:
+            files.append({'path':rel.as_posix(),'error':'unreadable'})
+    digest=hashlib.sha256(json.dumps(files,sort_keys=True).encode()).hexdigest()
+    return {'format_version':'1.0','root':str(root),'files':files,'digest':digest,'file_count':len(files)}
 
 def snapshot_diff(before,after):
     b={x['path']:x.get('sha256') for x in before.get('files',[])}; a={x['path']:x.get('sha256') for x in after.get('files',[])}
