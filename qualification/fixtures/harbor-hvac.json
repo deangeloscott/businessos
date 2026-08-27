@@ -1,5 +1,5 @@
 {
-  "format_version":"1.0","business_id":"qa-harbor-hvac","name":"Harbor HVAC","category":"Residential HVAC service business","market":"Baltimore metro","objective":"Grow profitable booked service and replacement jobs while protecting review quality and technician capacity.",
+  "format_version":"1.0","business_id":"harbor-hvac","name":"Harbor HVAC","category":"Residential HVAC service business","market":"Baltimore metro","objective":"Grow profitable booked service and replacement jobs while protecting review quality and technician capacity.",
   "bootstrap_facts":{"industries":["Residential HVAC service business"],"markets":["Baltimore metro"],"services":["AC repair","heating repair","maintenance","system replacement"],"objectives":["Grow profitable booked service and replacement jobs while protecting review quality and technician capacity."],"brand":{"voice":{"tone":["plainspoken","helpful","local","trustworthy"]},"prohibited_styles":["fear tactics","fake urgency","unsupported same-day guarantees"]}},
   "brand":{"voice":["plainspoken","helpful","local","trustworthy"],"avoid":["fear tactics","fake urgency","unsupported same-day guarantees"]},
   "services":["AC repair","heating repair","maintenance","system replacement"],
