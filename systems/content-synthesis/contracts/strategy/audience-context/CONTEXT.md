@@ -38,16 +38,6 @@ context:
 - AudienceSegment
 - Objective
 - Offer
-completion_evidence:
-  required_text_components:
-  - id: audience-knowledge-needs-resistance
-    any_of: [already knows, cares about, misunderstands, resists, trying to accomplish]
-  - id: attention-and-tolerance
-    any_of: [attention state, device context, time tolerance, effort tolerance]
-  - id: platform-or-medium-context
-    any_of: [platform context, medium context, platform/medium, consumption environment]
-  - id: in-asset-context-boundary
-    any_of: [inside the asset, can be assumed, supplied in the asset]
 ---
 # Content Audience and Consumption Context
 
