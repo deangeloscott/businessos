@@ -3,7 +3,7 @@ from pathlib import Path
 import inspect, json, os, subprocess, sys, tempfile
 ROOT=Path(__file__).resolve().parents[1]; sys.path.insert(0,str(ROOT/'qualification'))
 from build_suite import build
-from prepare_run import init_business, copy_product, apply_candidate_request
+from prepare_run import init_business, copy_product, apply_candidate_request, candidate_surface, _ensure_separate
 from checkpoint import capture_checkpoint
 from release_fixture import release_event
 from common import fixture_for
@@ -14,16 +14,21 @@ def req(c,m):
 
 
 def smoke_prepare():
-    with tempfile.TemporaryDirectory(prefix='aura-qualification-smoke-') as td:
+    with tempfile.TemporaryDirectory(prefix='aura-qualification-smoke-') as td, tempfile.TemporaryDirectory(prefix='aura-workspaces-smoke-') as cd:
         selected=['content.intelligence.creator-monitoring','content.production.article']
-        cmd=[sys.executable,str(ROOT/'qualification/prepare_run.py'),'--profile','atomic','--domain','content-synthesis','--run-root',td,'--run-id','smoke']
+        cmd=[sys.executable,str(ROOT/'qualification/prepare_run.py'),'--profile','atomic','--domain','content-synthesis','--run-root',td,'--candidate-root',cd,'--run-id','smoke']
         for cid in selected: cmd += ['--contract',cid]
         prep_env=dict(os.environ); prep_env['PYTHONUTF8']='0'; prep_env['PYTHONDONTWRITEBYTECODE']='1'
         p=subprocess.run(cmd,cwd=ROOT,capture_output=True,text=True,env=prep_env)
         req(p.returncode==0,f'qualification prepare smoke failed:\nSTDOUT:\n{p.stdout}\nSTDERR:\n{p.stderr}')
         rd=Path(td)/'smoke'; meta=json.loads((rd/'run.json').read_text()); evaluator_queue=json.loads((rd/'evaluator/queue.json').read_text()); prep=json.loads((rd/'evaluator/preparation.json').read_text())
+        product=Path(meta['product_root']); workspace=Path(meta['workspace']); surface=Path(meta['candidate_surface_root'])
         req(meta.get('candidate_blind') is True and prep.get('candidate_blind') is True,'prepared qualification must explicitly record blind-candidate mode')
         req(meta.get('benchmark_context_seeded') is True,'prepared run must record grounded benchmark context')
+        req(product.parent==surface and workspace.parent==surface,'candidate product/workspace must share only the neutral candidate surface')
+        req(rd not in product.parents and rd not in workspace.parents and surface not in rd.parents,'candidate surface and evaluator run tree must be physically separate')
+        req(not (surface/'evaluator').exists() and not (surface/'checkpoints').exists(),'evaluator/checkpoint state leaked into candidate surface')
+        req('qualification' not in product.as_posix().lower() and 'qualification' not in workspace.as_posix().lower(),'candidate-visible paths reveal qualification intent')
         events=evaluator_queue.get('events',[]); req(evaluator_queue.get('event_count')==len(selected) and len(events)==len(selected),f'representative evaluator queue count mismatch: {events}')
         req(all(str(x.get('event_id','')).startswith('TASK-') for x in events),'evaluator tasks should use opaque external task IDs')
         req({x.get('contract_id') for x in events}==set(selected),'evaluator queue lost target contracts')
@@ -31,7 +36,6 @@ def smoke_prepare():
         req('contract_filter' not in meta,'run metadata exposed exact contract filter unnecessarily')
 
         # The model receives the real runtime product, not any qualification/test tooling.
-        product=rd/'product'
         req(not (product/'tests').exists(),'developer tests leaked into staged product')
         req(not (product/'qualification').exists(),'qualification machinery leaked into staged product')
         req(not (rd/'candidate').exists(),'candidate-visible qualification directory should not exist')
@@ -39,12 +43,12 @@ def smoke_prepare():
         for page in [product/'PLAYBOOK-INDEX.md',product/'PLAYBOOKS.md',*(product/'docs/playbooks').rglob('*.md')]: page.read_text(encoding='utf-8')
 
         # Only fixtures required by selected work should be initialized, using normal-looking supplied-material paths.
-        supplied=rd/'workspace/attachments/supplied/atlasops-saas.json'; req(supplied.exists(),'selected AtlasOps supplied material missing')
+        supplied=workspace/'attachments/supplied/atlasops-saas.json'; req(supplied.exists(),'selected AtlasOps supplied material missing')
         data=json.loads(supplied.read_text()); req('timeline' not in data,'future timeline leaked into initial supplied material')
-        req(not (rd/'workspace/attachments/qualification-inputs').exists(),'qualification-named input directory leaked into candidate workspace')
-        req(not (rd/'workspace/runtime/qualification-bootstrap').exists(),'qualification bootstrap internals leaked into candidate workspace')
+        req(not (workspace/'attachments/qualification-inputs').exists(),'qualification-named input directory leaked into candidate workspace')
+        req(not (workspace/'runtime/qualification-bootstrap').exists(),'qualification bootstrap internals leaked into candidate workspace')
         req((rd/'evaluator/bootstrap/atlasops-saas-bootstrap-audit.json').exists(),'maintainer-side bootstrap audit missing')
-        req(not (rd/'workspace/instances/harbor-hvac').exists() and not (rd/'workspace/instances/northline-coffee').exists(),'unrelated benchmark businesses were initialized for an AtlasOps-only representative run')
+        req(not (workspace/'instances/harbor-hvac').exists() and not (workspace/'instances/northline-coffee').exists(),'unrelated benchmark businesses were initialized for an AtlasOps-only representative run')
         req((rd/'evaluator/hidden-fixtures/atlasops-saas-releases.json').exists(),'selected AtlasOps future evidence was not staged evaluator-side')
 
         # Controller start takes the hidden before checkpoint and prints only an ordinary request for the candidate.
@@ -53,13 +57,14 @@ def smoke_prepare():
         started=json.loads(start.stdout); msg=started.get('candidate_message','').lower()
         req(msg and 'qualification' not in msg and 'checkpoint' not in msg and 'receipt' not in msg and 'scoring' not in msg,'candidate request contains test-taking language')
         req(all(cid.lower() not in msg for cid in selected),'candidate request leaked selected contract ID')
+        req(Path(started.get('product_root',''))==product and Path(started.get('workspace',''))==workspace,'controller changed candidate surface paths')
         eid=events[0]['event_id']; req((rd/'checkpoints'/eid/'before.json').exists(),'controller did not take evaluator-side before checkpoint')
 
         # Ordinary product mechanics still work with only BUSINESSOS_WORKSPACE exposed to the runtime.
         env=dict(os.environ); env['BUSINESSOS_WORKSPACE']=meta['workspace']; env['PYTHONDONTWRITEBYTECODE']='1'
         create=subprocess.run([sys.executable,str(product/'scripts/create_run.py'),'atlasops','core.intelligence.ecosystem-radar','external controller smoke'],cwd=product,env=env,capture_output=True,text=True)
         req(create.returncode==0,f'create_run object-form subcontract smoke failed: {create.stdout}\n{create.stderr}')
-        rid=create.stdout.strip().splitlines()[-1]; manifest=rd/'workspace/runtime/runs/atlasops'/rid/'contract-execution.json'; req(manifest.exists(),'create_run smoke did not persist contract-execution manifest')
+        rid=create.stdout.strip().splitlines()[-1]; manifest=workspace/'runtime/runs/atlasops'/rid/'contract-execution.json'; req(manifest.exists(),'create_run smoke did not persist contract-execution manifest')
         md=json.loads(manifest.read_text()); required=md.get('required_subcontracts') or []
         req(required and all(isinstance(x,str) for x in required),'create_run must normalize required subcontract metadata to contract-id strings')
         req('core.intelligence.ecosystem.source-discovery' in required,'object-form required subcontract id was not normalized into Run manifest')
@@ -67,7 +72,7 @@ def smoke_prepare():
         # Timed evidence is released by maintainer tooling after the external before checkpoint and appears as normal supplied business evidence.
         synthetic={'event_id':'TASK-RELEASE','evaluation_id':'SMOKE-RELEASE','kind':'cross_domain_mission','business_id':'atlasops','fixture':'atlasops-saas','contract_id':None,'task':'Use the new business update to reassess the situation.','release_fixture':'later_period','receipt_path':'evaluator/receipts/TASK-RELEASE.json'}
         evaluator_queue['events']=[synthetic]; evaluator_queue['event_count']=1; (rd/'evaluator/queue.json').write_text(json.dumps(evaluator_queue,indent=2)+'\n')
-        capture_checkpoint(product,Path(meta['workspace']),rd,'TASK-RELEASE','before','atlasops')
+        capture_checkpoint(product,workspace,rd,'TASK-RELEASE','before','atlasops')
         released,_=release_event(rd,'TASK-RELEASE'); req(released.exists(),'maintainer timed release did not create supplied evidence')
         rel=json.loads(released.read_text()); req(rel.get('source_type')=='business_supplied_update' and rel.get('evidence'),'timed release did not look like ordinary supplied business evidence')
         req('qualification_event_id' not in rel and 'fixture' not in rel and 'release_fixture' not in rel,'candidate-visible release payload leaked benchmark metadata')
@@ -93,6 +98,14 @@ def main():
     try: apply_candidate_request([{'contract_id':target,'task':'a'}],f'Execute {target}')
     except ValueError: pass
     else: raise AssertionError('maintainer-authored request must not expose hidden target contract id')
+
+    # Candidate-visible paths must be neutral and physically separate from evaluator state.
+    with tempfile.TemporaryDirectory(prefix='aura-workspaces-unit-') as cd, tempfile.TemporaryDirectory(prefix='aura-evaluator-unit-') as ed:
+        surface=candidate_surface(cd); req('qualification' not in surface.as_posix().lower(),'neutral candidate surface leaked qualification marker')
+        req(_ensure_separate(surface,Path(ed)/'run') is True,'separate candidate/evaluator trees should be accepted')
+        try: _ensure_separate(Path(ed)/'run'/'candidate',Path(ed)/'run')
+        except ValueError: pass
+        else: raise AssertionError('candidate surface nested under evaluator tree must be rejected')
 
     suite=build(); manifest=json.loads((ROOT/'SYSTEM-MANIFEST.json').read_text())
     expected=manifest.get('counts',{}).get('contract_count') or manifest.get('contract_count'); expected_caps=manifest.get('capability_count')
@@ -124,6 +137,6 @@ def main():
     released=[m for m in suite['cross_domain_missions']+suite['marathon_missions'] if m.get('release_fixture')]
     req(len(released)>=2 and {'CROSS-MARKET-CHANGE-001','MARATHON-002'}.issubset({m['id'] for m in released}),'expected longitudinal evidence-release missions missing')
     smoke_prepare()
-    print(f"qualification framework regressions passed: {suite['contract_count']} contract tests, {suite['capability_count']} capability mappings, durable principles/ledger, blind candidate staging, external checkpoints/receipts/releases, selected-fixture preparation, and production-like run smoke passed")
+    print(f"qualification framework regressions passed: {suite['contract_count']} contract tests, {suite['capability_count']} capability mappings, durable principles/ledger, physically isolated blind candidate staging, external checkpoints/receipts/releases, selected-fixture preparation, and production-like run smoke passed")
 
 if __name__=='__main__': main()
