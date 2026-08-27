@@ -12,6 +12,10 @@ SECTION_RE=re.compile(r'^##\s+(.+?)\s*$',re.M)
 PRODUCT_SNAPSHOT_IGNORED_DIRS={'.git','__pycache__','.pytest_cache','.venv','venv'}
 PRODUCT_SNAPSHOT_IGNORED_FILES={'.DS_Store'}
 PRODUCT_SNAPSHOT_IGNORED_SUFFIXES={'.pyc','.pyo'}
+PRODUCT_SNAPSHOT_MUTABLE_ENV_FILES={
+    'host-tools.json','tool-inventory.json','capability-bindings.json',
+    'provider-preferences.json','scheduler-bindings.json','host-profile.json','bootstrap-state.json',
+}
 
 def now():
     return datetime.datetime.now(datetime.timezone.utc).isoformat()
@@ -126,11 +130,28 @@ def tree_snapshot(root):
     digest=hashlib.sha256(json.dumps(files,sort_keys=True).encode()).hexdigest()
     return {'root':str(root),'files':files,'digest':digest}
 
-def product_snapshot(root):
-    """Stable qualification snapshot of staged product source.
+def product_snapshot_path_is_mutable(rel):
+    """Return True only for product-local host/runtime state official AURA helpers mutate.
 
-    Transient interpreter/editor files are ignored. Everything else under the staged
-    product is immutable during a qualification run and is therefore hashed.
+    Qualification protects product source, playbooks, policies, schemas, and scripts from
+    candidate modification. It must not fail ordinary AURA setup merely because the host
+    selects an external workspace or compiles its discovered capabilities into the local
+    deployment environment.
+    """
+    rel=Path(rel)
+    if rel.as_posix()=='.businessos/workspace.json': return True
+    parts=rel.parts
+    return bool(
+        len(parts)==4 and parts[0]=='deployment' and parts[1]=='environments'
+        and rel.name in PRODUCT_SNAPSHOT_MUTABLE_ENV_FILES
+    )
+
+def product_snapshot(root):
+    """Stable qualification snapshot of protected staged product source.
+
+    Transient interpreter/editor files and narrowly defined host-local runtime/config
+    state are ignored. Product source, playbooks, policies, schemas, scripts, and other
+    shipped content remain immutable during a qualification run and are hashed.
     """
     root=Path(root); files=[]
     if not root.exists(): return {'root':str(root),'files':[],'digest':hashlib.sha256(b'').hexdigest(),'format_version':'1.0'}
@@ -138,6 +159,7 @@ def product_snapshot(root):
         rel=p.relative_to(root); parts=rel.parts
         if any(part in PRODUCT_SNAPSHOT_IGNORED_DIRS for part in parts): continue
         if p.name in PRODUCT_SNAPSHOT_IGNORED_FILES or p.suffix.lower() in PRODUCT_SNAPSHOT_IGNORED_SUFFIXES: continue
+        if product_snapshot_path_is_mutable(rel): continue
         h=hashlib.sha256()
         try:
             with p.open('rb') as f:
