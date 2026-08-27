@@ -4,7 +4,7 @@ This directory exists for one practical reason:
 
 > **Prove that a normal user can give ViralTrac AURA real business work and receive a real, professionally useful result.**
 
-Qualification is maintainer tooling. It is not the product, it is excluded from normal packaged distributions, and AURA must never be redesigned merely to make this machinery easy to satisfy.
+Qualification is maintainer tooling. It is not the product, it is excluded from normal packaged distributions, and AURA must never be redesigned merely to make qualification easy to satisfy.
 
 ## North-star question
 
@@ -12,32 +12,70 @@ For each representative workflow/playbook, ask:
 
 > If a user gave AURA this task in ordinary language, did AURA actually do the work, use real evidence/tools where required, produce the requested result, and deliver something a competent customer would use and value?
 
-A pass is not “the schema validated.” A pass means the business work itself was good.
+A pass is not “the schema validated.” A pass means the business work itself was real and professionally useful.
 
 ## Golden rules
 
-1. **Test normal use, not test-taking.** Candidate tasks are ordinary business requests. The candidate queue uses opaque task IDs and does not expose the target contract, rubric, hard gates, or evaluator metadata. The evaluator retains that information separately under `evaluator/`.
-2. **Real work beats qualification paperwork.** Research must inspect real evidence. Production must create the actual deliverable or a truthful graceful-degradation artifact when rendering/execution is genuinely unavailable. QA must inspect a real target. Never reward plausible paperwork that substitutes for the job.
-3. **Deterministic gates prove integrity, not excellence.** They may establish that evidence exists, references resolve, state is valid, the promised medium is truthful, and claimed automated work has support. They must not encode business quality as arbitrary word counts, slide counts, magic phrases, or other benchmark-shaped passwords.
-4. **Professional review judges quality.** A human or independent model reviews the actual artifact and evidence for usefulness, accuracy, specificity, competitive readiness, and outcome readiness.
-5. **A truthful blocker is better than fabricated completion.** If required authorization, data, capability, or external access is genuinely unavailable, record the specific blocker. Do not manufacture a source, metric, tool action, asset, or outcome.
-6. **Diagnose before changing AURA.** A poor result may be a workflow problem, model problem, tool problem, fixture problem, or execution mistake. Change the product only when the failure reveals a reusable AURA weakness.
-7. **Do not overfit fixes to one bad artifact.** If a 207-word article is bad because it is incomplete, improve the requirement that the reader task be fully satisfied; do not conclude that every valid article must exceed one universal word count. Apply the same principle to slide counts, timecodes, formatting, and other incidental shapes.
+1. **Test normal use, not test-taking.** The candidate/model sees only a normal staged AURA product, the organization workspace, and the ordinary business request. It does not receive the qualification directory, target contract, rubric, checkpoints, receipts, evaluator files, event IDs, scoring rules, or hidden benchmark metadata.
+2. **Keep bookkeeping outside the candidate.** Before/after checkpoints, timed evidence release, event mapping, and qualification receipts are maintainer/controller responsibilities. They must not consume candidate attention or shape the artifact.
+3. **Real work beats qualification paperwork.** Research must inspect real evidence. Production must create the actual deliverable or a truthful graceful-degradation artifact when rendering/execution is genuinely unavailable. QA must inspect a real target.
+4. **Deterministic gates prove integrity, not excellence.** They may establish that evidence exists, references resolve, state is valid, the promised medium is truthful, and claimed automated work has support. They must not encode quality as arbitrary word counts, slide counts, magic phrases, or benchmark-shaped passwords.
+5. **Professional review judges quality.** A human or independent model reviews the actual artifact/evidence for usefulness, accuracy, specificity, competitive readiness, and outcome readiness.
+6. **A truthful blocker is better than fabricated completion.** If authorization, data, capability, or external access is genuinely unavailable, record the specific blocker through maintainer-side qualification state instead of manufacturing success.
+7. **Diagnose before changing AURA.** A poor result may be a workflow problem, model problem, tool problem, fixture problem, or execution mistake. Change the product only when the failure reveals a reusable AURA weakness.
+8. **Do not overfit fixes to one artifact.** Improve the requirement that the actual business job be satisfied; do not convert one weak result into a universal output quota.
 
-## Recommended qualification sequence
+## Preferred representative workflow
 
-The primary quality loop is **one representative workflow in a fresh run**:
+Start with the public release gate:
 
 ```bash
 python3 tests/run_all.py
+```
+
+Prepare one representative workflow:
+
+```bash
 python3 qualification/prepare_run.py \
   --profile atomic \
   --contract content.production.article
 ```
 
-Then point the candidate harness at the printed staged product and `candidate/RUN-INSTRUCTIONS.md`.
+Preparation prints the run directory, staged product, workspace, and the next maintainer command. It does **not** create candidate-facing qualification instructions or copy qualification code into the staged product.
 
-After the task finishes:
+Start the business task externally:
+
+```bash
+python3 qualification/task_controller.py start /path/to/run
+```
+
+The controller takes the hidden `before` checkpoint, releases any scheduled business evidence, and prints a `candidate_message`.
+
+Give the candidate/harness only:
+
+- the printed staged **AURA product** path;
+- the printed **workspace** path;
+- the plain-language **candidate_message**.
+
+Do **not** give the candidate the qualification run directory or evaluator files.
+
+When the candidate finishes the business work:
+
+```bash
+python3 qualification/task_controller.py finish /path/to/run
+```
+
+The controller takes the hidden `after` checkpoint and derives the bookkeeping receipt from observed AURA Runs, evidence, canonical changes, and workspace changes. The candidate does not write a qualification receipt.
+
+For a genuine external blocker, the maintainer may finish with an explicit classification:
+
+```bash
+python3 qualification/task_controller.py finish /path/to/run \
+  --blocker-classification external_capability \
+  --blocker-detail "Live browser access was unavailable in this harness."
+```
+
+Then evaluate:
 
 ```bash
 python3 qualification/evaluate_run.py /path/to/run
@@ -50,31 +88,60 @@ Have an independent reviewer produce `evaluator/judgments.json`, then rerun:
 python3 qualification/evaluate_run.py /path/to/run
 ```
 
-Inspect the actual artifact yourself when a decision matters. Independent judges are useful, but they are not infallible.
+Inspect the actual artifact yourself when the decision matters. Independent judges are useful, not infallible.
 
-Once a workflow is good, repeat it with another representative task/model or a small related batch. Use broader domain/cross-domain/endurance runs only after individual work quality is understood.
+## What the candidate actually sees
+
+A prepared run intentionally has **no `candidate/` qualification directory** and the staged product has **no `qualification/` or developer `tests/` directory**.
+
+The organization workspace uses ordinary-looking state/materials such as:
+
+`attachments/supplied/<business-material>.json`
+
+Benchmark fixture names, future evidence, rubrics, contract targets, controller receipts, product snapshots, and checkpoints remain evaluator-side.
+
+The benchmark business IDs themselves are ordinary organization IDs such as:
+
+- `atlasops`
+- `harbor-hvac`
+- `northline-coffee`
+
+The model should be able to behave exactly as it would for a normal business workspace.
+
+## Timed/longitudinal evidence
+
+Some missions include later-period first-party evidence. It remains hidden under evaluator control until the relevant work boundary.
+
+`task_controller.py start` automatically performs the hidden before-checkpoint first and then calls the maintainer-side release logic. Candidate-visible released material appears as a normal business-supplied update under `attachments/supplied/` and contains no event ID, fixture ID, scoring metadata, or qualification instructions.
+
+## Interruption and recovery
+
+The durable unit is the **run directory + staged product + organization workspace**, not one model session.
+
+Inspect status with:
+
+```bash
+python3 qualification/task_controller.py status /path/to/run
+```
+
+or:
+
+```bash
+python3 qualification/resume_status.py /path/to/run
+```
+
+Starting an already-in-progress task preserves its original before-checkpoint. A new model/harness should be pointed to the same normal product/workspace and given the same ordinary business request. Recovery instructions remain evaluator-side; never create a candidate-facing “qualification resume” prompt.
 
 ## What qualification means
 
 Qualification has four layers:
 
-1. **Authentic execution** — the claimed work really happened; important evidence is real and reconstructable; state/provenance is valid.
+1. **Authentic execution** — the claimed work really happened; important evidence is real/reconstructable; state/provenance is valid.
 2. **Professional usefulness** — a competent practitioner/customer could use the result without rebuilding the missing core work.
-3. **Competitive / outcome readiness** — where the task depends on the current field, AURA inspects relevant current alternatives/evidence and produces work deliberately suited to winning the intended outcome.
-4. **Observed outcome** — later real-world pilots may measure rankings, citations, leads, conversion, revenue, retention, or other business results. Never confuse readiness with an outcome that has not yet happened.
+3. **Competitive / outcome readiness** — where the task depends on the current field, AURA inspects relevant current alternatives/evidence and produces work deliberately suited to the intended outcome.
+4. **Observed outcome** — later real-world pilots may measure rankings, citations, leads, conversion, revenue, retention, or other business results. Never confuse readiness with an outcome that has not happened.
 
-For SEO/AEO, this may require inspecting current search/AI-answer leaders. For advertising, it may require current ad-transparency/creative/landing-path evidence. For organic content, visible views/shares/comments/velocity are proxies and should be normalized to obvious context when possible. “Better” always means better for the audience, task, and intended result—not simply longer or more elaborate.
-
-## Candidate vs. evaluator information
-
-`prepare_run.py` creates two views:
-
-- `candidate/queue.json` — opaque task IDs plus ordinary natural-language business requests and only the bookkeeping needed to complete the work run;
-- `evaluator/queue.json` and `evaluator/suite.json` — hidden target contracts, rubric dimensions, expected writes, competitive profiles, and other evaluation metadata.
-
-The candidate should route each request through AURA normally. It should not be told which internal contract is being certified or which predicates will be scored.
-
-The current portable runner still asks the candidate to take before/after checkpoints and write a compact receipt. Treat those as external audit bookkeeping. They must not shape the substantive artifact. A future harness may move those mechanics fully outside the candidate without changing the quality standard.
+For SEO/AEO, this may require inspecting current search/AI-answer leaders. For advertising, it may require current ad-transparency/creative/landing-path evidence. For organic content, visible views/shares/comments/velocity are proxies and should be normalized to obvious context when possible. “Better” means better for the audience, task, and intended result—not simply longer or more elaborate.
 
 ## Benchmark businesses
 
@@ -84,17 +151,11 @@ Controlled benchmark worlds provide known first-party context while allowing rep
 - **Harbor HVAC** — local residential HVAC service business;
 - **Northline Coffee** — DTC specialty-coffee ecommerce.
 
-Synthetic business context does **not** authorize synthetic public evidence. If a task inherently requires current external research, the candidate must use legitimate current sources/tools available in the environment. Placeholder domains and invented public records do not count.
-
-Initial candidate-visible material lives under:
-
-`attachments/qualification-inputs/<fixture>.json`
-
-Later-period benchmark evidence may be withheld under evaluator control and released at the appropriate task boundary.
+Synthetic business context does **not** authorize synthetic public evidence. If a task requires current external research, the candidate must use legitimate current sources/tools available in the environment. Placeholder domains and invented public records do not count as external evidence.
 
 ## Blockers
 
-Candidate blockers are classified as:
+Maintainer-side blocker classifications are:
 
 - `external_capability`
 - `authorization`
@@ -107,7 +168,7 @@ A genuine external blocker is not fabricated completion. A missing controlled fi
 
 ## Profiles
 
-Use the smallest profile that answers the question you are testing:
+Use the smallest profile that answers the question:
 
 ```bash
 # Preferred: one exact representative workflow
@@ -125,11 +186,19 @@ python3 qualification/prepare_run.py --profile cross-domain
 # Accumulated-state endurance only
 python3 qualification/prepare_run.py --profile marathon
 
-# Everything sequentially — optional stress/endurance run, not the primary quality test
+# Everything sequentially — optional stress/endurance, not primary quality proof
 python3 qualification/prepare_run.py --profile full
 ```
 
-The `full` profile is intentionally **not** the default proof that each workflow is excellent. Long multi-job sessions introduce model/context fatigue and are useful mainly for integration/endurance questions after atomic quality has been established.
+The `full` profile is intentionally not the default proof that each workflow is excellent. Long multi-job sessions introduce model/context fatigue and are useful mainly for integration/endurance questions after atomic quality is understood.
+
+Concurrency uses the same blind principle:
+
+```bash
+python3 qualification/prepare_concurrency.py
+```
+
+The maintainer receives separate lane requests/controller event IDs. Each model gets only the shared AURA product/workspace, its normal operator identity, and the lane’s plain business request. Controller IDs remain outside the model prompt.
 
 ## Evaluation outputs
 
@@ -154,7 +223,7 @@ A deterministic hard-pass is only an integrity floor. It cannot turn shallow or 
 
 ## Repetition and comparison
 
-Models are probabilistic. Repeat important workflows enough to distinguish one-off variance from a systematic weakness. Two evaluated runs can be compared with:
+Models are probabilistic. Repeat important workflows enough to distinguish one-off variance from a systematic weakness:
 
 ```bash
 python3 qualification/compare_runs.py /path/to/run-a /path/to/run-b
@@ -164,32 +233,24 @@ Repeated failures across competent candidates are stronger evidence of an AURA p
 
 ## Frozen diagnostic evidence
 
-Once a run has been used as diagnostic/qualification evidence, do not repair its candidate artifacts or canonical state in place. Fix AURA in source, prepare a fresh run, and compare. Mechanical normalization of evaluator-owned output may be documented when necessary, but candidate state remains frozen.
+Once a run has been used as diagnostic/qualification evidence, do not repair its candidate artifacts or canonical state in place. Fix AURA in source, prepare a fresh run, and compare.
 
 ## Key files
 
-- `build_suite.py` — builds evaluator specifications from installed contracts and turns each target into a production-like candidate request.
-- `prepare_run.py` — stages a clean AURA copy/workspace, grounds benchmark context, and separates candidate vs. evaluator metadata.
-- `checkpoint.py` — before/after state snapshots.
-- `release_fixture.py` — controlled later-evidence release.
+- `build_suite.py` — evaluator specifications + production-like ordinary business requests.
+- `prepare_run.py` — stages clean runtime product/workspace and hidden evaluator metadata.
+- `task_controller.py` — external start/finish/status orchestration; candidate never runs it.
+- `checkpoint.py` — maintainer-side before/after snapshots.
+- `release_fixture.py` — maintainer-side timed business-evidence release.
+- `resume_status.py` — evaluator-side interruption recovery.
 - `evaluate_run.py` — integrity/state/hard-gate evaluation and quality-result merge.
 - `build_judge_prompt.py` — independent professional-quality review instructions.
 - `compare_runs.py` — repeated-run comparison.
 - `integrity.py` — qualification-only integrity diagnostics.
-- `fixtures/`, `missions/`, `rubrics/` — benchmark authoring/evaluation material; not ordinary AURA runtime content.
-
-## Preflight
-
-Before spending model/tool cost on a representative run:
-
-```bash
-python3 tests/run_all.py
-```
-
-The public release gate includes qualification-framework regressions but does not run the long AI work itself.
+- `fixtures/`, `missions/`, `rubrics/` — benchmark authoring/evaluation material; never ordinary runtime content.
 
 ## The standard to protect
 
-The product is AURA. Qualification exists to answer whether AURA works.
+**The product is AURA. Qualification only observes whether AURA works.**
 
-When a test rule makes AURA more likely to create real, truthful, useful business work, it may belong in the product. When a rule mainly makes outputs easier to score, game, or standardize for the benchmark, keep it in evaluation—or remove it.
+When a rule makes AURA more likely to create real, truthful, useful business work for ordinary users, it may belong in the product. When a rule mainly makes outputs easier to score, game, or standardize for the benchmark, keep it evaluator-side—or remove it.
