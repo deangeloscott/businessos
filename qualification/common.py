@@ -76,9 +76,15 @@ def family_for(contract_id):
     return '.'.join(parts[:2]) if len(parts)>1 else contract_id
 
 def fixture_for(contract_id,owner):
+    """Choose a representative benchmark business without accidental substring matches.
+
+    Contract IDs contain words such as `production`; naive `"product" in id` matching
+    misclassified those as ecommerce. Route on normalized ID tokens/phrases instead.
+    """
     s=contract_id.lower()
-    if 'local' in s or 'gbp' in s or 'service-area' in s: return 'harbor-hvac'
-    if any(k in s for k in ('product','shopping','cart','checkout','merch','ecommerce')): return 'northline-commerce'
+    tokens={x for x in re.split(r'[^a-z0-9]+',s) if x}
+    if {'local','gbp'} & tokens or 'service-area' in s: return 'harbor-hvac'
+    if {'product','shopping','cart','checkout','merch','ecommerce'} & tokens: return 'northline-commerce'
     return 'atlasops-saas'
 
 def competitive_profile(contract):
