@@ -1,5 +1,5 @@
 {
-  "format_version":"1.0","business_id":"qa-northline-commerce","name":"Northline Coffee","category":"DTC specialty coffee ecommerce","objective":"Increase profitable first orders and 90-day repeat purchase while maintaining premium positioning.",
+  "format_version":"1.0","business_id":"northline-coffee","name":"Northline Coffee","category":"DTC specialty coffee ecommerce","objective":"Increase profitable first orders and 90-day repeat purchase while maintaining premium positioning.",
   "bootstrap_facts":{"industries":["DTC specialty coffee ecommerce"],"objectives":["Increase profitable first orders and 90-day repeat purchase while maintaining premium positioning."],"brand":{"voice":{"tone":["warm","knowledgeable","unpretentious"]},"prohibited_styles":["snobbery","health claims","invented sourcing claims"]}},
   "brand":{"voice":["warm","knowledgeable","unpretentious"],"avoid":["snobbery","health claims","invented sourcing claims"]},
   "offers":[{"name":"Discovery Box","price":"$39","contents":"three 6oz rotating coffees"},{"name":"Subscription","price":"from $19/shipment","notes":"frequency and coffee vary"}],
