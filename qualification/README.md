@@ -1,268 +1,96 @@
-# AURA Business Capability Qualification Suite
+# AURA Business Capability Qualification
 
-This directory tests **ViralTrac AURA as a business operating system**, not the intelligence brand of a particular model or harness.
+This directory exists for one practical reason:
 
-The governing question is:
+> **Prove that a normal user can give ViralTrac AURA real business work and receive a real, professionally useful result.**
 
-> **Does every AURA playbook/process actually deliver the business capability it claims, at a professionally usable and outcome-ready level, while leaving correct governed AURA state behind?**
+Qualification is maintainer tooling. It is not the product, it is excluded from normal packaged distributions, and AURA must never be redesigned merely to make this machinery easy to satisfy.
 
-## Qualification standard
+## North-star question
 
-Every AURA contract is treated as a product claim. A contract that says it can create an article, landing page, presentation, carousel, competitor analysis, customer Insight, experiment, publication, or other result must create the real result when the environment provides the required capability. A description of what could be created is not a substitute.
+For each representative workflow/playbook, ask:
 
-Passing has layers:
+> If a user gave AURA this task in ordinary language, did AURA actually do the work, use real evidence/tools where required, produce the requested result, and deliver something a competent customer would use and value?
 
-1. **Process correctness** — AURA's declared workflow, required subcontracts, evidence/provenance, lifecycle, authorization, and completion rules were followed.
-2. **Professional quality** — the business work is genuinely usable, sufficiently detailed for its audience/task, accurate, and clear.
-3. **Competitive / outcome readiness** — where the domain is competitive, AURA inspects the current field and does the work a strong practitioner would reasonably expect to maximize the intended outcome.
-4. **Observed outcome** — later real-world/longitudinal testing can determine whether rankings, citations, conversions, revenue, retention, or other results actually changed. Outcome readiness must never be misreported as an observed result.
+A pass is not “the schema validated.” A pass means the business work itself was good.
 
-For SEO/AEO, competitive readiness normally requires inspecting live search/AI-answer surfaces, comparing multiple leaders, understanding common expectations and meaningful leader differences, and producing work that is intentionally more useful/appropriate while acknowledging authority and external constraints. For advertising/marketing, it normally requires sampling relevant competitors and current ad-transparency/creative surfaces, analyzing recurring messages/offers/creative families and landing paths, and treating longevity/engagement as proxies rather than proof of profitability. For organic content, visible views/shares/comments/velocity should be normalized to account baseline, format, age, distribution, and audience where possible. For visual/content artifacts, “better” means better fit for the intended audience/task—not simply more detail.
+## Golden rules
 
-## What gets tested
+1. **Test normal use, not test-taking.** Candidate tasks are ordinary business requests. The candidate queue uses opaque task IDs and does not expose the target contract, rubric, hard gates, or evaluator metadata. The evaluator retains that information separately under `evaluator/`.
+2. **Real work beats qualification paperwork.** Research must inspect real evidence. Production must create the actual deliverable or a truthful graceful-degradation artifact when rendering/execution is genuinely unavailable. QA must inspect a real target. Never reward plausible paperwork that substitutes for the job.
+3. **Deterministic gates prove integrity, not excellence.** They may establish that evidence exists, references resolve, state is valid, the promised medium is truthful, and claimed automated work has support. They must not encode business quality as arbitrary word counts, slide counts, magic phrases, or other benchmark-shaped passwords.
+4. **Professional review judges quality.** A human or independent model reviews the actual artifact and evidence for usefulness, accuracy, specificity, competitive readiness, and outcome readiness.
+5. **A truthful blocker is better than fabricated completion.** If required authorization, data, capability, or external access is genuinely unavailable, record the specific blocker. Do not manufacture a source, metric, tool action, asset, or outcome.
+6. **Diagnose before changing AURA.** A poor result may be a workflow problem, model problem, tool problem, fixture problem, or execution mistake. Change the product only when the failure reveals a reusable AURA weakness.
+7. **Do not overfit fixes to one bad artifact.** If a 207-word article is bad because it is incomplete, improve the requirement that the reader task be fully satisfied; do not conclude that every valid article must exceed one universal word count. Apply the same principle to slide counts, timecodes, formatting, and other incidental shapes.
 
-- **Contract acceptance:** one generated event for every installed contract. Contract metadata/body are the specification source; no second manual contract list is maintained.
-- **Capability coverage:** every declared AURA capability is mapped to contract tests that require or optionally use it; unreferenced declarations are surfaced.
-- **Domain missions:** full Core, Customer Intelligence, Competitor Intelligence, Industry Intelligence, SEO/AEO, Content Synthesis, Marketing Synthesis, and Customer Optimization missions.
-- **Cross-domain missions:** business problems where AURA must choose and compose domains rather than being told which contract to run.
-- **Marathon missions:** continuous accumulated operation where later evidence, outcomes, contradictions, and changes must alter future work without resetting the workspace.
-- **Concurrency missions:** two independent operators/harnesses work the same business and shared workspace simultaneously to test deduplication, semantic ownership, operator provenance, collisions, and shared-state integrity.
+## Recommended qualification sequence
 
-The suite is deliberately capable of hours-long execution. Candidate instructions tell the agent to continue through the queue without pausing for permission between events.
-
-## Controlled benchmark businesses
-
-The suite currently uses three synthetic business worlds:
-
-- **AtlasOps** — B2B field-service workforce software.
-- **Harbor HVAC** — local residential HVAC service business.
-- **Northline Coffee** — DTC specialty-coffee ecommerce.
-
-Synthetic does not mean the candidate is allowed to invent whatever it wants. The benchmark supplies controlled first-party facts/evidence so the evaluator can know what information was available. Where the task is inherently competitive/current, the candidate still uses legitimate live evidence: current search/AI-answer surfaces, competitor sites, ad transparency/creative centers, public content performance, reviews, current industry evidence, and similar surfaces.
-
-`prepare_run.py` initializes each benchmark and uses AURA's canonical explicit-context bootstrap to ground its starting Business/Market/Objective/Brand/etc. state. The candidate therefore starts at **Level 2+** rather than spending the gauntlet re-proving onboarding.
-
-The richer first-party benchmark evidence is placed under:
-
-`attachments/qualification-inputs/<fixture>.json`
-
-### No future-information leakage
-
-Later-period benchmark evidence is deliberately withheld from initial candidate inputs. The raw authored benchmark files are not copied into the staged candidate product. Hidden timeline releases live outside the workspace under the evaluator area until a designated event begins.
-
-For an event with `release_fixture`, the candidate must first take the `before` checkpoint and then run:
-
-```bash
-python3 qualification/release_fixture.py <EVENT_ID>
-```
-
-The helper refuses release unless the current before-checkpoint exists and all prior queue events have their after-checkpoints. This makes “new evidence arrives now” deterministic rather than merely advisory.
-
-## Missing benchmark inputs are not AURA failures
-
-The candidate may **not** create a convenient synthetic business condition merely to make a contract easy to pass.
-
-If a contract needs controlled input that is not present and cannot legitimately be obtained from current research or accumulated AURA state, the candidate records:
-
-`qualification_fixture`
-
-The evaluator reports this as:
-
-`BLOCKED-QUALIFICATION-FIXTURE`
-
-That means the qualification benchmark needs enrichment and the event must be rerun. It is neither an AURA pass nor an AURA failure.
-
-## Files
-
-- `build_suite.py` — discovers every `contracts/**/CONTEXT.md`, extracts declared behavior, generates acceptance tests, and maps declared capabilities.
-- `prepare_run.py` — creates a **fresh staged AURA product copy**, an external qualification workspace, grounded benchmark context, sanitized initial evidence, hidden future releases, and the uninterrupted candidate queue plus evaluator specification.
-- `release_fixture.py` — releases intentionally withheld later-period evidence at the correct event boundary.
-- `checkpoint.py` — deterministic before/after workspace snapshots and `--require-context` validation for every event.
-- `launch.py` — optional generic shell-command adapter for launching a harness once against the uninterrupted queue while capturing stdout/stderr.
-- `evaluate_run.py` — verifies Runs, root evidence, required-subcontract evidence, validation, artifact existence, state changes, competitive-field evidence, timed releases, blockers, and merges professional-quality judgments.
-- `build_judge_prompt.py` — creates an independent review instruction file after hard-gate evaluation.
-- `compare_runs.py` — compares two independently evaluated gauntlets and surfaces repeated failures as likely AURA hotspots while separating external/fixture/review gaps.
-- `prepare_concurrency.py` / `launch_concurrent.py` — stage and launch two independent candidates simultaneously against one shared AURA workspace.
-- `rubrics/rubrics.json` — common, domain-specific, cross-domain, marathon, and concurrency professional/competitive quality standards.
-- `missions/missions.json` — domain, cross-domain, marathon, concurrency, and timed-release missions.
-- `fixtures/*.json` — authored controlled benchmark worlds. These are qualification-authoring inputs and are deliberately excluded from staged candidate product copies.
-
-## Preflight validation
-
-Before spending hours on an AI gauntlet, run the normal release gate:
+The primary quality loop is **one representative workflow in a fresh run**:
 
 ```bash
 python3 tests/run_all.py
+python3 qualification/prepare_run.py \
+  --profile atomic \
+  --contract content.production.article
 ```
 
-`tests/run_qualification_framework.py` is included in that gate. It checks the contract/capability mapping and **actually prepares a disposable smoke qualification run**. The smoke run verifies that:
+Then point the candidate harness at the printed staged product and `candidate/RUN-INSTRUCTIONS.md`.
 
-- all benchmark bootstrap facts can be persisted through AURA's canonical helper;
-- `validate_business.py --require-context` passes;
-- candidate fixtures contain current evidence but no future timeline;
-- future releases are staged separately;
-- raw authored fixtures are not copied into the candidate product;
-- bootstrap audits exist for all benchmark businesses.
-
-The hours-long AI gauntlet itself is intentionally not a release-unit test.
-
-## Prepare the full gauntlet
-
-From the AURA product root:
-
-```bash
-python3 qualification/build_suite.py
-python3 qualification/prepare_run.py --profile full
-```
-
-`prepare_run.py` prints a run directory, clean staged product copy, external workspace, queue, and `RUN-INSTRUCTIONS.md`.
-
-Point the candidate AI/harness at the printed staged **product root** and give it the printed **RUN-INSTRUCTIONS.md**. Do not point the candidate at the authored `qualification/fixtures/` source directory.
-
-The candidate should run the entire queue continuously.
-
-The candidate must retain:
-
-```bash
-export BUSINESSOS_WORKSPACE=/path/printed/by/prepare_run
-export AURA_QUALIFICATION_RUN=/path/to/qualification/run
-```
-
-If the harness exposes a CLI that can accept the instruction file, use the portable launcher:
-
-```bash
-python3 qualification/launch.py /path/to/run \
-  --label candidate-a \
-  --command 'YOUR_HARNESS_COMMAND {instructions}'
-```
-
-Available command-template placeholders are `{instructions}`, `{workspace}`, `{run_dir}`, and `{product_root}`. The harness command is deliberately not hard-coded into AURA.
-
-## Profiles
-
-```bash
-# Every individual contract in one domain
-python3 qualification/prepare_run.py --profile atomic --domain seo-aeo
-
-# Full domain missions only
-python3 qualification/prepare_run.py --profile domains
-
-# Cross-domain missions only
-python3 qualification/prepare_run.py --profile cross-domain
-
-# Accumulated-state endurance missions only
-python3 qualification/prepare_run.py --profile marathon
-
-# Entire sequential gauntlet
-python3 qualification/prepare_run.py --profile full
-```
-
-`full` is the main “freak athlete” test: individual contract acceptance, full-domain missions, cross-domain missions, then marathon behavior in one persistent run.
-
-## Evaluate the run
-
-After the queue finishes:
+After the task finishes:
 
 ```bash
 python3 qualification/evaluate_run.py /path/to/run
-```
-
-This creates:
-
-- `evaluator/hard-and-merged-results.json`
-- `evaluator/review-packets.json`
-- `evaluator/summary.json`
-- `REPORT.md`
-
-The hard evaluator checks checkpoint/receipt existence, real AURA Runs, root-contract match, root completion evidence, required subcontract evidence, workspace/business context validation, truthful completion, actual artifact creation when promised, declared state writes, customer-facing completion governance, reconstructable competitive-field evidence, and timed-release evidence when applicable.
-
-Cross-event integrity is also a hard qualification boundary when it demonstrates mass templating rather than legitimate reuse: exact artifact reuse across distinct contracts fails, and an artifact that is highly similar to two or more distinct contract outputs fails `artifact_contract_specific`. This does not make textual novelty a product law; it prevents a multi-contract qualification from counting one generic template as many different promised results.
-
-A human or independent judge then reviews the **actual business output**, evidence, state diff, and competitive field. Build ready-to-use judge instructions with:
-
-```bash
 python3 qualification/build_judge_prompt.py /path/to/run
 ```
 
-The judge writes every required 0–5 rubric score to `evaluator/judgments.json`. Then rerun:
+Have an independent reviewer produce `evaluator/judgments.json`, then rerun:
 
 ```bash
 python3 qualification/evaluate_run.py /path/to/run
 ```
 
-Final classifications include:
+Inspect the actual artifact yourself when a decision matters. Independent judges are useful, but they are not infallible.
 
-- `FAIL`
-- `BLOCKED-EXTERNAL`
-- `BLOCKED-QUALIFICATION-FIXTURE`
-- `FUNCTIONAL-NOT-ACCEPTABLE`
-- `ACCEPTABLE`
-- `COMPETITIVE`
-- `EXCEPTIONAL`
+Once a workflow is good, repeat it with another representative task/model or a small related batch. Use broader domain/cross-domain/endurance runs only after individual work quality is understood.
 
-A mechanically valid but shallow output cannot qualify as competitive merely because files and schemas are correct.
+## What qualification means
 
-## Two independent full candidates
+Qualification has four layers:
 
-Prepare the same profile twice. Each gets a clean AURA product copy and isolated workspace:
+1. **Authentic execution** — the claimed work really happened; important evidence is real and reconstructable; state/provenance is valid.
+2. **Professional usefulness** — a competent practitioner/customer could use the result without rebuilding the missing core work.
+3. **Competitive / outcome readiness** — where the task depends on the current field, AURA inspects relevant current alternatives/evidence and produces work deliberately suited to winning the intended outcome.
+4. **Observed outcome** — later real-world pilots may measure rankings, citations, leads, conversion, revenue, retention, or other business results. Never confuse readiness with an outcome that has not yet happened.
 
-```bash
-python3 qualification/prepare_run.py --profile full --run-id candidate-a
-python3 qualification/prepare_run.py --profile full --run-id candidate-b
-```
+For SEO/AEO, this may require inspecting current search/AI-answer leaders. For advertising, it may require current ad-transparency/creative/landing-path evidence. For organic content, visible views/shares/comments/velocity are proxies and should be normalized to obvious context when possible. “Better” always means better for the audience, task, and intended result—not simply longer or more elaborate.
 
-Run and judge both independently, then compare them:
+## Candidate vs. evaluator information
 
-```bash
-python3 qualification/compare_runs.py /path/to/candidate-a /path/to/candidate-b
-```
+`prepare_run.py` creates two views:
 
-The comparison separates:
+- `candidate/queue.json` — opaque task IDs plus ordinary natural-language business requests and only the bookkeeping needed to complete the work run;
+- `evaluator/queue.json` and `evaluator/suite.json` — hidden target contracts, rubric dimensions, expected writes, competitive profiles, and other evaluation metadata.
 
-- robust passes;
-- candidate-sensitive outcomes;
-- external/environment-sensitive outcomes;
-- qualification-fixture gaps;
-- incomplete reviews;
-- repeated failures / likely AURA hotspots.
+The candidate should route each request through AURA normally. It should not be told which internal contract is being certified or which predicates will be scored.
 
-Repeated failures across competent independent candidates are especially important evidence that the AURA contract/process itself needs improvement.
+The current portable runner still asks the candidate to take before/after checkpoints and write a compact receipt. Treat those as external audit bookkeeping. They must not shape the substantive artifact. A future harness may move those mechanics fully outside the candidate without changing the quality standard.
 
-## Shared-workspace concurrency
+## Benchmark businesses
 
-After the independent sequential runs are understood, prepare one shared workspace with two operator lanes:
+Controlled benchmark worlds provide known first-party context while allowing repeatability:
 
-```bash
-python3 qualification/prepare_concurrency.py
-```
+- **AtlasOps** — B2B field-service workforce software;
+- **Harbor HVAC** — local residential HVAC service business;
+- **Northline Coffee** — DTC specialty-coffee ecommerce.
 
-Then either give lane A and lane B instruction files to two candidates manually, or launch both commands simultaneously:
+Synthetic business context does **not** authorize synthetic public evidence. If a task inherently requires current external research, the candidate must use legitimate current sources/tools available in the environment. Placeholder domains and invented public records do not count.
 
-```bash
-python3 qualification/launch_concurrent.py /path/to/run \
-  --command-a 'HARNESS_A {instructions}' \
-  --command-b 'HARNESS_B {instructions}'
-```
+Initial candidate-visible material lives under:
 
-Both candidates share the business workspace but retain distinct `BUSINESSOS_OPERATOR_REF` values. Evaluate the result with the same `evaluate_run.py` and independent quality review.
+`attachments/qualification-inputs/<fixture>.json`
 
-## How every event is audited
-
-The uninterrupted candidate must create a deterministic `before` checkpoint, execute the real business work, write a structured receipt, create an `after` checkpoint, and immediately continue. The result package therefore preserves:
-
-- candidate stdout/stderr and launch metadata when launched through the helper;
-- workspace tree and object hashes before/after;
-- AURA Runs and contract-execution manifests;
-- root and subcontract evidence;
-- actual created artifacts;
-- canonical/source references;
-- reconstructable competitive-field references when applicable;
-- timed released-evidence references when applicable;
-- workspace/business context validation;
-- deterministic gate failures;
-- independent quality scores and notes.
-
-This makes it possible to inspect both **what the business received** and **what AURA became internally** after each event.
+Later-period benchmark evidence may be withheld under evaluator control and released at the appropriate task boundary.
 
 ## Blockers
 
@@ -275,42 +103,93 @@ Candidate blockers are classified as:
 - `qualification_fixture`
 - `aura_process`
 
-Genuine external blockers are `BLOCKED-EXTERNAL`. A missing controlled benchmark condition is `BLOCKED-QUALIFICATION-FIXTURE`. An `aura_process` inability remains an AURA failure.
+A genuine external blocker is not fabricated completion. A missing controlled fixture is a benchmark problem. An `aura_process` inability remains an AURA failure to investigate.
 
-## Recommended operational sequence
+## Profiles
 
-Do not make the first use of a brand-new qualification framework a many-hour full run.
+Use the smallest profile that answers the question you are testing:
 
-1. Run `python3 tests/run_all.py`.
-2. Prepare one substantial domain calibration run (SEO/AEO or Content is a good choice).
-3. Verify that checkpoints, receipts, artifact capture, evaluator gates, and judge packets behave as intended.
-4. Run **Full Candidate A** continuously.
-5. Run **Full Candidate B** from a fresh copy.
-6. Judge both and run `compare_runs.py`.
-7. Enrich any qualification-fixture gaps and rerun them.
-8. Fix AURA hotspots and rerun failed/marginal events.
-9. Run the shared-workspace concurrency gauntlet.
-10. After AURA is outcome-ready in controlled qualification, add real-world pilots to measure actual ranking, AI citation, conversion, revenue, retention, and other observed business outcomes.
+```bash
+# Preferred: one exact representative workflow
+python3 qualification/prepare_run.py --profile atomic --contract <contract-id>
 
-## Interpreting failures
+# Small domain batch when useful
+python3 qualification/prepare_run.py --profile atomic --domain content-synthesis
 
-A failed event is not automatically a model failure. Review the contract, transcript/logs, artifact, Run/contract-execution record, state diff, competitive snapshot, and rubric. Useful triage categories include:
+# Domain-level orchestration missions
+python3 qualification/prepare_run.py --profile domains
 
-- AURA contract/process defect or ambiguity
-- missing AURA capability/process
-- insufficient competitive/outcome methodology
-- candidate reasoning/execution failure
-- harness/tool/provider failure
-- unavailable external capability
-- qualification fixture/evaluator defect
-- acceptable probabilistic variance
+# Cross-domain routing/composition missions
+python3 qualification/prepare_run.py --profile cross-domain
 
-If multiple competent candidates fail the same maneuver in the same way, treat that as strong evidence that AURA itself needs improvement.
+# Accumulated-state endurance only
+python3 qualification/prepare_run.py --profile marathon
 
-## Release coverage regression
+# Everything sequentially — optional stress/endurance run, not the primary quality test
+python3 qualification/prepare_run.py --profile full
+```
 
-`tests/run_qualification_framework.py` verifies that the qualification generator maps the current manifest contract count and capability count, all required subcontracts resolve, every contract has gates/rubrics/tasks, every domain has a full mission, the cross-domain/marathon/concurrency layers remain present, benchmark context is grounded, later evidence is withheld, and a disposable preparation smoke run succeeds. It is included in `tests/run_all.py`.
+The `full` profile is intentionally **not** the default proof that each workflow is excellent. Long multi-job sessions introduce model/context fatigue and are useful mainly for integration/endurance questions after atomic quality has been established.
 
-## Non-goals
+## Evaluation outputs
 
-This qualification framework is not a mandatory AURA runtime, server, database, scheduler, UI, or model adapter. It uses AURA's existing local-first workspace architecture and can be driven by any harness capable of working from the filesystem. Harness-specific automation may be added as optional adapters without changing qualification semantics.
+`evaluate_run.py` creates:
+
+- `evaluator/hard-and-merged-results.json`
+- `evaluator/review-packets.json`
+- `evaluator/summary.json`
+- `REPORT.md`
+
+Possible verdicts include:
+
+- `FAIL`
+- `BLOCKED-EXTERNAL`
+- `BLOCKED-QUALIFICATION-FIXTURE`
+- `FUNCTIONAL-NOT-ACCEPTABLE`
+- `ACCEPTABLE`
+- `COMPETITIVE`
+- `EXCEPTIONAL`
+
+A deterministic hard-pass is only an integrity floor. It cannot turn shallow or mediocre work into `ACCEPTABLE`.
+
+## Repetition and comparison
+
+Models are probabilistic. Repeat important workflows enough to distinguish one-off variance from a systematic weakness. Two evaluated runs can be compared with:
+
+```bash
+python3 qualification/compare_runs.py /path/to/run-a /path/to/run-b
+```
+
+Repeated failures across competent candidates are stronger evidence of an AURA problem than one weak run. Candidate-sensitive outcomes should be investigated before redesigning the workflow.
+
+## Frozen diagnostic evidence
+
+Once a run has been used as diagnostic/qualification evidence, do not repair its candidate artifacts or canonical state in place. Fix AURA in source, prepare a fresh run, and compare. Mechanical normalization of evaluator-owned output may be documented when necessary, but candidate state remains frozen.
+
+## Key files
+
+- `build_suite.py` — builds evaluator specifications from installed contracts and turns each target into a production-like candidate request.
+- `prepare_run.py` — stages a clean AURA copy/workspace, grounds benchmark context, and separates candidate vs. evaluator metadata.
+- `checkpoint.py` — before/after state snapshots.
+- `release_fixture.py` — controlled later-evidence release.
+- `evaluate_run.py` — integrity/state/hard-gate evaluation and quality-result merge.
+- `build_judge_prompt.py` — independent professional-quality review instructions.
+- `compare_runs.py` — repeated-run comparison.
+- `integrity.py` — qualification-only integrity diagnostics.
+- `fixtures/`, `missions/`, `rubrics/` — benchmark authoring/evaluation material; not ordinary AURA runtime content.
+
+## Preflight
+
+Before spending model/tool cost on a representative run:
+
+```bash
+python3 tests/run_all.py
+```
+
+The public release gate includes qualification-framework regressions but does not run the long AI work itself.
+
+## The standard to protect
+
+The product is AURA. Qualification exists to answer whether AURA works.
+
+When a test rule makes AURA more likely to create real, truthful, useful business work, it may belong in the product. When a rule mainly makes outputs easier to score, game, or standardize for the benchmark, keep it in evaluation—or remove it.
