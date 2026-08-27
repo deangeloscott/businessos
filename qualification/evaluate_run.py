@@ -16,6 +16,7 @@ RUBRICS=json.loads((ROOT/'qualification/rubrics/rubrics.json').read_text())
 CONTRACTS=contract_index()
 
 def idx(items,key): return {x.get(key):x for x in items if isinstance(x,dict) and x.get(key)}
+def test_for_event(event,tests): return tests.get(event.get('evaluation_id') or event.get('event_id')) or {}
 def object_types(snap): return {x.get('object_type') for x in snap.get('objects',[]) if x.get('object_type')}
 def changed_object_types(before,after):
     b={x.get('id'):(x.get('object_type'),x.get('sha256')) for x in (before or {}).get('objects',[]) if x.get('id')}
@@ -114,15 +115,15 @@ def qualification_status(counts):
 
 def main():
     ap=argparse.ArgumentParser(); ap.add_argument('run_dir'); ap.add_argument('--judgments'); a=ap.parse_args(); rd=Path(a.run_dir).expanduser().resolve()
-    run=read_json(rd/'run.json'); queue=read_json(rd/'candidate/queue.json'); suite=read_json(rd/'evaluator/suite.json'); workspace=Path(run['workspace']); product_root=Path(run['product_root'])
+    run=read_json(rd/'run.json'); queue=read_json(rd/'evaluator/queue.json') or read_json(rd/'candidate/queue.json'); suite=read_json(rd/'evaluator/suite.json'); workspace=Path(run['workspace']); product_root=Path(run['product_root'])
     os.environ['BUSINESSOS_WORKSPACE']=str(workspace)
-    tests=idx(suite['contract_tests'],'test_id'); judgments={}
+    tests=idx(suite['contract_tests'],'test_id'); judgments={}; event_by_id=idx(queue.get('events',[]),'event_id')
     jp=Path(a.judgments).expanduser() if a.judgments else rd/'evaluator/judgments.json'
     if jp.exists(): judgments=idx(read_json(jp,[]),'event_id')
     results=[]
     previous_after=None
     for event in queue['events']:
-        eid=event['event_id']; test=tests.get(eid); before=read_json(rd/'checkpoints'/eid/'before.json'); after=read_json(rd/'checkpoints'/eid/'after.json'); receipt=read_json(rd/event['receipt_path'])
+        eid=event['event_id']; test=test_for_event(event,tests); before=read_json(rd/'checkpoints'/eid/'before.json'); after=read_json(rd/'checkpoints'/eid/'after.json'); receipt=read_json(rd/event['receipt_path'])
         gates,validation,run_audit,artifacts=hard_grade(event,test,before,after,receipt,workspace,product_root,previous_after)
         hard_pass=all(gates.values()) if gates else False
         judge=judgments.get(eid); scores=(judge or {}).get('scores') or {}; required_dims=(test or {}).get('rubric_dimensions') or event.get('rubric_dimensions') or [x['id'] for x in RUBRICS['base']]; missing_dims=[d for d in required_dims if d not in scores]; invalid_scores=[v for v in scores.values() if not isinstance(v,(int,float)) or v<0 or v>5]; review_complete=bool(scores) and not missing_dims and not invalid_scores; overall=(sum(scores[d] for d in required_dims)/len(required_dims)) if review_complete else None
@@ -138,7 +139,7 @@ def main():
         elif overall >= RUBRICS['minimums']['competitive_overall']: verdict='COMPETITIVE'
         elif overall >= RUBRICS['minimums']['acceptable_overall']: verdict='ACCEPTABLE'
         else: verdict='FUNCTIONAL-NOT-ACCEPTABLE'
-        results.append({'event_id':eid,'kind':event['kind'],'contract_id':event.get('contract_id'),'business_id':event['business_id'],'hard_pass':hard_pass,'hard_gates':gates,'validation':validation,'workspace_diff':snapshot_diff((before or {}).get('workspace',{}),(after or {}).get('workspace',{})),'receipt':receipt,'actual_artifacts':artifacts,'run_audit':run_audit,'judge':judge,'review_complete':review_complete,'missing_review_dimensions':missing_dims,'invalid_review_scores':invalid_scores,'overall_quality_score':overall,'blocker_classification':blocked_class,'integrity_flags':[],'verdict':verdict})
+        results.append({'event_id':eid,'evaluation_id':event.get('evaluation_id'),'kind':event['kind'],'contract_id':event.get('contract_id'),'business_id':event['business_id'],'hard_pass':hard_pass,'hard_gates':gates,'validation':validation,'workspace_diff':snapshot_diff((before or {}).get('workspace',{}),(after or {}).get('workspace',{})),'receipt':receipt,'actual_artifacts':artifacts,'run_audit':run_audit,'judge':judge,'review_complete':review_complete,'missing_review_dimensions':missing_dims,'invalid_review_scores':invalid_scores,'overall_quality_score':overall,'blocker_classification':blocked_class,'integrity_flags':[],'verdict':verdict})
         previous_after=after
 
     similarity=artifact_similarity_flags(results); duplicates=exact_duplicate_artifact_flags(results); run_flags=run_control_flags(rd,workspace)+staged_product_integrity_flags(rd,product_root,run)
@@ -158,8 +159,8 @@ def main():
 
     review=[]
     for r,event in zip(results,queue['events']):
-        test=tests.get(r['event_id']) or {}; receipt=r.get('receipt') or {}; dims=(test or {}).get('rubric_dimensions') or event.get('rubric_dimensions') or [x['id'] for x in RUBRICS['base']]
-        review.append({'event_id':r['event_id'],'contract_id':event.get('contract_id'),'claim_under_test':test.get('claim_under_test'),'task':event['task'],'process_steps':test.get('process_steps',[]),'completion_evidence':(test.get('claim_under_test') or {}).get('completion_evidence'),'competitive_profile':event.get('competitive_profile'),'hard_pass':r['hard_pass'],'hard_gates':r['hard_gates'],'integrity_flags':r['integrity_flags'],'run_integrity_flags':run_flags,'artifact_refs':receipt.get('artifact_refs',[]),'actual_artifacts':r.get('actual_artifacts',[]),'source_refs':receipt.get('source_refs',[]),'field_snapshot_refs':receipt.get('field_snapshot_refs',[]),'released_fixture_refs':receipt.get('released_fixture_refs',[]),'rubric_dimensions':dims,'score_scale':RUBRICS['score_scale'],'instructions':'Inspect the actual contract process/completion requirement and the actual artifacts/evidence. Generic contract-shaped placeholders, boilerplate substituted for distinct deliverables, self-attested QA without demonstrated checks, recycled unrelated competitive snapshots, or automation that manufactures qualification paperwork instead of performing the business work must be scored as materially incomplete. A hard-pass proves structural bookkeeping only, not professional quality.'})
+        test=test_for_event(event,tests); receipt=r.get('receipt') or {}; dims=(test or {}).get('rubric_dimensions') or event.get('rubric_dimensions') or [x['id'] for x in RUBRICS['base']]
+        review.append({'event_id':r['event_id'],'evaluation_id':event.get('evaluation_id'),'contract_id':event.get('contract_id'),'claim_under_test':test.get('claim_under_test'),'task':event['task'],'process_steps':test.get('process_steps',[]),'completion_evidence':(test.get('claim_under_test') or {}).get('completion_evidence'),'competitive_profile':event.get('competitive_profile'),'hard_pass':r['hard_pass'],'hard_gates':r['hard_gates'],'integrity_flags':r['integrity_flags'],'run_integrity_flags':run_flags,'artifact_refs':receipt.get('artifact_refs',[]),'actual_artifacts':r.get('actual_artifacts',[]),'source_refs':receipt.get('source_refs',[]),'field_snapshot_refs':receipt.get('field_snapshot_refs',[]),'released_fixture_refs':receipt.get('released_fixture_refs',[]),'rubric_dimensions':dims,'score_scale':RUBRICS['score_scale'],'instructions':'Judge the actual business result first. Verify that the requested work was genuinely performed, important evidence is real, and the deliverable is useful and professional for its audience. Do not reward or penalize arbitrary word counts, slide counts, formatting conventions, or validator-shaped language. Structural hard gates establish integrity only; they are not a quality score.'})
     write_json(rd/'evaluator/hard-and-merged-results.json',results); write_json(rd/'evaluator/review-packets.json',review)
     counts={}; gate_failures={}; domain_summary={}; integrity_counts={}
     for r in results:
@@ -167,8 +168,9 @@ def main():
         for g,v in r['hard_gates'].items():
             if not v: gate_failures[g]=gate_failures.get(g,0)+1
         for flag in r.get('integrity_flags',[]): integrity_counts[flag.get('type','unknown')]=integrity_counts.get(flag.get('type','unknown'),0)+1
+        event=event_by_id.get(r['event_id']) or {}
         if r['kind']=='contract_acceptance':
-            t=tests.get(r['event_id']) or {}; d=t.get('owner_system','unknown')
+            t=test_for_event(event,tests); d=t.get('owner_system','unknown')
             row=domain_summary.setdefault(d,{'events':0,'hard_pass':0,'quality_scores':[],'verdicts':{}})
             row['events']+=1; row['hard_pass']+=1 if r['hard_pass'] else 0; row['verdicts'][r['verdict']]=row['verdicts'].get(r['verdict'],0)+1
             if r['overall_quality_score'] is not None: row['quality_scores'].append(r['overall_quality_score'])
