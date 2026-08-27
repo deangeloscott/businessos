@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from pathlib import Path
-import json, os, re, subprocess, sys, tempfile
+import json, os, subprocess, sys, tempfile
 
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'qualification'))
@@ -24,11 +24,10 @@ def main():
         baseline=read_json(rd/'evaluator/product-snapshot.json')
         req(isinstance(baseline,dict) and baseline.get('digest'),'prepared qualification must persist staged product snapshot')
         req(run.get('product_snapshot_digest')==baseline.get('digest'),'run metadata must bind the staged product snapshot digest')
-        req(run.get('qualification_status')=='NOT_EVALUATED','prepared queue must not imply qualification success')
-        instructions=(rd/'candidate/RUN-INSTRUCTIONS.md').read_text(encoding='utf-8')
-        req('staged AURA product' in instructions and 'immutable' in instructions,'candidate instructions must make staged product immutability explicit')
-        normalized_instructions=re.sub(r'[*_`]+','',instructions.lower())
-        req('not a qualification pass' in normalized_instructions and 'only the independent evaluator' in normalized_instructions,'candidate instructions must distinguish queue completion from qualification success')
+        req(run.get('qualification_status')=='NOT_EVALUATED','prepared work queue must not imply qualification success')
+        instructions=(rd/'candidate/RUN-INSTRUCTIONS.md').read_text(encoding='utf-8').lower()
+        req('ordinary business request' in instructions and 'use aura normally' in instructions,'candidate instructions must frame the run as production-like business work')
+        req('scoring rule' in instructions and 'hidden target contract' in instructions,'candidate instructions must discourage test-target optimization')
         req(not staged_product_integrity_flags(rd,product,run),'untouched staged product must pass product-integrity check')
 
         transient=product/'__pycache__'/'scratch.cpython-313.pyc'; transient.parent.mkdir(); transient.write_bytes(b'transient')
