@@ -25,11 +25,11 @@ def candidate_task(c):
     outcome=(c.get('business_outcome') or c.get('purpose') or c['title']).strip()
     profile=competitive_profile(c); extra=''
     if profile=='search_live_field':
-        extra=' Inspect the current search/AI-answer field where relevant, compare multiple strong results, and use what you learn to make the result genuinely competitive rather than generic.'
+        extra=' Inspect enough of the current search/AI-answer field to understand the competitive pattern and make the result genuinely competitive rather than generic. Start with a small credible sample of strong results and expand only if more evidence could materially change the work.'
     elif profile=='paid_and_persuasion_field':
-        extra=' Inspect relevant current competitors, ads, landing paths, or persuasion surfaces where useful; treat longevity or engagement as signals rather than proof of profitability.'
+        extra=' Inspect enough relevant current competitors, ads, landing paths, or persuasion surfaces to understand the market pattern; expand only when more evidence could materially change the work, and treat longevity or engagement as signals rather than proof of profitability.'
     elif profile=='organic_attention_field':
-        extra=' Use real visible performance evidence where available, normalize obvious context differences, and extract reusable mechanisms rather than copying expression.'
+        extra=' Use enough real visible performance evidence to understand the relevant pattern, normalize obvious context differences, expand only when more evidence could materially change the work, and extract reusable mechanisms rather than copying expression.'
     elif output_policy(c)['artifact_required']:
         extra=' Create the actual usable deliverable, not a plan, outline, generic substitute, or description of what could be created.'
     return (
