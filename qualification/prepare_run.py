@@ -82,6 +82,27 @@ def apply_candidate_request(events,request):
     return out
 
 
+def candidate_surface(candidate_root=None):
+    """Create a neutral candidate-visible filesystem surface outside evaluator state."""
+    base=Path(candidate_root).expanduser().resolve() if candidate_root else (Path(tempfile.gettempdir())/'aura-workspaces').resolve()
+    if any(marker in base.as_posix().lower() for marker in ('qualification','evaluator','checkpoint')):
+        raise ValueError('--candidate-root must use a neutral path name that does not reveal qualification/evaluator machinery')
+    base.mkdir(parents=True,exist_ok=True)
+    return base/f'session-{uuid.uuid4().hex[:10]}'
+
+
+def _ensure_separate(candidate_dir,run_dir):
+    """Reject candidate surfaces nested with evaluator state in either direction."""
+    candidate_dir=Path(candidate_dir).resolve(); run_dir=Path(run_dir).resolve()
+    for child,parent in ((candidate_dir,run_dir),(run_dir,candidate_dir)):
+        try:
+            child.relative_to(parent)
+            raise ValueError('candidate product/workspace and evaluator run state must be physically separate directory trees')
+        except ValueError as e:
+            if str(e).startswith('candidate product/workspace'): raise
+    return True
+
+
 def copy_product(src,dst):
     """Stage the same runtime product a normal user receives, with no qualification/test lab."""
     src=Path(src); dst=Path(dst)
@@ -126,7 +147,7 @@ def init_business(product_root,workspace,fixture,evaluator_root=None):
 
 
 def main():
-    ap=argparse.ArgumentParser(); ap.add_argument('--profile',choices=['atomic','domains','cross-domain','marathon','full'],default='atomic'); ap.add_argument('--domain'); ap.add_argument('--contract',action='append',default=[],help='Exact contract ID to include in an atomic representative run; repeat for multiple contracts.'); ap.add_argument('--request',help='Maintainer-authored ordinary business request for exactly one selected event. This replaces only the candidate-visible task text; evaluator target/rubric remain hidden.'); ap.add_argument('--run-root'); ap.add_argument('--run-id'); a=ap.parse_args()
+    ap=argparse.ArgumentParser(); ap.add_argument('--profile',choices=['atomic','domains','cross-domain','marathon','full'],default='atomic'); ap.add_argument('--domain'); ap.add_argument('--contract',action='append',default=[],help='Exact contract ID to include in an atomic representative run; repeat for multiple contracts.'); ap.add_argument('--request',help='Maintainer-authored ordinary business request for exactly one selected event. This replaces only the candidate-visible task text; evaluator target/rubric remain hidden.'); ap.add_argument('--run-root',help='Maintainer-only evaluator/checkpoint run root.'); ap.add_argument('--candidate-root',help='Neutral root for candidate-visible product/workspace. Must be physically separate from the evaluator run root.'); ap.add_argument('--run-id'); a=ap.parse_args()
     if a.profile=='atomic' and not a.domain and not a.contract: raise SystemExit('Atomic qualification requires --contract <exact-contract-id> or --domain <installed-domain>; use --profile full explicitly only for an intentional broad endurance run')
     suite=build(); selected=select_events(suite,a.profile,a.domain,a.contract); evaluator_events=publicize_events(selected)
     try: evaluator_events=apply_candidate_request(evaluator_events,a.request)
@@ -135,16 +156,21 @@ def main():
     if run_dir.exists(): raise SystemExit(f'Run already exists: {run_dir}')
     try: run_dir.relative_to(ROOT.resolve()); raise SystemExit('Qualification run root must be outside the AURA product tree to prevent recursive staging or product contamination')
     except ValueError: pass
-    product_root=copy_product(ROOT,run_dir/'product'); generation_env=dict(os.environ); generation_env['PYTHONDONTWRITEBYTECODE']='1'; generation_env['PYTHONUTF8']='1'; _run([sys.executable,str(product_root/'scripts/generate_registry.py')],product_root,generation_env)
-    workspace=run_dir/'workspace'; workspace.mkdir(parents=True); (run_dir/'evaluator').mkdir(); (run_dir/'checkpoints').mkdir()
+    try:
+        candidate_dir=candidate_surface(a.candidate_root); _ensure_separate(candidate_dir,run_dir)
+    except ValueError as e: raise SystemExit(str(e))
+    if candidate_dir.exists(): raise SystemExit(f'Candidate surface already exists: {candidate_dir}')
+    run_dir.mkdir(parents=True); (run_dir/'evaluator').mkdir(); (run_dir/'checkpoints').mkdir()
+    product_root=copy_product(ROOT,candidate_dir/'product'); generation_env=dict(os.environ); generation_env['PYTHONDONTWRITEBYTECODE']='1'; generation_env['PYTHONUTF8']='1'; _run([sys.executable,str(product_root/'scripts/generate_registry.py')],product_root,generation_env)
+    workspace=candidate_dir/'workspace'; workspace.mkdir(parents=True)
     fixtures=sorted({event['fixture'] for event in evaluator_events})
     for fixture in fixtures: init_business(product_root,workspace,fixture,run_dir/'evaluator')
     baseline=product_snapshot(product_root); write_json(run_dir/'evaluator/product-snapshot.json',baseline)
     contract_filter=sorted(set(a.contract)); evaluator_queue={'format_version':'2.0','run_id':run_id,'profile':a.profile,'domain_filter':a.domain,'contract_filter':contract_filter,'event_count':len(evaluator_events),'events':evaluator_events}
-    preparation={'profile':a.profile,'domain_filter':a.domain,'contract_filter':contract_filter,'prepared_at':now(),'candidate_blind':True,'maintainer_authored_request':bool(a.request)}
+    preparation={'profile':a.profile,'domain_filter':a.domain,'contract_filter':contract_filter,'prepared_at':now(),'candidate_blind':True,'maintainer_authored_request':bool(a.request),'candidate_surface_root':str(candidate_dir)}
     write_json(run_dir/'evaluator/queue.json',evaluator_queue); write_json(run_dir/'evaluator/suite.json',suite); write_json(run_dir/'evaluator/preparation.json',preparation)
     future=any(fixture_data(f).get('timeline') for f in fixtures)
-    write_json(run_dir/'run.json',{'run_id':run_id,'created_at':now(),'product_root':str(product_root),'workspace':str(workspace),'profile':a.profile,'domain_filter':a.domain,'event_count':len(evaluator_events),'status':'prepared','execution_status':'prepared','qualification_status':'NOT_EVALUATED','product_snapshot_digest':baseline['digest'],'benchmark_context_seeded':True,'future_evidence_staged':future,'candidate_blind':True})
-    print(json.dumps({'run_id':run_id,'run_dir':str(run_dir),'product_root':str(product_root),'workspace':str(workspace),'event_count':len(evaluator_events),'candidate_blind':True,'next_command':f'python3 qualification/task_controller.py start "{run_dir}"','candidate_exposure':'Give the model only the staged product/workspace and the plain business request printed by task_controller.py start.'},indent=2))
+    write_json(run_dir/'run.json',{'run_id':run_id,'created_at':now(),'product_root':str(product_root),'workspace':str(workspace),'candidate_surface_root':str(candidate_dir),'profile':a.profile,'domain_filter':a.domain,'event_count':len(evaluator_events),'status':'prepared','execution_status':'prepared','qualification_status':'NOT_EVALUATED','product_snapshot_digest':baseline['digest'],'benchmark_context_seeded':True,'future_evidence_staged':future,'candidate_blind':True})
+    print(json.dumps({'run_id':run_id,'run_dir':str(run_dir),'product_root':str(product_root),'workspace':str(workspace),'event_count':len(evaluator_events),'candidate_blind':True,'next_command':f'python3 qualification/task_controller.py start "{run_dir}"','candidate_exposure':'Give the model only the neutral staged product/workspace paths and the plain business request printed by task_controller.py start. Keep evaluator/checkpoint paths outside the candidate filesystem scope.'},indent=2))
 
 if __name__=='__main__': main()
