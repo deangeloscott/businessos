@@ -94,6 +94,20 @@ def _root_evidence(workspace,business_id,run_ids):
     return refs
 
 
+def _asset_location_refs(workspace,changed_objects):
+    """Recover the actual deliverable refs from changed canonical Asset objects."""
+    refs=[]
+    for row in changed_objects:
+        if row.get('object_type')!='Asset' or not row.get('path'): continue
+        data=read_json(workspace/row['path'])
+        values=data if isinstance(data,list) else [data]
+        for obj in values:
+            if not isinstance(obj,dict) or obj.get('id')!=row.get('id') or obj.get('object_type')!='Asset': continue
+            ref=obj.get('location_reference')
+            if isinstance(ref,str) and ref.strip() and ref not in refs: refs.append(ref.strip())
+    return refs
+
+
 def _changed_workspace_paths(before,after):
     diff=snapshot_diff((before or {}).get('workspace',{}),(after or {}).get('workspace',{}))
     return diff.get('created',[])+diff.get('modified',[])
@@ -104,9 +118,13 @@ def derive_receipt(rd,run,event,blocker_classification=None,blocker_detail=None)
     before=read_json(rd/'checkpoints'/eid/'before.json',{}) or {}
     after=read_json(rd/'checkpoints'/eid/'after.json',{}) or {}
     changed_runs=_changed_runs(before,after,event)
-    run_ids=[x['run_id'] for x in changed_runs if x.get('run_id')]
-    artifact_refs=_root_evidence(workspace,event['business_id'],run_ids)
+    completed_runs=[x for x in changed_runs if x.get('status')=='completed']
+    selected_runs=completed_runs if completed_runs else changed_runs
+    run_ids=[x['run_id'] for x in selected_runs if x.get('run_id')]
     changed_objects=_changed_objects(before,after)
+    artifact_refs=_root_evidence(workspace,event['business_id'],run_ids)
+    for ref in _asset_location_refs(workspace,changed_objects):
+        if ref not in artifact_refs: artifact_refs.append(ref)
     canonical_refs=[]; source_refs=[]
     for obj in changed_objects:
         path=obj.get('path')
@@ -126,14 +144,13 @@ def derive_receipt(rd,run,event,blocker_classification=None,blocker_detail=None)
     if isinstance(released,str):
         try: released_refs.append(Path(released).resolve().relative_to(workspace.resolve()).as_posix())
         except ValueError: released_refs.append(released)
-    completed=bool(changed_runs) and all(x.get('status')=='completed' for x in changed_runs)
     blocker=None
     if blocker_classification:
         if blocker_classification not in VALID_BLOCKERS:
             raise SystemExit('Invalid blocker classification: '+blocker_classification)
         blocker={'classification':blocker_classification,'detail':blocker_detail or 'Required condition was unavailable during the business task.'}
         status='blocked'
-    elif completed:
+    elif completed_runs:
         status='completed'
     else:
         status='blocked'
@@ -143,7 +160,7 @@ def derive_receipt(rd,run,event,blocker_classification=None,blocker_detail=None)
         'event_id':eid,'business_id':event['business_id'],'status':status,'root_run_ids':run_ids,
         'artifact_refs':artifact_refs,'canonical_refs':canonical_refs,'source_refs':source_refs,
         'field_snapshot_refs':field_refs,'released_fixture_refs':released_refs,
-        'summary':f'Controller observed {len(run_ids)} changed matching root Run(s), {len(changed_objects)} changed canonical object(s), and {len(artifact_refs)} root evidence reference(s).',
+        'summary':f'Controller observed {len(changed_runs)} changed matching Run(s), {len(completed_runs)} completed matching Run(s), {len(changed_objects)} changed canonical object(s), and {len(artifact_refs)} artifact/evidence reference(s).',
         'blocker':blocker,'quality_notes':'Controller-generated bookkeeping only; professional quality is evaluated separately.'
     }
     write_json(_receipt_path(rd,event),receipt)
@@ -179,7 +196,7 @@ def finish(run_dir,event_id=None,blocker_classification=None,blocker_detail=None
     if not state['after_checkpoint']:
         capture_checkpoint(Path(run['product_root']),Path(run['workspace']),rd,event['event_id'],'after',event['business_id'])
     receipt=derive_receipt(rd,run,event,blocker_classification,blocker_detail)
-    run.pop('active_event_id',None)
+    if run.get('active_event_id')==event.get('event_id'): run.pop('active_event_id',None)
     remaining=[r for r in rows(rd,queue) if r['state']!='terminal']
     run['execution_status']='completed' if not remaining else 'prepared'; write_json(rd/'run.json',run)
     out={'status':'finished','event_id':event['event_id'],'controller_receipt':receipt,'remaining':len(remaining)}
