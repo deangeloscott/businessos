@@ -31,7 +31,7 @@ def candidate_task(c):
     elif profile=='organic_attention_field':
         extra=' Use real visible performance evidence where available, normalize obvious context differences, and extract reusable mechanisms rather than copying expression.'
     elif output_policy(c)['artifact_required']:
-        extra=' Create the actual usable deliverable, not a plan describing what could be created.'
+        extra=' Create the actual usable deliverable, not a plan, outline, generic substitute, or description of what could be created.'
     return (
         f'For the active business, {outcome.rstrip(".")}. {extra.strip()} '
         'Use AURA normally from this natural-language request: reuse relevant business state, use available tools and real evidence when the work requires them, and persist the useful business result. '
