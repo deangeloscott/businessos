@@ -86,7 +86,8 @@ def main():
     req(customer and all('prepublish_or_required_qa_recorded' in t['hard_gates'] for t in customer),'customer-facing roots must require structured QA evidence')
     competitive=[t for t in suite['contract_tests'] if t.get('competitive_profile') in {'search_live_field','paid_and_persuasion_field','organic_attention_field'}]
     req(competitive and all({'competitive_field_evidence_event_specific','competitive_field_evidence_reconstructable'} <= set(t['hard_gates']) for t in competitive),'competitive tests must require event-specific reconstructable field evidence')
-    req(all('generic' in t['candidate_task'].lower() or not t['output_policy'].get('artifact_required') for t in suite['contract_tests']),'artifact tasks must explicitly reject generic substitutes')
+    artifact_tasks=[t for t in suite['contract_tests'] if t['output_policy'].get('artifact_required')]
+    req(artifact_tasks and all('actual_artifact_exists' in t['hard_gates'] and 'artifact_referenced_by_receipt' in t['hard_gates'] for t in artifact_tasks),'artifact tasks must enforce real artifact evidence through evaluator gates rather than candidate prompt coaching')
 
     print('qualification adversarial integrity regressions passed')
 
