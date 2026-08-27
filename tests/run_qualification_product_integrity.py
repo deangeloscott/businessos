@@ -25,8 +25,18 @@ def main():
         req(isinstance(baseline,dict) and baseline.get('digest'),'prepared qualification must persist staged product snapshot')
         req(run.get('product_snapshot_digest')==baseline.get('digest'),'run metadata must bind the staged product snapshot digest')
         req(run.get('qualification_status')=='NOT_EVALUATED','prepared work queue must not imply qualification success')
+
+        # Verify production-like candidate exposure by structure, not by exact prompt wording.
+        candidate_queue=read_json(rd/'candidate/queue.json')
+        evaluator_queue=read_json(rd/'evaluator/queue.json')
+        events=(candidate_queue or {}).get('events') or []
+        req(events and all(x.get('kind')=='business_task' and x.get('task') for x in events),'candidate must receive ordinary business-task events')
+        hidden={'contract_id','evaluation_id','competitive_profile','required_output','rubric_dimensions'}
+        req(all(not (hidden & set(x)) for x in events),'candidate business tasks must not expose evaluator target metadata')
+        req((evaluator_queue or {}).get('events'),'evaluator must retain hidden target metadata separately')
+        req(all(x.get('contract_id') for x in evaluator_queue.get('events',[]) if x.get('kind')=='contract_acceptance'),'evaluator contract-acceptance events must retain target contracts')
         instructions=(rd/'candidate/RUN-INSTRUCTIONS.md').read_text(encoding='utf-8').lower()
-        req('ordinary business request' in instructions and 'use aura normally' in instructions,'candidate instructions must frame the run as production-like business work')
+        req('route each request through aura normally' in instructions and 'useful professional work' in instructions,'candidate instructions must direct normal AURA operation and useful business work')
         req('scoring rule' in instructions and 'hidden target contract' in instructions,'candidate instructions must discourage test-target optimization')
         req(not staged_product_integrity_flags(rd,product,run),'untouched staged product must pass product-integrity check')
 
