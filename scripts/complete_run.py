@@ -44,6 +44,16 @@ def _require_customer_facing_asset(business_id, run_id, m, rels):
         raise SystemExit(msg)
     return eligible
 
+def _snapshot_files(paths):
+    snapshots={}
+    for raw in paths:
+        p=Path(raw);p=p if p.is_absolute() else ROOT/p
+        if p.exists() and p.is_file():snapshots[p]=p.read_bytes()
+    return snapshots
+
+def _restore_files(snapshots):
+    for path,data in snapshots.items():path.write_bytes(data)
+
 def main():
     ap=argparse.ArgumentParser(description='Complete a Run only after every declared required subcontract has auditable, contract-appropriate completion evidence.')
     ap.add_argument('business_id');ap.add_argument('run_id');ap.add_argument('--evidence',action='append',default=[]);a=ap.parse_args()
@@ -66,12 +76,25 @@ def main():
     if not root:raise SystemExit(f'Installed contract metadata missing for Run root {root_id!r}')
     errors=validate_evidence(root,rels,a.business_id,a.run_id,phase='root',manifest=m)
     if errors:raise SystemExit('Cannot complete Run; evidence does not satisfy root contract completion profile:\n- '+'\n- '.join(errors))
-    bind_evidence_paths(a.business_id,a.run_id,rels,'root_completion_evidence')
-    # The external deliverable file is root evidence, while the canonical Asset record is the
-    # durable state object. Finalize its run_id/run_contract_id/history deterministically too.
-    if eligible_assets:
-        bind_evidence_paths(a.business_id,a.run_id,[path for _,path in eligible_assets],'root_asset_record')
-    m['root_status']='completed';m['root_evidence_refs']=rels;m['root_completion_evidence_spec']=m.get('root_completion_evidence_spec') or completion_spec(root);m['updated_at']=now();mp.write_text(json.dumps(m,indent=2)+'\n')
-    r=json.loads(rp.read_text());r['status']='completed';r['updated_at']=now();rp.write_text(json.dumps(r,indent=2)+'\n')
+    # Completion is a small local transaction: finalize provenance/state, run the same full
+    # active-business validator operators use, and restore the prior incomplete state if any
+    # schema, reference, provenance, claim, or Run semantic remains invalid.
+    touched=[mp,rp,*[resolve_storage_ref(x) for x in rels],*[path for _,path in eligible_assets]]
+    snapshots=_snapshot_files(touched)
+    try:
+        bind_evidence_paths(a.business_id,a.run_id,rels,'root_completion_evidence')
+        # The external deliverable file is root evidence, while the canonical Asset record is the
+        # durable state object. Finalize its run_id/run_contract_id/history deterministically too.
+        if eligible_assets:
+            bind_evidence_paths(a.business_id,a.run_id,[path for _,path in eligible_assets],'root_asset_record')
+        m['root_status']='completed';m['root_evidence_refs']=rels;m['root_completion_evidence_spec']=m.get('root_completion_evidence_spec') or completion_spec(root);m['updated_at']=now();mp.write_text(json.dumps(m,indent=2)+'\n')
+        r=json.loads(rp.read_text());r['status']='completed';r['updated_at']=now();rp.write_text(json.dumps(r,indent=2)+'\n')
+        from validate_business import validate_business
+        business_errors,_,_=validate_business(a.business_id)
+        if business_errors:
+            raise ValueError('active business validation is not clean:\n- '+'\n- '.join(business_errors))
+    except Exception as exc:
+        _restore_files(snapshots)
+        raise SystemExit(f'Cannot complete Run; {exc}')
     print(json.dumps({'run_id':a.run_id,'status':'completed','required_subcontracts':list(m.get('contracts',{})),'root_evidence_refs':rels,'root_completion_evidence_spec':m['root_completion_evidence_spec']},indent=2))
 if __name__=='__main__':main()

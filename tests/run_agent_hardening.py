@@ -103,6 +103,10 @@ def main():
             'extensions':{'businessos':{'fact_status':'known','authority':'explicit_user','source_ref':srcid,'grounding_method':GROUNDING_METHOD,'grounding_version':'1.0'}}
         }
         cp=BASE/'context/claims'/f"{claim['id']}.json";cp.parent.mkdir(parents=True,exist_ok=True);cp.write_text(json.dumps(claim,indent=2)+'\n')
+        forged=dict(claim);forged['support_quote']='We guarantee same-day written estimates.';cp.write_text(json.dumps(forged,indent=2)+'\n')
+        errors,_,_=validate_business(BID,True)
+        require(any('support_quote is not a literal excerpt' in e for e in errors),f'hand-stamped bootstrap metadata must not trust a fabricated support quote, got {errors}')
+        cp.write_text(json.dumps(claim,indent=2)+'\n')
         brand={
             'id':f'brd_{BID}','object_type':'Brand','schema_version':'1.0.0','business_id':BID,'created_at':ts,'updated_at':ts,'lineage':[srcid],
             'name':'Northstar HVAC','voice':{'tone':['honest']},
@@ -157,10 +161,11 @@ def main():
         sr=run(SCRIPTS/'create_run.py',BID,'content.strategy.format-platform','strategy-root must not prove production'); srid=sr.stdout.strip(); srdir=ROOT/'runtime/runs'/BID/srid
         # The strategy contract declares an Asset write, so use the canonical Asset object as
         # its structural completion evidence rather than unrelated loose prose.
-        run(SCRIPTS/'complete_run.py',BID,srid,'--evidence',str(apath.relative_to(ROOT)))
-        asset=json.loads(apath.read_text());asset['extensions']['businessos'].pop('origin',None);asset['extensions']['businessos']['run_ref']=srdir.relative_to(ROOT).as_posix();asset['extensions']['businessos']['contract_chain']=['content.strategy.format-platform'];apath.write_text(json.dumps(asset,indent=2)+'\n')
-        errors,_,_=validate_business(BID,True)
-        require(any('customer-facing Asset must reference a Run whose root contract is marked' in e for e in errors),f'strategy-only root contract must not validate as customer-facing production, got {errors}')
+        strategy_complete=run(SCRIPTS/'complete_run.py',BID,srid,'--evidence',str(apath.relative_to(ROOT)),check=False)
+        require(strategy_complete.returncode!=0 and 'customer-facing Asset must reference a Run whose root contract is marked' in (strategy_complete.stderr+strategy_complete.stdout),
+            f'active-business completion gate must reject a customer-facing Asset rooted at strategy: {strategy_complete.stderr+strategy_complete.stdout}')
+        require(json.loads((srdir/'run.json').read_text()).get('status')!='completed','failed active-business validation must restore the prior incomplete Run state')
+        asset=json.loads(apath.read_text())
         shutil.rmtree(srdir)
 
         # A legitimate customer-facing production root must now reject unrelated root evidence before completion.

@@ -50,9 +50,13 @@ def main():
         req(completion_spec(contracts['content.qa.accessibility'])['strict_qa_target'] is True,'Asset QA must target an existing exact Asset version')
 
         source_id=f'src_{BID}_sample'
+        captured=('Practical guide A received 120 qualified actions from 2400 views. '
+            'Broad trend summary B received 30 qualified actions from 1800 views. '
+            'Both assets ran on the same platform during the completed measurement window; paid amplification is unknown.')
         write(BASE/'intelligence'/'sources'/f'{source_id}.json',{
             'id':source_id,'object_type':'SourceRecord','business_id':BID,'source_type':'first_party',
-            'source_reference':'local content performance export','status':'active'
+            'source_reference':'local content performance export','status':'active',
+            'extensions':{'businessos_evidence':{'capture_status':'captured','capture_method':'text_excerpt','captured_text':captured}}
         })
 
         # Intelligence: a one-statement canonical Insight reproduces F and is not the analysis.
@@ -63,11 +67,24 @@ def main():
         })
         errors=validate_evidence(contracts['content.intelligence.content-performance-analysis'],[rel(insight)],BID,irun)
         req(any('work record' in e for e in errors),f'shallow canonical conclusion should fail intelligence completion: {errors}')
+        fabricated=write(RUNS/irun/'artifacts'/'fabricated-analysis-work-record.json',{
+            'contract_id':'content.intelligence.content-performance-analysis','status':'completed',
+            'analysis_scope':{'decision':'Choose a creator tactic','period':'current window'},
+            'method':{'selection':'Compared claimed creator results','normalization':'Used a claimed multiplier'},
+            'evidence_sample':[{'ref':source_id,'support_excerpt':'Dispatch Digest achieved 4.2x engagement.','observation':'A named creator allegedly outperformed.'}],
+            'comparisons':[{'baseline':'claimed average','result':'claimed 4.2x result'}],
+            'findings':[{'statement':'Copy the named creator pattern.','evidence_refs':[source_id,'src_missing_creator'],
+                'mechanism':'A tactical format allegedly increases attention.','alternative_explanations':['Audience size may differ.']}],
+            'limitations':['No captured creator item was available.'],'recommended_actions':['Capture the real item before deciding.']
+        })
+        errors=validate_evidence(contracts['content.intelligence.content-performance-analysis'],[rel(insight),rel(fabricated)],BID,irun)
+        req(any('literal support_excerpt' in e and 'unresolved' in e for e in errors),f'fabricated/unresolved intelligence support should fail: {errors}')
         record=write(RUNS/irun/'artifacts'/'analysis-work-record.json',{
             'contract_id':'content.intelligence.content-performance-analysis','status':'completed',
             'analysis_scope':{'decision':'Choose the next content mechanism','period':'Last completed measurement window','population':'Comparable practical and trend articles'},
             'method':{'selection':'Included same-platform assets with aligned objectives and measurement windows','normalization':'Compared qualified actions per view within format cohorts'},
-            'evidence_sample':[{'ref':source_id,'observation':'The source export contains item-level reach, qualified action, format, and distribution fields.'}],
+            'evidence_sample':[{'ref':source_id,'support_excerpt':'Practical guide A received 120 qualified actions from 2400 views.',
+                'observation':'The captured export contains item-level reach and qualified actions for the practical guide.'}],
             'comparisons':[{'baseline':'Within-format median qualified actions per view','result':'Practical guides exceeded the broad-trend cohort while paid status remained unknown.'}],
             'findings':[{'statement':'Practical implementation content is the stronger candidate for the next test.','evidence_refs':[source_id],
                 'mechanism':'Concrete workflow detail may reduce evaluation uncertainty for operations buyers.',
@@ -94,6 +111,10 @@ Grounded in source evidence and aligned with business goals.
         asset('ast_content_native_podcast',prun,'content.production.podcast',podcast,source_id)
         errors=validate_evidence(contracts['content.production.podcast'],[rel(podcast)],BID,prun)
         req(any('complete production packet' in e for e in errors),f'podcast keyword shell should fail: {errors}')
+        write(podcast,('# Podcast packet\nListener promise and audience context. Segment script with timing, audio direction, edit direction, source notes, CTA, and show notes. '
+            'The host explains a concrete operating problem, repeats the setup, and promises transitions without supplying timecodes or actual cues. ')*22)
+        errors=validate_evidence(contracts['content.production.podcast'],[rel(podcast)],BID,prun)
+        req(any('complete production packet' in e for e in errors),f'long podcast prose without concrete timecodes/cues should fail: {errors}')
         segment_body=('The host explains one concrete operating problem, connects it to the source evidence, gives a worked example, '
             'states what remains uncertain, and hands the listener to the next idea with a natural transition. ')*5
         write(podcast,f"""# The operating signal hidden in routine work
@@ -134,6 +155,11 @@ This file describes a future presentation.
         asset('ast_content_native_presentation',srun,'content.production.presentation',slides,source_id)
         errors=validate_evidence(contracts['content.production.presentation'],[rel(slides)],BID,srun)
         req(any('complete production packet' in e for e in errors),f'presentation keyword shell should fail: {errors}')
+        thin_slide=('Visible copy: one short message. Visual direction: use a simple diagram. Speaker notes: explain the point. ')
+        write(slides,"# Five-slide presentation\nAudience: operators. Objective: decide. Duration: twelve minutes. Source attribution and CTA next step.\n\n"+
+            '\n'.join(f'## Slide {i}: Topic\n{thin_slide}' for i in range(1,6)))
+        errors=validate_evidence(contracts['content.production.presentation'],[rel(slides)],BID,srun)
+        req(any('complete production packet' in e for e in errors),f'five thin slides without numeric complete build detail should fail: {errors}')
         slide_detail=('Visible copy states one decision-relevant message with a concrete example and a short qualifier. '
             'Visual direction uses a simple diagram rather than decorative stock imagery. Speaker notes explain the evidence, transition, and audience question. ')*3
         write(slides,"""# Presentation production specification
@@ -157,10 +183,18 @@ Source and proof attribution: use the local source record and label the causal l
         req(any('non-self target Asset' in e for e in errors),f'canned/self-targeted QA should fail: {errors}')
         write(badqa,{
             'contract_id':'content.qa.accessibility','status':'pass','tested_asset':'ast_content_native_podcast','tested_version':'1',
+            'checks_performed':[{'check':'diagram alt text','status':'pass','method':'Inspected every diagram and its alt text',
+                'finding':'Every diagram has descriptive alt text.','target_excerpt':'Diagram: roast profile comparison'}],
+            'issues_found':[],'corrections_made':[],'limitations':[],'blockers':[]
+        })
+        errors=validate_evidence(contracts['content.qa.accessibility'],[rel(badqa)],BID,qrun)
+        req(any('structured JSON QA pass record' in e for e in errors),f'QA claim about absent target content should fail: {errors}')
+        write(badqa,{
+            'contract_id':'content.qa.accessibility','status':'pass','tested_asset':'ast_content_native_podcast','tested_version':'1',
             'checks_performed':[
-                {'check':'transcript availability','status':'pass','method':'Compared the recording packet with the transcript section','finding':'The complete spoken script is present in ordered segments and can serve as the recording transcript.'},
-                {'check':'audio-only information','status':'pass','method':'Reviewed each segment for unexplained visual references','finding':'No segment depends on a chart, gesture, or visual-only distinction to convey its main point.'},
-                {'check':'language clarity','status':'pass','method':'Reviewed headings, transitions, and CTA for listener comprehension','finding':'The episode defines its baseline before analysis and states one explicit next action in the close.'}
+                {'check':'transcript availability','status':'pass','method':'Compared the recording packet with the transcript section','finding':'The complete spoken script is present in ordered segments and can serve as the recording transcript.','target_excerpt':'Script: Start with the decision the listener must make this week.'},
+                {'check':'audio-only information','status':'pass','method':'Reviewed each segment for unexplained visual references','finding':'No segment depends on a chart, gesture, or visual-only distinction to convey its main point.','target_excerpt':'The host explains one concrete operating problem'},
+                {'check':'language clarity','status':'pass','method':'Reviewed headings, transitions, and CTA for listener comprehension','finding':'The episode defines its baseline before analysis and states one explicit next action in the close.','target_excerpt':'Call to action: review one matched content cohort'}
             ],
             'issues_found':[],'corrections_made':[],'limitations':['Rendered-audio loudness and timing require recheck after recording.'],'blockers':[]
         })

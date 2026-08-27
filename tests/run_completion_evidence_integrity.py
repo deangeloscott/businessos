@@ -54,14 +54,19 @@ def main():
         ap=BASE/'assets'/f'{aid}.json';write(ap,json.dumps(asset,indent=2)+'\n')
         errs=validate_evidence(contracts['content.production.article'],[str(wrong.relative_to(ROOT))],BID,rid,phase='root')
         req(any('expected text/document medium' in e for e in errs),f'wrong-medium production placeholder must fail: {errs}')
-        article=BASE/'assets'/'article.md';write(article,'# Field-service implementation transparency\n\nA grounded article draft tied to the active WorkRequest.\n')
+        article_body=('# Field-service implementation transparency\n\n'
+            'Operations teams need a clear implementation plan before they can judge whether a workflow change is practical. '
+            'This section explains the decision, the evidence to inspect, and the questions that keep a rollout grounded. '
+            'A useful review names the current process, the intended improvement, the people affected, and the uncertainty that remains. '
+            'It also separates an observed result from a causal claim and gives the reader a bounded next step.\n\n')*7
+        article=BASE/'assets'/'article.md';write(article,article_body)
         asset['location_reference']=str(article.relative_to(ROOT));write(ap,json.dumps(asset,indent=2)+'\n')
         errs=validate_evidence(contracts['content.production.article'],[str(article.relative_to(ROOT))],BID,rid,phase='root')
         req(not errs,f'lineage-bound article document should satisfy deterministic structural minimums: {errs}')
         write(article,'# Deliverable: content.production.article\n\nThis is qualification-facing completion prose, not an article.\n')
         errs=validate_evidence(contracts['content.production.article'],[str(article.relative_to(ROOT))],BID,rid,phase='root')
         req(any('internal contract/qualification identifiers' in e for e in errs),f'internal completion metadata must not pass as a customer-facing article: {errs}')
-        write(article,'# Field-service implementation transparency\n\nA grounded article draft tied to the active WorkRequest.\n')
+        write(article,article_body)
 
         # A non-rendered video may satisfy graceful degradation only when it is a real
         # production packet, not arbitrary prose.
@@ -101,9 +106,9 @@ def main():
         good=RUNS/rid/'artifacts'/'good-prepublish.json';write(good,json.dumps({
             'contract_id':'content.qa.pre-publish','status':'pass','tested_asset':aid,'tested_version':'1',
             'checks_performed':[
-                {'check':'claims','status':'pass','method':'Compared each extracted claim with the Asset claim manifest','finding':'Three candidate claims matched approved support references.'},
-                {'check':'links','status':'pass','method':'Requested both saved destination URLs from the final draft','finding':'Two destination links returned successful responses.'},
-                {'check':'accessibility','status':'pass','method':'Inspected heading sequence and link labels in the final HTML','finding':'Heading order and descriptive link labels were verified.'}
+                {'check':'claims','status':'pass','method':'Compared each extracted claim with the Asset claim manifest','finding':'The operational guidance remains framed as a review method rather than a guaranteed outcome.','target_excerpt':'A useful review names the current process'},
+                {'check':'links','status':'not_applicable','method':'Inspected the saved Markdown for link syntax','finding':'The draft contains no destination links to request.','target_component':'article destination links','reason':'No links are present in this article draft.'},
+                {'check':'accessibility','status':'pass','method':'Inspected heading sequence and paragraph structure in the saved Markdown','finding':'One descriptive H1 precedes short reader-facing paragraphs.','target_excerpt':'Field-service implementation transparency'}
             ],
             'issues_found':[],'corrections_made':[],'limitations':[],
             'blockers':[]

@@ -35,9 +35,14 @@ PACKET_FALLBACKS={
 # not score creative quality; they prevent a short keyword shell from impersonating the
 # complete audience content and production direction promised by the contract.
 PACKET_MIN_WORDS={
-    'animation':140,'short-video':120,'long-video':300,'podcast':350,
-    'presentation':250,'carousel':180,'demo':180,
+    'animation':140,'short-video':120,'long-video':300,'podcast':700,
+    'presentation':500,'carousel':180,'demo':180,
 }
+
+# Text-first formats need enough finished audience copy to be the deliverable rather
+# than a synopsis wearing Asset metadata. These are structural medium floors, not SEO
+# targets or quality scores.
+TEXT_MIN_WORDS={'article':500}
 
 MIN_MEDIA_BYTES={'image':256,'gif':256,'audio':1024,'video':1024,'presentation':512,'infographic':256}
 
@@ -186,6 +191,45 @@ def _ref_resolves(ref,business_id):
     except Exception:return False
 
 
+def _ref_payload_text(ref,business_id):
+    """Return locally captured text for a canonical/path evidence reference."""
+    idx=object_index(business_id)
+    if ref in idx:
+        obj,_=idx[ref];parts=[]
+        ext=obj.get('extensions') if isinstance(obj.get('extensions'),dict) else {}
+        ev=ext.get('businessos_evidence') if isinstance(ext.get('businessos_evidence'),dict) else {}
+        for value in (ev.get('captured_text'),ext.get('verbatim_user_statement')):
+            if isinstance(value,str):parts.append(value)
+        if ev.get('record_payload') is not None:
+            parts.append(json.dumps(ev['record_payload'],sort_keys=True,ensure_ascii=False))
+        loc=obj.get('location_reference')
+        if isinstance(loc,str):
+            try:
+                p=resolve_storage_ref(loc)
+                if p.exists() and p.is_file() and p.suffix.lower() in TEXT_EXTS:parts.append(_text(p))
+            except Exception:pass
+        source_ref=obj.get('source_reference')
+        if isinstance(source_ref,str):
+            try:
+                p=resolve_storage_ref(source_ref)
+                if p.exists() and p.is_file() and p.suffix.lower() in TEXT_EXTS:parts.append(_text(p))
+            except Exception:pass
+        return '\n'.join(parts)
+    try:
+        p=resolve_storage_ref(ref)
+        return _text(p) if p.exists() and p.is_file() else ''
+    except Exception:return ''
+
+
+def _literal_support_ok(item,business_id):
+    if not isinstance(item,dict):return False
+    excerpt=next((item.get(k) for k in ('support_excerpt','source_excerpt','captured_excerpt') if item.get(k)),None)
+    refs=_record_refs(item)
+    if not isinstance(excerpt,str) or len(re.findall(r'\b\w+\b',excerpt))<3 or not refs:return False
+    needle=re.sub(r'\s+',' ',excerpt).strip().lower()
+    return any(needle in re.sub(r'\s+',' ',_ref_payload_text(ref,business_id)).lower() for ref in refs)
+
+
 def intelligence_evidence_errors(contract,paths,business_id,run_id):
     """Require an auditable analysis packet in addition to concise canonical state.
 
@@ -218,10 +262,13 @@ def intelligence_evidence_errors(contract,paths,business_id,run_id):
             failures.append('evidence_sample must contain inspected item-level evidence')
         else:
             refs=_record_refs(sample)
-            if not refs or not any(_ref_resolves(ref,business_id) for ref in refs):
-                failures.append('evidence_sample must include at least one reconstructable canonical or local evidence reference')
+            unresolved=sorted(set(ref for ref in refs if not _ref_resolves(ref,business_id)))
+            if not refs or unresolved:
+                failures.append('every evidence_sample reference must resolve to reconstructable canonical or local evidence'+(f' (unresolved: {", ".join(unresolved)})' if unresolved else ''))
             if not all(_substantive(item) for item in sample):
                 failures.append('evidence_sample items must contain substantive item-level observations')
+            if not all(_literal_support_ok(item,business_id) for item in sample):
+                failures.append('each evidence_sample item must include a literal support_excerpt present in its referenced captured evidence')
         findings=record.get('findings')
         if not isinstance(findings,list):failures.append('findings must be a list')
         elif status!='no_finding' and not findings:failures.append('completed analysis must contain at least one finding')
@@ -230,14 +277,18 @@ def intelligence_evidence_errors(contract,paths,business_id,run_id):
                 if not isinstance(finding,dict) or not _substantive(finding.get('statement')):
                     failures.append(f'finding {i+1} lacks a substantive statement');continue
                 if not _substantive(finding.get('mechanism')):failures.append(f'finding {i+1} lacks mechanism analysis')
-                if not _record_refs(finding.get('evidence_refs')):failures.append(f'finding {i+1} lacks evidence_refs')
+                finding_refs=_record_refs(finding.get('evidence_refs'))
+                if not finding_refs:failures.append(f'finding {i+1} lacks evidence_refs')
+                else:
+                    unresolved=sorted(set(ref for ref in finding_refs if not _ref_resolves(ref,business_id)))
+                    if unresolved:failures.append(f'finding {i+1} has unresolved evidence_refs: {", ".join(unresolved)}')
                 if not _substantive(finding.get('alternative_explanations')):failures.append(f'finding {i+1} lacks alternative explanations')
         if not failures:return []
         all_failures.extend(failures)
     return [f'{cid} intelligence work record is incomplete: ' + '; '.join(dict.fromkeys(all_failures))]
 
 
-def _structured_check(item,require_method_evidence=False):
+def _structured_check(item,require_method_evidence=False,target_text=''):
     if not isinstance(item,dict):return False
     label=next((item.get(k) for k in ('check','name','criterion','test') if item.get(k)),None)
     outcome=next((item.get(k) for k in ('status','result','outcome','passed') if item.get(k) is not None),None)
@@ -262,14 +313,22 @@ def _structured_check(item,require_method_evidence=False):
         passed=outcome is True or normalized_outcome in {'pass','passed','true','ok','not_applicable','not applicable','n/a'}
         if not passed:return False
         if normalized_outcome in {'not_applicable','not applicable','n/a'} and not _substantive(item.get('reason')):return False
+        if target_text:
+            if normalized_outcome in {'not_applicable','not applicable','n/a'}:
+                if not _substantive(item.get('target_component')):return False
+            else:
+                excerpt=item.get('target_excerpt')
+                if not isinstance(excerpt,str) or len(re.findall(r'\b\w+\b',excerpt))<2:return False
+                needle=re.sub(r'\s+',' ',excerpt).strip().lower()
+                if needle not in re.sub(r'\s+',' ',target_text).lower():return False
     return True
 
 
-def _structured_checks(checks,require_method_evidence=False):
-    if isinstance(checks,list):return bool(checks) and all(_structured_check(x,require_method_evidence) for x in checks)
+def _structured_checks(checks,require_method_evidence=False,target_text=''):
+    if isinstance(checks,list):return bool(checks) and all(_structured_check(x,require_method_evidence,target_text) for x in checks)
     if isinstance(checks,dict):
         return bool(checks) and all(
-            _structured_check(v,require_method_evidence) if isinstance(v,dict) else (not require_method_evidence and isinstance(v,(bool,int,float)))
+            _structured_check(v,require_method_evidence,target_text) if isinstance(v,dict) else (not require_method_evidence and isinstance(v,(bool,int,float)))
             for v in checks.values()
         )
     return False
@@ -298,6 +357,20 @@ def _qa_target_valid(data,paths,business_id,run_id,contract_id):
     return False
 
 
+def _qa_target_text(data,business_id):
+    if not business_id:return ''
+    raw=next((data.get(k) for k in ('tested_asset','target_asset','asset_ref','target_ref') if data.get(k)),None)
+    if not isinstance(raw,str):return ''
+    item=object_index(business_id).get(raw)
+    if not item:return ''
+    asset,_=item;loc=asset.get('location_reference')
+    if not isinstance(loc,str):return ''
+    try:
+        p=resolve_storage_ref(loc)
+        return _text(p) if p.exists() and p.is_file() and p.suffix.lower() in TEXT_EXTS|{'.svg'} else ''
+    except Exception:return ''
+
+
 def _qa_records(contract_id,paths,strict_target=False,business_id=None,run_id=None):
     out=[]
     for p in paths:
@@ -305,7 +378,8 @@ def _qa_records(contract_id,paths,strict_target=False,business_id=None,run_id=No
         if not isinstance(data,dict) or data.get('contract_id')!=contract_id:continue
         if str(data.get('status','')).lower() not in {'pass','passed'}:continue
         checks=data.get('checks_performed',data.get('checks'))
-        if not _structured_checks(checks,require_method_evidence=strict_target):continue
+        target_text=_qa_target_text(data,business_id) if contract_id.startswith('content.qa.') else ''
+        if not _structured_checks(checks,require_method_evidence=strict_target,target_text=target_text):continue
         if strict_target:
             blockers=data.get('blockers',None)
             if not isinstance(blockers,list) or blockers:continue
@@ -471,13 +545,12 @@ def _packet_fallback_ok(path,medium,contract_id=None):
             ('show notes','episode notes'),
             ('source notes','research notes','evidence notes','references'),
         )
-        if units<3 or any(not any(term in text for term in group) for group in required_groups):return False
+        timecodes=re.findall(r'\b(?:[0-5]?\d:)?[0-5]\d:[0-5]\d\b',text)
+        transitions=len(re.findall(r'(?im)^.*\b(?:transition|segue|audio cue|music cue|sfx|pause|fade|room tone)\b.*$',text))
+        if units<4 or len(timecodes)<4 or transitions<2 or any(not any(term in text for term in group) for group in required_groups):return False
     elif m=='presentation':
-        slides=max(
-            len(re.findall(r'(?im)^\s*#{1,6}\s+slide\s+\d+\b',text)),
-            len(re.findall(r'(?im)^\s*slide\s+\d+\s*[:.-]',text)),
-            len(re.findall(r'"slide_(?:number|id)"\s*:',text)),
-        )
+        sections=re.split(r'(?im)^\s*(?:#{1,6}\s+)?slide\s+\d+\s*[:.\-—]',text)[1:]
+        slides=max(len(sections),len(re.findall(r'"slide_(?:number|id)"\s*:',text)))
         notes=len(re.findall(r'\b(?:speaker notes?|presenter notes?|narration)\b',text))
         required_groups=(
             ('audience','attendees','viewer'),
@@ -485,7 +558,10 @@ def _packet_fallback_ok(path,medium,contract_id=None):
             ('source','proof','evidence','attribution'),
             ('call to action','cta','next step','decision close'),
         )
-        if slides<5 or notes<2 or any(not any(term in text for term in group) for group in required_groups):return False
+        numeric_duration=bool(re.search(r'\bduration\s*[:=-]?\s*\d+(?:\.\d+)?\s*(?:minutes?|mins?|seconds?|secs?)\b',text))
+        substantive=bool(sections) and all(len(re.findall(r'\b\w+\b',section))>=25 for section in sections)
+        visualized=bool(sections) and sum(bool(re.search(r'\b(?:visual direction|visual:|chart:|diagram:|image:|layout:)\b',s)) for s in sections)>=max(1,len(sections)-1)
+        if slides<6 or notes<max(2,slides-1) or not numeric_duration or not substantive or not visualized or any(not any(term in text for term in group) for group in required_groups):return False
     return True
 
 
@@ -531,6 +607,9 @@ def production_evidence_errors(contract,paths,business_id,run_id,manifest=None):
             errors.append(f'{asset.get("id")} evidence file type {ext or "<none>"} does not satisfy expected text/document medium for {cid}');continue
         if _contains_internal_completion_markers(p,cid):
             errors.append(f'{asset.get("id")} root artifact exposes internal contract/qualification identifiers instead of the promised audience-facing result');continue
+        minimum=TEXT_MIN_WORDS.get(str(medium or '').lower())
+        if minimum and len(re.findall(r'\b\w+\b',_text(p)))<minimum:
+            errors.append(f'{asset.get("id")} {medium} contains fewer than {minimum} words of finished audience-facing copy');continue
         usable.append(asset)
     if not usable:return errors or [f'{cid} has no root artifact matching its canonical Asset and expected medium']
 

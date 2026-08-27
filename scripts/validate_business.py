@@ -92,6 +92,16 @@ def _provenance_errors(objects, sources):
         if not statement:
             errors.append(f'{path} explicit_user source {srcid} lacks verbatim_user_statement grounding')
             continue
+        if typ=='BusinessClaim':
+            quote=obj.get('support_quote')
+            if not isinstance(quote,str) or not quote.strip():
+                errors.append(f'{path} explicit-user BusinessClaim requires a non-empty support_quote')
+                continue
+            normalized_quote=re.sub(r'\s+',' ',quote).strip().lower()
+            normalized_source=re.sub(r'\s+',' ',statement).strip().lower()
+            if normalized_quote not in normalized_source:
+                errors.append(f'{path} explicit-user BusinessClaim support_quote is not a literal excerpt of source {srcid}')
+                continue
         stoks=_fact_tokens(statement)
         for value,label in _explicit_values(obj):
             missing=sorted(_fact_tokens(value)-stoks)

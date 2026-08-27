@@ -5,7 +5,7 @@ Content intelligence must leave an auditable analysis, not only a concise canoni
 ## Native execution floor
 
 - Define the decision, scope, population/sample, platforms, period, comparison basis, and metric/proxy meanings before interpreting results. Unknown distribution, paid amplification, audience size, or measurement conditions remain explicit.
-- Inspect actual evidence items. Preserve a bounded sample or reconstructable references with enough item-level context to audit selection, deduplication, and comparison. A search result, list of names, or unsupported summary is discovery—not analysis.
+- Inspect actual evidence items. Preserve a bounded sample with a canonical/local reference and a literal `support_excerpt` present in the captured evidence for every sampled item. Every sample and finding reference must resolve at completion. A URL, search result, list of names, or unsupported summary without captured support is discovery—not analysis; current/public performance claims require item-level captured evidence.
 - Compare like with like where possible. Use creator/account/content baselines, cohorts, rates, distributions, or explicitly justified qualitative comparison. Never let raw reach or one winner stand in for normalized effectiveness.
 - Decompose the content mechanism: topic, hook, tension, sequence, proof/demo, visual grammar, pacing, payoff, CTA, interaction, and distribution context as applicable. Separate reusable mechanism from protected expression, creator identity, audience advantage, and platform effects.
 - Test the leading interpretation against counterexamples and plausible alternatives. State limitations, uncertainty, applicability, non-applicability, and what additional evidence could change the conclusion.
@@ -17,7 +17,7 @@ For completed analysis that writes `Observation`, `Insight`, or `Learning`, save
 
 - `contract_id`, `status`, and `analysis_scope`;
 - `method`, including selection and comparison/normalization logic;
-- `evidence_sample`, with reconstructable local/canonical references and item-level observations;
+- `evidence_sample`, each item containing a reconstructable local/canonical `ref`, a literal `support_excerpt` from that evidence, and the item-level observation;
 - `comparisons`, including baselines or criteria actually applied;
 - `findings`, each with a statement, evidence references, mechanism, and alternative explanations;
 - `limitations` and unresolved uncertainty;

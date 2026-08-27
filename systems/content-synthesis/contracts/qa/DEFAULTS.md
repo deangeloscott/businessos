@@ -5,19 +5,20 @@ QA is an inspection-and-correction process over a real target, not a pass label.
 ## Shared execution model
 
 1. Resolve the exact pre-existing target Asset and version. A QA record or Asset created merely to describe the QA cannot be its own target.
-2. Determine which checks apply to that medium, destination, audience, claims, and risk. Record an explicit reason for every material check marked not applicable.
+2. Determine which checks apply to that medium, destination, audience, claims, and risk. Record an explicit reason and named `target_component` for every material check marked `not_applicable`; do not pass a check for a feature the target does not contain.
 3. Inspect the target and its relevant source/proof/Brand/platform context. Use deterministic tools for exact checks and AI/human judgment for semantic checks; record the method actually used.
-4. Record criterion-level evidence and findings, including locations/components inspected, expected versus observed behavior, severity, and confidence where judgment is involved.
+4. Record criterion-level evidence and findings, including a literal `target_excerpt` from text targets (or a concrete target component plus inspected evidence for non-text media), expected versus observed behavior, severity, and confidence where judgment is involved. Claims of automated measurement/scanning require the saved tool output; do not describe an exact tool result that was not produced.
 5. Correct issues within authority or identify the exact proposed correction. Preserve before/after or corrected-version evidence when a change is made.
 6. Recheck affected criteria after correction. Record remaining limitations and blockers; do not convert unknown or untested conditions into passes.
 7. Set overall status from the check results. `pass` requires all material applicable checks to pass on the named version and an empty blocker list. A failure or material unresolved condition blocks downstream publication.
+8. Create an `ActionPacket` only when a real issue has a concrete proposed action, resolvable target/evidence references, owner or routing destination, and acceptance/recheck condition. An empty ceremonial action is not a QA result.
 
 ## Portable QA record
 
 Save a Run-local JSON record containing:
 
 - `contract_id`, `status`, `tested_asset`, and `tested_version`;
-- `checks_performed`, with a specific criterion, method, outcome, concrete finding/evidence, issue severity, correction, and recheck result as applicable;
+- `checks_performed`, with a specific criterion, method, outcome, concrete finding/evidence, literal `target_excerpt` (or justified `target_component` for `not_applicable`/non-text media), issue severity, correction, and recheck result as applicable;
 - `issues_found`, `corrections_made`, `limitations`, and `blockers` (empty arrays are explicit when none remain);
 - references to inspected evidence and any corrected Asset/version.
 

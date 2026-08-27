@@ -13,6 +13,15 @@
 - Strengthened Asset QA across Content/Marketing: each check now needs a concrete method and finding, overall pass state must preserve issues/corrections/limitations and have no blockers, and the record must target an existing exact Asset version rather than a QA wrapper created by the same Run.
 - Added `tests/run_content_native_execution.py` with representative intelligence, podcast, presentation, and accessibility-QA regressions derived from Calibration F. The full 69-event qualification is intentionally deferred until representative native execution receives fresh independent quality review.
 
+### Representative G1 Content follow-up
+
+- Tightened the shared Content-intelligence work record so every sampled item carries a literal excerpt present in captured evidence and every sample/finding reference resolves; unsupported creator names, performance multipliers, and placeholder-source conclusions now fail structurally.
+- Raised promised-medium floors: articles require at least 500 words of finished audience copy, podcast fallbacks require substantial content plus concrete timecodes and audio/edit cues, and presentation fallbacks require numeric duration plus at least six substantive slides with near-complete visual direction and speaker notes.
+- Bound Content QA passes to literal excerpts from text targets, with explicit component/reason handling for non-applicable checks, so QA cannot claim absent diagrams, links, CTAs, metadata, or accessibility features were inspected successfully.
+- Strengthened explicit-user `BusinessClaim` provenance by requiring `support_quote` to be a literal excerpt of its bootstrap-grounded SourceRecord rather than trusting a hand-stamped grounding label.
+- Made Run completion transactional: after provenance binding and completion state are staged, full active-business validation must pass or the Run and touched canonical evidence are restored to their prior incomplete state.
+- Expanded G1-derived family regressions for fabricated intelligence, thin articles, untimed podcast prose, five-slide shells, absent-feature QA, forged support quotes, and completion rollback. The full 69-event qualification remains deferred until these representative fixes receive another small independent run.
+
 ### RC18 candidate: Legacy PreferenceProfile migration hardening
 
 - Added deterministic `scripts/migrate_preference_profiles.py` for businesses upgraded from RC16/earlier state that already contains authorization/approval semantics inside otherwise legitimate `PreferenceProfile` objects.
