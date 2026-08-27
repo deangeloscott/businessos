@@ -28,10 +28,10 @@
     "concurrency_system":["concurrent_state_integrity","deduplication","semantic_ownership","operator_provenance","collision_recovery","shared_context_quality"]
   },
   "profile_descriptions":{
-    "live_serp_or_answer_environment":"Inspects the current search/AI-answer field rather than relying only on model memory.",
-    "leader_comparison":"Compares multiple leaders and identifies both common expected patterns and meaningful differences among #1/#2/#3 or analogous leaders.",
+    "live_serp_or_answer_environment":"Inspects enough of the current search/AI-answer field to ground the work in present reality rather than relying only on model memory; expands when more evidence could materially change the judgment.",
+    "leader_comparison":"Samples enough strong current leaders to identify expected patterns and meaningful differences; a few representative leaders are usually sufficient unless the field is ambiguous or another sample could materially change the conclusion.",
     "competitive_search_readiness":"Finished work plausibly competes for the intended search/answer outcome, acknowledging authority or external constraints content alone cannot solve.",
-    "ad_library_or_market_sampling":"Samples multiple relevant active/persistent/top-performing creatives or competitors using available transparency/creative centers and surrounding funnel evidence.",
+    "ad_library_or_market_sampling":"Samples enough relevant active, persistent, or visibly strong creatives/competitors and surrounding funnel evidence to understand the market pattern; expands only when additional sampling could materially change the conclusion.",
     "proxy_calibration":"Treats longevity, views, shares, engagement, repeated creative families, and platform metrics as evidence of differing strength—not direct proof of profit unless first-party data exists.",
     "baseline_normalization":"Normalizes visible content performance against creator/account baseline, age, format, audience size, and distribution where possible.",
     "mechanism_extraction":"Extracts transferable mechanisms rather than copying protected expression, branding, or exact creative.",
