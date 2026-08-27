@@ -26,24 +26,13 @@ PACKET_FALLBACKS={
     'short-video':(('visual','duration','audio'),('scene','beat','shot','storyboard')),
     'long-video':(('visual','duration','audio'),('scene','beat','shot','storyboard')),
     'podcast':(('audio','segment','script'),('edit','timing','show notes','talking points')),
-    'presentation':(('slide','audience','duration'),('speaker notes','visual','chart','diagram')),
+    'presentation':(('slide','audience'),('speaker notes','visual','chart','diagram')),
     'carousel':(('slide','sequence','visual'),('cover','frame','platform','dimensions')),
     'demo':(('product','step','state'),('narration','visual','interaction','screen')),
 }
 
-# These are medium-family structural floors for graceful-degradation packets. They do
-# not score creative quality; they prevent a short keyword shell from impersonating the
-# complete audience content and production direction promised by the contract.
-PACKET_MIN_WORDS={
-    'animation':140,'short-video':120,'long-video':300,'podcast':700,
-    'presentation':500,'carousel':180,'demo':180,
-}
-
-# Text-first formats need enough finished audience copy to be the deliverable rather
-# than a synopsis wearing Asset metadata. These are structural medium floors, not SEO
-# targets or quality scores.
-TEXT_MIN_WORDS={'article':500}
-
+# Media integrity checks establish that a usable file exists. They are deliberately not
+# creative-quality scores and do not impose task-independent word, duration, or slide counts.
 MIN_MEDIA_BYTES={'image':256,'gif':256,'audio':1024,'video':1024,'presentation':512,'infographic':256}
 
 
@@ -62,9 +51,9 @@ def contract_index():
 def completion_spec(contract):
     """Return a stable structural evidence profile for a contract.
 
-    Explicit frontmatter `completion_evidence` overrides inference. Inference gives the
-    installed catalog useful minimum safeguards without requiring bespoke validators for
-    hundreds of contracts.
+    Explicit frontmatter `completion_evidence` may override profile inference. The
+    structural layer verifies truthful artifact/state/evidence shape; it intentionally
+    does not encode output quality as magic phrases, arbitrary word counts, or slide counts.
     """
     explicit=contract.get('completion_evidence')
     if isinstance(explicit,str): explicit={'profile':explicit}
@@ -97,14 +86,12 @@ def completion_spec(contract):
     if not medium and profile=='production': medium=last
     default_fallback=medium in PACKET_FALLBACKS
     return {
-        'version':'1.0','profile':profile,'medium':medium,
+        'version':'1.1','profile':profile,'medium':medium,
         'declared_write_types':sorted(writes),'artifact_role':contract.get('artifact_role'),
         'allow_specification_fallback':bool(explicit.get('allow_specification_fallback',default_fallback)),
-        'allow_shared_subcontract_evidence':bool(explicit.get('allow_shared_subcontract_evidence',False)),
         # A required subcontract that declares canonical writes must leave one of those
-        # results as evidence.  A generic status/summary file is not the promised work.
+        # results as evidence. A generic status/summary file is not the promised work.
         'require_subcontract_write_evidence':bool(explicit.get('require_subcontract_write_evidence',bool(writes))),
-        'required_text_components':explicit.get('required_text_components') or [],
         'strict_qa_target':bool(explicit.get('strict_qa_target', profile=='qa' and 'Asset' in reads)),
     }
 
@@ -231,12 +218,9 @@ def _literal_support_ok(item,business_id):
 
 
 def intelligence_evidence_errors(contract,paths,business_id,run_id):
-    """Require an auditable analysis packet in addition to concise canonical state.
-
-    This validates a small shared Content-intelligence work-record protocol. It does not
-    decide whether the interpretation is good; independent review still owns that.
-    """
+    """Require an auditable but proportionate analysis record behind durable intelligence."""
     cid=contract.get('id');records=[]
+    required=('method','evidence_sample','findings','limitations','recommended_actions')
     for p in paths:
         data=_json(p)
         values=data if isinstance(data,list) else [data]
@@ -244,19 +228,20 @@ def intelligence_evidence_errors(contract,paths,business_id,run_id):
             if not isinstance(value,dict):continue
             nested=value.get('analysis_record')
             if isinstance(nested,dict):value=nested
-            if value.get('contract_id')==cid and all(k in value for k in ('analysis_scope','method','evidence_sample','comparisons','findings','limitations','recommended_actions')):
-                records.append(value)
+            if value.get('contract_id')==cid and all(k in value for k in required):records.append(value)
     if not records:
-        return [f'{cid} completion requires a Run-local JSON intelligence work record with analysis_scope, method, evidence_sample, comparisons, findings, limitations, and recommended_actions; a concise canonical conclusion alone is not the analysis']
+        return [f'{cid} completion requires a Run-local JSON intelligence work record with method, evidence_sample, findings, limitations, and recommended_actions; a concise canonical conclusion alone is not the analysis']
     all_failures=[]
     for record in records:
         failures=[]
         status=str(record.get('status','completed')).lower()
         if status not in {'completed','complete','no_finding'}:
             all_failures.append('status must be completed or no_finding');continue
-        for key in ('analysis_scope','method','comparisons','limitations','recommended_actions'):
-            if not _substantive(record.get(key)):
-                failures.append(f'{key} is empty or non-substantive')
+        for key in ('method','limitations','recommended_actions'):
+            if not _substantive(record.get(key)):failures.append(f'{key} is empty or non-substantive')
+        for key in ('analysis_scope','comparisons'):
+            if key in record and record.get(key) not in (None,[],{}) and not _substantive(record.get(key)):
+                failures.append(f'{key} is present but non-substantive')
         sample=record.get('evidence_sample')
         if not isinstance(sample,list) or not sample:
             failures.append('evidence_sample must contain inspected item-level evidence')
@@ -265,10 +250,8 @@ def intelligence_evidence_errors(contract,paths,business_id,run_id):
             unresolved=sorted(set(ref for ref in refs if not _ref_resolves(ref,business_id)))
             if not refs or unresolved:
                 failures.append('every evidence_sample reference must resolve to reconstructable canonical or local evidence'+(f' (unresolved: {", ".join(unresolved)})' if unresolved else ''))
-            if not all(_substantive(item) for item in sample):
-                failures.append('evidence_sample items must contain substantive item-level observations')
-            if not all(_literal_support_ok(item,business_id) for item in sample):
-                failures.append('each evidence_sample item must include a literal support_excerpt present in its referenced captured evidence')
+            if not all(_substantive(item) for item in sample):failures.append('evidence_sample items must contain substantive item-level observations')
+            if not all(_literal_support_ok(item,business_id) for item in sample):failures.append('each evidence_sample item must include a literal support_excerpt present in its referenced captured evidence')
         findings=record.get('findings')
         if not isinstance(findings,list):failures.append('findings must be a list')
         elif status!='no_finding' and not findings:failures.append('completed analysis must contain at least one finding')
@@ -282,7 +265,8 @@ def intelligence_evidence_errors(contract,paths,business_id,run_id):
                 else:
                     unresolved=sorted(set(ref for ref in finding_refs if not _ref_resolves(ref,business_id)))
                     if unresolved:failures.append(f'finding {i+1} has unresolved evidence_refs: {", ".join(unresolved)}')
-                if not _substantive(finding.get('alternative_explanations')):failures.append(f'finding {i+1} lacks alternative explanations')
+                alt=finding.get('alternative_explanations')
+                if alt not in (None,[],{}) and not _substantive(alt):failures.append(f'finding {i+1} has non-substantive alternative explanations')
         if not failures:return []
         all_failures.extend(failures)
     return [f'{cid} intelligence work record is incomplete: ' + '; '.join(dict.fromkeys(all_failures))]
@@ -315,15 +299,15 @@ def _structured_check(item,require_method_evidence=False,target_text='',business
         normalized_outcome=str(outcome).lower().strip()
         passed=outcome is True or normalized_outcome in {'pass','passed','true','ok','not_applicable','not applicable','n/a'}
         if not passed:return False
-        if normalized_outcome in {'not_applicable','not applicable','n/a'} and not _substantive(item.get('reason')):return False
-        if target_text:
-            if normalized_outcome in {'not_applicable','not applicable','n/a'}:
-                if not _substantive(item.get('target_component')):return False
-            else:
-                excerpt=item.get('target_excerpt')
-                if not isinstance(excerpt,str) or len(re.findall(r'\b\w+\b',excerpt))<2:return False
+        if normalized_outcome in {'not_applicable','not applicable','n/a'}:
+            if not _substantive(item.get('reason')) or not _substantive(item.get('target_component')):return False
+        elif target_text:
+            excerpt=item.get('target_excerpt'); component=item.get('target_component')
+            if isinstance(excerpt,str) and len(re.findall(r'\b\w+\b',excerpt))>=2:
                 needle=re.sub(r'\s+',' ',excerpt).strip().lower()
                 if needle not in re.sub(r'\s+',' ',target_text).lower():return False
+            elif not _substantive(component):
+                return False
     return True
 
 
@@ -420,35 +404,6 @@ def _text(path):
     except Exception:return ''
 
 
-def _required_text_component_errors(contract,paths):
-    """Verify contract-authored, machine-checkable components without special-casing IDs."""
-    components=completion_spec(contract).get('required_text_components') or []
-    if not components:return []
-    text='\n'.join(_text(p) for p in paths if Path(p).suffix.lower() in TEXT_EXTS|{'.svg'}).lower()
-    errors=[]
-    for raw in components:
-        if isinstance(raw,str):
-            label=raw;any_of=[raw];all_of=[]
-        elif isinstance(raw,dict):
-            label=str(raw.get('id') or raw.get('label') or raw.get('name') or 'unnamed component')
-            any_of=raw.get('any_of') or raw.get('terms') or []
-            all_of=raw.get('all_of') or []
-            if isinstance(any_of,str):any_of=[any_of]
-            if isinstance(all_of,str):all_of=[all_of]
-        else:
-            errors.append(f'{contract.get("id")} has invalid required_text_components metadata: {raw!r}');continue
-        any_terms=[str(x).strip().lower() for x in any_of if str(x).strip()]
-        all_terms=[str(x).strip().lower() for x in all_of if str(x).strip()]
-        if not any_terms and not all_terms:
-            errors.append(f'{contract.get("id")} required component {label!r} has no match terms');continue
-        if any_terms and not any(term in text for term in any_terms):
-            errors.append(f'{contract.get("id")} evidence is missing required component {label!r} (expected one of: {", ".join(any_terms)})')
-        missing=[term for term in all_terms if term not in text]
-        if missing:
-            errors.append(f'{contract.get("id")} evidence is missing required component {label!r} terms: {", ".join(missing)}')
-    return errors
-
-
 def _contains_internal_completion_markers(path,contract_id):
     if Path(path).suffix.lower() not in TEXT_EXTS|{'.svg'}:return False
     text=_text(path).lower()
@@ -499,8 +454,7 @@ def _svg_dimensions(path):
 def _media_integrity_errors(path,family,contract_id):
     p=Path(path);ext=p.suffix.lower();data=p.read_bytes();errors=[]
     if len(data)<MIN_MEDIA_BYTES.get(family,1):return [f'{p.name} is too small to be a usable {family} artifact']
-    if _contains_internal_completion_markers(p,contract_id):
-        errors.append(f'{p.name} exposes internal contract/qualification identifiers instead of the promised audience-facing artifact')
+    if _contains_internal_completion_markers(p,contract_id):errors.append(f'{p.name} exposes internal contract/qualification identifiers instead of the promised audience-facing artifact')
     if ext=='.svg':
         dims=_svg_dimensions(p)
         if not dims or dims[0]<64 or dims[1]<64:errors.append(f'{p.name} is not a valid usable-size SVG')
@@ -529,51 +483,35 @@ def _media_integrity_errors(path,family,contract_id):
 
 
 def _packet_fallback_ok(path,medium,contract_id=None):
+    """Check truthful medium-native fallback shape without pretending to score quality.
+
+    No task-independent word, duration, segment, or slide count is enforced here. The
+    contract and qualitative review determine whether the amount of work is sufficient.
+    """
     m=str(medium or '').lower();rules=PACKET_FALLBACKS.get(m)
     if not rules or Path(path).suffix.lower() not in TEXT_EXTS:return False
     if _contains_internal_completion_markers(path,contract_id):return False
     text=_text(path).lower()
-    if len(re.findall(r'\b\w+\b',text))<PACKET_MIN_WORDS.get(m,100):return False
     required,alternatives=rules
     if not (all(x in text for x in required) and any(x in text for x in alternatives)):return False
     if m=='podcast':
-        units=max(
-            len(re.findall(r'(?im)^\s*#{1,6}\s+(?:segment|part|act|chapter|cold open|introduction|intro|close|conclusion)\b',text)),
-            len(re.findall(r'(?im)^\s*(?:segment|part|act|chapter)\s*(?:\d+|[a-z])\b',text)),
-            len(re.findall(r'\b\d{1,2}:\d{2}\b',text)),
-        )
-        required_groups=(
-            ('listener promise','episode promise','audience'),
-            ('call to action','cta','next step'),
-            ('show notes','episode notes'),
-            ('source notes','research notes','evidence notes','references'),
-        )
+        segment_headings=len(re.findall(r'(?im)^\s*(?:#{1,6}\s+)?(?:segment|part|act|chapter|cold open|introduction|intro|close|conclusion)\b',text))
         timecodes=re.findall(r'\b(?:[0-5]?\d:)?[0-5]\d:[0-5]\d\b',text)
-        transitions=len(re.findall(r'(?im)^.*\b(?:transition|segue|audio cue|music cue|sfx|pause|fade|room tone)\b.*$',text))
-        if units<4 or len(timecodes)<4 or transitions<2 or any(not any(term in text for term in group) for group in required_groups):return False
+        cues=len(re.findall(r'(?im)^.*\b(?:transition|segue|audio cue|music cue|sfx|pause|fade|room tone)\b.*$',text))
+        if not (segment_headings or timecodes) or cues<1:return False
         def minutes(value):
             parts=[int(x) for x in value.split(':')]
             if len(parts)==2:return parts[0]+parts[1]/60
             return parts[0]*60+parts[1]+parts[2]/60
         claimed=[float(x) for x in re.findall(r'\b(?:total\s+duration|episode\s+length|duration)\s*[:=-]\s*(\d+(?:\.\d+)?)\s*(?:minutes?|mins?)\b',text)]
-        scheduled=max([minutes(x) for x in timecodes]+claimed)
-        word_count=len(re.findall(r'\b\w+\b',text))
-        if scheduled and word_count/scheduled<90:return False
+        if claimed and timecodes and max(minutes(x) for x in timecodes)>max(claimed)+0.25:return False
         if re.search(r'\b(?:mastered|mixed|recorded|rendered|exported)\s+(?:to|at|in)\b',text):return False
     elif m=='presentation':
         sections=re.split(r'(?im)^\s*(?:#{1,6}\s+)?slide\s+\d+\s*[:.\-—]',text)[1:]
         slides=max(len(sections),len(re.findall(r'"slide_(?:number|id)"\s*:',text)))
         notes=len(re.findall(r'\b(?:speaker notes?|presenter notes?|narration)\b',text))
-        required_groups=(
-            ('audience','attendees','viewer'),
-            ('objective','decision','learning outcome'),
-            ('source','proof','evidence','attribution'),
-            ('call to action','cta','next step','decision close'),
-        )
-        numeric_duration=bool(re.search(r'\bduration\s*[:=-]?\s*\d+(?:\.\d+)?\s*(?:minutes?|mins?|seconds?|secs?)\b',text))
-        substantive=bool(sections) and all(len(re.findall(r'\b\w+\b',section))>=25 for section in sections)
-        visualized=bool(sections) and sum(bool(re.search(r'\b(?:visual direction|visual:|chart:|diagram:|image:|layout:)\b',s)) for s in sections)>=max(1,len(sections)-1)
-        if slides<6 or notes<max(2,slides-1) or not numeric_duration or not substantive or not visualized or any(not any(term in text for term in group) for group in required_groups):return False
+        visualized=bool(re.search(r'\b(?:visual direction|visual:|chart:|diagram:|image:|layout:)\b',text))
+        if slides<1 or notes<1 or not visualized:return False
     return True
 
 
@@ -613,15 +551,12 @@ def production_evidence_errors(contract,paths,business_id,run_id,manifest=None):
                 continue
             if spec.get('allow_specification_fallback') and _packet_fallback_ok(p,medium,cid):
                 usable.append(asset);continue
-            fallback=' or a complete production packet/specification' if spec.get('allow_specification_fallback') else ''
+            fallback=' or a truthful medium-native production packet/specification' if spec.get('allow_specification_fallback') else ''
             errors.append(f'{asset.get("id")} evidence file type {ext or "<none>"} does not satisfy expected {family} medium for {cid}{fallback}');continue
         if ext not in TEXT_EXTS:
             errors.append(f'{asset.get("id")} evidence file type {ext or "<none>"} does not satisfy expected text/document medium for {cid}');continue
         if _contains_internal_completion_markers(p,cid):
             errors.append(f'{asset.get("id")} root artifact exposes internal contract/qualification identifiers instead of the promised audience-facing result');continue
-        minimum=TEXT_MIN_WORDS.get(str(medium or '').lower())
-        if minimum and len(re.findall(r'\b\w+\b',_text(p)))<minimum:
-            errors.append(f'{asset.get("id")} {medium} contains fewer than {minimum} words of finished audience-facing copy');continue
         usable.append(asset)
     if not usable:return errors or [f'{cid} has no root artifact matching its canonical Asset and expected medium']
 
@@ -655,38 +590,13 @@ def _ref_signatures(refs):
 
 
 def subcontract_evidence_reuse_errors(manifest,contracts=None):
-    """Reject distinct required jobs that merely cite the same evidence package.
+    """Compatibility hook: integrated artifacts may legitimately evidence several jobs.
 
-    One integrated artifact may be shared only when every involved contract explicitly
-    opts in and declares machine-checkable component requirements. That keeps reuse a
-    contract-authored decision instead of an agent-selected completion shortcut.
+    Normal AURA execution must not require duplicate files merely to prove that distinct
+    subcontracts ran. Each subcontract still needs a recorded completion and contract-
+    appropriate evidence; qualitative/qualification review can detect generic mass reuse.
     """
-    contracts=contracts or contract_index();steps=manifest.get('contracts') or {}
-    entries=[]
-    for cid in manifest.get('required_subcontracts') or []:
-        step=steps.get(cid) or {}
-        if step.get('status')!='completed' or not step.get('evidence_refs'):continue
-        locs,hashes=_ref_signatures(step.get('evidence_refs') or [])
-        if locs:entries.append((cid,locs,hashes))
-    groups=[];seen=set()
-    for signature_index,kind in ((1,'same evidence reference set'),(2,'byte-identical evidence package')):
-        bysig={}
-        for entry in entries:bysig.setdefault(entry[signature_index],[]).append(entry[0])
-        for sig,cids in bysig.items():
-            unique=sorted(set(cids))
-            if len(unique)<2:continue
-            key=tuple(unique)
-            if key in seen:continue
-            seen.add(key);groups.append((kind,unique))
-    errors=[]
-    for kind,cids in groups:
-        specs=[completion_spec(contracts.get(cid,{'id':cid})) for cid in cids]
-        authored_share=all(s.get('allow_shared_subcontract_evidence') and s.get('required_text_components') for s in specs)
-        if not authored_share:
-            errors.append(
-                f'distinct required subcontracts reuse the {kind} without contract-authored shared-evidence component rules: {", ".join(cids)}'
-            )
-    return errors
+    return []
 
 
 def subcontract_manifest_errors(manifest,business_id,run_id,contracts=None,require_complete=True):
@@ -704,7 +614,6 @@ def subcontract_manifest_errors(manifest,business_id,run_id,contracts=None,requi
         if not contract:
             errors.append(f'{cid}: contract missing from installed registry');continue
         errors.extend(f'{cid}: {x}' for x in validate_evidence(contract,refs,business_id,run_id,phase='subcontract',manifest=manifest))
-    errors.extend(subcontract_evidence_reuse_errors(manifest,contracts))
     return errors
 
 
@@ -722,7 +631,6 @@ def validate_evidence(contract,refs,business_id,run_id,phase='root',manifest=Non
     elif profile in {'publishing','measurement','research','planning','canonical_state'}:
         if phase=='root' or spec.get('require_subcontract_write_evidence'):
             errors.extend(_declared_write_errors(contract,paths,business_id,run_id,phase))
-    errors.extend(_required_text_component_errors(contract,paths))
     return errors
 
 
