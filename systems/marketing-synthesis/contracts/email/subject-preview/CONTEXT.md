@@ -33,14 +33,6 @@ context:
 - Offer
 - Objective
 - EconomicContext
-completion_evidence:
-  required_text_components:
-  - id: exact-email-linkage
-    any_of: [sequence position, message job, email 1, email 2]
-  - id: subject
-    any_of: [subject line, "subject:"]
-  - id: preview
-    any_of: [preview text, preheader, "preview:"]
 ---
 # Email Subject and Preview
 
