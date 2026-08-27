@@ -12,10 +12,7 @@ SECTION_RE=re.compile(r'^##\s+(.+?)\s*$',re.M)
 PRODUCT_SNAPSHOT_IGNORED_DIRS={'.git','__pycache__','.pytest_cache','.venv','venv'}
 PRODUCT_SNAPSHOT_IGNORED_FILES={'.DS_Store'}
 PRODUCT_SNAPSHOT_IGNORED_SUFFIXES={'.pyc','.pyo'}
-PRODUCT_SNAPSHOT_MUTABLE_ENV_FILES={
-    'host-tools.json','tool-inventory.json','capability-bindings.json',
-    'provider-preferences.json','scheduler-bindings.json','host-profile.json','bootstrap-state.json',
-}
+PRODUCT_SNAPSHOT_MUTABLE_ENV_FILES={'host-profile.json','bootstrap-state.json'}
 
 def now():
     return datetime.datetime.now(datetime.timezone.utc).isoformat()
@@ -131,12 +128,11 @@ def tree_snapshot(root):
     return {'root':str(root),'files':files,'digest':digest}
 
 def product_snapshot_path_is_mutable(rel):
-    """Return True only for product-local host/runtime state official AURA helpers mutate.
+    """Return True only for first-run host-local state that AURA creates in product root.
 
-    Qualification protects product source, playbooks, policies, schemas, and scripts from
-    candidate modification. It must not fail ordinary AURA setup merely because the host
-    selects an external workspace or compiles its discovered capabilities into the local
-    deployment environment.
+    Qualification protects product source, playbooks, policies, schemas, scripts, and
+    tracked deployment configuration. It must not fail ordinary AURA setup because the
+    host selects an external workspace or records first-run host/bootstrap metadata.
     """
     rel=Path(rel)
     if rel.as_posix()=='.businessos/workspace.json': return True
@@ -149,9 +145,9 @@ def product_snapshot_path_is_mutable(rel):
 def product_snapshot(root):
     """Stable qualification snapshot of protected staged product source.
 
-    Transient interpreter/editor files and narrowly defined host-local runtime/config
-    state are ignored. Product source, playbooks, policies, schemas, scripts, and other
-    shipped content remain immutable during a qualification run and are hashed.
+    Transient interpreter/editor files and narrowly defined first-run host-local state
+    are ignored. Product source, playbooks, policies, schemas, scripts, tracked deployment
+    configuration, and other shipped content remain immutable during qualification.
     """
     root=Path(root); files=[]
     if not root.exists(): return {'root':str(root),'files':[],'digest':hashlib.sha256(b'').hexdigest(),'format_version':'1.0'}
