@@ -40,13 +40,26 @@ def main():
         transient=product/'__pycache__'/'scratch.cpython-313.pyc'; transient.parent.mkdir(); transient.write_bytes(b'transient'); ds=product/'.DS_Store'; ds.write_bytes(b'transient')
         req(not staged_product_integrity_flags(rd,product,run),'ignored interpreter/editor transients must not invalidate qualification')
 
+        # Normal AURA setup intentionally mutates narrowly scoped host-local runtime/config state.
+        # Those files are not product methodology/source and must not create a false qualification failure.
+        env={**os.environ,'BUSINESSOS_WORKSPACE':str(workspace),'PYTHONDONTWRITEBYTECODE':'1'}
+        configure=subprocess.run([sys.executable,str(product/'scripts/configure_workspace.py'),str(workspace)],cwd=product,capture_output=True,text=True,env=env)
+        req(configure.returncode==0,f'normal external workspace configuration failed:\n{configure.stdout}\n{configure.stderr}')
+        bootstrap=subprocess.run([sys.executable,str(product/'scripts/bootstrap_environment.py'),'local'],cwd=product,capture_output=True,text=True,env=env)
+        req(bootstrap.returncode==0,f'normal host environment bootstrap failed:\n{bootstrap.stdout}\n{bootstrap.stderr}')
+        req((product/'.businessos/workspace.json').exists(),'normal workspace setup did not create local product pointer')
+        req((product/'deployment/environments/local/host-profile.json').exists(),'normal environment bootstrap did not create host profile')
+        req((product/'deployment/environments/local/bootstrap-state.json').exists(),'normal environment bootstrap did not create bootstrap state')
+        req(not staged_product_integrity_flags(rd,product,run),'official AURA host/workspace runtime state must not be treated as protected product mutation')
+
         helper=product/'run_all_events.py'; helper.write_text("print('private qualification solver')\n",encoding='utf-8')
         flags=staged_product_integrity_flags(rd,product,run); mutation=next((x for x in flags if x.get('type')=='staged_product_mutation'),None)
         req(mutation and 'run_all_events.py' in mutation.get('created',[]),f'candidate-created product helper must be a critical product mutation: {flags}')
-        helper.unlink(); req(not staged_product_integrity_flags(rd,product,run),'restoring exact staged product should clear current-state mutation flag')
+        helper.unlink(); req(not staged_product_integrity_flags(rd,product,run),'restoring exact protected product source should clear current-state mutation flag')
 
         target=product/'README.md'; original=target.read_text(encoding='utf-8'); target.write_text(original+'\nqualification mutation\n',encoding='utf-8')
         flags=staged_product_integrity_flags(rd,product,run); mutation=next((x for x in flags if x.get('type')=='staged_product_mutation'),None); req(mutation and 'README.md' in mutation.get('modified',[]),'modified staged source must fail product integrity'); target.write_text(original,encoding='utf-8')
+        req(not staged_product_integrity_flags(rd,product,run),'restoring protected source must leave only allowed host-local runtime state')
         target.unlink(); flags=staged_product_integrity_flags(rd,product,run); mutation=next((x for x in flags if x.get('type')=='staged_product_mutation'),None); req(mutation and 'README.md' in mutation.get('deleted',[]),'deleted staged source must fail product integrity')
 
         run_bad={**run,'product_snapshot_digest':'tampered'}; mismatch=staged_product_integrity_flags(rd,product,run_bad); req(mismatch and mismatch[0].get('type')=='product_integrity_baseline_mismatch','run metadata snapshot tampering must fail integrity')
@@ -56,6 +69,6 @@ def main():
     req(qualification_status({'HARD-PASS / REVIEW-PENDING':2})=='REVIEW_REQUIRED','hard-pass without professional review must not be called qualified')
     req(qualification_status({'BLOCKED-EXTERNAL':1})=='INCOMPLETE','blocked qualification must be incomplete')
     req(qualification_status({'ACCEPTABLE':2,'COMPETITIVE':1,'EXCEPTIONAL':1})=='QUALIFIED','only fully reviewed acceptable-or-better events may be qualified')
-    print('qualification staged-product integrity regressions passed with blind candidate exposure')
+    print('qualification staged-product integrity regressions passed with blind candidate exposure and expected host-local runtime state')
 
 if __name__=='__main__': main()
