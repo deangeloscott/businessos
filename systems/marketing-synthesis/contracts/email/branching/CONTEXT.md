@@ -33,14 +33,6 @@ context:
 - Offer
 - Objective
 - EconomicContext
-completion_evidence:
-  required_text_components:
-  - id: branch-condition-or-event
-    any_of: [branch condition, branch rule, "event:"]
-  - id: default-path
-    any_of: [default path, otherwise, no action]
-  - id: suppression-or-exit
-    any_of: [suppression, exit condition, stop sequence]
 ---
 # Email Sequence Branching
 
