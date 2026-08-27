@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from pathlib import Path
 import argparse, json, os, subprocess, sys
-from common import ROOT, read_json, snapshot_diff, write_json, now
+from common import ROOT, now, product_snapshot, read_json, snapshot_diff, write_json
 sys.path.insert(0,str(ROOT/'scripts'))
 from completion_evidence import contract_index, subcontract_manifest_errors, validate_evidence
 from integrity import (
@@ -85,6 +85,29 @@ def hard_grade(event,test,before,after,receipt,workspace,product_root):
         gates['prepublish_or_required_qa_recorded']=bool(structured_prepublish_refs(workspace,event['business_id'],before,after,run_audit))
     return gates,validation,run_audit,actual_artifacts
 
+def staged_product_integrity_flags(rd,product_root,run):
+    baseline=read_json(rd/'evaluator/product-snapshot.json')
+    if not isinstance(baseline,dict) or not baseline.get('digest'):
+        return [{'type':'product_integrity_baseline_missing','path':str(rd/'evaluator/product-snapshot.json')}]
+    if run.get('product_snapshot_digest')!=baseline.get('digest'):
+        return [{'type':'product_integrity_baseline_mismatch','path':str(rd/'run.json')}]
+    current=product_snapshot(product_root); diff=snapshot_diff(baseline,current)
+    if not any(diff.values()): return []
+    return [{
+        'type':'staged_product_mutation','path':str(product_root),
+        'created_count':len(diff['created']),'modified_count':len(diff['modified']),'deleted_count':len(diff['deleted']),
+        'created':diff['created'][:20],'modified':diff['modified'][:20],'deleted':diff['deleted'][:20],
+        'baseline_digest':baseline.get('digest'),'current_digest':current.get('digest'),
+    }]
+
+def qualification_status(counts):
+    if counts.get('FAIL'): return 'FAILED'
+    if counts.get('BLOCKED-EXTERNAL') or counts.get('BLOCKED-QUALIFICATION-FIXTURE'): return 'INCOMPLETE'
+    if counts.get('HARD-PASS / REVIEW-PENDING') or counts.get('HARD-PASS / REVIEW-INCOMPLETE'): return 'REVIEW_REQUIRED'
+    qualified=sum(counts.get(x,0) for x in ('ACCEPTABLE','COMPETITIVE','EXCEPTIONAL'))
+    total=sum(counts.values())
+    return 'QUALIFIED' if total and qualified==total else 'NOT_QUALIFIED'
+
 def main():
     ap=argparse.ArgumentParser(); ap.add_argument('run_dir'); ap.add_argument('--judgments'); a=ap.parse_args(); rd=Path(a.run_dir).expanduser().resolve()
     run=read_json(rd/'run.json'); queue=read_json(rd/'candidate/queue.json'); suite=read_json(rd/'evaluator/suite.json'); workspace=Path(run['workspace']); product_root=Path(run['product_root'])
@@ -112,8 +135,9 @@ def main():
         else: verdict='FUNCTIONAL-NOT-ACCEPTABLE'
         results.append({'event_id':eid,'kind':event['kind'],'contract_id':event.get('contract_id'),'business_id':event['business_id'],'hard_pass':hard_pass,'hard_gates':gates,'validation':validation,'workspace_diff':snapshot_diff((before or {}).get('workspace',{}),(after or {}).get('workspace',{})),'receipt':receipt,'actual_artifacts':artifacts,'run_audit':run_audit,'judge':judge,'review_complete':review_complete,'missing_review_dimensions':missing_dims,'invalid_review_scores':invalid_scores,'overall_quality_score':overall,'blocker_classification':blocked_class,'integrity_flags':[],'verdict':verdict})
 
-    similarity=artifact_similarity_flags(results); duplicates=exact_duplicate_artifact_flags(results); run_flags=run_control_flags(rd,workspace)
-    critical_run_flags=[x for x in run_flags if x.get('type') in {'mass_completion_runner','candidate_evaluator_spec_access'}]
+    similarity=artifact_similarity_flags(results); duplicates=exact_duplicate_artifact_flags(results); run_flags=run_control_flags(rd,workspace)+staged_product_integrity_flags(rd,product_root,run)
+    critical_types={'mass_completion_runner','candidate_evaluator_spec_access','staged_product_mutation','product_integrity_baseline_missing','product_integrity_baseline_mismatch'}
+    critical_run_flags=[x for x in run_flags if x.get('type') in critical_types]
     for r in results:
         r['integrity_flags']=(similarity.get(r['event_id']) or [])+(duplicates.get(r['event_id']) or [])
         if r.get('actual_artifacts'):
@@ -143,7 +167,8 @@ def main():
             row['events']+=1; row['hard_pass']+=1 if r['hard_pass'] else 0; row['verdicts'][r['verdict']]=row['verdicts'].get(r['verdict'],0)+1
             if r['overall_quality_score'] is not None: row['quality_scores'].append(r['overall_quality_score'])
     for d,row in domain_summary.items(): row['average_quality']=sum(row['quality_scores'])/len(row['quality_scores']) if row['quality_scores'] else None
-    report=['# AURA Qualification Report','',f"Run: `{run['run_id']}`",f"Profile: `{run['profile']}`",f"Events: {len(results)}",'', '## Verdict summary','']
+    qstatus=qualification_status(counts)
+    report=['# AURA Qualification Report','',f"Run: `{run['run_id']}`",f"Profile: `{run['profile']}`",f"Events: {len(results)}",f"Qualification status: **{qstatus}**",'', '## Verdict summary','']
     for k in sorted(counts): report.append(f'- **{k}**: {counts[k]}')
     report += ['', '## Coverage','',f"- Contract acceptance events: {sum(1 for r in results if r['kind']=='contract_acceptance')} / {suite['contract_count']}",f"- Domain missions: {sum(1 for r in results if r['kind']=='domain_mission')} / {len(suite['domain_missions'])}",f"- Cross-domain missions: {sum(1 for r in results if r['kind']=='cross_domain_mission')} / {len(suite['cross_domain_missions'])}",f"- Marathon missions: {sum(1 for r in results if r['kind']=='marathon_mission')} / {len(suite['marathon_missions'])}",f"- Concurrency missions: {sum(1 for r in results if r['kind']=='concurrency_mission')} / {len(suite.get('concurrency_missions',[]))}",'','## Domain contract summary',''] + [f"- **{d}**: {row['hard_pass']}/{row['events']} hard-pass" + (f", avg quality {row['average_quality']:.2f}/5" if row['average_quality'] is not None else '') for d,row in sorted(domain_summary.items())] + ['','## Hard-gate failure counts',''] + [f"- `{g}`: {n}" for g,n in sorted(gate_failures.items(), key=lambda x:(-x[1],x[0]))]
     report += ['','## Integrity flags',''] + ([f"- `{k}`: {n}" for k,n in sorted(integrity_counts.items())] if integrity_counts else ['- None'])
@@ -151,6 +176,6 @@ def main():
     report += ['','## Event results','']
     for r in results: report.append(f"- `{r['event_id']}` — **{r['verdict']}**"+(f" — {r['overall_quality_score']:.2f}/5" if r['overall_quality_score'] is not None else '')+(f" — integrity flags: {len(r['integrity_flags'])}" if r['integrity_flags'] else ''))
     (rd/'REPORT.md').write_text('\n'.join(report)+'\n',encoding='utf-8')
-    write_json(rd/'evaluator/summary.json',{'verdict_counts':counts,'gate_failure_counts':gate_failures,'integrity_flag_counts':integrity_counts,'run_integrity_flags':run_flags,'domain_summary':domain_summary}); write_json(rd/'run.json',{**run,'status':'evaluated','evaluated_at':now(),'verdict_counts':counts})
-    print(json.dumps({'results':str(rd/'evaluator/hard-and-merged-results.json'),'review_packets':str(rd/'evaluator/review-packets.json'),'report':str(rd/'REPORT.md'),'verdict_counts':counts,'integrity_flag_counts':integrity_counts,'run_integrity_flags':run_flags},indent=2))
+    write_json(rd/'evaluator/summary.json',{'qualification_status':qstatus,'verdict_counts':counts,'gate_failure_counts':gate_failures,'integrity_flag_counts':integrity_counts,'run_integrity_flags':run_flags,'domain_summary':domain_summary}); write_json(rd/'run.json',{**run,'status':'evaluated','execution_status':'evaluated','qualification_status':qstatus,'evaluated_at':now(),'verdict_counts':counts})
+    print(json.dumps({'results':str(rd/'evaluator/hard-and-merged-results.json'),'review_packets':str(rd/'evaluator/review-packets.json'),'report':str(rd/'REPORT.md'),'qualification_status':qstatus,'verdict_counts':counts,'integrity_flag_counts':integrity_counts,'run_integrity_flags':run_flags},indent=2))
 if __name__=='__main__': main()
