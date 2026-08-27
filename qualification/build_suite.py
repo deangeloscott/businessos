@@ -21,16 +21,22 @@ def subcontract_ids(items, contract_id):
     return out
 
 def candidate_task(c):
-    outcome=c.get('business_outcome') or c.get('purpose') or c['title']; run_when=c.get('run_when') or ''; profile=competitive_profile(c); extra=''
+    """Turn a contract claim into a production-like user request without exposing the test target."""
+    outcome=(c.get('business_outcome') or c.get('purpose') or c['title']).strip()
+    profile=competitive_profile(c); extra=''
     if profile=='search_live_field':
-        extra=' Inspect the live search/AI-answer field when the environment permits, compare multiple leaders, and create the actual competitively ready result rather than a generic best-practice output.'
+        extra=' Inspect the current search/AI-answer field where relevant, compare multiple strong results, and use what you learn to make the result genuinely competitive rather than generic.'
     elif profile=='paid_and_persuasion_field':
-        extra=' Inspect multiple relevant competitors/ads/landing paths using current transparency or creative surfaces when available; calibrate longevity/engagement as proxies rather than proof of profit; create the actual production-ready result.'
+        extra=' Inspect relevant current competitors, ads, landing paths, or persuasion surfaces where useful; treat longevity or engagement as signals rather than proof of profitability.'
     elif profile=='organic_attention_field':
-        extra=' Identify top/outlier content using visible performance proxies normalized to context where possible, extract mechanisms rather than copying expression, and produce the actual native result.'
+        extra=' Use real visible performance evidence where available, normalize obvious context differences, and extract reusable mechanisms rather than copying expression.'
     elif output_policy(c)['artifact_required']:
-        extra=' Produce the actual promised artifact at professional usable quality; a plan, outline, mock description, generic template, or statement of what could be created does not satisfy this test unless this contract specifically promises that planning artifact.'
-    return f"Execute AURA contract {c['contract_id']} for the active qualification business as a real production task. Intended outcome: {outcome} {run_when}{extra} Follow the contract's actual process and completion-evidence requirements, AURA governance, required subcontracts, evidence/provenance, and completion rules. Deterministic automation may assist bookkeeping, but it may not fabricate or mass-generate generic evidence/artifacts in place of contract-specific work. Continue until the contract is genuinely complete or record a specific external blocker."
+        extra=' Create the actual usable deliverable, not a plan describing what could be created.'
+    return (
+        f'For the active business, {outcome.rstrip(".")}. {extra.strip()} '
+        'Use AURA normally from this natural-language request: reuse relevant business state, use available tools and real evidence when the work requires them, and persist the useful business result. '
+        'Do not invent missing facts, sources, tool use, execution, or outcomes. If something genuinely required is unavailable, leave a precise blocker instead of manufacturing completion.'
+    ).replace('  ',' ').strip()
 
 def hard_gates(c):
     gates=['checkpoint_before_exists','checkpoint_after_exists','candidate_receipt_exists','root_run_exists','root_run_contract_matches','root_run_completed','root_completion_evidence_valid','required_subcontracts_completed','required_subcontract_evidence_valid','workspace_valid','business_valid','completion_claim_truthful']
