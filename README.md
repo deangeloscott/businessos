@@ -2,89 +2,128 @@
 
 **AURA = Agentic Understanding and Reinforcement Architecture.**
 
-**ViralTrac AURA is a portable, AI-native BusinessOS that gives AI agents structured processes to understand, research, operate, measure, optimize, learn, and improve how a business is run.**
+**ViralTrac AURA is a portable, AI-native BusinessOS that helps capable AI understand a business, determine useful work, execute through available tools, preserve what it learns, and improve future decisions over time.**
 
-Installed domain modules: **Competitor Intelligence, Content Synthesis, Customer Intelligence, Customer Optimization, Industry Intelligence, Marketing Synthesis, SEO/AEO**. Core is always included.
+AURA is not a model, agent harness, SaaS dashboard, or prompt library. It is the organization-owned operating layer around those capabilities: business context, evidence, workflows, governance, authorization, state, history, measurement, and Learning.
+
+## Start in three steps
+
+1. **Download/unzip AURA or clone the repository.**
+2. **Give the AURA folder to a compatible LLM/agent harness.**
+3. **Tell it your business and what you want.**
+
+For example:
+
+> Use ViralTrac AURA for my business. My company is Acme, our website is acme.com, and I want to grow qualified leads profitably. Get set up and figure out what we should work on first.
+
+You do not need to choose a playbook, contract, schema, provider, or operating mode before asking for help.
+
+See **`START-HERE.md`** for the short human quick start.
+
+## What this copy includes
+
+Core plus:
+
+- **Competitor Intelligence** — understand competitors, their positioning, offers, content, ads, funnels, customer sentiment, strengths, weaknesses, and meaningful changes;
+- **Customer Intelligence** — understand customer needs, pains, objections, language, decisions, experiences, and reasons for buying/leaving;
+- **Industry Intelligence** — track relevant market, platform, regulatory, technology, research, and category developments;
+- **SEO/AEO** — improve discovery across search engines, AI/answer engines, local search, technical SEO, content, authority, and visibility;
+- **Content Synthesis** — research what works and create platform-native articles, posts, newsletters, carousels, video/audio concepts, presentations, and more;
+- **Marketing Synthesis** — create and improve positioning, messaging, offers, ads, landing pages, VSLs, webinars, email, quizzes, and persuasive assets;
+- **Customer Optimization** — improve conversion, purchase, onboarding, activation, retention, repeat purchase, expansion, and referral.
+
+Browse the plain-language catalog in **`PLAYBOOKS.md`** if you want to see specific capabilities. You still do not need to pick one before asking AURA to solve a business problem.
+
+## The operating idea
+
+AURA is designed around a simple loop:
+
+**business context → evidence → priorities → reasoning → authorized work → verification → measurement → Learning → better future work**
+
+The model can change.
+
+The harness can change.
+
+The tools can change.
+
+The people can change.
+
+The organization’s durable operating intelligence should persist.
+
+## Local-first and portable
+
+AURA is designed to remain useful without a mandatory proprietary server, database, UI, cloud runtime, Git provider, ViralTrac account, or single AI vendor.
+
+The default experience can be as simple as one local folder.
+
+Business-specific context, intelligence, assets, preferences, Learning, extensions, and human knowledge stay in the organization-owned workspace unless deliberately integrated elsewhere.
+
+Optional deployment modes can separate product source from organization state for versioning, multi-device use, teams, or infrastructure needs. See `DEPLOYMENT.md` and `OPERATOR-GUIDE.md`.
+
+## Better tools should make AURA better
+
+AURA is intentionally model/provider/harness/tool neutral.
+
+It can use the best available combination of:
+
+- general-purpose AI models;
+- specialist models or Skills;
+- organization SOPs;
+- browsers/search;
+- APIs;
+- CRM/CMS/analytics systems;
+- deterministic software;
+- human experts;
+- ViralTrac;
+- future agent/harness capabilities.
+
+The native AURA processes should remain useful on their own. Optional specialist execution methods can improve them further when genuinely better for the job.
+
+## Evidence, truth, and authorization
+
+AURA is designed to be flexible about **how** intelligent work is performed while remaining strict about important organizational boundaries.
+
+It should distinguish:
+
+- known facts from inference;
+- external evidence from active-business truth;
+- drafts from execution;
+- execution from verification;
+- measurement from causation;
+- preferences from authorization.
+
+AURA should not invent business facts, source evidence, tool actions, media execution, publication, measurements, or outcomes merely to appear complete.
+
+Consequential actions such as publishing, spending money, contacting customers, changing production systems, or other governed actions remain subject to the applicable authorization boundary.
+
+## AURA and ViralTrac
+
+ViralTrac is AURA's recommended first-party companion, but it is optional.
+
+AURA is the broader business operating layer. When connected, ViralTrac can provide governed first-party tracking, attribution, measurement, experiments, event/exposure data, and supported growth-operation/action surfaces for authorized AURA work.
+
+AURA should still work before ViralTrac, alongside ViralTrac, or without ViralTrac.
+
+## Human, power-user, and agent documentation
+
+Use the level of detail you actually need:
+
+- **`START-HERE.md`** — simple human quick start;
+- **`WELCOME.md`** — first-run human message;
+- **`PLAYBOOKS.md`** — plain-language capability catalog;
+- **`OPERATOR-GUIDE.md`** — optional commands, workspaces, providers, validation, preferences, knowledge, and advanced operation;
+- **`DEPLOYMENT.md`** — storage/deployment/versioning/team options;
+- **`CONTEXT.md`** — agent operating context;
+- **`BRANDING.md`** — public naming;
+- **`PUBLIC-DISTRIBUTION.md` / `SECURITY.md`** — public/package/security boundary;
+- **`LICENSE.md`** — source-available license.
+
+## Source availability
 
 This distribution is **source-available, not open source**. Internal/commercial business use, customization, and agency/consulting use for clients are permitted under `LICENSE.md`; white-label resale or repackaging it as someone else's standalone BusinessOS product is not.
 
-AURA remains model/provider/vendor/harness agnostic. Each customer can keep a separate copy or, optionally, a separate organization-owned workspace; business-specific context, intelligence, assets, preferences, Learning, extensions, and human knowledge stay inside that workspace unless deliberately integrated elsewhere. AURA is portable-first: no proprietary AURA server/database/UI, ViralTrac account, cloud runtime, Git provider, or second-brain application is required for local operation.
+The official public product name is **ViralTrac AURA**. “BusinessOS” remains the descriptor/category and is retained in compatibility-sensitive technical identifiers such as the `businessos` repository name and `BUSINESSOS_*` environment variables.
 
-## Start
+---
 
-**AI/agent:** read root `CONTEXT.md` and `core/policies/agent-execution.md` before the first business write. Contract IDs are not executable paths; durable Business Context must use validated canonical objects.
-
-- Automatic first-run message: `WELCOME.md`
-- Human: `START-HERE.md`
-- Deployment/storage/versioning/Obsidian: `DEPLOYMENT.md`
-- Public naming rules: `BRANDING.md`
-- Browse what AURA can do: `PLAYBOOKS.md`
-- AI/agent: `CONTEXT.md`
-- License: `LICENSE.md`
-- Public distribution/security boundary: `PUBLIC-DISTRIBUTION.md`, `SECURITY.md`
-- Installed modules/dependencies: `INSTALLATION.json` and `distribution/ACTIVE-DEPENDENCIES.json`
-- Tasks: `TASK-NAVIGATOR.md`
-- Publisher/origin: `PUBLISHER.json`
-- Provider defaults: `distribution/provider-defaults.json`
-
-Optional modules are enrichments, not hidden hard dependencies. When one is absent, use `core/policies/module-independence.md`.
-
-## Three deployment experiences
-AURA has one operating architecture with three deployment experiences, not three separate products:
-
-1. **Simple — Download and Use.** The product folder is also the workspace. No Git, hosted service, or Obsidian is required.
-2. **Power User — Private Versioned Workspace.** Optionally separate organization state from product source, use private Git for history/rollback/multi-device use, and open the human knowledge layer in Obsidian or another Markdown tool.
-3. **Organization — Shared Organization Workspace.** Keep a private team-owned workspace with controlled Git/organization infrastructure while the canonical AURA product can be upgraded separately.
-
-Configure a new/empty external workspace with:
-
-```bash
-python3 scripts/configure_workspace.py <path> --profile power_user|organization
-python3 scripts/workspace_status.py
-```
-
-If the current workspace already contains business state, migrate it safely instead:
-
-```bash
-python3 scripts/migrate_workspace.py <path> --profile power_user|organization
-python3 scripts/workspace_status.py
-```
-
-Migration is non-destructive and hash-verified; the old workspace remains intact. `BUSINESSOS_WORKSPACE=<path>` can select the workspace without a local pointer. The `BUSINESSOS_*` namespace is intentionally retained as a technical compatibility identifier after the AURA rebrand.
-
-Refresh the human-readable knowledge layer with:
-
-```bash
-python3 scripts/generate_knowledge_layer.py <business-id>
-```
-
-Canonical BusinessOS JSON remains authoritative. `knowledge/<business-id>/_generated/` is a replaceable Markdown view; `knowledge/<business-id>/notes/` is for human working notes and is noncanonical until deliberately incorporated through normal evidence/context governance. A human note can be registered as provenance-backed source material with `scripts/register_human_note.py` without automatically making its statements true.
-
-See `DEPLOYMENT.md` and `core/policies/workspace-and-human-knowledge.md`.
-
-## ViralTrac native companion
-When ViralTrac is connected, AURA can dynamically discover its current machine-facing capabilities and use its governed semantic data, measurement, tracking, supported action/receipt surfaces, and event/reactive plane without making ViralTrac a required runtime. The public AURA package contains only integration-facing metadata needed by authorized clients; it does not include ViralTrac's proprietary hosted-application source code or private infrastructure. See `core/policies/viraltrac-native-companion.md`.
-
-## Customization and multi-operator use
-AURA separates reusable operating invariants from business/Brand configuration, team/operator preferences, and implementation technique. Durable preferences live as business-scoped `PreferenceProfile` objects and resolve deterministically as business → team → role → operator → one-task preference, always below mandatory AURA/business/Brand/contract/approval requirements. Runs may carry opaque `operator_ref`/`team_ref`/`role_ref` labels and snapshot the effective preferences for reproducibility. See `core/policies/preferences-and-adaptation.md`.
-
-Different models/harnesses may sequentially resume the same durable workspace; WorkRequests can be executed in the same session or by harness-managed workers. AURA does not itself spawn agents or guarantee arbitrary simultaneous writes to the same canonical object are conflict-safe. See `core/policies/shared-workspace-coordination.md`.
-
-## Fresh-business onboarding
-For a new business, `scripts/bootstrap_explicit_context.py` can ground setup facts across multiple original user-supplied files with repeated `--source-file` arguments; it preserves each source member reference/hash instead of requiring a manually merged source file. Explicit organization Brand instructions should be persisted as first-class Brand state during the same handoff, preferably with `--brand-profile-file runtime/<brand>.json` (the grounded facts `brand` field remains supported); reusable business/team/role/operator preferences can be persisted before residual work with `--preference-profile-file`. This keeps the first downstream Run portable and preference-aware rather than depending on transient chat context.
-
-For outward Content/Marketing work, intended audience and publication state are separate. A local unpublished homepage, landing page, email, ad, proposal, webinar, or similar draft remains customer-facing and must use the appropriate customer-facing production root, claim governance, required subcontract evidence, and Run provenance. Work created during the current execution is never `imported`/`preexisting` merely because it has not been published.
-
-## Updates
-Update checks use official GitHub Releases, are disabled by default, metadata-only, and never auto-install. For a one-time check: `python scripts/check_for_updates.py --force`.
-
-## Attention and changing platforms
-AURA keeps portable semantic state for material unresolved attention and versioned external platform changes; it does not require a proprietary notification/scheduler service. Compatible harnesses can query current attention with `python scripts/list_attention.py <business-id> --json` and current platform state with `python scripts/list_platform_state.py <business-id> --json`, then use whatever delivery/scheduling capabilities they provide. Repeated unchanged checks update existing state instead of creating duplicate files.
-
-### Authorization is not a preference
-Reusable style/work-method choices belong in `PreferenceProfile`. Current-task permissions and restrictions (for example, do not publish, do not spend, ask before contacting customers, or approval required before deployment) do **not** belong in PreferenceProfile and must not be carried into later sessions as personal preferences. Keep them in the current request/Run/action context; persist formal approvals through the governed `Approval` lifecycle when applicable.
-
-If upgrading a workspace created before this separation was enforced, inspect legacy profiles with `python3 scripts/migrate_preference_profiles.py <business-id>`. After reviewing the dry-run output, apply with `--apply`, then run `python3 scripts/validate_business.py <business-id> --require-context`. The migration removes invalid preference-held authority only; it does not create or infer an Approval.
-
-## Naming compatibility
-The official public product name is **ViralTrac AURA**. “BusinessOS” remains the descriptor/category and is retained in stable technical identifiers such as the `businessos` repository name, `BUSINESSOS_*` environment variables, existing contract/object conventions, and other compatibility-sensitive interfaces. See `BRANDING.md`.
+**The intended experience is simple:** give a capable AI the AURA folder, tell it about the business and desired outcome, and let AURA supply the durable operating structure underneath the work.
