@@ -130,15 +130,17 @@ def tree_snapshot(root):
 def product_snapshot_path_is_mutable(rel):
     """Return True only for first-run host-local state that AURA creates in product root.
 
-    Qualification protects product source, playbooks, policies, schemas, scripts, and
-    tracked deployment configuration. It must not fail ordinary AURA setup because the
-    host selects an external workspace or records first-run host/bootstrap metadata.
+    Qualification protects product source, playbooks, policies, schemas, scripts, tracked
+    deployment templates/configuration, and other shipped content. It must not fail
+    ordinary AURA setup because a real host selects an external workspace or records
+    first-run host/bootstrap metadata in a non-template environment.
     """
     rel=Path(rel)
     if rel.as_posix()=='.businessos/workspace.json': return True
     parts=rel.parts
     return bool(
         len(parts)==4 and parts[0]=='deployment' and parts[1]=='environments'
+        and parts[2] != '_template'
         and rel.name in PRODUCT_SNAPSHOT_MUTABLE_ENV_FILES
     )
 
@@ -147,7 +149,7 @@ def product_snapshot(root):
 
     Transient interpreter/editor files and narrowly defined first-run host-local state
     are ignored. Product source, playbooks, policies, schemas, scripts, tracked deployment
-    configuration, and other shipped content remain immutable during qualification.
+    templates/configuration, and other shipped content remain immutable during qualification.
     """
     root=Path(root); files=[]
     if not root.exists(): return {'root':str(root),'files':[],'digest':hashlib.sha256(b'').hexdigest(),'format_version':'1.0'}
