@@ -31,10 +31,21 @@ def smoke_prepare():
         req(evaluator_contracts==set(selected),f'evaluator queue lost the hidden target contracts: {evaluator_contracts}')
         req(evaluator_queue.get('contract_filter')==sorted(selected) and prep.get('contract_filter')==sorted(selected),'evaluator metadata must preserve exact representative contract filter')
         req('contract_filter' not in queue and 'contract_filter' not in meta,'candidate-visible queue/run metadata must not expose contract filter')
-        catalog_pages=[rd/'product/PLAYBOOK-INDEX.md',rd/'product/PLAYBOOKS.md',*(rd/'product/docs/playbooks').rglob('*.md')]
+
+        # The candidate must see the runtime product, not the maintainer test laboratory.
+        product=rd/'product'
+        req(not (product/'tests').exists(),'developer tests leaked into staged candidate product')
+        req(not (product/'qualification/fixtures').exists(),'raw benchmark fixtures leaked into staged candidate product')
+        allowed_helpers={'common.py','checkpoint.py','release_fixture.py','resume_status.py','RECOVERY.md'}
+        qroot=product/'qualification'
+        qfiles={p.relative_to(qroot).as_posix() for p in qroot.rglob('*') if p.is_file()} if qroot.exists() else set()
+        req(qfiles <= allowed_helpers,f'candidate product leaked maintainer qualification files: {sorted(qfiles-allowed_helpers)}')
+        req({'common.py','checkpoint.py','release_fixture.py'} <= qfiles,f'candidate product is missing required qualification helpers: {sorted({"common.py","checkpoint.py","release_fixture.py"}-qfiles)}')
+        req(not (product/'qualification/evaluate_run.py').exists() and not (product/'qualification/integrity.py').exists(),'evaluator implementation leaked into staged candidate product')
+
+        catalog_pages=[product/'PLAYBOOK-INDEX.md',product/'PLAYBOOKS.md',*(product/'docs/playbooks').rglob('*.md')]
         for page in catalog_pages:
             page.read_text(encoding='utf-8')
-        req(not (rd/'product/qualification/fixtures').exists(),'raw benchmark fixtures leaked into staged candidate product')
         for fixture in ('atlasops-saas','harbor-hvac','northline-commerce'):
             src=rd/'workspace/attachments/qualification-inputs'/f'{fixture}.json'; req(src.exists(),f'{fixture}: sanitized candidate fixture missing')
             data=json.loads(src.read_text()); req('timeline' not in data,f'{fixture}: future timeline leaked into initial candidate fixture')
@@ -42,7 +53,7 @@ def smoke_prepare():
         req((rd/'evaluator/hidden-fixtures/atlasops-saas-releases.json').exists(),'AtlasOps later-period release not staged')
         req((rd/'evaluator/hidden-fixtures/harbor-hvac-releases.json').exists(),'Harbor HVAC later-period release not staged')
         env=dict(os.environ); env['BUSINESSOS_WORKSPACE']=meta['workspace']; env['AURA_QUALIFICATION_RUN']=str(rd); env['PYTHONDONTWRITEBYTECODE']='1'
-        create=subprocess.run([sys.executable,str(rd/'product/scripts/create_run.py'),'qa-atlasops-saas','core.intelligence.ecosystem-radar','qualification object-form subcontract smoke'],cwd=rd/'product',env=env,capture_output=True,text=True)
+        create=subprocess.run([sys.executable,str(product/'scripts/create_run.py'),'qa-atlasops-saas','core.intelligence.ecosystem-radar','qualification object-form subcontract smoke'],cwd=product,env=env,capture_output=True,text=True)
         req(create.returncode==0,f'create_run object-form subcontract smoke failed: {create.stdout}\n{create.stderr}')
         rid=create.stdout.strip().splitlines()[-1]; manifest=rd/'workspace/runtime/runs/qa-atlasops-saas'/rid/'contract-execution.json'
         req(manifest.exists(),'create_run smoke did not persist contract-execution manifest')
@@ -51,9 +62,9 @@ def smoke_prepare():
         req('core.intelligence.ecosystem.source-discovery' in required,'object-form required subcontract id was not normalized into the Run manifest')
         release_event={'event_id':'SMOKE-RELEASE','kind':'business_task','business_id':'qa-atlasops-saas','fixture':'atlasops-saas','release_fixture':'later_period','task':'smoke timed release','receipt_path':'candidate-results/SMOKE-RELEASE.json'}
         queue_path.write_text(json.dumps({'format_version':'1.1','run_id':'smoke','event_count':1,'events':[release_event]},indent=2)+'\n')
-        before=subprocess.run([sys.executable,str(rd/'product/qualification/checkpoint.py'),'SMOKE-RELEASE','before','--business-id','qa-atlasops-saas'],cwd=rd/'product',env=env,capture_output=True,text=True)
+        before=subprocess.run([sys.executable,str(product/'qualification/checkpoint.py'),'SMOKE-RELEASE','before','--business-id','qa-atlasops-saas'],cwd=product,env=env,capture_output=True,text=True)
         req(before.returncode==0,f'timed release before-checkpoint failed: {before.stdout}\n{before.stderr}')
-        release=subprocess.run([sys.executable,str(rd/'product/qualification/release_fixture.py'),'SMOKE-RELEASE'],cwd=rd/'product',env=env,capture_output=True,text=True)
+        release=subprocess.run([sys.executable,str(product/'qualification/release_fixture.py'),'SMOKE-RELEASE'],cwd=product,env=env,capture_output=True,text=True)
         req(release.returncode==0,f'timed release helper failed: {release.stdout}\n{release.stderr}')
         released=rd/'workspace/attachments/qualification-inputs/atlasops-saas-later_period.json'; req(released.exists(),'timed release did not create candidate-visible evidence')
         rel=json.loads(released.read_text()); req(rel.get('release_fixture')=='later_period' and rel.get('evidence'),'timed release payload invalid')
@@ -86,10 +97,6 @@ def main():
     seed_source=inspect.getsource(init_business)
     req('bootstrap_explicit_context.py' in seed_source and '--require-context' in seed_source,'qualification preparation must ground fixture context canonically and validate required context before Level-2 testing')
     req("k!='timeline'" in seed_source and 'hidden-fixtures' in seed_source,'later-period fixture evidence must be withheld from initial candidate inputs')
-    copy_source=inspect.getsource(copy_product)
-    req("parts[0]=='qualification' and parts[1]=='fixtures'" in copy_source,'raw benchmark fixtures must not be copied into the staged candidate product')
-    req("'aura-qualification-runs'" in copy_source,'historical qualification run archives must not be copied into staged candidate products')
-    req("'evaluate_run.py'" in copy_source and "'integrity.py'" in copy_source,'evaluator-only executables must be excluded from staged candidate products')
     req((ROOT/'qualification/release_fixture.py').exists(),'timed fixture release helper missing')
     released=[m for m in suite['cross_domain_missions']+suite['marathon_missions'] if m.get('release_fixture')]
     req(len(released)>=2 and {'CROSS-MARKET-CHANGE-001','MARATHON-002'}.issubset({m['id'] for m in released}),'expected longitudinal evidence-release missions missing')
