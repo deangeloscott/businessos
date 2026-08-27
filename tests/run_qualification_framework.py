@@ -74,6 +74,15 @@ def smoke_prepare():
 
 
 def main():
+    # Qualification philosophy and longitudinal record are durable maintainer state, not candidate content.
+    principles=ROOT/'qualification/PRINCIPLES.md'; ledger=ROOT/'qualification/ledger.jsonl'; qreadme=ROOT/'qualification/README.md'
+    req(principles.is_file() and ledger.is_file(),'qualification principles/ledger missing')
+    req('PRINCIPLES.md' in qreadme.read_text(encoding='utf-8'),'qualification README must route maintainers to the authoritative principles')
+    for i,line in enumerate(ledger.read_text(encoding='utf-8').splitlines(),1):
+        if line.strip():
+            try: json.loads(line)
+            except json.JSONDecodeError as e: raise AssertionError(f'qualification ledger line {i} is not valid JSON: {e}')
+
     suite=build(); manifest=json.loads((ROOT/'SYSTEM-MANIFEST.json').read_text())
     expected=manifest.get('counts',{}).get('contract_count') or manifest.get('contract_count'); expected_caps=manifest.get('capability_count')
     req(suite['contract_count']==expected,f"qualification coverage {suite['contract_count']} != manifest {expected}")
@@ -104,6 +113,6 @@ def main():
     released=[m for m in suite['cross_domain_missions']+suite['marathon_missions'] if m.get('release_fixture')]
     req(len(released)>=2 and {'CROSS-MARKET-CHANGE-001','MARATHON-002'}.issubset({m['id'] for m in released}),'expected longitudinal evidence-release missions missing')
     smoke_prepare()
-    print(f"qualification framework regressions passed: {suite['contract_count']} contract tests, {suite['capability_count']} capability mappings, blind candidate staging, external checkpoints/receipts/releases, selected-fixture preparation, and production-like run smoke passed")
+    print(f"qualification framework regressions passed: {suite['contract_count']} contract tests, {suite['capability_count']} capability mappings, durable principles/ledger, blind candidate staging, external checkpoints/receipts/releases, selected-fixture preparation, and production-like run smoke passed")
 
 if __name__=='__main__': main()
