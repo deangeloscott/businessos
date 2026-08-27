@@ -3,9 +3,10 @@ from pathlib import Path
 import argparse, json, os, subprocess, sys
 from common import ROOT, now, product_snapshot, read_json, snapshot_diff, write_json
 sys.path.insert(0,str(ROOT/'scripts'))
-from completion_evidence import contract_index, subcontract_manifest_errors, validate_evidence
+from completion_evidence import completion_spec, contract_index, subcontract_manifest_errors, validate_evidence
 from integrity import (
-    artifact_similarity_flags, exact_duplicate_artifact_flags, existing_ref_paths,
+    artifact_similarity_flags, checkpoint_chain_contiguous, declared_write_absence_justified,
+    exact_duplicate_artifact_flags, existing_ref_paths,
     event_specific_ref_paths, integrity_hard_failure, reconstructable_field_snapshot_paths,
     run_control_flags, selector_types,
     structured_prepublish_refs,
@@ -39,9 +40,10 @@ def run_details(workspace,business_id,run_id):
     d=workspace/'runtime'/'runs'/business_id/run_id
     return read_json(d/'run.json',{}),read_json(d/'contract-execution.json',{})
 
-def hard_grade(event,test,before,after,receipt,workspace,product_root):
+def hard_grade(event,test,before,after,receipt,workspace,product_root,previous_after=None):
     gates={}
     gates['checkpoint_before_exists']=before is not None; gates['checkpoint_after_exists']=after is not None; gates['candidate_receipt_exists']=receipt is not None
+    if previous_after is not None:gates['checkpoint_chain_contiguous']=checkpoint_chain_contiguous(previous_after,before)
     run_ids=(receipt or {}).get('root_run_ids') or []; gates['root_run_exists']=bool(run_ids)
     matching=False; matching_complete=False; any_complete=False; all_subcontracts_ok=True; matching_subcontracts_ok=True; run_audit=[]
     matching_root_evidence_valid=False;matching_subcontract_evidence_valid=False
@@ -79,7 +81,9 @@ def hard_grade(event,test,before,after,receipt,workspace,product_root):
         gates['actual_artifact_exists']=bool(actual_artifacts); gates['artifact_referenced_by_receipt']=bool(artifact_refs)
         gates['artifact_nontrivial']=any(Path(p).stat().st_size>=200 for p in actual_artifacts)
     if test and test.get('writes'):
-        changed=changed_object_types(before,after); declared=selector_types(test['writes']); gates['declared_write_type_observed_or_explicitly_justified']=bool(declared & changed)
+        changed=changed_object_types(before,after); declared=selector_types(test['writes']); root=CONTRACTS.get(event.get('contract_id'),{})
+        justified=declared_write_absence_justified(completion_spec(root).get('profile'),actual_artifacts)
+        gates['declared_write_type_observed_or_explicitly_justified']=bool(declared & changed) or justified
     if test and test.get('artifact_role')=='customer_facing_production_root':
         gates['customer_facing_claim_governance_passed']=gates['root_run_completed']
         gates['prepublish_or_required_qa_recorded']=bool(structured_prepublish_refs(workspace,event['business_id'],before,after,run_audit))
@@ -116,9 +120,10 @@ def main():
     jp=Path(a.judgments).expanduser() if a.judgments else rd/'evaluator/judgments.json'
     if jp.exists(): judgments=idx(read_json(jp,[]),'event_id')
     results=[]
+    previous_after=None
     for event in queue['events']:
         eid=event['event_id']; test=tests.get(eid); before=read_json(rd/'checkpoints'/eid/'before.json'); after=read_json(rd/'checkpoints'/eid/'after.json'); receipt=read_json(rd/event['receipt_path'])
-        gates,validation,run_audit,artifacts=hard_grade(event,test,before,after,receipt,workspace,product_root)
+        gates,validation,run_audit,artifacts=hard_grade(event,test,before,after,receipt,workspace,product_root,previous_after)
         hard_pass=all(gates.values()) if gates else False
         judge=judgments.get(eid); scores=(judge or {}).get('scores') or {}; required_dims=(test or {}).get('rubric_dimensions') or event.get('rubric_dimensions') or [x['id'] for x in RUBRICS['base']]; missing_dims=[d for d in required_dims if d not in scores]; invalid_scores=[v for v in scores.values() if not isinstance(v,(int,float)) or v<0 or v>5]; review_complete=bool(scores) and not missing_dims and not invalid_scores; overall=(sum(scores[d] for d in required_dims)/len(required_dims)) if review_complete else None
         floor=min(scores[d] for d in required_dims) if review_complete else None
@@ -134,6 +139,7 @@ def main():
         elif overall >= RUBRICS['minimums']['acceptable_overall']: verdict='ACCEPTABLE'
         else: verdict='FUNCTIONAL-NOT-ACCEPTABLE'
         results.append({'event_id':eid,'kind':event['kind'],'contract_id':event.get('contract_id'),'business_id':event['business_id'],'hard_pass':hard_pass,'hard_gates':gates,'validation':validation,'workspace_diff':snapshot_diff((before or {}).get('workspace',{}),(after or {}).get('workspace',{})),'receipt':receipt,'actual_artifacts':artifacts,'run_audit':run_audit,'judge':judge,'review_complete':review_complete,'missing_review_dimensions':missing_dims,'invalid_review_scores':invalid_scores,'overall_quality_score':overall,'blocker_classification':blocked_class,'integrity_flags':[],'verdict':verdict})
+        previous_after=after
 
     similarity=artifact_similarity_flags(results); duplicates=exact_duplicate_artifact_flags(results); run_flags=run_control_flags(rd,workspace)+staged_product_integrity_flags(rd,product_root,run)
     critical_types={'mass_completion_runner','candidate_evaluator_spec_access','staged_product_mutation','product_integrity_baseline_missing','product_integrity_baseline_mismatch'}

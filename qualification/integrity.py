@@ -37,7 +37,14 @@ def existing_ref_paths(refs,workspace):
 
 def _snapshot_files(checkpoint):
     snap=(checkpoint or {}).get('workspace') or {}
-    return {x.get('path'):x for x in snap.get('files',[]) if isinstance(x,dict) and x.get('path')}
+    return {str(x.get('path')).replace('\\','/'):x for x in snap.get('files',[]) if isinstance(x,dict) and x.get('path')}
+
+
+def checkpoint_chain_contiguous(previous_after,current_before):
+    """No candidate work may occur between one event's after and the next event's before checkpoint."""
+    prior=((previous_after or {}).get('workspace') or {}).get('digest')
+    current=((current_before or {}).get('workspace') or {}).get('digest')
+    return bool(prior and current and prior==current)
 
 
 def event_specific_ref_paths(refs,before,after,workspace):
@@ -53,7 +60,7 @@ def event_specific_ref_paths(refs,before,after,workspace):
 
 def _source_locator(value,workspace):
     if isinstance(value,dict):
-        value=next((value.get(k) for k in ('source_url','url','source_ref','evidence_ref','reference') if value.get(k)),None)
+        value=next((value.get(k) for k in ('source_url','url','source_ref','source_reference','evidence_ref','reference') if value.get(k)),None)
     if not isinstance(value,str) or not value.strip():return False
     if re.match(r'^https?://',value.strip(),re.I):
         host=(urlparse(value.strip()).hostname or '').lower().rstrip('.')
@@ -68,9 +75,9 @@ def is_reconstructable_field_snapshot(path,workspace):
     try:data=json.loads(Path(path).read_text(encoding='utf-8'))
     except Exception:return False
     if not isinstance(data,dict) or not data.get('captured_at'):return False
-    context=any(data.get(k) for k in ('query','surface','method','scope','research_question','channel'))
+    context=any(data.get(k) for k in ('query','surface','method','scope','research_question','channel','market_context'))
     sources=[]
-    for key in ('sources','source_refs','evidence_refs'):
+    for key in ('sources','source_refs','source_references','evidence_refs'):
         value=data.get(key)
         if isinstance(value,list):sources.extend(value)
     for key in ('competitive_set','comparisons','results','examples'):
@@ -82,6 +89,26 @@ def is_reconstructable_field_snapshot(path,workspace):
 
 def reconstructable_field_snapshot_paths(refs,before,after,workspace):
     return [p for p in event_specific_ref_paths(refs,before,after,workspace) if is_reconstructable_field_snapshot(p,workspace)]
+
+
+def declared_write_absence_justified(profile,artifact_paths):
+    """Recognize evidence-backed outcomes where creating a declared object would be dishonest."""
+    for path in artifact_paths or []:
+        try:data=json.loads(Path(path).read_text(encoding='utf-8'))
+        except Exception:continue
+        if not isinstance(data,dict):continue
+        status=str(data.get('status','')).lower().strip()
+        if profile=='qa':
+            checks=data.get('checks_performed',data.get('checks'))
+            if status in {'pass','passed'} and isinstance(checks,list) and checks and all(
+                isinstance(data.get(key),list) and not data[key]
+                for key in ('issues_found','corrections_made','blockers')
+            ):
+                return True
+        if profile=='detector' and status in {'no_finding','no finding','none_detected'}:
+            checks=data.get('checks_performed',data.get('checks'))
+            if isinstance(checks,list) and checks:return True
+    return False
 
 
 def is_structured_prepublish_record(path):
@@ -211,6 +238,34 @@ def integrity_hard_failure(flags):
     return False
 
 
+def _log_requested_evaluator_material(text,evaluator_markers):
+    """Distinguish a tool request from filenames merely returned in tool output."""
+    def strings(value):
+        if isinstance(value,dict):
+            for item in value.values(): yield from strings(item)
+        elif isinstance(value,(list,tuple)):
+            for item in value: yield from strings(item)
+        elif value is not None:
+            yield str(value)
+    for raw in text.splitlines():
+        line=raw.strip()
+        if not line: continue
+        try: payload=json.loads(line)
+        except json.JSONDecodeError:
+            if any(marker in line.lower() for marker in evaluator_markers): return True
+            continue
+        if not isinstance(payload,dict): continue
+        step=payload.get('step_update') if isinstance(payload.get('step_update'),dict) else payload
+        info=step.get('tool_info') if isinstance(step.get('tool_info'),dict) else {}
+        requested=[]
+        if isinstance(info.get('parameters'),dict): requested.append(info['parameters'])
+        for key in ('tool','command','command_line','input'):
+            if step.get(key) is not None: requested.append(step[key])
+        request_text='\n'.join(strings(requested)).lower()
+        if any(marker in request_text for marker in evaluator_markers): return True
+    return False
+
+
 def run_control_flags(run_dir,workspace=None):
     rd=Path(run_dir)
     flags=[]
@@ -242,7 +297,7 @@ def run_control_flags(run_dir,workspace=None):
         for p in sorted(logs.glob('*.stdout.log')):
             try:text=p.read_text(encoding='utf-8',errors='ignore').lower()
             except OSError:continue
-            if any(marker in text for marker in evaluator_markers):
+            if _log_requested_evaluator_material(text,evaluator_markers):
                 flags.append({'type':'candidate_evaluator_spec_access','path':str(p)})
             if re.search(r'run_event\.py',text) and re.search(r'processing event \d+/\d+',text) and 'created aura run' in text:
                 flags.append({'type':'mass_completion_runner','path':str(p),'source':'captured_tool_log'})

@@ -2,7 +2,7 @@
 """Persist bounded research evidence without requiring agents to hand-author canonical schemas."""
 from _common import *
 from jsonschema import Draft202012Validator
-from validate_research_evidence import evidence_errors, DIRECT_ACQUISITION_METHODS, DISCOVERY_ONLY_METHODS, KNOWN_ACQUISITION_METHODS, AUTHORITATIVE_POINTER_METHODS
+from validate_research_evidence import evidence_errors, public_source_locator_error, DIRECT_ACQUISITION_METHODS, DISCOVERY_ONLY_METHODS, KNOWN_ACQUISITION_METHODS, AUTHORITATIVE_POINTER_METHODS
 import argparse, json, hashlib, shutil, secrets, re
 
 SYSTEMS_ALLOWED=SYSTEMS
@@ -205,6 +205,9 @@ def persist(bid,bundle):
                 adequate=(status=='captured' and acquisition in DIRECT_ACQUISITION_METHODS and (ev.get('captured_text') or ev.get('asset_refs') or ev.get('record_payload') is not None)) or (status=='external_pointer' and ev.get('evidence_pointer') and acquisition in AUTHORITATIVE_POINTER_METHODS)
                 if not adequate:
                     raise ValueError(f'Observation {o["id"]} cannot rely on public source {ref} acquired as {acquisition!r} with capture_status={status!r}; search/snippet discovery is not support. Open/retrieve the underlying source or use an authoritative reproducible record.')
+    for source in src_objs:
+        locator_error=public_source_locator_error(source)
+        if locator_error:raise ValueError(locator_error)
 
     for obj in all_objs:
         written.append((obj,_write(obj)))

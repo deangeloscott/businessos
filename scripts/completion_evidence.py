@@ -288,7 +288,7 @@ def intelligence_evidence_errors(contract,paths,business_id,run_id):
     return [f'{cid} intelligence work record is incomplete: ' + '; '.join(dict.fromkeys(all_failures))]
 
 
-def _structured_check(item,require_method_evidence=False,target_text=''):
+def _structured_check(item,require_method_evidence=False,target_text='',business_id=None):
     if not isinstance(item,dict):return False
     label=next((item.get(k) for k in ('check','name','criterion','test') if item.get(k)),None)
     outcome=next((item.get(k) for k in ('status','result','outcome','passed') if item.get(k) is not None),None)
@@ -309,6 +309,9 @@ def _structured_check(item,require_method_evidence=False,target_text=''):
         method=next((item.get(k) for k in ('method','procedure','tool','inspection') if item.get(k) not in (None,'')),None)
         finding=next((item.get(k) for k in ('finding','evidence','observed','actual','result') if item.get(k) not in (None,'')),None)
         if not _substantive(method) or not _substantive(finding):return False
+        if re.search(r'\b(?:automat(?:ed|ic)|scanner|linter|validator|flesch(?:-kincaid)?|contrast ratio|axe|lighthouse)\b',str(method),re.I):
+            tool_ref=next((item.get(k) for k in ('tool_output_ref','automation_evidence_ref','scan_output_ref') if item.get(k)),None)
+            if not tool_ref or not _ref_resolves(tool_ref,business_id):return False
         normalized_outcome=str(outcome).lower().strip()
         passed=outcome is True or normalized_outcome in {'pass','passed','true','ok','not_applicable','not applicable','n/a'}
         if not passed:return False
@@ -324,11 +327,11 @@ def _structured_check(item,require_method_evidence=False,target_text=''):
     return True
 
 
-def _structured_checks(checks,require_method_evidence=False,target_text=''):
-    if isinstance(checks,list):return bool(checks) and all(_structured_check(x,require_method_evidence,target_text) for x in checks)
+def _structured_checks(checks,require_method_evidence=False,target_text='',business_id=None):
+    if isinstance(checks,list):return bool(checks) and all(_structured_check(x,require_method_evidence,target_text,business_id) for x in checks)
     if isinstance(checks,dict):
         return bool(checks) and all(
-            _structured_check(v,require_method_evidence,target_text) if isinstance(v,dict) else (not require_method_evidence and isinstance(v,(bool,int,float)))
+            _structured_check(v,require_method_evidence,target_text,business_id) if isinstance(v,dict) else (not require_method_evidence and isinstance(v,(bool,int,float)))
             for v in checks.values()
         )
     return False
@@ -379,7 +382,7 @@ def _qa_records(contract_id,paths,strict_target=False,business_id=None,run_id=No
         if str(data.get('status','')).lower() not in {'pass','passed'}:continue
         checks=data.get('checks_performed',data.get('checks'))
         target_text=_qa_target_text(data,business_id) if contract_id.startswith('content.qa.') else ''
-        if not _structured_checks(checks,require_method_evidence=strict_target,target_text=target_text):continue
+        if not _structured_checks(checks,require_method_evidence=strict_target,target_text=target_text,business_id=business_id):continue
         if strict_target:
             blockers=data.get('blockers',None)
             if not isinstance(blockers,list) or blockers:continue
@@ -548,6 +551,15 @@ def _packet_fallback_ok(path,medium,contract_id=None):
         timecodes=re.findall(r'\b(?:[0-5]?\d:)?[0-5]\d:[0-5]\d\b',text)
         transitions=len(re.findall(r'(?im)^.*\b(?:transition|segue|audio cue|music cue|sfx|pause|fade|room tone)\b.*$',text))
         if units<4 or len(timecodes)<4 or transitions<2 or any(not any(term in text for term in group) for group in required_groups):return False
+        def minutes(value):
+            parts=[int(x) for x in value.split(':')]
+            if len(parts)==2:return parts[0]+parts[1]/60
+            return parts[0]*60+parts[1]+parts[2]/60
+        claimed=[float(x) for x in re.findall(r'\b(?:total\s+duration|episode\s+length|duration)\s*[:=-]\s*(\d+(?:\.\d+)?)\s*(?:minutes?|mins?)\b',text)]
+        scheduled=max([minutes(x) for x in timecodes]+claimed)
+        word_count=len(re.findall(r'\b\w+\b',text))
+        if scheduled and word_count/scheduled<90:return False
+        if re.search(r'\b(?:mastered|mixed|recorded|rendered|exported)\s+(?:to|at|in)\b',text):return False
     elif m=='presentation':
         sections=re.split(r'(?im)^\s*(?:#{1,6}\s+)?slide\s+\d+\s*[:.\-—]',text)[1:]
         slides=max(len(sections),len(re.findall(r'"slide_(?:number|id)"\s*:',text)))

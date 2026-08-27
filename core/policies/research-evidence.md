@@ -17,6 +17,8 @@ Do not copy an unnecessary archive of the internet into the workspace. Preserve 
 ## Search results are discovery, not evidence
 Search-result snippets, AI summaries of search results, directory previews, and unvisited URLs can help find sources. They do not by themselves qualify an Insight as `supported` when the underlying claim depends on source content that was not inspected and preserved.
 
+Reserved or placeholder public URLs such as `.invalid`, `.test`, `.example`, or localhost never establish current public evidence. If the real item cannot be opened and preserved, keep the finding unresolved rather than inventing a plausible locator, creator, quote, or metric.
+
 If the underlying source cannot be captured or reliably revisited, keep resulting interpretation provisional/candidate and state the limitation.
 
 ## SourceRecord evidence packet

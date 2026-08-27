@@ -36,10 +36,14 @@ def main():
 
         # Exact golden-path escape: current Run-produced homepage draft falsely labeled internal + preexisting.
         ap,fp=write_asset(rid,False,'preexisting','internal_working_draft')
-        run(S/'complete_run.py',BID,rid,'--evidence',ap,'--evidence',fp)
-        errs=run_completion_errors(BID,objs(ap))
-        req(any('cannot combine origin=' in e for e in errs),f'Run-produced object must not masquerade as preexisting: {errs}')
-        req(any('marketing-synthesis Asset may set customer_facing=false only' in e for e in errs),f'outward marketing draft must not opt out merely because unpublished: {errs}')
+        completed=run(S/'complete_run.py',BID,rid,'--evidence',ap,'--evidence',fp,check=False)
+        completion_output=completed.stderr+completed.stdout
+        req(completed.returncode!=0 and 'cannot combine origin=' in completion_output,
+            f'Run-produced object must not masquerade as preexisting: {completion_output}')
+        req('marketing-synthesis Asset may set customer_facing=false only' in completion_output,
+            f'outward marketing draft must not opt out merely because unpublished: {completion_output}')
+        req(json.loads((RUNS/rid/'run.json').read_text()).get('status')!='completed',
+            'failed active-business validation must restore the prior incomplete Run state')
 
         # Remove false legacy origin and declare the outward intent honestly: leaf-root bypass must still fail.
         a=json.loads(ap.read_text());bos=a['extensions']['businessos'];bos.pop('origin',None);bos['customer_facing']=True;ap.write_text(json.dumps(a,indent=2)+'\n')

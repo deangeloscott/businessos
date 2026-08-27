@@ -10,12 +10,21 @@ def req(c,m):
 
 def smoke_prepare():
     with tempfile.TemporaryDirectory(prefix='aura-qualification-smoke-') as td:
-        p=subprocess.run([sys.executable,str(ROOT/'qualification/prepare_run.py'),'--profile','atomic','--domain','core','--run-root',td,'--run-id','smoke'],cwd=ROOT,capture_output=True,text=True)
+        selected=['content.intelligence.creator-monitoring','content.production.article']
+        cmd=[sys.executable,str(ROOT/'qualification/prepare_run.py'),'--profile','atomic','--domain','content-synthesis','--run-root',td,'--run-id','smoke']
+        for cid in selected: cmd += ['--contract',cid]
+        prep_env=dict(os.environ); prep_env['PYTHONUTF8']='0'; prep_env['PYTHONDONTWRITEBYTECODE']='1'
+        p=subprocess.run(cmd,cwd=ROOT,capture_output=True,text=True,env=prep_env)
         req(p.returncode==0,f'qualification prepare smoke failed:\nSTDOUT:\n{p.stdout}\nSTDERR:\n{p.stderr}')
         rd=Path(td)/'smoke'; meta=json.loads((rd/'run.json').read_text()); queue_path=rd/'candidate/queue.json'; queue=json.loads(queue_path.read_text())
         req(meta.get('benchmark_context_seeded') is True,'prepared run must record grounded benchmark context')
         req(meta.get('future_evidence_staged') is True,'prepared run must record staged future evidence')
-        req(queue.get('event_count',0)>0 and all(x.get('kind')=='contract_acceptance' for x in queue.get('events',[])),'atomic core smoke queue missing contract events')
+        queued=[x.get('contract_id') for x in queue.get('events',[])]
+        req(queue.get('event_count')==len(selected) and set(queued)==set(selected) and all(x.get('kind')=='contract_acceptance' for x in queue.get('events',[])),f'atomic representative smoke queue mismatch: {queued}')
+        req(queue.get('contract_filter')==sorted(selected) and meta.get('contract_filter')==sorted(selected),'prepared run must preserve its exact representative contract filter')
+        catalog_pages=[rd/'product/PLAYBOOK-INDEX.md',rd/'product/PLAYBOOKS.md',*(rd/'product/docs/playbooks').rglob('*.md')]
+        for page in catalog_pages:
+            page.read_text(encoding='utf-8')
         req(not (rd/'product/qualification/fixtures').exists(),'raw benchmark fixtures leaked into staged candidate product')
         for fixture in ('atlasops-saas','harbor-hvac','northline-commerce'):
             src=rd/'workspace/attachments/qualification-inputs'/f'{fixture}.json'; req(src.exists(),f'{fixture}: sanitized candidate fixture missing')

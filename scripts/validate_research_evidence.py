@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from _common import *
+from urllib.parse import urlparse
 import argparse, json, hashlib
 
 PUBLIC_NARRATIVE_TYPES={
@@ -18,6 +19,7 @@ DISCOVERY_ONLY_METHODS={
 }
 KNOWN_ACQUISITION_METHODS=DIRECT_ACQUISITION_METHODS|DISCOVERY_ONLY_METHODS
 AUTHORITATIVE_POINTER_METHODS={'api_response','first_party_export','authoritative_record'}
+RESERVED_PUBLIC_HOSTS={'localhost','example.com','example.org','example.net'}
 
 
 def _evidence_ext(src):
@@ -46,11 +48,25 @@ def _capture_quality(src):
     return False,f'{status or "missing"}/{acquisition}'
 
 
+def public_source_locator_error(src):
+    public=src.get('access_scope')=='public' or src.get('source_type') in PUBLIC_NARRATIVE_TYPES or src.get('origin')=='public web'
+    ref=str(src.get('source_reference') or '').strip()
+    if not public or not ref.lower().startswith(('http://','https://')):return None
+    host=(urlparse(ref).hostname or '').lower().rstrip('.')
+    if not host or host in RESERVED_PUBLIC_HOSTS or host.endswith(('.invalid','.test','.localhost','.example')):
+        return f'{src.get("id") or "public SourceRecord"} uses reserved/placeholder public source_reference {ref!r}; placeholder URLs cannot support current public evidence'
+    return None
+
+
 def evidence_errors(business_id):
     idx=object_index(business_id); errors=[]; warnings=[]
     sources={k:v[0] for k,v in idx.items() if v[0].get('object_type')=='SourceRecord'}
     observations={k:v[0] for k,v in idx.items() if v[0].get('object_type')=='Observation'}
     insights={k:v[0] for k,v in idx.items() if v[0].get('object_type')=='Insight'}
+
+    for src in sources.values():
+        locator_error=public_source_locator_error(src)
+        if locator_error:errors.append(locator_error)
 
     for oid,obs in observations.items():
         refs=obs.get('source_refs') or []

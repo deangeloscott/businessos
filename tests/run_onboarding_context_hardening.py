@@ -33,7 +33,7 @@ def main():
             'markets':['small home-service companies'],
             'services':['helps office teams prioritize inbound leads'],
             'objectives':['increase qualified demo bookings from existing website traffic'],
-            'claim_constraints':['CrewBeacon is not a replacement CRM'],
+            'claim_constraints':['CrewBeacon works alongside the existing CRM and is not a replacement CRM.'],
             'brand':{
                 'name':'CrewBeacon',
                 'voice':{'tone':['plain English','calm','practical']},

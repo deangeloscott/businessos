@@ -119,21 +119,21 @@ Grounded in source evidence and aligned with business goals.
             'states what remains uncertain, and hands the listener to the next idea with a natural transition. ')*5
         write(podcast,f"""# The operating signal hidden in routine work
 Listener promise: operations leaders will learn how to distinguish a useful workflow signal from a vanity metric.
-Audience and listening context: a focused solo episode for an operations commute. Episode length: 14 minutes.
+Audience and listening context: a focused solo episode for an operations commute. Episode length: 8 minutes.
 
 ## Cold Open — 00:00
 Script: Start with the decision the listener must make this week. {segment_body}
 
-## Segment 1 — 01:15
+## Segment 1 — 01:00
 Script: Establish the comparison and define the baseline. {segment_body}
 
-## Segment 2 — 05:00
+## Segment 2 — 03:00
 Script: Walk through the mechanism and the strongest alternative explanation. {segment_body}
 
-## Segment 3 — 09:30
+## Segment 3 — 05:30
 Script: Turn the finding into a bounded test and explain the stopping condition. {segment_body}
 
-## Close — 13:00
+## Close — 07:30
 Script: Summarize the decision. Call to action: review one matched content cohort before choosing the next format.
 
 ## Research notes and source notes
@@ -146,6 +146,13 @@ Use clean room tone, short pauses between segments, and one audible transition. 
 Episode summary, three decision points, the evidence limitation, and the next-step checklist. Episode notes include the source attribution.
 """)
         req(not validate_evidence(contracts['content.production.podcast'],[rel(podcast)],BID,prun),'complete podcast recording packet should satisfy the structural fallback floor')
+        valid_podcast=podcast.read_text(encoding='utf-8')
+        write(podcast,valid_podcast.replace('Episode length: 8 minutes.','Episode length: 18 minutes.').replace('07:30','17:30'))
+        errors=validate_evidence(contracts['content.production.podcast'],[rel(podcast)],BID,prun)
+        req(any('complete production packet' in e for e in errors),f'podcast timing claim inconsistent with its script length should fail: {errors}')
+        write(podcast,valid_podcast.replace('Use clean room tone','Mastered to -16 LUFS. Use clean room tone'))
+        errors=validate_evidence(contracts['content.production.podcast'],[rel(podcast)],BID,prun)
+        req(any('complete production packet' in e for e in errors),f'text fallback must not claim nonexistent mastered audio: {errors}')
 
         srun='run_presentation_fixture';slides=write(RUNS/srun/'artifacts'/'presentation.md',"""# Strategic Production Deliverable
 
@@ -189,6 +196,17 @@ Source and proof attribution: use the local source record and label the causal l
         })
         errors=validate_evidence(contracts['content.qa.accessibility'],[rel(badqa)],BID,qrun)
         req(any('structured JSON QA pass record' in e for e in errors),f'QA claim about absent target content should fail: {errors}')
+        write(badqa,{
+            'contract_id':'content.qa.accessibility','status':'pass','tested_asset':'ast_content_native_podcast','tested_version':'1',
+            'checks_performed':[{'check':'readability score','status':'pass','method':'Automated Flesch-Kincaid scanner over the complete script',
+                'finding':'The automated scan confirmed the target reading level.','target_excerpt':'Listener promise: operations leaders'}],
+            'issues_found':[],'corrections_made':[],'limitations':[],'blockers':[]
+        })
+        errors=validate_evidence(contracts['content.qa.accessibility'],[rel(badqa)],BID,qrun)
+        req(any('structured JSON QA pass record' in e for e in errors),f'automated QA claim without saved tool output should fail: {errors}')
+        tool_output=write(RUNS/qrun/'artifacts'/'readability-scan.txt','Flesch-Kincaid grade: 8.2\nTarget: complete podcast script\n')
+        automated=json.loads(badqa.read_text(encoding='utf-8')); automated['checks_performed'][0]['tool_output_ref']=rel(tool_output); write(badqa,automated)
+        req(not validate_evidence(contracts['content.qa.accessibility'],[rel(badqa)],BID,qrun),'automated QA with resolvable saved tool output should satisfy the evidence requirement')
         write(badqa,{
             'contract_id':'content.qa.accessibility','status':'pass','tested_asset':'ast_content_native_podcast','tested_version':'1',
             'checks_performed':[

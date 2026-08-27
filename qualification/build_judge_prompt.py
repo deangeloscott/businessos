@@ -38,6 +38,7 @@ For each event:
 8. Outcome-readiness means the work did what a strong practitioner could reasonably do now to maximize the intended business result; it does not mean an unobserved ranking, citation, conversion, or profit result already occurred.
 9. Treat ad longevity, views, shares, engagement, and repeated creative families as proxies of differing strength unless direct outcome data exists. Reward explicit calibration of uncertainty.
 10. For "better" work, judge fit to the intended audience/task and competitive environment; more words, more slides, or more detail are not automatically better.
+11. For timed audio/video fallbacks, compare the actual spoken-word volume and cues with the claimed duration; timecode labels alone do not make a script long enough. A text fallback also cannot truthfully claim that nonexistent media was recorded, mixed, mastered, rendered, or exported.
 
 Write a JSON array to `{rd/'evaluator/judgments.json'}`. Each item must be:
 
@@ -49,7 +50,7 @@ Write a JSON array to `{rd/'evaluator/judgments.json'}`. Each item must be:
 }}
 ```
 
-Do not modify AURA state or candidate artifacts while judging.
+Write `judgments.json` as UTF-8. Do not modify AURA state or candidate artifacts while judging.
 ''',encoding='utf-8')
     print(json.dumps({'instructions':str(out),'packets':str(packet_out),'events_to_judge':len(selected),'hard_failures_excluded':excluded},indent=2))
 

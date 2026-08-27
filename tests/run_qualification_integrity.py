@@ -5,8 +5,9 @@ import json, sys, tempfile
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'qualification'))
 from integrity import (
-    artifact_similarity_flags, event_specific_ref_paths, is_structured_prepublish_record,
-    integrity_hard_failure, is_reconstructable_field_snapshot, run_control_flags, selector_types,
+    artifact_similarity_flags, checkpoint_chain_contiguous, declared_write_absence_justified,
+    event_specific_ref_paths, is_structured_prepublish_record, integrity_hard_failure,
+    is_reconstructable_field_snapshot, run_control_flags, selector_types,
 )
 from build_suite import build
 
@@ -21,10 +22,12 @@ def main():
     with tempfile.TemporaryDirectory(prefix='aura-qualification-integrity-') as td:
         root=Path(td); ws=root/'workspace'; ws.mkdir(); p=ws/'attachments'/'field.json'; p.parent.mkdir(parents=True); p.write_text('new evidence\n')
         before={'workspace':{'files':[]}}
-        after={'workspace':{'files':[{'path':'attachments/field.json','sha256':'abc'}]}}
+        after={'workspace':{'digest':'after-digest','files':[{'path':'attachments\\field.json','sha256':'abc'}]}}
         req(event_specific_ref_paths(['attachments/field.json'],before,after,ws),'new event field snapshot must be recognized')
         same_before={'workspace':{'files':[{'path':'attachments/field.json','sha256':'abc'}]}}
         req(not event_specific_ref_paths(['attachments/field.json'],same_before,after,ws),'unchanged recycled field snapshot must not count as event-specific evidence')
+        req(checkpoint_chain_contiguous({'workspace':{'digest':'same'}},{'workspace':{'digest':'same'}}),'matching adjacent checkpoint digests should be contiguous')
+        req(not checkpoint_chain_contiguous({'workspace':{'digest':'prior'}},{'workspace':{'digest':'mutated'}}),'between-event workspace mutation must break checkpoint continuity')
 
         bad_field=root/'bad-field.json';bad_field.write_text(json.dumps({'captured_at':'2026-08-26T00:00:00Z','competitive_set':[{'name':'Industry benchmark'},{'name':'Category competitor'}]}))
         req(not is_reconstructable_field_snapshot(bad_field,ws),'unnamed/source-free synthetic field evidence must not be reconstructable')
@@ -32,6 +35,10 @@ def main():
         req(not is_reconstructable_field_snapshot(placeholder_field,ws),'reserved placeholder URLs must not count as reconstructable field evidence')
         good_field=root/'good-field.json';good_field.write_text(json.dumps({'captured_at':'2026-08-26T00:00:00Z','query':'field service software','sources':[{'name':'A','source_url':'https://www.servicetitan.com/'},{'name':'B','source_url':'https://www.housecallpro.com/'}]}))
         req(is_reconstructable_field_snapshot(good_field,ws),'source-linked field evidence should be reconstructable')
+        first_party_a=ws/'attachments'/'performance.json'; first_party_a.write_text('{}')
+        first_party_b=ws/'instances'/'business'/'intelligence'/'sources'/'source.json'; first_party_b.parent.mkdir(parents=True); first_party_b.write_text('{}')
+        alias_field=root/'alias-field.json';alias_field.write_text(json.dumps({'captured_at':'2026-08-26T00:00:00Z','market_context':{'category':'field service'},'source_references':['attachments/performance.json','instances/business/intelligence/sources/source.json']}))
+        req(is_reconstructable_field_snapshot(alias_field,ws),'first-party field snapshot aliases with two resolvable sources should be reconstructable')
 
         bad=root/'bad-qa.json'; bad.write_text(json.dumps({'contract_id':'content.qa.pre-publish','status':'passed','notes':'QA passed'}))
         req(not is_structured_prepublish_record(bad),'self-attested QA must not pass structural pre-publish evidence check')
@@ -39,6 +46,7 @@ def main():
             'checks_performed':[{'check':'destination links','passed':True,'method':'Requested every saved destination URL','finding':'Both destination URLs returned successful HTTP responses.'}],
             'issues_found':[],'corrections_made':[],'limitations':[],'blockers':[],'tested_asset':'ast_1','tested_version':'1.0'}))
         req(is_structured_prepublish_record(good),'structured pre-publish evidence should pass')
+        req(declared_write_absence_justified('qa',[good]),'clean substantive QA should justify not creating a ceremonial declared corrective object')
 
         a=root/'a.md'; b=root/'b.md'; c=root/'c.md'
         body='# Deliverable\n\n## Context\nGeneric operational guidance for the target audience.\n\n## Steps\n1. Review the workflow.\n2. Apply the process.\n3. Validate the result.\n'*5
@@ -65,6 +73,12 @@ def main():
         logged=run_control_flags(root,ws)
         req(any(x.get('type')=='mass_completion_runner' and x.get('source')=='captured_tool_log' for x in logged),f'private-harness mass runner must be detected from canonical logs: {logged}')
         req(any(x.get('type')=='candidate_evaluator_spec_access' for x in logged),f'evaluator invocation must be detected from canonical logs: {logged}')
+        log.write_text(json.dumps({'event':'step_update','step_update':{'tool_info':{'name':'find_by_name','parameters':{'SearchDirectory':str(root)},'output':'evaluator/suite.json\nevaluator/hidden-fixtures'}}})+'\n')
+        listed=run_control_flags(root,ws)
+        req(not any(x.get('type')=='candidate_evaluator_spec_access' for x in listed),f'a filename returned by directory listing is not evaluator-spec access: {listed}')
+        log.write_text(json.dumps({'event':'step_update','step_update':{'tool_info':{'name':'view_file','parameters':{'AbsolutePath':str(root/'evaluator/suite.json')}}}})+'\n')
+        accessed=run_control_flags(root,ws)
+        req(any(x.get('type')=='candidate_evaluator_spec_access' for x in accessed),f'an explicit evaluator-spec read must remain a critical integrity flag: {accessed}')
 
     suite=build(); customer=[t for t in suite['contract_tests'] if t.get('artifact_role')=='customer_facing_production_root']
     evaluator=(ROOT/'qualification/evaluate_run.py').read_text()

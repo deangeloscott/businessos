@@ -141,7 +141,7 @@ ORDER = [
 
 
 def load_json(path):
-    return json.loads((ROOT/path).read_text())
+    return json.loads((ROOT/path).read_text(encoding='utf-8'))
 
 
 def rel_link(from_file: Path, target: str) -> str:
@@ -174,7 +174,7 @@ def playbooks_for(registry, system):
 
 def process_map(system):
     p = ROOT/'core/process-map.json' if system == 'core' else ROOT/'systems'/system/'process-map.json'
-    return json.loads(p.read_text()) if p.exists() else {'activities':[]}
+    return json.loads(p.read_text(encoding='utf-8')) if p.exists() else {'activities':[]}
 
 
 def contract_map(registry): return {c['id']:c for c in registry}
@@ -224,7 +224,7 @@ def write_root(registry, installed):
         '- `generated/contract-registry.json` and `generated/process-map-registry.json` are machine-readable indexes.',
         '- Each contract `CONTEXT.md` contains the authoritative detailed operating instructions.', '',
     ]
-    (ROOT/'PLAYBOOKS.md').write_text('\n'.join(lines))
+    (ROOT/'PLAYBOOKS.md').write_text('\n'.join(lines),encoding='utf-8')
 
 
 def write_domain(registry, system):
@@ -261,7 +261,7 @@ def write_domain(registry, system):
               'Ask BusinessOS something like:', '',
               f'> “Show me the exact steps for {plays[0].get("title") if plays else "this playbook"}, including what it reads, what it saves, and how it knows when it is done.”','',
               'The linked contract is the authoritative version. This page is only a simpler map for people.','']
-    outfile.write_text('\n'.join(lines))
+    outfile.write_text('\n'.join(lines),encoding='utf-8')
 
 
 def write_review_example(registry, installed):
@@ -331,7 +331,7 @@ def write_review_example(registry, installed):
     for title,link,cid in links:
         lines.append(f'- [{title}]({link}) — `{cid}`')
     lines += ['', 'These contracts define the actual operating rules. This page only explains the flow in simpler language.','']
-    out.write_text('\n'.join(lines))
+    out.write_text('\n'.join(lines),encoding='utf-8')
 
 
 def main():

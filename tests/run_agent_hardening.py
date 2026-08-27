@@ -292,6 +292,17 @@ def main():
         require(no_acq.returncode!=0 and "acquired as 'unknown'" in no_acq.stderr,'captured text without acquisition provenance must not support an Observation')
         no_acq_bundle.unlink(missing_ok=True)
 
+        # A model-authored placeholder URL cannot masquerade as a directly read current public item.
+        placeholder_bundle=ROOT/'runtime'/f'{BID}-placeholder-public-research.json'
+        placeholder_bundle.write_text(json.dumps({
+            'contract_id':'competitor.analysis.customer-sentiment',
+            'sources':[{'source_type':'review_platform','source_reference':'https://example.invalid/review/invented','acquisition_method':'direct_page_read','captured_text':'A purported public review excerpt.'}],
+            'observations':[{'statement':'A purported reviewer described a service issue.','source_indexes':[0]}]
+        }))
+        placeholder=run(SCRIPTS/'persist_research_bundle.py',BID,'--bundle-file',placeholder_bundle,check=False)
+        require(placeholder.returncode!=0 and 'reserved/placeholder public source_reference' in placeholder.stderr,'reserved placeholder URL must not become current public evidence')
+        placeholder_bundle.unlink(missing_ok=True)
+
         # Broad superlative/frequency claims must be sample-scoped unless measured population evidence exists.
         broad_bundle=ROOT/'runtime'/f'{BID}-broad-frequency-research.json'
         broad_bundle.write_text(json.dumps({
@@ -307,7 +318,7 @@ def main():
         good_bundle=ROOT/'runtime'/f'{BID}-good-research.json'
         good_bundle.write_text(json.dumps({
             'contract_id':'competitor.analysis.customer-sentiment',
-            'sources':[{'source_type':'review_platform','source_reference':'https://example.test/review/1','acquisition_method':'direct_page_read','captured_text':'The technician explained the repair clearly and did not pressure me.','rating':5}],
+            'sources':[{'source_type':'review_platform','source_reference':'https://www.yelp.com/biz/qualification-fixture-review-1','acquisition_method':'direct_page_read','captured_text':'The technician explained the repair clearly and did not pressure me.','rating':5}],
             'observations':[{'statement':'Reviewer praised clear explanation and lack of sales pressure.','source_indexes':[0],'observation_type':'customer_praise'}],
             'insights':[{'statement':'Clear explanation and low-pressure service are positive signals in the sampled evidence.','observation_indexes':[0],'status':'supported','confidence':0.7}]
         }))

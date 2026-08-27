@@ -25,6 +25,25 @@ def event_from_mission(m,kind):
     if m.get('release_fixture'): event['release_fixture']=m['release_fixture']
     return event
 
+def select_events(suite,profile,domain=None,contract_ids=None):
+    requested=set(contract_ids or [])
+    if requested and profile!='atomic':
+        raise SystemExit('--contract is supported only with --profile atomic so a representative contract run cannot silently include missions')
+    known={t['contract_id'] for t in suite['contract_tests']}
+    unknown=sorted(requested-known)
+    if unknown: raise SystemExit('Unknown qualification contract filter(s): '+', '.join(unknown))
+    events=[]
+    if profile in ('atomic','full'):
+        for t in suite['contract_tests']:
+            if domain and t['owner_system']!=domain: continue
+            if requested and t['contract_id'] not in requested: continue
+            events.append(event_from_contract(t))
+    if profile in ('domains','full'): events += [event_from_mission(m,'domain_mission') for m in suite['domain_missions'] if not domain or m['owner_system']==domain]
+    if profile in ('cross-domain','full'): events += [event_from_mission(m,'cross_domain_mission') for m in suite['cross_domain_missions']]
+    if profile in ('marathon','full'): events += [event_from_mission(m,'marathon_mission') for m in suite['marathon_missions']]
+    if not events: raise SystemExit('Qualification filters selected no events')
+    return events
+
 def copy_product(src,dst):
     src=Path(src); dst=Path(dst)
     for p in src.rglob('*'):
@@ -55,7 +74,7 @@ def init_business(product_root,workspace,fixture):
     bootstrap=data.get('bootstrap_facts')
     if not isinstance(bootstrap,dict) or not bootstrap:
         raise SystemExit(f'Qualification fixture {fixture} requires non-empty bootstrap_facts so Level-2 tests begin from grounded canonical context')
-    env=dict(os.environ); env['BUSINESSOS_WORKSPACE']=str(workspace); env['PYTHONDONTWRITEBYTECODE']='1'
+    env=dict(os.environ); env['BUSINESSOS_WORKSPACE']=str(workspace); env['PYTHONDONTWRITEBYTECODE']='1'; env['PYTHONUTF8']='1'
     _run([sys.executable,str(product_root/'scripts/init_business.py'),bid,'--name',name],product_root,env)
     inputs=workspace/'attachments'/'qualification-inputs'; inputs.mkdir(parents=True,exist_ok=True)
     initial={k:v for k,v in data.items() if k!='timeline'}
@@ -115,25 +134,19 @@ There are {len(events)} events in this run. Execution completion means the queue
 '''
 
 def main():
-    ap=argparse.ArgumentParser(); ap.add_argument('--profile',choices=['atomic','domains','cross-domain','marathon','full'],default='full'); ap.add_argument('--domain'); ap.add_argument('--run-root'); ap.add_argument('--run-id'); a=ap.parse_args()
-    suite=build(); run_id=a.run_id or ('aura-qualification-'+uuid.uuid4().hex[:10]); root=Path(a.run_root).expanduser().resolve() if a.run_root else Path(tempfile.gettempdir())/'aura-qualification-runs'; run_dir=root/run_id
+    ap=argparse.ArgumentParser(); ap.add_argument('--profile',choices=['atomic','domains','cross-domain','marathon','full'],default='full'); ap.add_argument('--domain'); ap.add_argument('--contract',action='append',default=[],help='Exact contract ID to include in an atomic representative run; repeat for multiple contracts.'); ap.add_argument('--run-root'); ap.add_argument('--run-id'); a=ap.parse_args()
+    suite=build(); events=select_events(suite,a.profile,a.domain,a.contract); run_id=a.run_id or ('aura-qualification-'+uuid.uuid4().hex[:10]); root=Path(a.run_root).expanduser().resolve() if a.run_root else Path(tempfile.gettempdir())/'aura-qualification-runs'; run_dir=root/run_id
     if run_dir.exists(): raise SystemExit(f'Run already exists: {run_dir}')
     try:
         run_dir.relative_to(ROOT.resolve()); raise SystemExit('Qualification run root must be outside the AURA product tree to prevent recursive staging or product contamination')
     except ValueError: pass
-    product_root=copy_product(ROOT,run_dir/'product'); _run([sys.executable,str(product_root/'scripts/generate_registry.py')],product_root,dict(os.environ)); workspace=run_dir/'workspace'; workspace.mkdir(parents=True); (run_dir/'candidate').mkdir(); (run_dir/'evaluator').mkdir(); (run_dir/'candidate-results').mkdir(); (run_dir/'checkpoints').mkdir()
+    product_root=copy_product(ROOT,run_dir/'product'); generation_env=dict(os.environ); generation_env['PYTHONDONTWRITEBYTECODE']='1'; generation_env['PYTHONUTF8']='1'; _run([sys.executable,str(product_root/'scripts/generate_registry.py')],product_root,generation_env); workspace=run_dir/'workspace'; workspace.mkdir(parents=True); (run_dir/'candidate').mkdir(); (run_dir/'evaluator').mkdir(); (run_dir/'candidate-results').mkdir(); (run_dir/'checkpoints').mkdir()
     fixtures={t['fixture'] for t in suite['contract_tests']}|{m['fixture'] for k in ('domain_missions','cross_domain_missions','marathon_missions') for m in suite[k]}
     for f in sorted(fixtures): init_business(product_root,workspace,f)
     baseline=product_snapshot(product_root); write_json(run_dir/'evaluator/product-snapshot.json',baseline)
-    events=[]
-    if a.profile in ('atomic','full'):
-        for t in suite['contract_tests']:
-            if not a.domain or t['owner_system']==a.domain: events.append(event_from_contract(t))
-    if a.profile in ('domains','full'): events += [event_from_mission(m,'domain_mission') for m in suite['domain_missions'] if not a.domain or m['owner_system']==a.domain]
-    if a.profile in ('cross-domain','full'): events += [event_from_mission(m,'cross_domain_mission') for m in suite['cross_domain_missions']]
-    if a.profile in ('marathon','full'): events += [event_from_mission(m,'marathon_mission') for m in suite['marathon_missions']]
-    queue={'format_version':'1.0','run_id':run_id,'created_at':now(),'profile':a.profile,'domain_filter':a.domain,'event_count':len(events),'events':events}
-    write_json(run_dir/'candidate/queue.json',queue); write_json(run_dir/'evaluator/suite.json',suite); write_json(run_dir/'run.json',{'run_id':run_id,'created_at':now(),'product_root':str(product_root),'workspace':str(workspace),'profile':a.profile,'event_count':len(events),'status':'prepared','execution_status':'prepared','qualification_status':'NOT_EVALUATED','product_snapshot_digest':baseline['digest'],'benchmark_context_seeded':True,'future_evidence_staged':True})
+    contract_filter=sorted(set(a.contract))
+    queue={'format_version':'1.0','run_id':run_id,'created_at':now(),'profile':a.profile,'domain_filter':a.domain,'contract_filter':contract_filter,'event_count':len(events),'events':events}
+    write_json(run_dir/'candidate/queue.json',queue); write_json(run_dir/'evaluator/suite.json',suite); write_json(run_dir/'run.json',{'run_id':run_id,'created_at':now(),'product_root':str(product_root),'workspace':str(workspace),'profile':a.profile,'domain_filter':a.domain,'contract_filter':contract_filter,'event_count':len(events),'status':'prepared','execution_status':'prepared','qualification_status':'NOT_EVALUATED','product_snapshot_digest':baseline['digest'],'benchmark_context_seeded':True,'future_evidence_staged':True})
     (run_dir/'candidate/RUN-INSTRUCTIONS.md').write_text(instructions(product_root,run_dir,workspace,events),encoding='utf-8')
     print(json.dumps({'run_id':run_id,'run_dir':str(run_dir),'product_root':str(product_root),'workspace':str(workspace),'event_count':len(events),'instructions':str(run_dir/'candidate/RUN-INSTRUCTIONS.md'),'queue':str(run_dir/'candidate/queue.json')},indent=2))
 if __name__=='__main__': main()

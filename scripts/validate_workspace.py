@@ -115,7 +115,11 @@ def main():
     catalog_pages=[ROOT/'PLAYBOOKS.md'] + (list((ROOT/'docs/playbooks').rglob('*.md')) if (ROOT/'docs/playbooks').exists() else [])
     for page in catalog_pages:
         if not page.exists(): continue
-        for target in re.findall(r'\[[^\]]+\]\(([^)]+)\)', page.read_text()):
+        try: page_text=page.read_text(encoding='utf-8')
+        except UnicodeDecodeError as e:
+            errors.append(f'{page.relative_to(ROOT)}: invalid UTF-8: {e}')
+            continue
+        for target in re.findall(r'\[[^\]]+\]\(([^)]+)\)',page_text):
             clean=target.split('#',1)[0].strip()
             if not clean or clean.startswith(('http://','https://','mailto:','#')): continue
             resolved=(page.parent/clean).resolve()
