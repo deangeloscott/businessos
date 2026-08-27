@@ -24,7 +24,7 @@ def fail(msg): raise AssertionError(msg)
 
 def main():
     required=[
-        'BRANDING.md','DEPLOYMENT.md','distribution/deployment-profiles.json','core/policies/workspace-and-human-knowledge.md',
+        'BRANDING.md','DEPLOYMENT.md','OPERATOR-GUIDE.md','distribution/deployment-profiles.json','core/policies/workspace-and-human-knowledge.md',
         'core/contracts/workspace/configure/CONTEXT.md','core/contracts/knowledge/refresh-human-layer/CONTEXT.md','core/contracts/knowledge/ingest-human-note/CONTEXT.md',
         'core/schemas/runtime/workspace-profile.schema.json','scripts/configure_workspace.py','scripts/migrate_workspace.py','scripts/workspace_status.py','scripts/generate_knowledge_layer.py','scripts/register_human_note.py'
     ]
@@ -113,16 +113,20 @@ def main():
         if common.resolve_storage_ref(ref).resolve()!=migrated.joinpath(ref).resolve(): fail('portable state reference did not survive workspace migration')
         os.environ['BUSINESSOS_WORKSPACE']=str(tmp)
 
-        # Prove standalone/component packaging preserves Core deployment and AURA branding.
+        # Prove standalone/component packaging preserves Core deployment, simple onboarding, and advanced mechanics.
         pkg=build_distribution('content',output_dir=tmp/'packages',keep_folder=True)
         pdir=Path(pkg['folder']);pinst=json.loads((pdir/'INSTALLATION.json').read_text())
         if not pinst.get('display_name','').startswith(EXPECTED_NAME) or pinst.get('public_name')!=pinst.get('display_name') or pinst.get('name_expansion')!=EXPECTED_EXPANSION: fail('component edition lost AURA family branding')
         if pinst.get('configurable_workspace_root') is not True or pinst.get('human_knowledge_layer') is not True: fail('component edition lost workspace/knowledge installation declarations')
         if pinst.get('deployment_profiles')!='distribution/deployment-profiles.json': fail('component edition lost deployment profile reference')
-        for rel in ['BRANDING.md','DEPLOYMENT.md','scripts/configure_workspace.py','scripts/migrate_workspace.py','scripts/generate_knowledge_layer.py','scripts/register_human_note.py','core/policies/workspace-and-human-knowledge.md','core/contracts/workspace/configure/CONTEXT.md','core/contracts/knowledge/refresh-human-layer/CONTEXT.md','core/contracts/knowledge/ingest-human-note/CONTEXT.md']:
+        for rel in ['BRANDING.md','DEPLOYMENT.md','OPERATOR-GUIDE.md','scripts/configure_workspace.py','scripts/migrate_workspace.py','scripts/generate_knowledge_layer.py','scripts/register_human_note.py','core/policies/workspace-and-human-knowledge.md','core/contracts/workspace/configure/CONTEXT.md','core/contracts/knowledge/refresh-human-layer/CONTEXT.md','core/contracts/knowledge/ingest-human-note/CONTEXT.md']:
             if not (pdir/rel).exists(): fail(f'component edition lost deployment component: {rel}')
         if (pdir/'.businessos/workspace.json').exists(): fail('component package leaked a local workspace pointer/profile')
-        if 'ViralTrac AURA' not in (pdir/'README.md').read_text() or 'migrate_workspace.py' not in (pdir/'START-HERE.md').read_text(): fail('component navigation does not expose AURA branding/migration architecture')
+        readme=(pdir/'README.md').read_text(); start=(pdir/'START-HERE.md').read_text(); operator=(pdir/'OPERATOR-GUIDE.md').read_text()
+        if 'ViralTrac AURA' not in readme or 'Start in three steps' not in readme: fail('component README lost simple public product entrypoint')
+        if 'You do **not** need to understand AURA' not in start or 'Talk to AURA normally' not in start: fail('component quick start is not user-simple')
+        if any(term in start for term in ('bootstrap_explicit_context.py','preflight_capabilities.py','complete_run.py')): fail('component quick start leaked operator/internal mechanics')
+        if 'migrate_workspace.py' not in operator or 'bootstrap_explicit_context.py' not in operator or 'preflight_capabilities.py' not in operator: fail('component operator guide lost advanced mechanics')
         cws=tmp/'component-workspace';env=dict(os.environ);env['BUSINESSOS_WORKSPACE']=str(cws);env['PYTHONDONTWRITEBYTECODE']='1'
         subprocess.run([sys.executable,str(pdir/'scripts/configure_workspace.py'),str(cws),'--profile','power_user','--no-link'],cwd=pdir,env=env,check=True,capture_output=True,text=True)
         subprocess.run([sys.executable,str(pdir/'scripts/init_business.py'),'component-workspace-test','--name','Component Workspace Test'],cwd=pdir,env=env,check=True,capture_output=True,text=True)
@@ -130,7 +134,7 @@ def main():
         subprocess.run([sys.executable,str(pdir/'scripts/generate_knowledge_layer.py'),'component-workspace-test'],cwd=pdir,env=env,check=True,capture_output=True,text=True)
         if not (cws/'knowledge/component-workspace-test/_generated/Home.md').exists(): fail('component edition did not generate external human knowledge layer')
         if (pdir/'instances/component-workspace-test').exists(): fail('component edition external state leaked into product package')
-        print('AURA workspace + human knowledge deployment regressions passed end to end, including verified migration, governed notes, branding, and component edition')
+        print('AURA workspace + human knowledge deployment regressions passed end to end, including verified migration, governed notes, simple onboarding, advanced operator guide, branding, and component edition')
     finally:
         if prior is None: os.environ.pop('BUSINESSOS_WORKSPACE',None)
         else: os.environ['BUSINESSOS_WORKSPACE']=prior
