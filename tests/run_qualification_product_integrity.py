@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from pathlib import Path
-import json, os, subprocess, sys, tempfile
+import json, os, re, subprocess, sys, tempfile
 
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'qualification'))
@@ -27,7 +27,8 @@ def main():
         req(run.get('qualification_status')=='NOT_EVALUATED','prepared queue must not imply qualification success')
         instructions=(rd/'candidate/RUN-INSTRUCTIONS.md').read_text(encoding='utf-8')
         req('staged AURA product' in instructions and 'immutable' in instructions,'candidate instructions must make staged product immutability explicit')
-        req('not a qualification pass' in instructions.lower() and 'only the independent evaluator' in instructions.lower(),'candidate instructions must distinguish queue completion from qualification success')
+        normalized_instructions=re.sub(r'[*_`]+','',instructions.lower())
+        req('not a qualification pass' in normalized_instructions and 'only the independent evaluator' in normalized_instructions,'candidate instructions must distinguish queue completion from qualification success')
         req(not staged_product_integrity_flags(rd,product,run),'untouched staged product must pass product-integrity check')
 
         transient=product/'__pycache__'/'scratch.cpython-313.pyc'; transient.parent.mkdir(); transient.write_bytes(b'transient')
