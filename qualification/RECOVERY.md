@@ -1,50 +1,77 @@
 # Qualification interruption recovery
 
-Long AURA qualification runs are expected to survive model/provider outages, terminal closures, host restarts, and agent-session replacement without restarting completed work.
+AURA qualification should survive model/provider outages, terminal closures, host restarts, and agent-session replacement without restarting completed business work.
 
-The durable unit is the **qualification run directory and its AURA workspace**, not one chat/session/model connection.
+The durable unit is the **qualification run directory + staged AURA product + organization workspace**, not one chat/session/model connection.
+
+The candidate/model must remain blind during recovery. Do not solve an infrastructure interruption by exposing qualification files, event IDs, receipts, checkpoints, target contracts, rubrics, or evaluator instructions.
 
 ## Inspect an interrupted run
 
-From a source checkout containing the qualification tools:
+From the source checkout containing maintainer qualification tools:
 
 ```bash
-python3 qualification/resume_status.py /path/to/qualification/run --write-instructions
+python3 qualification/task_controller.py status /path/to/run
 ```
 
-This inspects the queue, event receipts, before/after checkpoints, and candidate AURA Runs. It reports:
+or for more recovery detail:
 
-- terminal events: receipt is `completed` or `blocked` and the required after-checkpoint exists;
-- in-progress event: some event evidence exists but the terminal receipt/after boundary is incomplete;
-- pending events: not yet started;
-- the first unfinished event;
-- compatible candidate Runs created since that event's before-checkpoint.
+```bash
+python3 qualification/resume_status.py /path/to/run --write-instructions
+```
 
-It also writes:
+`resume_status.py` writes maintainer-only guidance to:
 
-`candidate/RESUME-INSTRUCTIONS.md`
+`evaluator/RECOVERY.md`
+
+It does not create candidate-facing recovery instructions.
 
 ## Recovery rules
 
-1. **Never restart the whole qualification merely because the AI/provider/session stopped.**
-2. Terminal events are immutable qualification history for that run. Do not redo them unless a reviewer explicitly invalidates and resets the event.
-3. If the first unfinished event has no before-checkpoint, start it normally.
-4. If its before-checkpoint already exists, preserve that checkpoint as the event baseline. Do not overwrite it because a new agent session started.
-5. Inspect compatible active/incomplete AURA Runs created after the event baseline and resume from the smallest incomplete point under AURA's normal local-state-and-recovery policy. Do not create a duplicate root Run merely because the model/harness changed.
-6. If a terminal receipt exists but the after-checkpoint is missing, verify the receipt and underlying AURA work are truthful and complete, then take the after-checkpoint. If the work is not complete, repair/resume it first.
-7. A provider outage, rate limit, model retirement, lost network connection, or terminal closure is an **execution-environment interruption**, not by itself an AURA pass or failure.
-8. A replacement model/harness may continue the same qualification run when necessary. Record the environment change in the run's external log/notes so later evaluation can distinguish AURA behavior from execution-environment sensitivity.
-9. Continue sequentially from the first unfinished event until the queue is exhausted.
+1. **Never restart the whole run merely because the AI/provider/session stopped.**
+2. Completed tasks are frozen qualification history. Do not redo them just to improve a score.
+3. If the unfinished task already has a before-checkpoint, preserve it as the task baseline.
+4. Reuse the same staged AURA product and organization workspace.
+5. Inspect compatible active/incomplete AURA Runs created after the baseline and resume from the smallest incomplete point rather than creating duplicate work merely because the model changed.
+6. Give the replacement candidate only the same normal product/workspace and the original ordinary business request. Do not give it the qualification run directory.
+7. Do not set `AURA_QUALIFICATION_RUN` in the candidate process. `BUSINESSOS_WORKSPACE` is sufficient for normal AURA operation.
+8. A provider outage, rate limit, model retirement, lost network connection, or terminal closure is an **execution-environment interruption**, not by itself an AURA pass or failure.
+9. Record model/provider/harness changes in evaluator-side logs so later review can distinguish AURA behavior from environment sensitivity.
+10. After the candidate finishes, let the external controller take the after-checkpoint and derive the bookkeeping receipt.
 
-## Resume with a replacement candidate
+## Resume the same task
 
-Point the replacement candidate at the same staged `product/` directory and the same external workspace. Give it both:
+Run:
 
-- `candidate/RUN-INSTRUCTIONS.md`
-- `candidate/RESUME-INSTRUCTIONS.md`
+```bash
+python3 qualification/task_controller.py start /path/to/run
+```
 
-The replacement candidate must preserve all existing business state, evidence, Runs, receipts, and checkpoints.
+For an in-progress task, the controller preserves the existing before-checkpoint and prints the ordinary `candidate_message` again.
+
+Point the replacement model/harness at the printed staged `product_root` and `workspace`, then give it only that `candidate_message`.
+
+When the business work is complete:
+
+```bash
+python3 qualification/task_controller.py finish /path/to/run
+```
+
+For a genuine external blocker, classify it maintainer-side with `--blocker-classification` and, when useful, `--blocker-detail`.
+
+## Maintainer launcher
+
+If using `qualification/launch.py`, the launcher performs the controller start/finish boundaries automatically around a successful candidate process.
+
+Its command template may use only candidate-safe placeholders:
+
+- `{request}`
+- `{workspace}`
+- `{product_root}`
+- `{business_id}`
+
+It deliberately does not support `{run_dir}` or `{instructions}` because those would reveal the qualification environment to the candidate.
 
 ## Why this matters
 
-A full qualification may run for many hours and hundreds of events. Restarting from zero after an infrastructure interruption would waste work, contaminate repeated-test interpretation, and make long-horizon qualification impractical. Recovery is therefore part of the qualification infrastructure rather than a manual exception.
+Recovery is valuable only if it preserves the meaning of the test. A replacement model should encounter the same kind of situation a real replacement agent would encounter: the organization's durable AURA state and the unresolved business request—not a benchmark-specific rescue prompt.
