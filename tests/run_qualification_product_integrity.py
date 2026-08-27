@@ -52,6 +52,16 @@ def main():
         req((product/'deployment/environments/local/bootstrap-state.json').exists(),'normal environment bootstrap did not create bootstrap state')
         req(not staged_product_integrity_flags(rd,product,run),'official AURA host/workspace runtime state must not be treated as protected product mutation')
 
+        # Shipped deployment templates remain protected even though runtime environments
+        # may create files with the same names. This also preserves old-baseline comparability.
+        template=product/'deployment/environments/_template/host-profile.json'
+        template_original=template.read_text(encoding='utf-8')
+        template.write_text(template_original+'\n',encoding='utf-8')
+        flags=staged_product_integrity_flags(rd,product,run); mutation=next((x for x in flags if x.get('type')=='staged_product_mutation'),None)
+        req(mutation and 'deployment/environments/_template/host-profile.json' in mutation.get('modified',[]),'deployment template mutation must remain protected')
+        template.write_text(template_original,encoding='utf-8')
+        req(not staged_product_integrity_flags(rd,product,run),'restoring deployment template must clear product-integrity flag while allowed host-local state remains')
+
         helper=product/'run_all_events.py'; helper.write_text("print('private qualification solver')\n",encoding='utf-8')
         flags=staged_product_integrity_flags(rd,product,run); mutation=next((x for x in flags if x.get('type')=='staged_product_mutation'),None)
         req(mutation and 'run_all_events.py' in mutation.get('created',[]),f'candidate-created product helper must be a critical product mutation: {flags}')
@@ -69,6 +79,6 @@ def main():
     req(qualification_status({'HARD-PASS / REVIEW-PENDING':2})=='REVIEW_REQUIRED','hard-pass without professional review must not be called qualified')
     req(qualification_status({'BLOCKED-EXTERNAL':1})=='INCOMPLETE','blocked qualification must be incomplete')
     req(qualification_status({'ACCEPTABLE':2,'COMPETITIVE':1,'EXCEPTIONAL':1})=='QUALIFIED','only fully reviewed acceptable-or-better events may be qualified')
-    print('qualification staged-product integrity regressions passed with blind candidate exposure and expected host-local runtime state')
+    print('qualification staged-product integrity regressions passed with blind candidate exposure, expected host-local runtime state, and protected deployment templates')
 
 if __name__=='__main__': main()
