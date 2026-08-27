@@ -2,7 +2,7 @@
 from pathlib import Path
 import argparse, json, os, shutil, subprocess, sys, tempfile, uuid
 from build_suite import build
-from common import ROOT, now, write_json
+from common import ROOT, now, product_snapshot, write_json
 
 FIXTURES=ROOT/'qualification/fixtures'
 RUBRICS=json.loads((ROOT/'qualification/rubrics/rubrics.json').read_text())
@@ -92,10 +92,13 @@ The benchmark businesses have already been initialized and their explicit starti
 
 Process every queue event in order and continue directly to the next event. Do not stop between events to ask whether to continue. A genuine blocker should be recorded for that event, then continue with later events when safe.
 
-**Qualification integrity rule:** automation may help with deterministic bookkeeping, file handling, validation, or repeated mechanical steps, but it may not replace the substantive contract-specific business work. Do not create a generic mass-completion runner that manufactures placeholder artifacts, generic subcontract files, self-attested QA, fake evidence, or receipts merely to satisfy gates. Each event must stand on its own actual contract process, evidence, and deliverable.
+**Qualification integrity rules:**
+- Automation may help with deterministic bookkeeping, file handling, validation, or repeated mechanical steps, but it may not replace the substantive contract-specific business work. Do not create a generic mass-completion runner that manufactures placeholder artifacts, generic subcontract files, self-attested QA, fake evidence, or receipts merely to satisfy gates. Each event must stand on its own actual contract process, evidence, and deliverable.
+- The staged AURA product at `{product_root}` is immutable for the entire run. Do not create, modify, or delete files anywhere under that product root. Put legitimate temporary working files under the external workspace instead, subject to the same no-mass-completion rule.
+- Queue exhaustion, receipts, and checkpoints prove only that execution was attempted/completed. They are **not** a qualification pass. Do not claim a pass rate, qualification success, or professional-quality verdict. Only the independent evaluator/judge may assign those outcomes after the run.
 
 For EVERY event:
-1. Read the event, controlled current fixture, accumulated AURA state, and the relevant AURA contract including its Process and Completion Evidence. Do not modify canonical AURA product source.
+1. Read the event, controlled current fixture, accumulated AURA state, and the relevant AURA contract including its Process and Completion Evidence. Do not modify canonical or staged AURA product source.
 2. Run `python3 qualification/checkpoint.py <EVENT_ID> before --business-id <BUSINESS_ID>` before doing event work.
 3. If the event has a `release_fixture` field, run `python3 qualification/release_fixture.py <EVENT_ID>` now. Preserve the released evidence provenance.
 4. Execute the business work fully. Do **not** invent a missing business condition or easy synthetic scenario merely to make the contract pass. If required controlled input is absent and cannot legitimately be obtained, record blocker `qualification_fixture`. If AURA says an artifact is creatable, create the actual promised medium. If a contract explicitly allows a production specification when rendering is unavailable, that fallback must be complete enough for human production (for example, real scenes/keyframes/timing/narration/transition specs rather than generic prose).
@@ -108,7 +111,7 @@ For EVERY event:
 11. Run `python3 qualification/checkpoint.py <EVENT_ID> after --business-id <BUSINESS_ID>` after the receipt and AURA work are persisted.
 12. Immediately continue to the next queue item.
 
-There are {len(events)} events in this run. Completion means the queue is exhausted, not merely that one event succeeded.
+There are {len(events)} events in this run. Execution completion means the queue is exhausted. Qualification status remains `NOT_EVALUATED` until the independent evaluator runs.
 '''
 
 def main():
@@ -121,6 +124,7 @@ def main():
     product_root=copy_product(ROOT,run_dir/'product'); _run([sys.executable,str(product_root/'scripts/generate_registry.py')],product_root,dict(os.environ)); workspace=run_dir/'workspace'; workspace.mkdir(parents=True); (run_dir/'candidate').mkdir(); (run_dir/'evaluator').mkdir(); (run_dir/'candidate-results').mkdir(); (run_dir/'checkpoints').mkdir()
     fixtures={t['fixture'] for t in suite['contract_tests']}|{m['fixture'] for k in ('domain_missions','cross_domain_missions','marathon_missions') for m in suite[k]}
     for f in sorted(fixtures): init_business(product_root,workspace,f)
+    baseline=product_snapshot(product_root); write_json(run_dir/'evaluator/product-snapshot.json',baseline)
     events=[]
     if a.profile in ('atomic','full'):
         for t in suite['contract_tests']:
@@ -129,7 +133,7 @@ def main():
     if a.profile in ('cross-domain','full'): events += [event_from_mission(m,'cross_domain_mission') for m in suite['cross_domain_missions']]
     if a.profile in ('marathon','full'): events += [event_from_mission(m,'marathon_mission') for m in suite['marathon_missions']]
     queue={'format_version':'1.0','run_id':run_id,'created_at':now(),'profile':a.profile,'domain_filter':a.domain,'event_count':len(events),'events':events}
-    write_json(run_dir/'candidate/queue.json',queue); write_json(run_dir/'evaluator/suite.json',suite); write_json(run_dir/'run.json',{'run_id':run_id,'created_at':now(),'product_root':str(product_root),'workspace':str(workspace),'profile':a.profile,'event_count':len(events),'status':'prepared','benchmark_context_seeded':True,'future_evidence_staged':True})
+    write_json(run_dir/'candidate/queue.json',queue); write_json(run_dir/'evaluator/suite.json',suite); write_json(run_dir/'run.json',{'run_id':run_id,'created_at':now(),'product_root':str(product_root),'workspace':str(workspace),'profile':a.profile,'event_count':len(events),'status':'prepared','execution_status':'prepared','qualification_status':'NOT_EVALUATED','product_snapshot_digest':baseline['digest'],'benchmark_context_seeded':True,'future_evidence_staged':True})
     (run_dir/'candidate/RUN-INSTRUCTIONS.md').write_text(instructions(product_root,run_dir,workspace,events),encoding='utf-8')
     print(json.dumps({'run_id':run_id,'run_dir':str(run_dir),'product_root':str(product_root),'workspace':str(workspace),'event_count':len(events),'instructions':str(run_dir/'candidate/RUN-INSTRUCTIONS.md'),'queue':str(run_dir/'candidate/queue.json')},indent=2))
 if __name__=='__main__': main()
