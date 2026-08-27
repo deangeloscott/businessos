@@ -3,7 +3,7 @@ from pathlib import Path
 import inspect, json, os, subprocess, sys, tempfile
 ROOT=Path(__file__).resolve().parents[1]; sys.path.insert(0,str(ROOT/'qualification'))
 from build_suite import build
-from prepare_run import init_business, copy_product
+from prepare_run import init_business, copy_product, apply_candidate_request
 from checkpoint import capture_checkpoint
 from release_fixture import release_event
 from common import fixture_for
@@ -82,6 +82,17 @@ def main():
         if line.strip():
             try: json.loads(line)
             except json.JSONDecodeError as e: raise AssertionError(f'qualification ledger line {i} is not valid JSON: {e}')
+
+    # Maintainers may supply a realistic ordinary request for one hidden target without exposing test machinery.
+    target='seo.intelligence.organic-competition.page-analysis'; ordinary='Analyze a strong current organic page for a valuable AtlasOps search intent and identify the material gaps for our business.'
+    customized=apply_candidate_request([{'contract_id':target,'task':'generic'}],ordinary)
+    req(customized[0]['task']==ordinary,'maintainer-authored ordinary request was not preserved')
+    try: apply_candidate_request([{'contract_id':target,'task':'a'},{'contract_id':'other','task':'b'}],ordinary)
+    except ValueError: pass
+    else: raise AssertionError('maintainer-authored request must require exactly one hidden event')
+    try: apply_candidate_request([{'contract_id':target,'task':'a'}],f'Execute {target}')
+    except ValueError: pass
+    else: raise AssertionError('maintainer-authored request must not expose hidden target contract id')
 
     suite=build(); manifest=json.loads((ROOT/'SYSTEM-MANIFEST.json').read_text())
     expected=manifest.get('counts',{}).get('contract_count') or manifest.get('contract_count'); expected_caps=manifest.get('capability_count')
