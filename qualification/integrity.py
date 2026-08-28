@@ -58,32 +58,63 @@ def event_specific_ref_paths(refs,before,after,workspace):
     return out
 
 
-def _source_locator(value,workspace):
+def _source_locator_key(value,workspace):
     if isinstance(value,dict):
         value=next((value.get(k) for k in ('source_url','url','source_ref','source_reference','evidence_ref','reference') if value.get(k)),None)
-    if not isinstance(value,str) or not value.strip():return False
-    if re.match(r'^https?://',value.strip(),re.I):
-        host=(urlparse(value.strip()).hostname or '').lower().rstrip('.')
-        if not host or host in {'localhost','example.com','example.org','example.net'}:return False
-        if host.endswith(('.invalid','.test','.localhost')):return False
-        return True
+    if not isinstance(value,str) or not value.strip():return None
+    value=value.strip()
+    if re.match(r'^https?://',value,re.I):
+        host=(urlparse(value).hostname or '').lower().rstrip('.')
+        if not host or host in {'localhost','example.com','example.org','example.net'}:return None
+        if host.endswith(('.invalid','.test','.localhost')):return None
+        return value
     p=resolve_workspace_ref(value,workspace)
-    return bool(p and p.exists() and p.is_file())
+    return str(p) if p and p.exists() and p.is_file() else None
+
+
+def _source_locator(value,workspace):
+    return bool(_source_locator_key(value,workspace))
+
+
+def _snapshot_views(data):
+    """Yield canonical and extension mappings that may describe one field-research snapshot."""
+    if not isinstance(data,dict): return []
+    out=[data]
+    extensions=data.get('extensions')
+    if isinstance(extensions,dict):
+        out.append(extensions)
+        for key in ('field_snapshot','research','search','serp','evidence','live_field'):
+            nested=extensions.get(key)
+            if isinstance(nested,dict): out.append(nested)
+    return out
 
 
 def is_reconstructable_field_snapshot(path,workspace):
+    """Require dated field context plus at least two real, independently resolvable sources.
+
+    Accept both generic evaluator snapshots and AURA's canonical SourceRecord shape. A
+    SourceRecord uses `retrieved_at`/`source_reference` and stores flexible search detail
+    under `extensions`, so qualification must understand that representation rather than
+    requiring non-schema top-level fields such as `captured_at` or `sources`.
+    """
     try:data=json.loads(Path(path).read_text(encoding='utf-8'))
     except Exception:return False
-    if not isinstance(data,dict) or not data.get('captured_at'):return False
-    context=any(data.get(k) for k in ('query','surface','method','scope','research_question','channel','market_context'))
+    if not isinstance(data,dict):return False
+    views=_snapshot_views(data)
+    captured=any(view.get(k) for view in views for k in ('captured_at','retrieved_at','observed_at','collected_at'))
+    if not captured:return False
+    context=any(view.get(k) for view in views for k in (
+        'query','search_query','intent','surface','method','scope','research_question',
+        'channel','market_context','query_context','research_context'
+    ))
     sources=[]
-    for key in ('sources','source_refs','source_references','evidence_refs'):
-        value=data.get(key)
-        if isinstance(value,list):sources.extend(value)
-    for key in ('competitive_set','comparisons','results','examples'):
-        value=data.get(key)
-        if isinstance(value,list):sources.extend(value)
-    locators=[x for x in sources if _source_locator(x,workspace)]
+    for view in views:
+        for key in ('source_reference','source_url','url','source_ref','evidence_ref','reference'):
+            if view.get(key): sources.append(view.get(key))
+        for key in ('sources','source_refs','source_references','evidence_refs','competitive_set','comparisons','results','examples'):
+            value=view.get(key)
+            if isinstance(value,list):sources.extend(value)
+    locators={key for item in sources if (key:=_source_locator_key(item,workspace))}
     return bool(context and len(locators)>=2)
 
 
