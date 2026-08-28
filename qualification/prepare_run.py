@@ -23,7 +23,7 @@ def event_from_contract(t):
 
 def mission_dimensions(m,kind):
     base=[x['id'] for x in RUBRICS['base']]
-    if kind=='cross_domain_mission': profile='cross_domain_system'
+    if kind in {'composition_mission','cross_domain_mission'}: profile='cross_domain_system'
     elif kind=='marathon_mission': profile='marathon_system'
     else:
         owner=m.get('owner_system'); profile={'core':'governance_and_state','customer-intelligence':'customer_truth','competitor-intelligence':'competitive_intelligence','industry-intelligence':'ecosystem_truth','seo-aeo':'search_live_field','content-synthesis':'artifact_excellence','marketing-synthesis':'paid_and_persuasion_field','customer-optimization':'first_party_outcomes'}.get(owner,'cross_domain_system')
@@ -48,6 +48,7 @@ def select_events(suite,profile,domain=None,contract_ids=None):
             if domain and t['owner_system']!=domain: continue
             if requested and t['contract_id'] not in requested: continue
             events.append(event_from_contract(t))
+    if profile in ('composition','full'): events += [event_from_mission(m,'composition_mission') for m in suite.get('composition_missions',[])]
     if profile in ('domains','full'): events += [event_from_mission(m,'domain_mission') for m in suite['domain_missions'] if not domain or m['owner_system']==domain]
     if profile in ('cross-domain','full'): events += [event_from_mission(m,'cross_domain_mission') for m in suite['cross_domain_missions']]
     if profile in ('marathon','full'): events += [event_from_mission(m,'marathon_mission') for m in suite['marathon_missions']]
@@ -147,7 +148,7 @@ def init_business(product_root,workspace,fixture,evaluator_root=None):
 
 
 def main():
-    ap=argparse.ArgumentParser(); ap.add_argument('--profile',choices=['atomic','domains','cross-domain','marathon','full'],default='atomic'); ap.add_argument('--domain'); ap.add_argument('--contract',action='append',default=[],help='Exact contract ID to include in an atomic representative run; repeat for multiple contracts.'); ap.add_argument('--request',help='Maintainer-authored ordinary business request for exactly one selected event. This replaces only the candidate-visible task text; evaluator target/rubric remain hidden.'); ap.add_argument('--run-root',help='Maintainer-only evaluator/checkpoint run root.'); ap.add_argument('--candidate-root',help='Neutral root for candidate-visible product/workspace. Must be physically separate from the evaluator run root.'); ap.add_argument('--run-id'); a=ap.parse_args()
+    ap=argparse.ArgumentParser(); ap.add_argument('--profile',choices=['atomic','composition','domains','cross-domain','marathon','full'],default='atomic'); ap.add_argument('--domain'); ap.add_argument('--contract',action='append',default=[],help='Exact contract ID to include in an atomic representative run; repeat for multiple contracts.'); ap.add_argument('--request',help='Maintainer-authored ordinary business request for exactly one selected event. This replaces only the candidate-visible task text; evaluator target/rubric remain hidden.'); ap.add_argument('--run-root',help='Maintainer-only evaluator/checkpoint run root.'); ap.add_argument('--candidate-root',help='Neutral root for candidate-visible product/workspace. Must be physically separate from the evaluator run root.'); ap.add_argument('--run-id'); a=ap.parse_args()
     if a.profile=='atomic' and not a.domain and not a.contract: raise SystemExit('Atomic qualification requires --contract <exact-contract-id> or --domain <installed-domain>; use --profile full explicitly only for an intentional broad endurance run')
     suite=build(); selected=select_events(suite,a.profile,a.domain,a.contract); evaluator_events=publicize_events(selected)
     try: evaluator_events=apply_candidate_request(evaluator_events,a.request)
