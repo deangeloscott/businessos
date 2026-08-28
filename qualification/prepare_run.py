@@ -67,6 +67,22 @@ def publicize_events(events):
     return out
 
 
+def apply_fixture_override(events,fixture):
+    """Use a maintainer-selected benchmark business for one representative event.
+
+    This changes only hidden qualification setup; the candidate still sees an ordinary
+    initialized business workspace and ordinary request.
+    """
+    if fixture is None:return events
+    if len(events)!=1:raise ValueError('--fixture requires exactly one selected qualification event')
+    path=FIXTURES/f'{fixture}.json'
+    if not path.is_file():raise ValueError(f'Unknown qualification fixture: {fixture}')
+    out=[dict(events[0])]
+    out[0]['fixture']=fixture
+    out[0]['business_id']=fixture_business_id(fixture)
+    return out
+
+
 def apply_candidate_request(events,request):
     """Allow one maintainer-authored ordinary request without exposing evaluator targets."""
     if request is None: return events
@@ -127,6 +143,27 @@ def _run(cmd,product_root,env):
     return p
 
 
+def _stage_supplied_media(inputs,data):
+    staged=[]; public=[]
+    for item in data.get('supplied_media',[]) or []:
+        if isinstance(item,str):
+            source=item; filename=Path(item).name; meta={'filename':filename}
+        elif isinstance(item,dict):
+            source=item.get('source'); filename=item.get('filename') or (Path(source).name if source else None); meta={k:v for k,v in item.items() if k!='source'}
+        else:raise SystemExit(f'Invalid supplied_media fixture entry: {item!r}')
+        if not source or not filename:raise SystemExit(f'supplied_media entry requires source/filename: {item!r}')
+        src=(FIXTURES/source).resolve()
+        try:src.relative_to(FIXTURES.resolve())
+        except ValueError:raise SystemExit(f'supplied_media source escapes qualification fixtures: {source}')
+        if not src.is_file():raise SystemExit(f'supplied_media source missing: {source}')
+        dest=(inputs/filename).resolve()
+        try:dest.relative_to(inputs.resolve())
+        except ValueError:raise SystemExit(f'supplied_media filename escapes supplied inputs: {filename}')
+        dest.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(src,dest)
+        staged.append(str(dest)); public.append(meta)
+    return staged,public
+
+
 def init_business(product_root,workspace,fixture,evaluator_root=None):
     data=fixture_data(fixture); bid=data['business_id']; name=data['name']; bootstrap=data.get('bootstrap_facts')
     if not isinstance(bootstrap,dict) or not bootstrap: raise SystemExit(f'Qualification fixture {fixture} requires non-empty bootstrap_facts so tests begin from grounded canonical context')
@@ -134,7 +171,9 @@ def init_business(product_root,workspace,fixture,evaluator_root=None):
     env=dict(os.environ); env['BUSINESSOS_WORKSPACE']=str(workspace); env['PYTHONDONTWRITEBYTECODE']='1'; env['PYTHONUTF8']='1'
     _run([sys.executable,str(product_root/'scripts/init_business.py'),bid,'--name',name],product_root,env)
     inputs=workspace/'attachments'/'supplied'; inputs.mkdir(parents=True,exist_ok=True)
-    initial={k:v for k,v in data.items() if k!='timeline'}
+    staged_media,public_media=_stage_supplied_media(inputs,data)
+    initial={k:v for k,v in data.items() if k not in {'timeline','supplied_media'}}
+    if public_media:initial['supplied_media']=public_media
     source_path=inputs/f'{fixture}.json'; source_path.write_text(json.dumps(initial,indent=2)+'\n',encoding='utf-8')
     if data.get('timeline'):
         hidden=evaluator_root/'hidden-fixtures'; hidden.mkdir(parents=True,exist_ok=True)
@@ -142,16 +181,18 @@ def init_business(product_root,workspace,fixture,evaluator_root=None):
     facts_path=seed_dir/f'{fixture}-facts.json'; facts_path.write_text(json.dumps(bootstrap,indent=2)+'\n',encoding='utf-8')
     boot=_run([sys.executable,str(product_root/'scripts/bootstrap_explicit_context.py'),bid,'--facts-file',str(facts_path),'--source-file',str(source_path),'--source-reference','supplied business material','--initialization-only'],product_root,env)
     validation=_run([sys.executable,str(product_root/'scripts/validate_business.py'),bid,'--require-context'],product_root,env)
-    audit={'fixture':fixture,'business_id':bid,'source_path':str(source_path),'facts_path':str(facts_path),'future_evidence_hidden':bool(data.get('timeline')),'bootstrapped_at':now(),'bootstrap_stdout':boot.stdout,'bootstrap_stderr':boot.stderr,'validation_stdout':validation.stdout,'validation_stderr':validation.stderr}
+    audit={'fixture':fixture,'business_id':bid,'source_path':str(source_path),'supplied_media_paths':staged_media,'facts_path':str(facts_path),'future_evidence_hidden':bool(data.get('timeline')),'bootstrapped_at':now(),'bootstrap_stdout':boot.stdout,'bootstrap_stderr':boot.stderr,'validation_stdout':validation.stdout,'validation_stderr':validation.stderr}
     write_json(seed_dir/f'{fixture}-bootstrap-audit.json',audit)
     return bid
 
 
 def main():
-    ap=argparse.ArgumentParser(); ap.add_argument('--profile',choices=['atomic','composition','domains','cross-domain','marathon','full'],default='atomic'); ap.add_argument('--domain'); ap.add_argument('--contract',action='append',default=[],help='Exact contract ID to include in an atomic representative run; repeat for multiple contracts.'); ap.add_argument('--request',help='Maintainer-authored ordinary business request for exactly one selected event. This replaces only the candidate-visible task text; evaluator target/rubric remain hidden.'); ap.add_argument('--run-root',help='Maintainer-only evaluator/checkpoint run root.'); ap.add_argument('--candidate-root',help='Neutral root for candidate-visible product/workspace. Must be physically separate from the evaluator run root.'); ap.add_argument('--run-id'); a=ap.parse_args()
+    ap=argparse.ArgumentParser(); ap.add_argument('--profile',choices=['atomic','composition','domains','cross-domain','marathon','full'],default='atomic'); ap.add_argument('--domain'); ap.add_argument('--contract',action='append',default=[],help='Exact contract ID to include in an atomic representative run; repeat for multiple contracts.'); ap.add_argument('--fixture',help='Maintainer-only benchmark fixture override for exactly one selected qualification event.'); ap.add_argument('--request',help='Maintainer-authored ordinary business request for exactly one selected event. This replaces only the candidate-visible task text; evaluator target/rubric remain hidden.'); ap.add_argument('--run-root',help='Maintainer-only evaluator/checkpoint run root.'); ap.add_argument('--candidate-root',help='Neutral root for candidate-visible product/workspace. Must be physically separate from the evaluator run root.'); ap.add_argument('--run-id'); a=ap.parse_args()
     if a.profile=='atomic' and not a.domain and not a.contract: raise SystemExit('Atomic qualification requires --contract <exact-contract-id> or --domain <installed-domain>; use --profile full explicitly only for an intentional broad endurance run')
     suite=build(); selected=select_events(suite,a.profile,a.domain,a.contract); evaluator_events=publicize_events(selected)
-    try: evaluator_events=apply_candidate_request(evaluator_events,a.request)
+    try:
+        evaluator_events=apply_fixture_override(evaluator_events,a.fixture)
+        evaluator_events=apply_candidate_request(evaluator_events,a.request)
     except ValueError as e: raise SystemExit(str(e))
     run_id=a.run_id or ('aura-qualification-'+uuid.uuid4().hex[:10]); root=Path(a.run_root).expanduser().resolve() if a.run_root else Path(tempfile.gettempdir())/'aura-qualification-runs'; run_dir=root/run_id
     if run_dir.exists(): raise SystemExit(f'Run already exists: {run_dir}')
@@ -168,7 +209,7 @@ def main():
     for fixture in fixtures: init_business(product_root,workspace,fixture,run_dir/'evaluator')
     baseline=product_snapshot(product_root); write_json(run_dir/'evaluator/product-snapshot.json',baseline)
     contract_filter=sorted(set(a.contract)); evaluator_queue={'format_version':'2.0','run_id':run_id,'profile':a.profile,'domain_filter':a.domain,'contract_filter':contract_filter,'event_count':len(evaluator_events),'events':evaluator_events}
-    preparation={'profile':a.profile,'domain_filter':a.domain,'contract_filter':contract_filter,'prepared_at':now(),'candidate_blind':True,'maintainer_authored_request':bool(a.request),'candidate_surface_root':str(candidate_dir)}
+    preparation={'profile':a.profile,'domain_filter':a.domain,'contract_filter':contract_filter,'fixture_override':a.fixture,'prepared_at':now(),'candidate_blind':True,'maintainer_authored_request':bool(a.request),'candidate_surface_root':str(candidate_dir)}
     write_json(run_dir/'evaluator/queue.json',evaluator_queue); write_json(run_dir/'evaluator/suite.json',suite); write_json(run_dir/'evaluator/preparation.json',preparation)
     future=any(fixture_data(f).get('timeline') for f in fixtures)
     write_json(run_dir/'run.json',{'run_id':run_id,'created_at':now(),'product_root':str(product_root),'workspace':str(workspace),'candidate_surface_root':str(candidate_dir),'profile':a.profile,'domain_filter':a.domain,'event_count':len(evaluator_events),'status':'prepared','execution_status':'prepared','qualification_status':'NOT_EVALUATED','product_snapshot_digest':baseline['digest'],'benchmark_context_seeded':True,'future_evidence_staged':future,'candidate_blind':True})
