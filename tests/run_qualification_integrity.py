@@ -35,6 +35,28 @@ def main():
         req(not is_reconstructable_field_snapshot(placeholder_field,ws),'reserved placeholder URLs must not count as reconstructable field evidence')
         good_field=root/'good-field.json';good_field.write_text(json.dumps({'captured_at':'2026-08-26T00:00:00Z','query':'field service software','sources':[{'name':'A','source_url':'https://www.servicetitan.com/'},{'name':'B','source_url':'https://www.housecallpro.com/'}]}))
         req(is_reconstructable_field_snapshot(good_field,ws),'source-linked field evidence should be reconstructable')
+
+        canonical=root/'canonical-source-record.json';canonical.write_text(json.dumps({
+            'id':'src_atlasops_field','object_type':'SourceRecord','schema_version':'1.0.0','business_id':'atlasops',
+            'source_type':'web_research','source_reference':'https://www.vonigo.com/product/franchise-service-software/',
+            'retrieved_at':'2026-08-27T22:00:00Z','access_scope':'public',
+            'extensions':{
+                'query':'field service scheduling software for multi-location teams',
+                'results':[
+                    {'name':'Vonigo','url':'https://www.vonigo.com/product/franchise-service-software/'},
+                    {'name':'ServiceTitan','url':'https://www.servicetitan.com/commercial'}
+                ]
+            }
+        }))
+        req(is_reconstructable_field_snapshot(canonical,ws),'canonical SourceRecord evidence with query context and two real locators should be reconstructable')
+        canonical_one=root/'canonical-one-source.json';canonical_one.write_text(json.dumps({
+            'id':'src_atlasops_one','object_type':'SourceRecord','schema_version':'1.0.0','business_id':'atlasops',
+            'source_type':'web_research','source_reference':'https://www.vonigo.com/product/franchise-service-software/',
+            'retrieved_at':'2026-08-27T22:00:00Z','access_scope':'public',
+            'extensions':{'query':'field service scheduling software for multi-location teams'}
+        }))
+        req(not is_reconstructable_field_snapshot(canonical_one,ws),'canonical SourceRecord with only one real source must still fail reconstructability')
+
         first_party_a=ws/'attachments'/'performance.json'; first_party_a.write_text('{}')
         first_party_b=ws/'instances'/'business'/'intelligence'/'sources'/'source.json'; first_party_b.parent.mkdir(parents=True); first_party_b.write_text('{}')
         alias_field=root/'alias-field.json';alias_field.write_text(json.dumps({'captured_at':'2026-08-26T00:00:00Z','market_context':{'category':'field service'},'source_references':['attachments/performance.json','instances/business/intelligence/sources/source.json']}))
