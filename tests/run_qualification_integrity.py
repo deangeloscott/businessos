@@ -57,6 +57,32 @@ def main():
         }))
         req(not is_reconstructable_field_snapshot(canonical_one,ws),'canonical SourceRecord with only one real source must still fail reconstructability')
 
+        atlasops_shape=root/'atlasops-shape.json';atlasops_shape.write_text(json.dumps({
+            'id':'src_atlasops_serp_multiloc_20260827','object_type':'SourceRecord','schema_version':'1.0.0','business_id':'atlasops',
+            'source_type':'webpage','source_reference':'[https://www.vonigo.com/](https://www.vonigo.com/)',
+            'retrieved_at':'2026-08-27T22:59:30Z','access_scope':'public',
+            'extensions':{
+                'target_intent':'field service scheduling software for multi-location teams',
+                'analyzed_urls':[
+                    '[https://www.vonigo.com/](https://www.vonigo.com/)',
+                    '[https://www.servicetitan.com/blog/multi-location-field-service-management](https://www.servicetitan.com/blog/multi-location-field-service-management)',
+                    '[https://buildops.com/](https://buildops.com/)'
+                ],
+                'businessos_evidence':{'capture_status':'captured','acquisition_method':'direct_page_read'}
+            }
+        }))
+        req(is_reconstructable_field_snapshot(atlasops_shape,ws),'canonical SourceRecord target_intent/analyzed_urls aliases and Markdown-wrapped URLs should remain reconstructable')
+        atlasops_duplicate=root/'atlasops-duplicate.json';atlasops_duplicate.write_text(json.dumps({
+            'id':'src_atlasops_dup','object_type':'SourceRecord','schema_version':'1.0.0','business_id':'atlasops',
+            'source_type':'webpage','source_reference':'[https://www.vonigo.com/](https://www.vonigo.com/)',
+            'retrieved_at':'2026-08-27T22:59:30Z','access_scope':'public',
+            'extensions':{
+                'target_intent':'field service scheduling software for multi-location teams',
+                'analyzed_urls':['https://www.vonigo.com/','[Vonigo](https://www.vonigo.com/)']
+            }
+        }))
+        req(not is_reconstructable_field_snapshot(atlasops_duplicate,ws),'different wrappers around one URL must not fake the two-distinct-source requirement')
+
         first_party_a=ws/'attachments'/'performance.json'; first_party_a.write_text('{}')
         first_party_b=ws/'instances'/'business'/'intelligence'/'sources'/'source.json'; first_party_b.parent.mkdir(parents=True); first_party_b.write_text('{}')
         alias_field=root/'alias-field.json';alias_field.write_text(json.dumps({'captured_at':'2026-08-26T00:00:00Z','market_context':{'category':'field service'},'source_references':['attachments/performance.json','instances/business/intelligence/sources/source.json']}))
