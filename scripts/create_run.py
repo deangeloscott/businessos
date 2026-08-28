@@ -5,6 +5,7 @@ from resolve_preferences import resolve_effective_preferences, _load_task_prefer
 from completion_evidence import completion_spec
 
 COMPLETION_POLICY='core/policies/completion-evidence.md'
+CONTENT_PREPUBLISH_QA='content.qa.pre-publish'
 
 def _required_subcontract_ids(contract):
     out=[]
@@ -12,7 +13,20 @@ def _required_subcontract_ids(contract):
         cid=item.get('id') if isinstance(item,dict) else item
         if not isinstance(cid,str) or not cid.strip():
             raise SystemExit(f"Invalid required subcontract metadata for {contract.get('id')}: {item!r}")
-        out.append(cid.strip())
+        cid=cid.strip()
+        if cid not in out: out.append(cid)
+    # Customer-facing Content production has one invariant QA floor even when an older
+    # media playbook only described QA in prose. Enforce it in the Run manifest so
+    # image/infographic/carousel/GIF/etc. work cannot complete without a real
+    # pre-publish pass record. Keep this scoped to Content Synthesis; other domains
+    # may have their own domain-specific QA contracts.
+    if (
+        contract.get('owner_system')=='content-synthesis'
+        and contract.get('artifact_role')=='customer_facing_production_root'
+        and contract.get('id')!=CONTENT_PREPUBLISH_QA
+        and CONTENT_PREPUBLISH_QA not in out
+    ):
+        out.append(CONTENT_PREPUBLISH_QA)
     return out
 
 p=argparse.ArgumentParser()
