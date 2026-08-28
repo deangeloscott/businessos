@@ -65,5 +65,5 @@ def main():
     if not p.exists():raise SystemExit(f'Asset file not found: {p}')
     try:candidates=scan_claims(a.business_id,p,a.claim_surface)
     except ValueError as exc:raise SystemExit(str(exc))
-    print(json.dumps({'business_id':a.business_id,'asset_file':str(p.relative_to(ROOT)),'claim_surface':a.claim_surface,'candidates':candidates},indent=2))
+    print(json.dumps({'business_id':a.business_id,'asset_file':storage_ref(p),'claim_surface':a.claim_surface,'candidates':candidates},indent=2))
 if __name__=='__main__':main()
