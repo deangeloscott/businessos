@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1200" viewBox="0 0 1200 1200" role="img" aria-labelledby="title desc">
+  <title id="title">Northline Coffee Discovery Box source product reference</title>
+  <desc id="desc">A neutral product reference showing one cream Discovery Box with three coffee pouches in rust, olive, and charcoal.</desc>
+  <rect width="1200" height="1200" fill="#efe9df"/>
+  <ellipse cx="600" cy="1010" rx="390" ry="72" fill="#d8cfc2"/>
+  <rect x="250" y="260" width="700" height="520" rx="28" fill="#f7f1e7" stroke="#2f2a26" stroke-width="10"/>
+  <text x="600" y="365" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="72" font-weight="700" letter-spacing="8" fill="#2f2a26">NORTHLINE</text>
+  <text x="600" y="430" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="30" letter-spacing="5" fill="#6c6258">DISCOVERY BOX</text>
+  <line x1="360" y1="470" x2="840" y2="470" stroke="#b8aa98" stroke-width="4"/>
+  <g>
+    <rect x="330" y="520" width="160" height="310" rx="18" fill="#a65e3f" stroke="#2f2a26" stroke-width="6"/>
+    <rect x="520" y="500" width="160" height="330" rx="18" fill="#7f8460" stroke="#2f2a26" stroke-width="6"/>
+    <rect x="710" y="520" width="160" height="310" rx="18" fill="#44413f" stroke="#2f2a26" stroke-width="6"/>
+    <text x="410" y="640" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="25" font-weight="700" fill="#fffaf1">NORTHLINE</text>
+    <text x="600" y="620" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="25" font-weight="700" fill="#fffaf1">NORTHLINE</text>
+    <text x="790" y="640" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="25" font-weight="700" fill="#fffaf1">NORTHLINE</text>
+    <circle cx="410" cy="715" r="24" fill="#f7f1e7" opacity="0.88"/>
+    <circle cx="600" cy="695" r="24" fill="#f7f1e7" opacity="0.88"/>
+    <circle cx="790" cy="715" r="24" fill="#f7f1e7" opacity="0.88"/>
+  </g>
+  <text x="600" y="935" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="#665c52">Three rotating coffees • reference image</text>
+</svg>
