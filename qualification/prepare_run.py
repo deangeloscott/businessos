@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from pathlib import Path
-import argparse, json, os, shutil, subprocess, sys, tempfile, uuid
+import argparse, base64, json, os, shutil, subprocess, sys, tempfile, uuid
 from build_suite import build
 from common import ROOT, now, product_snapshot, write_json
 
@@ -144,12 +144,19 @@ def _run(cmd,product_root,env):
 
 
 def _stage_supplied_media(inputs,data):
+    """Stage evaluator-owned fixture media as ordinary candidate-visible supplied files.
+
+    Binary fixture bytes may be stored base64-encoded in the maintainer-only qualification
+    tree so repository transport does not constrain the candidate-visible media format.
+    Encoding details and evaluator source paths never appear in public business metadata.
+    """
     staged=[]; public=[]
     for item in data.get('supplied_media',[]) or []:
         if isinstance(item,str):
-            source=item; filename=Path(item).name; meta={'filename':filename}
+            source=item; filename=Path(item).name; encoding='copy'; meta={'filename':filename}
         elif isinstance(item,dict):
-            source=item.get('source'); filename=item.get('filename') or (Path(source).name if source else None); meta={k:v for k,v in item.items() if k!='source'}
+            source=item.get('source'); filename=item.get('filename') or (Path(source).name if source else None); encoding=item.get('encoding') or 'copy'
+            meta={k:v for k,v in item.items() if k not in {'source','encoding'}}
         else:raise SystemExit(f'Invalid supplied_media fixture entry: {item!r}')
         if not source or not filename:raise SystemExit(f'supplied_media entry requires source/filename: {item!r}')
         src=(FIXTURES/source).resolve()
@@ -159,7 +166,17 @@ def _stage_supplied_media(inputs,data):
         dest=(inputs/filename).resolve()
         try:dest.relative_to(inputs.resolve())
         except ValueError:raise SystemExit(f'supplied_media filename escapes supplied inputs: {filename}')
-        dest.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(src,dest)
+        dest.parent.mkdir(parents=True,exist_ok=True)
+        if encoding=='copy':
+            shutil.copy2(src,dest)
+        elif encoding=='base64':
+            try:
+                encoded=''.join(src.read_text(encoding='ascii').split())
+                dest.write_bytes(base64.b64decode(encoded,validate=True))
+            except Exception as e:
+                raise SystemExit(f'Invalid base64 supplied_media fixture {source}: {e}')
+        else:
+            raise SystemExit(f'Unsupported supplied_media encoding {encoding!r} for {source}')
         staged.append(str(dest)); public.append(meta)
     return staged,public
 
