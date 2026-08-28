@@ -165,7 +165,8 @@ def main():
         f=json.loads(p.read_text()); req(isinstance(f.get('bootstrap_facts'),dict) and f['bootstrap_facts'],f'{p.name}: bootstrap_facts required'); req(not str(f.get('business_id','')).startswith('qa-'),f'{p.name}: candidate business id leaks qualification marker')
     seed_source=inspect.getsource(init_business)
     req('bootstrap_explicit_context.py' in seed_source and '--require-context' in seed_source,'qualification preparation must ground fixture context canonically and validate context')
-    req("k!='timeline'" in seed_source and 'hidden-fixtures' in seed_source,'later-period evidence must be withheld from initial supplied inputs')
+    # Actual withholding behavior is proven in smoke_prepare(): the candidate-visible supplied JSON has no timeline while evaluator hidden-fixtures retains it. Avoid asserting one exact Python-comprehension spelling here.
+    req('hidden-fixtures' in seed_source and 'timeline' in seed_source,'qualification preparation must preserve a hidden later-period evidence path')
     req((ROOT/'qualification/release_fixture.py').exists() and (ROOT/'qualification/task_controller.py').exists(),'external qualification controller/release tooling missing')
     released=[m for m in suite['cross_domain_missions']+suite['marathon_missions'] if m.get('release_fixture')]
     req(len(released)>=2 and {'CROSS-MARKET-CHANGE-001','MARATHON-002'}.issubset({m['id'] for m in released}),'expected longitudinal evidence-release missions missing')
