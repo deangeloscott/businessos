@@ -10,6 +10,8 @@ Normal business-operation work may write to:
 - `runtime/runs/<active-business-id>/...` for bounded working/recovery state;
 - other explicitly designated business-output locations named by an installed contract or directly requested by the user.
 
+After a bounded Run exists, `runtime/runs/<active-business-id>/<run-id>/work/` is the default scratch/build/cache/render location for that execution. Final governed business artifacts still belong in the locations required by the resolved contract; `work/` is execution state, not a substitute for canonical Asset/evidence registration.
+
 **The entire BusinessOS product root is read-only during normal business operation unless the user's request explicitly concerns developing, repairing, configuring, customizing, testing, or upgrading BusinessOS itself.** Do not use the product root as a working directory for business artifacts or tool scratch state. Build output, generated media, temporary files, browser/user-data profiles, renderer caches, package-manager output, helper scripts, logs, previews, exports, and hidden working directories such as `.build/`, `.tmp/`, or `.cache/` belong under the active organization workspace/runtime when they are business state, or in an external temporary location when they are disposable execution scratch.
 
 Normal business-operation work must **not** create, edit, patch, replace, or delete BusinessOS product files such as:
@@ -23,6 +25,9 @@ Normal business-operation work must **not** create, edit, patch, replace, or del
 - root-level or nested scratch/build/cache/output directories created by business execution or third-party tools
 
 This protection is about task scope, not technical impossibility. When the user's request explicitly concerns developing, repairing, configuring, customizing, testing, or upgrading BusinessOS itself, product-file changes may be appropriate under the ordinary change/verification process.
+
+## Specialist executor boundary
+A host Skill/plugin, renderer, generator, browser workflow, code tool, or other specialist capability is an **executor inside AURA**, not an alternate orchestration path around AURA. For ordinary business work, route the user's request and create/resume the appropriate bounded root Run before invoking a specialist capability that will materially perform the requested job or create its artifacts. The specialist may determine how to execute its assigned step, but it does not replace AURA's context, evidence, authorization, canonical state, required-subcontract, QA, completion, or Learning boundaries. Use the Run-scoped `work/` directory for specialist scratch/build/cache state unless the contract names another workspace-owned location.
 
 ## Supported-path integrity
 1. A failed deterministic helper is not permission to bypass it. Correct ordinary invocation mistakes using `--help`, documented examples, or the helper's error guidance.
