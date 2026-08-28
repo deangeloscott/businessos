@@ -9,8 +9,8 @@ from integrity import (
     exact_duplicate_artifact_flags, existing_ref_paths,
     event_specific_ref_paths, integrity_hard_failure, reconstructable_field_snapshot_paths,
     run_control_flags, selector_types,
-    structured_prepublish_refs,
 )
+from qa_resolution import required_qa_contract_ids, recorded_required_qa_refs
 
 RUBRICS=json.loads((ROOT/'qualification/rubrics/rubrics.json').read_text())
 CONTRACTS=contract_index()
@@ -86,8 +86,16 @@ def hard_grade(event,test,before,after,receipt,workspace,product_root,previous_a
         justified=declared_write_absence_justified(completion_spec(root).get('profile'),actual_artifacts)
         gates['declared_write_type_observed_or_explicitly_justified']=bool(declared & changed) or justified
     if test and test.get('artifact_role')=='customer_facing_production_root':
-        gates['customer_facing_claim_governance_passed']=gates['root_run_completed']
-        gates['prepublish_or_required_qa_recorded']=bool(structured_prepublish_refs(workspace,event['business_id'],before,after,run_audit))
+        # Active-business validation is the shared claim-governance gate. It understands
+        # text-native artifacts and declared claim surfaces for opaque rendered media.
+        gates['customer_facing_claim_governance_passed']=gates['business_valid']
+        # Qualification verifies QA that the actual production Run declares. It does not
+        # invent a domain-independent QA subcontract. Content Run creation supplies its
+        # shared pre-publish invariant; Marketing and other owners keep their own graph.
+        qa_ids=required_qa_contract_ids(run_audit,CONTRACTS,completion_spec,event.get('contract_id'))
+        qa_refs=recorded_required_qa_refs(run_audit,qa_ids,event.get('contract_id'))
+        if qa_ids:
+            gates['customer_facing_required_qa_recorded']=all(qa_refs.get(cid) for cid in qa_ids)
     return gates,validation,run_audit,actual_artifacts
 
 def staged_product_integrity_flags(rd,product_root,run):

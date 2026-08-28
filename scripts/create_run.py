@@ -7,7 +7,7 @@ from completion_evidence import completion_spec
 COMPLETION_POLICY='core/policies/completion-evidence.md'
 CONTENT_PREPUBLISH_QA='content.qa.pre-publish'
 
-def _required_subcontract_ids(contract):
+def _required_subcontract_ids(contract,byid):
     out=[]
     for item in ((contract.get('subcontracts') or {}).get('required') or []):
         cid=item.get('id') if isinstance(item,dict) else item
@@ -15,16 +15,15 @@ def _required_subcontract_ids(contract):
             raise SystemExit(f"Invalid required subcontract metadata for {contract.get('id')}: {item!r}")
         cid=cid.strip()
         if cid not in out: out.append(cid)
-    # Customer-facing Content production has one invariant QA floor even when an older
-    # media playbook only described QA in prose. Enforce it in the Run manifest so
-    # image/infographic/carousel/GIF/etc. work cannot complete without a real
-    # pre-publish pass record. Keep this scoped to Content Synthesis; other domains
-    # may have their own domain-specific QA contracts.
+    # Content has one shared pre-publish QA floor, so older Content media contracts
+    # inherit it when they do not already declare a QA subcontract. Other production
+    # owners keep the QA architecture their contracts actually declare; Run creation
+    # must not invent a cross-domain QA requirement merely because an Asset is public-facing.
     if (
         contract.get('owner_system')=='content-synthesis'
         and contract.get('artifact_role')=='customer_facing_production_root'
         and contract.get('id')!=CONTENT_PREPUBLISH_QA
-        and CONTENT_PREPUBLISH_QA not in out
+        and not any(cid in byid and completion_spec(byid[cid]).get('profile')=='qa' for cid in out)
     ):
         out.append(CONTENT_PREPUBLISH_QA)
     return out
@@ -55,7 +54,7 @@ obj={'run_id':rid,'business_id':a.business_id,'task':a.task,'contract_id':a.cont
      'completion_policy_ref':COMPLETION_POLICY,'correlation_id':corr,'causation_id':None,'created_at':ts,'updated_at':ts}
 (d/'run.json').write_text(json.dumps(obj,indent=2)+'\n');(d/'artifacts').mkdir();(d/'checkpoints').mkdir();(d/'logs').mkdir()
 (d/'artifacts'/'effective-preferences.json').write_text(json.dumps(pref,indent=2)+'\n')
-required=_required_subcontract_ids(byid[a.contract_id])
+required=_required_subcontract_ids(byid[a.contract_id],byid)
 manifest={
     'format_version':'1.1','run_id':rid,'business_id':a.business_id,
     'root_contract_id':a.contract_id,'root_status':'active','completion_policy_ref':COMPLETION_POLICY,

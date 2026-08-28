@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""RC15: scanner/validator catch invented timing, setup and absolute operational promises."""
+"""Claim governance catches unsupported promises in text-native and opaque rendered media."""
 from pathlib import Path
 import json, shutil, sys
 ROOT=Path(__file__).resolve().parents[1]; S=ROOT/'scripts'; sys.path.insert(0,str(S))
 from build_claim_manifest import scan_claims
-from validate_business_claims import validate_manifest_sentences
+from validate_business_claims import validate_manifest_sentences, claim_errors
 BID='claim-operational-promises'; BASE=ROOT/'instances'/BID
 
 def req(c,m):
@@ -39,6 +39,51 @@ def main():
         sentence='CrewBeacon guarantees every lead receives a response.'
         errs3=validate_manifest_sentences([{'text':sentence,'classification':'approved_business_claim','support_refs':['clm_minted']}],[sentence],{'clm_minted':(minted,Path('minted.json'))},'CrewBeacon','asset.json')
         req(any('missing/untrusted support refs' in e for e in errs3),'self-stamped verified_first_party claim without source_ref/support_quote must not authorize customer-facing copy')
+
+        # Text-bearing visual media enters the normal claim-governance path without OCR.
+        svg=BASE/'assets/visual.svg'
+        svg.write_text('''<svg xmlns="http://www.w3.org/2000/svg" width="800" height="400">
+  <title>CrewBeacon operating flow</title>
+  <text x="20" y="60">CrewBeacon automatically reallocates every lead in real time.</text>
+  <text x="20" y="110">Illustrative workflow: manager reviews the handoff before launch.</text>
+</svg>\n''')
+        svg_cands=scan_claims(BID,svg)
+        req(any('automatically reallocates every lead' in x for x in svg_cands),'SVG product behavior must be extracted from audience-readable text')
+        req(any('Illustrative workflow' in x for x in svg_cands),'SVG scan must cover visible guidance text, not raw XML markup')
+        asset={
+            'id':'ast_svg_claim_fixture','object_type':'Asset','business_id':BID,'owner_system':'content-synthesis',
+            'location_reference':str(svg.relative_to(ROOT)),
+            'extensions':{'businessos':{'customer_facing':True,'claim_manifest':[]}}
+        }
+        svg_errors=claim_errors(BID,[(asset,BASE/'assets/ast_svg_claim_fixture.json')])
+        req(any('automatically reallocates every lead' in e for e in svg_errors),'customer-facing SVG cannot silently bypass claim manifest coverage')
+        branded='CrewBeacon automatically reallocates every lead in real time.'
+        branded_manifest=[{'text':x,'classification':('approved_business_claim' if x==branded else 'general_guidance'),'support_refs':(['clm_one-view'] if x==branded else [])} for x in svg_cands]
+        svg_support_errors=validate_manifest_sentences(branded_manifest,svg_cands,idx,'CrewBeacon','asset.json')
+        req(any('automatically reallocates every lead' in e for e in svg_support_errors),'generic trusted positioning must not authorize invented SVG product behavior')
+
+        # Opaque media uses one format-independent claim-surface interface rather than an
+        # extension-specific OCR/parser rule. PNG is representative of the opaque path; the
+        # same sidecar contract applies to other raster, PDF/presentation, audio, and video media.
+        png=BASE/'assets/visual.png';png.write_bytes(b'\x89PNG\r\n\x1a\nopaque-fixture')
+        opaque_asset={
+            'id':'ast_opaque_claim_fixture','object_type':'Asset','business_id':BID,'owner_system':'content-synthesis',
+            'location_reference':str(png.relative_to(ROOT)),
+            'extensions':{'businessos':{'customer_facing':True,'run_ref':f'runtime/runs/{BID}/run_fixture','claim_manifest':[]}}
+        }
+        missing_surface=claim_errors(BID,[(opaque_asset,BASE/'assets/ast_opaque_claim_fixture.json')])
+        req(any('claim_surface_ref' in e for e in missing_surface),'new opaque customer-facing media must expose an auditable claim surface')
+        sidecar=BASE/'assets/visual.claim-surface.json'
+        sidecar.write_text(json.dumps({
+            'format_version':'1.0','artifact_ref':str(png.relative_to(ROOT)),
+            'visible_text':['CrewBeacon guarantees every lead is automatically routed in real time.'],
+            'spoken_text':[],
+            'material_visual_claims':['The graphic depicts an automated lead-routing workflow as product behavior.']
+        })+'\n')
+        opaque_asset['extensions']['businessos']['claim_surface_ref']=str(sidecar.relative_to(ROOT))
+        opaque_errors=claim_errors(BID,[(opaque_asset,BASE/'assets/ast_opaque_claim_fixture.json')])
+        req(any('guarantees every lead' in e for e in opaque_errors),'opaque claim surface must feed the same manifest coverage')
+
         print('claim operational-promise regressions passed')
     finally:
         if BASE.exists(): shutil.rmtree(BASE)

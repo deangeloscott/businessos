@@ -40,12 +40,34 @@ Examples:
 Quantifiers, guarantees, availability, timing, price, discounts, financing, warranties, certifications, comparative/superlative language, and process commitments require their own support when they materially change the promise.
 
 ## Customer-facing Asset claim manifest
-For Content/Marketing Assets with a customer-facing file, run `scripts/build_claim_manifest.py <business-id> <asset-file>` after drafting. `customer_facing` describes the **intended audience/use**, not whether the artifact has been published. A local draft of a homepage, landing page, email, ad, proposal, webinar, or similar outward asset is still customer-facing even while status=`draft` and publication is unauthorized. Set `extensions.businessos.customer_facing: false` only for genuinely internal support Assets such as an internal brief, strategy note, analysis, research packet, or planning artifact. Marketing Synthesis Assets default customer-facing and may opt out only for an explicitly internal support role. Otherwise customer-facing is the safe default. Every business-specific/promise-like candidate returned by that scanner must be classified in the canonical Asset's `extensions.businessos.claim_manifest` as one of:
+For Content/Marketing Assets with a customer-facing file, run `scripts/build_claim_manifest.py <business-id> <asset-file>` after drafting. `customer_facing` describes the **intended audience/use**, not whether the artifact has been published. A local draft of a homepage, landing page, email, ad, proposal, webinar, or similar outward asset is still customer-facing even while status=`draft` and publication is unauthorized. Set `extensions.businessos.customer_facing: false` only for genuinely internal support Assets such as an internal brief, strategy note, analysis, research packet, or planning artifact. Marketing Synthesis Assets default customer-facing and may opt out only for an explicitly internal support role. Otherwise customer-facing is the safe default.
+
+Claim governance is **format-independent**. Text-native artifacts that AURA can inspect without OCR are scanned directly. Newly produced opaque/rendered media (for example raster images, PDFs/presentations, audio, or video) must save a compact JSON claim-surface sidecar and reference it as `extensions.businessos.claim_surface_ref`. The sidecar contains:
+- `artifact_ref` for the exact governed file,
+- `visible_text` for audience-readable copy,
+- `spoken_text` for narration/dialogue,
+- `material_visual_claims` for factual/product implications carried by the visual itself,
+- or a substantive `no_material_claims_reason` when the asset genuinely contains none.
+
+Example sidecar:
+```json
+{
+  "format_version": "1.0",
+  "artifact_ref": "instances/example/assets/example.png",
+  "visible_text": ["Compare the options before deciding."],
+  "spoken_text": [],
+  "material_visual_claims": ["The diagram is an illustrative workflow, not a depiction of product automation."]
+}
+```
+
+Use `scripts/build_claim_manifest.py <business-id> <asset-file> --claim-surface <sidecar-ref>` for opaque/rendered media. The sidecar is an auditable representation, not evidence that the render matches it. Final QA must inspect the actual artifact and verify parity; a safe sidecar paired with contradictory pixels, slides, audio, or video is a failure.
+
+Every business-specific/promise-like candidate returned by the scanner must be classified in the canonical Asset's `extensions.businessos.claim_manifest` as one of:
 - `approved_business_claim` with canonical support refs,
 - `general_guidance` (must not be a claim about the active business), or
 - `placeholder` (must be visibly placeholder-marked).
 
-`validate_business.py` re-scans the saved artifact and rejects missing/unsupported manifest entries. A trusted support reference is **not** a permission token: the referenced canonical text must substantively authorize the customer-facing predicate, not merely exist or share the business name/market. A claim manifest is a QA control, not a replacement for judgment: if a statement materially enlarges the supported promise, narrow it or obtain authorization.
+`validate_business.py` re-scans the saved artifact or its declared claim surface and rejects missing/unsupported manifest entries. A trusted support reference is **not** a permission token: the referenced canonical text must substantively authorize the customer-facing predicate, not merely exist or share the business name/market. A claim manifest is a QA control, not a replacement for judgment: if a statement or visual implication materially enlarges the supported promise, narrow it, visibly frame it as illustrative/general where truthful, or obtain authorization.
 
 ### Claim manifest example
 ```json
