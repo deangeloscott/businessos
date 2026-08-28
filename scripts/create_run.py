@@ -52,7 +52,7 @@ rid='run_'+secrets.token_hex(8);corr='cor_'+secrets.token_hex(8);ts=now();d=ROOT
 obj={'run_id':rid,'business_id':a.business_id,'task':a.task,'contract_id':a.contract_id,'status':'active','focus_refs':a.focus,
      'operator_ref':operator_ref,'team_ref':team_ref,'role_ref':role_ref,'preference_output_type':a.output_type,'preference_channel':a.channel,'preference_snapshot_ref':f'runtime/runs/{a.business_id}/{rid}/artifacts/effective-preferences.json',
      'completion_policy_ref':COMPLETION_POLICY,'correlation_id':corr,'causation_id':None,'created_at':ts,'updated_at':ts}
-(d/'run.json').write_text(json.dumps(obj,indent=2)+'\n');(d/'artifacts').mkdir();(d/'checkpoints').mkdir();(d/'logs').mkdir()
+(d/'run.json').write_text(json.dumps(obj,indent=2)+'\n');(d/'artifacts').mkdir();(d/'checkpoints').mkdir();(d/'logs').mkdir();(d/'work').mkdir()
 (d/'artifacts'/'effective-preferences.json').write_text(json.dumps(pref,indent=2)+'\n')
 required=_required_subcontract_ids(byid[a.contract_id],byid)
 manifest={
@@ -66,4 +66,4 @@ manifest={
     } for cid in required},
     'created_at':ts,'updated_at':ts
 }
-(d/'contract-execution.json').write_text(json.dumps(manifest,indent=2)+'\n');(d/'README.md').write_text(f'Run-local working/recovery state. Preserve validated outputs and resume according to core/policies/local-state-and-recovery.md. Follow {COMPLETION_POLICY}: completion evidence profiles are deterministic minimums, not substitutes for contract-specific business quality. The effective-preferences snapshot is execution context only and does not override mandatory BusinessOS/business/Brand/contract/approval rules.\n');print(rid)
+(d/'contract-execution.json').write_text(json.dumps(manifest,indent=2)+'\n');(d/'README.md').write_text(f'Run-local working/recovery state. Use work/ as the default scratch/build/cache/render directory for this business execution; do not place temporary or generated execution files under the AURA product root. Preserve validated outputs and resume according to core/policies/local-state-and-recovery.md. Follow {COMPLETION_POLICY}: completion evidence profiles are deterministic minimums, not substitutes for contract-specific business quality. The effective-preferences snapshot is execution context only and does not override mandatory BusinessOS/business/Brand/contract/approval rules.\n');print(rid)
