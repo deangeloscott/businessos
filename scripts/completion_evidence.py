@@ -321,22 +321,27 @@ def _structured_checks(checks,require_method_evidence=False,target_text='',busin
     return False
 
 
-def _qa_target_valid(data,paths,business_id,run_id,contract_id):
-    """A strict QA target is an existing Asset/version other than the QA wrapper itself."""
+def _qa_target_valid(data,qa_record_path,business_id,run_id,contract_id):
+    """A strict QA target is an existing Asset/version other than the QA record/wrapper itself."""
     if not business_id:return False
     raw=next((data.get(k) for k in ('tested_asset','target_asset','asset_ref','target_ref','target_refs') if data.get(k)),None)
     values=raw if isinstance(raw,list) else [raw]
     version=next((data.get(k) for k in ('tested_version','asset_version','version') if data.get(k) is not None),None)
     if version is None:return False
-    idx=object_index(business_id);evidence_paths={str(Path(p).resolve()) for p in paths}
+    idx=object_index(business_id)
+    try:record_path=str(Path(qa_record_path).resolve())
+    except Exception:record_path=''
     for value in values:
         if not isinstance(value,str) or value not in idx:continue
         asset,asset_path=idx[value]
         if asset.get('object_type')!='Asset' or str(asset.get('version'))!=str(version):continue
+        try:
+            if record_path and str(Path(asset_path).resolve())==record_path:continue
+        except Exception:continue
         loc=asset.get('location_reference')
         if loc:
             try:
-                if str(resolve_storage_ref(loc).resolve()) in evidence_paths:continue
+                if record_path and str(resolve_storage_ref(loc).resolve())==record_path:continue
             except Exception:continue
         bos=(asset.get('extensions') or {}).get('businessos',{}) if isinstance(asset.get('extensions'),dict) else {}
         if run_id and bos.get('run_id')==run_id and bos.get('run_contract_id')==contract_id:continue
@@ -371,7 +376,7 @@ def _qa_records(contract_id,paths,strict_target=False,business_id=None,run_id=No
             blockers=data.get('blockers',None)
             if not isinstance(blockers,list) or blockers:continue
             if any(not isinstance(data.get(key),list) for key in ('issues_found','corrections_made','limitations')):continue
-            if not _qa_target_valid(data,paths,business_id,run_id,contract_id):continue
+            if not _qa_target_valid(data,p,business_id,run_id,contract_id):continue
         out.append((data,p))
     return out
 

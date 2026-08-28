@@ -117,8 +117,8 @@ Shot transitions, on-screen text, captions, final CTA, and rendering notes are s
             'issues_found':[],'corrections_made':[],'limitations':[],
             'blockers':[]
         },indent=2)+'\n')
-        r=run(S/'record_contract_completion.py',BID,rid,'content.qa.pre-publish','--evidence',str(good.relative_to(ROOT)))
-        req(r.returncode==0,f'structured QA record should be recordable without ceremonial excerpts for whole-asset checks: {r.stderr+r.stdout}')
+        r=run(S/'record_contract_completion.py',BID,rid,'content.qa.pre-publish','--evidence',str(good.relative_to(ROOT)),'--evidence',str(article.relative_to(ROOT)))
+        req(r.returncode==0,f'structured QA may include the exact inspected target artifact without being mistaken for self-targeting: {r.stderr+r.stdout}')
 
         # A declared-write subcontract cannot complete on a generic status/summary stub.
         generic_sub=RUNS/rid/'artifacts'/'generic-audience-context.json';write(generic_sub,json.dumps({
