@@ -45,6 +45,7 @@ HINTS=[
  (r'\bwebinar\b','marketing.assets.webinar'),
  (r'\b(advertorial)\b','marketing.assets.advertorial'),
  (r'\b(sales letter)\b','marketing.assets.sales-letter'),
+ (r'^(?!.*\boffer presentation\b).*\b(slide deck|pitch deck|executive briefing|presentation)\b','content.production.presentation'),
  (r'\bcheckout\b','customer-optimization.intervention.checkout'),
  (r'\bonboarding\b','customer-optimization.intervention.onboarding'),
  (r'\bactivation\b','customer-optimization.intervention.activation'),
