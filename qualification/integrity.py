@@ -58,11 +58,22 @@ def event_specific_ref_paths(refs,before,after,workspace):
     return out
 
 
+def _unwrap_locator_text(value):
+    """Normalize raw URLs and common Markdown/autolink wrappers to their real locator."""
+    value=value.strip()
+    markdown=re.fullmatch(r'\[[^\]]*\]\((https?://[^)\s]+)\)',value,re.I)
+    if markdown:return markdown.group(1)
+    if value.startswith('<') and value.endswith('>'):
+        inner=value[1:-1].strip()
+        if re.match(r'^https?://',inner,re.I):return inner
+    return value
+
+
 def _source_locator_key(value,workspace):
     if isinstance(value,dict):
         value=next((value.get(k) for k in ('source_url','url','source_ref','source_reference','evidence_ref','reference') if value.get(k)),None)
     if not isinstance(value,str) or not value.strip():return None
-    value=value.strip()
+    value=_unwrap_locator_text(value)
     if re.match(r'^https?://',value,re.I):
         host=(urlparse(value).hostname or '').lower().rstrip('.')
         if not host or host in {'localhost','example.com','example.org','example.net'}:return None
@@ -104,14 +115,17 @@ def is_reconstructable_field_snapshot(path,workspace):
     captured=any(view.get(k) for view in views for k in ('captured_at','retrieved_at','observed_at','collected_at'))
     if not captured:return False
     context=any(view.get(k) for view in views for k in (
-        'query','search_query','intent','surface','method','scope','research_question',
+        'query','search_query','intent','target_intent','target_query','surface','method','scope','research_question',
         'channel','market_context','query_context','research_context'
     ))
     sources=[]
     for view in views:
         for key in ('source_reference','source_url','url','source_ref','evidence_ref','reference'):
             if view.get(key): sources.append(view.get(key))
-        for key in ('sources','source_refs','source_references','evidence_refs','competitive_set','comparisons','results','examples'):
+        for key in (
+            'sources','source_refs','source_references','evidence_refs','competitive_set','comparisons','results','examples',
+            'analyzed_urls','visited_urls','retrieved_urls','observed_urls'
+        ):
             value=view.get(key)
             if isinstance(value,list):sources.extend(value)
     locators={key for item in sources if (key:=_source_locator_key(item,workspace))}
