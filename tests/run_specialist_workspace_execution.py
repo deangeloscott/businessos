@@ -20,8 +20,10 @@ def run(*args,env=None,check=True):
 
 def main():
     adapter=(ROOT/'AGENTS.md').read_text()
-    require('root `CONTEXT.md`' in adapter,'AGENTS compatibility shim must defer to the authoritative AURA entry contract')
-    require('executors inside the AURA contract/Run lifecycle' in adapter,'host specialist skills must remain executors inside AURA')
+    normalized=' '.join(adapter.lower().split())
+    require('root `context.md`' in normalized,'AGENTS compatibility shim must defer to the authoritative AURA entry contract')
+    require('executors' in normalized and 'aura contract/run lifecycle' in normalized,'host specialist skills must remain executors inside the governed AURA lifecycle')
+    require('not alternate operating systems' in normalized,'host specialist skills must not become alternate operating systems around AURA')
 
     with tempfile.TemporaryDirectory(prefix='aura-specialist-workspace-') as tmp:
         ws=Path(tmp)/'workspace'
