@@ -63,7 +63,20 @@ def build():
             if capid in (cm.get('required') or []): required.append(t['test_id'])
             if capid in (cm.get('optional') or []): optional.append(t['test_id'])
         coverage[capid]={'description':cap.get('description'),'required_by':required,'optional_by':optional,'covered_by_contract_tests':sorted(set(required+optional))}
-    return {'format_version':'1.0','suite_name':'AURA Business Capability Qualification Suite','contract_count':len(contracts),'contract_tests':tests,'capability_count':len(catalog),'capability_coverage':coverage,'unreferenced_capabilities':sorted(k for k,v in coverage.items() if not v['covered_by_contract_tests']),'domain_missions':MISSIONS['domain_missions'],'cross_domain_missions':MISSIONS['cross_domain_missions'],'marathon_missions':MISSIONS['marathon_missions'],'concurrency_missions':MISSIONS.get('concurrency_missions',[])}
+    return {
+        'format_version':'1.0',
+        'suite_name':'AURA Business Capability Qualification Suite',
+        'contract_count':len(contracts),
+        'contract_tests':tests,
+        'capability_count':len(catalog),
+        'capability_coverage':coverage,
+        'unreferenced_capabilities':sorted(k for k,v in coverage.items() if not v['covered_by_contract_tests']),
+        'composition_missions':MISSIONS.get('composition_missions',[]),
+        'domain_missions':MISSIONS['domain_missions'],
+        'cross_domain_missions':MISSIONS['cross_domain_missions'],
+        'marathon_missions':MISSIONS['marathon_missions'],
+        'concurrency_missions':MISSIONS.get('concurrency_missions',[]),
+    }
 
 def main():
     ap=argparse.ArgumentParser(); ap.add_argument('--out',default='qualification/generated/full-suite.json'); ap.add_argument('--stdout',action='store_true'); a=ap.parse_args(); suite=build()
@@ -71,5 +84,5 @@ def main():
         bad=[(t['contract_id'],t['unknown_required_subcontracts']) for t in suite['contract_tests'] if t['unknown_required_subcontracts']]; raise SystemExit(f'Unknown required subcontract(s): {bad[:20]}')
     if a.stdout: print(json.dumps(suite,indent=2))
     else:
-        p=ROOT/a.out; write_json(p,suite); print(f"generated {p}: {suite['contract_count']} contract tests, {len(suite['domain_missions'])} domain missions, {len(suite['cross_domain_missions'])} cross-domain missions, {len(suite['marathon_missions'])} marathon missions, {len(suite['concurrency_missions'])} concurrency missions")
+        p=ROOT/a.out; write_json(p,suite); print(f"generated {p}: {suite['contract_count']} contract tests, {len(suite['composition_missions'])} composition missions, {len(suite['domain_missions'])} domain missions, {len(suite['cross_domain_missions'])} cross-domain missions, {len(suite['marathon_missions'])} marathon missions, {len(suite['concurrency_missions'])} concurrency missions")
 if __name__=='__main__': main()
