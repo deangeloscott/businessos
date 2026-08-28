@@ -6,6 +6,10 @@ from _common import ROOT, installed_modules
 # such as research news -> LinkedIn is not collapsed into only the LinkedIn production step.
 COMPOUND_HINTS=[
  (r'\b(find|research|learn|understand|analy[sz]e).*(market|customers?|competitors?|industry|news|trends?).*(turn|create|make|use|into).*(content|campaign|marketing|posts?|linkedin|video|assets?)|\bturn.*(research|insights?|intelligence|news|findings?).*(content|campaign|marketing|posts?|linkedin|video)', 'core.coordination.multi-domain-request'),
+ # Search-led production is inherently a composition: SEO/AEO owns discovery requirements
+ # and delegates the customer-facing artifact instead of letting an artifact noun such as
+ # "landing page" silently transfer the whole job to Marketing.
+ (r'\b(create|write|produce|build|make|publish(?:-ready)?).*(organic|seo|serp|ai[- ]?answer|ai citation|google search).*(page|landing page|article|content|asset)|\b(organic|seo|serp|ai[- ]?answer|ai citation|google search).*(page|landing page|article|content|asset).*(create|write|produce|build|make|publish)', 'core.coordination.multi-domain-request'),
 ]
 
 # High-confidence direct job patterns. These bypass semantic resolution only when the
