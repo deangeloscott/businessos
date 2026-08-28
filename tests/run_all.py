@@ -37,6 +37,7 @@ TESTS=[
     'tests/run_qualification_integrity.py',
     'tests/run_qualification_product_integrity.py',
     'tests/run_qualification_qa_resolution.py',
+    'tests/run_qualification_supplied_media.py',
 ]
 for rel in TESTS:
     print(f'== {rel} ==')
