@@ -3,7 +3,7 @@ from pathlib import Path
 import inspect, json, os, subprocess, sys, tempfile
 ROOT=Path(__file__).resolve().parents[1]; sys.path.insert(0,str(ROOT/'qualification'))
 from build_suite import build
-from prepare_run import init_business, copy_product, apply_candidate_request, candidate_surface, _ensure_separate
+from prepare_run import init_business, copy_product, apply_candidate_request, candidate_surface, _ensure_separate, select_events
 from checkpoint import capture_checkpoint
 from release_fixture import release_event
 from common import fixture_for
@@ -78,6 +78,36 @@ def smoke_prepare():
         req('qualification_event_id' not in rel and 'fixture' not in rel and 'release_fixture' not in rel,'candidate-visible release payload leaked benchmark metadata')
 
 
+def composition_prepare_smoke():
+    with tempfile.TemporaryDirectory(prefix='aura-composition-smoke-') as td, tempfile.TemporaryDirectory(prefix='aura-workspaces-compose-') as cd:
+        p=subprocess.run([
+            sys.executable,str(ROOT/'qualification/prepare_run.py'),'--profile','composition',
+            '--run-root',td,'--candidate-root',cd,'--run-id','compose-smoke'
+        ],cwd=ROOT,capture_output=True,text=True,env={**os.environ,'PYTHONDONTWRITEBYTECODE':'1'})
+        req(p.returncode==0,f'composition qualification preparation failed:\nSTDOUT:\n{p.stdout}\nSTDERR:\n{p.stderr}')
+        rd=Path(td)/'compose-smoke'; meta=json.loads((rd/'run.json').read_text()); queue=json.loads((rd/'evaluator/queue.json').read_text())
+        events=queue.get('events',[])
+        req(meta.get('profile')=='composition' and queue.get('profile')=='composition','composition profile was not preserved')
+        req(len(events)==1 and events[0].get('kind')=='composition_mission','composition profile must prepare the targeted composition mission')
+        req(events[0].get('evaluation_id')=='COMPOSE-SEO-CONTENT-001','unexpected composition mission selected')
+        req(events[0].get('contract_id') is None,'composition mission must not masquerade as one atomic contract')
+        req({'evidence_reuse','execution_completeness'} <= set(events[0].get('rubric_dimensions') or []),'composition mission must judge state/evidence compounding and real execution')
+        msg=str(events[0].get('task','')).lower()
+        req('qualification' not in msg and 'rubric' not in msg and 'score' not in msg,'composition candidate task leaked evaluator framing')
+
+
+def judge_prompt_smoke():
+    with tempfile.TemporaryDirectory(prefix='aura-judge-prompt-') as td:
+        rd=Path(td); ev=rd/'evaluator'; ev.mkdir()
+        (ev/'review-packets.json').write_text(json.dumps([{'event_id':'TASK-0001','hard_pass':True,'rubric_dimensions':['accuracy']}])+'\n')
+        p=subprocess.run([sys.executable,str(ROOT/'qualification/build_judge_prompt.py'),str(rd)],cwd=ROOT,capture_output=True,text=True,env={**os.environ,'PYTHONDONTWRITEBYTECODE':'1'})
+        req(p.returncode==0,f'judge prompt generation failed:\nSTDOUT:\n{p.stdout}\nSTDERR:\n{p.stderr}')
+        instructions=(ev/'JUDGE-INSTRUCTIONS.md').read_text(encoding='utf-8')
+        req('Treat **5 as rare**' in instructions,'judge prompt must calibrate exceptional scores as rare')
+        req('Distinguish relevance from proof' in instructions,'judge prompt must prohibit upgrading relevance/proxies into stronger claims')
+        req('direct page read' in instructions and 'top-ranking result' in instructions,'judge prompt must explicitly scrutinize unsupported observation/ranking claims')
+
+
 def main():
     # Qualification philosophy and longitudinal record are durable maintainer state, not candidate content.
     principles=ROOT/'qualification/PRINCIPLES.md'; ledger=ROOT/'qualification/ledger.jsonl'; qreadme=ROOT/'qualification/README.md'
@@ -124,6 +154,9 @@ def main():
     customer=[t for t in suite['contract_tests'] if t.get('artifact_role')=='customer_facing_production_root']; req(customer,'expected customer-facing production contracts')
     req(all(t['output_policy']['artifact_required'] and 'actual_artifact_exists' in t['hard_gates'] for t in customer),'customer-facing roots must require actual artifacts')
     owners={m['owner_system'] for m in suite['domain_missions']}; required={'core','customer-intelligence','competitor-intelligence','industry-intelligence','seo-aeo','content-synthesis','marketing-synthesis','customer-optimization'}; req(owners==required,f'domain mission coverage mismatch: {owners ^ required}')
+    composition=suite.get('composition_missions',[]); req(composition and {m['id'] for m in composition}=={'COMPOSE-SEO-CONTENT-001'},'targeted composition mission missing or ambiguous')
+    compose_events=select_events(suite,'composition'); req(len(compose_events)==1 and compose_events[0]['kind']=='composition_mission','composition event selection failed')
+    req({'evidence_reuse','execution_completeness'} <= set(compose_events[0].get('rubric_dimensions') or []),'composition rubric must evaluate compounding and execution')
     req(len(suite['cross_domain_missions'])>=5 and len(suite['marathon_missions'])>=2 and len(suite.get('concurrency_missions',[]))>=4,'mission coverage too small')
     req([t for t in suite['contract_tests'] if t['competitive_profile']=='search_live_field'],'SEO/AEO live-field tests missing')
     req([t for t in suite['contract_tests'] if t['competitive_profile']=='paid_and_persuasion_field'],'competitive marketing tests missing')
@@ -136,7 +169,7 @@ def main():
     req((ROOT/'qualification/release_fixture.py').exists() and (ROOT/'qualification/task_controller.py').exists(),'external qualification controller/release tooling missing')
     released=[m for m in suite['cross_domain_missions']+suite['marathon_missions'] if m.get('release_fixture')]
     req(len(released)>=2 and {'CROSS-MARKET-CHANGE-001','MARATHON-002'}.issubset({m['id'] for m in released}),'expected longitudinal evidence-release missions missing')
-    smoke_prepare()
-    print(f"qualification framework regressions passed: {suite['contract_count']} contract tests, {suite['capability_count']} capability mappings, durable principles/ledger, physically isolated blind candidate staging, external checkpoints/receipts/releases, selected-fixture preparation, and production-like run smoke passed")
+    smoke_prepare(); composition_prepare_smoke(); judge_prompt_smoke()
+    print(f"qualification framework regressions passed: {suite['contract_count']} contract tests, {suite['capability_count']} capability mappings, durable principles/ledger, targeted composition profile, calibrated professional judge, physically isolated blind candidate staging, external checkpoints/receipts/releases, selected-fixture preparation, and production-like run smoke passed")
 
 if __name__=='__main__': main()
