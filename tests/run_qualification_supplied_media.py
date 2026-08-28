@@ -4,6 +4,7 @@ from pathlib import Path
 import json, os, subprocess, sys, tempfile
 
 ROOT=Path(__file__).resolve().parents[1]
+PNG_MAGIC=b'\x89PNG\r\n\x1a\n'
 
 
 def require(cond,msg):
@@ -36,15 +37,17 @@ def main():
         require(not (workspace/'instances/atlasops').exists(),'default AtlasOps fixture leaked into overridden run')
 
         supplied=workspace/'attachments/supplied'
-        media=supplied/'northline-discovery-box-source.svg'
+        media=supplied/'northline-discovery-box-source.png'
         require(media.is_file() and media.stat().st_size>0,'supplied product reference image was not staged')
+        require(media.read_bytes()[:8]==PNG_MAGIC,'candidate-visible supplied product reference is not a real PNG')
+        require(not (supplied/'northline-discovery-box-source.png.b64').exists(),'encoded fixture representation leaked into candidate workspace')
         require(not (product/'qualification').exists(),'qualification tooling leaked into candidate product')
-        require(not (product/'qualification/fixtures/media/northline-discovery-box-source.svg').exists(),'fixture source leaked into staged product')
 
         business_material=json.loads((supplied/'northline-commerce.json').read_text())
         media_rows=business_material.get('supplied_media') or []
-        require(len(media_rows)==1 and media_rows[0].get('filename')=='northline-discovery-box-source.svg',f'candidate-visible supplied media metadata missing: {media_rows}')
+        require(len(media_rows)==1 and media_rows[0].get('filename')=='northline-discovery-box-source.png',f'candidate-visible supplied media metadata missing: {media_rows}')
         require('source' not in media_rows[0],'candidate-visible fixture metadata leaked evaluator-side source path')
+        require('encoding' not in media_rows[0],'candidate-visible fixture metadata leaked maintainer storage encoding')
         require('qualification' not in json.dumps(media_rows).lower(),'candidate-visible supplied media metadata leaked qualification language')
 
         start=subprocess.run([sys.executable,str(ROOT/'qualification/task_controller.py'),'start',str(rd)],cwd=ROOT,capture_output=True,text=True,env=env)
