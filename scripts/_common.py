@@ -5,6 +5,7 @@ PRODUCT_ROOT=Path(__file__).resolve().parents[1]
 _WORKSPACE_ENV='BUSINESSOS_WORKSPACE'
 _WORKSPACE_CONFIG_ENV='BUSINESSOS_WORKSPACE_CONFIG'
 _STATE_NAMESPACES={'instances','runtime','knowledge','attachments'}
+_ENVIRONMENT_OVERLAY_REL=Path('.businessos/environments')
 
 
 def workspace_config_path():
@@ -96,6 +97,50 @@ def run_dir_path(business_id,run_id): return runtime_root()/'runs'/business_id/r
 def product_instance_template(): return PRODUCT_ROOT/'instances/_template'
 
 
+def environment_product_dir(environment):
+    return PRODUCT_ROOT/'deployment/environments'/str(environment)
+
+
+def environment_overlay_dir(environment,create=False):
+    """Host/environment state owned by the active workspace, never product source."""
+    path=workspace_root()/_ENVIRONMENT_OVERLAY_REL/str(environment)
+    if create:path.mkdir(parents=True,exist_ok=True)
+    return path
+
+
+def environment_exists(environment):
+    return environment_overlay_dir(environment).exists() or environment_product_dir(environment).exists()
+
+
+def environment_names():
+    names=set()
+    for root in (PRODUCT_ROOT/'deployment/environments', workspace_root()/_ENVIRONMENT_OVERLAY_REL):
+        if root.exists():
+            names.update(p.name for p in root.iterdir() if p.is_dir() and p.name!='_template')
+    return sorted(names)
+
+
+def environment_file(environment,relative,writable=False,seed_product_default=True):
+    """Resolve effective environment config with workspace overlay > shipped default.
+
+    Reads prefer workspace-owned host state and fall back per-file to immutable product
+    defaults. Writes always target the workspace overlay. When useful, a shipped default
+    is copied once into the overlay before mutation so normal runtime configuration never
+    dirties the AURA product tree or conflicts with product upgrades.
+    """
+    rel=Path(relative)
+    if rel.is_absolute() or '..' in rel.parts: raise ValueError('Environment-relative path required')
+    if not environment_exists(environment): raise ValueError(f'Unknown environment: {environment}')
+    overlay=environment_overlay_dir(environment,create=writable)/rel
+    product=environment_product_dir(environment)/rel
+    if writable:
+        overlay.parent.mkdir(parents=True,exist_ok=True)
+        if seed_product_default and not overlay.exists() and product.exists() and product.is_file():
+            overlay.write_bytes(product.read_bytes())
+        return overlay
+    return overlay if overlay.exists() else product
+
+
 def workspace_profile():
     root=workspace_root(); p=root/'.businessos/workspace.json'
     if p.exists():
@@ -133,18 +178,14 @@ def read_frontmatter(path):
     if end<0: raise ValueError(f'Unclosed frontmatter: {path}')
     meta=yaml.safe_load(text[4:end]) or {}
     return meta,text[end+5:]
-
 def contract_files():
     return sorted([p for p in PRODUCT_ROOT.rglob('CONTEXT.md') if '/contracts/' in p.as_posix()])
-
 def schemas():
     return sorted(PRODUCT_ROOT.rglob('*.schema.json'))
-
 def load_registry():
     p=PRODUCT_ROOT/'generated/contract-registry.json'
     if not p.exists(): raise SystemExit('Run scripts/generate_registry.py first')
     return json.loads(p.read_text())
-
 def now(): return datetime.datetime.now(datetime.timezone.utc).isoformat()
 
 def slug(s): return re.sub(r'[^a-z0-9]+','-',s.lower()).strip('-')
@@ -153,27 +194,22 @@ def slug(s): return re.sub(r'[^a-z0-9]+','-',s.lower()).strip('-')
 def os_version():
     p=PRODUCT_ROOT/'VERSION'
     return p.read_text().strip() if p.exists() else '0.0.0'
-
 def installation():
     p=PRODUCT_ROOT/'INSTALLATION.json'
     if p.exists():
         return json.loads(p.read_text())
     installed=['core']+[p.name for p in sorted((PRODUCT_ROOT/'systems').iterdir()) if p.is_dir()] if (PRODUCT_ROOT/'systems').exists() else ['core']
     return {'format_version':'1.0','source_version':os_version(),'edition':'unmanaged','display_name':'ViralTrac AURA','public_name':'ViralTrac AURA','name_expansion':'Agentic Understanding and Reinforcement Architecture','descriptor':'AI-native BusinessOS','installed_modules':installed,'standalone_distribution':False}
-
 def installed_modules():
     return set(installation().get('installed_modules',[]))
-
 def publisher_metadata():
     p=PRODUCT_ROOT/'PUBLISHER.json'
     if not p.exists(): return {}
     return json.loads(p.read_text())
-
 def provider_registry():
     p=PRODUCT_ROOT/'core/providers/registry.json'
     if not p.exists(): return {'format_version':'1.0','providers':[]}
     return json.loads(p.read_text())
-
 def module_catalog():
     p=PRODUCT_ROOT/'distribution/module-catalog.json'
     if not p.exists(): return {}
@@ -186,11 +222,9 @@ CONTEXT_TYPES={'Business','Brand','ProductService','Offer','AudienceSegment','Ma
 
 def selector_type(sel):
     return sel.get('type') if isinstance(sel,dict) else sel
-
 def normalize_selector(sel):
     if isinstance(sel,dict): return sel
     return {'type':sel}
-
 def iter_instance_objects(business_id):
     base=instance_dir(business_id)
     if not base.exists(): return []
@@ -210,10 +244,8 @@ def iter_instance_objects(business_id):
                 if isinstance(obj,dict) and obj.get('id') and obj.get('business_id')==business_id: out.append((obj,p))
         except Exception: continue
     return out
-
 def object_index(business_id):
     return {obj['id']:(obj,p) for obj,p in iter_instance_objects(business_id)}
-
 def object_matches(obj,selector):
     s=normalize_selector(selector)
     if obj.get('object_type')!=s.get('type'): return False
@@ -221,7 +253,6 @@ def object_matches(obj,selector):
         if k=='type': continue
         if obj.get(k)!=v: return False
     return True
-
 def refs_in_object(obj):
     pat=re.compile(r'\b(?:src|sprof|obs|ins|prf|opp|ini|act|wrk|apr|chg|ver|ast|mdef|mobs|exp|eval|lrn|inc|att|plc|cup|cmp|plt|jrn|iev|ocs|odm|sas|aud|brd|biz|eco|mkt|obj|off|prd|clm)_[A-Za-z0-9_-]+\b')
     return set(pat.findall(json.dumps(obj)))

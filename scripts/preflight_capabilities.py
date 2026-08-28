@@ -18,9 +18,11 @@ def _recommendations(capabilities):
 def preflight(business_id,contract_id,environment=None,include_optional=False,use_declared_environment=False):
     environment=environment or installation().get('default_environment') or 'local'
     if not (ROOT/'instances'/business_id).exists():raise ValueError(f'Unknown business: {business_id}')
+    if not environment_exists(environment):raise ValueError(f'Unknown environment: {environment}')
     try:eff=effective_capabilities(contract_id,business_id)
     except ValueError as e:raise ValueError(str(e))
-    required=eff['required'];optional=eff['optional'];extension_ids=eff.get('process_extension_ids') or [];profile_path=ROOT/'deployment/environments'/environment/'host-profile.json';profile=json.loads(profile_path.read_text()) if profile_path.exists() else {};discovery_complete=profile.get('discovery_status')=='completed'
+    required=eff['required'];optional=eff['optional'];extension_ids=eff.get('process_extension_ids') or []
+    profile_path=environment_file(environment,'host-profile.json');profile=json.loads(profile_path.read_text()) if profile_path.exists() else {};discovery_complete=profile.get('discovery_status')=='completed'
     if not discovery_complete and not use_declared_environment:return {'version':os_version(),'business_id':business_id,'contract_id':contract_id,'environment':environment,'status':'host_discovery_required','automated_ready':False,'required':[],'optional':[],'optional_checked':include_optional,'process_extension_ids':extension_ids,'host_discovery':{'completed':False,'policy':'core/policies/host-capability-discovery.md'},'recommendations':_recommendations(required+optional),'next_action':'Inspect current host tools, map clear capabilities, run scripts/bootstrap_environment.py, then rerun preflight. If discovery is impossible, rerun with --use-declared-environment.','rule':'ProcessExtension requirements are additive; provider choice remains separate from the business process.'}
     def check(cap):
         r=resolve(environment,cap,business_id);row={'capability':cap,'resolution':r}

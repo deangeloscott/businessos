@@ -18,7 +18,6 @@ def _provider_registry():
 
 
 def _pref_map(rows):
-    # One file may express only one effective state per capability/provider; validator rejects duplicates.
     return {(p['capability'],p['provider_id']):p for p in rows}
 
 
@@ -26,13 +25,12 @@ def _scope_preferences(environment,business_id):
     scopes=[]
     if business_id:
         scopes.append(('business_preference',ROOT/'instances'/business_id/'config/provider-preferences.json'))
-    scopes.append(('environment_preference',ROOT/'deployment/environments'/environment/'provider-preferences.json'))
+    scopes.append(('environment_preference',environment_file(environment,'provider-preferences.json')))
     scopes.append(('distribution_default',ROOT/'distribution/provider-defaults.json'))
     return [(name,_preferences(path)) for name,path in scopes]
 
 
 def _blocked_providers(capability,scopes):
-    # Higher-precedence scope wins for a provider. A business can therefore unblock/block a distribution default.
     effective={}
     for source,rows in scopes:
         for p in rows:
@@ -42,7 +40,7 @@ def _blocked_providers(capability,scopes):
 
 
 def _provider_snapshot(environment,provider_id):
-    path=ROOT/'deployment/environments'/environment/'providers'/f'{provider_id}-capabilities.json'
+    path=environment_file(environment,f'providers/{provider_id}-capabilities.json')
     if not path.exists(): return None
     try: return _read(path,{})
     except Exception: return None
@@ -87,13 +85,11 @@ def _recommendation(provider,capability,source,preference=None,existing_connecti
 def resolve(environment,capability,business_id=None):
     caps={x['id'] for x in _read(ROOT/'core/capabilities/catalog.json',{'capabilities':[]}).get('capabilities',[])}
     if capability not in caps: raise ValueError(f'Unknown capability: {capability}')
-    env=ROOT/'deployment/environments'/environment
-    if not env.exists(): raise ValueError(f'Unknown environment: {environment}')
+    if not environment_exists(environment): raise ValueError(f'Unknown environment: {environment}')
     if business_id and not (ROOT/'instances'/business_id).exists(): raise ValueError(f'Unknown business: {business_id}')
     providers=_provider_registry(); scopes=_scope_preferences(environment,business_id); blocked,effective=_blocked_providers(capability,scopes)
 
-    # Existing enabled bindings are the user's current deployment and win by default.
-    bindings=_read(env/'capability-bindings.json',{'bindings':[]}).get('bindings',[])
+    bindings=_read(environment_file(environment,'capability-bindings.json'),{'bindings':[]}).get('bindings',[])
     connected_refs={}
     for b in bindings:
         if not b.get('enabled',True) or not b.get('provider_id'): continue
@@ -105,21 +101,18 @@ def resolve(environment,capability,business_id=None):
         if pid and pid in blocked: continue
         allowed.append(b)
     if allowed:
-        # Prefer a specifically preferred provider if more than one active binding exists.
         rank={}
         for pid,p in effective.items():
             if p.get('mode')=='preferred': rank[pid]=(p.get('priority',999999),p.get('source'))
         allowed.sort(key=lambda b: rank.get(b.get('provider_id'),(999999,'')))
         return {'status':'available','capability':capability,'source':'active_binding','binding':allowed[0],'alternatives':allowed[1:]}
 
-    # Business > environment > distribution preference.
     for source,rows in scopes:
         preferred=sorted([p for p in rows if p.get('capability')==capability and p.get('mode')=='preferred' and p.get('provider_id') not in blocked], key=lambda p:p.get('priority',999999))
         for pref in preferred:
             provider=providers.get(pref['provider_id'])
             if not provider or capability not in provider.get('capabilities',[]): continue
             snap_status=_snapshot_status(environment,provider['id'],capability)
-            # A current provider snapshot outranks static potential-capability metadata.
             if snap_status in {'not_detected','candidate'}: continue
             return _recommendation(provider,capability,source,pref,connected_refs.get(provider['id']))
 

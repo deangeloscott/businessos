@@ -14,8 +14,9 @@
 /knowledge/
 /attachments/
 
-# Local workspace selection/profile metadata. External workspaces keep their own portable profile.
+# Local workspace selection/profile metadata and host-specific environment overlay.
 /.businessos/workspace.json
+/.businessos/environments/
 
 # Local secrets and environment files
 .env

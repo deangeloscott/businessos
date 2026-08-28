@@ -2,10 +2,10 @@
 from _common import *
 import argparse,json
 p=argparse.ArgumentParser();p.add_argument('environment');p.add_argument('--business');a=p.parse_args()
-base=ROOT/'deployment/environments'/a.environment
-if not base.exists(): raise SystemExit('Unknown environment')
+if not environment_exists(a.environment): raise SystemExit('Unknown environment')
 cat={x['id'] for x in json.loads((ROOT/'core/capabilities/catalog.json').read_text())['capabilities']}
-binds=json.loads((base/'capability-bindings.json').read_text()).get('bindings',[])
+bp=environment_file(a.environment,'capability-bindings.json')
+binds=json.loads(bp.read_text()).get('bindings',[]) if bp.exists() else []
 out={c:{'status':'unavailable'} for c in cat}
 for b in binds:
  c=b.get('capability')

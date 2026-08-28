@@ -17,7 +17,7 @@ def load_json_source(path):
     if path == '-':
         raw=sys.stdin.read().encode('utf-8')
     else:
-        raw=Path(path).read_bytes()
+        raw=resolve_storage_ref(path).read_bytes()
     return raw, json.loads(raw.decode('utf-8'))
 
 
@@ -36,7 +36,6 @@ def flatten_strings(value):
 
 
 def explicit_capabilities(data):
-    # A host may provide an already-normalized capability list alongside the native descriptor.
     vals=[]
     if isinstance(data,dict):
         for key in ('businessos_capabilities','business_os_capabilities'):
@@ -46,8 +45,7 @@ def explicit_capabilities(data):
 
 
 def sync(environment, manifest_path, connection_ref='provider:viraltrac', source_kind='auto', allow_preview=False):
-    env=ROOT/'deployment/environments'/environment
-    if not env.exists(): raise ValueError(f'Unknown environment: {environment}')
+    if not environment_exists(environment): raise ValueError(f'Unknown environment: {environment}')
     profile=json.loads(PROFILE.read_text())
     catalog={x['id'] for x in json.loads((ROOT/'core/capabilities/catalog.json').read_text()).get('capabilities',[])}
     raw,data=load_json_source(manifest_path)
@@ -97,14 +95,11 @@ def sync(environment, manifest_path, connection_ref='provider:viraltrac', source
     errors=list(Draft202012Validator(json.loads(SNAPSHOT_SCHEMA.read_text())).iter_errors(snap))
     if errors: raise ValueError('Invalid provider snapshot: '+'; '.join(e.message for e in errors))
 
-    providers_dir=env/'providers'; providers_dir.mkdir(parents=True,exist_ok=True)
-    (providers_dir/'viraltrac-capabilities.json').write_text(json.dumps(snap,indent=2)+'\n')
+    sp=environment_file(environment,'providers/viraltrac-capabilities.json',writable=True,seed_product_default=False)
+    sp.parent.mkdir(parents=True,exist_ok=True); sp.write_text(json.dumps(snap,indent=2)+'\n')
 
-    bp=env/'capability-bindings.json'
+    bp=environment_file(environment,'capability-bindings.json',writable=True)
     bindings=json.loads(bp.read_text()).get('bindings',[]) if bp.exists() else []
-    # Refresh descriptor-auto-bound companion capabilities for this provider connection.
-    # Candidate/runtime-gated capabilities (notably business.event.subscribe) are activated by their
-    # dedicated runtime/readiness flow and must not be silently removed by a later descriptor refresh.
     auto_mapped_caps={row['businessos_capability'] for row in profile['capability_mappings'] if row.get('auto_bind') or allow_preview}
     kept=[b for b in bindings if not (b.get('provider_id')==PROVIDER_ID and b.get('connection_ref')==connection_ref and b.get('capability') in auto_mapped_caps)]
     merged=kept+new_bindings
@@ -114,14 +109,14 @@ def sync(environment, manifest_path, connection_ref='provider:viraltrac', source
         'bound_capabilities':[b['capability'] for b in new_bindings],
         'candidate_capabilities':[r['capability'] for r in snapshot_rows if r['status']=='candidate'],
         'not_detected':[r['capability'] for r in snapshot_rows if r['status']=='not_detected'],
-        'snapshot':str((providers_dir/'viraltrac-capabilities.json').relative_to(ROOT))
+        'snapshot':storage_ref(sp)
     }
 
 
 def main():
-    p=argparse.ArgumentParser(description="Synchronize non-secret ViralTrac capability discovery into BusinessOS bindings. The harness retrieves the authenticated descriptor; this helper does not store credentials or require network access.")
+    p=argparse.ArgumentParser(description="Synchronize non-secret ViralTrac capability discovery into workspace-owned AURA environment bindings. The harness retrieves the authenticated descriptor; this helper does not store credentials or require network access.")
     p.add_argument('environment',nargs='?',default='local')
-    p.add_argument('--manifest',required=True,help="JSON from ViralTrac capability discovery/external-harness/MCP tooling, or '-' for stdin")
+    p.add_argument('--manifest',required=True,help="JSON from ViralTrac capability discovery/external-harness/MCP tooling, workspace-relative state ref, or '-' for stdin")
     p.add_argument('--connection-ref',default='provider:viraltrac')
     p.add_argument('--source-kind',default='auto')
     p.add_argument('--allow-preview',action='store_true',help='Also bind mappings marked candidate/preview-only. Use only after explicit operational/readiness verification.')

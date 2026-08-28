@@ -25,11 +25,11 @@ def _business_ids(root):
 
 
 def _workspace_gitignore():
-    return """# ViralTrac AURA organization-workspace safety defaults\n# Canonical state is intentionally versionable; secrets and ephemeral logs are not.\n.env\n.env.*\nsecrets/\ncredentials/\n*.pem\n*.key\n*.p12\n*.pfx\n*.jks\n.DS_Store\nThumbs.db\nruntime/runs/**/logs/\nruntime/tmp/\nattachments/private/\n"""
+    return """# ViralTrac AURA organization-workspace safety defaults\n# Canonical state is intentionally versionable; secrets, host-local environment state, and ephemeral logs are not.\n.env\n.env.*\nsecrets/\ncredentials/\n*.pem\n*.key\n*.p12\n*.pfx\n*.jks\n.DS_Store\nThumbs.db\n.businessos/environments/\nruntime/runs/**/logs/\nruntime/tmp/\nattachments/private/\n"""
 
 
 def _workspace_readme(profile):
-    return f"""# ViralTrac AURA Organization Workspace\n\nAURA = Agentic Understanding and Reinforcement Architecture.\n\nDeployment profile: **{profile['name']}** (`{profile['id']}`).\n\nThis directory is organization/user-owned AURA state, not a copy of the AURA product source.\n\n- `instances/` — canonical durable BusinessOS state.\n- `runtime/` — bounded run/recovery state.\n- `knowledge/` — human-facing generated Markdown plus clearly noncanonical notes.\n- `attachments/` — optional workspace-owned files; keep large/sensitive authoritative data in the governing external system when appropriate.\n\nGit/version control is optional. If this workspace is stored in Git, use a private repository appropriate to the organization and never commit credentials or secrets.\n\nOpen `knowledge/` directly in Obsidian or another Markdown tool if desired; AURA does not require Obsidian.\n"""
+    return f"""# ViralTrac AURA Organization Workspace\n\nAURA = Agentic Understanding and Reinforcement Architecture.\n\nDeployment profile: **{profile['name']}** (`{profile['id']}`).\n\nThis directory is organization/user-owned AURA state, not a copy of the AURA product source.\n\n- `instances/` — canonical durable BusinessOS state.\n- `runtime/` — bounded run/recovery state.\n- `knowledge/` — human-facing generated Markdown plus clearly noncanonical notes.\n- `attachments/` — optional workspace-owned files; keep large/sensitive authoritative data in the governing external system when appropriate.\n- `.businessos/environments/` — regenerable host-specific capability/provider overlay; shipped product environment files remain immutable defaults.\n\nGit/version control is optional. If this workspace is stored in Git, use a private repository appropriate to the organization and never commit credentials or secrets. Host-specific `.businessos/environments/` state is ignored by the default workspace `.gitignore` and can be rediscovered on another host.\n\nOpen `knowledge/` directly in Obsidian or another Markdown tool if desired; AURA does not require Obsidian.\n"""
 
 
 def configure(root_value,profile_value='simple',knowledge_enabled=True,write_link=True,force=False,allow_state_switch=False):
@@ -74,10 +74,6 @@ def configure(root_value,profile_value='simple',knowledge_enabled=True,write_lin
         if not readme.exists():
             readme.write_text('# ViralTrac AURA Human Knowledge Layer\n\nOpen this folder in Obsidian, VS Code, or any Markdown tool. Generated pages are derived from canonical BusinessOS objects; human notes are noncanonical until explicitly incorporated through normal AURA evidence/truth governance.\n')
     link_path=workspace_config_path(); link_written=False
-    # When the product root itself is the workspace, profile_path and link_path are the
-    # same local file. The profile already implies product-local/default selection, so do
-    # not overwrite it with a pointer object. For external workspaces, write the local
-    # untracked product pointer unless the host will select via BUSINESSOS_WORKSPACE.
     if write_link and root!=PRODUCT_ROOT.resolve():
         link_path.parent.mkdir(parents=True,exist_ok=True)
         link={'format_version':'1.0','workspace_root':str(root),'profile':profile_id,'knowledge_enabled':bool(knowledge_enabled)}

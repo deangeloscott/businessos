@@ -12,7 +12,6 @@ SECTION_RE=re.compile(r'^##\s+(.+?)\s*$',re.M)
 PRODUCT_SNAPSHOT_IGNORED_DIRS={'.git','__pycache__','.pytest_cache','.venv','venv'}
 PRODUCT_SNAPSHOT_IGNORED_FILES={'.DS_Store'}
 PRODUCT_SNAPSHOT_IGNORED_SUFFIXES={'.pyc','.pyo'}
-PRODUCT_SNAPSHOT_MUTABLE_ENV_FILES={'host-profile.json','bootstrap-state.json'}
 
 def now():
     return datetime.datetime.now(datetime.timezone.utc).isoformat()
@@ -128,28 +127,22 @@ def tree_snapshot(root):
     return {'root':str(root),'files':files,'digest':digest}
 
 def product_snapshot_path_is_mutable(rel):
-    """Return True only for first-run host-local state that AURA creates in product root.
+    """Return True only for local state that is explicitly outside protected product source.
 
-    Qualification protects product source, playbooks, policies, schemas, scripts, tracked
-    deployment templates/configuration, and other shipped content. It must not fail
-    ordinary AURA setup because a real host selects an external workspace or records
-    first-run host/bootstrap metadata in a non-template environment.
+    Workspace selection metadata and a product-local `.businessos/environments/` overlay
+    are host/user state. Shipped `deployment/environments/` files are product defaults and
+    remain protected during qualification; ordinary host discovery must never rewrite them.
     """
-    rel=Path(rel)
-    if rel.as_posix()=='.businessos/workspace.json': return True
-    parts=rel.parts
-    return bool(
-        len(parts)==4 and parts[0]=='deployment' and parts[1]=='environments'
-        and parts[2] != '_template'
-        and rel.name in PRODUCT_SNAPSHOT_MUTABLE_ENV_FILES
-    )
+    rel=Path(rel); posix=rel.as_posix()
+    if posix=='.businessos/workspace.json': return True
+    return len(rel.parts)>=2 and rel.parts[0]=='.businessos' and rel.parts[1]=='environments'
 
 def product_snapshot(root):
     """Stable qualification snapshot of protected staged product source.
 
-    Transient interpreter/editor files and narrowly defined first-run host-local state
-    are ignored. Product source, playbooks, policies, schemas, scripts, tracked deployment
-    templates/configuration, and other shipped content remain immutable during qualification.
+    Transient interpreter/editor files and explicitly workspace-local `.businessos` state
+    are ignored. Product source, playbooks, policies, schemas, scripts, shipped deployment
+    defaults/templates, and other installed content remain immutable during qualification.
     """
     root=Path(root); files=[]
     if not root.exists(): return {'root':str(root),'files':[],'digest':hashlib.sha256(b'').hexdigest(),'format_version':'1.0'}

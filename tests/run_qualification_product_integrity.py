@@ -23,7 +23,6 @@ def main():
         req(run.get('qualification_status')=='NOT_EVALUATED','prepared work must not imply qualification success')
         req(run.get('candidate_blind') is True,'prepared work must use blind candidate mode')
 
-        # Candidate-visible runtime surfaces must contain no qualification machinery or evaluator specification.
         req(not (product/'qualification').exists(),'staged product leaked qualification directory')
         req(not (product/'tests').exists(),'staged product leaked developer tests')
         req(not (rd/'candidate').exists(),'qualification run created candidate-facing test directory')
@@ -40,27 +39,44 @@ def main():
         transient=product/'__pycache__'/'scratch.cpython-313.pyc'; transient.parent.mkdir(); transient.write_bytes(b'transient'); ds=product/'.DS_Store'; ds.write_bytes(b'transient')
         req(not staged_product_integrity_flags(rd,product,run),'ignored interpreter/editor transients must not invalidate qualification')
 
-        # Normal AURA setup intentionally mutates narrowly scoped host-local runtime/config state.
-        # Those files are not product methodology/source and must not create a false qualification failure.
+        # A real host discovery pass with a non-empty manifest must write only workspace-owned
+        # environment state. This is the condition that an empty-manifest smoke test used to miss.
         env={**os.environ,'BUSINESSOS_WORKSPACE':str(workspace),'PYTHONDONTWRITEBYTECODE':'1'}
         configure=subprocess.run([sys.executable,str(product/'scripts/configure_workspace.py'),str(workspace)],cwd=product,capture_output=True,text=True,env=env)
         req(configure.returncode==0,f'normal external workspace configuration failed:\n{configure.stdout}\n{configure.stderr}')
-        bootstrap=subprocess.run([sys.executable,str(product/'scripts/bootstrap_environment.py'),'local'],cwd=product,capture_output=True,text=True,env=env)
+        shipped_bindings=product/'deployment/environments/local/capability-bindings.json'; shipped_before=shipped_bindings.read_text(encoding='utf-8')
+        manifest=workspace/'runtime/host-tools.json'; manifest.parent.mkdir(parents=True,exist_ok=True)
+        manifest.write_text(json.dumps({'format_version':'1.0','host_id':'qualification-host','tools':[{
+            'id':'generate_image','description':'host image generation','enabled':True,
+            'capabilities':['creative.image.generate'],'provider_action':'generate_image'
+        }]},indent=2)+'\n',encoding='utf-8')
+        bootstrap=subprocess.run([sys.executable,str(product/'scripts/bootstrap_environment.py'),'local','--manifest','runtime/host-tools.json','--mark-welcome-shown'],cwd=product,capture_output=True,text=True,env=env)
         req(bootstrap.returncode==0,f'normal host environment bootstrap failed:\n{bootstrap.stdout}\n{bootstrap.stderr}')
-        req((product/'.businessos/workspace.json').exists(),'normal workspace setup did not create local product pointer')
-        req((product/'deployment/environments/local/host-profile.json').exists(),'normal environment bootstrap did not create host profile')
-        req((product/'deployment/environments/local/bootstrap-state.json').exists(),'normal environment bootstrap did not create bootstrap state')
-        req(not staged_product_integrity_flags(rd,product,run),'official AURA host/workspace runtime state must not be treated as protected product mutation')
+        overlay=workspace/'.businessos/environments/local'
+        for name in ('host-profile.json','bootstrap-state.json','host-tools.json','tool-inventory.json','capability-bindings.json','provider-preferences.json','scheduler-bindings.json'):
+            req((overlay/name).exists(),f'workspace environment overlay missing {name}')
+        req(shipped_bindings.read_text(encoding='utf-8')==shipped_before,'host discovery modified shipped environment defaults')
+        req(not (product/'runtime/host-tools.json').exists(),'workspace host manifest leaked into staged product runtime')
+        req(not (product/'.businessos/environments').exists(),'external-workspace host overlay leaked into staged product')
+        resolved=subprocess.run([sys.executable,str(product/'scripts/resolve_capability.py'),'local','creative.image.generate'],cwd=product,capture_output=True,text=True,env=env)
+        req(resolved.returncode==0,f'overlay capability resolution failed:\n{resolved.stdout}\n{resolved.stderr}')
+        resolved_json=json.loads(resolved.stdout); req(resolved_json.get('status')=='available','discovered workspace binding was not used by capability resolution')
+        req(not staged_product_integrity_flags(rd,product,run),'official host discovery with real bindings must leave protected product source unchanged')
 
-        # Shipped deployment templates remain protected even though runtime environments
-        # may create files with the same names. This also preserves old-baseline comparability.
+        # Shipped deployment defaults/templates remain protected. Host state belongs in the overlay,
+        # so changing either a template or the local shipped default is a true product mutation.
         template=product/'deployment/environments/_template/host-profile.json'
         template_original=template.read_text(encoding='utf-8')
         template.write_text(template_original+'\n',encoding='utf-8')
         flags=staged_product_integrity_flags(rd,product,run); mutation=next((x for x in flags if x.get('type')=='staged_product_mutation'),None)
         req(mutation and 'deployment/environments/_template/host-profile.json' in mutation.get('modified',[]),'deployment template mutation must remain protected')
         template.write_text(template_original,encoding='utf-8')
-        req(not staged_product_integrity_flags(rd,product,run),'restoring deployment template must clear product-integrity flag while allowed host-local state remains')
+        req(not staged_product_integrity_flags(rd,product,run),'restoring deployment template must clear product-integrity flag')
+        shipped_bindings.write_text(shipped_before+'\n',encoding='utf-8')
+        flags=staged_product_integrity_flags(rd,product,run); mutation=next((x for x in flags if x.get('type')=='staged_product_mutation'),None)
+        req(mutation and 'deployment/environments/local/capability-bindings.json' in mutation.get('modified',[]),'shipped local environment default mutation must remain protected')
+        shipped_bindings.write_text(shipped_before,encoding='utf-8')
+        req(not staged_product_integrity_flags(rd,product,run),'restoring shipped local environment default must clear product-integrity flag')
 
         helper=product/'run_all_events.py'; helper.write_text("print('private qualification solver')\n",encoding='utf-8')
         flags=staged_product_integrity_flags(rd,product,run); mutation=next((x for x in flags if x.get('type')=='staged_product_mutation'),None)
@@ -69,7 +85,7 @@ def main():
 
         target=product/'README.md'; original=target.read_text(encoding='utf-8'); target.write_text(original+'\nqualification mutation\n',encoding='utf-8')
         flags=staged_product_integrity_flags(rd,product,run); mutation=next((x for x in flags if x.get('type')=='staged_product_mutation'),None); req(mutation and 'README.md' in mutation.get('modified',[]),'modified staged source must fail product integrity'); target.write_text(original,encoding='utf-8')
-        req(not staged_product_integrity_flags(rd,product,run),'restoring protected source must leave only allowed host-local runtime state')
+        req(not staged_product_integrity_flags(rd,product,run),'restoring protected source must leave only workspace-owned runtime state')
         target.unlink(); flags=staged_product_integrity_flags(rd,product,run); mutation=next((x for x in flags if x.get('type')=='staged_product_mutation'),None); req(mutation and 'README.md' in mutation.get('deleted',[]),'deleted staged source must fail product integrity')
 
         run_bad={**run,'product_snapshot_digest':'tampered'}; mismatch=staged_product_integrity_flags(rd,product,run_bad); req(mismatch and mismatch[0].get('type')=='product_integrity_baseline_mismatch','run metadata snapshot tampering must fail integrity')
@@ -79,6 +95,6 @@ def main():
     req(qualification_status({'HARD-PASS / REVIEW-PENDING':2})=='REVIEW_REQUIRED','hard-pass without professional review must not be called qualified')
     req(qualification_status({'BLOCKED-EXTERNAL':1})=='INCOMPLETE','blocked qualification must be incomplete')
     req(qualification_status({'ACCEPTABLE':2,'COMPETITIVE':1,'EXCEPTIONAL':1})=='QUALIFIED','only fully reviewed acceptable-or-better events may be qualified')
-    print('qualification staged-product integrity regressions passed with blind candidate exposure, expected host-local runtime state, and protected deployment templates')
+    print('qualification staged-product integrity regressions passed with blind candidate exposure, workspace-owned host environment state, and protected deployment defaults')
 
 if __name__=='__main__': main()

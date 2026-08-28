@@ -48,24 +48,33 @@ def provider_config_errors():
         for c in p.get('capabilities',[]):
             if c not in caps: errors.append(f'core/providers/registry.json: provider {pid} references unknown capability {c}')
     pref_paths=[ROOT/'distribution/provider-defaults.json']
-    envroot=ROOT/'deployment/environments'
-    if envroot.exists(): pref_paths += sorted(envroot.glob('*/provider-preferences.json'))
+    for env_name in environment_names():
+        try: pref_paths.append(environment_file(env_name,'provider-preferences.json'))
+        except ValueError: pass
     instroot=ROOT/'instances'
     if instroot.exists(): pref_paths += sorted(instroot.glob('*/config/provider-preferences.json'))
-    pschema=_schema('provider-preferences.schema.json')
+    # The same effective file may be reached from product fallback and workspace overlay logic.
+    dedup=[];seen_paths=set()
     for path in pref_paths:
+        key=str(Path(path).resolve())
+        if key in seen_paths: continue
+        seen_paths.add(key);dedup.append(path)
+    pschema=_schema('provider-preferences.schema.json')
+    for path in dedup:
         if not path.exists(): continue
         data=_load(path)
-        for e in Draft202012Validator(pschema).iter_errors(data): errors.append(f'{path.relative_to(ROOT)}: {e.message}')
+        try: rel=path.relative_to(ROOT)
+        except Exception: rel=path
+        for e in Draft202012Validator(pschema).iter_errors(data): errors.append(f'{rel}: {e.message}')
         seen=set()
         for pref in data.get('preferences',[]):
             key=(pref.get('capability'),pref.get('provider_id'))
-            if key in seen: errors.append(f'{path.relative_to(ROOT)}: duplicate preference {key}')
+            if key in seen: errors.append(f'{rel}: duplicate preference {key}')
             seen.add(key)
             cap=pref.get('capability'); pid=pref.get('provider_id')
-            if cap not in caps: errors.append(f'{path.relative_to(ROOT)}: unknown capability {cap}')
-            if pid not in providers: errors.append(f'{path.relative_to(ROOT)}: unknown provider {pid}')
-            elif cap not in providers[pid].get('capabilities',[]): errors.append(f'{path.relative_to(ROOT)}: provider {pid} does not supply {cap}')
+            if cap not in caps: errors.append(f'{rel}: unknown capability {cap}')
+            if pid not in providers: errors.append(f'{rel}: unknown provider {pid}')
+            elif cap not in providers[pid].get('capabilities',[]): errors.append(f'{rel}: provider {pid} does not supply {cap}')
     return errors
 
 

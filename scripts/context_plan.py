@@ -82,8 +82,8 @@ def build_plan(business_id,contract_id,focus=None,operator_ref=None,team_ref=Non
     # because event capabilities may not have been synchronized/activated yet.
     companion_caps={c for c in all_caps if c.startswith('business.')}
     env_name=installation().get('default_environment') or 'local'
-    bp=ROOT/'deployment/environments'/env_name/'capability-bindings.json'
     try:
+        bp=environment_file(env_name,'capability-bindings.json')
         active=json.loads(bp.read_text()).get('bindings',[]) if bp.exists() else []
     except Exception:
         active=[]

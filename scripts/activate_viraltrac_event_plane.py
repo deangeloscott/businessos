@@ -13,7 +13,7 @@ RECOGNIZED={'off','publish_shadow','evaluate_shadow','allowlisted_actions','broa
 def now(): return datetime.now(timezone.utc).isoformat().replace('+00:00','Z')
 
 def load_source(path):
-    raw=sys.stdin.read() if path=='-' else Path(path).read_text()
+    raw=sys.stdin.read() if path=='-' else resolve_storage_ref(path).read_text()
     return json.loads(raw)
 
 def walk_modes(v, out):
@@ -47,13 +47,12 @@ def upsert_binding(bindings, binding, remove=False):
     return out
 
 def activate(environment,business_id,operations,mode=None,delivery_mode='none',subscription_ref=None,connection_ref='provider:viraltrac'):
-    env=ROOT/'deployment/environments'/environment
+    if not environment_exists(environment): raise ValueError('Unknown environment: '+environment)
     biz=ROOT/'instances'/business_id
-    if not env.exists(): raise ValueError('Unknown environment: '+environment)
     if not biz.exists(): raise ValueError('Unknown business: '+business_id)
     ops=load_source(operations); opmode=resolve_mode(ops,mode)
     interop=json.loads(INTEROP.read_text())
-    bp=env/'capability-bindings.json'; bindings=json.loads(bp.read_text()).get('bindings',[]) if bp.exists() else []
+    bp=environment_file(environment,'capability-bindings.json',writable=True); bindings=json.loads(bp.read_text()).get('bindings',[]) if bp.exists() else []
     has_vt=any(b.get('provider_id')==PROVIDER_ID and b.get('enabled',True) for b in bindings)
     if not has_vt: raise ValueError('No enabled ViralTrac binding exists in this environment; connect/synchronize ViralTrac first.')
 
@@ -73,7 +72,6 @@ def activate(environment,business_id,operations,mode=None,delivery_mode='none',s
     elif opmode=='allowlisted_actions': subscribe_binding['limitations']=['only_separately_eligible_allowlisted_actions_may_execute']
     elif opmode=='broad': subscribe_binding['limitations']=['event_delivery_still_does_not_authorize_actions']
 
-    # Remove prior runtime-activated event bindings first; then add only if current evidence supports them.
     bindings=[b for b in bindings if not (b.get('capability')=='business.event.subscribe' and b.get('provider_id')==PROVIDER_ID and b.get('connection_ref')==connection_ref)]
     bindings=[b for b in bindings if not (b.get('capability')=='business.event.delivery.receive' and str(b.get('connection_ref','')).startswith('host:event_delivery:'))]
     if live_possible:
@@ -100,21 +98,21 @@ def activate(environment,business_id,operations,mode=None,delivery_mode='none',s
     validate(REACTIVE_SCHEMA,profile,'Invalid reactive monitoring profile')
     rp.parent.mkdir(parents=True,exist_ok=True); rp.write_text(json.dumps(profile,indent=2)+'\n')
 
-    # Reflect runtime activation in the latest provider capability snapshot when it exists.
-    sp=env/'providers/viraltrac-capabilities.json'
+    sp=environment_file(environment,'providers/viraltrac-capabilities.json')
     if sp.exists():
-        snap=json.loads(sp.read_text())
+        writable_sp=environment_file(environment,'providers/viraltrac-capabilities.json',writable=True)
+        snap=json.loads(writable_sp.read_text())
         for row in snap.get('capabilities',[]):
             if row.get('capability')=='business.event.subscribe':
                 row['status']='bound' if live_possible else ('candidate' if opmode not in {'off','publish_shadow'} else 'not_detected')
                 row['notes']=f'runtime mode={opmode}; host delivery={delivery_mode}; '+('subscription active' if live_possible else 'fallback active')
-        sp.write_text(json.dumps(snap,indent=2)+'\n')
+        writable_sp.write_text(json.dumps(snap,indent=2)+'\n')
     return {'provider_id':PROVIDER_ID,'environment':environment,'business_id':business_id,'operational_mode':opmode,'delivery_mode':delivery_mode,'live_reactive_enabled':live_possible,'status':status,'subscription_ref':subscription_ref if live_possible else None,'reason_codes':reason or ['reactive_event_path_ready']}
 
 def main():
-    p=argparse.ArgumentParser(description='Activate/deactivate the ViralTrac ViralTrac Event / Reactive Plane BusinessOS event path from current runtime mode/readiness evidence. This helper never creates credentials or invents a delivery endpoint.')
+    p=argparse.ArgumentParser(description='Activate/deactivate the ViralTrac Event / Reactive Plane BusinessOS event path from current runtime mode/readiness evidence. This helper never creates credentials or invents a delivery endpoint.')
     p.add_argument('environment',nargs='?',default='local'); p.add_argument('--business-id',required=True)
-    p.add_argument('--operations',required=True,help="Authenticated /v1/events/operations (or equivalent normalized runtime state) JSON, or '-' for stdin")
+    p.add_argument('--operations',required=True,help="Authenticated /v1/events/operations (or equivalent normalized runtime state) JSON, workspace-relative state ref, or '-' for stdin")
     p.add_argument('--mode',choices=sorted(RECOGNIZED),help='Explicit current runtime mode when the response contains multiple mode-like values.')
     p.add_argument('--delivery-mode',choices=['push','poll','none'],default='none',help='Current host/harness event-delivery mechanism. Use none when unavailable.')
     p.add_argument('--subscription-ref',help='Authoritative ViralTrac subscription/managed-binding reference. Required for live activation.')

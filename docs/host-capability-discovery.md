@@ -9,14 +9,14 @@ open AURA workspace
 → show WELCOME.md once
 → inspect host tools/connectors/MCP/filesystem/code/browser
 → conservatively map clear abilities to BusinessOS capabilities
-→ persist non-secret inventory/bindings
+→ persist non-secret inventory/bindings in workspace host state
 → initialize/resume business
 → route goal
 → capability preflight
 → execute
 ```
 
-The helper `scripts/bootstrap_environment.py` compiles an agent-prepared host manifest. It does not introspect a proprietary runtime by itself; the agent/harness supplies the visible tool descriptions it already has.
+The helper `scripts/bootstrap_environment.py` compiles an agent-prepared host manifest. It does not introspect a proprietary runtime by itself; the agent/harness supplies the visible tool descriptions it already has. Live discovered environment state is stored under the active workspace at `.businessos/environments/<environment>/`; shipped `deployment/environments/<environment>/` files remain immutable defaults.
 
 Example manifest:
 
@@ -37,10 +37,10 @@ Example manifest:
 }
 ```
 
-Then run:
+Save temporary discovery input under the active workspace (for example `runtime/host-tools.json`) or provide it over stdin, then run:
 
 ```bash
-python scripts/bootstrap_environment.py local --manifest host-tools.json --mark-welcome-shown
+python scripts/bootstrap_environment.py local --manifest runtime/host-tools.json --mark-welcome-shown
 ```
 
-Only map a capability when the tool clearly satisfies it. Unknown or risky mappings remain unbound until needed/confirmed.
+A `runtime/...` manifest ref resolves through the active workspace rather than the AURA product folder. `--manifest -` may be used for stdin. Only map a capability when the tool clearly satisfies it. Unknown or risky mappings remain unbound until needed/confirmed.
