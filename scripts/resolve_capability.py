@@ -17,6 +17,24 @@ def _provider_registry():
     return {p['id']:p for p in rows if p.get('status')!='deprecated'}
 
 
+def _local_pack_candidates(capability):
+    root=ROOT/'core/capability-packs';out=[]
+    if not root.exists():return out
+    for path in sorted(root.glob('*.json')):
+        try:pack=_read(path,{})
+        except Exception:continue
+        if any(capability in (t.get('capabilities') or []) for t in pack.get('tools',[])):
+            out.append({
+                'id':pack.get('id'),'display_name':pack.get('display_name'),'description':pack.get('description'),
+                'responsibility_note':pack.get('responsibility_note'),
+                'status_command':f"python3 scripts/manage_local_capabilities.py status --pack {pack.get('id')}",
+                'bind_command':f"python3 scripts/manage_local_capabilities.py bind --pack {pack.get('id')}",
+                'install_command':f"python3 scripts/manage_local_capabilities.py install --pack {pack.get('id')} --approve" if pack.get('installers') else None,
+                'policy':'core/policies/local-capability-packs.md'
+            })
+    return out
+
+
 def _pref_map(rows):
     return {(p['capability'],p['provider_id']):p for p in rows}
 
@@ -107,6 +125,7 @@ def resolve(environment,capability,business_id=None):
         allowed.sort(key=lambda b: rank.get(b.get('provider_id'),(999999,'')))
         return {'status':'available','capability':capability,'source':'active_binding','binding':allowed[0],'alternatives':allowed[1:]}
 
+    # Explicit business/environment/distribution provider preferences remain authoritative before generic local acquisition.
     for source,rows in scopes:
         preferred=sorted([p for p in rows if p.get('capability')==capability and p.get('mode')=='preferred' and p.get('provider_id') not in blocked], key=lambda p:p.get('priority',999999))
         for pref in preferred:
@@ -115,6 +134,14 @@ def resolve(environment,capability,business_id=None):
             snap_status=_snapshot_status(environment,provider['id'],capability)
             if snap_status in {'not_detected','candidate'}: continue
             return _recommendation(provider,capability,source,pref,connected_refs.get(provider['id']))
+
+    local_packs=_local_pack_candidates(capability)
+    if local_packs:
+        return {
+            'status':'local_pack_check_required','capability':capability,'source':'trusted_local_capability_pack',
+            'pack':local_packs[0],'alternatives':local_packs[1:],'requires_user_authorization':False,
+            'next_action':'inspect_trusted_local_capability_pack_before_external_provider_or_manual_fallback'
+        }
 
     compatible=[]
     for provider in providers.values():
@@ -135,7 +162,7 @@ def resolve(environment,capability,business_id=None):
 
 
 def main():
-    p=argparse.ArgumentParser(description='Resolve an active or preferred provider for one provider-neutral capability.')
+    p=argparse.ArgumentParser(description='Resolve an active or preferred provider/local capability path for one provider-neutral capability.')
     p.add_argument('environment');p.add_argument('capability');p.add_argument('--business')
     a=p.parse_args()
     try:r=resolve(a.environment,a.capability,a.business)
