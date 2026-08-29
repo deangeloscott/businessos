@@ -47,9 +47,27 @@ def provider_config_errors():
             errors.append(f'core/providers/registry.json: first-party provider {pid} must reference root publisher {root_publisher_id}')
         for c in p.get('capabilities',[]):
             if c not in caps: errors.append(f'core/providers/registry.json: provider {pid} references unknown capability {c}')
+
+    pack_schema=_schema('capability-pack.schema.json')
+    pack_root=ROOT/'core/capability-packs'
+    if pack_root.exists():
+        seen_packs=set()
+        for path in sorted(pack_root.glob('*.json')):
+            data=_load(path)
+            for e in Draft202012Validator(pack_schema).iter_errors(data):errors.append(f'{path.relative_to(ROOT)}: {e.message}')
+            pid=data.get('id')
+            if pid in seen_packs:errors.append(f'{path.relative_to(ROOT)}: duplicate capability pack id {pid}')
+            seen_packs.add(pid)
+            for tool in data.get('tools',[]):
+                for cap in tool.get('capabilities',[]):
+                    if cap not in caps:errors.append(f'{path.relative_to(ROOT)}: tool {tool.get("id")} references unknown capability {cap}')
+
     pref_paths=[ROOT/'distribution/provider-defaults.json']
+    scheduler_paths=[]
     for env_name in environment_names():
         try: pref_paths.append(environment_file(env_name,'provider-preferences.json'))
+        except ValueError: pass
+        try: scheduler_paths.append(environment_file(env_name,'scheduler-bindings.json'))
         except ValueError: pass
     instroot=ROOT/'instances'
     if instroot.exists(): pref_paths += sorted(instroot.glob('*/config/provider-preferences.json'))
@@ -75,6 +93,22 @@ def provider_config_errors():
             if cap not in caps: errors.append(f'{rel}: unknown capability {cap}')
             if pid not in providers: errors.append(f'{rel}: unknown provider {pid}')
             elif cap not in providers[pid].get('capabilities',[]): errors.append(f'{rel}: provider {pid} does not supply {cap}')
+
+    sschema=_schema('scheduler-bindings.schema.json')
+    seen_paths=set()
+    for path in scheduler_paths:
+        key=str(Path(path).resolve())
+        if key in seen_paths or not path.exists():continue
+        seen_paths.add(key)
+        data=_load(path)
+        try:rel=path.relative_to(ROOT)
+        except Exception:rel=path
+        for e in Draft202012Validator(sschema).iter_errors(data):errors.append(f'{rel}: {e.message}')
+        seen_ids=set()
+        for row in data.get('bindings',[]):
+            rid=row.get('id')
+            if rid in seen_ids:errors.append(f'{rel}: duplicate scheduler binding {rid}')
+            seen_ids.add(rid)
     return errors
 
 
