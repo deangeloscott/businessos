@@ -13,6 +13,7 @@ Adaptively discover, resolve, observe, traverse, compare, and interpret competit
 | `research-plan` | Resolve a competitive question with bounded evidence. | `competitor.research.plan` |
 | `source-coverage` | Adapt research depth and evidence-source coverage to the competitive decision. | `competitor.research.adaptive-source-coverage` |
 | `ecosystem-radar` | Discover important competitive movements and tactic claims, verify what is observed versus effective, and route material implications. | `competitor.intelligence.ecosystem-radar` |
+| `competitive-position` | Compose the relevant competitor jobs into a decision-useful competitive landscape and position. | `competitor.analysis.competitive-position` |
 | `competitor-discovery` | Identify current direct/substitute competitors. | `competitor.discovery.competitive-set` |
 | `entity-resolution` | Resolve competitor domains and public profiles to the correct canonical entity. | `competitor.discovery.entity-resolution` |
 | `emerging-competitors` | Detect new competitors entering the relevant customer choice set. | `competitor.discovery.emerging-competitors` |
