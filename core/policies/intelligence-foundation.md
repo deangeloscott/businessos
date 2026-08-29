@@ -7,7 +7,7 @@ AURA's intelligence should become richer without becoming a separate intelligenc
 - **The organization is the durable unit of intelligence.** Material evidence, Observations, Insights, source history, decisions, measurements, and Learning survive the conversation/model/harness that discovered them.
 - **Shared mechanics, domain-specific meaning.** Core may resolve sources/subjects, preserve multimodal evidence, maintain watch state, compare current versus prior evidence, and route signals. Customer, Competitor, Industry, SEO/AEO, Content, Marketing, and Customer Optimization retain their existing semantic ownership.
 - **Portable-first.** A watch plan or tracked subject must remain useful as organization-owned state without requiring a proprietary server, database, crawler, scheduler, model provider, or ViralTrac connection. Optional infrastructure may execute checks more conveniently.
-- **Capability-neutral.** State the evidence/business job first. Use the best available model/harness/tool path for webpages, documents, images, audio, video, transcripts, comments, APIs, or structured exports. Missing native multimodal capability changes the acquisition/extraction method, not the required evidence standard.
+- **Capability-neutral.** State the evidence/business job first. Use the best available model/harness/tool path for webpages, documents, images, audio, video, transcripts, comments, APIs, or structured exports. Missing native multimodal capability changes the acquisition/extraction method, not the required evidence standard. Trusted optional local capability packs may raise the local execution ceiling without becoming hard dependencies.
 - **Minimum sufficient research.** Do not archive or monitor everything because it is technically possible. Depth, source coverage, cadence, and modalities should expand only when they can materially change a decision, reduce important uncertainty, preserve a material baseline, or satisfy verification.
 - **No competing truth stores.** Canonical JSON remains machine-authoritative. Human-readable summaries/views may be generated from canonical state and linked evidence, but must not become a second source of truth.
 
@@ -23,6 +23,8 @@ When a material conclusion depends on non-text evidence:
 5. never treat an AI-generated summary of unseen media as support-grade evidence.
 
 Use `core/policies/research-evidence.md` for the support boundary. For large media, preserve bounded evidence or reproducible pointers instead of copying an unnecessary archive into the workspace.
+
+Optional deterministic tools may improve acquisition/processing. For example, `yt-dlp` can provide permitted media/subtitle acquisition mechanics and FFmpeg/ffprobe can provide media conversion/frame/audio/metadata mechanics. Those tools do not themselves establish what a video means. Follow `core/policies/local-capability-packs.md` and preserve the same evidence/modality boundaries.
 
 ## Durable subject and source tracking
 
@@ -51,7 +53,9 @@ A durable watch should answer:
 
 Prefer change detection and semantic deduplication over repeated full re-research. Unchanged checks should update checkpoint state rather than create duplicate Insights/alerts.
 
-AURA owns the monitoring state and meaning, not the scheduler. A harness, cron job, workflow runner, ViralTrac, or future provider may execute the next check.
+**Cadence is semantic organizational intent; scheduling is host execution state.** AURA owns the cadence/next useful check and may infer a proportionate starting cadence when recurring monitoring is clearly requested. User-specified cadence wins. Different subjects/sources/signals may use different cadences. A saved `next_check_at` does not prove a future task is scheduled.
+
+AURA owns the monitoring state and meaning, not a mandatory scheduler. A harness, OS scheduler, workflow runner, ViralTrac, or future provider may execute the next check. Automatic monitoring may be called active only when a verified scheduler binding exists in the current environment. Otherwise preserve reminder-only, due-on-next-start, paused/blocked, or manual state and follow `core/policies/monitoring-continuity.md`.
 
 ## Contextual comparison
 
@@ -92,6 +96,7 @@ Canonical state should be precise enough for models, deterministic helpers, vali
 - confidence/limitations;
 - source/evidence links;
 - what remains unknown;
-- what decision/action this affects.
+- what decision/action this affects;
+- whether monitoring is actually automated or only planned.
 
-Do not create Markdown mirrors for every canonical object. Generate human views when they reduce cognitive load or aid review; canonical state and evidence remain authoritative.
+Do not create Markdown mirrors for every canonical object. Generate human views when they reduce cognitive load or aid review; canonical state and evidence remain authoritative. Normal-user responses should describe the human concept/location first (for example `AtlasOps → Knowledge → Tracked Subjects → Alex Hormozi`) and reserve raw JSON/runtime paths for advanced inspection/debugging.
