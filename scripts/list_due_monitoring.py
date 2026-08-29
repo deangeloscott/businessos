@@ -4,6 +4,8 @@ from _common import *
 import argparse,json
 from datetime import datetime,timezone
 
+DEFAULT_NOTIFICATION='material_changes_only'
+
 
 def _dt(value):
     if not value:return None
@@ -46,6 +48,19 @@ def _matching_bindings(group,business_id,bindings):
     return out
 
 
+def _cadence_label(c):
+    if not c:return None
+    bits=[c.get('expression') or c.get('mode')]
+    if c.get('source'):bits.append(c['source'])
+    if c.get('timezone'):bits.append(c['timezone'])
+    return ' · '.join(str(x) for x in bits if x)
+
+
+def _profile_notification(profile):
+    n=profile.get('monitoring_notification') or {}
+    return n.get('mode') or DEFAULT_NOTIFICATION
+
+
 def summarize(business_id,environment=None,at=None):
     if not instance_dir(business_id).exists():raise ValueError(f'Unknown business: {business_id}')
     environment=environment or installation().get('default_environment') or 'local'
@@ -60,13 +75,28 @@ def summarize(business_id,environment=None,at=None):
         g['profiles'].append((obj,path))
     bindings=_bindings(environment);rows=[]
     for key,g in sorted(groups.items(),key=lambda kv:str(kv[1].get('subject_name') or kv[0]).lower()):
-        profs=g['profiles'];next_values=[(_dt(p.get('next_check_at')),p.get('next_check_at')) for p,_ in profs if _dt(p.get('next_check_at'))]
-        earliest=min(next_values,key=lambda x:x[0]) if next_values else (None,None)
-        due=bool(earliest[0] and earliest[0]<=current)
-        cadences=[]
+        profs=g['profiles'];due_points=[];cadences=[];signal_rows=[];notification_modes=[]
         for p,_ in profs:
-            c=p.get('monitoring_cadence')
-            if c and c not in cadences:cadences.append(c)
+            base_notification=_profile_notification(p);notification_modes.append(base_notification)
+            base_next=_dt(p.get('next_check_at'))
+            if base_next:
+                due_points.append({'at':base_next,'value':p.get('next_check_at'),'kind':'source','signal':None,'profile_id':p.get('id'),'notification_mode':base_notification})
+            label=_cadence_label(p.get('monitoring_cadence'))
+            if label and label not in cadences:cadences.append(label)
+            for s in p.get('monitoring_signal_cadences') or []:
+                row={
+                    'signal':s.get('signal'),'mode':s.get('mode'),'expression':s.get('expression'),'timezone':s.get('timezone'),
+                    'source':s.get('source'),'next_check_at':s.get('next_check_at'),'notification_mode':s.get('notification_mode') or base_notification,
+                    'profile_id':p.get('id')
+                }
+                if row not in signal_rows:signal_rows.append(row)
+                notification_modes.append(row['notification_mode'])
+                sat=_dt(s.get('next_check_at'))
+                if sat:
+                    due_points.append({'at':sat,'value':s.get('next_check_at'),'kind':'signal','signal':s.get('signal'),'profile_id':p.get('id'),'notification_mode':row['notification_mode']})
+        earliest=min(due_points,key=lambda x:x['at']) if due_points else None
+        due_items=[x for x in due_points if x['at']<=current]
+        due=bool(due_items)
         matched=_matching_bindings(g,business_id,bindings)
         active=[b for b in matched if b.get('status')=='active' and b.get('last_verified_at')]
         reminder=[b for b in active if b.get('executor_kind')=='reminder_only']
@@ -74,32 +104,41 @@ def summarize(business_id,environment=None,at=None):
         if automatic:execution='active_automatic'
         elif reminder:execution='reminder_only'
         elif any(b.get('status')=='paused' for b in matched):execution='paused'
-        elif cadences or earliest[1]:execution='planned_unbound'
+        elif cadences or signal_rows or earliest:execution='planned_unbound'
         else:execution='manual'
+        due_notice_allowed=any(x.get('notification_mode') in {'due_and_material_changes','all_checks'} for x in due_items)
         rows.append({
             'subject_key':g.get('subject_key'),
             'subject_name':g.get('subject_name'),
             'source_profile_count':len(profs),
             'cadences':cadences,
-            'next_check_at':earliest[1],
+            'signal_cadences':sorted(signal_rows,key=lambda x:(str(x.get('signal') or '').lower(),str(x.get('profile_id') or ''))),
+            'notification_modes':sorted(set(notification_modes or [DEFAULT_NOTIFICATION])),
+            'next_check_at':earliest['value'] if earliest else None,
+            'next_check_kind':earliest['kind'] if earliest else None,
+            'next_check_signal':earliest['signal'] if earliest else None,
             'due':due,
+            'due_items':[{'at':x['value'],'kind':x['kind'],'signal':x['signal'],'profile_id':x['profile_id'],'notification_mode':x['notification_mode']} for x in sorted(due_items,key=lambda x:x['at'])],
             'execution_status':execution,
             'active_scheduler_binding_ids':[b.get('id') for b in active],
-            'needs_on_start_attention':bool(due and execution not in {'active_automatic'}),
+            'needs_refresh_on_start':bool(due and execution not in {'active_automatic'}),
+            'proactive_due_notice_allowed':bool(due and due_notice_allowed),
             'profile_refs':[storage_ref(path) for _,path in profs]
         })
-    due_unbound=[r for r in rows if r['needs_on_start_attention']]
+    due_unbound=[r for r in rows if r['needs_refresh_on_start']]
+    due_notice=[r for r in due_unbound if r['proactive_due_notice_allowed']]
     return {
         'business_id':business_id,'environment':environment,'checked_at':current.isoformat().replace('+00:00','Z'),
-        'tracked_subject_count':len(rows),'due_unbound_count':len(due_unbound),
-        'due_unbound_subjects':[{'subject_key':r['subject_key'],'subject_name':r['subject_name'],'next_check_at':r['next_check_at'],'execution_status':r['execution_status']} for r in due_unbound],
+        'tracked_subject_count':len(rows),'due_unbound_count':len(due_unbound),'proactive_due_notice_count':len(due_notice),
+        'due_unbound_subjects':[{'subject_key':r['subject_key'],'subject_name':r['subject_name'],'next_check_at':r['next_check_at'],'execution_status':r['execution_status'],'proactive_due_notice_allowed':r['proactive_due_notice_allowed']} for r in due_unbound],
         'subjects':rows,
-        'rule':'Cadence/next_check_at is monitoring intent. Only a verified active scheduler binding is active automatic execution; otherwise overdue monitoring falls back to the next AURA start/manual refresh.'
+        'default_notification_mode':DEFAULT_NOTIFICATION,
+        'rule':'Cadence/next_check_at is monitoring intent. Only a verified active scheduler binding is active automatic execution. Unchanged checks are quiet by default; overdue unbound work can refresh on the next relevant AURA start without proactively notifying unless its notification mode allows due notices.'
     }
 
 
 def main():
-    p=argparse.ArgumentParser(description='List tracked subjects whose semantic monitoring is due and distinguish actual scheduler bindings from planned cadence.')
+    p=argparse.ArgumentParser(description='List tracked monitoring state and distinguish semantic cadence, due work, notification intent, and actual scheduler bindings.')
     p.add_argument('business_id');p.add_argument('--environment');p.add_argument('--at');p.add_argument('--due-only',action='store_true')
     a=p.parse_args()
     try:r=summarize(a.business_id,a.environment,a.at)
