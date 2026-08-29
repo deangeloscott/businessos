@@ -5,7 +5,7 @@ import json,sys
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'scripts'))
 from _common import read_frontmatter
-from completion_evidence import completion_spec, contract_index
+from completion_evidence import completion_spec
 from process_plan import build_process_plan
 from route_and_resolve import route_and_resolve
 
@@ -19,7 +19,7 @@ def main():
     meta,body=read_frontmatter(path)
     if meta.get('id')!='competitor.analysis.competitive-position':fail('competitive-position contract id regressed')
     if meta.get('owner_system')!='competitor-intelligence':fail('competitive-position semantic owner regressed')
-    spec=completion_spec(contract_index()['competitor.analysis.competitive-position'])
+    spec=completion_spec(meta)
     if spec.get('profile')!='intelligence':fail(f'competitive-position must use auditable intelligence completion profile, got {spec}')
 
     sub=meta.get('subcontracts') or {}
