@@ -5,8 +5,9 @@ This is deliberately not an agent, harness, scheduler, model router, or workflow
 A capable agent/harness decides whether the user's request is organizational work. Once
 that boundary is crossed, this helper makes the reliability mechanics deterministic:
 workspace/business resolution, routing, Run creation/recovery, process/context planning,
-and capability preflight. The agent then performs the actual business work using the
-returned envelope and whatever authorized host capabilities are available.
+capability preflight, and lightweight monitoring-continuity visibility. The agent then
+performs the actual business work using the returned envelope and whatever authorized host
+capabilities are available.
 """
 from pathlib import Path
 import argparse, json, os, subprocess, sys
@@ -16,6 +17,7 @@ from route_and_resolve import route_and_resolve
 from process_plan import build_process_plan
 from context_plan import build_plan
 from preflight_capabilities import preflight
+from list_due_monitoring import summarize as summarize_monitoring
 
 
 def _business_ids():
@@ -59,6 +61,25 @@ def _create_run(business_id,contract_id,task,operator_ref=None,team_ref=None,rol
     return rid
 
 
+def _monitoring_continuity(business_id):
+    try:
+        data=summarize_monitoring(business_id)
+        return {
+            'status':'available',
+            'tracked_subject_count':data.get('tracked_subject_count',0),
+            'due_unbound_count':data.get('due_unbound_count',0),
+            'due_unbound_subjects':data.get('due_unbound_subjects',[]),
+            'environment':data.get('environment'),
+            'rule':'Do not derail an unrelated request to clear a monitoring backlog. Refresh overdue work when relevant/authorized or surface one concise notice when it materially matters. A saved cadence/next check is not an active schedule without a verified scheduler binding.'
+        }
+    except (ValueError,json.JSONDecodeError) as e:
+        return {
+            'status':'degraded',
+            'reason':str(e),
+            'rule':'Monitoring-continuity inspection must not fabricate schedule state or silently block otherwise valid organizational work.'
+        }
+
+
 def enter(task,business_id=None,workspace=None,operator_ref=None,team_ref=None,role_ref=None,output_type=None,channel=None,task_preferences=None,new_run=False,include_optional_capabilities=True):
     task=(task or '').strip()
     if not task:return {'format_version':'1.0','status':'needs_input','missing':['request'],'reason':'Preserve and provide the user\'s original organizational request.'}
@@ -68,18 +89,19 @@ def enter(task,business_id=None,workspace=None,operator_ref=None,team_ref=None,r
     if resolved['status']!='resolved':
         return {'format_version':'1.0','status':'needs_input','workspace':str(workspace_root()),**{k:v for k,v in resolved.items() if k!='status'}}
     bid=resolved['business_id']
+    continuity=_monitoring_continuity(bid)
     try:route=route_and_resolve(task,bid,team_ref,role_ref,operator_ref)
-    except ValueError as e:return {'format_version':'1.0','status':'blocked','business_id':bid,'workspace':str(workspace_root()),'reason':str(e)}
+    except ValueError as e:return {'format_version':'1.0','status':'blocked','business_id':bid,'workspace':str(workspace_root()),'monitoring_continuity':continuity,'reason':str(e)}
     cid=route.get('contract_id')
     if not cid or route.get('status')!='available':
-        return {'format_version':'1.0','status':'blocked','business_id':bid,'workspace':str(workspace_root()),'original_request':task,'route':route,'reason':'AURA did not resolve an available business-work entry contract.'}
+        return {'format_version':'1.0','status':'blocked','business_id':bid,'workspace':str(workspace_root()),'original_request':task,'route':route,'monitoring_continuity':continuity,'reason':'AURA did not resolve an available business-work entry contract.'}
 
     matches=[] if new_run else _matching_active_runs(bid,cid,task)
     if matches:
         rid=matches[0][1];resumed=True
     else:
         try:rid=_create_run(bid,cid,task,operator_ref,team_ref,role_ref,output_type,channel,task_preferences);resumed=False
-        except ValueError as e:return {'format_version':'1.0','status':'blocked','business_id':bid,'workspace':str(workspace_root()),'original_request':task,'route':route,'reason':str(e)}
+        except ValueError as e:return {'format_version':'1.0','status':'blocked','business_id':bid,'workspace':str(workspace_root()),'original_request':task,'route':route,'monitoring_continuity':continuity,'reason':str(e)}
 
     run_dir=runtime_root()/'runs'/bid/rid
     work_dir=run_dir/'work';work_dir.mkdir(parents=True,exist_ok=True)
@@ -88,7 +110,7 @@ def enter(task,business_id=None,workspace=None,operator_ref=None,team_ref=None,r
         context=build_plan(bid,cid,operator_ref=operator_ref,team_ref=team_ref,role_ref=role_ref,run_id=rid)
         capabilities=preflight(bid,cid,include_optional=include_optional_capabilities)
     except (ValueError,json.JSONDecodeError) as e:
-        return {'format_version':'1.0','status':'blocked','business_id':bid,'workspace':str(workspace_root()),'original_request':task,'route':route,'run_id':rid,'run_ref':storage_ref(run_dir),'reason':str(e)}
+        return {'format_version':'1.0','status':'blocked','business_id':bid,'workspace':str(workspace_root()),'original_request':task,'route':route,'monitoring_continuity':continuity,'run_id':rid,'run_ref':storage_ref(run_dir),'reason':str(e)}
 
     env={
         'BUSINESSOS_WORKSPACE':str(workspace_root()),
@@ -105,6 +127,7 @@ def enter(task,business_id=None,workspace=None,operator_ref=None,team_ref=None,r
         'business_resolution':resolved.get('resolution'),
         'original_request':task,
         'route':route,
+        'monitoring_continuity':continuity,
         'run':{
             'run_id':rid,
             'resumed':resumed,
@@ -120,6 +143,8 @@ def enter(task,business_id=None,workspace=None,operator_ref=None,team_ref=None,r
             'instruction':'Continue the user\'s complete original request inside this AURA Run. Use the resolved context/process and authorized host Skills/tools as executors; do not replace AURA routing, business truth, authorization, evidence, canonical state, required subcontracts, QA, completion, or Learning.',
             'scratch_rule':'Use the Run work_dir for build/cache/render/temp state. The AURA product root remains read-only during ordinary business operation.',
             'persistence_rule':'Persist only material organizational evidence, findings, decisions, governed Assets/state, completion evidence, and evidence-supported Learning; ordinary scratch/tool internals remain working state.',
+            'continuity_rule':'Use monitoring_continuity as a lightweight memory cue, not a competing task queue. If overdue unbound monitoring is relevant to this request, refresh it through the appropriate AURA process. If it materially matters but is unrelated, surface at most one concise notice. Otherwise continue the user\'s request. Never describe planned cadence as an active schedule without a verified scheduler binding.',
+            'human_ux_rule':'In the final response, describe saved work using the organization/human knowledge concept first. Raw canonical/runtime filesystem paths are optional advanced inspection details, not the primary UX.'
         },
     }
 
