@@ -40,6 +40,34 @@
       },
       "required":["mode","expression","source"]
     },
+    "monitoring_signal_cadences": {
+      "type":"array",
+      "items": {
+        "type":"object",
+        "additionalProperties":false,
+        "properties": {
+          "signal":{"type":"string","minLength":1},
+          "mode":{"enum":["recurring","event_driven","manual"]},
+          "expression":{"type":["string","null"]},
+          "timezone":{"type":["string","null"]},
+          "source":{"enum":["user","inferred","policy"]},
+          "next_check_at":{"type":["string","null"],"format":"date-time"},
+          "notification_mode":{"enum":["material_changes_only","due_and_material_changes","all_checks","silent"]},
+          "notes":{"type":["string","null"]}
+        },
+        "required":["signal","mode","expression","source","notification_mode"]
+      }
+    },
+    "monitoring_notification": {
+      "type":["object","null"],
+      "additionalProperties":false,
+      "properties": {
+        "mode":{"enum":["material_changes_only","due_and_material_changes","all_checks","silent"]},
+        "source":{"enum":["user","inferred","policy"]},
+        "notes":{"type":["string","null"]}
+      },
+      "required":["mode","source"]
+    },
     "last_material_change_at": {"type":["string","null"],"format":"date-time"},
     "fact_type_assessments": {
       "type":"array",
