@@ -17,6 +17,8 @@ QUALITY_RANK = {"unknown":0,"weak":1,"mixed":2,"strong":3}
 SUBJECT_KINDS = {"organization","person","brand","product","creator","publication","channel","platform","regulator","community","other"}
 SUBJECT_RELATIONSHIPS = {"own_organization","competitor","substitute","partner","creator","thought_leader","publication","regulator","platform","vendor","benchmark","ecosystem_actor","monitored_subject","other"}
 SOURCE_MODALITIES = {"text","image","audio","video","document","structured","mixed"}
+CADENCE_MODES = {"recurring","event_driven","manual"}
+CADENCE_SOURCES = {"user","inferred","policy"}
 
 def _normalized_reference(value):
     """Normalize only URL components that are semantically case-insensitive.
@@ -99,6 +101,24 @@ def _rebuild_assessments(events, previous):
         out.append(row)
     return out
 
+def _cadence_from_args(args, existing):
+    requested = any(x is not None for x in [args.cadence_mode,args.cadence_expression,args.cadence_timezone,args.cadence_source,args.cadence_notes])
+    if not requested:
+        return existing
+    mode = args.cadence_mode or ((existing or {}).get("mode"))
+    if not mode:
+        raise ValueError("cadence updates require --cadence-mode on a profile without an existing cadence")
+    source = args.cadence_source or ((existing or {}).get("source")) or "inferred"
+    previous_source = (existing or {}).get("source")
+    if previous_source == "user" and source != "user" and not args.replace_user_cadence:
+        raise ValueError("existing monitoring cadence is user-specified; pass --cadence-source user for a user change or --replace-user-cadence only when an explicit user instruction authorizes replacement")
+    expression = args.cadence_expression if args.cadence_expression is not None else (existing or {}).get("expression")
+    timezone = args.cadence_timezone if args.cadence_timezone is not None else (existing or {}).get("timezone")
+    notes = args.cadence_notes if args.cadence_notes is not None else (existing or {}).get("notes")
+    if mode == "recurring" and not expression:
+        raise ValueError("recurring cadence requires --cadence-expression (for example 'weekly', 'monthly', or 'every 30 days')")
+    return {"mode":mode,"expression":expression,"timezone":timezone,"source":source,"notes":notes}
+
 def upsert(args):
     base = ROOT/"instances"/args.business_id
     if not base.exists():
@@ -114,14 +134,14 @@ def upsert(args):
         obj["source_reference"] = ref
     else:
         obj = {
-            "id":profile_id,"object_type":"SourceProfile","schema_version":"1.1.0",
+            "id":profile_id,"object_type":"SourceProfile","schema_version":"1.2.0",
             "business_id":args.business_id,"created_at":ts,"updated_at":ts,"lineage":[],
             "source_reference":ref,"display_name":None,"source_kind":"other","owner_systems":[],
             "topic_tags":[],"watch_status":"candidate","attention_priority":"medium",
             "discovery_reason":None,"commercial_context":None,
             "subject_key":None,"subject_name":None,"subject_kind":None,"subject_aliases":[],
             "subject_relationships":[],"source_modalities":[],"monitoring_questions":[],
-            "material_change_signals":[],"last_material_change_at":None,
+            "material_change_signals":[],"monitoring_cadence":None,"last_material_change_at":None,
             "fact_type_assessments":[],"last_checked_at":None,"next_check_at":None,
             "extensions":{"external_learning":{"outcome_events":[]}}
         }
@@ -129,7 +149,7 @@ def upsert(args):
     for key, default in {
         "subject_key":None,"subject_name":None,"subject_kind":None,"subject_aliases":[],
         "subject_relationships":[],"source_modalities":[],"monitoring_questions":[],
-        "material_change_signals":[],"last_material_change_at":None
+        "material_change_signals":[],"monitoring_cadence":None,"last_material_change_at":None
     }.items():
         obj.setdefault(key, default)
 
@@ -149,6 +169,7 @@ def upsert(args):
     if args.source_modality: obj["source_modalities"] = _merge_unique(obj.get("source_modalities"), args.source_modality)
     if args.monitoring_question: obj["monitoring_questions"] = _merge_unique(obj.get("monitoring_questions"), args.monitoring_question)
     if args.material_change_signal: obj["material_change_signals"] = _merge_unique(obj.get("material_change_signals"), args.material_change_signal)
+    obj["monitoring_cadence"] = _cadence_from_args(args,obj.get("monitoring_cadence"))
     if args.last_material_change_at is not None: obj["last_material_change_at"] = args.last_material_change_at
     if args.last_checked_at is not None: obj["last_checked_at"] = args.last_checked_at
     if args.next_check_at is not None: obj["next_check_at"] = args.next_check_at
@@ -176,7 +197,7 @@ def upsert(args):
     return path,obj
 
 def main():
-    p=argparse.ArgumentParser(description="Create/update a SourceProfile. Source history changes discovery attention only; subject/watch history guides research attention and never proves a current claim.")
+    p=argparse.ArgumentParser(description="Create/update a SourceProfile. Source history changes discovery attention only; subject/watch history guides research attention and never proves a current claim. Monitoring cadence is semantic intent, not proof of an active scheduler binding.")
     p.add_argument("business_id")
     p.add_argument("--source-reference",required=True)
     p.add_argument("--display-name")
@@ -195,6 +216,12 @@ def main():
     p.add_argument("--source-modality",action="append",choices=sorted(SOURCE_MODALITIES))
     p.add_argument("--monitoring-question",action="append")
     p.add_argument("--material-change-signal",action="append")
+    p.add_argument("--cadence-mode",choices=sorted(CADENCE_MODES))
+    p.add_argument("--cadence-expression")
+    p.add_argument("--cadence-timezone")
+    p.add_argument("--cadence-source",choices=sorted(CADENCE_SOURCES))
+    p.add_argument("--cadence-notes")
+    p.add_argument("--replace-user-cadence",action="store_true",help="Allow replacement of an existing user-specified cadence only when the current explicit user instruction authorizes it.")
     p.add_argument("--last-material-change-at")
     p.add_argument("--last-checked-at")
     p.add_argument("--next-check-at")
@@ -207,7 +234,7 @@ def main():
         path,obj=upsert(args)
     except ValueError as e:
         raise SystemExit(str(e))
-    print(json.dumps({"path":str(path.relative_to(ROOT)),"id":obj["id"],"watch_status":obj["watch_status"],"attention_priority":obj["attention_priority"],"subject_key":obj.get("subject_key")},indent=2))
+    print(json.dumps({"path":str(path.relative_to(ROOT)),"id":obj["id"],"watch_status":obj["watch_status"],"attention_priority":obj["attention_priority"],"subject_key":obj.get("subject_key"),"monitoring_cadence":obj.get("monitoring_cadence"),"next_check_at":obj.get("next_check_at"),"schedule_execution":"not represented here; verify environment scheduler binding separately"},indent=2))
 
 if __name__=="__main__":
     main()
