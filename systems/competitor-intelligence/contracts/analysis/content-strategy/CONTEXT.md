@@ -1,7 +1,7 @@
 ---
 id: competitor.analysis.content-strategy
 type: playbook
-version: 1.8.0
+version: 1.9.0
 owner_system: competitor-intelligence
 risk: low
 autonomy_ceiling: 4
@@ -30,6 +30,12 @@ capabilities:
   - public_comment.read
   - community.read
   - news.read
+  - media.video.acquire
+  - media.transcript.acquire
+  - media.metadata.inspect
+  - media.video.process
+  - media.audio.extract
+  - media.frame.extract
 events:
   consumes:
   - none
@@ -55,8 +61,8 @@ Improve competitive decisions through evidence-backed competitor content strateg
 Run when a decision requires current competitor content strategy and canonical competitor intelligence is missing, stale, contradictory, or insufficiently specific.
 
 ## Process
-1. [INTEGRATION] Inventory recent representative content across owned channels and major distribution surfaces, reusing resolved SourceProfiles/subject identity where available.
-2. [HYBRID] Inspect the modalities that actually carry each representative item's mechanism. This may include article/page text, image/carousel composition, video visuals and spoken transcript, audio/podcast segments, thumbnails, demonstrations, captions/descriptions, comments, or linked pages. Record transcript-only, sampled-frame, inaccessible-comment, or other material acquisition limits.
+1. [INTEGRATION] Inventory recent representative content across owned channels and major distribution surfaces, reusing resolved SourceProfiles/subject identity where available. If material public video/audio cannot be accessed through the native host, inspect trusted optional local media capabilities before settling for a weaker fallback; installing/updating/repairing system tools remains separately authorized.
+2. [HYBRID] Inspect the modalities that actually carry each representative item's mechanism. This may include article/page text, image/carousel composition, video visuals and spoken transcript, audio/podcast segments, thumbnails, demonstrations, captions/descriptions, comments, or linked pages. Acquisition/frame/audio/transcode tools provide deterministic mechanics, not semantic understanding. Record transcript-only, sampled-frame, inaccessible-comment, or other material acquisition limits.
 3. [DETERMINISTIC] Classify format, topic, audience/awareness/funnel role, publish date, platform, CTA, and observable engagement/discovery data; preserve source/time/frame/page evidence for material examples.
 4. [AI] Identify recurring narratives, teachings, series, content pillars, hooks, structures, proof/story devices, visual/audio mechanisms, unique evidence/assets, and distribution patterns.
 5. [HYBRID] Separate SEO-driven, social/community, thought-leadership, product, and commercial content roles where evidence supports it; do not infer a funnel role solely from format/platform.
