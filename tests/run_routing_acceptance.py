@@ -40,6 +40,8 @@ FEATURE_CASES=[
  ("Don't alert me unless something materially changes.",'core.intelligence.subject-monitoring'),
  ('Tell me after every check.','core.intelligence.subject-monitoring'),
  ('Keep this monitoring silent.','core.intelligence.subject-monitoring'),
+ ('Make this watch quiet.','core.intelligence.subject-monitoring'),
+ ('Monitoring for this subject should stay silent.','core.intelligence.subject-monitoring'),
  ('Make pricing monthly but hiring weekly.','core.intelligence.subject-monitoring'),
 ]
 
