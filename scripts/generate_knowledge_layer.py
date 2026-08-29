@@ -39,7 +39,50 @@ def _title(obj):
     return obj.get('object_type','Object')
 
 
-def _entry(obj,path):
+def _scheduler_bindings():
+    environment=installation().get('default_environment') or 'local'
+    try:path=environment_file(environment,'scheduler-bindings.json')
+    except Exception:return environment,[]
+    try:data=json.loads(path.read_text())
+    except Exception:return environment,[]
+    return environment,data.get('bindings',[]) or []
+
+
+def _matching_scheduler_bindings(obj,bindings):
+    out=[]
+    for b in bindings:
+        if b.get('business_id')!=obj.get('business_id'):continue
+        kind=b.get('target_kind')
+        if kind=='subject' and obj.get('subject_key') and b.get('subject_key')==obj.get('subject_key'):out.append(b)
+        elif kind=='source_profile' and b.get('source_profile_id')==obj.get('id'):out.append(b)
+        elif kind=='business_monitoring':out.append(b)
+    return out
+
+
+def _schedule_state(obj,bindings):
+    matched=_matching_scheduler_bindings(obj,bindings)
+    active=[b for b in matched if b.get('status')=='active' and b.get('last_verified_at')]
+    if any(b.get('executor_kind')!='reminder_only' for b in active):return 'active automatic',active
+    if any(b.get('executor_kind')=='reminder_only' for b in active):return 'reminder-only',active
+    if any(b.get('status')=='paused' for b in matched):return 'paused',matched
+    if obj.get('monitoring_cadence') or obj.get('next_check_at'):return 'planned / not automatically scheduled',matched
+    return 'manual',matched
+
+
+def _cadence_text(obj):
+    c=obj.get('monitoring_cadence')
+    if not c:return ''
+    expr=c.get('expression') or c.get('mode') or ''
+    src=c.get('source')
+    tz=c.get('timezone')
+    bits=[expr]
+    if src:bits.append(f'{src}')
+    if tz:bits.append(tz)
+    return ' · '.join(x for x in bits if x)
+
+
+def _entry(obj,path,bindings=None):
+    bindings=bindings or []
     oid=obj.get('id','(no id)'); typ=obj.get('object_type','Object'); title=_title(obj)
     lines=[f"### {title}",f"- **Type:** `{typ}`",f"- **ID:** `{oid}`"]
     for label,key in [('Owner','owner_system'),('Status','status'),('Maturity','maturity'),('Scope','owner_scope')]:
@@ -54,6 +97,9 @@ def _entry(obj,path):
         if obj.get('source_modalities'): lines.append(f"- **Modality:** {_clean(obj.get('source_modalities'),160)}")
         if obj.get('watch_status'): lines.append(f"- **Watch status:** `{_clean(obj.get('watch_status'),80)}`")
         if obj.get('attention_priority'): lines.append(f"- **Attention priority:** `{_clean(obj.get('attention_priority'),80)}`")
+        if _cadence_text(obj):lines.append(f"- **Cadence:** `{_clean(_cadence_text(obj),200)}`")
+        execution,matched=_schedule_state(obj,bindings);lines.append(f"- **Automatic execution:** `{execution}`")
+        if matched:lines.append(f"- **Scheduler binding(s):** {_clean([x.get('id') for x in matched],220)}")
         if obj.get('last_checked_at'): lines.append(f"- **Last checked:** `{_clean(obj.get('last_checked_at'),120)}`")
         if obj.get('next_check_at'): lines.append(f"- **Next check:** `{_clean(obj.get('next_check_at'),120)}`")
         if obj.get('last_material_change_at'): lines.append(f"- **Last material change:** `{_clean(obj.get('last_material_change_at'),120)}`")
@@ -63,6 +109,52 @@ def _entry(obj,path):
     for key,label in [('statement','Statement'),('conclusion','Conclusion'),('recommended_decision','Recommended decision'),('purpose','Purpose')]:
         if obj.get(key): lines += ['',f"**{label}:** {_clean(obj.get(key))}"]
     return '\n'.join(lines)+'\n'
+
+
+def _tracked_subjects(vals,bindings):
+    groups={}
+    for obj,path in vals:
+        key=obj.get('subject_key') or obj.get('id')
+        groups.setdefault(key,[]).append((obj,path))
+    blocks=[]
+    for key,items in sorted(groups.items(),key=lambda kv:(_title(kv[1][0][0]).lower(),kv[0])):
+        first=items[0][0];name=first.get('subject_name') or first.get('display_name') or key
+        kinds=sorted({x.get('subject_kind') for x,_ in items if x.get('subject_kind')})
+        rels=sorted({r for x,_ in items for r in (x.get('subject_relationships') or [])})
+        used=sorted({r for x,_ in items for r in (x.get('owner_systems') or [])})
+        questions=list(dict.fromkeys(q for x,_ in items for q in (x.get('monitoring_questions') or [])))
+        signals=list(dict.fromkeys(q for x,_ in items for q in (x.get('material_change_signals') or [])))
+        cadences=list(dict.fromkeys(_cadence_text(x) for x,_ in items if _cadence_text(x)))
+        last=max([x.get('last_checked_at') for x,_ in items if x.get('last_checked_at')],default=None)
+        nexts=sorted([x.get('next_check_at') for x,_ in items if x.get('next_check_at')]);next_check=nexts[0] if nexts else None
+        states=[];binding_ids=[]
+        for x,_ in items:
+            state,matched=_schedule_state(x,bindings);states.append(state);binding_ids += [b.get('id') for b in matched if b.get('id')]
+        if 'active automatic' in states:execution='active automatic'
+        elif 'reminder-only' in states:execution='reminder-only'
+        elif 'paused' in states:execution='paused'
+        elif any(s=='planned / not automatically scheduled' for s in states):execution='planned / not automatically scheduled'
+        else:execution='manual'
+        lines=[f"## {name}"]
+        if first.get('subject_key'):lines.append(f"- **Subject key:** `{first.get('subject_key')}`")
+        if kinds:lines.append(f"- **Kind:** {_clean(kinds,180)}")
+        if rels:lines.append(f"- **Relationship(s):** {_clean(rels,240)}")
+        if used:lines.append(f"- **Used by:** {_clean(used,240)}")
+        lines.append(f"- **Tracked sources/surfaces:** `{len(items)}`")
+        if cadences:lines.append(f"- **Cadence:** {_clean(cadences,300)}")
+        lines.append(f"- **Automatic execution:** `{execution}`")
+        if binding_ids:lines.append(f"- **Scheduler binding(s):** {_clean(sorted(set(binding_ids)),240)}")
+        if last:lines.append(f"- **Last checked:** `{last}`")
+        if next_check:lines.append(f"- **Next check:** `{next_check}`")
+        if questions:lines += ['',f"**Monitoring questions:** {_clean(questions,900)}"]
+        if signals:lines += ['',f"**Material-change signals:** {_clean(signals,900)}"]
+        lines += ['','**Sources / surfaces:**']
+        for obj,path in sorted(items,key=lambda x:(_title(x[0]).lower(),x[0].get('id',''))):
+            label=obj.get('display_name') or obj.get('source_reference') or obj.get('id')
+            modality=f" — {_clean(obj.get('source_modalities'),120)}" if obj.get('source_modalities') else ''
+            lines.append(f"- {_clean(label,220)}{modality} (`{obj.get('id')}`; `{storage_ref(path)}`)")
+        blocks.append('\n'.join(lines)+'\n')
+    return '\n'.join(blocks) if blocks else '_No current tracked subjects._\n'
 
 
 def _page_for(obj):
@@ -104,13 +196,14 @@ def generate(business_id):
     kbase.mkdir(parents=True,exist_ok=True);notes.mkdir(parents=True,exist_ok=True)
     if generated.exists(): shutil.rmtree(generated)
     generated.mkdir(parents=True)
-    ts=now(); grouped={name:[] for name,_ in PAGES}
+    ts=now(); grouped={name:[] for name,_ in PAGES};environment,bindings=_scheduler_bindings()
     objects=iter_instance_objects(business_id)
     for obj,path in objects: grouped[_page_for(obj)].append((obj,path))
     for name,description in PAGES:
         vals=sorted(grouped[name],key=lambda x:(x[0].get('object_type',''),_title(x[0]),x[0].get('id','')))
         body=_frontmatter(business_id,name,ts,len(vals))+f"# {name}\n\n{description}\n\n> Generated view only. Canonical AURA/BusinessOS truth remains under `instances/{business_id}/`. Human edits here may be overwritten.\n\n"
-        body += '\n'.join(_entry(obj,path) for obj,path in vals) if vals else '_No current canonical objects in this view._\n'
+        if name=='Tracked-Subjects':body += f"**Scheduler environment:** `{environment}`. Cadence/next-check is organizational intent; automatic execution is shown only when a verified environment binding exists.\n\n"+_tracked_subjects(vals,bindings)
+        else:body += '\n'.join(_entry(obj,path,bindings) for obj,path in vals) if vals else '_No current canonical objects in this view._\n'
         (generated/f'{name}.md').write_text(body)
     links='\n'.join(f"- [{name}](_generated/{name}.md) — {desc}" for name,desc in PAGES)
     home=_frontmatter(business_id,'Home',ts,len(objects))+f"# {business_id} — ViralTrac AURA Knowledge\n\nThis is the human-facing view of the active AURA workspace. It can be opened directly in Obsidian, VS Code, or any Markdown tool.\n\n**Canonical truth:** `instances/{business_id}/`  \n**Human notes:** `knowledge/{business_id}/notes/` (noncanonical until explicitly incorporated through AURA evidence/context governance)\n\n## Views\n{links}\n"
@@ -121,7 +214,7 @@ def generate(business_id):
     notes_readme=notes/'README.md'
     if not notes_readme.exists():
         notes_readme.write_text('# Human Notes\n\nWrite working notes here. These files are intentionally noncanonical. AURA must not treat a note as verified business truth merely because it exists in this folder.\n')
-    return {'business_id':business_id,'knowledge_root':str(kbase),'generated_root':str(generated),'canonical_object_count':len(objects),'pages':1+len(PAGES),'generated_at':ts}
+    return {'business_id':business_id,'knowledge_root':str(kbase),'generated_root':str(generated),'human_start':str(generated/'Home.md'),'tracked_subjects_view':str(generated/'Tracked-Subjects.md'),'canonical_object_count':len(objects),'pages':1+len(PAGES),'generated_at':ts}
 
 
 def main():
