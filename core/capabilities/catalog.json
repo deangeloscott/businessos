@@ -278,6 +278,34 @@
       "description": "Capture an allowed visual snapshot of a public webpage or public content item."
     },
     {
+      "id": "media.video.acquire",
+      "description": "Acquire permitted public or authorized video/audio media and associated metadata without bypassing access controls."
+    },
+    {
+      "id": "media.transcript.acquire",
+      "description": "Acquire available public or authorized captions/transcripts for evidence use while preserving source and modality limits."
+    },
+    {
+      "id": "media.metadata.inspect",
+      "description": "Inspect deterministic media/container/stream metadata without treating metadata as semantic visual/audio understanding."
+    },
+    {
+      "id": "media.video.process",
+      "description": "Perform deterministic local video mechanics such as clipping, transcoding, scaling, muxing, or format conversion."
+    },
+    {
+      "id": "media.audio.extract",
+      "description": "Extract or convert authorized audio from local/authorized media for downstream inspection or production."
+    },
+    {
+      "id": "media.frame.extract",
+      "description": "Extract representative frames or bounded visual samples from authorized video for downstream inspection."
+    },
+    {
+      "id": "automation.schedule.manage",
+      "description": "Create, inspect, update, pause, or disable an authorized host/OS/workflow schedule; schedule mechanics do not themselves execute or prove completion of AURA work."
+    },
+    {
       "id": "creative.avatar_video.generate",
       "description": "Generate an avatar-presented video from approved script, voice, and visual inputs."
     },

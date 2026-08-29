@@ -6,11 +6,12 @@ Use `python scripts/preflight_capabilities.py <business-id> <contract-id>`; it d
 
 For each required capability:
 1. First ensure host capability discovery has considered the tools actually visible in the current environment. Use an enabled discovered/existing permitted binding when available. If an already-authorized connected provider exposes machine-readable capabilities, refresh its current bindings before treating the capability as missing; connection alone is not proof that every provider surface is available.
-2. If no binding exists, resolve business → environment → distribution provider preference.
-3. A provider recommendation is not an active capability and does not authorize signup, purchase, connection, permissions, or data sharing. Obtain the applicable authorization or choose an allowed fallback.
-4. If no provider supplies the capability, preserve the required practitioner step through manual/assisted execution where possible.
-5. Optional capabilities may improve the job but do not block it. Resolve them only when useful.
+2. If no binding exists, resolve explicit business → environment → distribution provider preference.
+3. If no explicit provider preference resolves the need and a trusted optional local capability pack can supply it, inspect the pack. Bind a healthy existing tool without reinstalling it. Installing/upgrading/repairing system software requires explicit user authorization; use only the fixed product-owned recipe in `core/policies/local-capability-packs.md`.
+4. A provider/tool recommendation is not an active capability and does not authorize signup, purchase, connection, permissions, data sharing, or system software changes. Obtain the applicable authorization or choose an allowed fallback.
+5. If no provider/local tool supplies the capability, preserve the required practitioner step through manual/assisted execution where possible.
+6. Optional capabilities may improve the job but do not block it. Resolve them only when useful.
 
-Preflight results are execution guidance, not business evidence. Re-run preflight when a connection changes, a tool call shows the binding is no longer usable, or the job resumes in a different environment.
+Preflight results are execution guidance, not business evidence. Re-run preflight when a connection changes, a local pack is bound/updated, a tool call shows the binding is no longer usable, or the job resumes in a different environment.
 
 A missing capability must never cause the underlying business step to disappear. If neither automation nor a safe manual path can produce the required evidence/action, preserve the Run as blocked and make the missing dependency explicit.

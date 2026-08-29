@@ -159,6 +159,7 @@ Generated from contract frontmatter. Do not maintain a second manual list.
 - `core.monitoring.configure-reactive-monitoring` — Configure Reactive Monitoring: Prepare an active business to use a governed event/reaction plane for continuous BusinessOS evaluation without making live event delivery a hidden dependency.
 - `core.monitoring.diagnose-event-trace` — Diagnose Reactive Event Trace: Explain why an expected reactive BusinessOS path acted, declined, blocked, duplicated, degraded, or produced no outcome without guessing from event proximity.
 - `core.monitoring.react-to-business-event` — React to Governed Business Event: Turn an authorized business occurrence/event into a bounded BusinessOS evaluation trigger without treating event delivery as a command, action authorization, or proof of outcome.
+- `core.monitoring.status` — Review Monitoring Status: Give the user one understandable view of what AURA is monitoring, how often, what is due, how noisy each watch is intended to be, and whether recurring execution is actually active.
 - `core.opportunity.discover-next-best-work` — Discover Next Best Work: Translate a broad business goal or prioritization request into the highest-value next work supported by the **minimum sufficient evidence**.
 - `core.opportunity.qualify` — Qualify Opportunity: Turn domain diagnosis into a comparable, evidence-backed potential intervention.
 - `core.routing.resolve-intent` — Resolve User Intent: Interpret a natural-language business request when deterministic routing cannot identify a sufficiently confident direct job.

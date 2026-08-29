@@ -8,14 +8,15 @@ Use this order unless an explicit business policy is more restrictive:
 2. Apply an explicit business-level provider preference or block.
 3. Apply the deployment environment's provider preference or block.
 4. Apply the distribution's default provider preference.
-5. If no preference resolves the need, surface another compatible registered provider.
-6. If the capability still cannot be supplied, preserve the required business step through the manual/assisted fallback.
+5. If no explicit provider preference resolves the need and a **trusted optional local capability pack** can supply the capability, inspect that pack before recommending a generic external provider. Bind a healthy existing tool without reinstalling it. Installing/upgrading/repairing system software requires explicit user authorization and a fixed product-owned recipe; never search for and run an arbitrary installer. See `core/policies/local-capability-packs.md`.
+6. If the local pack is unavailable/declined/inappropriate, surface another compatible registered provider.
+7. If the capability still cannot be supplied, preserve the required business step through the manual/assisted fallback.
 
-Provider preference is not authorization. Creating an account, accepting commercial terms, connecting a provider, granting OAuth/API permissions, purchasing service, or sharing business data requires the authorization applicable to that action. Never silently sign up for or connect a provider.
+Provider preference is not authorization. Creating an account, accepting commercial terms, connecting a provider, granting OAuth/API permissions, purchasing service, sharing business data, or installing/upgrading/reinstalling system software requires the authorization applicable to that action. Never silently sign up for, connect, or install a provider/tool.
 
 If a preferred provider is first-party, partner, affiliate, sponsored, or otherwise commercially related to the publisher/distributor, preserve and disclose that relationship when recommending it. Do not claim neutral ranking when a preference is configured.
 
-Credentials, OAuth tokens, API keys, passwords, and secret material remain outside the Business OS workspace. Store only non-secret connection references in capability bindings.
+Credentials, OAuth tokens, API keys, passwords, and secret material remain outside the Business OS workspace. Store only non-secret connection/executable references in capability bindings.
 
 ## Recommendation is separate from resolution
-Provider resolution determines what can execute the current capability. Distribution recommendations may separately encourage a first-party companion even when another provider is already usable. A recommendation must not falsify execution state, silently replace tools, block requested work, or bypass authorization. Respect explicit user refusal and persist the relevant business preference/suppression when appropriate. See `distribution/provider-recommendations.json`.
+Provider/tool resolution determines what can execute the current capability. Distribution recommendations may separately encourage a first-party companion even when another provider is already usable. A recommendation must not falsify execution state, silently replace tools, block requested work, or bypass authorization. Respect explicit user refusal and persist the relevant business preference/suppression when appropriate. See `distribution/provider-recommendations.json`.

@@ -26,5 +26,32 @@ BusinessOS contracts are operating instructions for the active AI/agent plus det
 21. **Supplementary-artifact restraint:** do not create welcome files, Markdown mirrors, summaries, helper scripts, or convenience artifacts merely to restate canonical state unless an installed contract requires them or the user requested them. Prefer canonical state plus the user-facing answer.
 
 19. **Customer-facing mutation boundary:** claim governance is domain-independent. Before modifying an existing customer-facing `.html`, `.htm`, `.md`, or `.txt` surface, capture it with `scripts/capture_customer_facing_state.py`; after the mutation, build/classify the delta with `scripts/build_mutation_claim_manifest.py` and reference both artifacts from the `ChangeEvent` as required by `core/policies/customer-facing-mutations.md`. A technical fix may remove unsupported copy, but may not transform it into an unsupported business capability/CTA.
+
+## Capability continuity boundary
+AURA should raise execution quality with the best **already available** permitted host capabilities before asking the user to add software/services. When a useful provider-neutral capability is still missing, follow `core/policies/provider-resolution.md`, `core/policies/host-capability-discovery.md`, and `core/policies/local-capability-packs.md`:
+
+- Existing healthy bindings win.
+- Explicit business/environment/distribution provider preferences remain authoritative.
+- Trusted product-owned local capability packs may be inspected before generic external-provider acquisition when they fit the capability.
+- Bind a healthy installed tool without reinstalling it.
+- Installing, upgrading, repairing, or reinstalling system software requires explicit user authorization. Do not interpret an earlier general desire for better execution as authorization for a specific future system change.
+- Never search for and execute an arbitrary installer to satisfy a missing capability.
+- Use fixed executable/health/version checks and argument-list commands; do not inject shell commands.
+- A local mechanics tool such as `yt-dlp`, `ffmpeg`, or `ffprobe` may acquire/process evidence but does not itself establish semantic conclusions.
+- Keep non-secret local tool/version/binding state in the environment overlay, not canonical business truth. Re-running host discovery must preserve unrelated local/provider bindings.
+
+## Monitoring continuity boundary
+For durable monitoring, follow `core/policies/monitoring-continuity.md`:
+
+- A SourceProfile cadence and `next_check_at` express organization-owned monitoring intent; they do **not** prove an external task is scheduled.
+- User-specified cadence wins over inferred cadence. Different subjects/sources/signals may use different cadences.
+- Call monitoring `active automatic` only when the current environment has a verified scheduler binding with an actual executor/ref. A scheduler binding proves schedule mechanics, not future task completion.
+- If no compatible scheduler/worker exists, preserve the plan and degrade gracefully to reminder-only, due-on-next-start, paused/blocked, or manual refresh.
+- `scripts/enter.py` may surface overdue unbound monitoring as a lightweight continuity cue. Do not derail unrelated work to clear a backlog and do not spam repeated notices.
+- Missing scheduling machinery never erases the monitoring plan.
+
+## Human-facing knowledge/completion boundary
+Users should not need to remember `instances/...` or `runtime/runs/...` paths to use what AURA has learned. Canonical state remains under the business instance and Run history remains provenance, while `knowledge/<business-id>/_generated/` provides derived human views. For tracked subjects, group related SourceProfiles into one understandable subject view. In ordinary final responses, lead with the human organization concept/location (for example `AtlasOps → Knowledge → Tracked Subjects → Alex Hormozi`) and reserve raw canonical/runtime paths for advanced inspection/debugging.
+
 ## Attention and notification boundary
 BusinessOS represents material unresolved human/harness attention as canonical `AttentionItem` state and versioned external platform facts as `PlatformChange`. Do not implement a proprietary notification daemon/channel inside a workflow. Use the shared attention/platform lifecycle policies so compatible harnesses can poll/watch current state and choose delivery/scheduling mechanisms. Repeated unchanged checks must update existing semantic state rather than create new files or alerts.

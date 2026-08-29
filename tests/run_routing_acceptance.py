@@ -4,6 +4,7 @@ import sys
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'scripts'))
 from route_task import route
+from route_and_resolve import route_and_resolve
 
 CASES=[
  ('Create a webinar.','marketing.assets.webinar'),
@@ -30,6 +31,19 @@ CASES=[
  ('Analyze lost deals','customer.analysis.win-loss'),
  ('Help me figure out what to improve','core.routing.resolve-intent'),
 ]
+FEATURE_CASES=[
+ ('What are you monitoring for us?','core.monitoring.status'),
+ ('Show me our recurring checks and what is due.','core.monitoring.status'),
+ ('Review our monitoring schedule.','core.monitoring.status'),
+ ('Pause the Hormozi watch.','core.intelligence.subject-monitoring'),
+ ('Only notify me when something materially changes.','core.intelligence.subject-monitoring'),
+ ("Don't alert me unless something materially changes.",'core.intelligence.subject-monitoring'),
+ ('Tell me after every check.','core.intelligence.subject-monitoring'),
+ ('Keep this monitoring silent.','core.intelligence.subject-monitoring'),
+ ('Make this watch quiet.','core.intelligence.subject-monitoring'),
+ ('Monitoring for this subject should stay silent.','core.intelligence.subject-monitoring'),
+ ('Make pricing monthly but hiring weekly.','core.intelligence.subject-monitoring'),
+]
 
 def main():
     failures=[]
@@ -37,10 +51,15 @@ def main():
         rows=route(text)
         got=rows[0].get('contract_id') if rows else None
         if got!=expected: failures.append((text,expected,got))
+    for text,expected in FEATURE_CASES:
+        try:got=route_and_resolve(text).get('contract_id')
+        except Exception as e:got=f'ERROR:{e}'
+        if got!=expected:failures.append((text,expected,got))
     if failures:
         for text,expected,got in failures:
             print(f'FAIL: {text!r}: expected {expected}, got {got}')
         raise SystemExit(1)
-    print(f'routing acceptance passed: {len(CASES)}/{len(CASES)}')
+    total=len(CASES)+len(FEATURE_CASES)
+    print(f'routing acceptance passed: {total}/{total}')
 
 if __name__=='__main__': main()
