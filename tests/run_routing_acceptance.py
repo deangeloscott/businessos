@@ -37,6 +37,9 @@ FEATURE_CASES=[
  ('Review our monitoring schedule.','core.monitoring.status'),
  ('Pause the Hormozi watch.','core.intelligence.subject-monitoring'),
  ('Only notify me when something materially changes.','core.intelligence.subject-monitoring'),
+ ("Don't alert me unless something materially changes.",'core.intelligence.subject-monitoring'),
+ ('Tell me after every check.','core.intelligence.subject-monitoring'),
+ ('Keep this monitoring silent.','core.intelligence.subject-monitoring'),
  ('Make pricing monthly but hiring weekly.','core.intelligence.subject-monitoring'),
 ]
 
