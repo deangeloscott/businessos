@@ -24,6 +24,7 @@ PRIORITY_TYPES={'Objective','Opportunity','Initiative','WorkRequest','AttentionI
 EXPERIMENT_TYPES={'Experiment','OutcomeEvaluation','MetricDefinition','MetricObservation'}
 OPERATIONS_TYPES={'ActionPacket','Approval','Incident','ChangeEvent','VerificationRecord','WorkRequest','AttentionItem','EventReactionDecision','PlatformChange'}
 EVIDENCE_TYPES={'SourceRecord','SourceProfile','Observation','Insight','ProofRecord'}
+DEFAULT_NOTIFICATION='material_changes_only'
 
 
 def _clean(value,limit=700):
@@ -65,7 +66,7 @@ def _schedule_state(obj,bindings):
     if any(b.get('executor_kind')!='reminder_only' for b in active):return 'active automatic',active
     if any(b.get('executor_kind')=='reminder_only' for b in active):return 'reminder-only',active
     if any(b.get('status')=='paused' for b in matched):return 'paused',matched
-    if obj.get('monitoring_cadence') or obj.get('next_check_at'):return 'planned / not automatically scheduled',matched
+    if obj.get('monitoring_cadence') or obj.get('monitoring_signal_cadences') or obj.get('next_check_at'):return 'planned / not automatically scheduled',matched
     return 'manual',matched
 
 
@@ -79,6 +80,21 @@ def _cadence_text(obj):
     if src:bits.append(f'{src}')
     if tz:bits.append(tz)
     return ' · '.join(x for x in bits if x)
+
+
+def _notification_text(obj):
+    n=obj.get('monitoring_notification') or {}
+    mode=n.get('mode') or DEFAULT_NOTIFICATION
+    src=n.get('source') or 'policy default'
+    return f'{mode} · {src}'
+
+
+def _signal_cadence_text(row):
+    bits=[row.get('signal') or '(unnamed signal)',row.get('expression') or row.get('mode')]
+    if row.get('notification_mode'):bits.append(f"notify={row['notification_mode']}")
+    if row.get('next_check_at'):bits.append(f"next={row['next_check_at']}")
+    if row.get('source'):bits.append(row['source'])
+    return ' · '.join(str(x) for x in bits if x)
 
 
 def _entry(obj,path,bindings=None):
@@ -97,7 +113,10 @@ def _entry(obj,path,bindings=None):
         if obj.get('source_modalities'): lines.append(f"- **Modality:** {_clean(obj.get('source_modalities'),160)}")
         if obj.get('watch_status'): lines.append(f"- **Watch status:** `{_clean(obj.get('watch_status'),80)}`")
         if obj.get('attention_priority'): lines.append(f"- **Attention priority:** `{_clean(obj.get('attention_priority'),80)}`")
-        if _cadence_text(obj):lines.append(f"- **Cadence:** `{_clean(_cadence_text(obj),200)}`")
+        if _cadence_text(obj):lines.append(f"- **Default cadence:** `{_clean(_cadence_text(obj),200)}`")
+        lines.append(f"- **Notification mode:** `{_clean(_notification_text(obj),200)}`")
+        if obj.get('monitoring_signal_cadences'):
+            lines += ['', '**Signal-specific cadence:**']+[f"- {_clean(_signal_cadence_text(x),500)}" for x in obj.get('monitoring_signal_cadences') or []]
         execution,matched=_schedule_state(obj,bindings);lines.append(f"- **Automatic execution:** `{execution}`")
         if matched:lines.append(f"- **Scheduler binding(s):** {_clean([x.get('id') for x in matched],220)}")
         if obj.get('last_checked_at'): lines.append(f"- **Last checked:** `{_clean(obj.get('last_checked_at'),120)}`")
@@ -125,8 +144,12 @@ def _tracked_subjects(vals,bindings):
         questions=list(dict.fromkeys(q for x,_ in items for q in (x.get('monitoring_questions') or [])))
         signals=list(dict.fromkeys(q for x,_ in items for q in (x.get('material_change_signals') or [])))
         cadences=list(dict.fromkeys(_cadence_text(x) for x,_ in items if _cadence_text(x)))
+        notifications=list(dict.fromkeys(_notification_text(x) for x,_ in items))
+        signal_cadences=list(dict.fromkeys(_signal_cadence_text(s) for x,_ in items for s in (x.get('monitoring_signal_cadences') or [])))
         last=max([x.get('last_checked_at') for x,_ in items if x.get('last_checked_at')],default=None)
-        nexts=sorted([x.get('next_check_at') for x,_ in items if x.get('next_check_at')]);next_check=nexts[0] if nexts else None
+        next_values=[x.get('next_check_at') for x,_ in items if x.get('next_check_at')]
+        next_values += [s.get('next_check_at') for x,_ in items for s in (x.get('monitoring_signal_cadences') or []) if s.get('next_check_at')]
+        nexts=sorted(next_values);next_check=nexts[0] if nexts else None
         states=[];binding_ids=[]
         for x,_ in items:
             state,matched=_schedule_state(x,bindings);states.append(state);binding_ids += [b.get('id') for b in matched if b.get('id')]
@@ -141,11 +164,13 @@ def _tracked_subjects(vals,bindings):
         if rels:lines.append(f"- **Relationship(s):** {_clean(rels,240)}")
         if used:lines.append(f"- **Used by:** {_clean(used,240)}")
         lines.append(f"- **Tracked sources/surfaces:** `{len(items)}`")
-        if cadences:lines.append(f"- **Cadence:** {_clean(cadences,300)}")
+        if cadences:lines.append(f"- **Default cadence:** {_clean(cadences,300)}")
+        if notifications:lines.append(f"- **Notification mode(s):** {_clean(notifications,300)}")
         lines.append(f"- **Automatic execution:** `{execution}`")
         if binding_ids:lines.append(f"- **Scheduler binding(s):** {_clean(sorted(set(binding_ids)),240)}")
         if last:lines.append(f"- **Last checked:** `{last}`")
         if next_check:lines.append(f"- **Next check:** `{next_check}`")
+        if signal_cadences:lines += ['','**Signal-specific cadence:**']+[f"- {_clean(x,700)}" for x in signal_cadences]
         if questions:lines += ['',f"**Monitoring questions:** {_clean(questions,900)}"]
         if signals:lines += ['',f"**Material-change signals:** {_clean(signals,900)}"]
         lines += ['','**Sources / surfaces:**']
@@ -202,7 +227,8 @@ def generate(business_id):
     for name,description in PAGES:
         vals=sorted(grouped[name],key=lambda x:(x[0].get('object_type',''),_title(x[0]),x[0].get('id','')))
         body=_frontmatter(business_id,name,ts,len(vals))+f"# {name}\n\n{description}\n\n> Generated view only. Canonical AURA/BusinessOS truth remains under `instances/{business_id}/`. Human edits here may be overwritten.\n\n"
-        if name=='Tracked-Subjects':body += f"**Scheduler environment:** `{environment}`. Cadence/next-check is organizational intent; automatic execution is shown only when a verified environment binding exists.\n\n"+_tracked_subjects(vals,bindings)
+        if name=='Tracked-Subjects':
+            body += f"**Scheduler environment:** `{environment}`. Cadence/next-check is organizational intent; automatic execution is shown only when a verified environment binding exists. Monitoring is quiet by default (`material_changes_only`) unless the user changes it.\n\nAsk AURA normally to review or change monitoring, for example: _What are you monitoring?_, _Make pricing monthly but hiring weekly_, _Only tell me when something materially changes_, or _Pause this watch_.\n\n"+_tracked_subjects(vals,bindings)
         else:body += '\n'.join(_entry(obj,path,bindings) for obj,path in vals) if vals else '_No current canonical objects in this view._\n'
         (generated/f'{name}.md').write_text(body)
     links='\n'.join(f"- [{name}](_generated/{name}.md) — {desc}" for name,desc in PAGES)
