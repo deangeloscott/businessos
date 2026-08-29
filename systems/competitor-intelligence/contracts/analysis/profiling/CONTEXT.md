@@ -1,12 +1,13 @@
 ---
 id: competitor.analysis.profiling
 type: playbook
-version: 1.7.0
+version: 1.8.0
 owner_system: competitor-intelligence
 risk: low
 autonomy_ceiling: 4
 reads:
 - Competitor
+- SourceProfile
 - type: Insight
   owner_system: customer-intelligence
 - Observation
@@ -21,10 +22,14 @@ capabilities:
   optional:
   - webpage.snapshot
   - webpage.compare
+  - webpage.screenshot
   - advertising.observe
   - review.read
   - crm.opportunity.read
   - social.observe
+  - creator_content.observe
+  - public_comment.read
+  - document.read
   - crawler.run
   - community.read
   - news.read
@@ -50,19 +55,20 @@ subcontracts:
 # Competitor Profile
 
 ## Purpose
-Build a current evidence-backed competitor state without turning the summary object into a copy of raw evidence.
+Build a current evidence-backed competitor state across the source modalities relevant to the decision without turning the summary object into a copy of raw evidence.
 
 ## Business Outcome
-Improve competitive decisions through evidence-backed competitor profile, without mistaking observed activity for proven effectiveness.
+Improve competitive decisions through an evidence-backed competitor profile that can evolve over time, without mistaking observed activity for proven effectiveness.
 
 ## Run When
 Run when a decision requires current competitor profile and canonical competitor intelligence is missing, stale, contradictory, or insufficiently specific.
 
 ## Process
-1. [INTEGRATION] Retrieve current authoritative competitor-owned product/service, pricing, offer, positioning, and company information plus relevant third-party evidence.
-2. [DETERMINISTIC] Snapshot/version important source pages and compare with prior state where available.
-3. [AI] Extract factual state separately from strategic interpretation; retain exact source references.
-4. [HYBRID] Reconcile conflicting sources by fact type, authority, freshness, and directness rather than defaulting to one source hierarchy.
-5. [AI] Summarize current products, audiences, positioning, offers, strengths/weaknesses hypotheses, and notable recent changes.
-6. [HYBRID] Attach confidence and unanswered questions to the Competitor record; keep detailed evidence in Observations/Insights.
-7. [DETERMINISTIC] Update last_reviewed and emit competitor.updated when material.
+1. [INTEGRATION] Retrieve current authoritative competitor-owned product/service, pricing, offer, positioning, company information, relevant public profiles, and useful third-party evidence. Reuse resolved SourceProfiles for this subject rather than recreating the source map.
+2. [HYBRID] Inspect the evidence modalities that materially carry the competitor signal. This may include webpages/documents, ads/images, video/audio/transcripts, social posts/comments, jobs/hiring pages, reviews, news, or structured records. Use native multimodal inspection when available; record limitations when a fallback representation was used.
+3. [DETERMINISTIC] Snapshot/version important source pages or bounded evidence and compare with prior state where available.
+4. [AI] Extract factual state separately from strategic interpretation; retain exact source references, timestamps/pages/frames where material, and acquisition limitations.
+5. [HYBRID] Reconcile conflicting sources by fact type, authority, freshness, and directness rather than defaulting to one source hierarchy.
+6. [AI] Summarize current products, audiences, positioning, offers, public operating signals, strengths/weaknesses hypotheses, and notable recent changes. Treat hiring, funding, partnerships, M&A, expansion, content/message shifts, or similar signals as evidence to interpret, not automatic proof of strategy.
+7. [HYBRID] Attach confidence and unanswered questions to the Competitor record; keep detailed evidence in Observations/Insights and broad market events with Industry Intelligence when appropriate.
+8. [DETERMINISTIC] Update last_reviewed and emit competitor.updated when material.

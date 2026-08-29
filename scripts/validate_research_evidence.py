@@ -12,7 +12,8 @@ PUBLIC_NARRATIVE_TYPES={
 # what was preserved. Search/snippet discovery can be stored, but cannot support material claims.
 DIRECT_ACQUISITION_METHODS={
     'direct_page_read','browser_read','browser_capture','api_response','downloaded_document',
-    'uploaded_document','user_provided','first_party_export','authoritative_record'
+    'uploaded_document','user_provided','first_party_export','authoritative_record',
+    'image_inspection','audio_inspection','video_inspection','transcript_read','document_visual_inspection'
 }
 DISCOVERY_ONLY_METHODS={
     'search_result','search_snippet','directory_preview','ai_summary','unvisited_url','unknown'
@@ -110,7 +111,7 @@ def evidence_errors(business_id):
 
 
 def main():
-    p=argparse.ArgumentParser(description='Validate semantic evidence support for researched SourceRecords, Observations, and supported/active Insights.')
+    p=argparse.ArgumentParser(description='Validate semantic evidence support for researched SourceRecords, Observations, and supported/active Insights across text, visual, audio, video, document, structured, and mixed-media evidence.')
     p.add_argument('business_id'); a=p.parse_args()
     errors,warnings=evidence_errors(a.business_id)
     print(f'business={a.business_id} research_evidence_errors={len(errors)} warnings={len(warnings)}')

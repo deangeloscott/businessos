@@ -1,7 +1,7 @@
 ---
 id: customer.analysis.decision-drivers
 type: playbook
-version: 1.3.0
+version: 1.4.0
 owner_system: customer-intelligence
 risk: low
 autonomy_ceiling: 2
@@ -31,19 +31,19 @@ context:
 # Customer Decision Driver Analysis
 
 ## Purpose
-Identify the factors that materially influence customer choice and how their importance varies by context.
+Identify the factors and evidence-backed motivations that materially influence customer choice and how their importance varies by context.
 
 ## Business Outcome
-Provide evidence-backed buying criteria and tradeoffs that improve marketing, sales, product, and customer decisions.
+Provide evidence-backed buying criteria, motivations, and tradeoffs that improve marketing, sales, product, and customer decisions without reducing customers to generic persuasion labels.
 
 ## Run When
-Run when the business needs to understand why customers choose, reject, switch, or delay.
+Run when the business needs to understand why customers choose, reject, switch, delay, expand, stay, or leave.
 
 ## Process
-1. [AI] Combine direct decision evidence from interviews, win/loss, sales conversations, reviews, and behavior where relevant.
-2. [AI] Separate stated preferences from factors demonstrably present in actual decisions.
-3. [AI] Identify triggers, must-haves, tradeoffs, proof requirements, alternatives, constraints, and disqualifiers.
-4. [DETERMINISTIC] Compare drivers across wins/losses, segments, journey stages, and deal/customer outcomes.
-5. [AI] Test competing explanations such as price, timing, fit, trust, risk, implementation, and status quo.
-6. [HYBRID] Scope each driver to the population/evidence that supports it and avoid universal ranking without evidence.
-7. [AI] Create/update Customer Insights with evidence links and downstream relevance signals.
+1. [AI] Combine direct decision evidence from interviews, win/loss, sales/support conversations, reviews, public discussion, and behavior where relevant.
+2. [AI] Separate stated preferences/language from factors demonstrably present in actual decisions and from analyst interpretation.
+3. [AI] Identify triggers, must-haves, tradeoffs, proof requirements, alternatives, constraints, disqualifiers, and the customer progress/job at stake.
+4. [DETERMINISTIC] Compare drivers across wins/losses, segments, awareness/knowledge states, journey/lifecycle stages, channels/situations, and deal/customer outcomes where evidence permits.
+5. [AI] Test competing explanations such as price, timing, fit, trust, risk, implementation, status quo, desired gain, loss avoidance, certainty/control, speed, simplicity/effort, financial outcome, status/identity, autonomy, belonging, or convenience. Treat these as evidence-tested mechanisms, not a checklist that must be filled.
+6. [HYBRID] Scope each driver/motivation to the population and evidence that support it; avoid universal ranking, personality profiling, or sensitive-trait inference.
+7. [AI] Create/update Customer Insights with evidence links, confidence/contradictions, applicable decision context, and downstream relevance signals.

@@ -10,6 +10,7 @@ TESTS=[
     'tests/run_distribution.py',
     'tests/run_routing_acceptance.py',
     'tests/run_ecosystem_intelligence.py',
+    'tests/run_intelligence_maturation.py',
     'tests/run_playbook_evolution_exchange.py',
     'tests/run_workspace_human_knowledge.py',
     'tests/run_workspace_migration_path_guard.py',

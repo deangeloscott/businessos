@@ -8,6 +8,7 @@ PAGES=[
     ('Priorities','Objectives, opportunities, initiatives, work requests and active attention.'),
     ('Learning','Current AURA/BusinessOS Learning and its maturity/status.'),
     ('Experiments','Experiments, outcome evaluations and measured learning state.'),
+    ('Tracked-Subjects','Public/authorized subjects and sources AURA is intentionally watching, why they matter, and current checkpoints.'),
     ('Customers','Customer Intelligence and customer-understanding state.'),
     ('Competitors','Competitor Intelligence state.'),
     ('Industry','Industry Intelligence state.'),
@@ -33,7 +34,7 @@ def _clean(value,limit=700):
 
 
 def _title(obj):
-    for key in ['name','title','statement','conclusion','task','display_name','id']:
+    for key in ['name','title','subject_name','statement','conclusion','task','display_name','id']:
         if obj.get(key): return _clean(obj[key],160)
     return obj.get('object_type','Object')
 
@@ -45,6 +46,20 @@ def _entry(obj,path):
         if obj.get(key) is not None: lines.append(f"- **{label}:** `{_clean(obj.get(key),120)}`")
     if obj.get('confidence') is not None: lines.append(f"- **Confidence:** `{obj.get('confidence')}`")
     lines.append(f"- **Canonical source:** `{storage_ref(path)}`")
+    if typ=='SourceProfile':
+        if obj.get('subject_kind'): lines.append(f"- **Subject kind:** `{_clean(obj.get('subject_kind'),120)}`")
+        if obj.get('subject_relationships'): lines.append(f"- **Relationship(s):** {_clean(obj.get('subject_relationships'),240)}")
+        if obj.get('owner_systems'): lines.append(f"- **Used by:** {_clean(obj.get('owner_systems'),240)}")
+        if obj.get('source_reference'): lines.append(f"- **Source/surface:** {_clean(obj.get('source_reference'),500)}")
+        if obj.get('source_modalities'): lines.append(f"- **Modality:** {_clean(obj.get('source_modalities'),160)}")
+        if obj.get('watch_status'): lines.append(f"- **Watch status:** `{_clean(obj.get('watch_status'),80)}`")
+        if obj.get('attention_priority'): lines.append(f"- **Attention priority:** `{_clean(obj.get('attention_priority'),80)}`")
+        if obj.get('last_checked_at'): lines.append(f"- **Last checked:** `{_clean(obj.get('last_checked_at'),120)}`")
+        if obj.get('next_check_at'): lines.append(f"- **Next check:** `{_clean(obj.get('next_check_at'),120)}`")
+        if obj.get('last_material_change_at'): lines.append(f"- **Last material change:** `{_clean(obj.get('last_material_change_at'),120)}`")
+        if obj.get('discovery_reason'): lines += ['',f"**Why AURA watches this:** {_clean(obj.get('discovery_reason'))}"]
+        if obj.get('monitoring_questions'): lines += ['',f"**Monitoring questions:** {_clean(obj.get('monitoring_questions'))}"]
+        if obj.get('material_change_signals'): lines += ['',f"**Material-change signals:** {_clean(obj.get('material_change_signals'))}"]
     for key,label in [('statement','Statement'),('conclusion','Conclusion'),('recommended_decision','Recommended decision'),('purpose','Purpose')]:
         if obj.get(key): lines += ['',f"**{label}:** {_clean(obj.get(key))}"]
     return '\n'.join(lines)+'\n'
@@ -53,6 +68,7 @@ def _entry(obj,path):
 def _page_for(obj):
     typ=obj.get('object_type'); owner=obj.get('owner_system')
     if typ=='Learning': return 'Learning'
+    if typ=='SourceProfile': return 'Tracked-Subjects'
     if typ in BUSINESS_TYPES:return 'Business'
     if typ in PRIORITY_TYPES:return 'Priorities'
     if typ in EXPERIMENT_TYPES:return 'Experiments'

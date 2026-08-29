@@ -20,6 +20,15 @@
     "attention_priority": {"enum":["low","medium","high"]},
     "discovery_reason": {"type":["string","null"]},
     "commercial_context": {"type":["string","null"]},
+    "subject_key": {"type":["string","null"],"minLength":1},
+    "subject_name": {"type":["string","null"]},
+    "subject_kind": {"type":["string","null"],"enum":["organization","person","brand","product","creator","publication","channel","platform","regulator","community","other",null]},
+    "subject_aliases": {"type":"array","items":{"type":"string","minLength":1},"uniqueItems":true},
+    "subject_relationships": {"type":"array","items":{"enum":["own_organization","competitor","substitute","partner","creator","thought_leader","publication","regulator","platform","vendor","benchmark","ecosystem_actor","monitored_subject","other"]},"uniqueItems":true},
+    "source_modalities": {"type":"array","items":{"enum":["text","image","audio","video","document","structured","mixed"]},"uniqueItems":true},
+    "monitoring_questions": {"type":"array","items":{"type":"string","minLength":1},"uniqueItems":true},
+    "material_change_signals": {"type":"array","items":{"type":"string","minLength":1},"uniqueItems":true},
+    "last_material_change_at": {"type":["string","null"],"format":"date-time"},
     "fact_type_assessments": {
       "type":"array",
       "items": {

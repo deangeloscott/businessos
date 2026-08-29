@@ -13,6 +13,7 @@ Figure out what the business needs, keep business facts organized, choose the ri
 - **[Refresh Human Knowledge Layer](../../core/contracts/knowledge/refresh-human-layer/CONTEXT.md)** — Generate a traceable Markdown/Obsidian-friendly human view from canonical BusinessOS state without creating a competing truth store.
 - **[Ingest Human Knowledge Note](../../core/contracts/knowledge/ingest-human-note/CONTEXT.md)** — Register a human-authored workspace note as noncanonical source material and route useful claims through normal evidence/context governance.
 - **[External Ecosystem Intelligence Radar](../../core/contracts/intelligence/ecosystem/radar/CONTEXT.md)** — Discover important external changes, tactics, findings, and signals; verify what is real and relevant; and route promising items to investigation, testing, or learning.
+- **[Durable Subject Monitoring](../../core/contracts/intelligence/subject-monitoring/CONTEXT.md)** — Build or refresh a durable evidence-based watch for a company, creator, public figure, publication, platform, product, regulator, own organization, or other relevant subject across appropriate sources and modalities.
 - **[Playbook Evolution and System Improvement](../../core/contracts/learning/playbook-evolution/CONTEXT.md)** — Turn strong reusable Learning into a governed business process extension, new local playbook, or canonical BusinessOS revision candidate without overgeneralizing evidence.
 - **[BusinessOS Innovation Exchange](../../core/contracts/intelligence/innovation-exchange/CONTEXT.md)** — Prepare, import, browse, and evaluate portable BusinessOS process innovations with explicit sharing consent and no required central service.
 - **[Community Innovation Evidence Review](../../core/contracts/intelligence/community-evidence-review/CONTEXT.md)** — Separate community reports from independent/local evidence and route promising innovations to test, adopt, or playbook evolution.
@@ -64,6 +65,7 @@ These are smaller, specific playbooks BusinessOS can use inside the larger jobs 
 
 - [BusinessOS Innovation Exchange](../../core/contracts/intelligence/innovation-exchange/CONTEXT.md) *(main entry playbook)*
 - [Community Innovation Evidence Review](../../core/contracts/intelligence/community-evidence-review/CONTEXT.md) *(main entry playbook)*
+- [Durable Subject Monitoring](../../core/contracts/intelligence/subject-monitoring/CONTEXT.md) *(main entry playbook)*
 - [Evaluate Cross-System Relevance](../../core/contracts/intelligence/evaluate-relevance/CONTEXT.md)
 - [External Ecosystem Intelligence Radar](../../core/contracts/intelligence/ecosystem/radar/CONTEXT.md) *(main entry playbook)*
 - [External Evidence Triangulation](../../core/contracts/intelligence/ecosystem/evidence-triangulation/CONTEXT.md)

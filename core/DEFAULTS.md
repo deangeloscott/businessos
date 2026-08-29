@@ -27,6 +27,14 @@ These rules apply to every contract unless a stricter business, system, family, 
 - Public/third-party research may use browser/crawl/email tools only within legitimate access and a truthful authorized research identity. Never fabricate identity, company facts, purchase intent, or authority to obtain restricted information.
 - Research source examples are non-exhaustive: use them to ensure coverage, not to prevent the agent from finding better sources.
 
+## Shared Intelligence
+- Follow `core/policies/intelligence-foundation.md` for multimodal evidence, subject/source tracking, contextual comparison, decision context, and human/machine legibility.
+- Treat text, webpages, documents, images, audio, video, transcripts, comments, and structured records as evidence modalities. Use the best available provider-neutral method and preserve acquisition limitations.
+- Reuse a resolved SourceProfile/subject watch instead of restarting from zero. Monitoring state belongs to the organization; no workflow may create a mandatory proprietary scheduler/daemon to make that state useful.
+- Choose comparison cohorts for the decision. Geography, scale, audience/offer overlap, market position, business model, and channel/surface may make different peers relevant to different questions.
+- Shared evidence mechanics do not transfer semantic ownership. Route customer, competitor, industry, search, content, persuasion, and journey interpretations to their existing owners.
+- Canonical JSON remains machine-authoritative. Human summaries/views should be traceable derivatives and should not become competing canonical state.
+
 ## Evidence and Uncertainty
 - Reuse current canonical intelligence before repeating research.
 - Never invent missing evidence. When evidence is insufficient, stale, biased, or contradictory, preserve the uncertainty and create or maintain the knowledge gap.

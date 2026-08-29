@@ -4,12 +4,12 @@ Generated from contract frontmatter. Do not maintain a second manual list.
 
 ## competitor-intelligence
 
-- `competitor.analysis.advertising` — Advertising Intelligence: Observe competitor paid creative/message patterns, destinations, and persistence across relevant public advertising surfaces without equating visibility with profitability.
+- `competitor.analysis.advertising` — Advertising Intelligence: Observe competitor paid creative/message patterns, destinations, persistence, and multimodal execution across relevant public advertising surfaces without equating visibility with profitability.
 - `competitor.analysis.benchmark` — Competitive Benchmark: Compare the business and competitors on decision-relevant dimensions using transparent measures.
 - `competitor.analysis.capability-comparison` — Competitor Capability Comparison: Compare product/service capabilities in the customer context that makes them valuable.
 - `competitor.analysis.competitive-implications` — Competitive Implication Analysis: Translate supported competitor changes and strengths/weaknesses into implications for this business without deciding foreign-domain actions.
 - `competitor.analysis.competitor-brief` — Current Competitor Brief: Assemble a concise current view of a priority competitor from canonical state and active Insights.
-- `competitor.analysis.content-strategy` — Competitor Content Strategy: Understand the narratives, topics, formats, cadence, distribution, and apparent audience role of competitor content.
+- `competitor.analysis.content-strategy` — Competitor Content Strategy: Understand the narratives, topics, formats, cadence, distribution, multimodal execution, and apparent audience role of competitor content.
 - `competitor.analysis.customer-sentiment` — Competitor Customer Sentiment: Understand what customers praise, dislike, expect, and compare about competitors.
 - `competitor.analysis.funnel-capture` — Competitor Funnel Capture: Experience and document the legitimately observable path a prospect can take through a competitor acquisition flow.
 - `competitor.analysis.funnel-comparison` — Competitor Funnel Comparison: Compare observed competitor funnels by customer path, persuasion, friction, qualification, and offer transition.
@@ -22,7 +22,7 @@ Generated from contract frontmatter. Do not maintain a second manual list.
 - `competitor.analysis.price-normalization` — Competitor Price Normalization: Convert observed competitor prices into comparable economic units without erasing meaningful packaging differences.
 - `competitor.analysis.pricing` — Pricing Intelligence: Track competitor price, pricing model, discount/commitment terms, and material pricing changes accurately.
 - `competitor.analysis.product-release` — Product & Release Intelligence: Track material competitor product/service launches, feature movement, deprecations, and delivery changes.
-- `competitor.analysis.profiling` — Competitor Profile: Build a current evidence-backed competitor state without turning the summary object into a copy of raw evidence.
+- `competitor.analysis.profiling` — Competitor Profile: Build a current evidence-backed competitor state across the source modalities relevant to the decision without turning the summary object into a copy of raw evidence.
 - `competitor.analysis.review-patterns` — Competitor Review Pattern Analysis: Analyze recurring competitor praise, complaints, expectations, and switching evidence from public/customer sources.
 - `competitor.analysis.strategic-change` — Strategic Change Detection: Determine whether multiple competitor observations indicate a meaningful shift rather than isolated execution noise.
 - `competitor.analysis.strategy-hypothesis` — Competitor Strategy Hypothesis: Infer a competitor’s likely strategic direction from multiple observable changes while preserving uncertainty.
@@ -30,7 +30,7 @@ Generated from contract frontmatter. Do not maintain a second manual list.
 - `competitor.analysis.tactic-mechanism` — Competitor Tactic Mechanism Extraction: Determine the plausible mechanism behind a competitor tactic and what parts may transfer to this business.
 - `competitor.analysis.tactic-validation` — Competitor Tactic Validation: Assess whether an observed competitor tactic has credible evidence of effectiveness before imitation.
 - `competitor.analysis.whitespace` — Competitive Whitespace Analysis: Identify customer needs, positions, offers, or market spaces that relevant competitors serve poorly.
-- `competitor.discovery.competitive-set` — Competitor Discovery: Identify actual direct, substitute, emerging, and attention competitors relevant to defined business decisions.
+- `competitor.discovery.competitive-set` — Competitor Discovery: Identify actual direct, substitute, emerging, attention, and decision-specific benchmark competitors relevant to defined business decisions.
 - `competitor.discovery.emerging-competitors` — Emerging Competitor Discovery: Detect new or previously peripheral alternatives becoming strategically relevant.
 - `competitor.discovery.entity-resolution` — Competitor Entity Resolution: Resolve domains, aliases, social/review/advertising profiles, and other public identities to the correct canonical competitor before evidence is merged.
 - `competitor.intelligence.ecosystem-radar` — Competitive Ecosystem Radar: Discover important competitor entrants, movements, tactics, and strategic signals while separating observed competitor behavior from unsupported claims that the behavior works.
@@ -52,7 +52,7 @@ Generated from contract frontmatter. Do not maintain a second manual list.
 - `content.intake.work-request` — Content Work Request Intake: Accept delegated content production while preserving the originating Opportunity and exact success criteria.
 - `content.intelligence.content-performance-analysis` — Content Performance Pattern Analysis: Learn which topics, formats, hooks, structures, depths, and creative mechanisms work for this business while separating content quality from distribution and commercial effects.
 - `content.intelligence.creative-pattern-extraction` — Creative Pattern Extraction: Extract the reusable mechanism behind strong content so the business can learn from it without imitating the source's protected expression, identity, or exact creative.
-- `content.intelligence.creator-monitoring` — Creator Content Monitoring: Monitor selected creators in similar and dissimilar niches for new content mechanisms, topics, and format shifts that can inform original business content.
+- `content.intelligence.creator-monitoring` — Creator Content Monitoring: Build and maintain a durable, cross-source understanding of selected creators/channels for content mechanisms, topics, teachings, messaging/style, offers, and meaningful shifts that can inform original business content.
 - `content.intelligence.cross-niche-pattern-transfer` — Cross-Niche Creative Pattern Transfer: Adapt a validated creative mechanism from another niche or category to the business's own audience and subject without copying the original content.
 - `content.intelligence.ecosystem-radar` — Content Ecosystem Radar: Discover emerging content formats, distribution behaviors, creator patterns, platform mechanics, and communication tactics, then distinguish fleeting attention from reusable content mechanisms.
 - `content.intelligence.performance-normalization` — Content Performance Normalization: Normalize observed content performance so unusually large distribution or creator baseline does not masquerade as creative effectiveness.
@@ -108,7 +108,7 @@ Generated from contract frontmatter. Do not maintain a second manual list.
 - `content.research.research-plan` — Content Research Plan: Determine what additional factual/contextual research is required to create an accurate, useful asset after reusing existing intelligence.
 - `content.research.source-support` — Content Source & Evidence Support: Fill source/evidence gaps needed to communicate an already valid idea accurately without recreating broad customer/competitor/industry research.
 - `content.strategy.angle` — Angle Development: Find the most useful/interesting truthful framing of an idea for the defined audience and objective.
-- `content.strategy.audience-context` — Content Audience and Consumption Context: Define who is consuming the content, what state they are in, and how the platform/medium changes what will work.
+- `content.strategy.audience-context` — Content Audience and Consumption Context: Define who is consuming the content, what state they are in, what the asset needs to accomplish, and how the platform/medium changes what will work.
 - `content.strategy.core-message` — Content Core Message: Distill the source intelligence into the single central idea the audience should retain.
 - `content.strategy.desired-action` — Content Desired Action: Define the appropriate next behavior or takeaway for content based on its communication objective.
 - `content.strategy.evidence-proof-plan` — Content Evidence and Proof Plan: Match material factual claims and illustrative examples to appropriate sources and ProofRecords before production.
@@ -137,7 +137,7 @@ Generated from contract frontmatter. Do not maintain a second manual list.
 - `core.intelligence.community-evidence-review` — Community Innovation Evidence Review: Evaluate accumulated BusinessOS community contributions and local replications as evidence, not popularity, then decide whether an innovation should be ignored, watched, investigated, tested, adopted locally, or proposed for broader playbook evolution.
 - `core.intelligence.ecosystem-radar` — External Ecosystem Intelligence Radar: Run one governed external-learning cycle that discovers meaningful outside developments, verifies what the evidence actually supports, and routes only relevant findings to their canonical domain owners.
 - `core.intelligence.ecosystem.evidence-triangulation` — External Evidence Triangulation: Determine what a material external claim or signal is actually supported by after tracing provenance, independent corroboration, contradiction, freshness, novelty, methodology, and alternative explanations.
-- `core.intelligence.ecosystem.maintain-source-profile` — Maintain External Source Profile: Maintain business-scoped source watch history that improves future discovery attention without turning reputation or popularity into evidence.
+- `core.intelligence.ecosystem.maintain-source-profile` — Maintain External Source Profile: Maintain business-scoped source/watch history and optional resolved-subject grouping that improves future research attention without turning reputation or popularity into evidence.
 - `core.intelligence.ecosystem.route-learning` — Route External Evidence to Action or Learning: Turn a triangulated external finding into the smallest justified next state without confusing interesting evidence with authorization, business applicability, or proven causal value.
 - `core.intelligence.ecosystem.source-discovery` — External Source and Signal Discovery: Find current decision-relevant external signals through multiple discovery paths so BusinessOS is neither trapped in a fixed watchlist nor reduced to generic keyword search.
 - `core.intelligence.evaluate-relevance` — Evaluate Cross-System Relevance: Determine whether a newly published Insight materially intersects a specialized system without launching expensive work by default.
@@ -147,8 +147,9 @@ Generated from contract frontmatter. Do not maintain a second manual list.
 - `core.intelligence.record-platform-change` — Record Verified Platform Change: Maintain current verified platform/topic state independently from BusinessOS software releases.
 - `core.intelligence.register-proof` — Register Reusable Proof: Turn direct evidence into one reusable ProofRecord without overstating what the evidence proves or losing source, permission, and usage constraints.
 - `core.intelligence.request-refresh` — Request Intelligence Refresh: Ask the canonical semantic owner to refresh stale, incomplete, contradictory, or insufficiently specific intelligence instead of building a duplicate research store.
+- `core.intelligence.subject-monitoring` — Durable Subject Monitoring: Create or refresh a bounded, organization-owned watch for a decision-relevant public/authorized subject across one or more evidence surfaces while keeping domain interpretation with the existing semantic owner.
 - `core.knowledge.ingest-human-note` — Ingest Human Knowledge Note: Bring a human-authored Markdown/text note into BusinessOS as provenance-backed source material without assuming the note is verified canonical business truth.
-- `core.knowledge.refresh-human-layer` — Refresh Human Knowledge Layer: Generate an easy-to-browse Markdown view of canonical BusinessOS state for humans without creating a second source of truth.
+- `core.knowledge.refresh-human-layer` — Refresh Human Knowledge Layer: Generate an easy-to-browse Markdown view of canonical BusinessOS state—including durable tracked subjects/sources—for humans without creating a second source of truth.
 - `core.learning.adopt-process-extension` — Adopt Business Process Extension: Apply an explicitly approved business-scoped PlaybookEvolutionProposal as a reversible ProcessExtension without modifying the canonical BusinessOS source tree.
 - `core.learning.playbook-evolution` — Playbook Evolution and System Improvement: Turn sufficiently strong reusable Learning into the narrowest justified operating-process improvement without converting one successful result into universal BusinessOS behavior.
 - `core.learning.promote-learning` — Promote Learning: Turn repeated or sufficiently strong outcome evidence into scoped future decision guidance and, when justified, a candidate operating-process improvement.
@@ -169,7 +170,7 @@ Generated from contract frontmatter. Do not maintain a second manual list.
 - `customer.analysis.before-after-proof` — Before/After and Proof Extraction: Extract credible proof, testimonial language, and before/after states from customer evidence without exaggerating the customer's actual experience.
 - `customer.analysis.buying-criteria` — Buying Criteria & Trigger Analysis: Determine which criteria and events materially shape customer decisions.
 - `customer.analysis.churn` — Churn Reason Analysis: Understand customer-stated and evidenced reasons for leaving without conflating correlation with customer motivation.
-- `customer.analysis.decision-drivers` — Customer Decision Driver Analysis: Identify the factors that materially influence customer choice and how their importance varies by context.
+- `customer.analysis.decision-drivers` — Customer Decision Driver Analysis: Identify the factors and evidence-backed motivations that materially influence customer choice and how their importance varies by context.
 - `customer.analysis.feature-needs` — Customer Feature Need Analysis: Interpret feature requests as evidence of underlying customer needs, workflows, and desired outcomes.
 - `customer.analysis.hypothesis-validation` — Customer Hypothesis Validation: Test a strategically important belief about customers before downstream systems build on it.
 - `customer.analysis.insight-refresh` — Customer Insight Refresh: Re-evaluate an existing Customer Insight against new, stale, or contradictory evidence.
@@ -253,10 +254,11 @@ Generated from contract frontmatter. Do not maintain a second manual list.
 - `customer-optimization.learning.domain-learning` — Customer Optimization Learning: Improve journey definitions, friction diagnosis, intervention timing, lifecycle thresholds, and progression strategies from verified outcomes.
 - `customer-optimization.measurement.baseline` — Journey Intervention Baseline: Establish the pre-intervention customer and business state required to evaluate a journey change.
 - `customer-optimization.measurement.cohort-retention` — Cohort Retention Analysis: Compare retention/renewal behavior across cohorts and lifecycle experiences to locate durable drivers and risks.
+- `customer-optimization.measurement.customer-value` — Customer Value and Relationship Economics: Understand which customer relationships, segments, or cohorts create durable customer-realized value and sustainable business value, and where value is being created, lost, or put at risk.
 - `customer-optimization.measurement.time-to-value` — Time-to-Value Analysis: Measure how long it takes customers to reach a genuinely meaningful value milestone and what delays it.
 - `customer-optimization.measurement.transition` — Journey Transition Measurement: Measure progression from one defined customer state to the next with consistent eligibility, timing, and outcome rules.
 - `customer-optimization.monitoring.activation-risk` — Activation Risk Monitoring: Detect new customers/users likely to miss the value/activation path while there is still time to help.
-- `customer-optimization.monitoring.churn-risk` — Customer Churn Risk Monitoring: Detect observable lifecycle conditions associated with elevated churn so the business can investigate and respond appropriately.
+- `customer-optimization.monitoring.churn-risk` — Customer Churn Risk Monitoring: Detect observable lifecycle conditions associated with elevated churn so the business can investigate and respond appropriately, while distinguishing likelihood of loss from the value/consequence at risk.
 - `customer-optimization.monitoring.journey-health` — Customer Journey Health Monitoring: Continuously detect material deterioration or improvement in customer progression, delays, failure states, or downstream value.
 - `customer-optimization.monitoring.renewal-risk` — Renewal Risk Monitoring: Identify customer conditions that could prevent a healthy renewal before the decision deadline.
 - `customer-optimization.onboarding.escalation` — Onboarding Escalation Design: Define when stalled onboarding should move from automated guidance to human/technical/customer-success intervention.
@@ -315,13 +317,13 @@ Generated from contract frontmatter. Do not maintain a second manual list.
 
 ## marketing-synthesis
 
-- `marketing.ads.angle-matrix` — Advertising Angle Matrix: Generate distinct persuasion hypotheses for an ad campaign rather than cosmetic creative variants.
+- `marketing.ads.angle-matrix` — Advertising Angle Matrix: Generate distinct evidence-backed persuasion hypotheses for an ad campaign rather than cosmetic creative variants.
 - `marketing.ads.copy` — Advertising Copy: Write concise ad copy that earns qualified attention and creates accurate intent for the destination.
 - `marketing.ads.creative-brief` — Advertising Creative Brief: Specify the visual/audio demonstration required to express an approved ad angle in the placement.
 - `marketing.ads.message-match` — Ad-to-Destination Message Match: Ensure the destination immediately continues the specific promise and intent created by each ad angle.
 - `marketing.ads.qa` — Advertising Launch QA: Verify ads, creative, claims, Offer, destinations, tracking, and variant mapping before activation.
 - `marketing.ads.variant-plan` — Advertising Variant Test Plan: Define creative/copy variants so each comparison teaches something interpretable.
-- `marketing.assets.ads` — Advertising Creative & Copy: Create persuasive ad concepts/copy/creative requirements matched to audience, awareness, channel context, and destination.
+- `marketing.assets.ads` — Advertising Creative & Copy: Create persuasive ad concepts/copy/creative requirements matched to audience, awareness, funnel/journey role, channel/placement context, current field evidence where useful, and destination.
 - `marketing.assets.advertorial` — Advertorial: Create clearly compliant editorial-style persuasion that educates while transparently serving a commercial objective.
 - `marketing.assets.comparison` — Comparison & Alternative Persuasion: Help qualified buyers evaluate alternatives honestly using customer decision criteria and current competitive evidence.
 - `marketing.assets.email-sequence` — Commercial Email Sequence: Design a multi-email persuasion sequence where each message has a distinct job and builds appropriately on prior context.
@@ -333,7 +335,7 @@ Generated from contract frontmatter. Do not maintain a second manual list.
 - `marketing.assets.sales-letter` — Sales Letter: Create long-form written persuasion appropriate to audience sophistication and Offer complexity.
 - `marketing.assets.vsl` — Video Sales Letter: Build a sustained video persuasion narrative tied to an offer and measurable commercial action.
 - `marketing.assets.webinar` — Webinar Persuasion: Design a webinar that creates genuine understanding/value while logically leading qualified attendees to an offer.
-- `marketing.campaigns.campaign-concept` — Campaign Concept Development: Create a coherent commercial campaign concept linking audience, Insight, offer, message, creative mechanism, channels/assets, and measurable action.
+- `marketing.campaigns.campaign-concept` — Campaign Concept Development: Create a coherent commercial campaign concept linking audience, decision context, Insight, Offer, message, creative mechanism, channels/assets, and measurable action.
 - `marketing.diagnosis.persuasion-barrier` — Persuasion Barrier Diagnosis: Determine why the current commercial communication may not move the right audience toward the desired action before generating new copy.
 - `marketing.email.branching` — Email Sequence Branching: Define how observed recipient state changes the next message or exits the sequence.
 - `marketing.email.message-draft` — Marketing Email Draft: Write one email to perform its assigned job in an approved sequence.
@@ -354,7 +356,7 @@ Generated from contract frontmatter. Do not maintain a second manual list.
 - `marketing.measurement.commercial-response` — Marketing Outcome Analysis: Interpret commercial response and return scoped marketing/customer evidence without overclaiming causality.
 - `marketing.offer.bonuses` — Offer Bonus Design: Evaluate whether complementary additions can remove implementation barriers or accelerate value without cluttering the Offer.
 - `marketing.offer.context-proposal` — Offer Context Change Proposal: Package a Marketing-supported Offer change for controlled business review and canonical context update.
-- `marketing.offer.diagnosis` — Offer Diagnosis: Determine whether weak commercial response is caused by the actual Offer structure rather than only its presentation.
+- `marketing.offer.diagnosis` — Offer Diagnosis: Determine whether weak commercial response is caused by the actual Offer structure rather than only its presentation, and identify the smallest evidence-backed structural improvement worth testing.
 - `marketing.offer.guarantee` — Offer Guarantee Design: Turn validated risk-reversal strategy into precise proposed guarantee terms the business can actually administer.
 - `marketing.offer.packaging` — Offer Packaging Design: Design how approved products/services/outcomes are bundled, tiered, scoped, and sequenced into an offer proposal.
 - `marketing.offer.terms` — Offer Terms Optimization: Evaluate whether commitment, payment, cancellation, trial, eligibility, or contractual terms are blocking otherwise-qualified customers.
@@ -366,7 +368,7 @@ Generated from contract frontmatter. Do not maintain a second manual list.
 - `marketing.strategy.ethical-urgency` — Urgency and Scarcity Validation: Use genuine timing, capacity, availability, or consequence only when it is real and relevant.
 - `marketing.strategy.guarantee-risk-reversal` — Guarantee and Risk-Reversal Design: Evaluate how legitimate risk reversal can reduce a real purchase barrier without creating unsustainable or deceptive commitments.
 - `marketing.strategy.mechanism` — Persuasion Mechanism Explanation: Develop the credible explanation for how the product/service/approach creates the promised outcome and why alternatives may fail.
-- `marketing.strategy.messaging` — Messaging Architecture: Define what the audience needs to understand/believe in what order across a commercial experience.
+- `marketing.strategy.messaging` — Messaging Architecture: Define what the audience needs to notice, understand, believe, and do in what order across a commercial experience.
 - `marketing.strategy.objection-handling` — Objection Handling Strategy: Address evidence-backed buyer objections honestly without manipulative dismissal.
 - `marketing.strategy.offer-presentation` — Offer Presentation Strategy: Present an existing canonical Offer so value, terms, risk, proof, and next action are understandable and compelling.
 - `marketing.strategy.positioning` — Commercial Positioning Synthesis: Translate business/customer/competitive truth into a defensible commercial position for a defined audience and context.

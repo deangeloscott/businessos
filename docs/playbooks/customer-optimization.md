@@ -23,6 +23,7 @@ Find and improve problems in the customer journey, from conversion and purchase 
 - **[Onboarding Optimization](../../systems/customer-optimization/contracts/intervention/onboarding/CONTEXT.md)** — Move customers from purchase/start to meaningful value.
 - **[Activation Optimization](../../systems/customer-optimization/contracts/intervention/activation/CONTEXT.md)** — Increase successful activation/value milestones.
 - **[Time-to-Value Analysis](../../systems/customer-optimization/contracts/measurement/time-to-value/CONTEXT.md)** — Measure and reduce time to meaningful customer value.
+- **[Customer Value and Relationship Economics](../../systems/customer-optimization/contracts/measurement/customer-value/CONTEXT.md)** — Understand mutually valuable customer relationships, lifecycle economics, high-value patterns, and value-at-risk without reducing value to revenue alone.
 - **[Adoption Optimization](../../systems/customer-optimization/contracts/intervention/adoption/CONTEXT.md)** — Build sustained value-driving adoption.
 - **[Customer Success Process Optimization](../../systems/customer-optimization/contracts/intervention/customer-success/CONTEXT.md)** — Improve customer-success process mechanics.
 - **[Churn Diagnosis & Prevention](../../systems/customer-optimization/contracts/intervention/churn/CONTEXT.md)** — Diagnose and reduce avoidable churn.
@@ -33,7 +34,7 @@ Find and improve problems in the customer journey, from conversion and purchase 
 - **[Account / Customer Expansion Optimization](../../systems/customer-optimization/contracts/intervention/expansion/CONTEXT.md)** — Expand successful customer relationships when eligible.
 - **[Referral Optimization](../../systems/customer-optimization/contracts/intervention/referral/CONTEXT.md)** — Generate advocacy at appropriate value moments.
 - **[Service Recovery](../../systems/customer-optimization/contracts/intervention/service-recovery/CONTEXT.md)** — Recover active failures and prevent recurrence.
-- **[Customer Churn Risk Monitoring](../../systems/customer-optimization/contracts/monitoring/churn-risk/CONTEXT.md)** — Detect interpretable churn risk early.
+- **[Customer Churn Risk Monitoring](../../systems/customer-optimization/contracts/monitoring/churn-risk/CONTEXT.md)** — Detect interpretable churn risk early and distinguish risk likelihood from value-at-risk.
 - **[Lifecycle Experiment Design](../../systems/customer-optimization/contracts/experimentation/lifecycle-test/CONTEXT.md)** — Test a journey intervention with guardrails.
 - **[Cohort Retention Analysis](../../systems/customer-optimization/contracts/measurement/cohort-retention/CONTEXT.md)** — Understand retention patterns across cohorts.
 - **[Customer Journey Health Monitoring](../../systems/customer-optimization/contracts/monitoring/journey-health/CONTEXT.md)** — Monitor journey health and detect important change.
@@ -109,6 +110,7 @@ These are smaller, specific playbooks BusinessOS can use inside the larger jobs 
 ### Measurement
 
 - [Cohort Retention Analysis](../../systems/customer-optimization/contracts/measurement/cohort-retention/CONTEXT.md) *(main entry playbook)*
+- [Customer Value and Relationship Economics](../../systems/customer-optimization/contracts/measurement/customer-value/CONTEXT.md) *(main entry playbook)*
 - [Journey Intervention Baseline](../../systems/customer-optimization/contracts/measurement/baseline/CONTEXT.md)
 - [Journey Transition Measurement](../../systems/customer-optimization/contracts/measurement/transition/CONTEXT.md)
 - [Time-to-Value Analysis](../../systems/customer-optimization/contracts/measurement/time-to-value/CONTEXT.md) *(main entry playbook)*
