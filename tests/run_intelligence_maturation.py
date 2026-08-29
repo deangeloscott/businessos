@@ -40,23 +40,23 @@ def main():
 
     schema=json.loads((ROOT/'core/schemas/intelligence/source-profile.schema.json').read_text())
     props=schema.get('properties',{})
-    for field in ['subject_key','subject_name','subject_kind','subject_relationships','source_modalities','monitoring_questions','material_change_signals','last_material_change_at']:
+    for field in ['subject_key','subject_name','subject_kind','subject_relationships','source_modalities','monitoring_questions','material_change_signals','monitoring_cadence','last_material_change_at']:
         if field not in props:fail(f'SourceProfile missing intelligence-maturation field {field}')
     required=set(schema.get('required',[]))
-    if any(field in required for field in ['subject_key','subject_name','subject_kind','source_modalities','monitoring_questions']):
+    if any(field in required for field in ['subject_key','subject_name','subject_kind','source_modalities','monitoring_questions','monitoring_cadence']):
         fail('new subject/watch enrichment must remain optional for backward compatibility')
     rels=set(props['subject_relationships']['items']['enum'])
     if {'customer','prospect'} & rels:
         fail('shared public subject monitoring must not become a customer/prospect surveillance relationship model')
 
     helper=(ROOT/'scripts/upsert_source_profile.py').read_text()
-    for flag in ['--subject-key','--subject-name','--subject-kind','--subject-relationship','--source-modality','--monitoring-question','--material-change-signal']:
+    for flag in ['--subject-key','--subject-name','--subject-kind','--subject-relationship','--source-modality','--monitoring-question','--material-change-signal','--cadence-mode','--cadence-expression','--cadence-source']:
         if flag not in helper:fail(f'SourceProfile helper missing {flag}')
     if 'Source history changes discovery attention only' not in helper:
         fail('existing SourceProfile discovery-only invariant was lost')
 
     _,subject_meta,subject_body=contract('core.intelligence.subject-monitoring')
-    for phrase in ['one SourceProfile per source/surface','shared `subject_key`','text, documents, images, audio, video, transcripts','AURA stores the watch/checkpoint']:
+    for phrase in ['one SourceProfile per source/surface','shared `subject_key`','text, documents, images, audio, video, transcripts','cadence/`next_check_at` is monitoring intent']:
         if phrase not in subject_body:fail(f'subject monitoring missing behavior: {phrase}')
     if 'core.intelligence.ecosystem.maintain-source-profile' not in (subject_meta.get('subcontracts') or {}).get('required',[]):
         fail('subject monitoring must reuse shared SourceProfile mechanics')
@@ -94,11 +94,12 @@ def main():
         'subject_relationships':['thought_leader'],'source_reference':'https://example.com/channel','source_modalities':['video'],
         'watch_status':'active','attention_priority':'medium','discovery_reason':'Learn durable content mechanisms.',
         'monitoring_questions':['What topics are changing?'],'material_change_signals':['Major positioning shift'],
+        'monitoring_cadence':{'mode':'recurring','expression':'weekly','source':'inferred','timezone':None,'notes':None},
         'last_checked_at':'2026-08-29T00:00:00Z','next_check_at':'2026-09-05T00:00:00Z'
     }
     if _page_for(source_profile)!='Tracked-Subjects':fail('SourceProfile human view is not routed to Tracked-Subjects')
     rendered=_entry(source_profile,ROOT/'instances/example/intelligence/source-profiles/sprof_demo.json')
-    for phrase in ['Example Creator','thought_leader','What topics are changing?','Major positioning shift','Last checked','Next check']:
+    for phrase in ['Example Creator','thought_leader','What topics are changing?','Major positioning shift','Cadence','planned / not automatically scheduled','Last checked','Next check']:
         if phrase not in rendered:fail(f'tracked-subject human view missing {phrase}')
 
     print('AURA intelligence maturation regressions passed: shared monitoring, semantic routing, multimodal evidence, contextual intelligence, marketing/customer value, and human/machine legibility')
