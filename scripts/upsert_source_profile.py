@@ -15,7 +15,7 @@ OUTCOMES = {"original","supported","contradicted"}
 METHOD_QUALITY = {"unknown","weak","mixed","strong"}
 QUALITY_RANK = {"unknown":0,"weak":1,"mixed":2,"strong":3}
 SUBJECT_KINDS = {"organization","person","brand","product","creator","publication","channel","platform","regulator","community","other"}
-SUBJECT_RELATIONSHIPS = {"own_organization","competitor","substitute","partner","customer","prospect","creator","thought_leader","publication","regulator","platform","vendor","benchmark","ecosystem_actor","monitored_subject","other"}
+SUBJECT_RELATIONSHIPS = {"own_organization","competitor","substitute","partner","creator","thought_leader","publication","regulator","platform","vendor","benchmark","ecosystem_actor","monitored_subject","other"}
 SOURCE_MODALITIES = {"text","image","audio","video","document","structured","mixed"}
 
 def _normalized_reference(value):

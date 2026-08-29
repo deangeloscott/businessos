@@ -33,6 +33,9 @@ def main():
     required=set(schema.get('required',[]))
     if any(field in required for field in ['subject_key','subject_name','subject_kind','source_modalities','monitoring_questions']):
         fail('new subject/watch enrichment must remain optional for backward compatibility')
+    rels=set(props['subject_relationships']['items']['enum'])
+    if {'customer','prospect'} & rels:
+        fail('shared public subject monitoring must not become a customer/prospect surveillance relationship model')
 
     helper=(ROOT/'scripts/upsert_source_profile.py').read_text()
     for flag in ['--subject-key','--subject-name','--subject-kind','--subject-relationship','--source-modality','--monitoring-question','--material-change-signal']:
