@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SchedulerBindings",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "format_version": {"type":"string","minLength":1},
+    "bindings": {
+      "type":"array",
+      "items": {
+        "type":"object",
+        "additionalProperties":false,
+        "properties": {
+          "id":{"type":"string","pattern":"^sched_[A-Za-z0-9_-]+$"},
+          "environment":{"type":"string","minLength":1},
+          "business_id":{"type":"string","pattern":"^[a-z0-9][a-z0-9_-]{0,63}$"},
+          "target_kind":{"enum":["subject","source_profile","business_monitoring","reminder"]},
+          "subject_key":{"type":["string","null"],"minLength":1},
+          "source_profile_id":{"type":["string","null"],"pattern":"^sprof_[A-Za-z0-9_-]+$"},
+          "executor_kind":{"enum":["harness_scheduler","os_scheduler","workflow_runner","viraltrac","reminder_only","other"]},
+          "executor_ref":{"type":"string","minLength":1},
+          "cadence_expression":{"type":"string","minLength":1},
+          "timezone":{"type":["string","null"]},
+          "status":{"enum":["active","paused","disabled","error"]},
+          "next_run_at":{"type":["string","null"],"format":"date-time"},
+          "last_verified_at":{"type":"string","format":"date-time"},
+          "created_at":{"type":"string","format":"date-time"},
+          "updated_at":{"type":"string","format":"date-time"},
+          "notes":{"type":["string","null"]}
+        },
+        "required":["id","environment","business_id","target_kind","executor_kind","executor_ref","cadence_expression","status","last_verified_at","created_at","updated_at"],
+        "allOf":[
+          {"if":{"properties":{"target_kind":{"const":"subject"}}},"then":{"required":["subject_key"]}},
+          {"if":{"properties":{"target_kind":{"const":"source_profile"}}},"then":{"required":["source_profile_id"]}}
+        ]
+      }
+    }
+  },
+  "required":["format_version","bindings"]
+}
