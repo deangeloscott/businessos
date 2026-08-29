@@ -52,6 +52,6 @@ def main():
     if a.show and result.get('contract_id'):
         print('\n--- RESOLVED CONTRACT ---\n')
         if a.business_id:
-            _,_,content,_=resolve_effective(result['contract_id'],a.business_id,a.team_ref,a.role_ref,operator_ref);print(content,end='' if content.endswith('\n') else '\n')
+            _,_,content,_=resolve_effective(result['contract_id'],a.business_id,a.team_ref,a.role_ref,a.operator_ref);print(content,end='' if content.endswith('\n') else '\n')
         elif result.get('path'):print((ROOT/result['path']).read_text(),end='')
 if __name__=='__main__':main()
