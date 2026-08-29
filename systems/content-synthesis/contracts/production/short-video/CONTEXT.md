@@ -1,7 +1,7 @@
 ---
 id: content.production.short-video
 type: playbook
-version: 1.3.0
+version: 1.4.0
 owner_system: content-synthesis
 artifact_role: customer_facing_production_root
 risk: low
@@ -27,6 +27,9 @@ capabilities:
   - creative.video.generate
   - creative.animation.generate
   - video.render
+  - media.video.process
+  - media.audio.extract
+  - media.frame.extract
   - presentation.render
   - document.render
 context:
@@ -61,5 +64,5 @@ Run when an Opportunity or WorkRequest requires short-form video production and 
 4. [HYBRID] Ensure pacing serves comprehension; remove needless cuts/effects that compete with meaning.
 5. [AI] Write captions/on-screen text for sound-off comprehension where appropriate and ensure visual claims match evidence.
 6. [HYBRID] Specify platform aspect ratio, safe areas, duration, audio/music constraints, CTA, and render requirements.
-7. [INTEGRATION] Generate/render available media or create a complete production packet for human execution.
+7. [INTEGRATION] Generate/render available media or create a complete production packet for human execution. When local deterministic media processing is available, FFmpeg-style tooling may perform clip/transcode/frame/audio/render mechanics while the model/harness remains responsible for creative judgment and QA.
 8. [HYBRID] Review final render for factual, visual, audio, brand, and platform integrity before Asset completion.
