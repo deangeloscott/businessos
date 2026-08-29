@@ -7,7 +7,9 @@ from datetime import datetime,timezone
 
 def _dt(value):
     if not value:return None
-    try:return datetime.fromisoformat(str(value).replace('Z','+00:00'))
+    try:
+        parsed=datetime.fromisoformat(str(value).replace('Z','+00:00'))
+        return parsed if parsed.tzinfo is not None else parsed.replace(tzinfo=timezone.utc)
     except ValueError:return None
 
 
