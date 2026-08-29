@@ -32,6 +32,9 @@ CASES=[
  ('Help me figure out what to improve','core.routing.resolve-intent'),
 ]
 FEATURE_CASES=[
+ ('Establish the real competitive set and produce a decision-grade competitive position.','competitor.analysis.competitive-position'),
+ ('Research our competitors and tell us where we can win.','competitor.analysis.competitive-position'),
+ ('Give me a current competitive landscape with strengths, weaknesses, and whitespace.','competitor.analysis.competitive-position'),
  ('What are you monitoring for us?','core.monitoring.status'),
  ('Show me our recurring checks and what is due.','core.monitoring.status'),
  ('Review our monitoring schedule.','core.monitoring.status'),
