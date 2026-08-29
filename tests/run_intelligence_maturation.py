@@ -61,6 +61,10 @@ def main():
     if 'core.intelligence.ecosystem.maintain-source-profile' not in (subject_meta.get('subcontracts') or {}).get('required',[]):
         fail('subject monitoring must reuse shared SourceProfile mechanics')
 
+    _,_,routing_body=contract('core.routing.resolve-intent')
+    for phrase in ['durable subject watch/refresh','`core.intelligence.subject-monitoring`','not merely because it contains words such as “track” or “monitor.”']:
+        if phrase not in routing_body:fail(f'semantic intent resolution missing durable monitoring rule: {phrase}')
+
     core_map=json.loads((ROOT/'core/process-map.json').read_text())
     if 'core.intelligence.subject-monitoring' not in [a.get('entry_contract') for a in core_map.get('activities',[])]:
         fail('Core process map missing durable subject monitoring')
@@ -97,6 +101,6 @@ def main():
     for phrase in ['Example Creator','thought_leader','What topics are changing?','Major positioning shift','Last checked','Next check']:
         if phrase not in rendered:fail(f'tracked-subject human view missing {phrase}')
 
-    print('AURA intelligence maturation regressions passed: shared monitoring, multimodal evidence, contextual intelligence, marketing/customer value, and human/machine legibility')
+    print('AURA intelligence maturation regressions passed: shared monitoring, semantic routing, multimodal evidence, contextual intelligence, marketing/customer value, and human/machine legibility')
 
 if __name__=='__main__':main()
