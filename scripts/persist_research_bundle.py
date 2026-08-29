@@ -43,6 +43,18 @@ def _base(typ,oid,bid,run_id,ts):
     return d
 
 
+def _subject_refs(obj):
+    values=obj.get('subject_refs') if isinstance(obj,dict) else []
+    if not isinstance(values,list): return set()
+    return {str(x).strip() for x in values if isinstance(x,str) and x.strip()}
+
+
+def _require_subject_overlap(left,left_label,right,right_label):
+    a=_subject_refs(left); b=_subject_refs(right)
+    if a and b and not (a & b):
+        raise ValueError(f'{left_label} subject_refs ({", ".join(sorted(a))}) do not overlap {right_label} subject_refs ({", ".join(sorted(b))}); do not attach evidence about one resolved subject to another')
+
+
 def _copy_snapshot(bid, source_id, snapshot_path):
     src=Path(snapshot_path)
     if not src.is_absolute(): src=ROOT/src
@@ -86,9 +98,10 @@ def _source(bid,item,run_id,contract_id,ts):
     }
     ev={k:v for k,v in ev.items() if v is not None and v!=[]}
     s=_base('SourceRecord',sid,bid,run_id,ts); s.update({
-        'source_type':item.get('source_type') or 'webpage','source_reference':ref,'origin':item.get('origin') or 'public web',
-        'retrieved_at':item.get('retrieved_at') or ts,'published_at':item.get('published_at'),'content_hash':ch,
-        'access_scope':item.get('access_scope') or 'public','extensions':{'businessos_evidence':ev,'contract_id':contract_id}
+        'source_type':item.get('source_type') or 'webpage','source_reference':ref,'subject_refs':item.get('subject_refs',[]),
+        'origin':item.get('origin') or 'public web','retrieved_at':item.get('retrieved_at') or ts,
+        'published_at':item.get('published_at'),'content_hash':ch,'access_scope':item.get('access_scope') or 'public',
+        'extensions':{'businessos_evidence':ev,'contract_id':contract_id}
     })
     _validate('SourceRecord',s)
     return s,asset_objs
@@ -195,9 +208,12 @@ def persist(bid,bundle):
     all_objs=asset_objs+src_objs+obs_objs+ins_objs+cmp_objs
     # Validate semantic support in-memory before writes where possible.
     public_sources={s['id']:s for s in src_objs}
+    observation_map={o['id']:o for o in obs_objs}; insight_map={i['id']:i for i in ins_objs}
     for o in obs_objs:
         for ref in o['source_refs']:
             s=public_sources.get(ref)
+            if s:
+                _require_subject_overlap(o,o['id'],s,ref)
             if s and s.get('access_scope')=='public':
                 ev=s.get('extensions',{}).get('businessos_evidence',{})
                 acquisition=ev.get('acquisition_method') or 'unknown'
@@ -205,6 +221,21 @@ def persist(bid,bundle):
                 adequate=(status=='captured' and acquisition in DIRECT_ACQUISITION_METHODS and (ev.get('captured_text') or ev.get('asset_refs') or ev.get('record_payload') is not None)) or (status=='external_pointer' and ev.get('evidence_pointer') and acquisition in AUTHORITATIVE_POINTER_METHODS)
                 if not adequate:
                     raise ValueError(f'Observation {o["id"]} cannot rely on public source {ref} acquired as {acquisition!r} with capture_status={status!r}; search/snippet discovery is not support. Open/retrieve the underlying source or use an authoritative reproducible record.')
+    for ins in ins_objs:
+        if ins.get('status') not in {'supported','active'}: continue
+        for link in ins.get('evidence_links') or []:
+            if not isinstance(link,dict) or link.get('relationship') not in {'supports','derived_from'}: continue
+            ref=link.get('ref'); evidence=observation_map.get(ref) or public_sources.get(ref)
+            if evidence: _require_subject_overlap(ins,ins['id'],evidence,ref)
+    for c in cmp_objs:
+        for ref in c.get('observation_refs',[]):
+            evidence=observation_map.get(ref)
+            if evidence and _subject_refs(evidence) and c['id'] not in _subject_refs(evidence):
+                raise ValueError(f'Competitor {c["id"]} cannot attach Observation {ref} scoped to {", ".join(sorted(_subject_refs(evidence)))}; preserve subject-relevant evidence for this competitor')
+        for ref in c.get('active_insight_refs',[]):
+            evidence=insight_map.get(ref)
+            if evidence and _subject_refs(evidence) and c['id'] not in _subject_refs(evidence):
+                raise ValueError(f'Competitor {c["id"]} cannot attach Insight {ref} scoped to {", ".join(sorted(_subject_refs(evidence)))}; preserve subject-relevant evidence for this competitor')
     for source in src_objs:
         locator_error=public_source_locator_error(source)
         if locator_error:raise ValueError(locator_error)
@@ -225,17 +256,17 @@ def main():
   "contract_id": "competitor.analysis.customer-sentiment",
   "run_id": "run_...",
   "sources": [
-    {"source_type":"review_platform","source_reference":"https://...","acquisition_method":"direct_page_read","captured_text":"Exact review text...","rating":1}
+    {"source_type":"review_platform","source_reference":"https://...","subject_refs":["cmp_..."],"acquisition_method":"direct_page_read","captured_text":"Exact review text...","rating":1}
   ],
   "observations": [
-    {"statement":"Reviewer reported surprise charges.","source_indexes":[0],"observation_type":"customer_complaint"}
+    {"statement":"Reviewer reported surprise charges.","subject_refs":["cmp_..."],"source_indexes":[0],"observation_type":"customer_complaint"}
   ],
   "insights": [
-    {"statement":"Unexpected charges are a recurring concern in the sampled evidence.","observation_indexes":[0],"status":"supported","confidence":0.7}
+    {"statement":"Unexpected charges are a recurring concern in the sampled evidence.","subject_refs":["cmp_..."],"observation_indexes":[0],"status":"supported","confidence":0.7}
   ]
 }
 
-Declare acquisition_method separately from capture_method. Strong examples: direct_page_read, browser_read, browser_capture, api_response, downloaded_document, uploaded_document, user_provided, first_party_export, authoritative_record. Discovery-only methods such as search_result, search_snippet, directory_preview, ai_summary, unvisited_url, or unknown may be saved, but cannot support an Observation even if captured_text is present. Screenshots are useful when they add value; they are not required for every review. Supported/active superlative or prevalence claims (for example top, dominant, #1, most common) must be explicitly scoped to the sampled evidence unless a measured population basis is supplied.'''
+Declare acquisition_method separately from capture_method. Strong examples: direct_page_read, browser_read, browser_capture, api_response, downloaded_document, uploaded_document, user_provided, first_party_export, authoritative_record. Discovery-only methods such as search_result, search_snippet, directory_preview, ai_summary, unvisited_url, or unknown may be saved, but cannot support an Observation even if captured_text is present. When a source is about a resolved material subject, preserve matching subject_refs on the SourceRecord and downstream Observation/Insight so evidence about one subject cannot silently support another. Screenshots are useful when they add value; they are not required for every review. Supported/active superlative or prevalence claims (for example top, dominant, #1, most common) must be explicitly scoped to the sampled evidence unless a measured population basis is supplied.'''
     p=argparse.ArgumentParser(description='Persist SourceRecords, optional evidence Assets, Observations, Insights, and basic Competitor objects from a structured research bundle.',formatter_class=argparse.RawDescriptionHelpFormatter,epilog=epilog)
     p.add_argument('business_id'); p.add_argument('--bundle-file',required=True); a=p.parse_args()
     try:
