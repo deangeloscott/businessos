@@ -6,6 +6,12 @@ from resolve_contract import resolve_contract
 from process_extensions import route_local_playbook,resolve_effective
 from growth_baseline_gate import assess as assess_growth_baseline
 
+# Broad domain-level business outcomes that should compose several atomic jobs rather
+# than collapsing into whichever narrow contract happens to share the most words.
+DOMAIN_HINTS=[
+ (r'\b(?:competitive set|competitive landscape|competitive position|competitor landscape|competitor research|competitive intelligence)\b|\b(?:full|complete|comprehensive) competitor (?:analysis|research)\b|\b(?:research|analy[sz]e|understand|map|assess|establish).*(?:competitors?|competition).*(?:strengths? and weaknesses?|weaknesses? and strengths?|whitespace|where (?:we|i) can win|competitive advantage|landscape|position)', 'competitor.analysis.competitive-position','competitor-intelligence'),
+]
+
 FEATURE_HINTS=[
  (r'\b(make|turn|promote|formalize|formalise).*(playbook|process|workflow|standard operating|part of businessos)|\b(playbook|process).*(evolve|evolution|improve businessos)', 'core.learning.playbook-evolution'),
  (r'\binnovation exchange\b|\bshare.*(playbook|workflow|process)\b|\b(import|browse|community).*(playbook|workflow|businessos innovation)', 'core.intelligence.innovation-exchange'),
@@ -18,8 +24,11 @@ FEATURE_HINTS=[
 
 def route_and_resolve(task,business_id=None,team_ref=None,role_ref=None,operator_ref=None):
     hinted=None
-    for pat,cid in FEATURE_HINTS:
-        if re.search(pat,task,re.I):hinted={'score':100,'system_score':100,'contract_id':cid,'owner_system':'core','status':'available','reason':'matched explicit AURA/BusinessOS product, monitoring, or workspace feature request'};break
+    for pat,cid,owner in DOMAIN_HINTS:
+        if re.search(pat,task,re.I):hinted={'score':100,'system_score':100,'contract_id':cid,'owner_system':owner,'status':'available','reason':'matched broad domain-level business outcome that requires composed execution'};break
+    if not hinted:
+        for pat,cid in FEATURE_HINTS:
+            if re.search(pat,task,re.I):hinted={'score':100,'system_score':100,'contract_id':cid,'owner_system':'core','status':'available','reason':'matched explicit AURA/BusinessOS product, monitoring, or workspace feature request'};break
     local=route_local_playbook(task,business_id,team_ref,role_ref,operator_ref) if business_id else None;rows=[hinted] if hinted else ([local] if local else route(task,5))
     if not rows:raise ValueError('No route returned')
     first=rows[0]
