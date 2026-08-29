@@ -70,7 +70,7 @@ def main():
         fail('Core process map missing durable subject monitoring')
 
     for rel,phrases in {
-        'systems/competitor-intelligence/DEFAULTS.md':['Contextual Competitive Set','geography/service area','aspirational/category benchmark'],
+        'systems/competitor-intelligence/DEFAULTS.md':['Contextual Competitive Set','geography/service area','aspirational/category-benchmark'],
         'systems/customer-intelligence/DEFAULTS.md':['Decision Context and Motivations','loss avoidance','status/identity'],
         'systems/content-synthesis/DEFAULTS.md':['TOF/MOF/BOF','up to three genuinely distinct options','Content Stretching'],
         'systems/marketing-synthesis/DEFAULTS.md':['Persuasion Context','Marketing Doctrine and Baseline Excellence','up to three genuinely distinct strategic options','Offer and Value Reasoning'],
