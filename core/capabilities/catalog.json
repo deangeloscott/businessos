@@ -1,103 +1,397 @@
 {
   "version": "1.8.4",
   "capabilities": [
-    {"id":"analytics.read","description":"analytics read"},
-    {"id":"product_analytics.read","description":"product_analytics read"},
-    {"id":"customer_feedback.read","description":"customer_feedback read"},
-    {"id":"crm.contact.read","description":"crm contact read"},
-    {"id":"crm.contact.update","description":"crm contact update"},
-    {"id":"crm.opportunity.read","description":"crm opportunity read"},
-    {"id":"crm.activity.read","description":"crm activity read"},
-    {"id":"support.ticket.read","description":"support ticket read"},
-    {"id":"sales_call.read","description":"sales_call read"},
-    {"id":"survey.read","description":"survey read"},
-    {"id":"review.read","description":"review read"},
-    {"id":"community.read","description":"community read"},
-    {"id":"social.listen","description":"social listen"},
-    {"id":"social.observe","description":"social observe"},
-    {"id":"social.content.publish","description":"social content publish"},
-    {"id":"social.ad.publish","description":"social ad publish"},
-    {"id":"research.web.read","description":"research web read"},
-    {"id":"news.read","description":"news read"},
-    {"id":"regulatory.read","description":"regulatory read"},
-    {"id":"research.paper.read","description":"research paper read"},
-    {"id":"document.read","description":"document read"},
-    {"id":"webpage.fetch","description":"webpage fetch"},
-    {"id":"webpage.snapshot","description":"webpage snapshot"},
-    {"id":"webpage.compare","description":"webpage compare"},
-    {"id":"browser.interact","description":"Interact with legitimate public or authorized web experiences, including navigation, clicks, typing, form submission, and multi-step flows within policy."},
-    {"id":"advertising.observe","description":"advertising observe"},
-    {"id":"search.observe","description":"search observe"},
-    {"id":"search.performance.read","description":"search performance read"},
-    {"id":"search.rank.read","description":"search rank read"},
-    {"id":"search.serp.read","description":"search serp read"},
-    {"id":"search.index.inspect","description":"search index inspect"},
-    {"id":"search.index.request","description":"search index request"},
-    {"id":"crawler.run","description":"crawler run"},
-    {"id":"backlink.read","description":"backlink read"},
-    {"id":"local_profile.read","description":"local_profile read"},
-    {"id":"local_profile.update","description":"local_profile update"},
-    {"id":"ai_answer.observe","description":"ai_answer observe"},
-    {"id":"cms.page.read","description":"cms page read"},
-    {"id":"cms.page.update","description":"cms page update"},
-    {"id":"cms.page.publish","description":"cms page publish"},
-    {"id":"creative.text.generate","description":"creative text generate"},
-    {"id":"creative.image.generate","description":"creative image generate"},
-    {"id":"creative.image.edit","description":"creative image edit"},
-    {"id":"creative.audio.generate","description":"creative audio generate"},
-    {"id":"creative.video.generate","description":"creative video generate"},
-    {"id":"creative.animation.generate","description":"creative animation generate"},
-    {"id":"video.render","description":"video render"},
-    {"id":"presentation.render","description":"presentation render"},
-    {"id":"document.render","description":"document render"},
-    {"id":"email.read","description":"Read messages in an authorized mailbox or research inbox, including legitimately received follow-up."},
-    {"id":"email.send","description":"email send"},
-    {"id":"email.content.publish","description":"email content publish"},
-    {"id":"marketing.performance.read","description":"marketing performance read"},
-    {"id":"tracking.read","description":"tracking read"},
-    {"id":"conversion.read","description":"conversion read"},
-    {"id":"experiment.run","description":"experiment run"},
-    {"id":"checkout.read","description":"checkout read"},
-    {"id":"checkout.update","description":"checkout update"},
-    {"id":"billing.read","description":"billing read"},
-    {"id":"customer_success.read","description":"customer_success read"},
-    {"id":"scheduling.read","description":"scheduling read"},
-    {"id":"workflow.update","description":"workflow update"},
-    {"id":"market_data.read","description":"market_data read"},
-    {"id":"alert.read","description":"alert read"},
-    {"id":"revenue.read","description":"revenue read"},
-    {"id":"public_comment.read","description":"Read public comments/replies from an authorized public surface."},
-    {"id":"rss.read","description":"Read items from an RSS/Atom or equivalent subscribed feed."},
-    {"id":"creator_content.observe","description":"Observe public creator content and basic public performance/context signals."},
-    {"id":"webpage.screenshot","description":"Capture an allowed visual snapshot of a public webpage or public content item."},
-    {"id":"media.video.acquire","description":"Acquire permitted public or authorized video/audio media and associated metadata without bypassing access controls."},
-    {"id":"media.transcript.acquire","description":"Acquire available public or authorized captions/transcripts for evidence use while preserving source and modality limits."},
-    {"id":"media.metadata.inspect","description":"Inspect deterministic media/container/stream metadata without treating metadata as semantic visual/audio understanding."},
-    {"id":"media.video.process","description":"Perform deterministic local video mechanics such as clipping, transcoding, scaling, muxing, or format conversion."},
-    {"id":"media.audio.extract","description":"Extract or convert authorized audio from local/authorized media for downstream inspection or production."},
-    {"id":"media.frame.extract","description":"Extract representative frames or bounded visual samples from authorized video for downstream inspection."},
-    {"id":"automation.schedule.manage","description":"Create, inspect, update, pause, or disable an authorized host/OS/workflow schedule; schedule mechanics do not themselves execute or prove completion of AURA work."},
-    {"id":"creative.avatar_video.generate","description":"Generate an avatar-presented video from approved script, voice, and visual inputs."},
-    {"id":"social.content.schedule","description":"Schedule an approved social content Asset for future publication."},
-    {"id":"business.data.query","description":"Query governed first-party business data through a provider-neutral semantic or equivalent analytical interface."},
-    {"id":"business.data.explain","description":"Retrieve the definitions, plan, evidence, coverage, freshness, lineage, and reason codes behind a governed business-data result."},
-    {"id":"business.data.export","description":"Create or retrieve an authorized portable dataset/export derived from governed business data without mutating canonical truth."},
-    {"id":"business.data.artifact.create","description":"Create an authorized derived business-data artifact such as a saved result, chart/table dataset, or reproducible analysis snapshot."},
-    {"id":"business.action.governed.propose","description":"Submit an already-formed business action into a governed proposal lifecycle without granting execution authority."},
-    {"id":"business.action.governed.preview","description":"Preview an eligible governed business action, exclusions, constraints, side effects, and approval requirements before execution."},
-    {"id":"business.action.governed.execute","description":"Execute a supported, separately authorized governed business action and return execution status/receipt evidence."},
-    {"id":"business.action.receipt.read","description":"Read an authoritative action/external-execution receipt used to record and verify a BusinessOS ChangeEvent."},
-    {"id":"business.measurement.read","description":"Read governed business measurement, outcome, experiment, incrementality, attribution, or related evaluation evidence when available."},
-    {"id":"business.measurement.evaluate","description":"Use a governed measurement/evaluation surface to compare an intervention with outcomes while preserving evidence and causal limits."},
-    {"id":"business.event.subscribe","description":"Receive or subscribe to authorized business occurrence/event signals for reactive or continuous operation; an event is evidence, not authorization to act."},
-    {"id":"business.event.catalog.read","description":"Read an authorized governed event catalog/ontology so BusinessOS can understand available event meanings without hardcoding provider event names."},
-    {"id":"business.event.coverage.read","description":"Read producer/consumer/event coverage and readiness metadata for a governed event plane."},
-    {"id":"business.event.readiness.read","description":"Read current event-plane operational/readiness state, rollout mode, and degradation information."},
-    {"id":"business.event.subscription.manage","description":"Inspect, create, reconcile, enable, disable, or update an authorized governed event subscription/managed binding without bypassing provider policy."},
-    {"id":"business.event.evaluate.preview","description":"Dry-run or preview event-to-consumer evaluation without performing an external/customer-visible effect."},
-    {"id":"business.event.trace.read","description":"Read an authorized event trace linking occurrence, policy, delivery, evaluation, action, exposure, outcome, and reason-coded failures."},
-    {"id":"business.event.reconciliation.read","description":"Read event-plane reconciliation/repair state for missing mappings, delivery gaps, receipt gaps, conflicts, or other reason-coded degradation."},
-    {"id":"business.event.replay.preview","description":"Preview a governed replay/re-evaluation plan without performing effects."},
-    {"id":"business.event.delivery.receive","description":"Host/harness ability to receive or reliably surface an authorized provider event delivery for a BusinessOS run; this is execution machinery, not event truth."}
+    {
+      "id": "analytics.read",
+      "description": "analytics read"
+    },
+    {
+      "id": "product_analytics.read",
+      "description": "product_analytics read"
+    },
+    {
+      "id": "customer_feedback.read",
+      "description": "customer_feedback read"
+    },
+    {
+      "id": "crm.contact.read",
+      "description": "crm contact read"
+    },
+    {
+      "id": "crm.contact.update",
+      "description": "crm contact update"
+    },
+    {
+      "id": "crm.opportunity.read",
+      "description": "crm opportunity read"
+    },
+    {
+      "id": "crm.activity.read",
+      "description": "crm activity read"
+    },
+    {
+      "id": "support.ticket.read",
+      "description": "support ticket read"
+    },
+    {
+      "id": "sales_call.read",
+      "description": "sales_call read"
+    },
+    {
+      "id": "survey.read",
+      "description": "survey read"
+    },
+    {
+      "id": "review.read",
+      "description": "review read"
+    },
+    {
+      "id": "community.read",
+      "description": "community read"
+    },
+    {
+      "id": "social.listen",
+      "description": "social listen"
+    },
+    {
+      "id": "social.observe",
+      "description": "social observe"
+    },
+    {
+      "id": "social.content.publish",
+      "description": "social content publish"
+    },
+    {
+      "id": "social.ad.publish",
+      "description": "social ad publish"
+    },
+    {
+      "id": "research.web.read",
+      "description": "research web read"
+    },
+    {
+      "id": "news.read",
+      "description": "news read"
+    },
+    {
+      "id": "regulatory.read",
+      "description": "regulatory read"
+    },
+    {
+      "id": "research.paper.read",
+      "description": "research paper read"
+    },
+    {
+      "id": "document.read",
+      "description": "document read"
+    },
+    {
+      "id": "webpage.fetch",
+      "description": "webpage fetch"
+    },
+    {
+      "id": "webpage.snapshot",
+      "description": "webpage snapshot"
+    },
+    {
+      "id": "webpage.compare",
+      "description": "webpage compare"
+    },
+    {
+      "id": "browser.interact",
+      "description": "Interact with legitimate public or authorized web experiences, including navigation, clicks, typing, form submission, and multi-step flows within policy."
+    },
+    {
+      "id": "advertising.observe",
+      "description": "advertising observe"
+    },
+    {
+      "id": "search.observe",
+      "description": "search observe"
+    },
+    {
+      "id": "search.performance.read",
+      "description": "search performance read"
+    },
+    {
+      "id": "search.rank.read",
+      "description": "search rank read"
+    },
+    {
+      "id": "search.serp.read",
+      "description": "search serp read"
+    },
+    {
+      "id": "search.index.inspect",
+      "description": "search index inspect"
+    },
+    {
+      "id": "search.index.request",
+      "description": "search index request"
+    },
+    {
+      "id": "crawler.run",
+      "description": "crawler run"
+    },
+    {
+      "id": "backlink.read",
+      "description": "backlink read"
+    },
+    {
+      "id": "local_profile.read",
+      "description": "local_profile read"
+    },
+    {
+      "id": "local_profile.update",
+      "description": "local_profile update"
+    },
+    {
+      "id": "ai_answer.observe",
+      "description": "ai_answer observe"
+    },
+    {
+      "id": "cms.page.read",
+      "description": "cms page read"
+    },
+    {
+      "id": "cms.page.update",
+      "description": "cms page update"
+    },
+    {
+      "id": "cms.page.publish",
+      "description": "cms page publish"
+    },
+    {
+      "id": "creative.text.generate",
+      "description": "creative text generate"
+    },
+    {
+      "id": "creative.image.generate",
+      "description": "creative image generate"
+    },
+    {
+      "id": "creative.image.edit",
+      "description": "creative image edit"
+    },
+    {
+      "id": "creative.audio.generate",
+      "description": "creative audio generate"
+    },
+    {
+      "id": "creative.video.generate",
+      "description": "creative video generate"
+    },
+    {
+      "id": "creative.animation.generate",
+      "description": "creative animation generate"
+    },
+    {
+      "id": "video.render",
+      "description": "video render"
+    },
+    {
+      "id": "presentation.render",
+      "description": "presentation render"
+    },
+    {
+      "id": "document.render",
+      "description": "document render"
+    },
+    {
+      "id": "email.read",
+      "description": "Read messages in an authorized mailbox or research inbox, including legitimately received follow-up."
+    },
+    {
+      "id": "email.send",
+      "description": "email send"
+    },
+    {
+      "id": "email.content.publish",
+      "description": "email content publish"
+    },
+    {
+      "id": "marketing.performance.read",
+      "description": "marketing performance read"
+    },
+    {
+      "id": "tracking.read",
+      "description": "tracking read"
+    },
+    {
+      "id": "conversion.read",
+      "description": "conversion read"
+    },
+    {
+      "id": "experiment.run",
+      "description": "experiment run"
+    },
+    {
+      "id": "checkout.read",
+      "description": "checkout read"
+    },
+    {
+      "id": "checkout.update",
+      "description": "checkout update"
+    },
+    {
+      "id": "billing.read",
+      "description": "billing read"
+    },
+    {
+      "id": "customer_success.read",
+      "description": "customer_success read"
+    },
+    {
+      "id": "scheduling.read",
+      "description": "scheduling read"
+    },
+    {
+      "id": "workflow.update",
+      "description": "workflow update"
+    },
+    {
+      "id": "market_data.read",
+      "description": "market_data read"
+    },
+    {
+      "id": "alert.read",
+      "description": "alert read"
+    },
+    {
+      "id": "revenue.read",
+      "description": "revenue read"
+    },
+    {
+      "id": "public_comment.read",
+      "description": "Read public comments/replies from an authorized public surface."
+    },
+    {
+      "id": "rss.read",
+      "description": "Read items from an RSS/Atom or equivalent subscribed feed."
+    },
+    {
+      "id": "creator_content.observe",
+      "description": "Observe public creator content and basic public performance/context signals."
+    },
+    {
+      "id": "webpage.screenshot",
+      "description": "Capture an allowed visual snapshot of a public webpage or public content item."
+    },
+    {
+      "id": "media.video.acquire",
+      "description": "Acquire permitted public or authorized video/audio media and associated metadata without bypassing access controls."
+    },
+    {
+      "id": "media.transcript.acquire",
+      "description": "Acquire available public or authorized captions/transcripts for evidence use while preserving source and modality limits."
+    },
+    {
+      "id": "media.metadata.inspect",
+      "description": "Inspect deterministic media/container/stream metadata without treating metadata as semantic visual/audio understanding."
+    },
+    {
+      "id": "media.video.process",
+      "description": "Perform deterministic local video mechanics such as clipping, transcoding, scaling, muxing, or format conversion."
+    },
+    {
+      "id": "media.audio.extract",
+      "description": "Extract or convert authorized audio from local/authorized media for downstream inspection or production."
+    },
+    {
+      "id": "media.frame.extract",
+      "description": "Extract representative frames or bounded visual samples from authorized video for downstream inspection."
+    },
+    {
+      "id": "automation.schedule.manage",
+      "description": "Create, inspect, update, pause, or disable an authorized host/OS/workflow schedule; schedule mechanics do not themselves execute or prove completion of AURA work."
+    },
+    {
+      "id": "creative.avatar_video.generate",
+      "description": "Generate an avatar-presented video from approved script, voice, and visual inputs."
+    },
+    {
+      "id": "social.content.schedule",
+      "description": "Schedule an approved social content Asset for future publication."
+    },
+    {
+      "id": "business.data.query",
+      "description": "Query governed first-party business data through a provider-neutral semantic or equivalent analytical interface."
+    },
+    {
+      "id": "business.data.explain",
+      "description": "Retrieve the definitions, plan, evidence, coverage, freshness, lineage, and reason codes behind a governed business-data result."
+    },
+    {
+      "id": "business.data.export",
+      "description": "Create or retrieve an authorized portable dataset/export derived from governed business data without mutating canonical truth."
+    },
+    {
+      "id": "business.data.artifact.create",
+      "description": "Create an authorized derived business-data artifact such as a saved result, chart/table dataset, or reproducible analysis snapshot."
+    },
+    {
+      "id": "business.action.governed.propose",
+      "description": "Submit an already-formed business action into a governed proposal lifecycle without granting execution authority."
+    },
+    {
+      "id": "business.action.governed.preview",
+      "description": "Preview an eligible governed business action, exclusions, constraints, side effects, and approval requirements before execution."
+    },
+    {
+      "id": "business.action.governed.execute",
+      "description": "Execute a supported, separately authorized governed business action and return execution status/receipt evidence."
+    },
+    {
+      "id": "business.action.receipt.read",
+      "description": "Read an authoritative action/external-execution receipt used to record and verify a BusinessOS ChangeEvent."
+    },
+    {
+      "id": "business.measurement.read",
+      "description": "Read governed business measurement, outcome, experiment, incrementality, attribution, or related evaluation evidence when available."
+    },
+    {
+      "id": "business.measurement.evaluate",
+      "description": "Use a governed measurement/evaluation surface to compare an intervention with outcomes while preserving evidence and causal limits."
+    },
+    {
+      "id": "business.event.subscribe",
+      "description": "Receive or subscribe to authorized business occurrence/event signals for reactive or continuous operation; an event is evidence, not authorization to act."
+    },
+    {
+      "id": "business.event.catalog.read",
+      "description": "Read an authorized governed event catalog/ontology so BusinessOS can understand available event meanings without hardcoding provider event names."
+    },
+    {
+      "id": "business.event.coverage.read",
+      "description": "Read producer/consumer/event coverage and readiness metadata for a governed event plane."
+    },
+    {
+      "id": "business.event.readiness.read",
+      "description": "Read current event-plane operational/readiness state, rollout mode, and degradation information."
+    },
+    {
+      "id": "business.event.subscription.manage",
+      "description": "Inspect, create, reconcile, enable, disable, or update an authorized governed event subscription/managed binding without bypassing provider policy."
+    },
+    {
+      "id": "business.event.evaluate.preview",
+      "description": "Dry-run or preview event-to-consumer evaluation without performing an external/customer-visible effect."
+    },
+    {
+      "id": "business.event.trace.read",
+      "description": "Read an authorized event trace linking occurrence, policy, delivery, evaluation, action, exposure, outcome, and reason-coded failures."
+    },
+    {
+      "id": "business.event.reconciliation.read",
+      "description": "Read event-plane reconciliation/repair state for missing mappings, delivery gaps, receipt gaps, conflicts, or other reason-coded degradation."
+    },
+    {
+      "id": "business.event.replay.preview",
+      "description": "Preview a governed replay/re-evaluation plan without performing effects."
+    },
+    {
+      "id": "business.event.delivery.receive",
+      "description": "Host/harness ability to receive or reliably surface an authorized provider event delivery for a BusinessOS run; this is execution machinery, not event truth."
+    }
   ]
 }
