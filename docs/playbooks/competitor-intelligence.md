@@ -11,6 +11,7 @@ Find the competitors that matter, study what they do, compare them with the busi
 - **[Competitor Research Plan](../../systems/competitor-intelligence/contracts/research/plan/CONTEXT.md)** — Resolve a competitive question with bounded evidence.
 - **[Adaptive Competitive Source Coverage](../../systems/competitor-intelligence/contracts/research/adaptive-source-coverage/CONTEXT.md)** — Adapt research depth and evidence-source coverage to the competitive decision.
 - **[Competitive Ecosystem Radar](../../systems/competitor-intelligence/contracts/intelligence/ecosystem-radar/CONTEXT.md)** — Discover important competitive movements and tactic claims, verify what is observed versus effective, and route material implications.
+- **[Competitive Position & Landscape](../../systems/competitor-intelligence/contracts/analysis/competitive-position/CONTEXT.md)** — Compose the relevant competitor jobs into a decision-useful competitive landscape and position.
 - **[Competitor Discovery](../../systems/competitor-intelligence/contracts/discovery/competitive-set/CONTEXT.md)** — Identify current direct/substitute competitors.
 - **[Competitor Entity Resolution](../../systems/competitor-intelligence/contracts/discovery/entity-resolution/CONTEXT.md)** — Make sure websites, social profiles, review pages, ad profiles, and other sources belong to the correct competitor before combining the evidence.
 - **[Emerging Competitor Discovery](../../systems/competitor-intelligence/contracts/discovery/emerging-competitors/CONTEXT.md)** — Detect new competitors entering the relevant customer choice set.
@@ -37,6 +38,7 @@ These are smaller, specific playbooks BusinessOS can use inside the larger jobs 
 - [Advertising Intelligence](../../systems/competitor-intelligence/contracts/analysis/advertising/CONTEXT.md) *(main entry playbook)*
 - [Competitive Benchmark](../../systems/competitor-intelligence/contracts/analysis/benchmark/CONTEXT.md)
 - [Competitive Implication Analysis](../../systems/competitor-intelligence/contracts/analysis/competitive-implications/CONTEXT.md) *(main entry playbook)*
+- [Competitive Position & Landscape](../../systems/competitor-intelligence/contracts/analysis/competitive-position/CONTEXT.md) *(main entry playbook)*
 - [Competitive Whitespace Analysis](../../systems/competitor-intelligence/contracts/analysis/whitespace/CONTEXT.md)
 - [Competitor Capability Comparison](../../systems/competitor-intelligence/contracts/analysis/capability-comparison/CONTEXT.md) *(main entry playbook)*
 - [Competitor Content Strategy](../../systems/competitor-intelligence/contracts/analysis/content-strategy/CONTEXT.md) *(main entry playbook)*

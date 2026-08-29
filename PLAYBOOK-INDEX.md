@@ -8,6 +8,7 @@ Generated from contract frontmatter. Do not maintain a second manual list.
 - `competitor.analysis.benchmark` — Competitive Benchmark: Compare the business and competitors on decision-relevant dimensions using transparent measures.
 - `competitor.analysis.capability-comparison` — Competitor Capability Comparison: Compare product/service capabilities in the customer context that makes them valuable.
 - `competitor.analysis.competitive-implications` — Competitive Implication Analysis: Translate supported competitor changes and strengths/weaknesses into implications for this business without deciding foreign-domain actions.
+- `competitor.analysis.competitive-position` — Competitive Position & Landscape: Build a decision-useful competitive position by composing the existing Competitor Intelligence jobs needed for the question instead of collapsing a broad landscape request into one narrow analysis step.
 - `competitor.analysis.competitor-brief` — Current Competitor Brief: Assemble a concise current view of a priority competitor from canonical state and active Insights.
 - `competitor.analysis.content-strategy` — Competitor Content Strategy: Understand the narratives, topics, formats, cadence, distribution, multimodal execution, and apparent audience role of competitor content.
 - `competitor.analysis.customer-sentiment` — Competitor Customer Sentiment: Understand what customers praise, dislike, expect, and compare about competitors.
