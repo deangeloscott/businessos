@@ -109,6 +109,7 @@ Diagnose and improve conversion, purchase, onboarding, activation, success, rete
 | `onboarding` | Move customers from purchase/start to meaningful value. | `customer-optimization.intervention.onboarding` |
 | `activation` | Increase successful activation/value milestones. | `customer-optimization.intervention.activation` |
 | `time-to-value` | Measure and reduce time to meaningful customer value. | `customer-optimization.measurement.time-to-value` |
+| `customer-value` | Understand mutually valuable customer relationships, lifecycle economics, high-value patterns, and value-at-risk without reducing value to revenue alone. | `customer-optimization.measurement.customer-value` |
 | `adoption` | Build sustained value-driving adoption. | `customer-optimization.intervention.adoption` |
 | `customer-success` | Improve customer-success process mechanics. | `customer-optimization.intervention.customer-success` |
 | `churn` | Diagnose and reduce avoidable churn. | `customer-optimization.intervention.churn` |
@@ -119,7 +120,7 @@ Diagnose and improve conversion, purchase, onboarding, activation, success, rete
 | `expansion` | Expand successful customer relationships when eligible. | `customer-optimization.intervention.expansion` |
 | `referral` | Generate advocacy at appropriate value moments. | `customer-optimization.intervention.referral` |
 | `service-recovery` | Recover active failures and prevent recurrence. | `customer-optimization.intervention.service-recovery` |
-| `risk-monitoring` | Detect interpretable churn risk early. | `customer-optimization.monitoring.churn-risk` |
+| `risk-monitoring` | Detect interpretable churn risk early and distinguish risk likelihood from value-at-risk. | `customer-optimization.monitoring.churn-risk` |
 | `lifecycle-experiment` | Test a journey intervention with guardrails. | `customer-optimization.experimentation.lifecycle-test` |
 | `cohort-retention` | Understand retention patterns across cohorts. | `customer-optimization.measurement.cohort-retention` |
 | `journey-health` | Monitor journey health and detect material change. | `customer-optimization.monitoring.journey-health` |
@@ -202,6 +203,7 @@ Core supplies shared business context, evidence/provenance, Opportunities, Actio
 | `refresh-human-knowledge` | Generate a traceable Markdown/Obsidian-friendly human view from canonical BusinessOS state without creating a competing truth store. | `core.knowledge.refresh-human-layer` |
 | `ingest-human-note` | Register a human-authored workspace note as noncanonical source material and route useful claims through normal evidence/context governance. | `core.knowledge.ingest-human-note` |
 | `scan-external-ecosystem` | Discover important external changes, tactics, findings, and signals; verify what is real and relevant; and route promising items to investigation, testing, or learning. | `core.intelligence.ecosystem-radar` |
+| `track-external-subject` | Build or refresh a durable evidence-backed watch for a company, creator, public figure, publication, platform, product, regulator, own organization, or other decision-relevant subject across appropriate sources and modalities. | `core.intelligence.subject-monitoring` |
 | `evolve-operating-process` | Turn strong reusable Learning into a governed business process extension, new local playbook, or canonical BusinessOS revision candidate without overgeneralizing evidence. | `core.learning.playbook-evolution` |
 | `use-innovation-exchange` | Prepare, import, browse, and evaluate portable BusinessOS process innovations with explicit sharing consent and no required central service. | `core.intelligence.innovation-exchange` |
 | `review-community-innovation` | Separate community reports from independent/local evidence and route promising innovations to test, adopt, or playbook evolution. | `core.intelligence.community-evidence-review` |
