@@ -1,5 +1,5 @@
 {
-  "version": "1.4.0",
+  "version": "1.5.0",
   "system": "customer-optimization",
   "activities": [
     {"id":"journey-mapping","entry_contract":"customer-optimization.journey.mapping","result":"Define the business-specific customer journey and measurable transitions."},
@@ -17,6 +17,7 @@
     {"id":"onboarding","entry_contract":"customer-optimization.intervention.onboarding","result":"Move customers from purchase/start to meaningful value."},
     {"id":"activation","entry_contract":"customer-optimization.intervention.activation","result":"Increase successful activation/value milestones."},
     {"id":"time-to-value","entry_contract":"customer-optimization.measurement.time-to-value","result":"Measure and reduce time to meaningful customer value."},
+    {"id":"customer-value","entry_contract":"customer-optimization.measurement.customer-value","result":"Understand mutually valuable customer relationships, lifecycle economics, high-value patterns, and value-at-risk without reducing value to revenue alone."},
     {"id":"adoption","entry_contract":"customer-optimization.intervention.adoption","result":"Build sustained value-driving adoption."},
     {"id":"customer-success","entry_contract":"customer-optimization.intervention.customer-success","result":"Improve customer-success process mechanics."},
     {"id":"churn","entry_contract":"customer-optimization.intervention.churn","result":"Diagnose and reduce avoidable churn."},
@@ -27,7 +28,7 @@
     {"id":"expansion","entry_contract":"customer-optimization.intervention.expansion","result":"Expand successful customer relationships when eligible."},
     {"id":"referral","entry_contract":"customer-optimization.intervention.referral","result":"Generate advocacy at appropriate value moments."},
     {"id":"service-recovery","entry_contract":"customer-optimization.intervention.service-recovery","result":"Recover active failures and prevent recurrence."},
-    {"id":"risk-monitoring","entry_contract":"customer-optimization.monitoring.churn-risk","result":"Detect interpretable churn risk early."},
+    {"id":"risk-monitoring","entry_contract":"customer-optimization.monitoring.churn-risk","result":"Detect interpretable churn risk early and distinguish risk likelihood from value-at-risk."},
     {"id":"lifecycle-experiment","entry_contract":"customer-optimization.experimentation.lifecycle-test","result":"Test a journey intervention with guardrails."},
     {"id":"cohort-retention","entry_contract":"customer-optimization.measurement.cohort-retention","result":"Understand retention patterns across cohorts."},
     {"id":"journey-health","entry_contract":"customer-optimization.monitoring.journey-health","result":"Monitor journey health and detect material change."}
