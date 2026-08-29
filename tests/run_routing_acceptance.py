@@ -35,6 +35,9 @@ FEATURE_CASES=[
  ('What are you monitoring for us?','core.monitoring.status'),
  ('Show me our recurring checks and what is due.','core.monitoring.status'),
  ('Review our monitoring schedule.','core.monitoring.status'),
+ ('Pause the Hormozi watch.','core.intelligence.subject-monitoring'),
+ ('Only notify me when something materially changes.','core.intelligence.subject-monitoring'),
+ ('Make pricing monthly but hiring weekly.','core.intelligence.subject-monitoring'),
 ]
 
 def main():
