@@ -9,6 +9,7 @@ AURA's intelligence should become richer without becoming a separate intelligenc
 - **Portable-first.** A watch plan or tracked subject must remain useful as organization-owned state without requiring a proprietary server, database, crawler, scheduler, model provider, or ViralTrac connection. Optional infrastructure may execute checks more conveniently.
 - **Capability-neutral.** State the evidence/business job first. Use the best available model/harness/tool path for webpages, documents, images, audio, video, transcripts, comments, APIs, or structured exports. Missing native multimodal capability changes the acquisition/extraction method, not the required evidence standard. Trusted optional local capability packs may raise the local execution ceiling without becoming hard dependencies.
 - **Minimum sufficient research.** Do not archive or monitor everything because it is technically possible. Depth, source coverage, cadence, and modalities should expand only when they can materially change a decision, reduce important uncertainty, preserve a material baseline, or satisfy verification.
+- **Evidence closure before confident synthesis.** Decision-grade conclusions may not outrun the evidence that supports them. Material subjects, requested dimensions, and important claims should be supportable, explicitly limited, or visibly unknown before synthesis is treated as complete. More sources are not automatically better; the question is whether the evidence is relevant, support-grade, sufficiently scoped, and capable of supporting the confidence claimed.
 - **No competing truth stores.** Canonical JSON remains machine-authoritative. Human-readable summaries/views may be generated from canonical state and linked evidence, but must not become a second source of truth.
 
 ## Multimodal evidence
@@ -39,6 +40,23 @@ A tracked subject may be an organization, the active business, competitor, subst
 - active-business facts remain governed Business Context/first-party truth.
 
 Do not merge namesakes or accounts merely because names look similar. Preserve unresolved identity as separate/candidate source profiles until evidence is sufficient.
+
+## Evidence closure and subject relevance
+
+Evidence closure is a reasoning boundary, not a demand for exhaustive research. For a material decision, AURA should know which important subjects/dimensions are adequately supported, which are limited, which remain unknown or blocked, and which are not material to the decision. Stop when additional accessible evidence is unlikely to change the decision enough to justify the cost; do not stop merely because a polished narrative can already be written.
+
+Material claims should preserve a traceable chain from source evidence to Observation to Insight or decision artifact at the level needed to audit the conclusion. When the source has a resolved subject, preserve that subject on the SourceRecord. Evidence about one subject does not silently become evidence about another subject simply because both appear in the same comparison. Cross-subject comparison is valid when the underlying subject-specific facts are independently supported and the comparison itself is explicit.
+
+Keep these truth types distinct when they materially affect the decision:
+- **observed fact** — what the evidence directly shows;
+- **inference** — a reasoned interpretation of supported observations;
+- **sentiment pattern** — a scoped pattern in a defined sample/population;
+- **hypothesis** — a proposition to test or investigate;
+- **effectiveness/outcome evidence** — evidence that a tactic or condition produced or correlates with a result at the confidence stated.
+
+A confidence score, polished prose, or large report does not repair missing provenance. A missing material fact stays unknown/limited until evidence closes the gap. A test threshold or decision rule may be deliberately chosen without pretending it is an evidence-based forecast; predicted impact ranges require their own support.
+
+Use `core/policies/research-evidence.md` for the detailed support, provenance, subject-scoping, and closure rules.
 
 ## Monitoring design
 
