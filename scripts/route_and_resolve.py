@@ -23,13 +23,15 @@ FEATURE_HINTS=[
 ]
 
 def route_and_resolve(task,business_id=None,team_ref=None,role_ref=None,operator_ref=None):
-    hinted=None
-    for pat,cid,owner in DOMAIN_HINTS:
-        if re.search(pat,task,re.I):hinted={'score':100,'system_score':100,'contract_id':cid,'owner_system':owner,'status':'available','reason':'matched broad domain-level business outcome that requires composed execution'};break
-    if not hinted:
-        for pat,cid in FEATURE_HINTS:
-            if re.search(pat,task,re.I):hinted={'score':100,'system_score':100,'contract_id':cid,'owner_system':'core','status':'available','reason':'matched explicit AURA/BusinessOS product, monitoring, or workspace feature request'};break
-    local=route_local_playbook(task,business_id,team_ref,role_ref,operator_ref) if business_id else None;rows=[hinted] if hinted else ([local] if local else route(task,5))
+    feature_hint=None
+    for pat,cid in FEATURE_HINTS:
+        if re.search(pat,task,re.I):feature_hint={'score':100,'system_score':100,'contract_id':cid,'owner_system':'core','status':'available','reason':'matched explicit AURA/BusinessOS product, monitoring, or workspace feature request'};break
+    local=route_local_playbook(task,business_id,team_ref,role_ref,operator_ref) if business_id and not feature_hint else None
+    domain_hint=None
+    if not feature_hint and not local:
+        for pat,cid,owner in DOMAIN_HINTS:
+            if re.search(pat,task,re.I):domain_hint={'score':100,'system_score':100,'contract_id':cid,'owner_system':owner,'status':'available','reason':'matched broad domain-level business outcome that requires composed execution'};break
+    rows=[feature_hint] if feature_hint else ([local] if local else ([domain_hint] if domain_hint else route(task,5)))
     if not rows:raise ValueError('No route returned')
     first=rows[0]
     if first.get('status')!='available' or not first.get('contract_id'):result={**first,'task':task,'path':None,'executable':False}
@@ -50,6 +52,6 @@ def main():
     if a.show and result.get('contract_id'):
         print('\n--- RESOLVED CONTRACT ---\n')
         if a.business_id:
-            _,_,content,_=resolve_effective(result['contract_id'],a.business_id,a.team_ref,a.role_ref,a.operator_ref);print(content,end='' if content.endswith('\n') else '\n')
+            _,_,content,_=resolve_effective(result['contract_id'],a.business_id,a.team_ref,a.role_ref,operator_ref);print(content,end='' if content.endswith('\n') else '\n')
         elif result.get('path'):print((ROOT/result['path']).read_text(),end='')
 if __name__=='__main__':main()
