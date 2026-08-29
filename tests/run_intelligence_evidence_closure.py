@@ -20,7 +20,7 @@ def main():
 
     for phrase in [
         'Evidence closure before confident synthesis',
-        'subject-relevant support-grade evidence',
+        'Evidence about one subject does not silently become evidence about another subject',
         'A test threshold or decision rule may be deliberately chosen without pretending it is an evidence-based forecast',
     ]:
         req(phrase in foundation,f'shared intelligence foundation missing evidence-closure invariant: {phrase}')
