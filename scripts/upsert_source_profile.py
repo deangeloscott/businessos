@@ -19,6 +19,7 @@ SUBJECT_RELATIONSHIPS = {"own_organization","competitor","substitute","partner",
 SOURCE_MODALITIES = {"text","image","audio","video","document","structured","mixed"}
 CADENCE_MODES = {"recurring","event_driven","manual"}
 CADENCE_SOURCES = {"user","inferred","policy"}
+NOTIFICATION_MODES = {"material_changes_only","due_and_material_changes","all_checks","silent"}
 
 def _normalized_reference(value):
     """Normalize only URL components that are semantically case-insensitive.
@@ -119,6 +120,53 @@ def _cadence_from_args(args, existing):
         raise ValueError("recurring cadence requires --cadence-expression (for example 'weekly', 'monthly', or 'every 30 days')")
     return {"mode":mode,"expression":expression,"timezone":timezone,"source":source,"notes":notes}
 
+def _notification_from_args(args, existing):
+    requested = any(x is not None for x in [args.notification_mode,args.notification_source,args.notification_notes])
+    if not requested:return existing
+    source=args.notification_source or (existing or {}).get('source') or 'inferred'
+    previous_source=(existing or {}).get('source')
+    if previous_source=='user' and source!='user' and not args.replace_user_notification:
+        raise ValueError("existing monitoring notification preference is user-specified; preserve it unless the current explicit user instruction authorizes replacement")
+    return {
+        'mode':args.notification_mode or (existing or {}).get('mode') or 'material_changes_only',
+        'source':source,
+        'notes':args.notification_notes if args.notification_notes is not None else (existing or {}).get('notes')
+    }
+
+def _signal_key(value):
+    return " ".join(str(value or '').strip().split()).casefold()
+
+def _parse_signal_cadences(values, existing, replace_user=False):
+    rows={_signal_key(x.get('signal')):dict(x) for x in (existing or []) if isinstance(x,dict) and x.get('signal')}
+    for raw in values or []:
+        try:new=json.loads(raw)
+        except json.JSONDecodeError as e:raise ValueError(f'--signal-cadence-json must be valid JSON: {e}') from e
+        if not isinstance(new,dict):raise ValueError('--signal-cadence-json must decode to an object')
+        signal=" ".join(str(new.get('signal') or '').strip().split())
+        if not signal:raise ValueError('--signal-cadence-json requires signal')
+        key=_signal_key(signal);old=rows.get(key,{})
+        source=new.get('source') or old.get('source') or 'inferred'
+        if source not in CADENCE_SOURCES:raise ValueError(f'invalid signal cadence source: {source}')
+        if old.get('source')=='user' and source!='user' and not replace_user:
+            raise ValueError(f"signal cadence for '{old.get('signal')}' is user-specified and cannot be silently replaced")
+        mode=new.get('mode') or old.get('mode')
+        if mode not in CADENCE_MODES:raise ValueError(f"signal cadence for '{signal}' requires mode in {sorted(CADENCE_MODES)}")
+        expression=new.get('expression') if 'expression' in new else old.get('expression')
+        if mode=='recurring' and not expression:raise ValueError(f"recurring signal cadence for '{signal}' requires expression")
+        notification_mode=new.get('notification_mode') or old.get('notification_mode') or 'material_changes_only'
+        if notification_mode not in NOTIFICATION_MODES:raise ValueError(f'invalid signal notification_mode: {notification_mode}')
+        rows[key]={
+            'signal':signal,
+            'mode':mode,
+            'expression':expression,
+            'timezone':new.get('timezone') if 'timezone' in new else old.get('timezone'),
+            'source':source,
+            'next_check_at':new.get('next_check_at') if 'next_check_at' in new else old.get('next_check_at'),
+            'notification_mode':notification_mode,
+            'notes':new.get('notes') if 'notes' in new else old.get('notes')
+        }
+    return [rows[k] for k in sorted(rows)]
+
 def upsert(args):
     base = ROOT/"instances"/args.business_id
     if not base.exists():
@@ -134,14 +182,15 @@ def upsert(args):
         obj["source_reference"] = ref
     else:
         obj = {
-            "id":profile_id,"object_type":"SourceProfile","schema_version":"1.2.0",
+            "id":profile_id,"object_type":"SourceProfile","schema_version":"1.3.0",
             "business_id":args.business_id,"created_at":ts,"updated_at":ts,"lineage":[],
             "source_reference":ref,"display_name":None,"source_kind":"other","owner_systems":[],
             "topic_tags":[],"watch_status":"candidate","attention_priority":"medium",
             "discovery_reason":None,"commercial_context":None,
             "subject_key":None,"subject_name":None,"subject_kind":None,"subject_aliases":[],
             "subject_relationships":[],"source_modalities":[],"monitoring_questions":[],
-            "material_change_signals":[],"monitoring_cadence":None,"last_material_change_at":None,
+            "material_change_signals":[],"monitoring_cadence":None,"monitoring_signal_cadences":[],
+            "monitoring_notification":None,"last_material_change_at":None,
             "fact_type_assessments":[],"last_checked_at":None,"next_check_at":None,
             "extensions":{"external_learning":{"outcome_events":[]}}
         }
@@ -149,7 +198,8 @@ def upsert(args):
     for key, default in {
         "subject_key":None,"subject_name":None,"subject_kind":None,"subject_aliases":[],
         "subject_relationships":[],"source_modalities":[],"monitoring_questions":[],
-        "material_change_signals":[],"monitoring_cadence":None,"last_material_change_at":None
+        "material_change_signals":[],"monitoring_cadence":None,"monitoring_signal_cadences":[],
+        "monitoring_notification":None,"last_material_change_at":None
     }.items():
         obj.setdefault(key, default)
 
@@ -170,6 +220,10 @@ def upsert(args):
     if args.monitoring_question: obj["monitoring_questions"] = _merge_unique(obj.get("monitoring_questions"), args.monitoring_question)
     if args.material_change_signal: obj["material_change_signals"] = _merge_unique(obj.get("material_change_signals"), args.material_change_signal)
     obj["monitoring_cadence"] = _cadence_from_args(args,obj.get("monitoring_cadence"))
+    obj["monitoring_notification"] = _notification_from_args(args,obj.get("monitoring_notification"))
+    obj["monitoring_signal_cadences"] = _parse_signal_cadences(args.signal_cadence_json,obj.get("monitoring_signal_cadences"),args.replace_user_cadence)
+    for row in obj["monitoring_signal_cadences"]:
+        obj["material_change_signals"] = _merge_unique(obj.get("material_change_signals"),[row['signal']])
     if args.last_material_change_at is not None: obj["last_material_change_at"] = args.last_material_change_at
     if args.last_checked_at is not None: obj["last_checked_at"] = args.last_checked_at
     if args.next_check_at is not None: obj["next_check_at"] = args.next_check_at
@@ -221,7 +275,12 @@ def main():
     p.add_argument("--cadence-timezone")
     p.add_argument("--cadence-source",choices=sorted(CADENCE_SOURCES))
     p.add_argument("--cadence-notes")
+    p.add_argument("--signal-cadence-json",action="append",help="Per-signal cadence JSON object; repeat for multiple signals. Example: {\"signal\":\"pricing changes\",\"mode\":\"recurring\",\"expression\":\"monthly\",\"source\":\"user\",\"notification_mode\":\"material_changes_only\"}")
     p.add_argument("--replace-user-cadence",action="store_true",help="Allow replacement of an existing user-specified cadence only when the current explicit user instruction authorizes it.")
+    p.add_argument("--notification-mode",choices=sorted(NOTIFICATION_MODES))
+    p.add_argument("--notification-source",choices=sorted(CADENCE_SOURCES))
+    p.add_argument("--notification-notes")
+    p.add_argument("--replace-user-notification",action="store_true",help="Allow replacement of an existing user-specified notification mode only when the current explicit user instruction authorizes it.")
     p.add_argument("--last-material-change-at")
     p.add_argument("--last-checked-at")
     p.add_argument("--next-check-at")
@@ -234,7 +293,7 @@ def main():
         path,obj=upsert(args)
     except ValueError as e:
         raise SystemExit(str(e))
-    print(json.dumps({"path":str(path.relative_to(ROOT)),"id":obj["id"],"watch_status":obj["watch_status"],"attention_priority":obj["attention_priority"],"subject_key":obj.get("subject_key"),"monitoring_cadence":obj.get("monitoring_cadence"),"next_check_at":obj.get("next_check_at"),"schedule_execution":"not represented here; verify environment scheduler binding separately"},indent=2))
+    print(json.dumps({"path":str(path.relative_to(ROOT)),"id":obj["id"],"watch_status":obj["watch_status"],"attention_priority":obj["attention_priority"],"subject_key":obj.get("subject_key"),"monitoring_cadence":obj.get("monitoring_cadence"),"monitoring_signal_cadences":obj.get("monitoring_signal_cadences"),"monitoring_notification":obj.get("monitoring_notification"),"next_check_at":obj.get("next_check_at"),"schedule_execution":"not represented here; verify environment scheduler binding separately"},indent=2))
 
 if __name__=="__main__":
     main()
