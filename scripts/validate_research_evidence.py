@@ -5,8 +5,7 @@ import argparse, json, hashlib
 
 PUBLIC_NARRATIVE_TYPES={
     'review_platform','forum','social_platform','complaint_board','community','public_comment',
-    'social_post','review','discussion','webpage','article','consumer_reports','industry_guide',
-    'image','audio','video','podcast','document','media'
+    'social_post','review','discussion','webpage','article','consumer_reports','industry_guide'
 }
 
 # acquisition_method records how the evidence was actually obtained. capture_method records
@@ -77,7 +76,7 @@ def evidence_errors(business_id):
             continue
         for ref in refs:
             src=sources.get(ref)
-            if not src: continue
+            if not src: continue  # reference validator reports missing refs
             public=src.get('access_scope')=='public' or src.get('source_type') in PUBLIC_NARRATIVE_TYPES or src.get('origin')=='public web'
             if not public: continue
             ok,mode=_capture_quality(src)
