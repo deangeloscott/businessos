@@ -146,17 +146,47 @@ def _installer(pack):
     return None
 
 
-def _system_action(pack,action,approve):
+def _brew_installed(manager,formula):
+    p=subprocess.run([manager,'list','--formula',formula],capture_output=True,text=True,timeout=30)
+    return p.returncode==0
+
+
+def _system_action(pack,action,approve,status=None):
     if action not in {'install','upgrade','repair'}:raise ValueError(f'unsupported system action: {action}')
     if not approve:raise ValueError(f'{action} changes system software and requires explicit --approve')
     installer=_installer(pack)
     if not installer:
         raise ValueError(f"No trusted automatic installer configured for {pack['display_name']} on this environment. Use the tool project's/package manager's normal installation path, then run status/bind again.")
+    if installer.get('manager')!='brew':raise ValueError(f"Unsupported trusted installer manager: {installer.get('manager')}")
     manager=shutil.which(installer['manager_executable'])
-    args=installer[f'{action}_args']
-    p=subprocess.run([manager,*args],capture_output=True,text=True,timeout=1800)
-    if p.returncode!=0:raise ValueError(f"{action} failed via trusted {installer['manager']} recipe: {(p.stderr or p.stdout or '').strip()}")
-    return {'installer_id':installer['id'],'manager':installer['manager'],'command':[manager,*args],'stdout':(p.stdout or '').strip()[-4000:]}
+    status=status or inspect_pack(pack)
+    unhealthy={r.get('id'):r for r in status.get('tools',[]) if r.get('status')!='healthy'}
+    if not unhealthy:
+        return {'installer_id':installer['id'],'manager':installer['manager'],'changed':False,'commands':[],'message':'All pack capabilities already meet the configured AURA health/version floor; no system change was needed.'}
+
+    allowed=set((installer.get('install_args') or [])[1:])
+    tool_by_id={t.get('id'):t for t in pack.get('tools',[])}
+    formulas=[]
+    for tid,row in unhealthy.items():
+        tool=tool_by_id.get(tid) or {}
+        candidate=row.get('brew_formula') if row.get('brew_formula') in allowed else None
+        if not candidate:
+            candidate=next((f for f in tool.get('brew_formula_candidates',[]) if f in allowed),None)
+        if candidate and candidate not in formulas:formulas.append(candidate)
+    if not formulas:
+        raise ValueError(f"No reviewed formula in the trusted {installer['id']} recipe can repair the unhealthy tools: {', '.join(sorted(unhealthy))}")
+
+    commands=[];outputs=[]
+    for formula in formulas:
+        installed=_brew_installed(manager,formula)
+        if action=='repair':verb='reinstall' if installed else 'install'
+        elif action=='upgrade':verb='upgrade' if installed else 'install'
+        else:verb='upgrade' if installed else 'install'
+        cmd=[manager,verb,formula]
+        p=subprocess.run(cmd,capture_output=True,text=True,timeout=1800)
+        if p.returncode!=0:raise ValueError(f"{action} failed via trusted {installer['manager']} recipe for {formula}: {(p.stderr or p.stdout or '').strip()}")
+        commands.append(cmd);outputs.append({'formula':formula,'operation':verb,'stdout':(p.stdout or '').strip()[-3000:]})
+    return {'installer_id':installer['id'],'manager':installer['manager'],'changed':True,'commands':commands,'results':outputs}
 
 
 def recommendation(pack,status):
@@ -192,7 +222,7 @@ def main():
             if a.action=='recommend':row['recommendation']=recommendation(pack,before)
             elif a.action=='bind':row['binding']=_merge_binding_state(a.environment,pack,before);row['recommendation']=recommendation(pack,before)
             elif a.action in {'install','upgrade','repair'}:
-                row['system_action']=_system_action(pack,a.action,a.approve)
+                row['system_action']=_system_action(pack,a.action,a.approve,before)
                 after=inspect_pack(pack);row['status']=after;row['binding']=_merge_binding_state(a.environment,pack,after);row['recommendation']=recommendation(pack,after)
             out.append(row)
     except (ValueError,json.JSONDecodeError,subprocess.TimeoutExpired) as e:raise SystemExit(str(e))
