@@ -216,9 +216,11 @@ Open `knowledge/` in Obsidian or any Markdown tool if desired. Start with `knowl
 
 The tracked-subject view also distinguishes:
 
-- semantic cadence / next useful check;
+- default/source cadence and signal-specific cadence;
+- notification mode (quiet by default unless the user changes it);
 - actual verified automatic scheduler binding;
-- reminder-only / paused / planned-but-unbound / manual monitoring.
+- reminder-only / paused / planned-but-unbound / manual monitoring;
+- next useful check and relevant material-change signals.
 
 Generated pages are derived/noncanonical views. Human notes remain noncanonical until deliberately incorporated through the evidence/context process.
 
@@ -258,14 +260,25 @@ python3 scripts/list_attention.py <business-id> --json
 
 and use its own Slack/email/push/scheduler capabilities.
 
-For durable subject monitoring, **cadence is not the same as an active schedule**. Inspect due work with:
+For the normal combined monitoring view, use:
+
+```bash
+python3 scripts/monitoring_status.py <business-id>
+python3 scripts/monitoring_status.py <business-id> --json
+```
+
+This shows what AURA is watching, default/source cadence, signal-specific cadence, notification intent, what is due, pause/block state, and whether automatic execution has an actual verified scheduler binding. Normal users should be able to ask the same thing naturally: **“What are you monitoring for us?”**
+
+AURA's default monitoring notification mode is **material changes only**. An unchanged check should update checkpoints silently rather than generate “nothing changed” messages. Users may explicitly choose `due_and_material_changes`, `all_checks`, or `silent`, including different choices for individual signals. Monitoring/check cadence and notification cadence are separate concerns.
+
+For internal/diagnostic due-state inspection:
 
 ```bash
 python3 scripts/list_due_monitoring.py <business-id>
 python3 scripts/list_due_monitoring.py <business-id> --due-only
 ```
 
-If no scheduler exists, AURA retains the monitoring plan and can surface overdue work on the next AURA start. Manual refresh always remains possible.
+If no scheduler exists, AURA retains the monitoring plan and can refresh overdue work on a relevant future AURA start. It should not interrupt unrelated work merely to clear a backlog. Manual refresh always remains possible.
 
 When a harness/OS/workflow scheduler really creates and verifies a recurring task or reminder, record the non-secret environment binding only after that external schedule exists:
 
@@ -288,6 +301,14 @@ python3 scripts/manage_local_capabilities.py bind --pack local-automation
 ```
 
 That pack may discover `launchctl`, `systemctl`/`crontab`, or Windows Task Scheduler as available schedule mechanics. AURA remains scheduler-neutral and does not become a daemon.
+
+Pause a semantic watch without deleting its accumulated intelligence with:
+
+```bash
+python3 scripts/set_monitoring_watch_status.py <business-id> paused --subject-key <subject-key>
+```
+
+Resume it with `active`. If a real scheduler is attached, change the real host schedule too and then update its scheduler-binding receipt/status. AURA deliberately exposes a mismatch if the semantic watch says paused while the host scheduler is still active.
 
 External platform/vendor knowledge can be refreshed independently through `PlatformChange`; repeated unchanged checks should update current state rather than create endless duplicates.
 
