@@ -5,6 +5,7 @@
     {"id":"research-plan","entry_contract":"competitor.research.plan","result":"Resolve a competitive question with bounded evidence."},
     {"id":"source-coverage","entry_contract":"competitor.research.adaptive-source-coverage","result":"Adapt research depth and evidence-source coverage to the competitive decision."},
     {"id":"ecosystem-radar","entry_contract":"competitor.intelligence.ecosystem-radar","result":"Discover important competitive movements and tactic claims, verify what is observed versus effective, and route material implications."},
+    {"id":"competitive-position","entry_contract":"competitor.analysis.competitive-position","result":"Compose the relevant competitor jobs into a decision-useful competitive landscape and position."},
     {"id":"competitor-discovery","entry_contract":"competitor.discovery.competitive-set","result":"Identify current direct/substitute competitors."},
     {"id":"entity-resolution","entry_contract":"competitor.discovery.entity-resolution","result":"Resolve competitor domains and public profiles to the correct canonical entity."},
     {"id":"emerging-competitors","entry_contract":"competitor.discovery.emerging-competitors","result":"Detect new competitors entering the relevant customer choice set."},
