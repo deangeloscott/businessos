@@ -40,23 +40,23 @@ def main():
 
     schema=json.loads((ROOT/'core/schemas/intelligence/source-profile.schema.json').read_text())
     props=schema.get('properties',{})
-    for field in ['subject_key','subject_name','subject_kind','subject_relationships','source_modalities','monitoring_questions','material_change_signals','monitoring_cadence','last_material_change_at']:
+    for field in ['subject_key','subject_name','subject_kind','subject_relationships','source_modalities','monitoring_questions','material_change_signals','monitoring_cadence','monitoring_signal_cadences','monitoring_notification','last_material_change_at']:
         if field not in props:fail(f'SourceProfile missing intelligence-maturation field {field}')
     required=set(schema.get('required',[]))
-    if any(field in required for field in ['subject_key','subject_name','subject_kind','source_modalities','monitoring_questions','monitoring_cadence']):
+    if any(field in required for field in ['subject_key','subject_name','subject_kind','source_modalities','monitoring_questions','monitoring_cadence','monitoring_signal_cadences','monitoring_notification']):
         fail('new subject/watch enrichment must remain optional for backward compatibility')
     rels=set(props['subject_relationships']['items']['enum'])
     if {'customer','prospect'} & rels:
         fail('shared public subject monitoring must not become a customer/prospect surveillance relationship model')
 
     helper=(ROOT/'scripts/upsert_source_profile.py').read_text()
-    for flag in ['--subject-key','--subject-name','--subject-kind','--subject-relationship','--source-modality','--monitoring-question','--material-change-signal','--cadence-mode','--cadence-expression','--cadence-source']:
+    for flag in ['--subject-key','--subject-name','--subject-kind','--subject-relationship','--source-modality','--monitoring-question','--material-change-signal','--cadence-mode','--cadence-expression','--cadence-source','--signal-cadence-json','--notification-mode']:
         if flag not in helper:fail(f'SourceProfile helper missing {flag}')
     if 'Source history changes discovery attention only' not in helper:
         fail('existing SourceProfile discovery-only invariant was lost')
 
     _,subject_meta,subject_body=contract('core.intelligence.subject-monitoring')
-    for phrase in ['one SourceProfile per source/surface','shared `subject_key`','text, documents, images, audio, video, transcripts','cadence/`next_check_at` is monitoring intent']:
+    for phrase in ['one SourceProfile per source/surface','shared `subject_key`','text, documents, images, audio, video, transcripts','cadence/`next_check_at` is monitoring intent','monitoring_signal_cadences','material_changes_only']:
         if phrase not in subject_body:fail(f'subject monitoring missing behavior: {phrase}')
     if 'core.intelligence.ecosystem.maintain-source-profile' not in (subject_meta.get('subcontracts') or {}).get('required',[]):
         fail('subject monitoring must reuse shared SourceProfile mechanics')
@@ -66,8 +66,9 @@ def main():
         if phrase not in routing_body:fail(f'semantic intent resolution missing durable monitoring rule: {phrase}')
 
     core_map=json.loads((ROOT/'core/process-map.json').read_text())
-    if 'core.intelligence.subject-monitoring' not in [a.get('entry_contract') for a in core_map.get('activities',[])]:
-        fail('Core process map missing durable subject monitoring')
+    entry_ids=[a.get('entry_contract') for a in core_map.get('activities',[])]
+    if 'core.intelligence.subject-monitoring' not in entry_ids:fail('Core process map missing durable subject monitoring')
+    if 'core.monitoring.status' not in entry_ids:fail('Core process map missing human monitoring status view')
 
     for rel,phrases in {
         'systems/competitor-intelligence/DEFAULTS.md':['Contextual Competitive Set','geography/service area','aspirational/category-benchmark'],
@@ -95,11 +96,12 @@ def main():
         'watch_status':'active','attention_priority':'medium','discovery_reason':'Learn durable content mechanisms.',
         'monitoring_questions':['What topics are changing?'],'material_change_signals':['Major positioning shift'],
         'monitoring_cadence':{'mode':'recurring','expression':'weekly','source':'inferred','timezone':None,'notes':None},
+        'monitoring_notification':{'mode':'material_changes_only','source':'policy','notes':None},
         'last_checked_at':'2026-08-29T00:00:00Z','next_check_at':'2026-09-05T00:00:00Z'
     }
     if _page_for(source_profile)!='Tracked-Subjects':fail('SourceProfile human view is not routed to Tracked-Subjects')
     rendered=_entry(source_profile,ROOT/'instances/example/intelligence/source-profiles/sprof_demo.json')
-    for phrase in ['Example Creator','thought_leader','What topics are changing?','Major positioning shift','Cadence','planned / not automatically scheduled','Last checked','Next check']:
+    for phrase in ['Example Creator','thought_leader','What topics are changing?','Major positioning shift','Default cadence','Notification mode','material_changes_only','planned / not automatically scheduled','Last checked','Next check']:
         if phrase not in rendered:fail(f'tracked-subject human view missing {phrase}')
 
     print('AURA intelligence maturation regressions passed: shared monitoring, semantic routing, multimodal evidence, contextual intelligence, marketing/customer value, and human/machine legibility')
