@@ -106,9 +106,34 @@ Before atomic execution, use AURA's capability layer to identify what the curren
 python3 scripts/preflight_capabilities.py ...
 ```
 
-AURA describes required capabilities independently of providers. Existing visible tools should be discovered first; provider recommendations/fallbacks come afterward.
+AURA describes required capabilities independently of providers. Existing visible tools should be discovered first; explicit provider preferences come next; trusted optional local capability packs may then satisfy compatible local mechanics before a generic external-provider/manual fallback.
 
-New account signup, connection, credential use, spending, publishing, contacting customers, or other consequential external actions still require appropriate authorization.
+Inspect optional trusted local packs:
+
+```bash
+python3 scripts/manage_local_capabilities.py status
+python3 scripts/manage_local_capabilities.py recommend --pack local-media
+```
+
+For the local media toolkit, a healthy existing `yt-dlp`, `ffmpeg`, and `ffprobe` installation can be bound without reinstalling it:
+
+```bash
+python3 scripts/manage_local_capabilities.py bind --pack local-media
+```
+
+On a compatible Homebrew environment, the user may explicitly authorize AURA's fixed trusted setup/update/repair recipe:
+
+```bash
+python3 scripts/manage_local_capabilities.py install --pack local-media --approve
+python3 scripts/manage_local_capabilities.py upgrade --pack local-media --approve
+python3 scripts/manage_local_capabilities.py repair --pack local-media --approve
+```
+
+The enhanced Homebrew media setup uses `yt-dlp` plus `ffmpeg-full`; a healthy existing standard FFmpeg installation is still accepted. `yt-dlp` supplies permitted media/subtitle acquisition mechanics, while FFmpeg/ffprobe supplies deterministic processing/inspection mechanics. These tools do **not** mean AURA semantically watched or understood a video; the model/harness must still inspect the relevant evidence.
+
+AURA uses only product-owned/reviewable capability-pack definitions for automatic setup. It does not search for a random installer and execute it. System installation/update/repair, new account signup, connection, credential use, spending, publishing, contacting customers, or other consequential external actions still require appropriate authorization.
+
+The user-facing responsibility note for general-purpose local tools is intentionally short: **Use local tools responsibly and only on content/systems you are allowed to access.**
 
 Do not replace a failed deterministic AURA helper with a custom canonical-state writer merely to get around the failure.
 
@@ -187,7 +212,13 @@ Generate a readable Markdown view of canonical organization knowledge with:
 python3 scripts/generate_knowledge_layer.py <business-id>
 ```
 
-Open `knowledge/` in Obsidian or any Markdown tool if desired.
+Open `knowledge/` in Obsidian or any Markdown tool if desired. Start with `knowledge/<business-id>/_generated/Home.md`. Tracked sources for the same resolved subject are grouped under `Tracked-Subjects.md` so humans can review one understandable subject dossier instead of navigating many SourceProfile JSON files.
+
+The tracked-subject view also distinguishes:
+
+- semantic cadence / next useful check;
+- actual verified automatic scheduler binding;
+- reminder-only / paused / planned-but-unbound / manual monitoring.
 
 Generated pages are derived/noncanonical views. Human notes remain noncanonical until deliberately incorporated through the evidence/context process.
 
@@ -215,7 +246,7 @@ python3 scripts/sync_viraltrac_capabilities.py local --manifest <file>
 
 AURA remains the broader business operating authority. ViralTrac may provide governed measurement, tracking, attribution, experiments, interventions, receipts, and supported action surfaces for authorized AURA work.
 
-## 11. Attention and proactive operation
+## 11. Attention, monitoring, and proactive operation
 
 AURA can persist material unresolved attention as `AttentionItem` state. It does not require its own notification/scheduler service.
 
@@ -226,6 +257,37 @@ python3 scripts/list_attention.py <business-id> --json
 ```
 
 and use its own Slack/email/push/scheduler capabilities.
+
+For durable subject monitoring, **cadence is not the same as an active schedule**. Inspect due work with:
+
+```bash
+python3 scripts/list_due_monitoring.py <business-id>
+python3 scripts/list_due_monitoring.py <business-id> --due-only
+```
+
+If no scheduler exists, AURA retains the monitoring plan and can surface overdue work on the next AURA start. Manual refresh always remains possible.
+
+When a harness/OS/workflow scheduler really creates and verifies a recurring task or reminder, record the non-secret environment binding only after that external schedule exists:
+
+```bash
+python3 scripts/register_scheduler_binding.py local sched_example \
+  --business-id <business-id> \
+  --target-kind subject \
+  --subject-key <subject-key> \
+  --executor-kind harness_scheduler \
+  --executor-ref <actual-scheduler-reference> \
+  --cadence-expression "monthly" \
+  --verified-at <ISO-date-time>
+```
+
+The binding proves schedule mechanics, not that future AURA work ran successfully. A compatible worker/harness is still required. Optional built-in OS scheduling surfaces can be discovered through the `local-automation` capability pack:
+
+```bash
+python3 scripts/manage_local_capabilities.py status --pack local-automation
+python3 scripts/manage_local_capabilities.py bind --pack local-automation
+```
+
+That pack may discover `launchctl`, `systemctl`/`crontab`, or Windows Task Scheduler as available schedule mechanics. AURA remains scheduler-neutral and does not become a daemon.
 
 External platform/vendor knowledge can be refreshed independently through `PlatformChange`; repeated unchanged checks should update current state rather than create endless duplicates.
 
@@ -263,7 +325,7 @@ python3 tests/run_all.py
 
 ## 13. Updates
 
-Update checks are disabled by default and never auto-install.
+AURA product update checks are disabled by default and never auto-install.
 
 One-time metadata check:
 
@@ -277,6 +339,8 @@ Opt in to update checks:
 python3 scripts/set_update_policy.py --enable
 ```
 
+Optional local capability-tool updates are separate from AURA product updates and occur only when the user explicitly authorizes the local pack update/repair action.
+
 ## 14. Where to go deeper
 
 - Human quick start: `START-HERE.md`
@@ -284,6 +348,8 @@ python3 scripts/set_update_policy.py --enable
 - What AURA can do: `PLAYBOOKS.md`
 - Deployment/workspaces: `DEPLOYMENT.md`
 - Agent operating context: `CONTEXT.md`
+- Monitoring continuity: `core/policies/monitoring-continuity.md`
+- Optional local capability packs: `core/policies/local-capability-packs.md`
 - Public naming: `BRANDING.md`
 - License: `LICENSE.md`
 - Public/security boundary: `PUBLIC-DISTRIBUTION.md`, `SECURITY.md`
