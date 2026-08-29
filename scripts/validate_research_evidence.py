@@ -29,6 +29,18 @@ def _evidence_ext(src):
     return ev
 
 
+def _subject_refs(obj):
+    values=obj.get('subject_refs') if isinstance(obj,dict) else []
+    if not isinstance(values,list): return set()
+    return {str(x).strip() for x in values if isinstance(x,str) and x.strip()}
+
+
+def _subject_mismatch(left,left_label,right,right_label):
+    a=_subject_refs(left); b=_subject_refs(right)
+    if not a or not b or a & b: return None
+    return f'{left_label} subject_refs ({", ".join(sorted(a))}) do not overlap {right_label} subject_refs ({", ".join(sorted(b))}); evidence about one resolved subject cannot silently support another'
+
+
 def _capture_quality(src):
     ev=_evidence_ext(src)
     status=ev.get('capture_status')
@@ -77,6 +89,8 @@ def evidence_errors(business_id):
         for ref in refs:
             src=sources.get(ref)
             if not src: continue  # reference validator reports missing refs
+            mismatch=_subject_mismatch(obs,oid,src,ref)
+            if mismatch: errors.append(mismatch)
             public=src.get('access_scope')=='public' or src.get('source_type') in PUBLIC_NARRATIVE_TYPES or src.get('origin')=='public web'
             if not public: continue
             ok,mode=_capture_quality(src)
@@ -98,8 +112,13 @@ def evidence_errors(business_id):
         supporting_obs=[]
         for link in links:
             ref=link.get('ref')
-            if ref in observations: supporting_obs.append(ref)
+            if ref in observations:
+                supporting_obs.append(ref)
+                mismatch=_subject_mismatch(ins,iid,observations[ref],ref)
+                if mismatch: errors.append(mismatch)
             elif ref in sources:
+                mismatch=_subject_mismatch(ins,iid,sources[ref],ref)
+                if mismatch: errors.append(mismatch)
                 ok,mode=_capture_quality(sources[ref])
                 if not ok: errors.append(f'{iid} directly relies on source {ref} without directly acquired/reproducible evidence (evidence={mode})')
             elif ref in insights:
@@ -111,7 +130,7 @@ def evidence_errors(business_id):
 
 
 def main():
-    p=argparse.ArgumentParser(description='Validate semantic evidence support for researched SourceRecords, Observations, and supported/active Insights across text, visual, audio, video, document, structured, and mixed-media evidence.')
+    p=argparse.ArgumentParser(description='Validate semantic evidence support for researched SourceRecords, Observations, and supported/active Insights across text, visual, audio, video, document, structured, and mixed-media evidence, including resolved-subject provenance when supplied.')
     p.add_argument('business_id'); a=p.parse_args()
     errors,warnings=evidence_errors(a.business_id)
     print(f'business={a.business_id} research_evidence_errors={len(errors)} warnings={len(warnings)}')
