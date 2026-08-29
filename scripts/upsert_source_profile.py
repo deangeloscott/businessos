@@ -176,7 +176,7 @@ def upsert(args):
     return path,obj
 
 def main():
-    p=argparse.ArgumentParser(description="Create/update a SourceProfile. Source/subject watch history guides research attention; it never proves a current claim.")
+    p=argparse.ArgumentParser(description="Create/update a SourceProfile. Source history changes discovery attention only; subject/watch history guides research attention and never proves a current claim.")
     p.add_argument("business_id")
     p.add_argument("--source-reference",required=True)
     p.add_argument("--display-name")
