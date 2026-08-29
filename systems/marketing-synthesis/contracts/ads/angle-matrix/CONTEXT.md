@@ -1,7 +1,7 @@
 ---
 id: marketing.ads.angle-matrix
 type: playbook
-version: 1.3.0
+version: 1.4.0
 owner_system: marketing-synthesis
 risk: medium
 autonomy_ceiling: 2
@@ -20,6 +20,8 @@ capabilities:
   - none
   optional:
   - creative.text.generate
+  - advertising.observe
+  - research.web.read
   - tracking.read
   - conversion.read
   - marketing.performance.read
@@ -33,23 +35,25 @@ context:
 - Offer
 - Objective
 - EconomicContext
+- PreferenceProfile
 ---
 # Advertising Angle Matrix
 
 ## Purpose
-Generate distinct persuasion hypotheses for an ad campaign rather than cosmetic creative variants.
+Generate distinct evidence-backed persuasion hypotheses for an ad campaign rather than cosmetic creative variants.
 
 ## Business Outcome
-Test materially different reasons a qualified audience may act so performance produces useful marketing learning.
+Test materially different reasons a qualified audience may act so performance produces useful marketing learning instead of merely selecting a prettier execution.
 
 ## Run When
 Run when an advertising campaign requires this persuasion or QA sub-process; media buying/targeting execution remains outside this OS.
 
 ## Process
-1. [AI] Resolve Customer Insights, Offer, awareness, source/channel context, competitor positioning, proof, and prior performance.
-2. [AI] Generate distinct angles based on different pains/outcomes/mechanisms/proof/objections/comparisons/triggers—not synonym changes.
-3. [AI] State the hypothesis and audience belief each angle is intended to change.
-4. [HYBRID] Reject angles that require unsupported claims, exploit sensitive traits, or attract poor-fit customers.
-5. [AI] Match each angle to appropriate proof/creative demonstration and destination message requirement.
-6. [DETERMINISTIC] Select a testable subset that maximizes learning under available traffic/budget; media buying remains outside Marketing Synthesis.
-7. [AI] Produce angle matrix with expected mechanism and measurement.
+1. [AI] Resolve Customer Insights, Offer, awareness/knowledge state, funnel/journey role, source/channel context, competitor/current-field patterns when available, proof, owned prior performance, and applicable Brand/operator marketing doctrine.
+2. [AI] Generate distinct angles from evidence-backed pains/outcomes, motivations, mechanisms, proof, objections, comparisons, triggers, desired gains, loss/risk reduction, certainty/control, speed/effort, financial outcomes, status/identity, or other supported decision drivers—not synonym changes or a forced taxonomy.
+3. [AI] State the hypothesis, audience belief/decision barrier, communication job, and expected mechanism each angle is intended to change.
+4. [HYBRID] When current external creative patterns inform an angle, separate transferable mechanism from copied expression and distinguish performance proxies (engagement, longevity, prevalence, view counts) from direct business-outcome evidence.
+5. [HYBRID] Reject angles that require unsupported claims, fabricated urgency/scarcity, unapproved Offer terms, sensitive-trait exploitation, or acquisition of poor-fit customers.
+6. [AI] Match each angle to appropriate proof/creative demonstration, destination message requirement, and placement/context.
+7. [DETERMINISTIC] Select a testable subset that maximizes learning under available traffic/budget without inventing traffic/budget assumptions; media buying remains outside Marketing Synthesis.
+8. [AI] Produce the angle matrix with expected mechanism, evidence basis/uncertainty, and measurement/guardrail requirements.
