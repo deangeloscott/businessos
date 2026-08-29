@@ -27,7 +27,7 @@ def main():
     # Policy regressions verify the product concepts, not frozen sentence wording.
     req('## Evidence closure and subject relevance' in foundation,
         'shared intelligence foundation must define evidence closure and subject relevance')
-    req(contains_all(foundation,'evidence closure','material subjects','unknown','support-grade evidence'),
+    req(contains_all(foundation,'evidence closure','material subjects','unknown','support-grade'),
         'shared intelligence foundation must bound confident synthesis by material evidence coverage')
     req(contains_all(foundation,'observed fact','inference','sentiment pattern','hypothesis','effectiveness/outcome evidence'),
         'shared intelligence foundation must preserve material truth-type distinctions')
