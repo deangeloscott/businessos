@@ -6,7 +6,7 @@ installers, never uses shell=True, and only mutates system software after --appr
 """
 from _common import *
 from jsonschema import Draft202012Validator
-import argparse,json,os,re,shutil,subprocess,sys
+import argparse,json,re,shutil,subprocess,sys
 
 PACK_ROOT=ROOT/'core/capability-packs'
 
@@ -37,6 +37,7 @@ def packs():
         if errors:raise ValueError(f"{path.relative_to(ROOT)} invalid: "+'; '.join(f'{list(e.path)} {e.message}' for e in errors))
         unknown=sorted({cap for t in data.get('tools',[]) for cap in t.get('capabilities',[]) if cap not in caps})
         if unknown:raise ValueError(f"{path.relative_to(ROOT)} references unknown capabilities: {', '.join(unknown)}")
+        if data['id'] in out:raise ValueError(f"duplicate capability pack id: {data['id']}")
         out[data['id']]=data
     return out
 
@@ -87,7 +88,6 @@ def _compatible(tool,version):
     parsed=str(version.get('parsed') or '')
     minimum=tool.get('minimum_version')
     if minimum:
-        # yt-dlp date-style versions sort correctly after zero-padding the date components used by supported releases.
         def parts(v):
             try:return tuple(int(x) for x in re.split(r'[.\-]',v)[:3])
             except Exception:return ()
@@ -127,7 +127,6 @@ def _merge_binding_state(environment,pack,status):
     inv.setdefault('tools',[]);bindings.setdefault('bindings',[])
     prefix=f"local-pack:{pack['id']}:"
     healthy={r['id']:r for r in status['tools'] if r.get('status')=='healthy'}
-    # Replace this pack's discovered inventory/bindings while preserving every unrelated host/provider binding.
     inv['tools']=[x for x in inv['tools'] if not str(x.get('id','')).startswith(prefix)]
     bindings['bindings']=[x for x in bindings['bindings'] if not str(x.get('connection_ref','')).startswith(prefix)]
     for tool in pack.get('tools',[]):
@@ -183,8 +182,8 @@ def main():
     a=p.parse_args()
     try:
         allpacks=packs()
-        selected=[allpacks[a.pack]] if a.pack else list(allpacks.values())
         if a.pack and a.pack not in allpacks:raise ValueError(f'Unknown capability pack: {a.pack}')
+        selected=[allpacks[a.pack]] if a.pack else list(allpacks.values())
         if a.action in {'bind','install','upgrade','repair'} and len(selected)!=1:raise ValueError(f'{a.action} requires --pack <id>')
         if not environment_exists(a.environment):raise ValueError(f'Unknown environment: {a.environment}')
         out=[]
