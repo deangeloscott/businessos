@@ -45,6 +45,8 @@ For newly researched external sources, use `SourceRecord.extensions.businessos_e
 - `evidence_pointer`: durable provider/export/record/media reference when raw content stays outside the workspace;
 - `capture_notes`: limitations, sampled ranges, timestamp/page context, transcript provenance, or access constraints.
 
+When the evidence is about one or more resolved subjects, also use top-level `SourceRecord.subject_refs` to identify those subjects. Subject scoping is optional when the source is genuinely general or unresolved, but decision-grade research should populate it when material claims depend on distinguishing entities, products, locations, creators, competitors, or other subjects.
+
 A plain URL with `capture_status=pointer_only` may be saved for discovery/history, but it is not sufficient support for a material Observation/Insight that depends on the unseen content. The same is true when `captured_text` exists but `acquisition_method` is only `search_result`, `search_snippet`, `directory_preview`, `ai_summary`, `unvisited_url`, or `unknown`. Filling in a text field does not turn search discovery into inspected evidence.
 
 ## Acquisition method vs. capture method
@@ -63,6 +65,26 @@ A support-grade acquisition method establishes only that the represented modalit
 - If adequate evidence has not been preserved, use `candidate` status or gather the missing evidence before strengthening the claim.
 - Keep frequency and superlative claims honest. Say things like “in the sampled evidence” or “among the reviews examined” unless you have a representative/measured population that supports a broader claim such as “top,” “#1,” “most common,” or “dominant.”
 - Schema-valid means structurally valid; it does not automatically mean evidence-supported. Run `scripts/validate_research_evidence.py <business-id>` or normal business validation before calling research complete.
+
+### Subject relevance
+When a SourceRecord and its Observation both identify resolved subjects, their subject scopes must overlap. Evidence about one competitor, customer segment, creator, product, location, or other subject does not support a factual Observation about another merely because the sources were gathered in the same research run. Similarly, a supported/active Insight with resolved subjects should be supported by Observations whose subject scopes overlap or by evidence whose cross-subject relationship is explicitly explained.
+
+Cross-subject comparisons are valid when each side has its own support and the comparison is derived from those supported facts. Do not attach convenient unrelated evidence to a canonical subject record to make the record appear sourced.
+
+## Evidence closure before decision-grade synthesis
+Evidence closure means the material conclusion is bounded by the evidence actually obtained. It does **not** mean exhaustive research or a universal source quota.
+
+Before producing or finalizing a decision-grade research synthesis:
+
+1. **Resolve the decision scope.** Identify the material subjects, requested/material dimensions, time/geography/audience constraints, and the decisions the synthesis is intended to support.
+2. **Track coverage.** For each material subject/dimension, use a useful state such as `supported`, `limited`, `unknown/blocked`, or `not_material`. Preserve why the state is appropriate and the strongest relevant evidence refs where support exists.
+3. **Close material claims.** Important factual claims should resolve to subject-relevant support-grade evidence. Important inferences should identify the supported facts they derive from. Sentiment patterns should state the sample/population boundary. Hypotheses should remain hypotheses.
+4. **Do not manufacture precision.** Do not create numeric ranges, dates, contract terms, implementation timelines, prevalence, rankings, or other specificity beyond what the evidence establishes. When sources conflict or cannot be normalized, preserve the disagreement or compare structure instead of inventing a clean number.
+5. **Bound confidence.** Source count, model confidence, polished prose, and agreement among derivative sources do not substitute for directness, authority, freshness, relevance, representativeness, and contrary evidence. One anecdote may be useful evidence without establishing a recurring pattern.
+6. **Separate forecasts from decision rules.** A deliberately chosen test threshold, minimum detectable effect, stop rule, or success criterion is not a prediction. Do not present an unsupported impact range or outcome forecast as though research established it.
+7. **Stop proportionately.** If an important gap could materially change the decision and accessible evidence is available, research further. If the evidence is unavailable or further work is not proportionate, keep the gap visible and narrow/downgrade the conclusion. Never close a gap by guessing.
+
+A decision-grade artifact should make it possible to answer: what is supported, by which evidence, about which subject and scope, with what limitations, what remains unknown, and which recommendations are facts versus interpretations or hypotheses. Claim-level provenance may be expressed through canonical Observation/Insight refs, source refs adjacent to material claims, or another auditable mapping appropriate to the artifact; a bibliography detached from the claims is not enough when the synthesis contains many material factual assertions.
 
 ## Screenshots, frames, and media captures
 Screenshots/frames are useful but are not required for every source. Prefer them when exact visual context matters, a source is likely to change, a proof/testimonial candidate may be reused, or the image/visual mechanism itself has downstream value. Preserve searchable text/transcript/metadata when available even when a visual Asset exists. For long audio/video, preserve the bounded segments needed to audit material conclusions instead of copying the whole source without reason.
