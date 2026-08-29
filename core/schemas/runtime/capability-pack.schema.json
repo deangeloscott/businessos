@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CapabilityPack",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "format_version": {"type":"string","minLength":1},
+    "id": {"type":"string","pattern":"^[a-z0-9][a-z0-9._-]*$"},
+    "display_name": {"type":"string","minLength":1},
+    "description": {"type":"string","minLength":1},
+    "responsibility_note": {"type":"string","minLength":1},
+    "tools": {
+      "type":"array","minItems":1,
+      "items": {
+        "type":"object","additionalProperties":false,
+        "properties": {
+          "id":{"type":"string","pattern":"^[A-Za-z0-9][A-Za-z0-9._-]*$"},
+          "display_name":{"type":"string","minLength":1},
+          "executable":{"type":"string","minLength":1},
+          "version_args":{"type":"array","items":{"type":"string"}},
+          "capabilities":{"type":"array","minItems":1,"uniqueItems":true,"items":{"type":"string","minLength":1}},
+          "minimum_version":{"type":["string","null"]},
+          "minimum_major":{"type":["integer","null"],"minimum":0},
+          "brew_formula_candidates":{"type":"array","uniqueItems":true,"items":{"type":"string","minLength":1}},
+          "brew_path_suffix":{"type":["string","null"]},
+          "platforms":{"type":"array","minItems":1,"uniqueItems":true,"items":{"enum":["darwin","linux","windows"]}},
+          "limitations":{"type":"array","uniqueItems":true,"items":{"type":"string","minLength":1}}
+        },
+        "required":["id","display_name","executable","version_args","capabilities","platforms"]
+      }
+    },
+    "installers": {
+      "type":"array",
+      "items": {
+        "type":"object","additionalProperties":false,
+        "properties": {
+          "id":{"type":"string","minLength":1},
+          "platforms":{"type":"array","minItems":1,"uniqueItems":true,"items":{"enum":["darwin","linux","windows"]}},
+          "manager":{"type":"string","enum":["brew"]},
+          "manager_executable":{"type":"string","minLength":1},
+          "install_args":{"type":"array","minItems":1,"items":{"type":"string"}},
+          "upgrade_args":{"type":"array","minItems":1,"items":{"type":"string"}},
+          "repair_args":{"type":"array","minItems":1,"items":{"type":"string"}},
+          "notes":{"type":["string","null"]}
+        },
+        "required":["id","platforms","manager","manager_executable","install_args","upgrade_args","repair_args"]
+      }
+    }
+  },
+  "required":["format_version","id","display_name","description","responsibility_note","tools","installers"]
+}
