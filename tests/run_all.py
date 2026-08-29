@@ -11,6 +11,7 @@ TESTS=[
     'tests/run_routing_acceptance.py',
     'tests/run_ecosystem_intelligence.py',
     'tests/run_intelligence_maturation.py',
+    'tests/run_intelligence_evidence_closure.py',
     'tests/run_competitor_composition.py',
     'tests/run_capability_continuity.py',
     'tests/run_monitoring_pause.py',
