@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Regressions for maintainer-selected qualification fixtures with candidate-visible supplied media."""
 from pathlib import Path
-import json, os, subprocess, sys, tempfile
+import json, os, struct, subprocess, sys, tempfile, zlib
 
 ROOT=Path(__file__).resolve().parents[1]
 PNG_MAGIC=b'\x89PNG\r\n\x1a\n'
@@ -9,6 +9,27 @@ PNG_MAGIC=b'\x89PNG\r\n\x1a\n'
 
 def require(cond,msg):
     if not cond:raise AssertionError(msg)
+
+
+def require_decodable_png(path):
+    """Verify the staged PNG has structurally decodable compressed image data."""
+    raw=path.read_bytes()
+    require(raw[:8]==PNG_MAGIC,'candidate-visible supplied product reference is not a real PNG')
+    pos=8; idat=[]; saw_iend=False
+    while pos+12<=len(raw):
+        length=struct.unpack('>I',raw[pos:pos+4])[0]
+        end=pos+12+length
+        require(end<=len(raw),'candidate-visible supplied PNG has a truncated chunk')
+        chunk_type=raw[pos+4:pos+8]
+        chunk_data=raw[pos+8:pos+8+length]
+        if chunk_type==b'IDAT':idat.append(chunk_data)
+        if chunk_type==b'IEND':
+            saw_iend=True
+            break
+        pos=end
+    require(idat and saw_iend,'candidate-visible supplied PNG is missing image data or IEND')
+    try:zlib.decompress(b''.join(idat))
+    except zlib.error as e:raise AssertionError(f'candidate-visible supplied PNG image data is not decodable: {e}')
 
 
 def main():
@@ -39,7 +60,7 @@ def main():
         supplied=workspace/'attachments/supplied'
         media=supplied/'northline-discovery-box-source.png'
         require(media.is_file() and media.stat().st_size>0,'supplied product reference image was not staged')
-        require(media.read_bytes()[:8]==PNG_MAGIC,'candidate-visible supplied product reference is not a real PNG')
+        require_decodable_png(media)
         require(not (supplied/'northline-discovery-box-source.png.b64').exists(),'encoded fixture representation leaked into candidate workspace')
         require(not (product/'qualification').exists(),'qualification tooling leaked into candidate product')
 
