@@ -26,7 +26,7 @@
       "display_name": "FFmpeg",
       "executable": "ffmpeg",
       "version_args": ["-version"],
-      "capabilities": ["media.video.process", "media.audio.extract", "media.frame.extract", "video.render"],
+      "capabilities": ["media.video.process", "media.audio.extract", "media.frame.extract"],
       "minimum_version": null,
       "minimum_major": 6,
       "brew_formula_candidates": ["ffmpeg-full", "ffmpeg"],
@@ -57,7 +57,7 @@
       "install_args": ["install", "yt-dlp", "ffmpeg-full"],
       "upgrade_args": ["upgrade", "yt-dlp", "ffmpeg-full"],
       "repair_args": ["reinstall", "yt-dlp", "ffmpeg-full"],
-      "notes": "Use the official Homebrew formulas. A healthy existing standard ffmpeg installation is accepted; ffmpeg-full is the enhanced Homebrew install path when the user opts in."
+      "notes": "Use the reviewed Homebrew formula path. A healthy existing standard ffmpeg installation is accepted; ffmpeg-full is the enhanced Homebrew install path when the user opts in."
     }
   ]
 }
