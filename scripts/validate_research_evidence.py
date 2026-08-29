@@ -5,14 +5,16 @@ import argparse, json, hashlib
 
 PUBLIC_NARRATIVE_TYPES={
     'review_platform','forum','social_platform','complaint_board','community','public_comment',
-    'social_post','review','discussion','webpage','article','consumer_reports','industry_guide'
+    'social_post','review','discussion','webpage','article','consumer_reports','industry_guide',
+    'image','audio','video','podcast','document','media'
 }
 
 # acquisition_method records how the evidence was actually obtained. capture_method records
 # what was preserved. Search/snippet discovery can be stored, but cannot support material claims.
 DIRECT_ACQUISITION_METHODS={
     'direct_page_read','browser_read','browser_capture','api_response','downloaded_document',
-    'uploaded_document','user_provided','first_party_export','authoritative_record'
+    'uploaded_document','user_provided','first_party_export','authoritative_record',
+    'image_inspection','audio_inspection','video_inspection','transcript_read','document_visual_inspection'
 }
 DISCOVERY_ONLY_METHODS={
     'search_result','search_snippet','directory_preview','ai_summary','unvisited_url','unknown'
@@ -75,7 +77,7 @@ def evidence_errors(business_id):
             continue
         for ref in refs:
             src=sources.get(ref)
-            if not src: continue  # reference validator reports missing refs
+            if not src: continue
             public=src.get('access_scope')=='public' or src.get('source_type') in PUBLIC_NARRATIVE_TYPES or src.get('origin')=='public web'
             if not public: continue
             ok,mode=_capture_quality(src)
@@ -110,7 +112,7 @@ def evidence_errors(business_id):
 
 
 def main():
-    p=argparse.ArgumentParser(description='Validate semantic evidence support for researched SourceRecords, Observations, and supported/active Insights.')
+    p=argparse.ArgumentParser(description='Validate semantic evidence support for researched SourceRecords, Observations, and supported/active Insights across text, visual, audio, video, document, structured, and mixed-media evidence.')
     p.add_argument('business_id'); a=p.parse_args()
     errors,warnings=evidence_errors(a.business_id)
     print(f'business={a.business_id} research_evidence_errors={len(errors)} warnings={len(warnings)}')

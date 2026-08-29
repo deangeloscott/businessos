@@ -6,6 +6,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'scripts'))
 from _common import read_frontmatter
 from generate_knowledge_layer import _page_for,_entry
+from validate_research_evidence import DIRECT_ACQUISITION_METHODS,DISCOVERY_ONLY_METHODS,_capture_quality
 
 
 def fail(msg): raise AssertionError(msg)
@@ -25,6 +26,17 @@ def main():
     ptext=policy.read_text()
     for phrase in ['The organization is the durable unit of intelligence','Shared mechanics, domain-specific meaning','Capability-neutral','Minimum sufficient research','Contextual comparison','Human and machine legibility']:
         if phrase not in ptext:fail(f'intelligence foundation missing invariant: {phrase}')
+
+    research=(ROOT/'core/policies/research-evidence.md').read_text()
+    for phrase in ['Modality-specific support boundary','image_inspection','audio_inspection','video_inspection','transcript_read','does not establish tone','Transcript-only evidence can support spoken-language claims']:
+        if phrase not in research:fail(f'research evidence policy missing multimodal boundary: {phrase}')
+    for method in ['image_inspection','audio_inspection','video_inspection','transcript_read','document_visual_inspection']:
+        if method not in DIRECT_ACQUISITION_METHODS:fail(f'multimodal acquisition method not support-grade: {method}')
+    if not {'search_result','ai_summary'} <= DISCOVERY_ONLY_METHODS:fail('discovery-only evidence boundary regressed')
+    media_source={'extensions':{'businessos_evidence':{'capture_status':'captured','acquisition_method':'video_inspection','asset_refs':['ast_frame']}}}
+    if not _capture_quality(media_source)[0]:fail('direct inspected media with preserved evidence should pass capture-quality floor')
+    unseen_summary={'extensions':{'businessos_evidence':{'capture_status':'captured','acquisition_method':'ai_summary','captured_text':'model summary'}}}
+    if _capture_quality(unseen_summary)[0]:fail('AI summary of unseen media must remain discovery-only')
 
     schema=json.loads((ROOT/'core/schemas/intelligence/source-profile.schema.json').read_text())
     props=schema.get('properties',{})
@@ -85,6 +97,6 @@ def main():
     for phrase in ['Example Creator','thought_leader','What topics are changing?','Major positioning shift','Last checked','Next check']:
         if phrase not in rendered:fail(f'tracked-subject human view missing {phrase}')
 
-    print('AURA intelligence maturation regressions passed: shared monitoring, multimodal/contextual intelligence, marketing/customer value, and human/machine legibility')
+    print('AURA intelligence maturation regressions passed: shared monitoring, multimodal evidence, contextual intelligence, marketing/customer value, and human/machine legibility')
 
 if __name__=='__main__':main()
