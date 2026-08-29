@@ -36,5 +36,5 @@
       }
     }
   },
-  "required":["format_version","bindings"]
+  "required":["bindings"]
 }
