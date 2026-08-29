@@ -16,7 +16,7 @@
     "source_kind": {"enum":["official","regulator","primary_researcher","academic","publication","practitioner","vendor","data_provider","community","social_account","other"]},
     "owner_systems": {"type":"array","items":{"enum":["core","customer-intelligence","competitor-intelligence","industry-intelligence","seo-aeo","content-synthesis","marketing-synthesis","customer-optimization"]},"uniqueItems":true},
     "topic_tags": {"type":"array","items":{"type":"string","minLength":1},"uniqueItems":true},
-    "watch_status": {"enum":["seed","candidate","active","deprioritized","blocked","unavailable"]},
+    "watch_status": {"enum":["seed","candidate","active","paused","deprioritized","blocked","unavailable"]},
     "attention_priority": {"enum":["low","medium","high"]},
     "discovery_reason": {"type":["string","null"]},
     "commercial_context": {"type":["string","null"]},
