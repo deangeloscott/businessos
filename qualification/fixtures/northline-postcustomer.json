@@ -1,0 +1,241 @@
+{
+  "format_version": "1.0",
+  "business_id": "northline-coffee",
+  "name": "Northline Coffee",
+  "category": "DTC specialty coffee ecommerce",
+  "objective": "Increase profitable first orders and 90-day repeat purchase while maintaining premium positioning.",
+
+  "bootstrap_facts": {
+    "industries": [
+      "DTC specialty coffee ecommerce"
+    ],
+    "objectives": [
+      "Increase profitable first orders and 90-day repeat purchase while maintaining premium positioning."
+    ],
+    "brand": {
+      "voice": {
+        "tone": [
+          "warm",
+          "knowledgeable",
+          "unpretentious"
+        ]
+      },
+      "prohibited_styles": [
+        "snobbery",
+        "health claims",
+        "invented sourcing claims"
+      ]
+    }
+  },
+
+  "brand": {
+    "voice": [
+      "warm",
+      "knowledgeable",
+      "unpretentious"
+    ],
+    "avoid": [
+      "snobbery",
+      "health claims",
+      "invented sourcing claims"
+    ]
+  },
+
+  "offers": [
+    {
+      "name": "Discovery Box",
+      "price": "$39",
+      "contents": "three 6oz rotating coffees"
+    },
+    {
+      "name": "Subscription",
+      "price": "from $19/shipment",
+      "notes": "frequency and coffee vary"
+    }
+  ],
+
+  "first_party": {
+    "overall_customer_metrics": {
+      "monthly_orders": 4380,
+      "purchase_rate": 0.021,
+      "repeat_purchase_90d": 0.27,
+      "subscription_share_of_active_customers": 0.18,
+      "refund_rate": 0.024,
+      "support_contact_rate": 0.071
+    },
+
+    "first_purchase_cohorts": [
+      {
+        "first_purchase": "Discovery Box",
+        "customers": 1860,
+        "repeat_purchase_90d": 0.34,
+        "subscription_start_90d": 0.15,
+        "median_days_to_second_order": 39
+      },
+      {
+        "first_purchase": "Single full-size bag",
+        "customers": 2470,
+        "repeat_purchase_90d": 0.22,
+        "subscription_start_90d": 0.07,
+        "median_days_to_second_order": 51
+      }
+    ],
+
+    "subscription_cancellations_last_90d": {
+      "total": 174,
+      "reasons": [
+        {
+          "reason": "coffee accumulated faster than customer could use it",
+          "count": 61
+        },
+        {
+          "reason": "wanted more control over shipment frequency",
+          "count": 38
+        },
+        {
+          "reason": "shipment timing was inconvenient or unpredictable",
+          "count": 32
+        },
+        {
+          "reason": "wanted more control over coffee selection",
+          "count": 23
+        },
+        {
+          "reason": "price",
+          "count": 20
+        }
+      ]
+    },
+
+    "support_patterns_last_90d": [
+      {
+        "pattern": "uncertain which brew method or recipe fits a coffee",
+        "count": 84
+      },
+      {
+        "pattern": "questions about skipping, pausing, or changing subscription frequency",
+        "count": 72
+      },
+      {
+        "pattern": "questions about shipment timing or delivery status",
+        "count": 66
+      },
+      {
+        "pattern": "customers unsure which coffee to reorder after Discovery Box",
+        "count": 51
+      },
+      {
+        "pattern": "questions about changing the coffee in an upcoming subscription shipment",
+        "count": 37
+      }
+    ],
+
+    "refund_and_service_recovery": [
+      {
+        "reason": "late or delayed shipment",
+        "count": 41
+      },
+      {
+        "reason": "coffee arrived after intended gift date",
+        "count": 17
+      },
+      {
+        "reason": "customer disliked selected roast or flavor profile",
+        "count": 14
+      },
+      {
+        "reason": "damaged package",
+        "count": 9
+      }
+    ],
+
+    "customer_comments": [
+      "I liked trying three coffees, but after the box I wasn't sure which one I should order next.",
+      "The tasting notes make sense once I brew it, but I still want a simple starting recipe.",
+      "I joined the subscription because I found a coffee I liked in the Discovery Box.",
+      "Pausing was easy once I found the setting, but I didn't know I could change the frequency until support told me.",
+      "I cancelled because bags were stacking up faster than we could drink them.",
+      "I would have stayed subscribed if I could space shipments out more easily.",
+      "The coffee was great. The frustrating part was not knowing when the holiday shipment would arrive.",
+      "The brew guide in one of the emails was useful enough that I saved it.",
+      "I sent the Discovery Box to a friend because it was an easy way to introduce them to better coffee.",
+      "I don't necessarily want a subscription. I mostly want an easy way to reorder the one I liked."
+    ],
+
+    "post_purchase_survey": {
+      "responses": 612,
+      "most_selected_reasons_for_second_purchase": [
+        {
+          "reason": "found a coffee they specifically wanted again",
+          "count": 238
+        },
+        {
+          "reason": "wanted to explore another coffee",
+          "count": 149
+        },
+        {
+          "reason": "convenience of subscription",
+          "count": 92
+        },
+        {
+          "reason": "gift or referral purchase",
+          "count": 61
+        }
+      ],
+      "most_selected_barriers_to_another_purchase": [
+        {
+          "reason": "still had coffee remaining",
+          "count": 167
+        },
+        {
+          "reason": "uncertain what to order next",
+          "count": 116
+        },
+        {
+          "reason": "shipping timing or cost",
+          "count": 93
+        },
+        {
+          "reason": "price",
+          "count": 71
+        }
+      ]
+    },
+
+    "advocacy": {
+      "customers_with_repeat_purchase_who_used_referral_link": 0.12,
+      "one_time_customers_who_used_referral_link": 0.03,
+      "note": "Observed association only; this does not establish that repeat purchasing causes referrals."
+    },
+
+    "existing_post_purchase_touchpoints": [
+      {
+        "timing": "immediately after purchase",
+        "touchpoint": "order confirmation",
+        "current_content": "receipt, order contents, shipping address"
+      },
+      {
+        "timing": "after shipment",
+        "touchpoint": "shipping confirmation",
+        "current_content": "tracking link and basic delivery information"
+      },
+      {
+        "timing": "14 days after purchase",
+        "touchpoint": "generic product review request",
+        "current_content": "asks for a review; no brew guidance or reorder help"
+      },
+      {
+        "timing": "30 days after purchase",
+        "touchpoint": "general promotional email",
+        "current_content": "features current coffees; not personalized to the prior purchase"
+      }
+    ],
+
+    "known_constraints": [
+      "Do not invent customer outcomes that are not in the supplied evidence.",
+      "No live email, ecommerce, subscription, or customer-support account is connected in this environment.",
+      "Local drafts and implementation-ready assets may be created.",
+      "Do not claim that a lifecycle change has been deployed without an authorized live system."
+    ]
+  }
+}
