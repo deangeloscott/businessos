@@ -36,7 +36,7 @@ HINTS=[
  (r'\bcompetitor.*(tactic|working|doing better)|what .*competitor.*work|find out.*competitor.*better','competitor.analysis.tactic-validation'),
  (r'\b(regulation|regulatory|law|legislation)\b','industry.monitoring.regulation'),
  (r'\b(technology|platform|ai).*(trend|shift|change|development)','industry.monitoring.technology'),
- (r'\b(industry|market|category).*(trend|news|change)|\btrend.*industry\b','industry.monitoring.market'),
+ (r'\b(?:industry|market|category)\b.*\b(?:trend(?:s|ing)?|news|chang(?:e|es|ed|ing))\b|\btrend(?:s|ing)?\b.*\bindustry\b','industry.monitoring.market'),
  (r'\b(rank|ranking|visibility).*(drop|fall|declin|lost)|organic.*(drop|declin)','seo.diagnosis.detectors.ranking-decay'),
  (r'\b(ai answer|ai citation|cited|citation).*(missing|not|gap|visibility)|not .*cited','seo.diagnosis.detectors.ai-citation-gap'),
  (r'\bindex(ed|ing)?\b.*(problem|issue|not|missing)','seo.diagnosis.detectors.indexing'),
@@ -71,7 +71,7 @@ CORE_HINTS=[
 SYSTEM_RULES={
  'customer-intelligence':[(5,r'\b(customer|buyer|prospect)s?\b.*\b(want|need|believe|fear|complain|language|question|reason|choose|reject|leave|leaving|cancel|churn)'),(6,r'\b(objection|win.?loss|lost deal|interview|voice of customer|feature request|testimonial|review|churn reason)')],
  'competitor-intelligence':[(7,r'\b(competitor|competitive|rival)s?\b'),(4,r'\b(pricing|packaging|positioning|offer|funnel|messaging|tactic|whitespace)\b')],
- 'industry-intelligence':[(7,r'\b(industry|regulation|regulatory|legislation|news|trend|research|technology shift|market change|category change)\b')],
+ 'industry-intelligence':[(7,r'\b(industry|regulation|regulatory|legislation|news|trend|technology shift|market change|category change)\b')],
  'seo-aeo':[(7,r'\b(seo|search|organic|ranking|serp|indexing|backlink|google search|ai citation|ai answer)\b')],
  'content-synthesis':[(5,r'\b(content|article|video|carousel|slideshow|linkedin|newsletter|podcast|presentation|image|graphic|animation|infographic|gif|creator)\b'),(3,r'\b(create|make|turn|adapt|repurpose|produce|write|trending)\b')],
  'marketing-synthesis':[(7,r'\b(marketing|landing page|vsl|webinar|advertorial|sales letter|campaign|ad copy|lead magnet|persuasion|value proposition|offer presentation)\b'),(3,r'\b(convert|sell|commercial|lead|demo|purchase)\b')],
@@ -133,7 +133,15 @@ def route(task, top=5):
     if re.search(r'\b(lost deal|losing deal|why .*lost|win.?loss)',q):scores['customer-intelligence']+=10
     if re.search(r'why .*customer.*(cancel|churn)|reason.*(cancel|churn)',q):scores['customer-intelligence']+=8
     if re.search(r'(reduce|prevent|lower|improve).*(churn|retention|renewal)',q):scores['customer-optimization']+=8
-    owner=max(scores,key=scores.get)
+    top_system_score=max(scores.values())
+    top_owners=[name for name,score in scores.items() if score==top_system_score and score>0]
+    if len(top_owners)>1:
+        return _semantic_fallback(
+            contracts,
+            'multiple semantic owners were equally plausible; use workspace-native semantic intent resolution',
+            candidates=top_owners,
+        )
+    owner=top_owners[0] if top_owners else max(scores,key=scores.get)
 
     if scores[owner]>0 and owner not in available_owners:
         return [{'score':scores[owner],'system_score':scores[owner],'contract_id':None,'owner_system':owner,'status':'module-not-installed','reason':f'{owner} is the semantic owner but is not installed in this distribution'}]
