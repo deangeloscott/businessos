@@ -1,0 +1,324 @@
+{
+  "format_version": "1.0",
+  "business_id": "harbor-hvac",
+  "name": "Harbor HVAC",
+  "category": "Residential HVAC service business",
+  "market": "Baltimore metro",
+  "objective": "Grow profitable booked service and replacement jobs while protecting review quality and technician capacity.",
+
+  "bootstrap_facts": {
+    "industries": [
+      "Residential HVAC service business"
+    ],
+    "markets": [
+      "Baltimore metro"
+    ],
+    "services": [
+      "AC repair",
+      "heating repair",
+      "maintenance",
+      "system replacement"
+    ],
+    "objectives": [
+      "Grow profitable booked service and replacement jobs while protecting review quality and technician capacity."
+    ],
+    "brand": {
+      "voice": {
+        "tone": [
+          "plainspoken",
+          "helpful",
+          "local",
+          "trustworthy"
+        ]
+      },
+      "prohibited_styles": [
+        "fear tactics",
+        "fake urgency",
+        "unsupported same-day guarantees"
+      ]
+    }
+  },
+
+  "brand": {
+    "voice": [
+      "plainspoken",
+      "helpful",
+      "local",
+      "trustworthy"
+    ],
+    "avoid": [
+      "fear tactics",
+      "fake urgency",
+      "unsupported same-day guarantees"
+    ]
+  },
+
+  "services": [
+    "AC repair",
+    "heating repair",
+    "maintenance",
+    "system replacement"
+  ],
+
+  "first_party": {
+    "business_metrics": {
+      "latest_month": {
+        "organic_sessions": 12100,
+        "calls": 812,
+        "booked_jobs": 501,
+        "replacement_estimates": 81,
+        "replacement_sales": 23
+      },
+      "previous_month": {
+        "organic_sessions": 12800,
+        "calls": 940,
+        "booked_jobs": 602,
+        "replacement_estimates": 74,
+        "replacement_sales": 22
+      }
+    },
+
+    "organic_page_performance": {
+      "period_definition": {
+        "previous_90_days": "2026-03-02 through 2026-05-30",
+        "latest_90_days": "2026-06-01 through 2026-08-29",
+        "comparison_note": "Demand is seasonal. Do not attribute changes to SEO without considering query demand, rankings, click-through rate, page mix, and other available evidence."
+      },
+
+      "pages": [
+        {
+          "page": "/ac-repair-baltimore",
+          "previous_90_days": {
+            "impressions": 23900,
+            "clicks": 1339,
+            "ctr": 0.056,
+            "average_position": 5.0,
+            "organic_calls": 92,
+            "booked_jobs": 58
+          },
+          "latest_90_days": {
+            "impressions": 27800,
+            "clicks": 1001,
+            "ctr": 0.036,
+            "average_position": 8.2,
+            "organic_calls": 61,
+            "booked_jobs": 39
+          },
+          "same_season_previous_year": {
+            "impressions": 26700,
+            "clicks": 1442,
+            "ctr": 0.054,
+            "average_position": 5.3
+          }
+        },
+        {
+          "page": "/heating-repair-baltimore",
+          "status": "roughly stable year over year"
+        },
+        {
+          "page": "/maintenance",
+          "status": "roughly stable year over year"
+        }
+      ]
+    },
+
+    "query_performance": [
+      {
+        "query": "ac repair baltimore",
+        "previous": {
+          "impressions": 7400,
+          "clicks": 430,
+          "ctr": 0.058,
+          "average_position": 5.2
+        },
+        "latest": {
+          "impressions": 9600,
+          "clicks": 326,
+          "ctr": 0.034,
+          "average_position": 8.7
+        }
+      },
+      {
+        "query": "air conditioner repair baltimore",
+        "previous": {
+          "impressions": 3600,
+          "clicks": 209,
+          "ctr": 0.058,
+          "average_position": 6.0
+        },
+        "latest": {
+          "impressions": 4200,
+          "clicks": 160,
+          "ctr": 0.038,
+          "average_position": 9.1
+        }
+      },
+      {
+        "query": "hvac repair baltimore",
+        "previous": {
+          "impressions": 4800,
+          "clicks": 278,
+          "ctr": 0.058,
+          "average_position": 5.9
+        },
+        "latest": {
+          "impressions": 5100,
+          "clicks": 209,
+          "ctr": 0.041,
+          "average_position": 8.5
+        }
+      },
+      {
+        "query": "ac not cooling baltimore",
+        "previous": {
+          "impressions": 2600,
+          "clicks": 146,
+          "ctr": 0.056,
+          "average_position": 7.1
+        },
+        "latest": {
+          "impressions": 2900,
+          "clicks": 119,
+          "ctr": 0.041,
+          "average_position": 10.4
+        }
+      }
+    ],
+
+    "landing_page_overlap": {
+      "note": "Internal Search Console export shows multiple Harbor URLs receiving impressions for overlapping AC-repair queries. This is evidence of query/page overlap, not by itself proof of cannibalization.",
+      "urls": [
+        {
+          "url": "/ac-repair-baltimore",
+          "role": "Baltimore local AC repair service page",
+          "indexable": true,
+          "canonical": "self"
+        },
+        {
+          "url": "/services/ac-repair",
+          "role": "generic AC repair service page",
+          "indexable": true,
+          "canonical": "self"
+        },
+        {
+          "url": "/blog/ac-not-cooling",
+          "role": "informational troubleshooting article",
+          "indexable": true,
+          "canonical": "self"
+        }
+      ],
+
+      "query_example": {
+        "query": "ac repair baltimore",
+        "share_of_harbor_impressions_by_url": {
+          "/ac-repair-baltimore": 0.62,
+          "/services/ac-repair": 0.28,
+          "/blog/ac-not-cooling": 0.10
+        }
+      }
+    },
+
+    "site_crawl_snapshot": {
+      "/ac-repair-baltimore": {
+        "status_code": 200,
+        "indexable": true,
+        "in_xml_sitemap": true,
+        "canonical": "self",
+        "title": "AC Repair | Harbor HVAC",
+        "h1": "Air Conditioning Repair",
+        "approximate_words": 180,
+        "last_material_content_update": "2024-06-12",
+        "structured_data": [
+          "sitewide LocalBusiness"
+        ],
+        "internal_links_in": 4,
+        "mobile_lcp_seconds": 3.8,
+        "mobile_cls": 0.04,
+        "mobile_inp_ms": 180
+      },
+
+      "/services/ac-repair": {
+        "status_code": 200,
+        "indexable": true,
+        "in_xml_sitemap": true,
+        "canonical": "self",
+        "title": "Air Conditioning Repair | Harbor HVAC",
+        "h1": "AC Repair Services",
+        "internal_links_in": 23,
+        "content_overlap_with_local_page_estimate": 0.64
+      },
+
+      "/blog/ac-not-cooling": {
+        "status_code": 200,
+        "indexable": true,
+        "internal_links_in": 17,
+        "links_to_local_ac_repair_page": 0,
+        "links_to_generic_ac_repair_page": 2
+      }
+    },
+
+    "internal_linking": {
+      "relevant_ac_or_cooling_articles": 11,
+      "articles_linking_to": {
+        "/ac-repair-baltimore": 2,
+        "/services/ac-repair": 8
+      },
+      "note": "Counts indicate current internal-link architecture. They do not establish that changing links will improve rankings."
+    },
+
+    "customer_and_call_evidence": {
+      "reviews": [
+        "Technician explained the options without pressure.",
+        "The office gave me a window but the technician arrived outside it.",
+        "I appreciated seeing the repair price before work started.",
+        "They fixed the AC, but I wasn't sure whether the maintenance plan was worth it."
+      ],
+      "call_patterns": [
+        {
+          "pattern": "price before visit",
+          "count": 38
+        },
+        {
+          "pattern": "same-day availability",
+          "count": 31
+        },
+        {
+          "pattern": "financing for replacement",
+          "count": 19
+        },
+        {
+          "pattern": "service area confirmation",
+          "count": 17
+        }
+      ]
+    },
+
+    "available_site_asset": {
+      "file": "harbor-ac-repair-baltimore.html",
+      "description": "Authorized local working copy of the current AC repair landing page. It may be analyzed and revised locally. It is not connected to the live website."
+    },
+
+    "known_constraints": [
+      "No live CMS, Google Business Profile, analytics account, Search Console account, or production website deployment access is connected.",
+      "The supplied Search Console-like, crawler, call, and business metrics are authorized first-party benchmark evidence.",
+      "Current public competitors and search/local/answer surfaces should be researched with legitimate available web/search tools where useful.",
+      "Do not claim access to an AI-answer surface, local pack, Search Console, CMS, or ranking data that was not actually available.",
+      "Do not claim a local draft, redirect recommendation, internal-link change, schema change, or page revision has been deployed to production.",
+      "Do not promise same-day service, emergency availability, pricing, financing terms, service-area coverage, or other business facts not supported by evidence.",
+      "Local implementation-ready revisions and specifications may be created."
+    ]
+  },
+
+  "competitive_seed": {
+    "instruction": "Resolve the current organic and local competitors actually competing for the relevant Baltimore-area intent. Compare the appropriate live pages/entities/surfaces rather than defaulting to national HVAC brands. Treat observed ranking/visibility as current search evidence, not proof of business performance."
+  },
+
+  "supplied_media": [
+    {
+      "source": "sites/harbor-ac-repair-baltimore.html",
+      "filename": "harbor-ac-repair-baltimore.html",
+      "encoding": "copy",
+      "description": "Authorized working copy of Harbor HVAC's current Baltimore AC repair landing page. It may be revised locally but is not a live production file."
+    }
+  ]
+}

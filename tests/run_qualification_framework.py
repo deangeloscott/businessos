@@ -23,6 +23,10 @@ def smoke_prepare():
         req(p.returncode==0,f'qualification prepare smoke failed:\nSTDOUT:\n{p.stdout}\nSTDERR:\n{p.stderr}')
         rd=Path(td)/'smoke'; meta=json.loads((rd/'run.json').read_text()); evaluator_queue=json.loads((rd/'evaluator/queue.json').read_text()); prep=json.loads((rd/'evaluator/preparation.json').read_text())
         product=Path(meta['product_root']); workspace=Path(meta['workspace']); surface=Path(meta['candidate_surface_root'])
+        pointer=product/'.businessos/workspace.json'
+        req(pointer.exists(),'staged candidate product must be persistently bound to its external organization workspace')
+        pointer_data=json.loads(pointer.read_text())
+        req(Path(pointer_data.get('workspace_root','')).resolve()==workspace.resolve(),'staged candidate workspace pointer does not resolve to the prepared workspace')
         req(meta.get('candidate_blind') is True and prep.get('candidate_blind') is True,'prepared qualification must explicitly record blind-candidate mode')
         req(meta.get('benchmark_context_seeded') is True,'prepared run must record grounded benchmark context')
         req(product.parent==surface and workspace.parent==surface,'candidate product/workspace must share only the neutral candidate surface')
@@ -60,8 +64,13 @@ def smoke_prepare():
         req(Path(started.get('product_root',''))==product and Path(started.get('workspace',''))==workspace,'controller changed candidate surface paths')
         eid=events[0]['event_id']; req((rd/'checkpoints'/eid/'before.json').exists(),'controller did not take evaluator-side before checkpoint')
 
-        # Ordinary product mechanics still work with only BUSINESSOS_WORKSPACE exposed to the runtime.
-        env=dict(os.environ); env['BUSINESSOS_WORKSPACE']=meta['workspace']; env['PYTHONDONTWRITEBYTECODE']='1'
+        # Ordinary staged-product mechanics must resolve the prepared external
+        # workspace without requiring the candidate to reconstruct maintainer-only
+        # environment variables.
+        env=dict(os.environ)
+        env.pop('BUSINESSOS_WORKSPACE',None)
+        env.pop('BUSINESSOS_WORKSPACE_CONFIG',None)
+        env['PYTHONDONTWRITEBYTECODE']='1'
         create=subprocess.run([sys.executable,str(product/'scripts/create_run.py'),'atlasops','core.intelligence.ecosystem-radar','external controller smoke'],cwd=product,env=env,capture_output=True,text=True)
         req(create.returncode==0,f'create_run object-form subcontract smoke failed: {create.stdout}\n{create.stderr}')
         rid=create.stdout.strip().splitlines()[-1]; manifest=workspace/'runtime/runs/atlasops'/rid/'contract-execution.json'; req(manifest.exists(),'create_run smoke did not persist contract-execution manifest')

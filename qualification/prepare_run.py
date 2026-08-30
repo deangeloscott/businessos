@@ -222,6 +222,24 @@ def main():
     run_dir.mkdir(parents=True); (run_dir/'evaluator').mkdir(); (run_dir/'checkpoints').mkdir()
     product_root=copy_product(ROOT,candidate_dir/'product'); generation_env=dict(os.environ); generation_env['PYTHONDONTWRITEBYTECODE']='1'; generation_env['PYTHONUTF8']='1'; _run([sys.executable,str(product_root/'scripts/generate_registry.py')],product_root,generation_env)
     workspace=candidate_dir/'workspace'; workspace.mkdir(parents=True)
+
+    # Persistently bind the staged runtime product to its neutral external
+    # organization workspace. Candidate agents should not have to recreate the
+    # maintainer's temporary BUSINESSOS_WORKSPACE environment variable in order
+    # for normal AURA helpers to keep organization state outside product source.
+    binding_env=dict(os.environ)
+    binding_env.pop('BUSINESSOS_WORKSPACE',None)
+    binding_env.pop('BUSINESSOS_WORKSPACE_CONFIG',None)
+    binding_env['PYTHONDONTWRITEBYTECODE']='1'
+    binding_env['PYTHONUTF8']='1'
+    _run([
+        sys.executable,
+        str(product_root/'scripts/configure_workspace.py'),
+        str(workspace),
+        '--profile','power_user',
+        '--json'
+    ],product_root,binding_env)
+
     fixtures=sorted({event['fixture'] for event in evaluator_events})
     for fixture in fixtures: init_business(product_root,workspace,fixture,run_dir/'evaluator')
     baseline=product_snapshot(product_root); write_json(run_dir/'evaluator/product-snapshot.json',baseline)
