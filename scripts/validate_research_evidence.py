@@ -29,6 +29,11 @@ def _evidence_ext(src):
     return ev
 
 
+def is_public_source(src):
+    """Use declared provenance, not a narrative-looking type, for public-web safeguards."""
+    return src.get('access_scope')=='public' or src.get('origin')=='public web'
+
+
 def _subject_refs(obj):
     values=obj.get('subject_refs') if isinstance(obj,dict) else []
     if not isinstance(values,list): return set()
@@ -62,7 +67,7 @@ def _capture_quality(src):
 
 
 def public_source_locator_error(src):
-    public=src.get('access_scope')=='public' or src.get('source_type') in PUBLIC_NARRATIVE_TYPES or src.get('origin')=='public web'
+    public=is_public_source(src)
     ref=str(src.get('source_reference') or '').strip()
     if not public or not ref.lower().startswith(('http://','https://')):return None
     host=(urlparse(ref).hostname or '').lower().rstrip('.')
@@ -91,7 +96,7 @@ def evidence_errors(business_id):
             if not src: continue  # reference validator reports missing refs
             mismatch=_subject_mismatch(obs,oid,src,ref)
             if mismatch: errors.append(mismatch)
-            public=src.get('access_scope')=='public' or src.get('source_type') in PUBLIC_NARRATIVE_TYPES or src.get('origin')=='public web'
+            public=is_public_source(src)
             if not public: continue
             ok,mode=_capture_quality(src)
             if not ok:

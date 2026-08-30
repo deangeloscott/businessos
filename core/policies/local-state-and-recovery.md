@@ -24,6 +24,8 @@ Use the filesystem workspace as the default portable persistence layer. Preserve
 ## Start/resume behavior
 Before creating a new Run for work that may already be in progress, inspect the active business and relevant existing run state. Resume compatible unfinished work when its task, contract, inputs, and intended outcome still match; otherwise create a new bounded Run and preserve the prior Run for history.
 
+Runs may record exact `root_run_id`, `parent_run_id`, and `supersedes_run_id` relationships. Use them when support/replacement work is intentionally related; do not infer parentage from topical similarity. After ordinary finalization, `scripts/reconcile_runs.py` may classify related completed, active, dependency-blocked, redundant, and judgment-needed Runs. It may auto-supersede only an explicitly replaced exact same contract/task/focus Run with no material artifacts, canonical outputs, or contract evidence. It must preserve meaningful/blocked/independent Runs and surface ambiguous related Runs instead of guessing. Cross-domain work does not require an Initiative or WorkRequest merely to obtain Run relationships; use those objects only when their semantic coordination purpose actually applies.
+
 **Destructive cleanup is not recovery.** Never delete an existing business instance, Run, canonical artifact, human-note directory, or workspace merely because its name/status suggests failure, staleness, or testing. Ignore/preserve unrelated prior state unless the user/administrator explicitly authorizes deletion or a deterministic test owns a documented disposable path.
 
 On interruption or failure:

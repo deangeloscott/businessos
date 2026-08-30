@@ -95,6 +95,48 @@
         "null"
       ]
     },
+    "root_run_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Optional exact root Run for this bounded Run family; newly created root Runs reference themselves. Omission preserves compatibility with Runs created before explicit family relationships existed."
+    },
+    "parent_run_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1,
+      "description": "Optional exact parent Run for explicitly related support work."
+    },
+    "run_role": {
+      "enum": [
+        "root",
+        "support"
+      ],
+      "description": "Explicit role for newly created Runs. Legacy omission is interpreted as support only when parent_run_id exists, otherwise root."
+    },
+    "supersedes_run_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1,
+      "description": "Optional exact prior same-job Run intentionally replaced by this Run."
+    },
+    "superseded_by_run_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    },
+    "lifecycle_reason": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    },
     "created_at": {
       "type": "string",
       "format": "date-time"

@@ -39,7 +39,7 @@ def _semantic_requirements(object_types):
     return out
 
 
-def _matching_active_runs(business_id,contract_id,task):
+def _matching_active_runs(business_id,contract_id,task,parent_run_id=None):
     root=runtime_root()/'runs'/business_id
     if not root.exists():return []
     rows=[]
@@ -48,13 +48,14 @@ def _matching_active_runs(business_id,contract_id,task):
         except Exception:continue
         if d.get('status')!='active':continue
         if d.get('business_id')!=business_id or d.get('contract_id')!=contract_id or d.get('task')!=task:continue
+        if d.get('parent_run_id')!=parent_run_id:continue
         rows.append((d.get('updated_at') or d.get('created_at') or '',d.get('run_id'),rp))
     return sorted(rows,reverse=True)
 
 
-def _create_run(business_id,contract_id,task,operator_ref=None,team_ref=None,role_ref=None,output_type=None,channel=None,task_preferences=None):
+def _create_run(business_id,contract_id,task,operator_ref=None,team_ref=None,role_ref=None,output_type=None,channel=None,task_preferences=None,parent_run_id=None,supersedes_run_id=None):
     cmd=[sys.executable,str(PRODUCT_ROOT/'scripts/create_run.py'),business_id,contract_id,task]
-    for flag,value in [('--operator-ref',operator_ref),('--team-ref',team_ref),('--role-ref',role_ref),('--output-type',output_type),('--channel',channel),('--task-preferences',task_preferences)]:
+    for flag,value in [('--operator-ref',operator_ref),('--team-ref',team_ref),('--role-ref',role_ref),('--output-type',output_type),('--channel',channel),('--task-preferences',task_preferences),('--parent-run-id',parent_run_id),('--supersedes-run-id',supersedes_run_id)]:
         if value is not None:cmd.extend([flag,str(value)])
     p=subprocess.run(cmd,cwd=PRODUCT_ROOT,capture_output=True,text=True)
     if p.returncode!=0:raise ValueError((p.stderr or p.stdout or 'Run creation failed').strip())
@@ -136,7 +137,7 @@ def compact_handoff(envelope):
             'resolved_surfaces':['route','process','context','capabilities','run'],
             'rule':'Use these resolved results as authoritative for this Run. Do not rerun context_plan.py, process_plan.py, preflight_capabilities.py, inspect their source, or use their --help during ordinary execution. Re-enter only if relevant workspace/Run/capability state materially changed or a high-level interface below reports a real unresolved need.'
         },
-        'root_contract':{'contract_id':route.get('contract_id'),'owner_system':route.get('owner_system'),'path':route.get('path'),'reason':route.get('reason'),'declared_write_types':root_spec.get('declared_write_types',[])},
+        'root_contract':{'contract_id':route.get('contract_id'),'owner_system':route.get('owner_system'),'path':route.get('path'),'reason':route.get('reason'),'artifact_role':root_spec.get('artifact_role'),'declared_write_types':root_spec.get('declared_write_types',[])},
         'run':run,
         'process':{
             'entry_contract':process.get('entry_contract'),
@@ -163,16 +164,22 @@ def compact_handoff(envelope):
             'required_semantic_fields':_semantic_requirements(supported_write_types),
             'specialized_interfaces':{typ:interface for typ,interface in SPECIALIZED_PERSISTENCE.items() if typ in allowed_write_types},
             'input_shape':{'objects':[{'key':'local-label','object_type':'one supported_object_type','content':'AI-authored semantic fields only','lineage_refs':['existing_object_ref or @local-label']}]},
+            'customer_facing_readiness':({
+                'extension_path':'content.extensions.businessos.production_readiness',
+                'required_to_assert_ready':True,
+                'shape':{'status':'not_assessed|blocked|ready|not_applicable','assessed_version':'exact Asset version','unresolved_business_facts':[],'missing_authorization':[],'missing_capabilities':[],'other_blockers':[],'deployment_status':'not_performed|performed|not_applicable','measurement_status':'pending|in_progress|observed|not_applicable'},
+                'rule':'A missing assessment means not_assessed. Valid draft/QA work may complete while readiness is blocked; never use Run or QA completion as a launch/deployment/outcome claim.'
+            } if root_spec.get('artifact_role')=='customer_facing_production_root' else None),
             'rule':'The model decides all business meaning. This interface only validates and wraps supplied semantic content with schema identity, IDs, timestamps, storage location, local-reference resolution, and Run/contract provenance; it returns focused pre-finalization validation and never invents an Opportunity, Action, WorkRequest, Insight, or other result.'
         },
         'completion':{
             'interface':'scripts/finalize_run.py',
             'command':f"python3 scripts/finalize_run.py {envelope['business_id']} {run['run_id']} --workspace {workspace_arg}",
-            'rule':'Persist the real material results first, then call this interface directly. Do not run whole-business validation while the Run is active and do not invoke lower-level completion validators/helpers separately. Finalization reports genuine pre-finalization object/evidence issues while deferring only completion conditions caused by the active Run; semantic or ambiguous evidence returns needs_judgment and leaves the Run incomplete.'
+            'rule':'Persist the real material results first, then call this interface directly. Do not run whole-business validation while the Run is active and do not invoke lower-level completion validators/helpers separately. Finalization reports genuine pre-finalization object/evidence issues while deferring only completion conditions caused by the active Run; semantic or ambiguous evidence returns needs_judgment and leaves the Run incomplete. A completed Run returns a separate completion_scope and Run reconciliation; completion is not a claim of production readiness, deployment, authorization, capability availability, or outcome achievement.'
         },
         'execution_envelope_ref':envelope.get('execution_envelope_ref'),
     }
-def enter(task,business_id=None,workspace=None,operator_ref=None,team_ref=None,role_ref=None,output_type=None,channel=None,task_preferences=None,new_run=False,include_optional_capabilities=True):
+def enter(task,business_id=None,workspace=None,operator_ref=None,team_ref=None,role_ref=None,output_type=None,channel=None,task_preferences=None,new_run=False,include_optional_capabilities=True,parent_run_id=None,supersedes_run_id=None):
     task=(task or '').strip()
     if not task:return {'format_version':'1.0','status':'needs_input','missing':['request'],'reason':'Preserve and provide the user\'s original organizational request.'}
     if workspace:
@@ -188,11 +195,12 @@ def enter(task,business_id=None,workspace=None,operator_ref=None,team_ref=None,r
     if not cid or route.get('status')!='available':
         return {'format_version':'1.0','status':'blocked','business_id':bid,'workspace':str(workspace_root()),'original_request':task,'route':route,'monitoring_continuity':continuity,'reason':'AURA did not resolve an available business-work entry contract.'}
 
-    matches=[] if new_run else _matching_active_runs(bid,cid,task)
+    existing=_matching_active_runs(bid,cid,task,parent_run_id)
+    matches=[] if new_run or supersedes_run_id else existing
     if matches:
         rid=matches[0][1];resumed=True
     else:
-        try:rid=_create_run(bid,cid,task,operator_ref,team_ref,role_ref,output_type,channel,task_preferences);resumed=False
+        try:rid=_create_run(bid,cid,task,operator_ref,team_ref,role_ref,output_type,channel,task_preferences,parent_run_id,supersedes_run_id);resumed=False
         except ValueError as e:return {'format_version':'1.0','status':'blocked','business_id':bid,'workspace':str(workspace_root()),'original_request':task,'route':route,'monitoring_continuity':continuity,'reason':str(e)}
 
     run_dir=runtime_root()/'runs'/bid/rid
@@ -226,6 +234,7 @@ def enter(task,business_id=None,workspace=None,operator_ref=None,team_ref=None,r
             'run_ref':storage_ref(run_dir),
             'work_dir':str(work_dir),
             'work_ref':storage_ref(work_dir),
+            **{k:v for k,v in (json.loads((run_dir/'run.json').read_text()) if (run_dir/'run.json').exists() else {}).items() if k in {'root_run_id','parent_run_id','run_role','supersedes_run_id'}},
         },
         'process_plan':process,
         'context_plan':context,
@@ -254,10 +263,12 @@ def main():
     p.add_argument('--operator-ref');p.add_argument('--team-ref');p.add_argument('--role-ref')
     p.add_argument('--output-type');p.add_argument('--channel');p.add_argument('--task-preferences')
     p.add_argument('--new-run',action='store_true',help='Force a new Run instead of resuming an exact active business+contract+request match')
+    p.add_argument('--parent-run-id',help='Explicit parent Run when entering bounded support work')
+    p.add_argument('--supersedes-run-id',help='Explicit exact same-job active Run intentionally replaced by the new Run')
     p.add_argument('--required-only-capabilities',action='store_true',help='Skip optional capability checks in the returned preflight')
     p.add_argument('--full',action='store_true',help='Print the complete durable execution envelope instead of the compact ordinary agent handoff')
     a=p.parse_args()
-    out=enter(a.request,a.business_id,a.workspace,a.operator_ref,a.team_ref,a.role_ref,a.output_type,a.channel,a.task_preferences,a.new_run,not a.required_only_capabilities)
+    out=enter(a.request,a.business_id,a.workspace,a.operator_ref,a.team_ref,a.role_ref,a.output_type,a.channel,a.task_preferences,a.new_run,not a.required_only_capabilities,a.parent_run_id,a.supersedes_run_id)
     shown=out if a.full else compact_handoff(out)
     print(json.dumps(shown,indent=2)+'\n',end='')
     raise SystemExit(0 if out.get('status')=='ready' else 2)

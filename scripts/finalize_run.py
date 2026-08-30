@@ -10,12 +10,14 @@ from pathlib import Path
 import argparse, json, os
 
 from _common import *
-from completion_evidence import contract_index, subcontract_manifest_errors, validate_evidence
+from completion_evidence import contract_index, completion_spec, subcontract_manifest_errors, validate_evidence
 from record_contract_completion import record_contract_completion
 from complete_run import complete_run, snapshot_files, restore_files
 from validate_business import validate_business
 from generate_knowledge_layer import generate as generate_knowledge
 from run_provenance import RUN_BOUND_TYPES
+from artifact_readiness import summarize_readiness
+from run_lifecycle import reconcile_run_lifecycle
 
 
 ANCHOR_KINDS={'qa_record','detector_record','analysis_record','completion_record'}
@@ -214,6 +216,30 @@ def _concise_validation(result):
     return {'status':'clean','error_count':0,'warning_count':len(warnings),'warnings':warnings[:5],'canonical_object_counts':validation.get('canonical_object_counts',{})}
 
 
+def _completion_scope(business_id,run_id,manifest,candidates,run_completed):
+    contracts=contract_index();root=contracts.get(manifest.get('root_contract_id'),{});assets=[]
+    for row in candidates:
+        if root.get('artifact_role')!='customer_facing_production_root':continue
+        if row.get('kind')!='canonical' or row.get('object_type')!='Asset':continue
+        asset=_json(row['path'])
+        if not isinstance(asset,dict):continue
+        ext=asset.get('extensions') if isinstance(asset.get('extensions'),dict) else {}
+        bos=ext.get('businessos') if isinstance(ext.get('businessos'),dict) else {}
+        if bos.get('customer_facing',True) is False:continue
+        assets.append((asset,row['ref']))
+    qa=[]
+    for cid in manifest.get('required_subcontracts') or []:
+        if completion_spec(contracts.get(cid,{'id':cid})).get('profile')!='qa':continue
+        step=(manifest.get('contracts') or {}).get(cid) or {}
+        for ref in step.get('evidence_refs') or []:
+            data=_json(resolve_storage_ref(ref))
+            if not isinstance(data,dict) or data.get('contract_id')!=cid:continue
+            raw=next((data.get(k) for k in ('tested_asset','target_asset','asset_ref','target_ref') if data.get(k)),None)
+            version=next((data.get(k) for k in ('tested_version','asset_version','version') if data.get(k) is not None),None)
+            qa.append({'contract_id':cid,'status':str(data.get('status','')).lower(),'tested_asset':raw,'tested_version':str(version) if version is not None else None,'scope':'artifact_version_qa','artifact_qa_blockers':data.get('blockers',[])})
+    return summarize_readiness(assets,qa,run_completed)
+
+
 def _failure_for_evidence(failure,run_dir,business_id,run_id):
     gaps=_capability_gaps(run_dir)
     no_candidates=not failure.get('candidate_refs')
@@ -247,8 +273,10 @@ def finalize_run(business_id=None,run_id=None,root_evidence=None,contract_eviden
         business_errors,warnings,counts=validate_business(bid)
         errors=sub_errors+root_errors+business_errors
         if errors:return {'format_version':'1.0','status':'invalid_or_incomplete_evidence','category':'invalid_completed_state','business_id':bid,'run_id':rid,'run_status':run.get('status'),'errors':errors[:12]}
-        knowledge=_knowledge_result(bid,refresh_human_knowledge)
-        return {'format_version':'1.0','status':'completed','category':'mechanically_clean','business_id':bid,'run_id':rid,'run_ref':storage_ref(rd),'root_contract_id':root_id,'validation':{'status':'clean','error_count':0,'warning_count':len(warnings),'warnings':warnings[:5],'canonical_object_counts':counts},'human_knowledge':knowledge,'automatic_repairs':[]}
+        candidates=_run_candidates(bid,rid);knowledge=_knowledge_result(bid,refresh_human_knowledge)
+        reconciliation=reconcile_run_lifecycle(bid,rid,apply_safe_supersession=True)
+        repairs=[{'operation':'supersede_mechanically_redundant_run','run_id':x.get('run_id'),'resolution':'explicit_exact_replacement_without_material_work'} for x in reconciliation.get('mechanically_superseded_runs',[])]
+        return {'format_version':'1.0','status':'completed','category':'mechanically_repaired' if repairs else 'mechanically_clean','business_id':bid,'run_id':rid,'run_ref':storage_ref(rd),'root_contract_id':root_id,'completion_scope':_completion_scope(bid,rid,manifest,candidates,True),'run_reconciliation':reconciliation,'validation':{'status':'clean','error_count':0,'warning_count':len(warnings),'warnings':warnings[:5],'canonical_object_counts':counts},'human_knowledge':knowledge,'automatic_repairs':repairs}
 
     candidates=_run_candidates(bid,rid);plans=[]
     for cid in manifest.get('required_subcontracts') or []:
@@ -301,6 +329,8 @@ def finalize_run(business_id=None,run_id=None,root_evidence=None,contract_eviden
             repairs.append({'operation':'record_subcontract_completion','contract_id':plan['contract_id'],'evidence_refs':plan['refs'],'resolution':plan.get('resolution')})
         completed=complete_run(bid,rid,root_resolution['refs'])
         repairs.append({'operation':'complete_root_run','contract_id':root_id,'evidence_refs':completed.get('root_evidence_refs',[]),'resolution':root_resolution.get('resolution')})
+        reconciliation=reconcile_run_lifecycle(bid,rid,apply_safe_supersession=True)
+        repairs.extend({'operation':'supersede_mechanically_redundant_run','run_id':x.get('run_id'),'resolution':'explicit_exact_replacement_without_material_work'} for x in reconciliation.get('mechanically_superseded_runs',[]))
     except Exception as exc:
         restore_files(snapshots)
         return {
@@ -313,8 +343,9 @@ def finalize_run(business_id=None,run_id=None,root_evidence=None,contract_eviden
         'format_version':'1.0','status':'completed','category':'mechanically_repaired' if repairs else 'mechanically_clean',
         'business_id':bid,'workspace':str(workspace_root()),'run_id':rid,'run_ref':storage_ref(rd),'root_contract_id':root_id,
         'root_evidence_refs':completed.get('root_evidence_refs',[]),'required_subcontracts':completed.get('required_subcontracts',[]),
+        'completion_scope':_completion_scope(bid,rid,_json(mp) or manifest,_run_candidates(bid,rid),True),'run_reconciliation':reconciliation,
         'automatic_repairs':repairs,'validation':_concise_validation(completed),'human_knowledge':knowledge,
-        'rule':'Deterministic completion proves structural/evidence integrity, not business quality or external outcome execution.'
+        'rule':'Run completion proves the contracted work/evidence completed. The separate completion_scope reports artifact QA, production readiness, deployment, authorization/capability gaps, and outcome state without conflating them.'
     }
 
 
