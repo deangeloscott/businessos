@@ -13,6 +13,7 @@ DOMAIN_HINTS=[
 ]
 
 FEATURE_HINTS=[
+ (r'\b(?:build|create|develop|maintain|refresh|update)\b.*\b(?:durable|cumulative|reusable|ongoing)\b.*\b(?:understanding|knowledge|intelligence|watch)\b|\b(?:durable|cumulative|reusable)\b.*\b(?:understanding|knowledge|intelligence)\b.*\b(?:future updates?|refresh|keep current|ongoing)\b', 'core.intelligence.subject-monitoring'),
  (r'\b(make|turn|promote|formalize|formalise).*(playbook|process|workflow|standard operating|part of businessos)|\b(playbook|process).*(evolve|evolution|improve businessos)', 'core.learning.playbook-evolution'),
  (r'\binnovation exchange\b|\bshare.*(playbook|workflow|process)\b|\b(import|browse|community).*(playbook|workflow|businessos innovation)', 'core.intelligence.innovation-exchange'),
  (r'\b(?:what|which|show|list|review).*(?:monitoring|monitors|recurring checks|scheduled checks|scheduled monitoring|tracking status)|\bwhat.*(?:watching|tracking).*(?:for us|for me)|\b(?:monitoring|recurring checks).*(?:status|active|due|schedule)', 'core.monitoring.status'),

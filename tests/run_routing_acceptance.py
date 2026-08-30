@@ -20,7 +20,6 @@ CASES=[
  ('Find regulatory changes in our industry','industry.monitoring.regulation'),
  ('Research market changes in our category','industry.monitoring.market'),
  ('Research marketing changes in our approach','core.routing.resolve-intent'),
- ('Research Alex Hormozi and build a durable understanding we can refresh over time','core.routing.resolve-intent'),
  ('Why did our organic rankings drop?','seo.diagnosis.detectors.ranking-decay'),
  ('Create a landing page','marketing.assets.landing-page'),
  ('Create a landing page for paid search traffic','marketing.assets.landing-page'),
@@ -35,6 +34,8 @@ CASES=[
  ('Help me figure out what to improve','core.routing.resolve-intent'),
 ]
 FEATURE_CASES=[
+ ('Research Alex Hormozi and build a durable understanding we can refresh over time','core.intelligence.subject-monitoring'),
+ ('Build a reusable understanding of a public company that we can refresh in future updates','core.intelligence.subject-monitoring'),
  ('Establish the real competitive set and produce a decision-grade competitive position.','competitor.analysis.competitive-position'),
  ('Research our competitors and tell us where we can win.','competitor.analysis.competitive-position'),
  ('Give me a current competitive landscape with strengths, weaknesses, and whitespace.','competitor.analysis.competitive-position'),
