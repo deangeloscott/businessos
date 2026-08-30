@@ -1,5 +1,5 @@
 from pathlib import Path
-import json, re, yaml, hashlib, datetime, os, sys
+import json, re, yaml, hashlib, datetime, os, sys, tempfile
 
 PRODUCT_ROOT=Path(__file__).resolve().parents[1]
 _WORKSPACE_ENV='BUSINESSOS_WORKSPACE'
@@ -150,6 +150,39 @@ def workspace_profile():
         except Exception: pass
     link={} if workspace_selection_source()=='environment' else _read_workspace_link()
     return {'profile':link.get('profile','simple'),'workspace_root':str(root),'knowledge_enabled':link.get('knowledge_enabled',True)}
+
+
+def business_ids():
+    root=instances_root()
+    if not root.exists(): return []
+    return sorted(p.name for p in root.iterdir() if p.is_dir() and p.name!='_template')
+
+
+def resolve_business(explicit=None):
+    """Resolve exactly one active business without guessing across workspace instances."""
+    explicit=explicit or os.environ.get('BUSINESSOS_BUSINESS_ID')
+    ids=business_ids()
+    if explicit:
+        if explicit in ids:return {'status':'resolved','business_id':explicit,'resolution':'explicit'}
+        return {'status':'needs_input','missing':['active_business'],'reason':f'Unknown business: {explicit}','available_business_ids':ids}
+    if len(ids)==1:return {'status':'resolved','business_id':ids[0],'resolution':'single_workspace_business'}
+    if not ids:return {'status':'needs_input','missing':['active_business'],'reason':'No initialized business exists in the active organization workspace.','available_business_ids':[]}
+    return {'status':'needs_input','missing':['active_business'],'reason':'Multiple businesses exist in the active organization workspace; the active business is ambiguous.','available_business_ids':ids}
+
+
+def write_json_atomic(path,data):
+    """Write JSON atomically in the destination directory."""
+    p=Path(path);p.parent.mkdir(parents=True,exist_ok=True);tmp=None
+    try:
+        fd,tmp=tempfile.mkstemp(prefix=f'.{p.name}.',suffix='.tmp',dir=str(p.parent))
+        with os.fdopen(fd,'w',encoding='utf-8') as handle:
+            json.dump(data,handle,indent=2,ensure_ascii=False);handle.write('\n');handle.flush();os.fsync(handle.fileno())
+        os.replace(tmp,p);tmp=None
+    finally:
+        if tmp:
+            try:Path(tmp).unlink()
+            except FileNotFoundError:pass
+    return p
 
 
 def storage_ref(path):

@@ -151,6 +151,22 @@ AURA distinguishes lifecycle states such as drafted, approved, executed, verifie
 
 Preserve prior state and Runs unless deletion/replacement is explicitly authorized. Different models/harnesses can sequentially resume the same durable workspace.
 
+For ordinary agent execution, use the compact front door:
+
+```bash
+python3 scripts/enter.py "<complete original business request>" --business-id <business-id>
+```
+
+The complete resolved envelope is saved at the returned `execution_envelope_ref`. Use `enter.py --full` only for a programmatic/advanced caller that needs the complete prior CLI structure.
+
+After the model/harness performs the business work and persists its real governed results, use the single finalization surface:
+
+```bash
+python3 scripts/finalize_run.py <business-id> <run-id>
+```
+
+The finalizer resolves only exact Run-linked/contract-labelled or mechanically unique evidence, records required-subcontract completion, binds provenance, completes the root transactionally, runs integrated active-business validation, and refreshes the enabled derived human knowledge view. When several artifacts could fill the same semantic role, it returns `needs_judgment` and leaves the Run incomplete. Advanced callers can provide explicit root evidence with repeated `--evidence` or resolve a subcontract ambiguity with repeated `--contract-evidence CONTRACT_ID=REF`.
+
 ## 7. Customer-facing work and claims
 
 Customer-facing Content/Marketing work should use the appropriate customer-facing production root and preserve its actual Run/evidence lifecycle.
@@ -161,8 +177,11 @@ Use:
 
 - `core/policies/context-provenance-and-claims.md`
 - `core/policies/completion-evidence.md`
+- `scripts/finalize_run.py` for the ordinary integrated finalization path
 - `scripts/record_contract_completion.py`
 - `scripts/complete_run.py`
+
+The last two helpers remain independently usable low-level interfaces; ordinary agents should not need to manually sequence them when finalization evidence is mechanically clear.
 
 AURA should remain flexible about creative expression but strict about factual/outward claims. Do not claim a scan, render, publication, media master, experiment, measurement, or production change that did not occur.
 
