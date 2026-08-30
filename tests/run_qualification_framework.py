@@ -105,6 +105,31 @@ def composition_prepare_smoke():
         req('qualification' not in msg and 'rubric' not in msg and 'score' not in msg,'composition candidate task leaked evaluator framing')
 
 
+def mission_prepare_smoke():
+    mission='CROSS-MARKET-CHANGE-001'
+    with tempfile.TemporaryDirectory(prefix='aura-mission-smoke-') as td, tempfile.TemporaryDirectory(prefix='aura-workspaces-mission-') as cd:
+        p=subprocess.run([
+            sys.executable,str(ROOT/'qualification/prepare_run.py'),'--profile','cross-domain','--mission',mission,
+            '--run-root',td,'--candidate-root',cd,'--run-id','mission-smoke'
+        ],cwd=ROOT,capture_output=True,text=True,env={**os.environ,'PYTHONDONTWRITEBYTECODE':'1'})
+        req(p.returncode==0,f'exact mission qualification preparation failed:\nSTDOUT:\n{p.stdout}\nSTDERR:\n{p.stderr}')
+        result=json.loads(p.stdout); rd=Path(td)/'mission-smoke'; meta=json.loads((rd/'run.json').read_text()); queue=json.loads((rd/'evaluator/queue.json').read_text()); prep=json.loads((rd/'evaluator/preparation.json').read_text())
+        events=queue.get('events',[])
+        req(result.get('event_count')==1 and meta.get('event_count')==1 and queue.get('event_count')==1 and len(events)==1,'exact mission selector must prepare exactly one event')
+        event=events[0]
+        req(event.get('evaluation_id')==mission and event.get('event_id')=='TASK-0001','exact mission evaluator mapping must retain one hidden mission ID behind an opaque task ID')
+        req(event.get('kind')=='cross_domain_mission' and event.get('contract_id') is None,'exact cross-domain mission selected the wrong event kind')
+        req(queue.get('mission_filter')==mission and prep.get('mission_filter')==mission,'evaluator preparation metadata must preserve the exact mission filter')
+        req('mission_filter' not in meta,'candidate-visible run metadata exposed the exact mission filter unnecessarily')
+        req(mission.lower() not in str(event.get('task','')).lower(),'ordinary mission request leaked the hidden mission ID')
+
+        start=subprocess.run([sys.executable,str(ROOT/'qualification/task_controller.py'),'start',str(rd)],cwd=ROOT,capture_output=True,text=True,env={**os.environ,'PYTHONDONTWRITEBYTECODE':'1'})
+        req(start.returncode==0,f'exact mission controller start failed: {start.stdout}\n{start.stderr}')
+        started=json.loads(start.stdout); visible=json.dumps(started).lower()
+        req(started.get('candidate_message')==event.get('task'),'candidate must receive only the ordinary mission business request')
+        req(mission.lower() not in visible and 'evaluation_id' not in visible and 'mission_filter' not in visible,'candidate controller payload leaked the hidden mission selector')
+
+
 def judge_prompt_smoke():
     with tempfile.TemporaryDirectory(prefix='aura-judge-prompt-') as td:
         rd=Path(td); ev=rd/'evaluator'; ev.mkdir()
@@ -137,6 +162,12 @@ def main():
     try: apply_candidate_request([{'contract_id':target,'task':'a'}],f'Execute {target}')
     except ValueError: pass
     else: raise AssertionError('maintainer-authored request must not expose hidden target contract id')
+    hidden_mission='CROSS-MARKET-CHANGE-001'
+    mission_customized=apply_candidate_request([{'contract_id':None,'evaluation_id':hidden_mission,'task':'generic'}],ordinary)
+    req(mission_customized[0]['task']==ordinary,'ordinary request for a hidden mission was not preserved')
+    try: apply_candidate_request([{'contract_id':None,'evaluation_id':hidden_mission,'task':'generic'}],f'Execute {hidden_mission}')
+    except ValueError as e: req('hidden target mission id' in str(e),'hidden mission request rejection was unclear')
+    else: raise AssertionError('maintainer-authored request must not expose hidden target mission id')
 
     # Candidate-visible paths must be neutral and physically separate from evaluator state.
     with tempfile.TemporaryDirectory(prefix='aura-workspaces-unit-') as cd, tempfile.TemporaryDirectory(prefix='aura-evaluator-unit-') as ed:
@@ -166,6 +197,24 @@ def main():
     composition=suite.get('composition_missions',[]); req(composition and {m['id'] for m in composition}=={'COMPOSE-SEO-CONTENT-001'},'targeted composition mission missing or ambiguous')
     compose_events=select_events(suite,'composition'); req(len(compose_events)==1 and compose_events[0]['kind']=='composition_mission','composition event selection failed')
     req({'evidence_reuse','execution_completeness'} <= set(compose_events[0].get('rubric_dimensions') or []),'composition rubric must evaluate compounding and execution')
+    exact_missions=(
+        ('composition','COMPOSE-SEO-CONTENT-001','composition_mission'),
+        ('domains','DOMAIN-SEO-AEO-001','domain_mission'),
+        ('cross-domain','CROSS-MARKET-CHANGE-001','cross_domain_mission'),
+        ('marathon','MARATHON-002','marathon_mission'),
+    )
+    for profile,mission_id,kind in exact_missions:
+        selected=select_events(suite,profile,mission_id=mission_id)
+        req(len(selected)==1 and selected[0].get('event_id')==mission_id and selected[0].get('kind')==kind,f'exact mission selection failed for {profile}: {selected}')
+    try: select_events(suite,'cross-domain',mission_id='CROSS-UNKNOWN-999')
+    except SystemExit as e: req('Unknown qualification mission filter' in str(e),'unknown mission rejection was unclear')
+    else: raise AssertionError('unknown mission selector must be rejected')
+    try: select_events(suite,'marathon',mission_id='CROSS-MARKET-CHANGE-001')
+    except SystemExit as e: req('does not belong to --profile marathon' in str(e),'mission/profile mismatch rejection was unclear')
+    else: raise AssertionError('mission outside the selected profile must be rejected')
+    try: select_events(suite,'cross-domain',contract_ids=[target],mission_id='CROSS-MARKET-CHANGE-001')
+    except SystemExit as e: req('--contract and --mission cannot be used together' in str(e),'contract/mission ambiguity rejection was unclear')
+    else: raise AssertionError('--contract and --mission must not be mixed')
     req(len(suite['cross_domain_missions'])>=5 and len(suite['marathon_missions'])>=2 and len(suite.get('concurrency_missions',[]))>=4,'mission coverage too small')
     req([t for t in suite['contract_tests'] if t['competitive_profile']=='search_live_field'],'SEO/AEO live-field tests missing')
     req([t for t in suite['contract_tests'] if t['competitive_profile']=='paid_and_persuasion_field'],'competitive marketing tests missing')
@@ -179,7 +228,7 @@ def main():
     req((ROOT/'qualification/release_fixture.py').exists() and (ROOT/'qualification/task_controller.py').exists(),'external qualification controller/release tooling missing')
     released=[m for m in suite['cross_domain_missions']+suite['marathon_missions'] if m.get('release_fixture')]
     req(len(released)>=2 and {'CROSS-MARKET-CHANGE-001','MARATHON-002'}.issubset({m['id'] for m in released}),'expected longitudinal evidence-release missions missing')
-    smoke_prepare(); composition_prepare_smoke(); judge_prompt_smoke()
-    print(f"qualification framework regressions passed: {suite['contract_count']} contract tests, {suite['capability_count']} capability mappings, durable principles/ledger, targeted composition profile, calibrated professional judge, physically isolated blind candidate staging, external checkpoints/receipts/releases, selected-fixture preparation, and production-like run smoke passed")
+    smoke_prepare(); composition_prepare_smoke(); mission_prepare_smoke(); judge_prompt_smoke()
+    print(f"qualification framework regressions passed: {suite['contract_count']} contract tests, {suite['capability_count']} capability mappings, durable principles/ledger, targeted composition profile, exact blind mission selection, calibrated professional judge, physically isolated blind candidate staging, external checkpoints/receipts/releases, selected-fixture preparation, and production-like run smoke passed")
 
 if __name__=='__main__': main()

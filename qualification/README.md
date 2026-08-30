@@ -207,6 +207,9 @@ python3 qualification/prepare_run.py --profile domains
 # Cross-domain routing/composition missions
 python3 qualification/prepare_run.py --profile cross-domain
 
+# One exact cross-domain mission
+python3 qualification/prepare_run.py --profile cross-domain --mission CROSS-MARKET-CHANGE-001
+
 # Accumulated-state endurance only
 python3 qualification/prepare_run.py --profile marathon
 
