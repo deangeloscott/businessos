@@ -10,7 +10,7 @@ performs the actual business work using the returned envelope and whatever autho
 capabilities are available.
 """
 from pathlib import Path
-import argparse, json, os, subprocess, sys
+import argparse, json, os, shlex, subprocess, sys
 
 from _common import PRODUCT_ROOT, workspace_root, runtime_root, storage_ref, resolve_business, write_json_atomic
 from route_and_resolve import route_and_resolve
@@ -18,6 +18,25 @@ from process_plan import build_process_plan
 from context_plan import build_plan
 from preflight_capabilities import preflight
 from list_due_monitoring import summarize as summarize_monitoring
+
+
+PERSISTENCE_MECHANICAL_FIELDS={'id','object_type','schema_version','business_id','created_at','updated_at','lineage','owner_system','producer_system','requesting_system','observed_at'}
+SPECIALIZED_PERSISTENCE={
+    'AttentionItem':'scripts/upsert_attention.py','PlatformChange':'scripts/record_platform_change.py',
+    'SourceRecord':'scripts/persist_research_bundle.py','PreferenceProfile':'scripts/upsert_preference_profile.py',
+    'Business':'scripts/bootstrap_explicit_context.py','Brand':'scripts/bootstrap_explicit_context.py','BusinessClaim':'scripts/bootstrap_explicit_context.py',
+}
+
+
+def _semantic_requirements(object_types):
+    registry=json.loads((PRODUCT_ROOT/'generated/schema-registry.json').read_text());by_title={row.get('title'):row for row in registry}
+    out={}
+    for typ in object_types:
+        row=by_title.get(typ)
+        if not row:continue
+        schema=json.loads((PRODUCT_ROOT/row['path']).read_text())
+        out[typ]=[field for field in schema.get('required',[]) if field not in PERSISTENCE_MECHANICAL_FIELDS]
+    return out
 
 
 def _matching_active_runs(business_id,contract_id,task):
@@ -101,14 +120,23 @@ def compact_handoff(envelope):
     for cid in manifest.get('required_subcontracts',[]) or []:
         step=(manifest.get('contracts') or {}).get(cid) or {};spec=step.get('completion_evidence_spec') or {}
         required.append({'contract_id':cid,'status':step.get('status'),'evidence_profile':spec.get('profile'),'declared_write_types':spec.get('declared_write_types',[]),'strict_qa_target':spec.get('strict_qa_target',False)})
+    root_spec=manifest.get('root_completion_evidence_spec') or {}
+    allowed_write_types=sorted(set(root_spec.get('declared_write_types',[])).union(*(set(x.get('declared_write_types',[])) for x in required)))
+    supported_write_types=[typ for typ in allowed_write_types if typ not in SPECIALIZED_PERSISTENCE]
+    workspace_arg=shlex.quote(str(envelope.get('workspace')))
     route=envelope.get('route') or {}
     object_files=context.get('object_files',[]) or [];schema_files=context.get('schema_files',[]) or []
     classified=set(object_files)|set(schema_files)
     return {
-        'format_version':'1.1','handoff_format':'compact','status':'ready',
+        'format_version':'1.2','handoff_format':'compact','status':'ready',
         'workspace':envelope.get('workspace'),'business_id':envelope.get('business_id'),'business_resolution':envelope.get('business_resolution'),
         'original_request':envelope.get('original_request'),
-        'root_contract':{'contract_id':route.get('contract_id'),'owner_system':route.get('owner_system'),'path':route.get('path'),'reason':route.get('reason')},
+        'authority':{
+            'status':'resolved_authoritative_handoff',
+            'resolved_surfaces':['route','process','context','capabilities','run'],
+            'rule':'Use these resolved results as authoritative for this Run. Do not rerun context_plan.py, process_plan.py, preflight_capabilities.py, inspect their source, or use their --help during ordinary execution. Re-enter only if relevant workspace/Run/capability state materially changed or a high-level interface below reports a real unresolved need.'
+        },
+        'root_contract':{'contract_id':route.get('contract_id'),'owner_system':route.get('owner_system'),'path':route.get('path'),'reason':route.get('reason'),'declared_write_types':root_spec.get('declared_write_types',[])},
         'run':run,
         'process':{
             'entry_contract':process.get('entry_contract'),
@@ -122,14 +150,25 @@ def compact_handoff(envelope):
             'unresolved_selectors':context.get('unresolved_selectors',[]),
             'optional_unavailable_selectors':context.get('optional_unavailable_selectors',[]),
         },
+        'inputs':context.get('material_inputs') or {'declared_evidence_inputs':context.get('evidence_inputs',[]),'canonical_inputs':[],'supplied_evidence_refs':[]},
         'capabilities':_capability_summary(envelope.get('capability_preflight') or {}),
         'monitoring_continuity':envelope.get('monitoring_continuity'),
         'execution_env':envelope.get('execution_env'),
         'instructions':envelope.get('agent_handoff'),
+        'persistence':{
+            'interface':'scripts/persist_run_results.py',
+            'command':f"python3 scripts/persist_run_results.py {envelope['business_id']} {run['run_id']} --workspace {workspace_arg} --input <results-json-in-work-dir>",
+            'allowed_object_types':allowed_write_types,
+            'supported_object_types':supported_write_types,
+            'required_semantic_fields':_semantic_requirements(supported_write_types),
+            'specialized_interfaces':{typ:interface for typ,interface in SPECIALIZED_PERSISTENCE.items() if typ in allowed_write_types},
+            'input_shape':{'objects':[{'key':'local-label','object_type':'one supported_object_type','content':'AI-authored semantic fields only','lineage_refs':['existing_object_ref or @local-label']}]},
+            'rule':'The model decides all business meaning. This interface only validates and wraps supplied semantic content with schema identity, IDs, timestamps, storage location, local-reference resolution, and Run/contract provenance; it returns focused pre-finalization validation and never invents an Opportunity, Action, WorkRequest, Insight, or other result.'
+        },
         'completion':{
             'interface':'scripts/finalize_run.py',
-            'command':f"python3 scripts/finalize_run.py {envelope['business_id']} {run['run_id']}",
-            'rule':'Persist the real material results first. Finalization may normalize and bind only mechanically unique evidence; semantic or ambiguous evidence returns needs_judgment and leaves the Run incomplete.'
+            'command':f"python3 scripts/finalize_run.py {envelope['business_id']} {run['run_id']} --workspace {workspace_arg}",
+            'rule':'Persist the real material results first, then call this interface directly. Do not run whole-business validation while the Run is active and do not invoke lower-level completion validators/helpers separately. Finalization reports genuine pre-finalization object/evidence issues while deferring only completion conditions caused by the active Run; semantic or ambiguous evidence returns needs_judgment and leaves the Run incomplete.'
         },
         'execution_envelope_ref':envelope.get('execution_envelope_ref'),
     }
@@ -194,8 +233,9 @@ def enter(task,business_id=None,workspace=None,operator_ref=None,team_ref=None,r
         'execution_env':env,
         'agent_handoff':{
             'instruction':'Continue the user\'s complete original request inside this AURA Run. Use the resolved context/process and authorized host Skills/tools as executors; do not replace AURA routing, business truth, authorization, evidence, canonical state, required subcontracts, QA, completion, or Learning.',
+            'resolution_rule':'The returned route, process, context, capability preflight, and Run are authoritative for this execution. Do not recompute or inspect the helpers that produced them unless relevant state materially changed or a returned high-level interface identifies a real unresolved need.',
             'scratch_rule':'Use the Run work_dir for build/cache/render/temp state. The AURA product root remains read-only during ordinary business operation.',
-            'persistence_rule':'Persist only material organizational evidence, findings, decisions, governed Assets/state, completion evidence, and evidence-supported Learning; ordinary scratch/tool internals remain working state.',
+            'persistence_rule':'Persist only material organizational evidence, findings, decisions, governed Assets/state, completion evidence, and evidence-supported Learning; ordinary scratch/tool internals remain working state. Prefer the compact handoff persistence interface for Run results instead of reading schemas/writer/provenance source or hand-authoring canonical scaffolding.',
             'continuity_rule':'Use monitoring_continuity as a lightweight memory cue, not a competing task queue. If overdue unbound monitoring is relevant to this request, refresh it through the appropriate AURA process. If it materially matters but is unrelated, surface at most one concise notice. Otherwise continue the user\'s request. Never describe planned cadence as an active schedule without a verified scheduler binding.',
             'human_ux_rule':'In the final response, describe saved work using the organization/human knowledge concept first. Raw canonical/runtime filesystem paths are optional advanced inspection details, not the primary UX.'
         },

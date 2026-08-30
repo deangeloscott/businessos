@@ -84,21 +84,42 @@ def main():
         hist={'id':'opp_historical','object_type':'Opportunity','business_id':BID,'owner_system':'customer-optimization','extensions':{'businessos':{'origin':'preexisting'}}}
         req(not run_completion_errors(BID,[(hist,f'instances/{BID}/history/opportunity.json')]),'explicit preexisting state must remain migration-compatible')
 
-        # A representative composite Run should need only persisted governed output plus
-        # one finalizer call; the caller must not manually sequence subcontract/root helpers.
+        # A representative composite Run should need only AI-authored semantic content,
+        # the supported persistence interface, and one finalizer call. The input deliberately
+        # contains no IDs/timestamps/paths/Run provenance and uses local aliases instead.
         frid=run(S/'create_run.py',BID,'customer-optimization.intervention.adoption','High-level composite finalization fixture').stdout.strip()
         root_contract='customer-optimization.intervention.adoption';sub_contract='customer-optimization.adoption.path-design'
-        finalized_action=write(f'instances/{BID}/operations/action-packets/act_{BID}_finalizer.json',{
-            'id':f'act_{BID}_finalizer','object_type':'ActionPacket','schema_version':'1.0.0','business_id':BID,'owner_system':'customer-optimization',
-            'opportunity_ref':f'opp_{BID}_fixture','status':'proposed_not_executed','actions':[
-                {'action_id':'review-finalizer','description':'Review the composite finalizer fixture.','executor_type':'HUMAN','expected_outputs':['review decision'],'status':'proposed'}],
-            'extensions':{'businessos':{'run_ref':f'runtime/runs/{BID}/{frid}','run_id':frid,'run_contract_id':root_contract,'contract_chain':[root_contract,sub_contract]}}
-        })
-        finalized=run(S/'finalize_run.py',BID,frid,'--skip-human-knowledge',check=False)
+        result_input=write(f'runtime/runs/{BID}/{frid}/work/results.json',{'objects':[
+            {'key':'opportunity','object_type':'Opportunity','content':{
+                'title':'Activation path opportunity','statement':'A bounded activation path improvement should be reviewed.','status':'candidate','objective_refs':[],'confidence':0.6}},
+            {'key':'action','object_type':'ActionPacket','content':{
+                'opportunity_ref':'@opportunity','status':'proposed_not_executed','actions':[
+                    {'action_id':'review-finalizer','description':'Review the composite finalizer result.','executor_type':'HUMAN','expected_outputs':['review decision'],'status':'proposed'}]}},
+            {'key':'request','object_type':'WorkRequest','content':{
+                'executing_system':'content-synthesis','origin_opportunity_ref':'@opportunity','origin_action_ref':'@action',
+                'purpose':'Prepare the bounded activation guidance for review.','required_output':'A reviewable activation guidance draft.','status':'open'}}
+        ]})
+        persisted=run(S/'persist_run_results.py',BID,frid,'--input',result_input,'--workspace',ROOT,check=False)
+        req(persisted.returncode==0,f'supported Run-result persistence failed: {persisted.stdout+persisted.stderr}')
+        persisted_result=json.loads(persisted.stdout);rows={x['key']:x for x in persisted_result.get('objects',[])}
+        req(persisted_result.get('status')=='persisted' and persisted_result.get('pre_finalization_validation',{}).get('status')=='clean',f'active-Run persistence should distinguish deferred completion conditions from genuine validation errors: {persisted_result}')
+        req(set(rows)=={'opportunity','action','request'},f'persistence did not return every authored result: {persisted_result}')
+        finalized_action=ROOT/rows['action']['path'];finalized_opp=ROOT/rows['opportunity']['path'];finalized_request=ROOT/rows['request']['path']
+        action_data=json.loads(finalized_action.read_text());opp_data=json.loads(finalized_opp.read_text());request_data=json.loads(finalized_request.read_text())
+        req(action_data['opportunity_ref']==opp_data['id'] and request_data['origin_opportunity_ref']==opp_data['id'] and request_data['origin_action_ref']==action_data['id'],'persistence did not resolve local semantic references to canonical IDs')
+        for data in (action_data,opp_data,request_data):
+            bos=data.get('extensions',{}).get('businessos',{})
+            req(data.get('created_at') and data.get('updated_at') and bos.get('run_id')==frid and bos.get('run_contract_id')==root_contract,'persistence did not supply canonical mechanical wrapping/provenance')
+
+        # Reproduce the blind confirmation seam: explicit root evidence omits the already
+        # Run-linked Opportunity. The finalizer must include it comprehensively before mutation.
+        finalized=run(S/'finalize_run.py',BID,frid,'--skip-human-knowledge','--evidence',rows['action']['path'],'--evidence',rows['request']['path'],check=False)
         req(finalized.returncode==0,f'high-level composite finalization failed: {finalized.stdout+finalized.stderr}')
         final_result=json.loads(finalized.stdout)
         operations=[x.get('operation') for x in final_result.get('automatic_repairs',[])]
-        req(final_result.get('status')=='completed' and operations==['record_subcontract_completion','complete_root_run'],f'finalizer did not sequence the ordinary composite completion path: {final_result}')
+        req(final_result.get('status')=='completed' and operations==['include_required_run_linked_evidence','record_subcontract_completion','complete_root_run'],f'finalizer did not sequence the ordinary composite completion path: {final_result}')
+        included=final_result['automatic_repairs'][0].get('evidence_refs',[])
+        req(rows['opportunity']['path'] in included,f'finalizer did not safely include omitted exact Run-linked completion evidence: {final_result}')
         fm=json.loads((RUNS/frid/'contract-execution.json').read_text())
         req(fm['contracts'][sub_contract].get('status')=='completed' and fm.get('root_status')=='completed','finalizer did not persist composite completion bookkeeping')
         req(json.loads(finalized_action.read_text()).get('extensions',{}).get('businessos',{}).get('run_binding')=='root_completion_evidence','finalizer did not preserve final root provenance binding')
@@ -122,8 +143,8 @@ def main():
         am=json.loads((RUNS/arid/'contract-execution.json').read_text())
         req(am.get('root_status')=='active' and not am.get('root_evidence_refs'),'ambiguous finalization must not partially complete root state')
 
-        # An unexpected integrated-validation failure after subcontract recording must roll
-        # back the manifest, Run, and provenance-bound evidence to their exact prior bytes.
+        # Genuine canonical problems must be returned before finalization mutation; active-Run
+        # completion status/evidence conditions themselves must not obscure the real issue.
         rrid=run(S/'create_run.py',BID,'customer-optimization.intervention.adoption','Transactional rollback fixture').stdout.strip()
         rollback_action=write(f'instances/{BID}/operations/action-packets/act_{BID}_rollback.json',{
             'id':f'act_{BID}_rollback','object_type':'ActionPacket','schema_version':'1.0.0','business_id':BID,'owner_system':'customer-optimization',
@@ -139,11 +160,53 @@ def main():
         rolled=run(S/'finalize_run.py',BID,rrid,check=False)
         req(rolled.returncode==2,f'validation failure should keep finalization incomplete: {rolled.stdout+rolled.stderr}')
         rolled_result=json.loads(rolled.stdout)
-        req(rolled_result.get('category')=='finalization_validation_failed' and rolled_result.get('rollback')=='restored_pre_finalization_state',f'rollback was not reported: {rolled_result}')
-        req(rmanifest.read_bytes()==before_manifest and rrun.read_bytes()==before_run and rollback_action.read_bytes()==before_action,'failed finalization did not restore exact pre-finalization state')
+        req(rolled_result.get('category')=='pre_finalization_validation_failed' and rolled_result.get('mutation')=='none',f'genuine object errors were not returned concisely before mutation: {rolled_result}')
+        req(any('required' in e or 'owner_system' in e for e in rolled_result.get('errors',[])),f'pre-finalization result obscured the genuine canonical error: {rolled_result}')
+        req(rmanifest.read_bytes()==before_manifest and rrun.read_bytes()==before_run and rollback_action.read_bytes()==before_action,'pre-finalization failure mutated Run or evidence state')
         req(json.loads(rrun.read_text()).get('status')=='active','failed finalization must leave Run active')
         req(json.loads(rmanifest.read_text())['contracts'][sub_contract].get('status')=='pending','failed finalization must not retain partial subcontract completion')
-        invalid.unlink()
+        invalid.unlink();rollback_action.unlink()
+
+        # The finalizer's outer transaction still restores subcontract/provenance changes
+        # if an unexpected failure occurs after its clean pre-mutation validation.
+        orid=run(S/'create_run.py',BID,'customer-optimization.intervention.adoption','Outer finalizer rollback preservation fixture').stdout.strip()
+        outer_action=write(f'instances/{BID}/operations/action-packets/act_{BID}_outer_transaction.json',{
+            'id':f'act_{BID}_outer_transaction','object_type':'ActionPacket','schema_version':'1.0.0','business_id':BID,'owner_system':'customer-optimization',
+            'opportunity_ref':opp_data['id'],'status':'proposed_not_executed','actions':[
+                {'action_id':'outer-transaction-check','description':'Verify finalizer rollback remains intact.','executor_type':'HUMAN','expected_outputs':['rollback proof'],'status':'proposed'}],
+            'extensions':{'businessos':{'run_ref':f'runtime/runs/{BID}/{orid}','run_id':orid,'run_contract_id':root_contract,'contract_chain':[root_contract,sub_contract]}}
+        })
+        omanifest=RUNS/orid/'contract-execution.json';orun=RUNS/orid/'run.json'
+        outer_before=(omanifest.read_bytes(),orun.read_bytes(),outer_action.read_bytes())
+        import finalize_run as finalizer_module
+        original_complete=finalizer_module.complete_run
+        try:
+            def forced_failure(*_args,**_kwargs):raise ValueError('forced post-subcontract failure')
+            finalizer_module.complete_run=forced_failure
+            outer=finalizer_module.finalize_run(BID,orid,refresh_human_knowledge=False)
+        finally:finalizer_module.complete_run=original_complete
+        req(outer.get('category')=='finalization_validation_failed' and outer.get('rollback')=='restored_pre_finalization_state',f'outer finalizer rollback was not reported: {outer}')
+        req((omanifest.read_bytes(),orun.read_bytes(),outer_action.read_bytes())==outer_before,'outer finalizer transaction did not restore exact pre-finalization bytes')
+        outer_action.unlink()
+
+        # The low-level completion transaction remains rollback-safe if an unexpected full
+        # active-business failure occurs after provenance/state staging.
+        txrid=run(S/'create_run.py',BID,'customer-optimization.diagnosis.bottleneck-prioritization','Low-level rollback preservation fixture').stdout.strip()
+        txaction=write(f'instances/{BID}/operations/action-packets/act_{BID}_transaction.json',{
+            'id':f'act_{BID}_transaction','object_type':'ActionPacket','schema_version':'1.0.0','business_id':BID,'owner_system':'customer-optimization',
+            'opportunity_ref':opp_data['id'],'status':'proposed_not_executed','actions':[
+                {'action_id':'transaction-check','description':'Verify completion rollback remains intact.','executor_type':'HUMAN','expected_outputs':['rollback proof'],'status':'proposed'}],
+            'extensions':{}
+        })
+        txinvalid=write(f'instances/{BID}/decisions/opportunities/opp_{BID}_transaction_invalid.json',{
+            'id':f'opp_{BID}_transaction_invalid','object_type':'Opportunity','schema_version':'1.0.0','business_id':BID
+        })
+        txmanifest=RUNS/txrid/'contract-execution.json';txrun=RUNS/txrid/'run.json'
+        tx_before=(txmanifest.read_bytes(),txrun.read_bytes(),txaction.read_bytes())
+        tx=run(S/'complete_run.py',BID,txrid,'--evidence',str(txaction.relative_to(ROOT)),check=False)
+        req(tx.returncode==1 and 'active business validation is not clean' in tx.stderr,f'low-level completion did not reach its transactional validation gate: {tx.stdout+tx.stderr}')
+        req((txmanifest.read_bytes(),txrun.read_bytes(),txaction.read_bytes())==tx_before,'low-level completion validation failure did not restore exact pre-completion bytes')
+        txinvalid.unlink();txaction.unlink()
         print('run provenance regressions passed')
     finally:
         if BASE.exists(): shutil.rmtree(BASE)

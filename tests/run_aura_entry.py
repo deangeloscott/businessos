@@ -31,10 +31,16 @@ def main():
         ws=Path(td).resolve();env=os.environ.copy();env['BUSINESSOS_WORKSPACE']=str(ws)
         bid='entry-regression'
         init_business(bid,env)
+        supplied=ws/'attachments/supplied';supplied.mkdir(parents=True)
+        reference=supplied/'entry-reference.txt';reference.write_text('First-party presentation reference.\n')
+        source=supplied/'entry-business.json';source.write_text(json.dumps({'objective':'Create a presentation','reference_file':reference.name},indent=2)+'\n')
+        run([SCRIPTS/'bootstrap_explicit_context.py',bid,'--facts-json',json.dumps({'objectives':['Create a presentation']}),'--source-file',source,'--initialization-only'],env)
         request='Create a presentation for this business.'
         first=enter(request,bid,ws,env)
         require(first.get('status')=='ready',f'entry should be ready: {first}')
         require(first.get('handoff_format')=='compact','ordinary CLI entry should return the compact agent handoff')
+        authority=first.get('authority',{})
+        require(authority.get('status')=='resolved_authoritative_handoff' and 'Do not rerun context_plan.py' in authority.get('rule',''),'compact handoff must explicitly prevent ordinary plan/preflight recomputation')
         require(first.get('business_id')==bid,'explicit business should resolve')
         require(first.get('original_request')==request,'original request must be preserved')
         require(first.get('root_contract',{}).get('contract_id')=='content.production.presentation',f'expected presentation route, got {first.get("root_contract")}')
@@ -47,6 +53,14 @@ def main():
         require(first.get('process',{}).get('entry_contract')=='content.production.presentation','process plan should use routed root contract')
         require(first.get('process',{}).get('required_subcontracts'),'compact handoff should preserve required downstream contract information')
         require('status' in first.get('capabilities',{}),'compact handoff should preserve material capability state')
+        inputs=first.get('inputs',{});supplied_refs=inputs.get('supplied_evidence_refs',[])
+        require('attachments/supplied/entry-business.json' in supplied_refs,'compact handoff should expose the actual supplied business evidence path')
+        require('attachments/supplied/entry-reference.txt' in supplied_refs,'compact handoff should expose a directly referenced supplied input without scanning the workspace')
+        require(any(x.get('object_type')=='SourceRecord' and x.get('relationship') in {'selected_context','provenance'} for x in inputs.get('canonical_inputs',[])),'compact handoff should expose exact canonical supplied/provenance input needed to interpret selected context')
+        persistence=first.get('persistence',{})
+        require(persistence.get('interface')=='scripts/persist_run_results.py' and 'Asset' in persistence.get('allowed_object_types',[]),'compact handoff should expose the supported canonical Run-result interface and allowed writes')
+        require({'asset_type','business_role','version','status'}.issubset(set(persistence.get('required_semantic_fields',{}).get('Asset',[]))),'persistence handoff should expose required substantive fields without requiring schema-source inspection')
+        require('@local-label' in json.dumps(persistence.get('input_shape',{})),'persistence handoff should make local result references discoverable without --help/source inspection')
         require(first.get('completion',{}).get('interface')=='scripts/finalize_run.py','compact handoff should expose the ordinary finalization interface')
 
         envelope_ref=first.get('execution_envelope_ref');require(envelope_ref,'compact handoff should reference the complete envelope')
@@ -55,8 +69,9 @@ def main():
         require(durable.get('original_request')==request,'durable full envelope must preserve the original request')
         require(durable.get('route',{}).get('contract_id')=='content.production.presentation','durable full envelope must preserve resolved routing')
         require(durable.get('context_plan',{}).get('run_id')==rid,'durable context plan must be bound to the Run')
+        require(durable.get('context_plan',{}).get('material_inputs',{}).get('supplied_evidence_refs')==supplied_refs,'durable envelope must preserve the exact compact material-input resolution')
         require(durable.get('process_plan',{}).get('entry_contract')=='content.production.presentation','durable process plan should use the routed root contract')
-        require(len(json.dumps(first))<len(json.dumps(durable)),'ordinary handoff should be smaller than the complete durable envelope')
+        require('process_plan' not in first and 'context_plan' not in first and 'capability_preflight' not in first,'ordinary handoff should remain a compact projection rather than duplicating the complete resolved envelope')
 
         sys.path.insert(0,str(SCRIPTS))
         from enter import enter as library_enter

@@ -15,6 +15,7 @@ from record_contract_completion import record_contract_completion
 from complete_run import complete_run, snapshot_files, restore_files
 from validate_business import validate_business
 from generate_knowledge_layer import generate as generate_knowledge
+from run_provenance import RUN_BOUND_TYPES
 
 
 ANCHOR_KINDS={'qa_record','detector_record','analysis_record','completion_record'}
@@ -90,6 +91,18 @@ def _run_candidates(business_id,run_id):
         if key in dedup:dedup[key]['contract_ids'].update(row['contract_ids'])
         else:dedup[key]=row
     return list(dedup.values())
+
+
+def _required_run_linked_refs(candidates):
+    """Return comprehensive evidence refs mechanically required by Run integrity.
+
+    These are not semantic choices: every execution-significant canonical object already
+    linked to this Run must be recorded by that Run somewhere before completion.
+    """
+    return list(dict.fromkeys(
+        row['ref'] for row in candidates
+        if row.get('kind')=='canonical' and row.get('object_type') in RUN_BOUND_TYPES
+    ))
 
 
 def _normalize_refs(refs):
@@ -247,13 +260,40 @@ def finalize_run(business_id=None,run_id=None,root_evidence=None,contract_eviden
         else:resolution=_evidence_resolution(contract,manifest,bid,rid,'subcontract',candidates,supplied.get(cid))
         if resolution.get('status')!='resolved':return _failure_for_evidence(resolution,rd,bid,rid)
         plans.append(resolution)
-    root_resolution=_evidence_resolution(root,manifest,bid,rid,'root',candidates,root_evidence)
+    required_run_refs=_required_run_linked_refs(candidates)
+    explicit_root=list(root_evidence or [])
+    effective_root=[*explicit_root,*required_run_refs] if explicit_root or required_run_refs else None
+    root_resolution=_evidence_resolution(root,manifest,bid,rid,'root',candidates,effective_root)
     if root_resolution.get('status')!='resolved':return _failure_for_evidence(root_resolution,rd,bid,rid)
+
+    explicitly_normalized=[]
+    if explicit_root:
+        try:explicitly_normalized=_normalize_refs(explicit_root)
+        except ValueError:pass
+    mechanically_included=[ref for ref in required_run_refs if ref not in explicitly_normalized]
+    if mechanically_included:
+        root_resolution['resolution']='required_run_linked_completion_evidence'+('_plus_explicit' if explicit_root else '')
+        root_resolution['mechanically_included_refs']=mechanically_included
+
+    # Validate genuine current object/reference/semantic conditions before any completion
+    # mutation. The active_run_id view defers only the two integrity facts that cannot be
+    # true until this finalizer records evidence and completes the Run.
+    business_errors,_,_=validate_business(bid,active_run_id=rid)
+    if business_errors:
+        return {
+            'format_version':'1.0','status':'invalid_or_incomplete_evidence','category':'pre_finalization_validation_failed',
+            'business_id':bid,'run_id':rid,'run_status':'active','mutation':'none',
+            'errors':business_errors[:12],
+            'deferred_integrity_conditions':['active Run completion status','final completion-evidence recording'],
+            'needed':'Correct the reported canonical object/reference/evidence issue, then call finalize_run.py again. Do not run whole-business validation separately while the Run is active.'
+        }
 
     touched=[mp,rp]
     for row in candidates:touched.append(row['path'])
     for plan in plans+[root_resolution]:touched.extend(resolve_storage_ref(x) for x in plan.get('refs',[]))
     snapshots=snapshot_files(touched);repairs=[]
+    if mechanically_included:
+        repairs.append({'operation':'include_required_run_linked_evidence','evidence_refs':mechanically_included,'resolution':'comprehensive_exact_run_link'})
     try:
         for plan in plans:
             if plan.get('already_recorded'):continue
