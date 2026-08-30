@@ -2,7 +2,7 @@
 """Persist bounded research evidence without requiring agents to hand-author canonical schemas."""
 from _common import *
 from canonical_store import schema_entry, validate_canonical, canonical_path, write_canonical
-from validate_research_evidence import evidence_errors, public_source_locator_error, DIRECT_ACQUISITION_METHODS, DISCOVERY_ONLY_METHODS, KNOWN_ACQUISITION_METHODS, AUTHORITATIVE_POINTER_METHODS
+from validate_research_evidence import evidence_errors, public_source_locator_error, is_public_source, PUBLIC_NARRATIVE_TYPES, DIRECT_ACQUISITION_METHODS, DISCOVERY_ONLY_METHODS, KNOWN_ACQUISITION_METHODS, AUTHORITATIVE_POINTER_METHODS
 import argparse, json, hashlib, shutil, secrets, re
 
 SYSTEMS_ALLOWED=SYSTEMS
@@ -10,6 +10,7 @@ SYSTEMS_ALLOWED=SYSTEMS
 PREVALENCE_RE=re.compile(r'\b(single\s+most|most\s+common|top\s+(?:driver|reason|theme|factor|issue|complaint|priority)|dominant|#1|number\s+one|majority|overwhelmingly)\b',re.I)
 SAMPLE_SCOPE_RE=re.compile(r'\b(sample|sampled|sampling|reviewed evidence|preserved evidence|bounded evidence|reviewed sources|sources reviewed|observed evidence|evidence reviewed)\b',re.I)
 MEASURED_FREQUENCY_BASES={'representative_measurement','measured_population','complete_population'}
+STATE_NAMESPACES={'instances','runtime','knowledge','attachments'}
 
 def _check_frequency_claim(item,n):
     statement=str(item.get('statement') or '')
@@ -52,13 +53,51 @@ def _require_subject_overlap(left,left_label,right,right_label):
 
 
 def _copy_snapshot(bid, source_id, snapshot_path):
-    src=Path(snapshot_path)
-    if not src.is_absolute(): src=ROOT/src
+    src=resolve_storage_ref(snapshot_path)
     if not src.exists() or not src.is_file(): raise ValueError(f'snapshot_path does not exist: {snapshot_path}')
     ext=src.suffix.lower() or '.bin'; aid=_id('ast',f'{source_id}:{src.name}:{src.stat().st_size}')
     dest=ROOT/'instances'/bid/'assets'/'evidence'/f'{aid}{ext}'; dest.parent.mkdir(parents=True,exist_ok=True)
     if not dest.exists(): shutil.copy2(src,dest)
-    return aid,str(dest.relative_to(ROOT))
+    return aid,storage_ref(dest)
+
+
+def _workspace_evidence_path(raw):
+    if not isinstance(raw,str) or not raw.strip():return False
+    try:
+        path=resolve_storage_ref(raw).resolve();workspace=workspace_root().resolve()
+    except Exception:return False
+    if not path.exists() or not path.is_file() or not path.is_relative_to(workspace):return False
+    rel=path.relative_to(workspace)
+    return workspace_is_external() or (bool(rel.parts) and rel.parts[0] in STATE_NAMESPACES)
+
+
+def _source_provenance(item,ref,acquisition,snapshot_path):
+    """Resolve only mechanically established provenance; never invent an ambiguous origin."""
+    supplied={key:item.get(key) for key in ('source_type','origin','access_scope') if isinstance(item.get(key),str) and item.get(key).strip()}
+    if len(supplied)==3:return {**supplied,'resolution':'caller_declared'}
+
+    workspace_supplied=_workspace_evidence_path(ref) or _workspace_evidence_path(snapshot_path)
+    ref_is_http=ref.lower().startswith(('http://','https://'))
+    organization_supplied=workspace_supplied or acquisition in {'uploaded_document','first_party_export'} or (acquisition=='user_provided' and not ref_is_http)
+    declared_public_type=supplied.get('source_type') in PUBLIC_NARRATIVE_TYPES and ref.lower().startswith(('http://','https://'))
+
+    if declared_public_type:
+        if any(key in supplied for key in ('origin','access_scope')):
+            missing=sorted({'source_type','origin','access_scope'}-set(supplied))
+            raise ValueError(f'public source provenance is only partially declared for {ref!r}; specify {", ".join(missing)}')
+        return {'source_type':supplied['source_type'],'origin':'public web','access_scope':'public','resolution':'declared_public_source_type'}
+    if organization_supplied:
+        if any(key in supplied for key in ('origin','access_scope')):
+            missing=sorted({'source_type','origin','access_scope'}-set(supplied))
+            raise ValueError(f'source provenance is only partially declared for organization-supplied evidence {ref!r}; specify {", ".join(missing)} or omit all provenance fields so the exact workspace/acquisition metadata can be preserved')
+        source_type=supplied.get('source_type') or ('first_party_export' if acquisition=='first_party_export' else 'organization_supplied_file')
+        return {
+            'source_type':source_type,'origin':'organization supplied','access_scope':'business_internal',
+            'resolution':'exact_workspace_reference' if workspace_supplied else f'acquisition_method:{acquisition}',
+        }
+
+    missing=sorted({'source_type','origin','access_scope'}-set(supplied))
+    raise ValueError(f'cannot determine source provenance mechanically for {ref!r}; specify {", ".join(missing)}. AURA will not default ambiguous evidence to public web.')
 
 
 def _source(bid,item,run_id,contract_id,ts):
@@ -71,6 +110,7 @@ def _source(bid,item,run_id,contract_id,ts):
     acquisition=str(item.get('acquisition_method') or item.get('retrieval_method') or 'unknown').strip()
     if acquisition not in KNOWN_ACQUISITION_METHODS:
         raise ValueError(f'unknown acquisition_method {acquisition!r}; use one of: {", ".join(sorted(KNOWN_ACQUISITION_METHODS))}')
+    provenance=_source_provenance(item,ref,acquisition,snap)
     content_basis=text if isinstance(text,str) and text else (json.dumps(payload,sort_keys=True,ensure_ascii=False) if payload is not None else None)
     ch='sha256:'+hashlib.sha256(content_basis.encode('utf-8')).hexdigest() if content_basis else None
     sid=item.get('id') or _id('src',f'{ref}:{ch or pointer or "pointer"}')
@@ -90,13 +130,14 @@ def _source(bid,item,run_id,contract_id,ts):
         'acquisition_method':acquisition,'acquisition_reference':item.get('acquisition_reference'),
         'captured_text':text,'title':item.get('title'),'author_label':item.get('author_label'),
         'rating':item.get('rating'),'context':item.get('context'),'asset_refs':asset_refs,
-        'evidence_pointer':pointer,'record_payload':payload,'capture_notes':item.get('capture_notes')
+        'evidence_pointer':pointer,'record_payload':payload,'capture_notes':item.get('capture_notes'),
+        'provenance_resolution':provenance['resolution']
     }
     ev={k:v for k,v in ev.items() if v is not None and v!=[]}
     s=_base('SourceRecord',sid,bid,run_id,ts); s.update({
-        'source_type':item.get('source_type') or 'webpage','source_reference':ref,'subject_refs':item.get('subject_refs',[]),
-        'origin':item.get('origin') or 'public web','retrieved_at':item.get('retrieved_at') or ts,
-        'published_at':item.get('published_at'),'content_hash':ch,'access_scope':item.get('access_scope') or 'public',
+        'source_type':provenance['source_type'],'source_reference':ref,'subject_refs':item.get('subject_refs',[]),
+        'origin':provenance['origin'],'retrieved_at':item.get('retrieved_at') or ts,
+        'published_at':item.get('published_at'),'content_hash':ch,'access_scope':provenance['access_scope'],
         'extensions':{'businessos_evidence':ev,'contract_id':contract_id}
     })
     _validate('SourceRecord',s)
@@ -199,7 +240,7 @@ def persist(bid,bundle):
             s=public_sources.get(ref)
             if s:
                 _require_subject_overlap(o,o['id'],s,ref)
-            if s and s.get('access_scope')=='public':
+            if s and is_public_source(s):
                 ev=s.get('extensions',{}).get('businessos_evidence',{})
                 acquisition=ev.get('acquisition_method') or 'unknown'
                 status=ev.get('capture_status')
@@ -251,13 +292,13 @@ def main():
   ]
 }
 
-Declare acquisition_method separately from capture_method. Strong examples: direct_page_read, browser_read, browser_capture, api_response, downloaded_document, uploaded_document, user_provided, first_party_export, authoritative_record. Discovery-only methods such as search_result, search_snippet, directory_preview, ai_summary, unvisited_url, or unknown may be saved, but cannot support an Observation even if captured_text is present. When a source is about a resolved material subject, preserve matching subject_refs on the SourceRecord and downstream Observation/Insight so evidence about one subject cannot silently support another. Screenshots are useful when they add value; they are not required for every review. Supported/active superlative or prevalence claims (for example top, dominant, #1, most common) must be explicitly scoped to the sampled evidence unless a measured population basis is supplied.'''
+Declare acquisition_method separately from capture_method. Strong examples: direct_page_read, browser_read, browser_capture, api_response, downloaded_document, uploaded_document, user_provided, first_party_export, authoritative_record. Exact files inside the active organization workspace, uploaded_document/first_party_export acquisition, and non-URL user_provided references are persisted as organization-supplied business_internal evidence unless the caller explicitly supplies the complete source_type/origin/access_scope triple. A declared public narrative source type such as webpage/review_platform plus an HTTP(S) reference remains public web, including when the public item was supplied by the user. For any source whose provenance is not mechanically determined, specify source_type, origin, and access_scope; AURA will not guess public provenance. Discovery-only methods such as search_result, search_snippet, directory_preview, ai_summary, unvisited_url, or unknown may be saved, but cannot support an Observation even if captured_text is present. When a source is about a resolved material subject, preserve matching subject_refs on the SourceRecord and downstream Observation/Insight so evidence about one subject cannot silently support another. Screenshots are useful when they add value; they are not required for every review. Supported/active superlative or prevalence claims (for example top, dominant, #1, most common) must be explicitly scoped to the sampled evidence unless a measured population basis is supplied.'''
     p=argparse.ArgumentParser(description='Persist SourceRecords, optional evidence Assets, Observations, Insights, and basic Competitor objects from a structured research bundle.',formatter_class=argparse.RawDescriptionHelpFormatter,epilog=epilog)
     p.add_argument('business_id'); p.add_argument('--bundle-file',required=True); a=p.parse_args()
     try:
         bundle=json.loads(Path(a.bundle_file).read_text()); written,warns=persist(a.business_id,bundle)
     except (ValueError,FileExistsError,json.JSONDecodeError) as e:
         raise SystemExit(str(e)+'\nSupported path: run `python3 scripts/persist_research_bundle.py --help`; do not create a replacement canonical writer.')
-    print(json.dumps({'business_id':a.business_id,'objects_written':[{'id':o['id'],'object_type':o['object_type'],'path':str(p.relative_to(ROOT))} for o,p in written],'warnings':warns,'next_validation':f'python3 scripts/validate_business.py {a.business_id} --require-context'},indent=2))
+    print(json.dumps({'business_id':a.business_id,'objects_written':[{'id':o['id'],'object_type':o['object_type'],'path':storage_ref(p)} for o,p in written],'warnings':warns,'next_validation':f'python3 scripts/validate_business.py {a.business_id} --require-context'},indent=2))
 
 if __name__=='__main__': main()

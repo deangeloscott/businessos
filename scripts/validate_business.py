@@ -11,6 +11,7 @@ from validate_run_completion import run_completion_errors
 from validate_opportunity_grounding import opportunity_grounding_errors
 from validate_attention_lifecycle import lifecycle_errors
 from preference_semantics import preference_semantic_errors
+from artifact_readiness import readiness_errors
 import argparse,json,collections
 from bootstrap_explicit_context import _fact_tokens, GROUNDING_METHOD
 
@@ -146,6 +147,7 @@ def validate_business(business_id,require_context=False,active_run_id=None):
     errors.extend(claim_errors(business_id,objects))
     errors.extend(mutation_errors(business_id,objects))
     errors.extend(run_completion_errors(business_id,objects,active_run_id))
+    errors.extend(readiness_errors(business_id,objects))
     og_errors,og_warnings=opportunity_grounding_errors(business_id,objects); errors.extend(og_errors); warnings.extend(og_warnings)
     re_errors,re_warnings=evidence_errors(business_id); errors.extend(re_errors); warnings.extend(re_warnings)
     le_errors,le_warnings=local_evidence_errors(business_id); errors.extend(le_errors); warnings.extend(le_warnings)

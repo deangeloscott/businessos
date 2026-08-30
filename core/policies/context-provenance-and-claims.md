@@ -67,6 +67,8 @@ Every business-specific/promise-like candidate returned by the scanner must be c
 - `general_guidance` (must not be a claim about the active business), or
 - `placeholder` (must be visibly placeholder-marked).
 
+When a placeholder remains in an outward artifact, classify whether it is launch-critical with `launch_critical: true|false` before asserting production readiness. An unclassified placeholder is conservatively unresolved for readiness purposes. This does not make an honest draft or its version-specific QA invalid; it prevents the draft from being represented as production/launch ready until the missing fact is resolved or the placeholder is explicitly established as non-critical for the intended launch surface. Record the separate version-specific readiness assessment in `extensions.businessos.production_readiness` as defined by `core/policies/completion-evidence.md`.
+
 `validate_business.py` re-scans the saved artifact or its declared claim surface and rejects missing/unsupported manifest entries. A trusted support reference is **not** a permission token: the referenced canonical text must substantively authorize the customer-facing predicate, not merely exist or share the business name/market. A claim manifest is a QA control, not a replacement for judgment: if a statement or visual implication materially enlarges the supported promise, narrow it, visibly frame it as illustrative/general where truthful, or obtain authorization.
 
 ### Claim manifest example

@@ -10,6 +10,7 @@ from pathlib import Path
 import hashlib, json, re, struct
 import xml.etree.ElementTree as ET
 from _common import *
+from artifact_readiness import qa_global_readiness_errors
 
 CUSTOMER_FACING_ROLE='customer_facing_production_root'
 TEXT_EXTS={'.md','.txt','.html','.htm','.rst','.csv','.json'}
@@ -387,6 +388,9 @@ def qa_evidence_errors(contract,paths,business_id=None,run_id=None):
     if not records:
         if strict:return [f'{cid} completion requires a structured JSON QA pass record with matching contract_id, substantive per-check outcomes, no unresolved blockers, and an existing non-self target Asset at the exact tested version']
         return [f'{cid} completion requires a structured JSON QA pass record with matching contract_id and structured per-check outcomes']
+    for data,_ in records:
+        errors=qa_global_readiness_errors(data,business_id)
+        if errors:return [f'{cid} {error}' for error in errors]
     return []
 
 

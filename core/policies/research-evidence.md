@@ -49,6 +49,8 @@ When the evidence is about one or more resolved subjects, also use top-level `So
 
 A plain URL with `capture_status=pointer_only` may be saved for discovery/history, but it is not sufficient support for a material Observation/Insight that depends on the unseen content. The same is true when `captured_text` exists but `acquisition_method` is only `search_result`, `search_snippet`, `directory_preview`, `ai_summary`, `unvisited_url`, or `unknown`. Filling in a text field does not turn search discovery into inspected evidence.
 
+Source provenance is deterministic, not a convenience default. An exact existing reference inside the active organization workspace, established `uploaded_document`/`first_party_export` acquisition, or a non-URL `user_provided` reference is organization-supplied/business-internal evidence unless the caller supplies a complete contrary provenance classification. A declared public narrative source type plus an HTTP(S) locator remains public web even when the public item was supplied by the user. When neither exact storage nor established metadata determines provenance, the caller must supply `source_type`, `origin`, and `access_scope`; persistence must not silently invent `webpage / public web / public`. Public-web acquisition safeguards apply from declared public origin/access, not merely because a source type sounds narrative.
+
 ## Acquisition method vs. capture method
 These answer two different questions:
 
