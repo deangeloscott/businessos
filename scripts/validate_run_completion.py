@@ -12,7 +12,7 @@ def _contract_index():
     except Exception:return {}
 
 
-def _generic_run_errors(business_id,objects,contracts):
+def _generic_run_errors(business_id,objects,contracts,active_run_id=None):
     """Require execution-significant canonical state to be bound to real completed Run evidence."""
     errors=[]
     for obj,path in objects:
@@ -43,11 +43,12 @@ def _generic_run_errors(business_id,objects,contracts):
             owner=obj.get('owner_system');root_owner=root.get('owner_system')
             if owner and root_owner not in {None,'core',owner}:errors.append(f'{path} {typ} owner_system does not match producing Run root contract owner: {owner} vs {root_owner}')
         if bos.get('run_contract_id') and bos.get('run_contract_id')!=root_id:errors.append(f'{path} {typ} extensions.businessos.run_contract_id does not match Run root contract: {bos.get("run_contract_id")!r} vs {root_id!r}')
-        if m.get('root_status')!='completed' or r.get('status')!='completed':errors.append(f'{path} {typ} references a Run that is not completed: {rr}')
+        expected_active=bool(active_run_id and rid==active_run_id and m.get('root_status')=='active' and r.get('status')=='active')
+        if not expected_active and (m.get('root_status')!='completed' or r.get('status')!='completed'):errors.append(f'{path} {typ} references a Run that is not completed: {rr}')
         evidence=set(m.get('root_evidence_refs') or [])
         for step in (m.get('contracts') or {}).values():evidence.update(step.get('evidence_refs') or [])
         norm=str(Path(path))
-        if norm not in {str(Path(x)) for x in evidence}:errors.append(f'{path} {typ} is not recorded as completion evidence by its referenced Run: {rr}')
+        if not expected_active and norm not in {str(Path(x)) for x in evidence}:errors.append(f'{path} {typ} is not recorded as completion evidence by its referenced Run: {rr}')
     return errors
 
 
@@ -74,9 +75,9 @@ def _semantic_run_errors(business_id,objects,contracts):
     return errors
 
 
-def run_completion_errors(business_id,objects):
+def run_completion_errors(business_id,objects,active_run_id=None):
     errors=[];contracts=_contract_index()
-    errors.extend(_generic_run_errors(business_id,objects,contracts))
+    errors.extend(_generic_run_errors(business_id,objects,contracts,active_run_id))
     errors.extend(_semantic_run_errors(business_id,objects,contracts))
     for asset,path in objects:
         if asset.get('object_type')!='Asset' or asset.get('owner_system') not in {'content-synthesis','marketing-synthesis'}:continue
@@ -95,6 +96,7 @@ def run_completion_errors(business_id,objects):
         if not mp.exists() or not rp.exists():errors.append(f'{path} production Asset Run lacks auditable contract-execution manifest: {rr}');continue
         try:m=json.loads(mp.read_text());r=json.loads(rp.read_text())
         except Exception as e:errors.append(f'{path} invalid Run completion state: {e}');continue
+        expected_active=bool(active_run_id and r.get('run_id')==active_run_id and m.get('root_status')=='active' and r.get('status')=='active')
         if m.get('business_id')!=business_id or r.get('business_id')!=business_id:errors.append(f'{path} Run business_id mismatch: {rr}')
         root_id=m.get('root_contract_id')
         if not root_id or r.get('contract_id')!=root_id:errors.append(f'{path} Run root contract mismatch between run.json and contract-execution.json: {rr}')
@@ -107,21 +109,21 @@ def run_completion_errors(business_id,objects):
         required=m.get('required_subcontracts',[]);steps=m.get('contracts',{})
         for cid in required:
             st=steps.get(cid,{})
-            if st.get('status')!='completed':errors.append(f'{path} required subcontract not completed for Asset Run: {cid}')
+            if st.get('status')!='completed' and not expected_active:errors.append(f'{path} required subcontract not completed for Asset Run: {cid}')
             refs=st.get('evidence_refs') or []
-            if not refs:errors.append(f'{path} completed subcontract lacks evidence refs: {cid}')
+            if not refs and (st.get('status')=='completed' or not expected_active):errors.append(f'{path} completed subcontract lacks evidence refs: {cid}')
             for rel in refs:
                 if not resolve_storage_ref(rel).exists():errors.append(f'{path} subcontract evidence ref missing: {cid} -> {rel}')
-            if ('.qa' in cid or cid.endswith('.qa')) and not qa_record_ok(cid,refs,business_id,r.get('run_id')):errors.append(f'{path} QA subcontract lacks structured matching JSON pass evidence: {cid}')
-        if m.get('root_status')!='completed' or r.get('status')!='completed':errors.append(f'{path} production Asset references a Run that is not completed: {rr}')
+            if ('.qa' in cid or cid.endswith('.qa')) and (st.get('status')=='completed' or not expected_active) and not qa_record_ok(cid,refs,business_id,r.get('run_id')):errors.append(f'{path} QA subcontract lacks structured matching JSON pass evidence: {cid}')
+        if not expected_active and (m.get('root_status')!='completed' or r.get('status')!='completed'):errors.append(f'{path} production Asset references a Run that is not completed: {rr}')
         root_refs=m.get('root_evidence_refs') or []
-        if not root_refs:errors.append(f'{path} completed production Run lacks root deliverable evidence: {rr}')
+        if not root_refs and not expected_active:errors.append(f'{path} completed production Run lacks root deliverable evidence: {rr}')
         for rel in root_refs:
             if not resolve_storage_ref(rel).exists():errors.append(f'{path} root completion evidence ref missing: {rel}')
         loc=asset.get('location_reference')
         if customer_facing is not False and loc:
             locrel=storage_ref(resolve_storage_ref(loc));refnorm={str(Path(x)) for x in root_refs}
-            if str(Path(locrel)) not in refnorm:errors.append(f'{path} completed production Run root evidence does not include the customer-facing Asset file: {locrel}')
+            if not expected_active and str(Path(locrel)) not in refnorm:errors.append(f'{path} completed production Run root evidence does not include the customer-facing Asset file: {locrel}')
         chain=bos.get('contract_chain')
         if not isinstance(chain,list):errors.append(f'{path} production Asset requires extensions.businessos.contract_chain including the root and required subcontracts')
         else:

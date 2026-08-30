@@ -109,7 +109,7 @@ def _provenance_errors(objects, sources):
                 errors.append(f'{path} explicit_user {label} {value!r} is not grounded in source {srcid}; unsupported token(s): {", ".join(missing)}')
     return errors
 
-def validate_business(business_id,require_context=False):
+def validate_business(business_id,require_context=False,active_run_id=None):
     errors=[];warnings=[];base=ROOT/'instances'/business_id
     if not base.exists() or not base.is_dir(): return [f'Unknown business: {business_id}'],warnings,{}
     try: inst=json.loads((base/'instance.json').read_text())
@@ -145,7 +145,7 @@ def validate_business(business_id,require_context=False):
     errors.extend(_provenance_errors(objects,sources))
     errors.extend(claim_errors(business_id,objects))
     errors.extend(mutation_errors(business_id,objects))
-    errors.extend(run_completion_errors(business_id,objects))
+    errors.extend(run_completion_errors(business_id,objects,active_run_id))
     og_errors,og_warnings=opportunity_grounding_errors(business_id,objects); errors.extend(og_errors); warnings.extend(og_warnings)
     re_errors,re_warnings=evidence_errors(business_id); errors.extend(re_errors); warnings.extend(re_warnings)
     le_errors,le_warnings=local_evidence_errors(business_id); errors.extend(le_errors); warnings.extend(le_warnings)

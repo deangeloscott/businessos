@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Persist bounded research evidence without requiring agents to hand-author canonical schemas."""
 from _common import *
-from jsonschema import Draft202012Validator
+from canonical_store import schema_entry, validate_canonical, canonical_path, write_canonical
 from validate_research_evidence import evidence_errors, public_source_locator_error, DIRECT_ACQUISITION_METHODS, DISCOVERY_ONLY_METHODS, KNOWN_ACQUISITION_METHODS, AUTHORITATIVE_POINTER_METHODS
 import argparse, json, hashlib, shutil, secrets, re
 
@@ -22,15 +22,11 @@ def _check_frequency_claim(item,n):
 
 
 def _load_schema(title):
-    reg=json.loads((ROOT/'generated/schema-registry.json').read_text())
-    row=next((x for x in reg if x.get('title')==title),None)
-    if not row: raise ValueError(f'Unknown schema title: {title}')
-    return json.loads((ROOT/row['path']).read_text())
+    return schema_entry(title)[1]
 
 
 def _validate(title,obj):
-    errs=sorted(Draft202012Validator(_load_schema(title)).iter_errors(obj),key=lambda e:list(e.path))
-    if errs: raise ValueError(f'{title} invalid: '+'; '.join(f'{list(e.path)} {e.message}' for e in errs))
+    validate_canonical(title,obj)
 
 
 def _id(prefix,seed):
@@ -108,26 +104,15 @@ def _source(bid,item,run_id,contract_id,ts):
 
 
 def _path_for(bid,obj):
-    base=ROOT/'instances'/bid; typ=obj['object_type']; oid=obj['id']
-    mapping={
-        'SourceRecord':base/'intelligence/sources'/f'{oid}.json',
-        'Observation':base/'intelligence/observations'/f'{oid}.json',
-        'Insight':base/'intelligence/insights'/f'{oid}.json',
-        'Asset':base/'assets'/f'{oid}.json',
-        'Competitor':base/'context/competitors'/f'{oid}.json',
-    }
-    if typ not in mapping: raise ValueError(f'Unsupported research bundle object type: {typ}')
-    return mapping[typ]
+    return canonical_path(bid,obj)
 
 
 def _write(obj):
-    p=_path_for(obj['business_id'],obj); p.parent.mkdir(parents=True,exist_ok=True)
+    p=_path_for(obj['business_id'],obj)
     if p.exists():
         old=json.loads(p.read_text())
         if old==obj: return p
-        raise FileExistsError(f'Refusing to overwrite existing canonical object: {p.relative_to(ROOT)}')
-    p.write_text(json.dumps(obj,indent=2,ensure_ascii=False)+'\n')
-    return p
+    return write_canonical(obj,p)
 
 
 def persist(bid,bundle):

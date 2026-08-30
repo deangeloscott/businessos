@@ -1,5 +1,15 @@
 ## 1.8.4 — Stable release
 
+### Compact entry and deterministic Run finalization
+
+- `scripts/enter.py` now persists the complete resolved execution envelope inside the Run and returns a compact sufficient CLI handoff by default. The full library return remains unchanged in shape, and `--full` preserves the prior full CLI surface for advanced/programmatic consumers.
+- Added `scripts/finalize_run.py` as the ordinary high-level completion interface over the existing subcontract, provenance, completion-evidence, active-business validation, and human-knowledge mechanisms. Exact mechanical bookkeeping can complete in one call; semantic or ambiguous evidence returns a structured incomplete result without guessing.
+- Finalization pre-validates evidence roles before mutation and wraps all new subcontract/root bookkeeping in an outer rollback boundary. Integrated validation failure restores the exact pre-finalization Run manifest, Run state, and touched canonical evidence.
+- Underlying validators and `record_contract_completion.py` / `complete_run.py` remain independently usable. No agent runtime, daemon, scheduler, server, queue, mandatory database, model router, proprietary UI, domain-specific shortcut, or qualification-specific behavior was added.
+- The compact handoff is now explicitly authoritative, surfaces exact canonical/provenance inputs plus directly supplied evidence paths, and carries a supported Run-result persistence command so ordinary agents do not need to recompute plans/preflight or reverse-engineer schema/provenance mechanics.
+- Added `persist_run_results.py` over shared canonical schema/storage mechanics. The model remains the sole author of business meaning; deterministic code supplies IDs, timestamps, paths, local result references, Run/contract provenance, transactional focused validation, and no semantic defaults.
+- Active-Run pre-finalization validation now defers only completion-status/evidence-recording conditions that finalization itself must establish. `finalize_run.py` reports other canonical/reference issues before mutation and comprehensively includes exact Run-linked execution-significant outputs as mechanically required completion evidence.
+
 - Completed release-confidence validation across representative business domains, cross-domain orchestration, fresh-user onboarding, customer-facing completion, Brand persistence, second-harness portability, clean-session resume, legacy preference migration, and sequential multi-operator shared-state use.
 - The v1.8.4 shared-workspace guarantee is explicit: sequential/coordinated multi-session and multi-operator use is supported; arbitrary unsynchronized simultaneous writes to the same canonical object are not claimed conflict-safe.
 - Final multi-operator acceptance proved separate operator preferences and Run attribution on one shared business while keeping task authorization out of durable PreferenceProfile state.

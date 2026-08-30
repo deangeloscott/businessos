@@ -3,6 +3,79 @@ from _common import *
 import argparse,json,os
 from resolve_preferences import resolve_effective_preferences, _load_task_preferences
 
+
+def _strings(value):
+    if isinstance(value,str):
+        yield value
+    elif isinstance(value,list):
+        for item in value:yield from _strings(item)
+    elif isinstance(value,dict):
+        for item in value.values():yield from _strings(item)
+
+
+def _existing_material_path(raw,relative_to=None):
+    if not isinstance(raw,str) or not raw.strip() or '://' in raw:return None
+    value=raw.strip();candidates=[]
+    p=Path(value).expanduser()
+    if p.is_absolute():candidates.append(p)
+    else:
+        if relative_to is not None:candidates.append(Path(relative_to).parent/p)
+        candidates.append(resolve_storage_ref(value))
+    for candidate in candidates:
+        try:resolved=candidate.resolve()
+        except Exception:continue
+        if resolved.exists() and resolved.is_file():return resolved
+    return None
+
+
+def _material_inputs(selected,idx,declared):
+    """Expose only exact selected/provenance inputs and their real supplied files.
+
+    This is intentionally relationship-bounded. It does not inventory the workspace or
+    inline source payloads into the execution handoff.
+    """
+    related=dict(selected);frontier=list(selected);selected_ids=set(selected)
+    for _ in range(2):
+        following=[]
+        for oid in frontier:
+            obj,_=related[oid]
+            for ref in refs_in_object(obj):
+                if ref in related or ref not in idx:continue
+                related[ref]=idx[ref];following.append(ref)
+        frontier=following
+    canonical=[];supplied=[];supplied_paths=[]
+    for oid in sorted(related):
+        obj,path=related[oid]
+        canonical.append({
+            'object_ref':oid,'object_type':obj.get('object_type'),'path':storage_ref(path),
+            'relationship':'selected_context' if oid in selected_ids else 'provenance'
+        })
+        # Canonical provenance commonly points to a user-supplied file through
+        # source_reference/location_reference or extensions.source_members[].reference.
+        for raw in _strings({k:obj.get(k) for k in ('source_reference','location_reference') if obj.get(k)}):
+            material=_existing_material_path(raw)
+            if material and material not in supplied_paths:supplied_paths.append(material)
+        ext=obj.get('extensions') if isinstance(obj.get('extensions'),dict) else {}
+        for member in ext.get('source_members',[]) or []:
+            if not isinstance(member,dict):continue
+            material=_existing_material_path(member.get('reference'))
+            if material and material not in supplied_paths:supplied_paths.append(material)
+    # One bounded expansion makes files named inside a directly supplied JSON manifest
+    # discoverable (for example an accompanying image) without scanning attachments/.
+    for source in list(supplied_paths):
+        if source.suffix.lower()!='.json':continue
+        try:data=json.loads(source.read_text(encoding='utf-8'))
+        except Exception:continue
+        for raw in _strings(data):
+            material=_existing_material_path(raw,source)
+            if material and material not in supplied_paths:supplied_paths.append(material)
+    supplied=[storage_ref(path) for path in supplied_paths]
+    return {
+        'declared_evidence_inputs':list(declared or []),
+        'canonical_inputs':canonical,
+        'supplied_evidence_refs':supplied,
+    }
+
 def build_plan(business_id,contract_id,focus=None,operator_ref=None,team_ref=None,role_ref=None,run_id=None,task_preferences=None,output_type=None,channel=None):
     focus=focus or []
     reg=load_registry();match=next((x for x in reg['contracts'] if x['id']==contract_id),None)
@@ -183,7 +256,8 @@ def build_plan(business_id,contract_id,focus=None,operator_ref=None,team_ref=Non
         if x not in files and (ROOT/x).exists():files.append(x)
     for x in object_files:
         if x not in files:files.append(x)
-    return {'version':os_version(),'business_id':business_id,'contract_id':contract_id,'focus_refs':focus,'run_id':run_id,'operator_ref':operator_ref,'team_ref':team_ref,'role_ref':role_ref,'effective_preferences':preference_resolution.get('effective_preferences',{}),'preference_profiles':[x.get('id') for x in preference_resolution.get('applied_profiles',[])],'preference_conflicts':preference_resolution.get('conflicts',[]),'files':files,'object_refs':sorted(selected),'object_files':object_files,'schema_files':schema_files,'unresolved_selectors':unresolved,'optional_unavailable_selectors':optional_unavailable,'evidence_inputs':match.get('evidence_inputs',[]),'required_capabilities':required_caps,'optional_capabilities':optional_caps,'mutating_capabilities':mutating_caps}
+    material_inputs=_material_inputs(selected,idx,match.get('evidence_inputs',[]))
+    return {'version':os_version(),'business_id':business_id,'contract_id':contract_id,'focus_refs':focus,'run_id':run_id,'operator_ref':operator_ref,'team_ref':team_ref,'role_ref':role_ref,'effective_preferences':preference_resolution.get('effective_preferences',{}),'preference_profiles':[x.get('id') for x in preference_resolution.get('applied_profiles',[])],'preference_conflicts':preference_resolution.get('conflicts',[]),'files':files,'object_refs':sorted(selected),'object_files':object_files,'schema_files':schema_files,'unresolved_selectors':unresolved,'optional_unavailable_selectors':optional_unavailable,'evidence_inputs':match.get('evidence_inputs',[]),'material_inputs':material_inputs,'required_capabilities':required_caps,'optional_capabilities':optional_caps,'mutating_capabilities':mutating_caps}
 
 def main():
     p=argparse.ArgumentParser();p.add_argument('business_id');p.add_argument('contract_id');p.add_argument('--focus',action='append',default=[]);p.add_argument('--run-id');p.add_argument('--operator-ref');p.add_argument('--team-ref');p.add_argument('--role-ref');p.add_argument('--task-preferences');p.add_argument('--output-type');p.add_argument('--channel');p.add_argument('--output');a=p.parse_args()

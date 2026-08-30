@@ -151,6 +151,30 @@ AURA distinguishes lifecycle states such as drafted, approved, executed, verifie
 
 Preserve prior state and Runs unless deletion/replacement is explicitly authorized. Different models/harnesses can sequentially resume the same durable workspace.
 
+For ordinary agent execution, use the compact front door:
+
+```bash
+python3 scripts/enter.py "<complete original business request>" --business-id <business-id>
+```
+
+The compact handoff is authoritative for the returned Run: ordinary agents should not rerun or inspect the lower-level process/context/capability helpers unless relevant state changed or a high-level interface reports a real unresolved need. Its `inputs` section exposes only exact selected/provenance canonical refs and directly supplied evidence files, not a workspace inventory. The complete resolved envelope is saved at `execution_envelope_ref`; use `enter.py --full` only for a programmatic/advanced caller that needs the complete prior CLI structure.
+
+For AI-authored declared canonical results, write the compact input shape to the returned Run `work_dir` and call the returned persistence command:
+
+```bash
+python3 scripts/persist_run_results.py <business-id> <run-id> --input <results.json>
+```
+
+The model supplies the substantive fields. The helper supplies only schema identity, canonical IDs/timestamps/path, local `@key` reference resolution, Run/contract provenance, and focused pre-finalization validation. Specialized lifecycle writers remain authoritative for types such as deduplicated Attention, versioned PlatformChange, grounded explicit context, and SourceRecord capture.
+
+After the model/harness performs the business work and persists its real governed results, use the single finalization surface:
+
+```bash
+python3 scripts/finalize_run.py <business-id> <run-id>
+```
+
+Call the finalizer directly after material persistence; do not run whole-business validation first while the Run is active. The finalizer resolves exact Run-linked/contract-labelled, mechanically required, or mechanically unique evidence, reports genuine object/reference issues before mutation, records required-subcontract completion, binds provenance, completes the root transactionally, runs integrated green active-business validation, and refreshes the enabled derived human knowledge view. When several artifacts could fill the same semantic role, it returns `needs_judgment` and leaves the Run incomplete. Advanced callers can provide explicit root evidence with repeated `--evidence` or resolve a subcontract ambiguity with repeated `--contract-evidence CONTRACT_ID=REF`.
+
 ## 7. Customer-facing work and claims
 
 Customer-facing Content/Marketing work should use the appropriate customer-facing production root and preserve its actual Run/evidence lifecycle.
@@ -161,8 +185,11 @@ Use:
 
 - `core/policies/context-provenance-and-claims.md`
 - `core/policies/completion-evidence.md`
+- `scripts/finalize_run.py` for the ordinary integrated finalization path
 - `scripts/record_contract_completion.py`
 - `scripts/complete_run.py`
+
+The last two helpers remain independently usable low-level interfaces; ordinary agents should not need to manually sequence them when finalization evidence is mechanically clear.
 
 AURA should remain flexible about creative expression but strict about factual/outward claims. Do not claim a scan, render, publication, media master, experiment, measurement, or production change that did not occur.
 
