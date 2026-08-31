@@ -34,6 +34,9 @@ jobs:
       - name: Validate workspace
         run: python scripts/validate_workspace.py
 
+      - name: Run public regression suite
+        run: python tests/run_all.py
+
       - name: Commit validated migration
         run: |
           if git diff --quiet; then
