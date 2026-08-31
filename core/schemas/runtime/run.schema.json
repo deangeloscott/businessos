@@ -4,220 +4,77 @@
   "type": "object",
   "additionalProperties": false,
   "properties": {
-    "run_id": {
-      "type": "string",
-      "minLength": 1
+    "run_id": {"type": "string", "minLength": 1},
+    "business_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$"},
+    "task": {"type": "string", "minLength": 1},
+    "method_type": {
+      "enum": ["aura_playbook", "external_skill", "model_created", "ad_hoc"],
+      "description": "How the work was actually performed. AURA playbook conformance applies only to aura_playbook Runs."
     },
-    "business_id": {
-      "type": "string",
-      "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$"
-    },
-    "task": {
-      "type": "string",
-      "minLength": 1
-    },
+    "method_ref": {"type": ["string", "null"], "minLength": 1},
     "contract_id": {
-      "type": "string",
+      "type": ["string", "null"],
       "minLength": 1,
-      "description": "Selected AURA playbook/method for this bounded work receipt. It identifies the method used for the Run; it is not a claim that no other valid method could accomplish the user's goal."
+      "description": "AURA playbook identifier when method_type is aura_playbook. Optional for all other work."
     },
-    "status": {
-      "type": "string",
-      "minLength": 1
-    },
-    "focus_refs": {
-      "type": "array",
-      "items": {
-        "type": "string",
-        "minLength": 1
-      },
-      "uniqueItems": true
-    },
-    "operator_ref": {
-      "type": [
-        "string",
-        "null"
-      ],
-      "minLength": 1,
-      "description": "Stable workspace-local operator identifier for attribution/personalization; does not grant authority."
-    },
-    "team_ref": {
-      "type": [
-        "string",
-        "null"
-      ],
-      "minLength": 1,
-      "description": "Optional team context used for preference resolution; does not grant authority."
-    },
-    "role_ref": {
-      "type": [
-        "string",
-        "null"
-      ],
-      "minLength": 1,
-      "description": "Optional role context used for preference resolution; does not grant authority."
-    },
-    "preference_output_type": {
-      "type": [
-        "string",
-        "null"
-      ],
-      "minLength": 1,
-      "description": "Optional output-type context used only for preference applicability."
-    },
-    "preference_channel": {
-      "type": [
-        "string",
-        "null"
-      ],
-      "minLength": 1,
-      "description": "Optional channel context used only for preference applicability."
-    },
-    "preference_snapshot_ref": {
-      "type": [
-        "string",
-        "null"
-      ],
-      "minLength": 1,
-      "description": "Run-local effective-preference snapshot used for reproducible execution context."
-    },
+    "status": {"enum": ["active", "completed", "superseded", "abandoned"]},
+    "focus_refs": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+    "operator_ref": {"type": ["string", "null"], "minLength": 1},
+    "team_ref": {"type": ["string", "null"], "minLength": 1},
+    "role_ref": {"type": ["string", "null"], "minLength": 1},
+    "preference_output_type": {"type": ["string", "null"], "minLength": 1},
+    "preference_channel": {"type": ["string", "null"], "minLength": 1},
+    "preference_snapshot_ref": {"type": ["string", "null"], "minLength": 1},
     "completion_policy_ref": {
-      "type": "string",
+      "type": ["string", "null"],
       "minLength": 1,
-      "description": "Optional reference to the completion-evidence policy snapshot governing this Run."
+      "description": "Present only when a selected method has a specific completion/conformance policy."
     },
     "continuity": {
       "type": "object",
       "additionalProperties": false,
-      "description": "Compact organization-owned handoff index for this bounded work. It points to material durable results/evidence and must not become a transcript or hidden-reasoning archive.",
+      "description": "Compact organization-owned work receipt. Preserve material meaning, not transcripts or hidden reasoning.",
       "properties": {
-        "format_version": {
-          "type": "string",
-          "minLength": 1
-        },
-        "purpose": {
-          "const": "organizational_work_receipt"
-        },
-        "state": {
-          "enum": [
-            "active",
-            "completed",
-            "superseded"
-          ]
-        },
-        "method_ref": {
-          "type": "string",
-          "minLength": 1
-        },
-        "evidence_refs": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "minLength": 1
-          },
-          "uniqueItems": true
-        },
-        "result_refs": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "minLength": 1
-          },
-          "uniqueItems": true
-        },
-        "completed_at": {
-          "type": [
-            "string",
-            "null"
-          ],
-          "format": "date-time"
-        },
-        "superseded_by_run_id": {
-          "type": [
-            "string",
-            "null"
-          ],
-          "minLength": 1
-        }
+        "format_version": {"type": "string", "minLength": 1},
+        "purpose": {"const": "organizational_work_receipt"},
+        "state": {"enum": ["active", "completed", "superseded", "abandoned"]},
+        "method_type": {"enum": ["aura_playbook", "external_skill", "model_created", "ad_hoc"]},
+        "method_ref": {"type": ["string", "null"], "minLength": 1},
+        "summary": {"type": ["string", "null"]},
+        "evidence_refs": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+        "result_refs": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+        "decision_refs": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+        "unresolved": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+        "completed_at": {"type": ["string", "null"], "format": "date-time"},
+        "superseded_by_run_id": {"type": ["string", "null"], "minLength": 1}
       },
-      "required": [
-        "format_version",
-        "purpose",
-        "state",
-        "method_ref",
-        "evidence_refs",
-        "result_refs"
-      ]
+      "required": ["format_version", "purpose", "state", "method_type", "evidence_refs", "result_refs", "decision_refs", "unresolved"]
     },
-    "correlation_id": {
-      "type": "string",
-      "minLength": 1
-    },
-    "causation_id": {
-      "type": [
-        "string",
-        "null"
-      ]
-    },
-    "root_run_id": {
-      "type": "string",
-      "minLength": 1,
-      "description": "Optional exact root Run for this bounded Run family; newly created root Runs reference themselves. Omission preserves compatibility with Runs created before explicit family relationships existed."
-    },
-    "parent_run_id": {
-      "type": [
-        "string",
-        "null"
-      ],
-      "minLength": 1,
-      "description": "Optional exact parent Run for explicitly related support work."
-    },
-    "run_role": {
-      "enum": [
-        "root",
-        "support"
-      ],
-      "description": "Explicit role for newly created Runs. Legacy omission is interpreted as support only when parent_run_id exists, otherwise root."
-    },
-    "supersedes_run_id": {
-      "type": [
-        "string",
-        "null"
-      ],
-      "minLength": 1,
-      "description": "Optional exact prior same-job Run intentionally replaced by this Run."
-    },
-    "superseded_by_run_id": {
-      "type": [
-        "string",
-        "null"
-      ],
-      "minLength": 1
-    },
-    "lifecycle_reason": {
-      "type": [
-        "string",
-        "null"
-      ],
-      "minLength": 1
-    },
-    "created_at": {
-      "type": "string",
-      "format": "date-time"
-    },
-    "updated_at": {
-      "type": "string",
-      "format": "date-time"
-    }
+    "correlation_id": {"type": "string", "minLength": 1},
+    "causation_id": {"type": ["string", "null"]},
+    "root_run_id": {"type": "string", "minLength": 1},
+    "parent_run_id": {"type": ["string", "null"], "minLength": 1},
+    "run_role": {"enum": ["root", "support"]},
+    "supersedes_run_id": {"type": ["string", "null"], "minLength": 1},
+    "superseded_by_run_id": {"type": ["string", "null"], "minLength": 1},
+    "lifecycle_reason": {"type": ["string", "null"], "minLength": 1},
+    "created_at": {"type": "string", "format": "date-time"},
+    "updated_at": {"type": "string", "format": "date-time"}
   },
   "required": [
     "run_id",
     "business_id",
     "task",
-    "contract_id",
+    "method_type",
     "status",
     "correlation_id",
     "created_at",
     "updated_at"
+  ],
+  "allOf": [
+    {
+      "if": {"properties": {"method_type": {"const": "aura_playbook"}}, "required": ["method_type"]},
+      "then": {"required": ["contract_id"]}
+    }
   ]
 }
