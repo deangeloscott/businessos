@@ -24,12 +24,19 @@ def main():
         req(completion_spec(contracts['content.production.article'])['profile']=='production','article should use production profile')
         req(completion_spec(contracts['content.qa.pre-publish'])['profile']=='qa','pre-publish should use QA profile')
         req(completion_spec(contracts['content.qa.pre-publish'])['strict_qa_target'] is True,'pre-publish should require target Asset/version')
-        req(completion_spec(contracts['content.measurement.content-performance'])['profile']=='measurement','content performance should use measurement profile')
+        measurement_spec=completion_spec(contracts['content.measurement.content-performance'])
+        req(measurement_spec['profile']=='measurement','content performance should use measurement profile')
+        req(measurement_spec['require_root_write_evidence'] is True,'standalone measurement should leave a canonical result')
         req(completion_spec(contracts['content.research.source-support'])['profile']=='research','source support should use research profile')
         req(completion_spec(contracts['seo.diagnosis.detectors.indexing'])['profile']=='detector','detector profile inference failed')
         req(completion_spec(contracts['content.production.short-video'])['allow_specification_fallback'] is True,'short video should support complete production packet fallback')
         req(completion_spec(contracts['marketing.email.qa'])['strict_qa_target'] is True,'production email QA should identify the exact tested Asset/version')
         req('required_text_components' not in completion_spec(contracts['marketing.email.message-draft']),'normal completion profiles must not encode output quality as magic phrase requirements')
+        planning_spec=completion_spec(contracts['marketing.strategy.messaging'])
+        req(planning_spec['profile']=='planning','messaging architecture should remain a planning playbook')
+        req(planning_spec['require_root_write_evidence'] is False,'planning must not manufacture a canonical object merely because writes lists possible durable outputs')
+        req(planning_spec['require_subcontract_write_evidence'] is False,'required subprocesses should not need separate canonical objects by default')
+        req(completion_spec(contracts['marketing.email.subject-preview'])['require_subcontract_write_evidence'] is False,'integrated leaf work should be able to use parent evidence without a synthetic canonical write')
 
         rid=run(S/'create_run.py',BID,'content.production.article','Produce a real evidence-backed article').stdout.strip()
         req(rid.startswith('run_'),f'create_run failed: {rid}')
@@ -120,15 +127,16 @@ Shot transitions, on-screen text, captions, final CTA, and rendering notes are s
         r=run(S/'record_contract_completion.py',BID,rid,'content.qa.pre-publish','--evidence',str(good.relative_to(ROOT)),'--evidence',str(article.relative_to(ROOT)))
         req(r.returncode==0,f'structured QA may include the exact inspected target artifact without being mistaken for self-targeting: {r.stderr+r.stdout}')
 
-        # A declared-write subcontract cannot complete on a generic status/summary stub.
-        generic_sub=RUNS/rid/'artifacts'/'generic-audience-context.json';write(generic_sub,json.dumps({
-            'contract_id':'content.strategy.audience-context','business_id':BID,'status':'completed',
-            'subcontract_summary':'Completed audience context work.','target_audience':'Operations leaders','core_objective':'Increase qualified demand'
-        },indent=2)+'\n')
-        sub_errors=validate_evidence(contracts['content.strategy.audience-context'],[str(generic_sub.relative_to(ROOT))],BID,rid,phase='subcontract')
-        req(any('declared canonical write type' in e for e in sub_errors),f'generic subcontract summary must not satisfy a declared-write contract: {sub_errors}')
+        # A required planning subprocess may be evidenced by the integrated work itself.
+        # Its writes list is permission to persist useful durable state, not a requirement to
+        # manufacture an Asset/ActionPacket/WorkRequest solely for the subcontract ledger.
+        audience_context=RUNS/rid/'artifacts'/'audience-context.md';write(audience_context,"""# Audience/context decisions
+Operations leaders are evaluating implementation effort and need a concise explanation of the rollout path, proof boundary, and next action. The content should reduce uncertainty without implying guaranteed outcomes.
+""")
+        sub_errors=validate_evidence(contracts['content.strategy.audience-context'],[str(audience_context.relative_to(ROOT))],BID,rid,phase='subcontract')
+        req(not sub_errors,f'planning subcontract should accept genuine integrated evidence without a synthetic canonical write: {sub_errors}')
 
-        # Completion validation must not use magic words as a substitute for typed results.
+        # Leaf work inside an integrated asset should not need synthetic canonical objects.
         old_email=RUNS/rid/'artifacts'/'crewbeacon-style-email.md';write(old_email,"""# Demo nurture sequence
 
 ### Email 1: Confirmation
@@ -143,8 +151,7 @@ Shot transitions, on-screen text, captions, final CTA, and rendering notes are s
 """)
         subject_errors=validate_evidence(contracts['marketing.email.subject-preview'],[str(old_email.relative_to(ROOT))],BID,rid,phase='subcontract')
         branch_errors=validate_evidence(contracts['marketing.email.branching'],[str(old_email.relative_to(ROOT))],BID,rid,phase='subcontract')
-        req(subject_errors and branch_errors,'loose Markdown still cannot replace declared canonical writes')
-        req(not any('required component' in e for e in subject_errors+branch_errors),f'normal execution must not fail because validator keywords are absent: {subject_errors+branch_errors}')
+        req(not subject_errors and not branch_errors,f'integrated leaf evidence should not require standalone canonical write objects: {subject_errors+branch_errors}')
 
         # One genuinely integrated artifact may evidence multiple executed jobs; AURA should
         # not demand byte-different paperwork solely for bookkeeping.
