@@ -1,7 +1,7 @@
 ---
 id: core.action-control.authorize-action
 type: playbook
-version: 1.8.1
+version: 1.8.0
 owner_system: core
 risk: medium
 autonomy_ceiling: 2
