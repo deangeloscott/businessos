@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
-"""Shared bounded-Run provenance helpers for organization-owned work receipts."""
+"""Optional Run-receipt provenance helpers for organization-owned continuity."""
 from _common import *
 import json
 
-# Canonical state whose creation/update represents durable organizational meaning from
-# bounded work. Raw runtime delivery/reaction state is intentionally absent: hosts own
-# event processing, scheduling, retries, idempotency, and delivery mechanics.
+# Durable organization objects for which an existing Run linkage can add useful continuity.
+# Membership here never requires a Run: it only identifies objects that a Run receipt should
+# index when they are actually linked to one. Raw runtime delivery/reaction state is absent;
+# hosts own event processing, scheduling, retries, idempotency, and delivery mechanics.
 RUN_BOUND_TYPES={
     'Opportunity','Initiative','DecisionRecord',
     'AttentionItem','ChangeEvent','Incident','VerificationRecord','WorkRequest',
     'Experiment','OutcomeEvaluation','Learning','PlatformChange'
 }
-LEGACY_ORIGINS={'imported','preexisting'}
 
 
 def run_dir(business_id,run_id):
@@ -27,6 +27,7 @@ def _canonical_dict(data,business_id):
 
 
 def bind_evidence_path(business_id,run_id,evidence_path,binding='run_evidence'):
+    """Attach an optional Run receipt to existing canonical organization state."""
     p=Path(evidence_path); p=p if p.is_absolute() else ROOT/p
     if not p.exists() or p.suffix.lower()!='.json':return False
     try:data=json.loads(p.read_text())
