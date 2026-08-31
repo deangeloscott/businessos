@@ -53,7 +53,18 @@ def _validate_distribution_product_local():
         init_business(tid,'Distribution Smoke Test');sample=next((c for c in reg.values() if c.get('owner_system')!='core'),None) or next(iter(reg.values()),None)
         if sample:
             plan=build_plan(tid,sample['id'])
-            if inst.get('standalone_distribution') and 'core/policies/module-independence.md' not in plan.get('files',[]):errors.append('standalone context plan did not load module-independence policy')
+            if inst.get('standalone_distribution'):
+                defaults_rel='core/DEFAULTS.md'
+                if defaults_rel not in plan.get('files',[]):errors.append('standalone context plan did not load Core defaults')
+                else:
+                    defaults=(ROOT/defaults_rel).read_text()
+                    for phrase in [
+                        'Installed modules are packages of AURA operational knowledge, not limits on what a capable human, model, or harness may do.',
+                        'A missing module means its reusable AURA SOP knowledge is unavailable.',
+                        'does **not** prohibit the active model/user from completing that work',
+                        'An uninstalled optional module is never a hidden hard dependency.'
+                    ]:
+                        if phrase not in defaults:errors.append(f'Core defaults lost module-independence invariant: {phrase}')
     finally:
         if dest.exists():shutil.rmtree(dest)
     if errors:
