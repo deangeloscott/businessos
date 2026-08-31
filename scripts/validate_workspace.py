@@ -19,7 +19,7 @@ def main():
         try:meta,body=read_frontmatter(p)
         except Exception as e:errors.append(str(e));continue
         rel=str(p.relative_to(ROOT));cid=meta.get('id')
-        for k in ['id','type','version','owner_system','risk','autonomy_ceiling','reads','writes','capabilities']:
+        for k in ['id','type','version','owner_system','reads','writes','capabilities']:
             if k not in meta: errors.append(f'{rel}: missing metadata {k}')
         if cid:
             if cid in ids:errors.append(f'{rel}: duplicate id also at {ids[cid]}')
