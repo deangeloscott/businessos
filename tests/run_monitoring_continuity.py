@@ -25,10 +25,13 @@ def main():
     for rel in retired:req(not (ROOT/rel).exists(),f'retired runtime/provider artifact still exists: {rel}')
     catalog=json.loads((ROOT/'core/capabilities/catalog.json').read_text())
     ids={x.get('id') for x in catalog.get('capabilities',[])}
-    req('web.search' in ids and 'web.fetch' in ids,'provider-neutral capability vocabulary was lost')
+    for capability in ['research.web.read','webpage.fetch','creative.image.generate','document.read']:
+        req(capability in ids,f'provider-neutral capability vocabulary missing {capability}')
     guide=(ROOT/'docs/adding-a-capability.md').read_text()
-    for phrase in ['not permissions','active model/harness/user decides','does not inventory host tools']:
-        req(phrase in guide,f'capability guidance missing boundary: {phrase}')
+    for phrase in ['provider-neutral','Host/runtime responsibility','active model/harness/user decides','does not inventory host tools','Deliberate non-goals','research.web.read','webpage.fetch','creative.image.generate','document.read','Do not add aliases merely to mirror']:
+        req(phrase in guide,f'capability guidance missing boundary/current vocabulary: {phrase}')
+    for stale in ['web.search','web.fetch','media.image_generate']:
+        req(stale not in guide,f'capability guidance teaches retired alias: {stale}')
 
     tmp=Path(tempfile.mkdtemp(prefix='aura-monitoring-continuity-'));env={**os.environ,'BUSINESSOS_WORKSPACE':str(tmp),'PYTHONDONTWRITEBYTECODE':'1','PYTHONUTF8':'1'};prior=os.environ.get('BUSINESSOS_WORKSPACE')
     try:
