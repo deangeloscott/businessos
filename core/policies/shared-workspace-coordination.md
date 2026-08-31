@@ -4,9 +4,19 @@ BusinessOS is shared durable operating state, not an agent runtime. One model, s
 
 ## Runtime boundary
 
-The harness/runtime owns model selection, worker spawning, scheduling, retries, parallelism, process supervision, and delivery channels. BusinessOS owns business semantics, evidence, ownership, authorization, durable handoffs, validation, and state transitions.
+The harness/runtime owns model selection, worker spawning, scheduling, retries, parallelism, process supervision, delivery channels, and its own private/session memory mechanisms. BusinessOS owns durable organizational context, operational knowledge, evidence, ownership, authorization state, material work history, durable handoffs, validation, and state transitions.
 
 A WorkRequest is a durable delegation/coordination object; it does not require BusinessOS itself to spawn another agent. A harness may execute the WorkRequest in the same model/session, a later session, or another authorized worker.
+
+## Model and harness memory boundary
+
+A model context window, conversation history, harness memory, Skill state, scratchpad, or provider-specific memory can be useful execution context. Use it when available; AURA should not force the model to reload or duplicate information it already has merely to prove that AURA was consulted.
+
+Those memories are not the organization's portable source of continuity. Material business facts, evidence, preferences, decisions, outputs, outcomes, unresolved work, and Learning that another authorized worker may need should be preserved in AURA at the appropriate durable level. Do not persist transcripts, hidden chain-of-thought, every temporary hypothesis, or every tool interaction merely because they existed in the current model context.
+
+When current model/harness memory conflicts with current grounded AURA organizational state, do not silently let stale private memory overwrite the durable record. Resolve the conflict from current explicit user/organization information and evidence, then update durable organizational state when appropriate. Likewise, new explicit information in the current interaction may supersede stale AURA state; AURA is durable memory, not immutable memory.
+
+The practical rule is: use host memory as working memory, use AURA as organization-owned memory, and preserve only the material meaning needed for future work.
 
 ## Operator attribution
 
