@@ -97,12 +97,16 @@ def main():
         )
         knowledge.write_text(text, encoding="utf-8")
 
-    # This assertion tested a still-valid customer-facing production invariant but
-    # encoded the retired error wording rather than the invariant itself.
+    hardening = ROOT / "tests" / "run_agent_hardening.py"
     replace_exact(
-        ROOT / "tests" / "run_agent_hardening.py",
+        hardening,
         "'customer-facing Asset must reference a Run whose root contract is marked'",
         "'customer-facing Asset using an AURA playbook must reference a root marked'",
+    )
+    replace_exact(
+        hardening,
+        "        approval=(ROOT/'core/policies/approval.md').read_text(encoding='utf-8')\n        require('Silence is not approval' in approval,'silence-not-approval rule missing')",
+        "        for retired in ['core/policies/approval.md','core/policies/risk.md','core/policies/autonomy.md','core/schemas/action/action-packet.schema.json','core/schemas/action/approval.schema.json']:\n            require(not (ROOT/retired).exists(),f'retired control-plane component must be deleted: {retired}')\n        agent_interface=(ROOT/'CONTEXT.md').read_text(encoding='utf-8')\n        require('does not silently become a request to publish or mutate external state' in agent_interface,'real request-scope boundary missing from AURA agent interface')",
     )
 
     errors = []
