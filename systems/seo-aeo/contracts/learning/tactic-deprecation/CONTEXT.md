@@ -1,7 +1,7 @@
 ---
 id: seo.learning.tactic-deprecation
 type: playbook
-version: 1.1.0
+version: 1.2.0
 owner_system: seo-aeo
 reads:
 - type: Learning
@@ -11,60 +11,62 @@ reads:
 - Opportunity
 writes:
 - Learning
-- Event
 capabilities:
   required:
   - none
   optional:
   - none
 evidence_inputs:
-- dependent contracts
+- dependent playbooks and active organizational work
 updates:
   Learning:
-  - status maturity
+  - status maturity applicability
 ---
 # SEO Tactic Deprecation
 
 ## Purpose
-Constrain, contradict, supersede, or deprecate SEO Domain Learning and dependent guidance when evidence weakens, policy changes, or measured outcomes are consistently harmful.
+Narrow, contradict, supersede, or deprecate SEO Domain Learning when evidence weakens, external platform guidance changes, or measured outcomes are consistently harmful.
 
 ## Business Outcome
-Keep SEO/AEO strategy current, evidence-governed, policy-safe, and connected to measurable organic and business outcomes without creating a parallel strategy-evidence store.
+Keep SEO/AEO operating knowledge current and evidence-linked without turning one new result into universal truth or allowing ordinary business work to rewrite AURA product source.
 
 ## Run When
-Run when authoritative policy, replicated evidence, OutcomeEvaluations, or repeated operational failures materially weaken an active tactic.
+Run when authoritative external guidance, strong contradictory evidence, repeated harmful OutcomeEvaluations, non-replication, or repeated operational failure materially weakens an active tactic.
 
 ## Do Not Run When
-Do not treat a publication, practitioner opinion, competitor behavior, or one business result as a validated tactic by itself. Do not use private cross-business evidence unless Core System Learning governance explicitly permits it.
+Do not deprecate a tactic from a single weak signal, practitioner opinion, competitor behavior, or one business result without enough evidence for the claimed scope.
 
 ## Process
-1. [HYBRID] Confirm the trigger: authoritative policy change, strong contradiction, repeated harmful OutcomeEvaluations, non-replication, applicability failure, or repeated human correction.
-2. [AI] Identify every active contract, example, Opportunity, Initiative, scheduled workflow, and automated Action materially dependent on the tactic.
-3. [HYBRID] Classify immediate-stop, restrict-scope, supersede, or gradual replacement according to policy status, harm, reversibility, and evidence quality.
-4. [HYBRID] Define replacement guidance or explicit no-action when no reliable alternative exists; never invent a replacement simply to fill the gap.
-5. [HUMAN] Apply required approval for standard-guidance changes, lower autonomy where warranted, preserve historical evidence, and update the Learning status/maturity.
-6. [HYBRID] Create cleanup/rollback work for harmful active implementations when needed and monitor recovery before closing the deprecation.
+1. [HYBRID] Confirm the trigger: authoritative external change, strong contradiction, repeated harmful OutcomeEvaluations, non-replication, applicability failure, or repeated correction.
+2. [AI] Identify the active Learning, relevant Opportunities/Initiatives, monitoring intents, and AURA playbooks that materially rely on the tactic.
+3. [HYBRID] Choose the narrowest justified change: restrict applicability, reduce confidence/maturity, supersede with better-supported guidance, deprecate entirely, or preserve uncertainty pending more evidence.
+4. [HYBRID] State any replacement guidance only when evidence supports it; never invent a replacement merely to fill the gap.
+5. [DETERMINISTIC] Persist the updated SEO Learning with the evidence, contradiction, applicability, maturity/status change, and historical lineage needed for future work.
+6. [HYBRID] If the evidence suggests AURA's reusable playbook knowledge itself should change, route the Learning through `core.learning.playbook-evolution`. Ordinary organization work must not directly edit canonical AURA source.
+7. [HYBRID] If harmful live implementations require intervention, route that as separate business work through the appropriate domain/harness and measure recovery when possible.
 
 ## Decisions / Routing
-- Immediate operational harm → Incident/containment route.
-- Guidance change → update affected contracts then regenerate/test registries.
-- Contradicted but still conditionally valid → narrow applicability instead of full deprecation.
+- Immediate operational harm → relevant Incident/containment work.
+- Reusable AURA method improvement → `core.learning.playbook-evolution`.
+- Contradicted but conditionally valid → narrow applicability instead of full deprecation.
 
 ## Verification
-- Validate every canonical object written, preserve SourceRecord/Observation lineage, and keep evidence strength, conclusion confidence, policy status, and risk as separate dimensions.
-- Any later external state mutation must use an ActionPacket, ChangeEvent, and independent VerificationRecord.
+- The Learning change is no broader than its evidence.
+- Supporting and contradictory evidence remain traceable.
+- Historical state is preserved rather than silently overwritten.
+- No runtime Event, ActionPacket, approval object, autonomy tier, or generic risk gate is created.
+- No canonical AURA product source is silently mutated.
 
 ## Measurement
-- Strategy claims become stronger only through relevant observations, experiments, OutcomeEvaluations, replication, or authoritative policy evidence; popularity and confidence language are not outcome evidence.
+- Deprecation confidence should strengthen through relevant observations, OutcomeEvaluations, replication/non-replication, or authoritative external guidance—not popularity or unsupported confidence language.
 
 ## Learning
-- Maintain SEO-specific strategy knowledge as SEO Domain Learning. Propose broader Business or System Learning only when evidence and applicability justify the broader scope.
+- Maintain SEO-specific operating knowledge as SEO Domain Learning. Broader system/playbook changes require evidence-supported evolution through the explicit Core path.
 
 ## Failure / Fallback
-- If a source cannot be retrieved automatically, create a manual evidence-retrieval Action or use another authoritative source; do not invent the missing evidence.
-- If evidence remains contradictory or insufficient, preserve the uncertainty and keep the claim at hypothesis/experimental maturity instead of forcing a conclusion.
+- If evidence remains contradictory or insufficient, keep the tactic at the narrowest justified status/maturity and record the uncertainty rather than forcing a conclusion.
+- If a preferred source/tool is unavailable, use another valid method when practical or preserve the unresolved evidence need honestly.
 
 ## Completion Criteria
-- Outputs use current Core Observation/Insight/Experiment/Learning objects rather than legacy strategy-evidence object.
-- Source provenance, contradictory evidence, applicability, confidence, risk, and policy status remain inspectable.
-- No tactic is promoted, deprecated, or blocked for a reason that cannot be traced to evidence or policy.
+- The affected Learning truthfully reflects current evidence, maturity/status, applicability, and uncertainty.
+- No tactic is deprecated for a reason that cannot be traced to evidence or an actual external constraint.
