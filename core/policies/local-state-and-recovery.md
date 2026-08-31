@@ -10,10 +10,18 @@ Use the filesystem workspace as the default portable persistence layer. Preserve
 
 ## Storage classes
 1. **Canonical business state** — persist durable context, intelligence, decisions, operations, assets, measurement, and Learning under `instances/<business-id>/`. Validate canonical objects before writing.
-2. **Run state** — keep task-specific plans, intermediate artifacts, checkpoints, and logs under `runtime/runs/<business-id>/<run-id>/`. Run state may be temporary, but it is the recovery handoff while work is active or interrupted.
+2. **Run state** — use a Run as a bounded organizational work receipt and active recovery handoff: what business work was requested, which method was selected, what material evidence/results belong to it, and whether it remains active/completed/superseded. Run-local scratch/build/checkpoint/log files exist only when the work actually needs them; the Run is not a transcript, hidden-reasoning archive, or replacement for harness memory.
 3. **Human knowledge state** — generated human-readable views live under `knowledge/<business-id>/_generated/`; human working notes live under `knowledge/<business-id>/notes/`. Neither replaces canonical BusinessOS truth.
 4. **Workspace attachments** — optional files appropriate to retain with the workspace may live under `attachments/`. Keep credentials out of the workspace.
 5. **External/raw state** — large, sensitive, high-volume, or system-owned source data may remain in the authoritative external system. Store SourceRecord/Asset references, lineage, timestamps, hashes, or bounded snapshots when permitted and useful. Do not turn the portable workspace into an unnecessary data lake.
+
+## Run continuity receipts
+
+A Run exists to make material work understandable and resumable across sessions, models, harnesses, and people without reproducing the entire execution context. New Runs may carry a compact `continuity` index in `run.json` that identifies the selected method and, after completion, points to the material root evidence and Run-linked canonical results. This is a convenience index over durable state, not a second copy of the business meaning.
+
+The current model/harness may retain much richer working context than the Run. Use that working memory while it is available. Persist only what another authorized worker would materially need to understand, trust, continue, measure, or learn from the work. Do not create summary files, duplicate artifacts, or canonical objects solely to make a Run look busy.
+
+A completed Run proves that the bounded work satisfied its selected completion/integrity requirements. It does not by itself prove that a downstream intervention shipped, that an outcome occurred, or that every future question about the work has been answered.
 
 ## Current and historical state
 - Prefer one canonical current object for one business fact/decision at the appropriate semantic scope. Do not create parallel current copies merely because another workflow, Markdown view, or second-brain tool needs the same truth.
@@ -22,15 +30,15 @@ Use the filesystem workspace as the default portable persistence layer. Preserve
 - Never select among several plausible current objects by guessing. Resolve from explicit focus/relationships or surface the ambiguity.
 
 ## Start/resume behavior
-Before creating a new Run for work that may already be in progress, inspect the active business and relevant existing run state. Resume compatible unfinished work when its task, contract, inputs, and intended outcome still match; otherwise create a new bounded Run and preserve the prior Run for history.
+Before creating a new Run for work that may already be in progress, inspect the active business and relevant existing run state. Resume compatible unfinished work when its task, selected method, inputs, and intended outcome still match; otherwise create a new bounded Run and preserve the prior Run for history.
 
-Runs may record exact `root_run_id`, `parent_run_id`, and `supersedes_run_id` relationships. Use them when support/replacement work is intentionally related; do not infer parentage from topical similarity. After ordinary finalization, `scripts/reconcile_runs.py` may classify related completed, active, dependency-blocked, redundant, and judgment-needed Runs. It may auto-supersede only an explicitly replaced exact same contract/task/focus Run with no material artifacts, canonical outputs, or contract evidence. It must preserve meaningful/blocked/independent Runs and surface ambiguous related Runs instead of guessing. Cross-domain work does not require an Initiative or WorkRequest merely to obtain Run relationships; use those objects only when their semantic coordination purpose actually applies.
+Runs may record exact `root_run_id`, `parent_run_id`, and `supersedes_run_id` relationships. Use them when support/replacement work is intentionally related; do not infer parentage from topical similarity. After ordinary finalization, `scripts/reconcile_runs.py` may classify related completed, active, dependency-blocked, redundant, and judgment-needed Runs. It may auto-supersede only an explicitly replaced exact same selected method/task/focus Run with no material artifacts, canonical outputs, or contract evidence. It must preserve meaningful/blocked/independent Runs and surface ambiguous related Runs instead of guessing. Cross-domain work does not require an Initiative or WorkRequest merely to obtain Run relationships; use those objects only when their semantic coordination purpose actually applies.
 
 **Destructive cleanup is not recovery.** Never delete an existing business instance, Run, canonical artifact, human-note directory, or workspace merely because its name/status suggests failure, staleness, or testing. Ignore/preserve unrelated prior state unless the user/administrator explicitly authorizes deletion or a deterministic test owns a documented disposable path.
 
 On interruption or failure:
 1. Preserve completed outputs that already validate and remain based on valid inputs.
-2. Record enough run/checkpoint/log state for another compatible agent to determine what completed, what failed, and what remains.
+2. Record enough Run/checkpoint/log state for another compatible agent to determine what completed, what failed, and what remains; do not preserve every transient thought or tool event.
 3. Do not repeat expensive research or execution merely because the agent process restarted.
 4. Re-run only failed, missing, stale, or invalidated work. If upstream inputs materially changed, invalidate downstream work that depended on them.
 5. If an external mutation may have partially occurred, do not retry blindly; inspect ChangeEvent/Verification state first to avoid duplicate or conflicting actions.
@@ -43,4 +51,4 @@ On interruption or failure:
 ## Capability/source loss
 - If a required capability fails or disappears, rerun capability preflight. Use another existing binding, an authorized provider path, or manual/assisted fallback. Do not fabricate the missing result.
 - If a source becomes unavailable, keep previously valid canonical intelligence and its provenance, mark uncertainty/freshness appropriately, and do not claim the evidence was revalidated.
-- If recovery cannot safely continue, preserve the Run and represent the blocker through the applicable WorkRequest, Incident, approval, or manual action rather than destroying state.
+- If recovery cannot safely continue, preserve the Run and represent the blocker through the applicable WorkRequest, Incident, approval, or manual action when that durable object materially helps; do not manufacture one solely because the Run is incomplete.
