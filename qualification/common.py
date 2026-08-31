@@ -52,8 +52,6 @@ def parse_contract(path):
         'type':meta.get('type'),
         'version':meta.get('version'),
         'owner_system':meta.get('owner_system') or cid.split('.')[0],
-        'risk':meta.get('risk'),
-        'autonomy_ceiling':meta.get('autonomy_ceiling'),
         'artifact_role':meta.get('artifact_role'),
         'reads':meta.get('reads') or [],
         'writes':meta.get('writes') or [],
@@ -108,7 +106,7 @@ def output_policy(contract):
     return {
         'artifact_required':artifact_required,
         'declared_writes':contract.get('writes') or [],
-        'write_expectation':'at_least_one_declared_type' if contract.get('writes') else 'no_specific_object_type_required',
+        'write_expectation':'persist_only_when_materially_produced',
         'actual_output_not_description':artifact_required,
     }
 
