@@ -18,7 +18,8 @@
     },
     "contract_id": {
       "type": "string",
-      "minLength": 1
+      "minLength": 1,
+      "description": "Selected AURA playbook/method for this bounded work receipt. It identifies the method used for the Run; it is not a claim that no other valid method could accomplish the user's goal."
     },
     "status": {
       "type": "string",
@@ -84,6 +85,69 @@
       "type": "string",
       "minLength": 1,
       "description": "Optional reference to the completion-evidence policy snapshot governing this Run."
+    },
+    "continuity": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Compact organization-owned handoff index for this bounded work. It points to material durable results/evidence and must not become a transcript or hidden-reasoning archive.",
+      "properties": {
+        "format_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "purpose": {
+          "const": "organizational_work_receipt"
+        },
+        "state": {
+          "enum": [
+            "active",
+            "completed",
+            "superseded"
+          ]
+        },
+        "method_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidence_refs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "result_refs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "completed_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "superseded_by_run_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        }
+      },
+      "required": [
+        "format_version",
+        "purpose",
+        "state",
+        "method_ref",
+        "evidence_refs",
+        "result_refs"
+      ]
     },
     "correlation_id": {
       "type": "string",
