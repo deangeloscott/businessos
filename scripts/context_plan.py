@@ -103,8 +103,6 @@ def build_plan(business_id,contract_id,focus=None,operator_ref=None,team_ref=Non
     if 'Opportunity' in write_types:_add(files,'core/policies/decision-grounding.md')
     if 'AttentionItem' in combined:_add(files,'core/policies/attention-lifecycle.md')
     if 'PlatformChange' in combined:_add(files,'core/policies/platform-intelligence.md')
-    if 'ChangeEvent' in write_types:
-        _add(files,'core/policies/customer-facing-mutations.md');context_types.add('BusinessClaim')
     if owner=='seo-aeo' and 'Observation' in combined:_add(files,'core/policies/local-evidence.md')
     if match.get('id','').startswith(('core.opportunity.','core.diagnosis.','core.coordination.')):_add(files,'core/policies/resource-aware-execution.md')
 
