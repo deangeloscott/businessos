@@ -40,7 +40,8 @@ def main():
         require(first.get('status')=='ready',f'entry should be ready: {first}')
         require(first.get('handoff_format')=='compact','ordinary CLI entry should return the compact agent handoff')
         authority=first.get('authority',{})
-        require(authority.get('status')=='resolved_authoritative_handoff' and 'Do not rerun context_plan.py' in authority.get('rule',''),'compact handoff must explicitly prevent ordinary plan/preflight recomputation')
+        require(authority.get('status')=='resolved_execution_context' and 'Mechanical facts' in authority.get('rule',''),'compact handoff must distinguish mechanical authority from semantic method selection')
+        require(authority.get('selected_method')=='content.production.presentation','compact handoff should identify the playbook selected for this Run')
         require(first.get('business_id')==bid,'explicit business should resolve')
         require(first.get('original_request')==request,'original request must be preserved')
         require(first.get('root_contract',{}).get('contract_id')=='content.production.presentation',f'expected presentation route, got {first.get("root_contract")}')
@@ -53,6 +54,7 @@ def main():
         require(first.get('process',{}).get('entry_contract')=='content.production.presentation','process plan should use routed root contract')
         require(first.get('process',{}).get('required_subcontracts'),'compact handoff should preserve required downstream contract information')
         require('status' in first.get('capabilities',{}),'compact handoff should preserve material capability state')
+        require(first.get('monitoring_continuity',{}).get('status')=='not_checked','unrelated work should not pay monitoring-continuity scan overhead')
         inputs=first.get('inputs',{});supplied_refs=inputs.get('supplied_evidence_refs',[])
         require('attachments/supplied/entry-business.json' in supplied_refs,'compact handoff should expose the actual supplied business evidence path')
         require('attachments/supplied/entry-reference.txt' in supplied_refs,'compact handoff should expose a directly referenced supplied input without scanning the workspace')
@@ -89,6 +91,22 @@ def main():
         third=enter(request,bid,ws,env,'--new-run')
         require(third.get('run',{}).get('run_id')!=rid,'--new-run should force a distinct Run')
         require(third.get('run',{}).get('resumed') is False,'forced new Run should not report resumed')
+
+        # An ambiguous deterministic route should request semantic method selection before
+        # AURA creates a business-work Run. The active model/user/harness can then select a
+        # valid playbook explicitly and re-enter the unchanged original request.
+        ambiguous_request='Assess this unusual business situation and choose the most useful way to investigate it.'
+        runs_before=set((ws/'runtime/runs'/bid).glob('*/run.json'))
+        unresolved=run([SCRIPTS/'enter.py',ambiguous_request,'--business-id',bid,'--workspace',ws],env,check=False)
+        require(unresolved.returncode==2,'semantic method selection should be a non-ready handoff')
+        unresolved_payload=json.loads(unresolved.stdout)
+        require(unresolved_payload.get('status')=='needs_semantic_route',f'ambiguous deterministic route should require semantic selection: {unresolved_payload}')
+        require(unresolved_payload.get('route',{}).get('contract_id')=='core.routing.resolve-intent','semantic selection handoff should expose the intent-resolution playbook')
+        require(set((ws/'runtime/runs'/bid).glob('*/run.json'))==runs_before,'intent resolution must not create a routing Run before the real method is selected')
+        selected=enter(ambiguous_request,bid,ws,env,'--selected-contract','core.diagnosis.business-problem')
+        require(selected.get('status')=='ready','explicit semantic method selection should create the useful business-work Run')
+        require(selected.get('root_contract',{}).get('contract_id')=='core.diagnosis.business-problem','selected contract should become the Run method')
+        require(selected.get('root_contract',{}).get('selection_mode')=='explicit_semantic_selection','handoff should preserve who/what selected the method')
 
         # The high-level finalizer should resolve exact Run-labelled evidence, bind provenance,
         # validate the active business, complete the root, and refresh human knowledge without
