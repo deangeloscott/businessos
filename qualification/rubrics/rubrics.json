@@ -1,18 +1,19 @@
 {
-  "format_version":"1.0",
+  "format_version":"2.0",
   "score_scale":{"0":"not performed","1":"fundamentally inadequate","2":"materially incomplete or flawed","3":"professionally acceptable","4":"strong and competitive","5":"exceptional expert-level execution"},
   "minimums":{"hard_gates":"all_pass","dimension_floor":3.0,"acceptable_overall":3.3,"competitive_overall":4.0,"exceptional_overall":4.6},
   "base":[
-    {"id":"accuracy","description":"Factual, computational, and interpretive correctness; uncertainty is preserved."},
-    {"id":"evidence_quality","description":"Uses enough appropriate evidence, records provenance, and does not upgrade weak proxies into proof."},
-    {"id":"depth_completeness","description":"Covers the material work implied by the contract and requested detail level without filler."},
-    {"id":"professional_quality","description":"A competent professional could use the result without rebuilding the work from scratch."},
-    {"id":"business_alignment","description":"The work is tied to the actual business objective rather than vanity activity."},
-    {"id":"outcome_readiness","description":"The work includes the reasonable research, strategy, execution, QA, and integration needed to maximize the intended result."},
-    {"id":"state_integrity","description":"AURA state, provenance, lifecycle, ownership, completion, and receipts accurately reflect what happened."}
+    {"id":"accuracy","description":"Factual, computational, and interpretive correctness; uncertainty and unknowns are preserved."},
+    {"id":"evidence_quality","description":"Uses enough appropriate evidence, preserves provenance, and does not upgrade weak proxies into proof."},
+    {"id":"method_rigor","description":"Performs the material method/invariants needed for the job. Equivalent or improved implementation is acceptable; skipping essential work is not."},
+    {"id":"depth_completeness","description":"Covers the material work implied by the requested outcome and expected SOP without filler or exhaustive work for its own sake."},
+    {"id":"professional_quality","description":"A competent professional could use the result without rebuilding the core work from scratch."},
+    {"id":"business_alignment","description":"The work is tied to the actual business objective rather than vanity activity or benchmark-shaped output."},
+    {"id":"outcome_readiness","description":"The work includes the reasonable research, strategy, execution, QA, and integration that a strong practitioner could perform now to maximize the intended result."},
+    {"id":"state_integrity","description":"Persisted AURA state truthfully preserves material organizational meaning, provenance, decisions/results/outcomes/unresolved work as appropriate, without inventing facts or manufacturing ceremony solely for qualification."}
   ],
   "profiles":{
-    "governance_and_state":["semantic_ownership","authorization_discipline","lifecycle_integrity","recoverability"],
+    "governance_and_state":["semantic_ownership","truth_provenance_integrity","continuity_usefulness","lifecycle_integrity","recoverability"],
     "customer_truth":["signal_coverage","pattern_rigor","segmentation_and_context","decision_usefulness"],
     "competitive_intelligence":["competitive_set_quality","source_coverage","comparison_rigor","tactic_evidence_calibration","strategic_implication_quality"],
     "ecosystem_truth":["freshness","source_authority","corroboration_and_counterevidence","business_applicability"],
@@ -28,6 +29,9 @@
     "concurrency_system":["concurrent_state_integrity","deduplication","semantic_ownership","operator_provenance","collision_recovery","shared_context_quality"]
   },
   "profile_descriptions":{
+    "method_rigor":"Uses the essential business method needed for the result while allowing the model/harness to improve incidental implementation details.",
+    "truth_provenance_integrity":"Durable facts, evidence, decisions, results, and Learning remain truthfully classified and traceable to their basis.",
+    "continuity_usefulness":"Persisted state helps a capable future model continue the organization’s work rather than recording transient execution chatter or empty ceremony.",
     "live_serp_or_answer_environment":"Inspects enough of the current search/AI-answer field to ground the work in present reality rather than relying only on model memory; expands when more evidence could materially change the judgment.",
     "leader_comparison":"Samples enough strong current leaders to identify expected patterns and meaningful differences; a few representative leaders are usually sufficient unless the field is ambiguous or another sample could materially change the conclusion.",
     "competitive_search_readiness":"Finished work plausibly competes for the intended search/answer outcome, acknowledging authority or external constraints content alone cannot solve.",
@@ -42,6 +46,6 @@
     "contradiction_handling":"Later contradictory evidence revises confidence, hypotheses, or Learning rather than being ignored to preserve a convenient narrative.",
     "concurrent_state_integrity":"Shared workspace remains valid and reconstructable while multiple operators act at the same time.",
     "deduplication":"Overlapping evidence, Insights, Opportunities, and Assets are resolved/reused rather than multiplied into competing canonical copies.",
-    "operator_provenance":"Concurrent work remains attributable to the correct operator/run without collapsing identity or authority."
+    "operator_provenance":"Concurrent work remains attributable to the correct workstream/operator label where that distinction materially matters, without treating identity metadata as authority."
   }
 }
