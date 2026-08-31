@@ -1,341 +1,134 @@
 #!/usr/bin/env python3
 from _common import *
-import argparse, json, os, shutil, subprocess, sys, hashlib, zipfile, tempfile
+import argparse,json,os,shutil,subprocess,sys,hashlib,zipfile
 
 
 def editions():
     p=ROOT/'distribution/editions.json'
-    if not p.exists(): return {}
+    if not p.exists():return {}
     return {e['id']:e for e in json.loads(p.read_text()).get('editions',[])}
 
-
 def resolve_modules(requested):
-    cat=module_catalog()
-    unknown=[m for m in requested if m not in cat]
-    if unknown: raise ValueError('Unknown module(s): '+', '.join(unknown))
-    resolved=set(requested)|{'core'}
-    changed=True
+    cat=module_catalog();unknown=[m for m in requested if m not in cat]
+    if unknown:raise ValueError('Unknown module(s): '+', '.join(unknown))
+    resolved=set(requested)|{'core'};changed=True
     while changed:
         changed=False
         for mid in list(resolved):
             for dep in cat[mid].get('required_modules',[]):
-                if dep not in resolved: resolved.add(dep);changed=True
+                if dep not in resolved:resolved.add(dep);changed=True
     return resolved
 
-
 def dependency_manifest(modules):
-    cat=module_catalog(); out=[]
+    cat=module_catalog();out=[]
     for mid in sorted(modules):
-        m=cat[mid]
-        out.append({
-            'module':mid,
-            'required_modules':m.get('required_modules',[]),
-            'optional_installed':[x for x in m.get('optional_modules',[]) if x in modules],
-            'optional_not_installed':[x for x in m.get('optional_modules',[]) if x not in modules],
-            'standalone':m.get('standalone',False)
-        })
+        m=cat[mid];out.append({'module':mid,'required_modules':m.get('required_modules',[]),'optional_installed':[x for x in m.get('optional_modules',[]) if x in modules],'optional_not_installed':[x for x in m.get('optional_modules',[]) if x not in modules],'standalone':m.get('standalone',False)})
     return {'format_version':'1.0','modules':out}
-
 
 def _copy_clean(dest):
     def ignore(path,names):
-        ignored={'__pycache__','.git','.DS_Store','.businessos'} & set(names)
-        # Generated indexes are rebuilt for the edition; product-local user/workspace state
-        # and maintainer-only qualification infrastructure never belong in a packaged distribution.
-        rel=Path(path).resolve().relative_to(ROOT.resolve()) if Path(path).resolve()!=ROOT.resolve() else Path('.')
-        if rel==Path('.'):
-            ignored |= {'generated','dist','.businessos','runtime','knowledge','attachments','qualification'} & set(names)
-        if rel==Path('instances'):
-            ignored |= {n for n in names if n!='_template'}
-        if rel==Path('tests'):
-            ignored |= set(names)
+        ignored={'__pycache__','.git','.DS_Store','.businessos'}&set(names);rel=Path(path).resolve().relative_to(ROOT.resolve()) if Path(path).resolve()!=ROOT.resolve() else Path('.')
+        if rel==Path('.'):ignored|={'generated','dist','.businessos','runtime','knowledge','attachments','qualification'}&set(names)
+        if rel==Path('instances'):ignored|={n for n in names if n!='_template'}
+        if rel==Path('tests'):ignored|=set(names)
         return ignored
     shutil.copytree(ROOT,dest,ignore=ignore)
-    if (dest/'qualification').exists():
-        raise RuntimeError('Packaged distribution contains maintainer-only qualification infrastructure')
-    (dest/'generated').mkdir(exist_ok=True)
-    (dest/'tests').mkdir(exist_ok=True)
-
-
-def _reset_operator_profile(dest):
-    # Never distribute a publisher/operator's populated shared identity.
-    p=dest/'deployment/operator-profile.json'
-    if not p.exists(): return
-    d=json.loads(p.read_text())
-    for k in list((d.get('identity') or {}).keys()): d['identity'][k]=None
-    d['reuse_across_businesses']=[]
-    d['notes']=None
-    p.write_text(json.dumps(d,indent=2)+'\n')
-
+    if (dest/'qualification').exists():raise RuntimeError('Packaged distribution contains maintainer-only qualification infrastructure')
+    (dest/'generated').mkdir(exist_ok=True);(dest/'tests').mkdir(exist_ok=True)
 
 def _prune_modules(dest,modules):
     sdir=dest/'systems'
     for p in list(sdir.iterdir()):
-        if p.is_dir() and p.name not in modules: shutil.rmtree(p)
-
+        if p.is_dir() and p.name not in modules:shutil.rmtree(p)
 
 def _copy_interface_schemas(dest):
-    # A standalone module may consume a canonical object owned by an omitted module.
-    # Copy only that object's schema as an interface contract; do not install the owner module's SOPs.
     present_titles={}
     for sp in dest.rglob('*.schema.json'):
-        try: present_titles[json.loads(sp.read_text()).get('title')]=sp
-        except Exception: pass
+        try:present_titles[json.loads(sp.read_text()).get('title')]=sp
+        except Exception:pass
     source_by_title={}
     for sp in ROOT.rglob('*.schema.json'):
-        try: source_by_title[json.loads(sp.read_text()).get('title')]=sp
-        except Exception: pass
+        try:source_by_title[json.loads(sp.read_text()).get('title')]=sp
+        except Exception:pass
     needed=set()
     for cp in dest.rglob('CONTEXT.md'):
-        if '/contracts/' not in cp.as_posix(): continue
+        if '/contracts/' not in cp.as_posix():continue
         meta,_=read_frontmatter(cp)
-        for sel in meta.get('reads',[]): needed.add(selector_type(sel))
-        for typ in meta.get('writes',[]): needed.add(selector_type(typ))
+        for sel in meta.get('reads',[]):needed.add(selector_type(sel))
+        for typ in meta.get('writes',[]):needed.add(selector_type(typ))
     for typ in sorted(needed):
-        if typ in present_titles or typ not in source_by_title: continue
-        src=source_by_title[typ]
-        parts=src.relative_to(ROOT).parts
-        owner=parts[1] if len(parts)>2 and parts[0]=='systems' else 'external'
-        out=dest/'core/interfaces'/owner/src.name
-        out.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(src,out)
-
+        if typ in present_titles or typ not in source_by_title:continue
+        src=source_by_title[typ];parts=src.relative_to(ROOT).parts;owner=parts[1] if len(parts)>2 and parts[0]=='systems' else 'external';out=dest/'core/interfaces'/owner/src.name;out.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(src,out)
 
 def _prune_capabilities(dest):
+    """Keep only provider-neutral capability vocabulary used by the packaged SOPs."""
     used=set()
     for p in dest.rglob('CONTEXT.md'):
-        if '/contracts/' not in p.as_posix(): continue
+        if '/contracts/' not in p.as_posix():continue
         meta,_=read_frontmatter(p)
         for c in meta.get('capabilities',{}).get('required',[])+meta.get('capabilities',{}).get('optional',[]):
-            if c!='none': used.add(c)
-    cp=dest/'core/capabilities/catalog.json'; d=json.loads(cp.read_text())
-    d['version']=os_version();d['capabilities']=[x for x in d.get('capabilities',[]) if x.get('id') in used]
-    cp.write_text(json.dumps(d,indent=2)+'\n')
-    companion=dest/'core/providers/viraltrac/companion-profile.json'
-    if companion.exists():
-        cd=json.loads(companion.read_text())
-        cd['capability_mappings']=[x for x in cd.get('capability_mappings',[]) if x.get('businessos_capability') in used]
-        companion.write_text(json.dumps(cd,indent=2)+'\n')
-
-    # Keep provider metadata aligned with the edition's actual capability surface.
-    rp=dest/'core/providers/registry.json'
-    if rp.exists():
-        r=json.loads(rp.read_text()); kept=[]
-        for provider in r.get('providers',[]):
-            caps=[c for c in provider.get('capabilities',[]) if c in used]
-            if caps:
-                provider=dict(provider);provider['capabilities']=caps;kept.append(provider)
-        r['providers']=kept;rp.write_text(json.dumps(r,indent=2)+'\n')
-    pref_paths=[dest/'distribution/provider-defaults.json']
-    envroot=dest/'deployment/environments'
-    if envroot.exists(): pref_paths += sorted(envroot.glob('*/provider-preferences.json'))
-    instroot=dest/'instances'
-    if instroot.exists(): pref_paths += sorted(instroot.glob('*/config/provider-preferences.json'))
-    for pp in pref_paths:
-        if not pp.exists(): continue
-        pd=json.loads(pp.read_text());pd['preferences']=[x for x in pd.get('preferences',[]) if x.get('capability') in used]
-        pp.write_text(json.dumps(pd,indent=2)+'\n')
-
-
-def _prune_event_consumer_profile(dest,modules):
-    p=dest/'core/monitoring/event-consumer-profile.json'
-    if not p.exists(): return
-    d=json.loads(p.read_text())
-    present_ids=set()
-    for cp in dest.rglob('CONTEXT.md'):
-        if '/contracts/' not in cp.as_posix(): continue
-        try: meta,_=read_frontmatter(cp)
-        except Exception: continue
-        if meta.get('id'): present_ids.add(meta['id'])
-    kept=[]
-    for fam in d.get('event_families',[]):
-        owner=fam.get('owner_system')
-        if owner not in modules: continue
-        fam=dict(fam)
-        fam['preferred_contracts']=[x for x in fam.get('preferred_contracts',[]) if x in present_ids]
-        if fam['preferred_contracts']: kept.append(fam)
-    d['event_families']=kept
-    p.write_text(json.dumps(d,indent=2)+'\n')
-
-
-def _prune_provider_recommendations(dest):
-    path=dest/'distribution/provider-recommendations.json'
-    reg=dest/'core/providers/registry.json'
-    if not path.exists() or not reg.exists(): return
-    providers={p['id'] for p in json.loads(reg.read_text()).get('providers',[])}
-    data=json.loads(path.read_text())
-    data['recommendations']=[r for r in data.get('recommendations',[]) if r.get('provider_id') in providers]
-    path.write_text(json.dumps(data,indent=2)+'\n')
-
+            if c!='none':used.add(c)
+    cp=dest/'core/capabilities/catalog.json';d=json.loads(cp.read_text());d['version']=os_version();d['capabilities']=[x for x in d.get('capabilities',[]) if x.get('id') in used];cp.write_text(json.dumps(d,indent=2)+'\n')
 
 def _write_instance_template(dest,modules):
-    p=dest/'instances/_template/instance.json';d=json.loads(p.read_text())
-    d['enabled_systems']=sorted(modules-{'core'});p.write_text(json.dumps(d,indent=2)+'\n')
-
+    p=dest/'instances/_template/instance.json';d=json.loads(p.read_text());d['enabled_systems']=sorted(modules-{'core'});p.write_text(json.dumps(d,indent=2)+'\n')
 
 def _write_navigation(dest,edition_id,display_name,modules):
-    cat=module_catalog(); version=os_version(); domains=sorted(modules-{'core'}); expansion='Agentic Understanding and Reinforcement Architecture'
-    inst={
-        'format_version':'1.0','source_version':version,'edition':edition_id,'display_name':display_name,
-        'public_name':display_name,'name_expansion':expansion,'descriptor':'AI-native BusinessOS',
-        'installed_modules':['core']+domains,'standalone_distribution':edition_id!='full','portable_first':True,'default_environment':'local',
-        'configurable_workspace_root':True,'human_knowledge_layer':True,'deployment_profiles':'distribution/deployment-profiles.json',
-        'brand':'ViralTrac','startup_message':'WELCOME.md','host_capability_discovery':True
-    }
-    (dest/'INSTALLATION.json').write_text(json.dumps(inst,indent=2)+'\n')
-    (dest/'distribution/ACTIVE-DEPENDENCIES.json').write_text(json.dumps(dependency_manifest(modules),indent=2)+'\n')
-    names=', '.join(cat[m]['display_name'] for m in domains) if domains else 'Core only'
-    readme=f'''# {display_name} v{version}
-
-**AURA = {expansion}.**
-
-**{display_name} is a portable, AI-native BusinessOS that helps capable AI understand a business, determine useful work, execute through available tools, preserve what it learns, and improve future decisions over time.**
-
-Installed domain modules: **{names}**. Core is always included.
-
-## Start in three steps
-
-1. **Download/unzip this AURA edition.**
-2. **Give the folder to a compatible LLM/agent harness.**
-3. **Tell it your business and what you want.**
-
-For example:
-
-> Use ViralTrac AURA for my business. My company is Acme, our website is acme.com, and I want to grow qualified leads profitably. Get set up and figure out what we should work on first.
-
-You do not need to choose a playbook, contract, schema, provider, or operating mode before asking for help.
-
-See **`START-HERE.md`** for the short human quick start and **`PLAYBOOKS.md`** for the installed capability catalog.
-
-## Portable by default
-
-AURA remains local-first, organization-owned, model/provider/vendor/harness neutral, and usable without a mandatory proprietary server, database, UI, cloud runtime, Git provider, ViralTrac account, or second-brain application.
-
-The native processes should remain useful on their own. Stronger models, specialist Skills/SOPs, browsers/APIs, business systems, Git, shared workspaces, schedulers, and ViralTrac can improve the experience when available.
-
-## Documentation by audience
-
-- `START-HERE.md` — simple human quick start
-- `WELCOME.md` — first-run human message
-- `PLAYBOOKS.md` — plain-language capabilities
-- `OPERATOR-GUIDE.md` — optional commands/workspaces/providers/validation
-- `DEPLOYMENT.md` — deployment/versioning/team options
-- `CONTEXT.md` — AI/agent operating context
-- `LICENSE.md` — source-available license
-
-This distribution is **source-available, not open source**. Internal/commercial business use, customization, and agency/consulting use for clients are permitted under `LICENSE.md`; white-label resale or repackaging it as someone else's standalone BusinessOS product is not.
-'''
-    (dest/'README.md').write_text(readme)
-    start=f'''# Start Here — {display_name}
-
-**AURA = {expansion}.** This is an AI-native BusinessOS.
-
-Installed domain modules: **{names}**. Core is included automatically.
-
-You do **not** need to understand AURA's contracts, schemas, scripts, object types, routing, providers, Runs, or folder structure to use this edition.
-
-## 1. Give the folder to a capable AI/agent
-
-Give a compatible LLM/agent harness access to this AURA folder. The agent should read AURA's operating instructions and handle internal setup mechanics.
-
-## 2. Tell it your business and desired outcome
-
-For example:
-
-> Use ViralTrac AURA for my business. My company is Acme, our website is acme.com, and I want to increase qualified leads. Get set up, use what you can verify, and figure out what we should work on first.
-
-If you already supplied some of that context, AURA should reuse it instead of asking again.
-
-## 3. Talk to AURA normally
-
-You do not need to choose a playbook first. Ask for the business result you want, or ask what should happen next. AURA should route internally, use relevant durable context/evidence, inspect available capabilities, preserve useful results, respect authorization boundaries, and continue appropriate follow-on work.
-
-## Optional upgrades
-
-The local/filesystem experience is enough to start. Stronger models, specialist Skills/SOPs, browsers/APIs, existing business tools, Git, external/shared workspaces, Obsidian, schedulers, and ViralTrac are optional enhancements—not prerequisites.
-
-## Want direct control?
-
-Most users can stop here. For manual commands, workspaces, providers, validation, preferences, human knowledge, migration, and other advanced mechanics, see **`OPERATOR-GUIDE.md`**.
-
-Browse **`PLAYBOOKS.md`** if you want to see the specific jobs installed in this edition.
-
-**That's it: give the folder to a capable agent, tell it about the business and what you want, and let AURA handle the operating mechanics underneath.**
-'''
-    (dest/'START-HERE.md').write_text(start)
-    # Generate an edition-aware first-run message from the actual installed module set.
+    cat=module_catalog();version=os_version();domains=sorted(modules-{'core'});expansion='Agentic Understanding and Reinforcement Architecture';names=', '.join(cat[m]['display_name'] for m in domains) if domains else 'Core only'
+    inst={'format_version':'1.0','source_version':version,'edition':edition_id,'display_name':display_name,'public_name':display_name,'name_expansion':expansion,'descriptor':'AI-native BusinessOS','installed_modules':['core']+domains,'standalone_distribution':edition_id!='full','portable_first':True,'default_environment':'local','configurable_workspace_root':True,'human_knowledge_layer':True,'deployment_profiles':'distribution/deployment-profiles.json','brand':'ViralTrac','startup_message':'WELCOME.md'}
+    (dest/'INSTALLATION.json').write_text(json.dumps(inst,indent=2)+'\n');(dest/'distribution/ACTIVE-DEPENDENCIES.json').write_text(json.dumps(dependency_manifest(modules),indent=2)+'\n')
+    readme=f'''# {display_name} v{version}\n\n**AURA = {expansion}.**\n\n**{display_name} gives capable AI organization-owned memory, reusable operating knowledge, and lightweight continuity so useful work can build on what the organization already knows.**\n\nInstalled domain modules: **{names}**. Core is always included.\n\n## Start in three steps\n\n1. Download/unzip this AURA edition.\n2. Give the folder to a compatible LLM/agent harness.\n3. Tell it your business and what you want.\n\nYou do not need to choose a playbook, contract, schema, provider, or operating mode before asking for help. See `START-HERE.md` for the short quick start and `PLAYBOOKS.md` for the installed capability catalog.\n\nAURA is local-first, organization-owned, and model/provider/vendor/harness neutral. The active harness owns live tools, models, credentials, orchestration, scheduling, and execution mechanics; AURA owns durable organizational memory, reusable SOP knowledge, and the integrity of what it persists.\n\n- `START-HERE.md` — simple human quick start\n- `WELCOME.md` — first-run human message\n- `PLAYBOOKS.md` — plain-language capabilities\n- `OPERATOR-GUIDE.md` — optional workspace/validation/persistence mechanics\n- `DEPLOYMENT.md` — deployment/versioning/team options\n- `CONTEXT.md` — AI/agent operating context\n- `LICENSE.md` — source-available license\n\nThis distribution is **source-available, not open source**. See `LICENSE.md`.\n''';(dest/'README.md').write_text(readme)
+    start=f'''# Start Here — {display_name}\n\n**AURA = {expansion}.** Installed domain modules: **{names}**.\n\nGive this folder to a capable AI/agent, tell it the business and desired outcome, and talk normally. The agent should retrieve relevant AURA memory, surface an AURA SOP when useful, use its actual host capabilities normally, do the substantive work, and persist only material organizational meaning worth carrying forward.\n\nAURA itself does not inventory providers, install tools, operate schedulers, or calculate generic permission tiers.\n\nOptional stronger models, Skills/SOPs, browsers/APIs, business systems, private Git, shared workspaces, Obsidian, long-running harnesses, and ViralTrac can improve the experience but are not prerequisites.\n\nSee `OPERATOR-GUIDE.md` for advanced workspace/validation/persistence mechanics and `PLAYBOOKS.md` for installed jobs.\n\n**understand → retrieve → work → remember → continue**\n''';(dest/'START-HERE.md').write_text(start)
     subprocess.run([sys.executable,str(dest/'scripts/generate_welcome.py')],cwd=dest,check=True)
     lines=['# Task Navigator','',f'Installed edition: **{display_name}**.','']
     for mid in domains:
-        mp=dest/'systems'/mid/'process-map.json'
-        lines += [f"## {cat[mid]['display_name']}",'',cat[mid]['description'],'','| Activity | Result | Entry contract |','|---|---|---|']
+        mp=dest/'systems'/mid/'process-map.json';lines += [f"## {cat[mid]['display_name']}",'',cat[mid]['description'],'','| Activity | Result | Entry contract |','|---|---|---|']
         if mp.exists():
             d=json.loads(mp.read_text())
-            for a in d.get('activities',[]):
-                lines.append(f"| `{a['id']}` | {a.get('result','')} | `{a['entry_contract']}` |")
+            for a in d.get('activities',[]):lines.append(f"| `{a['id']}` | {a.get('result','')} | `{a['entry_contract']}` |")
         lines.append('')
-    lines += ['## Core','','Core supplies shared business context, evidence/provenance, Opportunities, Actions, verification, measurement, Learning, workspace/knowledge governance, capability abstraction, and module-independence rules.','']
+    lines += ['## Core','','Core supplies organization-owned context, evidence/provenance, decisions, optional continuity objects, measurement, Learning, reusable SOP knowledge, workspace integrity, and provider-neutral capability vocabulary.','']
     cp=dest/'core/process-map.json'
     if cp.exists():
-        lines += ['| Activity | Result | Entry contract |','|---|---|---|']
-        d=json.loads(cp.read_text())
-        for a in d.get('activities',[]): lines.append(f"| `{a['id']}` | {a.get('result','')} | `{a['entry_contract']}` |")
+        lines += ['| Activity | Result | Entry contract |','|---|---|---|'];d=json.loads(cp.read_text())
+        for a in d.get('activities',[]):lines.append(f"| `{a['id']}` | {a.get('result','')} | `{a['entry_contract']}` |")
         lines.append('')
     (dest/'TASK-NAVIGATOR.md').write_text('\n'.join(lines))
 
-
 def _write_distribution_test(dest):
-    (dest/'tests/run_distribution.py').write_text('''#!/usr/bin/env python3\nfrom pathlib import Path\nimport sys\nROOT=Path(__file__).resolve().parents[1]\nsys.path.insert(0,str(ROOT/"scripts"))\nfrom validate_distribution import validate_distribution\nvalidate_distribution()\n''')
-
-
+    (dest/'tests/run_distribution.py').write_text('#!/usr/bin/env python3\nfrom pathlib import Path\nimport sys\nROOT=Path(__file__).resolve().parents[1]\nsys.path.insert(0,str(ROOT/"scripts"))\nfrom validate_distribution import validate_distribution\nvalidate_distribution()\n')
 def _run(dest,rel):
-    env=dict(os.environ);env['PYTHONDONTWRITEBYTECODE']='1'
-    subprocess.run([sys.executable,str(dest/rel)],cwd=dest,env=env,check=True)
-
-
+    env=dict(os.environ);env['PYTHONDONTWRITEBYTECODE']='1';subprocess.run([sys.executable,str(dest/rel)],cwd=dest,env=env,check=True)
 def build_distribution(edition_id=None,requested_modules=None,output_dir=None,keep_folder=True):
-    eds=editions();cat=module_catalog()
+    eds=editions()
     if edition_id:
-        if edition_id not in eds: raise ValueError(f'Unknown edition {edition_id}')
+        if edition_id not in eds:raise ValueError(f'Unknown edition {edition_id}')
         ed=eds[edition_id];requested=ed['modules'];display=ed['display_name'];eid=edition_id
     else:
         requested=requested_modules or []
-        if not requested: raise ValueError('Choose --edition or --modules')
+        if not requested:raise ValueError('Choose --edition or --modules')
         eid='custom-'+'-'.join(sorted(requested));display='ViralTrac AURA — Custom'
-    modules=resolve_modules(requested)
-    available={'core'} | {p.name for p in (ROOT/'systems').iterdir() if p.is_dir()}
-    missing=modules-available
-    if missing: raise ValueError('Source workspace does not contain required module(s): '+', '.join(sorted(missing)))
-    outbase=Path(output_dir) if output_dir else ROOT.parent/'distributions'
-    outbase.mkdir(parents=True,exist_ok=True)
-    pkgname=f"{slug(display)}-v{os_version()}"
-    dest=outbase/pkgname
-    if dest.exists(): shutil.rmtree(dest)
-    _copy_clean(dest);_reset_operator_profile(dest);_prune_modules(dest,modules);_copy_interface_schemas(dest);_write_navigation(dest,eid,display,modules);_write_instance_template(dest,modules);_prune_event_consumer_profile(dest,modules);_prune_capabilities(dest);_prune_provider_recommendations(dest);_write_distribution_test(dest)
-    # Update visible version labels and regenerate all indexes from the actual subset.
-    (dest/'VERSION').write_text(os_version()+'\n')
-    _run(dest,'scripts/generate_registry.py');_run(dest,'scripts/validate_workspace.py');_run(dest,'tests/run_distribution.py')
-    # Regenerate once after smoke-test cleanup so manifests match the final package.
-    _run(dest,'scripts/generate_registry.py');_run(dest,'scripts/validate_workspace.py')
+    modules=resolve_modules(requested);available={'core'}|{p.name for p in (ROOT/'systems').iterdir() if p.is_dir()};missing=modules-available
+    if missing:raise ValueError('Source workspace does not contain required module(s): '+', '.join(sorted(missing)))
+    outbase=Path(output_dir) if output_dir else ROOT.parent/'distributions';outbase.mkdir(parents=True,exist_ok=True);pkgname=f"{slug(display)}-v{os_version()}";dest=outbase/pkgname
+    if dest.exists():shutil.rmtree(dest)
+    _copy_clean(dest);_prune_modules(dest,modules);_copy_interface_schemas(dest);_write_navigation(dest,eid,display,modules);_write_instance_template(dest,modules);_prune_capabilities(dest);_write_distribution_test(dest)
+    (dest/'VERSION').write_text(os_version()+'\n');_run(dest,'scripts/generate_registry.py');_run(dest,'scripts/validate_workspace.py');_run(dest,'tests/run_distribution.py');_run(dest,'scripts/generate_registry.py');_run(dest,'scripts/validate_workspace.py')
     zpath=outbase/(pkgname+'.zip')
-    if zpath.exists(): zpath.unlink()
+    if zpath.exists():zpath.unlink()
     shutil.make_archive(str(zpath.with_suffix('')),'zip',outbase,pkgname)
     with zipfile.ZipFile(zpath) as zf:
         bad=zf.testzip()
-        if bad: raise RuntimeError(f'ZIP integrity failed at {bad}')
+        if bad:raise RuntimeError(f'ZIP integrity failed at {bad}')
     digest=hashlib.sha256(zpath.read_bytes()).hexdigest();sha=zpath.with_suffix('.zip.sha256');sha.write_text(f'{digest}  {zpath.name}\n')
-    if not keep_folder: shutil.rmtree(dest)
+    if not keep_folder:shutil.rmtree(dest)
     return {'edition':eid,'display_name':display,'modules':sorted(modules),'folder':str(dest),'zip':str(zpath),'sha256_file':str(sha),'sha256':digest}
-
-
 def main():
-    ap=argparse.ArgumentParser(description='Build dependency-aware ViralTrac AURA distributions.')
-    ap.add_argument('--edition');ap.add_argument('--modules',nargs='+');ap.add_argument('--output-dir');ap.add_argument('--list',action='store_true');ap.add_argument('--no-folder',action='store_true')
-    a=ap.parse_args()
+    ap=argparse.ArgumentParser(description='Build dependency-aware ViralTrac AURA distributions.');ap.add_argument('--edition');ap.add_argument('--modules',nargs='+');ap.add_argument('--output-dir');ap.add_argument('--list',action='store_true');ap.add_argument('--no-folder',action='store_true');a=ap.parse_args()
     if a.list:
-        for e in editions().values(): print(f"{e['id']}: {e['display_name']} — {e['description']}")
+        for e in editions().values():print(f"{e['id']}: {e['display_name']} — {e['description']}")
         return
     try:r=build_distribution(a.edition,a.modules,a.output_dir,not a.no_folder)
-    except (ValueError,RuntimeError) as e: raise SystemExit(str(e))
+    except (ValueError,RuntimeError) as e:raise SystemExit(str(e))
     print(json.dumps(r,indent=2))
-
-if __name__=='__main__': main()
+if __name__=='__main__':main()

@@ -23,6 +23,5 @@
   "human_knowledge_layer": true,
   "deployment_profiles": "distribution/deployment-profiles.json",
   "brand": "ViralTrac",
-  "startup_message": "WELCOME.md",
-  "host_capability_discovery": true
+  "startup_message": "WELCOME.md"
 }
