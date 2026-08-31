@@ -55,6 +55,13 @@ def completion_spec(contract):
     Explicit frontmatter `completion_evidence` may override profile inference. The
     structural layer verifies truthful artifact/state/evidence shape; it intentionally
     does not encode output quality as magic phrases, arbitrary word counts, or slide counts.
+
+    Contract `writes` describe canonical object types the playbook is allowed to leave
+    when they materially result from the work. They are not, by themselves, instructions
+    to manufacture one object of every possible downstream type merely to prove execution.
+    Root jobs whose durable result is inherently canonical may still require one declared
+    result; required subcontracts do not require a separate canonical write unless the
+    contract explicitly opts into that stronger completion invariant.
     """
     explicit=contract.get('completion_evidence')
     if isinstance(explicit,str): explicit={'profile':explicit}
@@ -86,13 +93,15 @@ def completion_spec(contract):
     medium=explicit.get('medium')
     if not medium and profile=='production': medium=last
     default_fallback=medium in PACKET_FALLBACKS
+    default_root_write=profile in {'intelligence','publishing','measurement','research','canonical_state'} and bool(writes)
     return {
-        'version':'1.1','profile':profile,'medium':medium,
+        'version':'1.2','profile':profile,'medium':medium,
         'declared_write_types':sorted(writes),'artifact_role':contract.get('artifact_role'),
         'allow_specification_fallback':bool(explicit.get('allow_specification_fallback',default_fallback)),
-        # A required subcontract that declares canonical writes must leave one of those
-        # results as evidence. A generic status/summary file is not the promised work.
-        'require_subcontract_write_evidence':bool(explicit.get('require_subcontract_write_evidence',bool(writes))),
+        'require_root_write_evidence':bool(explicit.get('require_root_write_evidence',default_root_write)),
+        # Required subprocesses may be evidenced by one genuine integrated result. A
+        # separate canonical object is required only when the contract explicitly says so.
+        'require_subcontract_write_evidence':bool(explicit.get('require_subcontract_write_evidence',False)),
         'strict_qa_target':bool(explicit.get('strict_qa_target', profile=='qa' and 'Asset' in reads)),
     }
 
@@ -630,15 +639,17 @@ def validate_evidence(contract,refs,business_id,run_id,phase='root',manifest=Non
     paths=_paths(refs);errors=[]
     if not paths:return [f'{contract.get("id")} completion requires at least one existing non-empty evidence file']
     spec=completion_spec(contract);profile=spec['profile']
+    root_write_required=phase=='root' and spec.get('require_root_write_evidence')
+    subcontract_write_required=phase=='subcontract' and spec.get('require_subcontract_write_evidence')
     if profile=='qa':errors.extend(qa_evidence_errors(contract,paths,business_id,run_id))
     elif profile=='production' and phase=='root':errors.extend(production_evidence_errors(contract,paths,business_id,run_id,manifest))
     elif profile=='intelligence':
-        if phase=='root' or spec.get('require_subcontract_write_evidence'):
+        if root_write_required or subcontract_write_required:
             errors.extend(_declared_write_errors(contract,paths,business_id,run_id,phase))
         errors.extend(intelligence_evidence_errors(contract,paths,business_id,run_id))
     elif profile=='detector' and phase=='root':errors.extend(detector_evidence_errors(contract,paths,business_id,run_id))
     elif profile in {'publishing','measurement','research','planning','canonical_state'}:
-        if phase=='root' or spec.get('require_subcontract_write_evidence'):
+        if root_write_required or subcontract_write_required:
             errors.extend(_declared_write_errors(contract,paths,business_id,run_id,phase))
     return errors
 
