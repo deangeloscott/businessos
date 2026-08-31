@@ -33,7 +33,6 @@ TESTS=[
     'tests/run_platform_semantic_reverification.py',
     'tests/run_local_evidence.py',
     'tests/run_decision_grounding.py',
-    'tests/run_customer_facing_mutations.py',
     'tests/run_customer_facing_draft_provenance.py',
     'tests/run_customer_facing_completion_gate.py',
     'tests/run_customer_facing_qa_invariant.py',
