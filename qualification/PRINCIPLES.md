@@ -1,151 +1,108 @@
 # AURA Qualification Principles
 
-This document is the durable north star for qualifying ViralTrac AURA.
+This is the durable qualification doctrine for ViralTrac AURA.
 
-Qualification exists to answer one practical question:
+## North star
 
-> **When a normal user gives AURA real business work, does AURA do the real work, use the right evidence and capabilities, produce a professionally useful result, and—where the field is observable—produce work that is genuinely competitive with strong current alternatives?**
+> **When a normal user gives AURA real business work, does AURA help the model/harness/user perform the real work, use appropriate evidence and capabilities, produce a professionally useful result, and preserve useful organizational meaning without constraining the executing intelligence?**
 
-Qualification is maintainer tooling. It must observe normal AURA behavior, not become the objective AURA optimizes for.
+Qualification is maintainer tooling. It observes AURA; AURA does not optimize itself for the benchmark.
 
-## Protected rules
+## Protected invariants
 
-1. **The candidate does not see the test.** The candidate receives a normal staged AURA product, relevant organization workspace, available tools/capabilities, and an ordinary business request. Target contracts, rubrics, scoring, checkpoints, receipts, event IDs, benchmark metadata, evaluator research, and comparison sets remain outside the candidate environment.
-2. **Test real business work, not benchmark compliance.** Research should inspect real evidence when required. Production should create the actual usable deliverable when the environment can do so. Technical checks should run actual tools when claimed. QA should inspect a real target. A truthful production specification is a fallback, not a finished artifact.
-3. **Use minimum-sufficient research, not exhaustive-by-default research.** Start with the smallest credible evidence set that can support an excellent result. Expand when additional investigation has a reasonable chance of materially changing the output, recommendation, confidence, or competitive judgment. Stop when further research is unlikely to matter.
-4. **Deterministic gates protect integrity, not taste.** They may verify that evidence exists, sources resolve, claimed tools really ran, the promised medium is truthful, state is valid, provenance is reconstructable, and completion claims are supported. They must not encode excellence as arbitrary word counts, slide counts, duration targets, magic phrases, or benchmark-shaped output passwords.
-5. **Professional quality is judged externally.** A human or independent capable model reviews the actual work for accuracy, specificity, usefulness, craft, business alignment, and outcome readiness. Where current market performance is observable, the evaluator independently samples enough of the current field to establish a credible benchmark.
-6. **AURA and the evaluator investigate independently.** Their evidence may overlap, but AURA is not required to reproduce the evaluator's exact source set. The evaluator asks whether AURA's investigation was sufficient and whether its conclusions and output stand up against independently observed reality.
-7. **Bad output triggers diagnosis, not automatically a new product rule.** Determine whether the weakness came from AURA methodology, model capability, tool/capability availability, missing business context, execution error, randomness, fixture design, or evaluator error. Change AURA only when the failure reveals a reusable real-world AURA weakness.
-8. **A qualification requirement belongs in AURA only if it improves normal customer work.** If a rule mainly makes scoring easier, it stays in maintainer-side qualification or is removed.
-9. **Do not overfit one artifact.** Improve the underlying business method, evidence use, capability routing, production specification, or quality standard. Do not convert one disappointing output into a universal format quota.
-10. **Outcome readiness is not an observed outcome.** Competitive/readiness qualification may establish that work is professionally strong and plausibly suited to the intended result. Rankings, citations, leads, conversion, revenue, retention, or other outcomes require later real-world evidence.
+1. **Test normal use, not test-taking.** The candidate receives a normal AURA product/workspace, its real model/harness capabilities, and an ordinary business request. Hidden targets, rubrics, checkpoints, receipts, evaluator research, and scoring stay evaluator-side.
+2. **AURA must cooperate with intelligence, not constrain it.** Qualification must not reward AURA for limiting model/harness reasoning, tools, delegation, concurrency, planning, or judgment. Equivalent or improved implementation is allowed when essential business work remains rigorous and truthful.
+3. **Test real work, not internal ceremony.** A particular Run, contract-execution ledger, subcontract file, controller receipt, or evaluator-shaped artifact is never universal proof of success. Material results, real evidence, truthful durable state, and actual deliverables matter.
+4. **A selected AURA SOP still has substance.** For playbook qualification, the reviewer should judge whether the essential method/quality invariants were actually satisfied. Do this through `method_rigor` and the real work—not by demanding an exact execution graph.
+5. **Use minimum-sufficient evidence.** Start with a credible evidence set and expand only when more investigation could materially change the result, confidence, or competitive judgment.
+6. **Deterministic gates protect integrity, not taste.** They may verify real evidence, reconstructable provenance, valid state, truthful completion, event-specific artifacts, and supported claims. They must not encode excellence as word counts, slide counts, magic phrases, arbitrary file quotas, or benchmark-shaped passwords.
+7. **Professional quality is judged externally.** A human or independent capable model judges accuracy, evidence, method rigor, usefulness, craft, business alignment, and outcome readiness. Current-field comparison is used only when it materially improves the judgment.
+8. **Automation is allowed.** A model/harness may automate, delegate, parallelize, or otherwise use its capabilities. Automation fails only when it substitutes generic/fabricated work for the real job or violates another real integrity requirement.
+9. **A truthful blocker beats fabricated completion.** Real external capability, permission/scope, data, or service limits should be recorded evaluator-side. AURA should not invent an internal Approval/authority system to represent them.
+10. **Outcome readiness is not an observed outcome.** Rankings, citations, leads, conversion, revenue, retention, and similar results require later real-world evidence.
+11. **Bad output triggers diagnosis, not automatic product rules.** Separate AURA weaknesses from model, harness, context, fixture, evaluator, execution, and random-variance failures.
+12. **A benchmark rule belongs in AURA only when it improves ordinary customer work.** Otherwise it stays evaluator-side or is removed.
 
-## Layered qualification model
+## Integrity floor
 
-Use the smallest layer that answers the current question. Progress upward only after lower layers are understood.
+The deterministic qualification floor should stay narrow. Typical valid checks include:
+
+- evaluator bookkeeping is intact enough to trust the comparison;
+- the AURA workspace/business remains structurally valid;
+- claimed completion corresponds to an observed material result;
+- a promised deliverable actually exists and is event-specific;
+- current-field work has reconstructable current evidence when current external reality matters;
+- customer-facing claims/state remain truthful;
+- exact duplicate reuse does not masquerade as distinct completed jobs;
+- the candidate did not access hidden evaluator material or mutate the staged product.
+
+Missing evaluator bookkeeping is an **evaluator error**, not evidence that AURA failed.
+
+## Method rigor
+
+For an AURA SOP under test, distinguish:
+
+- **essential invariant** — necessary business work/quality requirement;
+- **useful default** — normally helpful but adaptable;
+- **incidental implementation** — tool/order/delegation detail the model/harness may improve;
+- **artificial ceremony** — remove from both qualification and, where applicable, AURA.
+
+The reviewer should penalize skipped essential work, not intelligent adaptation.
+
+## Competitive / field evaluation
+
+Use external comparison only where it helps answer whether the work is strong enough for the intended field.
+
+Start small. A few strong current references are often enough. Expand when the field is ambiguous, sources materially disagree, stakes are higher, or another sample could change the judgment.
+
+Do not require AURA to use the evaluator's exact sources or method. Compare the sufficiency and correctness of the resulting evidence and work.
+
+Visible proxies such as ad longevity, views, shares, engagement, or repeated creative families are signals—not direct proof of profitability or business outcomes unless first-party evidence establishes that.
+
+## Layered qualification
 
 ### Layer 0 — Software integrity
-
-Prove AURA's deterministic mechanics and operating invariants are intact: distribution, schemas, routing, state, provenance, completion integrity, authorization boundaries, migrations, recovery, and related regressions.
-
-Primary gate: `python3 tests/run_all.py`.
+Schemas, references, business isolation, persistence, routing/selection, migrations, packaging, and other deterministic AURA invariants.
 
 ### Layer 1 — Atomic job quality
-
-Run one meaningful playbook/job blind from an ordinary business request. Inspect the actual result. Prove that the individual job is genuinely executable and professionally useful.
+One meaningful job from an ordinary request. Inspect the actual result.
 
 ### Layer 2 — Competitive / field readiness
-
-When the task depends on a current external field, independently inspect enough strong current alternatives to judge whether AURA understood the field and produced work that is competitive for the intended outcome.
-
-Examples:
-- SEO/AEO: current SERPs, leading pages, answer/citation surfaces where observable;
-- advertising: transparency libraries, persistent creatives, landing paths, offer/message patterns;
-- organic content: visible performance proxies, format/context normalization, recurring mechanisms;
-- customer/industry intelligence: evidence quality, source breadth, contradiction handling, decision usefulness.
-
-The evaluator should not require AURA to use the same sources or identical method if AURA reached a well-supported, competitive result through another legitimate path.
+Where relevant, independently compare against enough strong current alternatives to judge whether the work is competitive.
 
 ### Layer 3 — Composition quality
-
-Test a larger business request that requires multiple playbooks/jobs. Verify that research and state actually compound: upstream evidence informs strategy, strategy informs production, QA inspects the produced target, useful context is reused, semantic ownership remains clean, and the user receives one coherent result rather than disconnected task fragments.
+Test whether multiple jobs/SOPs and organizational memory compound into one coherent result rather than disconnected fragments.
 
 ### Layer 4 — Capability and media execution
-
-Test whether AURA uses the capabilities available in the host environment to actually perform the work.
-
-Preferred order:
-1. create/run the real thing when the current environment can;
-2. use an already-authorized compatible capability when appropriate;
-3. when final rendering/execution is genuinely unavailable, produce a portable production specification that another tool, model, agent, or person can execute accurately.
-
-A portable production specification should preserve the intent needed to recreate the deliverable: objective, audience, message, source facts, structure/composition, brand constraints, required content/media, dimensions/format where relevant, exclusions, acceptance criteria, and any other material requirements. Tool-specific prompts/instructions may be saved as execution provenance, but the durable source of truth should remain provider/tool agnostic.
-
-Never call a storyboard a video, a script mastered audio, a Markdown outline a rendered presentation, or a proposed technical check an executed audit.
+Verify that the model/harness uses its real available capabilities effectively. When final execution genuinely cannot occur, require a truthful portable production specification rather than pretending the final medium exists.
 
 ### Layer 5 — Domain and cross-domain missions
-
-Give AURA larger outcome-oriented problems and judge routing, prioritization, evidence reuse, planning, cross-domain coordination, execution, QA, persistence, measurement design, and judgment about when to stop or ask for help.
+Test larger outcome-oriented problems, evidence reuse, prioritization, coordination, persistence, and judgment.
 
 ### Layer 6 — Reliability
-
-Repeat important workflows enough to distinguish a robust capability from a lucky run. Use multiple runs and, where material, more than one capable model/harness. Do not multiply every contract across every model by default. Sampling depth should reflect risk, importance, variability, and what decision the test needs to support.
+Repeat important workflows across runs and, where meaningful, capable models/harnesses. Do not multiply every test across everything by default.
 
 ### Layer 7 — Observed real-world outcomes
+Use authorized real organizations/work to measure what happened later while preserving causal uncertainty.
 
-Use real organizations and authorized live work to measure what happened after deployment or publication. Preserve causal uncertainty. Community/customer evidence can strengthen AURA's evidence base and support case studies, but one organization's result must not silently become a universal rule.
+## Diagnosis before product change
 
-## Competitive evaluation: keep it small and useful
+Before modifying AURA because of a qualification failure, answer:
 
-Use external comparison only when it helps answer whether the work is competitive.
+1. What real customer-facing weakness occurred?
+2. Is it attributable to AURA rather than model/harness capability, missing context, execution error, randomness, fixture design, or evaluator error?
+3. What first-principles AURA responsibility would improve by changing the product—organizational memory, operational knowledge, continuity, truth, measurement, Learning, retrieval, or integrity?
+4. Could the proposed fix constrain intelligence, duplicate runtime responsibility, create bureaucracy, or optimize for the benchmark instead of the user?
+5. What fresh real-work run would demonstrate improvement?
 
-- Sample a small number of strong current references first—often 2–3 is enough for an artifact comparison, while some SEO/AEO tasks may reasonably inspect several leading results to understand intent and recurring patterns.
-- Expand only when the field is ambiguous, results materially disagree, risk is higher, or another sample could change the judgment.
-- Prefer blind or source-masked pairwise comparison for customer-facing artifacts when practical: compare AURA's artifact against a strong reference for the same audience/objective without telling the judge which is AURA's.
-- Do not turn pairwise judging into a tournament or mandatory step for jobs where it adds little value.
+If those questions do not support the change, do not add the mechanism.
 
-## Minimal qualification ledger
+## Minimal qualification evidence
 
-`qualification/ledger.jsonl` is the append-only longitudinal record of meaningful completed qualification runs. Keep it deliberately small.
+Keep `qualification/ledger.jsonl` deliberately small. Preserve enough to know what was tested, AURA version, model/harness and important capabilities, integrity/quality verdicts, evidence location, meaningful limitations, and later real-world outcomes where available.
 
-A record should contain only what is needed to answer: what was tested, on what AURA version, with what environment, how it performed, where the evidence is, and whether later field outcomes exist.
+Community/customer reports are evidence with provenance and scope. Repeated strong evidence may justify Learning or SOP evolution; one organization's result must never silently become universal truth.
 
-Recommended fields:
+## Final invariant
 
-```json
-{
-  "date": "YYYY-MM-DD",
-  "aura_version": "1.8.4",
-  "playbook_or_mission": "seo.intelligence.organic-competition.page-analysis",
-  "layer": 2,
-  "scenario": "AtlasOps",
-  "model_harness": "<model / harness>",
-  "important_capabilities": ["search.serp.read", "research.web.read"],
-  "integrity_verdict": "PASS",
-  "quality_verdict": "COMPETITIVE",
-  "competitive_result": "optional short result",
-  "evidence_location": "<run/report/artifact path>",
-  "known_limitations": ["optional limitation"],
-  "observed_outcome": null
-}
-```
-
-Do not add fields merely because they could be measured. Add them only when repeated qualification decisions genuinely need them.
-
-## Community and field evidence
-
-Community contributions may include:
-- process improvements;
-- stronger Skills/templates/prompts/tool integrations;
-- execution examples;
-- measured field outcomes;
-- failure reports and limitations.
-
-Treat contributions as evidence with provenance and scope. Promote Learning only as broadly as the evidence supports. High-quality repeated evidence may justify AURA updates, public case studies, qualification claims, or recommended process extensions; it does not automatically rewrite universal AURA behavior.
-
-## Claims qualification may support
-
-Use narrow truthful language tied to evidence, for example:
-
-> "This workflow has been qualification-tested for professional readiness."
-
-or, when independently benchmarked:
-
-> "This workflow has been qualification-tested for competitive readiness."
-
-If useful, include supporting details such as AURA version, number of runs, environments/models tested, benchmark method, known limitations, or field case studies. Do not imply observed business outcomes that have not occurred.
-
-## Change-control rule
-
-Before changing qualification or changing AURA because of a qualification result, read this document.
-
-A proposed change should answer:
-
-1. What real-world business weakness did the test expose?
-2. Why is the weakness attributable to AURA rather than the model, tools, missing context, fixture, randomness, or evaluator?
-3. How does the proposed change improve normal customer work?
-4. Could the fix instead create benchmark-shaped behavior, arbitrary output constraints, exhaustive research, or duplicated bureaucracy?
-5. What fresh run will show that the underlying business result improved?
-
-Changing these principles should be explicit and rare. The justification must explain why the change improves real-world AURA operation—not merely why it makes qualification easier to score.
+> **Qualification should make us confident that AURA helps capable intelligence produce excellent real business work. It must never make AURA less capable, less portable, more bureaucratic, or more hostile to the model/harness/user in order to make scoring easier.**
