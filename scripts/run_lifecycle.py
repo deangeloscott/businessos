@@ -153,6 +153,10 @@ def reconcile_run_lifecycle(business_id,completed_run_id,apply_safe_supersession
                     if path.exists():snapshots[path]=path.read_bytes()
                 ts=now();run=dict(row['run']);manifest=dict(row['manifest'])
                 run.update({'status':'superseded','superseded_by_run_id':completed_run_id,'updated_at':ts,'lifecycle_reason':'mechanically_redundant_exact_replacement'})
+                continuity=dict(run.get('continuity') or {})
+                if continuity:
+                    continuity.update({'state':'superseded','superseded_by_run_id':completed_run_id})
+                    run['continuity']=continuity
                 manifest.update({'root_status':'superseded','superseded_by_run_id':completed_run_id,'updated_at':ts,'lifecycle_reason':'mechanically_redundant_exact_replacement'})
                 write_json_atomic(row['run_path'],run);write_json_atomic(row['manifest_path'],manifest);superseded.append(item)
         except Exception as exc:
