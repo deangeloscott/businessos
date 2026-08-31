@@ -1,58 +1,47 @@
 ---
 id: core.action-control.record-change
 type: service
-version: 1.8.0
+version: 2.0.0
 owner_system: core
-risk: low
-autonomy_ceiling: 4
-reads:
-- ActionPacket
-- Approval
+reads: []
 writes:
 - ChangeEvent
 capabilities:
   required:
   - none
   optional:
-  - business.action.governed.propose
-  - business.action.governed.preview
-  - business.action.governed.execute
-  - business.action.receipt.read
+  - none
 events:
   consumes:
   - none
   emits:
   - core.object.updated
 ---
-# Record Change Event
+# Record Material Change
 
 ## Purpose
-Record what external state was intentionally changed and how.
+Preserve a concise organization-owned record of a material change when future work benefits from knowing what changed, where, when, and with what evidence or result.
 
 ## Business Outcome
-Preserve auditability, rollback, verification, and attribution.
+Retain useful operational history without forcing every mutation through an AURA authorization, ActionPacket, or verification lifecycle.
 
 ## Run When
-When an authorized Action mutates external business state.
+Use this only when the change itself is durable organizational knowledge: for example a production configuration change, important published update, pricing change, campaign launch, account-setting change, or other state transition that future work may need to understand.
 
 ## Do Not Run When
-Do not create for read-only analysis.
+- Do not create a ChangeEvent for every tool call or routine edit.
+- Do not require an ActionPacket, Approval, Opportunity, or VerificationRecord before a change can be remembered.
+- Do not use ChangeEvent as runtime execution machinery; the current harness/tool owns execution mechanics and receipts.
 
 ## Process
-1. [DETERMINISTIC] Capture target references, executor, action packet, approval, and intended change before mutation where practical.
-2. [INTEGRATION] Execute or receive evidence of the authorized mutation through the assigned executor. When an available governed action surface supports the specific target action, use its proposal/preview/confirmation/execution semantics and preserve the provider/external-execution receipt; otherwise use the target-specific executor directly.
-3. [DETERMINISTIC] Capture after-state/action response, receipt/effect status, and failure details without treating provider acceptance, delivery, or an execution receipt as independent verification of the later business outcome.
-4. [HYBRID] Record rollback path/state where practical.
-5. [DETERMINISTIC] Persist ChangeEvent and route to verification.
+1. [AI] Decide whether remembering the change will materially improve future organizational continuity, troubleshooting, measurement, attribution, or decision-making.
+2. [HYBRID] Record a clear summary, affected targets, when it occurred, and the executor/actor when known.
+3. [HYBRID] Preserve before/after state, rollback information, evidence references, result references, related decisions, or related WorkRequests only when they are useful and actually known.
+4. [DETERMINISTIC] Validate the persisted ChangeEvent and its references. Never invent a before-state, receipt, decision, verification, or result merely to make the record look complete.
 
 ## Verification
-- Validate written objects against their schemas and preserve source/lineage references.
-
-## Failure / Fallback
-- If a required capability is unavailable, create a human-executable Manual Action Packet for the missing step; do not silently omit required work.
-- If evidence is insufficient, record the unresolved knowledge gap and avoid overstating confidence.
+- Schema/reference integrity applies to the record itself.
+- Independent change verification is required only when the selected SOP/task actually calls for it.
 
 ## Completion Criteria
-- Required outputs exist and validate.
-- Material uncertainty, contradictions, and unresolved dependencies are explicit.
-- Any required next route is represented by a canonical reference or event rather than an informal note.
+- The record contains enough truthful information for future work to understand the material change without needing the original conversation or execution transcript.
