@@ -1,7 +1,7 @@
 ---
 id: seo.learning.tactic-promotion
 type: playbook
-version: 1.1.0
+version: 1.2.0
 owner_system: seo-aeo
 reads:
 - type: Learning
@@ -11,60 +11,62 @@ reads:
 - Experiment
 writes:
 - Learning
-- Event
 capabilities:
   required:
   - none
   optional:
   - none
 evidence_inputs:
-- affected SEO contracts
+- affected SEO playbooks
 updates:
   Learning:
-  - maturity status
+  - maturity status applicability
 ---
 # SEO Tactic Promotion
 
 ## Purpose
-Promote an SEO Domain Learning to a stronger maturity and, when justified, update standard operating contracts without overgeneralizing its evidence.
+Promote SEO Domain Learning to a stronger evidence/maturity level when justified, without overgeneralizing one business result or turning ordinary organization work into self-modifying AURA source.
 
 ## Business Outcome
-Keep SEO/AEO strategy current, evidence-governed, policy-safe, and connected to measurable organic and business outcomes without creating a parallel strategy-evidence store.
+Keep SEO/AEO operating knowledge evidence-linked, current, and useful while preserving the distinction between organization Learning and canonical AURA product evolution.
 
 ## Run When
-Run when a tactic has materially stronger supporting evidence and may qualify for a higher maturity or standard implementation guidance.
+Run when a tactic has materially stronger supporting evidence and may justify a higher maturity, broader-but-still-bounded applicability, or stronger reusable guidance.
 
 ## Do Not Run When
-Do not treat a publication, practitioner opinion, competitor behavior, or one business result as a validated tactic by itself. Do not use private cross-business evidence unless Core System Learning governance explicitly permits it.
+Do not treat a publication, practitioner opinion, competitor behavior, one business result, or model confidence as sufficient proof of a generally valid tactic.
 
 ## Process
-1. [HYBRID] Review all material supporting and contradicting evidence, policy status, applicability boundaries, negative cases, and causal confidence.
-2. [HYBRID] Confirm the tactic adds user/business value under its stated conditions and does not rely on restricted/prohibited manipulation.
-3. [HYBRID] Determine the narrowest justified maturity increase and whether any standard contract actually needs to change; do not equate one validated business result with a universal standard.
-4. [HYBRID] Define exact affected contract changes, applicability conditions, executor/autonomy ceilings, QA, guardrails, and measurement requirements.
-5. [DETERMINISTIC] Run regression/contract tests against representative workflows and verify that updated guidance does not conflict with higher-level policy.
-6. [HUMAN] Require approval for changes to standard guidance when policy/risk requires it, preserve the prior version/rationale, update the Learning, and notify dependent active Opportunities when material.
+1. [HYBRID] Review material supporting and contradicting evidence, external platform/guidance status, applicability boundaries, negative cases, OutcomeEvaluations, and causal uncertainty.
+2. [HYBRID] Confirm the tactic adds user/business value under its stated conditions and that the evidence supports the proposed scope.
+3. [HYBRID] Choose the narrowest justified maturity/status/applicability increase; do not equate one validated result with a universal standard.
+4. [AI] State the mechanism, prerequisites, applicable conditions, exclusions, evidence basis, verification/QA needs, and measurement implications clearly enough for future work to use the Learning intelligently.
+5. [DETERMINISTIC] Persist the updated SEO Learning with traceable evidence and historical lineage.
+6. [HYBRID] If the evidence suggests AURA's reusable playbook knowledge itself should change, route the Learning through `core.learning.playbook-evolution`; ordinary business work must not directly edit canonical AURA source.
+7. [HYBRID] If organization-specific adoption requires concrete business work, route that work normally through the relevant playbook, external Skill, model-created method, or ad-hoc method.
 
 ## Decisions / Routing
-- If evidence remains narrow → keep current maturity and applicability.
-- If contradiction/policy risk emerges → `seo.learning.tactic-deprecation`.
-- If accepted → regenerate registries and revalidate affected contracts.
+- Evidence remains narrow → keep the current maturity/applicability.
+- Material contradiction emerges → `seo.learning.tactic-deprecation`.
+- Reusable AURA method improvement appears justified → `core.learning.playbook-evolution`.
 
 ## Verification
-- Validate every canonical object written, preserve SourceRecord/Observation lineage, and keep evidence strength, conclusion confidence, policy status, and risk as separate dimensions.
-- Any later external state mutation must use an ActionPacket, ChangeEvent, and independent VerificationRecord.
+- The Learning promotion is no broader than its evidence.
+- Supporting and contradictory evidence remain traceable.
+- Applicability and uncertainty are explicit.
+- No runtime Event, ActionPacket, approval object, autonomy ceiling, or generic risk gate is created.
+- No canonical AURA product source is silently mutated.
 
 ## Measurement
-- Strategy claims become stronger only through relevant observations, experiments, OutcomeEvaluations, replication, or authoritative policy evidence; popularity and confidence language are not outcome evidence.
+- Promotion should strengthen only through relevant observations, experiments, OutcomeEvaluations, replication, or authoritative external guidance—not popularity or confidence language alone.
 
 ## Learning
-- Maintain SEO-specific strategy knowledge as SEO Domain Learning. Propose broader Business or System Learning only when evidence and applicability justify the broader scope.
+- Maintain SEO-specific operating knowledge as SEO Domain Learning. Broader system/playbook changes require evidence-supported evolution through the explicit Core path.
 
 ## Failure / Fallback
-- If a source cannot be retrieved automatically, create a manual evidence-retrieval Action or use another authoritative source; do not invent the missing evidence.
-- If evidence remains contradictory or insufficient, preserve the uncertainty and keep the claim at hypothesis/experimental maturity instead of forcing a conclusion.
+- If evidence is contradictory or insufficient, preserve the current or narrower maturity and record the uncertainty rather than forcing promotion.
+- If a preferred source/tool is unavailable, use another valid method when practical or preserve the unresolved evidence need honestly.
 
 ## Completion Criteria
-- Outputs use current Core Observation/Insight/Experiment/Learning objects rather than legacy strategy-evidence object.
-- Source provenance, contradictory evidence, applicability, confidence, risk, and policy status remain inspectable.
-- No tactic is promoted, deprecated, or blocked for a reason that cannot be traced to evidence or policy.
+- The affected Learning truthfully reflects its current evidence, maturity/status, applicability, mechanism, and uncertainty.
+- No tactic is promoted for a reason that cannot be traced to evidence.
