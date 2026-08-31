@@ -1,0 +1,21 @@
+{
+  "format_version": "1.0",
+  "integration": "viraltrac",
+  "purpose": "Optional semantic correspondence between ViralTrac data and AURA durable organizational records.",
+  "mappings": [
+    {"aura_type":"SourceRecord","viraltrac_semantics":["source","evidence","external_record"]},
+    {"aura_type":"Observation","viraltrac_semantics":["observation","finding","business_signal"]},
+    {"aura_type":"MetricObservation","viraltrac_semantics":["metric","measurement","timeseries_point"]},
+    {"aura_type":"OutcomeEvaluation","viraltrac_semantics":["outcome","measurement_evaluation","experiment_result"]},
+    {"aura_type":"Asset","viraltrac_semantics":["artifact","export","generated_asset"]},
+    {"aura_type":"DecisionRecord","viraltrac_semantics":["durable_business_decision"]},
+    {"aura_type":"Run","viraltrac_semantics":["work_receipt","method_provenance"]},
+    {"aura_type":"ChangeEvent","viraltrac_semantics":["material_external_change","change_receipt"]},
+    {"aura_type":"VerificationRecord","viraltrac_semantics":["verification_evidence"]},
+    {"aura_type":"AttentionItem","viraltrac_semantics":["material_condition_needing_attention"]}
+  ],
+  "notes": [
+    "Mappings are semantic hints, not provider bindings or execution contracts.",
+    "Only material organization-owned meaning should be persisted in AURA."
+  ]
+}

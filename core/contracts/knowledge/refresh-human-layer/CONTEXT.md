@@ -1,7 +1,7 @@
 ---
 id: core.knowledge.refresh-human-layer
 type: playbook
-version: 1.2.0
+version: 1.3.0
 owner_system: core
 reads:
 - Business
@@ -32,32 +32,32 @@ capabilities:
 # Refresh Human Knowledge Layer
 
 ## Purpose
-Generate an easy-to-browse Markdown view of canonical BusinessOS state—including durable tracked subjects/sources—for humans without creating a second source of truth.
+Generate an easy-to-browse Markdown view of canonical AURA state—including durable tracked subjects/sources—without creating a second source of truth.
 
 ## Business Outcome
-Let founders, operators, and teams understand current BusinessOS knowledge, priorities, experiments, Learning, and monitoring context through ordinary files that work in Obsidian or other Markdown tools, without needing to remember canonical/runtime filesystem paths.
+Let founders, operators, and teams understand current organizational context, priorities, experiments, Learning, evidence, and monitoring intent through ordinary files that work in Obsidian or any Markdown tool.
 
 ## Run When
-Run after meaningful canonical state changes, when a human wants an updated second-brain view, during onboarding to a shared workspace, after monitoring/source-profile changes, or before reviewing BusinessOS knowledge outside an agent interface.
+Run after meaningful canonical state changes, when a human wants an updated knowledge view, during onboarding to a shared workspace, or before reviewing AURA knowledge outside an agent interface.
 
 ## Process
-1. [DETERMINISTIC] Resolve the active workspace and business; stop if the configured workspace has the human knowledge layer disabled.
-2. [DETERMINISTIC] Read canonical objects from `instances/<business-id>/` and preserve their IDs and workspace-relative source refs in generated output.
+1. [DETERMINISTIC] Resolve the active workspace/business; stop if the human knowledge layer is disabled.
+2. [DETERMINISTIC] Read canonical objects from `instances/<business-id>/` and preserve IDs/source refs in generated output.
 3. [DETERMINISTIC] Regenerate only `knowledge/<business-id>/_generated/`; never overwrite `knowledge/<business-id>/notes/` or treat human notes as canonical state.
-4. [AI] When a richer narrative view is requested, summarize only what current canonical objects support and keep uncertainty/status/maturity visible; do not fill gaps from generic knowledge.
-5. [DETERMINISTIC] Run `scripts/generate_knowledge_layer.py <business-id>` for the standard portable view and verify the Home page plus domain/learning/experiment pages exist. When SourceProfiles exist, `Tracked-Subjects.md` should group related source profiles by resolved subject, show the source/surface set, relationship, questions/signals, cadence/check timing, and distinguish actual verified automatic scheduling from planned/unbound/manual monitoring.
-6. [HYBRID] Humans may browse/edit notes through Obsidian, VS Code, a file browser, or any Markdown editor. Incorporate note content into canonical state only through the appropriate BusinessOS evidence/context process.
-7. [AI] In ordinary completion messages, point the user to the human concept first (for example `AtlasOps → Knowledge → Tracked Subjects → Alex Hormozi`). Raw canonical/runtime paths are useful for advanced inspection/debugging but should not be the primary UX.
-8. [DETERMINISTIC] Re-running the generator must be idempotent for generated pages and must leave human-authored notes unchanged.
+4. [AI] When a richer narrative view is requested, summarize only what current canonical objects support and keep uncertainty/status/maturity visible.
+5. [DETERMINISTIC] Run `scripts/generate_knowledge_layer.py <business-id>`. When SourceProfiles exist, `Tracked-Subjects.md` groups them by subject and shows source/surface, questions/signals, cadence, notification intent and next useful check. It explicitly does not infer external scheduler state.
+6. [HYBRID] Humans may browse/edit notes using any Markdown tool. Incorporate note content into canonical state only through an evidence/context process with provenance.
+7. [AI] In ordinary completion messages, point the user to the human concept first; raw object paths are secondary operator/debugging detail.
+8. [DETERMINISTIC] Re-running the generator must be safe/idempotent for generated pages and must leave human-authored notes unchanged.
 
 ## Verification
 - Canonical JSON remains authoritative.
-- Generated Markdown is marked `businessos_generated: true` and `canonical: false`.
+- Generated Markdown is marked `aura_generated: true` and `canonical: false`.
 - Human notes are physically separated from generated views.
-- Source refs remain traceable to canonical BusinessOS state.
-- Related SourceProfiles are presented as one understandable subject dossier/view rather than forcing humans to navigate many raw files.
-- Tracked-subject views expose monitoring meaning and actual schedule-binding truth without creating a duplicate identity/intelligence store.
-- No Obsidian/editor-specific format is required.
+- Source refs remain traceable to canonical AURA state.
+- Related SourceProfiles are presented as one understandable subject dossier.
+- Monitoring views describe organizational intent without claiming runtime scheduling.
+- No editor-specific format is required.
 
 ## Completion Criteria
-- The current human knowledge view is refreshed, traceable, safe to regenerate, and usable with ordinary Markdown tools while canonical BusinessOS state remains unchanged.
+The current human knowledge view is refreshed, traceable, safe to regenerate, and useful with ordinary Markdown tools while canonical AURA state remains unchanged.
