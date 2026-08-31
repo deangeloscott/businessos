@@ -1,12 +1,17 @@
 #!/usr/bin/env python3
+"""Build bounded AURA playbook context from organizational memory and SOP knowledge.
+
+This planner deliberately does not inspect host tools, provider bindings, scheduler state,
+operator-device inventories, or live capability availability. A playbook may declare
+provider-neutral capability needs; the active harness resolves those at execution time.
+"""
 from _common import *
 import argparse,json,os
 from resolve_preferences import resolve_effective_preferences, _load_task_preferences
 
 
 def _strings(value):
-    if isinstance(value,str):
-        yield value
+    if isinstance(value,str):yield value
     elif isinstance(value,list):
         for item in value:yield from _strings(item)
     elif isinstance(value,dict):
@@ -15,8 +20,7 @@ def _strings(value):
 
 def _existing_material_path(raw,relative_to=None):
     if not isinstance(raw,str) or not raw.strip() or '://' in raw:return None
-    value=raw.strip();candidates=[]
-    p=Path(value).expanduser()
+    value=raw.strip();candidates=[];p=Path(value).expanduser()
     if p.is_absolute():candidates.append(p)
     else:
         if relative_to is not None:candidates.append(Path(relative_to).parent/p)
@@ -29,11 +33,6 @@ def _existing_material_path(raw,relative_to=None):
 
 
 def _material_inputs(selected,idx,declared):
-    """Expose only exact selected/provenance inputs and their real supplied files.
-
-    This is intentionally relationship-bounded. It does not inventory the workspace or
-    inline source payloads into the execution handoff.
-    """
     related=dict(selected);frontier=list(selected);selected_ids=set(selected)
     for _ in range(2):
         following=[]
@@ -43,15 +42,10 @@ def _material_inputs(selected,idx,declared):
                 if ref in related or ref not in idx:continue
                 related[ref]=idx[ref];following.append(ref)
         frontier=following
-    canonical=[];supplied=[];supplied_paths=[]
+    canonical=[];supplied_paths=[]
     for oid in sorted(related):
         obj,path=related[oid]
-        canonical.append({
-            'object_ref':oid,'object_type':obj.get('object_type'),'path':storage_ref(path),
-            'relationship':'selected_context' if oid in selected_ids else 'provenance'
-        })
-        # Canonical provenance commonly points to a user-supplied file through
-        # source_reference/location_reference or extensions.source_members[].reference.
+        canonical.append({'object_ref':oid,'object_type':obj.get('object_type'),'path':storage_ref(path),'relationship':'selected_context' if oid in selected_ids else 'provenance'})
         for raw in _strings({k:obj.get(k) for k in ('source_reference','location_reference') if obj.get(k)}):
             material=_existing_material_path(raw)
             if material and material not in supplied_paths:supplied_paths.append(material)
@@ -60,8 +54,6 @@ def _material_inputs(selected,idx,declared):
             if not isinstance(member,dict):continue
             material=_existing_material_path(member.get('reference'))
             if material and material not in supplied_paths:supplied_paths.append(material)
-    # One bounded expansion makes files named inside a directly supplied JSON manifest
-    # discoverable (for example an accompanying image) without scanning attachments/.
     for source in list(supplied_paths):
         if source.suffix.lower()!='.json':continue
         try:data=json.loads(source.read_text(encoding='utf-8'))
@@ -69,194 +61,124 @@ def _material_inputs(selected,idx,declared):
         for raw in _strings(data):
             material=_existing_material_path(raw,source)
             if material and material not in supplied_paths:supplied_paths.append(material)
-    supplied=[storage_ref(path) for path in supplied_paths]
-    return {
-        'declared_evidence_inputs':list(declared or []),
-        'canonical_inputs':canonical,
-        'supplied_evidence_refs':supplied,
-    }
+    return {'declared_evidence_inputs':list(declared or []),'canonical_inputs':canonical,'supplied_evidence_refs':[storage_ref(path) for path in supplied_paths]}
 
-def build_plan(business_id,contract_id,focus=None,operator_ref=None,team_ref=None,role_ref=None,run_id=None,task_preferences=None,output_type=None,channel=None):
+
+def _add(files,rel):
+    if rel and rel not in files and (ROOT/rel).exists():files.append(rel)
+
+
+def build_plan(business_id,contract_id,focus=None,operator_ref=None,team_ref=None,role_ref=None,task_preferences=None,output_type=None,channel=None):
     focus=focus or []
-    reg=load_registry();match=next((x for x in reg['contracts'] if x['id']==contract_id),None)
-    if not match: raise ValueError('Unknown contract')
+    match=next((x for x in load_registry().get('contracts',[]) if x.get('id')==contract_id),None)
+    if not match:raise ValueError('Unknown contract')
     base=ROOT/'instances'/business_id
-    if not base.exists(): raise ValueError('Unknown business')
-    files=['CONTEXT.md','core/DEFAULTS.md','core/policies/agent-execution.md','core/policies/operating-scope.md','core/policies/active-business-truth.md','core/policies/preferences-and-adaptation.md','core/policies/shared-workspace-coordination.md']
-    optional_unavailable=[]
+    if not base.exists():raise ValueError('Unknown business')
+    owner=match.get('owner_system') or 'core'
     installed=installed_modules()
-    owner=match['owner_system']
-    run=None; preference_resolution=None
-    if run_id:
-        rp=ROOT/'runtime/runs'/business_id/run_id/'run.json'
-        if not rp.exists(): raise ValueError(f'Unknown Run: {run_id}')
-        run=json.loads(rp.read_text())
-        if run.get('business_id')!=business_id: raise ValueError('Run business_id mismatch')
-        if run.get('contract_id')!=contract_id: raise ValueError('Run contract_id does not match requested context plan contract')
-        for supplied,stored,label in [(operator_ref,run.get('operator_ref'),'operator_ref'),(team_ref,run.get('team_ref'),'team_ref'),(role_ref,run.get('role_ref'),'role_ref')]:
-            if supplied is not None and supplied!=stored: raise ValueError(f'{label} cannot override an existing Run attribution; create a new Run for different operator/team/role context')
-        for supplied,stored,label in [(output_type,run.get('preference_output_type'),'output_type'),(channel,run.get('preference_channel'),'channel')]:
-            if supplied is not None and supplied!=stored: raise ValueError(f'{label} cannot override an existing Run preference context; provide it when creating the Run')
-        if task_preferences is not None: raise ValueError('task preferences for an existing Run are fixed by its preference snapshot; provide them when creating the Run')
-        operator_ref=run.get('operator_ref');team_ref=run.get('team_ref');role_ref=run.get('role_ref');output_type=run.get('preference_output_type');channel=run.get('preference_channel')
-        if run.get('preference_snapshot_ref'):
-            snap=ROOT/run['preference_snapshot_ref']
-            if snap.exists():
-                preference_resolution=json.loads(snap.read_text())
-                rel=snap.relative_to(ROOT).as_posix()
-                if rel not in files: files.append(rel)
-    else:
-        operator_ref=operator_ref or os.environ.get('BUSINESSOS_OPERATOR_REF')
-        team_ref=team_ref or os.environ.get('BUSINESSOS_TEAM_REF')
-        role_ref=role_ref or os.environ.get('BUSINESSOS_ROLE_REF')
-        if isinstance(task_preferences,(str,Path)):
-            task_preferences=_load_task_preferences(str(task_preferences))
-    if preference_resolution is None:
-        preference_resolution=resolve_effective_preferences(business_id,operator_ref,team_ref,role_ref,owner,contract_id,output_type,channel,task_preferences)
-    if owner in {'content-synthesis','marketing-synthesis'}:
-        files.append('core/policies/context-provenance-and-claims.md')
-    if owner!='core': files.append(f'systems/{owner}/DEFAULTS.md')
-    cp=ROOT/match['path']; parents=list(cp.parents)
-    stop=(ROOT/f'systems/{owner}/contracts') if owner!='core' else (ROOT/'core/contracts')
-    chain=[]
-    for parent in parents:
-        if parent==stop: break
-        d=parent/'DEFAULTS.md'
-        if d.exists(): chain.append(d.relative_to(ROOT).as_posix())
-    for x in reversed(chain):
-        if x not in files: files.append(x)
-    files.append(match['path'])
+    if isinstance(task_preferences,(str,Path)):task_preferences=_load_task_preferences(str(task_preferences))
+    operator_ref=operator_ref or os.environ.get('BUSINESSOS_OPERATOR_REF')
+    team_ref=team_ref or os.environ.get('BUSINESSOS_TEAM_REF')
+    role_ref=role_ref or os.environ.get('BUSINESSOS_ROLE_REF')
+    prefs=resolve_effective_preferences(business_id,operator_ref,team_ref,role_ref,owner,contract_id,output_type,channel,task_preferences)
+
+    files=['CONTEXT.md','core/DEFAULTS.md','core/policies/agent-execution.md','core/policies/active-business-truth.md','core/policies/preferences-and-adaptation.md','core/policies/business-isolation.md']
+    if owner in {'content-synthesis','marketing-synthesis'}:_add(files,'core/policies/context-provenance-and-claims.md')
+    if owner!='core':_add(files,f'systems/{owner}/DEFAULTS.md')
+
+    cp=ROOT/match['path'];stop=(ROOT/f'systems/{owner}/contracts') if owner!='core' else (ROOT/'core/contracts');chain=[]
+    for parent in cp.parents:
+        if parent==stop:break
+        defaults=parent/'DEFAULTS.md'
+        if defaults.exists():chain.append(defaults.relative_to(ROOT).as_posix())
+    for rel in reversed(chain):_add(files,rel)
+    _add(files,match['path'])
 
     read_types={selector_type(x) for x in match.get('read_selectors',[])}
-    write_types=set(match.get('write_types',[]))
-    context_types=set(match.get('context_types',[]))
-    policy=[]
-    if {'SourceRecord','Observation','Insight','Learning','ProofRecord'} & (read_types|write_types): policy += ['core/policies/evidence.md','core/policies/provenance.md']
-    if {'SourceRecord','Observation','Insight'} & write_types: policy += ['core/policies/research-evidence.md']
-    if 'Opportunity' in write_types: policy += ['core/policies/decision-grounding.md']
-    if 'AttentionItem' in (read_types|write_types): policy += ['core/policies/attention-lifecycle.md']
-    if 'PlatformChange' in (read_types|write_types): policy += ['core/policies/platform-intelligence.md']
+    write_types=set(match.get('write_types',[]));context_types=set(match.get('context_types',[]))
+    combined=read_types|write_types
+    if {'SourceRecord','Observation','Insight','Learning','ProofRecord'} & combined:
+        _add(files,'core/policies/evidence.md');_add(files,'core/policies/provenance.md')
+    if {'SourceRecord','Observation','Insight'} & write_types:_add(files,'core/policies/research-evidence.md')
+    if 'Opportunity' in write_types:_add(files,'core/policies/decision-grounding.md')
+    if 'AttentionItem' in combined:_add(files,'core/policies/attention-lifecycle.md')
+    if 'PlatformChange' in combined:_add(files,'core/policies/platform-intelligence.md')
     if 'ChangeEvent' in write_types:
-        policy += ['core/policies/customer-facing-mutations.md']
-        context_types.add('BusinessClaim')
-    if owner=='seo-aeo' and 'Observation' in (read_types|write_types): policy += ['core/policies/local-evidence.md']
-    policy += ['core/policies/business-isolation.md']
-    if match.get('id','').startswith(('core.opportunity.','core.diagnosis.','core.coordination.')):
-        policy += ['core/policies/resource-aware-execution.md']
-    required_caps=[c for c in match.get('capabilities',{}).get('required',[]) if c!='none']
-    optional_caps=[c for c in match.get('capabilities',{}).get('optional',[]) if c!='none']
-    all_caps=required_caps+optional_caps
-    # Provider policy/config is resolved lazily only when a capability is missing; do not load it into every job.
-    # Load first-party companion policy only when an active ViralTrac binding is relevant to this job.
-    # Event-plane setup/diagnosis also needs the policy when ViralTrac is connected through any existing capability,
-    # because event capabilities may not have been synchronized/activated yet.
-    companion_caps={c for c in all_caps if c.startswith('business.')}
-    env_name=installation().get('default_environment') or 'local'
-    try:
-        bp=environment_file(env_name,'capability-bindings.json')
-        active=json.loads(bp.read_text()).get('bindings',[]) if bp.exists() else []
-    except Exception:
-        active=[]
-    any_vt=any(b.get('enabled',True) and b.get('provider_id')=='viraltrac' for b in active)
-    relevant_vt=any(b.get('enabled',True) and b.get('provider_id')=='viraltrac' and b.get('capability') in companion_caps for b in active)
-    event_job=match.get('id','').startswith('core.monitoring.') and any(c.startswith('business.event.') for c in all_caps)
-    if companion_caps and (relevant_vt or (event_job and any_vt)):
-        policy += ['core/policies/viraltrac-native-companion.md']
-    if {'browser.interact','email.read'} & set(all_caps):
-        policy += ['core/policies/external-research-interaction.md','core/policies/context-reuse-and-question-minimization.md']
-    for x in policy:
-        if x not in files and (ROOT/x).exists(): files.append(x)
+        _add(files,'core/policies/customer-facing-mutations.md');context_types.add('BusinessClaim')
+    if owner=='seo-aeo' and 'Observation' in combined:_add(files,'core/policies/local-evidence.md')
+    if match.get('id','').startswith(('core.opportunity.','core.diagnosis.','core.coordination.')):_add(files,'core/policies/resource-aware-execution.md')
 
-    idx=object_index(business_id); selectors=match.get('read_selectors',[])
-    for ap in preference_resolution.get('applied_profiles',[]):
-        rel=ap.get('path')
-        if rel and rel not in files and (ROOT/rel).exists(): files.append(rel)
-    if owner in {'content-synthesis','marketing-synthesis'}: context_types.add('BusinessClaim')
-    selected={};queue=[]
-    for rid in focus:
-        if rid in idx:selected[rid]=idx[rid];queue.append(rid)
+    idx=object_index(business_id);selectors=match.get('read_selectors',[]);selected={};queue=[]
+    for oid in focus:
+        if oid in idx:selected[oid]=idx[oid];queue.append(oid)
     seen=set(queue)
     for _ in range(2):
-        nq=[]
-        for rid in queue:
-            obj,_=idx[rid]
+        nxt=[]
+        for oid in queue:
+            obj,_=idx[oid]
             for ref in refs_in_object(obj):
                 if ref in seen or ref not in idx:continue
-                robj,rp=idx[ref]
+                robj,rpath=idx[ref]
                 if robj.get('object_type') in context_types or any(object_matches(robj,s) for s in selectors):
-                    selected[ref]=(robj,rp);nq.append(ref);seen.add(ref)
-        queue=nq
-    unresolved=[]
+                    selected[ref]=(robj,rpath);nxt.append(ref);seen.add(ref)
+        queue=nxt
+
+    unresolved=[];optional_unavailable=[]
+    if owner in {'content-synthesis','marketing-synthesis'}:context_types.add('BusinessClaim')
     for typ in sorted(context_types):
         candidates=[(o,p) for o,p in idx.values() if o.get('object_type')==typ and o.get('status') not in {'archived','superseded'}]
         already=any(o.get('object_type')==typ for o,_ in selected.values())
-        if typ=='BusinessClaim' and not already and candidates:
-            # Approved/constraint claim sets are small governance context; load all active claims so production cannot accidentally ignore a prohibition or promise boundary.
-            for c in candidates:selected[c[0]['id']]=c
+        if typ=='BusinessClaim' and not already:
+            for obj,path in candidates:selected[obj['id']]=(obj,path)
         elif not already and len(candidates)==1:selected[candidates[0][0]['id']]=candidates[0]
-        elif not already and len(candidates)>1:unresolved.append({'type':typ,'reason':'multiple candidates; provide focus/relationship'})
-        elif not already and not candidates:unresolved.append({'type':typ,'reason':'not present in active business'})
+        elif not already and len(candidates)>1:unresolved.append({'type':typ,'reason':'multiple candidates; resolve from request/focus rather than bulk-loading'})
+        elif not already:unresolved.append({'type':typ,'reason':'not present in durable AURA context'})
+
     for sel in selectors:
-        ns=normalize_selector(sel)
-        source_owner=ns.get('owner_system')
+        ns=normalize_selector(sel);source_owner=ns.get('owner_system')
         if source_owner and source_owner not in installed:
-            optional_unavailable.append({**ns,'reason':f'optional module {source_owner} is not installed; use module-independence fallback'})
+            optional_unavailable.append({**ns,'reason':f'optional module {source_owner} is not installed'})
             continue
-        already=any(object_matches(o,sel) for o,_ in selected.values())
-        if already:continue
+        if any(object_matches(o,sel) for o,_ in selected.values()):continue
         candidates=[(o,p) for o,p in idx.values() if object_matches(o,sel) and o.get('status') not in {'archived','superseded'}]
         if len(candidates)==1:selected[candidates[0][0]['id']]=candidates[0]
-        elif len(candidates)>1:unresolved.append({**normalize_selector(sel),'reason':'multiple candidates; resolve from focus/query, do not bulk-load'})
-        else:unresolved.append({**normalize_selector(sel),'reason':'not present in active business'})
-    if optional_unavailable or installation().get('standalone_distribution'):
-        modpol='core/policies/module-independence.md'
-        if modpol not in files and (ROOT/modpol).exists(): files.append(modpol)
-    if 'ProofRecord' in write_types or any(obj.get('object_type')=='ProofRecord' for obj,_ in selected.values()):
-        proof_policy='core/policies/proof.md'
-        if proof_policy not in files and (ROOT/proof_policy).exists():files.append(proof_policy)
-    if {'browser.interact','email.read'} & set(all_caps):
-        rp=base/'config/external-research-profile.json'
-        if rp.exists():
-            rel=rp.relative_to(ROOT).as_posix()
-            if rel not in files: files.append(rel)
-        op=ROOT/'deployment/operator-profile.json'
-        if op.exists():
-            rel=op.relative_to(ROOT).as_posix()
-            if rel not in files: files.append(rel)
+        elif len(candidates)>1:unresolved.append({**ns,'reason':'multiple candidates; resolve from request/focus rather than bulk-loading'})
+        else:unresolved.append({**ns,'reason':'not present in durable AURA context'})
 
-    if event_job:
-        for ep in [ROOT/'core/monitoring/event-consumer-profile.json', base/'config/reactive-monitoring.json']:
-            if ep.exists():
-                rel=ep.relative_to(ROOT).as_posix()
-                if rel not in files: files.append(rel)
-        if any_vt:
-            vp=ROOT/'core/providers/viraltrac/event-interoperability.json'
-            if vp.exists():
-                rel=vp.relative_to(ROOT).as_posix()
-                if rel not in files: files.append(rel)
+    for applied in prefs.get('applied_profiles',[]):_add(files,applied.get('path'))
+    if 'ProofRecord' in write_types or any(obj.get('object_type')=='ProofRecord' for obj,_ in selected.values()):_add(files,'core/policies/proof.md')
+    for rel in match.get('references',[]):_add(files,rel)
 
     object_files=[]
-    for oid,(obj,op) in selected.items():
-        rel=op.relative_to(ROOT).as_posix()
+    for oid,(obj,path) in selected.items():
+        rel=path.relative_to(ROOT).as_posix()
         if rel not in object_files:object_files.append(rel)
-    sreg=json.loads((ROOT/'generated/schema-registry.json').read_text());spath={s.get('title'):s['path'] for s in sreg if s.get('title')}
-    schema_files=[]
-    for typ in sorted(write_types):
-        if typ in spath:schema_files.append(spath[typ])
-    for x in schema_files:
-        if x not in files:files.append(x)
-    for x in match.get('references',[]):
-        if x not in files and (ROOT/x).exists():files.append(x)
-    for x in object_files:
-        if x not in files:files.append(x)
-    material_inputs=_material_inputs(selected,idx,match.get('evidence_inputs',[]))
-    return {'version':os_version(),'business_id':business_id,'contract_id':contract_id,'focus_refs':focus,'run_id':run_id,'operator_ref':operator_ref,'team_ref':team_ref,'role_ref':role_ref,'effective_preferences':preference_resolution.get('effective_preferences',{}),'preference_profiles':[x.get('id') for x in preference_resolution.get('applied_profiles',[])],'preference_conflicts':preference_resolution.get('conflicts',[]),'files':files,'object_refs':sorted(selected),'object_files':object_files,'schema_files':schema_files,'unresolved_selectors':unresolved,'optional_unavailable_selectors':optional_unavailable,'evidence_inputs':match.get('evidence_inputs',[]),'material_inputs':material_inputs,'required_capabilities':required_caps,'optional_capabilities':optional_caps}
+    schema_registry=json.loads((ROOT/'generated/schema-registry.json').read_text());schema_paths={row.get('title'):row['path'] for row in schema_registry if row.get('title')}
+    schema_files=[schema_paths[typ] for typ in sorted(write_types) if typ in schema_paths]
+    for rel in schema_files+object_files:_add(files,rel)
+
+    required_caps=[c for c in match.get('capabilities',{}).get('required',[]) if c!='none']
+    optional_caps=[c for c in match.get('capabilities',{}).get('optional',[]) if c!='none']
+    return {
+        'version':os_version(),'business_id':business_id,'contract_id':contract_id,'focus_refs':focus,
+        'operator_ref':operator_ref,'team_ref':team_ref,'role_ref':role_ref,
+        'effective_preferences':prefs.get('effective_preferences',{}),
+        'preference_profiles':[x.get('id') for x in prefs.get('applied_profiles',[])],
+        'preference_conflicts':prefs.get('conflicts',[]),
+        'files':files,'object_refs':sorted(selected),'object_files':object_files,'schema_files':schema_files,
+        'unresolved_selectors':unresolved,'optional_unavailable_selectors':optional_unavailable,
+        'evidence_inputs':match.get('evidence_inputs',[]),'material_inputs':_material_inputs(selected,idx,match.get('evidence_inputs',[])),
+        'required_capabilities':required_caps,'optional_capabilities':optional_caps,
+        'capability_rule':'Capability IDs describe this playbook method. The host/harness owns live capability discovery, providers, permissions, retries, and fallbacks.'
+    }
+
 
 def main():
-    p=argparse.ArgumentParser();p.add_argument('business_id');p.add_argument('contract_id');p.add_argument('--focus',action='append',default=[]);p.add_argument('--run-id');p.add_argument('--operator-ref');p.add_argument('--team-ref');p.add_argument('--role-ref');p.add_argument('--task-preferences');p.add_argument('--output-type');p.add_argument('--channel');p.add_argument('--output');a=p.parse_args()
-    try:plan=build_plan(a.business_id,a.contract_id,a.focus,a.operator_ref,a.team_ref,a.role_ref,a.run_id,a.task_preferences,a.output_type,a.channel)
-    except (ValueError,json.JSONDecodeError) as e:raise SystemExit(str(e))
-    out=json.dumps(plan,indent=2)+'\n'
-    if a.output:Path(a.output).write_text(out)
-    else:print(out,end='')
+    p=argparse.ArgumentParser(description='Build bounded organizational context for a selected AURA playbook.')
+    p.add_argument('business_id');p.add_argument('contract_id');p.add_argument('--focus',action='append',default=[])
+    p.add_argument('--operator-ref');p.add_argument('--team-ref');p.add_argument('--role-ref');p.add_argument('--task-preferences');p.add_argument('--output-type');p.add_argument('--channel')
+    a=p.parse_args()
+    print(json.dumps(build_plan(a.business_id,a.contract_id,a.focus,a.operator_ref,a.team_ref,a.role_ref,a.task_preferences,a.output_type,a.channel),indent=2,ensure_ascii=False))
+
+
 if __name__=='__main__':main()
