@@ -1,19 +1,21 @@
 ---
 id: core.incident.manage
 type: playbook
-version: 1.1.0
+version: 2.0.0
 owner_system: core
-risk: high
-autonomy_ceiling: 2
 reads:
 - Incident
 - Observation
-- ActionPacket
-writes:
-- Incident
-- ActionPacket
+- DecisionRecord
 - ChangeEvent
 - VerificationRecord
+writes:
+- Incident
+- WorkRequest
+- AttentionItem
+- ChangeEvent
+- VerificationRecord
+- DecisionRecord
 - Learning
 capabilities:
   required:
@@ -26,18 +28,26 @@ evidence_inputs:
 # Manage Incident
 
 ## Purpose
-Coordinate detection, containment, correction, verification, communication, and postmortem for material incidents while the domain owns technical diagnosis.
+Coordinate material incident understanding, containment, correction, verification, communication, and learning while the relevant domain/harness owns technical execution.
 
 ## Business Outcome
-Contain and resolve urgent business incidents without losing ownership, evidence, escalation, verification, or post-incident Learning.
+Resolve important incidents quickly without losing organizational truth, ownership, evidence, decisions, or post-incident Learning.
+
 ## Run When
-When a condition meets domain severity thresholds or creates urgent customer/business risk.
+When a condition creates material customer, operational, financial, reputational, legal, security, or other business impact that warrants incident-level coordination.
 
 ## Process
-1. [HYBRID] Confirm incident scope/severity, affected subjects, current impact, confidence, and domain owner.
-2. [HUMAN] Establish accountable incident authority for severe/high-risk events when policy requires it.
-3. [HYBRID] Prioritize containment that limits harm before optimization/root-cause work.
-4. [AI] Route domain diagnosis/correction to the owning specialized contract and maintain timeline/evidence.
-5. [DETERMINISTIC] Track actions/approvals/changes/verification and incident state.
-6. [HYBRID] Confirm restoration/guardrails, communicate status to required stakeholders, and close only when residual risk is explicit.
-7. [HYBRID] Produce postmortem/root-cause Learning and prevention Actions without blame-oriented speculation.
+1. [HYBRID] Establish the incident scope, affected subjects, current impact, confidence, evidence, and responsible domain/owner.
+2. [AI] Prioritize the smallest effective containment or information-gathering action that can materially reduce harm or uncertainty.
+3. [AI] Route specialized diagnosis/correction to the appropriate real owner. Use a durable WorkRequest only when the handoff itself should survive the current session.
+4. [HYBRID] Preserve material changes, verification evidence, and real organizational decisions when future continuity benefits from them. Do not create records merely to mirror tool calls.
+5. [HYBRID] Keep stakeholders informed according to actual organizational needs and constraints; use AttentionItem only for a material unresolved condition worth future awareness.
+6. [HYBRID] Close the Incident when the organization has sufficient evidence that the incident is resolved or accepted at its current state, with material residual uncertainty explicit.
+7. [HYBRID] Produce evidence-supported postmortem/root-cause Learning and prevention recommendations without blame-oriented speculation.
+
+## Verification
+- Incident status and claimed resolution are supported by appropriate evidence for the actual consequence.
+- Independent verification is used when needed to establish restoration or another important post-state; it is not required as generic ceremony for every intermediate tool action.
+
+## Completion Criteria
+- The incident's material facts, actions/results, decisions, residual uncertainty, and Learning are understandable from organization-owned state without an ActionPacket or generic authority lifecycle.
