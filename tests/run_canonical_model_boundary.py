@@ -25,7 +25,8 @@ def main():
     required={
         'Business','BusinessClaim','PreferenceProfile','SourceRecord','Observation','Insight','ProofRecord',
         'DecisionRecord','Opportunity','Initiative','WorkRequest','AttentionItem','ChangeEvent','VerificationRecord',
-        'Incident','Asset','MetricDefinition','MetricObservation','Experiment','OutcomeEvaluation','Learning'
+        'Incident','Asset','MetricDefinition','MetricObservation','Experiment','OutcomeEvaluation','Learning',
+        'PlaybookEvolutionProposal','ProcessExtension'
     }
     req(required<=canonical,f'canonical organization model lost expected durable types: {sorted(required-canonical)}')
 
