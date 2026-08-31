@@ -1,31 +1,45 @@
-# Contract Authoring
+# AURA SOP / Contract Authoring
 
-Atomic contracts are the independently routable SOP units. Keep the procedure complete, but inherit universal rules instead of repeating them.
+AURA contracts are independently routable units of reusable operational knowledge. Keep the business method complete enough to be useful while inheriting universal AURA truth, provenance, persistence, and business-isolation rules instead of repeating them.
 
 ## Source of truth
-Frontmatter is machine-readable and human-readable metadata. The body contains only the job-specific operating logic. Generated registries are derived; never edit them manually.
+
+Frontmatter is machine-readable method metadata. The body contains job-specific operating logic. Generated registries are derived; never edit them manually.
 
 ## Required frontmatter
-`id`, `type`, `version`, `owner_system`, `risk`, `autonomy_ceiling`, `reads`, `writes`, and `capabilities`. Add events, schedule, or explicit references only when needed.
+
+`id`, `type`, `version`, `owner_system`, `reads`, `writes`, and `capabilities`.
+
+- `reads` and `writes` describe canonical organizational object types the SOP may use or materially produce.
+- `capabilities` describe provider-neutral abilities the method needs or benefits from. They do **not** bind tools/providers or assert live availability.
+- Add `context`, `subcontracts`, `evidence_inputs`, `artifact_role`, `completion_evidence`, or explicit references only when they add real method value.
+
+Do **not** add generic `risk`, `autonomy_ceiling`, Approval, ActionPacket, provider-binding, scheduler, host-discovery, or runtime-permission metadata to new AURA contracts.
 
 ## Required body
+
 - `# Name`
 - `## Purpose` — exact job.
-- `## Business Outcome` — why this job changes a useful decision or result; avoid generic filler.
+- `## Business Outcome` — why the job matters.
 - `## Run When` — concrete trigger/condition.
-- `## Process` — complete ordered SOP with executor labels.
+- `## Process` — complete ordered SOP with meaningful executor labels when useful.
 
-Use optional sections only when they add job-specific value: `Do Not Run When`, `Decision Rules`, `Verification`, `Failure / Fallback`, `Completion Criteria`, `References`. Universal verification/fallback/completion rules are inherited from Core/System/Family defaults.
+Optional sections such as `Do Not Run When`, `Decision Rules`, `Verification`, `Failure / Fallback`, `Completion Criteria`, and `References` should exist only when they add job-specific value.
 
 ## Inputs and outputs
-`reads` and `writes` in frontmatter are canonical. Do not duplicate them as body lists unless the body must explain a non-obvious semantic requirement.
+
+`reads` and `writes` are possible durable organizational inputs/outputs, not write quotas. Do not persist an object merely because it is declared in metadata. Persist it only when the work genuinely produced that durable meaning.
 
 ## Executor labels
-Use `[AI]`, `[DETERMINISTIC]`, `[INTEGRATION]`, `[HUMAN]`, or `[HYBRID]` on meaningful process steps.
+
+Use `[AI]`, `[DETERMINISTIC]`, `[INTEGRATION]`, `[HUMAN]`, or `[HYBRID]` when they clarify who/what performs a meaningful SOP step. They describe the method; they do not create AURA-owned runtime authority.
 
 ## Separate contract vs step
-Create a contract when work is independently routable/reusable, has materially different context/capability/risk/output/fallback behavior, or is shared by several parents. Keep small mechanical actions as steps or deterministic utilities.
 
+Create a contract when the work is independently routable/reusable, has materially different context/capability/output/quality behavior, or is shared by several parents. Keep small mechanical actions as steps or deterministic utilities.
 
 ## Specify invariants, not incidental implementation
-Contracts should state the business outcome, evidence, constraints, required outputs, capabilities, risk/approval boundary, and validation needed for reliable completion. Do not hardcode a renderer, model, vendor, file-generation technique, exact creative structure, or other implementation detail unless it is itself a genuine requirement. `core/policies/preferences-and-adaptation.md` governs scoped preferences and method substitution.
+
+Contracts should specify the business outcome, evidence discipline, important constraints, essential method/quality invariants, relevant outputs, and verification needed for reliable completion. Do not hardcode a vendor, renderer, model, exact creative structure, file-generation technique, or other incidental implementation detail unless it is genuinely part of the requirement.
+
+The active model/harness may choose better implementation techniques while preserving the SOP's essential value.

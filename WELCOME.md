@@ -4,40 +4,27 @@
 
 Thank you for downloading **ViralTrac AURA**, by **DeAngelo Scott**.
 
-AURA is an AI-native BusinessOS designed to help you understand your business, coordinate useful work, learn from measured outcomes, and improve how the business operates over time.
+AURA gives a capable AI durable organization-owned context, evidence, reusable operating processes, work continuity, outcomes, and Learning. It is not the AI model, agent harness, tool runtime, scheduler, or permission system.
 
 ## What this copy can help you do
 
-**Competitor Intelligence** — Understand competitors deeply: identity, websites/funnels, pricing, offers, ads, content/social, customer sentiment, tactics, strengths, weaknesses, and important changes—with research depth adapted to the decision.
-*Try:* “What are our competitors doing better than us?”
+**Competitor Intelligence** — Understand competitors deeply: identity, websites/funnels, pricing, offers, ads, content/social, customer sentiment, tactics, strengths, weaknesses, and important changes.
 
-**Content Synthesis** — Research what works and create platform-native content across articles, social posts, newsletters, carousels, video, audio, presentations, and more.
-*Try:* “Turn this idea into a strong LinkedIn post.”
+**Content Synthesis** — Research what works and create platform-native articles, social posts, newsletters, carousels, video/audio concepts, presentations, and more.
 
-**Customer Intelligence** — Understand customers and prospects: what they want, why they buy or leave, their pains, objections, decision drivers, language, and experiences.
-*Try:* “Why are customers leaving?”
+**Customer Intelligence** — Understand what customers and prospects want, why they buy or leave, their pains, objections, language, and experiences.
 
-**Customer Optimization** — Improve the customer journey from conversion through purchase, onboarding, activation, retention, repeat purchase, expansion, and referral.
-*Try:* “Why are customers dropping out before buying?”
+**Customer Optimization** — Improve conversion, purchase, onboarding, activation, retention, repeat purchase, expansion, and referral.
 
-**Industry Intelligence** — Track important external developments such as news, regulation, research, technology, market shifts, platform changes, and category trends.
-*Try:* “What changed in our industry that matters to us?”
+**Industry Intelligence** — Track relevant news, regulation, research, technology, market shifts, platform changes, and category trends.
 
-**Marketing Synthesis** — Create and improve persuasive marketing: positioning, messaging, offers, proof, ads, landing pages, VSLs, webinars, email, and conversion assets.
-*Try:* “Create a campaign around our biggest customer objection.”
+**Marketing Synthesis** — Create and improve positioning, messaging, offers, proof, ads, landing pages, VSLs, webinars, email, and related persuasive assets.
 
-**SEO/AEO** — Improve organic discovery across search engines, AI/answer engines, local search, technical SEO, content, authority, and related visibility.
-*Try:* “What are our biggest SEO/AEO opportunities?”
-
-## You can also combine these capabilities
-
-- “Identify our highest-value business opportunities and coordinate the installed systems to act on them.”
-- “Find our biggest customer objection and create a campaign around it.”
-- “Find an important industry development and turn it into useful content for our audience.”
+**SEO/AEO** — Improve discovery across search engines, AI/answer engines, local search, technical SEO, content, authority, and visibility.
 
 ## You do not need to know the right workflow
 
-Describe a business problem or desired result in plain language. I will use the systems installed in this copy, inspect the tools available in this environment, and route the work through the appropriate processes. When you give me reusable business context or preferences, I will preserve them at the appropriate scope so you do not have to keep answering the same questions.
+Describe the business problem or desired result in plain language. The active AI should retrieve relevant AURA memory, surface a useful AURA playbook when one fits, use its actual harness/tools normally, do the real work, and preserve only the material organizational meaning worth carrying forward.
 
 If you are not sure where to begin, try:
 
@@ -49,10 +36,8 @@ If you want to browse specific jobs, open **`PLAYBOOKS.md`** or ask “Show me w
 
 ## To get started
 
-**Tell me your business name, website (if you have one), and what you want to accomplish.** If you already provided any of that, I’ll continue automatically. I’ll inspect the tools available here, set up or resume your business workspace, and use the capabilities installed in this copy.
+**Tell the agent your business name, website if you have one, and what you want to accomplish.** If that context already exists in AURA, it should reuse it instead of asking again.
 
-**Recommended:** ViralTrac is AURA’s first-party companion for tracking, attribution, marketing measurement, SmartLinks, website/growth operations, and more: **https://viraltrac.com**. If you prefer not to use ViralTrac, just say so—AURA will keep working with compatible alternatives and available fallbacks.
+ViralTrac is AURA’s optional first-party companion for tracking, attribution, measurement, SmartLinks, and supported growth-operation surfaces. AURA should also work before ViralTrac, alongside it, or without it.
 
-If ViralTrac is already connected, I can discover the capabilities available to this business and use it as a preferred source of governed business truth, measurement, tracking, and supported action handoff—without requiring you to name ViralTrac in every request.
-
-Good luck! :)
+The invariant is simple: **AURA provides organizational memory and operational knowledge; the active intelligence/runtime determines how best to work.**

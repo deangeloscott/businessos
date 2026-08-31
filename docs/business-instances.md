@@ -1,12 +1,17 @@
 # Business Instances
 
-Each business is isolated under `instances/<business-id>/`. Canonical business state, intelligence, decisions, operations, Assets, measurement, and Learning remain inside that instance. Cross-business references fail by default.
+Each business is isolated under `instances/<business-id>/`. Canonical business context, intelligence, decisions, operations, Assets, measurement, and Learning remain inside that instance. Cross-business references fail by default.
 
-`intelligence/proof/` stores canonical ProofRecords for reusable, source-linked, permission-aware evidence such as testimonials, reviews, case results, demonstrations, metrics, and certifications. The customer/CRM system remains the identity system of record; the Business OS stores only necessary subject references and evidence relationships.
+`intelligence/proof/` stores canonical ProofRecords for reusable source-linked evidence such as testimonials, reviews, case results, demonstrations, metrics, and certifications. External systems such as a CRM remain their own systems of record; AURA should retain only the business-owned context, references, bounded evidence, and relationships that future work materially needs.
 
-## Shared operator identity vs business state
-`deployment/operator-profile.json` is workspace/operator-scoped convenience state, not canonical business truth. It may supply only operator identity fields explicitly marked `reuse_across_businesses`. Brand/company facts remain isolated under their `business_id`, and a business research-profile value overrides an inherited operator value. This avoids repeat questions without allowing one brand's facts to leak into another.
+## Preferences and operator labels
 
+Durable work/expression preferences belong under `instances/<business-id>/context/preferences/` as `PreferenceProfile` objects so they do not leak across businesses accidentally. A profile may target the business, a team, a role, or a stable operator label. Operator labels may be opaque and need not contain personal information.
 
-## Preferences and operators
-Durable work/expression preferences belong under `instances/<business-id>/context/preferences/` as `PreferenceProfile` objects so they cannot leak across businesses by accident. A profile may target the business, a team, a role, or a stable operator label. Operator labels need not contain personal information. Runs can record `operator_ref`, `team_ref`, and `role_ref`, and their effective preference snapshot lives under the Run's artifacts for reproducibility. The existing `deployment/operator-profile.json` remains workspace-level identity convenience for external research; it is not the business preference store.
+Runs may record `operator_ref`, `team_ref`, and `role_ref` plus an effective preference snapshot for provenance. Those labels/snapshots do not grant authority.
+
+## Cross-business boundary
+
+Brand/company facts, customer evidence, private operational state, and business-specific preferences do not silently cross `business_id` boundaries. Reuse across businesses requires an explicit object/policy designed for broader eligibility, such as carefully supported system-level Learning or product operational knowledge.
+
+AURA does not maintain a shared personal identity/permission profile that automatically supplies or authorizes external actions across businesses.

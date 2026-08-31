@@ -1,21 +1,32 @@
 # Operating Model
 
-The Business OS optimizes **business outcome → evidence → opportunity → action → verification → measurement → learning**. Research is not complete when a report exists; it is complete when useful evidence becomes SourceRecords/Observations/Insights that other systems can reuse. An Insight may fan out into multiple independently owned Opportunities. Delegated production creates a WorkRequest, not a duplicate Opportunity.
+ViralTrac AURA is organizational memory + operational knowledge + lightweight continuity. It helps capable humans/AI reuse what the organization knows, apply strong repeatable processes, preserve material work, measure outcomes, and learn over time.
 
-## Universal loop
-1. Resolve Business Context and objective.
-2. Observe relevant reality.
-3. Convert direct evidence to Observations.
-4. Interpret evidence within the canonical semantic domain as Insights.
-5. Qualify value-changing Opportunities.
-6. Prioritize within domain and across the business portfolio.
-7. Convert committed Opportunities into structured Actions.
-8. Authorize the correct executor/capability.
-9. Record and independently verify external changes.
-10. Measure outcomes using canonical metrics and explicit attribution methods.
-11. Create narrowly scoped Learning and reprioritize.
+It is not a universal execution controller. The active model/harness owns reasoning, live tools, orchestration, concurrency, retries, scheduling, credentials, and execution mechanics.
 
-Monitoring, incidents, research refreshes, and external events can enter the loop at the appropriate point rather than following a fixed sequential stage architecture.
+## Core loop
 
-## Preference and method layer
-Before execution, resolve mandatory requirements separately from optional preferences. Durable preferences resolve business → team → role → operator, then one-task optional preferences may override those choices. They never override BusinessOS/business/Brand/compliance/approval/contract requirements. A better renderer, model strategy, provider, or implementation technique may be used without a BusinessOS release when the required outcome/evidence/authorization/validation contract remains satisfied.
+1. **Understand the request and organization.** Preserve the user's complete desired outcome and resolve exactly one active business for business-specific work.
+2. **Retrieve relevant organizational memory.** Reuse current Business Context, evidence, prior decisions, assets/results, unresolved work, outcomes, preferences/instructions, and Learning before repeating questions or research.
+3. **Choose a method intelligently.** Surface an AURA SOP when useful. The model/user may use it, adapt incidental implementation details, choose an external Skill, create another method, or work ad hoc.
+4. **Do the real work.** Use the host's actual capabilities normally. AURA should not substitute setup, routing, bookkeeping, or schema creation for the requested business result.
+5. **Persist material organizational meaning.** Save only what a capable future model would materially benefit from after the current session/runtime is gone.
+6. **Validate what AURA owns.** Persisted state must remain truthful, provenance-aware, reference-valid, schema-valid, and isolated to the correct business. Selected AURA SOP conformance is additional and applies only when that SOP was actually used/claimed.
+7. **Measure and learn.** Preserve real measurements/outcomes and promote Learning only when evidence supports it.
+8. **Continue from memory.** Future work should understand what materially happened without needing the original conversation, hidden reasoning, or runtime logs.
+
+## Optional continuity objects
+
+Objects such as Opportunity, Initiative, WorkRequest, AttentionItem, ChangeEvent, VerificationRecord, and Run exist because some work benefits from durable continuity. They are not mandatory lifecycle stages.
+
+Create them only when their organizational meaning is real and useful. Do not manufacture them to satisfy a process graph or mirror every tool/subagent/runtime action.
+
+## Preferences and method adaptation
+
+Durable preferences customize otherwise-valid choices. They do not become facts, permissions, or measured Learning. Apply actual business/Brand/task requirements first, then relevant scoped preferences, then model/harness discretion.
+
+A better renderer, model strategy, provider, Skill, integration, or implementation technique may be used without an AURA product release when the chosen method still satisfies the requested outcome, truth/evidence boundary, selected SOP's essential quality requirements when applicable, and real external constraints.
+
+## Resource discipline
+
+Use the minimum sufficient work that can materially improve the result or reduce important uncertainty. More research, subagents, tools, or ceremony are not automatically better. The active intelligence/harness decides execution depth; AURA contributes durable context and reusable process knowledge.

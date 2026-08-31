@@ -1,30 +1,26 @@
 # Start Here — ViralTrac AURA
 
-**AURA = Agentic Understanding and Reinforcement Architecture.** ViralTrac AURA is an AI-native BusinessOS.
+**AURA = Agentic Understanding and Reinforcement Architecture.** ViralTrac AURA is the organization-owned memory and operational-knowledge layer that helps a capable AI understand a business, reuse proven processes, preserve material work, and continue intelligently over time.
 
-You do **not** need to understand AURA's contracts, schemas, scripts, object types, routing, providers, Runs, or folder structure to use it.
+AURA is **not** the model, agent harness, tool runtime, scheduler, permission system, or business decision-maker.
 
 ## The normal way to use AURA
 
-### 1. Give AURA to a capable AI/agent
+### 1. Give the AURA folder to a capable AI/agent
 
-Download/unzip AURA or clone the repository, then give a compatible LLM/agent harness access to the AURA folder.
+Download/unzip AURA or clone the repository, then give a compatible LLM/agent harness access to the folder.
 
-The agent should read AURA's own operating instructions and handle the internal setup mechanics for you.
+### 2. Tell it about the business and what you want
 
-### 2. Tell it about your business and what you want
+A first message can be as simple as:
 
-A good first message can be as simple as:
+> Use ViralTrac AURA for my business. My company is Acme, our website is acme.com, and I want to increase qualified leads. Use what we already know, figure out the highest-value work, and help me get it done.
 
-> Use ViralTrac AURA for my business. My company is Acme, our website is acme.com, and I want to increase qualified leads. Get set up, use what you can verify, and figure out what we should work on first.
+If you already supplied some of that information, the agent should reuse it instead of asking again.
 
-If you already supplied some of that information, AURA should reuse it rather than asking you again.
+### 3. Talk normally
 
-### 3. Talk to it normally
-
-You do not need to choose a playbook first.
-
-Try things like:
+You do not need to choose a playbook first. Try things like:
 
 - “What should we work on first?”
 - “What are our competitors doing better than us?”
@@ -35,62 +31,36 @@ Try things like:
 - “Create a presentation for this proposal.”
 - “What have we learned from the work we've already done?”
 
-AURA should route the request through the appropriate installed processes, use relevant existing business state, inspect available tools, preserve useful results, and continue unresolved work automatically when appropriate.
+## What happens underneath
 
-## What AURA should handle underneath
+For useful organizational work, the agent should:
 
-Depending on the request and the environment, AURA can handle things such as:
+1. resolve the active organization;
+2. retrieve the smallest relevant set of durable AURA context, evidence, prior decisions, results, and Learning;
+3. surface an AURA SOP when one is a strong fit, without forcing the work into it;
+4. use the active harness's real tools, models, Skills, subagents, integrations, and other capabilities normally;
+5. do the substantive work the user requested;
+6. persist only material organization-owned meaning that future work would benefit from;
+7. validate AURA-owned state for truth, provenance, references, schema, and business isolation;
+8. measure outcomes and promote Learning when evidence supports it.
 
-- initializing/resuming the business workspace;
-- preserving business and Brand context;
-- distinguishing known facts, evidence, inference, and unknowns;
-- finding the right installed workflow internally;
-- checking which tools/capabilities are actually available;
-- using existing research and Learning instead of starting over;
-- creating drafts and business artifacts;
-- keeping customer-facing claims grounded;
-- respecting approval/authorization boundaries;
-- preserving Runs, evidence, outcomes, and Learning;
-- deciding what useful work should happen next.
-
-Those are primarily AURA/agent responsibilities—not steps a normal user should have to operate manually.
+AURA itself does **not** inventory providers, install tools, rank models, resolve credentials, operate schedulers, or calculate generic permission tiers.
 
 ## What you may still be asked for
 
-AURA should ask only when something material cannot be responsibly discovered or inferred.
+The agent should ask only when a material fact, credential, external authority boundary, or business choice cannot be responsibly resolved from the request, durable context, or available systems.
 
-Examples include:
-
-- a business fact only you know;
-- access to first-party data you have not connected;
-- approval to publish, spend money, contact customers, or change production;
-- a decision where several valid options depend on your preference or authority.
-
-Unknown information should remain unknown rather than being invented.
+Examples include a business fact only you know, access to first-party data that is not connected, or a consequential choice between several genuinely valid options. Unknown information should remain unknown rather than being invented.
 
 ## Optional ways to make AURA stronger
 
-The default local/filesystem experience is enough to start. You can optionally add more over time:
+The default local/filesystem experience is enough to start. You can optionally add stronger or specialist models, browser/search/API capabilities, CRM/analytics/CMS tools, organization SOPs or Skills, private Git, a shared organization workspace, Obsidian or another Markdown interface, a long-running agent harness, or ViralTrac for first-party tracking/measurement and supported growth operations.
 
-- stronger or specialist AI models;
-- browser/search/API capabilities;
-- your existing CRM, analytics, CMS, or other tools;
-- organization SOPs or specialist Skills;
-- Git/private versioning;
-- an external/shared organization workspace;
-- Obsidian or another Markdown knowledge interface;
-- schedulers/long-running agent harnesses;
-- ViralTrac for first-party tracking, attribution, measurement, and supported growth operations.
-
-These are enhancements, not prerequisites for the basic AURA experience.
+Those are enhancements, not prerequisites.
 
 ## If you want more control
 
-Most users can stop here.
-
-For direct commands, workspace configuration, provider setup, manual validation, preference controls, human knowledge, and other advanced mechanics, see:
-
-**`OPERATOR-GUIDE.md`**
+Most users can stop here. For workspace commands, validation, preferences, human knowledge, monitoring intent, migration, and other advanced mechanics, see **`OPERATOR-GUIDE.md`**.
 
 Other useful references:
 
@@ -102,6 +72,6 @@ Other useful references:
 
 ## One important boundary
 
-Asking AURA to analyze, recommend, or determine next work does not automatically authorize consequential external action. Publishing, spending, contacting customers, changing production systems, and similar actions still follow the applicable authorization rules.
+The user's request defines the work scope. A request to analyze does not silently become a request to publish, spend, contact customers, or mutate production. Conversely, when the user explicitly requests an action, the harness can actually perform it, and no real external constraint prevents it, AURA should not invent an internal permission ceremony that blocks the work.
 
-**That's it. Give the folder to a capable agent, tell it about the business and what you want, and let AURA handle the operating mechanics underneath.**
+**The intended experience is: understand → retrieve → work → remember → continue.**

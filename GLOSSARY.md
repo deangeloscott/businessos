@@ -1,44 +1,36 @@
-# Business OS Glossary
+# ViralTrac AURA Glossary
 
 Use these terms consistently.
 
-- **Business Context** — Controlled facts about the business: Brand, Products/Services, Offers, Audiences, Markets, Objectives, economics, and constraints.
-- **SourceRecord** — Where evidence came from and when/how it was retrieved.
+- **Business Context** — Durable organization-owned facts and constraints about the business: Brand, products/services, offers, audiences, markets, objectives, economics, and other relevant context.
+- **SourceRecord** — Where evidence came from and when/how it was obtained.
 - **Observation** — Something directly observed from a source, system, event, or measurement.
 - **Insight** — An evidence-backed interpretation owned by the domain responsible for its meaning.
-- **Opportunity** — A potentially valuable intervention with exactly one semantic owner.
-- **Initiative** — Coordination of multiple genuinely distinct Opportunities toward one larger outcome.
-- **ActionPacket** — The executable plan for an Opportunity.
-- **WorkRequest** — Delegated specialized work. Delegation does not create another Opportunity.
-- **Asset** — A persistent business artifact such as a page, video, email, image, report, or sales document.
-- **ChangeEvent** — The externally observable state changed by an Action.
-- **VerificationRecord** — Independent evidence that the intended change actually happened correctly.
+- **Opportunity** — An optional durable record of a potentially valuable intervention or improvement worth considering.
+- **Initiative** — Optional coordination state for several genuinely distinct pieces of work toward one larger outcome.
+- **DecisionRecord** — A durable organizational decision worth remembering, including who/what made it, when, scope, and basis. It is not a permission token.
+- **WorkRequest** — A real durable handoff whose purpose, expected output, context, and unresolved state should survive the current session. It is not a mirror of subagents or tool routing.
+- **AttentionItem** — A deduplicated material condition worth future organizational awareness. AURA owns the meaning and lifecycle, not notification delivery.
+- **Asset** — A persistent business artifact such as a page, video, email, image, report, presentation, or sales document.
+- **ChangeEvent** — An optional durable record that a material state changed and future work may benefit from remembering it.
+- **VerificationRecord** — Optional durable evidence that an important claimed state was checked, when the task/SOP/consequence warrants it.
 - **MetricObservation** — A measured value at a time/window.
-- **OutcomeEvaluation** — The evidence-backed judgment about what happened after an intervention and how confidently it contributed.
-- **Learning** — An evidence-backed proposition that should influence future decisions under stated conditions.
-- **Domain Learning** — Learning owned by one specialized OS.
-- **Business Learning** — Cross-domain Learning specific to one business.
-- **System Learning** — Carefully governed Learning that may generalize across businesses.
-- **Canonical owner** — The one system responsible for the authoritative semantic meaning of a responsibility/object.
-- **Fan-out** — One Insight independently creates distinct Opportunities in multiple domains.
-- **Delegation** — One Opportunity uses another system's specialized execution through a WorkRequest.
-- **Capability** — Provider-neutral ability such as `crm.opportunity.read` or `cms.page.publish`.
-- **AttentionItem** — A deduplicated, business-scoped condition that currently needs user/harness awareness because work is blocked, approval/input/capability is required, or a material change needs review. It is not a notification channel.
-- **PlatformChange** — The current/versioned verified state of an external platform/topic, independently refreshable from BusinessOS software releases and explicitly separated from measured business outcomes.
-- **Event** — A bounded reference to an authoritative occurrence that may trigger evaluation; it is not an action command, permission, exposure, or outcome.
-- **EventReactionDecision** — The idempotent BusinessOS disposition of an Event (ignore, defer, coalesce, evaluate, block, or fallback), including materiality, route, trace lineage, and reason codes.
-- **PreferenceProfile** — Business-scoped durable preferences for a business, team, role, or operator. Preferences guide valid choices but do not override mandatory rules, authorize actions, or become business truth.
-- **Operator ref** — A stable, potentially opaque workspace/session label recorded on a Run for attribution and preference resolution; it does not grant authority and need not contain personal information.
-- **Run** — A bounded execution of one contract for one active business.
-- **Context Plan** — The smallest set of rules, objects, schemas, and references needed for the active contract.
+- **OutcomeEvaluation** — An evidence-backed judgment about what happened and how confidently an intervention contributed.
+- **Learning** — An evidence-backed proposition that should influence future work under stated conditions.
+- **Domain Learning** — Learning scoped to one specialized domain.
+- **Business Learning** — Learning specific to one business.
+- **System Learning** — Carefully supported Learning eligible for broader reuse when the product's learning rules justify it.
+- **Canonical owner** — The one AURA domain responsible for the authoritative semantic meaning of a canonical responsibility/object.
+- **Capability** — A provider-neutral ability an AURA SOP may need or benefit from, such as `crm.opportunity.read` or `cms.page.publish`. Live availability and provider/tool choice belong to the active harness/runtime.
+- **PreferenceProfile** — Durable business-scoped preferences for a business, team, role, or operator label. Preferences guide otherwise-valid choices but do not become business truth or authorization.
+- **Operator ref** — An optional opaque workspace/session label used for attribution or scoped preferences. It grants no authority and need not contain personal information.
+- **Run** — A bounded organization-owned work receipt for material continuity. A Run records the actual method used: AURA playbook, external Skill, model-created method, or ad-hoc work.
+- **Context Plan** — The smallest relevant AURA policy/SOP/schema/object set selected for a piece of work. It does not describe the host's full runtime state.
+- **ProcessExtension** — Business-scoped operational knowledge that augments an AURA playbook or defines a local playbook without mutating the canonical product.
+- **PlatformChange** — A durable, refreshable record of a material external platform/topic state, kept distinct from measured business outcomes.
 
 ## ProofRecord
-A shared, source-linked record of evidence that supports a specific claim, outcome, capability, transformation, or customer experience. It records what the proof actually supports plus permission and usage constraints.
+A source-linked record of evidence that supports a specific claim, outcome, transformation, customer experience, or other business assertion. It records what the evidence actually supports plus relevant usage constraints.
 
 ## Content Intelligence
 The Content Synthesis function that studies content trends, creators, creative structures, platform patterns, and business-specific content performance to extract reusable communication mechanisms. It learns why patterns may work rather than copying popular content.
-
-- **Provider** — Software/service implementation capable of supplying one or more provider-neutral Business OS capabilities.
-- **Provider Preference** — Transparent preferred/allowed/blocked provider configuration at business, environment, or distribution scope; preference is not authorization.
-- **Capability Resolver** — Deterministic selection logic that uses existing bindings first, then scoped preferences, compatible providers, and finally manual fallback.
-- **Publisher Provenance** — Machine-readable origin/update metadata in `PUBLISHER.json` that can travel with distributable copies.
