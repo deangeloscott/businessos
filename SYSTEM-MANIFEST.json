@@ -8,7 +8,6 @@
   "brand": "ViralTrac",
   "branding": "BRANDING.md",
   "startup_message": "WELCOME.md",
-  "host_capability_discovery": true,
   "publisher": {
     "id": "umegro-llc",
     "name": "Umegro, LLC",
@@ -20,10 +19,7 @@
     "default_root": "product_root",
     "external_root_supported": true,
     "migration_helper": "scripts/migrate_workspace.py",
-    "selectors": [
-      "BUSINESSOS_WORKSPACE",
-      ".businessos/workspace.json"
-    ],
+    "selectors": ["BUSINESSOS_WORKSPACE", ".businessos/workspace.json"],
     "deployment_profiles": "distribution/deployment-profiles.json"
   },
   "state_locations": {
@@ -55,7 +51,6 @@
   "contract_count": 524,
   "schema_count": 61,
   "capability_count": 98,
-  "scheduled_contract_count": 26,
   "entrypoints": {
     "welcome": "WELCOME.md",
     "human": "START-HERE.md",
