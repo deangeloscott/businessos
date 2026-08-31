@@ -68,7 +68,12 @@ corr=(parent or prior or {}).get('correlation_id') or 'cor_'+secrets.token_hex(8
 ts=now();d=ROOT/'runtime/runs'/a.business_id/rid;d.mkdir(parents=True)
 obj={'run_id':rid,'business_id':a.business_id,'task':a.task,'contract_id':a.contract_id,'status':'active','focus_refs':a.focus,
      'operator_ref':operator_ref,'team_ref':team_ref,'role_ref':role_ref,'preference_output_type':a.output_type,'preference_channel':a.channel,'preference_snapshot_ref':f'runtime/runs/{a.business_id}/{rid}/artifacts/effective-preferences.json',
-     'completion_policy_ref':COMPLETION_POLICY,'correlation_id':corr,'causation_id':a.parent_run_id or a.supersedes_run_id,
+     'completion_policy_ref':COMPLETION_POLICY,
+     'continuity':{
+         'format_version':'1.0','purpose':'organizational_work_receipt','state':'active','method_ref':a.contract_id,
+         'evidence_refs':[],'result_refs':[],'completed_at':None,'superseded_by_run_id':None
+     },
+     'correlation_id':corr,'causation_id':a.parent_run_id or a.supersedes_run_id,
      'root_run_id':root_run_id,'parent_run_id':a.parent_run_id,'run_role':'support' if a.parent_run_id else 'root',
      'supersedes_run_id':a.supersedes_run_id,'superseded_by_run_id':None,'lifecycle_reason':None,
      'created_at':ts,'updated_at':ts}
@@ -86,4 +91,4 @@ manifest={
     } for cid in required},
     'created_at':ts,'updated_at':ts
 }
-(d/'contract-execution.json').write_text(json.dumps(manifest,indent=2)+'\n');(d/'README.md').write_text(f'Run-local working/recovery state. Use work/ as the default scratch/build/cache/render directory for this business execution; do not place temporary or generated execution files under the AURA product root. Preserve validated outputs and resume according to core/policies/local-state-and-recovery.md. Follow {COMPLETION_POLICY}: completion evidence profiles are deterministic minimums, not substitutes for contract-specific business quality. The effective-preferences snapshot is execution context only and does not override mandatory BusinessOS/business/Brand/contract/approval rules.\n');print(rid)
+(d/'contract-execution.json').write_text(json.dumps(manifest,indent=2)+'\n');(d/'README.md').write_text(f'Run-local working/recovery state for one bounded organizational work receipt. Use work/ as the default scratch/build/cache/render directory when needed; do not place temporary or generated execution files under the AURA product root. Preserve material results rather than transcripts or hidden reasoning, and resume according to core/policies/local-state-and-recovery.md. Follow {COMPLETION_POLICY}: completion evidence profiles are deterministic minimums, not substitutes for contract-specific business quality. The effective-preferences snapshot is execution context only and does not override mandatory BusinessOS/business/Brand/contract/approval rules.\n');print(rid)
