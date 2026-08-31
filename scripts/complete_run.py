@@ -44,6 +44,19 @@ def _require_customer_facing_asset(business_id, run_id, m, rels):
         raise ValueError(msg)
     return eligible
 
+def _run_linked_result_refs(business_id,run_id):
+    """Return a compact index of canonical organizational results linked to this Run."""
+    rr=f'runtime/runs/{business_id}/{run_id}';out=[]
+    for obj,path in iter_instance_objects(business_id):
+        ext=obj.get('extensions') if isinstance(obj.get('extensions'),dict) else {}
+        bos=ext.get('businessos') if isinstance(ext.get('businessos'),dict) else {}
+        lineage=obj.get('lineage') if isinstance(obj.get('lineage'),list) else []
+        if not (bos.get('run_id')==run_id or bos.get('run_ref')==rr or run_id in lineage or rr in lineage):continue
+        try:ref=storage_ref(path)
+        except Exception:continue
+        if ref not in out:out.append(ref)
+    return sorted(out)
+
 def snapshot_files(paths):
     snapshots={}
     for raw in paths:
@@ -85,8 +98,15 @@ def complete_run(business_id,run_id,evidence):
         # durable state object. Finalize its run_id/run_contract_id/history deterministically too.
         if eligible_assets:
             bind_evidence_paths(business_id,run_id,[path for _,path in eligible_assets],'root_asset_record')
-        m['root_status']='completed';m['root_evidence_refs']=rels;m['root_completion_evidence_spec']=m.get('root_completion_evidence_spec') or completion_spec(root);m['updated_at']=now();mp.write_text(json.dumps(m,indent=2)+'\n')
-        r=json.loads(rp.read_text());r['status']='completed';r['updated_at']=now();rp.write_text(json.dumps(r,indent=2)+'\n')
+        ts=now();result_refs=_run_linked_result_refs(business_id,run_id)
+        m['root_status']='completed';m['root_evidence_refs']=rels;m['root_completion_evidence_spec']=m.get('root_completion_evidence_spec') or completion_spec(root);m['updated_at']=ts;mp.write_text(json.dumps(m,indent=2)+'\n')
+        r=json.loads(rp.read_text());r['status']='completed';r['updated_at']=ts
+        continuity=dict(r.get('continuity') or {})
+        continuity.update({
+            'format_version':'1.0','purpose':'organizational_work_receipt','state':'completed','method_ref':root_id,
+            'evidence_refs':list(dict.fromkeys(rels)),'result_refs':result_refs,'completed_at':ts,'superseded_by_run_id':None
+        })
+        r['continuity']=continuity;rp.write_text(json.dumps(r,indent=2)+'\n')
         from validate_business import validate_business
         business_errors,business_warnings,counts=validate_business(business_id)
         if business_errors:
@@ -94,7 +114,7 @@ def complete_run(business_id,run_id,evidence):
     except Exception as exc:
         restore_files(snapshots)
         raise ValueError(f'Cannot complete Run; {exc}')
-    return {'run_id':run_id,'status':'completed','required_subcontracts':list(m.get('contracts',{})),'root_evidence_refs':rels,'root_completion_evidence_spec':m['root_completion_evidence_spec'],'validation':{'errors':0,'warnings':business_warnings,'canonical_object_counts':counts}}
+    return {'run_id':run_id,'status':'completed','required_subcontracts':list(m.get('contracts',{})),'root_evidence_refs':rels,'root_completion_evidence_spec':m['root_completion_evidence_spec'],'continuity':continuity,'validation':{'errors':0,'warnings':business_warnings,'canonical_object_counts':counts}}
 
 def main():
     ap=argparse.ArgumentParser(description='Complete a Run only after every declared required subcontract has auditable, contract-appropriate completion evidence.')
