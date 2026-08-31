@@ -58,7 +58,7 @@ def _entry(obj,path):
         if obj.get(key) is not None:lines.append(f"- **{label}:** `{_clean(obj.get(key),120)}`")
     if obj.get('confidence') is not None:lines.append(f"- **Confidence:** `{obj.get('confidence')}`")
     if obj.get('object_type')=='SourceProfile':
-        for label,key in [('Subject kind','subject_kind'),('Watch status','watch_status'),('Attention priority','attention_priority'),('Source/surface','source_reference'),('Last checked','last_checked_at'),('Next useful check','next_check_at')]:
+        for label,key in [('Subject kind','subject_kind'),('Relationship to organization','subject_relationships'),('Watch status','watch_status'),('Attention priority','attention_priority'),('Source/surface','source_reference'),('Last checked','last_checked_at'),('Next useful check','next_check_at')]:
             if obj.get(key):lines.append(f"- **{label}:** `{_clean(obj.get(key),500)}`")
         if _cadence(obj):lines.append(f"- **Cadence intent:** `{_clean(_cadence(obj),200)}`")
         lines.append(f"- **Notification intent:** `{_notification(obj)}`")
@@ -77,6 +77,8 @@ def _tracked_subjects(vals):
     blocks=[]
     for key,items in sorted(groups.items(),key=lambda kv:_title(kv[1][0][0]).lower()):
         first=items[0][0];name=first.get('subject_name') or first.get('display_name') or key
+        subject_kinds=list(dict.fromkeys(x.get('subject_kind') for x,_ in items if x.get('subject_kind')))
+        relationships=list(dict.fromkeys(r for x,_ in items for r in (x.get('subject_relationships') or [])))
         questions=list(dict.fromkeys(q for x,_ in items for q in (x.get('monitoring_questions') or [])))
         signals=list(dict.fromkeys(q for x,_ in items for q in (x.get('material_change_signals') or [])))
         cadences=list(dict.fromkeys(_cadence(x) for x,_ in items if _cadence(x)))
@@ -84,6 +86,8 @@ def _tracked_subjects(vals):
         nexts=sorted([x.get('next_check_at') for x,_ in items if x.get('next_check_at')]+[s.get('next_check_at') for x,_ in items for s in (x.get('monitoring_signal_cadences') or []) if s.get('next_check_at')])
         lines=[f"## {name}",f"- **Tracked sources/surfaces:** `{len(items)}`"]
         if first.get('subject_key'):lines.append(f"- **Subject key:** `{first.get('subject_key')}`")
+        if subject_kinds:lines.append(f"- **Subject kind:** {_clean(subject_kinds,300)}")
+        if relationships:lines.append(f"- **Relationship to organization:** {_clean(relationships,500)}")
         if cadences:lines.append(f"- **Cadence intent:** {_clean(cadences,300)}")
         if notifications:lines.append(f"- **Notification intent:** {_clean(notifications,300)}")
         if nexts:lines.append(f"- **Next useful check:** `{nexts[0]}`")
