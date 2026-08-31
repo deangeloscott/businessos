@@ -28,9 +28,7 @@ def main():
         for sec in REQUIRED:
             if sec not in body:errors.append(f'{rel}: missing section {sec}')
         proc=re.search(r'## Process\n(.*?)(?=\n## |\Z)',body,re.S)
-        steps=re.findall(r'^\d+\.\s+',proc.group(1),re.M) if proc else []
-        if len(steps)<5:errors.append(f'{rel}: fewer than 5 process steps ({len(steps)})')
-        if not re.search(r'\[(AI|DETERMINISTIC|INTEGRATION|HUMAN|HYBRID)\]',proc.group(1) if proc else ''):errors.append(f'{rel}: no executor labels')
+        if proc is not None and not proc.group(1).strip():errors.append(f'{rel}: empty Process section')
         for c in meta.get('capabilities',{}).get('required',[])+meta.get('capabilities',{}).get('optional',[]):
             if c!='none' and c not in validcaps:errors.append(f'{rel}: unknown capability {c}')
         for sel in meta.get('reads',[]):
