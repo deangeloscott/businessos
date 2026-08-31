@@ -29,6 +29,7 @@ INSTANCE_PATHS={
     'PlatformChange':'intelligence/platform-changes',
     'Opportunity':'decisions/opportunities',
     'Initiative':'decisions/initiatives',
+    'DecisionRecord':'decisions/records',
     'ActionPacket':'operations/action-packets',
     'WorkRequest':'operations/work-requests',
     'Approval':'operations/approvals',
