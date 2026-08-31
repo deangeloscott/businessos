@@ -3,6 +3,9 @@ from _common import *
 import json, re
 
 
+RETIRED_CONTRACT_METADATA={'risk','autonomy_ceiling'}
+
+
 def _write_task_navigator(process_maps,inst):
     cat=module_catalog(); installed=sorted(installed_modules()-{'core'})
     maps={d.get('system'):d for d in process_maps if isinstance(d,dict)}
@@ -32,7 +35,8 @@ def main():
         ids.add(cid)
         title=re.search(r'^#\s+(.+)',body,re.M)
         purpose=re.search(r'^## Purpose\n(.+?)(?=\n## |\Z)',body,re.M|re.S)
-        rec={**meta,'path':str(p.relative_to(ROOT)),'title':title.group(1).strip() if title else cid,'purpose':purpose.group(1).strip() if purpose else ''}
+        durable_meta={k:v for k,v in meta.items() if k not in RETIRED_CONTRACT_METADATA}
+        rec={**durable_meta,'path':str(p.relative_to(ROOT)),'title':title.group(1).strip() if title else cid,'purpose':purpose.group(1).strip() if purpose else ''}
         rec['read_selectors']=[normalize_selector(x) for x in meta.get('reads',[])]
         rec['write_types']=[selector_type(x) for x in meta.get('writes',[])]
         rec['context_types']=meta.get('context',[])
