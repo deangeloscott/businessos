@@ -1,7 +1,7 @@
 ---
 id: core.intelligence.ecosystem.source-discovery
 type: playbook
-version: 1.1.0
+version: 1.2.0
 owner_system: core
 reads:
 - Business
@@ -12,7 +12,6 @@ reads:
 - SourceRecord
 - Insight
 - Learning
-- InnovationExchangeEntry
 writes:
 - SourceProfile
 - SourceRecord
@@ -40,7 +39,7 @@ context:
 # External Source and Signal Discovery
 
 ## Purpose
-Find current decision-relevant external signals through multiple discovery paths so BusinessOS is neither trapped in a fixed watchlist nor reduced to generic keyword search.
+Find current decision-relevant external signals through multiple discovery paths so AURA is neither trapped in a fixed watchlist nor reduced to generic keyword search.
 
 ## Business Outcome
 Increase the chance of finding important new knowledge early while spending retrieval effort on sources and mechanisms that can plausibly change business decisions.
@@ -49,9 +48,9 @@ Increase the chance of finding important new knowledge early while spending retr
 Run inside an ecosystem radar, when a domain requests external refresh, or when a newly discovered source/claim warrants bounded expansion.
 
 ## Process
-1. [DETERMINISTIC] Start from active SourceProfiles, recently inspected SourceRecords, prior Learnings/Insights, locally imported InnovationExchangeEntries, domain taxonomies, and the current business decision; mark what is already fresh enough to reuse.
+1. [DETERMINISTIC] Start from active SourceProfiles, recently inspected SourceRecords, prior Learning/Insights, domain taxonomies, and the current business decision; mark what is already fresh enough to reuse. Optional imported exchange/index files may inform discovery, but are support data rather than canonical organization state.
 2. [AI] Cover known-source monitoring and create context-specific mechanism/topic/entity searches from the domain question; do not depend on one generic query or literal keyword matching.
-3. [AI] Perform semantic/open discovery for differently worded findings, new authors/researchers/communities, citation trails, related primary sources, adjacent mechanisms, and—when the user enabled that optional discovery surface—new BusinessOS Innovation Exchange contributions that a fixed watchlist could miss.
+3. [AI] Perform semantic/open discovery for differently worded findings, new authors/researchers/communities, citation trails, related primary sources, adjacent mechanisms, and—when the user enabled that optional discovery surface—new AURA Innovation Exchange contributions that a fixed watchlist could miss.
 4. [HYBRID] When a promising new source appears, inspect who/what it is, whether it produces original material or repeats others, relevant expertise/fact types, disclosed commercial context, and whether it merits a candidate/active SourceProfile. Treat an InnovationPackage as a contributed process/report, not proof that its claimed outcome works.
 5. [INTEGRATION] Open/retrieve the underlying material when capabilities permit and preserve bounded SourceRecord/Observation evidence; label search results, snippets, previews, inaccessible URLs, and unverified community claims as discovery-only rather than support.
 6. [DETERMINISTIC] Deduplicate canonical source identities, URLs/items, syndicated copies, duplicate InnovationPackages, and already-reviewed content using references/hashes/time; preserve publication/event time separately from retrieval time.
@@ -60,7 +59,8 @@ Run inside an ecosystem radar, when a domain requests external refresh, or when 
 
 ## Verification
 - Broad cycles include both watchlist reuse and reasonable open discovery when capabilities allow.
-- Query choice is model/harness implementation; BusinessOS requires discovery coverage and evidence handling, not hard-coded search strings.
+- Query choice is model/harness implementation; AURA requires discovery coverage and evidence handling, not hard-coded search strings.
+- Optional exchange/index data never substitutes for canonical SourceRecord/Observation evidence.
 - Innovation Exchange popularity/repetition is never counted as independent evidence.
 
 ## Completion Criteria
