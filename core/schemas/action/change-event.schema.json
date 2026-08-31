@@ -11,49 +11,28 @@
     "created_at": {"type": "string", "format": "date-time"},
     "updated_at": {"type": "string", "format": "date-time"},
     "lineage": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
-
     "summary": {"type": "string", "minLength": 1},
     "change_kind": {"type": ["string", "null"]},
     "target_refs": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
     "before_state": {},
     "change_details": {"type": "array"},
-    "actions_applied": {"type": "array"},
     "after_state": {},
     "executor": {"type": ["string", "null"]},
     "occurred_at": {"type": "string", "format": "date-time"},
-    "timestamp": {"type": "string", "format": "date-time"},
-    "status": {
-      "enum": ["planned", "applying", "applied", "partial", "failed", "rolled_back", "closed", "partially_applied", "verifying", "verified"]
-    },
+    "status": {"enum": ["planned", "applying", "applied", "partial", "failed", "rolled_back", "closed", "verifying", "verified"]},
     "evidence_refs": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
     "result_refs": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
     "decision_refs": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
     "work_request_refs": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
     "rollback": {"type": ["object", "null"]},
-
-    "action_packet_ref": {"type": "string", "minLength": 1},
-    "approval_ref": {"type": ["string", "null"]},
-
     "extensions": {"type": "object"}
   },
   "required": [
     "id",
     "object_type",
     "schema_version",
-    "business_id"
-  ],
-  "allOf": [
-    {
-      "anyOf": [
-        {"required": ["summary"]},
-        {"required": ["actions_applied"]}
-      ]
-    },
-    {
-      "anyOf": [
-        {"required": ["occurred_at"]},
-        {"required": ["timestamp"]}
-      ]
-    }
+    "business_id",
+    "summary",
+    "occurred_at"
   ]
 }
