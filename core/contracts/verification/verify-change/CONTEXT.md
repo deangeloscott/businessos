@@ -1,13 +1,11 @@
 ---
 id: core.verification.verify-change
 type: service
-version: 1.1.0
+version: 2.0.0
 owner_system: core
-risk: low
-autonomy_ceiling: 4
 reads:
 - ChangeEvent
-- ActionPacket
+- DecisionRecord
 writes:
 - VerificationRecord
 - ChangeEvent
@@ -22,36 +20,32 @@ events:
   emits:
   - core.object.updated
 ---
-# Verify Change
+# Verify Material Change
 
 ## Purpose
-Independently determine whether intended external state exists and guardrails remain acceptable.
+Establish whether an important claimed post-state is actually true when independent verification is useful to the task, selected SOP, or consequence.
 
 ## Business Outcome
-Prevent false success from tool responses and unsafe unintended changes.
+Prevent false success without making independent verification a universal prerequisite for all work.
 
 ## Run When
-After a ChangeEvent reaches applied, or after manual evidence is returned.
+When a material ChangeEvent or task needs independent evidence of the resulting state.
 
 ## Do Not Run When
-Do not substitute measurement of business outcome for implementation verification.
+- Do not create VerificationRecord merely because a tool call occurred.
+- Do not confuse implementation verification with measurement of the later business outcome.
 
 ## Process
-1. [HYBRID] Translate Action success criteria into explicit observable assertions.
-2. [INTEGRATION] Re-read independent post-state through the best available capability or human evidence.
-3. [DETERMINISTIC] Compare expected and observed state exactly where possible.
-4. [HYBRID] Evaluate unintended effects and guardrails.
-5. [HYBRID] Classify passed, partial, failed, or inconclusive and identify remediation/rollback if needed.
-6. [DETERMINISTIC] Persist VerificationRecord, update ChangeEvent state, emit change.verified or verification.failed.
+1. [AI] Determine the material claim that needs verification from the ChangeEvent, task, decision, or selected SOP.
+2. [HYBRID] Define the smallest observable post-state evidence that would establish, refute, or leave that claim inconclusive.
+3. [INTEGRATION/HUMAN] Re-read or independently observe the relevant state through the best available host capability or credible human evidence.
+4. [HYBRID] Compare expected and observed state, including unintended effects when material.
+5. [HYBRID] Classify the result as passed, partial, failed, or inconclusive without inventing certainty.
+6. [DETERMINISTIC] Persist a VerificationRecord when the result has future organizational value and update the related ChangeEvent when appropriate.
 
 ## Verification
-- Validate written objects against their schemas and preserve source/lineage references.
-
-## Failure / Fallback
-- If a required capability is unavailable, create a human-executable Manual Action Packet for the missing step; do not silently omit required work.
-- If evidence is insufficient, record the unresolved knowledge gap and avoid overstating confidence.
+- The VerificationRecord points to real evidence and the correct business/change.
+- The verification method is sufficiently independent for the claim being made.
 
 ## Completion Criteria
-- Required outputs exist and validate.
-- Material uncertainty, contradictions, and unresolved dependencies are explicit.
-- Any required next route is represented by a canonical reference or event rather than an informal note.
+- Future work can tell what was checked, what evidence was observed, and what conclusion is justified without requiring an ActionPacket or runtime transcript.
