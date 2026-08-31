@@ -138,8 +138,10 @@ def main():
         req(receipt.get('method_ref')==contract_id,f'AURA receipt lost playbook ref: {receipt}')
         req(str(nofinding.relative_to(ROOT)) in receipt.get('evidence_refs',[]),f'AURA receipt omitted root evidence: {receipt}')
 
-        # Whole-business validation must accept both kinds of completed work together.
-        validated=run(S/'validate_business.py',BID,'--require-context',check=False)
+        # Whole-business integrity must accept both kinds of completed work together.
+        # Explicit Business context is an onboarding concern and intentionally not part
+        # of this Run/provenance regression.
+        validated=run(S/'validate_business.py',BID,check=False)
         req(validated.returncode==0,f'combined work-receipt validation failed: {validated.stdout+validated.stderr}')
 
         # Deleted authority/control-plane concepts must not be recreated as a side effect
