@@ -23,7 +23,35 @@ FEATURE_HINTS=[
  (r'\b(obsidian|second brain|human knowledge|knowledge layer|human-readable knowledge|human view).*(businessos|aura|workspace|refresh|generate|open)|\b(refresh|generate|update).*(knowledge layer|obsidian|second brain)', 'core.knowledge.refresh-human-layer')
 ]
 
-def route_and_resolve(task,business_id=None,team_ref=None,role_ref=None,operator_ref=None):
+def _selection_result(task,contract_id,business_id=None,team_ref=None,role_ref=None,operator_ref=None,reason=None,selection_mode=None,extra=None):
+    extra=dict(extra or {})
+    if business_id:
+        path,meta,_,exts=resolve_effective(contract_id,business_id,team_ref,role_ref,operator_ref)
+        result={
+            'task':task,'contract_id':contract_id,'owner_system':meta.get('owner_system'),'status':'available',
+            'reason':reason,'path':str(path.relative_to(ROOT)) if path else None,
+            'process_extension_ids':[x['id'] for x in exts],'local_playbook':bool(meta.get('local_playbook')),'executable':False,
+        }
+    else:
+        path,meta=resolve_contract(contract_id)
+        result={'task':task,'contract_id':contract_id,'owner_system':meta.get('owner_system'),'status':'available','reason':reason,'path':str(path.relative_to(ROOT)),'executable':False}
+    result.update(extra)
+    result['selection_mode']=selection_mode or 'resolved'
+    result['semantic_selection_required']=contract_id=='core.routing.resolve-intent'
+    if business_id:
+        result['business_id']=business_id
+        if contract_id=='core.opportunity.discover-next-best-work':result['broad_growth_precheck']=assess_growth_baseline(business_id)
+    return result
+
+
+def route_and_resolve(task,business_id=None,team_ref=None,role_ref=None,operator_ref=None,selected_contract_id=None):
+    if selected_contract_id:
+        return _selection_result(
+            task,selected_contract_id,business_id,team_ref,role_ref,operator_ref,
+            reason='selected by the active user/model/harness after semantic method resolution',
+            selection_mode='explicit_semantic_selection',
+        )
+
     feature_hint=None
     for pat,cid in FEATURE_HINTS:
         if re.search(pat,task,re.I):feature_hint={'score':100,'system_score':100,'contract_id':cid,'owner_system':'core','status':'available','reason':'matched explicit AURA/BusinessOS product, monitoring, or workspace feature request'};break
@@ -35,19 +63,30 @@ def route_and_resolve(task,business_id=None,team_ref=None,role_ref=None,operator
     rows=[feature_hint] if feature_hint else ([local] if local else ([domain_hint] if domain_hint else route(task,5)))
     if not rows:raise ValueError('No route returned')
     first=rows[0]
-    if first.get('status')!='available' or not first.get('contract_id'):result={**first,'task':task,'path':None,'executable':False}
-    elif business_id:
-        path,meta,_,exts=resolve_effective(first['contract_id'],business_id,team_ref,role_ref,operator_ref);result={'task':task,'contract_id':first['contract_id'],'owner_system':first.get('owner_system') or meta.get('owner_system'),'status':first.get('status'),'reason':first.get('reason'),'path':str(path.relative_to(ROOT)) if path else None,'process_extension_ids':[x['id'] for x in exts],'local_playbook':bool(meta.get('local_playbook')),'executable':False}
-    else:
-        path,meta=resolve_contract(first['contract_id']);result={'task':task,'contract_id':first['contract_id'],'owner_system':first.get('owner_system') or meta.get('owner_system'),'status':first.get('status'),'reason':first.get('reason'),'path':str(path.relative_to(ROOT)),'executable':False}
-    if business_id:
-        result['business_id']=business_id
-        if result.get('contract_id')=='core.opportunity.discover-next-best-work':result['broad_growth_precheck']=assess_growth_baseline(business_id)
-    return result
+    if first.get('status')!='available' or not first.get('contract_id'):
+        result={**first,'task':task,'path':None,'executable':False,'selection_mode':'unavailable','semantic_selection_required':False}
+        if business_id:result['business_id']=business_id
+        return result
+
+    if first.get('contract_id')=='core.routing.resolve-intent':selection_mode='semantic_selection_required'
+    elif feature_hint:selection_mode='deterministic_explicit_feature'
+    elif local:selection_mode='organization_local_playbook'
+    elif domain_hint:selection_mode='deterministic_domain_composite'
+    else:selection_mode='deterministic_high_confidence'
+
+    passthrough={k:v for k,v in first.items() if k not in {'contract_id','owner_system','status','reason','score','system_score'}}
+    return _selection_result(
+        task,first['contract_id'],business_id,team_ref,role_ref,operator_ref,
+        reason=first.get('reason'),selection_mode=selection_mode,extra=passthrough,
+    )
+
 
 def main():
-    ap=argparse.ArgumentParser(description='Route one natural-language request and resolve the selected canonical/business-local AURA/BusinessOS playbook.');ap.add_argument('task');ap.add_argument('--business-id');ap.add_argument('--team-ref');ap.add_argument('--role-ref');ap.add_argument('--operator-ref');ap.add_argument('--show',action='store_true');a=ap.parse_args()
-    try:result=route_and_resolve(a.task,a.business_id,a.team_ref,a.role_ref,a.operator_ref)
+    ap=argparse.ArgumentParser(description='Route one natural-language request and resolve the selected canonical/business-local AURA/BusinessOS playbook.')
+    ap.add_argument('task');ap.add_argument('--business-id');ap.add_argument('--team-ref');ap.add_argument('--role-ref');ap.add_argument('--operator-ref')
+    ap.add_argument('--selected-contract',help='Explicit playbook selected by the active user/model/harness after semantic intent resolution')
+    ap.add_argument('--show',action='store_true');a=ap.parse_args()
+    try:result=route_and_resolve(a.task,a.business_id,a.team_ref,a.role_ref,a.operator_ref,a.selected_contract)
     except ValueError as e:raise SystemExit(str(e))
     print(json.dumps(result,indent=2))
     if a.show and result.get('contract_id'):
