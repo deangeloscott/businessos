@@ -2,12 +2,12 @@
 """Establish a governed AURA execution envelope for ordinary organization/business work.
 
 This is deliberately not an agent, harness, scheduler, model router, or workflow engine.
-A capable agent/harness decides whether the user's request is organizational work. Once
-that boundary is crossed, this helper makes the reliability mechanics deterministic:
-workspace/business resolution, routing, Run creation/recovery, process/context planning,
-capability preflight, and lightweight monitoring-continuity visibility. The agent then
-performs the actual business work using the returned envelope and whatever authorized host
-capabilities are available.
+A capable user/model/harness decides whether the request is organizational work and may
+select the valid method that best fits it. This helper keeps the mechanical side reliable:
+workspace/business resolution, deterministic routing recommendations, Run creation/recovery
+for a selected method, process/context planning, capability preflight, and bounded continuity
+state. Semantic intent resolution happens before a business-work Run is created when the
+deterministic router is uncertain. The active model/harness then performs the actual work.
 """
 from pathlib import Path
 import argparse, json, os, shlex, subprocess, sys
@@ -83,6 +83,11 @@ def _monitoring_continuity(business_id):
         }
 
 
+def _monitoring_relevant(contract_id):
+    cid=contract_id or ''
+    return 'monitoring.' in cid or cid.endswith('.monitoring') or cid=='core.intelligence.subject-monitoring'
+
+
 def _conditional_processes(node,parent=None):
     out=[]
     for row in node.get('conditional',[]) or []:
@@ -129,15 +134,17 @@ def compact_handoff(envelope):
     object_files=context.get('object_files',[]) or [];schema_files=context.get('schema_files',[]) or []
     classified=set(object_files)|set(schema_files)
     return {
-        'format_version':'1.2','handoff_format':'compact','status':'ready',
+        'format_version':'1.3','handoff_format':'compact','status':'ready',
         'workspace':envelope.get('workspace'),'business_id':envelope.get('business_id'),'business_resolution':envelope.get('business_resolution'),
         'original_request':envelope.get('original_request'),
         'authority':{
-            'status':'resolved_authoritative_handoff',
-            'resolved_surfaces':['route','process','context','capabilities','run'],
-            'rule':'Use these resolved results as authoritative for this Run. Do not rerun context_plan.py, process_plan.py, preflight_capabilities.py, inspect their source, or use their --help during ordinary execution. Re-enter only if relevant workspace/Run/capability state materially changed or a high-level interface below reports a real unresolved need.'
+            'status':'resolved_execution_context',
+            'mechanically_authoritative':['workspace','business identity','selected canonical refs','capability observations','Run identity'],
+            'selected_method':route.get('contract_id'),
+            'selection_mode':route.get('selection_mode'),
+            'rule':'Mechanical facts in this handoff are authoritative for the Run. The selected playbook is the method chosen for this Run, not a universal prohibition on another valid method. If the user/model materially changes methods before execution-significant writes, re-enter with the newly selected contract. While this playbook is used, preserve its essential process/evidence/quality invariants without freezing incidental implementation technique.'
         },
-        'root_contract':{'contract_id':route.get('contract_id'),'owner_system':route.get('owner_system'),'path':route.get('path'),'reason':route.get('reason'),'artifact_role':root_spec.get('artifact_role'),'declared_write_types':root_spec.get('declared_write_types',[])},
+        'root_contract':{'contract_id':route.get('contract_id'),'owner_system':route.get('owner_system'),'path':route.get('path'),'reason':route.get('reason'),'selection_mode':route.get('selection_mode'),'artifact_role':root_spec.get('artifact_role'),'declared_write_types':root_spec.get('declared_write_types',[])},
         'run':run,
         'process':{
             'entry_contract':process.get('entry_contract'),
@@ -179,7 +186,9 @@ def compact_handoff(envelope):
         },
         'execution_envelope_ref':envelope.get('execution_envelope_ref'),
     }
-def enter(task,business_id=None,workspace=None,operator_ref=None,team_ref=None,role_ref=None,output_type=None,channel=None,task_preferences=None,new_run=False,include_optional_capabilities=True,parent_run_id=None,supersedes_run_id=None):
+
+
+def enter(task,business_id=None,workspace=None,operator_ref=None,team_ref=None,role_ref=None,output_type=None,channel=None,task_preferences=None,new_run=False,include_optional_capabilities=True,parent_run_id=None,supersedes_run_id=None,selected_contract_id=None):
     task=(task or '').strip()
     if not task:return {'format_version':'1.0','status':'needs_input','missing':['request'],'reason':'Preserve and provide the user\'s original organizational request.'}
     if workspace:
@@ -188,12 +197,26 @@ def enter(task,business_id=None,workspace=None,operator_ref=None,team_ref=None,r
     if resolved['status']!='resolved':
         return {'format_version':'1.0','status':'needs_input','workspace':str(workspace_root()),**{k:v for k,v in resolved.items() if k!='status'}}
     bid=resolved['business_id']
-    continuity=_monitoring_continuity(bid)
-    try:route=route_and_resolve(task,bid,team_ref,role_ref,operator_ref)
-    except ValueError as e:return {'format_version':'1.0','status':'blocked','business_id':bid,'workspace':str(workspace_root()),'monitoring_continuity':continuity,'reason':str(e)}
+    try:route=route_and_resolve(task,bid,team_ref,role_ref,operator_ref,selected_contract_id)
+    except ValueError as e:return {'format_version':'1.0','status':'blocked','business_id':bid,'workspace':str(workspace_root()),'reason':str(e)}
+
+    if route.get('semantic_selection_required'):
+        return {
+            'format_version':'1.1','status':'needs_semantic_route','workspace':str(workspace_root()),'business_id':bid,
+            'business_resolution':resolved.get('resolution'),'original_request':task,'route':route,
+            'instruction':'No business-work Run has been created. Use the resolved core.routing.resolve-intent playbook and current business context to choose the smallest valid method. Then re-enter the unchanged original request with --selected-contract <contract-id>. Ask the user only if unresolved ambiguity would materially change the route and cannot be resolved from existing context or bounded research.',
+            'selection_rule':'A deterministic routing fallback is a request for semantic judgment, not permission to create a routing Run or force the closest lexical contract.'
+        }
+
     cid=route.get('contract_id')
     if not cid or route.get('status')!='available':
-        return {'format_version':'1.0','status':'blocked','business_id':bid,'workspace':str(workspace_root()),'original_request':task,'route':route,'monitoring_continuity':continuity,'reason':'AURA did not resolve an available business-work entry contract.'}
+        return {'format_version':'1.0','status':'blocked','business_id':bid,'workspace':str(workspace_root()),'original_request':task,'route':route,'reason':'AURA did not resolve an available business-work entry contract.'}
+
+    continuity=_monitoring_continuity(bid) if _monitoring_relevant(cid) else {
+        'status':'not_checked',
+        'reason':'Monitoring continuity was not inspected because it is not relevant to the selected method.',
+        'rule':'Do not pay monitoring-scan overhead for unrelated work. Inspect monitoring state when the selected job concerns monitoring or when another high-level interface identifies it as material.'
+    }
 
     existing=_matching_active_runs(bid,cid,task,parent_run_id)
     matches=[] if new_run or supersedes_run_id else existing
@@ -220,7 +243,7 @@ def enter(task,business_id=None,workspace=None,operator_ref=None,team_ref=None,r
         'BUSINESSOS_WORK_DIR':str(work_dir),
     }
     envelope={
-        'format_version':'1.1',
+        'format_version':'1.2',
         'status':'ready',
         'workspace':str(workspace_root()),
         'business_id':bid,
@@ -241,11 +264,11 @@ def enter(task,business_id=None,workspace=None,operator_ref=None,team_ref=None,r
         'capability_preflight':capabilities,
         'execution_env':env,
         'agent_handoff':{
-            'instruction':'Continue the user\'s complete original request inside this AURA Run. Use the resolved context/process and authorized host Skills/tools as executors; do not replace AURA routing, business truth, authorization, evidence, canonical state, required subcontracts, QA, completion, or Learning.',
-            'resolution_rule':'The returned route, process, context, capability preflight, and Run are authoritative for this execution. Do not recompute or inspect the helpers that produced them unless relevant state materially changed or a returned high-level interface identifies a real unresolved need.',
+            'instruction':'Continue the user\'s complete original request inside this AURA Run. The selected playbook is a proven organizational method for this job; preserve its essential process, evidence, output, verification, and QA invariants while allowing the active model/harness/Skills/tools to choose better incidental implementation techniques. Preserve AURA business truth, authorization, evidence, canonical state, and Learning boundaries.',
+            'resolution_rule':'Mechanical facts and refs returned here are authoritative for this Run. The selected playbook is the method chosen for the Run, not a universal claim that no other valid method exists. If the user/model materially changes the method before execution-significant writes, re-enter with --selected-contract for the new method rather than silently mixing process semantics. Do not recompute lower-level context/process/capability helpers unless relevant state materially changed or a high-level interface identifies a real unresolved need.',
             'scratch_rule':'Use the Run work_dir for build/cache/render/temp state. The AURA product root remains read-only during ordinary business operation.',
             'persistence_rule':'Persist only material organizational evidence, findings, decisions, governed Assets/state, completion evidence, and evidence-supported Learning; ordinary scratch/tool internals remain working state. Prefer the compact handoff persistence interface for Run results instead of reading schemas/writer/provenance source or hand-authoring canonical scaffolding.',
-            'continuity_rule':'Use monitoring_continuity as a lightweight memory cue, not a competing task queue. If overdue unbound monitoring is relevant to this request, refresh it through the appropriate AURA process. If it materially matters but is unrelated, surface at most one concise notice. Otherwise continue the user\'s request. Never describe planned cadence as an active schedule without a verified scheduler binding.',
+            'continuity_rule':'Use monitoring_continuity only when it was inspected for relevant work. Never describe planned cadence as an active schedule without a verified scheduler binding.',
             'human_ux_rule':'In the final response, describe saved work using the organization/human knowledge concept first. Raw canonical/runtime filesystem paths are optional advanced inspection details, not the primary UX.'
         },
     }
@@ -262,13 +285,14 @@ def main():
     p.add_argument('--workspace',help='Optional organization workspace root; otherwise use configured BUSINESSOS_WORKSPACE/workspace link')
     p.add_argument('--operator-ref');p.add_argument('--team-ref');p.add_argument('--role-ref')
     p.add_argument('--output-type');p.add_argument('--channel');p.add_argument('--task-preferences')
+    p.add_argument('--selected-contract',help='Explicit playbook selected by the active user/model/harness after semantic intent resolution')
     p.add_argument('--new-run',action='store_true',help='Force a new Run instead of resuming an exact active business+contract+request match')
     p.add_argument('--parent-run-id',help='Explicit parent Run when entering bounded support work')
     p.add_argument('--supersedes-run-id',help='Explicit exact same-job active Run intentionally replaced by the new Run')
     p.add_argument('--required-only-capabilities',action='store_true',help='Skip optional capability checks in the returned preflight')
     p.add_argument('--full',action='store_true',help='Print the complete durable execution envelope instead of the compact ordinary agent handoff')
     a=p.parse_args()
-    out=enter(a.request,a.business_id,a.workspace,a.operator_ref,a.team_ref,a.role_ref,a.output_type,a.channel,a.task_preferences,a.new_run,not a.required_only_capabilities,a.parent_run_id,a.supersedes_run_id)
+    out=enter(a.request,a.business_id,a.workspace,a.operator_ref,a.team_ref,a.role_ref,a.output_type,a.channel,a.task_preferences,a.new_run,not a.required_only_capabilities,a.parent_run_id,a.supersedes_run_id,a.selected_contract)
     shown=out if a.full else compact_handoff(out)
     print(json.dumps(shown,indent=2)+'\n',end='')
     raise SystemExit(0 if out.get('status')=='ready' else 2)
