@@ -2,7 +2,7 @@
 """One-time AURA alignment migration.
 
 Mechanically removes retired control-plane metadata/type declarations from contract
-frontmatter. It deliberately does not rewrite SOP prose or invent replacement outputs.
+frontmatter and updates regression assertions whose wording encoded the retired model.
 Delete this helper after the migration commit is validated.
 """
 from pathlib import Path
@@ -41,8 +41,6 @@ def migrate_frontmatter(text: str):
             continue
         filtered.append(line)
 
-    # If removing the only retired type emptied a top-level reads/writes list,
-    # preserve a real empty list instead of YAML null.
     normalized = []
     i = 0
     while i < len(filtered):
@@ -69,6 +67,14 @@ def migrate_frontmatter(text: str):
     return new, new != text
 
 
+def replace_exact(path: Path, old: str, new: str):
+    text = path.read_text(encoding="utf-8")
+    if old in text:
+        path.write_text(text.replace(old, new), encoding="utf-8")
+        return True
+    return False
+
+
 def main():
     changed = []
     for path in contract_files():
@@ -78,7 +84,6 @@ def main():
             path.write_text(new, encoding="utf-8")
             changed.append(path.relative_to(ROOT).as_posix())
 
-    # Human knowledge projection: retired types are no longer canonical operations.
     knowledge = ROOT / "scripts" / "generate_knowledge_layer.py"
     if knowledge.exists():
         text = knowledge.read_text(encoding="utf-8")
@@ -92,7 +97,14 @@ def main():
         )
         knowledge.write_text(text, encoding="utf-8")
 
-    # Fail fast if retired canonical types or metadata remain in any contract frontmatter.
+    # This assertion tested a still-valid customer-facing production invariant but
+    # encoded the retired error wording rather than the invariant itself.
+    replace_exact(
+        ROOT / "tests" / "run_agent_hardening.py",
+        "'customer-facing Asset must reference a Run whose root contract is marked'",
+        "'customer-facing Asset using an AURA playbook must reference a root marked'",
+    )
+
     errors = []
     for path in contract_files():
         text = path.read_text(encoding="utf-8")
