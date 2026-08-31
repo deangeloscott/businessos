@@ -147,9 +147,6 @@ def build_plan(business_id,contract_id,focus=None,operator_ref=None,team_ref=Non
     optional_caps=[c for c in match.get('capabilities',{}).get('optional',[]) if c!='none']
     all_caps=required_caps+optional_caps
     # Provider policy/config is resolved lazily only when a capability is missing; do not load it into every job.
-    mutating_caps=[]
-    for c in all_caps:
-        if c.endswith(('.update','.publish','.send','.schedule')) or c in {'checkout.update','workflow.update','search.index.request','business.action.governed.execute'}: mutating_caps.append(c)
     # Load first-party companion policy only when an active ViralTrac binding is relevant to this job.
     # Event-plane setup/diagnosis also needs the policy when ViralTrac is connected through any existing capability,
     # because event capabilities may not have been synchronized/activated yet.
@@ -167,10 +164,6 @@ def build_plan(business_id,contract_id,focus=None,operator_ref=None,team_ref=Non
         policy += ['core/policies/viraltrac-native-companion.md']
     if {'browser.interact','email.read'} & set(all_caps):
         policy += ['core/policies/external-research-interaction.md','core/policies/context-reuse-and-question-minimization.md']
-    if mutating_caps or {'ChangeEvent','Approval'} & write_types:
-        policy += ['core/policies/change-control.md','core/policies/verification.md','core/policies/autonomy.md','core/policies/risk.md','core/policies/approval.md']
-    elif match.get('risk') in {'medium','high','critical'}:
-        policy += ['core/policies/autonomy.md','core/policies/risk.md','core/policies/approval.md']
     for x in policy:
         if x not in files and (ROOT/x).exists(): files.append(x)
 
@@ -257,7 +250,7 @@ def build_plan(business_id,contract_id,focus=None,operator_ref=None,team_ref=Non
     for x in object_files:
         if x not in files:files.append(x)
     material_inputs=_material_inputs(selected,idx,match.get('evidence_inputs',[]))
-    return {'version':os_version(),'business_id':business_id,'contract_id':contract_id,'focus_refs':focus,'run_id':run_id,'operator_ref':operator_ref,'team_ref':team_ref,'role_ref':role_ref,'effective_preferences':preference_resolution.get('effective_preferences',{}),'preference_profiles':[x.get('id') for x in preference_resolution.get('applied_profiles',[])],'preference_conflicts':preference_resolution.get('conflicts',[]),'files':files,'object_refs':sorted(selected),'object_files':object_files,'schema_files':schema_files,'unresolved_selectors':unresolved,'optional_unavailable_selectors':optional_unavailable,'evidence_inputs':match.get('evidence_inputs',[]),'material_inputs':material_inputs,'required_capabilities':required_caps,'optional_capabilities':optional_caps,'mutating_capabilities':mutating_caps}
+    return {'version':os_version(),'business_id':business_id,'contract_id':contract_id,'focus_refs':focus,'run_id':run_id,'operator_ref':operator_ref,'team_ref':team_ref,'role_ref':role_ref,'effective_preferences':preference_resolution.get('effective_preferences',{}),'preference_profiles':[x.get('id') for x in preference_resolution.get('applied_profiles',[])],'preference_conflicts':preference_resolution.get('conflicts',[]),'files':files,'object_refs':sorted(selected),'object_files':object_files,'schema_files':schema_files,'unresolved_selectors':unresolved,'optional_unavailable_selectors':optional_unavailable,'evidence_inputs':match.get('evidence_inputs',[]),'material_inputs':material_inputs,'required_capabilities':required_caps,'optional_capabilities':optional_caps}
 
 def main():
     p=argparse.ArgumentParser();p.add_argument('business_id');p.add_argument('contract_id');p.add_argument('--focus',action='append',default=[]);p.add_argument('--run-id');p.add_argument('--operator-ref');p.add_argument('--team-ref');p.add_argument('--role-ref');p.add_argument('--task-preferences');p.add_argument('--output-type');p.add_argument('--channel');p.add_argument('--output');a=p.parse_args()
