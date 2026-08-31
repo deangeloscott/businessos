@@ -1,41 +1,35 @@
 # Process Extensions and Local Playbooks
 
-BusinessOS may adapt a business's operating process without mutating the canonical BusinessOS product. The preferred mechanism is a business-scoped `ProcessExtension`.
+AURA may retain business-scoped improvements to its operational knowledge without mutating the canonical AURA product. A `ProcessExtension` is optional durable knowledge, not a permission system or runtime wrapper.
 
-## Why overlays come first
+## Purpose
 
-Canonical contracts remain the portable upgrade base. A `ProcessExtension` can augment an installed contract or define a local business playbook while preserving the original contract, its provenance, and its upgrade path. Successful local practice does not become a universal BusinessOS rule merely because it worked once.
+Use an extension when evidence-supported Learning is reusable for a particular organization/team/role/operator and encoding that method would materially help future work. Do not create an extension merely to preserve one-off implementation detail.
 
-## Modes
-
-- `augment_contract`: adds business-scoped applicability, method instructions, provider-neutral capability requirements, and verification to an installed canonical contract.
-- `local_playbook`: defines a new business-scoped playbook with its own local contract ID, purpose, route terms, declared reads/writes, capabilities, instructions, and verification.
+Modes:
+- `augment_contract` — add organization-scoped applicability, instructions, capability needs, and verification to an installed AURA playbook.
+- `local_playbook` — define a reusable organization-scoped playbook when no suitable canonical playbook exists.
 
 ## Invariants
 
-1. Higher-level BusinessOS safety, truth, approval, evidence, lifecycle, privacy, and validation policies always win.
-2. An extension may not lower a canonical contract's risk, autonomy ceiling, approval, evidence, claim, or verification requirements.
-3. Augmenting a contract never deletes the canonical instructions. Effective resolution is base contract plus applicable active extensions.
-4. An `augment_contract` extension may not introduce canonical write types the base contract does not already declare; use a new local playbook or explicit canonical revision when a genuinely new lifecycle/output is needed.
-5. Local playbooks may use canonical object types and provider-neutral capabilities, but they may not invent replacement persistence rules or bypass deterministic helpers.
-6. Capability requirements describe what the job needs, not which vendor/model must provide it. Provider preferences and bindings remain separate.
-7. Business-scoped extensions never become another business's private state. Cross-business/system reuse requires explicit eligible evidence and normal Core learning governance.
-8. BusinessOS version compatibility must be checked before applying an extension. Incompatible extensions remain inspectable but inactive.
-9. Retiring/deactivating an extension must leave the canonical contract intact and restore normal base behavior.
-10. Canonical BusinessOS product changes remain explicit BusinessOS development work and require the normal repository regression/release path.
+1. Extensions are operational knowledge. They do not own reasoning, tool/provider choice, orchestration, permissions, scheduling, concurrency, or runtime execution.
+2. The active model/harness/user may use the extension, adapt it, combine it with another method, or choose a better method. If an AURA playbook plus extension is explicitly selected and completion is claimed, its essential quality/evidence requirements should be satisfied.
+3. A capability declaration describes what the method may need; it is not proof the current runtime has that capability and never names/binds the provider that must satisfy it.
+4. `augment_contract` may not introduce canonical write types the base playbook does not already declare. Use a local playbook or an explicit canonical product revision when a genuinely different durable output model is required.
+5. Extensions may use canonical object types but may not invent alternative persistence semantics that undermine evidence/provenance, business isolation, or canonical state integrity.
+6. Scope is organization-owned. A private extension never becomes another organization's knowledge automatically. Broader reuse requires appropriate evidence and an explicit product/community path.
+7. Compatibility should describe AURA version applicability only; it must not encode host tools, providers, models, autonomy, risk tiers, or permission state.
+8. Deactivating/retiring an extension preserves history and restores normal base-playbook resolution.
+9. Canonical AURA product changes remain explicit product-development work and must pass the repository's integrity/quality validation before release.
 
 ## Scope precedence
 
-When several active extensions apply to the same contract, resolve lower to higher precedence:
+When multiple active extensions apply, resolve lower to higher specificity:
 
 `business -> team -> role -> operator`
 
-Within the same scope, lower `priority` applies first and higher `priority` later. Equal-scope/equal-priority extensions may coexist only when they do not declare contradictory requirements; ambiguous conflicts must be surfaced.
+Within the same scope, lower `priority` applies first. Equal-scope/equal-priority extensions may coexist only when their requirements are compatible; surface ambiguity instead of silently inventing precedence.
 
 ## Effective resolution
 
-Use `scripts/resolve_effective_contract.py` or `scripts/resolve_contract.py --business-id ...` when an active business may have extensions. `scripts/route_and_resolve.py --business-id ...` also considers active local playbooks before falling back to canonical routing.
-
-## Capability preflight
-
-`preflight_capabilities.py` includes the required/optional provider-neutral capabilities declared by applicable extensions. A missing provider changes execution/fallback; it does not silently remove the extension's required business step.
+`scripts/resolve_effective_contract.py` and business-aware routing may surface applicable extensions/local playbooks. Resolution composes operational knowledge only. It does not perform capability preflight or create execution authority.

@@ -1,45 +1,11 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "ProcessExtension",
-  "type": "object",
-  "additionalProperties": false,
-  "properties": {
-    "id": {"type":"string","pattern":"^pex_[A-Za-z0-9_-]+$"},
-    "object_type": {"const":"ProcessExtension"},
-    "schema_version": {"type":"string","pattern":"^\\d+\\.\\d+\\.\\d+$"},
-    "business_id": {"type":"string","pattern":"^[a-z0-9][a-z0-9_-]{0,63}$"},
-    "created_at": {"type":"string","format":"date-time"},
-    "updated_at": {"type":"string","format":"date-time"},
-    "extension_version": {"type":"string","pattern":"^\\d+\\.\\d+\\.\\d+$"},
-    "mode": {"enum":["augment_contract","local_playbook"]},
-    "owner_system": {"enum":["core","customer-intelligence","competitor-intelligence","industry-intelligence","seo-aeo","content-synthesis","marketing-synthesis","customer-optimization"]},
-    "target_contract_id": {"type":["string","null"]},
-    "local_contract_id": {"type":["string","null"]},
-    "title": {"type":"string","minLength":1},
-    "purpose": {"type":"string","minLength":1},
-    "route_terms": {"type":"array","items":{"type":"string","minLength":2},"uniqueItems":true},
-    "status": {"enum":["active","inactive","retired"]},
-    "scope": {"enum":["business","team","role","operator"]},
-    "scope_ref": {"type":["string","null"]},
-    "priority": {"type":"integer","minimum":-1000,"maximum":1000},
-    "applies_when": {"type":"array","items":{"type":"string","minLength":1},"uniqueItems":true},
-    "does_not_apply_when": {"type":"array","items":{"type":"string","minLength":1},"uniqueItems":true},
-    "reads": {"type":"array","items":{"type":"string","minLength":1},"uniqueItems":true},
-    "writes": {"type":"array","items":{"type":"string","minLength":1},"uniqueItems":true},
-    "required_capabilities": {"type":"array","items":{"type":"string","minLength":1},"uniqueItems":true},
-    "optional_capabilities": {"type":"array","items":{"type":"string","minLength":1},"uniqueItems":true},
-    "instructions": {"type":"array","items":{"type":"string","minLength":1},"minItems":1},
-    "verification": {"type":"array","items":{"type":"string","minLength":1},"minItems":1},
-    "source_learning_refs": {"type":"array","items":{"type":"string","pattern":"^lrn_[A-Za-z0-9_-]+$"},"minItems":1,"uniqueItems":true},
-    "evidence_refs": {"type":"array","items":{"type":"string","minLength":1},"uniqueItems":true},
-    "compatibility": {"type":"object","additionalProperties":false,"properties":{"businessos_min":{"type":["string","null"]},"businessos_max":{"type":["string","null"]}},"required":["businessos_min","businessos_max"]},
-    "extensions": {"type":"object"},
-    "risk": {"enum":["low","medium","high"]},
-    "autonomy_ceiling": {"type":"integer","minimum":0,"maximum":4}
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "title":"ProcessExtension",
+  "type":"object",
+  "additionalProperties":false,
+  "properties":{
+    "id":{"type":"string","pattern":"^pex_[A-Za-z0-9_-]+$"},"object_type":{"const":"ProcessExtension"},"schema_version":{"type":"string","pattern":"^\\d+\\.\\d+\\.\\d+$"},"business_id":{"type":"string","pattern":"^[a-z0-9][a-z0-9_-]{0,63}$"},"created_at":{"type":"string","format":"date-time"},"updated_at":{"type":"string","format":"date-time"},"extension_version":{"type":"string","pattern":"^\\d+\\.\\d+\\.\\d+$"},"mode":{"enum":["augment_contract","local_playbook"]},"owner_system":{"enum":["core","customer-intelligence","competitor-intelligence","industry-intelligence","seo-aeo","content-synthesis","marketing-synthesis","customer-optimization"]},"target_contract_id":{"type":["string","null"]},"local_contract_id":{"type":["string","null"]},"title":{"type":"string","minLength":1},"purpose":{"type":"string","minLength":1},"route_terms":{"type":"array","items":{"type":"string","minLength":2},"uniqueItems":true},"status":{"enum":["active","inactive","retired"]},"scope":{"enum":["business","team","role","operator"]},"scope_ref":{"type":["string","null"]},"priority":{"type":"integer","minimum":-1000,"maximum":1000},"applies_when":{"type":"array","items":{"type":"string","minLength":1},"uniqueItems":true},"does_not_apply_when":{"type":"array","items":{"type":"string","minLength":1},"uniqueItems":true},"reads":{"type":"array","items":{"type":"string","minLength":1},"uniqueItems":true},"writes":{"type":"array","items":{"type":"string","minLength":1},"uniqueItems":true},"required_capabilities":{"type":"array","items":{"type":"string","minLength":1},"uniqueItems":true},"optional_capabilities":{"type":"array","items":{"type":"string","minLength":1},"uniqueItems":true},"instructions":{"type":"array","items":{"type":"string","minLength":1},"minItems":1},"verification":{"type":"array","items":{"type":"string","minLength":1},"minItems":1},"source_learning_refs":{"type":"array","items":{"type":"string","pattern":"^lrn_[A-Za-z0-9_-]+$"},"minItems":1,"uniqueItems":true},"evidence_refs":{"type":"array","items":{"type":"string","minLength":1},"uniqueItems":true},"compatibility":{"type":"object","additionalProperties":false,"properties":{"aura_min":{"type":["string","null"]},"aura_max":{"type":["string","null"]}},"required":["aura_min","aura_max"]},"extensions":{"type":"object"}
   },
-  "required": ["id","object_type","schema_version","business_id","created_at","updated_at","extension_version","mode","owner_system","target_contract_id","local_contract_id","title","purpose","route_terms","status","scope","scope_ref","priority","applies_when","does_not_apply_when","reads","writes","required_capabilities","optional_capabilities","risk","autonomy_ceiling","instructions","verification","source_learning_refs","evidence_refs","compatibility"],
-  "allOf": [
-    {"if":{"properties":{"mode":{"const":"augment_contract"}}},"then":{"properties":{"target_contract_id":{"type":"string","minLength":1}}}},
-    {"if":{"properties":{"mode":{"const":"local_playbook"}}},"then":{"properties":{"local_contract_id":{"type":"string","pattern":"^custom\\.[a-z0-9][a-z0-9.-]*$"}}}}
-  ]
+  "required":["id","object_type","schema_version","business_id","created_at","updated_at","extension_version","mode","owner_system","target_contract_id","local_contract_id","title","purpose","route_terms","status","scope","scope_ref","priority","applies_when","does_not_apply_when","reads","writes","required_capabilities","optional_capabilities","instructions","verification","source_learning_refs","evidence_refs","compatibility"],
+  "allOf":[{"if":{"properties":{"mode":{"const":"augment_contract"}}},"then":{"properties":{"target_contract_id":{"type":"string","minLength":1}}}},{"if":{"properties":{"mode":{"const":"local_playbook"}}},"then":{"properties":{"local_contract_id":{"type":"string","pattern":"^custom\\.[a-z0-9][a-z0-9.-]*$"}}}}]
 }

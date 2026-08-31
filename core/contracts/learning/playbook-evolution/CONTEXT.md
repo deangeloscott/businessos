@@ -1,7 +1,7 @@
 ---
 id: core.learning.playbook-evolution
 type: playbook
-version: 1.0.0
+version: 1.3.0
 owner_system: core
 reads:
 - Learning
@@ -15,53 +15,36 @@ capabilities:
   - none
   optional:
   - none
-subcontracts:
-  conditional:
-  - id: core.learning.adopt-process-extension
-    when: user explicitly approves a business-scoped extension/local playbook
-events:
-  consumes:
-  - none
-  emits:
-  - core.object.created
 ---
 # Playbook Evolution and System Improvement
 
 ## Purpose
-Turn sufficiently strong reusable Learning into the narrowest justified operating-process improvement without converting one successful result into universal BusinessOS behavior.
+Turn sufficiently strong reusable Learning into the narrowest justified operating-knowledge improvement without converting one successful result into universal AURA behavior.
 
 ## Business Outcome
-Let every installed domain improve how the active business operates while keeping canonical BusinessOS portable, upgradeable, provider-neutral, evidence-governed, and reversible.
+Let the organization improve how future AI/humans work while keeping AURA portable, model/harness-neutral, evidence-linked, and easy to revise.
 
 ## Run When
-Run when validated/emerging Learning appears reusable, the user asks to make a successful method part of BusinessOS, or community/external evidence suggests a process improvement worth formalizing.
+Run when evidence-supported Learning appears reusable, the user/model intentionally wants to preserve a successful method, or outside/community evidence suggests an improvement worth evaluating.
 
 ## Do Not Run When
-Do not rewrite BusinessOS because a result is merely interesting, stylistically preferred, weakly correlated, or unsupported outside its observed scope.
+Do not formalize a method because a result is merely interesting, stylistically preferred, weakly correlated, or unsupported outside its observed scope.
 
 ## Process
-1. [AI] Load the candidate Learning, material OutcomeEvaluations/Insights, contradictory evidence, and any existing ProcessExtensions that overlap the same mechanism.
-2. [HYBRID] Decide the narrowest justified level: keep as Learning/business rule, augment an existing contract, create a new local playbook, or create a domain/system `canonical_revision` proposal.
-3. [AI] State the reusable mechanism conditionally, with explicit `applies_when`, `does_not_apply_when`, causal uncertainty, negative cases, and what would cause re-evaluation.
-4. [HYBRID] For process change, define provider-neutral required/optional capabilities, declared reads/writes, operating instructions, verification, route terms when a new local playbook is needed, and rollback/deactivation behavior.
-5. [HYBRID] Preserve canonical safety/approval/evidence/autonomy boundaries. An extension may add requirements but may not silently lower the base contract's controls.
-6. [DETERMINISTIC] Persist a schema-valid PlaybookEvolutionProposal through `scripts/persist_playbook_evolution.py`; do not edit `core/` or `systems/` during ordinary business work.
-7. [HUMAN] Require explicit user approval before business-scoped adoption. If approved, route to `core.learning.adopt-process-extension`.
-8. [HYBRID] For `canonical_revision`, keep the proposal as a system-development candidate. Canonical product changes require an explicit BusinessOS-development request, repository change review, registry regeneration, and regression validation.
-
-## Decisions / Routing
-- Evidence not strong/reusable enough -> keep/narrow the Learning.
-- Existing process should be adapted only for this business -> `augment_existing`.
-- Reusable business workflow has no suitable base contract -> `new_local_playbook`.
-- Evidence may justify changing standard BusinessOS guidance -> `canonical_revision`, then explicit product-development workflow.
-- User approves business-scoped adoption -> `core.learning.adopt-process-extension`.
+1. [AI] Load the candidate Learning, material OutcomeEvaluations/Insights, contradictory evidence, and overlapping ProcessExtensions.
+2. [HYBRID] Choose the narrowest useful level: keep as Learning/reusable guidance, augment an existing AURA playbook, create a local playbook, or create a domain/system `canonical_revision` candidate.
+3. [AI] State the reusable mechanism conditionally with `applies_when`, `does_not_apply_when`, uncertainty, negative cases, and re-evaluation triggers.
+4. [HYBRID] For a process change, keep only valuable operational knowledge: provider-neutral capability needs, relevant reads/writes, instructions, quality/verification criteria, and route terms for a new local playbook.
+5. [DETERMINISTIC] Persist a schema-valid PlaybookEvolutionProposal through `scripts/persist_playbook_evolution.py`; ordinary organization work does not edit AURA product source.
+6. [HYBRID] If the organization intentionally chooses a business-scoped proposal, adopt it through `core.learning.adopt-process-extension`. The adoption command itself is the action; no separate Approval/autonomy/risk/runtime gate exists.
+7. [HYBRID] Keep `canonical_revision` proposals as product-development candidates. Canonical AURA changes require deliberate source changes plus registry/validation/quality work before release.
 
 ## Verification
 - Proposal scope is no broader than its evidence.
 - Supporting and contradictory evidence remain traceable.
-- Capabilities are provider-neutral.
-- No canonical BusinessOS product file was silently mutated.
-- Adoption has an explicit rollback/deactivation path.
+- Capability needs are provider-neutral.
+- The proposal does not encode host/provider/runtime state or generic authority semantics.
+- No canonical AURA product file was silently mutated.
 
 ## Completion Criteria
-- A validated PlaybookEvolutionProposal exists or the Learning remains intentionally unpromoted with an inspectable reason.
+A useful PlaybookEvolutionProposal exists, or the Learning remains intentionally unpromoted because formalization would not improve future organizational work.
