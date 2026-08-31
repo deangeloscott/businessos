@@ -26,6 +26,7 @@ TESTS=[
     'tests/run_onboarding_context_hardening.py',
     'tests/run_brand_onboarding.py',
     'tests/run_run_provenance.py',
+    'tests/run_run_continuity_receipt.py',
     'tests/run_organizational_state_truth.py',
     'tests/run_growth_evidence_inventory.py',
     'tests/run_platform_python_compat.py',
