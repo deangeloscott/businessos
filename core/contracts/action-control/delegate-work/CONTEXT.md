@@ -1,13 +1,9 @@
 ---
 id: core.action-control.delegate-work
 type: service
-version: 1.2.0
+version: 2.0.0
 owner_system: core
-risk: low
-autonomy_ceiling: 4
-reads:
-- ActionPacket
-- Opportunity
+reads: []
 writes:
 - WorkRequest
 - AttentionItem
@@ -25,33 +21,30 @@ events:
 # Delegate Work
 
 ## Purpose
-Request another operating system to perform specialized execution without duplicating the originating Opportunity.
+Create a durable organizational handoff only when future continuity benefits from recording that one person, team, system, or workstream is responsible for returning a bounded result.
 
 ## Business Outcome
-Use specialized production capability while preserving single Opportunity ownership and lineage.
+Coordinate real work without turning model subagents, tool calls, or internal routing into organizational bureaucracy.
 
 ## Run When
-When an Action requires another OS semantic/production expertise.
+Use this only when a durable handoff materially helps the organization remember what was requested, why it matters, who or what owns the return, and what result came back.
 
 ## Do Not Run When
-Do not delegate merely because another system/subagent exists; keep work local when the current OS owns and can execute it. Do not use delegation as a default response to uncertainty, and do not recursively re-delegate after timeout/failure without first reassessing whether the extra work can still change the outcome.
+- Do not create a WorkRequest merely because the current model invokes a subagent, tool, provider, or another internal execution mechanism.
+- Do not require an Opportunity or ActionPacket before work can be delegated.
+- Do not persist routine ephemeral coordination that the current harness can complete inside the same work session.
 
 ## Process
-1. [AI] Confirm this is delegation rather than an independently valuable second intervention, and that specialization/parallelism is reasonably expected to improve quality or reduce total work/elapsed time versus keeping the task local.
-2. [AI] Specify one bounded purpose, required output, originating Opportunity/Action, constraints, success criteria, and context references. Avoid broad multi-domain "research everything" requests.
-3. [DETERMINISTIC] Resolve executing system and required capabilities/contracts.
-4. [HYBRID] Define return contract, approval constraints, and deadline/priority when material.
-5. [DETERMINISTIC] Persist WorkRequest and emit work.requested.
+1. [AI] Decide whether a durable organizational handoff is actually useful. Prefer direct execution when the current worker/harness can complete the work without losing continuity.
+2. [AI] Define the smallest useful handoff: purpose, requested output, relevant context references, real constraints, and an assignee/owner only when one is actually known.
+3. [AI] Add a due date only when a real deadline exists. Do not manufacture timing, priority, capability requirements, or a return protocol for bookkeeping.
+4. [DETERMINISTIC] Persist one WorkRequest when the handoff should survive the current session. The runtime/harness remains responsible for tools, subagents, retries, concurrency, and current capability resolution.
+5. [HYBRID] If progress is materially blocked and future organizational attention would help, create or update one deduplicated AttentionItem describing the real unresolved condition.
 
 ## Verification
-- Validate written objects against their schemas and preserve source/lineage references.
-
-## Failure / Fallback
-- If a required capability is unavailable, create a human-executable Manual Action Packet for the missing step; when user/harness action is actually required, create/update one deduplicated AttentionItem. Do not silently omit required work or create repeated notifications for the same blocker.
-- If evidence is insufficient, record the unresolved knowledge gap and avoid overstating confidence.
-- If delegated work times out/fails, preserve any usable partial evidence, return the blocker, and reassess value-of-information before retrying. Repeated provider failure is not a reason to multiply subagents.
+- Validate any persisted WorkRequest or AttentionItem against its schema.
+- Preserve references to material organizational context/results rather than execution transcripts.
 
 ## Completion Criteria
-- Required outputs exist and validate.
-- Material uncertainty, contradictions, and unresolved dependencies are explicit.
-- Any required next route is represented by a canonical reference or event rather than an informal note.
+- The organization can understand what work was handed off and what result is expected without needing the originating conversation.
+- No WorkRequest was created solely to mirror runtime orchestration.
