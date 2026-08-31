@@ -1,57 +1,119 @@
-# Agent Execution Policy
+# Agent Work Policy
 
-BusinessOS contracts are operating instructions for the active AI/agent plus deterministic helpers; they are not executable programs unless a contract explicitly names a script/tool.
+AURA supports organizational work with durable memory and reusable operational knowledge. It is not the active model, harness, permission system, scheduler, universal orchestrator, or business decision-maker.
 
-## Mandatory operating sequence
-1. Before the first business write in a session, read root `CONTEXT.md` and `INSTALLATION.json`, resolve exactly one active `business_id`, and preserve the user's **complete original request**, including any outcome that remains after setup.
-2. **Route natural language, never IDs.** `scripts/route_task.py` accepts exactly one positional natural-language task. Correct: `python3 scripts/route_task.py "What should we work on first to grow profitably?"`. Never pass a `business_id`, contract ID, or `--intent` to it. Prefer the safer combined helper: `python3 scripts/route_and_resolve.py "<natural-language request>" --show`, which routes the request and prints the selected contract's `CONTEXT.md`.
-3. A contract identifier such as `core.context.bootstrap-business` is an ID, **not** a shell/Python path and not a request to feed back into the router. Resolve a known ID with `python3 scripts/resolve_contract.py <contract-id> --show`, read the returned instructions, then perform that process with the active agent/harness and only explicitly named deterministic utilities.
-4. Do not treat arbitrary Markdown notes as canonical BusinessOS state. Contract `writes` declare the canonical object types that the playbook is allowed to leave when they materially result from the work; they are not a command to manufacture one object of every listed type. When the work genuinely produces durable `Business`, `Market`, `Objective`, `ProductService`, `Insight`, `Opportunity`, `Asset`, or other declared state, persist it as schema-valid canonical JSON and validate it. If a contract's explicit completion evidence requires a particular canonical result, satisfy that requirement. Supplemental notes may coexist but do not replace required canonical objects or truthful durable state.
-5. For a new business, initialize the instance with `python3 scripts/init_business.py <business-id> --name "<name>"`. When the user has already supplied explicit facts, prefer `scripts/bootstrap_explicit_context.py`. For conversational bootstrap, pass the grounding material through `--source-text` and/or repeated `--source-file`; do not manually merge multiple supplied files just to satisfy grounding. Explicit organization Brand instructions must become canonical Brand context during onboarding. Prefer a small structured manifest through `--brand-profile-file runtime/<brand>.json`; the grounded facts `brand` field remains supported. Do not substitute BusinessClaim constraints for first-class voice/style/audience/visual Brand state. If the user supplied reusable business/team/role/operator preferences, persist them in the same onboarding handoff with `--preference-profile-file` **before residual work is routed** so the first downstream Run can snapshot them. If the original request contains any outcome beyond setup, also pass the remaining natural-language outcome via `--residual-request` so the helper deterministically routes it only after the explicit setup state has been persisted. Use `--initialization-only` only when initialization/persistence was genuinely the entire request. The helper rejects structured facts that introduce unsupported taxonomy/classification. Do not add an industry, market, audience, business model, service, objective, or channel merely because it seems plausible. Conservative paraphrase is allowed only when it is directly grounded in the supplied statement.
-6. Preserve the truth boundary everywhere, following `core/policies/active-business-truth.md`: explicit authorized user/first-party facts are known; sourced discoveries retain source lineage; inference is provisional; unknown remains unknown. This applies to canonical state **and** Markdown, answers, plans, code, webpages, marketing copy, generated assets, and tool inputs. Never invent prices, margins, KPIs, service areas, audiences, offers, services, hours, guarantees, positioning, value propositions, targets, performance, or other business facts merely to make a profile/artifact look complete. “Not supplied/not found” means unknown unless absence is authoritatively established. Material inference belongs in evidence/Observation, a labeled hypothesis, or `ContextUpdateProposal`, not silently in active-business truth.
-7. After a prerequisite such as initialization/bootstrap completes, **continue every unresolved part of the original request automatically**. For conversational bootstrap, prefer carrying that residual intent through `bootstrap_explicit_context.py --residual-request "<remaining request>"`; its `residual_route` is a required handoff, not optional commentary. If the user asked what to do next or expressed a broad growth goal, perform the resolved `core.opportunity.discover-next-best-work`; do not stop after setup, improvise your own tactic list, or ask the user to choose an internal department.
-8. For broad next-best-work requests, treat `scripts/growth_baseline_gate.py` as a deterministic **evidence inventory**, not a semantic permission gate. Missing `EconomicContext`, `MetricObservation`, or `OutcomeEvaluation` objects is a representation fact and does not by itself mean the business lacks usable first-party evidence. Inspect and reuse the actual SourceRecords, Observations, Insights, experiments, supplied files, metrics, outcomes, and other organizational context already available. The capable model/human decides whether evidence is sufficient for the particular decision and level of commitment. When that judgment says one missing fact could materially change the next move, establish only the smallest decisive baseline/gap under `core/policies/resource-aware-execution.md`; when useful bounded work is already justified, continue without demanding an ideal dataset. Delegate only when specialization/parallelism is actually justified and likely to improve quality or reduce total work/time. Ask a question only when missing user-only information is genuinely required and cannot be resolved through already-authorized first-party sources or a bounded data-access/export step.
-9. Validate active business state with `python3 scripts/validate_business.py <business-id>` (use `--require-context` after bootstrap) after initialization or outside an active Run. During ordinary Run execution, use the focused result from `persist_run_results.py` and then call `finalize_run.py` directly; whole-business validation before finalization contains completion conditions that are intentionally false while the Run is active. `tests/run_distribution.py` and public-distribution validation are release/package tests for a clean distributable copy and must not be used as active-business validation.
-10. Never delete an existing business instance, Run, or canonical artifact merely because it appears stale, failed, or test-like. Preserve/ignore it unless the user/administrator explicitly authorizes destructive cleanup or a deterministic test owns a documented disposable path.
-11. **Claim/estimate discipline:** follow `core/policies/evidence.md`. Keep active-business facts, external evidence, inference/hypothesis, and unknown business state distinct. Do not turn market benchmarks into company-specific forecasts or invent implementation duration, staffing, cost, ROI timing, or business metrics. Unknown resource cost remains unknown; known material blockers/costs still matter.
-12. **Automation-aware prioritization:** do not overweight presumed conventional manual-development effort when automation/capabilities may execute the work. Evaluate real dependencies, risk, reversibility, authorization, strategic leverage, and evidence-backed resource constraints. Automation feasibility is not permission and is not proof of zero cost.
-13. **Scope and clarification gate:** preserve the user's requested action boundary. Analysis/diagnosis/prioritization such as “determine what we should do next” does **not** authorize implementation of the selected tactic. A clarification timeout, silence, tool timeout, or missing response is never approval and must not be converted into permission to create/deploy business-facing assets, make commitments, adopt new business facts, purchase/connect services, or choose among materially different interventions. Continue only with low-risk reversible analysis that stays inside the original request.
-14. **Final-response completion gate:** before answering, compare the user's requested outcomes with completed work. If any requested outcome is still unresolved and can be advanced safely **within the requested scope**, continue operating. For requests such as “determine what we should do next,” a final department/tactic menu is noncompliant; return one prioritized next action (or the smallest bounded evidence plan) and explain why it is next. If the user also requested execution, continue through the useful authorized work that can be done now rather than stopping at a plan solely because ideal information is unavailable.
-15. **Research evidence boundary:** when external research creates durable intelligence, follow `core/policies/research-evidence.md`. Inspect and preserve enough underlying evidence to audit material claims; a URL/search snippet alone is not sufficient support for a material `supported` Insight. Record how the evidence was acquired separately from what was captured; search/snippet acquisition remains discovery-only even when text is copied into a bundle. Prefer `scripts/persist_research_bundle.py` for bounded research writes rather than hand-authoring schema-specific persistence code during normal operation.
-16. **BusinessOS system-integrity boundary:** follow `core/policies/operating-scope.md`. During normal business operation, do not create/edit/patch replacement files under `scripts/`, `core/`, `systems/`, `tests/`, schemas, registries, manifests, or other BusinessOS product internals. A helper rejection/usage error is not permission to write a custom canonical writer or manually stamp state as `explicit_user`. Correct the supported invocation using `--help`/documented examples; if the supported path is genuinely defective, preserve state and surface the blocker. BusinessOS product changes are appropriate only when the user's request itself explicitly concerns developing/repairing/configuring/upgrading BusinessOS. Do not expose this as a technical mode the user must choose.
-17. **Context provenance / claim boundary:** follow `core/policies/context-provenance-and-claims.md` for Content/Marketing work. Preserve explicit reusable promises/constraints as grounded `BusinessClaim` objects through `bootstrap_explicit_context.py`; agent-created Brand/AudienceSegment/Offer strategy is normally `derived_inference` or `candidate_strategy`, not `explicit_user`. Do not self-stamp `grounding_method` metadata onto a hand-authored object to make it trusted. For customer-facing Content/Marketing Assets, scan the saved artifact with `scripts/build_claim_manifest.py`, classify every returned candidate in the Asset claim manifest, and narrow/authorize any statement that enlarges the approved promise. Customer-facing means intended outward use, not current publication status: an unpublished homepage/landing-page/email/ad/etc. draft remains customer-facing. Never mark work generated in the current execution as `imported`/`preexisting` to bypass Run or claim governance.
-18. **Bounded Run provenance / Required-process completion evidence:** After routing/method selection, create or resume the bounded Run **before execution-significant canonical writes**. Runs created with `scripts/create_run.py` include `contract-execution.json`. Execute the real selected root/playbook method first. The full process plan may contain nested required methods and semantic conditional branches; these describe how the selected SOP works and do not each require a separate bookkeeping row merely because they appear in the method graph. The Run manifest's direct `required_subcontracts` are the root-level completion checkpoints that must be executed and recorded. A nested method requires its own ledger entry only when it is also a direct root checkpoint or is independently entered as its own Run. Conditional methods are activated by model/human judgment when their condition is actually relevant; when used, preserve their material result/evidence in the integrated work rather than pre-creating fake completion records. Prefer `scripts/persist_run_results.py` for AI-authored canonical results so the model determines every substantive Opportunity/Action/WorkRequest/Insight/etc. field while deterministic software handles only schema identity, IDs, timestamps, storage, local refs, Run provenance, and focused active-Run validation. Then call `scripts/finalize_run.py <business-id> <run-id>` directly for the ordinary completion path. It composes exact Run resolution, safe storage-reference normalization, mechanically required/unique evidence resolution, pre-mutation validation that defers only active-Run completion conditions, direct completion-checkpoint recording, provenance binding, root completion, integrated green active-business validation, enabled human-knowledge refresh, and relationship-aware Run reconciliation. It may not invent evidence, interpret business meaning, choose between multiple plausible artifacts, weaken a completion profile, repair claims/content to pass, or auto-complete related Runs. Only an explicit exact same-job replacement with no material work may be mechanically superseded; blocked/meaningful Runs remain active and ambiguous related Runs are returned as `needs_judgment` within reconciliation. `scripts/record_contract_completion.py` and `scripts/complete_run.py` remain independently usable low-level interfaces. The completion helpers bind execution-significant canonical outputs to the Run that actually records them. `validate_business.py` rejects new decision/action/operational state that lacks a completed evidence-bound Run; explicitly imported/preexisting historical state is exempt. A Run may complete successfully while a downstream intervention remains blocked (for example, an ActionPacket can remain proposed and an AttentionItem remains open because production approval is missing). **Run complete does not mean downstream intervention complete.** The finalizer's `completion_scope` keeps artifact status/current-version QA separate from production readiness, unresolved facts, authorization/capability gaps, deployment execution, and outcome measurement. Do not run whole-business validation separately while the ordinary Run is active; use the persistence/finalizer results, and let the finalizer run the final green business-state gate. For customer-facing Content/Marketing Assets, create/resume the Run from the appropriate contract marked `artifact_role: customer_facing_production_root` rather than rooting the Run at one of its leaf subcontracts; the producing root must additionally be marked `artifact_role: customer_facing_production_root`; QA completion checkpoints require a matching JSON pass record naming the exact tested Asset/version, the actual customer-facing deliverable file must be root evidence, and the Asset `contract_chain` should describe the material selected method. Each direct root completion checkpoint must be executed and recorded with contract-appropriate evidence; one genuine integrated artifact may support multiple jobs when it actually contains their work, and duplicate paperwork must not be created merely to satisfy bookkeeping. Do not claim completion while essential selected process, QA, or evidence is merely implied.
-19. **Local/first-party evidence boundary:** when SEO/AEO or another workflow makes direct factual claims about deterministic local files or first-party website exports, follow `core/policies/local-evidence.md`. For website facts such as canonicals, robots directives, titles, sitemap membership, JSON-LD validity, or broken local links, run `scripts/inspect_site_evidence.py` and persist material direct Observations with `scripts/persist_site_observation.py`; do not hand-author those observations from model memory/prose inspection. Keep technical consequence and visibility impact as inference or unknown unless separately measured.
-20. **Decision-grounding boundary:** when creating a qualified/prioritized Opportunity, follow `core/policies/decision-grounding.md` and populate `reasoning_basis`. Verified facts do not automatically establish their economic, ranking, traffic, lead, conversion, or AI-answer consequences. Do not invent relative business value such as “highest-value service,” and do not turn canonicals/robots/noindex or other technical signals into absolute claims about actual rankings, traffic, index state, or AI citations unless appropriate outcome evidence exists. Preserve material inference and unknowns explicitly; `validate_business.py` enforces this boundary. The final user-facing summary must preserve the same epistemic strength—do not turn a canonical hypothesis such as “messaging is the most plausible first lever” into a causal statement such as “messaging is killing conversions.”
-21. **Supplementary-artifact restraint:** do not create welcome files, Markdown mirrors, summaries, helper scripts, or convenience artifacts merely to restate canonical state unless an installed contract requires them or the user requested them. Prefer canonical state plus the user-facing answer.
+## Core operating loop
 
-22. **Customer-facing mutation boundary:** claim governance is domain-independent. Before modifying an existing customer-facing `.html`, `.htm`, `.md`, or `.txt` surface, capture it with `scripts/capture_customer_facing_state.py`; after the mutation, build/classify the delta with `scripts/build_mutation_claim_manifest.py` and reference both artifacts from the `ChangeEvent` as required by `core/policies/customer-facing-mutations.md`. A technical fix may remove unsupported copy, but may not transform it into an unsupported business capability/CTA.
+1. **Preserve the request.** Keep the user's complete requested outcome and actual action boundary intact.
+2. **Resolve the organization.** For business-specific work, operate against exactly one active `business_id`.
+3. **Retrieve relevant durable context.** Reuse current business facts, evidence, preferences/instructions, prior decisions, assets/results, unresolved work, outcomes, and Learning before repeating questions or research.
+4. **Choose the best method.** An AURA playbook may be recommended when it is a strong fit. The model/user may instead use an external Skill, a model-created method, or an ad-hoc method. Do not force work into an AURA contract merely to make it recordable.
+5. **Use the host normally.** The active harness owns its actual tools, models, subagents, concurrency, permissions, retries, scheduling, and live capability discovery. AURA may describe provider-neutral capability needs for an AURA playbook but must not override live host truth.
+6. **Do the real work.** Produce the useful business result the user requested. Do not substitute bookkeeping, setup, routing, or schema creation for the substantive work.
+7. **Persist material organizational meaning.** Save only durable facts/evidence, meaningful decisions, reusable instructions/preferences, material assets/results, real handoffs, unresolved work, outcomes, and evidence-supported Learning that future organizational work would materially benefit from.
+8. **Validate what AURA owns.** Persisted state must be schema-valid, reference-valid, provenance-aware, epistemically honest, and isolated to the correct business. If an AURA playbook was actually selected and completion is claimed, also satisfy its essential process/evidence/QA requirements.
+9. **Continue from memory.** Future models should be able to understand what materially happened without needing the original conversation, hidden reasoning, or runtime logs.
 
-## Capability continuity boundary
-AURA should raise execution quality with the best **already available** permitted host capabilities before asking the user to add software/services. When a useful provider-neutral capability is still missing, follow `core/policies/provider-resolution.md`, `core/policies/host-capability-discovery.md`, and `core/policies/local-capability-packs.md`:
+## Persistence boundary
 
-- Existing healthy bindings win.
-- Explicit business/environment/distribution provider preferences remain authoritative.
-- Trusted product-owned local capability packs may be inspected before generic external-provider acquisition when they fit the capability.
-- Bind a healthy installed tool without reinstalling it.
-- Installing, upgrading, repairing, or reinstalling system software requires explicit user authorization. Do not interpret an earlier general desire for better execution as authorization for a specific future system change.
-- Never search for and execute an arbitrary installer to satisfy a missing capability.
-- Use fixed executable/health/version checks and argument-list commands; do not inject shell commands.
-- A local mechanics tool such as `yt-dlp`, `ffmpeg`, or `ffprobe` may acquire/process evidence but does not itself establish semantic conclusions.
-- Keep non-secret local tool/version/binding state in the environment overlay, not canonical business truth. Re-running host discovery must preserve unrelated local/provider bindings.
+Before writing durable AURA state, ask:
 
-## Monitoring continuity boundary
-For durable monitoring, follow `core/policies/monitoring-continuity.md`:
+> Would a capable future model working for this organization materially benefit from knowing this after the current session/runtime is gone?
 
-- A SourceProfile cadence and `next_check_at` express organization-owned monitoring intent; they do **not** prove an external task is scheduled.
-- User-specified cadence wins over inferred cadence. Different subjects/sources/signals may use different cadences.
-- Call monitoring `active automatic` only when the current environment has a verified scheduler binding with an actual executor/ref. A scheduler binding proves schedule mechanics, not future task completion.
-- If no compatible scheduler/worker exists, preserve the plan and degrade gracefully to reminder-only, due-on-next-start, paused/blocked, or manual refresh.
-- `scripts/enter.py` may surface overdue unbound monitoring as a lightweight continuity cue. Do not derail unrelated work to clear a backlog and do not spam repeated notices.
-- Missing scheduling machinery never erases the monitoring plan.
+Persist when the answer is materially yes. Do **not** persist merely because a schema exists.
 
-## Human-facing knowledge/completion boundary
-Users should not need to remember `instances/...` or `runtime/runs/...` paths to use what AURA has learned. Canonical state remains under the business instance and Run history remains provenance, while `knowledge/<business-id>/_generated/` provides derived human views. For tracked subjects, group related SourceProfiles into one understandable subject view. In ordinary final responses, lead with the human organization concept/location (for example `AtlasOps → Knowledge → Tracked Subjects → Alex Hormozi`) and reserve raw canonical/runtime paths for advanced inspection/debugging.
+Do not store as organizational memory:
+- hidden chain-of-thought or scratch reasoning;
+- full chats/transcripts merely for completeness;
+- routine tool calls, retries, temporary calculations, or subagent chatter;
+- transient host capability state;
+- arbitrary execution logs that carry no durable organizational meaning.
 
-## Attention and notification boundary
-BusinessOS represents material unresolved human/harness attention as canonical `AttentionItem` state and versioned external platform facts as `PlatformChange`. Do not implement a proprietary notification daemon/channel inside a workflow. Use the shared attention/platform lifecycle policies so compatible harnesses can poll/watch current state and choose delivery/scheduling mechanisms. Repeated unchanged checks must update existing semantic state rather than create new files or alerts.
+A bounded Run/work receipt is useful when continuity, provenance, recovery, or later understanding benefits from one. It is not required before ordinary reasoning begins.
+
+## Method provenance
+
+New Runs identify the method actually used:
+- `aura_playbook`
+- `external_skill`
+- `model_created`
+- `ad_hoc`
+
+Only `aura_playbook` work has AURA contract-execution/conformance state. External Skill, model-created, and ad-hoc work may create the same legitimate organizational results and work receipts without fabricated contract IDs, contract chains, or completion ledgers.
+
+When canonical results are produced, prefer `scripts/persist_run_results.py` or the specialized persistence helper for that object type. The model supplies substantive business meaning; deterministic helpers may supply mechanical IDs, timestamps, storage paths, local-reference resolution, method provenance, schema checks, and safe transactional writes.
+
+## AURA playbooks
+
+A contract ID identifies an AURA playbook/service, not an executable program and not universal authority.
+
+When an AURA playbook is selected:
+- load the minimum relevant playbook/context;
+- follow its essential process, evidence, and quality invariants;
+- use its declared writes as **possible durable outputs**, not quotas;
+- use its capability declarations as provider-neutral method needs;
+- perform required QA/evidence checks before claiming that playbook completed.
+
+The model/user may adapt incidental implementation details or choose another method. If another method is used, record that method honestly instead of pretending the AURA playbook ran.
+
+## Truth and evidence
+
+Follow `core/policies/active-business-truth.md`, `core/policies/evidence.md`, `core/policies/provenance.md`, and `core/policies/context-provenance-and-claims.md` where applicable.
+
+Keep distinct:
+- explicit user/first-party facts;
+- verified first-party facts;
+- external evidence;
+- derived inference;
+- candidate strategy/hypothesis;
+- unknown.
+
+Never invent prices, performance, service areas, offers, promises, metrics, audiences, outcomes, tool actions, permissions, or other business facts to make an artifact look complete. `not supplied` / `not found` is not proof of absence.
+
+For outward-facing work, do not turn hypotheses, competitor patterns, placeholders, or inferred details into established company claims. Artifact quality, publication/deployment, and measured outcome are separate facts.
+
+## Decisions and constraints
+
+Respect actual constraints from the user, organization, law, regulation, contract, platform, account, or environment. Record a material organizational choice as `DecisionRecord` when future work benefits from knowing it.
+
+AURA does not create generic `Approval` objects, autonomy ceilings, permission tiers, or `ActionPacket` authority gates. Absence of an AURA decision record does not itself forbid action.
+
+The user's requested scope still matters. A request to analyze does not silently become a request to publish or mutate external state; an explicit request to execute should not be blocked by invented internal ceremony when the harness can perform it and no real constraint prevents it.
+
+## Handoffs, changes, verification, and attention
+
+Create durable coordination/state only when it has future organizational value:
+- `WorkRequest` for a real handoff worth remembering;
+- `AttentionItem` for a material condition worth future awareness;
+- `ChangeEvent` when remembering a material change will help later work;
+- `VerificationRecord` when verification itself is materially useful or required by the selected SOP/task/consequence.
+
+Do not mirror every subagent call, tool invocation, deployment step, or runtime event into AURA canonical state.
+
+Verification is not a universal ceremony. Require it where the selected SOP or real consequence warrants it (for example a deployment, DNS change, publishing step, or another operation whose actual post-state matters).
+
+## Monitoring and capabilities
+
+AURA may remember monitoring intent: what to watch, why it matters, materiality criteria, cadence intent, last meaningful state, and findings. The host/runtime owns actual schedules, polling, retries, event processing, notification delivery, and scheduler truth.
+
+Likewise, AURA playbooks may declare provider-neutral capabilities. The host/runtime resolves actual tools/providers and live availability. Environment caches/bindings are execution aids, not durable business truth and not universal AURA policy.
+
+## Product integrity
+
+During ordinary business operation, do not modify AURA product source (`core/`, `systems/`, `scripts/`, schemas, tests, registries, manifests) to work around a business-execution problem. Product changes are appropriate only when the request itself concerns developing, repairing, configuring, or upgrading AURA.
+
+## Completion
+
+Universal AURA completion means only that organization-owned state is truthful and structurally sound.
+
+AURA playbook conformance is additional and conditional: only claim a playbook completed when its essential process/evidence/QA requirements were actually satisfied.
+
+Do not equate Run completion with deployment, customer-facing readiness, authorization, capability availability, business outcome, or causal proof.
+
+The intended experience is:
+
+**understand → retrieve → work → remember → continue**
+
+not:
+
+**request → bureaucracy → permission calculation → work**
