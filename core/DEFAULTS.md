@@ -31,6 +31,16 @@ AURA SOPs describe reusable high-quality business methods. Provider-neutral capa
 
 If an AURA SOP is selected and its completion is claimed, satisfy its essential process, evidence, and QA requirements. Do not turn incidental implementation details into universal requirements. Work done through an external Skill, model-created method, or ad-hoc method remains legitimate organizational work and may still be remembered truthfully without fabricated contract execution.
 
+### Module independence
+Installed modules are packages of AURA operational knowledge, not limits on what a capable human, model, or harness may do.
+
+- Only use or claim an AURA module/SOP that is actually installed.
+- A missing module means its reusable AURA SOP knowledge is unavailable. It does **not** prohibit the active model/user from completing that work through an external Skill, model-created method, or ad-hoc method when the available capabilities and evidence are sufficient.
+- An uninstalled optional module is never a hidden hard dependency. Use relevant organizational context, supplied material, existing evidence, direct observation, or bounded task-specific research as appropriate.
+- Missing optional modules may change the available AURA guidance or evidence path; they must not silently lower the requested business outcome or quality bar.
+- Do not fabricate an uninstalled module as the owner, executor, or source of durable AURA state. Persist evidence, results, decisions, and Learning under valid available semantics and truthful provenance.
+- If a module is installed later, reuse compatible existing organizational state rather than reinitializing or duplicating it.
+
 ## Execution Boundary
 - Use the active model/harness's real tools, models, subagents, concurrency, retries, scheduling, permissions, and runtime state. AURA should not duplicate or override those mechanisms.
 - Stay within the user's actual request and any real business, legal, platform, account, or organizational constraints. AURA does not manufacture additional authority gates.
