@@ -11,7 +11,6 @@
     "created_at": {"type": "string", "format": "date-time"},
     "updated_at": {"type": "string", "format": "date-time"},
     "lineage": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
-
     "purpose": {"type": "string", "minLength": 1},
     "requested_output": {"type": "string", "minLength": 1},
     "context_refs": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
@@ -23,19 +22,6 @@
     "result_refs": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
     "decision_refs": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
     "notes": {"type": ["string", "null"]},
-
-    "requesting_system": {"type": "string"},
-    "executing_system": {"type": "string"},
-    "origin_opportunity_ref": {"type": "string", "minLength": 1},
-    "origin_action_ref": {"type": "string", "minLength": 1},
-    "initiative_ref": {"type": ["string", "null"]},
-    "required_output": {"type": "string", "minLength": 1},
-    "required_context_refs": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
-    "success_criteria": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
-    "required_capabilities": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
-    "return_contract": {"type": "string", "minLength": 1},
-    "returned_refs": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
-
     "extensions": {"type": "object"}
   },
   "required": [
@@ -44,14 +30,7 @@
     "schema_version",
     "business_id",
     "purpose",
+    "requested_output",
     "status"
-  ],
-  "allOf": [
-    {
-      "anyOf": [
-        {"required": ["requested_output"]},
-        {"required": ["required_output"]}
-      ]
-    }
   ]
 }
