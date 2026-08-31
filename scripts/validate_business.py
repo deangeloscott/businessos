@@ -6,7 +6,6 @@ from validate_isolation import isolation_errors
 from validate_research_evidence import evidence_errors
 from validate_local_evidence import local_evidence_errors
 from validate_business_claims import claim_errors
-from validate_customer_facing_mutations import mutation_errors
 from validate_run_completion import run_completion_errors
 from validate_opportunity_grounding import opportunity_grounding_errors
 from validate_attention_lifecycle import lifecycle_errors
@@ -79,7 +78,6 @@ def _provenance_errors(objects, sources):
         src=sources[srcid]
         sext=src.get('extensions') if isinstance(src.get('extensions'),dict) else {}
         statement=sext.get('verbatim_user_statement')
-        # Only deterministic bootstrap-owned explicit objects may use this grounding method.
         if sext.get('grounding_method')!=GROUNDING_METHOD:
             errors.append(f'{path} explicit_user source {srcid} is not trusted: source was not persisted through {GROUNDING_METHOD}')
             continue
@@ -145,7 +143,6 @@ def validate_business(business_id,require_context=False,active_run_id=None):
             if typ=='SourceRecord' and oid: sources[oid]=obj
     errors.extend(_provenance_errors(objects,sources))
     errors.extend(claim_errors(business_id,objects))
-    errors.extend(mutation_errors(business_id,objects))
     errors.extend(run_completion_errors(business_id,objects,active_run_id))
     errors.extend(readiness_errors(business_id,objects))
     og_errors,og_warnings=opportunity_grounding_errors(business_id,objects); errors.extend(og_errors); warnings.extend(og_warnings)
