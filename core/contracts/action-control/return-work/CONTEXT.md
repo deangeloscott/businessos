@@ -1,15 +1,11 @@
 ---
 id: core.action-control.return-work
-type: playbook
-version: 1.1.0
+type: service
+version: 2.0.0
 owner_system: core
-risk: low
-autonomy_ceiling: 4
 reads:
 - WorkRequest
 - Asset
-- VerificationRecord
-- ActionPacket
 writes:
 - WorkRequest
 - Observation
@@ -27,17 +23,24 @@ events:
 # Return Delegated Work
 
 ## Purpose
-Complete a WorkRequest by returning valid outputs and execution evidence to the originating system without transferring Opportunity ownership.
+Record the material result of a durable WorkRequest so future organizational work can continue from what actually happened.
 
 ## Business Outcome
-Return delegated work with complete lineage, status, outputs, and unresolved dependencies so the originating Opportunity can continue cleanly.
+Close the loop on a real handoff without requiring ActionPackets, approval state, runtime transcripts, or artificial verification objects.
+
 ## Run When
-When the executing system finishes or cannot finish delegated work.
+When work represented by a durable WorkRequest is completed, blocked, cancelled, or otherwise produces a material result worth preserving.
 
 ## Process
-1. [DETERMINISTIC] Confirm returned outputs correspond to the WorkRequest success criteria and active business.
-2. [HYBRID] Record output references, execution/QA evidence, deviations, unresolved constraints, and whether the request is completed, partial, blocked, or failed.
-3. [DETERMINISTIC] Validate returned canonical objects and lineage to the originating WorkRequest.
-4. [AI] Identify any newly discovered independent domain Opportunity separately; do not hide it inside the delegated return.
-5. [DETERMINISTIC] Update WorkRequest status and emit work.returned.
-6. [HYBRID] Originating system retains responsibility for final domain verification/Opportunity outcome.
+1. [AI] Compare the returned work with the WorkRequest's actual requested output and constraints. Judge quality using the relevant task/SOP requirements rather than generic handoff ceremony.
+2. [HYBRID] Record material result references, unresolved issues, and a truthful status: completed, blocked, cancelled, or still in progress.
+3. [DETERMINISTIC] Validate persisted references and business ownership. Do not fabricate a result reference merely to close the request.
+4. [AI] Preserve genuinely new organizational evidence or observations when they will matter later. Do not store transient execution logs as business memory.
+5. [DETERMINISTIC] Update the WorkRequest and emit `work.returned` when the return is materially useful to downstream continuity.
+
+## Verification
+- The WorkRequest truthfully reflects what came back and its current status.
+- Any persisted result/evidence objects validate independently.
+
+## Completion Criteria
+- Future work can discover the requested work, its material result, and any unresolved next step from organization-owned state.
