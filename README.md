@@ -2,9 +2,25 @@
 
 **AURA = Agentic Understanding and Reinforcement Architecture.**
 
-**ViralTrac AURA is a portable, AI-native BusinessOS that helps capable AI understand a business, determine useful work, execute through available tools, preserve what it learns, and improve future decisions over time.**
+**ViralTrac AURA is a portable, AI-native BusinessOS that helps capable AI understand a business, find and use relevant proven operating processes, execute through available tools, preserve material organizational work, and improve future decisions over time.**
 
-AURA is not a model, agent harness, SaaS dashboard, or prompt library. It is the organization-owned operating layer around those capabilities: business context, evidence, workflows, governance, authorization, state, history, measurement, and Learning.
+AURA is not a model, agent harness, SaaS dashboard, or prompt library. It is the organization-owned operating layer around those capabilities: durable business context, evidence, operational knowledge, preferences, work history, assets, measurement, and Learning.
+
+## Architectural north star
+
+A useful shorthand is:
+
+**AURA = organizational memory + operational knowledge + lightweight continuity.**
+
+- **Organizational memory** preserves the business context, evidence, preferences, decisions, assets, outcomes, and Learning that future humans or AI may need.
+- **Operational knowledge** is the reusable set of high-quality, model/tool-agnostic playbooks and SOPs that help capable intelligence perform recurring business jobs well.
+- **Lightweight continuity** preserves enough material work history that another model, harness, worker, or session can understand what happened and continue without reconstructing the organization from scratch.
+
+The user/model determines the goal and may choose the valid method that best accomplishes it. AURA may surface or recommend a relevant playbook. When an AURA playbook is selected, preserve the parts of its method, sequencing, evidence discipline, outputs, verification, and QA that materially make the process reliable; incidental implementation technique should remain adaptable to the active model, harness, tools, environment, and organization preferences.
+
+AURA should be strict about the integrity of the organizational record—identity, provenance, references, truth boundaries, business isolation, and truthful lifecycle state—without unnecessarily substituting its own semantic business judgment for capable humans or models.
+
+AURA should also stay lightweight. Organizational overhead should be proportional to the durable value and consequence of the work. A mandatory mechanism should earn its cost through better work quality, context, continuity, provenance, truth, reuse, measurement, or Learning rather than through ceremony alone.
 
 ## Start in three steps
 
@@ -38,7 +54,7 @@ Browse the plain-language catalog in **`PLAYBOOKS.md`** if you want to see speci
 
 AURA is designed around a simple loop:
 
-**business context → evidence → priorities → reasoning → authorized work → verification → measurement → Learning → better future work**
+**business context → relevant evidence + process knowledge → capable reasoning/execution → material organizational record → verification/measurement → Learning → better future work**
 
 The model can change.
 
@@ -77,7 +93,7 @@ It can use the best available combination of:
 - ViralTrac;
 - future agent/harness capabilities.
 
-The native AURA processes should remain useful on their own. Optional specialist execution methods can improve them further when genuinely better for the job.
+The native AURA processes should remain useful on their own. Optional specialist execution methods can improve them further when genuinely better for the job. A specialist Skill may implement or enhance an AURA process; AURA should not duplicate a better execution capability merely to own the execution itself.
 
 ## Evidence, truth, and authorization
 
@@ -94,7 +110,7 @@ It should distinguish:
 
 AURA should not invent business facts, source evidence, tool actions, media execution, publication, measurements, or outcomes merely to appear complete.
 
-Consequential actions such as publishing, spending money, contacting customers, changing production systems, or other governed actions remain subject to the applicable authorization boundary.
+Consequential actions such as publishing, spending money, contacting customers, changing production systems, or other governed actions remain subject to the applicable user, organization, platform, legal, account, or other real authorization boundary.
 
 ## AURA and ViralTrac
 
@@ -126,4 +142,4 @@ The official public product name is **ViralTrac AURA**. “BusinessOS” remains
 
 ---
 
-**The intended experience is simple:** give a capable AI the AURA folder, tell it about the business and desired outcome, and let AURA supply the durable operating structure underneath the work.
+**The intended experience is simple:** give a capable AI the AURA folder, tell it about the business and desired outcome, let AURA surface useful organizational context and proven processes, and preserve the material work so the organization can continue from it later.
