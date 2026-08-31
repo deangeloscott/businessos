@@ -50,7 +50,10 @@ def main():
         require(len(payload['objects_written'])==7,f'exact Northstar bootstrap should write 7 objects, got {payload}')
         require(payload.get('completion_state')=='initialization_complete_residual_routed',f'bootstrap should deterministically route declared residual intent, got {payload}')
         require(payload.get('residual_route',{}).get('contract_id')=='core.opportunity.discover-next-best-work',f'bootstrap residual route should select next-best-work, got {payload}')
-        require(payload.get('residual_route',{}).get('broad_growth_precheck',{}).get('status')=='baseline_required',f'bootstrap residual route should carry fresh-business baseline gate, got {payload}')
+        precheck=payload.get('residual_route',{}).get('broad_growth_precheck',{})
+        require(precheck.get('status')=='evidence_inventory_ready',f'bootstrap residual route should carry growth evidence inventory, got {payload}')
+        require(precheck.get('hard_gate') is False and precheck.get('decision_authority')=='model_or_human',f'growth evidence inventory must remain advisory, got {precheck}')
+        require(precheck.get('structured_baseline_state')=='not_recorded',f'fresh bootstrap should report missing structured baseline as representation state, got {precheck}')
         require('department/tactic menu' in payload.get('required_next_action',''),'bootstrap should make residual continuation non-optional')
 
         errors,warnings,counts=validate_business(BID,True)
@@ -217,7 +220,8 @@ def main():
         cid=result[0].get('contract_id') if isinstance(result,list) and result else None
         require(cid=='core.opportunity.discover-next-best-work',f'next-best-work routing expected, got {result}')
         rr=route_and_resolve('determine what we should do next',BID)
-        require(rr.get('broad_growth_precheck',{}).get('status')=='baseline_required',f'fresh business should trigger baseline gate, got {rr}')
+        precheck=rr.get('broad_growth_precheck',{})
+        require(precheck.get('status')=='evidence_inventory_ready' and precheck.get('hard_gate') is False,f'fresh business should return advisory growth evidence inventory, got {rr}')
 
         plan=build_plan(BID,'core.opportunity.discover-next-best-work')
         require('core/policies/resource-aware-execution.md' in plan['files'],'resource-aware policy missing from next-best-work context plan')
@@ -242,9 +246,9 @@ def main():
         require('Contextual questions are encouraged' in resource and 'decision-critical unknown' in resource,'contextual diagnostic question rule missing')
 
         nb=(ROOT/'core/contracts/opportunity/discover-next-best-work/CONTEXT.md').read_text(encoding='utf-8')
-        require('growth_baseline_gate.py' in nb and 'hard first-pass gate' in nb,'deterministic profitable-growth baseline gate missing')
+        require('growth_baseline_gate.py' in nb and 'lightweight inventory' in nb and 'not a deterministic judgment' in nb,'advisory profitable-growth evidence inventory semantics missing')
         require('one bounded discovery loop' in nb,'bounded discovery-loop rule missing')
-        require('Do **not** implement' in nb,'next-best-work execution boundary missing')
+        require('If the user asked only' in nb and 'If the user also requested execution' in nb,'next-best-work request-boundary semantics missing')
 
         claim_policy=(ROOT/'core/policies/context-provenance-and-claims.md').read_text(encoding='utf-8')
         require('BusinessClaim' in claim_policy and 'claim_manifest' in claim_policy,'context provenance/claim policy missing core controls')
@@ -252,7 +256,7 @@ def main():
         require('core/policies/context-provenance-and-claims.md' in mplan['files'],'marketing production context must load claim/provenance policy')
         require(any(x.get('type')=='BusinessClaim' for x in mplan.get('unresolved_selectors',[]) if isinstance(x,dict)),'marketing context plan should request reusable BusinessClaim context when none exists')
         agent=(ROOT/'core/policies/agent-execution.md').read_text(encoding='utf-8')
-        require('Required-contract completion evidence' in agent and 'build_claim_manifest.py' in agent,'agent execution must enforce auditable production/claim controls')
+        require('Required-process completion evidence' in agent and 'build_claim_manifest.py' in agent,'agent execution must enforce auditable production/claim controls')
         require((ROOT/'core/policies/completion-evidence.md').exists(),'contract-aware completion evidence policy missing')
         reg=json.loads((ROOT/'generated/contract-registry.json').read_text()); byid={c['id']:c for c in reg['contracts']}
         require(byid['content.production.article'].get('artifact_role')=='customer_facing_production_root','content production root role metadata missing')
