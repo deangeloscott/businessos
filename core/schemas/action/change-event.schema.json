@@ -4,98 +4,56 @@
   "type": "object",
   "additionalProperties": false,
   "properties": {
-    "id": {
-      "type": "string",
-      "pattern": "^chg_[A-Za-z0-9_-]+$"
-    },
-    "object_type": {
-      "const": "ChangeEvent"
-    },
-    "schema_version": {
-      "type": "string",
-      "pattern": "^\\d+\\.\\d+\\.\\d+$"
-    },
-    "business_id": {
-      "type": "string",
-      "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$"
-    },
-    "created_at": {
-      "type": "string",
-      "format": "date-time"
-    },
-    "updated_at": {
-      "type": "string",
-      "format": "date-time"
-    },
-    "lineage": {
-      "type": "array",
-      "items": {
-        "type": "string",
-        "minLength": 1
-      },
-      "uniqueItems": true
-    },
-    "action_packet_ref": {
-      "type": "string",
-      "minLength": 1
-    },
-    "target_refs": {
-      "type": "array",
-      "items": {
-        "type": "string",
-        "minLength": 1
-      },
-      "uniqueItems": true
-    },
+    "id": {"type": "string", "pattern": "^chg_[A-Za-z0-9_-]+$"},
+    "object_type": {"const": "ChangeEvent"},
+    "schema_version": {"type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$"},
+    "business_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "updated_at": {"type": "string", "format": "date-time"},
+    "lineage": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+
+    "summary": {"type": "string", "minLength": 1},
+    "change_kind": {"type": ["string", "null"]},
+    "target_refs": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
     "before_state": {},
-    "actions_applied": {
-      "type": "array"
-    },
+    "change_details": {"type": "array"},
+    "actions_applied": {"type": "array"},
     "after_state": {},
-    "executor": {
-      "type": "string",
-      "minLength": 1
-    },
-    "approval_ref": {
-      "type": [
-        "string",
-        "null"
-      ]
-    },
-    "rollback": {
-      "type": "object"
-    },
+    "executor": {"type": ["string", "null"]},
+    "occurred_at": {"type": "string", "format": "date-time"},
+    "timestamp": {"type": "string", "format": "date-time"},
     "status": {
-      "enum": [
-        "planned",
-        "applying",
-        "applied",
-        "verifying",
-        "verified",
-        "closed",
-        "partially_applied",
-        "failed",
-        "rolled_back"
-      ]
+      "enum": ["planned", "applying", "applied", "partial", "failed", "rolled_back", "closed", "partially_applied", "verifying", "verified"]
     },
-    "timestamp": {
-      "type": "string",
-      "format": "date-time"
-    },
-    "extensions": {
-      "type": "object"
-    }
+    "evidence_refs": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+    "result_refs": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+    "decision_refs": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+    "work_request_refs": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+    "rollback": {"type": ["object", "null"]},
+
+    "action_packet_ref": {"type": "string", "minLength": 1},
+    "approval_ref": {"type": ["string", "null"]},
+
+    "extensions": {"type": "object"}
   },
   "required": [
     "id",
     "object_type",
     "schema_version",
-    "business_id",
-    "action_packet_ref",
-    "target_refs",
-    "actions_applied",
-    "executor",
-    "status",
-    "timestamp"
+    "business_id"
+  ],
+  "allOf": [
+    {
+      "anyOf": [
+        {"required": ["summary"]},
+        {"required": ["actions_applied"]}
+      ]
+    },
+    {
+      "anyOf": [
+        {"required": ["occurred_at"]},
+        {"required": ["timestamp"]}
+      ]
+    }
   ]
 }
