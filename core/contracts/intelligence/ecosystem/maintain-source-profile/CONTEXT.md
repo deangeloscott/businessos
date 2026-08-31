@@ -3,8 +3,6 @@ id: core.intelligence.ecosystem.maintain-source-profile
 type: service
 version: 1.1.0
 owner_system: core
-risk: low
-autonomy_ceiling: 4
 reads:
 - SourceProfile
 - SourceRecord

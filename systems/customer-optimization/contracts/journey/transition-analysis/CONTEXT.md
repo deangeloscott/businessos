@@ -3,8 +3,6 @@ id: customer-optimization.journey.transition-analysis
 type: playbook
 version: 1.1.0
 owner_system: customer-optimization
-risk: low
-autonomy_ceiling: 4
 reads:
 - CustomerJourney
 - type: Insight

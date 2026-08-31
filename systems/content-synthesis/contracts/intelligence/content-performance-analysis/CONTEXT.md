@@ -3,8 +3,6 @@ id: content.intelligence.content-performance-analysis
 type: playbook
 version: 1.2.0
 owner_system: content-synthesis
-risk: low
-autonomy_ceiling: 4
 reads:
 - Asset
 - MetricObservation

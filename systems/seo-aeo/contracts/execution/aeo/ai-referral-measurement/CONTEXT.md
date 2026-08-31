@@ -3,8 +3,6 @@ id: seo.execution.aeo.ai-referral-measurement
 type: playbook
 version: 1.1.0
 owner_system: seo-aeo
-risk: low
-autonomy_ceiling: 4
 reads:
 - SEOAssetState
 - Asset

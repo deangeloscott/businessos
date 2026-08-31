@@ -3,8 +3,6 @@ id: seo.diagnosis.detectors.technical
 type: detector
 version: 1.1.0
 owner_system: seo-aeo
-risk: medium
-autonomy_ceiling: 3
 reads:
 - OrganicDemandUnit
 - SEOAssetState

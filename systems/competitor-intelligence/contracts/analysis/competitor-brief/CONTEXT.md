@@ -3,8 +3,6 @@ id: competitor.analysis.competitor-brief
 type: playbook
 version: 1.3.0
 owner_system: competitor-intelligence
-risk: low
-autonomy_ceiling: 2
 reads:
 - Competitor
 - SourceRecord

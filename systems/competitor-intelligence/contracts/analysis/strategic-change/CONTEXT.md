@@ -3,8 +3,6 @@ id: competitor.analysis.strategic-change
 type: playbook
 version: 1.3.0
 owner_system: competitor-intelligence
-risk: low
-autonomy_ceiling: 4
 reads:
 - Competitor
 - type: Insight

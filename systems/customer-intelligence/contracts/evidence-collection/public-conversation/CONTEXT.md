@@ -3,8 +3,6 @@ id: customer.evidence-collection.public-conversation
 type: playbook
 version: 1.3.0
 owner_system: customer-intelligence
-risk: medium
-autonomy_ceiling: 3
 reads:
 - SourceRecord
 - Observation

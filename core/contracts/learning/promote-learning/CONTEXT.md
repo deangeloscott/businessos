@@ -3,8 +3,6 @@ id: core.learning.promote-learning
 type: service
 version: 1.2.0
 owner_system: core
-risk: low
-autonomy_ceiling: 4
 reads:
 - OutcomeEvaluation
 - Learning

@@ -3,8 +3,6 @@ id: competitor.discovery.competitive-set
 type: playbook
 version: 1.8.0
 owner_system: competitor-intelligence
-risk: low
-autonomy_ceiling: 4
 reads:
 - type: Insight
   owner_system: customer-intelligence

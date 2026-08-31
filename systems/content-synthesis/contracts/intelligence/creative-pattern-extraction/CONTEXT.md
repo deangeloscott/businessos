@@ -3,8 +3,6 @@ id: content.intelligence.creative-pattern-extraction
 type: playbook
 version: 1.2.0
 owner_system: content-synthesis
-risk: low
-autonomy_ceiling: 4
 reads:
 - SourceRecord
 - Observation

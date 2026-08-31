@@ -3,8 +3,6 @@ id: core.intelligence.innovation-exchange
 type: playbook
 version: 1.0.0
 owner_system: core
-risk: low
-autonomy_ceiling: 3
 reads:
 - ProcessExtension
 - Learning

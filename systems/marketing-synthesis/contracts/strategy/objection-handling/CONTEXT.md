@@ -3,8 +3,6 @@ id: marketing.strategy.objection-handling
 type: playbook
 version: 1.1.0
 owner_system: marketing-synthesis
-risk: low
-autonomy_ceiling: 4
 reads:
 - type: Insight
   owner_system: customer-intelligence
@@ -15,7 +13,6 @@ reads:
 writes:
 - Insight
 - Opportunity
-- ActionPacket
 - WorkRequest
 capabilities:
   required:

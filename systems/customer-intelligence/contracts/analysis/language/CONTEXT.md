@@ -3,8 +3,6 @@ id: customer.analysis.language
 type: playbook
 version: 1.1.0
 owner_system: customer-intelligence
-risk: low
-autonomy_ceiling: 4
 reads:
 - SourceRecord
 - Observation

@@ -3,8 +3,6 @@ id: content.production.title-headline
 type: playbook
 version: 1.3.0
 owner_system: content-synthesis
-risk: low
-autonomy_ceiling: 2
 reads:
 - Insight
 - Opportunity
@@ -14,7 +12,6 @@ reads:
 - PlatformProfile
 writes:
 - Asset
-- ActionPacket
 - WorkRequest
 capabilities:
   required:

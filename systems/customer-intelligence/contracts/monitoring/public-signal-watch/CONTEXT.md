@@ -3,8 +3,6 @@ id: customer.monitoring.public-signal-watch
 type: detector
 version: 1.2.0
 owner_system: customer-intelligence
-risk: medium
-autonomy_ceiling: 3
 reads:
 - Observation
 - Insight

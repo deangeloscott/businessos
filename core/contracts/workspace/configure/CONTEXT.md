@@ -3,8 +3,6 @@ id: core.workspace.configure
 type: service
 version: 1.1.0
 owner_system: core
-risk: low
-autonomy_ceiling: 3
 reads: []
 writes: []
 capabilities:

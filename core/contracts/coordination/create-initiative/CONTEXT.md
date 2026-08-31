@@ -3,8 +3,6 @@ id: core.coordination.create-initiative
 type: playbook
 version: 1.1.0
 owner_system: core
-risk: low
-autonomy_ceiling: 4
 reads:
 - Opportunity
 writes:

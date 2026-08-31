@@ -3,8 +3,6 @@ id: seo.incidents.mass-deindexing
 type: incident
 version: 1.1.0
 owner_system: seo-aeo
-risk: high
-autonomy_ceiling: 2
 reads:
 - SEOAssetState
 - Asset
@@ -13,7 +11,6 @@ reads:
 - Opportunity
 - Observation
 writes:
-- ActionPacket
 - Incident
 capabilities:
   required:

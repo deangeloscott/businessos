@@ -3,8 +3,6 @@ id: core.context.brand-profile
 type: playbook
 version: 1.5.0
 owner_system: core
-risk: medium
-autonomy_ceiling: 2
 reads:
 - Brand
 - Asset

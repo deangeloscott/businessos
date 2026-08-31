@@ -3,8 +3,6 @@ id: content.intelligence.trending-content-discovery
 type: playbook
 version: 1.3.0
 owner_system: content-synthesis
-risk: low
-autonomy_ceiling: 4
 reads:
 - PlatformProfile
 - Insight

@@ -120,21 +120,19 @@ Generated from contract frontmatter. Do not maintain a second manual list.
 
 ## core
 
-- `core.action-control.authorize-action` — Authorize Action: Calculate effective action authorization from capability, autonomy, risk, permissions, evidence, compliance, scale, reversibility, and approval requirements.
-- `core.action-control.build-action-packet` — Build Action Packet: Convert a committed Opportunity into explicit executable Actions.
-- `core.action-control.delegate-work` — Delegate Work: Request another operating system to perform specialized execution without duplicating the originating Opportunity.
-- `core.action-control.record-change` — Record Change Event: Record what external state was intentionally changed and how.
-- `core.action-control.return-work` — Return Delegated Work: Complete a WorkRequest by returning valid outputs and execution evidence to the originating system without transferring Opportunity ownership.
-- `core.attention.manage` — Manage Attention: Represent a material condition that needs user/harness awareness without coupling BusinessOS to any notification channel.
+- `core.action-control.delegate-work` — Delegate Work: Create a durable organizational handoff only when future continuity benefits from recording that one person, team, system, or workstream is responsible for returning a bounded result.
+- `core.action-control.record-change` — Record Material Change: Preserve a concise organization-owned record of a material change when future work benefits from knowing what changed, where, when, and with what evidence or result.
+- `core.action-control.return-work` — Return Delegated Work: Record the material result of a durable WorkRequest so future organizational work can continue from what actually happened.
+- `core.attention.manage` — Manage Attention: Represent a material organizational condition that should remain visible across sessions without coupling AURA to any notification channel or generic governance gate.
 - `core.context.bootstrap-business` — Bootstrap Business Context: Turn minimal business identity and available evidence into a usable initial Business Context, using adaptive owned-business discovery before asking the user for information that can be safely obtained.
 - `core.context.brand-profile` — Capture Brand Profile: Turn explicit brand preferences, approved examples, and observable first-party patterns into durable generation constraints for every installed module.
 - `core.context.owned-business-discovery` — Adaptive Owned Business Discovery: Build an evidence-backed map of the business and its official/public surfaces at the depth needed for the current job, instead of repeatedly asking the user for information the system can safely discover.
-- `core.context.propose-update` — Propose Canonical Context Update: Convert evidence that conflicts with or materially extends canonical Business Context into a controlled proposed change.
+- `core.context.propose-update` — Propose Canonical Context Update: Represent credible evidence that materially changes or conflicts with durable Business Context without silently rewriting organizational truth.
 - `core.coordination.create-initiative` — Create Initiative: Coordinate genuinely distinct domain Opportunities toward one shared business outcome.
 - `core.coordination.multi-domain-request` — Coordinate Multi-Domain Request: Decompose one user request that intentionally spans several business responsibilities into correctly owned, sequenced work without duplicating intelligence or Opportunities.
 - `core.data.query-business-truth` — Query Governed Business Truth: Answer a decision-relevant question from the active business's authoritative/connected data without making the model re-derive provider-specific joins, metrics, identity, or attribution semantics when a governed semantic plane is available.
 - `core.diagnosis.business-problem` — Diagnose Broad Business Problem: Turn an unexplained business symptom into a bounded, evidence-backed diagnosis across the installed semantic domains before recommending interventions.
-- `core.incident.manage` — Manage Incident: Coordinate detection, containment, correction, verification, communication, and postmortem for material incidents while the domain owns technical diagnosis.
+- `core.incident.manage` — Manage Incident: Coordinate material incident understanding, containment, correction, verification, communication, and learning while the relevant domain/harness owns technical execution.
 - `core.intelligence.community-evidence-review` — Community Innovation Evidence Review: Evaluate accumulated BusinessOS community contributions and local replications as evidence, not popularity, then decide whether an innovation should be ignored, watched, investigated, tested, adopted locally, or proposed for broader playbook evolution.
 - `core.intelligence.ecosystem-radar` — External Ecosystem Intelligence Radar: Run one governed external-learning cycle that discovers meaningful outside developments, verifies what the evidence actually supports, and routes only relevant findings to their canonical domain owners.
 - `core.intelligence.ecosystem.evidence-triangulation` — External Evidence Triangulation: Determine what a material external claim or signal is actually supported by after tracing provenance, independent corroboration, contradiction, freshness, novelty, methodology, and alternative explanations.
@@ -154,7 +152,7 @@ Generated from contract frontmatter. Do not maintain a second manual list.
 - `core.learning.adopt-process-extension` — Adopt Business Process Extension: Apply an explicitly approved business-scoped PlaybookEvolutionProposal as a reversible ProcessExtension without modifying the canonical BusinessOS source tree.
 - `core.learning.playbook-evolution` — Playbook Evolution and System Improvement: Turn sufficiently strong reusable Learning into the narrowest justified operating-process improvement without converting one successful result into universal BusinessOS behavior.
 - `core.learning.promote-learning` — Promote Learning: Turn repeated or sufficiently strong outcome evidence into scoped future decision guidance and, when justified, a candidate operating-process improvement.
-- `core.measurement.design-experiment` — Design Experiment: Provide a shared disciplined experiment contract while allowing domains to define their intervention and mechanism.
+- `core.measurement.design-experiment` — Design Experiment: Design a disciplined experiment when causal learning would materially improve a business decision.
 - `core.measurement.evaluate-outcome` — Evaluate Outcome: Determine what happened after an intervention and how confidently it can be attributed.
 - `core.measurement.publish-metric` — Publish Metric Observation: Create comparable metric observations from external or derived measurements using canonical definitions.
 - `core.monitoring.configure-reactive-monitoring` — Configure Reactive Monitoring: Prepare an active business to use a governed event/reaction plane for continuous BusinessOS evaluation without making live event delivery a hidden dependency.
@@ -164,7 +162,7 @@ Generated from contract frontmatter. Do not maintain a second manual list.
 - `core.opportunity.discover-next-best-work` — Discover Next Best Work: Translate a broad business goal or prioritization request into the highest-value next work supported by the **minimum sufficient evidence**.
 - `core.opportunity.qualify` — Qualify Opportunity: Turn domain diagnosis into a comparable, evidence-backed potential intervention.
 - `core.routing.resolve-intent` — Resolve User Intent: Interpret a natural-language business request when deterministic routing cannot identify a sufficiently confident direct job.
-- `core.verification.verify-change` — Verify Change: Independently determine whether intended external state exists and guardrails remain acceptable.
+- `core.verification.verify-change` — Verify Material Change: Establish whether an important claimed post-state is actually true when independent verification is useful to the task, selected SOP, or consequence.
 - `core.workspace.configure` — Configure AURA Workspace: Configure where organization-owned ViralTrac AURA state lives and which deployment experience is being used without changing AURA's operating semantics or making Git, Obsidian, or hosted infrastructure mandatory.
 
 ## customer-intelligence

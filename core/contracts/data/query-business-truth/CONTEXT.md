@@ -3,8 +3,6 @@ id: core.data.query-business-truth
 type: playbook
 version: 1.8.0
 owner_system: core
-risk: low
-autonomy_ceiling: 4
 reads:
 - Business
 - SourceRecord

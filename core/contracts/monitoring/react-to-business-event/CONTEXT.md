@@ -3,8 +3,6 @@ id: core.monitoring.react-to-business-event
 type: playbook
 version: 1.8.1
 owner_system: core
-risk: medium
-autonomy_ceiling: 2
 reads:
 - Business
 - SourceRecord

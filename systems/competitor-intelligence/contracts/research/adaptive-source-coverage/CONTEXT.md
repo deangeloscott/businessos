@@ -3,8 +3,6 @@ id: competitor.research.adaptive-source-coverage
 type: playbook
 version: 1.7.0
 owner_system: competitor-intelligence
-risk: low
-autonomy_ceiling: 3
 reads:
 - Competitor
 - SourceRecord

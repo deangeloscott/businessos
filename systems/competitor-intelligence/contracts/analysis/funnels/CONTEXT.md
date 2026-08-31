@@ -3,8 +3,6 @@ id: competitor.analysis.funnels
 type: playbook
 version: 1.7.0
 owner_system: competitor-intelligence
-risk: low
-autonomy_ceiling: 4
 reads:
 - Competitor
 - type: Insight

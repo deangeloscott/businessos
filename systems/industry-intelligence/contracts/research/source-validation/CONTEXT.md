@@ -3,8 +3,6 @@ id: industry.research.source-validation
 type: playbook
 version: 1.3.0
 owner_system: industry-intelligence
-risk: low
-autonomy_ceiling: 2
 reads:
 - IndustryEvent
 - SourceRecord

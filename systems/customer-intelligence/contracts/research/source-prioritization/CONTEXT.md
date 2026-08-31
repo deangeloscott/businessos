@@ -3,14 +3,11 @@ id: customer.research.source-prioritization
 type: playbook
 version: 1.3.0
 owner_system: customer-intelligence
-risk: low
-autonomy_ceiling: 2
 reads:
 - SourceRecord
 - Observation
 - Insight
-writes:
-- ActionPacket
+writes: []
 capabilities:
   required:
   - none

@@ -3,8 +3,6 @@ id: customer.evidence-collection.reviews
 type: playbook
 version: 1.2.0
 owner_system: customer-intelligence
-risk: low
-autonomy_ceiling: 4
 reads:
 - SourceRecord
 - Observation

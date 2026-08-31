@@ -3,12 +3,8 @@ id: content.publishing.publish-asset
 type: playbook
 version: 1.2.0
 owner_system: content-synthesis
-risk: medium
-autonomy_ceiling: 3
 reads:
 - Asset
-- ActionPacket
-- Approval
 writes:
 - ChangeEvent
 - VerificationRecord

@@ -3,8 +3,6 @@ id: content.strategy.format-platform
 type: playbook
 version: 1.1.0
 owner_system: content-synthesis
-risk: low
-autonomy_ceiling: 4
 reads:
 - Opportunity
 - WorkRequest
@@ -13,7 +11,6 @@ reads:
 - Asset
 - PlatformProfile
 writes:
-- ActionPacket
 - Asset
 capabilities:
   required:

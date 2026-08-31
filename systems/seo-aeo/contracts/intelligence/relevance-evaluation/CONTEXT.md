@@ -3,8 +3,6 @@ id: seo.intelligence.relevance-evaluation
 type: detector
 version: 1.1.0
 owner_system: seo-aeo
-risk: low
-autonomy_ceiling: 4
 reads:
 - Insight
 - Opportunity

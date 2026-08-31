@@ -3,8 +3,6 @@ id: industry.analysis.audience-implication
 type: playbook
 version: 1.2.0
 owner_system: industry-intelligence
-risk: low
-autonomy_ceiling: 4
 reads:
 - IndustryEvent
 - Insight

@@ -3,8 +3,6 @@ id: industry.monitoring.news
 type: playbook
 version: 1.2.0
 owner_system: industry-intelligence
-risk: low
-autonomy_ceiling: 4
 reads:
 - SourceRecord
 - Observation

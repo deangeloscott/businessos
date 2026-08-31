@@ -4,8 +4,6 @@ type: playbook
 version: 1.3.0
 owner_system: content-synthesis
 artifact_role: customer_facing_production_root
-risk: low
-autonomy_ceiling: 2
 reads:
 - Insight
 - Opportunity
@@ -15,7 +13,6 @@ reads:
 - PlatformProfile
 writes:
 - Asset
-- ActionPacket
 - WorkRequest
 capabilities:
   required:

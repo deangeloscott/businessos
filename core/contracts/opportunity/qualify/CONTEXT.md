@@ -3,8 +3,6 @@ id: core.opportunity.qualify
 type: service
 version: 1.2.0
 owner_system: core
-risk: low
-autonomy_ceiling: 4
 reads:
 - Insight
 - Opportunity

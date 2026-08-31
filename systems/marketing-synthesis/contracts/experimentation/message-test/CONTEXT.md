@@ -3,8 +3,6 @@ id: marketing.experimentation.message-test
 type: playbook
 version: 1.1.0
 owner_system: marketing-synthesis
-risk: low
-autonomy_ceiling: 4
 reads:
 - Opportunity
 - MetricDefinition
@@ -12,7 +10,6 @@ reads:
 - Asset
 writes:
 - Experiment
-- ActionPacket
 capabilities:
   required:
   - none

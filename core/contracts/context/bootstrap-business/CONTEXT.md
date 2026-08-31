@@ -3,8 +3,6 @@ id: core.context.bootstrap-business
 type: playbook
 version: 1.11.0
 owner_system: core
-risk: medium
-autonomy_ceiling: 2
 reads: []
 writes:
 - Business

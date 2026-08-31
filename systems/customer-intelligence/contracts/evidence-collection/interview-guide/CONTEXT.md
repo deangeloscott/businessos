@@ -3,14 +3,11 @@ id: customer.evidence-collection.interview-guide
 type: playbook
 version: 1.3.0
 owner_system: customer-intelligence
-risk: low
-autonomy_ceiling: 2
 reads:
 - Insight
 - Observation
 writes:
 - Asset
-- ActionPacket
 capabilities:
   required:
   - none

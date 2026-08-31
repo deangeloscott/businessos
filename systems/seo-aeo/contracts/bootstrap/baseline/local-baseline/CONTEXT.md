@@ -3,8 +3,6 @@ id: seo.bootstrap.baseline.local-baseline
 type: playbook
 version: 1.1.0
 owner_system: seo-aeo
-risk: low
-autonomy_ceiling: 4
 reads:
 - Asset
 - Observation

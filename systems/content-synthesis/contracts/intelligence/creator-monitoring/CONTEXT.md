@@ -3,8 +3,6 @@ id: content.intelligence.creator-monitoring
 type: detector
 version: 1.4.0
 owner_system: content-synthesis
-risk: low
-autonomy_ceiling: 4
 reads:
 - SourceProfile
 - SourceRecord

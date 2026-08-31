@@ -3,8 +3,6 @@ id: marketing.landing-page.qa
 type: playbook
 version: 1.4.0
 owner_system: marketing-synthesis
-risk: medium
-autonomy_ceiling: 2
 reads:
 - Opportunity
 - Insight
@@ -12,7 +10,6 @@ reads:
 - Asset
 - WorkRequest
 writes:
-- ActionPacket
 - WorkRequest
 - Asset
 capabilities:

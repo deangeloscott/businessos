@@ -3,8 +3,6 @@ id: competitor.intelligence.relevance-evaluation
 type: detector
 version: 1.1.0
 owner_system: competitor-intelligence
-risk: low
-autonomy_ceiling: 4
 reads:
 - Insight
 - Opportunity

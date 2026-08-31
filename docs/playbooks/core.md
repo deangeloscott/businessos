@@ -33,11 +33,6 @@ Figure out what the business needs, keep business facts organized, choose the ri
 
 These are smaller, specific playbooks BusinessOS can use inside the larger jobs above. The names are kept simple here; open the linked contract or ask BusinessOS to explain one if you want the exact steps.
 
-### Actions and approvals
-
-- [Authorize Action](../../core/contracts/action-control/authorize-action/CONTEXT.md)
-- [Return Delegated Work](../../core/contracts/action-control/return-work/CONTEXT.md)
-
 ### Business context
 
 - [Adaptive Owned Business Discovery](../../core/contracts/context/owned-business-discovery/CONTEXT.md) *(main entry playbook)*
@@ -103,6 +98,6 @@ These are smaller, specific playbooks BusinessOS can use inside the larger jobs 
 
 Ask BusinessOS something like:
 
-> “Show me the exact steps for Authorize Action, including what it reads, what it saves, and how it knows when it is done.”
+> “Show me the exact steps for Bootstrap Business Context, including what it reads, what it saves, and how it knows when it is done.”
 
 The linked contract is the authoritative version. This page is only a simpler map for people.

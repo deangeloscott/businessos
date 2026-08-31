@@ -3,13 +3,10 @@ id: customer.evidence-collection.interview-participants
 type: playbook
 version: 1.3.0
 owner_system: customer-intelligence
-risk: low
-autonomy_ceiling: 2
 reads:
 - SourceRecord
 - Observation
-writes:
-- ActionPacket
+writes: []
 capabilities:
   required:
   - crm.contact.read

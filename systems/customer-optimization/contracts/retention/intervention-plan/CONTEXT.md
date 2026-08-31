@@ -3,8 +3,6 @@ id: customer-optimization.retention.intervention-plan
 type: playbook
 version: 1.3.0
 owner_system: customer-optimization
-risk: medium
-autonomy_ceiling: 2
 reads:
 - CustomerJourney
 - Observation
@@ -16,7 +14,6 @@ writes:
 - Observation
 - Insight
 - Opportunity
-- ActionPacket
 capabilities:
   required:
   - analytics.read

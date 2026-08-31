@@ -3,8 +3,6 @@ id: core.intelligence.record-platform-change
 type: service
 version: 1.8.4
 owner_system: core
-risk: low
-autonomy_ceiling: 4
 reads:
 - Business
 - SourceRecord

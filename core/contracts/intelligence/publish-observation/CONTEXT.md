@@ -3,8 +3,6 @@ id: core.intelligence.publish-observation
 type: service
 version: 1.1.0
 owner_system: core
-risk: low
-autonomy_ceiling: 4
 reads:
 - SourceRecord
 writes:

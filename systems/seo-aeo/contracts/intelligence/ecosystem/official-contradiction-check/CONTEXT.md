@@ -3,8 +3,6 @@ id: seo.intelligence.ecosystem.official-contradiction-check
 type: playbook
 version: 1.1.0
 owner_system: seo-aeo
-risk: low
-autonomy_ceiling: 4
 reads:
 - type: Insight
   owner_system: seo-aeo
@@ -14,7 +12,6 @@ reads:
 writes:
 - Learning
 - Observation
-- Approval
 - Incident
 capabilities:
   required:

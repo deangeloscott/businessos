@@ -3,8 +3,6 @@ id: core.intelligence.ecosystem.route-learning
 type: playbook
 version: 1.0.0
 owner_system: core
-risk: low
-autonomy_ceiling: 4
 reads:
 - Business
 - Objective

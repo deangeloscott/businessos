@@ -3,8 +3,6 @@ id: customer-optimization.intelligence.relevance-evaluation
 type: detector
 version: 1.1.0
 owner_system: customer-optimization
-risk: low
-autonomy_ceiling: 4
 reads:
 - Insight
 - Opportunity

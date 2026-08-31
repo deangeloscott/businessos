@@ -3,8 +3,6 @@ id: core.intelligence.subject-monitoring
 type: playbook
 version: 1.2.0
 owner_system: core
-risk: low
-autonomy_ceiling: 4
 reads:
 - SourceProfile
 - SourceRecord

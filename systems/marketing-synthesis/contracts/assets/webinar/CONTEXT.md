@@ -4,8 +4,6 @@ type: playbook
 version: 1.3.0
 owner_system: marketing-synthesis
 artifact_role: customer_facing_production_root
-risk: medium
-autonomy_ceiling: 3
 reads:
 - Opportunity
 - type: Insight
@@ -16,7 +14,6 @@ reads:
 - WorkRequest
 - ProofRecord
 writes:
-- ActionPacket
 - WorkRequest
 - Asset
 capabilities:

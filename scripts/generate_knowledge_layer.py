@@ -15,14 +15,14 @@ PAGES=[
     ('SEO-AEO','SEO/AEO intelligence and operating state.'),
     ('Content-Marketing','Content Synthesis and Marketing Synthesis state.'),
     ('Customer-Optimization','Customer Optimization state.'),
-    ('Operations','Actions, approvals, incidents, change/verification and operational attention.'),
+    ('Operations','Decisions, incidents, material changes/verification, work requests and operational attention.'),
     ('Evidence','Sources, observations, insights and proof lineage.')
 ]
 
 BUSINESS_TYPES={'Business','Brand','ProductService','Offer','Market','AudienceSegment','EconomicContext','BusinessClaim','PreferenceProfile'}
 PRIORITY_TYPES={'Objective','Opportunity','Initiative','WorkRequest','AttentionItem'}
 EXPERIMENT_TYPES={'Experiment','OutcomeEvaluation','MetricDefinition','MetricObservation'}
-OPERATIONS_TYPES={'ActionPacket','Approval','Incident','ChangeEvent','VerificationRecord','WorkRequest','AttentionItem','EventReactionDecision','PlatformChange'}
+OPERATIONS_TYPES={'DecisionRecord','Incident','ChangeEvent','VerificationRecord','WorkRequest','AttentionItem','EventReactionDecision','PlatformChange'}
 EVIDENCE_TYPES={'SourceRecord','SourceProfile','Observation','Insight','ProofRecord'}
 DEFAULT_NOTIFICATION='material_changes_only'
 

@@ -3,8 +3,6 @@ id: core.learning.adopt-process-extension
 type: service
 version: 1.0.0
 owner_system: core
-risk: low
-autonomy_ceiling: 3
 reads:
 - PlaybookEvolutionProposal
 - Learning

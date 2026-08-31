@@ -52,8 +52,8 @@
     "marketing-synthesis",
     "seo-aeo"
   ],
-  "contract_count": 526,
-  "schema_count": 62,
+  "contract_count": 524,
+  "schema_count": 61,
   "capability_count": 98,
   "scheduled_contract_count": 26,
   "entrypoints": {

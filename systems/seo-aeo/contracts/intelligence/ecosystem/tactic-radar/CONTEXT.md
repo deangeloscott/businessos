@@ -3,8 +3,6 @@ id: seo.intelligence.ecosystem.tactic-radar
 type: playbook
 version: 1.0.0
 owner_system: seo-aeo
-risk: low
-autonomy_ceiling: 4
 reads:
 - SourceProfile
 - SourceRecord

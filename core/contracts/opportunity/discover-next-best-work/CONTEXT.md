@@ -3,8 +3,6 @@ id: core.opportunity.discover-next-best-work
 type: playbook
 version: 1.4.0
 owner_system: core
-risk: low
-autonomy_ceiling: 4
 reads:
 - Business
 - Objective

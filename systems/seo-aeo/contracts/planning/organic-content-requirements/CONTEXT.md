@@ -3,8 +3,6 @@ id: seo.planning.organic-content-requirements
 type: playbook
 version: 1.1.0
 owner_system: seo-aeo
-risk: low
-autonomy_ceiling: 4
 reads:
 - Opportunity
 - OrganicDemandUnit
@@ -16,7 +14,6 @@ reads:
 - OrganicCompetitorState
 writes:
 - WorkRequest
-- ActionPacket
 capabilities:
   required:
   - none

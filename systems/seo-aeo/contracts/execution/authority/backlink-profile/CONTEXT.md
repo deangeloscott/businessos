@@ -3,8 +3,6 @@ id: seo.execution.authority.backlink-profile
 type: playbook
 version: 1.1.0
 owner_system: seo-aeo
-risk: medium
-autonomy_ceiling: 2
 reads:
 - SEOAssetState
 - Asset

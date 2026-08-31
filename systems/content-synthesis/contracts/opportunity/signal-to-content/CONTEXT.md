@@ -3,8 +3,6 @@ id: content.opportunity.signal-to-content
 type: playbook
 version: 1.2.0
 owner_system: content-synthesis
-risk: low
-autonomy_ceiling: 4
 reads:
 - Observation
 - Insight

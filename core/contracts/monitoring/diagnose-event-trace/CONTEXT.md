@@ -3,8 +3,6 @@ id: core.monitoring.diagnose-event-trace
 type: playbook
 version: 1.8.1
 owner_system: core
-risk: low
-autonomy_ceiling: 4
 reads:
 - Business
 - Event

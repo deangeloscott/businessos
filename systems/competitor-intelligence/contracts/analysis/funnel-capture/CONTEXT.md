@@ -3,8 +3,6 @@ id: competitor.analysis.funnel-capture
 type: playbook
 version: 1.7.1
 owner_system: competitor-intelligence
-risk: low
-autonomy_ceiling: 2
 reads:
 - Competitor
 - SourceRecord

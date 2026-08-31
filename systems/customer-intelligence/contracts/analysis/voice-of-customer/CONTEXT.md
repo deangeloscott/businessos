@@ -3,8 +3,6 @@ id: customer.analysis.voice-of-customer
 type: playbook
 version: 1.1.0
 owner_system: customer-intelligence
-risk: low
-autonomy_ceiling: 4
 reads:
 - SourceRecord
 - Observation

@@ -3,8 +3,6 @@ id: competitor.intelligence.ecosystem-radar
 type: playbook
 version: 1.0.0
 owner_system: competitor-intelligence
-risk: low
-autonomy_ceiling: 4
 reads:
 - Competitor
 - SourceProfile

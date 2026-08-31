@@ -3,8 +3,6 @@ id: seo.execution.local.multi-location-franchise
 type: playbook
 version: 1.1.0
 owner_system: seo-aeo
-risk: medium
-autonomy_ceiling: 3
 reads:
 - SEOAssetState
 - Asset

@@ -3,8 +3,6 @@ id: seo.learning.tactic-promotion
 type: playbook
 version: 1.1.0
 owner_system: seo-aeo
-risk: low
-autonomy_ceiling: 4
 reads:
 - type: Learning
   owner_system: seo-aeo

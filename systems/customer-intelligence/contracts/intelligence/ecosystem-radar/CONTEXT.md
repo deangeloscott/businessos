@@ -3,8 +3,6 @@ id: customer.intelligence.ecosystem-radar
 type: playbook
 version: 1.0.0
 owner_system: customer-intelligence
-risk: low
-autonomy_ceiling: 4
 reads:
 - SourceProfile
 - SourceRecord

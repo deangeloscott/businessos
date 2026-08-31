@@ -3,8 +3,6 @@ id: content.intake.work-request
 type: playbook
 version: 1.1.0
 owner_system: content-synthesis
-risk: low
-autonomy_ceiling: 4
 reads:
 - WorkRequest
 - Opportunity
@@ -12,7 +10,6 @@ reads:
 - Asset
 writes:
 - WorkRequest
-- ActionPacket
 capabilities:
   required:
   - none
