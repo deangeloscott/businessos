@@ -43,7 +43,10 @@ def main():
     for phrase in ['No automatic sharing','workflow_only','anonymized_evidence','full_case_study','anonymous','pseudonymous','named']:
         if phrase not in policy:fail(f'innovation policy missing {phrase}')
     source=(ROOT/'core/contracts/intelligence/ecosystem/source-discovery/CONTEXT.md').read_text()
-    if 'InnovationExchangeEntry' not in source or 'Innovation Exchange popularity/repetition is never counted as independent evidence' not in source:fail('ecosystem discovery lost innovation evidence boundary')
+    source_meta=source.split('\n---\n',1)[0]
+    if '- InnovationExchangeEntry' in source_meta:fail('ecosystem discovery reintroduced exchange support data as canonical organization state')
+    for phrase in ['support data rather than canonical organization state','Treat an InnovationPackage as a contributed process/report, not proof that its claimed outcome works','Optional exchange/index data never substitutes for canonical SourceRecord/Observation evidence','Innovation Exchange popularity/repetition is never counted as independent evidence']:
+        if phrase not in source:fail(f'ecosystem discovery lost innovation evidence boundary: {phrase}')
     for bid in [A,B]:shutil.rmtree(ROOT/'instances'/bid,ignore_errors=True)
     shutil.rmtree(ROOT/'runtime'/'innovation'/A,ignore_errors=True);tmpdir=Path(tempfile.mkdtemp(prefix='aura-innovation-test-'))
     try:
