@@ -16,6 +16,7 @@ TESTS=[
     'tests/run_monitoring_pause.py',
     'tests/run_playbook_evolution_exchange.py',
     'tests/run_workspace_human_knowledge.py',
+    'tests/run_component_distributions.py',
     'tests/run_workspace_migration_path_guard.py',
     'tests/run_agent_hardening.py',
     'tests/run_bootstrap_reference_ids.py',
