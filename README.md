@@ -95,9 +95,9 @@ It can use the best available combination of:
 
 The native AURA processes should remain useful on their own. Optional specialist execution methods can improve them further when genuinely better for the job. A specialist Skill may implement or enhance an AURA process; AURA should not duplicate a better execution capability merely to own the execution itself.
 
-## Evidence, truth, and authorization
+## Evidence, truth, and real-world constraints
 
-AURA is designed to be flexible about **how** intelligent work is performed while remaining strict about important organizational boundaries.
+AURA is designed to be flexible about **how** intelligent work is performed while remaining strict about organizational truth and the actual scope of the work.
 
 It should distinguish:
 
@@ -106,17 +106,17 @@ It should distinguish:
 - drafts from execution;
 - execution from verification;
 - measurement from causation;
-- preferences from authorization.
+- reusable preferences from one-task instructions or constraints.
 
 AURA should not invent business facts, source evidence, tool actions, media execution, publication, measurements, or outcomes merely to appear complete.
 
-Consequential actions such as publishing, spending money, contacting customers, changing production systems, or other governed actions remain subject to the applicable user, organization, platform, legal, account, or other real authorization boundary.
+A request to analyze does not silently become permission to publish, spend money, contact customers, or change production systems. Conversely, when the user has actually requested an action, the active harness can perform it, and no real user, organization, platform, legal, contractual, account, or other external constraint prevents it, AURA should not invent an internal permission ceremony that blocks the work.
 
 ## AURA and ViralTrac
 
 ViralTrac is AURA's recommended first-party companion, but it is optional.
 
-AURA is the broader business operating layer. When connected, ViralTrac can provide governed first-party tracking, attribution, measurement, experiments, event/exposure data, and supported growth-operation/action surfaces for authorized AURA work.
+AURA is the broader organizational intelligence and operating-knowledge layer. When connected, ViralTrac can provide first-party tracking, attribution, measurement, experiments, event/exposure data, and supported growth-operation surfaces through whatever ViralTrac access the active user/harness legitimately has.
 
 AURA should still work before ViralTrac, alongside ViralTrac, or without ViralTrac.
 
@@ -127,7 +127,7 @@ Use the level of detail you actually need:
 - **`START-HERE.md`** — simple human quick start;
 - **`WELCOME.md`** — first-run human message;
 - **`PLAYBOOKS.md`** — plain-language capability catalog;
-- **`OPERATOR-GUIDE.md`** — optional commands, workspaces, providers, validation, preferences, knowledge, and advanced operation;
+- **`OPERATOR-GUIDE.md`** — optional commands, workspaces, validation, preferences, knowledge, and advanced operation;
 - **`DEPLOYMENT.md`** — storage/deployment/versioning/team options;
 - **`CONTEXT.md`** — agent operating context;
 - **`BRANDING.md`** — public naming;
