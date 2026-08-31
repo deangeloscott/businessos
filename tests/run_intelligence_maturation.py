@@ -5,7 +5,7 @@ import json,sys
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'scripts'))
 from _common import read_frontmatter
-from generate_knowledge_layer import _page_for,_entry
+from generate_knowledge_layer import _page_for,_entry,_tracked_subjects
 from validate_research_evidence import DIRECT_ACQUISITION_METHODS,DISCOVERY_ONLY_METHODS,_capture_quality
 
 
@@ -99,10 +99,14 @@ def main():
         'monitoring_notification':{'mode':'material_changes_only','source':'policy','notes':None},
         'last_checked_at':'2026-08-29T00:00:00Z','next_check_at':'2026-09-05T00:00:00Z'
     }
+    profile_path=ROOT/'instances/example/intelligence/source-profiles/sprof_demo.json'
     if _page_for(source_profile)!='Tracked-Subjects':fail('SourceProfile human view is not routed to Tracked-Subjects')
-    rendered=_entry(source_profile,ROOT/'instances/example/intelligence/source-profiles/sprof_demo.json')
-    for phrase in ['Example Creator','thought_leader','What topics are changing?','Major positioning shift','Default cadence','Notification mode','material_changes_only','planned / not automatically scheduled','Last checked','Next check']:
-        if phrase not in rendered:fail(f'tracked-subject human view missing {phrase}')
+    rendered=_entry(source_profile,profile_path)
+    for phrase in ['Example Creator','thought_leader','What topics are changing?','Major positioning shift','Cadence intent','Notification intent','material_changes_only','Scheduling/execution is runtime state outside AURA','do not prove a background task exists','Last checked','Next useful check']:
+        if phrase not in rendered:fail(f'tracked-subject entry view missing {phrase}')
+    grouped=_tracked_subjects([(source_profile,profile_path)])
+    for phrase in ['Example Creator','creator','thought_leader','Cadence intent','Notification intent','material_changes_only','Runtime scheduling','external / not inferred by AURA','What topics are changing?','Major positioning shift','Next useful check']:
+        if phrase not in grouped:fail(f'tracked-subject grouped human view missing {phrase}')
 
     print('AURA intelligence maturation regressions passed: shared monitoring, semantic routing, multimodal evidence, contextual intelligence, marketing/customer value, and human/machine legibility')
 
