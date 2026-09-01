@@ -55,4 +55,4 @@ Run when a decision requires current pricing intelligence and canonical competit
 4. [HYBRID] Compare with prior snapshots and distinguish true change from localization, experiment/personalization, logged-in state, or temporary promotion.
 5. [AI] Interpret likely strategic implications only after factual change is established.
 6. [HYBRID] Cross-check customer/win-loss evidence before asserting price competitiveness or effectiveness.
-7. [DETERMINISTIC] Update Competitor state/Observations and emit pricing change when material.
+7. [HYBRID] Update current Competitor/Observation state and preserve a material pricing-change Insight only when that interpretation has durable organizational value. Do not create runtime event traffic merely because competitor pricing changed.
