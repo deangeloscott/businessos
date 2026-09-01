@@ -1,18 +1,21 @@
 # Marketing Synthesis
 
-Turn intelligence, Offer, proof, objections, and awareness into commercial persuasion and conversion assets.
+Turn current business/customer/competitor evidence, Offer, proof, objections, and awareness context into effective commercial persuasion and conversion assets.
 
 ## Common jobs
-- Diagnose persuasion barrier → `contracts/diagnosis/`
-- Positioning/messaging/value proposition → corresponding top-level families
+- Define the persuasion problem/brief → `marketing.intake.persuasion-brief`
+- Diagnose a persuasion barrier → `contracts/diagnosis/`
+- Positioning/messaging/value proposition → corresponding strategy families
 - Landing page/VSL/webinar/email/ads/etc. → `contracts/assets/`
-- Experiment and evaluate → `contracts/experimentation/` / `measurement/`
+- Experiment/evaluate persuasion hypotheses → `contracts/experimentation/` / `measurement/`
+- Reusable Marketing Learning → `marketing.learning.domain-learning`
 
 ## Boundary
-Read `DEFAULTS.md` before authoring or modifying domain contracts. Cross-domain facts should be consumed from their canonical owner; delegated work uses WorkRequest rather than a duplicate Opportunity.
+Marketing owns persuasion operating knowledge, not customer truth, product/service truth, generic journey mechanics, provider/runtime control, or authorization. Reuse relevant organizational evidence directly; another domain's Insight is context, not a routing event.
+
+Internal persuasion briefs can be persisted as Marketing-owned `Asset` objects when useful. A WorkRequest is reserved for a real durable handoff across people/models/sessions/time, not ordinary movement between AURA playbooks.
+
+The active model/user chooses message, method, and applicability; the active harness owns real tools, publishing, scheduling, experiments, permissions, and execution mechanics.
 
 ## AI execution
-Do not load this entire system. Route to one atomic contract and use the root Context Planner.
-
-## Complete process map
-`process-map.json` lists the common important activities this system claims to perform. Use `python scripts/process_plan.py --system marketing-synthesis --activity <activity-id>` to expand a composite activity into its required and conditional sub-processes.
+Do not load this entire system. Retrieve the smallest relevant context and choose/adapt the useful method with model/user judgment. `process-map.json` is a browse/composition aid, not runtime execution order.

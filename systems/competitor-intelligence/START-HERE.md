@@ -1,19 +1,20 @@
 # Competitor Intelligence
 
-Maintain evidence-backed competitor state and interpret pricing, positioning, offers, funnels, messaging, customer sentiment, and strategic movement.
+Maintain evidence-backed competitor understanding and interpret pricing, positioning, offers, funnels, messaging, customer sentiment, capabilities, strategic movement, and credible implications.
 
 ## Common jobs
-- Discover/profile competitors → `contracts/discovery/` / `profiling/`
-- Pricing, packaging, positioning, messaging, offers → `contracts/analysis/`
-- Competitor change → `contracts/change-detection/`
-- What appears to work → `contracts/tactic-validation/`
-- Competitive whitespace → `contracts/whitespace/`
+- Discover/profile the relevant competitive set → `contracts/discovery/` / `contracts/analysis/profiling/`
+- Broad competitive position/landscape → `competitor.analysis.competitive-position`
+- Pricing, packaging, positioning, messaging, offers, capabilities → `contracts/analysis/`
+- Detect/understand material competitor changes → monitoring/change analysis methods
+- Evaluate whether an observed tactic appears effective → `competitor.analysis.tactic-validation`
+- Translate evidence into scoped business implications → `competitor.analysis.competitive-implications`
+- Reusable Competitor Learning → `competitor.learning.domain-learning`
 
 ## Boundary
-Read `DEFAULTS.md` before authoring or modifying domain contracts. Cross-domain facts should be consumed from their canonical owner; delegated work uses WorkRequest rather than a duplicate Opportunity.
+Competitor Intelligence preserves competitor evidence and decision-useful interpretation. It does not automatically create foreign-domain Opportunities, relevance signals, WorkRequests, or routed actions. Other work may directly consume the same evidence/Insights when relevant.
+
+Observed competitor behavior, inferred strategy, and evidence of effectiveness must remain separate. The active model/user decides what the evidence means for the current business decision and which method is useful next.
 
 ## AI execution
-Do not load this entire system. Route to one atomic contract and use the root Context Planner.
-
-## Complete process map
-`process-map.json` lists the common important activities this system claims to perform. Use `python scripts/process_plan.py --system competitor-intelligence --activity <activity-id>` to expand a composite activity into its required and conditional sub-processes.
+Do not load this entire system. Retrieve the smallest relevant context and choose/adapt the useful method with model/user judgment. `process-map.json` is a browse/composition aid, not runtime execution order.

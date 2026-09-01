@@ -1,24 +1,24 @@
 # Content Synthesis
 
-Turn validated ideas and signals into communication that is native to the audience, platform, medium, and consumption context.
+Turn useful ideas, evidence, requirements, and organizational context into communication that fits the audience, medium, platform, and consumption context.
 
 ## Common jobs
-- Find trending/strong content patterns → `contracts/intelligence/`
-- Monitor creators / validate a trend → `content.intelligence.creator-monitoring` / `content.intelligence.trend-validation`
-- Turn a comment, proof item, news Insight, search signal, or other intelligence into content → `content.opportunity.signal-to-content`
+- Find/understand strong or emerging content mechanisms → `contracts/intelligence/`
+- Build a reusable communication brief when useful → `content.intake.content-brief`
 - Choose platform/format → `content.strategy.format-platform`
-- Refresh current platform behavior → `content.strategy.platform-profile-refresh`
+- Refresh durable platform guidance when current behavior matters → `content.strategy.platform-profile-refresh`
 - Adapt one idea natively → `content.adaptation.platform-native`
 - Produce article/video/carousel/infographic/GIF/image/podcast/avatar video/etc. → `contracts/production/`
 - Create useful derivative scripts/clips/captions/thumbnails → `content.production.derivative-package`
-- QA/fact/brand → `contracts/qa/`
-- Publish/schedule approved Assets → `content.publishing.publish-asset`
+- QA/fact/brand review → `contracts/qa/`
+- Publish when explicitly requested and the active harness has the real capability/permission → `content.publishing.publish-asset`
 
 ## Boundary
-Content Intelligence studies creative mechanisms and audience communication behavior. Customer, competitor, industry, SEO, offer, and journey truth remain with their canonical owners. A WorkRequest from another system is delegated execution, not a new Content Opportunity.
+Content Intelligence studies communication/creative mechanisms. Customer, competitor, industry, SEO, offer, Brand, and journey truth remain reusable organizational context rather than instructions from separate internal controllers.
+
+Content may directly consume relevant Insights, ProofRecords, SEO requirements, persuasion requirements, and prior Assets. It does not require an AURA WorkRequest merely because another domain supplied context. Use a WorkRequest only for a real durable organizational handoff across actors/sessions/time.
+
+The harness owns rendering, platform APIs, scheduling, publishing mechanics, retries, and permissions.
 
 ## AI execution
-Do not load this entire system. Route to one atomic contract and use the root Context Planner.
-
-## Complete process map
-`process-map.json` lists the common important activities this system claims to perform. Use `python scripts/process_plan.py --system content-synthesis --activity <activity-id>` to expand a composite activity into its required and conditional sub-processes.
+Do not load this entire system. Retrieve the smallest relevant context and choose/adapt the useful method with model/user judgment. `process-map.json` is a browse/composition aid, not runtime execution order.

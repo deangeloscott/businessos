@@ -1,18 +1,20 @@
 # Customer Optimization
 
-Improve how customers progress from interest through purchase, onboarding, success, retention, repeat, expansion, and referral.
+Improve how customers progress from interest through purchase, onboarding, success, retention, repeat, expansion, referral, and recovery while protecting real customer value.
 
 ## Common jobs
-- Map/instrument journey → `contracts/journey/`
-- Diagnose friction/dropoff → `contracts/diagnosis/`
-- Checkout/onboarding/activation/retention/etc. → `contracts/intervention/`
-- Experiment/monitor/measure → corresponding contract families
+- Map/instrument a customer journey → `contracts/journey/`
+- Diagnose friction/dropoff/root cause → `contracts/diagnosis/`
+- Design or execute checkout/onboarding/activation/retention/etc. improvements → `contracts/intervention/`
+- Improve a real sales/customer handoff → `customer-optimization.intervention.sales-handoff`
+- Bounded journey/churn monitoring reviews → `contracts/monitoring/`
+- Measure transitions, time-to-value, value, and outcomes → `contracts/measurement/`
+- Reusable Customer Optimization Learning → `customer-optimization.learning.domain-learning`
 
 ## Boundary
-Read `DEFAULTS.md` before authoring or modifying domain contracts. Cross-domain facts should be consumed from their canonical owner; delegated work uses WorkRequest rather than a duplicate Opportunity.
+Customer Optimization owns journey/progression/value-realization operating knowledge, not customer psychology truth, generic persuasion, or the external CRM/product/billing runtime. Reuse Customer/Marketing/Offer/measurement evidence directly where relevant.
+
+A WorkRequest is not needed to move reasoning between AURA domains. Use one only for a real durable organizational handoff. The harness/external systems own workflow execution, customer messaging, scheduling, account permissions, and operational automation.
 
 ## AI execution
-Do not load this entire system. Route to one atomic contract and use the root Context Planner.
-
-## Complete process map
-`process-map.json` lists the common important activities this system claims to perform. Use `python scripts/process_plan.py --system customer-optimization --activity <activity-id>` to expand a composite activity into its required and conditional sub-processes.
+Do not load this entire system. Retrieve the smallest relevant context and choose/adapt the useful method with model/user judgment. `process-map.json` is a browse/composition aid, not runtime execution order.

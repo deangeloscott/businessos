@@ -4,14 +4,18 @@ Improve valuable organic discovery across search, answer engines, AI interfaces,
 
 ## Common jobs
 - Ranking/indexing/technical/AEO problem → `contracts/diagnosis/`
-- Organic demand → `contracts/intelligence/organic-demand/`
+- Organic demand and current search/answer understanding → `contracts/intelligence/`
 - Technical/on-page/architecture/internal linking → `contracts/execution/`
-- AEO/AI citations → `contracts/intelligence/aeo/` + `execution/aeo/`
-- Search incident → `contracts/incidents/`
-- Organic measurement/attribution → `contracts/measurement/`
+- Organic content requirements → `seo.planning.organic-content-requirements`
+- Search/policy incident → `contracts/incidents/`
+- Bounded monitoring/evidence checks → `contracts/monitoring/`
+- Organic measurement/attribution/reviews → `contracts/measurement/`
+- Reusable SEO/AEO Learning → `seo.aeo.learning.domain-learning`
 
 ## Boundary
-Read `DEFAULTS.md` before authoring or modifying domain contracts. Cross-domain facts should be consumed from their canonical owner; delegated work uses WorkRequest rather than a duplicate Opportunity.
+SEO/AEO owns reusable operating knowledge and durable state for organic discovery, not generic content production, customer truth, broad competitor truth, runtime scheduling, or tool/provider control. Reuse relevant organizational evidence directly. Another domain can consume SEO evidence/requirements without a WorkRequest or duplicate Opportunity.
+
+Monitoring intent/checkpoints may be remembered in AURA; the active harness/runtime owns recurrence and notifications. External changes are executed through the host's real tools/permissions, not an AURA approval/autonomy lifecycle.
 
 ## AI execution
-Do not load this entire system. Route to one atomic contract and use the root Context Planner.
+Do not load this entire system. Retrieve the smallest relevant context and choose the useful method with model/user judgment. Playbook candidates are navigation help, not semantic routing authority.
