@@ -12,11 +12,9 @@ def _schema(title):
         except Exception:continue
         if data.get('title')==title:return data
     raise ValueError(f'Unknown schema title: {title}')
-
 def _validate(title,obj):
     errors=sorted(Draft202012Validator(_schema(title)).iter_errors(obj),key=lambda error:list(error.path))
     if errors:raise ValueError('; '.join(f"{list(error.path)}: {error.message}" for error in errors))
-
 def _canonical_contract_exists(contract_id):
     for path in contract_files():
         try:meta,_=read_frontmatter(path)
@@ -50,7 +48,7 @@ def persist_proposal(business_id,payload):
         'created_at':existing.get('created_at') or timestamp,'updated_at':timestamp,'owner_system':payload.get('owner_system'),'change_kind':kind,'proposed_scope':payload.get('proposed_scope','business'),
         'target_contract_id':target,'proposed_local_contract_id':local_id,'title':payload.get('title') or 'Playbook evolution proposal','summary':payload.get('summary'),
         'learning_refs':learning_refs,'evidence_refs':list(dict.fromkeys(payload.get('evidence_refs') or [])),'applies_when':list(dict.fromkeys(payload.get('applies_when') or [])),
-        'does_not_apply_when':list(dict.fromkeys(payload.get('does_not_apply_when') or [])),'route_terms':list(dict.fromkeys(payload.get('route_terms') or [])),'reads':list(dict.fromkeys(payload.get('reads') or [])),
+        'does_not_apply_when':list(dict.fromkeys(payload.get('does_not_apply_when') or [])),'discovery_terms':list(dict.fromkeys(payload.get('discovery_terms') or [])),'reads':list(dict.fromkeys(payload.get('reads') or [])),
         'writes':list(dict.fromkeys(payload.get('writes') or [])),'required_capabilities':list(dict.fromkeys(payload.get('required_capabilities') or [])),'optional_capabilities':list(dict.fromkeys(payload.get('optional_capabilities') or [])),
         'instructions':payload.get('instructions') or [],'verification':payload.get('verification') or [],'status':existing.get('status') if existing.get('status')=='adopted' else 'candidate','extensions':payload.get('extensions') or {}
     }
