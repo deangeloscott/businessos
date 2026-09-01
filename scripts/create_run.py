@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Create one optional organization-owned work receipt.
 
-A Run records bounded continuity around work that is useful to resume, inspect, or hand off.
-It does not create an execution plan, subcontract ledger, capability preflight, provider
-binding, permission gate, or scheduler state. Selecting an AURA playbook records the method
-that was used; it does not turn the playbook into execution authority.
+A Run records bounded continuity around one piece of work when that continuity is useful to
+resume, inspect, or hand off. It does not create an execution plan, parent/child work graph,
+subcontract ledger, capability preflight, provider binding, permission gate, or scheduler
+state. Selecting an AURA playbook records the method that was used; it does not turn the
+playbook into execution authority.
 """
 from _common import *
 import argparse, json, secrets, os, sys
@@ -13,16 +14,9 @@ from resolve_preferences import resolve_effective_preferences, _load_task_prefer
 METHOD_TYPES={'aura_playbook','external_skill','model_created','ad_hoc'}
 
 
-def _method_identity(run):
-    method_type=run.get('method_type') or ('aura_playbook' if run.get('contract_id') else 'ad_hoc')
-    method_ref=run.get('method_ref') or run.get('contract_id')
-    return method_type,method_ref
-
-
 def _args(byid):
     raw=sys.argv[1:]
-    # Accept the older positional form as a human convenience without preserving its
-    # historical execution semantics:
+    # Accept the older positional human convenience:
     #   create_run.py BUSINESS_ID CONTRACT_ID TASK
     # Canonical form:
     #   create_run.py BUSINESS_ID TASK [--contract-id ... | --method-type ...]
@@ -40,8 +34,6 @@ def _args(byid):
     p.add_argument('--output-type',help='Optional output-type context for PreferenceProfile applicability')
     p.add_argument('--channel',help='Optional channel context for PreferenceProfile applicability')
     p.add_argument('--task-preferences',help='JSON object file of one-task optional preferences')
-    p.add_argument('--parent-run-id',help='Exact parent receipt when this is bounded support work')
-    p.add_argument('--supersedes-run-id',help='Exact prior active receipt intentionally replaced by this same work')
     return p.parse_args(raw)
 
 
@@ -73,25 +65,7 @@ def main():
         )
     except (ValueError,json.JSONDecodeError) as e:raise SystemExit(str(e))
 
-    related={}
-    for label,value in [('parent',a.parent_run_id),('superseded',a.supersedes_run_id)]:
-        if not value:continue
-        path=run_dir_path(a.business_id,value)/'run.json'
-        if not path.exists():raise SystemExit(f'Unknown {label} Run for this business: {value}')
-        try:related[label]=json.loads(path.read_text())
-        except Exception as exc:raise SystemExit(f'Invalid {label} Run {value}: {exc}')
-        if related[label].get('business_id')!=a.business_id:raise SystemExit(f'{label.title()} Run business_id mismatch')
-    if a.supersedes_run_id:
-        prior=related['superseded']
-        if prior.get('status')!='active':raise SystemExit('supersedes-run-id must reference an active Run')
-        prior_type,prior_ref=_method_identity(prior)
-        if prior_type!=method_type or prior_ref!=method_ref or prior.get('task')!=a.task or (prior.get('focus_refs') or [])!=a.focus or prior.get('parent_run_id')!=a.parent_run_id:
-            raise SystemExit('supersedes-run-id must reference the exact same method, task, focus, and parent relationship')
-
-    rid='run_'+secrets.token_hex(8);parent=related.get('parent');prior=related.get('superseded')
-    corr=(parent or prior or {}).get('correlation_id') or 'cor_'+secrets.token_hex(8)
-    root_run_id=(parent or {}).get('root_run_id') or (a.parent_run_id if parent else rid)
-    ts=now();d=runtime_root()/'runs'/a.business_id/rid;d.mkdir(parents=True)
+    rid='run_'+secrets.token_hex(8);ts=now();d=runtime_root()/'runs'/a.business_id/rid;d.mkdir(parents=True)
     pref_ref=f'runtime/runs/{a.business_id}/{rid}/artifacts/effective-preferences.json'
     obj={
         'run_id':rid,'business_id':a.business_id,'task':a.task,
@@ -103,11 +77,8 @@ def main():
             'format_version':'2.0','purpose':'organizational_work_receipt','state':'active',
             'method_type':method_type,'method_ref':method_ref,'summary':None,
             'evidence_refs':[],'result_refs':[],'decision_refs':[],'unresolved':[],
-            'completed_at':None,'superseded_by_run_id':None
+            'completed_at':None
         },
-        'correlation_id':corr,'causation_id':a.parent_run_id or a.supersedes_run_id,
-        'root_run_id':root_run_id,'parent_run_id':a.parent_run_id,'run_role':'support' if a.parent_run_id else 'root',
-        'supersedes_run_id':a.supersedes_run_id,'superseded_by_run_id':None,'lifecycle_reason':None,
         'created_at':ts,'updated_at':ts
     }
     (d/'run.json').write_text(json.dumps(obj,indent=2)+'\n')
