@@ -1,6 +1,6 @@
 ---
 id: core.verification.verify-change
-type: service
+type: playbook
 owner_system: core
 reads:
 - ChangeEvent
