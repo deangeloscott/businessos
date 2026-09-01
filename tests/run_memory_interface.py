@@ -39,6 +39,34 @@ def main():
             req(updated['objects'][0]['operation']=='updated','canonical current memory update failed without Run')
             asset=json.loads(asset_path.read_text());req(asset['business_role']=='approved reusable draft','canonical memory update did not persist')
 
+            corrected=remember(bid,{'objects':[{
+                'key':'asset_correction','object_type':'Asset','object_ref':asset_id,'content':{},
+                'remove_fields':['location_reference']
+            }]})
+            req(corrected['objects'][0]['removed_fields']==['location_reference'],'field removal was not reported truthfully')
+            asset=json.loads(asset_path.read_text());req('location_reference' not in asset,'obsolete optional field survived direct current-truth correction')
+            proposal_dir=ws/'instances'/bid/'context/proposals'
+            req(not proposal_dir.exists() or not list(proposal_dir.glob('*.json')),'direct current-truth correction manufactured ContextUpdateProposal ceremony')
+
+            required_rejected=False
+            try:
+                remember(bid,{'objects':[{
+                    'key':'invalid_required_removal','object_type':'Asset','object_ref':asset_id,'content':{},
+                    'remove_fields':['asset_type']
+                }]})
+            except ValueError:required_rejected=True
+            req(required_rejected,'schema-required field removal should fail mechanical validation')
+            asset=json.loads(asset_path.read_text());req(asset.get('asset_type')=='draft','failed required-field removal mutated canonical memory')
+
+            mechanical_rejected=False
+            try:
+                remember(bid,{'objects':[{
+                    'key':'invalid_mechanical_removal','object_type':'Asset','object_ref':asset_id,'content':{},
+                    'remove_fields':['id']
+                }]})
+            except ValueError:mechanical_rejected=True
+            req(mechanical_rejected,'AURA-owned mechanical fields must not be removable through semantic memory updates')
+
             bundle={
                 'method_type':'external_skill','method_ref':'first-party-review',
                 'owner_system':'core',
@@ -61,7 +89,7 @@ def main():
             req('contract_id' not in (source.get('extensions') or {}),'non-AURA research fabricated contract provenance')
 
             errors,_,_=validate_business(bid,True);req(not errors,f'Run-independent memory must remain valid: {errors}')
-            print('AURA memory interface regressions passed: remember/research do not require Run or contract')
+            print('AURA memory interface regressions passed: direct create/update/correction and research do not require Run, contract, or proposal ceremony')
         finally:
             if old is None:os.environ.pop('BUSINESSOS_WORKSPACE',None)
             else:os.environ['BUSINESSOS_WORKSPACE']=old
