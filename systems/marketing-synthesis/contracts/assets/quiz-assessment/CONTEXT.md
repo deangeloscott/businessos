@@ -12,7 +12,6 @@ reads:
 - Asset
 - WorkRequest
 writes:
-- WorkRequest
 - Asset
 capabilities:
   required:
@@ -35,15 +34,15 @@ context:
 Create a diagnostic experience that gives the participant useful feedback while qualifying/segmenting toward a relevant next action.
 
 ## Business Outcome
-Increase the likelihood of the desired commercial action through evidence-backed quiz / assessment conversion asset that matches audience awareness, offer, proof, and acquisition context.
+Increase the likelihood of the desired commercial action through an evidence-backed quiz / assessment conversion asset that matches audience awareness, Offer, proof, and acquisition context.
 
 ## Run When
-Run when an Opportunity or WorkRequest requires quiz / assessment conversion asset to remove a commercial persuasion gap or create the required conversion asset.
+Use when a quiz or assessment is useful to remove a commercial persuasion gap or support a qualified next action. An Opportunity or real durable WorkRequest may provide context but is not required.
 
 ## Process
 1. [AI] Define user value, decision/diagnostic construct, target audience, required segmentation, and downstream action.
-2. [HYBRID] Ensure questions genuinely measure/usefully proxy the construct rather than forcing answers toward the Offer.
+2. [HYBRID] Ensure questions genuinely measure or usefully proxy the construct rather than forcing answers toward the Offer.
 3. [AI] Design question sequence, response scales, branching, scoring logic, and result categories.
-4. [DETERMINISTIC] Specify scoring/branching deterministically and test boundary cases.
+4. [DETERMINISTIC] Specify scoring/branching clearly enough to implement and test boundary cases when the assessment requires deterministic behavior.
 5. [AI] Write result explanations and recommendations that reflect answers and disclose limitations.
-6. [HYBRID] Map qualified segments to appropriate Offer/next step without misrepresenting the assessment as clinical/scientific unless validated.
+6. [HYBRID] Map qualified segments to an appropriate Offer/next step without misrepresenting the assessment as clinical/scientific unless validated. Use the active harness's real implementation/design capabilities directly when building the experience; persist a WorkRequest only for a real durable organizational handoff.
