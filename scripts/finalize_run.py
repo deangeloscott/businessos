@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
-"""Finalize an ordinary AURA Run through one deterministic, judgment-safe interface.
+"""Finalize a selected AURA playbook Run through a deterministic, judgment-safe interface.
 
-This helper composes existing completion, provenance, evidence, validation, and human-
-knowledge mechanisms. It never creates business evidence or decides what an artifact
+This helper composes playbook completion, provenance, evidence, validation, and optional
+human-knowledge refresh. It never creates business evidence or decides what an artifact
 means. Automatic evidence resolution is limited to exact Run/contract provenance and
 structurally valid, mechanically unique roles; ambiguity leaves the Run incomplete.
+
+General external-Skill, model-created, or ad-hoc work receipts do not use this contract
+finalizer. They may be completed through the ordinary Run receipt path instead.
 """
 from pathlib import Path
 import argparse, json, os
@@ -15,13 +18,13 @@ from record_contract_completion import record_contract_completion
 from complete_run import complete_run, snapshot_files, restore_files
 from validate_business import validate_business
 from generate_knowledge_layer import generate as generate_knowledge
-from run_provenance import RUN_BOUND_TYPES
+from run_provenance import RUN_LINKABLE_TYPES
 from artifact_readiness import summarize_readiness
 from run_lifecycle import reconcile_run_lifecycle
 
 
 ANCHOR_KINDS={'qa_record','detector_record','analysis_record','completion_record'}
-IGNORED_RUN_ARTIFACTS={'effective-preferences.json','execution-envelope.json'}
+IGNORED_RUN_ARTIFACTS={'effective-preferences.json'}
 
 
 def _json(path):
@@ -72,8 +75,8 @@ def _candidate(ref,path,kind,contract_ids=None,object_type=None):
 
 
 def _run_candidates(business_id,run_id):
-    """Return only governed canonical outputs and contract-labelled Run artifacts."""
-    out=[];rr=_run_ref(business_id,run_id)
+    """Return canonical Run-linked outputs and contract-labelled Run artifacts."""
+    out=[]
     for obj,path in iter_instance_objects(business_id):
         if not _is_run_linked(obj,business_id,run_id):continue
         ids=_contract_ids(obj);ref=storage_ref(path);typ=obj.get('object_type')
@@ -96,14 +99,10 @@ def _run_candidates(business_id,run_id):
 
 
 def _required_run_linked_refs(candidates):
-    """Return comprehensive evidence refs mechanically required by Run integrity.
-
-    These are not semantic choices: every execution-significant canonical object already
-    linked to this Run must be recorded by that Run somewhere before completion.
-    """
+    """Return canonical refs that a linked playbook receipt must index before completion."""
     return list(dict.fromkeys(
         row['ref'] for row in candidates
-        if row.get('kind')=='canonical' and row.get('object_type') in RUN_BOUND_TYPES
+        if row.get('kind')=='canonical' and row.get('object_type') in RUN_LINKABLE_TYPES
     ))
 
 
@@ -123,7 +122,7 @@ def _evidence_resolution(contract,manifest,business_id,run_id,phase,candidates,e
         try:refs=_normalize_refs(explicit)
         except ValueError as e:return {'status':'invalid_or_incomplete_evidence','contract_id':cid,'reason':str(e),'candidate_refs':[]}
         errors=validate_evidence(contract,refs,business_id,run_id,phase=phase,manifest=manifest)
-        if errors:return {'status':'invalid_or_incomplete_evidence','contract_id':cid,'reason':'Supplied evidence does not satisfy the contract completion profile.','errors':errors[:8],'candidate_refs':refs}
+        if errors:return {'status':'invalid_or_incomplete_evidence','contract_id':cid,'reason':'Supplied evidence does not satisfy the playbook completion profile.','errors':errors[:8],'candidate_refs':refs}
         return {'status':'resolved','contract_id':cid,'refs':refs,'resolution':'explicit'}
 
     exact=[x for x in candidates if cid in x['contract_ids']]
@@ -147,8 +146,8 @@ def _evidence_resolution(contract,manifest,business_id,run_id,phase,candidates,e
         if not errors:return {'status':'resolved','contract_id':cid,'refs':refs,'resolution':'exact_run_contract_provenance'}
         return {'status':'invalid_or_incomplete_evidence','contract_id':cid,'reason':'Exact Run/contract-linked evidence exists but does not satisfy the completion profile.','errors':errors[:8],'candidate_refs':refs}
 
-    # A fallback is safe only when one individual governed Run-linked artifact uniquely
-    # satisfies the declared role. Do not search scratch files or combine semantic guesses.
+    # A fallback is safe only when one individual Run-linked artifact uniquely satisfies
+    # the declared role. Do not search scratch files or combine semantic guesses.
     valid=[]
     for row in candidates:
         if row['kind']=='supporting_record':continue
@@ -158,14 +157,14 @@ def _evidence_resolution(contract,manifest,business_id,run_id,phase,candidates,e
     if len(valid)>1:
         return {
             'status':'needs_judgment','contract_id':cid,
-            'reason':'Multiple governed Run-linked artifacts could satisfy this completion role; AURA will not select one arbitrarily.',
+            'reason':'Multiple Run-linked artifacts could satisfy this completion role; AURA will not select one arbitrarily.',
             'candidate_refs':[x['ref'] for x in valid],
             'needed':'Provide the intended evidence explicitly.'
         }
     return {
         'status':'invalid_or_incomplete_evidence','contract_id':cid,
-        'reason':'No exact or mechanically unique governed Run-linked evidence satisfies the completion profile.',
-        'candidate_refs':[],'needed':'Persist the real contract result/evidence or provide its existing storage reference explicitly.'
+        'reason':'No exact or mechanically unique Run-linked evidence satisfies the completion profile.',
+        'candidate_refs':[],'needed':'Persist the real playbook result/evidence or provide its existing storage reference explicitly.'
     }
 
 
@@ -185,21 +184,8 @@ def _resolve_run(business_id,run_id=None):
             data=_json(rp)
             if isinstance(data,dict) and data.get('business_id')==business_id and data.get('status')=='active':active.append(data)
     if len(active)==1:return {'status':'resolved','run_id':active[0]['run_id'],'run':active[0]}
-    if not active:return {'status':'needs_judgment','reason':'No active Run is uniquely available; provide the Run ID from enter.py.','candidate_run_ids':[]}
-    return {'status':'needs_judgment','reason':'Multiple active Runs exist; AURA will not guess which business job to finalize.','candidate_run_ids':sorted(x['run_id'] for x in active)}
-
-
-def _capability_gaps(run_dir):
-    envelope=_json(run_dir/'artifacts'/'execution-envelope.json')
-    if not isinstance(envelope,dict):return []
-    preflight=envelope.get('capability_preflight') or {};gaps=[]
-    required_capabilities=(envelope.get('context_plan') or {}).get('required_capabilities') or []
-    if preflight.get('status')=='host_discovery_required' and required_capabilities:
-        gaps.append({'type':'host_discovery','required_capabilities':required_capabilities,'next_action':preflight.get('next_action')})
-    for row in preflight.get('required',[]) or []:
-        if row.get('execution_state') in {'provider_discovery','local_capability_discovery','provider_decision'}:
-            gaps.append({k:row.get(k) for k in ('capability','execution_state','next_action','fallback_if_not_authorized') if row.get(k) is not None})
-    return gaps
+    if not active:return {'status':'needs_judgment','reason':'No active Run is uniquely available; provide the Run ID explicitly.','candidate_run_ids':[]}
+    return {'status':'needs_judgment','reason':'Multiple active Runs exist; AURA will not guess which work receipt to finalize.','candidate_run_ids':sorted(x['run_id'] for x in active)}
 
 
 def _knowledge_result(business_id,refresh):
@@ -240,12 +226,12 @@ def _completion_scope(business_id,run_id,manifest,candidates,run_completed):
     return summarize_readiness(assets,qa,run_completed)
 
 
-def _failure_for_evidence(failure,run_dir,business_id,run_id):
-    gaps=_capability_gaps(run_dir)
-    no_candidates=not failure.get('candidate_refs')
-    if failure.get('status')=='invalid_or_incomplete_evidence' and no_candidates and gaps:
-        return {'format_version':'1.0','status':'blocked','category':'missing_external_capability_or_authorization','business_id':business_id,'run_id':run_id,'run_status':'active','capability_gaps':gaps,'evidence_issue':failure}
-    return {'format_version':'1.0','status':failure.get('status'),'category':'semantic_or_evidence_judgment' if failure.get('status')=='needs_judgment' else 'invalid_or_incomplete_evidence','business_id':business_id,'run_id':run_id,'run_status':'active','issue':failure}
+def _failure_for_evidence(failure,business_id,run_id):
+    return {
+        'format_version':'1.0','status':failure.get('status'),
+        'category':'semantic_or_evidence_judgment' if failure.get('status')=='needs_judgment' else 'invalid_or_incomplete_evidence',
+        'business_id':business_id,'run_id':run_id,'run_status':'active','issue':failure
+    }
 
 
 def finalize_run(business_id=None,run_id=None,root_evidence=None,contract_evidence=None,workspace=None,refresh_human_knowledge=True):
@@ -256,7 +242,14 @@ def finalize_run(business_id=None,run_id=None,root_evidence=None,contract_eviden
     bid=resolved_business['business_id'];run_resolution=_resolve_run(bid,run_id)
     if run_resolution.get('status')!='resolved':return {'format_version':'1.0','status':'needs_judgment','category':'run_resolution','business_id':bid,**{k:v for k,v in run_resolution.items() if k!='status'}}
     rid=run_resolution['run_id'];run=run_resolution['run'];rd=run_dir_path(bid,rid);mp=rd/'contract-execution.json';rp=rd/'run.json'
-    if not mp.exists():return {'format_version':'1.0','status':'invalid_or_incomplete_evidence','category':'invalid_run_state','business_id':bid,'run_id':rid,'reason':'Run contract-execution manifest is missing.'}
+    method=run.get('method_type') or ('aura_playbook' if run.get('contract_id') else 'ad_hoc')
+    if method!='aura_playbook':
+        return {
+            'format_version':'1.0','status':'needs_judgment','category':'method_not_applicable',
+            'business_id':bid,'run_id':rid,
+            'reason':'finalize_run.py applies only to a selected AURA playbook Run. Complete general external-Skill, model-created, or ad-hoc work through the ordinary work-receipt completion path.'
+        }
+    if not mp.exists():return {'format_version':'1.0','status':'invalid_or_incomplete_evidence','category':'invalid_run_state','business_id':bid,'run_id':rid,'reason':'AURA playbook Run contract-execution manifest is missing.'}
     manifest=_json(mp)
     if not isinstance(manifest,dict) or manifest.get('business_id')!=bid or manifest.get('run_id')!=rid:
         return {'format_version':'1.0','status':'invalid_or_incomplete_evidence','category':'invalid_run_state','business_id':bid,'run_id':rid,'reason':'Run contract-execution manifest identity is invalid.'}
@@ -286,13 +279,13 @@ def finalize_run(business_id=None,run_id=None,root_evidence=None,contract_eviden
             resolution=_evidence_resolution(contract,manifest,bid,rid,'subcontract',candidates,step.get('evidence_refs') or [])
             resolution['already_recorded']=True
         else:resolution=_evidence_resolution(contract,manifest,bid,rid,'subcontract',candidates,supplied.get(cid))
-        if resolution.get('status')!='resolved':return _failure_for_evidence(resolution,rd,bid,rid)
+        if resolution.get('status')!='resolved':return _failure_for_evidence(resolution,bid,rid)
         plans.append(resolution)
     required_run_refs=_required_run_linked_refs(candidates)
     explicit_root=list(root_evidence or [])
     effective_root=[*explicit_root,*required_run_refs] if explicit_root or required_run_refs else None
     root_resolution=_evidence_resolution(root,manifest,bid,rid,'root',candidates,effective_root)
-    if root_resolution.get('status')!='resolved':return _failure_for_evidence(root_resolution,rd,bid,rid)
+    if root_resolution.get('status')!='resolved':return _failure_for_evidence(root_resolution,bid,rid)
 
     explicitly_normalized=[]
     if explicit_root:
@@ -303,9 +296,9 @@ def finalize_run(business_id=None,run_id=None,root_evidence=None,contract_eviden
         root_resolution['resolution']='required_run_linked_completion_evidence'+('_plus_explicit' if explicit_root else '')
         root_resolution['mechanically_included_refs']=mechanically_included
 
-    # Validate genuine current object/reference/semantic conditions before any completion
-    # mutation. The active_run_id view defers only the two integrity facts that cannot be
-    # true until this finalizer records evidence and completes the Run.
+    # Validate current organization/reference/evidence conditions before any completion
+    # mutation. active_run_id defers only the facts that cannot be true until this
+    # finalizer records evidence and completes the selected playbook receipt.
     business_errors,_,_=validate_business(bid,active_run_id=rid)
     if business_errors:
         return {
@@ -313,7 +306,7 @@ def finalize_run(business_id=None,run_id=None,root_evidence=None,contract_eviden
             'business_id':bid,'run_id':rid,'run_status':'active','mutation':'none',
             'errors':business_errors[:12],
             'deferred_integrity_conditions':['active Run completion status','final completion-evidence recording'],
-            'needed':'Correct the reported canonical object/reference/evidence issue, then call finalize_run.py again. Do not run whole-business validation separately while the Run is active.'
+            'needed':'Correct the reported organization/reference/evidence issue, then call finalize_run.py again.'
         }
 
     touched=[mp,rp]
@@ -345,7 +338,7 @@ def finalize_run(business_id=None,run_id=None,root_evidence=None,contract_eviden
         'root_evidence_refs':completed.get('root_evidence_refs',[]),'required_subcontracts':completed.get('required_subcontracts',[]),
         'completion_scope':_completion_scope(bid,rid,_json(mp) or manifest,_run_candidates(bid,rid),True),'run_reconciliation':reconciliation,
         'automatic_repairs':repairs,'validation':_concise_validation(completed),'human_knowledge':knowledge,
-        'rule':'Run completion proves the contracted work/evidence completed. The separate completion_scope reports artifact QA, production readiness, deployment, authorization/capability gaps, and outcome state without conflating them.'
+        'rule':'AURA playbook Run completion proves the selected SOP/evidence completion state. Artifact QA, production readiness, deployment, real external constraints, and measured outcomes remain distinct facts.'
     }
 
 
@@ -360,7 +353,7 @@ def _contract_evidence(values):
 
 
 def main():
-    ap=argparse.ArgumentParser(description='Deterministically finalize one ordinary AURA Run. Ambiguous or semantic evidence is never silently selected.')
+    ap=argparse.ArgumentParser(description='Finalize a selected AURA playbook Run. Ambiguous or semantic evidence is never silently selected.')
     ap.add_argument('business_id',nargs='?',help='Defaults to BUSINESSOS_BUSINESS_ID or the only initialized workspace business')
     ap.add_argument('run_id',nargs='?',help='Defaults to BUSINESSOS_RUN_ID or the only active Run for the business')
     ap.add_argument('--workspace',help='Optional organization workspace root')
