@@ -19,6 +19,7 @@ TESTS=[
     'tests/run_component_distributions.py',
     'tests/run_workspace_migration_path_guard.py',
     'tests/run_agent_hardening.py',
+    'tests/run_aura_entry.py',
     'tests/run_bootstrap_reference_ids.py',
     'tests/run_preferences_multioperator.py',
     'tests/run_preference_task_constraint_separation.py',
