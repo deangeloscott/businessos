@@ -7,7 +7,7 @@ This regression focuses on invariants AURA can actually own:
 - outward business claims remain literally evidence-bounded;
 - valid work does not require a Run or AURA playbook;
 - the front door retrieves candidates without taking over execution;
-- retired approval/action-control/mutation machinery stays physically absent.
+- retired semantic routing/orchestration/approval machinery stays physically absent.
 """
 from pathlib import Path
 import json,shutil,subprocess,sys
@@ -98,6 +98,10 @@ def main():
         require('core/policies/customer-facing-mutations.md' not in plan['files'],'deleted mutation gate returned to bounded context')
         require('core/DEFAULTS.md' not in plan['files'] and 'core/policies/agent-execution.md' not in plan['files'],'bounded context reintroduced redundant universal instructions')
 
+        root_contract=(ROOT/'CONTEXT.md').read_text(encoding='utf-8')
+        for phrase in ['not the model, semantic intent engine, universal orchestrator','The model/user decides semantic applicability.','Work normally.','A Run is an **optional bounded work receipt**']:
+            require(phrase in root_contract,f'root agent contract lost first-principles boundary: {phrase}')
+
         agent=(ROOT/'core/policies/agent-execution.md').read_text(encoding='utf-8')
         require('AURA does not create generic `Approval` objects' in agent,'agent policy lost no-internal-approval boundary')
         require('Do not force work into an AURA contract merely to make it recordable' in agent,'agent policy lost method freedom')
@@ -107,11 +111,22 @@ def main():
         require('A valid customer-facing Asset does **not** require a Run' in claims,'claim policy lost optional-Run boundary')
         require('does **not** require a universal pre-edit snapshot' in claims,'claim policy reintroduced mutation ceremony')
 
-        retired=[ROOT/'core/policies/approval.md',ROOT/'core/policies/operating-scope.md',ROOT/'core/policies/customer-facing-mutations.md',ROOT/'core/schemas/action/action-packet.schema.json',ROOT/'core/schemas/action/approval.schema.json',ROOT/'core/contracts/action-control',ROOT/'scripts/validate_customer_facing_mutations.py',ROOT/'scripts/capture_customer_facing_state.py',ROOT/'scripts/build_mutation_claim_manifest.py']
-        for path in retired:require(not path.exists(),f'retired control-plane artifact reappeared: {path.relative_to(ROOT)}')
+        retired=[
+            ROOT/'core/policies/approval.md',ROOT/'core/policies/operating-scope.md',ROOT/'core/policies/customer-facing-mutations.md',
+            ROOT/'core/schemas/action/action-packet.schema.json',ROOT/'core/schemas/action/approval.schema.json',ROOT/'core/contracts/action-control',
+            ROOT/'scripts/validate_customer_facing_mutations.py',ROOT/'scripts/capture_customer_facing_state.py',ROOT/'scripts/build_mutation_claim_manifest.py',
+            ROOT/'core/contracts/routing/resolve-intent',ROOT/'core/contracts/coordination/multi-domain-request',
+            ROOT/'core/contracts/intelligence/ecosystem/route-learning',
+        ]
+        for path in retired:require(not path.exists(),f'retired control/router/orchestrator artifact reappeared: {path.relative_to(ROOT)}')
+
+        core_map=json.loads((ROOT/'core/process-map.json').read_text())
+        entries={a.get('entry_contract') for a in core_map.get('activities',[])}
+        for cid in ['core.routing.resolve-intent','core.coordination.multi-domain-request','core.intelligence.ecosystem.route-learning']:
+            require(cid not in entries,f'Core process map reintroduced retired routing/orchestration entry: {cid}')
 
         errors,_,_=validate_business(BID,True);require(not errors,f'current architecture should finish with valid organization state: {errors}')
-        print('agent hardening regressions passed: provenance and outward truth remain strong without semantic/execution-control baggage')
+        print('agent hardening regressions passed: provenance and outward truth remain strong without semantic-routing/orchestration/execution-control baggage')
     finally:
         if BASE.exists():shutil.rmtree(BASE)
         rbase=ROOT/'runtime/runs'/BID
