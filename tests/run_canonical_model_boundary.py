@@ -41,6 +41,13 @@ def main():
     for typ in ('Run','PublisherMetadata','WorkspaceProfile','InnovationPackage','InnovationExchangeEntry','InnovationExchangeIndex'):
         req(typ not in canonical,f'support/interface type {typ} must not become canonical merely because a schema exists')
 
+    # Organization initialization must derive its durable directories from the same
+    # canonical model. A second hand-maintained path list previously kept deleted
+    # Approval/ActionPacket directories alive after those concepts were removed.
+    init_text=(ROOT/'scripts/init_business.py').read_text()
+    req('from canonical_store import INSTANCE_PATHS' in init_text,'init_business must derive organization directories from canonical_store.INSTANCE_PATHS')
+    req('operations/action-packets' not in init_text and 'operations/approvals' not in init_text,'retired ActionPacket/Approval directories re-entered organization initialization')
+
     # ContextUpdateProposal is useful unresolved organizational memory, not an Approval
     # object under a different name. A real organizational choice belongs in DecisionRecord.
     proposal_schema=json.loads((ROOT/'core/schemas/context/context-update-proposal.schema.json').read_text())
