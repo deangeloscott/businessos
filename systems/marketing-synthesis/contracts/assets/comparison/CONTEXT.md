@@ -13,7 +13,6 @@ reads:
 - WorkRequest
 - ProofRecord
 writes:
-- WorkRequest
 - Asset
 capabilities:
   required:
@@ -36,10 +35,10 @@ context:
 Help qualified buyers evaluate alternatives honestly using customer decision criteria and current competitive evidence.
 
 ## Business Outcome
-Increase the likelihood of the desired commercial action through evidence-backed comparison & alternative persuasion that matches audience awareness, offer, proof, and acquisition context.
+Increase the likelihood of the desired commercial action through evidence-backed comparison & alternative persuasion that matches audience awareness, Offer, proof, and acquisition context.
 
 ## Run When
-Run when an Opportunity or WorkRequest requires comparison & alternative persuasion to remove a commercial persuasion gap or create the required conversion asset.
+Use when a comparison/alternative asset is useful to resolve a material buyer decision question. An Opportunity or real durable WorkRequest may provide context but is not required.
 
 ## Process
 1. [AI] Define comparison audience, stage, alternatives, decision criteria, and the action the asset should support.
@@ -47,4 +46,4 @@ Run when an Opportunity or WorkRequest requires comparison & alternative persuas
 3. [AI] Build fair comparison dimensions including contexts where each alternative may fit better.
 4. [HYBRID] Distinguish factual differences, subjective tradeoffs, and our interpretation; timestamp volatile pricing/features.
 5. [AI] Present our differentiated value/proof against criteria rather than attacking competitor brand.
-6. [HYBRID] Add appropriate CTA and delegate final content/media production; create refresh dependency on competitor state.
+6. [HYBRID] Add an appropriate CTA and use relevant Content operating knowledge plus the active harness's real production capabilities directly for final media/document execution. Remember the competitor/source freshness dependency when it is materially useful; persist a WorkRequest only for a real durable organizational handoff.
