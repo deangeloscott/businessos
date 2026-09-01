@@ -12,7 +12,6 @@ reads:
 - Asset
 - WorkRequest
 writes:
-- WorkRequest
 - Asset
 capabilities:
   required:
@@ -20,9 +19,6 @@ capabilities:
   optional:
   - creative.text.generate
   - email.send
-  - social.ad.publish
-  - cms.page.publish
-  - experiment.run
   - tracking.read
 context:
 - AudienceSegment
@@ -35,15 +31,25 @@ context:
 Move not-yet-ready prospects toward a better-informed decision over time rather than repeatedly asking for the sale.
 
 ## Business Outcome
-Increase the likelihood of the desired commercial action through evidence-backed lead nurture strategy that matches audience awareness, offer, proof, and acquisition context.
+Increase qualified progression through useful evidence-backed nurture matched to audience awareness, Offer, proof, acquisition context, and relationship state.
 
 ## Run When
-Run when an Opportunity or WorkRequest requires lead nurture strategy to remove a commercial persuasion gap or create the required conversion asset.
+Use when the organization needs a nurture strategy or sequence for prospects/customers who are not ready for the desired action. An Opportunity, prior Asset, or real WorkRequest may provide context but is not required.
 
 ## Process
-1. [AI] Define entry source, awareness, reason not ready, likely information/experience needed, buying horizon, and exit criteria.
-2. [AI] Build content/message progression across education, proof, comparison, objection resolution, use cases, customer outcomes, and appropriate offers.
-3. [HYBRID] Personalize/branch only on reliable signals; avoid pretending to know motives not evidenced.
-4. [AI] Determine cadence based on decision cycle and value delivery rather than maximum contact frequency.
-5. [DETERMINISTIC] Define lifecycle state transitions, suppression on conversion, and handoff to Customer Optimization/Sales where applicable.
-6. [HYBRID] Measure progression to qualified intent rather than opens alone.
+1. [AI] Define entry source, awareness, why the audience may not be ready based on actual evidence, likely information/experience needed, buying horizon, and useful exit criteria.
+2. [AI] Build content/message progression across education, proof, comparison, objection resolution, use cases, customer outcomes, and appropriate Offers.
+3. [HYBRID] Personalize or branch only on reliable available signals; do not pretend to know motives, lifecycle state, or intent that has not been established.
+4. [AI] Determine cadence from decision cycle, relationship, and value delivery rather than maximum contact frequency. Cadence here is communication design; the external system/runtime owns actual scheduling.
+5. [AI] Define useful lifecycle transitions and suppression/next-action behavior where the necessary real signals exist. If later customer-progression or sales work is needed, use the relevant operating knowledge directly; create a WorkRequest only when a real durable handoff across actors/sessions/time is actually needed.
+6. [HYBRID] Measure progression to qualified intent/value where possible rather than opens or clicks alone.
+7. [HYBRID] Preserve the useful nurture Asset/strategy. If sending or automation is explicitly requested and the harness has real capability/permission, configure it through the external system; otherwise report the remaining execution state truthfully without manufacturing AURA runtime state.
+
+## Verification
+- Nurture content provides real value and progression rather than repetitive pressure.
+- Personalization, lifecycle assumptions, urgency, frequency, and claims stay within evidence and real constraints.
+- Designed cadence/branching is not represented as active automation unless the external system actually implements it.
+- AURA domains do not hand the prospect around through internal WorkRequests.
+
+## Completion Criteria
+- The organization has a usable nurture strategy/Asset at the requested fidelity, with external execution state and measurement clearly separated from the plan.
