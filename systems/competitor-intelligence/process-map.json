@@ -1,5 +1,4 @@
 {
-  "version": "1.8.0",
   "system": "competitor-intelligence",
   "activities": [
     {"id":"research-plan","entry_contract":"competitor.research.plan","result":"Resolve a competitive question with bounded evidence."},
