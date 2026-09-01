@@ -9,20 +9,14 @@ reads:
 - Asset
 - WorkRequest
 writes:
-- WorkRequest
 - Asset
 capabilities:
   required:
   - none
   optional:
-  - creative.text.generate
   - tracking.read
   - conversion.read
-  - marketing.performance.read
-  - experiment.run
   - cms.page.publish
-  - email.send
-  - social.ad.publish
 context:
 - Brand
 - AudienceSegment
@@ -33,20 +27,29 @@ context:
 # Landing Page Persuasion QA
 
 ## Purpose
-Verify the final rendered landing page preserves message match, evidence, Offer accuracy, persuasion flow, and action integrity.
+Verify the requested landing-page version preserves message match, evidence, Offer accuracy, persuasion flow, action integrity, and usable rendering.
 
 ## Business Outcome
-Prevent conversion assets from becoming materially worse during design, CMS implementation, responsive changes, or tracking setup.
+Catch material conversion, truth, usability, or implementation defects before they hurt the intended audience or measurement.
 
 ## Run When
-Run before launch and after material landing-page changes.
+Use on a substantive landing-page/homepage draft or live implementation when end-to-end QA can materially improve readiness or identify defects.
 
 ## Process
-1. [DETERMINISTIC] Load final rendered page on required breakpoints and compare with approved architecture/copy/Offer version.
+1. [HYBRID] Inspect the actual available artifact/render at relevant breakpoints and compare it with the intended audience, acquisition context, message architecture, current Offer, and supporting evidence. If a final render is not available, QA only what actually exists and state that limitation.
 2. [AI] Evaluate source-message match, opening clarity, section sequence, proof/objection placement, Offer/fit transparency, and CTA understanding.
-3. [DETERMINISTIC] Check links, forms/CTA destinations, tracking, responsive visibility, prices/terms, proof assets, and required legal/compliance elements.
-4. [HYBRID] Re-run claim validation on rendered text/images and confirm no design edit removed qualifiers or changed meaning.
-5. [AI] Identify persuasion problems versus UX/technical friction and route Customer Optimization issues.
-6. [DETERMINISTIC] Block launch on material errors; capture pass/fail and before-state baseline. Scope QA `blockers` to unresolved defects in the inspected artifact/version. Record unresolved launch facts, authorization, capabilities, deployment, and outcome state in the Asset production-readiness assessment rather than making QA pass/fail impersonate global launch readiness.
-7. [DETERMINISTIC] After launch verify live page/version and measurement instrumentation.
-8. [DETERMINISTIC] Save a JSON pass/fail record under the active Run (for example `runtime/runs/<business-id>/<run-id>/artifacts/landing-page-qa.json`) with `contract_id: "marketing.landing-page.qa"`, `status: "pass"|"fail"`, checks performed, unresolved artifact/QA blockers, and tested Asset/version. Record completion with `scripts/record_contract_completion.py`; do not substitute a generic claim grep for this integrated QA record or call an honest draft production-ready merely because its current-version QA passed.
+3. [HYBRID] Check links, forms/CTA destinations, responsive visibility, prices/terms, proof assets, tracking, accessibility, and real legal/platform requirements where the available artifact/capabilities permit those checks.
+4. [HYBRID] Apply the customer-facing claim policy to rendered text/images or an appropriate claim surface and confirm no design/edit enlarged unsupported promises or removed material qualifiers.
+5. [AI] Distinguish persuasion defects from UX, form, checkout, technical, product, or other journey friction. Use relevant operating knowledge directly rather than routing issues to another AURA service.
+6. [AI] Report material defects, lower-severity improvements, and the evidence/check behind each conclusion. A material defect may justify a recommendation not to launch that version, but AURA does not own launch authorization.
+7. [HYBRID] If the user explicitly requests publication/deployment and the harness has real capability/permission, verify the live version and measurement instrumentation after the external change when practical. Otherwise do not imply deployment occurred.
+8. [AI] Update/preserve the Asset's useful QA/readiness information when future work benefits from it. A separate Run-local pass file, contract-completion record, pre-edit snapshot, or generic VerificationRecord is not required merely to prove QA happened.
+
+## Verification
+- QA reflects the artifact/version actually inspected rather than an assumed final render.
+- Material outward claims and Offer terms remain supported.
+- Artifact quality/readiness, external deployment, and later business outcome remain separate facts.
+- QA can recommend against release because of a real defect without acting as an AURA permission gate.
+
+## Completion Criteria
+- The inspected version has a clear evidence-backed QA result and actionable defects/improvements, with any untested surfaces or deployment state stated honestly. No Run is required.
