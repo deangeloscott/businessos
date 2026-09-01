@@ -5,7 +5,7 @@ import json,re,shutil,sys,tempfile
 ROOT=Path(__file__).resolve().parents[1];sys.path.insert(0,str(ROOT/'scripts'))
 from persist_playbook_evolution import persist_proposal
 from adopt_process_extension import adopt_extension
-from process_extensions import resolve_effective,effective_capabilities,route_local_playbook
+from process_extensions import resolve_effective,effective_capabilities,local_playbook_candidates
 from prepare_innovation_package import prepare_package
 from export_innovation_package import export_package
 from innovation_common import validate_package,load_package,bounded_summary
@@ -29,6 +29,7 @@ def _check_contract_shape(rel):
         if heading not in body:fail(f'{rel} missing required section {heading}')
     proc=re.search(r'## Process\n(.*?)(?=\n## |\Z)',body,re.S)
     if proc is not None and not proc.group(1).strip():fail(f'{rel} has an empty Process section')
+def _candidate_ids(result):return [x.get('contract_id') for x in result.get('candidates',[]) if isinstance(x,dict)]
 def main():
     for rel in ['core/policies/playbook-evolution.md','core/policies/process-extensions.md','core/policies/innovation-exchange.md',*NEW_CONTRACTS,'core/schemas/learning/playbook-evolution-proposal.schema.json','core/schemas/learning/process-extension.schema.json','core/schemas/intelligence/innovation-package.schema.json','core/schemas/intelligence/innovation-exchange-entry.schema.json','core/schemas/config/innovation-sharing.schema.json','core/schemas/intelligence/innovation-exchange-index.schema.json']:
         if not (ROOT/rel).exists():fail(f'missing {rel}')
@@ -42,8 +43,7 @@ def main():
     policy=(ROOT/'core/policies/innovation-exchange.md').read_text()
     for phrase in ['No automatic sharing','workflow_only','anonymized_evidence','full_case_study','anonymous','pseudonymous','named']:
         if phrase not in policy:fail(f'innovation policy missing {phrase}')
-    source=(ROOT/'core/contracts/intelligence/ecosystem/source-discovery/CONTEXT.md').read_text()
-    source_meta=source.split('\n---\n',1)[0]
+    source=(ROOT/'core/contracts/intelligence/ecosystem/source-discovery/CONTEXT.md').read_text();source_meta=source.split('\n---\n',1)[0]
     if '- InnovationExchangeEntry' in source_meta:fail('ecosystem discovery reintroduced exchange support data as canonical organization state')
     for phrase in ['support data rather than canonical organization state','Treat an InnovationPackage as a contributed process/report, not proof that its claimed outcome works','Optional exchange/index data never substitutes for canonical SourceRecord/Observation evidence','Innovation Exchange popularity/repetition is never counted as independent evidence']:
         if phrase not in source:fail(f'ecosystem discovery lost innovation evidence boundary: {phrase}')
@@ -61,10 +61,15 @@ def main():
         if ext['id'] not in [x['id'] for x in exts] or 'Proof-first landing page extension' not in content:fail('adopted extension not visible in effective playbook')
         if 'document.read' not in effective_capabilities('marketing.assets.landing-page',A)['required']:fail('extension capability need not visible in effective metadata')
         if any(k in meta for k in ['risk','autonomy_ceiling']):fail('effective playbook reintroduced retired authority metadata')
-        local_payload=dict(proposal_payload);local_payload.update({'change_kind':'new_local_playbook','target_contract_id':None,'proposed_local_contract_id':'custom.marketing.proof-first-landing','title':'Proof First Landing Workflow','summary':'A reusable local workflow for proof-first landing-page planning.','route_terms':['proof first landing','proof-first workflow'],'required_capabilities':[]});local_prop,_=persist_proposal(A,local_payload);local_ext,_=adopt_extension(A,local_prop['id']);routed=route_local_playbook('Use our proof first landing workflow',A)
-        if not routed or routed['contract_id']!='custom.marketing.proof-first-landing':fail('local playbook routing failed')
-        resolved=route_and_resolve('Use our proof first landing workflow',A)
-        if not resolved.get('local_playbook'):fail('route_and_resolve did not resolve local playbook')
+        local_payload=dict(proposal_payload);local_payload.update({'change_kind':'new_local_playbook','target_contract_id':None,'proposed_local_contract_id':'custom.marketing.proof-first-landing','title':'Proof First Landing Workflow','summary':'A reusable local workflow for proof-first landing-page planning.','route_terms':['proof first landing','proof-first workflow'],'required_capabilities':[]});local_prop,_=persist_proposal(A,local_payload);local_ext,_=adopt_extension(A,local_prop['id'])
+        local_candidates=local_playbook_candidates('Use our proof first landing workflow',A)
+        if 'custom.marketing.proof-first-landing' not in [x.get('contract_id') for x in local_candidates]:fail('local playbook candidate discovery failed')
+        if any(x.get('selection_authority') is not False for x in local_candidates):fail('local playbook candidates claimed semantic selection authority')
+        unresolved=route_and_resolve('Use our proof first landing workflow',A)
+        if unresolved.get('contract_id') is not None or not unresolved.get('semantic_selection_required'):fail('candidate discovery silently selected a local playbook')
+        if 'custom.marketing.proof-first-landing' not in _candidate_ids(unresolved):fail('combined candidate discovery omitted the local playbook')
+        resolved=route_and_resolve('Use our proof first landing workflow',A,selected_contract_id='custom.marketing.proof-first-landing')
+        if resolved.get('contract_id')!='custom.marketing.proof-first-landing' or not resolved.get('local_playbook'):fail('explicit local playbook resolution failed')
         _,local_meta,local_content,_=resolve_effective('custom.marketing.proof-first-landing',A)
         if not local_meta.get('local_playbook') or 'Proof First Landing Workflow' not in local_content:fail('local playbook effective resolution failed')
         cfg,_=configure(A,'ask_when_noteworthy','workflow_only','anonymous',True,['shared/innovation-index.json'],None)
@@ -85,9 +90,15 @@ def main():
         if entry4['local_evidence']['supported_count']!=1:fail('duplicate local outcome event was not idempotent')
         feed=list_entries(B,compatible_only=True)
         if not feed or feed[0]['id']!=entry['id'] or feed[0]['local_supported']!=1:fail('local innovation feed did not surface evidence')
-        if route_and_resolve('Make this successful method a permanent AURA playbook',A)['contract_id']!='core.learning.playbook-evolution':fail('playbook evolution route missing')
-        if route_and_resolve('Share this workflow through the innovation exchange',A)['contract_id']!='core.intelligence.innovation-exchange':fail('innovation exchange route missing')
-        print('playbook evolution + innovation exchange regressions passed without authority/runtime semantics')
+        evolution_candidates=route_and_resolve('Make this successful method a permanent AURA playbook',A)
+        if 'core.learning.playbook-evolution' not in _candidate_ids(evolution_candidates):fail('playbook evolution candidate missing')
+        evolution_selected=route_and_resolve('Make this successful method a permanent AURA playbook',A,selected_contract_id='core.learning.playbook-evolution')
+        if evolution_selected.get('contract_id')!='core.learning.playbook-evolution':fail('explicit playbook evolution resolution failed')
+        exchange_candidates=route_and_resolve('Share this workflow through the innovation exchange',A)
+        if 'core.intelligence.innovation-exchange' not in _candidate_ids(exchange_candidates):fail('innovation exchange candidate missing')
+        exchange_selected=route_and_resolve('Share this workflow through the innovation exchange',A,selected_contract_id='core.intelligence.innovation-exchange')
+        if exchange_selected.get('contract_id')!='core.intelligence.innovation-exchange':fail('explicit innovation exchange resolution failed')
+        print('playbook evolution + innovation exchange regressions passed without semantic/runtime authority')
     finally:
         for bid in [A,B]:shutil.rmtree(ROOT/'instances'/bid,ignore_errors=True)
         shutil.rmtree(ROOT/'runtime'/'innovation'/A,ignore_errors=True);shutil.rmtree(tmpdir,ignore_errors=True)
