@@ -1,26 +1,29 @@
-# BusinessOS Playbook Evolution & Innovation Exchange
+# AURA Process Evolution & Innovation Exchange
 
-BusinessOS can turn strong business Learning into durable local operating improvements without editing the canonical BusinessOS base, and users can optionally package/share those improvements with others.
+AURA can preserve strong organization-specific operating improvements without editing canonical AURA product source. Users may also explicitly package/share those improvements with others. Both capabilities are optional.
 
-## Local evolution
+## Local process evolution
 
-1. Promote evidence-backed Learning through `core.learning.promote-learning`.
-2. Use `core.learning.playbook-evolution` to create a bounded proposal.
-3. Persist it with:
-   `python scripts/persist_playbook_evolution.py <business-id> --proposal-file runtime/<proposal>.json`
-4. After explicit user approval, adopt a business-scoped extension/local playbook:
-   `python scripts/adopt_process_extension.py <business-id> <proposal-id> --approve`
-5. Resolve with:
-   `python scripts/resolve_effective_contract.py <business-id> <contract-id> --show`
+Reusable Learning is ordinary organization-owned memory. Create or update it when the active model/user judges that the evidence supports a durable reusable conclusion; there is no separate Learning-promotion stage.
 
-Canonical contracts remain unchanged. Effective behavior is base contract plus active compatible ProcessExtensions.
+When that Learning would materially improve a repeatable method:
+1. Use `core.learning.playbook-evolution` to decide whether the Learning itself is sufficient, an existing playbook should gain an organization-local extension, a new local playbook is useful, or a canonical AURA product revision is worth proposing.
+2. Persist a bounded proposal with:
+   `python3 scripts/persist_playbook_evolution.py <business-id> --proposal-file <proposal.json>`
+3. If the organization intentionally chooses a business-scoped proposal, adopt it with:
+   `python3 scripts/adopt_process_extension.py <business-id> <proposal-id>`
+4. Resolve organization-local operating knowledge with:
+   `python3 scripts/resolve_effective_contract.py <business-id> <playbook-id> --show`
 
-## Sharing controls
+A `ProcessExtension` is reusable organization-owned operating knowledge, not execution authority. The active model/user may use, adapt, combine, or ignore it when another method is better.
 
-Configure prompting/defaults:
-`python scripts/configure_innovation_sharing.py <business-id> --prompt-mode ask_when_noteworthy --detail workflow_only --identity anonymous`
+## Optional sharing defaults
 
-This configuration never grants permission to disclose data.
+Configure contribution defaults and optional discovery sources:
+
+`python3 scripts/configure_innovation_sharing.py <business-id> --detail workflow_only --identity anonymous [--enable-discovery] [--source <index-reference>]`
+
+These settings remember formatting/discovery preferences only. They do not decide when AURA should interrupt the user, prepare a contribution, or disclose anything.
 
 Detail levels:
 - `workflow_only`
@@ -32,50 +35,54 @@ Identity levels:
 - `pseudonymous`
 - `named`
 
-These choices are independent.
+Detail and identity are independent.
 
 ## Prepare and export
 
-Prepare a local draft:
-`python scripts/prepare_innovation_package.py <business-id> <process-extension-id> --detail workflow_only --identity anonymous`
+For an explicit sharing task, prepare a bounded local draft:
 
-The draft is not approved for sharing.
+`python3 scripts/prepare_innovation_package.py <business-id> <process-extension-id> --detail workflow_only --identity anonymous`
 
-After the user explicitly approves:
-`python scripts/export_innovation_package.py runtime/...draft.json --output runtime/innovation-package.zip --approve`
+The draft is not approved for external disclosure.
 
-This creates a portable file only; BusinessOS does not upload it automatically.
+After the user explicitly authorizes the current export:
+
+`python3 scripts/export_innovation_package.py <draft.json> --output <innovation-package.zip> --approve`
+
+This creates a portable file only. AURA does not upload or publish it automatically.
 
 ## Import and evaluate
 
-Validate:
-`python scripts/validate_innovation_package.py innovation-package.zip --require-export-approval`
+Validate a received package:
 
-Import:
-`python scripts/import_innovation_package.py <business-id> innovation-package.zip`
+`python3 scripts/validate_innovation_package.py <innovation-package.zip> --require-export-approval`
 
-Browse the local feed:
-`python scripts/list_innovation_exchange.py <business-id> --compatible-only`
+Import it for one organization:
 
-Imported packages become external/community evidence candidates, not trusted best practices. They flow through Ecosystem Intelligence triangulation.
+`python3 scripts/import_innovation_package.py <business-id> <innovation-package.zip>`
 
-After the business tests an innovation and has a canonical OutcomeEvaluation:
-`python scripts/record_innovation_outcome.py <business-id> <exchange-entry-id> --outcome supported --evidence-ref eval_...`
+Import preserves the exact contribution as organization-local support data and creates a canonical `SourceRecord` pointing to that evidence. It does **not** manufacture an `Insight`, `Learning`, confidence score, recommendation, or adoption decision.
 
-Community reports and active-business outcomes remain separate so virality cannot masquerade as replication.
+Browse locally imported support data:
 
-## No central dependency
+`python3 scripts/list_innovation_exchange.py <business-id> --compatible-only`
 
-InnovationPackage JSON/ZIP files can be exchanged manually. A future hosted registry/API may improve discovery, but a local BusinessOS copy remains complete without it.
+If the active organization tests an imported method and has a real `OutcomeEvaluation`, associate that evidence mechanically:
 
-## Publish or browse a decentralized feed
+`python3 scripts/record_innovation_outcome.py <business-id> <exchange-entry-id> --outcome supported --evidence-ref eval_...`
 
-A curator/community can place approved packages in a folder/repository and generate an index:
+The model/user decides what imported and local evidence means. Reported community outcomes and active-organization outcomes remain separate so popularity or repeated contribution cannot masquerade as independent replication.
 
-`python scripts/build_innovation_exchange_index.py <package-directory> --exchange-id community-name`
+## Decentralized discovery
 
-Users can browse a downloaded index without importing anything:
+Approved packages can be exchanged through ordinary files, repositories, email/file transfer, or an optional future registry/API. A central service is never required.
 
-`python scripts/browse_innovation_exchange_index.py innovation-index.json --query "landing page"`
+A curator/community can generate a portable discovery index from a directory of approved packages:
 
-A configured `exchange_sources` list may point the active business/harness at approved index locations. Retrieving a remote index/package is still a host capability; import and adoption remain explicit local actions.
+`python3 scripts/build_innovation_exchange_index.py <package-directory> --exchange-id community-name`
+
+Browse an available index without importing anything:
+
+`python3 scripts/browse_innovation_exchange_index.py <innovation-index.json> --query "landing page"`
+
+A configured `exchange_sources` list may help the active model/harness discover indexes. Retrieving remote material remains a host capability; import, interpretation, testing, adoption, and sharing remain explicit local work.
