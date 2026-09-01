@@ -36,20 +36,25 @@ updates:
 # Indexing Opportunity Detector
 
 ## Purpose
-Find assets whose observed index/canonical/serving state conflicts with intended business/search state.
+Find Assets whose observed index/canonical/serving state conflicts with intended business/search state.
 
 ## Business Outcome
-Detect and explain material indexing opportunity early enough to prioritize the right SEO/AEO response and protect or improve valuable organic discovery.
+Separate real indexing problems from intentional states and expected propagation, then preserve a focused Opportunity only when the mismatch matters.
+
 ## Run When
-Run after fresh relevant observations are ingested, on the configured opportunity-scan cadence, or when an operator explicitly asks to diagnose **indexing opportunity**. Do not create an Opportunity until the detector's evidence threshold is met.
+Use when fresh relevant crawl/index observations exist and the user/model needs to diagnose an **indexing opportunity/problem**. If an external runtime invokes this from saved monitoring intent, that runtime owns the schedule. Do not create an Opportunity until evidence and model judgment support one.
 
 ## Process
-1. [HYBRID] Compare intended Asset / SEOAssetState index state with current crawl/index/search observations.
+1. [HYBRID] Compare intended Asset/SEOAssetState index state with current crawl/index/search observations.
 2. [AI] Identify valuable not-indexed, wrong-canonical, stale-indexed, unexpectedly indexed, or changed-but-not-reflected cases.
-3. [HYBRID] Exclude intentional noindex/redirect/removal states and expected lag windows.
-4. [DETERMINISTIC] Join discovery/internal links, duplication/content quality, technical directives, and platform diagnostics.
-5. [HYBRID] Create index-troubleshooting or deindex-removal Opportunities with evidence.
-6. [HYBRID] Escalate broad unexpected losses as mass-deindexing Incident.
+3. [HYBRID] Exclude intentional noindex/redirect/removal states and reasonable propagation windows.
+4. [HYBRID] Relate discovery/internal links, duplication/content quality, technical directives, and platform diagnostics to plausible causes. Exact joins are mechanical; causal meaning is not.
+5. [AI] Create/update an indexing Opportunity only when the mismatch is materially valuable and plausibly addressable; do not route execution automatically.
+6. [AI] Preserve an Incident only when evidence supports a genuinely severe broad unexpected loss, not merely because multiple URLs are affected.
+
+## Verification
+- Claimed indexing state is grounded in observable crawl/index/search evidence.
+- Intentional state, propagation lag, diagnosis, severity, and business impact remain distinct.
+
 ## Deterministic local-site evidence
 When the scoped evidence is a local/first-party website export, do not hand-author material direct site facts from model memory or prose inspection. Run `scripts/inspect_site_evidence.py`, then persist material direct Observations through `scripts/persist_site_observation.py` using the captured fact IDs. Keep consequences, severity, and visibility implications as inference unless separately measured. Follow `core/policies/local-evidence.md`.
-

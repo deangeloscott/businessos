@@ -41,19 +41,22 @@ updates:
 # Search Reputation Risk Detector
 
 ## Purpose
-Detect reputation/review conditions that materially affect organic/local discovery or search-result trust, without owning broad sentiment/reputation management.
+Detect reputation/review conditions that materially affect organic/local discovery or search-result trust without owning broad sentiment/reputation management.
 
 ## Business Outcome
-Detect and explain material search reputation risk early enough to prioritize the right SEO/AEO response and protect or improve valuable organic discovery.
+Identify search-relevant reputation risks and the actual underlying mechanism without treating operational complaints as an SEO problem or creating automatic reputation workflows.
+
 ## Run When
-Run after fresh relevant observations are ingested, on the configured opportunity-scan cadence, or when an operator explicitly asks to diagnose **reputation gap**. Do not create an Opportunity until the detector's evidence threshold is met.
+Use when fresh relevant reputation/search observations exist and the user/model needs to diagnose a **search reputation risk/gap**. If an external runtime invokes this from saved monitoring intent, that runtime owns the schedule. Do not create an Opportunity until evidence and model judgment support one.
 
 ## Process
-1. [HYBRID] Compare rating/review volume/recency/themes/response coverage and third-party profile accuracy by location/product/source.
-2. [DETERMINISTIC] Join search/local/AI observations to identify where reputation is visible in the decision path.
-3. [AI] Identify whether the issue is insufficient authentic review generation, response backlog, operational complaint pattern, inaccurate profile, or misinformation.
-4. [HYBRID] Route operational root causes outside SEO when marketing cannot fix them.
-5. [HYBRID] Create ethical reputation Opportunities with business impact evidence.
-6. [HYBRID] Define downstream measurement of reputation and conversion effects, not review count alone.
+1. [HYBRID] Compare rating/review volume/recency/themes/response coverage and third-party profile accuracy by relevant location/product/source.
+2. [HYBRID] Relate search/local/AI observations to where reputation evidence is actually visible in the decision path.
+3. [AI] Determine whether the likely problem is insufficient authentic review generation, response backlog, an operational complaint pattern, inaccurate profile information, misinformation, or another mechanism.
+4. [AI] When the root cause belongs outside SEO, state that plainly and let the active model/user continue with the appropriate business method; create a durable handoff only if another owner genuinely needs one.
+5. [AI] Create/update an ethical SEO reputation Opportunity only when a search/discovery intervention is materially supported by evidence.
+6. [HYBRID] Define later evaluation using relevant reputation/trust and business-choice evidence rather than review count alone.
 
-
+## Verification
+- Search visibility, reputation evidence, operational root cause, and business impact remain distinct.
+- No synthetic review/manipulation tactic is recommended merely to improve a metric.

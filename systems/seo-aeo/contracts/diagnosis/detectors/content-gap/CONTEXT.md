@@ -40,19 +40,22 @@ updates:
 # Content / Information Gap Detector
 
 ## Purpose
-Find high-value buyer needs or answer components not adequately served by an owned asset.
+Find high-value buyer needs or answer components not adequately served by an owned Asset.
 
 ## Business Outcome
-Detect and explain material content / information gap early enough to prioritize the right SEO/AEO response and protect or improve valuable organic discovery.
+Identify useful information gaps with a real audience/business pathway while avoiding keyword-volume-driven content production and unnecessary Asset fragmentation.
+
 ## Run When
-Run after fresh relevant observations are ingested, on the configured opportunity-scan cadence, or when an operator explicitly asks to diagnose **content / information gap**. Do not create an Opportunity until the detector's evidence threshold is met.
+Use when fresh relevant demand/content observations exist and the user/model needs to diagnose a **content / information gap**. If an external runtime invokes this from saved monitoring intent, that runtime owns the schedule. Do not create an Opportunity until evidence and model judgment support one.
 
 ## Process
-1. [DETERMINISTIC] Join Demand clusters, journey stages, competitor/answer-source coverage, owned asset inventory, support/sales questions, and performance.
+1. [HYBRID] Relate Demand clusters, journey stages, competitor/answer-source coverage, owned Asset inventory, support/sales questions, and performance to the current business question.
 2. [AI] Identify absent destinations, incomplete sections/evidence, obsolete information, or formats that users actually need.
-3. [HYBRID] Check whether enhancing an existing asset is better than creating a new one to avoid fragmentation/cannibalization.
-4. [HYBRID] Define the missing user outcome/information, not a target word count.
-5. [HYBRID] Create a content/on-page Opportunity with business pathway and evidence.
+3. [AI] Decide whether improving an existing Asset is better than creating a new one, accounting for fragmentation and cannibalization risk.
+4. [AI] Define the missing user outcome/information rather than a target word count or generic keyword brief.
+5. [AI] Create/update a content/on-page Opportunity only when the gap has a credible audience/business pathway and evidence.
 6. [HYBRID] Reject content whose only justification is keyword volume without audience/business value.
 
-
+## Verification
+- Demand evidence, user need, existing coverage, and business relevance remain separately inspectable.
+- The detector does not route production or require a new Asset merely because a gap exists.

@@ -40,22 +40,21 @@ updates:
 # Ranking Decay Detector
 
 ## Purpose
-Detect sustained loss of position/visibility for valuable demand and identify the likely scope.
+Detect sustained loss of position/visibility for valuable demand and identify the likely scope/mechanism.
 
 ## Business Outcome
-Detect and explain material ranking decay early enough to prioritize the right SEO/AEO response and protect or improve valuable organic discovery.
+Explain material ranking decay without assuming every fluctuation is actionable or automatically rewriting content.
+
 ## Run When
-Run after fresh relevant observations are ingested, on the configured opportunity-scan cadence, or when an operator explicitly asks to diagnose **ranking decay**. Do not create an Opportunity until the detector's evidence threshold is met.
+Use when fresh relevant visibility observations exist and the user/model needs to diagnose **ranking decay**. If an external runtime invokes this from saved monitoring intent, that runtime owns the schedule. Do not create an Opportunity until evidence and model judgment support one.
 
 ## Process
-1. [HYBRID] Compare configurable recent/prior/YoY/rolling windows and retain query-page-market-device granularity.
-2. [HYBRID] Require material value-weighted decline beyond normal volatility/provider noise.
-3. [AI] Determine whether the drop is page-specific, cluster-wide, template/sitewide, market-specific, or competitor displacement.
-4. [HYBRID] Check demand/intent/SERP changes, technical/index state, page changes, competitor changes, authority, freshness, cannibalization, and ecosystem updates.
-5. [HYBRID] Create Opportunity or Incident based on severity/scope, with hypotheses ranked by evidence.
+1. [HYBRID] Compare appropriate recent/prior/YoY/rolling windows while retaining query-page-market-device context.
+2. [HYBRID] Require material value-weighted decline beyond normal volatility and observable measurement noise.
+3. [AI] Determine whether the decline is page-specific, cluster-wide, template/sitewide, market-specific, competitor displacement, or still unresolved.
+4. [HYBRID] Evaluate demand/intent/SERP changes, technical/index state, page changes, competitor movement, authority, freshness, cannibalization, and relevant platform/industry evidence.
+5. [AI] Create/update an Opportunity or Incident only when severity, business value, and a plausible intervention/root cause are sufficiently supported; otherwise preserve hypotheses/uncertainty.
 6. [AI] Do not automatically rewrite content until diagnosis identifies a plausible content cause.
 
 ## Verification
-- Separate demand, ranking, indexing, SERP-layout, seasonality and tracking effects before assigning a cause.
-
-
+- Separate demand, ranking, indexing, SERP-layout, seasonality, tracking effects, and causal hypotheses before assigning a cause.

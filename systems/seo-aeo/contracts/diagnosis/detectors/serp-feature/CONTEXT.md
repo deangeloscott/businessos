@@ -42,16 +42,19 @@ updates:
 Find valuable result formats or surface features the brand could legitimately qualify for or better serve.
 
 ## Business Outcome
-Detect and explain material serp / discovery feature opportunity early enough to prioritize the right SEO/AEO response and protect or improve valuable organic discovery.
+Identify useful discovery-feature opportunities without assuming feature eligibility, visibility, or ownership can be guaranteed.
+
 ## Run When
-Run after fresh relevant observations are ingested, on the configured opportunity-scan cadence, or when an operator explicitly asks to diagnose **serp / discovery feature opportunity**. Do not create an Opportunity until the detector's evidence threshold is met.
+Use when fresh relevant result-surface observations exist and the user/model needs to diagnose a **SERP / discovery feature opportunity**. If an external runtime invokes this from saved monitoring intent, that runtime owns the schedule. Do not create an Opportunity until evidence and model judgment support one.
 
 ## Process
-1. [AI] Observe high-value result ecosystems and identify recurring local, image, video, product, rich-result, discussion, news, or other feature types.
-2. [HYBRID] Verify the feature aligns with actual user intent and the brand has or can create eligible/useful content/data.
-3. [HYBRID] Inspect current owned eligibility, structured information, media, product/local data, and competitor examples.
-4. [HYBRID] Route to the relevant content, media, structured-data, local, product, or technical playbook.
-5. [HYBRID] Create an Opportunity with feature-specific evidence rather than treating feature ownership as guaranteed.
-6. [HYBRID] Define SEO monitoring and Core OutcomeEvaluation of feature presence and business effect after any later change.
+1. [AI] Inspect high-value result ecosystems and identify recurring local, image, video, product, rich-result, discussion, news, or other feature types.
+2. [AI] Judge whether the feature aligns with actual user intent and whether the business has or could legitimately create useful eligible content/data.
+3. [HYBRID] Inspect current owned eligibility, structured information, media, product/local data, and relevant competitor/source examples.
+4. [AI] Identify the most relevant content/media/structured-data/local/product/technical method when useful; do not route execution automatically.
+5. [AI] Create/update an Opportunity only when feature-specific evidence and business value justify it; do not imply guaranteed feature ownership.
+6. [HYBRID] Define later observation/evaluation evidence if a future intervention is performed. Runtime scheduling and execution remain external to AURA.
 
-
+## Verification
+- Feature presence, eligibility, user value, and likely business effect remain distinct.
+- A detected feature does not itself authorize or require an intervention.

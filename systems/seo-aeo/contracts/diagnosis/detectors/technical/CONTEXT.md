@@ -35,20 +35,25 @@ updates:
 # Technical Opportunity Detector
 
 ## Purpose
-Convert crawl/index/performance observations into prioritized, root-cause technical opportunities.
+Convert crawl/index/performance observations into evidence-backed root-cause technical opportunities.
 
 ## Business Outcome
-Detect and explain material technical opportunity early enough to prioritize the right SEO/AEO response and protect or improve valuable organic discovery.
+Identify systemic technical problems worth fixing without creating thousands of duplicate URL tasks or turning the detector into an automated remediation controller.
+
 ## Run When
-Run after fresh relevant observations are ingested, on the configured opportunity-scan cadence, or when an operator explicitly asks to diagnose **technical opportunity**. Do not create an Opportunity until the detector's evidence threshold is met.
+Use when fresh relevant technical observations exist and the user/model needs to diagnose a **technical SEO opportunity/problem**. If an external runtime invokes this from saved monitoring intent, that runtime owns the schedule. Do not create an Opportunity until evidence and model judgment support one.
 
 ## Process
-1. [HYBRID] Ingest technical baseline/monitoring issues and group occurrences by underlying template/configuration/root cause.
-2. [DETERMINISTIC] Join affected assets with business value, demand, traffic, index state, conversions, backlinks, and change history.
-3. [HYBRID] Estimate affected scope and whether the configuration is intentional.
-4. [AI] Prioritize systemic fixes over thousands of duplicate per-URL tickets when one root cause explains them.
-5. [HYBRID] Create an Opportunity with issue class, evidence, affected set, risk, and routed technical playbook.
-6. [HYBRID] Escalate sitewide/access/security failures to Incident handling.
+1. [HYBRID] Group technical baseline/monitoring observations by plausible shared template/configuration/root cause.
+2. [HYBRID] Relate affected Assets to business value, demand, traffic, index state, conversions, backlinks, and relevant change history. Exact joins are mechanical; materiality/root cause are not.
+3. [AI] Assess affected scope, intentionality, severity, and the evidence for each plausible cause.
+4. [AI] Prefer systemic root-cause interventions over duplicate per-URL tasks when one mechanism plausibly explains the evidence.
+5. [AI] Create/update an Opportunity only when the issue is materially valuable and a plausible technical intervention exists; later method/tool choice remains with the model/harness.
+6. [AI] Preserve an Incident only when actual evidence supports a severe sitewide/access/security condition requiring durable incident awareness.
+
+## Verification
+- Symptom count alone does not establish root cause or severity.
+- Technical execution/remediation remains with the active model/harness and real system.
+
 ## Deterministic local-site evidence
 When the scoped evidence is a local/first-party website export, do not hand-author material direct site facts from model memory or prose inspection. Run `scripts/inspect_site_evidence.py`, then persist material direct Observations through `scripts/persist_site_observation.py` using the captured fact IDs. Keep consequences, severity, and visibility implications as inference unless separately measured. Follow `core/policies/local-evidence.md`.
-

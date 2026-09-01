@@ -41,21 +41,23 @@ updates:
 # Organic Experience Alignment Detector
 
 ## Purpose
-Detect when organic acquisition intent, ranking destination, search promise, or landing experience is misaligned; route general persuasion or journey friction to the correct OS.
+Detect when organic acquisition intent, ranking destination, search promise, or landing experience is misaligned and distinguish SEO acquisition problems from broader persuasion/journey friction.
 
 ## Business Outcome
-Detect and explain material organic experience alignment early enough to prioritize the right SEO/AEO response and protect or improve valuable organic discovery.
+Identify the real owner/mechanism of an organic conversion gap without forcing non-SEO problems into SEO Opportunities or cross-domain routing machinery.
+
 ## Run When
-Run after fresh relevant observations are ingested, on the configured opportunity-scan cadence, or when an operator explicitly asks to diagnose **conversion gap**. Do not create an Opportunity until the detector's evidence threshold is met.
+Use when fresh relevant organic/conversion observations exist and the user/model needs to diagnose an **organic conversion/experience alignment gap**. If an external runtime invokes this from saved monitoring intent, that runtime owns the schedule. Do not create an Opportunity until evidence and model judgment support one.
 
 ## Process
-1. [DETERMINISTIC] Select sufficient-volume/value organic segments and join landing page, query/intent, audience/market, conversion events, and downstream quality/value where available.
-2. [HYBRID] Compare against appropriate page/intent/market baselines rather than sitewide conversion rate.
-3. [HYBRID] Inspect offer match, CTA, form/checkout usability, trust/reputation, page speed, device issues, information completeness, and traffic intent quality.
-4. [HYBRID] Separate SEO acquisition mismatch from broader CRO/product/sales issues.
-5. [HYBRID] Create an Opportunity routed to on-page/content/technical or an external business/CRO workflow as appropriate.
-6. [HYBRID] Define the downstream business-outcome and guardrail measurements required after any intervention.
-7. [AI] If the primary cause is offer/message persuasion rather than organic intent mapping, route a WorkRequest or relevance signal to Marketing Synthesis.
-8. [AI] If the primary cause is form/checkout/sales/onboarding/process friction, route to Customer Optimization rather than retaining an SEO Opportunity.
+1. [HYBRID] Select sufficiently decision-relevant organic segments and relate landing page, query/intent, audience/market, conversion events, and downstream quality/value where available.
+2. [HYBRID] Compare against appropriate page/intent/market baselines rather than a sitewide conversion rate.
+3. [AI] Inspect Offer match, CTA, form/checkout usability, trust/reputation, page speed, device issues, information completeness, and traffic-intent quality as possible mechanisms.
+4. [AI] Distinguish SEO acquisition/intent mismatch from broader Marketing, Customer Optimization, product, sales, or operational causes.
+5. [AI] Create/update an SEO Opportunity only when SEO owns a materially supported intervention. Otherwise state the likely non-SEO mechanism and let the active model/user use the relevant operating knowledge directly.
+6. [HYBRID] Define the downstream business-outcome and guardrail evidence needed after any intervention.
+7. [AI] Create a WorkRequest only if a genuine durable handoff to another owner must survive the current session; do not route ordinary model continuation through AURA.
 
-
+## Verification
+- Search intent, landing experience, persuasion, journey friction, and downstream business value remain distinct.
+- No cross-domain Opportunity/WorkRequest is manufactured merely to encode model decomposition.

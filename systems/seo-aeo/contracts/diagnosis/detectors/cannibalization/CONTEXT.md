@@ -40,19 +40,22 @@ updates:
 # Cannibalization / Intent Ownership Detector
 
 ## Purpose
-Find multiple owned assets competing/confusing intent ownership where consolidation or differentiation may improve outcomes.
+Find multiple owned assets competing or confusing intent ownership where consolidation or differentiation may improve outcomes.
 
 ## Business Outcome
-Detect and explain material cannibalization / intent ownership early enough to prioritize the right SEO/AEO response and protect or improve valuable organic discovery.
+Distinguish harmful ownership ambiguity from legitimate multiple-result coverage and identify a focused intervention only when the evidence supports it.
+
 ## Run When
-Run after fresh relevant observations are ingested, on the configured opportunity-scan cadence, or when an operator explicitly asks to diagnose **cannibalization / intent ownership**. Do not create an Opportunity until the detector's evidence threshold is met.
+Use when fresh relevant query/asset observations exist and the user/model needs to diagnose **cannibalization / intent ownership**. If an external runtime invokes this from saved monitoring intent, that runtime owns the schedule. Do not create an Opportunity until evidence and model judgment support one.
 
 ## Process
-1. [AI] Group queries/prompts/topics by multiple ranking/cited/target owned URLs and analyze switching over time.
-2. [HYBRID] Compare actual intent, audience, page type, offer, canonical/internal links, and conversion purpose of the candidate assets.
-3. [HYBRID] Distinguish legitimate multiple results or distinct sub-intents from harmful duplication.
-4. [AI] Assess whether merge, redirect, canonical alignment, internal-link clarification, retargeting, or content differentiation is appropriate.
-5. [HYBRID] Create one Opportunity spanning all affected assets and preserve redirect/content history.
-6. [HYBRID] Define downstream measurement at the combined topic/cluster level rather than judging only the surviving URL.
+1. [AI] Group queries/prompts/topics with multiple ranking/cited/target owned URLs and inspect switching/overlap over time.
+2. [HYBRID] Compare actual intent, audience, page type, Offer, canonical/internal links, and conversion purpose of candidate Assets.
+3. [AI] Distinguish legitimate multiple results or distinct sub-intents from harmful duplication/ownership ambiguity.
+4. [AI] Decide whether merge, redirect, canonical alignment, internal-link clarification, retargeting, content differentiation, or no change is most plausible.
+5. [AI] Create/update one Opportunity spanning the materially affected Assets only when the evidence supports a controllable problem; preserve relevant redirect/content history.
+6. [HYBRID] Define later evaluation at the combined topic/cluster level so success is not judged only by one surviving URL.
 
-
+## Verification
+- Query/topic similarity alone does not establish harmful cannibalization.
+- A future change remains model/harness execution; this detector only preserves the diagnosis/Opportunity when useful.

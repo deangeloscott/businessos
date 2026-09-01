@@ -44,20 +44,19 @@ updates:
 Find pages whose observed clicks are materially below an appropriate expectation for their visibility and intent.
 
 ## Business Outcome
-Detect and explain material low ctr / search presentation early enough to prioritize the right SEO/AEO response and protect or improve valuable organic discovery.
+Identify controllable search-presentation gaps without mistaking rank/result-layout movement or low-quality traffic for a copy problem.
+
 ## Run When
-Run after fresh relevant observations are ingested, on the configured opportunity-scan cadence, or when an operator explicitly asks to diagnose **low ctr / search presentation**. Do not create an Opportunity until the detector's evidence threshold is met.
+Use when fresh relevant CTR/search-result observations exist and the user/model needs to diagnose **low CTR / search presentation**. If an external runtime invokes this from saved monitoring intent, that runtime owns the schedule. Do not create an Opportunity until evidence and model judgment support one.
 
 ## Process
-1. [DETERMINISTIC] Join query-page impressions, clicks, CTR, position, device, market, brand/nonbrand, result features, and business value.
-2. [HYBRID] Apply configurable initial rules (including user-supplied position/impression thresholds where configured), then prefer learned expected CTR curves once sufficient brand data exists.
-3. [HYBRID] Flag statistically/materially meaningful underperformance rather than every below-average row.
+1. [HYBRID] Relate query-page impressions, clicks, CTR, position, device, market, brand/nonbrand, result features, and business value. Exact joins are mechanical; comparability/value are model judgments.
+2. [HYBRID] Apply useful initial rules and user-supplied thresholds where appropriate, then prefer learned expected CTR curves once sufficient comparable business evidence exists.
+3. [HYBRID] Identify statistically/materially meaningful underperformance rather than every below-average row.
 4. [AI] Diagnose title/snippet relevance, result features/zero-click behavior, intent mismatch, brand familiarity, ratings/reviews, structured appearance, query-page mismatch, and competitor presentation.
-5. [HYBRID] Create a presentation/content Opportunity only if the root cause is plausibly controllable.
-6. [HYBRID] Define downstream measurement against matched position/query conditions so ranking movement is not mistaken for CTR-copy impact.
+5. [AI] Create/update a presentation/content Opportunity only if the likely root cause is materially valuable and plausibly controllable.
+6. [HYBRID] Define later evaluation against comparable position/query conditions so ranking movement is not mistaken for CTR-copy impact.
 
 ## Verification
-- Compare CTR only against a relevant position/query/device/market expectation; do not mistake rank movement for presentation lift.
+- Compare CTR only against a relevant position/query/device/market expectation.
 - Create an Opportunity only when the gap is material and plausibly controllable.
-
-
