@@ -13,7 +13,6 @@ reads:
 - WorkRequest
 - ProofRecord
 writes:
-- WorkRequest
 - Asset
 capabilities:
   required:
@@ -21,7 +20,6 @@ capabilities:
   optional:
   - creative.text.generate
   - email.send
-  - social.ad.publish
   - cms.page.publish
   - experiment.run
   - tracking.read
@@ -49,18 +47,28 @@ subcontracts:
 # Webinar Persuasion
 
 ## Purpose
-Design a webinar that creates genuine understanding/value while logically leading qualified attendees to an offer.
+Design a webinar that creates genuine understanding/value while logically leading qualified attendees to an Offer.
 
 ## Business Outcome
-Increase the likelihood of the desired commercial action through evidence-backed webinar persuasion that matches audience awareness, offer, proof, and acquisition context.
+Increase the likelihood of the desired commercial action through an evidence-backed webinar matched to audience awareness, Offer, proof, acquisition context, and the actual session experience.
 
 ## Run When
-Run when an Opportunity or WorkRequest requires webinar persuasion to remove a commercial persuasion gap or create the required conversion asset.
+Use when the organization needs a webinar to educate, persuade, demonstrate, or support a commercial decision. An Opportunity, prior Asset, or real WorkRequest may provide context but is not required.
 
 ## Process
-1. [AI] Define audience starting beliefs, desired transformation, teaching promise, Offer, objections, and commercial action.
-2. [AI] Structure value-first narrative: why topic matters → useful framework/demo/case → implications → transition to solution/offer → proof → fit/terms → CTA/Q&A.
-3. [HYBRID] Ensure educational content stands on its own and is not merely withheld value disguised as teaching.
-4. [AI] Define slide-level persuasive/teaching jobs and speaker logic; Content may own final slide production.
-5. [HYBRID] Build objection/proof/FAQ plan and explicit compliance/claim checks.
-6. [DETERMINISTIC] Define registration/attendance/conversion measurement and follow-up WorkRequests.
+1. [AI] Define audience starting beliefs, desired transformation, teaching promise, Offer, objections, proof, session format, and commercial action.
+2. [AI] Use the authored webinar submethods as relevant composition/quality knowledge to structure a value-first narrative: why topic matters → useful framework/demo/case → implications → transition to solution/Offer → proof → fit/terms → CTA/Q&A.
+3. [HYBRID] Ensure the educational content stands on its own and material outward claims are supported; do not manufacture urgency, scarcity, proof, or outcomes.
+4. [AI] Create the speaker logic/script and slide-level teaching/persuasion jobs. If slide production is within the user's request and the harness can create the presentation, produce it directly; otherwise preserve a usable slide brief or create a WorkRequest only for a real durable handoff to another actor.
+5. [AI] Build the objection/proof/FAQ plan and registration/reminder/follow-up content only where those parts are relevant to the requested webinar and real communication permissions/constraints.
+6. [HYBRID] Define useful attendance, engagement, conversion, quality, and follow-up measurement without pretending a configured schedule or campaign exists merely because the plan describes one.
+7. [HYBRID] Apply customer-facing claim/QA checks appropriate to the produced Assets and preserve only the durable webinar materials/decisions future work benefits from. Sending, scheduling, hosting, publishing, and measurement execution belong to the active harness/external systems.
+
+## Verification
+- Teaching creates genuine standalone value and the transition to the Offer is coherent rather than deceptive.
+- Claims, proof, Offer terms, urgency, reminders, and follow-up remain within current organizational truth and real constraints.
+- Slide/content production is composed directly when available rather than delegated between AURA domains.
+- Planned registration/reminder/follow-up behavior is not represented as active runtime state unless the external system actually implements it.
+
+## Completion Criteria
+- The organization has the requested usable webinar system or the precise remaining real-world handoff needed to finish it, without an internal AURA request chain.
