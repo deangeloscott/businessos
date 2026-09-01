@@ -21,6 +21,7 @@ TESTS=[
     'tests/run_monitoring_pause.py',
     'tests/run_attention_platform_lifecycle.py',
     'tests/run_playbook_evolution_exchange.py',
+    'tests/run_explicit_operating_knowledge.py',
     'tests/run_workspace_human_knowledge.py',
     'tests/run_component_distributions.py',
     'tests/run_workspace_migration_path_guard.py',
