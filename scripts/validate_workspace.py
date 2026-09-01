@@ -35,6 +35,7 @@ def main():
         rel=str(p.relative_to(ROOT));cid=meta.get('id')
         for key in ['id','type','owner_system','reads','writes','capabilities']:
             if key not in meta:errors.append(f'{rel}: missing metadata {key}')
+        if meta.get('type')=='service':errors.append(f'{rel}: retired service framing; AURA contracts are reusable operating knowledge, not internal services')
         retired=sorted(RETIRED_CONTRACT_METADATA&set(meta))
         if retired:errors.append(f'{rel}: retired/redundant contract metadata remains: {retired}')
         if cid:
