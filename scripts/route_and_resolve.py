@@ -2,37 +2,19 @@
 """Resolve an explicitly selected AURA playbook or return bounded candidates.
 
 Natural-language semantic intent belongs to the active model/user. AURA deterministically
-checks installed knowledge and resolves an explicit playbook ID after that judgment.
+checks installed operating knowledge and resolves an explicit playbook ID after that judgment.
 """
 from _common import ROOT
-import argparse,json,re
+import argparse,json
 from route_task import route
 from resolve_contract import resolve_contract
-from process_extensions import local_playbooks,resolve_effective
-
-
-def _candidate_local(task,business_id,team_ref=None,role_ref=None,operator_ref=None,top=5):
-    if not business_id:return []
-    q=str(task or '').strip().lower();words=set(re.findall(r'[a-z0-9]{2,}',q));rows=[]
-    for ext in local_playbooks(business_id,team_ref,role_ref,operator_ref):
-        cid=str(ext.get('local_contract_id') or '');title=str(ext.get('title') or '');purpose=str(ext.get('purpose') or '')
-        text=' '.join([cid,title,purpose,*[str(x) for x in ext.get('route_terms') or []]]).lower()
-        score=10000 if q==cid.lower() else len(words & set(re.findall(r'[a-z0-9]{2,}',text)))*3
-        if title and title.lower() in q:score+=6
-        if score<=0:continue
-        rows.append((score,{
-            'score':score,'contract_id':cid,'owner_system':ext.get('owner_system'),'status':'available',
-            'local_playbook':True,'process_extension_id':ext.get('id'),'selection_authority':False,
-            'reason':'organization-local playbook candidate only; the active model/user must judge semantic applicability',
-        }))
-    rows.sort(key=lambda item:(item[0],item[1]['contract_id']),reverse=True)
-    return [row for _,row in rows[:top]]
+from process_extensions import local_playbook_candidates,resolve_effective
 
 
 def _selected(task,contract_id,business_id=None,team_ref=None,role_ref=None,operator_ref=None):
     if business_id:
         path,meta,_,exts=resolve_effective(contract_id,business_id,team_ref,role_ref,operator_ref)
-        result={
+        return {
             'task':task,'contract_id':contract_id,'owner_system':meta.get('owner_system'),'status':'available',
             'reason':'explicitly selected by the active model/user after semantic judgment',
             'path':str(path.relative_to(ROOT)) if path else None,
@@ -40,7 +22,6 @@ def _selected(task,contract_id,business_id=None,team_ref=None,role_ref=None,oper
             'executable':False,'selection_mode':'explicit_model_selection','semantic_selection_required':False,
             'business_id':business_id,
         }
-        return result
     path,meta=resolve_contract(contract_id)
     return {
         'task':task,'contract_id':contract_id,'owner_system':meta.get('owner_system'),'status':'available',
@@ -54,7 +35,7 @@ def route_and_resolve(task,business_id=None,team_ref=None,role_ref=None,operator
     if selected_contract_id:
         return _selected(task,selected_contract_id,business_id,team_ref,role_ref,operator_ref)
 
-    candidates=_candidate_local(task,business_id,team_ref,role_ref,operator_ref,top)
+    candidates=local_playbook_candidates(task,business_id,team_ref,role_ref,operator_ref,top) if business_id else []
     seen={row['contract_id'] for row in candidates}
     for row in route(task,top):
         if row.get('contract_id') in seen:continue
@@ -81,7 +62,7 @@ def main():
     except ValueError as e:raise SystemExit(str(e))
     print(json.dumps(result,indent=2))
     if a.show and result.get('contract_id'):
-        print('\n--- RESOLVED CONTRACT ---\n')
+        print('\n--- RESOLVED PLAYBOOK ---\n')
         if a.business_id:
             _,_,content,_=resolve_effective(result['contract_id'],a.business_id,a.team_ref,a.role_ref,a.operator_ref);print(content,end='' if content.endswith('\n') else '\n')
         elif result.get('path'):print((ROOT/result['path']).read_text(),end='')
