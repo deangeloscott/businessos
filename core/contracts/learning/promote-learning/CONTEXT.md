@@ -17,33 +17,34 @@ capabilities:
 # Promote Learning
 
 ## Purpose
-Turn repeated or sufficiently strong outcome evidence into scoped future decision guidance without turning Learning maturity into an automatic routing lifecycle.
+Turn repeated or sufficiently strong outcome evidence into scoped future decision guidance without turning Learning maturity into an automatic routing lifecycle or leaking one organization's private evidence into another.
 
 ## Business Outcome
-Improve future decisions without converting anecdotes into universal best practices or silently changing reusable AURA product behavior.
+Improve future decisions while keeping Learning evidence-backed, organization-owned, and no broader than the evidence supports.
 
 ## Run When
-When OutcomeEvaluations or repeated evidence suggest a tactic, threshold, preference, or mechanism may be reusable beyond the immediate result.
+When OutcomeEvaluations or repeated evidence suggest a tactic, threshold, preference, or mechanism may be reusable beyond the immediate result inside the active organization.
 
 ## Do Not Run When
-Do not promote mere observations, one-off stylistic edits, weak correlations, or unsupported generalizations beyond their evidence-supported scope.
+Do not promote mere observations, one-off stylistic edits, weak correlations, unsupported generalizations, or private evidence from another organization.
 
 ## Process
 1. [AI] State the candidate Learning as a conditional proposition rather than a slogan.
-2. [HYBRID] Determine the narrowest justified scope: organization/domain or broader system-level reuse only when evidence supports it.
-3. [HYBRID] Aggregate supporting and contradictory evidence and assess replication, causal confidence, freshness, and applicability.
+2. [AI] Choose the narrowest useful organization-owned scope: `domain` when the guidance belongs to one specialized domain, or `business` when it genuinely applies across the active organization.
+3. [HYBRID] Aggregate supporting and contradictory evidence from the active organization and assess replication, causal confidence, freshness, and applicability.
 4. [AI] Choose maturity/status and explicit applies_when/does_not_apply_when from the evidence rather than from a fixed promotion pipeline.
-5. [DETERMINISTIC] For any broader-scope Learning, verify the actual evidence/reference/isolation requirements that make such reuse legitimate.
-6. [DETERMINISTIC] Persist the Learning. Do not emit an AURA runtime event merely because its maturity or current interpretation changed.
-7. [AI] If formal reusable operating knowledge would materially improve future work, `core.learning.playbook-evolution` is an available method the model/user may choose. Promotion does not automatically route there or edit product files.
+5. [DETERMINISTIC] Persist and validate the Learning chosen by the model/user. Do not emit an AURA runtime event merely because maturity or interpretation changed.
+6. [AI] If the Learning suggests a reusable organization-specific method, `core.learning.playbook-evolution` may encode it as a local process extension/playbook. If broader reuse outside this organization is desired, use an explicit sharing/adoption path such as the Innovation Exchange or deliberate AURA product-development work rather than creating cross-business Learning state.
 
 ## Verification
-- The Learning is schema-valid and its scope is no broader than its supporting evidence.
+- The Learning belongs to the active organization and is scoped no broader than its supporting evidence.
 - Supporting and contradictory evidence remain inspectable.
 - Learning maturity does not create execution authority or mandatory next work.
+- No other organization's private state is read or incorporated implicitly.
 
 ## Failure / Fallback
 - If evidence remains insufficient or contradictory, keep the Learning at the narrowest justified maturity/scope or leave it unpromoted.
+- If broader reuse seems valuable, preserve the organization-local evidence and use an explicit export/product-development path rather than weakening organization isolation.
 
 ## Completion Criteria
-- Durable guidance exists only when it improves future work, with applicability, uncertainty, and evidence clear enough for later models/humans to use it responsibly.
+- Durable guidance exists only when it improves future work for the active organization, with applicability, uncertainty, and evidence clear enough for later models/humans to use responsibly.
