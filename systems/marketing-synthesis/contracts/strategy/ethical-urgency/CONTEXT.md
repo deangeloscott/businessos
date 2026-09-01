@@ -9,7 +9,6 @@ reads:
 - Asset
 - WorkRequest
 writes:
-- WorkRequest
 - Asset
 capabilities:
   required:
@@ -39,13 +38,13 @@ Use genuine timing, capacity, availability, or consequence only when it is real 
 Help qualified prospects act when delay has real cost without manufacturing pressure.
 
 ## Run When
-Run when an asset/campaign proposes urgency, scarcity, countdowns, deadlines, limited capacity, or time-sensitive action.
+Use when an asset/campaign proposes urgency, scarcity, countdowns, deadlines, limited capacity, or time-sensitive action.
 
 ## Process
 1. [AI] Identify the real reason timing matters: deadline, inventory/capacity, event, enrollment window, price change, regulation, season, opportunity cost, or customer consequence.
-2. [DETERMINISTIC] Verify the condition, source, start/end time, inventory/capacity logic, timezone, and what happens after expiry.
+2. [HYBRID] Verify the condition, source, start/end time, inventory/capacity logic, timezone, and what happens after expiry using the strongest available business/source evidence.
 3. [AI] Distinguish urgency from scarcity and explain the consequence of delay accurately.
 4. [HYBRID] Reject evergreen fake deadlines, resetting countdowns, invented limited seats, hidden extensions, or pressure unrelated to customer value.
 5. [AI] Write urgency in proportion to evidence and allow a clear path for people who are not ready/eligible.
-6. [DETERMINISTIC] Ensure operational systems can honor the stated deadline/capacity and update the Asset when conditions change.
-7. [DETERMINISTIC] Include urgency claims in final claim-validation/verification.
+6. [HYBRID] Ensure the real operational system can honor the stated deadline/capacity when that can be verified, and treat changing conditions as a reason to update the affected Asset/business truth rather than as an AURA scheduling rule.
+7. [AI] Preserve the validated urgency/scarcity guidance and evidence linkage in the relevant Asset when useful. Include material urgency claims in final claim validation; do not create a WorkRequest merely to move the result to another AURA method.
