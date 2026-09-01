@@ -3,8 +3,8 @@
 
 Every method uses the same continuity primitive. An AURA playbook Run records which
 playbook was actually used, but completion does not certify an internal execution graph,
-subcontract ledger, provider state, permission state, launch readiness, or business
-outcome. Those meanings belong to the work itself and their dedicated organization state.
+provider state, permission state, launch readiness, or business outcome. Those meanings
+belong to the work itself and their dedicated organization state.
 """
 from pathlib import Path
 import argparse, json
@@ -122,7 +122,7 @@ def complete_run(business_id,run_id,evidence=None,result_refs=None,decision_refs
             'format_version':'2.0','purpose':'organizational_work_receipt','state':'completed',
             'method_type':method_type,'method_ref':method_ref,'summary':final_summary,
             'evidence_refs':final_evidence,'result_refs':final_results,'decision_refs':final_decisions,
-            'unresolved':final_unresolved,'completed_at':ts,'superseded_by_run_id':None
+            'unresolved':final_unresolved,'completed_at':ts
         }
         schema_errors=_validate_run(run)
         if schema_errors:raise ValueError('Run schema invalid: '+'; '.join(schema_errors[:8]))
