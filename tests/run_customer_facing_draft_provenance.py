@@ -33,22 +33,26 @@ def main():
         run(S/'init_business.py',BID,'--name','Customer Facing Draft Provenance')
         rid=run(S/'create_run.py',BID,'marketing.landing-page.copy','Draft homepage copy').stdout.strip()
 
-        # A current Run-linked artifact cannot falsely claim to predate that work, and an
-        # outward draft cannot become "internal" merely because it has not been published.
+        # Origin provenance and later work provenance are distinct. An Asset may truthfully
+        # predate a Run that later works on it. The actual error here is trying to classify an
+        # outward marketing draft as internal merely because it is unpublished.
         ap,fp=write_asset(rid,False,'preexisting','internal_working_draft')
         completed=run(S/'complete_run.py',BID,rid,'--evidence',ap,'--evidence',fp,check=False)
         completion_output=completed.stderr+completed.stdout
-        req(completed.returncode!=0 and 'cannot combine origin=' in completion_output,
-            f'Run-linked object must not use contradictory origin provenance: {completion_output}')
+        req(completed.returncode!=0,'misclassified outward marketing draft should fail completion')
+        req('cannot combine origin=' not in completion_output,
+            f'preexisting origin must not be treated as incompatible with later truthful Run provenance: {completion_output}')
         req('marketing-synthesis Asset may set customer_facing=false only' in completion_output,
             f'outward marketing draft must not opt out merely because unpublished: {completion_output}')
         req(json.loads((RUNS/rid/'run.json').read_text()).get('status')!='completed',
             'failed validation must restore the prior incomplete Run state')
 
         # When an AURA playbook Run is actually used, its root must honestly be a
-        # customer-facing production root before it can claim provenance for this draft.
-        a=json.loads(ap.read_text());bos=a['extensions']['businessos'];bos.pop('origin',None);bos['customer_facing']=True;ap.write_text(json.dumps(a,indent=2)+'\n')
-        errs=run_completion_errors(BID,objs(ap))
+        # customer-facing production root before it can claim conformance for this draft.
+        a=json.loads(ap.read_text());bos=a['extensions']['businessos'];bos['customer_facing']=True;ap.write_text(json.dumps(a,indent=2)+'\n')
+        errs=run_completion_errors(BID,objs(ap),active_run_id=rid)
+        req(not any('cannot combine origin=' in e for e in errs),
+            f'preexisting origin must remain compatible with later active Run provenance: {errs}')
         req(any('customer-facing Asset using an AURA playbook must reference a root marked artifact_role=customer_facing_production_root' in e for e in errs),
             f'customer-facing homepage draft rooted at a non-production AURA playbook must fail: {errs}')
 
@@ -62,7 +66,7 @@ def main():
         }
         req(not run_completion_errors(BID,[(hist,f'instances/{BID}/assets/{hist["id"]}.json')]),
             'genuine preexisting internal marketing support Asset should not require a Run')
-        print('customer-facing draft provenance regressions passed')
+        print('customer-facing draft provenance regressions passed with independent origin and optional Run provenance')
     finally:
         for p in [BASE,RUNS]:
             if p.exists(): shutil.rmtree(p)
