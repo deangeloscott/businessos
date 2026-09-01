@@ -1,19 +1,21 @@
 # AURA Harness Entry Adapter
 
-This file is a thin adapter for harnesses that automatically read `AGENTS.md`. Root `CONTEXT.md` defines AURA's operating philosophy.
+This file is a thin adapter for harnesses that automatically read `AGENTS.md`. Root `CONTEXT.md` defines AURA's operating philosophy. `AURA-ATTACHMENT.md` defines the same small contract for harnesses that should know AURA exists even when work starts outside this folder.
 
-AURA supports the active model/harness/user; it does not replace or constrain their intelligence, tools, orchestration, delegation, concurrency, planning, or judgment.
+AURA provides organization-owned memory and reusable operating knowledge. It does not replace or constrain the active model/harness/user's intelligence, tools, semantic judgment, orchestration, delegation, concurrency, planning, permissions, scheduling, or execution.
 
-For work performed on behalf of an AURA-managed organization:
+For substantive work performed on behalf of an AURA-managed organization:
 
-1. Resolve or initialize the organization when needed.
-2. Use `python3 scripts/enter.py "<complete request>"` to retrieve bounded organizational context and an optional AURA playbook recommendation.
-3. Treat the recommendation as operational knowledge, **not authority**. The model/harness/user may use it, adapt it, use an external Skill, create a better method, or work ad hoc.
-4. Use the host's actual capabilities normally. AURA capability IDs describe what an AURA playbook may need; AURA does not inventory, bind, rank, install, or select providers/tools.
-5. Create a Run/work receipt only when durable continuity or persistence is useful, and record the method actually used.
-6. Persist only material organization-owned meaning that a capable future model would benefit from: evidence, facts/inferences with provenance, decisions, useful results/assets, unresolved work, outcomes, or Learning. Do not persist private reasoning, every tool call, caches, or runtime chatter.
-7. If an AURA playbook was explicitly selected and completion of that playbook is claimed, satisfy its essential quality/evidence invariants. Other methods do not need to masquerade as AURA contracts.
+1. Identify the organization. `python3 scripts/list_businesses.py --json` exposes stable IDs and human-readable names without attempting semantic matching. If exactly one organization exists, AURA may resolve it automatically; if several are genuinely plausible, resolve from conversation context or ask the user rather than guessing.
+2. If the organization does not exist yet, `scripts/init_business.py <business-id> --name "<name>"` creates the smallest truthful canonical identity. Do not invent industry, service, market, objective, or other facts merely to complete setup.
+3. Retrieve only memory that can materially improve the current work. `python3 scripts/enter.py "<complete request>" --business-id <id>` is a bounded helper; equivalent direct retrieval is valid when the harness already has the needed context.
+4. AURA operating knowledge is optional. The model/user may select an AURA playbook, adapt one within its real invariants, use an external Skill, create a better method, or work ad hoc. AURA does not semantically own the user's request.
+5. Use the host's actual capabilities normally. AURA capability IDs describe possible playbook needs; AURA does not inventory, bind, rank, install, authorize, or select providers/tools.
+6. Create a Run/work receipt only when durable continuity or provenance is useful. A Run is not required before reasoning begins.
+7. Persist only material organization-owned meaning that a capable future model would benefit from: evidence, current facts/inferences with provenance, durable decisions/instructions, useful results/assets, unresolved work, outcomes, or Learning. Do not persist private reasoning, every tool call, caches, or runtime chatter.
+8. If an AURA playbook was explicitly selected and completion of that playbook is claimed, satisfy its essential quality/evidence invariants. Other methods do not need to masquerade as AURA contracts.
+9. Validate AURA-owned state when it is changed. Organization isolation, provenance/reference integrity, and schema validity are deterministic AURA responsibilities.
 
-Unrelated personal/general work should continue through the host normally. During ordinary business operation, do not modify AURA product source to work around an execution problem. Product-source changes are appropriate when the request itself is to develop, repair, configure, or upgrade AURA; see `core/policies/agent-execution.md` and `core/DEFAULTS.md` for that boundary.
+Unrelated personal/general work should continue through the host normally. During ordinary organizational work, do not modify AURA product source to work around an execution problem. Product-source changes are appropriate when the request itself is to develop, repair, configure, or upgrade AURA.
 
-The invariant is: **AURA provides organizational intelligence and operational knowledge; the active intelligence/runtime determines how best to work.**
+The invariant is: **identify → retrieve little → work normally → remember what matters → continue.**
