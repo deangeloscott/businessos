@@ -8,12 +8,15 @@ This regression focuses on invariants AURA can actually own:
 - valid work does not require a Run or AURA playbook;
 - the front door retrieves candidates without taking over execution;
 - AURA domains remain bodies of operating knowledge rather than internal semantic services;
+- process maps remain navigation/composition aids rather than execution graphs;
+- flagship production and journey methods do not manufacture WorkRequest/Run/lifecycle ceremony;
 - retired semantic routing/orchestration/approval/event-control machinery stays physically absent.
 """
 from pathlib import Path
 import json,re,shutil,subprocess,sys
 
 ROOT=Path(__file__).resolve().parents[1];SCRIPTS=ROOT/'scripts';sys.path.insert(0,str(SCRIPTS))
+from _common import read_frontmatter,selector_type
 from bootstrap_explicit_context import build_objects,_path,GROUNDING_METHOD
 from context_plan import build_plan
 from enter import prepare_work
@@ -124,6 +127,15 @@ def main():
         for cid in ['core.routing.resolve-intent','core.coordination.multi-domain-request','core.intelligence.ecosystem.route-learning','core.intelligence.request-refresh','core.intelligence.evaluate-relevance']:
             require(cid not in entries,f'Core process map reintroduced retired routing/orchestration entry: {cid}')
 
+        # Process maps are browse/composition aids, not execution graphs.
+        execution_graph_keys={'next','next_contract','depends_on','dependencies','sequence','order','routes_to','delegate_to','on_success','on_failure'}
+        process_maps=[ROOT/'core/process-map.json',*ROOT.glob('systems/*/process-map.json')]
+        for path in process_maps:
+            data=json.loads(path.read_text(encoding='utf-8'))
+            for activity in data.get('activities',[]):
+                bad=execution_graph_keys & set(activity)
+                require(not bad,f'{path.relative_to(ROOT)} reintroduced execution-graph metadata on {activity.get("id")}: {sorted(bad)}')
+
         # AURA domains are reusable bodies of expertise, not internal semantic services.
         # Their shared defaults may distinguish knowledge scope, but must not tell modules
         # to route/publish work to one another or model an internal owner-to-owner RPC.
@@ -142,6 +154,42 @@ def main():
             require('## Knowledge Scope' in text,f'{path.relative_to(ROOT)} lost knowledge-scope framing')
             for phrase in service_phrases:
                 require(phrase not in low,f'{path.relative_to(ROOT)} recreated internal domain-service routing: {phrase}')
+
+        # Flagship Marketing production roots produce the work itself. A WorkRequest may
+        # be consumed as real continuity context, but it is not a mandatory internal output.
+        mandatory_run_phrases=('required run root','record_contract_completion.py','finalize_run.py','run contract-execution manifest','under the active run')
+        marketing_roots=[]
+        for path in ROOT.glob('systems/marketing-synthesis/contracts/assets/*/CONTEXT.md'):
+            meta,body=read_frontmatter(path)
+            if meta.get('artifact_role')!='customer_facing_production_root':continue
+            marketing_roots.append(path)
+            writes={selector_type(x) for x in meta.get('writes',[])}
+            require('WorkRequest' not in writes,f'{path.relative_to(ROOT)} recreated mandatory internal WorkRequest production')
+            low=body.lower()
+            for phrase in mandatory_run_phrases:
+                require(phrase not in low,f'{path.relative_to(ROOT)} recreated mandatory Run/conformance machinery: {phrase}')
+        require(marketing_roots,'expected flagship Marketing production roots')
+
+        prepublish=ROOT/'systems/content-synthesis/contracts/qa/pre-publish/CONTEXT.md'
+        pmeta,pbody=read_frontmatter(prepublish);pwrites={selector_type(x) for x in pmeta.get('writes',[])}
+        require('WorkRequest' not in pwrites,'Content pre-publish QA recreated internal WorkRequest production')
+        for phrase in mandatory_run_phrases:
+            require(phrase not in pbody.lower(),f'Content pre-publish QA recreated mandatory Run/conformance machinery: {phrase}')
+
+        # Journey interventions may create durable meaning when it really occurs, but an
+        # intervention is not automatically a five-object lifecycle.
+        generic_intervention_lifecycle={'WorkRequest','ChangeEvent','Experiment','MetricObservation','OutcomeEvaluation'}
+        internal_domain_delegate=re.compile(r'\b(?:route|delegate)\b.*\b(?:marketing|content|customer intelligence|competitor intelligence|industry intelligence|seo/aeo)\b',re.I)
+        negative_delegate=('do not route','do not delegate','not route','not delegate','rather than route','rather than delegate')
+        intervention_paths=list(ROOT.glob('systems/customer-optimization/contracts/intervention/*/CONTEXT.md'))
+        require(intervention_paths,'expected Customer Optimization interventions')
+        for path in intervention_paths:
+            meta,body=read_frontmatter(path);writes={selector_type(x) for x in meta.get('writes',[])}
+            require(not generic_intervention_lifecycle<=writes,f'{path.relative_to(ROOT)} recreated generic intervention lifecycle')
+            for line in body.splitlines():
+                low=line.lower()
+                if internal_domain_delegate.search(line) and not any(marker in low for marker in negative_delegate):
+                    require(False,f'{path.relative_to(ROOT)} recreated internal domain delegation: {line.strip()}')
 
         memory_contracts=[
             'core/contracts/intelligence/publish-observation/CONTEXT.md',
