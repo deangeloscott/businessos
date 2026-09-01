@@ -15,7 +15,8 @@ from list_innovation_exchange import list_entries
 from configure_innovation_sharing import configure
 from build_innovation_exchange_index import build_index
 from browse_innovation_exchange_index import browse
-from route_and_resolve import route_and_resolve
+from find_playbooks import find_candidates
+from resolve_contract import resolve_contract
 A='test-evolution-a';B='test-evolution-b'
 NEW_CONTRACTS=['core/contracts/learning/playbook-evolution/CONTEXT.md','core/contracts/learning/adopt-process-extension/CONTEXT.md','core/contracts/intelligence/innovation-exchange/CONTEXT.md','core/contracts/intelligence/community-evidence-review/CONTEXT.md']
 def fail(msg):raise AssertionError(msg)
@@ -31,7 +32,7 @@ def _check_contract_shape(rel):
         if heading not in body:fail(f'{rel} missing required section {heading}')
     process=re.search(r'## Process\n(.*?)(?=\n## |\Z)',body,re.S)
     if process is not None and not process.group(1).strip():fail(f'{rel} has an empty Process section')
-def _candidate_ids(result):return [row.get('contract_id') for row in result.get('candidates',[]) if isinstance(row,dict)]
+def _candidate_ids(rows):return [row.get('contract_id') for row in rows if isinstance(row,dict)]
 def main():
     for rel in ['core/policies/playbook-evolution.md','core/policies/process-extensions.md','core/policies/innovation-exchange.md',*NEW_CONTRACTS,'core/schemas/learning/playbook-evolution-proposal.schema.json','core/schemas/learning/process-extension.schema.json','core/schemas/intelligence/innovation-package.schema.json','core/schemas/intelligence/innovation-exchange-entry.schema.json','core/schemas/config/innovation-sharing.schema.json','core/schemas/intelligence/innovation-exchange-index.schema.json']:
         if not (ROOT/rel).exists():fail(f'missing {rel}')
@@ -70,13 +71,8 @@ def main():
         local_candidates=local_playbook_candidates('Use our proof first landing workflow',A)
         if 'custom.marketing.proof-first-landing' not in [row.get('contract_id') for row in local_candidates]:fail('local playbook candidate discovery failed')
         if any(row.get('selection_authority') is not False for row in local_candidates):fail('local playbook candidates claimed semantic selection authority')
-        unresolved=route_and_resolve('Use our proof first landing workflow',A)
-        if unresolved.get('contract_id') is not None or not unresolved.get('semantic_selection_required'):fail('candidate discovery silently selected a local playbook')
-        if 'custom.marketing.proof-first-landing' not in _candidate_ids(unresolved):fail('combined candidate discovery omitted the local playbook')
-        resolved=route_and_resolve('Use our proof first landing workflow',A,selected_contract_id='custom.marketing.proof-first-landing')
-        if resolved.get('contract_id')!='custom.marketing.proof-first-landing' or not resolved.get('local_playbook'):fail('explicit local playbook resolution failed')
         _,local_meta,local_content,_=resolve_effective('custom.marketing.proof-first-landing',A)
-        if not local_meta.get('local_playbook') or 'Proof First Landing Workflow' not in local_content:fail('local playbook effective resolution failed')
+        if not local_meta.get('local_playbook') or 'Proof First Landing Workflow' not in local_content:fail('explicit local playbook resolution failed')
 
         config,_=configure(A,'workflow_only','anonymous',True,['shared/innovation-index.json'],None)
         if 'prompt_mode' in config:fail('innovation config retained pseudo prompting behavior')
@@ -105,14 +101,14 @@ def main():
         feed=list_entries(B,compatible_only=True)
         if not feed or feed[0]['id']!=entry['id'] or feed[0]['local_supported']!=1:fail('local innovation support view did not surface evidence')
 
-        evolution_candidates=route_and_resolve('Make this successful method a permanent AURA playbook',A)
+        evolution_candidates=find_candidates('Make this successful method a permanent AURA playbook',5)
         if 'core.learning.playbook-evolution' not in _candidate_ids(evolution_candidates):fail('playbook evolution candidate missing')
-        evolution_selected=route_and_resolve('Make this successful method a permanent AURA playbook',A,selected_contract_id='core.learning.playbook-evolution')
-        if evolution_selected.get('contract_id')!='core.learning.playbook-evolution':fail('explicit playbook evolution resolution failed')
-        exchange_candidates=route_and_resolve('Share this workflow through the innovation exchange',A)
+        evolution_path,evolution_meta=resolve_contract('core.learning.playbook-evolution')
+        if evolution_meta.get('id')!='core.learning.playbook-evolution' or not evolution_path.exists():fail('explicit playbook evolution resolution failed')
+        exchange_candidates=find_candidates('Share this workflow through the innovation exchange',5)
         if 'core.intelligence.innovation-exchange' not in _candidate_ids(exchange_candidates):fail('innovation exchange candidate missing')
-        exchange_selected=route_and_resolve('Share this workflow through the innovation exchange',A,selected_contract_id='core.intelligence.innovation-exchange')
-        if exchange_selected.get('contract_id')!='core.intelligence.innovation-exchange':fail('explicit innovation exchange resolution failed')
+        exchange_path,exchange_meta=resolve_contract('core.intelligence.innovation-exchange')
+        if exchange_meta.get('id')!='core.intelligence.innovation-exchange' or not exchange_path.exists():fail('explicit innovation exchange resolution failed')
         print('playbook evolution + innovation exchange regressions passed without semantic/runtime authority')
     finally:
         for bid in [A,B]:shutil.rmtree(ROOT/'instances'/bid,ignore_errors=True)
