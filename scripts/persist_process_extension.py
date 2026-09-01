@@ -71,7 +71,7 @@ def persist_extension(business_id,spec):
         'id':oid,'object_type':'ProcessExtension','schema_version':'1.0.0','business_id':bid,
         'created_at':existing.get('created_at') or timestamp,'updated_at':timestamp,
         'mode':mode,'owner_system':owner,'target_contract_id':target,'local_contract_id':local_id,
-        'title':title,'purpose':purpose,'route_terms':list(dict.fromkeys(spec.get('route_terms') or [])),
+        'title':title,'purpose':purpose,'discovery_terms':list(dict.fromkeys(spec.get('discovery_terms') or [])),
         'status':spec.get('status') or 'active','scope':scope,'scope_ref':scope_ref,
         'applies_when':list(dict.fromkeys(spec.get('applies_when') or [])),'does_not_apply_when':list(dict.fromkeys(spec.get('does_not_apply_when') or [])),
         'reads':reads,'writes':writes,'required_capabilities':required_capabilities,'optional_capabilities':optional_capabilities,
