@@ -1,5 +1,4 @@
 {
-  "version": "1.8.4",
   "system": "core",
   "activities": [
     {"id":"resolve-intent","entry_contract":"core.routing.resolve-intent","result":"Interpret an ordinary-language request and choose the smallest useful AURA playbook route when one fits, without forcing uncertain lexical matches or requiring AURA as the method."},
