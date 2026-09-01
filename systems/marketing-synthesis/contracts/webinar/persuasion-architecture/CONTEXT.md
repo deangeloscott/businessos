@@ -9,7 +9,6 @@ reads:
 - Asset
 - WorkRequest
 writes:
-- WorkRequest
 - Asset
 capabilities:
   required:
@@ -39,7 +38,7 @@ Overlay the necessary belief, proof, objection, and Offer progression onto the e
 Move qualified attendees toward an informed Offer decision while preserving the webinar’s standalone value.
 
 ## Run When
-Run after teaching architecture and persuasion brief are available.
+Use when teaching architecture and sufficient persuasion context are available.
 
 ## Process
 1. [AI] Map the beliefs/objections required for the commercial action against the teaching modules that naturally influence them.
@@ -48,4 +47,4 @@ Run after teaching architecture and persuasion brief are available.
 4. [AI] Identify the exact transition point where education has made the solution category/Offer relevant.
 5. [HYBRID] Prevent manipulation such as false open loops, exaggerated pain, or education intentionally crippled to force purchase.
 6. [AI] Define Q&A/objection strategy and what should be answered before versus after Offer presentation.
-7. [DETERMINISTIC] Produce persuasion overlay linked to teaching beats and proof.
+7. [AI] Preserve the persuasion overlay linked to teaching beats and proof as a Marketing-owned Asset. Downstream script/slides may consume it directly without an internal WorkRequest.
