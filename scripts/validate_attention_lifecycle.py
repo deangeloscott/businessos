@@ -1,49 +1,47 @@
 #!/usr/bin/env python3
+"""Validate small semantic invariants for durable AttentionItem and PlatformChange state."""
 from _common import *
 import argparse,collections
 
-def lifecycle_errors(bid,objects=None):
-    pairs=objects if objects is not None else [(o,str(p.relative_to(ROOT))) for o,p in iter_instance_objects(bid)]
-    idx={o.get('id'):(o,p) for o,p in pairs if o.get('id')}
-    errors=[]; active=collections.defaultdict(list); current=collections.defaultdict(list)
-    for o,p in pairs:
-        typ=o.get('object_type')
+
+def lifecycle_errors(business_id,objects=None):
+    pairs=objects if objects is not None else [(obj,str(path.relative_to(ROOT))) for obj,path in iter_instance_objects(business_id)]
+    index={obj.get('id'):(obj,path) for obj,path in pairs if obj.get('id')};errors=[];active_attention=collections.defaultdict(list);current_platform=collections.defaultdict(list)
+    for obj,path in pairs:
+        typ=obj.get('object_type')
         if typ=='AttentionItem':
-            if o.get('status') in {'open','acknowledged'}:active[o.get('dedupe_key')].append((o,p))
-            if o.get('status')=='resolved' and not o.get('resolved_at'):errors.append(f'{p} resolved AttentionItem requires resolved_at')
-            sb=o.get('superseded_by')
-            if o.get('status')=='superseded' and not sb:errors.append(f'{p} superseded AttentionItem requires superseded_by')
-            if sb:
-                if sb==o.get('id'):errors.append(f'{p} AttentionItem cannot supersede itself')
-                elif sb not in idx:errors.append(f'{p} superseded_by {sb} does not exist')
+            if obj.get('status') in {'open','acknowledged'}:active_attention[obj.get('dedupe_key')].append((obj,path))
+            if obj.get('status')=='resolved' and not obj.get('resolved_at'):errors.append(f'{path} resolved AttentionItem requires resolved_at')
         elif typ=='PlatformChange':
-            key=o.get('semantic_key')
-            if o.get('status')=='current':
-                if o.get('authority')=='unknown': errors.append(f'{p} current PlatformChange requires non-unknown authority')
-                refs=(o.get('source_refs') or [])+(o.get('evidence_refs') or [])
-                if not refs: errors.append(f'{p} current PlatformChange requires source/evidence provenance')
-                for ref in o.get('source_refs') or []:
-                    if ref not in idx or idx[ref][0].get('object_type')!='SourceRecord': errors.append(f'{p} source_ref {ref} must reference an existing SourceRecord')
-            if o.get('status')=='current':current[key].append((o,p))
-            sb=o.get('superseded_by');sup=o.get('supersedes')
-            if o.get('status')=='superseded' and not sb:errors.append(f'{p} superseded PlatformChange requires superseded_by')
-            if o.get('status')=='current' and sb:errors.append(f'{p} current PlatformChange may not have superseded_by')
-            if sb:
-                if sb==o.get('id'):errors.append(f'{p} PlatformChange cannot supersede itself')
-                elif sb not in idx:errors.append(f'{p} superseded_by {sb} does not exist')
+            key=obj.get('semantic_key')
+            if obj.get('status')=='current':
+                current_platform[key].append((obj,path))
+                if obj.get('authority')=='unknown':errors.append(f'{path} current PlatformChange requires non-unknown authority')
+                refs=(obj.get('source_refs') or [])+(obj.get('evidence_refs') or [])
+                if not refs:errors.append(f'{path} current PlatformChange requires source/evidence provenance')
+                for ref in obj.get('source_refs') or []:
+                    if ref not in index or index[ref][0].get('object_type')!='SourceRecord':errors.append(f'{path} source_ref {ref} must reference an existing SourceRecord')
+                if obj.get('superseded_by'):errors.append(f'{path} current PlatformChange may not have superseded_by')
+            replacement=obj.get('superseded_by');prior=obj.get('supersedes')
+            if obj.get('status')=='superseded' and not replacement:errors.append(f'{path} superseded PlatformChange requires superseded_by')
+            if replacement:
+                if replacement==obj.get('id'):errors.append(f'{path} PlatformChange cannot supersede itself')
+                elif replacement not in index:errors.append(f'{path} superseded_by {replacement} does not exist')
                 else:
-                    n=idx[sb][0]
-                    if n.get('object_type')!='PlatformChange' or n.get('semantic_key')!=key:errors.append(f'{p} superseded_by must reference the same PlatformChange semantic_key')
-                    elif n.get('supersedes')!=o.get('id'):errors.append(f'{p} supersession link is not reciprocal with {sb}')
-            if sup and sup not in idx:errors.append(f'{p} supersedes {sup} does not exist')
-    for key,vals in active.items():
-        if key and len(vals)>1:errors.append(f'multiple active AttentionItems share dedupe_key {key!r}: '+', '.join(o['id'] for o,_ in vals))
-    for key,vals in current.items():
-        if key and len(vals)>1:errors.append(f'multiple current PlatformChanges share semantic_key {key!r}: '+', '.join(o['id'] for o,_ in vals))
+                    current=index[replacement][0]
+                    if current.get('object_type')!='PlatformChange' or current.get('semantic_key')!=key:errors.append(f'{path} superseded_by must reference the same PlatformChange semantic_key')
+                    elif current.get('supersedes')!=obj.get('id'):errors.append(f'{path} supersession link is not reciprocal with {replacement}')
+            if prior and prior not in index:errors.append(f'{path} supersedes {prior} does not exist')
+    for key,values in active_attention.items():
+        if key and len(values)>1:errors.append(f'multiple active AttentionItems share dedupe_key {key!r}: '+', '.join(obj['id'] for obj,_ in values))
+    for key,values in current_platform.items():
+        if key and len(values)>1:errors.append(f'multiple current PlatformChanges share semantic_key {key!r}: '+', '.join(obj['id'] for obj,_ in values))
     return errors
 
+
 def main():
-    ap=argparse.ArgumentParser();ap.add_argument('business_id');a=ap.parse_args();e=lifecycle_errors(a.business_id)
-    if e:print('\n'.join(e));raise SystemExit(1)
-    print('attention/platform lifecycle validation passed')
+    parser=argparse.ArgumentParser();parser.add_argument('business_id');args=parser.parse_args();errors=lifecycle_errors(args.business_id)
+    if errors:print('\n'.join(errors));raise SystemExit(1)
+    print('attention/platform semantic validation passed')
+
 if __name__=='__main__':main()
