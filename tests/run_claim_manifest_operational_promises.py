@@ -19,7 +19,10 @@ def main():
         (BASE/'context').mkdir(parents=True,exist_ok=True)
         (BASE/'context/business.json').write_text(json.dumps({'id':'biz_claim-operational-promises','object_type':'Business','schema_version':'1.0.0','business_id':BID,'created_at':'2026-08-25T00:00:00+00:00','updated_at':'2026-08-25T00:00:00+00:00','lineage':[],'name':'CrewBeacon'})+'\n')
         p=BASE/'assets/draft.md';p.parent.mkdir(parents=True,exist_ok=True)
-        p.write_text("""CrewBeacon brings supported connected lead sources together so nothing lives only in someone's inbox.\nA 30-minute walkthrough with our team, focused on how your office would prioritize leads.\nNo setup required to see the demo.\n""")
+        p.write_text("""CrewBeacon brings supported connected lead sources together so nothing lives only in someone's inbox.
+A 30-minute walkthrough with our team, focused on how your office would prioritize leads.
+No setup required to see the demo.
+""")
         cands=scan_claims(BID,p)
         req(any('30-minute walkthrough' in x for x in cands),'timing promise must be scanned')
         req(any('No setup required' in x for x in cands),'setup promise must be scanned')
@@ -65,14 +68,15 @@ def main():
         # Opaque media uses one format-independent claim-surface interface rather than an
         # extension-specific OCR/parser rule. PNG is representative of the opaque path; the
         # same sidecar contract applies to other raster, PDF/presentation, audio, and video media.
+        # Claim governance must apply to a newly managed outward Asset even when no Run exists.
         png=BASE/'assets/visual.png';png.write_bytes(b'\x89PNG\r\n\x1a\nopaque-fixture')
         opaque_asset={
             'id':'ast_opaque_claim_fixture','object_type':'Asset','business_id':BID,'owner_system':'content-synthesis',
             'location_reference':str(png.relative_to(ROOT)),
-            'extensions':{'businessos':{'customer_facing':True,'run_ref':f'runtime/runs/{BID}/run_fixture','claim_manifest':[]}}
+            'extensions':{'businessos':{'customer_facing':True,'claim_manifest':[]}}
         }
         missing_surface=claim_errors(BID,[(opaque_asset,BASE/'assets/ast_opaque_claim_fixture.json')])
-        req(any('claim_surface_ref' in e for e in missing_surface),'new opaque customer-facing media must expose an auditable claim surface')
+        req(any('claim_surface_ref' in e for e in missing_surface),'new opaque customer-facing media must expose an auditable claim surface without requiring a Run')
         sidecar=BASE/'assets/visual.claim-surface.json'
         sidecar.write_text(json.dumps({
             'format_version':'1.0','artifact_ref':str(png.relative_to(ROOT)),
@@ -84,7 +88,7 @@ def main():
         opaque_errors=claim_errors(BID,[(opaque_asset,BASE/'assets/ast_opaque_claim_fixture.json')])
         req(any('guarantees every lead' in e for e in opaque_errors),'opaque claim surface must feed the same manifest coverage')
 
-        print('claim operational-promise regressions passed')
+        print('claim operational-promise regressions passed without Run coupling')
     finally:
         if BASE.exists(): shutil.rmtree(BASE)
 if __name__=='__main__': main()
