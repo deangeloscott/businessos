@@ -3,9 +3,9 @@
 from _common import *
 import json,re
 
-# Defensive exclusion for retired control/runtime metadata. validate_workspace.py rejects
-# these keys in authored contracts; they must never become generated product semantics.
-RETIRED_CONTRACT_METADATA={'risk','autonomy_ceiling','events','schedule'}
+# Authored contract metadata is method knowledge only. Product version belongs to VERSION /
+# INSTALLATION.json; runtime/control metadata belongs to the host, not generated AURA views.
+RETIRED_CONTRACT_METADATA={'version','risk','autonomy_ceiling','events','schedule'}
 
 
 def _tokens(value):
@@ -36,10 +36,8 @@ def main():
         if not cid:continue
         if cid in ids:raise SystemExit(f'Duplicate contract id: {cid}')
         ids.add(cid)
-        title_match=re.search(r'^#\s+(.+)',body,re.M)
-        title=title_match.group(1).strip() if title_match else cid
-        purpose=_section(body,'Purpose')
-        run_when=_section(body,'Run When')
+        title_match=re.search(r'^#\s+(.+)',body,re.M);title=title_match.group(1).strip() if title_match else cid
+        purpose=_section(body,'Purpose');run_when=_section(body,'Run When')
         durable_meta={k:v for k,v in meta.items() if k not in RETIRED_CONTRACT_METADATA}
         rec={**durable_meta,'path':str(p.relative_to(ROOT)),'title':title,'purpose':purpose}
         rec['read_selectors']=[normalize_selector(x) for x in meta.get('reads',[])];rec['write_types']=[selector_type(x) for x in meta.get('writes',[])];rec['context_types']=meta.get('context',[]);contracts.append(rec)
@@ -47,14 +45,7 @@ def main():
             if c!='none':caps.setdefault(c,[]).append(cid)
         deps[cid]={'context':meta.get('context',[]),'reads':rec['read_selectors'],'writes':rec['write_types'],'evidence_inputs':meta.get('evidence_inputs',[])}
         title_tokens=_tokens(title);purpose_tokens=_tokens(purpose);run_when_tokens=_tokens(run_when);id_tokens=_tokens(cid.replace('.',' ').replace('-',' '))
-        routes.append({
-            'contract_id':cid,
-            'owner_system':meta.get('owner_system'),
-            'tokens':sorted(set(title_tokens+purpose_tokens+run_when_tokens+id_tokens)),
-            'title_tokens':title_tokens,
-            'purpose_tokens':purpose_tokens,
-            'run_when_tokens':run_when_tokens,
-        })
+        routes.append({'contract_id':cid,'owner_system':meta.get('owner_system'),'tokens':sorted(set(title_tokens+purpose_tokens+run_when_tokens+id_tokens)),'title_tokens':title_tokens,'purpose_tokens':purpose_tokens,'run_when_tokens':run_when_tokens})
     (gen/'contract-registry.json').write_text(json.dumps({'version':os_version(),'contracts':contracts},indent=2)+'\n',encoding='utf-8')
     (gen/'system-registry.json').write_text(json.dumps({'systems':sorted(set(c.get('owner_system') for c in contracts if c.get('owner_system')))},indent=2)+'\n',encoding='utf-8')
     (gen/'capability-usage-index.json').write_text(json.dumps(caps,indent=2)+'\n',encoding='utf-8')
