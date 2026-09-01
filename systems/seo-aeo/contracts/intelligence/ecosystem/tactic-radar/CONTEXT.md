@@ -13,8 +13,6 @@ reads:
 - OutcomeEvaluation
 writes:
 - Insight
-- Opportunity
-- WorkRequest
 capabilities:
   required:
   - research.web.read
@@ -40,38 +38,35 @@ subcontracts:
   - id: seo.intelligence.ecosystem.official-contradiction-check
   conditional:
   - id: seo.learning.strategy-experiment-design
-    when: A promising uncertain tactic is testable, material, policy-allowed, and applicable to eligible owned assets.
+    when: A promising uncertain tactic is testable and an experiment would materially improve the decision.
   - id: seo.learning.tactic-registry
-    when: Evidence or an experiment materially changes SEO Domain Learning.
-  - id: seo.learning.tactic-promotion
-    when: Evidence may justify stronger maturity or standard guidance.
-  - id: seo.learning.tactic-deprecation
-    when: Evidence, policy, or outcomes materially weaken an active tactic.
+    when: New evidence materially changes SEO Domain Learning and the model/user chooses to update it.
 ---
 # SEO/AEO Ecosystem Tactic Radar
 
 ## Purpose
-Discover and evaluate emerging SEO/AEO mechanisms, tactics, platform changes, practitioner findings, and research, then route the few that matter into the existing SEO experiment and Learning lifecycle.
+Discover and evaluate emerging SEO/AEO mechanisms, tactics, platform changes, practitioner findings, and research without automatically promoting them into an experiment or Learning lifecycle.
 
 ## Business Outcome
-Keep organic and AI-answer discovery strategy current without blindly copying popular tactics or rebuilding the existing SEO evidence system.
+Keep organic and AI-answer discovery strategy current without blindly copying popular tactics, confusing policy with effectiveness, or turning AURA into an SEO routing engine.
 
 ## Run When
-Run from the Core ecosystem radar, on demand for SEO/AEO refresh, or when a material search/answer-platform change or tactic claim appears.
+Use on demand for SEO/AEO refresh or when a material search/answer-platform change or tactic claim could affect the business.
 
 ## Process
-1. [HYBRID] Reuse current SEO ecosystem monitoring, domain Learnings, official guidance, experiments, and Core SourceProfiles before requesting fresh discovery.
-2. [AI] Define relevant SEO/AEO mechanisms and surfaces such as crawling/indexing, architecture, on-page relevance, authority, local discovery, entities, answer visibility/citations, demand, and conversion alignment; use Core discovery to find both known-source updates and semantically related new sources.
-3. [HYBRID] Extract atomic claims with the existing SEO claim-extraction contract, then use Core triangulation plus SEO evidence grading to distinguish original tests, independent replications, echoes, counterevidence, policy statements, correlations, and speculation.
+1. [HYBRID] Reuse current SEO evidence, Domain Learning, official guidance, experiments/outcomes, and SourceProfiles before requesting fresh discovery.
+2. [AI] Define the SEO/AEO mechanisms/surfaces relevant to the decision, such as crawling/indexing, architecture, on-page relevance, authority, local discovery, entities, answer visibility/citations, demand, or conversion alignment.
+3. [HYBRID] Use SEO claim extraction, Core triangulation, and SEO evidence grading to separate original tests, independent replications, echoes, counterevidence, policy statements, correlations, and speculation.
 4. [HYBRID] Check current official policy/eligibility separately from whether a tactic appears effective; popularity, competitor adoption, or one business result never establishes a standard tactic.
-5. [AI] Evaluate applicability to the active business by market, site/asset type, current baseline, search/answer surface, technical prerequisites, authority, expected business value, cost, risk, and ability to measure a meaningful effect.
-6. [HYBRID] Route weak/noisy claims to ignore/watch, material evidence gaps to bounded investigation, and promising uncertain low-enough-risk claims to `seo.learning.strategy-experiment-design`.
-7. [DETERMINISTIC] After experiment/outcome evidence, update the existing tactic registry/domain Learning and use promotion/deprecation only at the narrowest maturity/applicability justified.
-8. [AI] Return prioritized SEO/AEO findings with freshness, novelty, independent evidence, contradictions, policy status, business relevance, and the exact next route.
+5. [AI] Evaluate applicability to the active business from the actual market, site/assets, baseline, search/answer surface, prerequisites, authority, expected business mechanism, downside, and measurement feasibility. Do not invent economics or impact.
+6. [AI] Decide the narrowest useful disposition: ignore, remember, watch, investigate, experiment, apply a sufficiently supported tactic, revise Learning, or do nothing. `seo.learning.strategy-experiment-design` and the Learning playbooks are optional methods the model/user may select, not automatic next routes.
+7. [DETERMINISTIC] Persist only material SEO Insight/evidence meaning and exact references chosen by the model/user. If Learning is changed, use the Learning path after semantic judgment; deterministic AURA validates/persists rather than deciding maturity/applicability.
+8. [AI] Return prioritized findings with freshness, novelty, independent evidence, contradictions, policy status, business relevance, uncertainty, and any suggested next method.
 
 ## Verification
-- Existing SEO evidence/experiment/Learning contracts remain authoritative; this radar orchestrates them rather than duplicating them.
+- Evidence strength, conclusion confidence, official-policy status, and business applicability remain distinct.
 - Viral discussion volume is never counted as independent validation.
+- No tactic is automatically promoted, deprecated, experimented on, or routed because the radar observed it.
 
 ## Completion Criteria
-- Every material SEO/AEO discovery is ignored, watched, investigated, tested, or routed into existing Learning with an evidence-backed reason.
+- Material SEO/AEO discoveries have evidence-calibrated interpretation and business relevance, with the next method left to capable model/user judgment.
