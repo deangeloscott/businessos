@@ -1,7 +1,7 @@
 # Competitor Intelligence Defaults
 
-## Domain Boundary
-Competitor Intelligence owns competitor identity, state, strategy, pricing, packaging, offers, positioning, messaging, strengths, weaknesses, and strategic movement. SEO owns organic search/answer competition; Customer Intelligence owns customer truth. Shared Core subject/source monitoring may collect evidence about a competitor but does not become a second owner of competitor meaning.
+## Knowledge Scope
+Competitor Intelligence provides operating knowledge for competitor identity, state, strategy, pricing, packaging, offers, positioning, messaging, strengths, weaknesses, and strategic movement. Organic search/answer competition, customer truth, journey mechanics, and other adjacent questions may use their own relevant operating knowledge directly; AURA does not need separate semantic services handing work to one another.
 
 ## Evidence Discipline
 - Distinguish observed competitor activity from inferred strategy, scoped sentiment, hypotheses, and evidence that a tactic works.
@@ -19,19 +19,20 @@ Competitor Intelligence owns competitor identity, state, strategy, pricing, pack
 - Explain what each comparison group is being used to learn; do not infer direct competitive pressure merely because an entity is famous or ranks for a keyword.
 
 ## Broad Competitive Position Requests
-- Use `competitor.analysis.competitive-position` when the requested outcome is a broad competitive landscape/set/position, where the business can win, or another multi-facet competitor decision.
-- The broad workflow composes the existing discovery, profiling, comparison, pricing/offer, positioning, funnel, advertising/content, sentiment, strategic-change, tactic-validation, and implication jobs only where the request/decision warrants them. It is not a reason to run every competitor playbook exhaustively.
+- `competitor.analysis.competitive-position` is useful when the requested outcome is a broad competitive landscape/set/position, where the business can win, or another multi-facet competitor decision.
+- The broad workflow composes discovery, profiling, comparison, pricing/offer, positioning, funnel, advertising/content, sentiment, strategic-change, tactic-validation, and implication methods only where the request/decision warrants them. It is not a reason to run every competitor playbook exhaustively.
 - Explicitly requested material dimensions must be investigated or visibly marked limited/unknown/blocked. Do not silently omit a requested dimension because one convenient source or capability was unavailable.
-- Keep focused requests focused: a narrow question such as competitor pricing, positioning, or advertising should still route directly to the corresponding atomic job unless broader composition is materially necessary.
+- Keep focused requests focused: a narrow question such as competitor pricing, positioning, or advertising can use the corresponding focused method unless broader composition would materially improve the decision.
 
 ## Adaptive Research Depth
-- Use Rapid, Standard, Comprehensive, or Continuous depth according to the decision/request. Do not run an exhaustive source checklist when additional research is unlikely to change the decision.
+- Choose bounded research depth according to the decision/request. Do not run an exhaustive source checklist when additional research is unlikely to change the decision.
 - Source classes and named platforms are a map, not rails. Check the relevant evidence classes, discover additional credible sources when useful, deepen high-signal branches, and record material coverage gaps.
 - Resolve domains/profiles/advertiser identities before merging their evidence into a canonical Competitor. Similar names alone are not sufficient.
 - Stop when material evidence closure is proportionate to the decision and further accessible research is unlikely to change it. If an unresolved gap could materially change the conclusion, deepen it when feasible or narrow/downgrade the conclusion instead of guessing.
-- For durable monitoring, reuse shared SourceProfiles/subject keys and update checkpoints rather than rebuilding the same source map each cycle.
+- For durable monitoring, reuse shared SourceProfiles/subject keys and update checkpoints rather than rebuilding the same source map each check. AURA may remember monitoring intent and prior findings; the harness owns recurrence.
 
-## Foreign-Domain Signals
-Publish search, customer, industry, product, or journey Observations to the relevant owner rather than maintaining duplicate semantic state.
+## Adjacent Evidence
+Competitor research may reveal durable search, customer, industry, product, or journey observations. Preserve useful evidence once with truthful provenance and let the active model apply the relevant operating knowledge directly. Do not create duplicate semantic state or internal handoffs merely because several AURA knowledge areas could use the evidence.
+
 ## Standalone Mode
-Competitor Intelligence can operate with Core alone. Use observable competitor evidence and Business Context; optional modules enrich interpretation but are not required to maintain competitor truth.
+Competitor Intelligence can operate with Core alone. Use observable competitor evidence and Business Context; optional modules can enrich interpretation but are not required to maintain competitor truth.
