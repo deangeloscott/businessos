@@ -10,7 +10,7 @@ Use the filesystem workspace as the default portable persistence layer. Preserve
 
 ## Storage classes
 1. **Canonical organization state** — durable context, intelligence, decisions, operations, assets, measurement, Learning, and reusable process knowledge live under `instances/<business-id>/`. This is AURA's primary continuity surface. Validate canonical objects before writing.
-2. **Optional work receipts** — a Run may record a bounded piece of materially useful continuity: what work was requested, which method was used, what evidence/results belong to it, and whether that receipt remains active/completed/superseded. A Run is not required to begin, continue, validate, or complete ordinary work.
+2. **Optional work receipts** — a Run may record a bounded piece of materially useful continuity: what work was requested, which method was used, what evidence/results belong to it, and whether that receipt remains active or completed. A Run is not required to begin, continue, validate, or complete ordinary work.
 3. **Human knowledge state** — generated human-readable views live under `knowledge/<business-id>/_generated/`; human working notes live under `knowledge/<business-id>/notes/`. Neither replaces canonical AURA truth.
 4. **Workspace attachments** — optional files appropriate to retain with the workspace may live under `attachments/`. Keep credentials out of the workspace.
 5. **External/raw state** — large, sensitive, high-volume, or system-owned source data may remain in the authoritative external system. Store SourceRecord/Asset references, lineage, timestamps, hashes, or bounded snapshots when permitted and useful. Do not turn the portable workspace into an unnecessary data lake.
@@ -29,10 +29,7 @@ On interruption or failure:
 4. Re-do only work that is actually missing, stale, invalidated, or known to have failed. Let the capable model/user judge semantic dependency from the real task and evidence instead of requiring an AURA execution graph.
 5. If an external mutation may have partially occurred, inspect the authoritative external state and any useful ChangeEvent/Verification evidence before retrying so duplicate or conflicting actions are avoided.
 
-## Related receipts
-Runs may record explicit `root_run_id`, `parent_run_id`, or replacement relationships when those relationships materially help continuity. Do not infer them from topical similarity and do not create nested Runs merely to mirror model decomposition.
-
-`scripts/reconcile_runs.py` is optional housekeeping for explicitly related receipts. It may summarize those relationships and safely retire only an exact empty replacement when the relationship is mechanically unambiguous. It does not decide business-task completion, inspect provider/capability state, create dependency graphs, or determine what work the model should do next. Ambiguous or materially populated receipts remain untouched.
+Separate Runs are independent receipts. Completing one must not automatically complete, supersede, classify, or otherwise mutate another. If continuity must cross a real person/model/session/team boundary, use the existing durable organizational meaning—such as a relevant result/decision/AttentionItem or a real `WorkRequest` handoff—rather than creating a Run relationship graph.
 
 ## Current and historical state
 - Prefer one canonical current object for one business fact/decision at the appropriate semantic scope. Do not create parallel current copies merely because another workflow, Markdown view, or tool wants the same truth.
