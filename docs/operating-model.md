@@ -8,11 +8,11 @@ It is not a universal execution controller. The active model/harness owns reason
 
 1. **Understand the request and organization.** Preserve the user's complete desired outcome and resolve exactly one active business for business-specific work.
 2. **Retrieve relevant organizational memory.** Reuse current Business Context, evidence, prior decisions, assets/results, unresolved work, outcomes, preferences/instructions, and Learning before repeating questions or research.
-3. **Choose a method intelligently.** Surface an AURA SOP when useful. The model/user may use it, adapt incidental implementation details, choose an external Skill, create another method, or work ad hoc.
+3. **Choose a method intelligently.** Surface a few AURA playbook candidates when useful. The model/user may select one, adapt incidental implementation details, choose an external Skill, create another method, or work ad hoc.
 4. **Do the real work.** Use the host's actual capabilities normally. AURA should not substitute setup, routing, bookkeeping, or schema creation for the requested business result.
 5. **Persist material organizational meaning.** Save only what a capable future model would materially benefit from after the current session/runtime is gone.
 6. **Validate what AURA owns.** Persisted state must remain truthful, provenance-aware, reference-valid, schema-valid, and isolated to the correct business. Selected AURA SOP conformance is additional and applies only when that SOP was actually used/claimed.
-7. **Measure and learn.** Preserve real measurements/outcomes and promote Learning only when evidence supports it.
+7. **Measure and learn.** Preserve real measurements/outcomes and reusable Learning only when the evidence supports the conclusion and its applicability.
 8. **Continue from memory.** Future work should understand what materially happened without needing the original conversation, hidden reasoning, or runtime logs.
 
 ## Optional continuity objects
