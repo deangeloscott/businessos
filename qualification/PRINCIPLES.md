@@ -73,7 +73,7 @@ Visible proxies such as ad longevity, views, shares, engagement, or repeated cre
 ## Layered real-work qualification
 
 ### Layer 0 — AURA product integrity
-Schemas, references, business isolation, persistence, routing/selection, migrations, packaging, and other deterministic AURA invariants. This is the separate `tests/run_all.py` product gate, not a model/harness benchmark.
+Schemas, references, business isolation, persistence, playbook discovery/resolution, migrations, packaging, and other deterministic AURA invariants. This is the separate `tests/run_all.py` product gate, not a model/harness benchmark.
 
 ### Layer 1 — Atomic job quality
 One meaningful job from an ordinary request. Inspect the actual result.
