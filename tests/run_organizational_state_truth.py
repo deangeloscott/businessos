@@ -35,19 +35,24 @@ def readiness_regression(workspace,env):
     asset={
         'id':aid,'object_type':'Asset','schema_version':'1.0.0','business_id':bid,'created_at':'2026-08-30T00:00:00+00:00','updated_at':'2026-08-30T00:00:00+00:00','lineage':[business['id']],
         'asset_type':'landing_page','owner_system':'marketing-synthesis','business_role':'customer_facing_landing_page_draft','location_reference':f'instances/{bid}/assets/landing-page.html','version':'1','status':'draft',
-        'extensions':{'businessos':{'customer_facing':True,'run_ref':f'runtime/runs/{bid}/{rid}','run_id':rid,'run_contract_id':'marketing.assets.landing-page','run_method_type':'aura_playbook','run_method_ref':'marketing.assets.landing-page','claim_manifest':[
+        'extensions':{'businessos':{'customer_facing':True,'claim_manifest':[
             {'text':'We charge [CONFIRM ACTUAL FEE].','classification':'placeholder','support_refs':[],'launch_critical':True},
             {'text':'Start here: [CONFIRM CTA AND URL].','classification':'placeholder','support_refs':[],'launch_critical':True}],
             'production_readiness':readiness}}
     }
-    asset_path=write(base/'assets'/f'{aid}.json',asset)
+    asset_path=write(base/'assets'/f'{aid}.json',asset);before=asset_path.read_bytes()
+    # The truthful Asset is valid on its own. Merely having a separate active receipt does
+    # not become part of the Asset's canonical truth or gate validation.
     active=run([S/'validate_business.py',bid],env,check=False)
     req(active.returncode==0,f'active optional receipt invalidated truthful draft state: {active.stdout+active.stderr}')
     completed=run([S/'complete_run.py',bid,rid,'--result',asset_path.relative_to(workspace),'--result',artifact.relative_to(workspace),'--summary','Prepared a truthful landing-page draft; production readiness remains blocked by unresolved real-world facts/access.'],env)
     result=json.loads(completed.stdout);req(result.get('status')=='completed',f'receipt completion failed: {result}')
+    req(asset_path.read_bytes()==before,'receipt completion mutated independent Asset truth')
     saved=json.loads(asset_path.read_text());row=saved['extensions']['businessos']['production_readiness']
     req(saved.get('status')=='draft' and row.get('status')=='blocked' and row.get('deployment_status')=='not_performed' and row.get('measurement_status')=='pending','receipt completion changed readiness/deployment/outcome truth')
     req(row.get('unresolved_business_facts') and row.get('missing_authorization') and row.get('missing_capabilities'),'typed real-world readiness blockers were lost')
+    retired={'run_ref','run_id','run_method_type','run_method_ref','run_contract_id','run_binding','run_history_refs','contract_chain'}
+    req(not (retired & set(saved.get('extensions',{}).get('businessos',{}))),'Asset regained canonical Run backlinks')
 
     pr=saved['extensions']['businessos']['production_readiness'];pr['status']='ready';write(asset_path,saved)
     bad=run([S/'validate_business.py',bid],env,check=False);req(bad.returncode!=0 and 'cannot retain unresolved blockers' in bad.stdout,f'ready assertion retained typed blockers: {bad.stdout}')
