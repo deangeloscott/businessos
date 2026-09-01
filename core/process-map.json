@@ -12,7 +12,6 @@
     {"id":"review-community-innovation","entry_contract":"core.intelligence.community-evidence-review","result":"Separate community reports from independent/local evidence and route promising innovations to test, adopt, or playbook evolution."},
     {"id":"diagnose-business-problem","entry_contract":"core.diagnosis.business-problem","result":"Narrow a broad unexplained business symptom to evidence-backed likely mechanisms and correctly owned next work before intervention."},
     {"id":"discover-next-best-work","entry_contract":"core.opportunity.discover-next-best-work","result":"Turn a broad growth/prioritization goal into the highest-value next work supported by current evidence and installed modules."},
-    {"id":"coordinate-multi-domain-request","entry_contract":"core.coordination.multi-domain-request","result":"Decompose and sequence one compound request across several semantic owners while preserving ownership, lineage, and efficient handoffs."},
     {"id":"bootstrap-business","entry_contract":"core.context.bootstrap-business","result":"Create evidence-backed initial business context from minimal identity, first-party sources, and user-provided information."},
     {"id":"owned-business-discovery","entry_contract":"core.context.owned-business-discovery","result":"Adaptively map owned/official business surfaces and evidence at the depth needed for the current job."},
     {"id":"brand-profile","entry_contract":"core.context.brand-profile","result":"Capture durable brand voice, visual, content, channel, reference, and prohibited-style rules."},
