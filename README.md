@@ -1,145 +1,93 @@
-# ViralTrac AURA v1.8.4
+# ViralTrac AURA
 
+**Alpha · v0.1.0**  
 **AURA = Agentic Understanding and Reinforcement Architecture.**
 
-**ViralTrac AURA is a portable, AI-native BusinessOS that helps capable AI understand a business, find and use relevant proven operating processes, execute through available tools, preserve material organizational work, and improve future decisions over time.**
+ViralTrac AURA is a portable, local-first **AI-native BusinessOS** that gives capable AI durable organizational memory, reusable operating knowledge, and lightweight continuity.
 
-AURA is not a model, agent harness, SaaS dashboard, or prompt library. It is the organization-owned operating layer around those capabilities: durable business context, evidence, operational knowledge, preferences, work history, assets, measurement, and Learning.
+AURA helps an AI understand the business, reuse relevant context and evidence, apply proven playbooks when useful, do real work through the tools available to it, and preserve what should matter later.
 
-## Architectural north star
+AURA is **not** the AI model, agent harness, scheduler, provider router, permission system, or proprietary runtime.
 
-A useful shorthand is:
-
-**AURA = organizational memory + operational knowledge + lightweight continuity.**
-
-- **Organizational memory** preserves the business context, evidence, preferences, decisions, assets, outcomes, and Learning that future humans or AI may need.
-- **Operational knowledge** is the reusable set of high-quality, model/tool-agnostic playbooks and SOPs that help capable intelligence perform recurring business jobs well.
-- **Lightweight continuity** preserves enough material work history that another model, harness, worker, or session can understand what happened and continue without reconstructing the organization from scratch.
-
-The user/model determines the goal and may choose the valid method that best accomplishes it. AURA may surface or recommend a relevant playbook. When an AURA playbook is selected, preserve the parts of its method, sequencing, evidence discipline, outputs, verification, and QA that materially make the process reliable; incidental implementation technique should remain adaptable to the active model, harness, tools, environment, and organization preferences.
-
-AURA should be strict about the integrity of the organizational record—identity, provenance, references, truth boundaries, business isolation, and truthful lifecycle state—without unnecessarily substituting its own semantic business judgment for capable humans or models.
-
-AURA should also stay lightweight. Organizational overhead should be proportional to the durable value and consequence of the work. A mandatory mechanism should earn its cost through better work quality, context, continuity, provenance, truth, reuse, measurement, or Learning rather than through ceremony alone.
+> **Alpha status:** the architecture and product-integrity layer are validated, but real-work quality, playbook excellence, retrieval quality, Learning, and usability are still being actively qualified. Interfaces may change before 1.0.
 
 ## Start in three steps
 
 1. **Download/unzip AURA or clone the repository.**
-2. **Give the AURA folder to a compatible LLM/agent harness.**
-3. **Tell it your business and what you want.**
+2. **Give the AURA folder to a capable AI/agent harness.**
+3. **Tell it about your business and what you want.**
 
 For example:
 
-> Use ViralTrac AURA for my business. My company is Acme, our website is acme.com, and I want to grow qualified leads profitably. Get set up and figure out what we should work on first.
+> Use ViralTrac AURA for my business. My company is Acme, our website is acme.com, and I want to grow qualified leads profitably. Use what we already know, figure out the highest-value work, and help me get it done.
 
-You do not need to choose a playbook, contract, schema, provider, or operating mode before asking for help.
+You do not need to choose a playbook, contract, schema, provider, or operating mode first.
 
-See **`START-HERE.md`** for the short human quick start.
+For the shortest guide, read **`START-HERE.md`**.
 
-## What this copy includes
+## What AURA can help with
 
-Core plus:
+The full edition includes reusable operating knowledge for:
 
-- **Competitor Intelligence** — understand competitors, their positioning, offers, content, ads, funnels, customer sentiment, strengths, weaknesses, and meaningful changes;
-- **Customer Intelligence** — understand customer needs, pains, objections, language, decisions, experiences, and reasons for buying/leaving;
-- **Industry Intelligence** — track relevant market, platform, regulatory, technology, research, and category developments;
-- **SEO/AEO** — improve discovery across search engines, AI/answer engines, local search, technical SEO, content, authority, and visibility;
-- **Content Synthesis** — research what works and create platform-native articles, posts, newsletters, carousels, video/audio concepts, presentations, and more;
-- **Marketing Synthesis** — create and improve positioning, messaging, offers, ads, landing pages, VSLs, webinars, email, quizzes, and persuasive assets;
-- **Customer Optimization** — improve conversion, purchase, onboarding, activation, retention, repeat purchase, expansion, and referral.
+- **Competitor Intelligence** — understand competitors, positioning, offers, ads, content, funnels, customer sentiment, strengths, weaknesses, and meaningful changes.
+- **Customer Intelligence** — understand customer needs, pains, objections, language, decisions, experiences, and reasons for buying or leaving.
+- **Industry Intelligence** — track relevant market, platform, regulatory, technology, research, and category developments.
+- **SEO/AEO** — improve discovery across search engines, AI/answer engines, local search, technical SEO, content, authority, and visibility.
+- **Content Synthesis** — research what works and create useful articles, posts, newsletters, presentations, audio/video concepts, and other content.
+- **Marketing Synthesis** — create and improve positioning, messaging, offers, ads, landing pages, VSLs, webinars, email, quizzes, and related persuasive assets.
+- **Customer Optimization** — improve conversion, onboarding, activation, retention, repeat purchase, expansion, and referral.
 
-Browse the plain-language catalog in **`PLAYBOOKS.md`** if you want to see specific capabilities. You still do not need to pick one before asking AURA to solve a business problem.
+See **`PLAYBOOKS.md`** for the plain-language capability catalog. A capable AI may use an AURA playbook, adapt one, use a specialist Skill, or use another sound method when that produces better work.
 
-## The operating idea
+## How it works
 
 AURA is designed around a simple loop:
 
-**business context → relevant evidence + process knowledge → capable reasoning/execution → material organizational record → verification/measurement → Learning → better future work**
+**understand → retrieve → work → remember → measure → learn → continue**
 
-The model can change.
+AURA owns the durable organizational layer:
 
-The harness can change.
+- business context and facts;
+- evidence and provenance;
+- useful preferences and instructions;
+- decisions and opportunities;
+- assets and material work history;
+- monitoring intent and continuity;
+- measurements, outcomes, and Learning;
+- reusable AURA playbooks and SOP knowledge.
 
-The tools can change.
+The active model/harness owns reasoning and execution mechanics such as tools, browsing, APIs, models, subagents, concurrency, retries, credentials, rendering, scheduling, and provider selection.
 
-The people can change.
+## Design principles
 
-The organization’s durable operating intelligence should persist.
-
-## Local-first and portable
-
-AURA is designed to remain useful without a mandatory proprietary server, database, UI, cloud runtime, Git provider, ViralTrac account, or single AI vendor.
-
-The default experience can be as simple as one local folder.
-
-Business-specific context, intelligence, assets, preferences, Learning, extensions, and human knowledge stay in the organization-owned workspace unless deliberately integrated elsewhere.
-
-Optional deployment modes can separate product source from organization state for versioning, multi-device use, teams, or infrastructure needs. See `DEPLOYMENT.md` and `OPERATOR-GUIDE.md`.
-
-## Better tools should make AURA better
-
-AURA is intentionally model/provider/harness/tool neutral.
-
-It can use the best available combination of:
-
-- general-purpose AI models;
-- specialist models or Skills;
-- organization SOPs;
-- browsers/search;
-- APIs;
-- CRM/CMS/analytics systems;
-- deterministic software;
-- human experts;
-- ViralTrac;
-- future agent/harness capabilities.
-
-The native AURA processes should remain useful on their own. Optional specialist execution methods can improve them further when genuinely better for the job. A specialist Skill may implement or enhance an AURA process; AURA should not duplicate a better execution capability merely to own the execution itself.
-
-## Evidence, truth, and real-world constraints
-
-AURA is designed to be flexible about **how** intelligent work is performed while remaining strict about organizational truth and the actual scope of the work.
-
-It should distinguish:
-
-- known facts from inference;
-- external evidence from active-business truth;
-- drafts from execution;
-- execution from verification;
-- measurement from causation;
-- reusable preferences from one-task instructions or constraints.
-
-AURA should not invent business facts, source evidence, tool actions, media execution, publication, measurements, or outcomes merely to appear complete.
-
-A request to analyze does not silently become permission to publish, spend money, contact customers, or change production systems. Conversely, when the user has actually requested an action, the active harness can perform it, and no real user, organization, platform, legal, contractual, account, or other external constraint prevents it, AURA should not invent an internal permission ceremony that blocks the work.
+- **Organization-owned:** business memory belongs to the organization, not a required SaaS control plane.
+- **Portable:** the default experience can be one local folder.
+- **Model and harness neutral:** better models and tools should make AURA better, not break its architecture.
+- **Truthful:** unknowns remain unknown; evidence, execution, measurement, and outcomes should not be fabricated.
+- **Lightweight:** persistent structure should earn its cost through better work, memory, continuity, evidence, measurement, or Learning.
+- **Non-restrictive:** AURA should not unnecessarily constrain how capable humans or AI reason, plan, delegate, or execute.
 
 ## AURA and ViralTrac
 
-ViralTrac is AURA's recommended first-party companion, but it is optional.
+ViralTrac is AURA's optional first-party companion for tracking, attribution, measurement, experiments, and supported growth-operation surfaces. AURA should work before ViralTrac, alongside it, or without it.
 
-AURA is the broader organizational intelligence and operating-knowledge layer. When connected, ViralTrac can provide first-party tracking, attribution, measurement, experiments, event/exposure data, and supported growth-operation surfaces through whatever ViralTrac access the active user/harness legitimately has.
+## Useful docs
 
-AURA should still work before ViralTrac, alongside ViralTrac, or without ViralTrac.
+- **`START-HERE.md`** — shortest human quick start
+- **`WELCOME.md`** — first-run overview
+- **`PLAYBOOKS.md`** — plain-language capabilities
+- **`OPERATOR-GUIDE.md`** — optional workspace and advanced mechanics
+- **`DEPLOYMENT.md`** — storage, deployment, and team options
+- **`CONTEXT.md`** — operating context for AI/agents
+- **`CHANGELOG.md`** — current alpha changes and version history note
+- **`LICENSE.md`** — source-available license
 
-## Human, power-user, and agent documentation
+## License
 
-Use the level of detail you actually need:
+ViralTrac AURA is **source-available, not open source**. Internal/commercial business use, customization, and agency/consulting use for clients are permitted under `LICENSE.md`; white-label resale or repackaging AURA as someone else's standalone BusinessOS is not.
 
-- **`START-HERE.md`** — simple human quick start;
-- **`WELCOME.md`** — first-run human message;
-- **`PLAYBOOKS.md`** — plain-language capability catalog;
-- **`OPERATOR-GUIDE.md`** — optional commands, workspaces, validation, preferences, knowledge, and advanced operation;
-- **`DEPLOYMENT.md`** — storage/deployment/versioning/team options;
-- **`CONTEXT.md`** — agent operating context;
-- **`BRANDING.md`** — public naming;
-- **`PUBLIC-DISTRIBUTION.md` / `SECURITY.md`** — public/package/security boundary;
-- **`LICENSE.md`** — source-available license.
-
-## Source availability
-
-This distribution is **source-available, not open source**. Internal/commercial business use, customization, and agency/consulting use for clients are permitted under `LICENSE.md`; white-label resale or repackaging it as someone else's standalone BusinessOS product is not.
-
-The official public product name is **ViralTrac AURA**. “BusinessOS” remains the descriptor/category and is retained in compatibility-sensitive technical identifiers such as the `businessos` repository name and `BUSINESSOS_*` environment variables.
+The repository keeps the technical name `businessos` and some `BUSINESSOS_*` compatibility identifiers, while the public product name is **ViralTrac AURA**.
 
 ---
 
-**The intended experience is simple:** give a capable AI the AURA folder, tell it about the business and desired outcome, let AURA surface useful organizational context and proven processes, and preserve the material work so the organization can continue from it later.
+**The intended experience is simple:** give a capable AI the AURA folder, tell it about the business and desired outcome, let it use AURA's relevant memory and operating knowledge, and preserve what will make future work better.
