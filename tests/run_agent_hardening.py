@@ -115,6 +115,8 @@ def main():
             ROOT/'templates/manual-action.md',
         ]
         for path in retired:require(not path.exists(),f'retired control/router/orchestrator artifact reappeared: {path.relative_to(ROOT)}')
+        for path in ROOT.glob('systems/*/contracts/intelligence/relevance-evaluation'):
+            require(not path.exists(),f'domain semantic relevance dispatcher reappeared: {path.relative_to(ROOT)}')
 
         core_map=json.loads((ROOT/'core/process-map.json').read_text())
         entries={a.get('entry_contract') for a in core_map.get('activities',[])}
@@ -135,16 +137,22 @@ def main():
             require('Manual Action Packet' not in text,f'{rel} reintroduced retired manual-action fallback')
             require(runtime_event_pattern.search(text) is None,f'{rel} reintroduced named runtime event emission')
 
-        # No domain may recreate the old generic missing-capability fallback locally.
+        # No authored method may recreate the old generic missing-capability fallback or
+        # a positive internal event-emission step. Negative boundary prose remains valid.
         forbidden_manual_fallbacks=[
             'if a required capability is unavailable, create a human-executable manual action packet',
             'or create a manual action packet',
         ]
+        negative_emit_markers=('do not emit','does not emit','never emit','without emitting','not emit')
         for path in ROOT.rglob('CONTEXT.md'):
             if '/contracts/' not in path.as_posix():continue
-            low=path.read_text(encoding='utf-8').lower()
+            text=path.read_text(encoding='utf-8');low=text.lower()
             for phrase in forbidden_manual_fallbacks:
                 require(phrase not in low,f'{path.relative_to(ROOT)} reintroduced retired Manual Action Packet fallback: {phrase}')
+            for line in text.splitlines():
+                line_low=line.lower()
+                if re.search(r'\bemit(?:s|ted|ting)?\b',line_low) and not any(marker in line_low for marker in negative_emit_markers):
+                    require(False,f'{path.relative_to(ROOT)} reintroduced positive runtime-event emission prose: {line.strip()}')
 
         errors,_,_=validate_business(BID,True);require(not errors,f'current architecture should finish with valid organization state: {errors}')
         print('agent hardening regressions passed: provenance and outward truth remain strong without semantic-routing/orchestration/event-control baggage')
