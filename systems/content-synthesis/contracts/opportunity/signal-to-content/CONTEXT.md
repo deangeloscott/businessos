@@ -8,7 +8,6 @@ reads:
 - ProofRecord
 - IndustryEvent
 - Opportunity
-- WorkRequest
 - Asset
 writes:
 - Insight
@@ -28,20 +27,28 @@ context:
 # Signal to Content Opportunity
 
 ## Purpose
-Evaluate whether a customer comment, proof item, Industry Insight, competitor/search signal, trend, or other canonical intelligence should become useful content—and what kind of content response is justified.
+Judge whether a real organizational signal creates a worthwhile communication opportunity for a specific audience, and if so what kind of content response is justified.
 
 ## Business Outcome
-Turn valuable organizational signals into timely, audience-relevant content without creating duplicate Opportunities or producing content merely because a topic exists.
+Turn useful customer, proof, industry, competitor, search, trend, or other evidence into timely audience value without producing content merely because a topic exists.
 
 ## Run When
-Run when new intelligence or proof has plausible communication value and no existing Content WorkRequest already defines the required production job.
+Use when a current Observation, Insight, ProofRecord, IndustryEvent, measured pattern, or other durable signal may materially improve audience communication and the value of a content response is not already obvious.
 
 ## Process
-1. [DETERMINISTIC] Resolve the originating signal, its semantic owner, source/proof restrictions, business Objective, affected audience, existing Opportunities/WorkRequests, and freshness/timeliness.
-2. [DETERMINISTIC] If an existing WorkRequest or foreign-domain Opportunity already requires Content execution, attach the signal as evidence and route to the requested Content workflow; do not create a duplicate Content Opportunity.
-3. [AI] Identify the audience value the signal could create: answer a question, respond to concern, demonstrate, teach, compare, show proof, explain news, provide a use case, correct a misconception, or develop a timely point of view.
-4. [AI] Generate candidate content responses and distinguish reactive one-off response from reusable evergreen content, series, demonstration, case story, infographic, carousel, video, audio, or platform-native post.
-5. [HYBRID] Evaluate evidence quality, timeliness, audience relevance, differentiation, brand fit, proof/permission constraints, expected value, and whether doing nothing is better.
-6. [DETERMINISTIC] Search existing Assets/Content Opportunities for the same communication intervention and update/reuse when appropriate.
-7. [HYBRID] Create a Content Insight and candidate Content Opportunity only when content itself is an independent valuable intervention; otherwise return the signal to the existing delegated work path.
-8. [DETERMINISTIC] Route qualified work to angle/format/platform planning with the original signal and lineage intact.
+1. [HYBRID] Reuse the originating signal/evidence, current business Objective, affected audience, Brand/Offer context, relevant existing Assets/Opportunities, freshness, and any rights/proof/claim constraints that could change the decision.
+2. [AI] Identify the audience value the signal could create: answer a question, respond to a concern, demonstrate, teach, compare, show proof, explain a development, provide a use case, correct a misconception, or express a useful point of view.
+3. [AI] Generate the smallest useful response options and distinguish a reactive one-off from evergreen content, a reusable series, demonstration, case story, infographic, carousel, video, audio, platform-native post, or no content at all.
+4. [AI] Evaluate evidence quality, timeliness, audience relevance, differentiation, Brand fit, rights/permission constraints, expected business/audience value, opportunity cost, and whether doing nothing is better.
+5. [HYBRID] Reuse or extend an existing Asset/Opportunity when it represents the same real communication need. Exact IDs/refs may be matched deterministically; semantic duplication is model judgment.
+6. [AI] Create/update a scoped Content Insight only when a durable interpretation about communication value will help future work. Create a Content Opportunity only when content itself is a distinct valuable intervention worth remembering; neither object is required simply to continue producing content in the current task.
+7. [AI] If content is warranted, continue directly with the useful brief/strategy/production method. The active model/user chooses format, sequencing, and method; no WorkRequest, foreign-domain return path, or routing event is required.
+
+## Verification
+- The source signal remains distinguishable from the content interpretation built from it.
+- A timely topic is not treated as automatically valuable content.
+- Proof/claims/rights are preserved at the scope supported by evidence.
+- Opportunity creation reflects a genuinely distinct durable intervention, not an internal routing step.
+
+## Completion Criteria
+- The model/user can decide whether content is worth doing, why, for whom, and what response class is most useful, with any durable Insight/Opportunity preserved only when future work benefits.
