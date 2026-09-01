@@ -35,7 +35,7 @@ def _walk_text(value):
 
 
 def _sentences(op):
-    fields={k:op.get(k) for k in ('title','statement','diagnosis','expected_value','risk','priority_assessment','constraints','domain_data') if k in op}
+    fields={k:op.get(k) for k in ('title','statement','diagnosis','expected_value','priority_assessment','constraints','domain_data') if k in op}
     text='\n'.join(_walk_text(fields))
     return [s.strip() for s in re.split(r'(?<=[.!?])\s+|\n+',text) if s.strip()]
 
