@@ -7,7 +7,7 @@ import json
 # Membership here never requires a Run: it only identifies objects that a Run receipt should
 # index when they are actually linked to one. Raw runtime delivery/reaction state is absent;
 # hosts own event processing, scheduling, retries, idempotency, and delivery mechanics.
-RUN_BOUND_TYPES={
+RUN_LINKABLE_TYPES={
     'Opportunity','Initiative','DecisionRecord',
     'AttentionItem','ChangeEvent','Incident','VerificationRecord','WorkRequest',
     'Experiment','OutcomeEvaluation','Learning','PlatformChange'
