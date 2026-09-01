@@ -47,8 +47,6 @@ def main():
         proc=re.search(r'## Process\n(.*?)(?=\n## |\Z)',body,re.S)
         if proc is not None and not proc.group(1).strip():errors.append(f'{rel}: empty Process section')
 
-        # Capabilities are only provider-neutral needs actually referenced by current SOPs.
-        # Live availability and provider/tool choice belong to the active harness/runtime.
         for cap in meta.get('capabilities',{}).get('required',[])+meta.get('capabilities',{}).get('optional',[]):
             if cap=='none':continue
             usedcaps.add(cap)
@@ -137,13 +135,21 @@ def main():
         'core/policies/preferences-and-adaptation.md','core/policies/business-isolation.md',
         'core/policies/context-provenance-and-claims.md','core/policies/monitoring-continuity.md',
         'core/schemas/context/preference-profile.schema.json','core/schemas/decision/decision-record.schema.json',
-        'scripts/enter.py','scripts/create_run.py','scripts/complete_run.py','scripts/canonical_store.py',
-        'scripts/persist_run_results.py','scripts/validate_business.py','scripts/resolve_contract.py',
-        'scripts/bootstrap_explicit_context.py','scripts/resolve_preferences.py','scripts/upsert_preference_profile.py',
-        'BEGINNERS-GUIDE.md'
+        'scripts/enter.py','scripts/remember.py','scripts/create_run.py','scripts/complete_run.py','scripts/canonical_store.py',
+        'scripts/validate_business.py','scripts/resolve_contract.py','scripts/bootstrap_explicit_context.py',
+        'scripts/resolve_preferences.py','scripts/upsert_preference_profile.py','BEGINNERS-GUIDE.md'
     ]
     for rel in required_core:
         if not (ROOT/rel).exists():errors.append(f'missing AURA core component {rel}')
+
+    retired_paths=[
+        'scripts/run_lifecycle.py','scripts/reconcile_runs.py','scripts/run_provenance.py','scripts/persist_run_results.py',
+        'scripts/finalize_run.py','scripts/finalize_work_receipt.py','scripts/finalize_sop_run.py','scripts/complete_sop_run.py',
+        'scripts/record_contract_completion.py','scripts/route_task.py','scripts/route_and_resolve.py',
+        'templates/manual-action.md','core/quality/action-quality.md'
+    ]
+    for rel in retired_paths:
+        if (ROOT/rel).exists():errors.append(f'retired control/receipt/routing artifact reappeared: {rel}')
 
     if installation().get('portable_first') is not True:errors.append('INSTALLATION.json must declare portable_first=true')
 
