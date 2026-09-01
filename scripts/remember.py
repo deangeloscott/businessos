@@ -93,6 +93,7 @@ def remember(business_id,payload):
         lineage=_resolve_local(item.get('lineage_refs',[]),aliases)
         if not isinstance(lineage,list) or not all(isinstance(x,str) and x for x in lineage):
             raise ValueError(f'{row["key"]} lineage_refs must be a list of canonical refs or @local keys.')
+        _,schema=schema_entry(typ);properties=schema.get('properties') or {}
         obj=dict(existing);old_extensions=obj.get('extensions') if isinstance(obj.get('extensions'),dict) else {}
         supplied_extensions=content.pop('extensions',{})
         if not isinstance(supplied_extensions,dict):raise ValueError(f'{row["key"]} content.extensions must be an object when supplied.')
@@ -101,13 +102,17 @@ def remember(business_id,payload):
             'id':row['id'],'object_type':typ,'schema_version':existing.get('schema_version','1.0.0'),
             'business_id':bid,'created_at':existing.get('created_at',ts),'updated_at':ts,
         })
-        prior_lineage=existing.get('lineage') if isinstance(existing.get('lineage'),list) else []
-        obj['lineage']=list(dict.fromkeys([*prior_lineage,*lineage]))
-        obj['extensions']=_merge_extensions(old_extensions,supplied_extensions)
-        if provenance:
-            bos=obj['extensions'].setdefault('businessos',{})
-            bos['memory_provenance']=dict(provenance)
-        _,schema=schema_entry(typ);properties=schema.get('properties') or {}
+        if 'lineage' in properties:
+            prior_lineage=existing.get('lineage') if isinstance(existing.get('lineage'),list) else []
+            obj['lineage']=list(dict.fromkeys([*prior_lineage,*lineage]))
+        elif lineage:
+            raise ValueError(f'{typ} does not support lineage_refs; preserve provenance in a schema-supported field instead.')
+        if 'extensions' in properties:
+            obj['extensions']=_merge_extensions(old_extensions,supplied_extensions)
+            if provenance:
+                bos=obj['extensions'].setdefault('businessos',{});bos['memory_provenance']=dict(provenance)
+        elif supplied_extensions or provenance:
+            raise ValueError(f'{typ} does not support extensions/provenance payloads.')
         if 'observed_at' in properties and not obj.get('observed_at'):obj['observed_at']=ts
         validate_canonical(typ,obj);row['object']=obj;objects.append(obj)
 
