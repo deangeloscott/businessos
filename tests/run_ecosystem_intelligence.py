@@ -1,164 +1,163 @@
 #!/usr/bin/env python3
-"""Regression checks for Core external ecosystem intelligence and domain radars."""
+"""Regression checks for external intelligence without an AURA routing/control plane."""
 from pathlib import Path
-import json, sys, yaml
+import json,sys
 ROOT=Path(__file__).resolve().parents[1]
-sys.path.insert(0,str(ROOT/"scripts"))
+sys.path.insert(0,str(ROOT/'scripts'))
 from _common import read_frontmatter
-from upsert_source_profile import _normalized_reference, _profile_id
+from upsert_source_profile import _normalized_reference,_profile_id
 
-CORE_IDS = {
-    "core.intelligence.ecosystem-radar",
-    "core.intelligence.ecosystem.source-discovery",
-    "core.intelligence.ecosystem.evidence-triangulation",
-    "core.intelligence.ecosystem.maintain-source-profile",
-    "core.intelligence.ecosystem.route-learning",
+CORE_IDS={
+    'core.intelligence.ecosystem-radar',
+    'core.intelligence.ecosystem.source-discovery',
+    'core.intelligence.ecosystem.evidence-triangulation',
+    'core.intelligence.ecosystem.maintain-source-profile',
 }
-DOMAIN_IDS = {
-    "competitor.intelligence.ecosystem-radar",
-    "customer.intelligence.ecosystem-radar",
-    "industry.intelligence.ecosystem-radar",
-    "seo.intelligence.ecosystem.tactic-radar",
-    "content.intelligence.ecosystem-radar",
-    "marketing.intelligence.ecosystem-radar",
-    "customer-optimization.intelligence.ecosystem-radar",
+DOMAIN_IDS={
+    'competitor.intelligence.ecosystem-radar',
+    'customer.intelligence.ecosystem-radar',
+    'industry.intelligence.ecosystem-radar',
+    'seo.intelligence.ecosystem.tactic-radar',
+    'content.intelligence.ecosystem-radar',
+    'marketing.intelligence.ecosystem-radar',
+    'customer-optimization.intelligence.ecosystem-radar',
 }
-REQUIRED_PHRASES = {
-    "core.intelligence.ecosystem.source-discovery": [
-        "known-source","semantic/open discovery","new authors/researchers/communities","discovery-only"
-    ],
-    "core.intelligence.ecosystem.evidence-triangulation": [
-        "originating evidence","independent support","independent contradiction","echo","freshness","novelty"
-    ],
-    "core.intelligence.ecosystem.maintain-source-profile": [
-        "discovery priors only","never use SourceProfile history as support"
-    ],
-    "core.intelligence.ecosystem.route-learning": [
-        "ignore, watch, investigate, test, adopt","active-business applicability"
-    ],
+RETIRED_IDS={
+    'core.intelligence.ecosystem.route-learning',
+    'core.routing.resolve-intent',
+    'core.coordination.multi-domain-request',
 }
+
+
+def fail(msg):raise AssertionError(msg)
+
+def req(cond,msg):
+    if not cond:fail(msg)
+
+def contains(text,*parts):
+    low=text.lower();return all(str(p).lower() in low for p in parts)
 
 def contracts():
     out={}
-    for p in ROOT.rglob("CONTEXT.md"):
-        if "/contracts/" not in p.as_posix(): continue
+    for p in ROOT.rglob('CONTEXT.md'):
+        if '/contracts/' not in p.as_posix():continue
         meta,body=read_frontmatter(p)
-        if meta.get("id"): out[meta["id"]] = (p,meta,body)
+        if meta.get('id'):out[meta['id']]=(p,meta,body)
     return out
 
-def fail(msg):
-    raise AssertionError(msg)
+def subcontract_ids(meta):
+    refs=[]
+    for kind in ('required','conditional'):
+        for item in (meta.get('subcontracts') or {}).get(kind,[]) or []:
+            refs.append(item.get('id') if isinstance(item,dict) else item)
+    return refs
+
 
 def main():
-    cs=contracts()
-    missing=(CORE_IDS|DOMAIN_IDS)-set(cs)
-    if missing: fail("missing ecosystem contracts: "+", ".join(sorted(missing)))
+    cs=contracts();missing=(CORE_IDS|DOMAIN_IDS)-set(cs)
+    req(not missing,'missing ecosystem contracts: '+', '.join(sorted(missing)))
+    for cid in RETIRED_IDS:req(cid not in cs,f'retired semantic/routing contract returned: {cid}')
 
-    policy=(ROOT/"core/policies/external-learning.md")
-    if not policy.exists(): fail("missing external-learning policy")
-    ptext=policy.read_text()
-    for phrase in ["watchlist is a seed","semantic variants","attention prior only","echo","Freshness is mechanism-specific","SourceRecord -> Observation -> Insight"]:
-        if phrase not in ptext: fail(f"external-learning policy missing invariant: {phrase}")
-
-    schema_path=ROOT/"core/schemas/intelligence/source-profile.schema.json"
-    schema=json.loads(schema_path.read_text())
-    if schema.get("title")!="SourceProfile" or schema.get("additionalProperties") is not False:
-        fail("SourceProfile schema must be strict and titled SourceProfile")
-    required=set(schema.get("required",[]))
-    for field in ["source_reference","source_kind","owner_systems","watch_status","attention_priority","fact_type_assessments"]:
-        if field not in required: fail(f"SourceProfile missing required field {field}")
-
-    helper=(ROOT/"scripts/upsert_source_profile.py")
-    htext=helper.read_text()
-    for phrase in ["outcome_events","event_key","Source history changes discovery attention only"]:
-        if phrase not in htext: fail(f"source profile helper missing {phrase}")
-
-    # Equivalent URL spellings must resolve to one profile, while path case stays distinct.
-    a="HTTPS://Example.COM:443/Research/Article/"
-    b="https://example.com/Research/Article"
-    if _normalized_reference(a) != b:
-        fail("SourceProfile URL normalization must collapse scheme/host casing, default HTTPS port, and trailing slash")
-    if _profile_id("test-business",a) != _profile_id("test-business",b):
-        fail("equivalent SourceProfile URLs must generate the same deterministic id")
-    if _profile_id("test-business",b) == _profile_id("test-business","https://example.com/research/article"):
-        fail("SourceProfile normalization must preserve potentially case-sensitive URL paths")
-    try:
-        _normalized_reference("https://user:secret@example.com/research")
-    except ValueError:
-        pass
-    else:
-        fail("SourceProfile references must reject embedded URL credentials")
-
-    for cid,phrases in REQUIRED_PHRASES.items():
-        body=cs[cid][2]
-        for phrase in phrases:
-            if phrase not in body: fail(f"{cid} missing required behavior phrase: {phrase}")
-
-    core_meta=cs["core.intelligence.ecosystem-radar"][1]
-
-    if "schedule" in core_meta:
-        fail("Core ecosystem radar must not reintroduce AURA-owned schedule metadata")
-
-    if "SourceProfile" not in (core_meta.get("reads") or []):
-        fail("Core ecosystem radar must reuse durable SourceProfile monitoring state")
-
-    for field in ("reads", "writes"):
-        if "MonitoringIntent" in (core_meta.get(field) or []):
-            fail("Core ecosystem radar must not invent a duplicate MonitoringIntent canonical object")
-
-    body=cs["core.intelligence.ecosystem-radar"][2]
-    for phrase in [
-        "active harness/runtime owns actual scheduling",
-        "AURA does not implement the scheduler",
+    policy=(ROOT/'core/policies/external-learning.md').read_text()
+    for concepts in [
+        ('active model/user','semantic interpretation'),
+        ('host/harness','scheduling','execution'),
+        ('source attention','source truth'),
+        ('repetition','independent replication'),
+        ('freshness','mechanism-specific'),
+        ('sourceRecord','Observation','Insight','not mandatory lifecycle'),
+        ('external discovery','does not automatically establish','active-business fact'),
     ]:
-        if phrase not in body:
-            fail(f"Core radar must preserve runtime scheduling boundary: {phrase}")
+        req(contains(policy,*concepts),f'external-learning policy missing concepts: {concepts}')
+    req('ActionPacket' not in policy,'external-learning policy reintroduced ActionPacket')
 
+    schema=json.loads((ROOT/'core/schemas/intelligence/source-profile.schema.json').read_text())
+    req(schema.get('title')=='SourceProfile' and schema.get('additionalProperties') is False,'SourceProfile schema must remain strict')
+    required=set(schema.get('required',[]))
+    for field in ['source_reference','source_kind','owner_systems','watch_status','attention_priority','fact_type_assessments']:
+        req(field in required,f'SourceProfile missing required field {field}')
+
+    helper=(ROOT/'scripts/upsert_source_profile.py').read_text()
+    for phrase in ['outcome_events','event_key','Source history changes discovery attention only']:
+        req(phrase in helper,f'source profile helper missing {phrase}')
+
+    # Deterministic source identity is limited to exact/mechanical normalization.
+    a='HTTPS://Example.COM:443/Research/Article/'
+    b='https://example.com/Research/Article'
+    req(_normalized_reference(a)==b,'URL normalization must collapse scheme/host casing, default HTTPS port, and trailing slash')
+    req(_profile_id('test-business',a)==_profile_id('test-business',b),'mechanically equivalent URLs must share a deterministic profile id')
+    req(_profile_id('test-business',b)!=_profile_id('test-business','https://example.com/research/article'),'URL normalization must preserve potentially case-sensitive paths')
+    try:_normalized_reference('https://user:secret@example.com/research')
+    except ValueError:pass
+    else:fail('SourceProfile references must reject embedded URL credentials')
+
+    discovery=cs['core.intelligence.ecosystem.source-discovery'][2]
+    for concepts in [
+        ('active model/user','fresh'),
+        ('semantic source identity','model judgment'),
+        ('normalization','hashes','exact identifiers'),
+        ('discovery-only','support-grade'),
+        ('additional discovery','unlikely to change the decision'),
+    ]:
+        req(contains(discovery,*concepts),f'source discovery lost boundary: {concepts}')
+
+    triangulation=cs['core.intelligence.ecosystem.evidence-triangulation'][2]
+    for concepts in [
+        ('originating evidence','independent support','independent contradiction'),
+        ('echo','independent corroboration'),
+        ('freshness','novelty'),
+        ('semantic','current Insights/Learnings'),
+    ]:
+        req(contains(triangulation,*concepts),f'evidence triangulation lost invariant: {concepts}')
+
+    source_profile=cs['core.intelligence.ecosystem.maintain-source-profile'][2]
+    req(contains(source_profile,'discovery priors only','never use SourceProfile history as support'),'SourceProfile history became evidence authority')
+    req(contains(source_profile,'never merge namesakes','name similarity'),'SourceProfile lost semantic identity boundary')
+
+    core_meta=cs['core.intelligence.ecosystem-radar'][1];core_body=cs['core.intelligence.ecosystem-radar'][2]
+    req('schedule' not in core_meta,'Core ecosystem radar reintroduced AURA-owned schedule metadata')
+    req('SourceProfile' in (core_meta.get('reads') or []),'Core ecosystem radar must reuse durable source/watch state')
+    req('WorkRequest' not in (core_meta.get('writes') or []) and 'Opportunity' not in (core_meta.get('writes') or []),'Core radar should not manufacture routed work objects')
+    refs=subcontract_ids(core_meta)
+    req('core.intelligence.ecosystem.source-discovery' in refs and 'core.intelligence.ecosystem.evidence-triangulation' in refs,'Core radar lost shared evidence methods')
+    req('core.intelligence.ecosystem.route-learning' not in refs,'Core radar reintroduced retired route-learning controller')
+    for concepts in [
+        ('active harness/runtime','scheduling'),
+        ('does not automatically invoke or route','domain'),
+        ('model/user','disposition'),
+        ('do not manufacture WorkRequests','Opportunities'),
+    ]:
+        req(contains(core_body,*concepts),f'Core radar lost model/runtime boundary: {concepts}')
+
+    # Every domain radar reuses the shared evidence methods but owns no mandatory next-route lifecycle.
     for cid in DOMAIN_IDS:
-        meta=cs[cid][1]
-        refs=[]
-        sc=meta.get("subcontracts") or {}
-        for kind in ("required","conditional"):
-            for item in sc.get(kind,[]) or []:
-                refs.append(item.get("id") if isinstance(item,dict) else item)
-        for needed in ["core.intelligence.ecosystem.source-discovery","core.intelligence.ecosystem.evidence-triangulation"]:
-            if needed not in refs: fail(f"{cid} does not use shared Core {needed}")
+        meta,body=cs[cid][1],cs[cid][2];refs=subcontract_ids(meta)
+        for needed in ['core.intelligence.ecosystem.source-discovery','core.intelligence.ecosystem.evidence-triangulation']:
+            req(needed in refs,f'{cid} does not reuse shared Core evidence method {needed}')
+        req('WorkRequest' not in (meta.get('writes') or []),f'{cid} still writes WorkRequest as radar orchestration')
+        req(contains(body,'model') or contains(body,'active model'),f'{cid} lost explicit model judgment')
+        req(not contains(body,'exact next route'),f'{cid} still requires an exact routed next method')
 
-    route_expectations={
-        "seo.intelligence.ecosystem.tactic-radar":["seo.learning.strategy-experiment-design","seo.learning.tactic-registry","seo.learning.tactic-promotion","seo.learning.tactic-deprecation"],
-        "marketing.intelligence.ecosystem-radar":["marketing.experimentation.message-test","marketing.learning.domain-learning"],
-        "customer-optimization.intelligence.ecosystem-radar":["customer-optimization.experimentation.lifecycle-test","customer-optimization.learning.domain-learning"],
-        "customer.intelligence.ecosystem-radar":["customer.analysis.insight-refresh","customer.learning.domain-learning"],
-        "competitor.intelligence.ecosystem-radar":["competitor.analysis.tactic-validation","competitor.learning.domain-learning"],
-        "industry.intelligence.ecosystem-radar":["industry.analysis.event-verification","industry.analysis.materiality","industry.learning.domain-learning"],
-        "content.intelligence.ecosystem-radar":["content.intelligence.trend-validation","content.learning.domain-learning"],
-    }
-    for cid,expected in route_expectations.items():
-        meta=cs[cid][1]
-        refs=[]
-        for kind in ("required","conditional"):
-            for item in (meta.get("subcontracts") or {}).get(kind,[]) or []:
-                refs.append(item.get("id") if isinstance(item,dict) else item)
-        for ref in expected:
-            if ref not in refs: fail(f"{cid} missing end-to-end route {ref}")
-            if ref not in cs: fail(f"{cid} routes to unknown contract {ref}")
+    # Community review may suggest evolution but must not route through a disposition controller.
+    community=cs['core.intelligence.community-evidence-review'];crefs=subcontract_ids(community[1])
+    req('core.intelligence.ecosystem.evidence-triangulation' in crefs,'community evidence review lost triangulation')
+    req('core.intelligence.ecosystem.route-learning' not in crefs,'community review reintroduced route-learning')
+    req('WorkRequest' not in (community[1].get('writes') or []) and 'Opportunity' not in (community[1].get('writes') or []),'community review became a routing-object producer')
 
     map_expected={
-        "core/process-map.json":"core.intelligence.ecosystem-radar",
-        "systems/competitor-intelligence/process-map.json":"competitor.intelligence.ecosystem-radar",
-        "systems/customer-intelligence/process-map.json":"customer.intelligence.ecosystem-radar",
-        "systems/industry-intelligence/process-map.json":"industry.intelligence.ecosystem-radar",
-        "systems/seo-aeo/process-map.json":"seo.intelligence.ecosystem.tactic-radar",
-        "systems/content-synthesis/process-map.json":"content.intelligence.ecosystem-radar",
-        "systems/marketing-synthesis/process-map.json":"marketing.intelligence.ecosystem-radar",
-        "systems/customer-optimization/process-map.json":"customer-optimization.intelligence.ecosystem-radar",
+        'core/process-map.json':'core.intelligence.ecosystem-radar',
+        'systems/competitor-intelligence/process-map.json':'competitor.intelligence.ecosystem-radar',
+        'systems/customer-intelligence/process-map.json':'customer.intelligence.ecosystem-radar',
+        'systems/industry-intelligence/process-map.json':'industry.intelligence.ecosystem-radar',
+        'systems/seo-aeo/process-map.json':'seo.intelligence.ecosystem.tactic-radar',
+        'systems/content-synthesis/process-map.json':'content.intelligence.ecosystem-radar',
+        'systems/marketing-synthesis/process-map.json':'marketing.intelligence.ecosystem-radar',
+        'systems/customer-optimization/process-map.json':'customer-optimization.intelligence.ecosystem-radar',
     }
     for rel,cid in map_expected.items():
         data=json.loads((ROOT/rel).read_text())
-        if cid not in [a.get("entry_contract") for a in data.get("activities",[])]:
-            fail(f"{rel} missing radar activity {cid}")
+        req(cid in [a.get('entry_contract') for a in data.get('activities',[])],f'{rel} missing radar activity {cid}')
 
-    print(f"ecosystem intelligence regressions passed: {len(CORE_IDS)} core + {len(DOMAIN_IDS)} domain radar contracts")
+    print(f'ecosystem intelligence regressions passed: {len(CORE_IDS)} shared methods + {len(DOMAIN_IDS)} domain radars without routing-control lifecycle')
 
-if __name__=="__main__":
-    main()
+if __name__=='__main__':main()
