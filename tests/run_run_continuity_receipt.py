@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Regression coverage for durable organizational work receipts without control-plane artifacts."""
+"""Regression coverage for durable memory plus one-way optional work receipts."""
 from pathlib import Path
 import json, shutil, subprocess, sys
 
@@ -8,6 +8,10 @@ S=ROOT/'scripts'
 BID='run-continuity-receipt'
 BASE=ROOT/'instances'/BID
 RUNS=ROOT/'runtime'/'runs'/BID
+RETIRED_RUN_BACKLINK_FIELDS={
+    'run_ref','run_id','run_method_type','run_method_ref','run_contract_id',
+    'run_binding','run_history_refs','contract_chain'
+}
 
 
 def req(cond,msg):
@@ -25,8 +29,8 @@ def main():
     try:
         run(S/'init_business.py',BID,'--name','Run Continuity Receipt')
 
-        # External work may use AURA as organizational memory without pretending it
-        # executed an AURA playbook.
+        # External work may use an optional AURA receipt without pretending that an AURA
+        # playbook executed it.
         rid=run(
             S/'create_run.py',BID,'Review a bounded organizational choice',
             '--method-type','external_skill','--method-ref','decision-review-skill',
@@ -38,10 +42,9 @@ def main():
         req(continuity.get('purpose')=='organizational_work_receipt',f'missing receipt purpose: {continuity}')
         req(continuity.get('state')=='active',f'new receipt should be active: {continuity}')
 
-        # Persist real organizational meaning through the same canonical interface used
-        # by AURA playbook work. The caller supplies meaning; AURA supplies identity,
-        # storage, provenance, and schema validation.
-        payload=rd/'work'/'results.json'
+        # Durable organizational meaning is persisted through the ordinary memory primitive,
+        # independently from the receipt.
+        payload=rd/'work'/'memory.json'
         payload.write_text(json.dumps({'objects':[{
             'key':'decision',
             'object_type':'DecisionRecord',
@@ -55,39 +58,42 @@ def main():
                 'notes':'Regression fixture for organization-owned continuity.'
             }
         }]},indent=2)+'\n')
-        persisted=run(S/'persist_run_results.py',BID,rid,'--input',payload,check=False)
-        req(persisted.returncode==0,f'general canonical persistence failed: {persisted.stdout+persisted.stderr}')
-        result=json.loads(persisted.stdout);rows=result.get('objects') or []
-        req(result.get('method_type')=='external_skill' and len(rows)==1,f'wrong persistence result: {result}')
+        remembered=run(S/'remember.py',BID,'--input',payload,check=False)
+        req(remembered.returncode==0,f'ordinary canonical memory failed: {remembered.stdout+remembered.stderr}')
+        result=json.loads(remembered.stdout);rows=result.get('objects') or []
+        req(len(rows)==1 and rows[0].get('object_type')=='DecisionRecord',f'wrong memory result: {result}')
         decision_path=ROOT/rows[0]['path'];decision=load(decision_path)
-        bos=decision.get('extensions',{}).get('businessos',{})
-        req(decision.get('object_type')=='DecisionRecord',f'wrong canonical result: {decision}')
-        req(bos.get('run_id')==rid and bos.get('run_method_type')=='external_skill',f'method provenance missing: {bos}')
-        req(bos.get('run_method_ref')=='decision-review-skill',f'method reference missing: {bos}')
-        req('run_contract_id' not in bos and 'contract_chain' not in bos,f'general work fabricated contract provenance: {bos}')
+        bos=decision.get('extensions',{}).get('businessos',{}) if isinstance(decision.get('extensions'),dict) else {}
+        req(not (RETIRED_RUN_BACKLINK_FIELDS & set(bos)),f'ordinary memory was coupled to a receipt: {bos}')
+        before=decision_path.read_bytes()
 
-        # Completion indexes only material organizational meaning, not transcripts,
-        # tool calls, hidden reasoning, or a fake contract-completion ledger.
+        # The receipt may point to already-valid durable meaning. Closing it must not write
+        # method/Run bookkeeping back into that canonical object.
         completed=run(
             S/'complete_run.py',BID,rid,
             '--result',rows[0]['path'],
             '--decision',rows[0]['path'],
-            '--summary','Recorded the bounded organizational decision and its provenance.',
+            '--summary','Recorded the bounded organizational decision.',
             '--unresolved','Revisit only if materially better evidence appears.',
             check=False,
         )
         req(completed.returncode==0,f'general Run completion failed: {completed.stdout+completed.stderr}')
         meta=load(rp);continuity=meta.get('continuity') or {}
         req(meta.get('status')=='completed' and continuity.get('state')=='completed',f'Run/receipt did not complete: {meta}')
-        req(continuity.get('method_type')=='external_skill',f'receipt lost method type: {continuity}')
+        req(continuity.get('method_type')=='external_skill' and continuity.get('method_ref')=='decision-review-skill',f'receipt lost method provenance: {continuity}')
         req(rows[0]['path'] in continuity.get('result_refs',[]),f'receipt omitted durable result: {continuity}')
         req(rows[0]['path'] in continuity.get('decision_refs',[]),f'receipt omitted durable decision: {continuity}')
         req(continuity.get('summary') and continuity.get('unresolved'),f'receipt omitted material continuity: {continuity}')
-        req(not (rd/'contract-execution.json').exists(),'completion created fake AURA playbook execution')
+        req(decision_path.read_bytes()==before,'completing a receipt mutated canonical organization memory')
+        decision=load(decision_path);bos=decision.get('extensions',{}).get('businessos',{}) if isinstance(decision.get('extensions'),dict) else {}
+        req(not (RETIRED_RUN_BACKLINK_FIELDS & set(bos)),f'receipt completion reintroduced canonical Run backlinks: {bos}')
+
+        for rel in ['scripts/persist_run_results.py','scripts/run_provenance.py','scripts/run_lifecycle.py','scripts/reconcile_runs.py']:
+            req(not (ROOT/rel).exists(),f'retired receipt coupling helper reappeared: {rel}')
 
         checked=run(S/'validate_business.py',BID,check=False)
         req(checked.returncode==0,f'completed organizational receipt must validate: {checked.stdout+checked.stderr}')
-        print('Run continuity regressions passed: canonical organizational meaning persists without legacy control-plane or fake contract execution')
+        print('Run continuity regressions passed: durable memory stands alone and optional receipts reference it one-way')
     finally:
         for p in [BASE,RUNS]:
             if p.exists():shutil.rmtree(p)
