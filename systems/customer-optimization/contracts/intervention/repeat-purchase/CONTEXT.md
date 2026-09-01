@@ -8,12 +8,7 @@ reads:
 - type: Insight
   owner_system: customer-intelligence
 - MetricObservation
-writes:
-- WorkRequest
-- ChangeEvent
-- Experiment
-- MetricObservation
-- OutcomeEvaluation
+writes: []
 capabilities:
   required:
   - none
@@ -51,5 +46,6 @@ Run when journey evidence or an active Opportunity requires repeat purchase opti
 1. [DETERMINISTIC] Analyze purchase intervals, product/category replenishment cycles, customer cohorts, usage/consumption proxies, and repeat rates.
 2. [AI] Identify why customers do/do not return: timing, satisfaction, awareness, convenience, price, alternatives, changed need, or product fit.
 3. [HYBRID] Define eligible moments and suppression rules; avoid prompting repurchase when likely unnecessary/inappropriate.
-4. [AI] Design reminders, reorder convenience, bundles, education, loyalty/value communication, or service interventions as appropriate.
-5. [DETERMINISTIC] Measure incremental profitable repeat purchases, unsubscribes/complaints, discount cost, and long-term value.
+4. [AI] Design reminders, reorder convenience, bundles, education, loyalty/value communication, or service interventions as appropriate. Use relevant Marketing/Content operating knowledge directly when communication quality matters rather than creating an internal domain handoff.
+5. [DETERMINISTIC] Measure incremental profitable repeat purchases, unsubscribes/complaints, discount cost, and long-term value when evidence is available.
+6. [HYBRID] If real workflow or communication changes are implemented, verify them when practical. Preserve a WorkRequest, ChangeEvent, Experiment, measurement, evaluation, or Learning only when that meaning actually occurred and future work benefits from remembering it.
