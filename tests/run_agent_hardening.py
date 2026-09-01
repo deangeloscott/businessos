@@ -7,6 +7,7 @@ This regression focuses on invariants AURA can actually own:
 - outward business claims remain literally evidence-bounded;
 - valid work does not require a Run or AURA playbook;
 - the front door retrieves candidates without taking over execution;
+- AURA domains remain bodies of operating knowledge rather than internal semantic services;
 - retired semantic routing/orchestration/approval/event-control machinery stays physically absent.
 """
 from pathlib import Path
@@ -122,6 +123,25 @@ def main():
         entries={a.get('entry_contract') for a in core_map.get('activities',[])}
         for cid in ['core.routing.resolve-intent','core.coordination.multi-domain-request','core.intelligence.ecosystem.route-learning','core.intelligence.request-refresh','core.intelligence.evaluate-relevance']:
             require(cid not in entries,f'Core process map reintroduced retired routing/orchestration entry: {cid}')
+
+        # AURA domains are reusable bodies of expertise, not internal semantic services.
+        # Their shared defaults may distinguish knowledge scope, but must not tell modules
+        # to route/publish work to one another or model an internal owner-to-owner RPC.
+        domain_defaults=list(ROOT.glob('systems/*/DEFAULTS.md'))
+        require(domain_defaults,'expected installed domain defaults')
+        service_phrases=[
+            'route them to the semantic owner',
+            'route to the correct owner',
+            'route persuasion/content/sales/product work through the correct owner',
+            'another domain already owns the opportunity and requests production',
+            'route that interpretation to competitor intelligence',
+            'upstream semantic owners',
+        ]
+        for path in domain_defaults:
+            text=path.read_text(encoding='utf-8');low=text.lower()
+            require('## Knowledge Scope' in text,f'{path.relative_to(ROOT)} lost knowledge-scope framing')
+            for phrase in service_phrases:
+                require(phrase not in low,f'{path.relative_to(ROOT)} recreated internal domain-service routing: {phrase}')
 
         memory_contracts=[
             'core/contracts/intelligence/publish-observation/CONTEXT.md',
