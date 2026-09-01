@@ -1,5 +1,4 @@
 {
-  "version": "1.5.0",
   "system": "customer-optimization",
   "activities": [
     {"id":"journey-mapping","entry_contract":"customer-optimization.journey.mapping","result":"Define the business-specific customer journey and measurable transitions."},
