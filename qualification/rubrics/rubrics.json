@@ -13,7 +13,7 @@
     {"id":"state_integrity","description":"Persisted AURA state truthfully preserves material organizational meaning, provenance, decisions/results/outcomes/unresolved work as appropriate, without inventing facts or manufacturing ceremony solely for qualification."}
   ],
   "profiles":{
-    "governance_and_state":["semantic_ownership","truth_provenance_integrity","continuity_usefulness","lifecycle_integrity","recoverability"],
+    "organizational_memory":["semantic_ownership","truth_provenance_integrity","continuity_usefulness"],
     "customer_truth":["signal_coverage","pattern_rigor","segmentation_and_context","decision_usefulness"],
     "competitive_intelligence":["competitive_set_quality","source_coverage","comparison_rigor","tactic_evidence_calibration","strategic_implication_quality"],
     "ecosystem_truth":["freshness","source_authority","corroboration_and_counterevidence","business_applicability"],
@@ -25,8 +25,7 @@
     "marketing_outcome":["customer_insight_use","offer_and_message_fit","persuasion_quality","measurement_readiness"],
     "first_party_outcomes":["bottleneck_diagnosis","causal_discipline","intervention_quality","measurement_design","commercial_relevance"],
     "cross_domain_system":["cross_domain_coordination","semantic_ownership","evidence_reuse","next_best_work_quality","execution_completeness"],
-    "marathon_system":["long_horizon_coherence","state_compounding","evidence_reuse","contradiction_handling","priority_adaptation","process_learning","operating_efficiency"],
-    "concurrency_system":["concurrent_state_integrity","deduplication","semantic_ownership","operator_provenance","collision_recovery","shared_context_quality"]
+    "marathon_system":["long_horizon_coherence","state_compounding","evidence_reuse","contradiction_handling","priority_adaptation","process_learning","operating_efficiency"]
   },
   "profile_descriptions":{
     "method_rigor":"Uses the essential business method needed for the result while allowing the model/harness to improve incidental implementation details.",
@@ -43,9 +42,6 @@
     "artifact_usability":"Produces the actual promised artifact in an immediately usable form rather than a description of what could be produced.",
     "cross_domain_coordination":"Uses the right semantic owners and handoffs across domains instead of duplicating the same problem or research in multiple systems.",
     "state_compounding":"Later work becomes better informed by accumulated AURA state instead of repeatedly starting from scratch.",
-    "contradiction_handling":"Later contradictory evidence revises confidence, hypotheses, or Learning rather than being ignored to preserve a convenient narrative.",
-    "concurrent_state_integrity":"Shared workspace remains valid and reconstructable while multiple operators act at the same time.",
-    "deduplication":"Overlapping evidence, Insights, Opportunities, and Assets are resolved/reused rather than multiplied into competing canonical copies.",
-    "operator_provenance":"Concurrent work remains attributable to the correct workstream/operator label where that distinction materially matters, without treating identity metadata as authority."
+    "contradiction_handling":"Later contradictory evidence revises confidence, hypotheses, or Learning rather than being ignored to preserve a convenient narrative."
   }
 }
