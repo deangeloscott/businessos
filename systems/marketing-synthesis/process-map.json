@@ -1,5 +1,4 @@
 {
-  "version": "1.4.0",
   "system": "marketing-synthesis",
   "activities": [
     {"id":"persuasion-diagnosis","entry_contract":"marketing.diagnosis.persuasion-barrier","result":"Determine whether and why persuasion is limiting qualified action."},
