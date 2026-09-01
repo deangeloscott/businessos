@@ -9,8 +9,6 @@ reads:
 - Learning
 writes:
 - Insight
-- Opportunity
-- WorkRequest
 capabilities:
   required:
   - none
@@ -19,37 +17,36 @@ capabilities:
 subcontracts:
   required:
   - id: core.intelligence.ecosystem.evidence-triangulation
-  - id: core.intelligence.ecosystem.route-learning
   conditional:
   - id: core.learning.playbook-evolution
-    when: evidence supports a reusable process improvement
+    when: Evidence supports a reusable process improvement and the active model/user chooses to evaluate product/local process evolution.
 ---
 # Community Innovation Evidence Review
 
 ## Purpose
-Evaluate community-contributed process ideas and local replications as evidence, not popularity, then decide whether an innovation should be ignored, watched, investigated, tested, adopted locally, or proposed for broader playbook evolution.
+Evaluate community-contributed process ideas and local replications as evidence rather than popularity, then determine what the evidence actually justifies.
 
 ## Business Outcome
-Convert useful community experimentation into faster learning without creating an echo chamber or allowing private cross-business state to leak.
+Learn faster from community experimentation without creating an echo chamber, leaking private cross-business state, or turning community attention into automatic adoption/routing.
 
 ## Run When
-Run when imported community evidence becomes decision-relevant, receives new local OutcomeEvaluation evidence, accumulates meaningful support or contradiction, or may justify adoption/evolution beyond simple discovery.
+Use when imported community evidence becomes decision-relevant, receives new local OutcomeEvaluation evidence, accumulates meaningful support/contradiction, or may justify changing an organization-local method or AURA product knowledge.
 
 ## Process
-1. [DETERMINISTIC] Load the canonical SourceRecords and linked candidate Insight for the contribution plus relevant local OutcomeEvaluations, existing Learning, and overlapping evidence. Exchange/index entries may be consulted as noncanonical import support when available, but they are not organizational truth.
-2. [AI] Separate reported community counts from independently inspectable evidence and from the active business's own measured outcomes.
-3. [HYBRID] Trace duplicate/reposted packages and do not count identical contribution material as independent replication.
-4. [AI] Apply Core triangulation: independent support/contradiction, methodology, applicability, novelty/repackaging, mechanism-specific freshness, and alternative explanations.
-5. [HYBRID] Use Core route-learning to choose ignore/watch/investigate/test/adopt. Stronger evidence thresholds apply as cost, harm, or irreversibility rise.
-6. [HYBRID] If local or independently corroborated evidence supports a durable reusable process, route to `core.learning.playbook-evolution` with the narrowest justified scope.
-7. [HYBRID] If broader evidence might justify a canonical AURA improvement, create a `canonical_revision` proposal only; do not mutate the product automatically.
+1. [HYBRID] Reuse the canonical SourceRecords and linked candidate Insight for the contribution plus relevant local OutcomeEvaluations, existing Learning, and overlapping evidence. Exchange/index entries may be consulted as noncanonical import support but are not organizational truth.
+2. [AI] Separate reported community counts/repetition from independently inspectable evidence and from the active organization's own measured outcomes.
+3. [HYBRID] Trace duplicate/reposted packages and do not count identical contribution material as independent replication. Exact package/hash deduplication may be deterministic; semantic equivalence remains model judgment.
+4. [HYBRID] Use Core evidence triangulation to assess independent support/contradiction, methodology, applicability, novelty/repackaging, mechanism-specific freshness, and alternative explanations.
+5. [AI] Decide the narrowest justified disposition: ignore, remember, watch, investigate, test, adopt locally, revise an existing Learning, or do nothing. This is a reasoning decision, not a Core routing lifecycle.
+6. [AI] If evidence supports a reusable process improvement, `core.learning.playbook-evolution` may be relevant operating knowledge. The active model/user chooses whether to use it and at what scope; ordinary review does not mutate AURA product source.
+7. [DETERMINISTIC] Persist only material Insight/evidence meaning selected by the model/user. Any later ProcessExtension or product revision proposal is created through its own explicit evolution path rather than being manufactured by this review.
 
 ## Verification
 - Exchange popularity/repetition is never substituted for independent evidence.
-- Canonical conclusions remain traceable through SourceRecord, Insight, OutcomeEvaluation, and Learning objects.
+- Material conclusions remain traceable through SourceRecord, Insight, OutcomeEvaluation, and Learning evidence where applicable.
 - Private business state from another installation is never required.
-- Contradictions and neutral outcomes remain visible.
-- Any resulting process change has explicit applicability and can be revised or retired.
+- Contradictions and neutral outcomes remain visible when material.
+- No WorkRequest, Opportunity, permission object, or next-route state is created merely because community evidence was reviewed.
 
 ## Completion Criteria
-- The innovation has an evidence-grounded disposition and, when justified, a Learning/evolution route rather than an unreviewed community recommendation.
+- The contribution has an evidence-grounded interpretation and, when useful, a clearly suggested next method without an automatic routing/adoption decision encoded by AURA.
