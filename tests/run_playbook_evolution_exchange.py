@@ -39,10 +39,11 @@ def main():
     for rel in NEW_CONTRACTS:_check_contract_shape(rel)
     for path in ['core/schemas/learning/playbook-evolution-proposal.schema.json','core/schemas/learning/process-extension.schema.json']:
         text=(ROOT/path).read_text()
-        for retired in ['risk','autonomy_ceiling','approval_required','priority','extension_version']:
-            if f'"{retired}"' in text:fail(f'{path} still encodes retired process authority/version field {retired}')
+        for retired in ['risk','autonomy_ceiling','approval_required','priority','extension_version','route_terms']:
+            if f'"{retired}"' in text:fail(f'{path} still encodes retired process authority/version/routing field {retired}')
     process_schema=json.loads((ROOT/'core/schemas/learning/process-extension.schema.json').read_text())
     if process_schema.get('additionalProperties') is not False:fail('ProcessExtension schema must be strict')
+    if 'discovery_terms' not in process_schema.get('properties',{}):fail('ProcessExtension lost bounded local-playbook discovery vocabulary')
     exchange_schema=json.loads((ROOT/'core/schemas/intelligence/innovation-exchange-entry.schema.json').read_text())
     if 'object_type' in exchange_schema.get('properties',{}):fail('InnovationExchangeEntry must remain non-canonical support state')
     sharing_schema=json.loads((ROOT/'core/schemas/config/innovation-sharing.schema.json').read_text())
@@ -61,13 +62,13 @@ def main():
     shutil.rmtree(ROOT/'runtime'/'innovation'/A,ignore_errors=True);tmpdir=Path(tempfile.mkdtemp(prefix='aura-innovation-test-'))
     try:
         abase=make_business(A);bbase=make_business(B);learning(abase,A)
-        proposal_payload={'owner_system':'marketing-synthesis','change_kind':'augment_existing','proposed_scope':'business','target_contract_id':'marketing.assets.landing-page','proposed_local_contract_id':None,'title':'Proof-first landing page extension','summary':'Add the validated proof-first sequence when evidence conditions match.','learning_refs':['lrn_evolution_test'],'evidence_refs':[],'applies_when':['Suitable proof exists'],'does_not_apply_when':['Proof is unavailable'],'route_terms':[],'reads':[],'writes':['DecisionRecord'],'required_capabilities':['document.read'],'optional_capabilities':[],'instructions':['Lead the relevant persuasion sequence with the strongest supported proof before unsupported persuasion claims.'],'verification':['Confirm proof claims retain evidence/claim lineage.']}
+        proposal_payload={'owner_system':'marketing-synthesis','change_kind':'augment_existing','proposed_scope':'business','target_contract_id':'marketing.assets.landing-page','proposed_local_contract_id':None,'title':'Proof-first landing page extension','summary':'Add the validated proof-first sequence when evidence conditions match.','learning_refs':['lrn_evolution_test'],'evidence_refs':[],'applies_when':['Suitable proof exists'],'does_not_apply_when':['Proof is unavailable'],'discovery_terms':[],'reads':[],'writes':['DecisionRecord'],'required_capabilities':['document.read'],'optional_capabilities':[],'instructions':['Lead the relevant persuasion sequence with the strongest supported proof before unsupported persuasion claims.'],'verification':['Confirm proof claims retain evidence/claim lineage.']}
         proposal,_=persist_proposal(A,proposal_payload);extension,_=adopt_extension(A,proposal['id']);_,meta,content,extensions=resolve_effective('marketing.assets.landing-page',A)
         if extension['id'] not in [item['id'] for item in extensions] or 'Proof-first landing page extension' not in content:fail('adopted extension not visible in effective playbook')
         if 'DecisionRecord' not in meta.get('writes',[]):fail('extension durable-output metadata was incorrectly constrained by base playbook writes')
         if 'document.read' not in effective_capabilities('marketing.assets.landing-page',A)['required']:fail('extension capability need not visible in effective metadata')
         if any(key in meta for key in ['risk','autonomy_ceiling','version']):fail('effective playbook reintroduced retired authority/version metadata')
-        local_payload=dict(proposal_payload);local_payload.update({'change_kind':'new_local_playbook','target_contract_id':None,'proposed_local_contract_id':'custom.marketing.proof-first-landing','title':'Proof First Landing Workflow','summary':'A reusable local workflow for proof-first landing-page planning.','route_terms':['proof first landing','proof-first workflow'],'writes':[],'required_capabilities':[]});local_proposal,_=persist_proposal(A,local_payload);local_extension,_=adopt_extension(A,local_proposal['id'])
+        local_payload=dict(proposal_payload);local_payload.update({'change_kind':'new_local_playbook','target_contract_id':None,'proposed_local_contract_id':'custom.marketing.proof-first-landing','title':'Proof First Landing Workflow','summary':'A reusable local workflow for proof-first landing-page planning.','discovery_terms':['proof first landing','proof-first workflow'],'writes':[],'required_capabilities':[]});local_proposal,_=persist_proposal(A,local_payload);local_extension,_=adopt_extension(A,local_proposal['id'])
         local_candidates=local_playbook_candidates('Use our proof first landing workflow',A)
         if 'custom.marketing.proof-first-landing' not in [row.get('contract_id') for row in local_candidates]:fail('local playbook candidate discovery failed')
         if any(row.get('selection_authority') is not False for row in local_candidates):fail('local playbook candidates claimed semantic selection authority')
@@ -80,6 +81,7 @@ def main():
         package,draft=prepare_package(A,local_extension['id'],detail='workflow_only',identity='anonymous')
         if package['privacy']['user_approved_export']:fail('prepared package must remain unapproved draft')
         if 'aura_version' not in package or 'businessos_version' in package:fail('InnovationPackage retained legacy product-version naming')
+        if 'discovery_terms' not in package.get('process',{}) or 'route_terms' in package.get('process',{}):fail('InnovationPackage retained routing vocabulary for lexical discovery cues')
         zip_path=tmpdir/'innovation.zip';exported,_=export_package(draft,zip_path,approved=True);validate_package(load_package(zip_path),require_export_approval=True);index,index_path=build_index(tmpdir,'test-exchange');found=browse(index_path,'proof first')
         if len(index['entries'])!=1 or not found['entries'] or found['entries'][0]['package_id']!=exported['package_id']:fail('portable exchange index discovery failed')
         if exported['identity_level']!='anonymous' or exported['detail_level']!='workflow_only':fail('package sharing presets changed unexpectedly')
