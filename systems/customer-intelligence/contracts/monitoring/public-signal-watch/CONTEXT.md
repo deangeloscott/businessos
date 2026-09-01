@@ -28,19 +28,25 @@ context:
 # Public Customer Signal Watch
 
 ## Purpose
-Continuously detect meaningful changes in public customer questions, praise, complaints, needs, and experience without treating every mention as important.
+Review new public customer questions, praise, complaints, needs, and experience for meaningful changes without making AURA the monitoring runtime or treating every mention as important.
 
 ## Business Outcome
-Surface emerging customer opportunities or risks early enough for the business to respond, learn, or create useful communication.
+Keep customer understanding current enough to notice emerging opportunities or risks while avoiding duplicate evidence, alert noise, and cross-domain dispatch machinery.
 
 ## Run When
-Run on the configured monitoring cycle for approved public sources and active customer/product themes.
+Use for a bounded public-signal review when the user requests it or saved monitoring intent indicates another check would be useful. Any recurring execution is owned by the active harness/runtime.
 
 ## Process
-1. [DETERMINISTIC] Load the approved watch topics, products, markets, current Customer Insights, last checkpoint, and existing unresolved themes.
-2. [INTEGRATION] Retrieve only new public comments/reviews/discussions since the checkpoint using allowed sources; do not monitor private spaces or individuals beyond an authorized customer relationship purpose.
-3. [DETERMINISTIC] Deduplicate reposts/cross-posts and compare against prior captured signals so old conversation is not repeatedly treated as new evidence.
-4. [AI] Extract meaningful new questions, pains, sentiment shifts, use cases, before/after evidence, objections, feature needs, and changing language.
-5. [HYBRID] Evaluate whether the new evidence merely adds examples, materially strengthens/weakens an Insight, creates a new Customer Insight candidate, or warrants no action.
-6. [HYBRID] Flag potential proof and content-response candidates and route foreign-domain signals to the canonical owner without creating duplicate Insights.
-7. [DETERMINISTIC] Persist new SourceRecords/Observations, update monitoring checkpoint, update Customer Insights only when warranted, and emit events for downstream relevance evaluation.
+1. [HYBRID] Resolve the relevant themes/products/markets, current Customer Insights, prior checkpoint, and unresolved questions. The model/user decides what is relevant; AURA may persist the resulting monitoring intent.
+2. [INTEGRATION] Retrieve new material from appropriate public/authorized sources with the active harness. Do not access private spaces or personal information beyond the user's actual authorization and legitimate task scope.
+3. [DETERMINISTIC] Deduplicate mechanically identical/reposted material and compare exact checkpoints so old conversation is not repeatedly treated as new evidence.
+4. [AI] Extract meaningful new questions, pains, sentiment shifts, use cases, before/after evidence, objections, feature needs, and changing language while keeping direct statements separate from inferred motivation.
+5. [AI] Decide whether the new evidence merely adds examples, materially strengthens/weakens an Insight, supports a new Customer Insight, suggests useful work, or warrants no durable change.
+6. [AI] Surface potentially useful proof/content/business implications as ordinary findings or recommendations. Other domain operating knowledge may be used when relevant, but this watch does not route signals through an AURA dispatcher.
+7. [DETERMINISTIC] Persist only material SourceRecords/Observations/Insights selected by the model/user and update the relevant checkpoint. Do not emit runtime events merely because a public signal was observed.
+
+## Verification
+- Direct public evidence remains distinct from interpretation and active-customer applicability.
+- Reposts/duplicate evidence do not inflate apparent prevalence.
+- Saved cadence/checkpoint intent never claims a recurring task exists; the external runtime owns any scheduling.
+- No cross-domain WorkRequest/event is manufactured merely because a signal might matter elsewhere.
