@@ -1,43 +1,36 @@
 # Welcome to ViralTrac AURA
 
+**Alpha · v0.1.0**  
 **AURA = Agentic Understanding and Reinforcement Architecture.**
 
-Thank you for downloading **ViralTrac AURA**, by **DeAngelo Scott**.
+AURA gives capable AI durable organizational memory, reusable operating knowledge, and lightweight continuity. It is not the AI model, agent harness, tool runtime, scheduler, provider router, or permission system.
 
-AURA gives a capable AI durable organization-owned context, evidence, reusable operating processes, work continuity, outcomes, and Learning. It is not the AI model, agent harness, tool runtime, scheduler, or permission system.
+> Alpha means the architecture is usable and integrity-tested, while real-work quality, playbooks, retrieval, Learning, and usability are still being actively improved before 1.0.
 
-## What this copy can help you do
+## Start
 
-**Competitor Intelligence** — Understand competitors deeply: identity, websites/funnels, pricing, offers, ads, content/social, customer sentiment, tactics, strengths, weaknesses, and important changes.
+1. Give this AURA folder to a capable AI/agent harness.
+2. Tell it about the business and what you want.
+3. Talk normally; you do not need to choose a playbook first.
 
-**Content Synthesis** — Research what works and create platform-native articles, social posts, newsletters, carousels, video/audio concepts, presentations, and more.
+For example:
 
-**Customer Intelligence** — Understand what customers and prospects want, why they buy or leave, their pains, objections, language, and experiences.
+> Use ViralTrac AURA for my business. My company is Acme, our website is acme.com, and I want to grow qualified leads. Use what we already know and help me get the highest-value work done.
 
-**Customer Optimization** — Improve conversion, purchase, onboarding, activation, retention, repeat purchase, expansion, and referral.
+## What this copy can help with
 
-**Industry Intelligence** — Track relevant news, regulation, research, technology, market shifts, platform changes, and category trends.
+- **Competitor Intelligence** — understand competitors, positioning, offers, ads, content, funnels, customer sentiment, strengths, weaknesses, and meaningful changes.
+- **Content Synthesis** — research what works and create useful platform-native content and production-ready assets.
+- **Customer Intelligence** — understand what customers want, why they buy or leave, their pains, objections, language, and experiences.
+- **Customer Optimization** — improve conversion, onboarding, activation, retention, repeat purchase, expansion, and referral.
+- **Industry Intelligence** — track relevant news, regulation, research, technology, market shifts, platform changes, and category trends.
+- **Marketing Synthesis** — create and improve positioning, messaging, offers, ads, landing pages, VSLs, webinars, email, and related persuasive assets.
+- **SEO/AEO** — improve discovery across search engines, AI/answer engines, local search, technical SEO, content, authority, and visibility.
 
-**Marketing Synthesis** — Create and improve positioning, messaging, offers, proof, ads, landing pages, VSLs, webinars, email, and related persuasive assets.
+A capable AI should retrieve the smallest useful AURA context, use an AURA playbook when it helps, use its actual tools/capabilities normally, do the substantive work, and preserve only material organizational meaning worth carrying forward.
 
-**SEO/AEO** — Improve discovery across search engines, AI/answer engines, local search, technical SEO, content, authority, and visibility.
+If you want to browse specific jobs, open **`PLAYBOOKS.md`**. For the shortest setup guide, open **`START-HERE.md`**.
 
-## You do not need to know the right workflow
+ViralTrac is an optional first-party companion for tracking, attribution, measurement, experiments, and supported growth-operation surfaces. AURA also works without it.
 
-Describe the business problem or desired result in plain language. The active AI should retrieve relevant AURA memory, surface a useful AURA playbook when one fits, use its actual harness/tools normally, do the real work, and preserve only the material organizational meaning worth carrying forward.
-
-If you are not sure where to begin, try:
-
-- “What can you help me with?”
-- “What should we work on first?”
-- “Here is my business. Find the biggest opportunities you can help with using what is installed.”
-
-If you want to browse specific jobs, open **`PLAYBOOKS.md`** or ask “Show me what ViralTrac AURA can do.” You still do not need to choose a playbook before asking for help.
-
-## To get started
-
-**Tell the agent your business name, website if you have one, and what you want to accomplish.** If that context already exists in AURA, it should reuse it instead of asking again.
-
-ViralTrac is AURA’s optional first-party companion for tracking, attribution, measurement, SmartLinks, and supported growth-operation surfaces. AURA should also work before ViralTrac, alongside it, or without it.
-
-The invariant is simple: **AURA provides organizational memory and operational knowledge; the active intelligence/runtime determines how best to work.**
+**Core invariant:** AURA provides organizational memory and operating knowledge; capable intelligence determines how best to work.
