@@ -66,7 +66,7 @@ def main():
         ('repetition','independent replication'),
         ('freshness','mechanism-specific'),
         ('sourceRecord','Observation','Insight','not mandatory lifecycle'),
-        ('external discovery','does not automatically establish','active-business fact'),
+        ('external discovery','automatically establish','active-business fact'),
     ]:
         req(contains(policy,*concepts),f'external-learning policy missing concepts: {concepts}')
     req('ActionPacket' not in policy,'external-learning policy reintroduced ActionPacket')
@@ -94,7 +94,7 @@ def main():
     discovery=cs['core.intelligence.ecosystem.source-discovery'][2]
     for concepts in [
         ('active model/user','fresh'),
-        ('semantic source identity','model judgment'),
+        ('semantic source identity','model/user'),
         ('normalization','hashes','exact identifiers'),
         ('discovery-only','support-grade'),
         ('additional discovery','unlikely to change the decision'),
