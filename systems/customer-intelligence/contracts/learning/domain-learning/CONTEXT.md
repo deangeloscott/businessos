@@ -18,17 +18,26 @@ capabilities:
 # Customer Intelligence Learning
 
 ## Purpose
-Improve which customer evidence sources, methods, segment scopes, and assumptions produce reliable customer understanding.
+Turn repeated evidence about customer-research quality into reusable guidance about which sources, methods, segment scopes, and assumptions produce reliable customer understanding.
 
 ## Business Outcome
-Reduce uncertainty about customers through customer intelligence learning, so downstream decisions reflect current customer evidence rather than assumption.
+Reduce future uncertainty about customers by improving how evidence is gathered and interpreted without turning Customer Learning into customer truth itself.
 
 ## Run When
-Run during periodic learning cycles or after sufficient OutcomeEvaluations/corrections accumulate.
+Use when enough Customer Insights, corrections, method outcomes, or repeated research work exists to support a reusable methodological lesson. Do not run merely because a periodic learning cycle is due.
 
 ## Process
-1. [AI] Review Customer Insights that were strengthened, contradicted, narrowed, or repeatedly corrected and the methods/sources that produced them.
-2. [HYBRID] Identify method/source conditions associated with reliable versus misleading conclusions without generalizing from one study.
-3. [AI] Capture stable customer-domain lessons such as source coverage needs, segment differences, question effects, or recurring evidence gaps.
-4. [HYBRID] Keep customer truths as Insights; record methodological/decision guidance as Customer Intelligence Learning.
-5. [DETERMINISTIC] Promote/deprecate Learning under Core maturity rules and preserve applicability.
+1. [AI] Review Customer Insights that were strengthened, contradicted, narrowed, superseded, or repeatedly corrected and the methods/sources that produced them.
+2. [HYBRID] Identify source/method conditions associated with reliable versus misleading conclusions while accounting for segment, sample, question framing, time, market, and selection effects.
+3. [AI] Capture reusable customer-intelligence lessons such as source-coverage needs, segment differences, question effects, evidence gaps, or method limitations only at the scope the evidence supports.
+4. [AI] Keep current customer facts/interpretations as Insights; Learning records reusable research/decision guidance rather than silently rewriting customer truth.
+5. [AI] State applicability, negative cases, contradictory evidence, uncertainty, and what would revise the lesson.
+6. [HYBRID] Create/update Learning only when future research materially benefits. Deterministic helpers validate/persist the model/user judgment rather than deciding promotion, deprecation, maturity, or applicability.
+
+## Verification
+- Method/source usefulness remains fact-type and context specific.
+- One study or one customer cohort is not generalized beyond its evidence.
+- Learning does not encode a scheduled research loop, automatic relevance router, or deterministic semantic lifecycle.
+
+## Completion Criteria
+- Future customer research can reuse an evidence-backed methodological lesson while current customer truth remains separately evidence-calibrated.
