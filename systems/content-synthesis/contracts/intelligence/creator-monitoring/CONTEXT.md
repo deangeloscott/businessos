@@ -40,21 +40,30 @@ context:
 # Creator Content Monitoring
 
 ## Purpose
-Build and maintain a durable, cross-source understanding of selected creators/channels for content mechanisms, topics, teachings, messaging/style, offers, and meaningful shifts that can inform original business content.
+Build or refresh a durable, cross-source understanding of selected creators/channels for content mechanisms, topics, teachings, messaging/style, offers, and meaningful shifts that can inform original business content.
 
 ## Business Outcome
-Continuously learn from strong public creative execution without copying creator-specific expression, losing cross-channel history, or confusing popularity with transferable effectiveness.
+Learn from strong public creative execution without copying creator-specific expression, losing useful cross-channel history, or confusing popularity with transferable effectiveness.
 
 ## Run When
-Run on the configured creator-watch cadence when an actual executor is available, when the watch is due on the next AURA start, when a creator/category is added because it is strategically useful to study, or when the user asks for a deep/current understanding of a specific creator or channel. Contract schedule metadata is a semantic default, not proof that a background schedule has been bound.
+Use when the user or current content decision needs a current/deeper understanding of a creator or channel, when a selected creator/category becomes strategically useful to study, or when saved SourceProfile/watch context indicates that a bounded refresh would materially help. Any recurring execution is owned by the active harness/runtime.
 
 ## Process
-1. [DETERMINISTIC] Load/reuse the shared creator subject key, resolved SourceProfiles, last checkpoints, target platforms/surfaces, and the reason/questions each creator is relevant. Do not create a content-owned duplicate identity system.
-2. [HYBRID] Expand identity across other public profiles/website/newsletter/podcast only when evidence supports that they belong to the same subject. Preserve ambiguous accounts separately.
-3. [INTEGRATION] Retrieve the minimum sufficient new or historical corpus for the request with source, format, date, visible context/performance signals, and relevant surrounding items/comments when comparison is needed. Before treating public video/audio as inaccessible, inspect existing host bindings and trusted optional local media capabilities; installing/updating/repairing system tools still requires explicit authorization.
-4. [HYBRID] Inspect the modalities that materially carry the mechanism: spoken/transcript content, visual composition, thumbnails/key frames, demonstrations/screens, editing/pacing, captions, descriptions, posts, comments, or linked pages. Prefer native multimodal inspection when available; use legitimate transcript/frame/document fallbacks and record limitations. `yt-dlp`/FFmpeg-style mechanics may acquire/process evidence but do not themselves establish semantic visual/audio findings.
-5. [DETERMINISTIC] Identify unusually strong, novel, or changing items relative to the creator's own baseline and appropriate peer/context where enough data exists. Treat visible engagement/volume as a proxy, not proof of business outcome.
-6. [AI] Decompose candidate content into topics/teachings, hooks, structure, pacing, proof, storytelling, visual/audio devices, interaction, payoff, CTA, distribution context, offers, and recurring audience response.
-7. [AI] Separate creator-specific advantages/expression from patterns that could plausibly transfer to another brand/audience; do not copy protected expression or style so specifically that it substitutes for the creator.
-8. [HYBRID] Compare patterns across the creator's channels, over time, and against existing Content Insights/Learnings before calling something a stable pattern or meaningful shift.
-9. [DETERMINISTIC] Publish source-backed Observations/Content Insights, update shared SourceProfile checkpoints/cadence as applicable, and route non-content signals (for example company funding/strategy or broad industry events) to their semantic owner. Follow Core monitoring-continuity rules before describing recurring execution as scheduled/automatic.
+1. [HYBRID] Resolve the creator/channel identity, relevant SourceProfiles, prior evidence/checkpoints, target surfaces, and the actual business/content question that makes the subject worth studying. Do not create a duplicate identity system when existing organizational evidence already resolves the subject.
+2. [AI] Expand identity across other public profiles, websites, newsletters, podcasts, or channels only when evidence supports that they belong to the same subject. Preserve ambiguity instead of merging uncertain identities.
+3. [INTEGRATION] Retrieve the minimum sufficient new or historical corpus for the current question using the host's available capabilities. Capture source, format, date, visible context/performance signals, and surrounding items/comments only where they materially improve interpretation.
+4. [HYBRID] Inspect the modalities that actually carry the mechanism: spoken/transcript content, visual composition, thumbnails/key frames, demonstrations/screens, editing/pacing, captions, descriptions, posts, comments, or linked pages. Prefer native multimodal inspection when available; use legitimate transcript/frame/document fallbacks and record material limitations.
+5. [HYBRID] Identify unusually strong, novel, or changing items relative to the creator's own prior work and appropriate peer/context when enough evidence exists. Treat visible engagement/volume as a proxy, not proof of business outcome.
+6. [AI] Decompose useful examples into topics/teachings, hooks, structure, pacing, proof, storytelling, visual/audio devices, interaction, payoff, CTA, distribution context, offers, and recurring audience response.
+7. [AI] Separate creator-specific advantages/expression from mechanisms that could plausibly transfer to another brand/audience. Do not copy protected expression or imitate style so specifically that it substitutes for the creator.
+8. [AI] Compare patterns across channels, over time, and against existing Content Insights/Learnings before treating something as stable, novel, or materially changed.
+9. [HYBRID] Persist only source-backed Observations/Content Insights and SourceProfile/checkpoint updates that future work would materially benefit from. Preserve semantic next-check/watch intent when useful, but do not represent it as an active schedule. If the research reveals a materially relevant non-content fact, use the appropriate organizational context or domain method directly rather than emitting or routing an AURA event.
+
+## Verification
+- Creator identity and cross-channel linkage are evidence-backed.
+- Visible engagement/performance signals are labeled as proxies rather than proven business outcomes.
+- Transferable mechanisms remain distinct from creator-specific expression.
+- Saved watch/checkpoint state does not claim a recurring job exists unless an external runtime actually provides one.
+
+## Completion Criteria
+- The organization has the smallest useful current understanding of the creator/channel for the active content decision, with reusable evidence and patterns preserved only where future work benefits.
