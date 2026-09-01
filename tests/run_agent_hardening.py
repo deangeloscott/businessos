@@ -10,6 +10,7 @@ This regression focuses on invariants AURA can actually own:
 - AURA domains remain bodies of operating knowledge rather than internal semantic services;
 - process maps remain navigation/composition aids rather than execution graphs;
 - flagship production and journey methods do not manufacture WorkRequest/Run/lifecycle ceremony;
+- Marketing composition does not turn strategy/production steps into an internal job queue;
 - retired semantic routing/orchestration/approval/event-control machinery stays physically absent.
 """
 from pathlib import Path
@@ -137,44 +138,54 @@ def main():
                 require(not bad,f'{path.relative_to(ROOT)} reintroduced execution-graph metadata on {activity.get("id")}: {sorted(bad)}')
 
         # AURA domains are reusable bodies of expertise, not internal semantic services.
-        # Their shared defaults may distinguish knowledge scope, but must not tell modules
-        # to route/publish work to one another or model an internal owner-to-owner RPC.
         domain_defaults=list(ROOT.glob('systems/*/DEFAULTS.md'))
         require(domain_defaults,'expected installed domain defaults')
         service_phrases=[
-            'route them to the semantic owner',
-            'route to the correct owner',
+            'route them to the semantic owner','route to the correct owner',
             'route persuasion/content/sales/product work through the correct owner',
             'another domain already owns the opportunity and requests production',
-            'route that interpretation to competitor intelligence',
-            'upstream semantic owners',
+            'route that interpretation to competitor intelligence','upstream semantic owners',
         ]
         for path in domain_defaults:
             text=path.read_text(encoding='utf-8');low=text.lower()
             require('## Knowledge Scope' in text,f'{path.relative_to(ROOT)} lost knowledge-scope framing')
-            for phrase in service_phrases:
-                require(phrase not in low,f'{path.relative_to(ROOT)} recreated internal domain-service routing: {phrase}')
+            for phrase in service_phrases:require(phrase not in low,f'{path.relative_to(ROOT)} recreated internal domain-service routing: {phrase}')
+
+        mandatory_run_phrases=('required run root','record_contract_completion.py','finalize_run.py','run contract-execution manifest','under the active run')
 
         # Flagship Marketing production roots produce the work itself. A WorkRequest may
         # be consumed as real continuity context, but it is not a mandatory internal output.
-        mandatory_run_phrases=('required run root','record_contract_completion.py','finalize_run.py','run contract-execution manifest','under the active run')
         marketing_roots=[]
         for path in ROOT.glob('systems/marketing-synthesis/contracts/assets/*/CONTEXT.md'):
             meta,body=read_frontmatter(path)
             if meta.get('artifact_role')!='customer_facing_production_root':continue
-            marketing_roots.append(path)
-            writes={selector_type(x) for x in meta.get('writes',[])}
+            marketing_roots.append(path);writes={selector_type(x) for x in meta.get('writes',[])}
             require('WorkRequest' not in writes,f'{path.relative_to(ROOT)} recreated mandatory internal WorkRequest production')
-            low=body.lower()
-            for phrase in mandatory_run_phrases:
-                require(phrase not in low,f'{path.relative_to(ROOT)} recreated mandatory Run/conformance machinery: {phrase}')
+            for phrase in mandatory_run_phrases:require(phrase not in body.lower(),f'{path.relative_to(ROOT)} recreated mandatory Run/conformance machinery: {phrase}')
         require(marketing_roots,'expected flagship Marketing production roots')
+
+        # Marketing strategy and ordinary composition leaves return reusable strategy/work,
+        # not an internal AURA job queue. Direct canonical updates happen only when truth
+        # is actually established; routine strategy must not create context-proposal flow.
+        strategy_paths=list(ROOT.glob('systems/marketing-synthesis/contracts/strategy/*/CONTEXT.md'))
+        require(strategy_paths,'expected Marketing strategy methods')
+        positive_context_proposal=re.compile(r'\b(?:create|produce|persist|write)\s+(?:a\s+)?(?:core\s+)?(?:`)?context(?:update|\s+change)\s*proposal',re.I)
+        for path in strategy_paths:
+            meta,body=read_frontmatter(path);writes={selector_type(x) for x in meta.get('writes',[])}
+            require('WorkRequest' not in writes,f'{path.relative_to(ROOT)} recreated internal WorkRequest strategy output')
+            require(not positive_context_proposal.search(body),f'{path.relative_to(ROOT)} recreated routine ContextUpdateProposal workflow')
+
+        direct_marketing_families=('ads','landing-page','webinar','email')
+        for family in direct_marketing_families:
+            for path in ROOT.glob(f'systems/marketing-synthesis/contracts/{family}/*/CONTEXT.md'):
+                meta,body=read_frontmatter(path);writes={selector_type(x) for x in meta.get('writes',[])}
+                require('WorkRequest' not in writes,f'{path.relative_to(ROOT)} recreated internal WorkRequest composition')
+                for phrase in mandatory_run_phrases:require(phrase not in body.lower(),f'{path.relative_to(ROOT)} recreated mandatory Run/conformance machinery: {phrase}')
 
         prepublish=ROOT/'systems/content-synthesis/contracts/qa/pre-publish/CONTEXT.md'
         pmeta,pbody=read_frontmatter(prepublish);pwrites={selector_type(x) for x in pmeta.get('writes',[])}
         require('WorkRequest' not in pwrites,'Content pre-publish QA recreated internal WorkRequest production')
-        for phrase in mandatory_run_phrases:
-            require(phrase not in pbody.lower(),f'Content pre-publish QA recreated mandatory Run/conformance machinery: {phrase}')
+        for phrase in mandatory_run_phrases:require(phrase not in pbody.lower(),f'Content pre-publish QA recreated mandatory Run/conformance machinery: {phrase}')
 
         # Journey interventions may create durable meaning when it really occurs, but an
         # intervention is not automatically a five-object lifecycle.
@@ -192,12 +203,9 @@ def main():
                     require(False,f'{path.relative_to(ROOT)} recreated internal domain delegation: {line.strip()}')
 
         memory_contracts=[
-            'core/contracts/intelligence/publish-observation/CONTEXT.md',
-            'core/contracts/intelligence/manage-insight/CONTEXT.md',
-            'core/contracts/opportunity/qualify/CONTEXT.md',
-            'core/contracts/learning/promote-learning/CONTEXT.md',
-            'core/contracts/measurement/publish-metric/CONTEXT.md',
-            'core/contracts/measurement/evaluate-outcome/CONTEXT.md',
+            'core/contracts/intelligence/publish-observation/CONTEXT.md','core/contracts/intelligence/manage-insight/CONTEXT.md',
+            'core/contracts/opportunity/qualify/CONTEXT.md','core/contracts/learning/promote-learning/CONTEXT.md',
+            'core/contracts/measurement/publish-metric/CONTEXT.md','core/contracts/measurement/evaluate-outcome/CONTEXT.md',
         ]
         runtime_event_pattern=re.compile(r'\bemit\s+[a-z][a-z0-9_-]*\.[a-z][a-z0-9_.-]*',re.I)
         for rel in memory_contracts:
@@ -205,18 +213,12 @@ def main():
             require('Manual Action Packet' not in text,f'{rel} reintroduced retired manual-action fallback')
             require(runtime_event_pattern.search(text) is None,f'{rel} reintroduced named runtime event emission')
 
-        # No authored method may recreate the old generic missing-capability fallback or
-        # a positive internal event-emission step. Negative boundary prose remains valid.
-        forbidden_manual_fallbacks=[
-            'if a required capability is unavailable, create a human-executable manual action packet',
-            'or create a manual action packet',
-        ]
+        forbidden_manual_fallbacks=['if a required capability is unavailable, create a human-executable manual action packet','or create a manual action packet']
         negative_emit_markers=('do not emit','does not emit','never emit','without emitting','not emit')
         for path in ROOT.rglob('CONTEXT.md'):
             if '/contracts/' not in path.as_posix():continue
             text=path.read_text(encoding='utf-8');low=text.lower()
-            for phrase in forbidden_manual_fallbacks:
-                require(phrase not in low,f'{path.relative_to(ROOT)} reintroduced retired Manual Action Packet fallback: {phrase}')
+            for phrase in forbidden_manual_fallbacks:require(phrase not in low,f'{path.relative_to(ROOT)} reintroduced retired Manual Action Packet fallback: {phrase}')
             for line in text.splitlines():
                 line_low=line.lower()
                 if re.search(r'\bemit(?:s|ted|ting)?\b',line_low) and not any(marker in line_low for marker in negative_emit_markers):
