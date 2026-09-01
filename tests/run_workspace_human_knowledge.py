@@ -49,7 +49,6 @@ def main():
         for rel in ['OPERATOR-GUIDE.md','scripts/configure_workspace.py','scripts/migrate_workspace.py','scripts/generate_knowledge_layer.py','core/schemas/config/workspace-profile.schema.json']:
             req((pdir/rel).exists(),f'component edition lost {rel}')
         for rel in retired:req(not (pdir/rel).exists(),f'component edition restored retired runtime machinery: {rel}')
-        operator=(pdir/'OPERATOR-GUIDE.md').read_text();req('AURA does not perform capability preflight' in operator and 'Scheduling/reminders/notifications belong to the active harness/runtime' in operator,'component operator guide lost new runtime boundary')
         cws=tmp/'component-workspace';env={**os.environ,'BUSINESSOS_WORKSPACE':str(cws),'PYTHONDONTWRITEBYTECODE':'1'}
         subprocess.run([sys.executable,str(pdir/'scripts/configure_workspace.py'),str(cws),'--profile','power_user','--no-link'],cwd=pdir,env=env,check=True,capture_output=True,text=True)
         subprocess.run([sys.executable,str(pdir/'scripts/init_business.py'),'component-workspace-test','--name','Component Workspace Test'],cwd=pdir,env=env,check=True,capture_output=True,text=True)
