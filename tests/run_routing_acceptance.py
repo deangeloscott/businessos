@@ -1,72 +1,54 @@
 #!/usr/bin/env python3
+"""Protect deterministic playbook discovery without testing model semantics."""
 from pathlib import Path
-import sys
+import json,sys
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'scripts'))
 from route_task import route
 from route_and_resolve import route_and_resolve
 
-CASES=[
- ('Create a webinar.','marketing.assets.webinar'),
- ('Why are customers leaving?','customer.analysis.churn'),
- ('Reduce customer churn.','customer-optimization.intervention.churn'),
- ('What should we work on first?','core.opportunity.discover-next-best-work'),
- ('I want to grow revenue profitably.','core.opportunity.discover-next-best-work'),
- ("Traffic and leads increased but revenue didn't.",'core.diagnosis.business-problem'),
- ("Traffic and leads are growing but revenue isn't. What's wrong?",'core.diagnosis.business-problem'),
- ('determine what we should do next','core.opportunity.discover-next-best-work'),
- ('Compare competitor pricing','competitor.analysis.pricing'),
- ('Analyze sales objections','customer.analysis.objections'),
- ('Find regulatory changes in our industry','industry.monitoring.regulation'),
- ('Research market changes in our category','industry.monitoring.market'),
- ('Research marketing changes in our approach','core.routing.resolve-intent'),
- ('Why did our organic rankings drop?','seo.diagnosis.detectors.ranking-decay'),
- ('Create a landing page','marketing.assets.landing-page'),
- ('Create a landing page for paid search traffic','marketing.assets.landing-page'),
- ('Create a publish-ready organic page for our target query','core.coordination.multi-domain-request'),
- ('Create an SEO landing page for this keyword','core.coordination.multi-domain-request'),
- ('Create a carousel','content.production.carousel'),
- ('Improve customer onboarding','customer-optimization.intervention.onboarding'),
- ('Find trending creator content','content.intelligence.trending-content-discovery'),
- ('Research industry news and turn it into LinkedIn posts','core.coordination.multi-domain-request'),
- ('Build an infographic','content.production.infographic'),
- ('Analyze lost deals','customer.analysis.win-loss'),
- ('Help me figure out what to improve','core.routing.resolve-intent'),
-]
-FEATURE_CASES=[
- ('Research Alex Hormozi and build a durable understanding we can refresh over time','core.intelligence.subject-monitoring'),
- ('Build a reusable understanding of a public company that we can refresh in future updates','core.intelligence.subject-monitoring'),
- ('Establish the real competitive set and produce a decision-grade competitive position.','competitor.analysis.competitive-position'),
- ('Research our competitors and tell us where we can win.','competitor.analysis.competitive-position'),
- ('Give me a current competitive landscape with strengths, weaknesses, and whitespace.','competitor.analysis.competitive-position'),
- ('What are you monitoring for us?','core.monitoring.status'),
- ('Show me our recurring checks and what is due.','core.monitoring.status'),
- ('Review our monitoring schedule.','core.monitoring.status'),
- ('Pause the Hormozi watch.','core.intelligence.subject-monitoring'),
- ('Only notify me when something materially changes.','core.intelligence.subject-monitoring'),
- ("Don't alert me unless something materially changes.",'core.intelligence.subject-monitoring'),
- ('Tell me after every check.','core.intelligence.subject-monitoring'),
- ('Keep this monitoring silent.','core.intelligence.subject-monitoring'),
- ('Make this watch quiet.','core.intelligence.subject-monitoring'),
- ('Monitoring for this subject should stay silent.','core.intelligence.subject-monitoring'),
- ('Make pricing monthly but hiring weekly.','core.intelligence.subject-monitoring'),
-]
+
+def req(condition,message):
+    if not condition:raise AssertionError(message)
+
 
 def main():
-    failures=[]
-    for text,expected in CASES:
-        rows=route(text)
-        got=rows[0].get('contract_id') if rows else None
-        if got!=expected: failures.append((text,expected,got))
-    for text,expected in FEATURE_CASES:
-        try:got=route_and_resolve(text).get('contract_id')
-        except Exception as e:got=f'ERROR:{e}'
-        if got!=expected:failures.append((text,expected,got))
-    if failures:
-        for text,expected,got in failures:
-            print(f'FAIL: {text!r}: expected {expected}, got {got}')
-        raise SystemExit(1)
-    total=len(CASES)+len(FEATURE_CASES)
-    print(f'routing acceptance passed: {total}/{total}')
+    registry={row['id']:row for row in json.loads((ROOT/'generated/contract-registry.json').read_text()).get('contracts',[])}
 
-if __name__=='__main__': main()
+    cases=[
+        'Create a webinar.',
+        'Why are customers leaving?',
+        'What should we work on first?',
+        'Compare competitor pricing.',
+        'Create a publish-ready organic page for our target query.',
+        'Research industry news and turn it into LinkedIn posts.',
+        'Help me figure out what to improve.',
+    ]
+    for text in cases:
+        rows=route(text,5)
+        req(len(rows)<=5,f'candidate search exceeded bound for {text!r}: {len(rows)}')
+        for row in rows:
+            req(row.get('contract_id') in registry,f'candidate search returned unknown playbook: {row}')
+            req(row.get('status')=='available',f'candidate availability must be mechanically valid: {row}')
+            req(row.get('selection_authority') is False,f'candidate search claimed semantic authority: {row}')
+
+        resolved=route_and_resolve(text)
+        req(resolved.get('contract_id') is None,f'natural language was silently converted into selected playbook for {text!r}: {resolved}')
+        req(resolved.get('semantic_selection_required') is True,f'natural-language method choice must remain with model/user: {resolved}')
+        req(resolved.get('selection_mode')=='model_selection_required',f'model-selection boundary drifted: {resolved}')
+
+    # Candidate search should still be useful for distinctive literal jobs.
+    webinar=route('Create a webinar.',5)
+    req(any(row.get('contract_id')=='marketing.assets.webinar' for row in webinar),f'distinctive literal playbook was not discoverable: {webinar}')
+
+    # Exact IDs are deterministic identifiers, not semantic guesses.
+    exact='content.production.presentation';rows=route(exact,3)
+    req(rows and rows[0].get('contract_id')==exact,'exact playbook ID should resolve as the highest candidate')
+    selected=route_and_resolve('Create a presentation.',selected_contract_id=exact)
+    req(selected.get('contract_id')==exact and selected.get('semantic_selection_required') is False,'explicitly selected playbook did not resolve deterministically')
+    req(selected.get('selection_mode')=='explicit_model_selection','explicit selection lost model-owned provenance')
+
+    print('playbook candidate discovery passed: deterministic index, model-owned semantic selection')
+
+
+if __name__=='__main__':main()
