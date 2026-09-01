@@ -38,7 +38,7 @@ def readiness_regression(workspace,env):
     aid=f'ast_{bid}_landing'
     readiness={
         'status':'blocked','assessed_version':'1','unresolved_business_facts':['Actual customer fee and waiver policy are not established.','Final CTA destination is not established.'],
-        'missing_authorization':['Publication/deployment has not been authorized.'],'missing_capabilities':['No bound CMS deployment capability is available.'],'other_blockers':[],
+        'missing_authorization':['The current task has not authorized publication/deployment.'],'missing_capabilities':['The current harness does not have publishing access to the target surface.'],'other_blockers':[],
         'deployment_status':'not_performed','deployment_evidence_refs':[],'measurement_status':'pending','measurement_evidence_refs':[],
     }
     asset={
@@ -78,14 +78,14 @@ def readiness_regression(workspace,env):
     req(scope.get('qa') and scope['qa'][0].get('status')=='pass' and scope['qa'][0].get('artifact_qa_blockers')==[],f'current-version draft QA should pass independently: {scope}')
     row=scope['assets'][0]
     req(row.get('artifact_status')=='draft' and row.get('deployment_status')=='not_performed' and row.get('measurement_status')=='pending',f'draft/deployment/outcome state was not preserved: {row}')
-    req(row.get('unresolved_business_facts') and row.get('missing_authorization') and row.get('missing_capabilities'),f'typed readiness blockers were lost: {row}')
+    req(row.get('unresolved_business_facts') and row.get('missing_authorization') and row.get('missing_capabilities'),f'typed real-world readiness blockers were lost: {row}')
 
     qa_saved=json.loads(qa.read_text());qa_saved['production_ready']=True;write(qa,qa_saved)
     qa_bad=run([S/'validate_business.py',bid],env,check=False)
     req(qa_bad.returncode!=0 and 'QA record may pass artifact/version checks but cannot assert production/launch readiness' in qa_bad.stdout,f'artifact QA was allowed to impersonate global readiness: {qa_bad.stdout}')
     qa_saved.pop('production_ready');write(qa,qa_saved)
 
-    # Neither typed blockers nor launch-critical/unassessed placeholders may coexist with ready.
+    # Neither typed real-world blockers nor launch-critical/unassessed placeholders may coexist with ready.
     saved=json.loads(asset_path.read_text());pr=saved['extensions']['businessos']['production_readiness'];pr['status']='ready'
     write(asset_path,saved);bad=run([S/'validate_business.py',bid],env,check=False)
     req(bad.returncode!=0 and 'cannot retain unresolved blockers' in bad.stdout,f'ready assertion retained typed blockers: {bad.stdout}')
@@ -139,13 +139,10 @@ def lifecycle_regression(workspace,env):
     premature=json.loads(run([S/'reconcile_runs.py',bid,current,'--apply-safe-supersession'],env).stdout)
     req(premature.get('status')=='needs_judgment' and 'not exactly completed' in premature.get('reason',''),'active replacement was allowed to reconcile before successful completion')
     req(json.loads((workspace/'runtime/runs'/bid/old/'run.json').read_text()).get('status')=='active','pre-completion reconciliation mutated the prior Run')
+
     independent=run([S/'create_run.py',bid,'core.diagnosis.business-problem','Diagnose a separate still-active business question'],env).stdout.strip()
-    blocked=run([S/'create_run.py',bid,'core.workspace.configure','Configure a dependent external workspace step','--parent-run-id',current],env).stdout.strip()
     ambiguous=run([S/'create_run.py',bid,'core.diagnosis.business-problem','Evaluate an unresolved support question','--parent-run-id',current],env).stdout.strip()
-    blocked_dir=workspace/'runtime/runs'/bid/blocked
-    write(blocked_dir/'artifacts/execution-envelope.json',{
-        'capability_preflight':{'status':'blocked','required':[{'capability':'cms.page.publish','execution_state':'provider_decision'}]},
-    })
+
     current_dir=workspace/'runtime/runs'/bid/current
     evidence=write(current_dir/'artifacts/indexing-no-finding.json',{
         'contract_id':'seo.diagnosis.detectors.indexing','status':'completed','result':'no_finding',
@@ -155,14 +152,14 @@ def lifecycle_regression(workspace,env):
     write(current_dir/'artifacts/inspection.txt','The bounded index-state inspection completed.\n')
     finalized=json.loads(run([S/'finalize_run.py',bid,current,'--workspace',workspace,'--skip-human-knowledge'],env).stdout)
     recon=finalized.get('run_reconciliation',{})
-    req(finalized.get('status')=='completed',f'completed root Run should remain complete while reconciliation reports siblings: {finalized}')
+    req(finalized.get('status')=='completed',f'completed root Run should remain complete while reconciliation reports related receipts: {finalized}')
     req(any(x.get('run_id')==old for x in recon.get('mechanically_superseded_runs',[])),f'exact empty replacement was not safely superseded: {recon}')
-    req(any(x.get('run_id')==blocked for x in recon.get('blocked_or_waiting_runs',[])),f'real dependency-blocked support Run was not identified: {recon}')
     req(any(x.get('run_id')==independent for x in recon.get('legitimately_active_runs',[])),f'independent active Run was not preserved: {recon}')
-    req(any(x.get('run_id')==ambiguous for x in recon.get('needs_judgment',[])) and recon.get('status')=='needs_judgment',f'ambiguous support lifecycle did not request judgment: {recon}')
-    statuses={rid:json.loads((workspace/'runtime/runs'/bid/rid/'run.json').read_text()).get('status') for rid in (old,current,independent,blocked,ambiguous)}
+    req(any(x.get('run_id')==ambiguous for x in recon.get('needs_judgment',[])) and recon.get('status')=='needs_judgment',f'ambiguous related Run did not request judgment: {recon}')
+    req('blocked_or_waiting_runs' not in recon,f'Run reconciliation reintroduced an AURA-owned blocker queue: {recon}')
+    statuses={rid:json.loads((workspace/'runtime/runs'/bid/rid/'run.json').read_text()).get('status') for rid in (old,current,independent,ambiguous)}
     req(statuses[old]=='superseded' and statuses[current]=='completed',f'exact Run completion/supersession state is wrong: {statuses}')
-    req(statuses[independent]=='active' and statuses[blocked]=='active' and statuses[ambiguous]=='active',f'legitimate/blocked/ambiguous Runs were auto-completed: {statuses}')
+    req(statuses[independent]=='active' and statuses[ambiguous]=='active',f'independent/ambiguous Runs were auto-completed: {statuses}')
     req(evidence.exists(),'finalization removed completion evidence')
 
     # Completing one support Run must preserve its exact parent/root as meaningful composition work.
