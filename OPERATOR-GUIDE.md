@@ -1,83 +1,109 @@
 # ViralTrac AURA — Operator Guide
 
-AURA is the organization-owned layer for durable business context, evidence, operational knowledge, work continuity, outcomes, and Learning. It is not the model, tool runtime, provider resolver, scheduler, or orchestrator.
+This is the practical reference for people who want more control over how AURA is set up and used. If you are new to AURA, start with `BEGINNERS-GUIDE.md`.
 
-## Workspace
+AURA keeps useful business memory, evidence, operating knowledge, work history, outcomes, and Learning. The AI and its tools still do the reasoning and execution.
 
-AURA can keep state with the product folder or use a separate organization-owned workspace:
+You do not need to memorize the commands below. A capable command-line or coding agent can often run them for you.
+
+## Choose where business memory lives
+
+AURA can keep business memory inside the AURA product folder, or in a separate organization-owned workspace.
+
+A separate workspace is usually better for regular use because it makes upgrades, backups, several computers, and team use safer.
+
+Create an empty separate workspace:
 
 ```bash
 python3 scripts/configure_workspace.py /path/to/workspace --profile power_user
 python3 scripts/workspace_status.py
 ```
 
-For a populated workspace move, use `scripts/migrate_workspace.py` rather than copying state blindly.
+If the current AURA folder already contains business information, move it with `scripts/migrate_workspace.py` instead of copying only some folders or simply switching the workspace path.
 
-## Initialize an organization
+## Set up a business
 
 ```bash
 python3 scripts/init_business.py <business-id> --name "Business Name"
 ```
 
-Ground explicit supplied facts/evidence with supported context/evidence helpers. Unknowns remain unknown; do not fabricate plausible business details.
+Save supplied facts and evidence through AURA's supported context/evidence helpers. If something is unknown, leave it unknown instead of inventing a likely answer.
 
 ## Prepare work
 
-Normal business work starts from the user's request:
+Normal business work starts with the user's request:
 
 ```bash
 python3 scripts/enter.py "<complete business request>" --business-id <business-id>
 ```
 
-The result retrieves bounded organizational context and may recommend an AURA playbook. The recommendation is not authority. The active model/harness may use it, adapt it, use an external Skill, use another established method, or create an ad-hoc method.
+AURA retrieves a small amount of relevant business memory and may recommend a playbook.
 
-AURA playbooks declare provider-neutral capability needs through `core/capabilities/catalog.json`. The active harness/user decides which actual tools/providers satisfy those needs. AURA does not perform capability preflight, provider resolution, host discovery, software installation, credential management, scheduling, or retries.
+The recommendation is guidance, not authority. The AI/user may use it, adapt it, use an outside Skill, use another established method, or create a better method for the task.
 
-## Work receipts and persistence
+AURA playbooks describe the kinds of capabilities they need in general terms. The active AI/harness decides which real tools or providers to use. AURA does not need to inspect the computer, rank providers, install software, manage credentials, schedule jobs, or control retries.
 
-Create a Run when durable continuity is useful:
+## Work receipts and saving useful results
+
+A Run is an optional work receipt. Create one when remembering a bounded piece of work will help later:
 
 ```bash
 python3 scripts/create_run.py <business-id> "<task>" --method-type <external_skill|model_created|ad_hoc> [--method-ref <name>]
 ```
 
-For an explicitly selected AURA playbook, use its contract ID. General work does not fabricate contract execution.
+If the work deliberately uses an AURA playbook, use that playbook's contract ID.
 
-Persist only material organization-owned meaning through supported canonical helpers. The model supplies substantive meaning; deterministic helpers may supply IDs, timestamps, paths, local references, and integrity checks.
+Do not pretend ordinary or outside work used an AURA playbook when it did not.
 
-Complete general work with the work-receipt path. AURA-playbook work may additionally use SOP-specific conformance/finalization when claiming that playbook was completed.
+Save only material organization-owned meaning through AURA's supported save helpers. The AI supplies the business meaning. Deterministic helpers can safely supply things such as IDs, timestamps, paths, local references, and format checks.
+
+A work receipt should help a future AI understand what materially happened. It should not become a full chat transcript or hidden-reasoning archive.
 
 ## Truth and customer-facing work
 
-AURA should be flexible about method and expression but strict about factual/outward claims. Preserve evidence/provenance and never claim a scan, render, publication, experiment, measurement, deployment, or external action that did not occur.
+AURA can be flexible about how work is done, but it should stay strict about factual claims.
+
+Keep the evidence behind important claims. Never say a scan, render, publication, experiment, measurement, deployment, or outside action happened when it did not.
 
 ## Preferences and instructions
 
-Reusable style/work choices may be persisted as preferences. Current-task restrictions such as "do not publish" or "do not contact customers" are task instructions, not standing permission objects and not durable preferences unless the user clearly establishes a reusable instruction.
+Reusable choices such as writing style or preferred output format can be saved as preferences when they are meant to apply again.
 
-## Human knowledge layer
+A one-time instruction such as “do not publish this” or “do not contact customers” applies to the current work. Do not silently turn it into a permanent rule unless the user clearly means it to be reusable.
+
+## Human-readable knowledge view
 
 ```bash
 python3 scripts/generate_knowledge_layer.py <business-id>
 ```
 
-Generated Markdown is a readable view of canonical organization state. Human notes remain source material until deliberately incorporated with provenance.
+This creates Markdown pages that are easier for people to read.
+
+These pages are views of AURA's main structured business records. Human notes can also live in the knowledge area, but a note does not automatically become a trusted business fact. Bring important notes into AURA's evidence process deliberately when useful.
 
 ## Monitoring
 
-AURA may remember what should be watched, why, cadence intent, material-change signals, prior checks, and when another check would be useful:
+AURA can remember what should be watched, why it matters, how often another check may be useful, what changes matter, and what was found before:
 
 ```bash
 python3 scripts/monitoring_status.py <business-id>
 python3 scripts/list_due_monitoring.py <business-id> --due-only
 ```
 
-These commands do **not** certify that a background task is scheduled. Scheduling/reminders/notifications belong to the active harness/runtime. If the user asks that runtime to schedule something, the runtime should do so using its own facilities; AURA retains only the organizational monitoring intent and meaningful results.
+These commands do **not** mean a background task is actually scheduled.
+
+The active AI/harness, operating system, workflow tool, ViralTrac, or another runtime handles the real scheduling and notification delivery. AURA keeps the business meaning of the monitoring request and the useful results.
 
 ## ViralTrac
 
-ViralTrac is an optional first-party integration, not an AURA runtime dependency. See `integrations/viraltrac/README.md`. The active harness chooses and authenticates the current ViralTrac interface when useful; AURA retains only material organizational meaning and evidence references.
+ViralTrac is optional. AURA does not require it.
+
+When ViralTrac is useful, the active AI/harness connects to it through the available interface and credentials. AURA keeps only the useful business meaning and evidence references that should survive later.
+
+See `integrations/viraltrac/README.md` for integration details.
 
 ## Validation
 
-Deterministic AURA validation should protect schema/reference integrity, business isolation, truthful provenance, and selected-SOP conformance. It should not require runtime/provider machinery that belongs to the host.
+AURA validation should protect what AURA owns: valid stored records, valid references, correct business separation, truthful evidence links, and the important requirements of an AURA playbook when that playbook was actually used.
+
+Validation should not require provider selection, scheduling, browser control, or other runtime machinery that belongs to the AI/harness.
