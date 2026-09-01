@@ -1,30 +1,16 @@
 #!/usr/bin/env python3
+"""Create one optional organization-owned work receipt.
+
+A Run records bounded continuity around work that is useful to resume, inspect, or hand off.
+It does not create an execution plan, subcontract ledger, capability preflight, provider
+binding, permission gate, or scheduler state. Selecting an AURA playbook records the method
+that was used; it does not turn the playbook into execution authority.
+"""
 from _common import *
 import argparse, json, secrets, os, sys
 from resolve_preferences import resolve_effective_preferences, _load_task_preferences
-from completion_evidence import completion_spec
 
-COMPLETION_POLICY='core/policies/completion-evidence.md'
-CONTENT_PREPUBLISH_QA='content.qa.pre-publish'
 METHOD_TYPES={'aura_playbook','external_skill','model_created','ad_hoc'}
-
-
-def _required_subcontract_ids(contract,byid):
-    out=[]
-    for item in ((contract.get('subcontracts') or {}).get('required') or []):
-        cid=item.get('id') if isinstance(item,dict) else item
-        if not isinstance(cid,str) or not cid.strip():
-            raise SystemExit(f"Invalid required subcontract metadata for {contract.get('id')}: {item!r}")
-        cid=cid.strip()
-        if cid not in out:out.append(cid)
-    if (
-        contract.get('owner_system')=='content-synthesis'
-        and contract.get('artifact_role')=='customer_facing_production_root'
-        and contract.get('id')!=CONTENT_PREPUBLISH_QA
-        and not any(cid in byid and completion_spec(byid[cid]).get('profile')=='qa' for cid in out)
-    ):
-        out.append(CONTENT_PREPUBLISH_QA)
-    return out
 
 
 def _method_identity(run):
@@ -35,17 +21,18 @@ def _method_identity(run):
 
 def _args(byid):
     raw=sys.argv[1:]
-    # Preserve the long-standing CLI form:
+    # Accept the older positional form as a human convenience without preserving its
+    # historical execution semantics:
     #   create_run.py BUSINESS_ID CONTRACT_ID TASK
-    # while making the actual interface method-agnostic:
+    # Canonical form:
     #   create_run.py BUSINESS_ID TASK [--contract-id ... | --method-type ...]
     if len(raw)>=3 and raw[1] in byid and not raw[2].startswith('-'):
         raw=[raw[0],raw[2],'--contract-id',raw[1],*raw[3:]]
-    p=argparse.ArgumentParser(description='Create a bounded organization-owned work receipt for any method. AURA SOP completion machinery is attached only when an AURA playbook is selected.')
+    p=argparse.ArgumentParser(description='Create an optional bounded AURA work receipt for any method.')
     p.add_argument('business_id');p.add_argument('task')
-    p.add_argument('--contract-id',help='Selected AURA playbook id. Implies --method-type aura_playbook.')
+    p.add_argument('--contract-id',help='AURA playbook actually used for the work. Implies --method-type aura_playbook.')
     p.add_argument('--method-type',choices=sorted(METHOD_TYPES),help='How the work is actually being performed; defaults to ad_hoc when no AURA playbook is selected.')
-    p.add_argument('--method-ref',help='Optional provider-neutral reference/name for an external Skill, model-created method, or other method.')
+    p.add_argument('--method-ref',help='Provider-neutral reference/name for an external Skill, model-created method, or other method.')
     p.add_argument('--focus',action='append',default=[])
     p.add_argument('--operator-ref',default=None,help='Stable operator label; defaults to BUSINESSOS_OPERATOR_REF')
     p.add_argument('--team-ref',default=None,help='Optional team label; defaults to BUSINESSOS_TEAM_REF')
@@ -53,8 +40,8 @@ def _args(byid):
     p.add_argument('--output-type',help='Optional output-type context for PreferenceProfile applicability')
     p.add_argument('--channel',help='Optional channel context for PreferenceProfile applicability')
     p.add_argument('--task-preferences',help='JSON object file of one-task optional preferences')
-    p.add_argument('--parent-run-id',help='Exact parent Run when this is bounded support work')
-    p.add_argument('--supersedes-run-id',help='Exact prior active Run intentionally replaced by this same work')
+    p.add_argument('--parent-run-id',help='Exact parent receipt when this is bounded support work')
+    p.add_argument('--supersedes-run-id',help='Exact prior active receipt intentionally replaced by this same work')
     return p.parse_args(raw)
 
 
@@ -104,7 +91,7 @@ def main():
     rid='run_'+secrets.token_hex(8);parent=related.get('parent');prior=related.get('superseded')
     corr=(parent or prior or {}).get('correlation_id') or 'cor_'+secrets.token_hex(8)
     root_run_id=(parent or {}).get('root_run_id') or (a.parent_run_id if parent else rid)
-    ts=now();d=ROOT/'runtime/runs'/a.business_id/rid;d.mkdir(parents=True)
+    ts=now();d=runtime_root()/'runs'/a.business_id/rid;d.mkdir(parents=True)
     pref_ref=f'runtime/runs/{a.business_id}/{rid}/artifacts/effective-preferences.json'
     obj={
         'run_id':rid,'business_id':a.business_id,'task':a.task,
@@ -112,7 +99,6 @@ def main():
         'status':'active','focus_refs':a.focus,
         'operator_ref':operator_ref,'team_ref':team_ref,'role_ref':role_ref,
         'preference_output_type':a.output_type,'preference_channel':a.channel,'preference_snapshot_ref':pref_ref,
-        'completion_policy_ref':COMPLETION_POLICY if contract else None,
         'continuity':{
             'format_version':'2.0','purpose':'organizational_work_receipt','state':'active',
             'method_type':method_type,'method_ref':method_ref,'summary':None,
@@ -125,29 +111,13 @@ def main():
         'created_at':ts,'updated_at':ts
     }
     (d/'run.json').write_text(json.dumps(obj,indent=2)+'\n')
-    for name in ('artifacts','checkpoints','logs','work'):(d/name).mkdir()
+    for name in ('artifacts','work'):(d/name).mkdir()
     (d/'artifacts'/'effective-preferences.json').write_text(json.dumps(pref,indent=2)+'\n')
-
-    if contract:
-        required=_required_subcontract_ids(contract,byid)
-        manifest={
-            'format_version':'1.1','run_id':rid,'business_id':a.business_id,
-            'root_contract_id':a.contract_id,'root_status':'active','completion_policy_ref':COMPLETION_POLICY,
-            'root_completion_evidence_spec':completion_spec(contract),
-            'required_subcontracts':required,
-            'contracts':{cid:{
-                'status':'pending','evidence_refs':[],'note':None,'updated_at':ts,
-                'completion_evidence_spec':completion_spec(byid[cid])
-            } for cid in required},
-            'created_at':ts,'updated_at':ts
-        }
-        (d/'contract-execution.json').write_text(json.dumps(manifest,indent=2)+'\n')
-
     (d/'README.md').write_text(
-        'Run-local working/recovery state for one bounded organizational work receipt. '
-        'Use work/ for scratch/build/cache/render files when needed; do not write temporary execution files into the AURA product root. '
-        'Preserve material evidence, results, decisions, unresolved work, and a concise completion summary rather than transcripts or hidden reasoning. '
-        'AURA SOP completion/conformance files exist only when method_type is aura_playbook. Runtime tools, permissions, retries, subagents, and capability discovery remain the host/harness responsibility.\n'
+        'Optional local continuity for one bounded piece of organizational work. '
+        'Use work/ for temporary working files when useful and artifacts/ for material receipt evidence. '
+        'Preserve only what helps the organization resume, inspect, or learn from the work. '
+        'The active model/harness owns tools, permissions, retries, subagents, scheduling, and execution.\n'
     )
     print(rid)
 
