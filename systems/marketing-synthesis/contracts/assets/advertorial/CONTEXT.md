@@ -12,7 +12,6 @@ reads:
 - Asset
 - WorkRequest
 writes:
-- WorkRequest
 - Asset
 capabilities:
   required:
@@ -35,10 +34,10 @@ context:
 Create clearly compliant editorial-style persuasion that educates while transparently serving a commercial objective.
 
 ## Business Outcome
-Increase the likelihood of the desired commercial action through evidence-backed advertorial that matches audience awareness, offer, proof, and acquisition context.
+Increase the likelihood of the desired commercial action through an evidence-backed advertorial that matches audience awareness, Offer, proof, and acquisition context.
 
 ## Run When
-Run when an Opportunity or WorkRequest requires advertorial to remove a commercial persuasion gap or create the required conversion asset.
+Use when an advertorial is useful to remove a commercial persuasion gap or create the required conversion asset. An Opportunity or real durable WorkRequest may provide context but is not required.
 
 ## Process
 1. [AI] Define audience, publisher/context, problem, insight/story, evidence, Offer, and disclosure requirements.
@@ -46,4 +45,4 @@ Run when an Opportunity or WorkRequest requires advertorial to remove a commerci
 3. [HYBRID] Maintain clear advertising/sponsorship disclosure and avoid impersonating independent journalism.
 4. [AI] Build narrative that delivers informational value before/while connecting to the commercial solution.
 5. [HYBRID] Fact-check comparative/causal claims and ensure landing destination continues the promise.
-6. [DETERMINISTIC] Package copy/media WorkRequests and measurement plan.
+6. [HYBRID] Use relevant Content operating knowledge and the active harness's real media/document production capabilities directly, and define measurement appropriate to the business objective. Persist a WorkRequest only for a real durable organizational handoff.
