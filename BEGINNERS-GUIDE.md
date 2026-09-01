@@ -3,9 +3,11 @@
 **Alpha · v0.1.0**  
 **AURA = Agentic Understanding and Reinforcement Architecture.**
 
-This guide is for anyone who wants to use AURA, including people who are new to AI tools.
+This guide is for anyone who wants to use AURA, including people who are new to AI.
 
 You do not need to understand programming, Git, AI models, agents, or technical file formats before you start.
+
+If you only want to get started, read through **Get started**. The rest of this guide is here when you need it.
 
 ## What is AURA?
 
@@ -46,9 +48,9 @@ You may see a few common words when using AURA.
 
 **Agent** — an AI that can do more than answer a question. It may read files, use tools, run commands, browse the web, or complete several steps for you.
 
-**Harness** — the app or program the AI works inside. A harness gives the AI access to files and tools. Examples include coding agents, command-line agents, desktop agents, and other AI work environments.
+**Harness** — the app or program the AI works inside. It gives the AI access to files and tools. In most cases, you can simply think of this as your **AI tool** and ignore the word “harness” unless you need the technical detail.
 
-You do not need to memorize these terms. The important part is that the AI tool you use needs access to the AURA folder if you want it to use AURA.
+You do not need to memorize any of these terms. The important part is that the AI tool needs access to the AURA folder if you want it to use AURA.
 
 ## What do I need?
 
@@ -65,7 +67,9 @@ Those can be useful later, but they are optional.
 
 ### 1. Download AURA
 
-Download the current AURA release and unzip it, or clone the repository if you already use Git.
+Download the current AURA release and unzip it.
+
+If you already use Git, you can clone the repository instead.
 
 ### 2. Give your AI access to the AURA folder
 
@@ -85,7 +89,7 @@ For example:
 
 > Use AURA for my business. My company is Acme, our website is acme.com, and I want to increase qualified leads. Use what we already know and help me figure out the highest-value work.
 
-If the business has not been set up yet, the AI can initialize it with AURA's existing helpers.
+If the business has not been set up yet, the AI can use AURA's setup helpers.
 
 ### 4. Talk normally
 
@@ -113,7 +117,7 @@ The main question is:
 
 AURA should usually remember things like:
 
-- durable business facts;
+- lasting business facts;
 - useful evidence and sources;
 - important customer or competitor findings;
 - real decisions;
@@ -139,15 +143,15 @@ AURA is meant to be useful organizational memory, not an activity log.
 
 AURA has two kinds of files:
 
-**AURA product files** are the software, playbooks, instructions, schemas, and helpers that make AURA work.
+**AURA product files** are the software, playbooks, instructions, and helpers that make AURA work.
 
 **Organization files** are the information AURA remembers about your business.
 
 For a quick trial, both can live in the same AURA folder.
 
-For regular use, it is safer to keep your organization files in a separate workspace. This makes upgrades, backups, several computers, and team use easier.
+For regular use, it is safer to keep your organization files in a separate **workspace**. A workspace is simply the folder where AURA keeps your organization's information.
 
-Think of it like this:
+Keeping it separate makes upgrades, backups, several computers, and team use easier.
 
 ```text
 AURA software folder
@@ -175,13 +179,11 @@ python3 scripts/migrate_workspace.py ~/My-AURA-Workspace --profile power_user
 python3 scripts/workspace_status.py
 ```
 
-The migration helper checks for conflicts, copies the state, verifies the copied files, and leaves the old copy untouched.
+The migration helper checks for conflicts, copies the organization files, verifies the copied files, and leaves the old copy untouched.
 
 ## How do I update AURA without losing my business memory?
 
-AURA software and your organization memory can be kept separate.
-
-That is the safest setup for regular use.
+The safest regular setup keeps AURA software and organization memory separate.
 
 ```text
 old AURA version ─┐
@@ -194,12 +196,12 @@ When a new AURA version is released:
 1. keep your organization workspace;
 2. download or clone the new AURA version;
 3. point the new AURA copy at the same workspace;
-4. review release notes for any required migration steps;
-5. check the workspace before deleting an older copy.
+4. read the release notes for any special move or update step;
+5. check that the workspace works before deleting an older copy.
 
 AURA does not run its own automatic updater. Software updates are handled through normal file, Git, GitHub, or other software-management methods.
 
-Future releases may include schema migrations when the stored format truly needs to change. A normal upgrade should not require starting your business memory from scratch.
+A future release may sometimes need to change how stored records are formatted. When that happens, the release should provide a safe way to move the old information forward. A normal upgrade should not require starting your business memory from scratch.
 
 ## Can I use more than one AI with the same AURA?
 
@@ -207,7 +209,7 @@ Yes.
 
 AURA memory belongs to the organization, not to one AI company or model.
 
-For example, the same workspace could be used by Claude, Codex, Hermes, OpenClaw, Gemini-based agents, or another capable file-aware AI tool.
+For example, the same workspace could be used by Claude, Codex, Hermes, OpenClaw, a Gemini-based agent, or another AI tool that can access the files.
 
 ```text
                  Claude
@@ -221,9 +223,9 @@ This lets one AI benefit from useful information saved by another AI later.
 
 ### One important limit
 
-AURA does not currently promise that two agents can safely edit the **same stored object at exactly the same time**.
+AURA does not currently promise that two agents can safely change the **same saved record at exactly the same time**.
 
-Several agents can read the same workspace. They can also often create different records safely. But if two agents may change the same file at once, coordinate the work instead of assuming database-style conflict handling.
+Several agents can read the same workspace. They can also often create different records safely. If two agents may change the same file or record at once, coordinate the work instead of assuming the changes will merge automatically.
 
 ## Can I use AURA on more than one computer?
 
@@ -233,7 +235,7 @@ Yes. There are several ways.
 
 Other computers can connect to that machine using normal remote-access tools.
 
-This is useful when you want one clear source of truth.
+This is useful when you want one clear live copy of the workspace.
 
 ### Option 2: Use private Git
 
@@ -244,7 +246,7 @@ You do not need Git to use AURA.
 Git is useful when you want:
 
 - change history;
-- rollback;
+- a way to return to an older version;
 - several computers;
 - controlled collaboration;
 - backups of text-based workspace files.
@@ -261,9 +263,9 @@ AURA does not require a specific cloud-storage company.
 
 ## What is the knowledge folder?
 
-AURA's main machine-readable business state is stored in structured files.
+AURA stores its main business records in structured files that are easy for software to check and use.
 
-AURA can also make a simpler Markdown view for people to read.
+AURA can also make simpler Markdown pages for people to read.
 
 Run:
 
@@ -273,11 +275,11 @@ python3 scripts/generate_knowledge_layer.py <business-id>
 
 This creates readable pages under `knowledge/<business-id>/`.
 
-You can open these files in an ordinary text editor, VS Code, Obsidian, or another Markdown notes app.
+You can open these pages in an ordinary text editor, VS Code, Obsidian, or another Markdown notes app.
 
-A notes app is only a viewing and writing tool. It is not required, and it does not replace AURA's canonical business state.
+A notes app is only a way to view and write notes. It is not required, and it does not replace AURA's main structured business records.
 
-Human notes do not automatically become trusted business facts just because they are inside the knowledge folder. They can be brought into AURA's evidence process deliberately when useful.
+Human notes do not automatically become trusted business facts just because they are inside the knowledge folder. Important notes can be brought into AURA's evidence process on purpose when useful.
 
 ## What are optional local tools?
 
@@ -295,7 +297,7 @@ Examples include:
 
 These tools are optional.
 
-AURA describes the business job that needs to be done. The active AI/harness should use the best tools it actually has.
+AURA describes the business job that needs to be done. The active AI tool should use the best tools it actually has.
 
 Installing more tools can increase what the AI can do locally, but AURA should not depend on one specific tool when another sound method works.
 
@@ -305,7 +307,7 @@ No.
 
 AURA works without ViralTrac.
 
-ViralTrac is an optional first-party companion for things such as attribution, measurement, experiments, and supported growth-operation surfaces.
+ViralTrac is an optional first-party companion for things such as attribution, measurement, experiments, and supported growth work.
 
 ## Do I need the internet?
 
@@ -319,19 +321,19 @@ Some tasks still need internet access because the work itself needs current outs
 
 You do not need to be a Python programmer.
 
-Some AURA helpers are Python scripts. A capable coding or command-line agent can often run them for you.
+Some AURA helpers are Python scripts. A capable coding or command-line AI can often run them for you.
 
-If your AI tool cannot run commands, it may still be able to read AURA files, but some setup, validation, and persistence helpers may need to be run another way.
+If your AI tool cannot run commands, it may still be able to read AURA files, but some setup, validation, and saving helpers may need to be run another way.
 
 ## Common problems
 
 ### “My AI does not seem to know AURA exists.”
 
-Make sure the AI can access the AURA folder. Work from inside the folder when your harness supports that, or tell the AI directly where the folder is and ask it to use AURA for the business.
+Make sure the AI can access the AURA folder. Work from inside the folder when your AI tool supports that, or tell the AI directly where the folder is and ask it to use AURA for the business.
 
 ### “AURA is asking which business I mean.”
 
-Your workspace may contain more than one business. Tell the AI which business is active. AURA should not guess when the choice is ambiguous.
+Your workspace may contain more than one business. Tell the AI which business is active. AURA should not guess when the choice is unclear.
 
 ### “I downloaded a new AURA version. Where is my old information?”
 
@@ -339,19 +341,19 @@ Do not assume a new product folder contains the organization memory from an olde
 
 If you used a separate workspace, point the new AURA version to that same workspace.
 
-If your business data still lives inside the older AURA folder, keep that folder and use `scripts/migrate_workspace.py` to move the state safely before deleting anything.
+If your business information still lives inside the older AURA folder, keep that folder and use `scripts/migrate_workspace.py` to move the information safely before deleting anything.
 
 ### “My AI did useful work but AURA did not remember it.”
 
-Ask the AI to preserve the material organization-owned meaning from the work. The AI should use AURA's persistence rule: save what would materially help a future model, not the whole conversation.
+Ask the AI to preserve the material business meaning from the work. It should save what would materially help a future AI, not the whole conversation.
 
 ### “AURA remembered something that is wrong.”
 
-Treat this as a truth problem, not something to hide. Check the supporting evidence and update or supersede the incorrect record using AURA's normal truth/provenance process. Do not silently turn uncertain information into fact.
+Check the supporting evidence and correct or replace the bad record through AURA's normal evidence and correction process. Do not silently turn uncertain information into fact.
 
 ### “Two AI agents are working at the same time.”
 
-Reading the same workspace is fine. Avoid having both agents edit the same stored object at exactly the same time unless you have coordinated how conflicts will be handled.
+Reading the same workspace is fine. Avoid having both agents change the same saved record at exactly the same time unless you have coordinated how conflicts will be handled.
 
 ### “I moved AURA to another computer.”
 
@@ -359,7 +361,7 @@ Move or reconnect the organization workspace too. Product files and organization
 
 ### “I see JSON files. Should I edit them by hand?”
 
-Usually no. Let AURA's helpers or a capable AI use the supported persistence paths. The structured files are meant to stay valid and traceable.
+Usually no. Let AURA's helpers or a capable AI use AURA's normal save methods. The structured files are meant to stay valid and traceable.
 
 ### “Do I need to choose a playbook?”
 
@@ -393,7 +395,7 @@ This makes upgrades and backups safer.
 
 ### I use several computers
 
-Use a shared host, private Git, or a trusted sync method for the organization workspace.
+Use a shared main computer/server, private Git, or a trusted sync method for the organization workspace.
 
 ### I am a power user
 
@@ -403,13 +405,13 @@ Use only the extras that actually make your work better.
 
 ### We are a team
 
-Use an organization-owned shared workspace with appropriate access controls. Coordinate concurrent edits to the same stored objects.
+Use an organization-owned shared workspace with appropriate access controls. Coordinate simultaneous edits to the same saved records.
 
 ## Where to go next
 
 - `PLAYBOOKS.md` — see what kinds of business work AURA can help with
 - `OPERATOR-GUIDE.md` — practical commands and advanced use
-- `DEPLOYMENT.md` — workspace, storage, team, and deployment details
+- `DEPLOYMENT.md` — workspace, storage, upgrades, multi-device, and team details
 - `CONTEXT.md` — the main instructions AURA gives to AI agents
 - `LICENSE.md` — source-available license
 
