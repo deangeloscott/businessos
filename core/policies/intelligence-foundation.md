@@ -59,7 +59,7 @@ A durable watch may remember:
 
 **Cadence is organizational intent; scheduling is host execution state.** A saved `next_check_at` does not prove that any future task exists. The model may suggest a proportionate cadence when recurring monitoring is requested; user-specified cadence wins.
 
-The host/runtime that actually creates or observes a schedule is the authority on whether automation is active. AURA may preserve a bounded external schedule reference/status if future work benefits from it, but AURA does not create, mirror, verify, or maintain scheduler bindings.
+The host/runtime that actually creates or observes a schedule is the authority on whether automation is active. AURA may preserve a bounded reference to the relevant external schedule when that reference materially helps continuity, but it does not cache scheduler status or create, mirror, verify, or maintain scheduler bindings.
 
 Unchanged checks should update source/watch checkpoints rather than create duplicate findings or alert noise. AURA may remember notification intent; actual delivery belongs to the runtime/channel that sends it.
 
