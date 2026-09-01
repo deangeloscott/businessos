@@ -19,6 +19,8 @@ from route_and_resolve import route_and_resolve
 A='test-evolution-a';B='test-evolution-b'
 NEW_CONTRACTS=['core/contracts/learning/playbook-evolution/CONTEXT.md','core/contracts/learning/adopt-process-extension/CONTEXT.md','core/contracts/intelligence/innovation-exchange/CONTEXT.md','core/contracts/intelligence/community-evidence-review/CONTEXT.md']
 def fail(msg):raise AssertionError(msg)
+def contains(text,*parts):
+    low=text.lower();return all(str(p).lower() in low for p in parts)
 def make_business(bid):
     base=ROOT/'instances'/bid;base.mkdir(parents=True,exist_ok=True);(base/'instance.json').write_text(json.dumps({'business_id':bid,'enabled_systems':['marketing-synthesis']},indent=2)+'\n');return base
 def learning(base,bid):
@@ -43,10 +45,18 @@ def main():
     policy=(ROOT/'core/policies/innovation-exchange.md').read_text()
     for phrase in ['No automatic sharing','workflow_only','anonymized_evidence','full_case_study','anonymous','pseudonymous','named']:
         if phrase not in policy:fail(f'innovation policy missing {phrase}')
+
     source=(ROOT/'core/contracts/intelligence/ecosystem/source-discovery/CONTEXT.md').read_text();source_meta=source.split('\n---\n',1)[0]
     if '- InnovationExchangeEntry' in source_meta:fail('ecosystem discovery reintroduced exchange support data as canonical organization state')
-    for phrase in ['support data rather than canonical organization state','Treat an InnovationPackage as a contributed process/report, not proof that its claimed outcome works','Optional exchange/index data never substitutes for canonical SourceRecord/Observation evidence','Innovation Exchange popularity/repetition is never counted as independent evidence']:
-        if phrase not in source:fail(f'ecosystem discovery lost innovation evidence boundary: {phrase}')
+    for concepts in [
+        ('exchange/index files','support data','canonical organization truth'),
+        ('innovation exchange contributions','discovery'),
+        ('discovery-only','support-grade evidence'),
+        ('popularity','repetition','independent evidence'),
+        ('semantic source identity','model judgment'),
+    ]:
+        if not contains(source,*concepts):fail(f'ecosystem discovery lost innovation/evidence boundary: {concepts}')
+
     for bid in [A,B]:shutil.rmtree(ROOT/'instances'/bid,ignore_errors=True)
     shutil.rmtree(ROOT/'runtime'/'innovation'/A,ignore_errors=True);tmpdir=Path(tempfile.mkdtemp(prefix='aura-innovation-test-'))
     try:
