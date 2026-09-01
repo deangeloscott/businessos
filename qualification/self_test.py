@@ -18,6 +18,10 @@ SELF_TESTS=[
     'tests/run_qualification_product_integrity.py',
 ]
 
+product_gate=(ROOT/'tests/run_all.py').read_text(encoding='utf-8')
+if 'run_qualification_' in product_gate:
+    raise SystemExit('AURA product-integrity gate must not count qualification-harness self-tests')
+
 failures=[]
 for rel in SELF_TESTS:
     print(f'== {rel} ==',flush=True)
