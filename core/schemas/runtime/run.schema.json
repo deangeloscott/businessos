@@ -9,7 +9,7 @@
     "task": {"type": "string", "minLength": 1},
     "method_type": {
       "enum": ["aura_playbook", "external_skill", "model_created", "ad_hoc"],
-      "description": "How the work was actually performed. AURA playbook conformance applies only to aura_playbook Runs."
+      "description": "How the work was actually performed. This records method provenance, not execution authority."
     },
     "method_ref": {"type": ["string", "null"], "minLength": 1},
     "contract_id": {
@@ -25,11 +25,6 @@
     "preference_output_type": {"type": ["string", "null"], "minLength": 1},
     "preference_channel": {"type": ["string", "null"], "minLength": 1},
     "preference_snapshot_ref": {"type": ["string", "null"], "minLength": 1},
-    "completion_policy_ref": {
-      "type": ["string", "null"],
-      "minLength": 1,
-      "description": "Present only when a selected method has a specific completion/conformance policy."
-    },
     "continuity": {
       "type": "object",
       "additionalProperties": false,
