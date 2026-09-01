@@ -13,7 +13,7 @@ DOCS = ROOT / 'docs' / 'playbooks'
 PLAIN = {
     'core': {
         'name': 'AURA Core',
-        'summary': 'Figure out what the business needs, keep business facts organized, choose the right work, and coordinate work across AURA.',
+        'summary': 'Keep organizational context, evidence, decisions, continuity, and reusable operating knowledge organized so capable AI can work from what the organization already knows.',
         'ask': 'What should we work on first?'
     },
     'competitor-intelligence': {
@@ -56,7 +56,6 @@ PLAIN = {
 
 RESULT_OVERRIDES = {
     'core.diagnosis.business-problem': 'Find the most likely causes of a broad business problem and decide what should be investigated or done next before jumping to a fix.',
-    'core.coordination.multi-domain-request': 'Break one larger request into the right AURA areas, put the work in the right order, and keep the handoffs clear.',
     'competitor.discovery.entity-resolution': 'Make sure websites, social profiles, review pages, ad profiles, and other sources belong to the correct competitor before combining the evidence.',
     'competitor.analysis.strength-weakness': 'Identify specific competitor strengths and weaknesses that matter to customers and the business.',
     'content.intelligence.creative-pattern-extraction': 'Find the reusable idea or structure behind strong content without copying the original creator.',
@@ -65,11 +64,11 @@ RESULT_OVERRIDES = {
     'customer.analysis.objections': 'Identify the objections that stop or delay customers and understand where each objection matters.',
     'customer.analysis.decision-drivers': 'Identify what makes customers choose, delay, switch, or decide not to buy.',
     'customer.analysis.insight-refresh': 'Keep customer insights current and update them when new evidence conflicts with what was previously believed.',
-    'customer-optimization.journey.instrumentation': 'Set up tracking so AURA can see how customers move from one important journey stage to another.',
+    'customer-optimization.journey.instrumentation': 'Determine whether customer-journey transitions can be measured reliably and improve the real source instrumentation when that work is requested.',
     'customer-optimization.instrumentation.data-quality': 'Check that customer-journey tracking and measurements are reliable enough to use for decisions.',
     'industry.monitoring.news': 'Find important news developments that could affect the business.',
     'industry.monitoring.regulation': 'Find and explain important regulation or standards changes that could affect the business.',
-    'industry.event.detect': 'Save an important industry event in the correct AURA record so it can be verified, analyzed, and reused.',
+    'industry.event.detect': 'Preserve an important industry event with enough evidence and context for later verification, analysis, and reuse.',
     'industry.analysis.event-verification': 'Check the important facts about an industry event before using it for business decisions.',
     'industry.analysis.materiality': 'Decide whether an industry event is important enough to change a business decision or action.',
     'industry.analysis.business-impact': 'Explain the specific ways an industry event could affect this business.',
@@ -184,13 +183,13 @@ def write_root(registry, installed):
     lines = [
         '# What AURA Can Do', '',
         'This is the plain-language guide to the work AURA can help with.', '',
-        '**You do not need to choose a playbook before asking for help.** Tell AURA what you want to accomplish in normal language. It should choose the right work for you. Use this guide when you want to browse what is possible or understand how a job works.', '',
+        '**You do not need to choose a playbook before asking for help.** Tell the AI what you want to accomplish in normal language. AURA can supply relevant organizational memory and reusable operating knowledge; the active model/user chooses the method. Use this guide when you want to browse what is possible or understand how a job works.', '',
         f'This copy currently includes **{total} detailed playbooks** across the installed AURA areas. The contracts and process maps remain the source of truth; this guide is only a simpler view of them.', '',
         '## How to use this guide', '',
         '- **Just ask:** “Research our competitors and tell me what matters.”',
         '- **Browse an area:** open one of the sections below.',
         '- **Ask about a playbook:** “Show me how Review Intelligence works.”',
-        '- **Ask for exact execution:** “Show me the detailed steps, inputs, outputs, and evidence rules for that playbook.”', '',
+        '- **Ask for the detailed method:** “Show me the steps, inputs, outputs, and evidence rules for that playbook.”', '',
         '## AURA areas', ''
     ]
     for s in ORDER:
@@ -200,21 +199,20 @@ def write_root(registry, installed):
         lines += [f"### [{info['name']}]({page})", '', info['summary'], '', f'**{count} detailed playbooks.**', '', f'*Try:* “{info["ask"]}”', '']
     lines += [
         '## What a playbook means', '',
-        'A playbook is a repeatable way for AURA to do a specific job. A playbook can tell the AI:', '',
-        '1. **When to run the job.**',
+        'A playbook is reusable operating knowledge for a specific kind of job. It can tell the AI:', '',
+        '1. **When the method is useful.**',
         '2. **What information or evidence it needs.**',
-        '3. **Which tools or capabilities may be useful.**',
-        '4. **What steps to take.**',
-        '5. **What to save so the work can be reused later.**',
-        '6. **What to check before calling the job complete.**',
-        '7. **Where useful findings should go next.**', '',
-        'AURA can combine several playbooks when one business request needs more than one kind of work.', '',
+        '3. **Which capabilities may help.**',
+        '4. **What substantive work the method includes.**',
+        '5. **What durable results or evidence may be worth remembering.**',
+        '6. **What quality or verification checks materially define good work.**', '',
+        'The active model/user may combine relevant playbook knowledge when one business request spans several kinds of work. The playbooks do not form an internal service or routing graph.', '',
     ]
     if 'customer-intelligence' in installed:
         lines += [
             '## Worked example', '',
             '### [Research public reviews and conversations](docs/playbooks/examples/research-public-reviews.md)', '',
-            'See a plain-language example of how AURA can find reviews, preserve the source text and screenshots when useful and allowed, remove duplicates, analyze themes and customer language, save reusable evidence, and route useful findings to the installed AURA areas that can use them.', '',
+            'See a plain-language example of how a capable AI can use AURA context and operating knowledge to find reviews, preserve useful source text and screenshots when allowed, remove duplicates, analyze themes and customer language, save reusable evidence, and reuse relevant findings directly in later work.', '',
         ]
     lines += [
         '## For advanced users', '',
@@ -243,7 +241,7 @@ def write_domain(registry, system):
         lines.append(f'- **{title_md}** — {result}')
         if cid: seen.add(cid)
     lines += ['', '## More detailed playbooks','',
-              'These are smaller, specific playbooks AURA can use inside the larger jobs above. The names are kept simple here; open the linked contract or ask AURA to explain one if you want the exact steps.','']
+              'These are smaller, specific playbooks whose knowledge may help inside the larger jobs above. The names are kept simple here; open the linked contract or ask the AI to explain one if you want the exact method.','']
     groups={}
     for c in plays:
         parts=c['id'].split('.')
@@ -257,8 +255,8 @@ def write_domain(registry, system):
             lines.append(f"- [{c.get('title',c['id'])}]({link}){marker}")
         lines.append('')
     lines += ['## Want to see exactly how one works?','',
-              'Ask AURA something like:', '',
-              f'> “Show me the exact steps for {plays[0].get("title") if plays else "this playbook"}, including what it reads, what it saves, and how it knows when it is done.”','',
+              'Ask the AI something like:', '',
+              f'> “Show me the exact method for {plays[0].get("title") if plays else "this playbook"}, including what it reads, what it may save, and the important quality checks.”','',
               'The linked contract is the authoritative version. This page is only a simpler map for people.','']
     outfile.write_text('\n'.join(lines),encoding='utf-8')
 
@@ -281,55 +279,55 @@ def write_review_example(registry, installed):
         c=cmap.get(cid)
         if c: links.append((c['title'],rel_link(out,c['path']),cid))
     lines=['# Example Playbook Flow: Research Public Reviews and Conversations','',
-           'This example shows what a user-level request can turn into inside AURA. It is **not a second set of rules**. The linked contracts remain authoritative.','',
+           'This example shows how a capable AI can use AURA memory and operating knowledge for one user-level request. It is **not a second set of rules**. The linked contracts remain authoritative.','',
            '## What the user can say','',
            '> “Research what customers are saying about us and our competitors. Find the biggest complaints, praise, objections, and useful customer language.”','',
            'The user does not need to name websites, tools, folders, contracts, or AURA systems unless they want to.','',
-           '## What AURA does','',
+           '## How the work can proceed','',
            '### 1. Define what the research needs to answer','',
-           'AURA uses the business, market, product/service, competitors, time window, and current decision to decide what evidence is worth collecting. It should not search every possible source just because a source exists.','',
+           'The AI uses relevant organizational context, the market, product/service, competitors, time window, and current decision to judge what evidence is worth collecting. It should not search every possible source just because a source exists.','',
            '### 2. Find the right review and conversation sources','',
            'Depending on the business, useful sources might include Google Business Profile, Trustpilot, Yelp, Reddit, industry review sites, social platforms, marketplaces, app stores, owned reviews, support data, or other relevant public/first-party sources. These are examples, not a fixed checklist.','',
            '### 3. Collect allowed source evidence','',
-           'For each useful review or public conversation, AURA first opens or retrieves the underlying item. A search result or URL can help find evidence, but it is not enough by itself for an important supported conclusion. AURA preserves the information that is actually available and allowed, such as:', '',
+           'For each useful review or public conversation, the active model/harness first opens or retrieves the underlying item. A search result or URL can help find evidence, but it is not enough by itself for an important supported conclusion. Preserve the information that is actually available and allowed, such as:', '',
            '- review/comment text', '- rating', '- date or timestamp', '- source/platform', '- page or permalink', '- product, service, location, or thread context', '- public author label only when it is needed', '- useful public context such as thread or engagement information', '',
            '### 4. Preserve a screenshot or snapshot when it adds value','',
-           'AURA normally keeps the useful source text and metadata so the evidence can be searched and checked later. A screenshot is extra preservation, not a requirement for every review. When the source permits it and visual context, proof value, or page change risk matters, AURA can capture the original page/review as a screenshot or snapshot and link it to the same source record.','',
+           'Useful source text and metadata should normally remain searchable and checkable later. A screenshot is extra preservation, not a requirement for every review. When the source permits it and visual context, proof value, or page-change risk matters, the active model/harness can capture the original page/review and link it to the same source evidence.','',
            '### 5. Remove duplicates','',
-           'AURA removes exact duplicates, syndicated copies, reposts, and repeated captures while keeping genuinely different people or meaningful follow-up comments separate.','',
+           'Remove exact duplicates, syndicated copies, reposts, and repeated captures while keeping genuinely different people or meaningful follow-up comments separate.','',
            '### 6. Analyze each piece of evidence','',
-           'AURA can extract:', '',
+           'The AI can extract:', '',
            '- praise', '- complaints', '- pain points', '- desired outcomes', '- expectations', '- objections', '- comparisons', '- buying or switching signals', '- use cases', '- before/after statements', '- feature or service requests', '- exact customer wording', '- sentiment about specific parts of the experience', '',
-           'Direct customer statements stay separate from AURA interpretation. If the original evidence was not preserved or cannot be reliably revisited, the interpretation stays provisional instead of being marked as fully supported.','',
+           'Direct customer statements stay separate from interpretation. If the original evidence was not preserved or cannot be reliably revisited, the interpretation stays provisional instead of being marked as fully supported.','',
            '### 7. Look for patterns across the evidence','',
-           'AURA compares reviews and conversations to find recurring themes, emerging issues, differences between products/locations/segments, and contradictions with other evidence such as interviews, support conversations, or sales calls.','',
+           'Compare reviews and conversations to find recurring themes, emerging issues, differences between products/locations/segments, and contradictions with other evidence such as interviews, support conversations, or sales calls.','',
            '### 8. Save reusable business knowledge','',
            'Useful evidence can become linked AURA objects instead of disappearing inside one chat:', '',
            '- **SourceRecord** — where the evidence came from', '- **Asset** — a screenshot or snapshot when one was captured', '- **Observation** — what was directly observed', '- **Insight** — a supported pattern or conclusion', '- **ProofRecord** — reusable proof/testimonial evidence when the claim and permission rules support it', '',
-           '### 9. Route useful findings to the right next work','',
-           'One review can matter in several places without being copied into separate truth stores. AURA routes a finding only to areas installed in this copy and only when the finding is relevant.', '',
-           '- a repeated complaint can inform **Customer Intelligence**',
+           '### 9. Reuse useful findings directly','',
+           'One finding can matter to several kinds of work without being copied into separate truth stores or routed through internal AURA services. The active model can apply the same supported evidence wherever it is relevant:', '',
+           '- a repeated complaint can inform customer understanding',
     ]
     if 'competitor-intelligence' in installed:
-        lines.append('- a competitor complaint can inform **Competitor Intelligence**')
+        lines.append('- a competitor complaint can inform competitor analysis')
     if 'customer-optimization' in installed:
-        lines.append('- checkout or service friction can inform **Customer Optimization**')
+        lines.append('- checkout or service friction can inform customer-journey improvement')
     if 'marketing-synthesis' in installed:
-        lines.append('- strong customer language can inform **Marketing Synthesis**')
+        lines.append('- strong customer language can inform marketing')
     if 'content-synthesis' in installed:
-        lines.append('- supported proof can be reused in **Content Synthesis** when relevant')
+        lines.append('- supported proof can be reused in content when relevant')
     if 'seo-aeo' in installed:
-        lines.append('- supported proof can be reused in **SEO/AEO** when relevant')
+        lines.append('- supported proof can be reused in SEO/AEO when relevant')
     lines += ['',
            '### 10. Stop when more collection is unlikely to change the decision','',
-           'AURA should collect enough evidence to answer the current question responsibly. It should not keep scraping or researching simply because more data is available. If the job needs ongoing monitoring, it can preserve what was checked and later look for meaningful changes.','',
+           'Collect enough evidence to answer the current question responsibly. Do not keep researching simply because more data is available. If the organization wants ongoing monitoring, AURA may preserve the monitoring intent and prior evidence; the active host/runtime owns any actual recurring schedule or future check.','',
            '## What the user should get back','',
            'The final result should be useful to a business person, not just a pile of saved reviews. A good result could include:', '',
            '- the most important themes', '- what customers repeatedly praise or dislike', '- useful exact customer language', '- differences between the business and competitors', '- important uncertainties or evidence gaps', '- links/citations back to the source evidence', '- saved screenshots where useful and allowed', '- the best next action supported by the evidence', '',
            '## Authoritative AURA playbooks','']
     for title,link,cid in links:
         lines.append(f'- [{title}]({link}) — `{cid}`')
-    lines += ['', 'These contracts define the actual operating rules. This page only explains the flow in simpler language.','']
+    lines += ['', 'These contracts define the actual operating knowledge. This page only explains the flow in simpler language.','']
     out.write_text('\n'.join(lines),encoding='utf-8')
 
 
