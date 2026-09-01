@@ -5,7 +5,7 @@
 
 ViralTrac AURA is a portable, local-first **AI-native BusinessOS** that gives capable AI durable organizational memory, reusable operating knowledge, and lightweight continuity.
 
-AURA helps an AI understand the business, reuse relevant context and evidence, apply proven playbooks when useful, do real work through the tools available to it, and preserve what should matter later.
+AURA helps an AI understand the business, reuse relevant context and evidence, use relevant playbooks when useful, do real work through the tools available to it, and preserve what should matter later.
 
 AURA is **not** the AI model, agent harness, scheduler, provider router, permission system, or proprietary runtime.
 
