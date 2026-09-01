@@ -36,6 +36,8 @@ AURA = helps the AI understand and remember the organization
 Tools = help the AI browse, create, analyze, publish, measure, or do other work
 ```
 
+AURA does not open its own chat window or start working by itself. You use AURA through an AI tool that can access its files.
+
 The goal is simple:
 
 **understand → retrieve → work → remember → measure → learn → continue**
@@ -50,7 +52,22 @@ You may see a few common words when using AURA.
 
 **Harness** — the app or program the AI works inside. It gives the AI access to files and tools. In most cases, you can simply think of this as your **AI tool** and ignore the word “harness” unless you need the technical detail.
 
-You do not need to memorize any of these terms. The important part is that the AI tool needs access to the AURA folder if you want it to use AURA.
+You do not need to memorize any of these terms.
+
+## What kind of AI tool works with AURA?
+
+The normal AURA experience needs an AI tool that can access the AURA folder and save files there.
+
+Different AI tools do this in different ways. You may:
+
+- open a folder or workspace inside the AI app;
+- run the AI tool from inside the AURA folder;
+- choose a folder the AI is allowed to use;
+- tell the AI the path to the AURA folder when the tool already has local file access.
+
+Some tools automatically read AURA's instruction files when they enter the folder. Others need you to say that you want them to use AURA.
+
+If an AI app can only chat and cannot access local files, it cannot use AURA as a shared local memory system in the normal way. You may be able to upload individual AURA files manually, but that is less automatic and does not give the same ongoing shared workspace.
 
 ## What do I need?
 
@@ -62,6 +79,16 @@ For the basic experience, you need only:
 You do **not** need Git, Obsidian, cloud storage, ViralTrac, FFmpeg, yt-dlp, a server, or a special database just to use AURA.
 
 Those can be useful later, but they are optional.
+
+## Does local-first mean my data never leaves my computer?
+
+Not necessarily.
+
+AURA keeps its own files locally by default. But the AI tool you use may send some of the information it reads to a cloud AI provider so the model can work with it.
+
+If privacy matters, check how your AI tool and model handle data. A local AI model can keep more of the work on your own device, while a cloud model may process information on outside servers.
+
+AURA should not be used as a place to casually store passwords, API keys, private keys, or other secrets. Keep credentials in the secure system that normally manages them.
 
 ## Get started
 
@@ -330,6 +357,10 @@ If your AI tool cannot run commands, it may still be able to read AURA files, bu
 ### “My AI does not seem to know AURA exists.”
 
 Make sure the AI can access the AURA folder. Work from inside the folder when your AI tool supports that, or tell the AI directly where the folder is and ask it to use AURA for the business.
+
+### “My AI tool cannot open local folders.”
+
+That tool cannot provide the normal AURA experience by itself. Use an AI tool that can work with local files, or manually provide the needed AURA files when the tool allows uploads. Manual uploads are less seamless because the AI does not share one live organization workspace automatically.
 
 ### “AURA is asking which business I mean.”
 
