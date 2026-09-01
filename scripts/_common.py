@@ -239,10 +239,6 @@ def publisher_metadata():
     p=PRODUCT_ROOT/'PUBLISHER.json'
     if not p.exists(): return {}
     return json.loads(p.read_text())
-def provider_registry():
-    p=PRODUCT_ROOT/'core/providers/registry.json'
-    if not p.exists(): return {'format_version':'1.0','providers':[]}
-    return json.loads(p.read_text())
 def module_catalog():
     p=PRODUCT_ROOT/'distribution/module-catalog.json'
     if not p.exists(): return {}
@@ -287,5 +283,5 @@ def object_matches(obj,selector):
         if obj.get(k)!=v: return False
     return True
 def refs_in_object(obj):
-    pat=re.compile(r'\b(?:src|sprof|obs|ins|prf|opp|ini|act|wrk|apr|chg|ver|ast|mdef|mobs|exp|eval|lrn|inc|att|plc|cup|cmp|plt|jrn|iev|ocs|odm|sas|aud|brd|biz|eco|mkt|obj|off|prd|clm)_[A-Za-z0-9_-]+\b')
+    pat=re.compile(r'\b(?:src|sprof|obs|ins|prf|opp|ini|wrk|chg|ver|ast|mdef|mobs|exp|eval|lrn|inc|att|plc|cup|cmp|plt|jrn|iev|ocs|odm|sas|aud|brd|biz|eco|mkt|obj|off|prd|clm)_[A-Za-z0-9_-]+\b')
     return set(pat.findall(json.dumps(obj)))
