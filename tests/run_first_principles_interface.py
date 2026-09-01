@@ -6,7 +6,7 @@ import json,os,tempfile,sys
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'scripts'))
 
-from _common import business_directory,resolve_business
+from _common import business_directory,resolve_business,object_index
 from init_business import init_business
 from bootstrap_explicit_context import persist_explicit_context
 from validate_business import validate_business
@@ -72,7 +72,7 @@ def main():
             # state no longer depends on the object and does not manufacture history.
             forgotten=forget(bid,objective_ref)
             req(forgotten['status']=='forgotten' and not objective_path.exists(),'unreferenced durable object was not safely forgotten')
-            req(objective_ref not in {obj.get('id') for obj,p in []},'forget unexpectedly created replacement state')
+            req(objective_ref not in object_index(bid),'forgotten object remained in canonical organization memory')
             errors,_,_=validate_business(bid,True)
             req(not errors,f'organization must remain valid after safe forgetting: {errors}')
 
