@@ -45,25 +45,39 @@ AURA playbooks describe the kinds of capabilities they need in general terms. Th
 
 ## Work receipts and saving useful results
 
-A Run is an optional work receipt. Create one when remembering a bounded piece of work will help later:
+A Run is an optional work receipt. Create one only when remembering a bounded piece of work will help later:
 
 ```bash
 python3 scripts/create_run.py <business-id> "<task>" --method-type <external_skill|model_created|ad_hoc> [--method-ref <name>]
 ```
 
-If the work deliberately uses an AURA playbook, use that playbook's contract ID.
+If the work actually uses an AURA playbook:
 
-Do not pretend ordinary or outside work used an AURA playbook when it did not.
+```bash
+python3 scripts/create_run.py <business-id> "<task>" --contract-id <playbook-id>
+```
+
+The playbook ID records method provenance. It does **not** create an execution plan, subcontract ledger, capability preflight, permission gate, or special completion regime. Do not pretend ordinary or outside work used an AURA playbook when it did not.
 
 Save only material organization-owned meaning through AURA's supported save helpers. The AI supplies the business meaning. Deterministic helpers can safely supply things such as IDs, timestamps, paths, local references, and format checks.
 
-A work receipt should help a future AI understand what materially happened. It should not become a full chat transcript or hidden-reasoning archive.
+When the receipt itself is worth completing, use the same command for every method:
+
+```bash
+python3 scripts/complete_run.py <business-id> <run-id> --summary "<material result>" [--evidence <ref>] [--result <ref>] [--decision <ref>] [--unresolved <item>]
+```
+
+Completing a Run means only that the useful receipt was closed and its material continuity was preserved. It does not certify playbook conformance, QA, publication readiness, deployment, external authorization, or business outcomes.
+
+A work receipt should help a future AI understand what materially happened. It should not become a full chat transcript, hidden-reasoning archive, or shadow workflow engine.
 
 ## Truth and customer-facing work
 
 AURA can be flexible about how work is done, but it should stay strict about factual claims.
 
 Keep the evidence behind important claims. Never say a scan, render, publication, experiment, measurement, deployment, or outside action happened when it did not.
+
+Artifact QA and production readiness are separate from receipt completion. Use the relevant operating knowledge and deterministic claim/media/readiness checks when they materially protect the actual output.
 
 ## Preferences and instructions
 
@@ -104,6 +118,6 @@ See `integrations/viraltrac/README.md` for integration details.
 
 ## Validation
 
-AURA validation should protect what AURA owns: valid stored records, valid references, correct business separation, truthful evidence links, and the important requirements of an AURA playbook when that playbook was actually used.
+AURA validation should protect what AURA owns: valid stored records, valid references, organization isolation, truthful evidence and provenance, structurally usable artifacts where deterministic checking helps, and non-contradictory durable state.
 
-Validation should not require provider selection, scheduling, browser control, or other runtime machinery that belongs to the AI/harness.
+Validation should not decide semantic strategy, provider choice, evidence sufficiency, permission, scheduling, browser control, or whether the model is allowed to continue working.
