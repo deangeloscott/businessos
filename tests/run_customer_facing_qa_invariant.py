@@ -1,61 +1,59 @@
 #!/usr/bin/env python3
-"""Ensure customer-facing Content production cannot silently skip pre-publish QA."""
+"""Ensure customer-facing production preserves substantive QA without Run orchestration."""
 from pathlib import Path
-import json, shutil, subprocess, sys
+import sys
 
-ROOT=Path(__file__).resolve().parents[1]
-S=ROOT/'scripts'
-BID='customer-facing-qa-invariant'
-BASE=ROOT/'instances'/BID
-RUNS=ROOT/'runtime'/'runs'/BID
+ROOT=Path(__file__).resolve().parents[1];sys.path.insert(0,str(ROOT/'scripts'))
+from _common import read_frontmatter
 
 
 def req(condition,message):
-    if not condition: raise AssertionError(message)
+    if not condition:raise AssertionError(message)
 
 
-def create_manifest(contract_id):
-    p=subprocess.run(
-        [sys.executable,str(S/'create_run.py'),BID,contract_id,'customer-facing QA invariant regression'],
-        cwd=ROOT,capture_output=True,text=True
-    )
-    req(p.returncode==0,f'create_run failed for {contract_id}: {p.stderr+ p.stdout}')
-    rid=p.stdout.strip().splitlines()[-1]
-    path=RUNS/rid/'contract-execution.json'
-    req(path.exists(),f'{contract_id} did not create contract-execution manifest')
-    return json.loads(path.read_text(encoding='utf-8'))
+def load(rel):
+    path=ROOT/rel;meta,body=read_frontmatter(path);return path,meta,body
 
 
 def main():
-    for path in (BASE,RUNS):
-        if path.exists(): shutil.rmtree(path)
-    try:
-        p=subprocess.run([sys.executable,str(S/'init_business.py'),BID,'--name','Customer-facing QA Invariant'],cwd=ROOT,capture_output=True,text=True)
-        req(p.returncode==0,f'init failed: {p.stderr+p.stdout}')
+    pre_path,pre_meta,pre_body=load('systems/content-synthesis/contracts/qa/pre-publish/CONTEXT.md')
+    req(pre_meta.get('id')=='content.qa.pre-publish','shared Content pre-publish QA playbook is missing')
+    req('actual final artifact' in pre_body.lower(),'pre-publish QA must inspect the real rendered/final artifact')
+    req('claim_surface_ref' in pre_body,'opaque/rendered QA lost claim-surface verification')
+    req('accessibility' in pre_body.lower(),'pre-publish QA lost accessibility checks')
+    req('run/work receipt is optional' in pre_body.lower(),'pre-publish QA became Run-dependent again')
 
-        # Media roots that historically described QA only in prose must now receive
-        # the shared Content pre-publish QA requirement in their Run manifest.
-        for cid in ('content.production.infographic','content.production.image'):
-            manifest=create_manifest(cid)
-            required=manifest.get('required_subcontracts') or []
-            req('content.qa.pre-publish' in required,f'{cid} did not inherit content.qa.pre-publish: {required}')
-            req('content.qa.pre-publish' in (manifest.get('contracts') or {}),f'{cid} QA subcontract was not initialized')
+    # Article explicitly composes shared final QA as useful operating knowledge, but the
+    # body makes clear the subprocess list is not an execution ledger.
+    _,article_meta,article_body=load('systems/content-synthesis/contracts/production/article/CONTEXT.md')
+    required=[x.get('id') if isinstance(x,dict) else x for x in ((article_meta.get('subcontracts') or {}).get('required') or [])]
+    req(required.count('content.qa.pre-publish')==1,f'article should reference shared pre-publish QA once: {required}')
+    req('subcontract-completion ledger are optional' in article_body.lower(),'article composition was turned back into mandatory Run conformance')
 
-        # Contracts that already declared pre-publish QA must not receive duplicates.
-        article=create_manifest('content.production.article')
-        required=article.get('required_subcontracts') or []
-        req(required.count('content.qa.pre-publish')==1,f'article duplicated pre-publish QA: {required}')
+    # Native visual methods may perform their relevant final inspection directly rather
+    # than being forced through one universal QA subprocess.
+    _,image_meta,image_body=load('systems/content-synthesis/contracts/production/image/CONTEXT.md')
+    req(image_meta.get('artifact_role')=='customer_facing_production_root','image production lost customer-facing root role')
+    for phrase in ('inspect final image','visual errors','legibility','accessibility'):
+        req(phrase in image_body.lower(),f'image production lost native final QA: {phrase}')
 
-        # Keep the invariant scoped to Content Synthesis. Marketing owns its own QA.
-        landing=create_manifest('marketing.assets.landing-page')
-        required=landing.get('required_subcontracts') or []
-        req('marketing.landing-page.qa' in required,'marketing landing page lost its domain QA subcontract')
-        req('content.qa.pre-publish' not in required,f'Content QA leaked into Marketing run: {required}')
+    _,info_meta,info_body=load('systems/content-synthesis/contracts/production/infographic/CONTEXT.md')
+    req(info_meta.get('artifact_role')=='customer_facing_production_root','infographic production lost customer-facing root role')
+    for phrase in ('inspect the actual final visual','legibility','factual fidelity','accessibility'):
+        req(phrase in info_body.lower(),f'infographic production lost native final QA: {phrase}')
+    req('manual action package' not in info_body.lower(),'infographic recreated retired capability fallback')
 
-        print('customer-facing Content pre-publish QA invariant regressions passed')
-    finally:
-        for path in (BASE,RUNS):
-            if path.exists(): shutil.rmtree(path)
+    # Marketing keeps the same substantive separation without inheriting Content's internal
+    # composition list or a Run-level QA gate.
+    _,landing_meta,landing_body=load('systems/marketing-synthesis/contracts/landing-page/qa/CONTEXT.md')
+    req(landing_meta.get('id')=='marketing.landing-page.qa','landing-page QA playbook missing')
+    for phrase in ('actual available artifact','claim policy','accessibility','no run is required'):
+        req(phrase in landing_body.lower(),f'landing-page QA lost substantive boundary: {phrase}')
+
+    for retired in ('scripts/record_contract_completion.py','scripts/finalize_run.py','scripts/complete_sop_run.py'):
+        req(not (ROOT/retired).exists(),f'QA invariant recreated Run orchestration helper: {retired}')
+
+    print('customer-facing QA regressions passed: substantive artifact QA remains strong without Run execution orchestration')
 
 
-if __name__=='__main__': main()
+if __name__=='__main__':main()
