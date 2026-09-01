@@ -117,7 +117,7 @@ def main():
             ROOT/'core/contracts/routing/resolve-intent',ROOT/'core/contracts/coordination/multi-domain-request',
             ROOT/'core/contracts/intelligence/ecosystem/route-learning',ROOT/'core/contracts/intelligence/request-refresh',
             ROOT/'core/contracts/intelligence/evaluate-relevance',ROOT/'systems/marketing-synthesis/contracts/offer/context-proposal',
-            ROOT/'templates/manual-action.md',
+            ROOT/'core/contracts/learning/promote-learning',ROOT/'templates/manual-action.md',
         ]
         for path in retired:require(not path.exists(),f'retired control/router/orchestrator artifact reappeared: {path.relative_to(ROOT)}')
         for path in ROOT.glob('systems/*/contracts/intelligence/relevance-evaluation'):
@@ -125,8 +125,8 @@ def main():
 
         core_map=json.loads((ROOT/'core/process-map.json').read_text())
         entries={a.get('entry_contract') for a in core_map.get('activities',[])}
-        for cid in ['core.routing.resolve-intent','core.coordination.multi-domain-request','core.intelligence.ecosystem.route-learning','core.intelligence.request-refresh','core.intelligence.evaluate-relevance']:
-            require(cid not in entries,f'Core process map reintroduced retired routing/orchestration entry: {cid}')
+        for cid in ['core.routing.resolve-intent','core.coordination.multi-domain-request','core.intelligence.ecosystem.route-learning','core.intelligence.request-refresh','core.intelligence.evaluate-relevance','core.learning.promote-learning']:
+            require(cid not in entries,f'Core process map reintroduced retired routing/orchestration/promotion entry: {cid}')
 
         # Process maps are browse/composition aids, not execution graphs.
         execution_graph_keys={'next','next_contract','depends_on','dependencies','sequence','order','routes_to','delegate_to','on_success','on_failure'}
@@ -204,8 +204,8 @@ def main():
 
         memory_contracts=[
             'core/contracts/intelligence/publish-observation/CONTEXT.md','core/contracts/intelligence/manage-insight/CONTEXT.md',
-            'core/contracts/opportunity/qualify/CONTEXT.md','core/contracts/learning/promote-learning/CONTEXT.md',
-            'core/contracts/measurement/publish-metric/CONTEXT.md','core/contracts/measurement/evaluate-outcome/CONTEXT.md',
+            'core/contracts/opportunity/qualify/CONTEXT.md','core/contracts/measurement/publish-metric/CONTEXT.md',
+            'core/contracts/measurement/evaluate-outcome/CONTEXT.md',
         ]
         runtime_event_pattern=re.compile(r'\bemit\s+[a-z][a-z0-9_-]*\.[a-z][a-z0-9_.-]*',re.I)
         for rel in memory_contracts:
