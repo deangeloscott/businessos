@@ -9,7 +9,6 @@ reads:
 - Asset
 - WorkRequest
 writes:
-- WorkRequest
 - Asset
 capabilities:
   required:
@@ -36,16 +35,16 @@ context:
 Specify the visual/audio demonstration required to express an approved ad angle in the placement.
 
 ## Business Outcome
-Let Content produce native creative without reconstructing commercial persuasion strategy.
+Enable strong native creative without forcing a separate internal domain to reconstruct the commercial persuasion strategy.
 
 ## Run When
-Run when an advertising campaign requires this persuasion or QA sub-process; media buying/targeting execution remains outside this OS.
+Use when an ad angle needs clear visual/audio production requirements; media buying/targeting execution remains outside this method unless separately available and requested.
 
 ## Process
-1. [DETERMINISTIC] Resolve angle, copy, audience, Offer, ProofRecords, destination, and placement/platform specs.
+1. [HYBRID] Resolve angle, copy, audience, Offer, ProofRecords, destination, and placement/platform requirements.
 2. [AI] Define the first-frame/attention mechanism, demonstration/story/visual proof, key message beats, required on-screen text, and CTA.
 3. [AI] Identify what should be shown rather than claimed and which real Proof/Asset must be used.
 4. [HYBRID] Prevent misleading synthetic testimonials/results, visual bait, or creative that targets an irrelevant audience.
-5. [AI] Define format/duration/variant requirements and what is fixed versus open to Content creativity.
-6. [AI] Create Content WorkRequest with exact persuasion/evidence constraints.
-7. [DETERMINISTIC] Verify returned creative against angle/claim/destination before activation.
+5. [AI] Define format/duration/variant requirements and what is fixed versus open to creative execution.
+6. [HYBRID] Preserve the useful creative brief as an Asset and use relevant Content operating knowledge plus the active harness's real generation/rendering capabilities directly when available. Persist a WorkRequest only for a real durable organizational handoff to a separate executor.
+7. [HYBRID] Verify produced creative against angle, claims, and destination before activation when the media is available.
