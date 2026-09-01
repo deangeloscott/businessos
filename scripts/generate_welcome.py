@@ -4,42 +4,48 @@ import json
 
 ROOT=Path(__file__).resolve().parents[1]
 
+
 def load(path):return json.loads((ROOT/path).read_text())
 
+
 def build():
-    inst=load('INSTALLATION.json');cat={m['id']:m for m in load('distribution/module-catalog.json')['modules']};installed=[m for m in inst.get('installed_modules',[]) if m!='core' and m in cat];display=inst.get('display_name','ViralTrac AURA');expansion=inst.get('name_expansion','Agentic Understanding and Reinforcement Architecture')
-    lines=[f'# Welcome to {display}','',f'**AURA = {expansion}.**','',f'Thank you for downloading **{display}**, by **DeAngelo Scott**.','', 'AURA gives a capable AI durable organization-owned context, evidence, reusable operating processes, work continuity, outcomes, and Learning. It is not the AI model, agent harness, tool runtime, scheduler, or permission system.','', '## What this copy can help you do','']
-    if installed:
-        for mid in installed:
-            m=cat[mid];lines.append(f"**{m['display_name']}** — {m['welcome_summary']}");ex=m.get('example_prompts',[])
-            if ex:lines.append(f"*Try:* “{ex[0]}”")
-            lines.append('')
-    else:
-        m=cat['core'];lines += [f"**{m['display_name']}** — {m['welcome_summary']}",'',f"*Try:* “{m['example_prompts'][0]}”",'']
-    combos=[];s=set(installed);candidates=[
-        ({'customer-intelligence','marketing-synthesis'},'Find our biggest customer objection and create a campaign around it.'),
-        ({'industry-intelligence','content-synthesis'},'Find an important industry development and turn it into useful content for our audience.'),
-        ({'competitor-intelligence','marketing-synthesis'},'Find a competitor weakness and turn it into stronger positioning or an offer.'),
-        ({'seo-aeo','content-synthesis'},'Find the highest-value organic content opportunity and create the asset needed to pursue it.'),
-        ({'customer-intelligence','customer-optimization'},'Find why customers are leaving and determine what part of the experience should change.'),
+    inst=load('INSTALLATION.json')
+    cat={m['id']:m for m in load('distribution/module-catalog.json')['modules']}
+    installed=[m for m in inst.get('installed_modules',[]) if m!='core' and m in cat]
+    display=inst.get('display_name','ViralTrac AURA')
+    expansion=inst.get('name_expansion','Agentic Understanding and Reinforcement Architecture')
+    version=inst.get('source_version') or (ROOT/'VERSION').read_text().strip()
+    maturity=str(inst.get('maturity','alpha')).capitalize()
+
+    lines=[
+        f'# Welcome to {display}','',
+        f'**{maturity} · v{version}**  ',
+        f'**AURA = {expansion}.**','',
+        'AURA gives capable AI durable organizational memory, reusable operating knowledge, and lightweight continuity. It is not the AI model, agent harness, tool runtime, scheduler, provider router, or permission system.','',
+        '> Alpha means the architecture is usable and integrity-tested, while real-work quality, playbooks, retrieval, Learning, and usability are still being actively improved before 1.0.','',
+        '## Start','',
+        '1. Give this AURA folder to a capable AI/agent harness.',
+        '2. Tell it about the business and what you want.',
+        '3. Talk normally; you do not need to choose a playbook first.','',
+        'For example:','',
+        '> Use ViralTrac AURA for my business. My company is Acme, our website is acme.com, and I want to grow qualified leads. Use what we already know and help me get the highest-value work done.','',
+        '## What this copy can help with',''
     ]
-    for req,prompt in candidates:
-        if req<=s:combos.append(prompt)
-    if len(s)>=4:combos.insert(0,'Identify our highest-value business opportunities and coordinate the useful work needed to pursue them.')
-    if combos:
-        lines += ['## You can also combine these capabilities','']+[f'- “{p}”' for p in combos[:3]]+['']
+    for mid in installed:
+        m=cat[mid]
+        lines.append(f"- **{m['display_name']}** — {m['welcome_summary']}")
+    if not installed:
+        m=cat['core'];lines.append(f"- **{m['display_name']}** — {m['welcome_summary']}")
+
     lines += [
-        '## You do not need to know the right workflow','',
-        'Describe a business problem or desired result in plain language. The active AI should retrieve relevant AURA memory, surface a useful AURA playbook when one fits, use its actual harness/tools normally, do the real work, and preserve only the material organizational meaning worth carrying forward.','',
-        'If you are not sure where to begin, try:','',
-        '- “What can you help me with?”','- “What should we work on first?”','- “Here is my business. Find the biggest opportunities you can help with using what is installed.”','',
-        'If you want to browse specific jobs, open **`PLAYBOOKS.md`** or ask “Show me what ViralTrac AURA can do.” You still do not need to choose a playbook before asking for help.','',
-        '## To get started','',
-        '**Tell the agent your business name, website if you have one, and what you want to accomplish.** If that context already exists in AURA, it should reuse it instead of asking again.','',
-        'ViralTrac is AURA’s optional first-party companion for tracking, attribution, measurement, SmartLinks, and supported growth-operation surfaces. AURA should also work before ViralTrac, alongside it, or without it.','',
-        'The invariant is simple: **AURA provides organizational memory and operational knowledge; the active intelligence/runtime determines how best to work.**',''
+        '',
+        'A capable AI should retrieve the smallest useful AURA context, use an AURA playbook when it helps, use its actual tools/capabilities normally, do the substantive work, and preserve only material organizational meaning worth carrying forward.','',
+        'If you want to browse specific jobs, open **`PLAYBOOKS.md`**. For the shortest setup guide, open **`START-HERE.md`**.','',
+        'ViralTrac is an optional first-party companion for tracking, attribution, measurement, experiments, and supported growth-operation surfaces. AURA also works without it.','',
+        '**Core invariant:** AURA provides organizational memory and operating knowledge; capable intelligence determines how best to work.',''
     ]
     return '\n'.join(lines)
+
 
 if __name__=='__main__':
     out=ROOT/'WELCOME.md';out.write_text(build());print(out)
