@@ -16,11 +16,13 @@ GENERIC=[
     r'Run when .* evidence is required for a current intelligence need, refresh, monitoring cycle, or decision',
     r'Improve valuable organic discovery and its contribution to business outcomes while preserving domain boundaries and evidence lineage'
 ]
+RETIRED_CONTRACT_METADATA={'version','risk','autonomy_ceiling','events','schedule'}
 
 
 def main():
-    errors=[];warnings=[];ids={}
+    errors=[];warnings=[];ids={};usedcaps=set()
     capcat=json.loads((ROOT/'core/capabilities/catalog.json').read_text());validcaps={x['id'] for x in capcat['capabilities']}
+    if 'version' in capcat:errors.append('core/capabilities/catalog.json: redundant product version field; VERSION/INSTALLATION.json are the product-version authority')
     owners=installed_modules();declared=installation().get('installed_modules',[])
     present={'core'} | ({p.name for p in (ROOT/'systems').iterdir() if p.is_dir()} if (ROOT/'systems').exists() else set())
     if set(declared)!=present:errors.append(f'INSTALLATION.json modules {sorted(declared)} do not match present modules {sorted(present)}')
@@ -31,8 +33,10 @@ def main():
         try:meta,body=read_frontmatter(p)
         except Exception as exc:errors.append(str(exc));continue
         rel=str(p.relative_to(ROOT));cid=meta.get('id')
-        for key in ['id','type','version','owner_system','reads','writes','capabilities']:
+        for key in ['id','type','owner_system','reads','writes','capabilities']:
             if key not in meta:errors.append(f'{rel}: missing metadata {key}')
+        retired=sorted(RETIRED_CONTRACT_METADATA&set(meta))
+        if retired:errors.append(f'{rel}: retired/redundant contract metadata remains: {retired}')
         if cid:
             if cid in ids:errors.append(f'{rel}: duplicate id also at {ids[cid]}')
             ids[cid]=rel
@@ -42,10 +46,12 @@ def main():
         proc=re.search(r'## Process\n(.*?)(?=\n## |\Z)',body,re.S)
         if proc is not None and not proc.group(1).strip():errors.append(f'{rel}: empty Process section')
 
-        # Capabilities describe provider-neutral needs of an SOP. They are not claims
-        # about what the current host has installed or permission to use.
+        # Capabilities are only provider-neutral needs actually referenced by current SOPs.
+        # Live availability and provider/tool choice belong to the active harness/runtime.
         for cap in meta.get('capabilities',{}).get('required',[])+meta.get('capabilities',{}).get('optional',[]):
-            if cap!='none' and cap not in validcaps:errors.append(f'{rel}: unknown capability {cap}')
+            if cap=='none':continue
+            usedcaps.add(cap)
+            if cap not in validcaps:errors.append(f'{rel}: unknown capability {cap}')
         for sel in meta.get('reads',[]):
             typ=selector_type(sel)
             if typ not in sreg:errors.append(f'{rel}: non-canonical read selector {sel}')
@@ -68,6 +74,9 @@ def main():
         for pat in legacy_patterns:
             if re.search(pat,body):errors.append(f'{rel}: legacy artifact matches {pat}')
 
+    unused=sorted(validcaps-usedcaps)
+    if unused:errors.append(f'core/capabilities/catalog.json: unreferenced capability vocabulary should be removed: {unused}')
+
     all_ids=set(ids)
     for p in contract_files():
         meta,_=read_frontmatter(p);subcontracts=meta.get('subcontracts') or {}
@@ -82,6 +91,7 @@ def main():
     for mp in map_paths:
         try:data=json.loads(mp.read_text())
         except Exception as exc:errors.append(f'{mp.relative_to(ROOT)} invalid JSON: {exc}');continue
+        if 'version' in data:errors.append(f'{mp.relative_to(ROOT)}: redundant process-map version; VERSION/INSTALLATION.json are the product-version authority')
         seen=set()
         for activity in data.get('activities',[]):
             aid=activity.get('id');entry=activity.get('entry_contract')
@@ -120,8 +130,6 @@ def main():
             if not clean or clean.startswith(('http://','https://','mailto:','#')):continue
             if not (page.parent/clean).resolve().exists():errors.append(f'{page.relative_to(ROOT)}: broken local link {target}')
 
-    # These are actual AURA product responsibilities. Runtime/provider adapters may be
-    # present, but AURA remains valid without them.
     required_core=[
         'CONTEXT.md','core/DEFAULTS.md','core/policies/agent-execution.md',
         'core/policies/active-business-truth.md','core/policies/evidence.md','core/policies/provenance.md',
