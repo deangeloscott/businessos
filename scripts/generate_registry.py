@@ -30,7 +30,7 @@ def _write_task_navigator(process_maps,inst):
 
 
 def main():
-    gen=ROOT/'generated';gen.mkdir(exist_ok=True);contracts=[];ids=set();caps={};deps={};routes=[]
+    gen=ROOT/'generated';gen.mkdir(exist_ok=True);contracts=[];ids=set();caps={};deps={};candidate_rows=[]
     for p in contract_files():
         meta,body=read_frontmatter(p);cid=meta.get('id')
         if not cid:continue
@@ -45,13 +45,13 @@ def main():
             if c!='none':caps.setdefault(c,[]).append(cid)
         deps[cid]={'context':meta.get('context',[]),'reads':rec['read_selectors'],'writes':rec['write_types'],'evidence_inputs':meta.get('evidence_inputs',[])}
         title_tokens=_tokens(title);purpose_tokens=_tokens(purpose);run_when_tokens=_tokens(run_when);id_tokens=_tokens(cid.replace('.',' ').replace('-',' '))
-        routes.append({'contract_id':cid,'owner_system':meta.get('owner_system'),'tokens':sorted(set(title_tokens+purpose_tokens+run_when_tokens+id_tokens)),'title_tokens':title_tokens,'purpose_tokens':purpose_tokens,'run_when_tokens':run_when_tokens})
+        candidate_rows.append({'contract_id':cid,'owner_system':meta.get('owner_system'),'tokens':sorted(set(title_tokens+purpose_tokens+run_when_tokens+id_tokens)),'title_tokens':title_tokens,'purpose_tokens':purpose_tokens,'run_when_tokens':run_when_tokens})
     (gen/'contract-registry.json').write_text(json.dumps({'version':os_version(),'contracts':contracts},indent=2)+'\n',encoding='utf-8')
     (gen/'system-registry.json').write_text(json.dumps({'systems':sorted(set(c.get('owner_system') for c in contracts if c.get('owner_system')))},indent=2)+'\n',encoding='utf-8')
     (gen/'capability-usage-index.json').write_text(json.dumps(caps,indent=2)+'\n',encoding='utf-8')
     (gen/'context-dependency-index.json').write_text(json.dumps(deps,indent=2)+'\n',encoding='utf-8')
-    (gen/'route-index.json').write_text(json.dumps(routes,indent=2)+'\n',encoding='utf-8')
-    for obsolete in ('event-subscription-index.json','schedule-index.json'):
+    (gen/'playbook-candidate-index.json').write_text(json.dumps(candidate_rows,indent=2)+'\n',encoding='utf-8')
+    for obsolete in ('event-subscription-index.json','schedule-index.json','route-index.json'):
         op=gen/obsolete
         if op.exists():op.unlink()
     process_maps=[];map_paths=[]
