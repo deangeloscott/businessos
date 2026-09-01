@@ -77,9 +77,6 @@ def _provenance_errors(objects,sources):
             errors.append(f'{path} explicit_user source {srcid} is not marked explicit_user authority')
             continue
 
-        # Exact authorized outward claims need exact evidence. General business context
-        # may be semantically normalized by the capable model as long as its source and
-        # authority are preserved; deterministic AURA does not re-interpret language.
         if typ=='BusinessClaim':
             if obj.get('authority')!='explicit_user':
                 errors.append(f'{path} explicit-user BusinessClaim must declare authority=explicit_user')
@@ -97,7 +94,7 @@ def _provenance_errors(objects,sources):
     return errors
 
 
-def validate_business(business_id,require_context=False,active_run_id=None):
+def validate_business(business_id,require_context=False):
     errors=[];warnings=[];base=ROOT/'instances'/business_id
     if not base.exists() or not base.is_dir():return [f'Unknown business: {business_id}'],warnings,{}
     try:inst=json.loads((base/'instance.json').read_text())
@@ -131,7 +128,7 @@ def validate_business(business_id,require_context=False,active_run_id=None):
             if typ=='SourceRecord' and oid:sources[oid]=obj
     errors.extend(_provenance_errors(objects,sources))
     errors.extend(claim_errors(business_id,objects))
-    errors.extend(run_completion_errors(business_id,objects,active_run_id))
+    errors.extend(run_completion_errors(business_id,objects))
     errors.extend(readiness_errors(business_id,objects))
     og_errors,og_warnings=opportunity_grounding_errors(business_id,objects);errors.extend(og_errors);warnings.extend(og_warnings)
     re_errors,re_warnings=evidence_errors(business_id);errors.extend(re_errors);warnings.extend(re_warnings)
