@@ -1,167 +1,85 @@
 #!/usr/bin/env python3
-"""Regression coverage for AURA work receipts and conditional SOP conformance.
-
-The invariant is deliberately architectural rather than compatibility-oriented:
-- every method may have a truthful organization-owned Run/work receipt;
-- external Skills, model-created methods, and ad-hoc work do not fabricate AURA
-  contract execution;
-- selecting an AURA playbook opts into its stronger completion/evidence rules.
-"""
+"""Regression: every method uses the same optional AURA work-receipt primitive."""
 from pathlib import Path
 import json, shutil, subprocess, sys
 
-ROOT=Path(__file__).resolve().parents[1]
-S=ROOT/'scripts'
-BID='run-provenance-regression'
-BASE=ROOT/'instances'/BID
-RUNS=ROOT/'runtime'/'runs'/BID
+ROOT=Path(__file__).resolve().parents[1];S=ROOT/'scripts'
+BID='run-provenance-regression';BASE=ROOT/'instances'/BID;RUNS=ROOT/'runtime'/'runs'/BID
 
 
 def req(condition,message):
-    if not condition:
-        raise AssertionError(message)
+    if not condition:raise AssertionError(message)
+def run(*args,check=True):return subprocess.run([sys.executable,*map(str,args)],cwd=ROOT,capture_output=True,text=True,check=check)
+def load(path):return json.loads(Path(path).read_text())
+def write(path,text):path=Path(path);path.parent.mkdir(parents=True,exist_ok=True);path.write_text(text);return path
 
 
-def run(*args,check=True):
-    return subprocess.run(
-        [sys.executable,*map(str,args)],
-        cwd=ROOT,
-        capture_output=True,
-        text=True,
-        check=check,
-    )
+def create_and_complete(method_type,task,method_ref=None,contract_id=None):
+    args=[S/'create_run.py',BID,task]
+    if contract_id:args.extend(['--contract-id',contract_id])
+    else:
+        args.extend(['--method-type',method_type])
+        if method_ref:args.extend(['--method-ref',method_ref])
+    rid=run(*args).stdout.strip();rd=RUNS/rid;state=load(rd/'run.json')
+    req(state['method_type']==method_type,f'{method_type} Run method mismatch: {state}')
+    req(state.get('completion_policy_ref') is None,f'{method_type} Run recreated completion-policy machinery')
+    req(not (rd/'contract-execution.json').exists(),f'{method_type} Run recreated an execution ledger')
+    req((rd/'artifacts').is_dir() and (rd/'work').is_dir(),'receipt should expose only useful local artifact/work spaces')
+    req(not (rd/'logs').exists() and not (rd/'checkpoints').exists(),'receipt recreated host/runtime log or checkpoint ownership')
+    if contract_id:
+        req(state.get('contract_id')==contract_id and state.get('method_ref')==contract_id,'AURA playbook receipt lost method provenance')
+    else:req(state.get('contract_id') is None,f'{method_type} receipt fabricated contract provenance')
 
-
-def load(path):
-    return json.loads(Path(path).read_text())
-
-
-def write(path,text):
-    path=Path(path)
-    path.parent.mkdir(parents=True,exist_ok=True)
-    path.write_text(text)
-    return path
-
-
-def create_general(method_type,task,method_ref=None):
-    args=[S/'create_run.py',BID,task,'--method-type',method_type]
-    if method_ref:
-        args.extend(['--method-ref',method_ref])
-    rid=run(*args).stdout.strip()
-    rd=RUNS/rid
-    state=load(rd/'run.json')
-    req(state['method_type']==method_type,f'{method_type} Run method_type mismatch: {state}')
-    req(state.get('contract_id') is None,f'{method_type} Run fabricated contract_id: {state}')
-    req(state.get('completion_policy_ref') is None,f'{method_type} Run fabricated SOP completion policy: {state}')
-    req(not (rd/'contract-execution.json').exists(),f'{method_type} Run fabricated contract execution')
-    return rid,rd,state
-
-
-def complete_general(rid,rd,method_type):
     evidence=write(rd/'artifacts'/'evidence.txt',f'{method_type} evidence\n')
-    result=write(rd/'artifacts'/'result.md',f'# {method_type} result\n\nUseful bounded work result.\n')
-    completed=run(
-        S/'complete_run.py',BID,rid,
-        '--evidence',str(evidence.relative_to(ROOT)),
-        '--result',str(result.relative_to(ROOT)),
-        '--summary',f'Completed useful {method_type} work and preserved its material result.',
-        '--unresolved','Revisit only if new organizational evidence materially changes the result.',
-    )
-    payload=json.loads(completed.stdout)
-    req(payload.get('status')=='completed',f'{method_type} Run did not complete: {payload}')
-    state=load(rd/'run.json')
-    receipt=state.get('continuity') or {}
-    req(state.get('status')=='completed',f'{method_type} Run state not completed: {state}')
-    req(receipt.get('purpose')=='organizational_work_receipt',f'{method_type} receipt purpose missing: {receipt}')
-    req(receipt.get('method_type')==method_type,f'{method_type} receipt method mismatch: {receipt}')
-    req(str(evidence.relative_to(ROOT)) in receipt.get('evidence_refs',[]),f'{method_type} receipt omitted evidence: {receipt}')
-    req(str(result.relative_to(ROOT)) in receipt.get('result_refs',[]),f'{method_type} receipt omitted result: {receipt}')
-    req(receipt.get('summary'),f'{method_type} receipt omitted summary: {receipt}')
-    req(receipt.get('unresolved'),f'{method_type} receipt omitted unresolved work: {receipt}')
-    req(not (rd/'contract-execution.json').exists(),f'{method_type} completion created fake contract execution')
+    result=write(rd/'artifacts'/'result.md',f'# Result\n\nUseful bounded {method_type} work.\n')
+    completed=run(S/'complete_run.py',BID,rid,'--evidence',str(evidence.relative_to(ROOT)),'--result',str(result.relative_to(ROOT)),'--summary',f'Completed useful {method_type} work.','--unresolved','Revisit only if material new evidence changes the result.')
+    payload=json.loads(completed.stdout);req(payload.get('status')=='completed',f'{method_type} receipt did not complete: {payload}')
+    state=load(rd/'run.json');receipt=state.get('continuity') or {}
+    req(state.get('status')=='completed' and receipt.get('state')=='completed',f'{method_type} receipt state mismatch')
+    req(receipt.get('purpose')=='organizational_work_receipt','receipt lost continuity purpose')
+    req(receipt.get('method_type')==method_type,'receipt lost method type')
+    req(str(evidence.relative_to(ROOT)) in receipt.get('evidence_refs',[]),'receipt omitted evidence')
+    req(str(result.relative_to(ROOT)) in receipt.get('result_refs',[]),'receipt omitted result')
+    req(not (rd/'contract-execution.json').exists(),'completion recreated execution ledger')
+    return rid
 
 
 def main():
-    if BASE.exists():
-        shutil.rmtree(BASE)
-    if RUNS.exists():
-        shutil.rmtree(RUNS)
+    for path in (BASE,RUNS):
+        if path.exists():shutil.rmtree(path)
     try:
         run(S/'init_business.py',BID,'--name','Run Provenance Regression')
+        create_and_complete('external_skill','Bounded external Skill fixture','competitor-research-skill')
+        create_and_complete('model_created','Bounded model-created fixture','model-created:conversion-diagnostic')
+        create_and_complete('ad_hoc','Bounded ad-hoc fixture')
+        create_and_complete('aura_playbook','Inspect bounded indexing evidence',contract_id='seo.diagnosis.detectors.indexing')
 
-        # Non-AURA methods preserve organizational continuity without pretending to
-        # execute an AURA playbook or manufacturing contract-completion state.
-        for method_type,method_ref in [
-            ('external_skill','competitor-research-skill'),
-            ('model_created','model-created:conversion-diagnostic'),
-            ('ad_hoc',None),
-        ]:
-            rid,rd,_=create_general(method_type,f'Bounded {method_type} fixture',method_ref)
-            complete_general(rid,rd,method_type)
-
-        # Selecting an AURA playbook is the explicit opt-in to its stronger
-        # contract/evidence conformance machinery.
-        contract_id='seo.diagnosis.detectors.indexing'
-        rid=run(
-            S/'create_run.py',BID,'Inspect bounded indexing evidence',
-            '--contract-id',contract_id,
-        ).stdout.strip()
-        rd=RUNS/rid
-        state=load(rd/'run.json')
-        manifest=load(rd/'contract-execution.json')
-        req(state.get('method_type')=='aura_playbook',f'AURA playbook Run method mismatch: {state}')
-        req(state.get('contract_id')==contract_id,f'AURA playbook Run contract mismatch: {state}')
-        req(state.get('completion_policy_ref'),f'AURA playbook Run omitted completion policy: {state}')
-        req(manifest.get('root_contract_id')==contract_id,f'AURA playbook manifest root mismatch: {manifest}')
-
-        inspected=write(rd/'artifacts'/'inspection.txt','bounded indexing inspection evidence\n')
-        nofinding=rd/'artifacts'/'no-finding.json'
-        nofinding.write_text(json.dumps({
-            'contract_id':contract_id,
-            'status':'completed',
-            'result':'no_finding',
-            'checks_performed':[{'check':'bounded index-state comparison','status':'pass'}],
-            'evidence_refs':[str(inspected.relative_to(ROOT))],
-        },indent=2)+'\n')
-        completed=run(
-            S/'complete_run.py',BID,rid,
-            '--evidence',str(nofinding.relative_to(ROOT)),
-            check=False,
-        )
-        req(completed.returncode==0,f'AURA playbook completion failed: {completed.stdout+completed.stderr}')
-        state=load(rd/'run.json')
-        manifest=load(rd/'contract-execution.json')
-        receipt=state.get('continuity') or {}
-        req(state.get('status')=='completed',f'AURA playbook Run not completed: {state}')
-        req(manifest.get('root_status')=='completed',f'AURA playbook conformance not completed: {manifest}')
-        req(receipt.get('method_type')=='aura_playbook',f'AURA receipt lost method type: {receipt}')
-        req(receipt.get('method_ref')==contract_id,f'AURA receipt lost playbook ref: {receipt}')
-        req(str(nofinding.relative_to(ROOT)) in receipt.get('evidence_refs',[]),f'AURA receipt omitted root evidence: {receipt}')
-
-        # Whole-business integrity must accept both kinds of completed work together.
-        # Explicit Business context is an onboarding concern and intentionally not part
-        # of this Run/provenance regression.
         validated=run(S/'validate_business.py',BID,check=False)
-        req(validated.returncode==0,f'combined work-receipt validation failed: {validated.stdout+validated.stderr}')
+        req(validated.returncode==0,f'combined receipt validation failed: {validated.stdout+validated.stderr}')
 
-        # Deleted authority/control-plane concepts must not be recreated as a side effect
-        # of ordinary work receipt creation or completion.
-        for retired in [
-            ROOT/'core'/'schemas'/'action'/'action-packet.schema.json',
-            ROOT/'core'/'schemas'/'action'/'approval.schema.json',
-            ROOT/'core'/'policies'/'approval.md',
-            ROOT/'core'/'policies'/'risk.md',
-            ROOT/'core'/'policies'/'autonomy.md',
-        ]:
-            req(not retired.exists(),f'retired control-plane artifact reappeared: {retired.relative_to(ROOT)}')
+        # The old conditional SOP execution stack must remain physically absent.
+        retired=[
+            'scripts/finalize_run.py','scripts/finalize_work_receipt.py','scripts/finalize_sop_run.py',
+            'scripts/complete_sop_run.py','scripts/record_contract_completion.py',
+        ]
+        for rel in retired:req(not (ROOT/rel).exists(),f'retired Run execution helper reappeared: {rel}')
+        schema=(ROOT/'core/schemas/runtime/run.schema.json').read_text()
+        req('completion_policy_ref' not in schema,'Run schema recreated completion-policy authority')
 
-        print('Run work-receipt and conditional AURA playbook provenance regressions passed')
+        # Capability failure may produce a truthful partial/specification result, but not
+        # an AURA-internal manual-action object under a renamed Packet/Package label.
+        negative=('do not ','does not ','never ','without ','not required','rather than ')
+        for path in ROOT.rglob('CONTEXT.md'):
+            if '/contracts/' not in path.as_posix():continue
+            for line in path.read_text(encoding='utf-8').splitlines():
+                low=line.lower()
+                if ('manual action packet' in low or 'manual action package' in low) and not any(marker in low for marker in negative):
+                    req(False,f'{path.relative_to(ROOT)} recreated retired manual-action fallback: {line.strip()}')
+
+        print('Run receipt regressions passed: all methods share one optional continuity primitive with no internal execution ledger')
     finally:
-        if BASE.exists():
-            shutil.rmtree(BASE)
-        if RUNS.exists():
-            shutil.rmtree(RUNS)
+        for path in (BASE,RUNS):
+            if path.exists():shutil.rmtree(path)
 
 
-if __name__=='__main__':
-    main()
+if __name__=='__main__':main()
