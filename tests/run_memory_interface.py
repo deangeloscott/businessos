@@ -5,6 +5,7 @@ import json,os,sys,tempfile
 
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'scripts'))
+from _common import object_index
 from init_business import init_business
 from remember import remember
 from forget import forget
@@ -88,7 +89,7 @@ def main():
             try:forget(bid,source_id)
             except ValueError:blocked=True
             req(blocked,'forget must refuse to delete memory that current canonical state still references')
-            req(source_id in {obj_id for obj_id in __import__('forget').object_index(bid)},'blocked forget removed referenced memory')
+            req(source_id in object_index(bid),'blocked forget removed referenced memory')
             req(forget(bid,dependent_id)['status']=='forgotten','unreferenced dependent object could not be forgotten')
             req(forget(bid,source_id)['status']=='forgotten','formerly referenced object could not be forgotten after dependency was resolved')
 
