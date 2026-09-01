@@ -10,7 +10,7 @@ def _sharing_config(business_id):
     if path.exists():
         try:return json.loads(path.read_text())
         except Exception:pass
-    return {'format_version':'1.0','prompt_mode':'ask_when_noteworthy','default_detail_level':'workflow_only','default_identity_level':'anonymous','exchange_discovery_enabled':False,'exchange_sources':[],'notes':None}
+    return {'format_version':'1.0','default_detail_level':'workflow_only','default_identity_level':'anonymous','exchange_discovery_enabled':False,'exchange_sources':[],'notes':None}
 
 def _evidence_counts(summary):
     if summary is None:return
@@ -48,7 +48,7 @@ def prepare_package(business_id,extension_id,detail=None,identity=None,evidence_
 
 
 def main():
-    parser=argparse.ArgumentParser(description='Prepare a local InnovationPackage draft. This does not approve or submit sharing.');parser.add_argument('business_id');parser.add_argument('extension_id');parser.add_argument('--detail',choices=['workflow_only','anonymized_evidence','full_case_study']);parser.add_argument('--identity',choices=['anonymous','pseudonymous','named']);parser.add_argument('--display-name');parser.add_argument('--pseudonym');parser.add_argument('--evidence-summary-file');parser.add_argument('--case-study-file');parser.add_argument('--output');args=parser.parse_args()
+    parser=argparse.ArgumentParser(description='Prepare a local InnovationPackage draft for an explicit sharing task. This does not authorize or submit disclosure.');parser.add_argument('business_id');parser.add_argument('extension_id');parser.add_argument('--detail',choices=['workflow_only','anonymized_evidence','full_case_study']);parser.add_argument('--identity',choices=['anonymous','pseudonymous','named']);parser.add_argument('--display-name');parser.add_argument('--pseudonym');parser.add_argument('--evidence-summary-file');parser.add_argument('--case-study-file');parser.add_argument('--output');args=parser.parse_args()
     try:
         evidence=json.loads(Path(args.evidence_summary_file).read_text()) if args.evidence_summary_file else None;case=json.loads(Path(args.case_study_file).read_text()) if args.case_study_file else None;package,path=prepare_package(args.business_id,args.extension_id,args.detail,args.identity,evidence,case,args.display_name,args.pseudonym,args.output)
     except (ValueError,json.JSONDecodeError) as exc:raise SystemExit(str(exc))
