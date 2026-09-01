@@ -46,7 +46,7 @@ Installed modules are packages of AURA operational knowledge, not limits on what
 - Stay within the user's actual request and any real business, legal, platform, account, or organizational constraints. AURA does not manufacture additional authority gates.
 - Tool availability is an execution fact, not durable organizational truth unless the organization has a material reason to remember it.
 - Protect AURA product files during ordinary business work. Product changes belong to explicit AURA development/repair work, not business-operation fallbacks.
-- Use minimum sufficient work: deepen research or orchestration only when it can materially improve the outcome, reduce important uncertainty, or satisfy a selected method's real requirements.
+- Use minimum sufficient work: deepen research or execution complexity only when it can materially improve the outcome, reduce important uncertainty, or satisfy a selected method's real requirements.
 
 ## Coordination and Continuity
 - Reuse current organizational context before asking repeat questions or repeating research.
@@ -55,7 +55,7 @@ Installed modules are packages of AURA operational knowledge, not limits on what
 - Monitoring intent may be durable organizational state; scheduler bindings, polling loops, retries, and notification delivery are runtime concerns.
 
 ## Validation
-Universal AURA integrity means persisted records are schema-valid, truthful, provenance-aware, reference-valid, and isolated to the correct business. Selected-SOP conformance is additional and applies only when that SOP is actually used or claimed.
+Universal AURA integrity means persisted records are schema-valid, truthful, provenance-aware, reference-valid, and isolated to the correct business. When an AURA SOP is actually used or claimed, its essential method and quality requirements should also be satisfied; this does not create a separate conformance lifecycle.
 
 A successful tool response is not automatically proof of a later business outcome. Independent verification should be performed when the task/SOP or consequence warrants it, not as universal ceremony.
 
