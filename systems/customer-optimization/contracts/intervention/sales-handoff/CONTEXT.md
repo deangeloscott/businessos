@@ -9,11 +9,8 @@ reads:
   owner_system: customer-intelligence
 - MetricObservation
 writes:
-- WorkRequest
+- Asset
 - ChangeEvent
-- Experiment
-- MetricObservation
-- OutcomeEvaluation
 capabilities:
   required:
   - none
@@ -23,15 +20,11 @@ capabilities:
   - crm.contact.read
   - crm.contact.update
   - crm.opportunity.read
-  - checkout.read
-  - checkout.update
-  - billing.read
   - support.ticket.read
   - customer_success.read
   - scheduling.read
   - email.send
   - workflow.update
-  - experiment.run
 context:
 - EconomicContext
 - Offer
@@ -39,18 +32,29 @@ context:
 # Sales Handoff Optimization
 
 ## Purpose
-Reduce delay, context loss, ownership ambiguity, and customer effort when qualified leads move between systems/people.
+Reduce delay, context loss, ownership ambiguity, duplicate outreach, and customer effort when a real qualified lead/customer moves between sales people or operational systems.
 
 ## Business Outcome
-Improve customer progression and value realization through sales handoff optimization, while protecting customer and business guardrails.
+Improve customer progression and sales continuity through a clearer real-world handoff process without confusing AURA's organizational memory with the CRM/workflow runtime that performs assignment and notification.
 
 ## Run When
-Run when journey evidence or an active Opportunity requires sales handoff optimization to improve a defined customer transition or outcome.
+Use when evidence shows a sales handoff is materially harming a defined journey transition or when the organization wants to design/improve that real operational handoff. An existing Opportunity may provide context but is not required.
 
 ## Process
-1. [DETERMINISTIC] Map trigger → assignment → notification → first contact → context transfer → acceptance/reassignment states.
-2. [DETERMINISTIC] Measure latency, failure/reassignment, missing context, duplicate outreach, customer wait, and downstream outcomes.
-3. [AI] Review sales/customer evidence for common handoff confusion or expectation mismatch.
-4. [HYBRID] Diagnose ownership/routing/process/data problems versus salesperson skill issues outside current scope.
-5. [HYBRID] Define service levels, routing rules, context packet, escalation, and fallback ownership.
-6. [INTEGRATION] Implement workflow/CRM updates when authorized and verify end-to-end with test records.
+1. [HYBRID] Map the actual business handoff: triggering condition, source/receiving role or system, assignment logic, required context, customer expectation, acceptance/reassignment, first-contact target, and failure/recovery path.
+2. [HYBRID] Measure or inspect latency, unassigned/reassigned cases, missing context, duplicate outreach, customer wait/repetition, and downstream outcomes using the strongest available operational evidence.
+3. [AI] Use sales/customer evidence to identify where handoff confusion, expectation mismatch, poor qualification, missing data, process design, capacity, or salesperson behavior is the likely mechanism.
+4. [AI] Distinguish problems that should be solved in the handoff design from training, staffing, offer, customer-understanding, or other business issues. Do not turn every sales problem into routing logic.
+5. [AI] Define the smallest useful handoff design: ownership rule, minimum context, customer-facing expectation, service target where justified, fallback/escalation owner, and what should happen on acceptance/failure. Avoid unnecessary rules that make the process brittle.
+6. [HYBRID] Preserve the design as an internal `Asset` when future operators/models benefit from it. If the user wants the real process changed and the active harness has the required CRM/workflow capabilities and real permissions, make those external changes directly; AURA does not create a generic approval gate or internal WorkRequest first.
+7. [HYBRID] When a material operational change is actually made, preserve a `ChangeEvent` only if later evaluation/continuity benefits from knowing what changed, when, and why. Do not create a ChangeEvent for a draft recommendation.
+8. [AI] Define what later evidence would show whether the handoff improved customer/sales outcomes. Use separate measurement/evaluation work when that evidence becomes available rather than manufacturing an Experiment or OutcomeEvaluation during design.
+
+## Verification
+- This playbook concerns a real business handoff, not model/subagent/domain routing inside AURA.
+- Customer context transfer is limited to what the receiving actor actually needs and respects real privacy/contractual constraints.
+- Proposed service/routing rules are justified by business/customer evidence rather than needless process complexity.
+- Recommendations, external changes actually executed, and later outcomes remain separate facts.
+
+## Completion Criteria
+- The organization has either a clear evidence-backed handoff design or an implemented real-world handoff improvement, with enough durable context to understand the change later and no AURA-owned assignment/notification runtime.
