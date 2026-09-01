@@ -44,9 +44,12 @@ def main():
     if process_schema.get('additionalProperties') is not False:fail('ProcessExtension schema must be strict')
     exchange_schema=json.loads((ROOT/'core/schemas/intelligence/innovation-exchange-entry.schema.json').read_text())
     if 'object_type' in exchange_schema.get('properties',{}):fail('InnovationExchangeEntry must remain non-canonical support state')
+    sharing_schema=json.loads((ROOT/'core/schemas/config/innovation-sharing.schema.json').read_text())
+    if 'prompt_mode' in sharing_schema.get('properties',{}):fail('innovation sharing config reintroduced pseudo prompting/runtime behavior')
     policy=(ROOT/'core/policies/innovation-exchange.md').read_text()
-    for phrase in ['No automatic sharing','workflow_only','anonymized_evidence','full_case_study','anonymous','pseudonymous','named']:
+    for phrase in ['No automatic sharing','workflow_only','anonymized_evidence','full_case_study','anonymous','pseudonymous','named','does **not** manufacture an `Insight`']:
         if phrase not in policy:fail(f'innovation policy missing {phrase}')
+    if 'candidate Insight -> triangulation -> ignore/watch/investigate/test/adopt' in policy:fail('innovation policy restored synthetic semantic pipeline')
 
     source=(ROOT/'core/contracts/intelligence/ecosystem/source-discovery/CONTEXT.md').read_text();source_meta=source.split('\n---\n',1)[0]
     if '- InnovationExchangeEntry' in source_meta:fail('ecosystem discovery reintroduced exchange support data as canonical organization state')
@@ -75,7 +78,8 @@ def main():
         _,local_meta,local_content,_=resolve_effective('custom.marketing.proof-first-landing',A)
         if not local_meta.get('local_playbook') or 'Proof First Landing Workflow' not in local_content:fail('local playbook effective resolution failed')
 
-        config,_=configure(A,'ask_when_noteworthy','workflow_only','anonymous',True,['shared/innovation-index.json'],None)
+        config,_=configure(A,'workflow_only','anonymous',True,['shared/innovation-index.json'],None)
+        if 'prompt_mode' in config:fail('innovation config retained pseudo prompting behavior')
         if not config['exchange_discovery_enabled'] or config['exchange_sources']!=['shared/innovation-index.json']:fail('innovation sharing/discovery config did not persist')
         package,draft=prepare_package(A,local_extension['id'],detail='workflow_only',identity='anonymous')
         if package['privacy']['user_approved_export']:fail('prepared package must remain unapproved draft')
