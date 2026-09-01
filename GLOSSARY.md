@@ -16,10 +16,9 @@ Use these terms consistently.
 - **VerificationRecord** — Optional durable evidence that an important claimed state was checked, when the task/SOP/consequence warrants it.
 - **MetricObservation** — A measured value at a time/window.
 - **OutcomeEvaluation** — An evidence-backed judgment about what happened and how confidently an intervention contributed.
-- **Learning** — An evidence-backed proposition that should influence future work under stated conditions.
-- **Domain Learning** — Learning scoped to one specialized domain.
-- **Business Learning** — Learning specific to one business.
-- **System Learning** — Carefully supported Learning eligible for broader reuse when the product's learning rules justify it.
+- **Learning** — An evidence-backed proposition that should influence future work under stated conditions inside the active organization.
+- **Domain Learning** — Learning scoped to one specialized domain inside the active organization.
+- **Business Learning** — Learning that genuinely applies across the active organization.
 - **Canonical owner** — The one AURA domain responsible for the authoritative semantic meaning of a canonical responsibility/object.
 - **Capability** — A provider-neutral ability an AURA SOP may need or benefit from, such as `crm.opportunity.read` or `cms.page.publish`. Live availability and provider/tool choice belong to the active harness/runtime.
 - **PreferenceProfile** — Durable business-scoped preferences for a business, team, role, or operator label. Preferences guide otherwise-valid choices but do not become business truth or authorization.
@@ -27,6 +26,7 @@ Use these terms consistently.
 - **Run** — A bounded organization-owned work receipt for material continuity. A Run records the actual method used: AURA playbook, external Skill, model-created method, or ad-hoc work.
 - **Context Plan** — The smallest relevant AURA policy/SOP/schema/object set selected for a piece of work. It does not describe the host's full runtime state.
 - **ProcessExtension** — Business-scoped operational knowledge that augments an AURA playbook or defines a local playbook without mutating the canonical product.
+- **InnovationPackage** — An explicitly prepared portable package for sharing reusable process knowledge across organization boundaries without implicitly exposing another organization's private state.
 - **PlatformChange** — A durable, refreshable record of a material external platform/topic state, kept distinct from measured business outcomes.
 
 ## ProofRecord
