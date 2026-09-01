@@ -1,6 +1,6 @@
 ---
 id: core.monitoring.status
-type: service
+type: playbook
 owner_system: core
 reads:
 - SourceProfile
