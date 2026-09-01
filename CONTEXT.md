@@ -13,7 +13,7 @@ For substantive organizational work:
 5. **Remember only what matters.** Persist durable organizational meaning when forgetting it would materially hurt future quality, truth, continuity, or efficiency. Do not save hidden reasoning, complete chats, routine tool calls, temporary calculations, retries, subagent chatter, caches, or transient host capability state.
 6. **Preserve truth.** Keep explicit/verified business facts, external evidence, inference, candidate strategy, and unknown distinct. Unknown/not-found is not absent. Never fabricate business facts, claims, evidence, tool actions, permissions, or outcomes.
 7. **Validate AURA-owned state.** Canonical state must be schema-valid, provenance/reference-aware, and isolated to the correct organization. Deterministic validation protects these mechanics; it should not replace model semantic judgment.
-8. **Measure and learn when evidence supports it.** Preserve meaningful outcomes and promote reusable Learning only at the scope justified by evidence.
+8. **Measure and learn when evidence supports it.** Preserve meaningful outcomes and promote reusable Learning only at the domain/business scope justified by evidence inside the active organization.
 
 ## Persistence test
 
@@ -42,7 +42,9 @@ Provider-neutral capability IDs describe possible method needs only. The host ow
 
 ## Organization truth and isolation
 
-Every canonical object belongs to one organization. Cross-organization canonical references are invalid unless an explicit product-level learning mechanism is designed for that purpose.
+Every canonical object belongs to exactly one organization. Canonical references must remain inside that organization. AURA does not implicitly pool or cross-reference private state/Learning across organizations.
+
+When reusable process knowledge should cross an organization boundary, use an explicit sharing/adoption mechanism such as an InnovationPackage/ProcessExtension or deliberate canonical AURA product-development work. The receiving organization evaluates/imports its own copy/evidence; it does not gain direct access to the source organization's private canonical state.
 
 Use provenance appropriate to the meaning being saved. AURA should deterministically verify that referenced sources/objects exist and belong to the organization; the capable model determines semantic interpretation. Stronger literal support may still be required for outward claims or other cases where exact evidence is materially important.
 
