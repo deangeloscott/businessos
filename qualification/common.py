@@ -97,7 +97,7 @@ def competitive_profile(contract):
     if owner=='customer-intelligence': return 'customer_truth'
     if owner=='industry-intelligence': return 'ecosystem_truth'
     if owner=='customer-optimization': return 'first_party_outcomes'
-    return 'governance_and_state'
+    return 'organizational_memory'
 
 def output_policy(contract):
     cid=contract['contract_id'].lower(); role=contract.get('artifact_role')
