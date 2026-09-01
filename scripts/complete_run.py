@@ -1,26 +1,27 @@
 #!/usr/bin/env python3
-"""Complete an organization-owned work receipt.
+"""Complete an optional organization-owned work receipt.
 
-AURA playbook Runs delegate to the preserved SOP-specific completion engine. Other
-methods complete through a small truth/integrity path that records material evidence,
-results, decisions, unresolved work, and a concise summary without inventing contract
-execution or SOP conformance.
+Every method uses the same continuity primitive. An AURA playbook Run records which
+playbook was actually used, but completion does not certify an internal execution graph,
+subcontract ledger, provider state, permission state, launch readiness, or business
+outcome. Those meanings belong to the work itself and their dedicated organization state.
 """
 from pathlib import Path
 import argparse, json
+from jsonschema import Draft202012Validator
 
 from _common import *
-from complete_sop_run import complete_run as complete_sop_run, snapshot_files, restore_files
+from run_provenance import bind_evidence_paths
 from validate_business import validate_business
+
+EVIDENCE_OBJECT_TYPES={'SourceRecord','Observation','MetricObservation','ProofRecord','BusinessClaim'}
 
 
 def _material_ref(business_id,raw):
-    """Normalize a canonical object id or resolvable storage reference to durable storage."""
     value=str(raw).strip()
     if not value:raise ValueError('Empty material reference')
     idx=object_index(business_id)
-    if value in idx:
-        return storage_ref(idx[value][1])
+    if value in idx:return storage_ref(idx[value][1])
     path=resolve_storage_ref(value)
     if not path.exists() or not path.is_file():raise ValueError(f'Material reference does not resolve: {raw}')
     return storage_ref(path)
@@ -34,20 +35,55 @@ def _refs(business_id,values):
     return out
 
 
+def _run_linked(obj,business_id,run_id):
+    ext=obj.get('extensions') if isinstance(obj.get('extensions'),dict) else {}
+    bos=ext.get('businessos') if isinstance(ext.get('businessos'),dict) else {}
+    lineage=obj.get('lineage') if isinstance(obj.get('lineage'),list) else []
+    rr=f'runtime/runs/{business_id}/{run_id}'
+    return bos.get('run_id')==run_id or bos.get('run_ref')==rr or run_id in lineage or rr in lineage
+
+
+def _linked_refs(business_id,run_id):
+    evidence=[];results=[];decisions=[]
+    for obj,path in iter_instance_objects(business_id):
+        if not _run_linked(obj,business_id,run_id):continue
+        ref=storage_ref(path);typ=obj.get('object_type')
+        target=decisions if typ=='DecisionRecord' else (evidence if typ in EVIDENCE_OBJECT_TYPES else results)
+        if ref not in target:target.append(ref)
+        if typ=='Asset' and isinstance(obj.get('location_reference'),str):
+            try:
+                loc=resolve_storage_ref(obj['location_reference'])
+                if loc.exists() and loc.is_file():
+                    lref=storage_ref(loc)
+                    if lref not in results:results.append(lref)
+            except Exception:pass
+    return sorted(evidence),sorted(results),sorted(decisions)
+
+
+def _validate_run(run):
+    schema=json.loads((PRODUCT_ROOT/'core/schemas/runtime/run.schema.json').read_text())
+    return [f'{list(e.path)}: {e.message}' for e in Draft202012Validator(schema).iter_errors(run)]
+
+
 def complete_run(business_id,run_id,evidence=None,result_refs=None,decision_refs=None,summary=None,unresolved=None):
-    run_dir=run_dir_path(business_id,run_id);run_path=run_dir/'run.json';manifest=run_dir/'contract-execution.json'
-    if not run_path.exists():raise ValueError('Run file missing')
-
-    # Selected AURA SOPs keep their strong contract-specific completion/evidence rules.
-    if manifest.exists():
-        return complete_sop_run(business_id,run_id,evidence or [])
-
-    run=json.loads(run_path.read_text())
+    rd=run_dir_path(business_id,run_id);rp=rd/'run.json'
+    if not rp.exists():raise ValueError('Run file missing')
+    run=json.loads(rp.read_text())
     if run.get('business_id')!=business_id or run.get('run_id')!=run_id:raise ValueError('Run identity mismatch')
-    if run.get('status')!='active':raise ValueError(f"Run is not active: {run.get('status')}")
     method_type=run.get('method_type') or ('aura_playbook' if run.get('contract_id') else 'ad_hoc')
+    method_ref=run.get('method_ref') or run.get('contract_id')
     if method_type=='aura_playbook':
-        raise ValueError('AURA playbook Run is missing its contract-execution manifest')
+        contract_id=run.get('contract_id')
+        installed={x.get('id') for x in load_registry().get('contracts',[]) if x.get('id')}
+        if not contract_id or contract_id not in installed:raise ValueError(f'AURA playbook receipt references an unavailable playbook: {contract_id!r}')
+        if method_ref not in {None,contract_id}:raise ValueError('AURA playbook method_ref must equal contract_id')
+        method_ref=contract_id
+    elif run.get('contract_id'):
+        raise ValueError('Only aura_playbook Runs may carry contract_id')
+
+    if run.get('status')=='completed':
+        return {'run_id':run_id,'status':'completed','category':'already_completed','method_type':method_type,'continuity':run.get('continuity') or {}}
+    if run.get('status')!='active':raise ValueError(f"Run is not active: {run.get('status')}")
 
     evidence_refs=_refs(business_id,evidence)
     results=_refs(business_id,result_refs)
@@ -57,37 +93,56 @@ def complete_run(business_id,run_id,evidence=None,result_refs=None,decision_refs
         text=str(item).strip()
         if text and text not in unresolved_clean:unresolved_clean.append(text)
     summary_text=str(summary).strip() if summary is not None else ''
-    if not (summary_text or evidence_refs or results or decisions or unresolved_clean):
-        raise ValueError('General Run completion requires material organizational meaning: provide a summary, evidence/result/decision reference, or unresolved item')
 
-    before=run_path.read_bytes();ts=now()
-    continuity=dict(run.get('continuity') or {})
-    continuity.update({
-        'format_version':'2.0','purpose':'organizational_work_receipt','state':'completed',
-        'method_type':method_type,'method_ref':run.get('method_ref'),
-        'summary':summary_text or continuity.get('summary'),
-        'evidence_refs':evidence_refs,'result_refs':results,'decision_refs':decisions,'unresolved':unresolved_clean,
-        'completed_at':ts,'superseded_by_run_id':None
-    })
-    run['method_type']=method_type
-    run.setdefault('method_ref',run.get('contract_id'))
-    run['status']='completed';run['updated_at']=ts;run['continuity']=continuity
+    touched=[rp]
+    for ref in [*evidence_refs,*results,*decisions]:
+        try:p=resolve_storage_ref(ref)
+        except Exception:continue
+        if p.exists() and p.is_file() and p.suffix.lower()=='.json':touched.append(p)
+    snapshots={p:p.read_bytes() for p in dict.fromkeys(touched)}
+
     try:
-        run_path.write_text(json.dumps(run,indent=2)+'\n')
+        bind_evidence_paths(business_id,run_id,[resolve_storage_ref(x) for x in evidence_refs],'receipt_evidence')
+        bind_evidence_paths(business_id,run_id,[resolve_storage_ref(x) for x in results],'receipt_result')
+        bind_evidence_paths(business_id,run_id,[resolve_storage_ref(x) for x in decisions],'receipt_decision')
+        linked_evidence,linked_results,linked_decisions=_linked_refs(business_id,run_id)
+        current=dict(run.get('continuity') or {})
+        def merged(key,new):return list(dict.fromkeys([*(current.get(key) or []),*new]))
+        final_evidence=merged('evidence_refs',[*evidence_refs,*linked_evidence])
+        final_results=merged('result_refs',[*results,*linked_results])
+        final_decisions=merged('decision_refs',[*decisions,*linked_decisions])
+        final_unresolved=list(dict.fromkeys([*(current.get('unresolved') or []),*unresolved_clean]))
+        final_summary=summary_text or current.get('summary')
+        if not (final_summary or final_evidence or final_results or final_decisions or final_unresolved):
+            raise ValueError('Run completion requires material organizational meaning: a summary, evidence/result/decision reference, or unresolved item')
+
+        ts=now();run['method_type']=method_type;run['method_ref']=method_ref
+        run['status']='completed';run['updated_at']=ts
+        run['continuity']={
+            'format_version':'2.0','purpose':'organizational_work_receipt','state':'completed',
+            'method_type':method_type,'method_ref':method_ref,'summary':final_summary,
+            'evidence_refs':final_evidence,'result_refs':final_results,'decision_refs':final_decisions,
+            'unresolved':final_unresolved,'completed_at':ts,'superseded_by_run_id':None
+        }
+        schema_errors=_validate_run(run)
+        if schema_errors:raise ValueError('Run schema invalid: '+'; '.join(schema_errors[:8]))
+        rp.write_text(json.dumps(run,indent=2)+'\n')
         errors,warnings,counts=validate_business(business_id)
-        if errors:raise ValueError('active business validation is not clean:\n- '+'\n- '.join(errors))
+        if errors:raise ValueError('active business validation is not clean:\n- '+'\n- '.join(errors[:12]))
     except Exception:
-        run_path.write_bytes(before)
+        for path,data in snapshots.items():path.write_bytes(data)
         raise
+
     return {
-        'run_id':run_id,'status':'completed','method_type':method_type,
-        'continuity':continuity,
-        'validation':{'errors':0,'warnings':warnings,'canonical_object_counts':counts}
+        'run_id':run_id,'status':'completed','method_type':method_type,'method_ref':method_ref,
+        'continuity':run['continuity'],
+        'validation':{'errors':0,'warnings':warnings,'canonical_object_counts':counts},
+        'rule':'This receipt records continuity only. It does not certify playbook conformance, external execution, authorization, production readiness, or business outcomes.'
     }
 
 
 def main():
-    ap=argparse.ArgumentParser(description='Complete a Run. AURA SOP Runs use SOP conformance; all other methods persist a truthful organizational work receipt.')
+    ap=argparse.ArgumentParser(description='Complete an optional AURA work receipt for any method.')
     ap.add_argument('business_id');ap.add_argument('run_id')
     ap.add_argument('--evidence',action='append',default=[])
     ap.add_argument('--result',action='append',default=[])
