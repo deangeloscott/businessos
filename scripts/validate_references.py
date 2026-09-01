@@ -1,34 +1,68 @@
 #!/usr/bin/env python3
+"""Validate intra-organization canonical references from the canonical schema model."""
 from _common import *
 import argparse,json,re
-PAT=re.compile(r'(?<![A-Za-z0-9_-])(?:src|sprof|obs|ins|prf|opp|ini|act|wrk|apr|chg|ver|ast|mdef|mobs|exp|eval|lrn|inc|att|plc|clm|cup|cmp|plt|jrn|iev|ocs|odm|sas|aud|brd|biz|eco|mkt|obj|off|ofr|prd)_[A-Za-z0-9_-]+(?![A-Za-z0-9_-])')
+
+
+def canonical_reference_pattern():
+    """Build the reference grammar from canonical object ID schemas.
+
+    Retired object prefixes disappear when their schemas disappear; new canonical types
+    become reference-valid automatically. This avoids a second hand-maintained model.
+    """
+    prefixes=set()
+    for path in schemas():
+        try:data=json.loads(path.read_text())
+        except Exception:continue
+        pattern=(((data.get('properties') or {}).get('id') or {}).get('pattern') or '')
+        match=re.match(r'^\^([A-Za-z0-9]+)_',pattern)
+        if match:prefixes.add(match.group(1))
+    if not prefixes:raise ValueError('No canonical ID prefixes could be derived from schemas')
+    joined='|'.join(sorted((re.escape(prefix) for prefix in prefixes),key=len,reverse=True))
+    return re.compile(rf'(?<![A-Za-z0-9_-])(?:{joined})_[A-Za-z0-9_-]+(?![A-Za-z0-9_-])')
+
+
+def references_in(value):
+    return set(canonical_reference_pattern().findall(json.dumps(value)))
+
 
 def reference_errors(business_id):
     base=ROOT/'instances'/business_id
     if not base.exists():return ['Unknown business']
     index={}
-    for f in base.rglob('*.json'):
-        try:o=json.loads(f.read_text())
+    for file in base.rglob('*.json'):
+        try:data=json.loads(file.read_text())
         except Exception:continue
-        vals=o if isinstance(o,list) else [o]
+        vals=data if isinstance(data,list) else [data]
         for item in vals:
-            if isinstance(item,dict) and item.get('id'):index[item['id']]=f
+            if isinstance(item,dict) and item.get('id'):index[item['id']]=file
     errors=[]
-    for oid,f in index.items():
-        try:o=json.loads(f.read_text())
+    pat=canonical_reference_pattern()
+    for oid,file in index.items():
+        try:data=json.loads(file.read_text())
         except Exception:continue
-        for ref in PAT.findall(json.dumps(o)):
-            if ref!=oid and ref not in index:errors.append(f'{f.relative_to(ROOT)} unresolved ref {ref}')
+        for ref in pat.findall(json.dumps(data)):
+            if ref!=oid and ref not in index:errors.append(f'{file.relative_to(ROOT)} unresolved ref {ref}')
     return errors
+
+
+def inbound_references(business_id,target_ref):
+    """Return canonical objects that currently reference target_ref."""
+    out=[];target=str(target_ref)
+    for obj,path in iter_instance_objects(business_id):
+        if obj.get('id')==target:continue
+        if target in references_in(obj):out.append({'object_ref':obj.get('id'),'object_type':obj.get('object_type'),'path':storage_ref(path)})
+    return out
+
 
 def validate_references(business_id):
     errs=reference_errors(business_id)
     if errs:return False,errs,0
-    base=ROOT/'instances'/business_id;count=sum(1 for f in base.rglob('*.json') if _has_id(f))
+    base=ROOT/'instances'/business_id;count=sum(1 for file in base.rglob('*.json') if _has_id(file))
     return True,[],count
 
-def _has_id(f):
-    try:o=json.loads(f.read_text());return isinstance(o,dict) and bool(o.get('id'))
+def _has_id(file):
+    try:data=json.loads(file.read_text());return isinstance(data,dict) and bool(data.get('id'))
     except Exception:return False
 
 def main():
