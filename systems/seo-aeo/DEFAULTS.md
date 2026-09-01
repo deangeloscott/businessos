@@ -12,7 +12,7 @@ SEO/AEO provides operating knowledge for valuable organic discovery across searc
 Use the active harness's available tools/capabilities normally. If a preferred capability is unavailable, use another valid host method when practical or state the concrete limitation. For material external mutations, preserve a ChangeEvent or independent VerificationRecord only when remembering the change/check will materially help future work or the selected method/consequence genuinely warrants it.
 
 ## Learning
-Use verified outcome evidence to improve SEO Domain Learning. Promote to Business Learning only when the evidence genuinely supports organization-wide applicability. Private Learning does not automatically cross organization boundaries; broader reusable process improvements use explicit playbook evolution, Innovation Exchange sharing/adoption, or deliberate canonical AURA product development.
+Use verified outcome evidence to create or update reusable SEO-domain Learning when the conclusion is specific to organic-discovery work. Record business-scoped Learning only when the evidence genuinely supports organization-wide applicability. Scope is a model/human evidence judgment, not a deterministic promotion pipeline. Private Learning does not automatically cross organization boundaries; broader reusable process improvements use explicit playbook evolution, Innovation Exchange sharing/adoption, or deliberate canonical AURA product development.
 
 ## Standalone Mode
 SEO/AEO can operate with Core alone using the bounded upstream-research rule above. Treat missing optional intelligence modules as enrichments, never as permission to claim unsupported canonical conclusions.
