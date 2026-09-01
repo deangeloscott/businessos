@@ -2,12 +2,12 @@
   "system": "customer-intelligence",
   "activities": [
     {"id":"customer-research","entry_contract":"customer.research.plan","result":"Resolve a customer knowledge need with evidence sufficient for the decision.","supporting_contracts":["customer.research.source-prioritization","customer.research.sample-design","customer.research.evidence-coverage"]},
-    {"id":"ecosystem-radar","entry_contract":"customer.intelligence.ecosystem-radar","result":"Detect changing customer needs, language, objections, expectations, and use cases; corroborate them; and compare external signals with first-party evidence when needed."},
+    {"id":"ecosystem-radar","entry_contract":"customer.intelligence.ecosystem-radar","result":"Detect changing customer needs, language, objections, expectations, and use cases; corroborate them; and compare external signals with first-party evidence when useful."},
     {"id":"interviews","entry_contract":"customer.evidence-collection.interviews","result":"Collect and code neutral, decision-relevant customer interview evidence."},
     {"id":"surveys","entry_contract":"customer.evidence-collection.surveys","result":"Design, field, and interpret a survey with defensible coverage."},
     {"id":"sales-conversation-mining","entry_contract":"customer.evidence-collection.sales-conversations","result":"Extract direct customer evidence from sales conversations."},
-    {"id":"support-mining","entry_contract":"customer.evidence-collection.support","result":"Extract recurring customer problems/questions from support evidence."},
-    {"id":"public-conversation-mining","entry_contract":"customer.evidence-collection.public-conversation","result":"Monitor and interpret public customer/audience signals."},
+    {"id":"support-mining","entry_contract":"customer.evidence-collection.support","result":"Extract recurring customer problems and questions from support evidence."},
+    {"id":"public-conversation-mining","entry_contract":"customer.evidence-collection.public-conversation","result":"Collect and interpret public customer/audience evidence without treating public visibility as permission for invasive profiling."},
     {"id":"voice-of-customer","entry_contract":"customer.analysis.voice-of-customer","result":"Produce reusable customer language and themes."},
     {"id":"pain-desire","entry_contract":"customer.analysis.pain-desire","result":"Identify pains, desires, and desired outcomes."},
     {"id":"objections","entry_contract":"customer.analysis.objections","result":"Identify and scope customer objections."},
@@ -17,7 +17,7 @@
     {"id":"churn","entry_contract":"customer.analysis.churn","result":"Explain customer-stated and evidence-backed reasons for leaving."},
     {"id":"feature-needs","entry_contract":"customer.analysis.feature-needs","result":"Interpret feature requests as underlying needs rather than roadmap commands."},
     {"id":"segmentation","entry_contract":"customer.analysis.segmentation","result":"Identify meaningful customer differences and propose segment refinement where justified."},
-    {"id":"insight-refresh","entry_contract":"customer.analysis.insight-refresh","result":"Keep Customer Insights current and contradiction-aware."},
-    {"id":"research-gap-monitoring","entry_contract":"customer.monitoring.research-gaps","result":"Find and prioritize decision-critical customer knowledge gaps."}
+    {"id":"insight-refresh","entry_contract":"customer.analysis.insight-refresh","result":"Keep Customer Insights current and contradiction-aware when new evidence makes review useful."},
+    {"id":"research-gap-monitoring","entry_contract":"customer.monitoring.research-gaps","result":"Run a bounded review for decision-critical customer evidence gaps and identify the smallest useful research action; recurrence belongs to the active runtime."}
   ]
 }
