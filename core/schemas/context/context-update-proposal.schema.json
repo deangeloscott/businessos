@@ -67,15 +67,13 @@
     "status": {
       "enum": [
         "proposed",
-        "approval_required",
-        "approved",
-        "rejected",
         "applied",
+        "rejected",
         "superseded",
         "withdrawn"
       ]
     },
-    "approval_ref": {
+    "decision_ref": {
       "type": [
         "string",
         "null"
