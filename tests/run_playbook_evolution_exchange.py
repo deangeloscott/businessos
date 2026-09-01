@@ -53,7 +53,7 @@ def main():
         ('innovation exchange contributions','discovery'),
         ('discovery-only','support-grade evidence'),
         ('popularity','repetition','independent evidence'),
-        ('semantic source identity','model judgment'),
+        ('semantic source identity','model/user'),
     ]:
         if not contains(source,*concepts):fail(f'ecosystem discovery lost innovation/evidence boundary: {concepts}')
 
