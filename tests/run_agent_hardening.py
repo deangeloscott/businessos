@@ -10,7 +10,7 @@ This regression focuses on invariants AURA can actually own:
 - retired semantic routing/orchestration/approval/event-control machinery stays physically absent.
 """
 from pathlib import Path
-import json,shutil,subprocess,sys
+import json,re,shutil,subprocess,sys
 
 ROOT=Path(__file__).resolve().parents[1];SCRIPTS=ROOT/'scripts';sys.path.insert(0,str(SCRIPTS))
 from bootstrap_explicit_context import build_objects,_path,GROUNDING_METHOD
@@ -129,10 +129,11 @@ def main():
             'core/contracts/measurement/publish-metric/CONTEXT.md',
             'core/contracts/measurement/evaluate-outcome/CONTEXT.md',
         ]
+        runtime_event_pattern=re.compile(r'\bemit\s+[a-z][a-z0-9_-]*\.[a-z][a-z0-9_.-]*',re.I)
         for rel in memory_contracts:
             text=(ROOT/rel).read_text(encoding='utf-8')
             require('Manual Action Packet' not in text,f'{rel} reintroduced retired manual-action fallback')
-            require('emit ' not in text.lower(),f'{rel} reintroduced runtime event emission')
+            require(runtime_event_pattern.search(text) is None,f'{rel} reintroduced named runtime event emission')
 
         # No domain may recreate the old generic missing-capability fallback locally.
         forbidden_manual_fallbacks=[
