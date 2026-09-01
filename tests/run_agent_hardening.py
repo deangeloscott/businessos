@@ -7,7 +7,7 @@ This regression focuses on invariants AURA can actually own:
 - outward business claims remain literally evidence-bounded;
 - valid work does not require a Run or AURA playbook;
 - the front door retrieves candidates without taking over execution;
-- retired semantic routing/orchestration/approval machinery stays physically absent.
+- retired semantic routing/orchestration/approval/event-control machinery stays physically absent.
 """
 from pathlib import Path
 import json,shutil,subprocess,sys
@@ -34,9 +34,6 @@ def main():
     if BASE.exists():shutil.rmtree(BASE)
     try:
         run(SCRIPTS/'init_business.py',BID,'--name','Northstar HVAC')
-        # These structured values are conservative model normalization of the supplied
-        # source. AURA preserves provenance but does not re-interpret the English with a
-        # hand-written semantic tokenizer.
         objects=build_objects(BID,industries=['residential HVAC'],markets=['Baltimore service area'],services=['installation','repair','maintenance'],objectives=['profitable growth'],source_text=SOURCE)
         for obj in objects:write_json(_path(BASE,obj),obj)
 
@@ -44,14 +41,12 @@ def main():
         require(not errors,f'provenanced organization context should validate: {errors}')
         require(counts.get('Business')==1 and counts.get('ProductService')==3,f'expected business/service context: {counts}')
 
-        # What AURA can deterministically prove is provenance, not semantic equivalence.
         market=next((BASE/'context/markets').glob('*.json'));original=market.read_text();obj=json.loads(original)
         obj['extensions']['businessos']['source_ref']='src_missing_explicit_source';market.write_text(json.dumps(obj,indent=2)+'\n')
         errors,_,_=validate_business(BID,True)
         require(any('requires an existing SourceRecord source_ref' in e for e in errors),f'explicit context with missing provenance should fail: {errors}')
         market.write_text(original)
 
-        # Persist one exact reusable business claim grounded to the original user source.
         srcp=next((BASE/'intelligence/sources').glob('src_*explicit*.json'));src=json.loads(srcp.read_text());srcid=src['id'];ts=src['created_at']
         claim={
             'id':f'clm_{BID}_written-estimates','object_type':'BusinessClaim','schema_version':'1.0.0','business_id':BID,
@@ -62,7 +57,6 @@ def main():
         }
         cp=BASE/'context/claims'/f"{claim['id']}.json";write_json(cp,claim)
 
-        # Literal evidence remains a real deterministic safeguard for outward claims.
         bad_claim=dict(claim);bad_claim['support_quote']='We guarantee same-day written estimates.'
         write_json(cp,bad_claim);errors,_,_=validate_business(BID,True)
         require(any('support_quote is not a literal excerpt' in e for e in errors),f'unsupported literal claim support should fail: {errors}')
@@ -116,17 +110,34 @@ def main():
             ROOT/'core/schemas/action/action-packet.schema.json',ROOT/'core/schemas/action/approval.schema.json',ROOT/'core/contracts/action-control',
             ROOT/'scripts/validate_customer_facing_mutations.py',ROOT/'scripts/capture_customer_facing_state.py',ROOT/'scripts/build_mutation_claim_manifest.py',
             ROOT/'core/contracts/routing/resolve-intent',ROOT/'core/contracts/coordination/multi-domain-request',
-            ROOT/'core/contracts/intelligence/ecosystem/route-learning',
+            ROOT/'core/contracts/intelligence/ecosystem/route-learning',ROOT/'core/contracts/intelligence/request-refresh',
+            ROOT/'core/contracts/intelligence/evaluate-relevance',ROOT/'systems/marketing-synthesis/contracts/offer/context-proposal',
+            ROOT/'templates/manual-action.md',
         ]
         for path in retired:require(not path.exists(),f'retired control/router/orchestrator artifact reappeared: {path.relative_to(ROOT)}')
 
         core_map=json.loads((ROOT/'core/process-map.json').read_text())
         entries={a.get('entry_contract') for a in core_map.get('activities',[])}
-        for cid in ['core.routing.resolve-intent','core.coordination.multi-domain-request','core.intelligence.ecosystem.route-learning']:
+        for cid in ['core.routing.resolve-intent','core.coordination.multi-domain-request','core.intelligence.ecosystem.route-learning','core.intelligence.request-refresh','core.intelligence.evaluate-relevance']:
             require(cid not in entries,f'Core process map reintroduced retired routing/orchestration entry: {cid}')
 
+        # Durable organization-memory contracts must not recreate an internal event bus
+        # or Manual Action Packet fallback merely because canonical state changed.
+        memory_contracts=[
+            'core/contracts/intelligence/publish-observation/CONTEXT.md',
+            'core/contracts/intelligence/manage-insight/CONTEXT.md',
+            'core/contracts/opportunity/qualify/CONTEXT.md',
+            'core/contracts/learning/promote-learning/CONTEXT.md',
+            'core/contracts/measurement/publish-metric/CONTEXT.md',
+            'core/contracts/measurement/evaluate-outcome/CONTEXT.md',
+        ]
+        for rel in memory_contracts:
+            text=(ROOT/rel).read_text(encoding='utf-8')
+            require('Manual Action Packet' not in text,f'{rel} reintroduced retired manual-action fallback')
+            require('emit ' not in text.lower(),f'{rel} reintroduced runtime event emission')
+
         errors,_,_=validate_business(BID,True);require(not errors,f'current architecture should finish with valid organization state: {errors}')
-        print('agent hardening regressions passed: provenance and outward truth remain strong without semantic-routing/orchestration/execution-control baggage')
+        print('agent hardening regressions passed: provenance and outward truth remain strong without semantic-routing/orchestration/event-control baggage')
     finally:
         if BASE.exists():shutil.rmtree(BASE)
         rbase=ROOT/'runtime/runs'/BID
