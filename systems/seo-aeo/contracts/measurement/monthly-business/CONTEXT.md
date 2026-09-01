@@ -10,11 +10,6 @@ reads:
 - Observation
 writes:
 - MetricObservation
-- Experiment
-- Learning
-- OutcomeEvaluation
-- Opportunity
-- ChangeEvent
 capabilities:
   required:
   - analytics.read
@@ -27,30 +22,31 @@ context:
 - Market
 - Objective
 - Offer
-evidence_inputs:
-- review mention reputation response history
 ---
-# Monthly Organic Discovery Business Review
+# Organic Discovery Business Review
 
 ## Purpose
-Connect SEO/AEO operations to business outcomes and strategic decisions.
+Connect a meaningful reporting period of SEO/AEO work to business outcomes, explanations, decisions, and the evidence needed for what comes next.
 
 ## Business Outcome
-Improve valuable organic discovery through monthly organic discovery business review, with a clear SEO/AEO mechanism and connection to the active business Objective.
+Help business decisions reflect real organic contribution and material changes rather than visibility metrics alone.
 
 ## Run When
-Run when the configured measurement window closes, a report is due, or **monthly organic discovery business review** evidence becomes decision-relevant.
+Use when a business review needs a period-level organic-discovery assessment and sufficiently current measurement evidence is available. The period may be monthly or another cadence chosen by the organization; AURA does not schedule the review.
 
 ## Process
-1. [DETERMINISTIC] Validate full month data and document material attribution/data limitations.
-2. [HYBRID] Report profit/revenue/qualified leads/conversions or strongest available proxies first, then qualified traffic and supporting visibility metrics.
-3. [HYBRID] Break down contribution by market, offer, audience, topic/cluster, asset type, discovery surface, and major intervention where defensible.
-4. [AI] Explain gains/losses through demand, visibility, CTR, conversion, technical, authority, local, AEO, and major ecosystem/competitor changes.
-5. [HYBRID] Review Opportunity portfolio: value captured, pipeline, blockers, experiments, autonomy performance, and material costs.
-6. [DETERMINISTIC] Set/adjust next-month priorities and record explicit strategic decisions rather than only presenting charts.
+1. [HYBRID] Confirm the review period, business Objectives, available data, and material attribution/measurement limitations.
+2. [HYBRID] Lead with profit/revenue/qualified leads/conversions or the strongest available business proxies, then use qualified traffic and visibility evidence to explain them.
+3. [HYBRID] Break down contribution by market, offer, audience, topic/cluster, asset type, discovery surface, and material intervention only where the evidence supports the comparison.
+4. [AI] Explain gains/losses through plausible demand, visibility, CTR, conversion, technical, authority, local, AEO, ecosystem, competitor, and business-context mechanisms without forcing a cause when evidence is insufficient.
+5. [AI] Review material Opportunities/changes/experiments by value captured, current evidence, real blockers/constraints, costs, and unresolved questions—not by an AURA autonomy status.
+6. [AI] Recommend the smallest set of next priorities with explicit business rationale. Preserve an organizational decision only when the user/model actually makes one and future work benefits from remembering it.
+7. [DETERMINISTIC] Persist only new reusable MetricObservations that are not already represented by the underlying measurement state.
 
-## Decisions / Routing
-- Route → SEO Domain Learning / Core Business Learning as justified by outcome evidence.
-- Route → Core Opportunity qualification when an SEO intervention is evidence-supported.
+## Verification
+- Business outcomes lead the review; proxies remain labeled.
+- Explanations distinguish evidence from hypotheses.
+- The review does not create approval/autonomy bookkeeping or automatically route next work.
 
-
+## Completion Criteria
+- A decision-maker can understand what organic discovery contributed during the period, why material changes may have occurred, and what priorities are justified next.

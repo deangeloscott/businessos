@@ -9,11 +9,7 @@ reads:
 - Experiment
 writes:
 - MetricObservation
-- Experiment
-- Learning
 - OutcomeEvaluation
-- Opportunity
-- ChangeEvent
 capabilities:
   required:
   - analytics.read
@@ -27,27 +23,30 @@ context:
 - Objective
 - Offer
 ---
-# Change Event Evaluation
+# Change Evaluation
 
 ## Purpose
-Determine whether a specific optimization likely helped, harmed, or was inconclusive.
+Evaluate whether a specific SEO/AEO change likely helped, harmed, had little effect, or remains inconclusive without overstating causality.
 
 ## Business Outcome
-Improve valuable organic discovery through change event evaluation, with a clear SEO/AEO mechanism and connection to the active business Objective.
+Improve future organic-discovery decisions by turning executed changes into evidence rather than anecdotes.
 
 ## Run When
-Run when the configured measurement window closes, a report is due, or **change event evaluation** evidence becomes decision-relevant.
+Use when a material change has enough post-change evidence to evaluate, or when a severe negative signal justifies an earlier bounded review. If the evidence window is not mature enough, say so; AURA does not wait or schedule the future check itself.
 
 ## Process
-1. [HYBRID] Load the Change Event hypothesis, affected asset/query/topic, before state, expected metrics, guardrails, and measurement plan.
-2. [HYBRID] Wait until the predefined minimum observation condition/window unless an early severe negative guardrail triggers review.
-3. [INTEGRATION] Retrieve post-change business/search/AI/local/technical observations and validate data health.
-4. [DETERMINISTIC] Normalize for demand, position, seasonality, concurrent changes, market/device mix, and other confounders defined in the plan.
-5. [AI] Classify outcome as positive, negative, neutral, or inconclusive with effect size/range and confidence.
-6. [HYBRID] Write learning back to the Change Event/Opportunity and route harmful results to rollback/replanning.
+1. [HYBRID] Resolve the ChangeEvent/change evidence, hypothesis, affected scope, before state, intended outcome, guardrails, and any measurement design actually used.
+2. [AI] Judge whether enough evidence exists for the intended evaluation. Preserve the remaining measurement condition/checkpoint when useful instead of manufacturing a conclusion.
+3. [INTEGRATION] Retrieve relevant post-change business/search/AI/local/technical observations and verify that measurement inputs are usable.
+4. [HYBRID] Account for demand, seasonality, concurrent changes, market/device mix, position/SERP shifts, and other plausible confounders using only adjustments the evidence/design can support.
+5. [AI] Classify the result as supported improvement, supported harm, neutral/no material effect, or inconclusive; state effect size/range and causal confidence separately.
+6. [HYBRID] Persist an OutcomeEvaluation and material supporting MetricObservations when future work benefits. Recommend rollback/replanning or another next method when warranted, but the active user/harness owns any actual change.
+7. [AI] Promote reusable Learning only through the appropriate evidence-based Learning path when the result is sufficiently strong and scoped; one change does not automatically become a rule.
 
-## Decisions / Routing
-- Route → SEO Domain Learning / Core Business Learning as justified by outcome evidence.
-- Route → Core Opportunity qualification when an SEO intervention is evidence-supported.
+## Verification
+- Before/after association is not presented as causality without supporting design/evidence.
+- Confounders and measurement limitations remain visible.
+- Recommended reversal/replanning is distinct from action actually executed.
 
-
+## Completion Criteria
+- The organization has a calibrated reusable evaluation of the change and knows what, if anything, the evidence warrants next without automatic routing.

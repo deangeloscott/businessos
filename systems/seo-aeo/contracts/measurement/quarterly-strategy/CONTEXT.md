@@ -10,11 +10,6 @@ reads:
 - Observation
 writes:
 - MetricObservation
-- Experiment
-- Learning
-- OutcomeEvaluation
-- Opportunity
-- ChangeEvent
 capabilities:
   required:
   - analytics.read
@@ -27,30 +22,31 @@ context:
 - Market
 - Objective
 - Offer
-evidence_inputs:
-- review mention reputation response history
 ---
-# Quarterly Organic Discovery Strategy Review
+# Organic Discovery Strategy Review
 
 ## Purpose
-Reassess markets, demand, competitors, asset portfolio, strategy evidence, and resource direction.
+Reassess organic-discovery markets, demand, competitors, asset portfolio, strategy evidence, and investment direction over a strategically meaningful horizon.
 
 ## Business Outcome
-Improve valuable organic discovery through quarterly organic discovery strategy review, with a clear SEO/AEO mechanism and connection to the active business Objective.
+Keep SEO/AEO strategy aligned with current business value and evidence instead of preserving tactics because they were previously selected.
 
 ## Run When
-Run when the configured measurement window closes, a report is due, or **quarterly organic discovery strategy review** evidence becomes decision-relevant.
+Use when the organization needs a strategic organic-discovery review across a sufficiently meaningful period. Quarterly is a common horizon, not an AURA-owned schedule.
 
 ## Process
-1. [HYBRID] Refresh Brand Context for product/offer/audience/market/positioning changes.
-2. [HYBRID] Review quarter business value and longer-term organic contribution against objectives and proxy dependence.
-3. [AI] Reassess Demand Universe, competitor types, answer/search/local surfaces, topic coverage, authority/reputation, and technical architecture.
-4. [HYBRID] Review what intervention classes worked for this brand and what SEO ecosystem evidence or eligible System Learning changed.
-5. [AI] Identify structural investments such as new asset types, original research/data, architecture, localization, reputation programs, or integrations.
-6. [AI] Reprioritize objectives/opportunity scoring weights only with an interpretable business reason and preserve version history.
+1. [HYBRID] Reuse current Business/Brand/Offer/Audience/Market/Objectives and identify changes that materially alter the strategy question.
+2. [HYBRID] Review business value and longer-term organic contribution against Objectives, including where conclusions still rely on proxies.
+3. [AI] Reassess the demand universe, competitor types, answer/search/local surfaces, topic/asset coverage, authority/reputation, and technical architecture at the depth that could change strategy.
+4. [AI] Review which intervention mechanisms have evidence for this organization and what credible external/SEO ecosystem evidence materially changes prior assumptions.
+5. [AI] Identify structural investments or removals worth considering, such as asset types, original research/data, architecture, localization, reputation work, or integrations; do not preserve a tactic merely because it exists in an older plan.
+6. [AI] Recommend changes to strategic priorities/weights only with an interpretable business reason and evidence. Persist actual organizational decisions when they are made; do not deterministically rewrite strategy because a reporting period ended.
+7. [DETERMINISTIC] Persist only new reusable MetricObservations that improve future measurement context.
 
-## Decisions / Routing
-- Route → SEO Domain Learning / Core Business Learning as justified by outcome evidence.
-- Route → Core Opportunity qualification when an SEO intervention is evidence-supported.
+## Verification
+- Strategy recommendations trace to current business context and evidence.
+- External tactic popularity does not substitute for local applicability/outcome evidence.
+- The review does not automatically create Learning, Opportunities, or routed work.
 
-
+## Completion Criteria
+- The organization has a current evidence-backed view of where organic discovery should concentrate, stop, deepen, or change, with decisions left to the appropriate user/model.
