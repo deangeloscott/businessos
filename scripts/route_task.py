@@ -29,6 +29,26 @@ def _words(value):
     return set(re.findall(r'[a-z0-9]{2,}',str(value or '').lower()))
 
 
+def _candidate_score(words,q,cid,row):
+    if q==cid.lower():return 10000
+    cid_words=_words(cid.replace('.',' ').replace('-',' '))
+    title_tokens=set(row.get('title_tokens') or [])
+    purpose_tokens=set(row.get('purpose_tokens') or [])
+    run_when_tokens=set(row.get('run_when_tokens') or [])
+    if title_tokens or purpose_tokens or run_when_tokens:
+        # These are authored retrieval cues, not semantic rules. A Run When match is
+        # especially useful because the playbook author explicitly described when the
+        # method should be considered. The model/user still chooses applicability.
+        score=(len(words & title_tokens)*5)+(len(words & purpose_tokens)*3)+(len(words & run_when_tokens)*5)
+    else:
+        # Backward-compatible fallback for a route index generated before cue-specific
+        # fields existed.
+        score=len(words & set(row.get('tokens') or []))*3
+    score+=len(words & cid_words)*2
+    if any(token in q for token in cid_words if len(token)>=5):score+=4
+    return score
+
+
 def route(task,top=5):
     q=str(task or '').strip().lower()
     if not q:return []
@@ -36,13 +56,7 @@ def route(task,top=5):
     for row in rows:
         cid=str(row.get('contract_id') or '')
         if not cid or cid not in installed:continue
-        if q==cid.lower():score=10000
-        else:
-            tokens=set(row.get('tokens') or [])
-            cid_words=_words(cid.replace('.',' ').replace('-',' '))
-            overlap=len(words & tokens);id_overlap=len(words & cid_words)
-            phrase_bonus=4 if any(token in q for token in cid_words if len(token)>=5) else 0
-            score=(overlap*3)+(id_overlap*2)+phrase_bonus
+        score=_candidate_score(words,q,cid,row)
         if score<=0:continue
         scored.append((score,cid,row))
     scored.sort(key=lambda item:(item[0],item[1]),reverse=True)
@@ -51,7 +65,7 @@ def route(task,top=5):
         out.append({
             'score':score,'contract_id':cid,'owner_system':row.get('owner_system'),'status':'available',
             'selection_authority':False,
-            'reason':'lexical/index candidate only; current product source confirms the playbook exists, and the active model/user must judge semantic applicability',
+            'reason':'lexical/index candidate only; authored title/purpose/Run When cues and current product source make this discoverable, while the active model/user must judge semantic applicability',
         })
     return out
 
