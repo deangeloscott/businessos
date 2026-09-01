@@ -5,12 +5,11 @@
   "additionalProperties": false,
   "properties": {
     "format_version": {"const":"1.0"},
-    "prompt_mode": {"enum":["never_ask","ask_when_noteworthy","prepare_draft_only"]},
     "default_detail_level": {"enum":["workflow_only","anonymized_evidence","full_case_study"]},
     "default_identity_level": {"enum":["anonymous","pseudonymous","named"]},
     "exchange_discovery_enabled": {"type":"boolean"},
     "notes": {"type":["string","null"]},
     "exchange_sources": {"type":"array","items":{"type":"string","minLength":1},"uniqueItems":true}
   },
-  "required": ["format_version","prompt_mode","default_detail_level","default_identity_level","exchange_discovery_enabled","exchange_sources","notes"]
+  "required": ["format_version","default_detail_level","default_identity_level","exchange_discovery_enabled","exchange_sources","notes"]
 }
