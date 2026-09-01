@@ -22,21 +22,24 @@ context:
 # Capture Brand Profile
 
 ## Purpose
-Turn explicit brand preferences, approved examples, and observable first-party patterns into durable generation constraints for every installed module.
+Preserve durable organization Brand guidance and evidence-backed Brand context so future work can express the organization consistently without inventing rules from isolated examples.
 
 ## Business Outcome
-Make outputs consistently look, sound, and behave like this specific brand instead of a generic business using the same underlying Business OS.
+Make relevant outputs reflect this organization's established voice, positioning, visual/content rules, references, and prohibitions while keeping Brand truth distinct from optional working preferences and public inference.
 
 ## Run When
-When a business provides or changes brand voice, visual rules, content preferences, channel conventions, approved references, or prohibited styles. During fresh-business onboarding, explicit organization-level brand guidance should become canonical Brand state before downstream customer-facing work begins.
+Use when the organization explicitly provides/changes Brand guidance, when authoritative Brand materials should be normalized into durable context, or when resolving Brand context would materially improve current/future work.
 
 ## Process
-1. [HYBRID] Collect explicit instructions, brand guidelines, approved examples, rejected examples, reference Assets, and channel-specific preferences; distinguish mandatory rules from preferences. If these are supplied during fresh-business onboarding, create a small structured Brand manifest and pass it through `bootstrap_explicit_context.py --brand-profile-file ...` (or the supported `brand` facts field) so the Brand exists before residual/downstream Runs. Do not flatten voice/style/audience guidance into BusinessClaim constraints merely to avoid creating Brand state.
-2. [AI] Normalize the guidance into voice, positioning, visual identity, content style, channel preferences, reference assets, prohibited styles, claims, and other durable brand rules without inventing unsupported requirements.
-3. [AI] Resolve conflicts by authority and recency: explicit current business instruction outranks inferred patterns; approved guidelines outrank isolated historical examples; unresolved conflicts remain visible.
-4. [HYBRID] Determine whether each change is a factual synchronization, explicit brand decision, or inference. Existing canonical Brand decisions that are only inferred require a ContextUpdateProposal rather than silent overwrite.
-5. [DETERMINISTIC] Validate the resulting Brand object or proposal against schema, business isolation, references, and approved-claim constraints.
-6. [AI] Summarize the active brand rules in operational terms that downstream Content, Marketing, SEO, and other installed modules can apply directly, including notable do/don't examples.
+1. [HYBRID] Gather relevant explicit instructions, brand guidelines, approved/rejected examples, reference Assets, and authoritative first-party materials. Distinguish mandatory Brand rules from optional work/expression preferences; PreferenceProfile remains the home for reusable optional choices.
+2. [AI] Normalize only supported meaning into voice, positioning, visual identity, content style, channel guidance, reference assets, prohibited styles, claims, and other durable Brand fields. Do not invent requirements because they seem conventional or because one historical asset happened to use them.
+3. [AI] Resolve conflicts using the actual evidence/authority available: explicit current organization instruction generally outranks inference; authoritative current guidelines generally outrank isolated historical examples. Preserve material unresolved conflict/uncertainty rather than silently choosing.
+4. [AI] Decide whether newly observed material establishes current Brand truth, remains inference/candidate guidance, or indicates an unresolved possible change to existing Brand context. Use `ContextUpdateProposal` only when that unresolved candidate change is itself worth remembering; it is not a required approval/change-control step.
+5. [DETERMINISTIC] Persist/validate the Brand or proposal chosen by the model/user against schema, business isolation, exact references, provenance, and outward-claim constraints where applicable. Deterministic AURA does not decide whether two pieces of Brand language mean the same thing.
+6. [AI] Make the resulting Brand context understandable enough that future Content, Marketing, SEO, sales-support, or other relevant work can apply the established guidance without needing the original conversation.
 
 ## Verification
-A downstream job reading the Brand object can distinguish required rules, preferred expression, references, and prohibited behavior without needing the original conversation that established them.
+- Explicit Brand truth, inferred patterns, optional preferences, and outward BusinessClaims remain distinct.
+- A Brand object is not required merely to start or continue unrelated organizational work.
+- ContextUpdateProposal is used only for materially useful unresolved change memory, not as a permission gate.
+- A downstream model can understand established Brand guidance and its provenance without treating unsupported public patterns as organization truth.
