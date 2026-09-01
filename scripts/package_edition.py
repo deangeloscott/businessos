@@ -7,7 +7,6 @@ def editions():
     p=ROOT/'distribution/editions.json'
     if not p.exists():return {}
     return {e['id']:e for e in json.loads(p.read_text()).get('editions',[])}
-
 def resolve_modules(requested):
     cat=module_catalog();unknown=[m for m in requested if m not in cat]
     if unknown:raise ValueError('Unknown module(s): '+', '.join(unknown))
@@ -18,13 +17,11 @@ def resolve_modules(requested):
             for dep in cat[mid].get('required_modules',[]):
                 if dep not in resolved:resolved.add(dep);changed=True
     return resolved
-
 def dependency_manifest(modules):
     cat=module_catalog();out=[]
     for mid in sorted(modules):
         m=cat[mid];out.append({'module':mid,'required_modules':m.get('required_modules',[]),'optional_installed':[x for x in m.get('optional_modules',[]) if x in modules],'optional_not_installed':[x for x in m.get('optional_modules',[]) if x not in modules],'standalone':m.get('standalone',False)})
     return {'format_version':'1.0','modules':out}
-
 def _copy_clean(dest):
     def ignore(path,names):
         ignored={'__pycache__','.git','.DS_Store','.businessos'}&set(names);rel=Path(path).resolve().relative_to(ROOT.resolve()) if Path(path).resolve()!=ROOT.resolve() else Path('.')
@@ -35,12 +32,10 @@ def _copy_clean(dest):
     shutil.copytree(ROOT,dest,ignore=ignore)
     if (dest/'qualification').exists():raise RuntimeError('Packaged distribution contains maintainer-only qualification infrastructure')
     (dest/'generated').mkdir(exist_ok=True);(dest/'tests').mkdir(exist_ok=True)
-
 def _prune_modules(dest,modules):
     sdir=dest/'systems'
     for p in list(sdir.iterdir()):
         if p.is_dir() and p.name not in modules:shutil.rmtree(p)
-
 def _copy_interface_schemas(dest):
     present_titles={}
     for sp in dest.rglob('*.schema.json'):
@@ -59,7 +54,6 @@ def _copy_interface_schemas(dest):
     for typ in sorted(needed):
         if typ in present_titles or typ not in source_by_title:continue
         src=source_by_title[typ];parts=src.relative_to(ROOT).parts;owner=parts[1] if len(parts)>2 and parts[0]=='systems' else 'external';out=dest/'core/interfaces'/owner/src.name;out.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(src,out)
-
 def _prune_capabilities(dest):
     """Keep only provider-neutral capability vocabulary used by the packaged SOPs."""
     used=set()
@@ -69,17 +63,13 @@ def _prune_capabilities(dest):
         for c in meta.get('capabilities',{}).get('required',[])+meta.get('capabilities',{}).get('optional',[]):
             if c!='none':used.add(c)
     cp=dest/'core/capabilities/catalog.json';d=json.loads(cp.read_text());d['capabilities']=[x for x in d.get('capabilities',[]) if x.get('id') in used];cp.write_text(json.dumps(d,indent=2)+'\n')
-
 def _write_instance_template(dest,modules):
     p=dest/'instances/_template/instance.json';d=json.loads(p.read_text());d['enabled_systems']=sorted(modules-{'core'});p.write_text(json.dumps(d,indent=2)+'\n')
-
 def _write_navigation(dest,edition_id,display_name,modules):
     cat=module_catalog();version=os_version();domains=sorted(modules-{'core'});expansion='Agentic Understanding and Reinforcement Architecture';names=', '.join(cat[m]['display_name'] for m in domains) if domains else 'Core only'
-    inst={'format_version':'1.0','source_version':version,'maturity':'alpha','edition':edition_id,'display_name':display_name,'public_name':display_name,'name_expansion':expansion,'descriptor':'AI-native BusinessOS','installed_modules':['core']+domains,'standalone_distribution':edition_id!='full','portable_first':True,'default_environment':'local','configurable_workspace_root':True,'human_knowledge_layer':True,'deployment_profiles':'distribution/deployment-profiles.json','brand':'ViralTrac','startup_message':'WELCOME.md'}
+    inst={'format_version':'1.0','source_version':version,'maturity':'alpha','edition':edition_id,'display_name':display_name,'public_name':display_name,'name_expansion':expansion,'descriptor':'AI-native BusinessOS','installed_modules':['core']+domains,'standalone_distribution':edition_id!='full','portable_first':True,'default_environment':'local','configurable_workspace_root':True,'human_knowledge_layer':True,'deployment_profiles':'distribution/deployment-profiles.json','brand':'ViralTrac','startup_message':'BEGINNERS-GUIDE.md'}
     (dest/'INSTALLATION.json').write_text(json.dumps(inst,indent=2)+'\n');(dest/'distribution/ACTIVE-DEPENDENCIES.json').write_text(json.dumps(dependency_manifest(modules),indent=2)+'\n')
-    readme=f'''# {display_name}\n\n**Alpha · v{version}**  \n**AURA = {expansion}.**\n\n{display_name} gives capable AI organization-owned memory, reusable operating knowledge, and lightweight continuity so useful work can build on what the organization already knows.\n\n> Alpha means the architecture is usable and integrity-tested while real-work quality, playbooks, retrieval, Learning, and usability are still being improved before 1.0.\n\nInstalled domain modules: **{names}**. Core is always included.\n\n## Start in three steps\n\n1. Download/unzip this AURA edition.\n2. Give the folder to a capable AI/agent harness.\n3. Tell it about the business and what you want.\n\nYou do not need to choose a playbook, contract, schema, provider, or operating mode first. See `START-HERE.md` for the short guide and `PLAYBOOKS.md` for installed capabilities.\n\nAURA is local-first, organization-owned, and model/provider/harness neutral. The active harness owns tools, models, credentials, orchestration, scheduling, and other execution mechanics; AURA owns durable organizational memory, reusable operating knowledge, and the integrity of what it persists.\n\n- `START-HERE.md` — shortest quick start\n- `WELCOME.md` — first-run overview\n- `PLAYBOOKS.md` — plain-language capabilities\n- `OPERATOR-GUIDE.md` — optional workspace and advanced mechanics\n- `DEPLOYMENT.md` — storage/deployment/team options\n- `CONTEXT.md` — AI/agent operating context\n- `LICENSE.md` — source-available license\n\nThis distribution is **source-available, not open source**. See `LICENSE.md`.\n''';(dest/'README.md').write_text(readme)
-    start=f'''# Start Here — {display_name}\n\n**Alpha · v{version}**  \n**AURA = {expansion}.**\n\nInstalled domain modules: **{names}**.\n\nGive this folder to a capable AI/agent, tell it about the business and desired outcome, and talk normally. The agent should retrieve relevant AURA memory, use an AURA playbook when helpful, use its actual host capabilities normally, do the substantive work, and preserve only material organizational meaning worth carrying forward.\n\nThe model/harness remains responsible for tools, browsing, files, APIs, rendering, credentials, scheduling, retries, provider choice, orchestration, and other execution mechanics.\n\nOptional stronger models, Skills/SOPs, business systems, private Git, shared workspaces, long-running harnesses, and ViralTrac can improve the experience but are not prerequisites.\n\nSee `OPERATOR-GUIDE.md` for advanced workspace mechanics and `PLAYBOOKS.md` for installed jobs.\n\n**understand → retrieve → work → remember → measure → learn → continue**\n''';(dest/'START-HERE.md').write_text(start)
-    subprocess.run([sys.executable,str(dest/'scripts/generate_welcome.py')],cwd=dest,check=True)
+    readme=f'''# {display_name}\n\n**Alpha · v{version}**  \n**AURA = {expansion}.**\n\n{display_name} gives AI organization-owned memory, reusable operating knowledge, and lightweight continuity so useful work can build on what the organization already knows.\n\n> Alpha means the architecture is usable and integrity-tested while real-work quality, playbooks, retrieval, Learning, and usability are still being improved before 1.0.\n\nInstalled domain modules: **{names}**. Core is always included.\n\n## Start in three steps\n\n1. Download and unzip this AURA edition.\n2. Give an AI tool access to the folder.\n3. Tell it about the business and what you want.\n\nYou do not need to choose a playbook, contract, schema, provider, or operating mode first. See `BEGINNERS-GUIDE.md` for the main human guide and `PLAYBOOKS.md` for installed capabilities.\n\nAURA is local-first, organization-owned, and model/provider/harness neutral. The active harness owns tools, models, credentials, orchestration, scheduling, and other execution mechanics; AURA owns durable organizational memory, reusable operating knowledge, and the integrity of what it persists.\n\n- `BEGINNERS-GUIDE.md` — main human guide, including first use, memory, upgrades, optional tools, and troubleshooting\n- `PLAYBOOKS.md` — plain-language capabilities\n- `OPERATOR-GUIDE.md` — practical commands and advanced use\n- `DEPLOYMENT.md` — storage, deployment, multi-device, and team details\n- `CONTEXT.md` — AI/agent operating context\n- `LICENSE.md` — source-available license\n\nThis distribution is **source-available, not open source**. See `LICENSE.md`.\n''';(dest/'README.md').write_text(readme)
     lines=['# Task Navigator','',f'Installed edition: **{display_name}**.','']
     for mid in domains:
         mp=dest/'systems'/mid/'process-map.json';lines += [f"## {cat[mid]['display_name']}",'',cat[mid]['description'],'','| Activity | Result | Entry contract |','|---|---|---|']
@@ -94,7 +84,6 @@ def _write_navigation(dest,edition_id,display_name,modules):
         for a in d.get('activities',[]):lines.append(f"| `{a['id']}` | {a.get('result','')} | `{a['entry_contract']}` |")
         lines.append('')
     (dest/'TASK-NAVIGATOR.md').write_text('\n'.join(lines))
-
 def _write_distribution_test(dest):
     (dest/'tests/run_distribution.py').write_text('#!/usr/bin/env python3\nfrom pathlib import Path\nimport sys\nROOT=Path(__file__).resolve().parents[1]\nsys.path.insert(0,str(ROOT/"scripts"))\nfrom validate_distribution import validate_distribution\nvalidate_distribution()\n')
 def _run(dest,rel):
