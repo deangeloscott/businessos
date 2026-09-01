@@ -13,43 +13,37 @@ capabilities:
   - none
   optional:
   - none
-subcontracts:
-  conditional:
-  - id: core.learning.playbook-evolution
-    when: a sufficiently strong reusable Learning may justify a durable process change
 ---
 # Promote Learning
 
 ## Purpose
-Turn repeated or sufficiently strong outcome evidence into scoped future decision guidance and, when justified, a candidate operating-process improvement.
+Turn repeated or sufficiently strong outcome evidence into scoped future decision guidance without turning Learning maturity into an automatic routing lifecycle.
 
 ## Business Outcome
-Improve future decisions without converting anecdotes into universal best practices, while giving every domain a governed route from strong Learning to Playbook Evolution.
+Improve future decisions without converting anecdotes into universal best practices or silently changing reusable AURA product behavior.
 
 ## Run When
-When OutcomeEvaluations or repeated evidence suggest a tactic, threshold, preference, or mechanism is reusable.
+When OutcomeEvaluations or repeated evidence suggest a tactic, threshold, preference, or mechanism may be reusable beyond the immediate result.
 
 ## Do Not Run When
-Do not promote mere observations, one-off stylistic edits, or weak correlations beyond their evidence-supported scope.
+Do not promote mere observations, one-off stylistic edits, weak correlations, or unsupported generalizations beyond their evidence-supported scope.
 
 ## Process
 1. [AI] State the candidate Learning as a conditional proposition rather than a slogan.
-2. [HYBRID] Determine the narrowest appropriate scope: domain, business, or system.
-3. [HYBRID] Aggregate supporting/contradictory evidence and assess replication, causal confidence, and applicability.
-4. [HYBRID] Set maturity/status and explicit applies_when/does_not_apply_when.
-5. [DETERMINISTIC] For system learning, confirm evidence eligibility and isolation requirements.
-6. [DETERMINISTIC] Persist Learning and emit learning.promoted/updated.
-7. [HYBRID] If the Learning is strong enough that a durable business process, new local playbook, or standard BusinessOS change may be justified, route to `core.learning.playbook-evolution`; do not edit product files directly.
+2. [HYBRID] Determine the narrowest justified scope: organization/domain or broader system-level reuse only when evidence supports it.
+3. [HYBRID] Aggregate supporting and contradictory evidence and assess replication, causal confidence, freshness, and applicability.
+4. [AI] Choose maturity/status and explicit applies_when/does_not_apply_when from the evidence rather than from a fixed promotion pipeline.
+5. [DETERMINISTIC] For any broader-scope Learning, verify the actual evidence/reference/isolation requirements that make such reuse legitimate.
+6. [DETERMINISTIC] Persist the Learning. Do not emit an AURA runtime event merely because its maturity or current interpretation changed.
+7. [AI] If formal reusable operating knowledge would materially improve future work, `core.learning.playbook-evolution` is an available method the model/user may choose. Promotion does not automatically route there or edit product files.
 
 ## Verification
-- Validate written objects against their schemas and preserve source/lineage references.
-- Playbook evolution scope must never be broader than the promoted Learning's evidence.
+- The Learning is schema-valid and its scope is no broader than its supporting evidence.
+- Supporting and contradictory evidence remain inspectable.
+- Learning maturity does not create execution authority or mandatory next work.
 
 ## Failure / Fallback
-- If a required capability is unavailable, create a human-executable Manual Action Packet for the missing step; do not silently omit required work.
-- If evidence is insufficient, record the unresolved knowledge gap and avoid overstating confidence.
+- If evidence remains insufficient or contradictory, keep the Learning at the narrowest justified maturity/scope or leave it unpromoted.
 
 ## Completion Criteria
-- Required outputs exist and validate.
-- Material uncertainty, contradictions, and unresolved dependencies are explicit.
-- Any required next route is represented by a canonical reference or event rather than an informal note.
+- Durable guidance exists only when it improves future work, with applicability, uncertainty, and evidence clear enough for later models/humans to use it responsibly.
