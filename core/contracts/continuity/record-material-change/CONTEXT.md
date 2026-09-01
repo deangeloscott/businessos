@@ -1,11 +1,8 @@
 ---
-name: Record Material Change
 id: core.continuity.record-material-change
-version: 1.0.0
+type: playbook
+version: 1.0.1
 owner_system: core
-stakeholders:
-- Business
-- ChangeEvent
 reads:
 - Business
 - DecisionRecord
@@ -14,46 +11,41 @@ reads:
 - WorkRequest
 writes:
 - ChangeEvent
-input_contract:
-- Business context
-- A real organizational change whose history would materially help later understanding, troubleshooting, measurement, or continuation
-output_contract:
-- A concise ChangeEvent describing what materially changed, when, where, and the evidence or results worth preserving
-capabilities: []
-events:
-  consumes:
+capabilities:
+  required:
   - none
-  emits:
+  optional:
   - none
+context:
+- Business
 ---
+# Record Material Change
 
-# Purpose
-
+## Purpose
 Preserve meaningful organizational change history when remembering the change would improve future understanding, troubleshooting, measurement, or continuity.
 
-# When to use
+## Business Outcome
+Give future humans and AI a concise, evidence-aware record of important changes without turning ordinary execution into a universal mutation ceremony or runtime event log.
 
-Create a `ChangeEvent` only for a material change that actually happened or was materially attempted. Do not create one for every file edit, tool call, internal step, or transient runtime action.
+## Run When
+Use this when a real organizational change occurred or was materially attempted and remembering it later would improve understanding, troubleshooting, measurement, or continuation. Do not create a `ChangeEvent` for every file edit, tool call, internal step, or transient runtime action.
 
-Planned work belongs in the organizational object that describes the plan or work itself, such as a `WorkRequest`, `Initiative`, or `DecisionRecord`. A `ChangeEvent` is history, not a workflow state machine.
+## Process
+1. [AI] Determine whether the change is materially worth remembering. Planned work belongs in the organizational object that describes the plan or work itself; a `ChangeEvent` records meaningful history, not a workflow state machine.
+2. [HYBRID] Identify the organization subject or scope that materially changed and record a concise business-readable summary of what happened.
+3. [HYBRID] Record when the change occurred and the actor when that information is useful and known; do not invent missing execution details.
+4. [AI] Preserve before/after state, source evidence, decisions, work references, or result references only when they materially help explain the change later.
+5. [AI] When useful, record the semantic outcome as `applied`, `partial`, `failed`, `rolled_back`, or `unknown`, matching what the evidence actually supports.
+6. [HYBRID] If the change is later reversed or superseded, preserve the relationship or resulting state without rewriting the historical record.
 
-# Method
+## Verification
+- The `ChangeEvent` corresponds to a real material change or material attempted change.
+- Its claims are supported by the available organizational evidence at the level of certainty recorded.
+- A `VerificationRecord` is created only when an actual check was performed and preserving that check materially improves organizational truth or continuity.
+- A future need to check something is represented as attention, monitoring intent, or work rather than a pretend verification result.
 
-1. Identify the organization subject or scope that materially changed.
-2. Record a concise business-readable summary of the change.
-3. Record when it occurred and the actor when that information is useful and known.
-4. Preserve before/after state, source evidence, decisions, work references, or result references only when they help explain the change later.
-5. If useful, record the semantic outcome as `applied`, `partial`, `failed`, `rolled_back`, or `unknown`.
-6. If the change is later reversed, preserve the rollback relationship or resulting state without rewriting history.
+## Boundary
+This SOP does not authorize changes, control execution, prescribe tools, or require a ceremony around ordinary work. The human, model, and harness decide how work is executed; AURA preserves only the organizational meaning that remains useful afterward.
 
-# Verification
-
-A `VerificationRecord` is optional. Create one only when an actual check is performed and preserving the check materially improves organizational truth or continuity. A future need to check something belongs in attention, monitoring intent, or work—not in a pretend verification result.
-
-# Boundary
-
-This SOP does not authorize changes, control execution, prescribe tools, or require a ceremony around ordinary work. The human, model, and harness decide how work is executed; AURA preserves the organizational meaning that remains useful afterward.
-
-# Completion
-
-The record is complete when a future capable actor can understand the material change and its useful evidence or outcome without reconstructing runtime chatter.
+## Completion Criteria
+A future capable actor can understand the material change, its relevant evidence or result, and any meaningful relationship to prior or subsequent organizational state without reconstructing runtime chatter.
