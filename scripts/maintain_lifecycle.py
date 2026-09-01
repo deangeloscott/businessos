@@ -1,34 +1,37 @@
 #!/usr/bin/env python3
+"""Archive old terminal semantic state without deleting durable evidence."""
 from _common import *
-import argparse,json,datetime,shutil
+import argparse,json,datetime
 
-def parse(s):
-    if not s:return None
-    try:return datetime.datetime.fromisoformat(s.replace('Z','+00:00'))
+
+def parse(value):
+    if not value:return None
+    try:return datetime.datetime.fromisoformat(value.replace('Z','+00:00'))
     except Exception:return None
 
-def age_days(ts,asof):
-    d=parse(ts);return (asof-d).total_seconds()/86400 if d else -1
+def age_days(timestamp,as_of):
+    value=parse(timestamp);return (as_of-value).total_seconds()/86400 if value else -1
+
 
 def main():
-    ap=argparse.ArgumentParser(description='Archive old terminal attention/platform state. No durable evidence is deleted.')
-    ap.add_argument('business_id');ap.add_argument('--attention-days',type=int,default=90);ap.add_argument('--platform-days',type=int,default=180);ap.add_argument('--apply',action='store_true');ap.add_argument('--as-of');a=ap.parse_args()
-    base=ROOT/'instances'/a.business_id
-    if not base.exists():raise SystemExit(f'Unknown business: {a.business_id}')
-    asof=parse(a.as_of) if a.as_of else datetime.datetime.now(datetime.timezone.utc)
-    if asof.tzinfo is None:asof=asof.replace(tzinfo=datetime.timezone.utc)
+    parser=argparse.ArgumentParser(description='Move old resolved AttentionItems and superseded PlatformChanges out of the active view. No durable evidence is deleted.')
+    parser.add_argument('business_id');parser.add_argument('--attention-days',type=int,default=90);parser.add_argument('--platform-days',type=int,default=180);parser.add_argument('--apply',action='store_true');parser.add_argument('--as-of');args=parser.parse_args()
+    base=ROOT/'instances'/args.business_id
+    if not base.exists():raise SystemExit(f'Unknown business: {args.business_id}')
+    as_of=parse(args.as_of) if args.as_of else datetime.datetime.now(datetime.timezone.utc)
+    if as_of.tzinfo is None:as_of=as_of.replace(tzinfo=datetime.timezone.utc)
     actions=[]
-    for obj,p in iter_instance_objects(a.business_id):
-        typ=obj.get('object_type');status=obj.get('status');days=None;histdir=None
-        if typ=='AttentionItem' and status in {'resolved','superseded'}:days=a.attention_days;histdir=base/'history'/'attention'/str(asof.year)
-        elif typ=='PlatformChange' and status=='superseded':days=a.platform_days;histdir=base/'history'/'platform-changes'/str(asof.year)
+    for obj,path in iter_instance_objects(args.business_id):
+        typ=obj.get('object_type');status=obj.get('status')
+        if typ=='AttentionItem' and status=='resolved':days=args.attention_days;history_dir=base/'history'/'attention'/str(as_of.year)
+        elif typ=='PlatformChange' and status=='superseded':days=args.platform_days;history_dir=base/'history'/'platform-changes'/str(as_of.year)
         else:continue
-        if age_days(obj.get('updated_at'),asof)<days:continue
-        target=histdir/p.name
-        actions.append({'id':obj['id'],'object_type':typ,'from':str(p.relative_to(ROOT)),'to':str(target.relative_to(ROOT))})
-        if a.apply:
-            obj['status']='archived';obj['updated_at']=asof.isoformat();bos=obj.setdefault('extensions',{}).setdefault('businessos',{});bos['archived_from_status']=status;bos['archived_at']=asof.isoformat()
+        if age_days(obj.get('updated_at'),as_of)<days:continue
+        target=history_dir/path.name;actions.append({'id':obj['id'],'object_type':typ,'from':str(path.relative_to(ROOT)),'to':str(target.relative_to(ROOT))})
+        if args.apply:
+            obj['status']='archived';obj['updated_at']=as_of.isoformat();bos=obj.setdefault('extensions',{}).setdefault('businessos',{});bos['archived_from_status']=status;bos['archived_at']=as_of.isoformat()
             target.parent.mkdir(parents=True,exist_ok=True);target.write_text(json.dumps(obj,indent=2)+'\n')
-            if p.resolve()!=target.resolve():p.unlink()
-    print(json.dumps({'business_id':a.business_id,'apply':a.apply,'eligible_count':len(actions),'actions':actions},indent=2))
+            if path.resolve()!=target.resolve():path.unlink()
+    print(json.dumps({'business_id':args.business_id,'apply':args.apply,'eligible_count':len(actions),'actions':actions},indent=2))
+
 if __name__=='__main__':main()
