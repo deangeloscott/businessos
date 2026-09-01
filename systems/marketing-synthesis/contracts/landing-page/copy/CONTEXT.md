@@ -9,7 +9,6 @@ reads:
 - Asset
 - WorkRequest
 writes:
-- WorkRequest
 - Asset
 capabilities:
   required:
@@ -33,13 +32,13 @@ context:
 # Landing Page Copy
 
 ## Purpose
-Write the complete evidence-backed copy for an approved landing-page persuasion architecture.
+Write complete evidence-backed copy for a landing-page persuasion architecture.
 
 ## Business Outcome
 Communicate the right promise, mechanism, proof, Offer, fit, objections, and CTA clearly enough for qualified visitors to decide.
 
 ## Run When
-Run after landing-page architecture, message match, proof, and Offer facts are resolved. When the requested deliverable is a standalone customer-facing homepage/landing-page draft, do **not** create the bounded Run with this leaf contract as the root; execute it as the required subcontract of `marketing.assets.landing-page`.
+Use when landing-page/homepage copy is needed and the relevant message match, proof, Offer facts, and page structure are sufficiently known. It may be used directly or as part of a broader landing-page method; no Run hierarchy or required subcontract relationship is necessary.
 
 ## Process
 1. [AI] Draft headline/subheadline/opening from source-message match and audience desired outcome without unsupported superlatives.
@@ -48,4 +47,4 @@ Run after landing-page architecture, message match, proof, and Offer facts are r
 4. [AI] Address important objections at the point they arise rather than adding a generic FAQ only.
 5. [AI] Write CTA/microcopy so the user knows what happens next and what commitment is being made.
 6. [HYBRID] Remove jargon, repetition, vague claims, unnecessary hype, and copy that masks journey/product problems.
-7. [DETERMINISTIC] Hand final draft to claim/proof/QA checks with section→evidence relationships.
+7. [HYBRID] Preserve the useful draft as an Asset with section-to-evidence relationships when future work benefits from it, then use the relevant claim/proof/QA methods directly as needed. Do not create an internal WorkRequest or execution receipt merely to move between AURA methods.
