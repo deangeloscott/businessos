@@ -23,7 +23,7 @@ Before saving anything, ask:
 
 If no, do not persist it merely because a schema/helper exists.
 
-For ordinary canonical create/update work, `scripts/remember.py <business-id> --input <json>` is the generic persistence primitive. It does not require a Run or AURA playbook. Use a specialized helper only when the object has genuinely special lifecycle/evidence semantics that the generic writer should not duplicate.
+For ordinary canonical create/update work, `scripts/remember.py <business-id> --input <json>` is the generic persistence primitive. It does not require a Run or AURA playbook. On an update, `remove_fields` may explicitly remove obsolete top-level semantic fields; omission alone means “leave the existing value unchanged.” Use `scripts/forget.py` when an entire unreferenced canonical object should no longer exist. Use a specialized helper only when the object has genuinely special lifecycle/evidence semantics that the generic writer should not duplicate.
 
 A Run is an **optional bounded work receipt** for continuity/provenance. It is not required before reasoning begins and should not be required merely to remember durable truth. If a Run exists, record the method actually used: `aura_playbook`, `external_skill`, `model_created`, or `ad_hoc`.
 
@@ -48,7 +48,7 @@ When reusable process knowledge should cross an organization boundary, use an ex
 
 Use provenance appropriate to the meaning being saved. AURA should deterministically verify that referenced sources/objects exist and belong to the organization; the capable model determines semantic interpretation. Stronger literal support may still be required for outward claims or other cases where exact evidence is materially important.
 
-Current context should represent the best supported organizational truth. When reality changes, update/retire incorrect current state and preserve historical change only when the history itself has future organizational value.
+Current context should represent the best supported organizational truth. When reality changes, directly update the current object, remove obsolete fields, or forget an unneeded unreferenced object. Preserve separate historical state only when that history has future organizational value. A `ContextUpdateProposal` is for a materially useful unresolved possible correction; it is not required before correcting known truth.
 
 ## External systems
 
@@ -76,7 +76,8 @@ During ordinary organizational work, do not modify AURA product source to work a
 - `scripts/init_business.py <business-id> --name "<name>"` — establish the smallest truthful organization identity; no extra facts are required.
 - `scripts/enter.py "<request>" --business-id <id>` — retrieve bounded baseline context and playbook candidates without semantic routing.
 - Re-run `enter.py` with `--selected-contract <id>` only after the active model/user chooses an AURA playbook.
-- `scripts/remember.py <business-id> --input <json>` — create/update ordinary durable canonical meaning without a Run.
+- `scripts/remember.py <business-id> --input <json>` — create/update ordinary durable canonical meaning without a Run; use `remove_fields` on updates when a semantic field is no longer current.
+- `scripts/forget.py <business-id> <object-ref>` — remove a whole unreferenced object when it no longer deserves durable memory.
 - Use specialized persistence helpers only where they preserve real semantics, and `scripts/validate_business.py <business-id>` after material changes.
 
 The intended experience is:
