@@ -1,6 +1,6 @@
 ---
 id: core.workspace.configure
-type: service
+type: playbook
 owner_system: core
 reads: []
 writes: []
