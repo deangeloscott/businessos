@@ -8,12 +8,7 @@ reads:
 - type: Insight
   owner_system: customer-intelligence
 - MetricObservation
-writes:
-- WorkRequest
-- ChangeEvent
-- Experiment
-- MetricObservation
-- OutcomeEvaluation
+writes: []
 capabilities:
   required:
   - none
@@ -53,7 +48,8 @@ Run when journey evidence or an active Opportunity requires account / customer e
 ## Process
 1. [AI] Define expansion types relevant to the business: seats, locations, volume, tier, use cases, departments, services, or products.
 2. [DETERMINISTIC] Identify expansion-ready accounts from success, usage/capacity, organizational signals, contract timing, and unmet needs.
-3. [HYBRID] Validate with Customer Intelligence/success evidence so usage alone is not mistaken for intent.
+3. [HYBRID] Validate with relevant Customer/success evidence so usage alone is not mistaken for intent.
 4. [AI] Map stakeholders, value proof, use-case expansion, procurement/process needs, and likely objections.
-5. [HYBRID] Design handoff/process and delegate commercial messaging to Marketing/Sales where applicable.
-6. [DETERMINISTIC] Measure incremental profitable expansion plus adoption/retention guardrails.
+5. [HYBRID] Design the real customer/sales process and use relevant Marketing/Sales operating knowledge directly for commercial communication. Persist a WorkRequest only when a real organizational handoff needs to survive the current session or actor.
+6. [DETERMINISTIC] Measure incremental profitable expansion plus adoption/retention guardrails when evidence is available.
+7. [HYBRID] Preserve a ChangeEvent, Experiment, measurement, evaluation, or Learning only when that meaning actually occurred and future work benefits from remembering it.
