@@ -35,12 +35,12 @@ Do not create attention merely because a generic risk label, approval framework,
 
 ## Process
 1. [AI] Confirm the condition is materially useful to remember. Routine successful/unchanged monitoring and transient execution noise do not qualify.
-2. [DETERMINISTIC] Derive a stable business-scoped semantic `dedupe_key` from the underlying condition rather than the current timestamp, run, provider, or delivery attempt.
-3. [DETERMINISTIC] Use `scripts/upsert_attention.py` to create or update one `AttentionItem`; repeated detection updates `last_seen`/`occurrence_count` rather than creating duplicate files.
+2. [AI] Identify the stable business-scoped condition identity that should count as the same recurring AttentionItem across sessions. Express that as a compact `dedupe_key`; semantic sameness belongs to capable model/user judgment, not keyword hashing.
+3. [DETERMINISTIC] Use `scripts/upsert_attention.py` with the chosen key to create/update one exact matching `AttentionItem`; repeated use of the same key updates `last_seen`/`occurrence_count` rather than creating duplicate files.
 4. [AI] State why the condition matters, the smallest useful next action when one is known, material evidence/source refs, and originating organizational refs without inventing urgency, authority, or outcomes.
 5. [DETERMINISTIC] When acknowledged/resolved/superseded, update lifecycle through `scripts/set_attention_status.py`; resolution should point to actual evidence, results, decisions, or changed state when available.
 6. [DETERMINISTIC] Expose active state through `scripts/list_attention.py`; notification and scheduling behavior stays outside AURA Core.
-7. [DETERMINISTIC] Periodically archive old resolved/superseded items with `scripts/maintain_lifecycle.py`; archived history is not normal working context.
+7. [DETERMINISTIC] Archive old resolved/superseded items with `scripts/maintain_lifecycle.py` when housekeeping is actually useful; AURA itself does not schedule periodic maintenance.
 
 ## Verification
-There is at most one active item per dedupe key, repeated unchanged detections do not multiply files, terminal items leave the active queue, and the stored condition remains organizationally meaningful rather than runtime bookkeeping.
+There is at most one active item per explicitly chosen dedupe key, repeated unchanged detections do not multiply files, terminal items leave the active queue, and the stored condition remains organizationally meaningful rather than runtime bookkeeping.
