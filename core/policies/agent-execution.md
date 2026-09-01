@@ -31,7 +31,7 @@ Do not store as organizational memory:
 
 Use `scripts/remember.py` for ordinary durable canonical create/update operations. Use a specialized helper only where that object has genuinely special evidence, identity, or state semantics, such as research evidence, preferences, attention, or platform-change history.
 
-A bounded Run/work receipt is useful when continuity, provenance, recovery, or later understanding benefits from one. It is not required before ordinary reasoning begins or merely to remember organizational meaning. When a Run exists and its provenance materially helps, `scripts/persist_run_results.py` may persist results through that receipt.
+A bounded Run/work receipt is useful when continuity, method provenance, or later understanding benefits from one. It is not required before ordinary reasoning begins or merely to remember organizational meaning. Canonical results are persisted normally and stand on their own; if a receipt is useful, `scripts/complete_run.py` may reference those already-valid results without adding Run fields back onto them.
 
 ## Method provenance
 
@@ -43,7 +43,9 @@ A Run, when useful, identifies the method actually used:
 
 Every method uses the same optional receipt primitive. An AURA playbook ID records which reusable AURA method informed the work; it does **not** create a contract-execution manifest, subcontract ledger, permission state, execution hierarchy, or special completion regime. External Skill, model-created, and ad-hoc work may create the same legitimate organizational results without fabricated contract IDs.
 
-The model supplies substantive business meaning. Deterministic AURA helpers may supply mechanical IDs, timestamps, storage paths, local-reference resolution, truthful method provenance when relevant, schema checks, reference/isolation checks, and safe transactional writes.
+Method provenance belongs in the optional receipt when preserving it materially improves continuity. Canonical organizational facts/results should not be coupled to a Run merely to record which runtime path produced them. Their own source/evidence/lineage semantics remain authoritative.
+
+The model supplies substantive business meaning. Deterministic AURA helpers may supply mechanical IDs, timestamps, storage paths, local-reference resolution, schema checks, reference/isolation checks, and safe transactional writes.
 
 ## AURA playbooks
 
@@ -58,7 +60,7 @@ When AURA playbook knowledge is useful:
 
 The model/user may adapt incidental implementation details or choose another sound method. Record method provenance honestly only when a receipt is worth preserving; do not create paperwork merely to prove that a playbook ran.
 
-Organization-local `ProcessExtension` playbooks are the organization's own reusable operating knowledge. They are not preferences or notes, and they do not become AURA product-wide source. Explicitly supplied organization SOPs and evidence-promoted Learning may both become ProcessExtensions with truthful provenance. AURA may surface them as candidates; the model/user decides semantic applicability.
+Organization-local `ProcessExtension` playbooks are the organization's own reusable operating knowledge. They are not preferences or notes, and they do not become AURA product-wide source. Explicitly supplied organization SOPs and evidence-supported Learning may both become ProcessExtensions with truthful provenance. AURA may surface them as candidates; the model/user decides semantic applicability.
 
 ## Truth and evidence
 
