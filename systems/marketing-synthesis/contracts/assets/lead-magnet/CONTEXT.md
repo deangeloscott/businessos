@@ -12,7 +12,6 @@ reads:
 - Asset
 - WorkRequest
 writes:
-- WorkRequest
 - Asset
 capabilities:
   required:
@@ -35,15 +34,15 @@ context:
 Create an exchange-worthy asset that solves a bounded valuable problem and naturally relates to the next commercial step.
 
 ## Business Outcome
-Increase the likelihood of the desired commercial action through evidence-backed lead magnet that matches audience awareness, offer, proof, and acquisition context.
+Increase the likelihood of the desired commercial action through an evidence-backed lead magnet that matches audience awareness, Offer, proof, and acquisition context.
 
 ## Run When
-Run when an Opportunity or WorkRequest requires lead magnet to remove a commercial persuasion gap or create the required conversion asset.
+Use when a lead magnet is useful to remove a commercial persuasion gap or create the required conversion asset. An Opportunity or real durable WorkRequest may provide context but is not required.
 
 ## Process
 1. [AI] Define audience problem/job, urgency, current alternatives, and what useful standalone outcome can be delivered.
 2. [AI] Select format/mechanism: checklist, template, calculator, guide, diagnostic, dataset, mini-course, toolkit, or other value-fit asset.
 3. [HYBRID] Ensure the asset provides real value rather than merely previewing the sales pitch.
 4. [AI] Design content/interaction and natural bridge to Offer based on unresolved next problem.
-5. [DETERMINISTIC] Define lead capture/consent/tracking requirements and customer-journey handoff.
-6. [DETERMINISTIC] Delegate production to Content where appropriate.
+5. [DETERMINISTIC] Define lead capture/consent/tracking requirements and the real customer-journey transition when relevant.
+6. [HYBRID] Use relevant Content operating knowledge and the active harness's real production capabilities directly for the chosen format. Persist a WorkRequest only when a real organizational handoff must survive the current actor/session.
