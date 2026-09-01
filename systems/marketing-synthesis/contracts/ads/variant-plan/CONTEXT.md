@@ -9,7 +9,6 @@ reads:
 - Asset
 - WorkRequest
 writes:
-- WorkRequest
 - Asset
 capabilities:
   required:
@@ -39,13 +38,13 @@ Define creative/copy variants so each comparison teaches something interpretable
 Increase useful learning while avoiding large grids of arbitrary variants.
 
 ## Run When
-Run when an advertising campaign requires this persuasion or QA sub-process; media buying/targeting execution remains outside this OS.
+Use when an advertising campaign needs a bounded, interpretable variant plan; media buying/targeting execution remains outside this method unless separately available and requested.
 
 ## Process
 1. [AI] Choose the specific variable/hypothesis to test: angle, hook, proof, creative mechanism, CTA, or execution element.
 2. [AI] Hold other material persuasion variables stable where causal interpretation matters.
-3. [DETERMINISTIC] Define variant IDs, allocation/measurement handoff, success/guardrail metrics, and minimum evaluation conditions appropriate to available traffic.
+3. [HYBRID] Define variant IDs, allocation/measurement needs, success/guardrail metrics, and minimum evaluation conditions appropriate to actual available traffic.
 4. [AI] Prioritize high-information contrasts before minor optimizations.
 5. [HYBRID] Account for placement/audience/delivery algorithm differences and avoid overclaiming causality from uncontrolled comparisons.
-6. [DETERMINISTIC] Define stopping/iteration rule and what decision each result will inform.
-7. [AI] Create variant production WorkRequests tied to one test plan.
+6. [AI] Define stopping/iteration logic and what decision each result will inform without turning the plan into an AURA scheduler or experiment runtime.
+7. [HYBRID] Preserve the test/variant plan as an Asset and use the active harness's real creative/experiment capabilities directly when execution is requested and available. Persist a WorkRequest only for a real durable organizational handoff to a separate executor.
