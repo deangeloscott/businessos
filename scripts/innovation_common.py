@@ -76,7 +76,7 @@ def find_identifying_keys(value,path=''):
 def canonical_hash(package):
     data=copy.deepcopy(package);data.setdefault('integrity',{})['content_hash']=None;raw=json.dumps(data,sort_keys=True,separators=(',',':'),ensure_ascii=False).encode();return hashlib.sha256(raw).hexdigest()
 def innovation_fingerprint(process):
-    selected={key:process.get(key) for key in ['mode','owner_system','target_contract_id','local_contract_id','title','purpose','route_terms','reads','writes','required_capabilities','optional_capabilities','applies_when','does_not_apply_when','instructions','verification']};raw=json.dumps(selected,sort_keys=True,separators=(',',':'),ensure_ascii=False).encode();return hashlib.sha256(raw).hexdigest()
+    selected={key:process.get(key) for key in ['mode','owner_system','target_contract_id','local_contract_id','title','purpose','discovery_terms','reads','writes','required_capabilities','optional_capabilities','applies_when','does_not_apply_when','instructions','verification']};raw=json.dumps(selected,sort_keys=True,separators=(',',':'),ensure_ascii=False).encode();return hashlib.sha256(raw).hexdigest()
 def load_package(path):
     path=Path(path)
     if not path.exists():raise ValueError(f'Package not found: {path}')
