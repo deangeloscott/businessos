@@ -11,7 +11,6 @@ writes:
 - IndustryEvent
 - Observation
 - Insight
-- WorkRequest
 capabilities:
   required:
   - none
@@ -32,24 +31,32 @@ subcontracts:
   required:
   - industry.event.factual-summary
   - industry.analysis.impact-pathway
-  - industry.handoff.decision-brief
 ---
 # Rapid Response Intelligence
 
 ## Purpose
-Produce a verified bounded intelligence packet quickly when a developing event demands business communication or action.
+Produce the smallest verified, decision-useful understanding of a fast-moving external development when time and uncertainty matter.
 
 ## Business Outcome
-Improve the business response to external change through timely, evidence-backed rapid response intelligence.
+Help the organization respond intelligently to external change without trading away evidence quality or creating an AURA notification/handoff control layer.
 
 ## Run When
-Run when a decision or monitoring signal requires current rapid response intelligence and existing Industry Intelligence is missing, stale, or unresolved.
+Use when a developing external event could materially change a near-term business decision or communication and current Industry Intelligence is missing, stale, or unresolved.
 
 ## Process
-1. [AI] Define the exact urgent decision and maximum acceptable uncertainty/time horizon.
-2. [INTEGRATION] Retrieve primary/most authoritative current sources first and timestamp every claim.
-3. [AI] Separate confirmed facts, credible reports, unknowns, implications, and speculation.
-4. [HYBRID] Perform rapid materiality/business-impact assessment and identify compliance/reputation sensitivity.
-5. [AI] Produce a concise reusable Insight plus source/evidence references and affected-system notifications.
-6. [HYBRID] Explicitly schedule/trigger follow-up verification because developing facts may change.
-7. [DETERMINISTIC] Update/supersede the rapid Insight when authoritative facts evolve.
+1. [AI] Define the exact decision, what must be known now, what can remain uncertain, and how quickly the answer loses value.
+2. [INTEGRATION] Retrieve the strongest available current primary/authoritative evidence first, preserving publication/event/retrieval time where it matters.
+3. [AI] Separate confirmed facts, credible-but-unconfirmed reports, unknowns, interpretations, scenarios, and speculation.
+4. [HYBRID] Use the factual-summary and impact-pathway methods to determine material business implications, timing, and relevant compliance/reputation sensitivity without claiming certainty beyond the evidence.
+5. [AI] Produce a concise reusable Insight with the decision-relevant facts, implications, evidence refs, uncertainty, and what would materially change the conclusion. Other domain playbooks may be useful immediately, but the active model/user chooses them directly.
+6. [HYBRID] When important facts are still developing, preserve the unresolved question, future milestone/date, or monitoring intent that would justify another check. The active harness/runtime owns any actual reminder, recurring check, or notification.
+7. [AI] When later authoritative evidence changes the real-world understanding, update/supersede the durable Event/Insight at the scope justified by that evidence; semantic change is not a deterministic string-diff transition.
+
+## Verification
+- Time pressure does not collapse confirmed facts and plausible reports into one truth state.
+- Every material current claim is traceable to appropriately current evidence.
+- Follow-up intent is not represented as an active schedule or notification.
+- No WorkRequest, downstream notification, or routing packet is required for another capable model/domain method to use the result.
+
+## Completion Criteria
+- The organization has a compact current answer good enough for the time-sensitive decision, knows the material uncertainty, and can continue directly with whatever method/action is appropriate without an AURA handoff layer.
