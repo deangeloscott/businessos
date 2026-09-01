@@ -12,7 +12,6 @@ reads:
 - Asset
 - WorkRequest
 writes:
-- WorkRequest
 - Asset
 capabilities:
   required:
@@ -35,15 +34,15 @@ context:
 Create persuasive evidence/tools that help sellers and buyers resolve real decision questions consistently.
 
 ## Business Outcome
-Increase the likelihood of the desired commercial action through evidence-backed sales enablement asset that matches audience awareness, offer, proof, and acquisition context.
+Increase the likelihood of the desired commercial action through an evidence-backed sales enablement asset that matches audience awareness, Offer, proof, and acquisition context.
 
 ## Run When
-Run when an Opportunity or WorkRequest requires sales enablement asset to remove a commercial persuasion gap or create the required conversion asset.
+Use when a sales-enablement asset can resolve a recurring material buying/sales question. An Opportunity or real durable WorkRequest may provide context but is not required.
 
 ## Process
-1. [AI] Identify sales-stage decision, recurring objection/question, buying roles, competitor context, and evidence gap from Customer/Sales Insights.
+1. [AI] Identify sales-stage decision, recurring objection/question, buying roles, competitor context, and evidence gap from Customer/Sales evidence.
 2. [AI] Choose asset: one-pager, battlecard, ROI model, case library, proof sheet, comparison, implementation guide, objection guide, deck section, or email template.
 3. [HYBRID] Separate verified competitor/customer facts from suggested seller language and prohibit unsupported competitive claims.
 4. [AI] Design for fast retrieval/use during actual sales workflow, including when not to use the asset.
 5. [DETERMINISTIC] Version proof/pricing/terms dependencies so stale assets can be detected.
-6. [HYBRID] Route visual/document production to Content and measure usage/outcome where data permits.
+6. [HYBRID] Use relevant Content operating knowledge and the active harness's real visual/document capabilities directly for final production, and evaluate usage/outcome when useful data exists. Persist a WorkRequest only for a real durable organizational handoff.
