@@ -1,43 +1,55 @@
 # Public Distribution
 
-**ViralTrac AURA (Agentic Understanding and Reinforcement Architecture)** is designed to be portable and distributable as a self-contained AI-native BusinessOS. The public repository is the canonical source for official source-available releases; versioned ZIP assets are the recommended distribution format for most users.
+ViralTrac AURA is distributed as a portable, source-available AI-native BusinessOS.
 
-## Public but not open source
+## Current maturity
 
-The source is visible so users, agencies, clients, and AI systems can inspect and operate AURA. Use is governed by `LICENSE.md`. The license permits internal business use, customization, and agency/consulting use for clients, but does not permit white-label resale or repackaging AURA as someone else's standalone product.
+AURA is currently **Alpha**. The version in `VERSION` is the source of truth. Alpha releases may change architecture, interfaces, schemas, playbooks, and operating guidance before 1.0.
 
-## ViralTrac separation
+A green product-integrity gate means the release is internally coherent; it does not by itself mean the product is stable or that every workflow has proven real-world excellence.
 
-The public AURA distribution does not include ViralTrac's proprietary application source code or private infrastructure. ViralTrac integrations use intentionally machine-facing, authenticated interfaces. See `SECURITY.md`.
+## Recommended way to get AURA
 
-## Releases
+For most users, the recommended artifact is the curated full ViralTrac AURA ZIP from an official GitHub prerelease/release.
 
-Use tagged GitHub Releases for stable versions. A normal user can download a ZIP, unzip it, and give the workspace to a compatible AI/agent environment. Advanced users may clone or fork the public repository subject to the source-available license and GitHub's platform terms.
+Advanced users may clone or fork the public repository. The repository may include maintainer/developer tests and qualification tooling that are intentionally excluded from curated end-user packages.
 
-The **full ViralTrac AURA ZIP is the primary and recommended release asset**. Specialized AURA component editions are optional smaller downloads generated from the same canonical source for users who intentionally want a bounded subsystem. The source repository itself represents the full AURA BusinessOS; editions should not be maintained as separate source branches or competing codebases.
+## What ships to users
 
-The source repository may also contain maintainer/developer verification infrastructure such as regression tests and the AURA business-capability qualification gauntlet. Those materials exist to prove and improve the product and are not part of the ordinary operating experience. Curated release ZIPs should contain the AURA runtime/source needed by users plus the minimal public distribution validation entrypoint, while excluding maintainer-only qualification fixtures, hidden evaluator material, marathon runners, and other test infrastructure. GitHub's automatically generated source-code archives may still reflect the full repository because they are source snapshots rather than the curated end-user distribution.
+Curated distributions contain the AURA product source, installed operating knowledge, schemas, navigation, validation helpers, and the minimal distribution test needed to verify the package itself.
 
-Organization-owned state may optionally live in a separate workspace configured through `scripts/configure_workspace.py`. Existing populated state should move through the verified, non-destructive `scripts/migrate_workspace.py` path. Local workspace pointers, live business state, human knowledge, attachments, and other user-specific workspace material must not be bundled into a public release.
+They do **not** include:
 
-## Updates
+- maintainer-only qualification/evaluator infrastructure;
+- benchmark fixtures or hidden evaluator material;
+- developer regression suites;
+- business instances or customer data;
+- local workspace pointers;
+- credentials or secrets;
+- proprietary ViralTrac application source.
 
-Update checks are optional and disabled by default. When enabled, AURA can request the official GitHub Releases metadata and compare the latest stable version with the local `VERSION`. It never auto-downloads or auto-installs an update because AURA copies/workspaces may contain business-specific state or user modifications.
+The package builder fails if maintainer qualification infrastructure leaks into a user distribution.
 
-Use:
+## Full and component editions
 
-```bash
-python scripts/check_for_updates.py --force
-```
+The **full ViralTrac AURA ZIP** is the primary release artifact.
 
-to perform a one-time check without enabling recurring checks, or:
+Optional component editions are smaller distributions generated from the same canonical source. A component is current AURA Core plus selected domain operating knowledge; it is not a separate product architecture and does not restrict what a capable model/harness may do with its own abilities.
 
-```bash
-python scripts/set_update_policy.py --enable
-```
+## Organization-owned state
 
-to allow a compatible host/agent to perform bounded stable-release checks according to `deployment/update-policy.json`.
+AURA can operate from one local folder or use a separate organization-owned workspace. Keeping organization state separate from product source is useful for upgrades, teams, private Git, and customized deployments.
 
-The update request does not upload business instances, prompts, credentials, local files, or operating history. GitHub will still receive ordinary connection metadata associated with an HTTPS request.
+Use the verified workspace helpers in `OPERATOR-GUIDE.md` / `DEPLOYMENT.md` rather than bundling live business state into a release artifact.
 
-See `BRANDING.md` for the current public name. Stable technical compatibility identifiers such as the `businessos` repository path and `BUSINESSOS_*` environment variables remain intentionally unchanged.
+## Updating
+
+AURA does not run its own update service or auto-updater.
+
+Use Git/GitHub, official release assets, or the active harness/user's normal software-management workflow to check for and apply updates. Review changes before replacing a customized copy, and preserve organization-owned workspace state separately when appropriate.
+
+## License
+
+AURA is **source-available, not open source**. Internal business use, customization, and agency/consulting use for clients are permitted under `LICENSE.md`; white-label resale or repackaging it as someone else's standalone BusinessOS is not.
+
+See `BRANDING.md` for naming and maturity guidance and `SECURITY.md` for the public/private boundary.
