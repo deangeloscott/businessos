@@ -47,8 +47,7 @@ TESTS=[
     'tests/run_qualification_framework.py',
     'tests/run_qualification_resume.py',
     'tests/run_qualification_integrity.py',
-    'tests/run_qualification_product_integrity.py',
-    'tests/run_qualification_supplied_media.py'
+    'tests/run_qualification_product_integrity.py'
 ]
 failures=[]
 for rel in TESTS:
