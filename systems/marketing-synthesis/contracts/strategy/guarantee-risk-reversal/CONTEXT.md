@@ -9,7 +9,6 @@ reads:
 - Asset
 - WorkRequest
 writes:
-- WorkRequest
 - Asset
 capabilities:
   required:
@@ -39,13 +38,13 @@ Evaluate how legitimate risk reversal can reduce a real purchase barrier without
 Improve qualified conversion where perceived risk is material while preserving economics, operational feasibility, and customer fit.
 
 ## Run When
-Run when Customer/Marketing evidence shows risk is a meaningful barrier and the actual Offer can potentially be changed.
+Use when Customer/Marketing evidence shows risk is a meaningful barrier and the actual Offer could potentially be changed.
 
 ## Process
 1. [AI] Identify the exact perceived risk: outcome, implementation, time, quality, fit, switching, financial, contractual, or effort.
-2. [DETERMINISTIC] Resolve current Offer terms, economics, delivery variability, refund/cancellation policy, legal/compliance constraints, and ProofRecords.
-3. [AI] Generate risk-reversal options that target the actual risk: trial, milestone, guarantee, conditional assurance, implementation commitment, cancellation flexibility, or other legitimate mechanism.
-4. [AI] Model customer behavior/incentive effects, abuse risk, operational burden, financial downside, and qualification needs for each option.
+2. [HYBRID] Resolve current Offer terms, economics, delivery variability, refund/cancellation policy, applicable legal/compliance constraints, and ProofRecords.
+3. [AI] Generate risk-reversal options that target the actual risk: trial, milestone, guarantee, conditional assurance, implementation commitment, cancellation flexibility, or another legitimate mechanism.
+4. [AI] Evaluate customer behavior/incentive effects, abuse risk, operational burden, financial downside, and qualification needs for each option using actual evidence where available.
 5. [HYBRID] Reject guarantees that promise outcomes outside business control or conceal material conditions.
-6. [AI] Recommend testable Offer changes with exact terms and evidence/rationale; do not mutate canonical Offer directly.
-7. [DETERMINISTIC] Create ContextUpdateProposal for approved-business review and define post-change measurement/guardrails.
+6. [AI] Recommend the narrowest credible option with exact proposed terms, evidence/rationale, material uncertainty, and useful measurement/guardrails when warranted. Keep it explicitly proposed rather than current Offer truth.
+7. [AI] Preserve the recommendation as a Marketing-owned strategy Asset when useful. If the organization actually adopts the new guarantee/risk-reversal terms, update canonical Offer truth through the normal current-context path with provenance. If not adopted, keep the idea clearly candidate; do not manufacture a ContextUpdateProposal, approval object, WorkRequest, or Experiment merely because the option was evaluated.
