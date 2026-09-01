@@ -3,9 +3,8 @@
 from _common import *
 import json,re
 
-# Historical contract metadata that described AURA-owned runtime/authority mechanics.
-# It may remain in older authored frontmatter during migration, but it must not enter
-# generated operational-knowledge registries or become future product semantics.
+# Defensive exclusion for retired control/runtime metadata. validate_workspace.py rejects
+# these keys in authored contracts; they must never become generated product semantics.
 RETIRED_CONTRACT_METADATA={'risk','autonomy_ceiling','events','schedule'}
 
 
@@ -40,7 +39,6 @@ def main():
     (gen/'capability-usage-index.json').write_text(json.dumps(caps,indent=2)+'\n',encoding='utf-8')
     (gen/'context-dependency-index.json').write_text(json.dumps(deps,indent=2)+'\n',encoding='utf-8')
     (gen/'route-index.json').write_text(json.dumps(routes,indent=2)+'\n',encoding='utf-8')
-    # Remove obsolete runtime indexes if a migrated workspace previously generated them.
     for obsolete in ('event-subscription-index.json','schedule-index.json'):
         op=gen/obsolete
         if op.exists():op.unlink()
@@ -66,7 +64,7 @@ def main():
     (ROOT/'PLAYBOOK-INDEX.md').write_text('\n'.join(lines).rstrip()+'\n',encoding='utf-8')
     import generate_playbooks;generate_playbooks.main();inst=installation();_write_task_navigator(process_maps,inst);pub=publisher_metadata();publisher=pub.get('publisher',{}) if pub else {}
     manifest_root={
-        'version':os_version(),'edition':inst.get('edition','unmanaged'),'display_name':inst.get('display_name','ViralTrac AURA'),'public_name':inst.get('public_name',publisher.get('product_name','ViralTrac AURA')),'name_expansion':inst.get('name_expansion',publisher.get('product_name_expansion','Agentic Understanding and Reinforcement Architecture')),'descriptor':inst.get('descriptor',publisher.get('product_descriptor','AI-native BusinessOS')),'brand':inst.get('brand','ViralTrac'),'branding':'BRANDING.md','startup_message':inst.get('startup_message','WELCOME.md'),'publisher':{'id':publisher.get('id'),'name':publisher.get('name'),'metadata':'PUBLISHER.json'},'portable_first':bool(inst.get('portable_first',False)),'default_environment':inst.get('default_environment','local'),
+        'version':os_version(),'maturity':inst.get('maturity','alpha'),'edition':inst.get('edition','unmanaged'),'display_name':inst.get('display_name','ViralTrac AURA'),'public_name':inst.get('public_name',publisher.get('product_name','ViralTrac AURA')),'name_expansion':inst.get('name_expansion',publisher.get('product_name_expansion','Agentic Understanding and Reinforcement Architecture')),'descriptor':inst.get('descriptor',publisher.get('product_descriptor','AI-native BusinessOS')),'brand':inst.get('brand','ViralTrac'),'branding':'BRANDING.md','startup_message':inst.get('startup_message','WELCOME.md'),'publisher':{'id':publisher.get('id'),'name':publisher.get('name'),'metadata':'PUBLISHER.json'},'portable_first':bool(inst.get('portable_first',False)),'default_environment':inst.get('default_environment','local'),
         'workspace':{'default_root':'product_root','external_root_supported':True,'migration_helper':'scripts/migrate_workspace.py','selectors':['BUSINESSOS_WORKSPACE','.businessos/workspace.json'],'deployment_profiles':'distribution/deployment-profiles.json'},
         'state_locations':{'canonical_business':'instances/<business-id>/','run':'runtime/runs/<business-id>/<run-id>/','human_knowledge':'knowledge/<business-id>/','attachments':'attachments/'},
         'installed_modules':sorted(installed_modules()),'systems':sorted(by_system),'contract_count':len(contracts),'schema_count':len(sreg),'capability_count':len(json.loads((ROOT/'core/capabilities/catalog.json').read_text(encoding='utf-8')).get('capabilities',[])),'entrypoints':{'welcome':'WELCOME.md','human':'START-HERE.md','deployment':'DEPLOYMENT.md','branding':'BRANDING.md','playbooks':'PLAYBOOKS.md','task_navigator':'TASK-NAVIGATOR.md','agent':'CONTEXT.md','glossary':'GLOSSARY.md'},'generated_from':'scripts/generate_registry.py'
