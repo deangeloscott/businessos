@@ -1,6 +1,6 @@
 ---
 id: core.learning.adopt-process-extension
-type: service
+type: playbook
 owner_system: core
 reads:
 - PlaybookEvolutionProposal
@@ -31,7 +31,7 @@ Do not adopt a `canonical_revision` through this path. Do not infer that an exte
 1. [DETERMINISTIC] Resolve the proposal and Learning references and confirm they belong to the active business.
 2. [HYBRID] Confirm the proposal is still applicable and has not been superseded/contradicted since it was prepared.
 3. [DETERMINISTIC] Run `scripts/adopt_process_extension.py <business-id> <proposal-id>`.
-4. [DETERMINISTIC] For `augment_existing`, confirm the target canonical playbook exists and the extension does not silently introduce a different canonical output lifecycle. For `new_local_playbook`, confirm the local ID is unique.
+4. [DETERMINISTIC] For `augment_existing`, confirm the target canonical playbook exists. For `new_local_playbook`, confirm the local ID is unique. Validate any declared read/write object types and provider-neutral capability IDs as real AURA vocabulary; do not treat the base playbook's declarations as a permission boundary.
 5. [DETERMINISTIC] Validate the ProcessExtension, mark the proposal adopted, and leave canonical AURA source unchanged.
 6. [DETERMINISTIC] Resolve the effective playbook/local playbook and verify its instructions and provider-neutral capability needs remain visible.
 7. [HYBRID] If later evidence contradicts the extension, or canonical AURA supersedes it, narrow/deactivate/retire it while preserving useful history.
@@ -40,7 +40,7 @@ Do not adopt a `canonical_revision` through this path. Do not infer that an exte
 - No Approval/risk/autonomy/provider-binding state was created.
 - Canonical AURA files are unchanged.
 - Effective resolution contains the adopted operational knowledge.
-- Capability declarations remain descriptive rather than runtime gates.
+- Read/write and capability declarations remain descriptive rather than runtime permissions or gates.
 - The extension remains optional to the executing intelligence unless the user explicitly selected that AURA method for the task.
 
 ## Completion Criteria
