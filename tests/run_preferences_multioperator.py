@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""RC13 regressions for scoped preferences, operator attribution, and adaptive execution context."""
+"""Regressions for scoped preferences, operator attribution, and current-vs-frozen preference context."""
 from pathlib import Path
-import json, os, shutil, subprocess, sys, tempfile
+import json, os, shutil, subprocess, sys
 from jsonschema import Draft202012Validator
 
 ROOT=Path(__file__).resolve().parents[1]
@@ -23,7 +23,6 @@ def assert_eq(actual,expected,label):
 
 def main():
     if BASE.exists(): shutil.rmtree(BASE)
-    runtime_files=[]
     try:
         init_business(BID,'Preference Resolution Test')
         upsert(BID,'Business presentation defaults','business',BID,{
@@ -65,7 +64,8 @@ def main():
         assert_eq(task_res['effective_preferences']['presentation']['slide_density'],'ultra_sparse','task preference highest optional preference precedence')
         if task_res['leaf_sources']['presentation.slide_density']['source_type']!='task_preference': raise AssertionError('task preference provenance missing')
 
-        # create_run should attribute the operator/team/role and snapshot the effective preferences.
+        # create_run may preserve attribution and a frozen preference snapshot when a work
+        # receipt is useful. That receipt is optional and does not own normal context retrieval.
         env=dict(os.environ);env['BUSINESSOS_OPERATOR_REF']='operator_alice';env['BUSINESSOS_TEAM_REF']='team_sales';env['BUSINESSOS_ROLE_REF']='role_presenter';env['PYTHONDONTWRITEBYTECODE']='1'
         cp=subprocess.run([sys.executable,str(ROOT/'scripts/create_run.py'),BID,'content.production.presentation','Create a client presentation','--output-type','presentation','--channel','live-meeting'],cwd=ROOT,env=env,text=True,capture_output=True,check=True)
         rid=cp.stdout.strip().splitlines()[-1]
@@ -85,12 +85,17 @@ def main():
         errs=list(Draft202012Validator(schema).iter_errors(run))
         if errs: raise AssertionError('Run schema errors: '+'; '.join(e.message for e in errs))
 
-        plan=build_plan(BID,'content.production.presentation',run_id=rid)
+        # Context planning resolves current organization-owned preferences directly. It
+        # does not need a Run id or load a Run snapshot merely to prepare useful context.
+        plan=build_plan(
+            BID,'content.production.presentation',
+            operator_ref='operator_alice',team_ref='team_sales',role_ref='role_presenter',
+            output_type='presentation',channel='live-meeting'
+        )
         assert_eq(plan['operator_ref'],'operator_alice','context plan operator')
-        assert_eq(plan['effective_preferences']['presentation']['speaker_notes'],'detailed','context plan reuses run preferences')
+        assert_eq(plan['effective_preferences']['presentation']['speaker_notes'],'detailed','context plan current preference')
         if 'core/policies/preferences-and-adaptation.md' not in plan['files']: raise AssertionError('preference policy missing from context plan')
-        if 'core/policies/shared-workspace-coordination.md' not in plan['files']: raise AssertionError('shared workspace policy missing from context plan')
-        if run['preference_snapshot_ref'] not in plan['files']: raise AssertionError('Run preference snapshot missing from context plan')
+        if run['preference_snapshot_ref'] in plan['files']: raise AssertionError('context plan should not depend on an optional Run snapshot')
 
         errors,warnings,counts=validate_business(BID,False)
         if errors: raise AssertionError('business validation errors: '+'; '.join(errors))
@@ -113,16 +118,24 @@ def main():
         },'prf_pref_alice_high',5,'explicit_user',systems=['content-synthesis'])
         hi=resolve_effective_preferences(BID,'operator_alice','team_sales','role_presenter','content-synthesis','content.production.presentation')
         assert_eq(hi['effective_preferences']['presentation']['speaker_notes'],'minimal','same-scope priority override')
-        # Existing Run remains reproducible: later profile changes do not mutate its frozen snapshot.
-        old_plan=build_plan(BID,'content.production.presentation',run_id=rid)
-        assert_eq(old_plan['effective_preferences']['presentation']['speaker_notes'],'detailed','existing Run preference snapshot is immutable')
 
-        print('scoped preference + multi-operator regressions passed')
+        # Current retrieval should see the new durable preference, while the existing
+        # optional Run receipt remains a reproducible record of the preference snapshot
+        # that applied when that bounded work began.
+        current_plan=build_plan(
+            BID,'content.production.presentation',
+            operator_ref='operator_alice',team_ref='team_sales',role_ref='role_presenter',
+            output_type='presentation',channel='live-meeting'
+        )
+        assert_eq(current_plan['effective_preferences']['presentation']['speaker_notes'],'minimal','current context plan should use current durable preference')
+        frozen=json.loads(snap.read_text())
+        assert_eq(frozen['effective_preferences']['presentation']['speaker_notes'],'detailed','existing Run preference snapshot is immutable')
+
+        print('scoped preference + multi-operator regressions passed without Run-owned context retrieval')
     finally:
         if BASE.exists(): shutil.rmtree(BASE)
         rd=ROOT/'runtime/runs'/BID
         if rd.exists(): shutil.rmtree(rd)
-        # prune empty business runtime parent if created only for the test
         try:
             if (ROOT/'runtime/runs').exists() and not any((ROOT/'runtime/runs').iterdir()): (ROOT/'runtime/runs').rmdir()
         except OSError: pass
