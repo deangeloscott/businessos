@@ -4,7 +4,7 @@ import json,shutil
 from generate_registry import main as generate_registry
 from validate_workspace import main as validate_workspace
 from process_plan import build_process_plan
-from route_task import route
+from find_playbooks import find_candidates
 from init_business import init_business
 from context_plan import build_plan
 from validate_public_distribution import validate_public_distribution
@@ -29,7 +29,7 @@ def _validate_distribution_product_local():
         for kind in ('required','conditional'):
             for item in (c.get('subcontracts') or {}).get(kind,[]) or []:
                 rid=item.get('id') if isinstance(item,dict) else item
-                if rid not in reg:errors.append(f'{cid} references unavailable subcontract {rid}')
+                if rid not in reg:errors.append(f'{cid} references unavailable supporting playbook {rid}')
     map_paths=[]
     if (ROOT/'core/process-map.json').exists():map_paths.append(ROOT/'core/process-map.json')
     map_paths+=sorted((ROOT/'systems').glob('*/process-map.json'))
@@ -37,13 +37,13 @@ def _validate_distribution_product_local():
         d=json.loads(mp.read_text())
         for a in d.get('activities',[]):
             try:build_process_plan(d['system'],a['id'])
-            except Exception as e:errors.append(f"process plan {d['system']}/{a['id']}: {e}")
+            except Exception as e:errors.append(f"process knowledge {d['system']}/{a['id']}: {e}")
 
-    # Candidate discovery is an index/integrity aid, not a semantic owner-selection test.
+    # Candidate discovery is an index/integrity aid, not semantic method selection.
     for mid in sorted(installed-{'core'}):
         task=catalog[mid].get('smoke_task')
         if not task:continue
-        rows=route(task,5)
+        rows=find_candidates(task,5)
         for row in rows:
             cid=row.get('contract_id')
             if cid not in reg:errors.append(f'candidate discovery returned unknown playbook for {mid}: {row}')
@@ -52,7 +52,7 @@ def _validate_distribution_product_local():
     omitted=[m for m in catalog if m!='core' and m not in installed]
     if omitted:
         for mid in omitted[:3]:
-            rows=route(catalog[mid].get('smoke_task',''),5)
+            rows=find_candidates(catalog[mid].get('smoke_task',''),5)
             if any(row.get('owner_system')==mid for row in rows):errors.append(f'omitted module appeared as available candidate: {mid}')
 
     tid='distribution-smoke';dest=ROOT/'instances'/tid
