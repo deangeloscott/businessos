@@ -1,30 +1,43 @@
 #!/usr/bin/env python3
+"""Update the current semantic state of one durable AttentionItem."""
 from _common import *
 import argparse,json
 
-def find_item(bid,aid):
-    for obj,p in iter_instance_objects(bid):
-        if obj.get('object_type')=='AttentionItem' and obj.get('id')==aid:return obj,p
+STATUSES={'open','acknowledged','resolved'}
+
+
+def find_item(business_id,attention_id):
+    for obj,path in iter_instance_objects(business_id):
+        if obj.get('object_type')=='AttentionItem' and obj.get('id')==attention_id:return obj,path
     return None,None
 
+
+def set_status(business_id,attention_id,status,resolution_refs=None,note=None,at=None):
+    if status not in STATUSES:raise ValueError(f'Unknown AttentionItem status: {status}')
+    obj,path=find_item(business_id,attention_id)
+    if not obj:raise ValueError('AttentionItem not found')
+    timestamp=at or now();old=obj.get('status');resolution_refs=resolution_refs or []
+    if status=='resolved' and not (resolution_refs or note):raise ValueError('resolved requires a resolution reference or note')
+    obj['status']=status;obj['updated_at']=timestamp
+    if status=='open':
+        obj['acknowledged_at']=None;obj['resolved_at']=None;obj['next_review_at']=obj.get('next_review_at')
+    elif status=='acknowledged':
+        obj['acknowledged_at']=timestamp;obj['resolved_at']=None
+    else:
+        obj['resolved_at']=timestamp;obj['next_review_at']=None
+        obj['resolution_refs']=sorted(set((obj.get('resolution_refs') or [])+resolution_refs))
+        if note:
+            bos=obj.setdefault('extensions',{}).setdefault('businessos',{})
+            bos['resolution_note']=note
+    path.write_text(json.dumps(obj,indent=2)+'\n')
+    return {'attention_id':obj['id'],'from':old,'to':status,'path':str(path.relative_to(ROOT))}
+
+
 def main():
-    ap=argparse.ArgumentParser(description='Acknowledge, resolve, or supersede one AttentionItem.')
-    ap.add_argument('business_id'); ap.add_argument('attention_id'); ap.add_argument('status',choices=['open','acknowledged','resolved','superseded']); ap.add_argument('--resolution-ref',action='append',default=[]); ap.add_argument('--superseded-by'); ap.add_argument('--note'); ap.add_argument('--at'); a=ap.parse_args(); ts=a.at or now()
-    obj,p=find_item(a.business_id,a.attention_id)
-    if not obj: raise SystemExit('AttentionItem not found')
-    old=obj['status']; new=a.status
-    machines=json.loads((ROOT/'core/references/state-machines.json').read_text()); allowed=machines['AttentionItem']['transitions'].get(old,[])
-    if new!=old and new not in allowed: raise SystemExit(f'Invalid AttentionItem transition {old} -> {new}; allowed={allowed}')
-    if new=='resolved' and not (a.resolution_ref or a.note): raise SystemExit('resolved requires --resolution-ref or --note')
-    if new=='superseded' and not a.superseded_by: raise SystemExit('superseded requires --superseded-by')
-    bos=obj.setdefault('extensions',{}).setdefault('businessos',{});hist=bos.setdefault('transition_history',[])
-    if old!=new:
-        hist.append({'from':old,'to':new,'at':ts,'note':a.note});
-        if len(hist)>50: del hist[:-50]
-    obj['status']=new;obj['updated_at']=ts
-    if new=='acknowledged':obj['acknowledged_at']=ts
-    if new=='resolved': obj['resolved_at']=ts;obj['resolution_refs']=sorted(set(obj.get('resolution_refs',[])+a.resolution_ref));obj['next_review_at']=None
-    if new=='superseded':obj['superseded_by']=a.superseded_by;obj['next_review_at']=None
-    if new=='open': obj['resolved_at']=None;obj['superseded_by']=None
-    p.write_text(json.dumps(obj,indent=2)+'\n');print(json.dumps({'attention_id':obj['id'],'from':old,'to':new,'path':str(p.relative_to(ROOT))},indent=2))
-if __name__=='__main__': main()
+    parser=argparse.ArgumentParser(description='Mark one durable AttentionItem open, acknowledged, or resolved. This changes organizational memory, not execution permission.')
+    parser.add_argument('business_id');parser.add_argument('attention_id');parser.add_argument('status',choices=sorted(STATUSES));parser.add_argument('--resolution-ref',action='append',default=[]);parser.add_argument('--note');parser.add_argument('--at');args=parser.parse_args()
+    try:result=set_status(args.business_id,args.attention_id,args.status,args.resolution_ref,args.note,args.at)
+    except ValueError as exc:raise SystemExit(str(exc))
+    print(json.dumps(result,indent=2))
+
+if __name__=='__main__':main()
