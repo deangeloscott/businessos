@@ -1,6 +1,6 @@
 ---
 id: core.intelligence.publish-observation
-type: service
+type: playbook
 owner_system: core
 reads:
 - SourceRecord
