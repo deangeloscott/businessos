@@ -36,8 +36,6 @@ subcontracts:
   - id: core.intelligence.ecosystem.source-discovery
   - id: core.intelligence.ecosystem.evidence-triangulation
   conditional:
-  - id: marketing.intelligence.relevance-evaluation
-    when: External intelligence needs deeper marketing-specific applicability analysis.
   - id: marketing.experimentation.message-test
     when: A promising uncertain marketing mechanism is testable and a bounded experiment would materially improve the decision.
 ---
