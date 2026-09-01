@@ -1,6 +1,6 @@
 ---
 id: core.measurement.evaluate-outcome
-type: service
+type: playbook
 owner_system: core
 reads:
 - Opportunity
