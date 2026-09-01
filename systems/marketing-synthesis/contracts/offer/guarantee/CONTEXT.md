@@ -9,20 +9,16 @@ reads:
 - Asset
 - WorkRequest
 writes:
-- WorkRequest
-- Asset
+- Insight
+- Opportunity
 capabilities:
   required:
   - none
   optional:
-  - creative.text.generate
   - tracking.read
   - conversion.read
   - marketing.performance.read
   - experiment.run
-  - cms.page.publish
-  - email.send
-  - social.ad.publish
 context:
 - Brand
 - AudienceSegment
@@ -33,19 +29,27 @@ context:
 # Offer Guarantee Design
 
 ## Purpose
-Turn validated risk-reversal strategy into precise proposed guarantee terms the business can actually administer.
+Design precise candidate risk-reversal/guarantee terms that the organization could actually administer without presenting a proposed promise as current business truth.
 
 ## Business Outcome
-Create a clear customer assurance with enforceable conditions and measurable business risk.
+Evaluate a clear customer assurance with understandable conditions and bounded business exposure while avoiding unsupported guarantees or hidden complexity.
 
 ## Run When
-Run after guarantee/risk-reversal analysis identifies a viable Offer change.
+Use when evidence indicates customer risk is a material barrier and a guarantee/risk-reversal approach may be a viable Offer change.
 
 ## Process
-1. [AI] State the customer risk being reversed and the exact business-controlled promise.
-2. [DETERMINISTIC] Define eligibility, customer obligations, covered outcome/milestone, evidence required, timeframe, remedy, exclusions, request process, and business owner.
-3. [HYBRID] Test edge cases, ambiguity, abuse potential, legal/compliance, delivery variability, and operational ability to adjudicate consistently.
-4. [AI] Rewrite conditions in plain language that does not negate the headline promise through hidden complexity.
-5. [DETERMINISTIC] Model worst-case/expected economic exposure and required tracking.
-6. [AI] Define how the guarantee should be presented without implying broader certainty than its terms.
-7. [DETERMINISTIC] Submit proposed guarantee through ContextUpdateProposal and approval before any marketing use.
+1. [AI] State the customer risk being addressed, the business-controlled promise under consideration, and the evidence that makes risk reversal relevant.
+2. [AI] Define candidate eligibility, customer obligations, covered outcome/milestone, evidence required, timeframe, remedy, exclusions, request process, and operational owner only to the detail needed to evaluate the concept.
+3. [HYBRID] Test ambiguity, abuse potential, applicable legal/compliance constraints, delivery variability, operational ability to adjudicate consistently, and customer-fairness implications.
+4. [AI] Express the candidate terms in plain language that does not negate the headline promise through hidden complexity.
+5. [AI] Estimate economic exposure only from supported inputs; distinguish known limits/scenarios from assumptions and keep unsupported expected/worst-case economics explicitly unknown.
+6. [AI] Define how the guarantee could be presented without implying broader certainty, outcomes, or rights than the candidate terms actually support.
+7. [AI] Keep the candidate guarantee distinct from current Offer/BusinessClaim truth. If the organization actually adopts it, persist the established terms/claim through the supported context/claim path. If the unresolved candidate itself is worth remembering, preserve it with the semantic object that actually fits (for example Insight, Opportunity, Experiment, or Core ContextUpdateProposal); no AURA approval lifecycle is required.
+
+## Verification
+- Candidate guarantee wording is not treated as an approved outward claim before the organization establishes it.
+- Economic/operational/legal implications are supported or explicitly uncertain.
+- No ContextUpdateProposal, Approval, WorkRequest, or experiment is created merely because guarantee design occurred.
+
+## Completion Criteria
+- The organization has a precise, evidence-aware candidate guarantee it can evaluate or test without AURA manufacturing approval authority or silently changing current Offer truth.
