@@ -32,19 +32,27 @@ context:
 # Industry Event Update Diff
 
 ## Purpose
-Identify exactly what changed since the last verified Event state.
+Identify what materially changed since the last verified real-world IndustryEvent state without treating repeated coverage as new intelligence or emitting AURA runtime events.
 
 ## Business Outcome
-Prevent repeated headlines from being treated as new intelligence and focus attention on new facts.
+Keep external-event understanding current while focusing attention on genuinely new facts, corrections, and status changes.
 
 ## Run When
-Run whenever an existing IndustryEvent receives new source material.
+When an existing IndustryEvent receives new evidence that may alter the current understanding.
 
 ## Process
-1. [DETERMINISTIC] Load the prior factual summary/timeline and new observations.
-2. [AI] Classify each new item as duplicate, clarification, correction, new fact, status change, scope change, effective-date change, consequence, or commentary.
-3. [AI] Identify which prior facts are now outdated, contradicted, or superseded.
-4. [DETERMINISTIC] Preserve prior versions and source refs; do not overwrite historical fact state.
-5. [AI] State the material delta in the smallest precise form.
-6. [HYBRID] Re-run materiality/impact only if the delta can change a decision or prior Insight.
-7. [DETERMINISTIC] Update Event status, timeline, follow-up date, and emit an update event only for meaningful deltas.
+1. [DETERMINISTIC] Load the prior persisted event state, timeline, and exact new evidence references.
+2. [AI] Classify each new evidence item as duplicate/republication, clarification, correction, new fact, status change, scope change, effective-date change, consequence, commentary, or another evidence-supported category.
+3. [AI] Identify which prior factual claims are now outdated, contradicted, superseded, or simply more precisely stated.
+4. [DETERMINISTIC] Preserve prior versions and source refs; do not erase historical state that remains useful for understanding the change.
+5. [AI] State the material delta in the smallest precise form supported by evidence.
+6. [AI] Reassess materiality/business impact only when the delta could change a decision or prior durable Insight; do not automatically trigger another workflow.
+7. [HYBRID] Update the IndustryEvent status/timeline and any useful next-review date from the resolved semantic delta. Persist an Observation/Insight only when the new evidence or interpretation has durable value. Do not emit an AURA runtime event merely because the external event changed.
+
+## Verification
+- The new state is traceable to evidence and the prior state remains inspectable when history matters.
+- Repeated reporting without a material delta does not create artificial change.
+- Semantic change classification remains a model/user judgment; deterministic helpers preserve exact references/state.
+
+## Completion Criteria
+- Future work can tell what actually changed in the real-world event, what did not, and why that distinction is supported without a separate internal event stream.
