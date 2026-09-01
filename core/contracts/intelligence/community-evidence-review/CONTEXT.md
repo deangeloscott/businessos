@@ -1,7 +1,6 @@
 ---
 id: core.intelligence.community-evidence-review
 type: playbook
-version: 1.1.0
 owner_system: core
 reads:
 - SourceRecord

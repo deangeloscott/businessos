@@ -1,7 +1,6 @@
 ---
 id: customer.evidence-collection.public-conversation
 type: playbook
-version: 1.3.0
 owner_system: customer-intelligence
 reads:
 - SourceRecord
@@ -24,11 +23,6 @@ capabilities:
   - rss.read
   - webpage.snapshot
   - webpage.screenshot
-events:
-  consumes:
-  - none
-  emits:
-  - customer.public-signal.observed
 context:
 - AudienceSegment
 - Market

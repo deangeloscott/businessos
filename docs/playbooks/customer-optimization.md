@@ -9,7 +9,7 @@ Find and improve problems in the customer journey, from conversion and purchase 
 ## Common jobs
 
 - **[Customer Journey Mapping](../../systems/customer-optimization/contracts/journey/mapping/CONTEXT.md)** — Define the business-specific customer journey and measurable transitions.
-- **[Journey Instrumentation](../../systems/customer-optimization/contracts/journey/instrumentation/CONTEXT.md)** — Set up tracking so BusinessOS can see how customers move from one important journey stage to another.
+- **[Journey Instrumentation](../../systems/customer-optimization/contracts/journey/instrumentation/CONTEXT.md)** — Set up tracking so AURA can see how customers move from one important journey stage to another.
 - **[Journey Instrumentation Data Quality](../../systems/customer-optimization/contracts/instrumentation/data-quality/CONTEXT.md)** — Check that customer-journey tracking and measurements are reliable enough to use for decisions.
 - **[Customer Optimization Ecosystem Tactic Radar](../../systems/customer-optimization/contracts/intelligence/ecosystem-radar/CONTEXT.md)** — Discover external customer-journey tactics, verify the evidence and applicability, and route promising low-enough-risk interventions into guarded tests.
 - **[Journey Transition Analysis](../../systems/customer-optimization/contracts/journey/transition-analysis/CONTEXT.md)** — Find progression/drop-off/delay patterns.
@@ -41,7 +41,7 @@ Find and improve problems in the customer journey, from conversion and purchase 
 
 ## More detailed playbooks
 
-These are smaller, specific playbooks BusinessOS can use inside the larger jobs above. The names are kept simple here; open the linked contract or ask BusinessOS to explain one if you want the exact steps.
+These are smaller, specific playbooks AURA can use inside the larger jobs above. The names are kept simple here; open the linked contract or ask AURA to explain one if you want the exact steps.
 
 ### Adoption
 
@@ -162,7 +162,7 @@ These are smaller, specific playbooks BusinessOS can use inside the larger jobs 
 
 ## Want to see exactly how one works?
 
-Ask BusinessOS something like:
+Ask AURA something like:
 
 > “Show me the exact steps for Adoption Path Design, including what it reads, what it saves, and how it knows when it is done.”
 

@@ -1,7 +1,6 @@
 ---
 id: customer.evidence-collection.reviews
 type: playbook
-version: 1.2.0
 owner_system: customer-intelligence
 reads:
 - SourceRecord

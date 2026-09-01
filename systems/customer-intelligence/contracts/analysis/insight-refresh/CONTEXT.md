@@ -1,7 +1,6 @@
 ---
 id: customer.analysis.insight-refresh
 type: playbook
-version: 1.3.0
 owner_system: customer-intelligence
 reads:
 - Insight

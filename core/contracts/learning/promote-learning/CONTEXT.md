@@ -1,7 +1,6 @@
 ---
 id: core.learning.promote-learning
 type: service
-version: 1.2.0
 owner_system: core
 reads:
 - OutcomeEvaluation
@@ -18,11 +17,6 @@ subcontracts:
   conditional:
   - id: core.learning.playbook-evolution
     when: a sufficiently strong reusable Learning may justify a durable process change
-events:
-  consumes:
-  - none
-  emits:
-  - core.object.updated
 ---
 # Promote Learning
 

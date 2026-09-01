@@ -1,7 +1,6 @@
 ---
 id: customer.evidence-collection.survey-fielding
 type: playbook
-version: 2.0.0
 owner_system: customer-intelligence
 reads:
 - Asset

@@ -1,7 +1,6 @@
 ---
 id: content.production.article
 type: playbook
-version: 1.4.0
 owner_system: content-synthesis
 artifact_role: customer_facing_production_root
 reads:

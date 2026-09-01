@@ -1,7 +1,6 @@
 ---
 id: seo.execution.authority.competitor-link-gap
 type: playbook
-version: 1.1.0
 owner_system: seo-aeo
 reads:
 - SEOAssetState

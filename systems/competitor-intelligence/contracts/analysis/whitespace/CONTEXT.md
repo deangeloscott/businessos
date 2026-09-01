@@ -1,7 +1,6 @@
 ---
 id: competitor.analysis.whitespace
 type: playbook
-version: 1.1.0
 owner_system: competitor-intelligence
 reads:
 - Competitor
@@ -23,11 +22,6 @@ capabilities:
   - review.read
   - crm.opportunity.read
   - social.observe
-events:
-  consumes:
-  - none
-  emits:
-  - competitor.insight.updated
 context:
 - AudienceSegment
 - Business

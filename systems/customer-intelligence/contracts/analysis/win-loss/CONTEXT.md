@@ -1,7 +1,6 @@
 ---
 id: customer.analysis.win-loss
 type: playbook
-version: 1.3.0
 owner_system: customer-intelligence
 reads:
 - SourceRecord
@@ -22,11 +21,6 @@ capabilities:
   - survey.read
   - review.read
   - analytics.read
-events:
-  consumes:
-  - none
-  emits:
-  - customer.insight.updated
 context:
 - AudienceSegment
 - Market

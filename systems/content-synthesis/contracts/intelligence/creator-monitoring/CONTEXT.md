@@ -1,7 +1,6 @@
 ---
 id: content.intelligence.creator-monitoring
 type: detector
-version: 1.4.0
 owner_system: content-synthesis
 reads:
 - SourceProfile
@@ -34,10 +33,6 @@ capabilities:
   - media.video.process
   - media.audio.extract
   - media.frame.extract
-schedule:
-  class: recurring
-  default: weekly
-  configurable: true
 context:
 - AudienceSegment
 - Brand

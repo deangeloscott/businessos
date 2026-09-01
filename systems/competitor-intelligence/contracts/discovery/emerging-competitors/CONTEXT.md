@@ -1,7 +1,6 @@
 ---
 id: competitor.discovery.emerging-competitors
 type: playbook
-version: 1.3.0
 owner_system: competitor-intelligence
 reads:
 - Competitor

@@ -1,7 +1,6 @@
 ---
 id: core.intelligence.record-platform-change
 type: service
-version: 1.8.4
 owner_system: core
 reads:
 - Business

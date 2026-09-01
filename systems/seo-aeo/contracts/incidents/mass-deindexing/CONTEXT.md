@@ -1,7 +1,6 @@
 ---
 id: seo.incidents.mass-deindexing
 type: incident
-version: 1.1.0
 owner_system: seo-aeo
 reads:
 - SEOAssetState
@@ -20,11 +19,6 @@ capabilities:
   - search.index.inspect
   - crawler.run
   - cms.page.read
-events:
-  consumes:
-  - none
-  emits:
-  - seo.incident.updated
 evidence_inputs:
 - crawl/index state HTTP behavior and URL relationships
 ---

@@ -1,7 +1,6 @@
 ---
 id: core.intelligence.ecosystem.evidence-triangulation
 type: playbook
-version: 1.0.0
 owner_system: core
 reads:
 - SourceProfile

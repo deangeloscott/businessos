@@ -1,7 +1,6 @@
 ---
 id: core.intelligence.manage-insight
 type: service
-version: 1.1.0
 owner_system: core
 reads:
 - Observation
@@ -13,13 +12,6 @@ capabilities:
   - none
   optional:
   - none
-events:
-  consumes:
-  - none
-  emits:
-  - insight.activated
-  - insight.updated
-  - insight.contradicted
 context:
 - AudienceSegment
 - Market

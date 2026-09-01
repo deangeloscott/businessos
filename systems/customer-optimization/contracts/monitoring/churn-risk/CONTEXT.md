@@ -1,7 +1,6 @@
 ---
 id: customer-optimization.monitoring.churn-risk
 type: playbook
-version: 1.4.0
 owner_system: customer-optimization
 reads:
 - CustomerJourney

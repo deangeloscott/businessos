@@ -1,7 +1,6 @@
 ---
 id: core.routing.resolve-intent
 type: service
-version: 1.1.0
 owner_system: core
 reads:
 - Business
@@ -13,11 +12,6 @@ capabilities:
   required:
   - none
   optional:
-  - none
-events:
-  consumes:
-  - none
-  emits:
   - none
 context:
 - Business

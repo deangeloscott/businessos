@@ -1,7 +1,6 @@
 ---
 id: seo.learning.tactic-deprecation
 type: playbook
-version: 1.2.0
 owner_system: seo-aeo
 reads:
 - type: Learning

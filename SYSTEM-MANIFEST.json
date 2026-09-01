@@ -1,5 +1,6 @@
 {
-  "version": "1.8.4",
+  "version": "0.1.0",
+  "maturity": "alpha",
   "edition": "full",
   "display_name": "ViralTrac AURA",
   "public_name": "ViralTrac AURA",
@@ -19,7 +20,10 @@
     "default_root": "product_root",
     "external_root_supported": true,
     "migration_helper": "scripts/migrate_workspace.py",
-    "selectors": ["BUSINESSOS_WORKSPACE", ".businessos/workspace.json"],
+    "selectors": [
+      "BUSINESSOS_WORKSPACE",
+      ".businessos/workspace.json"
+    ],
     "deployment_profiles": "distribution/deployment-profiles.json"
   },
   "state_locations": {
@@ -48,9 +52,9 @@
     "marketing-synthesis",
     "seo-aeo"
   ],
-  "contract_count": 524,
-  "schema_count": 61,
-  "capability_count": 98,
+  "contract_count": 520,
+  "schema_count": 47,
+  "capability_count": 83,
   "entrypoints": {
     "welcome": "WELCOME.md",
     "human": "START-HERE.md",

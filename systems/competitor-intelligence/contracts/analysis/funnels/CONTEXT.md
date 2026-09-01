@@ -1,7 +1,6 @@
 ---
 id: competitor.analysis.funnels
 type: playbook
-version: 1.7.0
 owner_system: competitor-intelligence
 reads:
 - Competitor
@@ -26,11 +25,6 @@ capabilities:
   - browser.interact
   - crawler.run
   - email.read
-events:
-  consumes:
-  - none
-  emits:
-  - competitor.insight.updated
 context:
 - AudienceSegment
 - Business

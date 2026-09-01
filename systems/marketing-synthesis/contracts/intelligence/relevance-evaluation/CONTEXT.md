@@ -1,7 +1,6 @@
 ---
 id: marketing.intelligence.relevance-evaluation
 type: detector
-version: 1.1.0
 owner_system: marketing-synthesis
 reads:
 - Insight
@@ -16,13 +15,6 @@ capabilities:
   - none
   optional:
   - none
-events:
-  consumes:
-  - insight.activated
-  - insight.updated
-  - insight.contradicted
-  emits:
-  - intelligence.relevance.evaluated
 context:
 - AudienceSegment
 - Brand

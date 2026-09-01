@@ -1,7 +1,6 @@
 ---
 id: core.context.owned-business-discovery
 type: playbook
-version: 1.9.0
 owner_system: core
 reads:
 - Business

@@ -1,7 +1,6 @@
 ---
 id: core.intelligence.register-proof
 type: playbook
-version: 1.2.0
 owner_system: core
 reads:
 - SourceRecord
@@ -16,11 +15,6 @@ capabilities:
   - none
   optional:
   - none
-events:
-  consumes:
-  - none
-  emits:
-  - proof.registered
 context:
 - AudienceSegment
 - ProductService

@@ -1,7 +1,6 @@
 ---
 id: content.strategy.audience-context
 type: playbook
-version: 1.4.0
 owner_system: content-synthesis
 reads:
 - Insight

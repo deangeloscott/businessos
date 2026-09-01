@@ -1,7 +1,6 @@
 ---
 id: customer.monitoring.theme-change
 type: playbook
-version: 1.1.0
 owner_system: customer-intelligence
 reads:
 - Observation
@@ -19,15 +18,6 @@ capabilities:
   - support.ticket.read
   - review.read
   - community.read
-events:
-  consumes:
-  - none
-  emits:
-  - customer.insight.updated
-schedule:
-  class: recurring
-  default: weekly
-  configurable: true
 ---
 # Customer Theme Change Monitoring
 

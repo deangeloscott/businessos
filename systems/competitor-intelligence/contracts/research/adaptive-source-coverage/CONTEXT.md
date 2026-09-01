@@ -1,7 +1,6 @@
 ---
 id: competitor.research.adaptive-source-coverage
 type: playbook
-version: 1.7.0
 owner_system: competitor-intelligence
 reads:
 - Competitor

@@ -1,7 +1,6 @@
 ---
 id: core.context.propose-update
 type: playbook
-version: 2.1.0
 owner_system: core
 reads:
 - Observation

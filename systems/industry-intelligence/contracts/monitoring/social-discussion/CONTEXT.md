@@ -1,7 +1,6 @@
 ---
 id: industry.monitoring.social-discussion
 type: detector
-version: 1.2.0
 owner_system: industry-intelligence
 reads:
 - IndustryEvent
@@ -22,10 +21,6 @@ capabilities:
   - community.read
   - rss.read
   - news.read
-schedule:
-  class: recurring
-  default: daily
-  configurable: true
 context:
 - Market
 - ProductService

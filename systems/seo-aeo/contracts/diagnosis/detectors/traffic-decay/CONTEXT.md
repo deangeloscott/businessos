@@ -1,7 +1,6 @@
 ---
 id: seo.diagnosis.detectors.traffic-decay
 type: detector
-version: 1.1.0
 owner_system: seo-aeo
 reads:
 - OrganicDemandUnit

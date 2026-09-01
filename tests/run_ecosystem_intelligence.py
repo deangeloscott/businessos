@@ -95,12 +95,24 @@ def main():
             if phrase not in body: fail(f"{cid} missing required behavior phrase: {phrase}")
 
     core_meta=cs["core.intelligence.ecosystem-radar"][1]
-    schedule=core_meta.get("schedule") or {}
-    if schedule.get("class")!="recurring" or schedule.get("default")!="weekly":
-        fail("Core ecosystem radar must declare configurable weekly recurrence intent")
+
+    if "schedule" in core_meta:
+        fail("Core ecosystem radar must not reintroduce AURA-owned schedule metadata")
+
+    if "SourceProfile" not in (core_meta.get("reads") or []):
+        fail("Core ecosystem radar must reuse durable SourceProfile monitoring state")
+
+    for field in ("reads", "writes"):
+        if "MonitoringIntent" in (core_meta.get(field) or []):
+            fail("Core ecosystem radar must not invent a duplicate MonitoringIntent canonical object")
+
     body=cs["core.intelligence.ecosystem-radar"][2]
-    if "does not implement the scheduler" not in body:
-        fail("Core radar must preserve harness scheduling boundary")
+    for phrase in [
+        "active harness/runtime owns actual scheduling",
+        "AURA does not implement the scheduler",
+    ]:
+        if phrase not in body:
+            fail(f"Core radar must preserve runtime scheduling boundary: {phrase}")
 
     for cid in DOMAIN_IDS:
         meta=cs[cid][1]

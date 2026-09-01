@@ -1,7 +1,6 @@
 ---
 id: competitor.analysis.advertising
 type: playbook
-version: 1.9.0
 owner_system: competitor-intelligence
 reads:
 - Competitor
@@ -31,11 +30,6 @@ capabilities:
   - media.video.process
   - media.audio.extract
   - media.frame.extract
-events:
-  consumes:
-  - none
-  emits:
-  - competitor.insight.updated
 context:
 - AudienceSegment
 - Business

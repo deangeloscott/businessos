@@ -1,7 +1,6 @@
 ---
 id: customer.monitoring.public-signal-watch
 type: detector
-version: 1.2.0
 owner_system: customer-intelligence
 reads:
 - Observation
@@ -20,16 +19,6 @@ capabilities:
   - community.read
   - review.read
   - rss.read
-schedule:
-  class: recurring
-  default: daily
-  configurable: true
-events:
-  consumes:
-  - none
-  emits:
-  - customer.public-signal.observed
-  - insight.updated
 context:
 - AudienceSegment
 - ProductService

@@ -1,7 +1,6 @@
 ---
 id: core.context.brand-profile
 type: playbook
-version: 1.5.0
 owner_system: core
 reads:
 - Brand

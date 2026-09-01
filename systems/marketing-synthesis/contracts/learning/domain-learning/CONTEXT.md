@@ -1,7 +1,6 @@
 ---
 id: marketing.learning.domain-learning
 type: playbook
-version: 1.1.0
 owner_system: marketing-synthesis
 reads:
 - OutcomeEvaluation

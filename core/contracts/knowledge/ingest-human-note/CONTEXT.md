@@ -1,7 +1,6 @@
 ---
 id: core.knowledge.ingest-human-note
 type: playbook
-version: 1.0.0
 owner_system: core
 reads:
 - SourceRecord

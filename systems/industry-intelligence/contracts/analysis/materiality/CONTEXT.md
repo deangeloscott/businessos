@@ -1,7 +1,6 @@
 ---
 id: industry.analysis.materiality
 type: playbook
-version: 1.3.0
 owner_system: industry-intelligence
 reads:
 - IndustryEvent
@@ -21,11 +20,6 @@ capabilities:
   - regulatory.read
   - research.paper.read
   - market_data.read
-events:
-  consumes:
-  - none
-  emits:
-  - industry.insight.updated
 context:
 - AudienceSegment
 - Business

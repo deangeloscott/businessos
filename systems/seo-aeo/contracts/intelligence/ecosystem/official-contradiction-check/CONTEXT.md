@@ -1,7 +1,6 @@
 ---
 id: seo.intelligence.ecosystem.official-contradiction-check
 type: playbook
-version: 1.1.0
 owner_system: seo-aeo
 reads:
 - type: Insight

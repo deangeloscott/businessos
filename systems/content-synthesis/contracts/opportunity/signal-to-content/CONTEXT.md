@@ -1,7 +1,6 @@
 ---
 id: content.opportunity.signal-to-content
 type: playbook
-version: 1.2.0
 owner_system: content-synthesis
 reads:
 - Observation
@@ -19,14 +18,6 @@ capabilities:
   - none
   optional:
   - none
-events:
-  consumes:
-  - customer.public-signal.observed
-  - insight.activated
-  - insight.updated
-  - industry.audience-implication.updated
-  emits:
-  - content.opportunity.evaluated
 context:
 - AudienceSegment
 - Brand

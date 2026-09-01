@@ -1,7 +1,6 @@
 ---
 id: core.intelligence.publish-observation
 type: service
-version: 1.1.0
 owner_system: core
 reads:
 - SourceRecord
@@ -12,11 +11,6 @@ capabilities:
   - none
   optional:
   - none
-events:
-  consumes:
-  - none
-  emits:
-  - core.object.updated
 ---
 # Publish Observation
 

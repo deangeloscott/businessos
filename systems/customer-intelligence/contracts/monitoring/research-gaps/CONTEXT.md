@@ -1,7 +1,6 @@
 ---
 id: customer.monitoring.research-gaps
 type: playbook
-version: 1.3.0
 owner_system: customer-intelligence
 reads:
 - Insight

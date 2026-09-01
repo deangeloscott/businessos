@@ -1,7 +1,6 @@
 ---
 id: seo.execution.technical.duplicate-content
 type: playbook
-version: 1.1.0
 owner_system: seo-aeo
 reads:
 - SEOAssetState

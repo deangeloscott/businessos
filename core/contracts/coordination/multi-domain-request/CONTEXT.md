@@ -1,7 +1,6 @@
 ---
 id: core.coordination.multi-domain-request
 type: playbook
-version: 1.1.0
 owner_system: core
 reads:
 - Business
@@ -18,12 +17,6 @@ capabilities:
   - none
   optional:
   - none
-events:
-  consumes:
-  - none
-  emits:
-  - core.work.requested
-  - core.object.updated
 context:
 - Business
 - Objective

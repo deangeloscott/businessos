@@ -1,7 +1,6 @@
 ---
 id: customer-optimization.intervention.retention
 type: playbook
-version: 1.3.0
 owner_system: customer-optimization
 reads:
 - CustomerJourney

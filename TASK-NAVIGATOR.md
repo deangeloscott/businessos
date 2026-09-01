@@ -2,7 +2,7 @@
 
 Installed edition: **ViralTrac AURA**.
 
-ViralTrac AURA is an AI-native BusinessOS. You can ask for an outcome in plain language; this file is a human browse view, not a requirement to select a playbook manually.
+ViralTrac AURA is an AI-native BusinessOS. Ask for an outcome in plain language; this file is a human browse view, not a requirement to select a playbook manually.
 
 ## Competitor Intelligence
 
@@ -195,19 +195,19 @@ Diagnose, plan, execute, verify, and learn from organic discovery across search,
 
 ## Core
 
-Core supplies shared business context, evidence/provenance, Opportunities, Actions, verification, measurement, Learning, playbook evolution, workspace/knowledge governance, capability abstraction, and module-independence rules.
+Core supplies organization-owned business context, evidence/provenance, decisions, optional continuity objects, measurement, Learning, reusable SOP knowledge, workspace integrity, and provider-neutral capability vocabulary.
 
 | Activity | Result | Entry contract |
 |---|---|---|
-| `resolve-intent` | Interpret an ordinary-language request and choose the smallest valid direct, diagnostic, prioritization, or multi-domain route without forcing an uncertain lexical match. | `core.routing.resolve-intent` |
+| `resolve-intent` | Interpret an ordinary-language request and choose the smallest useful AURA playbook route when one fits, without forcing uncertain lexical matches or requiring AURA as the method. | `core.routing.resolve-intent` |
 | `configure-workspace` | Choose simple, power-user, or organization deployment; optionally separate organization-owned state from product source; and keep versioning/Obsidian as optional adapters. | `core.workspace.configure` |
-| `refresh-human-knowledge` | Generate a traceable Markdown/Obsidian-friendly human view from canonical BusinessOS state without creating a competing truth store. | `core.knowledge.refresh-human-layer` |
-| `ingest-human-note` | Register a human-authored workspace note as noncanonical source material and route useful claims through normal evidence/context governance. | `core.knowledge.ingest-human-note` |
+| `refresh-human-knowledge` | Generate a traceable Markdown/Obsidian-friendly human view from canonical AURA state without creating a competing truth store. | `core.knowledge.refresh-human-layer` |
+| `ingest-human-note` | Register a human-authored workspace note as noncanonical source material and route useful claims through normal evidence/context handling. | `core.knowledge.ingest-human-note` |
 | `scan-external-ecosystem` | Discover important external changes, tactics, findings, and signals; verify what is real and relevant; and route promising items to investigation, testing, or learning. | `core.intelligence.ecosystem-radar` |
 | `track-external-subject` | Build or refresh a durable evidence-backed watch for a company, creator, public figure, publication, platform, product, regulator, own organization, or other decision-relevant subject across appropriate sources and modalities. | `core.intelligence.subject-monitoring` |
-| `review-monitoring-status` | Show what AURA is monitoring, per-subject/source/signal cadence, notification intent, due work, and whether recurring execution is actually active. | `core.monitoring.status` |
-| `evolve-operating-process` | Turn strong reusable Learning into a governed business process extension, new local playbook, or canonical BusinessOS revision candidate without overgeneralizing evidence. | `core.learning.playbook-evolution` |
-| `use-innovation-exchange` | Prepare, import, browse, and evaluate portable BusinessOS process innovations with explicit sharing consent and no required central service. | `core.intelligence.innovation-exchange` |
+| `review-monitoring-status` | Show durable monitoring intent, cadence/materiality, semantic due state, and meaningful unresolved findings without treating AURA as the scheduler or notification runtime. | `core.monitoring.status` |
+| `evolve-operating-process` | Turn strong reusable Learning into a business process extension, new local playbook, or canonical AURA revision candidate without overgeneralizing evidence. | `core.learning.playbook-evolution` |
+| `use-innovation-exchange` | Prepare, import, browse, and evaluate portable AURA process innovations with explicit sharing consent and no required central service. | `core.intelligence.innovation-exchange` |
 | `review-community-innovation` | Separate community reports from independent/local evidence and route promising innovations to test, adopt, or playbook evolution. | `core.intelligence.community-evidence-review` |
 | `diagnose-business-problem` | Narrow a broad unexplained business symptom to evidence-backed likely mechanisms and correctly owned next work before intervention. | `core.diagnosis.business-problem` |
 | `discover-next-best-work` | Turn a broad growth/prioritization goal into the highest-value next work supported by current evidence and installed modules. | `core.opportunity.discover-next-best-work` |
@@ -215,9 +215,6 @@ Core supplies shared business context, evidence/provenance, Opportunities, Actio
 | `bootstrap-business` | Create evidence-backed initial business context from minimal identity, first-party sources, and user-provided information. | `core.context.bootstrap-business` |
 | `owned-business-discovery` | Adaptively map owned/official business surfaces and evidence at the depth needed for the current job. | `core.context.owned-business-discovery` |
 | `brand-profile` | Capture durable brand voice, visual, content, channel, reference, and prohibited-style rules. | `core.context.brand-profile` |
-| `query-business-truth` | Query connected first-party business truth through the best governed/provider-neutral data surface and preserve evidence-linked BusinessOS references. | `core.data.query-business-truth` |
-| `react-to-business-event` | Turn an authorized business occurrence into a deduplicated BusinessOS evaluation trigger without bypassing routing or approval. | `core.monitoring.react-to-business-event` |
-| `configure-reactive-monitoring` | Configure an event-driven BusinessOS monitoring path only when provider runtime readiness and host delivery are actually available, with explicit fallback otherwise. | `core.monitoring.configure-reactive-monitoring` |
-| `diagnose-event-trace` | Explain and repair reason-coded reactive-event failures or no-action outcomes without guessing or unsafe replay. | `core.monitoring.diagnose-event-trace` |
+| `query-business-truth` | Query authoritative first-party business truth through the best currently available host/integration surface and preserve evidence-linked AURA references. | `core.data.query-business-truth` |
 
 See `DEPLOYMENT.md` for Simple / Power User / Organization deployment and `BRANDING.md` for public naming.

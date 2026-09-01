@@ -1,7 +1,6 @@
 ---
 id: core.diagnosis.business-problem
 type: playbook
-version: 1.1.0
 owner_system: core
 reads:
 - Business
@@ -17,11 +16,6 @@ capabilities:
   - none
   optional:
   - none
-events:
-  consumes:
-  - none
-  emits:
-  - core.work.requested
 context:
 - Business
 - Objective

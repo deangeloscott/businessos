@@ -1,7 +1,6 @@
 ---
 id: customer.analysis.decision-drivers
 type: playbook
-version: 1.4.0
 owner_system: customer-intelligence
 reads:
 - Observation

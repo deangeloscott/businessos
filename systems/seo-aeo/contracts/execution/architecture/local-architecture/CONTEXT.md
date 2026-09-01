@@ -1,7 +1,6 @@
 ---
 id: seo.execution.architecture.local-architecture
 type: playbook
-version: 1.1.0
 owner_system: seo-aeo
 reads:
 - SEOAssetState

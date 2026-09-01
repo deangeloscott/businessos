@@ -1,7 +1,6 @@
 ---
 id: industry.source-mapping.priority-sources
 type: playbook
-version: 1.2.0
 owner_system: industry-intelligence
 reads: []
 writes:

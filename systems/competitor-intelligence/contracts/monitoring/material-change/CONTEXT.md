@@ -1,7 +1,6 @@
 ---
 id: competitor.monitoring.material-change
 type: playbook
-version: 1.1.0
 owner_system: competitor-intelligence
 reads:
 - Competitor
@@ -20,15 +19,6 @@ capabilities:
   - research.web.read
   - advertising.observe
   - social.observe
-events:
-  consumes:
-  - none
-  emits:
-  - competitor.insight.updated
-schedule:
-  class: recurring
-  default: daily
-  configurable: true
 context:
 - Objective
 ---

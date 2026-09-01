@@ -1,7 +1,6 @@
 ---
 id: seo.intelligence.ecosystem.source-monitoring
 type: playbook
-version: 1.2.0
 owner_system: seo-aeo
 reads:
 - type: Insight

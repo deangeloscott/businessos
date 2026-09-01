@@ -1,7 +1,6 @@
 ---
 id: seo.monitoring.ai-visibility
 type: playbook
-version: 1.1.0
 owner_system: seo-aeo
 reads:
 - SEOAssetState
@@ -26,10 +25,6 @@ capabilities:
   - ai_answer.observe
   - crawler.run
   - local_profile.read
-schedule:
-  class: recurring
-  default: daily
-  configurable: true
 evidence_inputs:
 - prompt/question observations, answer text, citations, mentions, and competing sources
 updates:

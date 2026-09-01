@@ -1,7 +1,6 @@
 ---
 id: core.intelligence.ecosystem.source-discovery
 type: playbook
-version: 1.2.0
 owner_system: core
 reads:
 - Business

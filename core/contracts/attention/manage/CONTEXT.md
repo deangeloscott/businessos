@@ -1,7 +1,6 @@
 ---
 id: core.attention.manage
 type: service
-version: 2.0.0
 owner_system: core
 reads:
 - Business

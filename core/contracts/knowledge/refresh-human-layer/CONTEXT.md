@@ -1,7 +1,6 @@
 ---
 id: core.knowledge.refresh-human-layer
 type: playbook
-version: 1.3.0
 owner_system: core
 reads:
 - Business

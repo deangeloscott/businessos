@@ -1,7 +1,6 @@
 ---
 id: industry.analysis.research-quality
 type: playbook
-version: 1.3.0
 owner_system: industry-intelligence
 reads:
 - IndustryEvent

@@ -1,7 +1,6 @@
 ---
 id: customer-optimization.monitoring.journey-health
 type: playbook
-version: 1.1.0
 owner_system: customer-optimization
 reads:
 - CustomerJourney
@@ -24,10 +23,6 @@ capabilities:
   - checkout.read
   - billing.read
   - customer_success.read
-schedule:
-  class: recurring
-  default: daily
-  configurable: true
 ---
 # Customer Journey Health Monitoring
 

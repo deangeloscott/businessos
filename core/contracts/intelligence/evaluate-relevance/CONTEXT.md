@@ -1,7 +1,6 @@
 ---
 id: core.intelligence.evaluate-relevance
 type: playbook
-version: 1.1.0
 owner_system: core
 reads:
 - Insight
@@ -15,11 +14,6 @@ capabilities:
   - none
   optional:
   - none
-events:
-  consumes:
-  - none
-  emits:
-  - intelligence.relevance.evaluated
 context:
 - AudienceSegment
 - Market

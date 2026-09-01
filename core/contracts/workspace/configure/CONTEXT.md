@@ -1,7 +1,6 @@
 ---
 id: core.workspace.configure
 type: service
-version: 1.1.0
 owner_system: core
 reads: []
 writes: []

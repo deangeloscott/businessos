@@ -1,7 +1,6 @@
 ---
 id: seo.diagnosis.detector.organic-experience-alignment
 type: detector
-version: 1.1.0
 owner_system: seo-aeo
 reads:
 - OrganicDemandUnit

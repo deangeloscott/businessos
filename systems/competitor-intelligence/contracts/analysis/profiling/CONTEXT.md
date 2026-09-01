@@ -1,7 +1,6 @@
 ---
 id: competitor.analysis.profiling
 type: playbook
-version: 1.8.0
 owner_system: competitor-intelligence
 reads:
 - Competitor
@@ -31,11 +30,6 @@ capabilities:
   - crawler.run
   - community.read
   - news.read
-events:
-  consumes:
-  - none
-  emits:
-  - competitor.insight.updated
 context:
 - AudienceSegment
 - Business

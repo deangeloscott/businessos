@@ -1,7 +1,6 @@
 ---
 id: customer.analysis.hypothesis-validation
 type: playbook
-version: 1.1.0
 owner_system: customer-intelligence
 reads:
 - SourceRecord
@@ -22,11 +21,6 @@ capabilities:
   - survey.read
   - review.read
   - analytics.read
-events:
-  consumes:
-  - none
-  emits:
-  - customer.insight.updated
 context:
 - AudienceSegment
 - Market

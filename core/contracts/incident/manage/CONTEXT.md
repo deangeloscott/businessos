@@ -1,7 +1,6 @@
 ---
 id: core.incident.manage
 type: playbook
-version: 2.0.0
 owner_system: core
 reads:
 - Incident

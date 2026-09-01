@@ -1,7 +1,6 @@
 ---
 id: seo.monitoring.local
 type: playbook
-version: 1.1.0
 owner_system: seo-aeo
 reads:
 - SEOAssetState
@@ -22,10 +21,6 @@ capabilities:
   - local_profile.update
   - review.read
   - research.web.read
-schedule:
-  class: recurring
-  default: daily
-  configurable: true
 evidence_inputs:
 - location/profile data, local-result observations, and local competitors
 updates:

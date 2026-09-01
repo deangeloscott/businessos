@@ -1,7 +1,6 @@
 ---
 id: seo.intelligence.ecosystem.tactic-radar
 type: playbook
-version: 1.0.0
 owner_system: seo-aeo
 reads:
 - SourceProfile

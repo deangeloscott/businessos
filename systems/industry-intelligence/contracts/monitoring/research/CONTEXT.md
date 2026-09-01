@@ -1,7 +1,6 @@
 ---
 id: industry.monitoring.research
 type: playbook
-version: 1.3.0
 owner_system: industry-intelligence
 reads:
 - SourceRecord
@@ -21,15 +20,6 @@ capabilities:
   - alert.read
   - market_data.read
   - rss.read
-events:
-  consumes:
-  - none
-  emits:
-  - industry.event.updated
-schedule:
-  class: recurring
-  default: weekly
-  configurable: true
 context:
 - Business
 - Market

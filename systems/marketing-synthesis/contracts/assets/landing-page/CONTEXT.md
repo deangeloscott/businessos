@@ -1,7 +1,6 @@
 ---
 id: marketing.assets.landing-page
 type: playbook
-version: 1.5.0
 owner_system: marketing-synthesis
 artifact_role: customer_facing_production_root
 reads:

@@ -1,7 +1,6 @@
 ---
 id: marketing.strategy.proof
 type: playbook
-version: 1.2.0
 owner_system: marketing-synthesis
 reads:
 - type: Insight

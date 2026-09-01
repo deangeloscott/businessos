@@ -1,7 +1,6 @@
 ---
 id: marketing.webinar.teaching-architecture
 type: playbook
-version: 1.3.0
 owner_system: marketing-synthesis
 reads:
 - Opportunity

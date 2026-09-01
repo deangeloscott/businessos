@@ -1,7 +1,6 @@
 ---
 id: competitor.discovery.competitive-set
 type: playbook
-version: 1.8.0
 owner_system: competitor-intelligence
 reads:
 - type: Insight

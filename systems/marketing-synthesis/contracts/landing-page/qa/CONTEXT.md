@@ -1,7 +1,6 @@
 ---
 id: marketing.landing-page.qa
 type: playbook
-version: 1.4.0
 owner_system: marketing-synthesis
 reads:
 - Opportunity

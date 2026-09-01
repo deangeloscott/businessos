@@ -1,7 +1,6 @@
 ---
 id: core.opportunity.discover-next-best-work
 type: playbook
-version: 1.4.0
 owner_system: core
 reads:
 - Business
@@ -19,12 +18,6 @@ capabilities:
   - none
   optional:
   - none
-events:
-  consumes:
-  - none
-  emits:
-  - core.work.requested
-  - core.object.updated
 context:
 - Business
 - Objective

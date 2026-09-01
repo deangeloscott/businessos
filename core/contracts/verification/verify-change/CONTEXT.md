@@ -1,7 +1,6 @@
 ---
 id: core.verification.verify-change
 type: service
-version: 2.0.0
 owner_system: core
 reads:
 - ChangeEvent
@@ -14,11 +13,6 @@ capabilities:
   - none
   optional:
   - none
-events:
-  consumes:
-  - none
-  emits:
-  - core.object.updated
 ---
 # Verify Material Change
 

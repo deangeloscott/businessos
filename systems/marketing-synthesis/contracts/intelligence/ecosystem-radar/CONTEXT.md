@@ -1,7 +1,6 @@
 ---
 id: marketing.intelligence.ecosystem-radar
 type: playbook
-version: 1.0.0
 owner_system: marketing-synthesis
 reads:
 - SourceProfile

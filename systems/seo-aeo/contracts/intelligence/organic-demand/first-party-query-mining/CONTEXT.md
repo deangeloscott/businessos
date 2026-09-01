@@ -1,7 +1,6 @@
 ---
 id: seo.intelligence.organic-demand.first-party-query-mining
 type: playbook
-version: 1.1.0
 owner_system: seo-aeo
 reads:
 - SEOAssetState

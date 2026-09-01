@@ -1,7 +1,6 @@
 ---
 id: content.production.gif
 type: playbook
-version: 1.2.0
 owner_system: content-synthesis
 artifact_role: customer_facing_production_root
 reads:

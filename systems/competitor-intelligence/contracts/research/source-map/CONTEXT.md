@@ -1,7 +1,6 @@
 ---
 id: competitor.research.source-map
 type: playbook
-version: 1.7.0
 owner_system: competitor-intelligence
 reads:
 - Competitor

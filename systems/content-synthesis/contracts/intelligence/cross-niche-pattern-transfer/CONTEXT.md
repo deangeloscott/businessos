@@ -1,7 +1,6 @@
 ---
 id: content.intelligence.cross-niche-pattern-transfer
 type: playbook
-version: 1.2.0
 owner_system: content-synthesis
 reads:
 - Insight

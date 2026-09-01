@@ -1,7 +1,6 @@
 ---
 id: industry.intelligence.ecosystem-radar
 type: playbook
-version: 1.0.0
 owner_system: industry-intelligence
 reads:
 - SourceProfile

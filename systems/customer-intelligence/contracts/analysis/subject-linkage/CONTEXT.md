@@ -1,7 +1,6 @@
 ---
 id: customer.analysis.subject-linkage
 type: playbook
-version: 1.2.0
 owner_system: customer-intelligence
 reads:
 - SourceRecord

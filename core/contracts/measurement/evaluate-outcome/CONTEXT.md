@@ -1,7 +1,6 @@
 ---
 id: core.measurement.evaluate-outcome
 type: service
-version: 1.8.0
 owner_system: core
 reads:
 - Opportunity
@@ -19,11 +18,6 @@ capabilities:
   - business.measurement.evaluate
   - business.data.query
   - business.data.explain
-events:
-  consumes:
-  - none
-  emits:
-  - core.object.updated
 ---
 # Evaluate Outcome
 

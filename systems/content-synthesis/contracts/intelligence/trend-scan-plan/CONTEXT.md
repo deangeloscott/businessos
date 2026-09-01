@@ -1,7 +1,6 @@
 ---
 id: content.intelligence.trend-scan-plan
 type: playbook
-version: 1.3.0
 owner_system: content-synthesis
 reads:
 - Insight

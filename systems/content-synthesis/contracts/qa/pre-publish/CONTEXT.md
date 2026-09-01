@@ -1,7 +1,6 @@
 ---
 id: content.qa.pre-publish
 type: playbook
-version: 1.6.0
 owner_system: content-synthesis
 reads:
 - Insight

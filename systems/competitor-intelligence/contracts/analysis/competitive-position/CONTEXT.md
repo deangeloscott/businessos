@@ -1,7 +1,6 @@
 ---
 id: competitor.analysis.competitive-position
 type: playbook
-version: 1.8.0
 owner_system: competitor-intelligence
 reads:
 - Competitor

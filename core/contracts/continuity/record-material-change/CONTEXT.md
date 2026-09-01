@@ -1,7 +1,6 @@
 ---
 id: core.continuity.record-material-change
 type: playbook
-version: 1.0.1
 owner_system: core
 reads:
 - Business

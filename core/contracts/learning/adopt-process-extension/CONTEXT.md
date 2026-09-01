@@ -1,7 +1,6 @@
 ---
 id: core.learning.adopt-process-extension
 type: service
-version: 1.3.0
 owner_system: core
 reads:
 - PlaybookEvolutionProposal

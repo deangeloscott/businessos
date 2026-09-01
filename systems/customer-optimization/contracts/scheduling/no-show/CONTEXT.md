@@ -1,7 +1,6 @@
 ---
 id: customer-optimization.scheduling.no-show
 type: playbook
-version: 1.3.0
 owner_system: customer-optimization
 reads:
 - CustomerJourney

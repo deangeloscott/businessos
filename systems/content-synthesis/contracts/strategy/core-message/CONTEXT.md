@@ -1,7 +1,6 @@
 ---
 id: content.strategy.core-message
 type: playbook
-version: 1.3.0
 owner_system: content-synthesis
 reads:
 - Insight

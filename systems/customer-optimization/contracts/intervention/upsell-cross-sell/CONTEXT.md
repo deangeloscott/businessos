@@ -1,7 +1,6 @@
 ---
 id: customer-optimization.intervention.upsell-cross-sell
 type: playbook
-version: 1.1.0
 owner_system: customer-optimization
 reads:
 - CustomerJourney

@@ -16,7 +16,7 @@ Track news, research, regulation, technology, market changes, and other outside 
 - **[Research Monitoring](../../systems/industry-intelligence/contracts/monitoring/research/CONTEXT.md)** — Detect and evaluate important research.
 - **[Technology & Platform Monitoring](../../systems/industry-intelligence/contracts/monitoring/technology/CONTEXT.md)** — Detect important technology/platform changes.
 - **[Industry Social Discussion Monitoring](../../systems/industry-intelligence/contracts/monitoring/social-discussion/CONTEXT.md)** — Use social discussion as early signal without treating popularity as fact.
-- **[Industry Event Detection](../../systems/industry-intelligence/contracts/event/detect/CONTEXT.md)** — Save an important industry event in the correct BusinessOS record so it can be verified, analyzed, and reused.
+- **[Industry Event Detection](../../systems/industry-intelligence/contracts/event/detect/CONTEXT.md)** — Save an important industry event in the correct AURA record so it can be verified, analyzed, and reused.
 - **[Industry Event Verification](../../systems/industry-intelligence/contracts/analysis/event-verification/CONTEXT.md)** — Check the important facts about an industry event before using it for business decisions.
 - **[Industry Event Factual Summary](../../systems/industry-intelligence/contracts/event/factual-summary/CONTEXT.md)** — Maintain a clean factual Event layer.
 - **[Event Evolution Tracking](../../systems/industry-intelligence/contracts/analysis/event-evolution/CONTEXT.md)** — Track meaningful Event changes and future checkpoints.
@@ -28,7 +28,7 @@ Track news, research, regulation, technology, market changes, and other outside 
 
 ## More detailed playbooks
 
-These are smaller, specific playbooks BusinessOS can use inside the larger jobs above. The names are kept simple here; open the linked contract or ask BusinessOS to explain one if you want the exact steps.
+These are smaller, specific playbooks AURA can use inside the larger jobs above. The names are kept simple here; open the linked contract or ask AURA to explain one if you want the exact steps.
 
 ### Analysis
 
@@ -91,7 +91,7 @@ These are smaller, specific playbooks BusinessOS can use inside the larger jobs 
 
 ## Want to see exactly how one works?
 
-Ask BusinessOS something like:
+Ask AURA something like:
 
 > “Show me the exact steps for Audience Implication of an Industry Event, including what it reads, what it saves, and how it knows when it is done.”
 

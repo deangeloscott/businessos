@@ -1,7 +1,6 @@
 ---
 id: industry.analysis.audience-implication
 type: playbook
-version: 1.2.0
 owner_system: industry-intelligence
 reads:
 - IndustryEvent
@@ -18,11 +17,6 @@ capabilities:
   - news.read
   - regulatory.read
   - research.paper.read
-events:
-  consumes:
-  - industry.insight.updated
-  emits:
-  - industry.audience-implication.updated
 context:
 - AudienceSegment
 - Market

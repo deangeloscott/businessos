@@ -1,7 +1,6 @@
 ---
 id: core.intelligence.innovation-exchange
 type: playbook
-version: 1.1.0
 owner_system: core
 reads:
 - ProcessExtension

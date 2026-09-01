@@ -31,7 +31,7 @@ Find the competitors that matter, study what they do, compare them with the busi
 
 ## More detailed playbooks
 
-These are smaller, specific playbooks BusinessOS can use inside the larger jobs above. The names are kept simple here; open the linked contract or ask BusinessOS to explain one if you want the exact steps.
+These are smaller, specific playbooks AURA can use inside the larger jobs above. The names are kept simple here; open the linked contract or ask AURA to explain one if you want the exact steps.
 
 ### Analysis
 
@@ -93,7 +93,7 @@ These are smaller, specific playbooks BusinessOS can use inside the larger jobs 
 
 ## Want to see exactly how one works?
 
-Ask BusinessOS something like:
+Ask AURA something like:
 
 > “Show me the exact steps for Advertising Intelligence, including what it reads, what it saves, and how it knows when it is done.”
 

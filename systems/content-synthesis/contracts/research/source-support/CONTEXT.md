@@ -1,7 +1,6 @@
 ---
 id: content.research.source-support
 type: playbook
-version: 1.1.0
 owner_system: content-synthesis
 reads:
 - WorkRequest

@@ -1,7 +1,6 @@
 ---
 id: seo.monitoring.indexing
 type: playbook
-version: 1.1.0
 owner_system: seo-aeo
 reads:
 - SEOAssetState
@@ -22,10 +21,6 @@ capabilities:
   - search.index.request
   - cms.page.read
   - crawler.run
-schedule:
-  class: recurring
-  default: daily
-  configurable: true
 evidence_inputs:
 - crawl/index state HTTP behavior and URL relationships
 updates:

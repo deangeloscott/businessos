@@ -1,7 +1,6 @@
 ---
 id: core.monitoring.status
 type: service
-version: 2.0.0
 owner_system: core
 reads:
 - SourceProfile

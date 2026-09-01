@@ -1,7 +1,6 @@
 ---
 id: customer-optimization.measurement.customer-value
 type: playbook
-version: 1.0.0
 owner_system: customer-optimization
 reads:
 - CustomerJourney

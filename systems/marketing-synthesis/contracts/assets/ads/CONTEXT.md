@@ -1,7 +1,6 @@
 ---
 id: marketing.assets.ads
 type: playbook
-version: 1.4.0
 owner_system: marketing-synthesis
 artifact_role: customer_facing_production_root
 reads:
