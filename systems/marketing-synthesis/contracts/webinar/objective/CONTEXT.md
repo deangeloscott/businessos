@@ -9,7 +9,6 @@ reads:
 - Asset
 - WorkRequest
 writes:
-- WorkRequest
 - Asset
 capabilities:
   required:
@@ -39,13 +38,13 @@ Define the commercial and educational job of a webinar before building teaching 
 Ensure the webinar creates real audience value while supporting a specific qualified commercial outcome.
 
 ## Run When
-Run before designing a sales-oriented webinar.
+Use before designing a sales-oriented webinar.
 
 ## Process
-1. [DETERMINISTIC] Resolve AudienceSegment, source/registration context, Offer, Customer Insights, objective/economics, and existing webinar performance.
+1. [HYBRID] Resolve AudienceSegment, source/registration context, Offer, Customer evidence, objective/economics, and existing webinar performance when available.
 2. [AI] State the audience’s starting problem/knowledge, the useful transformation they should receive even without buying, and the desired commercial action.
 3. [AI] Define who the webinar is for/not for, prerequisite knowledge, and the one core topic/promise it can credibly deliver.
 4. [AI] Identify persuasion barriers the webinar—not merely follow-up—must resolve.
 5. [HYBRID] Ensure educational promise is substantial and not withheld value disguised as a pitch.
-6. [DETERMINISTIC] Define registration, attendance, engagement, CTA, conversion, and quality metrics plus session constraints.
-7. [AI] Produce objective/audience brief for teaching/persuasion design.
+6. [HYBRID] Define useful registration, attendance, engagement, CTA, conversion, quality metrics, and session constraints based on the actual webinar context.
+7. [AI] Preserve the objective/audience brief as a Marketing-owned Asset for direct use by teaching, persuasion, script, slide, and execution methods. Do not create a WorkRequest merely to move between them.
