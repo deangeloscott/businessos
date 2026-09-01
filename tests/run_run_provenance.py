@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Regression: every method uses the same optional AURA work-receipt primitive."""
+"""Regression: every method uses the same simple optional AURA work-receipt primitive."""
 from pathlib import Path
 import json, shutil, subprocess, sys
 
@@ -26,6 +26,8 @@ def create_and_complete(method_type,task,method_ref=None,contract_id=None):
     req(not (rd/'contract-execution.json').exists(),f'{method_type} Run recreated an execution ledger')
     req((rd/'artifacts').is_dir() and (rd/'work').is_dir(),'receipt should expose only useful local artifact/work spaces')
     req(not (rd/'logs').exists() and not (rd/'checkpoints').exists(),'receipt recreated host/runtime log or checkpoint ownership')
+    retired_relationship_fields={'correlation_id','causation_id','root_run_id','parent_run_id','run_role','supersedes_run_id','superseded_by_run_id','lifecycle_reason'}
+    req(not (retired_relationship_fields & set(state)),f'{method_type} receipt recreated relationship lifecycle fields')
     if contract_id:
         req(state.get('contract_id')==contract_id and state.get('method_ref')==contract_id,'AURA playbook receipt lost method provenance')
     else:req(state.get('contract_id') is None,f'{method_type} receipt fabricated contract provenance')
@@ -57,14 +59,16 @@ def main():
         validated=run(S/'validate_business.py',BID,check=False)
         req(validated.returncode==0,f'combined receipt validation failed: {validated.stdout+validated.stderr}')
 
-        # The old conditional SOP execution stack must remain physically absent.
         retired=[
             'scripts/finalize_run.py','scripts/finalize_work_receipt.py','scripts/finalize_sop_run.py',
             'scripts/complete_sop_run.py','scripts/record_contract_completion.py',
+            'scripts/run_lifecycle.py','scripts/reconcile_runs.py','scripts/run_provenance.py','scripts/persist_run_results.py',
         ]
-        for rel in retired:req(not (ROOT/rel).exists(),f'retired Run execution helper reappeared: {rel}')
-        schema=(ROOT/'core/schemas/runtime/run.schema.json').read_text()
+        for rel in retired:req(not (ROOT/rel).exists(),f'retired Run execution/coupling helper reappeared: {rel}')
+        schema=json.loads((ROOT/'core/schemas/runtime/run.schema.json').read_text())
         req('completion_policy_ref' not in schema,'Run schema recreated completion-policy authority')
+        retired_relationship_fields={'correlation_id','causation_id','root_run_id','parent_run_id','run_role','supersedes_run_id','superseded_by_run_id','lifecycle_reason'}
+        req(not (retired_relationship_fields & set(schema.get('properties',{}))),'Run schema recreated relationship lifecycle')
 
         # Capability failure may produce a truthful partial/specification result, but not
         # an AURA-internal manual-action object under a renamed Packet/Package label.
@@ -76,7 +80,7 @@ def main():
                 if ('manual action packet' in low or 'manual action package' in low) and not any(marker in low for marker in negative):
                     req(False,f'{path.relative_to(ROOT)} recreated retired manual-action fallback: {line.strip()}')
 
-        print('Run receipt regressions passed: all methods share one optional continuity primitive with no internal execution ledger')
+        print('Run receipt regressions passed: all methods share one simple optional one-way continuity primitive')
     finally:
         for path in (BASE,RUNS):
             if path.exists():shutil.rmtree(path)
