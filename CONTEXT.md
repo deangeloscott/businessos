@@ -23,9 +23,9 @@ Before saving anything, ask:
 
 If no, do not persist it merely because a schema/helper exists.
 
-For ordinary canonical create/update work, `scripts/remember.py <business-id> --input <json>` is the generic persistence primitive. It does not require a Run or AURA playbook. On an update, `remove_fields` may explicitly remove obsolete top-level semantic fields; omission alone means “leave the existing value unchanged.” Use `scripts/forget.py` when an entire unreferenced canonical object should no longer exist. Use a specialized helper only when the object has genuinely special lifecycle/evidence semantics that the generic writer should not duplicate.
+For ordinary canonical create/update work, `scripts/remember.py <business-id> --input <json>` is the generic persistence primitive. It does not require a Run or AURA playbook. On an update, `remove_fields` may explicitly remove obsolete top-level semantic fields; omission alone means “leave the existing value unchanged.” Use `scripts/forget.py` when an entire unreferenced canonical object should no longer exist. Use a specialized helper only when the object has genuinely special evidence, identity, or state semantics that the generic writer should not duplicate.
 
-A Run is an **optional bounded work receipt** for continuity/provenance. It is not required before reasoning begins and should not be required merely to remember durable truth. If a Run exists, record the method actually used: `aura_playbook`, `external_skill`, `model_created`, or `ad_hoc`.
+A Run is an **optional bounded work receipt** for continuity/provenance. It is not required before reasoning begins and should not be required merely to remember durable truth. If a Run exists, record the method actually used: `aura_playbook`, `external_skill`, `model_created`, or `ad_hoc`. All methods use the same receipt primitive; selecting a playbook does not create an execution ledger or stronger completion regime.
 
 ## Operating knowledge
 
@@ -33,7 +33,7 @@ AURA playbooks/contracts describe reusable methods. They are not executable prog
 
 - Deterministic indexes may find bounded candidate playbooks.
 - The model/user decides semantic applicability.
-- Only claim AURA-playbook conformance when that playbook was actually selected and its essential evidence/quality invariants were satisfied.
+- When an AURA playbook is actually used, use the parts of its method and quality/evidence invariants that materially define that job; do not turn that into internal conformance paperwork.
 - External Skill, model-created, and ad-hoc work remain legitimate and may produce the same useful organizational results without fabricated AURA contract provenance.
 
 Installed modules are packages of AURA operating knowledge, not limits on what a capable model/harness may do. If a module is absent, its AURA playbooks are unavailable; that does **not** prohibit another sound method when the host has sufficient capabilities/evidence.
@@ -64,7 +64,7 @@ A request to analyze does not silently become a request to publish. An explicit 
 
 ## Customer-facing work
 
-Do not convert hypotheses, competitor patterns, placeholders, or inferred business details into established company claims. Load the specific claim/evidence policies when outward-facing work requires them. Artifact quality, deployment, and measured business outcome are separate facts.
+Do not convert hypotheses, competitor patterns, placeholders, or inferred business details into established company claims. Load the specific claim/evidence policies when outward-facing work requires them. Artifact quality, production readiness, deployment, authorization, and measured business outcome are separate facts.
 
 ## Product boundary
 
@@ -78,6 +78,7 @@ During ordinary organizational work, do not modify AURA product source to work a
 - Re-run `enter.py` with `--selected-contract <id>` only after the active model/user chooses an AURA playbook.
 - `scripts/remember.py <business-id> --input <json>` — create/update ordinary durable canonical meaning without a Run; use `remove_fields` on updates when a semantic field is no longer current.
 - `scripts/forget.py <business-id> <object-ref>` — remove a whole unreferenced object when it no longer deserves durable memory.
+- `scripts/create_run.py <business-id> "<task>" ...` / `scripts/complete_run.py <business-id> <run-id> ...` — optional continuity when preserving a bounded work receipt is actually useful.
 - Use specialized persistence helpers only where they preserve real semantics, and `scripts/validate_business.py <business-id>` after material changes.
 
 The intended experience is:
