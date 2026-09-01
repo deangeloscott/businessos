@@ -104,11 +104,12 @@ def asset_claim_units(asset,artifact_path):
             statements.extend(units('\n'.join(_surface_values(surface))))
         return list(dict.fromkeys(statements)),None
 
-    # For opaque/rendered media, a producing Run must leave an auditable surface. Imported
-    # pre-existing media is not retroactively forced through this path until it is mutated.
+    # Opaque/rendered media created or currently managed as customer-facing work must
+    # expose an auditable claim surface regardless of whether a Run receipt exists.
+    # Truly imported/pre-existing media is not retroactively forced through this path
+    # until it is materially reworked as current output.
     origin=str(bos.get('origin','')).lower()
-    produced=bool(bos.get('run_ref') or bos.get('run_id')) and origin not in {'imported','preexisting'}
-    if not produced:return [],None
+    if origin in {'imported','preexisting'}:return [],None
     ref=bos.get('claim_surface_ref')
     if not ref:return [],f'customer-facing rendered Asset {asset.get("id")} requires extensions.businessos.claim_surface_ref; opaque media cannot bypass claim governance'
     surface,error=load_claim_surface(ref,path)
