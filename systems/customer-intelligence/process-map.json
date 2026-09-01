@@ -1,5 +1,4 @@
 {
-  "version": "1.4.0",
   "system": "customer-intelligence",
   "activities": [
     {"id":"customer-research","entry_contract":"customer.research.plan","result":"Resolve a customer knowledge need with evidence sufficient for the decision.","supporting_contracts":["customer.research.source-prioritization","customer.research.sample-design","customer.research.evidence-coverage"]},
