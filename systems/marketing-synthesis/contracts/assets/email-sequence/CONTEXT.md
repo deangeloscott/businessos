@@ -12,7 +12,6 @@ reads:
 - Asset
 - WorkRequest
 writes:
-- WorkRequest
 - Asset
 capabilities:
   required:
@@ -20,9 +19,6 @@ capabilities:
   optional:
   - creative.text.generate
   - email.send
-  - social.ad.publish
-  - cms.page.publish
-  - experiment.run
   - tracking.read
 context:
 - AudienceSegment
@@ -42,15 +38,25 @@ subcontracts:
 Design a multi-email persuasion sequence where each message has a distinct job and builds appropriately on prior context.
 
 ## Business Outcome
-Increase the likelihood of the desired commercial action through evidence-backed commercial email sequence that matches audience awareness, offer, proof, and acquisition context.
+Increase the likelihood of the desired commercial action through an evidence-backed sequence matched to audience awareness, Offer, proof, acquisition context, and the actual relationship/permission state.
 
 ## Run When
-Run when an Opportunity or WorkRequest requires commercial email sequence to remove a commercial persuasion gap or create the required conversion asset.
+Use when the organization needs a commercial email sequence or nurture/follow-up sequence. An Opportunity, prior Asset, or real WorkRequest may provide context but is not required.
 
 ## Process
-1. [AI] Define audience state, entry trigger/source, Offer, desired final action, sequence horizon, and known objections/questions.
-2. [AI] Assign a distinct job to each email: orient, deliver value, demonstrate mechanism/proof, address objection, case/example, offer, urgency if genuine, close/follow-up.
-3. [AI] Draft subject/preheader/body/CTA with continuity but without repetitive restatement.
-4. [HYBRID] Match frequency and urgency to relationship/permission and avoid artificial countdown/scarcity.
-5. [DETERMINISTIC] Define branching/suppression for conversion, disengagement, segment, or lifecycle state where available.
-6. [HYBRID] Validate links, terms, personalization, compliance, and measurement events before send.
+1. [AI] Define audience state, entry trigger/source, Offer, desired final action, sequence horizon, known objections/questions, and real communication permission/relationship constraints.
+2. [AI] Use the authored email submethods as relevant composition/quality knowledge. Assign a distinct job to each message: orient, deliver value, demonstrate mechanism/proof, address objection, case/example, Offer, genuine urgency where applicable, close/follow-up.
+3. [AI] Draft subject/preheader/body/CTA with continuity but without repetitive restatement or unsupported personalization.
+4. [HYBRID] Match frequency, urgency, and segmentation to the relationship and evidence rather than maximum contact frequency; do not manufacture countdowns, scarcity, or behavioral knowledge the organization does not actually have.
+5. [AI] Define branching/suppression for conversion, disengagement, segment, or lifecycle state only where those states/signals really exist. The active email/CRM system owns automation/runtime state.
+6. [HYBRID] Validate claims, links, Offer terms, personalization, compliance, and useful measurement before any send.
+7. [HYBRID] Preserve the usable sequence Asset(s). If sending/automation is explicitly requested and the harness has the real capabilities/permissions, perform it through the external system; otherwise do not create an internal WorkRequest merely because execution remains outside AURA. Use a WorkRequest only for a genuine durable handoff to another actor.
+
+## Verification
+- Each email has a distinct useful job and the sequence builds coherent context.
+- Claims, personalization, urgency, frequency, and Offer terms stay within current evidence and real constraints.
+- Branching/suppression logic is a design unless it has actually been configured in the external system.
+- AURA does not treat the sequence as an internal request pipeline.
+
+## Completion Criteria
+- The organization has a usable evidence-bounded email sequence at the requested level of fidelity, with sending/automation state reported truthfully and separately.
