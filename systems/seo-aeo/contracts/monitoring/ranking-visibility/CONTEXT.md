@@ -34,28 +34,23 @@ updates:
 # Ranking and Search Visibility Monitoring
 
 ## Purpose
-Track material query/page/cluster visibility changes across relevant search surfaces.
+Review material query/page/cluster visibility changes across relevant search surfaces without making AURA the rank-tracking runtime.
 
 ## Business Outcome
-Improve valuable organic discovery through ranking and search visibility monitoring, with a clear SEO/AEO mechanism and connection to the active business Objective.
+Keep search-visibility evidence current enough to recognize meaningful gains/losses while separating demand, ranking, indexing, result-layout, seasonality, and tracking effects.
 
 ## Run When
-Run on the configured cadence or event trigger for **ranking and search visibility monitoring**.
+Use for a bounded ranking/visibility check when the user requests it, saved monitoring intent indicates another review would be useful, or a material search/site change warrants comparison. Any recurring execution belongs to the active harness/runtime.
 
 ## Process
-1. [HUMAN] Refresh configured first-party search and rank observations at the approved cadence.
-2. [HYBRID] Aggregate by value-weighted query cluster, asset, topic, market, device, branded/nonbrand, and result type.
-3. [HYBRID] Compare configurable rolling/prior/YoY windows and detect sustained changes beyond noise.
-4. [DETERMINISTIC] Join demand and SERP/result changes so position shifts are not interpreted without context.
-5. [HYBRID] Route gains to learning and declines to ranking-decay/root-cause workflows.
-6. [HYBRID] Maintain historical state rather than overwriting prior observations.
-
-## Decisions / Routing
-- Route → Core Opportunity qualification when an SEO intervention is evidence-supported.
-- Route → Core verification using SEO-specific assertions.
-- Route → SEO measurement / Core OutcomeEvaluation.
+1. [INTEGRATION] Retrieve current first-party search and available rank/visibility observations for the decision-relevant query/asset/market scope.
+2. [HYBRID] Aggregate where useful by value-weighted query cluster, Asset, topic, market, device, branded/nonbrand, and result type.
+3. [HYBRID] Compare appropriate rolling/prior/YoY windows while accounting for seasonality, sample limitations, and observable search-surface changes.
+4. [HYBRID] Add demand and SERP/result context so position/visibility shifts are not interpreted in isolation.
+5. [AI] Decide whether a sustained change warrants deeper ranking-decay/upside/root-cause diagnosis, an Opportunity, or Learning review. Monitoring does not route those methods automatically.
+6. [HYBRID] Preserve current and historical measurement/state needed for later comparison rather than overwriting prior evidence.
 
 ## Verification
-- Separate demand, ranking, indexing, SERP-layout, seasonality and tracking effects before assigning a cause.
-
-
+- Separate demand, ranking, indexing, SERP-layout, seasonality, and tracking effects before assigning a cause.
+- Semantic cause/materiality remains model judgment.
+- AURA stores useful monitoring intent/evidence; the host owns any recurring rank collection.

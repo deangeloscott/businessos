@@ -34,28 +34,23 @@ updates:
 # Backlink and Mention Monitoring
 
 ## Purpose
-Track meaningful new/lost/changed external references and authority opportunities.
+Review meaningful new, lost, or changed external references and authority signals without treating link-provider noise as organizational truth.
 
 ## Business Outcome
-Improve valuable organic discovery through backlink and mention monitoring, with a clear SEO/AEO mechanism and connection to the active business Objective.
+Keep authority/mention understanding current enough to identify real losses, gains, or opportunities while measuring relevance and business value rather than raw volume.
 
 ## Run When
-Run on the configured cadence or event trigger for **backlink and mention monitoring**.
+Use for a bounded backlink/mention check when the user requests it, saved monitoring intent indicates another review would be useful, or a material site/PR/market change warrants re-observation. Any recurring execution belongs to the active harness/runtime.
 
 ## Process
-1. [DETERMINISTIC] Refresh link/mention observations and normalize source/target state.
+1. [INTEGRATION] Retrieve current link/mention evidence from appropriate available sources and preserve the exact source/target/time context needed for comparison.
 2. [HYBRID] Verify significant new/lost references and distinguish provider noise, redirects, site migrations, spam, and true editorial changes.
-3. [HYBRID] Attribute earned links/mentions to outreach/PR/assets where evidence supports it.
-4. [HYBRID] Route recoverable valuable losses, unlinked mentions, competitor gaps, or harmful anomalies to authority/incident workflows.
-5. [HYBRID] Update source quality/relevance observations without overreacting to synthetic authority score changes.
-6. [HYBRID] Measure referral/business value and topic relevance alongside counts.
-
-## Decisions / Routing
-- Route → Core Opportunity qualification when an SEO intervention is evidence-supported.
-- Route → Core verification using SEO-specific assertions.
-- Route → SEO measurement / Core OutcomeEvaluation.
+3. [HYBRID] Attribute earned links/mentions to outreach, PR, Assets, or other causes only when evidence supports that relationship.
+4. [AI] Judge whether a valuable loss, unlinked mention, competitor gap, harmful anomaly, or authority pattern is materially worth deeper work. Relevant authority/incident playbooks may be useful methods; monitoring does not route them automatically.
+5. [AI] Assess source relevance/quality for the current fact type without treating synthetic authority scores as truth.
+6. [HYBRID] Preserve useful measurement/state and compare referral/business value and topic relevance alongside counts. Create an Opportunity or Incident only when that durable organizational meaning is genuinely justified.
 
 ## Verification
-- Target relevance and legitimacy over raw link volume; preserve outreach provenance and opt-out/compliance requirements.
-
-
+- Target relevance and legitimacy matter more than raw link volume.
+- Material observations remain traceable to actual link/mention evidence.
+- Saved monitoring intent never claims a background checker exists; runtime owns recurring execution.

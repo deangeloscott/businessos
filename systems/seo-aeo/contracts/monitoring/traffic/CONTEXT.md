@@ -34,28 +34,23 @@ updates:
 # Organic Traffic Monitoring
 
 ## Purpose
-Detect material changes in qualified organic site/app traffic and landing behavior.
+Review material changes in qualified organic site/app traffic and landing behavior without treating analytics movement as self-explanatory.
 
 ## Business Outcome
-Improve valuable organic discovery through organic traffic monitoring, with a clear SEO/AEO mechanism and connection to the active business Objective.
+Keep organic traffic evidence current enough to distinguish meaningful acquisition changes from demand, seasonality, tracking, search visibility, and downstream-quality effects.
 
 ## Run When
-Run on the configured cadence or event trigger for **organic traffic monitoring**.
+Use for a bounded organic-traffic check when the user requests it, saved monitoring intent indicates another review would be useful, or a material site/search/business change warrants comparison. Any recurring execution belongs to the active harness/runtime.
 
 ## Process
-1. [HYBRID] Refresh organic sessions/users/landing pages and quality/business-action metrics.
-2. [HYBRID] Segment by asset, topic, market, device, new/returning, brand/nonbrand, and source surface where observable.
-3. [HYBRID] Compare rolling/prior/YoY baselines with seasonality and known campaign/site changes.
-4. [DETERMINISTIC] Validate analytics health before alerting on decline.
-5. [AI] Route material unexplained losses to traffic-decay diagnosis and gains to Change Event attribution/learning.
-6. [HYBRID] Track quality and conversion so raw visitor growth cannot hide worse business outcomes.
-
-## Decisions / Routing
-- Route → Core Opportunity qualification when an SEO intervention is evidence-supported.
-- Route → Core verification using SEO-specific assertions.
-- Route → SEO measurement / Core OutcomeEvaluation.
+1. [INTEGRATION] Retrieve current organic sessions/users/landing-page and relevant quality/business-action evidence from the strongest available first-party measurement sources.
+2. [HYBRID] Segment by Asset, topic, market, device, new/returning, brand/nonbrand, and source surface only where those dimensions are trustworthy and decision-relevant.
+3. [HYBRID] Compare appropriate rolling/prior/YoY baselines while accounting for seasonality and known campaign/site/business changes.
+4. [HYBRID] Check measurement/data quality relevant to the observed movement before concluding that demand, visibility, or traffic actually changed. Do not create a separate AURA provider-health state machine.
+5. [AI] Decide whether a material unexplained loss/gain warrants deeper traffic-decay/root-cause diagnosis, an Opportunity, attribution review, Learning, or no additional durable state. Monitoring does not route these automatically.
+6. [HYBRID] Preserve useful MetricObservation/SEOAssetState evidence and keep quality/conversion visible so raw visitor growth cannot hide worse business outcomes.
 
 ## Verification
-- Reconcile search visibility, analytics and conversion evidence before concluding the site lost demand or rank.
-
-
+- Reconcile search visibility, analytics, and conversion evidence before concluding the site lost demand or rank.
+- Measurement health is assessed only as evidence quality for the current question, not as an AURA-owned provider/runtime subsystem.
+- Recurring collection remains owned by the active harness/runtime.

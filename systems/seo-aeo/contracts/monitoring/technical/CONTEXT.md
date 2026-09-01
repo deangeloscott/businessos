@@ -29,25 +29,23 @@ updates:
 # Technical Health Monitoring
 
 ## Purpose
-Continuously detect changes in technical conditions likely to affect discovery, user experience, or measurement.
+Review technical conditions that may materially affect discovery, user experience, or SEO measurement without making AURA a crawler/uptime runtime.
 
 ## Business Outcome
-Improve valuable organic discovery through technical health monitoring, with a clear SEO/AEO mechanism and connection to the active business Objective.
+Keep decision-relevant technical SEO evidence current enough to distinguish isolated symptoms, shared root causes, intentional states, and critical sitewide problems.
 
 ## Run When
-Run on the configured cadence or event trigger for **technical health monitoring**.
+Use for a bounded technical-health check when the user requests it, saved monitoring intent indicates another review would be useful, or a material deployment/site/search change warrants inspection. Any recurring crawling/uptime execution belongs to the active harness/runtime.
 
 ## Process
-1. [HYBRID] Run incremental/full crawls and direct checks according to site scale/risk.
-2. [HYBRID] Monitor uptime/status, redirects, robots/noindex, canonicals, sitemaps, rendering, internal links, structured data, performance, security indicators, and template changes.
-3. [HYBRID] Group recurring URL symptoms into shared root causes.
-4. [INTEGRATION] Compare with Change Events/deployments to identify likely causal timing.
-5. [HYBRID] Route normal issues to Technical detector and critical sitewide changes to Incidents.
-6. [HYBRID] Suppress accepted/intentional states with expiry/review dates rather than permanently ignoring them.
+1. [INTEGRATION] Run the crawler/direct checks available to the active harness at a scope proportionate to site size, risk, and the current question.
+2. [HYBRID] Inspect uptime/status, redirects, robots/noindex, canonicals, sitemaps, rendering, internal links, structured data, performance, security indicators, and template changes only where relevant.
+3. [AI] Group recurring URL symptoms into plausible shared root causes and distinguish observation from causal conclusion.
+4. [HYBRID] Compare with known material ChangeEvents/deployments when timing evidence can help explain a condition.
+5. [AI] Decide whether a material problem warrants deeper Technical diagnosis, an Incident, an Opportunity, or simply an SEOAssetState/Observation update. Monitoring does not route those methods automatically.
+6. [AI] Preserve intentional/accepted states and a future review intent only when forgetting them would cause repeated false alarms; a review date is organizational intent, not a scheduled task.
 
-## Decisions / Routing
-- Route → Core Opportunity qualification when an SEO intervention is evidence-supported.
-- Route → Core verification using SEO-specific assertions.
-- Route → SEO measurement / Core OutcomeEvaluation.
-
-
+## Verification
+- Claimed technical problems are based on inspected current evidence.
+- Root cause and severity remain calibrated to evidence rather than inferred from one symptom.
+- AURA does not own uptime polling, crawl scheduling, alert delivery, or automatic remediation.
