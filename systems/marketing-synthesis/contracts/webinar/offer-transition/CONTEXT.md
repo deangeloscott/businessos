@@ -9,7 +9,6 @@ reads:
 - Asset
 - WorkRequest
 writes:
-- WorkRequest
 - Asset
 capabilities:
   required:
@@ -39,13 +38,13 @@ Design the transition from teaching into the commercial Offer so it follows logi
 Avoid abrupt “now for the pitch” transitions while making the commercial decision explicit.
 
 ## Run When
-Run when a sales-oriented webinar reaches the point where the Offer should be presented.
+Use when a sales-oriented webinar reaches the point where the Offer should be presented.
 
 ## Process
 1. [AI] Summarize the problem/mechanism/framework attendees now understand and the gap between knowing it and implementing/achieving it.
 2. [AI] Introduce the Offer as one appropriate way to close that gap, not as the only conceivable solution.
 3. [AI] Define fit/disqualification, scope, process, outcomes, proof, terms, risk reversal, and why now where genuine.
-4. [DETERMINISTIC] Validate all price/terms/guarantee/availability facts against the current Offer.
+4. [HYBRID] Validate all price/terms/guarantee/availability facts against current Offer truth.
 5. [AI] Address the highest remaining objections and explain the exact next step after CTA.
 6. [HYBRID] Remove artificial value stacks, unsupported outcome certainty, or pressure inconsistent with the evidence.
-7. [DETERMINISTIC] Produce the Offer/CTA beat sequence for script/slides.
+7. [AI] Preserve the Offer/CTA beat sequence as a Marketing-owned Asset for direct use by script/slides/QA methods. Do not create a WorkRequest merely to continue the webinar composition.
