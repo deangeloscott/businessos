@@ -13,8 +13,6 @@ reads:
 writes:
 - Observation
 - Insight
-- Opportunity
-- WorkRequest
 capabilities:
   required:
   - research.web.read
@@ -39,36 +37,35 @@ subcontracts:
   - id: core.intelligence.ecosystem.evidence-triangulation
   conditional:
   - id: marketing.intelligence.relevance-evaluation
-    when: External intelligence must be evaluated for marketing-specific relevance.
+    when: External intelligence needs deeper marketing-specific applicability analysis.
   - id: marketing.experimentation.message-test
-    when: A promising marketing mechanism is testable and active-business evidence is insufficient.
-  - id: marketing.learning.domain-learning
-    when: Outcome evidence supports reusable marketing guidance.
+    when: A promising uncertain marketing mechanism is testable and a bounded experiment would materially improve the decision.
 ---
 # Marketing Ecosystem Tactic Radar
 
 ## Purpose
-Discover and evaluate emerging positioning, messaging, offer-presentation, creative, advertising, funnel, landing-page, email, webinar, VSL, and campaign tactics before they influence marketing work.
+Discover and evaluate emerging positioning, messaging, offer-presentation, creative, advertising, funnel, landing-page, email, webinar, VSL, and campaign mechanisms before using them in marketing work.
 
 ## Business Outcome
 Improve persuasion faster from credible external learning while avoiding copycat marketing, anecdotal best practices, and tactics that do not fit the active audience/offer/channel.
 
 ## Run When
-Run from the Core ecosystem radar, on demand for marketing refresh, or when a material new persuasion/channel tactic or measured result appears.
+Use on demand for marketing refresh or when a material new persuasion/channel tactic or measured result could affect the business.
 
 ## Process
-1. [HYBRID] Reuse current Marketing Learnings, customer/competitor evidence, owned performance, prior experiments, and SourceProfiles before external expansion.
-2. [AI] Discover tactic/mechanism claims across practitioners, primary experiments, case studies, research, competitors, communities, platform changes, and adjacent categories using semantic and known-source discovery.
-3. [HYBRID] Preserve the underlying evidence and use Core triangulation to separate original measurements, independent replications, repeated case-study retellings, practitioner inference, commercial promotion, and direct counterevidence.
-4. [AI] Identify the persuasion mechanism and conditions: audience awareness, segment, offer, proof, channel, creative format, traffic/source context, journey stage, and outcome measured.
-5. [HYBRID] Evaluate whether the reported metric is a proxy or meaningful commercial result and whether confounders such as media mix, targeting, offer changes, seasonality, or funnel changes could explain it.
-6. [HYBRID] Route weak claims to ignore/watch, evidence gaps to bounded investigation, and promising applicable uncertain tactics to `marketing.experimentation.message-test` with the smallest interpretable treatment.
-7. [AI] Use owned outcomes to determine support/contradiction/inconclusive status and avoid generalizing one winning creative or offer across audiences/channels.
-8. [DETERMINISTIC] Feed repeatable context-specific outcomes into `marketing.learning.domain-learning`; route customer truths back to Customer Intelligence and operational journey effects to Customer Optimization.
+1. [HYBRID] Reuse current Marketing Learning, customer/competitor evidence, owned performance, prior experiments, Assets, and SourceProfiles before external expansion.
+2. [AI] Discover mechanism claims across practitioners, primary experiments, case studies, research, competitors, communities, platform changes, and adjacent categories only to the depth relevant to the current marketing decision.
+3. [HYBRID] Preserve underlying evidence and use Core triangulation to separate original measurements, independent replications, repeated retellings, practitioner inference, commercial promotion, and counterevidence.
+4. [AI] Identify the persuasion mechanism and conditions: audience awareness/segment, Offer, proof, channel, creative format, traffic/source context, journey stage, and outcome measured.
+5. [AI] Determine whether the reported metric is only a proxy or a meaningful commercial result, and consider confounders such as media mix, targeting, Offer changes, seasonality, or funnel changes before inferring effect.
+6. [AI] Decide what the evidence warrants next: ignore, watch, investigate, test, adapt into current work, revise Learning, or do nothing. `marketing.experimentation.message-test` and other Marketing playbooks are optional methods, not automatic routes.
+7. [AI] Where owned outcomes exist, use them to assess support/contradiction/inconclusive status without generalizing one winning creative/offer across audiences or channels.
+8. [DETERMINISTIC] Persist only material Observation/Insight evidence and exact references selected by the model/user. Reusable Marketing Learning updates require the appropriate evidence and semantic judgment rather than automatic lifecycle progression.
 
 ## Verification
-- External tactics never bypass active Offer/Brand/customer evidence or authorization.
-- Claimed lift is not treated as causal without a design that supports causality.
+- External tactics do not become active-business facts, offers, promises, or permissions.
+- Claimed lift is not treated as causal without evidence/design that supports causality.
+- No Opportunity, WorkRequest, experiment, or Learning update is created merely because the radar observed a tactic.
 
 ## Completion Criteria
-- Material marketing tactics are ignored, watched, investigated, tested, or learned with explicit evidence and applicability.
+- Material marketing mechanisms are evidence-calibrated and scoped to their applicability, with any suggested next method left to capable model/user judgment.
