@@ -8,7 +8,7 @@
   "descriptor": "AI-native BusinessOS",
   "brand": "ViralTrac",
   "branding": "BRANDING.md",
-  "startup_message": "WELCOME.md",
+  "startup_message": "BEGINNERS-GUIDE.md",
   "publisher": {
     "id": "umegro-llc",
     "name": "Umegro, LLC",
@@ -56,8 +56,7 @@
   "schema_count": 47,
   "capability_count": 83,
   "entrypoints": {
-    "welcome": "WELCOME.md",
-    "human": "START-HERE.md",
+    "human": "BEGINNERS-GUIDE.md",
     "deployment": "DEPLOYMENT.md",
     "branding": "BRANDING.md",
     "playbooks": "PLAYBOOKS.md",
