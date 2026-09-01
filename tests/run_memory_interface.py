@@ -7,6 +7,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'scripts'))
 from init_business import init_business
 from remember import remember
+from forget import forget
 from persist_research_bundle import persist as persist_research
 from validate_business import validate_business
 
@@ -67,6 +68,30 @@ def main():
             except ValueError:mechanical_rejected=True
             req(mechanical_rejected,'AURA-owned mechanical fields must not be removable through semantic memory updates')
 
+            linked=remember(bid,{'objects':[
+                {
+                    'key':'obsolete_source','object_type':'Asset','content':{
+                        'asset_type':'note','owner_system':'core','business_role':'temporary context',
+                        'version':'1','status':'active'
+                    }
+                },
+                {
+                    'key':'dependent_asset','object_type':'Asset','lineage_refs':['@obsolete_source'],'content':{
+                        'asset_type':'brief','owner_system':'core','business_role':'depends on temporary context',
+                        'version':'1','status':'active'
+                    }
+                }
+            ]})
+            source_id=next(row['id'] for row in linked['objects'] if row['key']=='obsolete_source')
+            dependent_id=next(row['id'] for row in linked['objects'] if row['key']=='dependent_asset')
+            blocked=False
+            try:forget(bid,source_id)
+            except ValueError:blocked=True
+            req(blocked,'forget must refuse to delete memory that current canonical state still references')
+            req(source_id in {obj_id for obj_id in __import__('forget').object_index(bid)},'blocked forget removed referenced memory')
+            req(forget(bid,dependent_id)['status']=='forgotten','unreferenced dependent object could not be forgotten')
+            req(forget(bid,source_id)['status']=='forgotten','formerly referenced object could not be forgotten after dependency was resolved')
+
             bundle={
                 'method_type':'external_skill','method_ref':'first-party-review',
                 'owner_system':'core',
@@ -89,7 +114,7 @@ def main():
             req('contract_id' not in (source.get('extensions') or {}),'non-AURA research fabricated contract provenance')
 
             errors,_,_=validate_business(bid,True);req(not errors,f'Run-independent memory must remain valid: {errors}')
-            print('AURA memory interface regressions passed: direct create/update/correction and research do not require Run, contract, or proposal ceremony')
+            print('AURA memory interface regressions passed: direct create/update/correction/forget and research do not require Run, contract, or proposal ceremony')
         finally:
             if old is None:os.environ.pop('BUSINESSOS_WORKSPACE',None)
             else:os.environ['BUSINESSOS_WORKSPACE']=old
