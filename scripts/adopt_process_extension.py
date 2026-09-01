@@ -11,11 +11,9 @@ def _find_proposal(business_id,proposal_id):
     for obj,path in iter_instance_objects(business_id):
         if obj.get('object_type')=='PlaybookEvolutionProposal' and obj.get('id')==proposal_id:return obj,path
     raise ValueError(f'Unknown PlaybookEvolutionProposal for {business_id}: {proposal_id}')
-
 def _validate(obj):
     errors=sorted(Draft202012Validator(_schema('ProcessExtension')).iter_errors(obj),key=lambda error:list(error.path))
     if errors:raise ValueError('; '.join(f"{list(error.path)}: {error.message}" for error in errors))
-
 def _canonical_contract_exists(contract_id):
     for path in contract_files():
         try:meta,_=read_frontmatter(path)
@@ -37,7 +35,7 @@ def adopt_extension(business_id,proposal_id):
         'id':oid,'object_type':'ProcessExtension','schema_version':'1.0.0','business_id':business_id,
         'created_at':existing.get('created_at') or timestamp,'updated_at':timestamp,
         'mode':mode,'owner_system':proposal['owner_system'],'target_contract_id':proposal.get('target_contract_id'),'local_contract_id':proposal.get('proposed_local_contract_id'),
-        'title':proposal['title'],'purpose':proposal['summary'],'route_terms':proposal.get('route_terms') or [],'status':'active','scope':'business','scope_ref':None,
+        'title':proposal['title'],'purpose':proposal['summary'],'discovery_terms':proposal.get('discovery_terms') or [],'status':'active','scope':'business','scope_ref':None,
         'applies_when':proposal.get('applies_when') or [],'does_not_apply_when':proposal.get('does_not_apply_when') or [],'reads':proposal.get('reads') or [],'writes':proposal.get('writes') or [],
         'required_capabilities':proposal.get('required_capabilities') or [],'optional_capabilities':proposal.get('optional_capabilities') or [],'instructions':proposal.get('instructions') or [],'verification':proposal.get('verification') or [],
         'source_kind':'learning_evolved','source_learning_refs':proposal.get('learning_refs') or [],'source_refs':proposal.get('evidence_refs') or [],'evidence_refs':proposal.get('evidence_refs') or [],
