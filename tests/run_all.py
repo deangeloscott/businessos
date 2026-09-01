@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Public release gate for the distributable AURA source tree."""
+"""Public release gate for the distributable AURA source tree.
+
+Run every suite even when one fails so one local execution reveals the complete
+failure set. The gate still exits nonzero whenever any suite fails.
+"""
 from pathlib import Path
 import os,subprocess,sys
 ROOT=Path(__file__).resolve().parents[1]
@@ -47,6 +51,13 @@ TESTS=[
     'tests/run_qualification_qa_resolution.py',
     'tests/run_qualification_supplied_media.py'
 ]
+failures=[]
 for rel in TESTS:
-    print(f'== {rel} ==');subprocess.run([sys.executable,str(ROOT/rel)],check=True,cwd=ROOT,env=env)
+    print(f'== {rel} ==',flush=True)
+    completed=subprocess.run([sys.executable,str(ROOT/rel)],cwd=ROOT,env=env)
+    if completed.returncode!=0:failures.append((rel,completed.returncode))
+if failures:
+    print(f'\npublic release gate failed: {len(failures)}/{len(TESTS)} suites failed')
+    for rel,code in failures:print(f'- {rel} (exit {code})')
+    raise SystemExit(1)
 print(f'all public release tests passed: {len(TESTS)} suites')
