@@ -86,7 +86,8 @@ def main():
         if errs: raise AssertionError('Run schema errors: '+'; '.join(e.message for e in errs))
 
         # Context planning resolves current organization-owned preferences directly. It
-        # does not need a Run id or load a Run snapshot merely to prepare useful context.
+        # does not need a Run id, a Run snapshot, or repeated universal preference-policy
+        # prose merely to prepare useful context.
         plan=build_plan(
             BID,'content.production.presentation',
             operator_ref='operator_alice',team_ref='team_sales',role_ref='role_presenter',
@@ -94,7 +95,7 @@ def main():
         )
         assert_eq(plan['operator_ref'],'operator_alice','context plan operator')
         assert_eq(plan['effective_preferences']['presentation']['speaker_notes'],'detailed','context plan current preference')
-        if 'core/policies/preferences-and-adaptation.md' not in plan['files']: raise AssertionError('preference policy missing from context plan')
+        if 'core/policies/preferences-and-adaptation.md' in plan['files']: raise AssertionError('context plan reintroduced redundant universal preference policy')
         if run['preference_snapshot_ref'] in plan['files']: raise AssertionError('context plan should not depend on an optional Run snapshot')
 
         errors,warnings,counts=validate_business(BID,False)
@@ -131,7 +132,7 @@ def main():
         frozen=json.loads(snap.read_text())
         assert_eq(frozen['effective_preferences']['presentation']['speaker_notes'],'detailed','existing Run preference snapshot is immutable')
 
-        print('scoped preference + multi-operator regressions passed without Run-owned context retrieval')
+        print('scoped preference + multi-operator regressions passed without Run-owned or redundant policy context retrieval')
     finally:
         if BASE.exists(): shutil.rmtree(BASE)
         rd=ROOT/'runtime/runs'/BID
