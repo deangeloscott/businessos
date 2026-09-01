@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Focused regressions for readiness, evidence origin, and optional receipt reconciliation."""
+"""Focused regressions for readiness, evidence origin, and simple optional receipts."""
 from pathlib import Path
 import json,os,subprocess,sys,tempfile
 
@@ -41,7 +41,6 @@ def readiness_regression(workspace,env):
             'production_readiness':readiness}}
     }
     asset_path=write(base/'assets'/f'{aid}.json',asset)
-    # Active receipt linkage is valid; the receipt must not gate current organizational state.
     active=run([S/'validate_business.py',bid],env,check=False)
     req(active.returncode==0,f'active optional receipt invalidated truthful draft state: {active.stdout+active.stderr}')
     completed=run([S/'complete_run.py',bid,rid,'--result',asset_path.relative_to(workspace),'--result',artifact.relative_to(workspace),'--summary','Prepared a truthful landing-page draft; production readiness remains blocked by unresolved real-world facts/access.'],env)
@@ -50,7 +49,6 @@ def readiness_regression(workspace,env):
     req(saved.get('status')=='draft' and row.get('status')=='blocked' and row.get('deployment_status')=='not_performed' and row.get('measurement_status')=='pending','receipt completion changed readiness/deployment/outcome truth')
     req(row.get('unresolved_business_facts') and row.get('missing_authorization') and row.get('missing_capabilities'),'typed real-world readiness blockers were lost')
 
-    # Neither typed real-world blockers nor launch-critical placeholders may coexist with ready.
     pr=saved['extensions']['businessos']['production_readiness'];pr['status']='ready';write(asset_path,saved)
     bad=run([S/'validate_business.py',bid],env,check=False);req(bad.returncode!=0 and 'cannot retain unresolved blockers' in bad.stdout,f'ready assertion retained typed blockers: {bad.stdout}')
     pr['status']='blocked';saved['extensions']['businessos']['no_blockers']=True;write(asset_path,saved)
@@ -83,36 +81,29 @@ def complete_receipt(workspace,env,bid,rid,label):
     return json.loads(run([S/'complete_run.py',bid,rid,'--evidence',evidence.relative_to(workspace),'--summary',f'Completed {label}.'],env).stdout)
 
 
-def lifecycle_regression(workspace,env):
-    bid='run-lifecycle-truth';init_business(workspace,bid,env);task='Inspect the exact indexing condition for this bounded interaction'
-    old=run([S/'create_run.py',bid,task,'--contract-id','seo.diagnosis.detectors.indexing'],env).stdout.strip()
-    current=run([S/'create_run.py',bid,task,'--contract-id','seo.diagnosis.detectors.indexing','--supersedes-run-id',old],env).stdout.strip()
-    premature=json.loads(run([S/'reconcile_runs.py',bid,current,'--apply-safe-supersession'],env).stdout)
-    req(premature.get('status')=='needs_judgment' and 'not exactly completed' in premature.get('reason',''),'active replacement reconciled before completion')
-    req(json.loads((workspace/'runtime/runs'/bid/old/'run.json').read_text()).get('status')=='active','pre-completion reconciliation mutated prior receipt')
-    independent=run([S/'create_run.py',bid,'Diagnose a separate still-active business question','--contract-id','core.diagnosis.business-problem'],env).stdout.strip()
-    ambiguous=run([S/'create_run.py',bid,'Evaluate an unresolved support question','--contract-id','core.diagnosis.business-problem','--parent-run-id',current],env).stdout.strip()
-    complete_receipt(workspace,env,bid,current,'bounded index-state inspection')
-    recon=json.loads(run([S/'reconcile_runs.py',bid,current,'--apply-safe-supersession'],env).stdout)
-    req(any(x.get('run_id')==old for x in recon.get('mechanically_superseded_runs',[])),f'exact empty replacement was not safely superseded: {recon}')
-    req(any(x.get('run_id')==independent for x in recon.get('legitimately_active_runs',[])),f'independent active receipt was not preserved: {recon}')
-    req(any(x.get('run_id')==ambiguous for x in recon.get('needs_judgment',[])) and recon.get('status')=='needs_judgment',f'ambiguous related receipt did not request judgment: {recon}')
-    statuses={rid:json.loads((workspace/'runtime/runs'/bid/rid/'run.json').read_text()).get('status') for rid in (old,current,independent,ambiguous)}
-    req(statuses[old]=='superseded' and statuses[current]=='completed' and statuses[independent]=='active' and statuses[ambiguous]=='active',f'receipt states are wrong: {statuses}')
-
-    parent=run([S/'create_run.py',bid,'Coordinate a bounded composed diagnosis','--contract-id','core.diagnosis.business-problem'],env).stdout.strip()
-    child=run([S/'create_run.py',bid,'Complete one bounded support inspection','--contract-id','seo.diagnosis.detectors.indexing','--parent-run-id',parent],env).stdout.strip()
-    complete_receipt(workspace,env,bid,child,'bounded support inspection')
-    child_recon=json.loads(run([S/'reconcile_runs.py',bid,child],env).stdout)
-    req(child_recon.get('status')=='remaining_work' and any(x.get('run_id')==parent and x.get('relationship')=='exact_parent' for x in child_recon.get('legitimately_active_runs',[])),f'active parent composition work was treated as debris: {child_recon}')
-    req(json.loads((workspace/'runtime/runs'/bid/parent/'run.json').read_text()).get('status')=='active','completed support receipt auto-completed its parent')
+def receipt_independence_regression(workspace,env):
+    bid='run-receipt-truth';init_business(workspace,bid,env)
+    first=run([S/'create_run.py',bid,'Inspect one bounded indexing condition','--contract-id','seo.diagnosis.detectors.indexing'],env).stdout.strip()
+    second=run([S/'create_run.py',bid,'Diagnose a separate business question','--contract-id','core.diagnosis.business-problem'],env).stdout.strip()
+    duplicate=run([S/'create_run.py',bid,'Inspect one bounded indexing condition','--contract-id','seo.diagnosis.detectors.indexing'],env).stdout.strip()
+    complete_receipt(workspace,env,bid,first,'bounded index-state inspection')
+    states={rid:json.loads((workspace/'runtime/runs'/bid/rid/'run.json').read_text()) for rid in (first,second,duplicate)}
+    req(states[first].get('status')=='completed','completed receipt did not close')
+    req(states[second].get('status')=='active' and states[duplicate].get('status')=='active','completing one receipt mutated another receipt')
+    retired_relationship_fields={'correlation_id','causation_id','root_run_id','parent_run_id','run_role','supersedes_run_id','superseded_by_run_id','lifecycle_reason'}
+    for rid,row in states.items():
+        leaked=retired_relationship_fields & set(row)
+        req(not leaked,f'{rid} reintroduced receipt relationship graph: {sorted(leaked)}')
+    schema=json.loads((ROOT/'core/schemas/runtime/run.schema.json').read_text())
+    req(not (retired_relationship_fields & set(schema.get('properties',{}))),'Run schema reintroduced relationship lifecycle fields')
+    req(not (S/'run_lifecycle.py').exists() and not (S/'reconcile_runs.py').exists(),'Run reconciliation subsystem reappeared')
 
 
 def main():
     with tempfile.TemporaryDirectory(prefix='aura-organizational-state-truth-') as td:
         workspace=Path(td).resolve();env=os.environ.copy();env['BUSINESSOS_WORKSPACE']=str(workspace);env['PYTHONDONTWRITEBYTECODE']='1'
-        readiness_regression(workspace,env);provenance_regression(workspace,env);lifecycle_regression(workspace,env)
-    print('organizational state truth regressions passed: readiness, provenance, and receipt reconciliation')
+        readiness_regression(workspace,env);provenance_regression(workspace,env);receipt_independence_regression(workspace,env)
+    print('organizational state truth regressions passed: readiness, provenance, and independent optional receipts')
 
 
 if __name__=='__main__':main()
