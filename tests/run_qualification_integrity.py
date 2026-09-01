@@ -12,27 +12,61 @@ def req(cond,msg):
 def main():
     with tempfile.TemporaryDirectory(prefix='aura-qualification-integrity-') as td:
         root=Path(td);ws=root/'workspace';ws.mkdir();p=ws/'attachments'/'field.json';p.parent.mkdir(parents=True);p.write_text('new evidence\n');before={'workspace':{'files':[]}};after={'workspace':{'digest':'after','files':[{'path':'attachments\\field.json','sha256':'abc'}]}}
-        req(event_specific_ref_paths(['attachments/field.json'],before,after,ws),'new event evidence must be recognized');req(not event_specific_ref_paths(['attachments/field.json'],{'workspace':{'files':[{'path':'attachments/field.json','sha256':'abc'}]}},after,ws),'unchanged prior evidence must not count as event-specific');req(checkpoint_chain_contiguous({'workspace':{'digest':'same'}},{'workspace':{'digest':'same'}}),'adjacent evaluator checkpoints should remain auditable')
-        bad=root/'bad.json';bad.write_text(json.dumps({'captured_at':'2026-08-26T00:00:00Z','query':'field service','sources':[{'url':'https://example.invalid/a'},{'url':'https://example.invalid/b'}]}));req(not is_reconstructable_field_snapshot(bad,ws),'placeholder URLs must not count');good=root/'good.json';good.write_text(json.dumps({'captured_at':'2026-08-26T00:00:00Z','query':'field service software','sources':[{'url':'https://www.servicetitan.com/'},{'url':'https://www.housecallpro.com/'}]}));req(is_reconstructable_field_snapshot(good,ws),'real source-linked evidence should remain reconstructable')
-        a=root/'a.md';b=root/'b.md';c=root/'c.md';body='# Deliverable\n\nGeneric operational guidance for the target audience.\n'*12;a.write_text(body);b.write_text(body);c.write_text(body);flags=artifact_similarity_flags([{'event_id':'E1','kind':'contract_acceptance','contract_id':'one','actual_artifacts':[str(a)]},{'event_id':'E2','kind':'contract_acceptance','contract_id':'two','actual_artifacts':[str(b)]},{'event_id':'E3','kind':'contract_acceptance','contract_id':'three','actual_artifacts':[str(c)]}],max_examples=1);req(flags.get('E1'),'highly similar cross-job artifacts must still be surfaced for review')
+        req(event_specific_ref_paths(['attachments/field.json'],before,after,ws),'new event evidence must be recognized')
+        req(not event_specific_ref_paths(['attachments/field.json'],{'workspace':{'files':[{'path':'attachments/field.json','sha256':'abc'}]}},after,ws),'unchanged prior evidence must not count as event-specific')
+        req(checkpoint_chain_contiguous({'workspace':{'digest':'same'}},{'workspace':{'digest':'same'}}),'adjacent evaluator checkpoints should remain auditable')
+
+        bad=root/'bad.json';bad.write_text(json.dumps({'captured_at':'2026-08-26T00:00:00Z','query':'field service','sources':[{'url':'https://example.invalid/a'},{'url':'https://example.invalid/b'}]}))
+        req(not is_reconstructable_field_snapshot(bad,ws),'placeholder URLs must not count')
+        good=root/'good.json';good.write_text(json.dumps({'captured_at':'2026-08-26T00:00:00Z','query':'field service software','sources':[{'url':'https://www.servicetitan.com/'},{'url':'https://www.housecallpro.com/'}]}))
+        req(is_reconstructable_field_snapshot(good,ws),'real source-linked evidence should remain reconstructable')
+
+        a=root/'a.md';b=root/'b.md';c=root/'c.md';body='# Deliverable\n\nGeneric operational guidance for the target audience.\n'*12;a.write_text(body);b.write_text(body);c.write_text(body)
+        flags=artifact_similarity_flags([
+            {'event_id':'E1','kind':'contract_acceptance','contract_id':'one','actual_artifacts':[str(a)]},
+            {'event_id':'E2','kind':'contract_acceptance','contract_id':'two','actual_artifacts':[str(b)]},
+            {'event_id':'E3','kind':'contract_acceptance','contract_id':'three','actual_artifacts':[str(c)]},
+        ],max_examples=1)
+        req(flags.get('E1'),'highly similar cross-job artifacts must still be surfaced for review')
 
         scratch=ws/'scratch';scratch.mkdir()
-        ordinary=scratch/'batch_work.py';ordinary.write_text("for event in events: print('complete work')\n")
+        ordinary=scratch/'batch_work.py';ordinary.write_text("for event in events: print('complete real work')\n")
         ordinary_flags=run_control_flags(root,ws)
         req(not any(x.get('path')==str(ordinary) for x in ordinary_flags),'ordinary batch automation must not be treated as qualification manipulation')
 
+        # The benchmark boundary is evaluator blindness, not whether a candidate uses
+        # normal AURA helpers or loops over several real tasks.
         control_script=scratch/'qualification-control.py';control_script.write_text(
             "for event in events:\n"
-            "    # Deliberately references qualification/completion-control surfaces.\n"
-            "    print('queue.json complete_run.py record_contract_completion.py receipt_path required_subcontracts')\n"
+            "    print('evaluator/suite.json evaluator/queue.json')\n"
         )
         control=run_control_flags(root,ws)
-        req(any(x.get('type')=='mass_completion_runner' and x.get('path')==str(control_script) for x in control),'automation that reaches into qualification/completion-control surfaces should remain visible as an integrity/review signal')
+        req(any(x.get('type')=='candidate_evaluator_spec_access' and x.get('path')==str(control_script) for x in control),'candidate access to evaluator-private material must remain visible')
+        req(any(x.get('type')=='mass_completion_runner' and x.get('path')==str(control_script) for x in control),'looping over multiple evaluator-private surfaces should remain an integrity signal')
 
-    suite=build();all_gates={g for t in suite['contract_tests'] for g in t['hard_gates']};retired={'checkpoint_before_exists','checkpoint_after_exists','candidate_receipt_exists','root_run_exists','root_run_contract_matches','root_run_completed','root_completion_evidence_valid','required_subcontracts_completed','required_subcontract_evidence_valid','declared_write_type_observed_or_explicitly_justified','artifact_referenced_by_receipt','prepublish_or_required_qa_recorded'};req(not (all_gates&retired),f'qualification suite resurrected execution-ledger gates: {sorted(all_gates&retired)}');req({'workspace_valid','business_valid','material_result_observed','completion_claim_truthful'}<=all_gates,'qualification lost the real business-work integrity floor')
-    customer=[t for t in suite['contract_tests'] if t.get('artifact_role')=='customer_facing_production_root'];req(customer and all('customer_facing_claim_governance_passed' in t['hard_gates'] for t in customer),'customer-facing work must still protect claim/state truth');competitive=[t for t in suite['contract_tests'] if t.get('competitive_profile') in {'search_live_field','paid_and_persuasion_field','organic_attention_field'}];req(competitive and all({'competitive_field_evidence_event_specific','competitive_field_evidence_reconstructable'}<=set(t['hard_gates']) for t in competitive),'competitive qualification must retain current reconstructable field evidence');artifact_tasks=[t for t in suite['contract_tests'] if t['output_policy'].get('artifact_required')];req(artifact_tasks and all({'actual_artifact_exists','artifact_nontrivial','artifact_event_specific'}<=set(t['hard_gates']) for t in artifact_tasks),'artifact qualification must test the real event-specific deliverable')
-    evaluator=(ROOT/'qualification/evaluate_run.py').read_text();req('root_run_contract_matches' not in evaluator and 'required_subcontract_evidence_valid' not in evaluator,'evaluator must not require the retired execution graph');critical=evaluator.split('critical_types=',1)[1].split(';critical_run_flags',1)[0];req("'mass_completion_runner'" not in critical,'bulk automation must not be an automatic failure when it performs real work');req('EVALUATOR-ERROR' in evaluator,'broken benchmark bookkeeping must be separated from candidate failure')
-    controller=(ROOT/'qualification/task_controller.py').read_text();req('matching root AURA Run' not in controller and "'material_result_observed':material_result" in controller,'controller must classify observed business results rather than contract-ledger completion')
-    judge=(ROOT/'qualification/build_judge_prompt.py').read_text().lower();req('particular run id' in judge and 'do **not** require' in judge,'judge must not reward the retired execution ledger');req('automation is acceptable' in judge,'judge must evaluate automated work by its real result')
-    print('qualification real-work integrity regressions passed: ordinary automation allowed; evaluator/control manipulation remains visible')
+    suite=build();all_gates={g for t in suite['contract_tests'] for g in t['hard_gates']}
+    retired={'checkpoint_before_exists','checkpoint_after_exists','candidate_receipt_exists','root_run_exists','root_run_contract_matches','root_run_completed','root_completion_evidence_valid','required_subcontracts_completed','required_subcontract_evidence_valid','declared_write_type_observed_or_explicitly_justified','artifact_referenced_by_receipt','prepublish_or_required_qa_recorded'}
+    req(not (all_gates&retired),f'qualification suite resurrected execution-ledger gates: {sorted(all_gates&retired)}')
+    req({'workspace_valid','business_valid','material_result_observed','completion_claim_truthful'}<=all_gates,'qualification lost the real business-work integrity floor')
+    customer=[t for t in suite['contract_tests'] if t.get('artifact_role')=='customer_facing_production_root']
+    req(customer and all('customer_facing_claim_governance_passed' in t['hard_gates'] for t in customer),'customer-facing work must still protect claim/state truth')
+    competitive=[t for t in suite['contract_tests'] if t.get('competitive_profile') in {'search_live_field','paid_and_persuasion_field','organic_attention_field'}]
+    req(competitive and all({'competitive_field_evidence_event_specific','competitive_field_evidence_reconstructable'}<=set(t['hard_gates']) for t in competitive),'competitive qualification must retain current reconstructable field evidence')
+    artifact_tasks=[t for t in suite['contract_tests'] if t['output_policy'].get('artifact_required')]
+    req(artifact_tasks and all({'actual_artifact_exists','artifact_nontrivial','artifact_event_specific'}<=set(t['hard_gates']) for t in artifact_tasks),'artifact qualification must test the real event-specific deliverable')
+
+    integrity=(ROOT/'qualification/integrity.py').read_text()
+    for retired_phrase in ('contract-execution.json','required_subcontracts','record_contract_completion.py','structured_prepublish_refs'):
+        req(retired_phrase not in integrity,f'qualification integrity resurrected deleted AURA execution machinery: {retired_phrase}')
+    evaluator=(ROOT/'qualification/evaluate_run.py').read_text()
+    req('root_run_contract_matches' not in evaluator and 'required_subcontract_evidence_valid' not in evaluator,'evaluator must not require the retired execution graph')
+    critical=evaluator.split('critical_types=',1)[1].split(';critical_run_flags',1)[0]
+    req("'mass_completion_runner'" not in critical,'bulk automation must not be an automatic failure when it performs real work')
+    req('EVALUATOR-ERROR' in evaluator,'broken benchmark bookkeeping must be separated from candidate failure')
+    controller=(ROOT/'qualification/task_controller.py').read_text()
+    req('matching root AURA Run' not in controller and "'material_result_observed':material_result" in controller,'controller must classify observed business results rather than contract-ledger completion')
+    judge=(ROOT/'qualification/build_judge_prompt.py').read_text().lower()
+    req('particular run id' in judge and 'do **not** require' in judge,'judge must not reward the retired execution ledger')
+    req('automation is acceptable' in judge,'judge must evaluate automated work by its real result')
+    print('qualification real-work integrity regressions passed: real automation allowed; evaluator-private access remains visible')
 if __name__=='__main__':main()
