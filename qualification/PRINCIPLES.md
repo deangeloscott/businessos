@@ -4,9 +4,19 @@ This is the durable qualification doctrine for ViralTrac AURA.
 
 ## North star
 
-> **When a normal user gives AURA real business work, does AURA help the model/harness/user perform the real work, use appropriate evidence and capabilities, produce a professionally useful result, and preserve useful organizational meaning without constraining the executing intelligence?**
+> **When a normal user gives AURA real business work, does AURA help the model/harness/user perform the real work, use appropriate evidence and available capabilities, produce a professionally useful result, and preserve useful organizational meaning without constraining the executing intelligence?**
 
 Qualification is maintainer tooling. It observes AURA; AURA does not optimize itself for the benchmark.
+
+## Three distinct verification surfaces
+
+Keep these separate:
+
+1. **AURA product integrity** — deterministic checks for things AURA itself owns: schemas, references, business isolation, retrieval/state semantics, truth boundaries, packaging, and other architectural invariants. Run with `python3 tests/run_all.py`.
+2. **Qualification-harness integrity** — maintainer-only checks that the blind evaluator, checkpoints, recovery, scoring inputs, and staged-product observation are trustworthy. Run with `python3 qualification/self_test.py`. These checks do not count as AURA product tests.
+3. **Real-work qualification** — give a capable model/harness an ordinary business task with AURA and judge the actual business result. This is the evidence that AURA is useful.
+
+Do not collapse these into one score or one release-test count.
 
 ## Protected invariants
 
@@ -22,6 +32,7 @@ Qualification is maintainer tooling. It observes AURA; AURA does not optimize it
 10. **Outcome readiness is not an observed outcome.** Rankings, citations, leads, conversion, revenue, retention, and similar results require later real-world evidence.
 11. **Bad output triggers diagnosis, not automatic product rules.** Separate AURA weaknesses from model, harness, context, fixture, evaluator, execution, and random-variance failures.
 12. **A benchmark rule belongs in AURA only when it improves ordinary customer work.** Otherwise it stays evaluator-side or is removed.
+13. **Do not test the host as if it were AURA.** Generic abilities such as opening/decoding files, browsing, calling APIs, rendering media, running code, choosing tools, using subagents, or scheduling belong to the active model/harness/environment. Qualification may treat those capabilities as environmental conditions and judge the business result AURA helped produce, but it must not turn generic host competence into an AURA product invariant.
 
 ## Integrity floor
 
@@ -59,10 +70,10 @@ Do not require AURA to use the evaluator's exact sources or method. Compare the 
 
 Visible proxies such as ad longevity, views, shares, engagement, or repeated creative families are signals—not direct proof of profitability or business outcomes unless first-party evidence establishes that.
 
-## Layered qualification
+## Layered real-work qualification
 
-### Layer 0 — Software integrity
-Schemas, references, business isolation, persistence, routing/selection, migrations, packaging, and other deterministic AURA invariants.
+### Layer 0 — AURA product integrity
+Schemas, references, business isolation, persistence, routing/selection, migrations, packaging, and other deterministic AURA invariants. This is the separate `tests/run_all.py` product gate, not a model/harness benchmark.
 
 ### Layer 1 — Atomic job quality
 One meaningful job from an ordinary request. Inspect the actual result.
@@ -73,8 +84,8 @@ Where relevant, independently compare against enough strong current alternatives
 ### Layer 3 — Composition quality
 Test whether multiple jobs/SOPs and organizational memory compound into one coherent result rather than disconnected fragments.
 
-### Layer 4 — Capability and media execution
-Verify that the model/harness uses its real available capabilities effectively. When final execution genuinely cannot occur, require a truthful portable production specification rather than pretending the final medium exists.
+### Layer 4 — Medium-specific outcome quality
+When a business job naturally calls for a particular medium or artifact, judge whether the AURA-assisted result is useful and appropriate for that medium. Do **not** benchmark generic host abilities such as parsing a PDF, decoding an image, rendering a video, or using a particular tool. If a required host capability is genuinely unavailable, record the external limitation truthfully rather than scoring AURA as though it owned that capability.
 
 ### Layer 5 — Domain and cross-domain missions
 Test larger outcome-oriented problems, evidence reuse, prioritization, coordination, persistence, and judgment.
