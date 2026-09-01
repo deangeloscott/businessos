@@ -15,7 +15,7 @@
     "dedupe_key": {"type":"string","minLength":1},
     "attention_type": {"type":"string","minLength":1},
     "severity": {"enum":["informational","low","medium","high","critical"]},
-    "status": {"enum":["open","acknowledged","resolved","superseded","archived"]},
+    "status": {"enum":["open","acknowledged","resolved","archived"]},
     "title": {"type":"string","minLength":1},
     "reason": {"type":"string","minLength":1},
     "recommended_action": {"type":["string","null"]},
@@ -28,8 +28,6 @@
     "acknowledged_at": {"type":["string","null"],"format":"date-time"},
     "resolved_at": {"type":["string","null"],"format":"date-time"},
     "resolution_refs": {"type":"array","items":{"type":"string","minLength":1},"uniqueItems":true},
-    "supersedes": {"type":"array","items":{"type":"string","pattern":"^att_[A-Za-z0-9_-]+$"},"uniqueItems":true},
-    "superseded_by": {"type":["string","null"],"pattern":"^att_[A-Za-z0-9_-]+$"},
     "retention_class": {"enum":["operational","durable"]},
     "extensions": {"type":"object","additionalProperties":true}
   },
