@@ -121,8 +121,6 @@ def main():
         for cid in ['core.routing.resolve-intent','core.coordination.multi-domain-request','core.intelligence.ecosystem.route-learning','core.intelligence.request-refresh','core.intelligence.evaluate-relevance']:
             require(cid not in entries,f'Core process map reintroduced retired routing/orchestration entry: {cid}')
 
-        # Durable organization-memory contracts must not recreate an internal event bus
-        # or Manual Action Packet fallback merely because canonical state changed.
         memory_contracts=[
             'core/contracts/intelligence/publish-observation/CONTEXT.md',
             'core/contracts/intelligence/manage-insight/CONTEXT.md',
@@ -135,6 +133,17 @@ def main():
             text=(ROOT/rel).read_text(encoding='utf-8')
             require('Manual Action Packet' not in text,f'{rel} reintroduced retired manual-action fallback')
             require('emit ' not in text.lower(),f'{rel} reintroduced runtime event emission')
+
+        # No domain may recreate the old generic missing-capability fallback locally.
+        forbidden_manual_fallbacks=[
+            'if a required capability is unavailable, create a human-executable manual action packet',
+            'or create a manual action packet',
+        ]
+        for path in ROOT.rglob('CONTEXT.md'):
+            if '/contracts/' not in path.as_posix():continue
+            low=path.read_text(encoding='utf-8').lower()
+            for phrase in forbidden_manual_fallbacks:
+                require(phrase not in low,f'{path.relative_to(ROOT)} reintroduced retired Manual Action Packet fallback: {phrase}')
 
         errors,_,_=validate_business(BID,True);require(not errors,f'current architecture should finish with valid organization state: {errors}')
         print('agent hardening regressions passed: provenance and outward truth remain strong without semantic-routing/orchestration/event-control baggage')
