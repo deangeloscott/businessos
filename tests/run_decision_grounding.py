@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""RC5 regressions for evidence -> inference -> unknown separation in Opportunity objects."""
+"""Regressions for evidence -> inference -> unknown separation in Opportunity objects."""
 from pathlib import Path
 import json, shutil, subprocess, sys
 ROOT=Path(__file__).resolve().parents[1]; SCRIPTS=ROOT/'scripts'; sys.path.insert(0,str(SCRIPTS))
@@ -24,7 +24,7 @@ def write_op(statement,diagnosis,priority='Dependency-first technical remediatio
       'title':'Repair prerequisite indexability configuration','statement':statement,'status':'prioritized',
       'objective_refs':[],'origin_insight_refs':[],'evidence_links':[oid],'affected_refs':[],
       'diagnosis':diagnosis,'confidence':0.9,'urgency':0.8,'strategic_leverage':0.8,
-      'risk':'Low implementation risk; verify intent before changing directives.','constraints':['Diagnostic evidence only'],
+      'constraints':['Diagnostic evidence only'],
       'priority_assessment':{'rank':1,'rationale':priority},
       'recommended_intervention_types':['indexability'],'dependencies':[],
       'reasoning_basis':{
@@ -62,7 +62,7 @@ def main():
         op=json.loads(good.read_text()); del op['reasoning_basis']; good.write_text(json.dumps(op,indent=2)+'\n')
         e=errors(); require(any('reasoning_basis' in x for x in e),f'prioritized Opportunity without reasoning basis must fail, got {e}')
 
-        # Restore, then reproduce RC4 unsupported economics.
+        # Restore, then reproduce unsupported economics.
         good.unlink(); write_op(
             'Fix this page first because replacement is Northstar HVAC\'s highest-value service.',
             'The noindex is directly observed; correcting it is prerequisite work.',
@@ -70,7 +70,7 @@ def main():
         )
         e=errors(); require(any('economic/value assertion' in x for x in e),f'unsupported highest/high-value service claim must fail, got {e}')
 
-        # Reproduce RC4 overclaim from robots/indexability to absolute search/AI outcome.
+        # Overclaim from robots/indexability to absolute search/AI outcome.
         good.unlink(); write_op(
             'The robots block is preventing indexing and any AI-answer citation of this resource.',
             'The resource is invisible to both search engines and AI answer systems.',
@@ -96,7 +96,7 @@ def main():
         require('core/policies/decision-grounding.md' in plan['files'],'Opportunity-writing plan must load decision-grounding policy')
         policy=(ROOT/'core/policies/decision-grounding.md').read_text()
         require('highest-value' in policy and 'AI answer' in policy and 'reasoning_basis' in policy,'decision grounding policy missing key boundaries')
-        print('decision grounding regressions passed')
+        print('decision grounding regressions passed without retired generic risk field')
     finally:
         if BASE.exists(): shutil.rmtree(BASE)
         if SITE.exists(): shutil.rmtree(SITE)
