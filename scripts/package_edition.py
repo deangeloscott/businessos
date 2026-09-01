@@ -68,7 +68,7 @@ def _prune_capabilities(dest):
         meta,_=read_frontmatter(p)
         for c in meta.get('capabilities',{}).get('required',[])+meta.get('capabilities',{}).get('optional',[]):
             if c!='none':used.add(c)
-    cp=dest/'core/capabilities/catalog.json';d=json.loads(cp.read_text());d['version']=os_version();d['capabilities']=[x for x in d.get('capabilities',[]) if x.get('id') in used];cp.write_text(json.dumps(d,indent=2)+'\n')
+    cp=dest/'core/capabilities/catalog.json';d=json.loads(cp.read_text());d['capabilities']=[x for x in d.get('capabilities',[]) if x.get('id') in used];cp.write_text(json.dumps(d,indent=2)+'\n')
 
 def _write_instance_template(dest,modules):
     p=dest/'instances/_template/instance.json';d=json.loads(p.read_text());d['enabled_systems']=sorted(modules-{'core'});p.write_text(json.dumps(d,indent=2)+'\n')
