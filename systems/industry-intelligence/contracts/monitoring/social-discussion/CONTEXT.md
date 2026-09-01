@@ -28,19 +28,28 @@ context:
 # Industry Social Discussion Monitoring
 
 ## Purpose
-Detect meaningful category/industry discussion emerging across public social, communities, and feeds while filtering memes, isolated virality, and repeated copies of the same story.
+Review public industry/category discussion for meaningful emerging narratives, questions, risks, and developments while filtering memes, isolated virality, and repeated copies of the same story.
 
 ## Business Outcome
-Surface changing narratives, questions, risks, and opportunities early enough for Industry Intelligence to verify them and determine whether they matter to the business.
+Give Industry Intelligence an early evidence surface for developments worth verifying without mistaking social attention for factual truth or making AURA the monitoring runtime.
 
 ## Run When
-Run on the configured monitoring cycle for priority industry topics, markets, technologies, regulations, and category narratives.
+Use for a bounded public-discussion review when requested, when saved monitoring intent indicates another check would be useful, or when a current decision could be changed by emerging industry conversation. The active harness/runtime owns any recurrence.
 
 ## Process
-1. [DETERMINISTIC] Load approved watch topics, markets, prior IndustryEvents, known narratives, last checkpoint, and priority public sources.
-2. [INTEGRATION] Retrieve new public discussions/feed items since the checkpoint with source, timestamp, thread/context, and visible spread/engagement indicators where available.
-3. [DETERMINISTIC] Cluster reposts, copied headlines, syndication, and repeated discussion of the same development so apparent volume is not mistaken for independent evidence.
-4. [AI] Identify candidate developments, changing narratives, questions, concerns, claims, and emerging terminology while separating observed discussion from factual truth.
-5. [HYBRID] Cross-check material factual claims against stronger/primary sources before updating an IndustryEvent; unresolved social claims remain Observations/hypotheses.
-6. [AI] Determine whether the signal belongs to an existing Event, indicates a new Event candidate, or is merely conversation without a material external development.
-7. [DETERMINISTIC] Persist SourceRecords/Observations/Event updates and route potentially material Events to verification/materiality rather than directly creating content.
+1. [DETERMINISTIC] Load saved watch topics/markets, prior IndustryEvents, known narratives, checkpoints, and source references that are relevant to the current review.
+2. [INTEGRATION] Retrieve relevant new public discussions/feed items since the useful checkpoint with source, timestamp, thread/context, and visible spread/engagement indicators where available.
+3. [HYBRID] Collapse mechanically identical reposts/URLs deterministically, then use model judgment to distinguish syndication, copied claims, related conversation, and genuinely independent evidence.
+4. [AI] Identify candidate developments, changing narratives, questions, concerns, claims, and emerging terminology while keeping observed discussion separate from factual truth.
+5. [HYBRID] Cross-check material factual claims against stronger/primary sources before updating an IndustryEvent; unresolved social claims remain bounded Observations/hypotheses.
+6. [AI] Judge whether a signal belongs to an existing real-world event, suggests a distinct event worth investigating, represents a durable narrative shift, or is merely conversation without material external meaning.
+7. [HYBRID] Persist only useful SourceRecords/Observations and, when justified, update/create a durable IndustryEvent. Verification/materiality playbooks may be useful next methods if the model/user chooses them; this review does not automatically route work or create runtime events.
+
+## Verification
+- Social prevalence is not treated as factual or causal proof.
+- Duplicate/repeated discussion is not counted as independent evidence.
+- Event identity/materiality are model judgments supported by evidence.
+- AURA may preserve monitoring intent/checkpoints but does not own scheduling or notification delivery.
+
+## Completion Criteria
+- The organization has the smallest useful evidence-backed view of emerging industry discussion, with material unknowns and any worthwhile next investigation clear without a monitoring daemon or routing lifecycle.
