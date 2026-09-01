@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Public release gate for the distributable AURA source tree.
+"""AURA product-integrity gate.
 
-Run every suite even when one fails so one local execution reveals the complete
-failure set. The gate still exits nonzero whenever any suite fails.
+Run every product-owned regression even when one fails so one local execution reveals
+the complete failure set. Qualification-harness self-tests run separately under
+`qualification/self_test.py` and are not counted as AURA product tests.
 """
 from pathlib import Path
 import os,subprocess,sys
@@ -43,11 +44,7 @@ TESTS=[
     'tests/run_customer_facing_qa_invariant.py',
     'tests/run_claim_manifest_operational_promises.py',
     'tests/run_completion_evidence_integrity.py',
-    'tests/run_content_native_execution.py',
-    'tests/run_qualification_framework.py',
-    'tests/run_qualification_resume.py',
-    'tests/run_qualification_integrity.py',
-    'tests/run_qualification_product_integrity.py'
+    'tests/run_content_native_execution.py'
 ]
 failures=[]
 for rel in TESTS:
@@ -55,7 +52,7 @@ for rel in TESTS:
     completed=subprocess.run([sys.executable,str(ROOT/rel)],cwd=ROOT,env=env)
     if completed.returncode!=0:failures.append((rel,completed.returncode))
 if failures:
-    print(f'\npublic release gate failed: {len(failures)}/{len(TESTS)} suites failed')
+    print(f'\nAURA product-integrity gate failed: {len(failures)}/{len(TESTS)} suites failed')
     for rel,code in failures:print(f'- {rel} (exit {code})')
     raise SystemExit(1)
-print(f'all public release tests passed: {len(TESTS)} suites')
+print(f'all AURA product-integrity tests passed: {len(TESTS)} suites')
