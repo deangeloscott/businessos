@@ -1,6 +1,6 @@
 ---
 id: core.intelligence.record-platform-change
-type: service
+type: playbook
 owner_system: core
 reads:
 - Business
