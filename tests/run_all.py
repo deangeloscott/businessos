@@ -27,6 +27,7 @@ TESTS=[
     'tests/run_agent_hardening.py',
     'tests/run_aura_entry.py',
     'tests/run_first_principles_interface.py',
+    'tests/run_memory_interface.py',
     'tests/run_bootstrap_reference_ids.py',
     'tests/run_preferences_multioperator.py',
     'tests/run_preference_task_constraint_separation.py',
