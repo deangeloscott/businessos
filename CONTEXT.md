@@ -13,7 +13,8 @@ For ordinary organizational work, follow this loop:
 5. **Persist material organizational meaning.** Save information when forgetting it would materially hurt future organizational work. Preserve durable facts, evidence, decisions, reusable instructions/preferences, material assets/results, meaningful handoffs, unresolved work, outcomes, and evidence-supported Learning. Do not save hidden reasoning, full transcripts, routine tool calls, temporary calculations, subagent chatter, retries, or transient runtime capability state.
 6. **Preserve epistemic truth.** Keep explicit user facts, verified first-party facts, external evidence, derived inference, candidate strategy, and unknown distinct. Never fabricate business facts, claims, tool actions, permissions, outcomes, or evidence. Unknown/not-found is not absent.
 7. **Validate what AURA owns.** Persisted state must be schema-valid, provenance-aware, reference-valid, and isolated to the correct business. If an AURA SOP was selected and completion is claimed, also satisfy that SOP's essential process/evidence/QA requirements.
-8. **Continue from memory.** Future work should be able to understand what materially happened without needing the original conversation or hidden reasoning.
+8. **Measure and learn when evidence exists.** Preserve meaningful measurements/outcomes, evaluate what actually happened without overstating causality, and promote reusable Learning only when the evidence supports it.
+9. **Continue from memory.** Future work should be able to understand what materially happened without needing the original conversation or hidden reasoning.
 
 ## Persistence test
 
@@ -33,7 +34,7 @@ If the answer is no, do not persist it merely because a schema or helper exists.
 Use canonical objects for what they actually mean:
 - `Business`, `Brand`, `ProductService`, `Offer`, `AudienceSegment`, `Market`, `Objective`, `EconomicContext`, and `BusinessClaim` — durable business context/truth.
 - `SourceRecord`, `SourceProfile`, `Observation`, `Insight`, and `ProofRecord` — evidence and interpretation with provenance.
-- `DecisionRecord` — a real durable organizational decision. Its absence does **not** mean future action is forbidden.
+- `DecisionRecord` — a real durable organizational decision worth remembering. Its absence does **not** mean future action is forbidden.
 - `Opportunity` and `Initiative` — optional prioritization/coordination state when useful, not mandatory lifecycle stages.
 - `WorkRequest` — a durable real handoff worth remembering, not a mirror of subagents/tools/runtime routing.
 - `AttentionItem` — a material condition worth future awareness, deduplicated and lifecycle-managed; AURA owns the meaning, not notification delivery.
@@ -88,7 +89,7 @@ During ordinary business work, do not modify AURA product source (`core/`, `syst
 
 The desired user experience is:
 
-**understand → retrieve → work → remember → continue**
+**understand → retrieve → work → remember → measure → learn → continue**
 
 not:
 
