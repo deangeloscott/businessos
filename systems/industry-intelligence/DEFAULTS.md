@@ -1,7 +1,7 @@
 # Industry Intelligence Defaults
 
-## Domain Boundary
-Industry Intelligence owns material external developments and their broad business relevance. It does not own persistent competitor strategy, customer psychology, SEO response, marketing response, or customer-journey intervention. Shared Core subject/source monitoring may collect event evidence but does not become a second Industry owner.
+## Knowledge Scope
+Industry Intelligence provides operating knowledge for material external developments and their broad business relevance. Persistent competitor strategy, customer psychology, SEO response, marketing response, and customer-journey intervention are distinct questions whose relevant operating knowledge may be used directly by the active model when needed.
 
 ## Event Discipline
 - Cluster multiple reports about the same development into one evolving IndustryEvent where appropriate.
@@ -12,13 +12,13 @@ Industry Intelligence owns material external developments and their broad busine
 ## Tracked Subjects and Multimodal Evidence
 - A material signal may arrive from a company/public-figure/creator/publication/platform/regulator watch maintained through shared Core SourceProfiles. Reuse the evidence and create/update the correct IndustryEvent instead of creating duplicate monitoring state.
 - Use text, documents, images, audio/video, transcripts, social discussion, public records, and structured data when they materially improve event verification. Follow `core/policies/intelligence-foundation.md` and preserve acquisition limitations.
-- When a signal is primarily about a particular competitor's strategy, route that interpretation to Competitor Intelligence while retaining any broader IndustryEvent that genuinely matters to the market.
+- When a signal primarily concerns a particular competitor's strategy, use Competitor Intelligence operating knowledge for that interpretation. Preserve a broader IndustryEvent only when the development genuinely has market-level meaning worth remembering.
 
 ## Materiality
 Prioritize developments capable of changing a business decision, risk, opportunity, customer expectation, competitor behavior, regulation, technology, or operating condition—not article volume.
 
 ## Audience Communication
-- Keep verified event facts separate from the audience-specific “so what.” Facts answer what happened; Industry Insight explains why it matters; Content decides how to communicate it.
+- Keep verified event facts separate from the audience-specific “so what.” Facts answer what happened; Industry analysis explains why it matters; Content operating knowledge may help communicate it when communication is part of the actual job.
 - Social discussion can signal a developing event or narrative but does not by itself verify factual claims. Cluster repeated copies and cross-check material claims before escalation.
 ## Standalone Mode
 Industry Intelligence can operate with Core alone. Verify external developments from traceable sources and keep business implications scoped to available context when optional modules are absent.
