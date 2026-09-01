@@ -26,44 +26,44 @@ capabilities:
 Convert articles, announcements, experiments, and observed outcomes into atomic, testable SEO/AEO claims with explicit source lineage and applicability.
 
 ## Business Outcome
-Keep SEO/AEO strategy current and evidence-governed without creating a parallel strategy-evidence or execution-control store.
+Keep SEO/AEO strategy current and evidence-backed without creating a parallel strategy store or importing another organization's private Learning.
 
 ## Run When
-Use when a new SourceRecord/Observation may contain a material SEO/AEO strategy claim.
+Use when a SourceRecord/Observation may contain a material SEO/AEO strategy claim worth understanding or preserving.
 
 ## Do Not Run When
-Do not treat a publication, practitioner opinion, competitor behavior, or one business result as a validated tactic by itself. Do not use private cross-business evidence unless Core System Learning rules explicitly support that broader reuse.
+Do not treat a publication, practitioner opinion, competitor behavior, one business result, or model confidence as a validated tactic by itself. Do not use another organization's private AURA state as evidence for the active organization.
 
 ## Process
 1. [AI] Read the source in context and separate direct platform announcement, measured result, author inference, recommendation, and speculation.
-2. [HYBRID] Extract one atomic claim at a time; state the claimed mechanism, expected outcome, affected surface, and applicability conditions without combining unrelated assertions.
+2. [AI] Extract one atomic claim at a time; state the claimed mechanism, expected outcome, affected surface, and applicability conditions without combining unrelated assertions.
 3. [DETERMINISTIC] Preserve the originating SourceRecord/Observation plus source type, date, reported method/sample, and material commercial/conflict-of-interest context when present. Deterministic AURA verifies references; it does not decide the claim's semantic meaning.
 4. [AI] Paraphrase rather than over-copying source text while retaining enough source reference for a capable reviewer to verify the interpretation.
-5. [AI] Identify prerequisite mechanisms, alternative explanations, known counterexamples, and what observation or experiment would discriminate among them.
-6. [AI] Keep the result at candidate Insight/Learning maturity until support justifies more. Evidence assessment and current official-policy checking are useful related methods when they can materially change confidence or applicability; AURA does not auto-route the claim through them.
+5. [AI] Identify prerequisite mechanisms, alternative explanations, known counterexamples, and what observation or experiment could distinguish among them.
+6. [AI] Keep the result at the narrowest useful candidate Insight/Learning maturity until support justifies more. Evidence assessment and current official-policy checking are optional related methods when they can materially change confidence or applicability.
 
 ## Related operating knowledge
 - `seo.intelligence.ecosystem.evidence-grading` can help assess support strength.
 - `seo.intelligence.ecosystem.official-contradiction-check` can help check current authoritative rules/guidance.
+- `seo.learning.strategy-experiment-design` can help when testing would materially reduce important uncertainty.
 
 These are reusable methods, not runtime routing requirements.
 
 ## Verification
-- Validate canonical objects written and preserve SourceRecord/Observation lineage.
-- Keep evidence strength, conclusion confidence, official-policy status, and practical consequence distinct.
-- A later external state change is performed through the active model/harness when actually requested and capable. AURA does not require an ActionPacket or other permission object.
+- Canonical objects written are valid and SourceRecord/Observation lineage is preserved.
+- Evidence strength, conclusion confidence, official-policy status, and practical consequence remain distinct.
+- No private state from another organization is implicitly consumed.
+- A later external state change is performed by the active model/harness when actually requested and capable; AURA does not require an execution/permission packet.
 
 ## Measurement
-- Strategy claims become stronger only through relevant observations, experiments, OutcomeEvaluations, replication, or authoritative policy evidence; popularity and confidence language are not outcome evidence.
+- Strategy claims strengthen only through relevant observations, experiments, OutcomeEvaluations, replication, or authoritative evidence—not popularity or confidence language alone.
 
 ## Learning
-- Maintain SEO-specific strategy knowledge as SEO Domain Learning. Propose broader Business or System Learning only when evidence and applicability justify the broader scope.
+- Maintain reusable SEO-specific guidance as organization-owned SEO Domain Learning. Business Learning is appropriate only when evidence supports organization-wide applicability. Cross-organization reuse uses explicit Innovation Exchange/export/adoption or deliberate AURA product-development work.
 
 ## Failure / Fallback
-- If a source cannot be retrieved automatically, use another available authoritative source or create a real human/owner handoff when needed. Do not invent missing evidence or an AURA action object for a tool limitation.
-- If evidence remains contradictory or insufficient, preserve the uncertainty and keep the claim at hypothesis/experimental maturity instead of forcing a conclusion.
+- If a source cannot be retrieved automatically, use another valid source/method when practical or preserve the unresolved evidence need honestly.
+- If evidence remains contradictory or insufficient, preserve uncertainty and keep the claim at the narrowest supported maturity.
 
 ## Completion Criteria
-- Outputs use current Core Observation/Insight/Experiment/Learning objects rather than a parallel strategy-evidence store.
-- Source provenance, contradictory evidence, applicability, confidence, and official-policy status remain inspectable where material.
-- No tactic is promoted, deprecated, blocked, or claimed effective for a reason that cannot be traced to evidence or an actually applicable constraint.
+- Material SEO/AEO claims are atomic, traceable, testable where appropriate, organization-isolated, and no stronger than their evidence supports.
