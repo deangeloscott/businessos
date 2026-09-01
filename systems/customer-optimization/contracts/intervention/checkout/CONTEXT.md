@@ -8,29 +8,16 @@ reads:
 - type: Insight
   owner_system: customer-intelligence
 - MetricObservation
-writes:
-- WorkRequest
-- ChangeEvent
-- Experiment
-- MetricObservation
-- OutcomeEvaluation
+writes: []
 capabilities:
   required:
   - none
   optional:
   - analytics.read
-  - product_analytics.read
-  - crm.contact.read
-  - crm.contact.update
-  - crm.opportunity.read
   - checkout.read
   - checkout.update
   - billing.read
   - support.ticket.read
-  - customer_success.read
-  - scheduling.read
-  - email.send
-  - workflow.update
   - experiment.run
 context:
 - EconomicContext
@@ -49,16 +36,19 @@ subcontracts:
 Reduce preventable purchase friction while preserving trust, economics, compliance, and order quality.
 
 ## Business Outcome
-Improve customer progression and value realization through checkout optimization, while protecting customer and business guardrails.
+Improve healthy completed purchases by fixing real checkout friction without confusing Offer/persuasion problems with checkout mechanics.
 
 ## Run When
-Run when journey evidence or an active Opportunity requires checkout optimization to improve a defined customer transition or outcome.
+Use when checkout abandonment, payment failure, form/flow friction, or purchase-completion quality is a material issue. An existing Opportunity may provide context but is not required.
 
 ## Process
-1. [DETERMINISTIC] Map checkout steps, fields, payment methods, validation/errors, fees/taxes/shipping timing, coupons, authentication, mobile/device behavior, and failure reasons.
-2. [DETERMINISTIC] Quantify abandonment and technical/payment errors by stage/segment/device/source without assuming all abandonment is a defect.
-3. [AI] Identify surprise cost, uncertainty, effort, forced account, payment limitation, trust, performance, and technical friction hypotheses.
-4. [HYBRID] Separate Offer/price persuasion problems (Marketing/business) from checkout mechanics.
-5. [HYBRID] Design intervention/test with revenue, fraud, support, margin, refund, and customer-experience guardrails.
-6. [INTEGRATION] Implement authorized changes and payment options; verify transactions in controlled test.
-7. [HYBRID] Evaluate completed profitable purchases and downstream quality, not checkout conversion alone.
+1. [HYBRID] Map the actual checkout steps, fields, payment methods, validation/errors, fees/taxes/shipping timing, coupons, authentication, device behavior, and observed failure reasons relevant to the decision.
+2. [HYBRID] Quantify abandonment and technical/payment errors by useful stage/segment/device/source where evidence exists; do not assume all abandonment is a defect.
+3. [AI] Identify supported or testable hypotheses such as surprise cost, uncertainty, effort, forced account creation, payment limitation, trust, performance, accessibility, or technical failure.
+4. [AI] Separate checkout mechanics from Offer/price persuasion or broader journey problems and use the relevant operating knowledge directly rather than routing work between AURA domains.
+5. [AI] Design the smallest useful intervention/test with revenue, fraud, support, margin, refund, accessibility, and customer-experience guardrails proportionate to the change.
+6. [HYBRID] If implementation is requested and the host has real capability/permission, apply the checkout/payment change through the external system and verify controlled transactions or resulting state where practical. Otherwise return the actionable design without implying execution.
+7. [HYBRID] Evaluate completed profitable purchases and downstream order/customer quality when evidence becomes available. Preserve durable change, experiment, measurement, outcome, or Learning records only when those meanings actually occur and matter later.
+
+## Completion Criteria
+- The checkout mechanism and proposed/executed improvement are evidence-bounded, external execution state is truthful, and no generic AURA lifecycle is required.
