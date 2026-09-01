@@ -1,6 +1,6 @@
 ---
 id: core.intelligence.ecosystem.maintain-source-profile
-type: service
+type: playbook
 owner_system: core
 reads:
 - SourceProfile
