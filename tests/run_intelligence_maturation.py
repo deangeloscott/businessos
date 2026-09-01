@@ -56,7 +56,12 @@ def main():
         fail('existing SourceProfile discovery-only invariant was lost')
 
     _,subject_meta,subject_body=contract('core.intelligence.subject-monitoring')
-    for phrase in ['one SourceProfile per source/surface','shared `subject_key`','text, documents, images, audio, video, transcripts','Cadence and `next_check_at` are organizational monitoring intent','never proof that a background task exists','monitoring_signal_cadences','material_changes_only','let the current harness/runtime handle scheduling separately']:
+    for phrase in [
+        'one SourceProfile per source/surface','shared `subject_key`','text, documents, images, audio, video, transcripts',
+        'Cadence and `next_check_at` are organizational monitoring intent','never proof that a background task exists',
+        'monitoring_signal_cadences','notification intent separate','material-change-oriented default',
+        'let the current harness/runtime create the real schedule separately',
+    ]:
         if phrase not in subject_body:fail(f'subject monitoring missing behavior: {phrase}')
     if 'core.intelligence.ecosystem.maintain-source-profile' not in (subject_meta.get('subcontracts') or {}).get('required',[]):
         fail('subject monitoring must reuse shared SourceProfile mechanics')
