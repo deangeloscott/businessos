@@ -1,6 +1,6 @@
 ---
 id: core.opportunity.qualify
-type: service
+type: playbook
 owner_system: core
 reads:
 - Insight
