@@ -10,9 +10,7 @@ reads:
 - Asset
 - MetricObservation
 writes:
-- Insight
-- Opportunity
-- WorkRequest
+- Asset
 capabilities:
   required:
   - none
@@ -32,15 +30,16 @@ context:
 Address evidence-backed buyer objections honestly without manipulative dismissal.
 
 ## Business Outcome
-Increase the likelihood of the desired commercial action through evidence-backed objection handling strategy that matches audience awareness, offer, proof, and acquisition context.
+Increase the likelihood of the desired commercial action through evidence-backed objection handling that matches audience awareness, Offer, proof, and acquisition context.
 
 ## Run When
-Run when an Opportunity or WorkRequest requires objection handling strategy to remove a commercial persuasion gap or create the required conversion asset.
+Use when material buyer objections need a reusable response strategy. An Opportunity or real durable WorkRequest may provide context but is not required.
 
 ## Process
-1. [AI] Load scoped Customer Objection Insights and identify true underlying uncertainty/risk behind each objection.
+1. [AI] Load scoped Customer objection evidence and identify the true underlying uncertainty/risk behind each objection.
 2. [AI] Classify response mechanism: clarify fit, provide proof, explain tradeoff, reduce risk, compare alternatives, set expectation, reframe economics, or admit non-fit.
 3. [HYBRID] Match each response to evidence/Offer truth and avoid pressure tactics that contradict customer interest.
 4. [AI] Determine where in the funnel/asset the objection should be preempted versus handled after it arises.
 5. [AI] Draft message logic and proof requirements; include honest limitations/eligibility where relevant.
-6. [HYBRID] Route persistent operational objections to Customer Optimization/Product/business owner when messaging cannot fix the underlying reality.
+6. [HYBRID] When an objection is caused by actual product, journey, service, price, or operational reality, use the relevant organizational evidence and operating knowledge directly to address the underlying problem rather than routing it through an internal AURA owner.
+7. [AI] Preserve the reusable objection-response strategy as a Marketing-owned Asset. Create a separate Opportunity, WorkRequest, or canonical change only when that distinct organizational meaning actually exists.
