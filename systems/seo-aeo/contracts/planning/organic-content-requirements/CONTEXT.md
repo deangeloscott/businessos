@@ -12,7 +12,7 @@ reads:
   owner_system: competitor-intelligence
 - OrganicCompetitorState
 writes:
-- WorkRequest
+- Asset
 capabilities:
   required:
   - none
@@ -27,37 +27,32 @@ context:
 # Organic Content Requirements
 
 ## Purpose
-Translate a qualified SEO content Opportunity into a complete organic-discovery requirement set that Content Synthesis can execute without rediscovering SEO strategy.
+Turn current organic-demand, search/answer, customer, competitor, and business evidence into the requirements a useful content asset should satisfy without making another model rediscover the SEO/AEO problem.
 
 ## Business Outcome
-Establish or execute the SEO/AEO capability needed to improve valuable organic discovery.
+Improve the quality and business relevance of content intended for organic/search/AI-answer discovery while keeping SEO requirements separate from creative execution and persuasion judgment.
 
 ## Run When
-Run when the scoped SEO/AEO job is required by bootstrap, diagnosis, Opportunity planning, or delegated execution.
+Use when a new or revised content asset needs materially important organic-discovery requirements. An existing Opportunity may provide context but is not required merely to use this method.
 
 ## Do Not Run When
-Do not use this contract to duplicate canonical customer, competitor, industry, content, marketing, or journey ownership.
+Do not add an SEO requirements layer when organic/search/answer discovery is not material to the asset or when current requirements are already sufficient and fresh.
 
 ## Process
-1. [AI] Restate target organic demand, audience/market, intent, user task, business conversion path, and why a new/updated Asset is needed.
-2. [HYBRID] Analyze current result/answer expectations, owned overlap/cannibalization, organic competitors/sources, AEO citation patterns, and information gaps.
-3. [AI] Specify must-answer questions, factual/entity coverage, differentiated/original evidence needs, proof, media/demonstration, and exclusions.
-4. [HYBRID] Define search presentation needs, internal links, architecture placement/URL constraints, structured-data eligibility, localization, and AEO/source requirements.
-5. [AI] Define CTA/commercial handoff requirements without inventing persuasion strategy; request Marketing input where material.
-6. [HYBRID] Define SEO success/guardrail metrics and verification assertions.
-7. [DETERMINISTIC] Create a Content Synthesis WorkRequest with exact requirements and return contract; retain SEO Opportunity ownership.
+1. [AI] Define the target audience/market, organic demand or question, intent/user task, desired business pathway, and why an owned asset is needed or needs revision.
+2. [HYBRID] Inspect current search/answer expectations, owned overlap/cannibalization, relevant competitors/sources, citation patterns, first-party performance, and information gaps only to the depth that can change the requirements.
+3. [AI] Specify must-answer questions, factual/entity coverage, differentiated/original evidence needs, proof, useful media/demonstration, exclusions, and uncertainty that the content must preserve.
+4. [HYBRID] Define search-presentation needs, internal-link/architecture context, structured-data eligibility, localization, crawl/index considerations, and AI-answer/source requirements only where actually relevant.
+5. [AI] Keep organic-discovery requirements separate from creative format and persuasion strategy. Reuse current Brand/Offer/Customer/Marketing context directly where useful rather than routing a request to another AURA system.
+6. [AI] Define the measurements/observations that would later show whether the intended organic mechanism occurred, without forecasting unobserved rankings, citations, traffic, leads, or revenue.
+7. [AI] Produce a concise requirements brief that references durable evidence instead of copying upstream research. Persist it as an internal SEO-owned `Asset` only when future sessions/actors materially benefit; otherwise use the requirements directly in the current work.
+8. [AI] If a real handoff across people/models/sessions must survive the current runtime, `core.continuity.manage-handoff` may preserve that organizational handoff separately. This playbook does not create a WorkRequest merely to move work from SEO to Content.
 
 ## Verification
-- Validate all written objects and independently verify external state changes.
-
-## Measurement
-- Define the SEO mechanism metric and relevant business outcome before execution when this contract changes external state.
-
-## Learning
-- Return OutcomeEvaluation evidence to SEO Domain Learning and relevant upstream/downstream systems.
-
-## Failure / Fallback
-- Missing tools create manual work; missing upstream intelligence permits bounded provisional SEO research with source provenance.
+- Requirements trace to current business/search/customer/competitor evidence where those dimensions materially matter.
+- SEO requirements do not invent company claims, ranking guarantees, citation guarantees, or persuasion strategy.
+- The requirements are specific enough to materially improve production but do not dictate unnecessary creative choices.
+- No internal routing, return contract, manual-action fallback, or downstream event is required.
 
 ## Completion Criteria
-- The required SEO output exists, validates, and has explicit lineage/next route.
+- A capable model can produce or revise the intended content without rebuilding the organic-discovery analysis, and any persisted brief is durable organizational knowledge rather than an internal delegation packet.
