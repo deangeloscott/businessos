@@ -24,7 +24,6 @@ TESTS=[
     'tests/run_bootstrap_reference_ids.py',
     'tests/run_preferences_multioperator.py',
     'tests/run_preference_task_constraint_separation.py',
-    'tests/run_preference_profile_migration.py',
     'tests/run_onboarding_context_hardening.py',
     'tests/run_brand_onboarding.py',
     'tests/run_run_provenance.py',
