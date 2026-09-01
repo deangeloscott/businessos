@@ -3,8 +3,9 @@
 
 The active model/user supplies semantic content. AURA supplies only mechanical identity,
 timestamps, local-reference resolution, canonical paths, schema validation, safe atomic
-writes, business isolation, and rollback. A Run or playbook contract is optional context,
-not a prerequisite for organizational memory.
+writes, business isolation, and rollback. Updates may explicitly remove obsolete semantic
+fields; AURA does not infer what should change. A Run or playbook contract is optional
+context, not a prerequisite for organizational memory.
 """
 from pathlib import Path
 import argparse,json,re,secrets
@@ -72,6 +73,17 @@ def remember(business_id,payload):
         if not isinstance(content,dict):raise ValueError(f'objects[{number-1}].content must contain caller-authored semantic fields.')
         forbidden=sorted(MECHANICAL_FIELDS & set(content))
         if forbidden:raise ValueError('Mechanical fields belong to AURA, not content: '+', '.join(forbidden))
+        remove_fields=item.get('remove_fields',[])
+        if not isinstance(remove_fields,list) or not all(isinstance(field,str) and field for field in remove_fields):
+            raise ValueError(f'objects[{number-1}].remove_fields must be a list of non-empty top-level field names.')
+        if len(remove_fields)!=len(set(remove_fields)):
+            raise ValueError(f'objects[{number-1}].remove_fields contains duplicates.')
+        mechanical_removals=sorted(MECHANICAL_FIELDS & set(remove_fields))
+        if mechanical_removals:raise ValueError('Mechanical fields may not be removed: '+', '.join(mechanical_removals))
+        overlap=sorted(set(remove_fields) & set(content))
+        if overlap:raise ValueError('A field cannot be updated and removed in the same object: '+', '.join(overlap))
+        if remove_fields and not existing_ref:
+            raise ValueError(f'objects[{number-1}].remove_fields is only valid when updating an existing canonical object.')
         key=item.get('key') or existing_ref
         if not isinstance(key,str) or not re.fullmatch(r'[A-Za-z][A-Za-z0-9_-]*',key):
             raise ValueError(f'objects[{number-1}] requires a simple unique key (letters/numbers/_/-).')
@@ -80,21 +92,26 @@ def remember(business_id,payload):
             if existing_ref not in index:raise ValueError(f'Unknown canonical object_ref for update: {existing_ref}')
             existing,path=index[existing_ref]
             if existing.get('object_type')!=typ:raise ValueError(f'object_ref {existing_ref} is {existing.get("object_type")}, not {typ}.')
+            missing=[field for field in remove_fields if field not in existing]
+            if missing:raise ValueError('Cannot remove fields that are not present on the current object: '+', '.join(sorted(missing)))
             oid=existing_ref
         else:
             existing={};path=None;oid=_new_id(typ,bid,known_ids);known_ids.add(oid)
         if oid in targets:raise ValueError(f'Canonical object is targeted more than once in one input: {oid}')
         targets.add(oid);aliases[key]=oid
-        prepared.append({'item':item,'type':typ,'content':content,'existing':existing,'path':path,'id':oid,'key':key})
+        prepared.append({'item':item,'type':typ,'content':content,'remove_fields':remove_fields,'existing':existing,'path':path,'id':oid,'key':key})
 
     ts=now();objects=[]
     for row in prepared:
         item=row['item'];typ=row['type'];existing=row['existing'];content=_resolve_local(dict(row['content']),aliases)
+        remove_fields=set(row['remove_fields'])
         lineage=_resolve_local(item.get('lineage_refs',[]),aliases)
         if not isinstance(lineage,list) or not all(isinstance(x,str) and x for x in lineage):
             raise ValueError(f'{row["key"]} lineage_refs must be a list of canonical refs or @local keys.')
         _,schema=schema_entry(typ);properties=schema.get('properties') or {}
-        obj=dict(existing);old_extensions=obj.get('extensions') if isinstance(obj.get('extensions'),dict) else {}
+        obj=dict(existing)
+        for field in remove_fields:obj.pop(field,None)
+        old_extensions=obj.get('extensions') if isinstance(obj.get('extensions'),dict) else {}
         supplied_extensions=content.pop('extensions',{})
         if not isinstance(supplied_extensions,dict):raise ValueError(f'{row["key"]} content.extensions must be an object when supplied.')
         obj.update(content)
@@ -108,9 +125,12 @@ def remember(business_id,payload):
         elif lineage:
             raise ValueError(f'{typ} does not support lineage_refs; preserve provenance in a schema-supported field instead.')
         if 'extensions' in properties:
-            obj['extensions']=_merge_extensions(old_extensions,supplied_extensions)
-            if provenance:
-                bos=obj['extensions'].setdefault('businessos',{});bos['memory_provenance']=dict(provenance)
+            if 'extensions' in remove_fields and not supplied_extensions and not provenance:
+                obj.pop('extensions',None)
+            else:
+                obj['extensions']=_merge_extensions(old_extensions,supplied_extensions)
+                if provenance:
+                    bos=obj['extensions'].setdefault('businessos',{});bos['memory_provenance']=dict(provenance)
         elif supplied_extensions or provenance:
             raise ValueError(f'{typ} does not support extensions/provenance payloads.')
         if 'observed_at' in properties and not obj.get('observed_at'):obj['observed_at']=ts
@@ -133,18 +153,18 @@ def remember(business_id,payload):
 
     rows=[{
         'key':row['key'],'id':row['id'],'object_type':row['type'],
-        'operation':'updated' if row['existing'] else 'created','path':storage_ref(row['path'])
+        'operation':'updated' if row['existing'] else 'created','removed_fields':list(row['remove_fields']),'path':storage_ref(row['path'])
     } for row in prepared]
     return {
         'format_version':'1.0','status':'persisted','business_id':bid,'objects':rows,
         'validation':{'status':'clean','warnings':warnings[:5],'canonical_object_counts':counts},
-        'semantic_boundary':'Only caller-authored organizational meaning was persisted; AURA supplied mechanical canonical wrapping, storage, and integrity validation.',
+        'semantic_boundary':'Only caller-authored organizational meaning was persisted; AURA supplied mechanical canonical wrapping, explicit field removal, storage, and integrity validation.',
     }
 
 
 def main():
     ap=argparse.ArgumentParser(description='Remember durable organization-owned meaning without requiring a Run or AURA playbook.')
-    ap.add_argument('business_id');ap.add_argument('--input',required=True,help='JSON file containing a non-empty objects list and optional provenance object.')
+    ap.add_argument('business_id');ap.add_argument('--input',required=True,help='JSON file containing a non-empty objects list and optional provenance object. Updates may include remove_fields for obsolete top-level semantic fields.')
     a=ap.parse_args()
     try:payload=json.loads(Path(a.input).read_text(encoding='utf-8'));result=remember(a.business_id,payload)
     except (ValueError,FileExistsError,json.JSONDecodeError,OSError) as exc:raise SystemExit(str(exc))
