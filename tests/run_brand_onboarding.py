@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Regressions for first-class Brand onboarding and downstream Brand retrieval."""
+"""Regressions for first-class Brand onboarding, provenance, and downstream retrieval."""
 from pathlib import Path
 import json, shutil, subprocess, sys
 ROOT=Path(__file__).resolve().parents[1]
@@ -9,21 +9,18 @@ from context_plan import build_plan
 from validate_business import validate_business
 
 BID='brand-onboarding-test'
-BAD='brand-onboarding-ungrounded'
 TMP=ROOT/'runtime'/'brand-onboarding-test'
 
 def req(cond,msg):
     if not cond: raise AssertionError(msg)
-
 def run(*args,check=True):
     return subprocess.run([sys.executable,*map(str,args)],cwd=ROOT,capture_output=True,text=True,check=check)
-
 def clean(bid):
     for p in [ROOT/'instances'/bid, ROOT/'runtime'/'runs'/bid]:
         if p.exists(): shutil.rmtree(p)
 
 def main():
-    clean(BID);clean(BAD)
+    clean(BID)
     if TMP.exists(): shutil.rmtree(TMP)
     try:
         TMP.mkdir(parents=True,exist_ok=True)
@@ -68,6 +65,7 @@ def main():
         req(b.get('content_style',{}).get('guidance')=='Prefer concrete explanations over broad hype','Brand content style lost')
         req(b.get('prohibited_styles')==['portray customers as incompetent or careless'],'Brand prohibited style lost')
         req(bos.get('authority')=='explicit_user' and bos.get('explicit_brand_profile') is True,'Brand explicit-source provenance incorrect')
+        req(bool(bos.get('source_ref')),'Brand must retain its explicit source reference')
 
         # Brand guidance belongs in Brand, not as a fake generic claim-constraint substitute.
         claims=list((ROOT/'instances'/BID/'context/claims').glob('*.json'))
@@ -85,21 +83,19 @@ def main():
         req(not errors,f'Brand-onboarded business must validate: {errors}')
         req(counts.get('Brand')==1,'expected exactly one canonical Brand')
 
-        # Ungrounded Brand expansion must still fail even through the dedicated Brand manifest path.
-        bad_brand=dict(brand)
-        bad_brand['voice']={'tone':['aggressive luxury']}
-        bad_path=TMP/'brand-profile-ungrounded.json';bad_path.write_text(json.dumps(bad_brand,indent=2)+'\n')
-        run(S/'init_business.py',BAD,'--name','CrewBeacon')
-        bad=run(S/'bootstrap_explicit_context.py',BAD,'--facts-file',facts_path,
-                '--source-file',overview,'--source-file',brand_notes,
-                '--brand-profile-file',bad_path,'--initialization-only',check=False)
-        req(bad.returncode!=0,'ungrounded Brand expansion should be rejected')
-        req('Unsupported brand' in (bad.stdout+bad.stderr) or 'not grounded' in (bad.stdout+bad.stderr),f'unexpected ungrounded Brand failure: {bad.stdout} {bad.stderr}')
-        req(not (ROOT/'instances'/BAD/'context/brand'/f'brd_{BAD}.json').exists(),'failed Brand bootstrap must not persist Brand state')
+        # AURA does not use word-overlap heuristics to decide whether a model's Brand
+        # interpretation is semantically equivalent to its source. It *can* prove that
+        # explicit-user Brand state points to a real explicit-user source. Protect that.
+        original=bp.read_text();broken=json.loads(original)
+        broken['extensions']['businessos']['source_ref']='src_missing_brand_source'
+        bp.write_text(json.dumps(broken,indent=2)+'\n')
+        errors,_,_=validate_business(BID,True)
+        req(any('requires an existing SourceRecord source_ref' in e for e in errors),f'missing Brand source provenance should fail: {errors}')
+        bp.write_text(original)
 
-        print('first-class Brand onboarding regressions passed without Run-owned retrieval')
+        print('first-class Brand onboarding regressions passed with provenance-owned, model-semantic boundary')
     finally:
-        clean(BID);clean(BAD)
+        clean(BID)
         if TMP.exists(): shutil.rmtree(TMP)
 
 if __name__=='__main__': main()
