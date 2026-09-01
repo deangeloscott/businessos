@@ -26,39 +26,33 @@ context:
 # SEO Asset State Inventory
 
 ## Purpose
-Attach SEO-specific state to canonical Assets without creating duplicate asset identities.
+Understand the current search-relevant state of owned pages/assets while keeping one canonical Asset identity and preserving only SEO-specific state that future work will actually reuse.
 
 ## Business Outcome
-Establish or execute the SEO/AEO capability needed to improve valuable organic discovery.
+Give future SEO/AEO work a trustworthy view of what owned assets exist, how they are technically/search-wise represented, and where material evidence gaps remain without rebuilding the site inventory on every task.
 
 ## Run When
-Run when the scoped SEO/AEO job is required by bootstrap, diagnosis, Opportunity planning, or delegated execution.
+Use when current owned-asset state is missing, materially stale, or needed for a concrete SEO/AEO diagnosis, plan, or measurement question.
 
 ## Do Not Run When
-Do not use this contract to duplicate canonical customer, competitor, industry, content, marketing, or journey ownership.
+Do not inventory the entire site merely because an SEO task exists. Reuse current Asset/SEOAssetState evidence and inspect only the surfaces needed for the real job.
 
 ## Process
-1. [DETERMINISTIC] Discover owned URLs/assets through sitemaps, crawl, CMS, analytics/search data, and known canonical Asset registry.
-2. [DETERMINISTIC] Resolve each discoverable item to one Core Asset ID or submit a new Asset registration when truly missing.
-3. [INTEGRATION] Collect URL/status/indexability/canonical/render/search-performance/structured-data/internal-link data for SEO-relevant Assets.
-4. [AI] Classify page type, probable search intent role, market/language, template, and organic relevance.
-5. [DETERMINISTIC] Create/update SEOAssetState keyed to Asset ID; do not copy generic asset metadata.
-6. [HYBRID] Identify material coverage/data gaps and route baseline contracts.
+1. [HYBRID] Reuse known canonical Assets first, then inspect the relevant owned surfaces through whatever real host methods are available: sitemap/site crawl, CMS, local export, search/index evidence, analytics, or direct page inspection.
+2. [AI] Resolve observed pages/items to existing canonical Assets by real identity. Create a new Asset only when an independently meaningful owned asset is genuinely missing; do not duplicate an Asset merely to attach SEO state.
+3. [HYBRID] Collect only decision-relevant SEO state for the scoped assets, such as URL/status, indexability/canonical signals, render/accessibility, search performance, structured data, internal-link context, page/template type, market/language, and organic role when supported.
+4. [AI] Distinguish directly observed site facts from interpretations such as severity, likely intent, opportunity, or expected impact.
+5. [DETERMINISTIC] Create/update `SEOAssetState` keyed to the canonical Asset and persist material direct Observations/evidence when future work benefits. Do not copy generic Asset truth into parallel SEO objects.
+6. [AI] State material unknowns or stale evidence honestly. A missing host tool is not an AURA setup/manual-action object; use another valid evidence source when sufficient or preserve the limitation.
+
+## Deterministic local-site evidence
+When the scoped evidence is a local/first-party website export, `scripts/inspect_site_evidence.py` and `scripts/persist_site_observation.py` may mechanically capture/persist material direct facts. Keep consequences, severity, and visibility implications as model/user inference unless separately measured. Follow `core/policies/local-evidence.md`.
 
 ## Verification
-- Validate all written objects and independently verify external state changes.
-
-## Measurement
-- Define the SEO mechanism metric and relevant business outcome before execution when this contract changes external state.
-
-## Learning
-- Return OutcomeEvaluation evidence to SEO Domain Learning and relevant upstream/downstream systems.
-
-## Failure / Fallback
-- Missing tools create manual work; missing upstream intelligence permits bounded provisional SEO research with source provenance.
+- Canonical Asset identity is preserved rather than duplicated.
+- SEOAssetState is evidence-linked and contains SEO-specific reusable state rather than generic copies.
+- Direct observations remain distinct from interpretation and forecast.
+- The method does not create internal routes, manual-action fallbacks, or capability inventories.
 
 ## Completion Criteria
-- The required SEO output exists, validates, and has explicit lineage/next route.
-## Deterministic local-site evidence
-When the scoped evidence is a local/first-party website export, do not hand-author material direct site facts from model memory or prose inspection. Run `scripts/inspect_site_evidence.py`, then persist material direct Observations through `scripts/persist_site_observation.py` using the captured fact IDs. Keep consequences, severity, and visibility implications as inference unless separately measured. Follow `core/policies/local-evidence.md`.
-
+Future SEO/AEO work can understand the scoped owned-asset state and material unknowns without repeating unnecessary discovery, and no execution-control lifecycle was created.
