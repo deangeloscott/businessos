@@ -50,4 +50,4 @@ When a condition creates material customer, operational, financial, reputational
 - Independent verification is used when needed to establish restoration or another important post-state; it is not required as generic ceremony for every intermediate tool action.
 
 ## Completion Criteria
-- The incident's material facts, actions/results, decisions, residual uncertainty, and Learning are understandable from organization-owned state without an ActionPacket or generic authority lifecycle.
+- The incident's material facts, actions/results, decisions, residual uncertainty, and Learning are understandable from organization-owned state without requiring an internal authority lifecycle.
