@@ -13,7 +13,7 @@ For substantive organizational work:
 5. **Remember only what matters.** Persist durable organizational meaning when forgetting it would materially hurt future quality, truth, continuity, or efficiency. Do not save hidden reasoning, complete chats, routine tool calls, temporary calculations, retries, subagent chatter, caches, or transient host capability state.
 6. **Preserve truth.** Keep explicit/verified business facts, external evidence, inference, candidate strategy, and unknown distinct. Unknown/not-found is not absent. Never fabricate business facts, claims, evidence, tool actions, permissions, or outcomes.
 7. **Validate AURA-owned state.** Canonical state must be schema-valid, provenance/reference-aware, and isolated to the correct organization. Deterministic validation protects these mechanics; it should not replace model semantic judgment.
-8. **Measure and learn when evidence supports it.** Preserve meaningful outcomes and promote reusable Learning only at the domain/business scope justified by evidence inside the active organization.
+8. **Measure and learn when evidence supports it.** Preserve meaningful outcomes and reusable Learning only at the domain/business scope justified by evidence inside the active organization.
 
 ## Persistence test
 
