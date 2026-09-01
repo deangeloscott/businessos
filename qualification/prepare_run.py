@@ -26,7 +26,7 @@ def mission_dimensions(m,kind):
     if kind in {'composition_mission','cross_domain_mission'}: profile='cross_domain_system'
     elif kind=='marathon_mission': profile='marathon_system'
     else:
-        owner=m.get('owner_system'); profile={'core':'governance_and_state','customer-intelligence':'customer_truth','competitor-intelligence':'competitive_intelligence','industry-intelligence':'ecosystem_truth','seo-aeo':'search_live_field','content-synthesis':'artifact_excellence','marketing-synthesis':'paid_and_persuasion_field','customer-optimization':'first_party_outcomes'}.get(owner,'cross_domain_system')
+        owner=m.get('owner_system'); profile={'core':'organizational_memory','customer-intelligence':'customer_truth','competitor-intelligence':'competitive_intelligence','industry-intelligence':'ecosystem_truth','seo-aeo':'search_live_field','content-synthesis':'artifact_excellence','marketing-synthesis':'paid_and_persuasion_field','customer-optimization':'first_party_outcomes'}.get(owner,'cross_domain_system')
     return base + list(RUBRICS['profiles'].get(profile,[]))
 
 
