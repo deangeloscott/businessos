@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""RC14 regressions: unpublished outward drafts remain customer-facing and current work cannot masquerade as preexisting."""
+"""Unpublished outward drafts stay customer-facing; AURA playbook provenance stays truthful when used."""
 from pathlib import Path
 import json, shutil, subprocess, sys
 ROOT=Path(__file__).resolve().parents[1]; S=ROOT/'scripts'; sys.path.insert(0,str(S))
@@ -24,8 +24,7 @@ def write_asset(rid,customer_facing,origin=None,role='internal_working_draft'):
     p=BASE/'assets'/f"{a['id']}.json";p.write_text(json.dumps(a,indent=2)+'\n')
     return p,f
 
-def objs(p):
-    return [(json.loads(p.read_text()),str(p.relative_to(ROOT)))]
+def objs(p):return [(json.loads(p.read_text()),str(p.relative_to(ROOT)))]
 
 def main():
     for p in [BASE,RUNS]:
@@ -34,24 +33,26 @@ def main():
         run(S/'init_business.py',BID,'--name','Customer Facing Draft Provenance')
         rid=run(S/'create_run.py',BID,'marketing.landing-page.copy','Draft homepage copy').stdout.strip()
 
-        # Exact golden-path escape: current Run-produced homepage draft falsely labeled internal + preexisting.
+        # A current Run-linked artifact cannot falsely claim to predate that work, and an
+        # outward draft cannot become "internal" merely because it has not been published.
         ap,fp=write_asset(rid,False,'preexisting','internal_working_draft')
         completed=run(S/'complete_run.py',BID,rid,'--evidence',ap,'--evidence',fp,check=False)
         completion_output=completed.stderr+completed.stdout
         req(completed.returncode!=0 and 'cannot combine origin=' in completion_output,
-            f'Run-produced object must not masquerade as preexisting: {completion_output}')
+            f'Run-linked object must not use contradictory origin provenance: {completion_output}')
         req('marketing-synthesis Asset may set customer_facing=false only' in completion_output,
             f'outward marketing draft must not opt out merely because unpublished: {completion_output}')
         req(json.loads((RUNS/rid/'run.json').read_text()).get('status')!='completed',
-            'failed active-business validation must restore the prior incomplete Run state')
+            'failed validation must restore the prior incomplete Run state')
 
-        # Remove false legacy origin and declare the outward intent honestly: leaf-root bypass must still fail.
+        # When an AURA playbook Run is actually used, its root must honestly be a
+        # customer-facing production root before it can claim provenance for this draft.
         a=json.loads(ap.read_text());bos=a['extensions']['businessos'];bos.pop('origin',None);bos['customer_facing']=True;ap.write_text(json.dumps(a,indent=2)+'\n')
         errs=run_completion_errors(BID,objs(ap))
-        req(any('customer-facing Asset must reference a Run whose root contract is marked artifact_role=customer_facing_production_root' in e for e in errs),
-            f'customer-facing homepage draft rooted at leaf contract must fail: {errs}')
+        req(any('customer-facing Asset using an AURA playbook must reference a root marked artifact_role=customer_facing_production_root' in e for e in errs),
+            f'customer-facing homepage draft rooted at a non-production AURA playbook must fail: {errs}')
 
-        # Historical imported internal support material remains migration-compatible without a producing Run.
+        # Genuine pre-existing internal support material remains valid without any Run.
         hist={
           'id':f'ast_{BID}_historical','object_type':'Asset','schema_version':'1.0.0','business_id':BID,
           'created_at':'2026-08-01T00:00:00+00:00','updated_at':'2026-08-01T00:00:00+00:00','lineage':[],
@@ -59,7 +60,8 @@ def main():
           'location_reference':None,'version':'1','status':'draft',
           'extensions':{'businessos':{'customer_facing':False,'origin':'preexisting'}}
         }
-        req(not run_completion_errors(BID,[(hist,f'instances/{BID}/assets/{hist["id"]}.json')]),'genuine preexisting internal marketing support Asset should remain compatible')
+        req(not run_completion_errors(BID,[(hist,f'instances/{BID}/assets/{hist["id"]}.json')]),
+            'genuine preexisting internal marketing support Asset should not require a Run')
         print('customer-facing draft provenance regressions passed')
     finally:
         for p in [BASE,RUNS]:
