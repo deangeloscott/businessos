@@ -139,7 +139,7 @@ def main():
         'scripts/enter.py','scripts/create_run.py','scripts/complete_run.py','scripts/canonical_store.py',
         'scripts/persist_run_results.py','scripts/validate_business.py','scripts/resolve_contract.py',
         'scripts/bootstrap_explicit_context.py','scripts/resolve_preferences.py','scripts/upsert_preference_profile.py',
-        'WELCOME.md'
+        'BEGINNERS-GUIDE.md'
     ]
     for rel in required_core:
         if not (ROOT/rel).exists():errors.append(f'missing AURA core component {rel}')
