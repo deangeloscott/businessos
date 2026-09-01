@@ -40,7 +40,7 @@ def main():
         rec=payload.get('recommended_playbook',{})
         req(rec.get('status') in {'recommended','model_judgment','none'},f'entry returned invalid recommendation state: {rec}')
         req('not authority' in rec.get('rule',''),'AURA playbook recommendation became execution authority')
-        req('host/harness' in payload.get('rule',''),'front door lost runtime ownership boundary')
+        req('does not decide whether the harness is allowed or able to execute' in payload.get('rule',''),'front door lost runtime ownership boundary')
         req(not (ws/'runtime/runs'/bid).exists(),'entry created runtime Run state despite optional-Run architecture')
 
         selected_result,selected=enter(request,bid,ws,env,'--selected-contract','content.production.presentation')
