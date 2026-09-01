@@ -9,14 +9,14 @@ These defaults apply across AURA unless a selected SOP or explicit business inst
 4. Let the active model/harness reason and execute with the capabilities it actually has.
 5. Persist only material organizational meaning that future work should retain.
 6. Validate persisted truth, provenance, references, schema, and business isolation.
-7. Measure outcomes and promote Learning when evidence supports it.
+7. Preserve measurements, outcomes, and reusable Learning when the evidence actually supports them.
 
 ## Organizational Memory
 Persist information when forgetting it would materially hurt future organizational work. Favor durable facts, evidence, decisions, instructions/preferences, assets/results, meaningful work receipts, unresolved work, outcomes, and evidence-supported Learning.
 
 Do not persist hidden reasoning, full conversations, routine tool calls, transient calculations, subagent chatter, retries, temporary capability state, or execution mechanics merely because they occurred.
 
-Use `DecisionRecord` for a real durable organizational decision. Use `WorkRequest` only for a real handoff worth remembering. Use `AttentionItem` only for a material condition worth future awareness. Use `ChangeEvent` or `VerificationRecord` only when the change or verification itself has future organizational value or the selected SOP requires it.
+Use `DecisionRecord` for a real durable organizational decision. Use `WorkRequest` only for a real handoff worth remembering. Use `AttentionItem` only for a material condition worth future awareness. Use `ChangeEvent` or `VerificationRecord` only when the change or verification itself has future organizational value; ordinary execution or QA does not require a durable lifecycle record.
 
 ## Truth and Evidence
 - Keep observation, inference, hypothesis, candidate strategy, established fact, and unknown distinct.
