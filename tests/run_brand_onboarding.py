@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""RC16 regressions for first-class Brand onboarding and downstream Brand resolution."""
+"""Regressions for first-class Brand onboarding and downstream Brand retrieval."""
 from pathlib import Path
 import json, shutil, subprocess, sys
 ROOT=Path(__file__).resolve().parents[1]
@@ -67,17 +67,19 @@ def main():
         req(b.get('voice',{}).get('tone')==['plain English','competent','practical','calm','useful'],'Brand voice lost')
         req(b.get('content_style',{}).get('guidance')=='Prefer concrete explanations over broad hype','Brand content style lost')
         req(b.get('prohibited_styles')==['portray customers as incompetent or careless'],'Brand prohibited style lost')
-        req(bos.get('authority')=='explicit_user' and bos.get('explicit_brand_profile') is True,'Brand authority/provenance incorrect')
+        req(bos.get('authority')=='explicit_user' and bos.get('explicit_brand_profile') is True,'Brand explicit-source provenance incorrect')
 
         # Brand guidance belongs in Brand, not as a fake generic claim-constraint substitute.
         claims=list((ROOT/'instances'/BID/'context/claims').glob('*.json'))
         req(not claims,f'brand-only guidance unexpectedly flattened into BusinessClaim objects: {claims}')
 
-        rid=run(S/'create_run.py',BID,'marketing.assets.landing-page','Draft a local homepage').stdout.strip().splitlines()[-1]
-        plan=build_plan(BID,'marketing.assets.landing-page',run_id=rid)
+        # Downstream AURA context retrieval should find Brand directly from durable
+        # organization memory. No Run is required merely to retrieve relevant context.
+        plan=build_plan(BID,'marketing.assets.landing-page')
         brand_rel=bp.relative_to(ROOT).as_posix()
-        req(f'brd_{BID}' in plan.get('object_refs',[]),f'downstream Run did not resolve Brand object: {plan.get("object_refs")}')
+        req(f'brd_{BID}' in plan.get('object_refs',[]),f'downstream context did not resolve Brand object: {plan.get("object_refs")}')
         req(brand_rel in plan.get('files',[]),f'downstream context plan omitted Brand file: {plan.get("files")}')
+        req(not (ROOT/'runtime'/'runs'/BID).exists(),'Brand retrieval should not create or require Run state')
 
         errors,warnings,counts=validate_business(BID,True)
         req(not errors,f'Brand-onboarded business must validate: {errors}')
@@ -95,7 +97,7 @@ def main():
         req('Unsupported brand' in (bad.stdout+bad.stderr) or 'not grounded' in (bad.stdout+bad.stderr),f'unexpected ungrounded Brand failure: {bad.stdout} {bad.stderr}')
         req(not (ROOT/'instances'/BAD/'context/brand'/f'brd_{BAD}.json').exists(),'failed Brand bootstrap must not persist Brand state')
 
-        print('first-class Brand onboarding regressions passed')
+        print('first-class Brand onboarding regressions passed without Run-owned retrieval')
     finally:
         clean(BID);clean(BAD)
         if TMP.exists(): shutil.rmtree(TMP)
