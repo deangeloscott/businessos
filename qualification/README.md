@@ -8,6 +8,32 @@ Qualification is maintainer tooling. It is not part of the packaged product and 
 
 Before changing qualification—or changing AURA because of a qualification result—read [`PRINCIPLES.md`](PRINCIPLES.md).
 
+## Keep three things separate
+
+### 1. AURA product integrity
+
+```bash
+python3 tests/run_all.py
+```
+
+This checks things AURA itself owns: schemas, references, business isolation, retrieval/state semantics, truth boundaries, packaging, continuity behavior, and other architectural invariants.
+
+It does **not** test the model/harness's generic ability to open files, decode images, parse PDFs, browse, call APIs, render media, schedule work, run code, use subagents, or choose tools.
+
+### 2. Qualification-harness integrity
+
+```bash
+python3 qualification/self_test.py
+```
+
+This checks the maintainer-only evaluator: blind candidate isolation, recovery, benchmark integrity, and staged-product observation. These checks make the evaluator trustworthy enough to use; they are **not AURA product tests** and do not prove AURA produces good work.
+
+### 3. Real-work qualification
+
+Give a capable model/harness the normal AURA product, organization workspace, ordinary business materials, and an ordinary-language business request. Judge the actual business result.
+
+This is the evidence that matters most.
+
 ## What qualification protects
 
 A strong qualification run asks whether the candidate:
@@ -21,6 +47,8 @@ A strong qualification run asks whether the candidate:
 - held up against strong current alternatives when competitive comparison was relevant.
 
 It does **not** require the candidate to manufacture a particular Run ID, contract-execution ledger, subcontract file, checkpoint, qualification receipt, or evaluator-shaped artifact.
+
+It also does **not** test generic model/harness competence as though it belonged to AURA. Files, browsers, APIs, renderers, code execution, schedulers, subagents, and other host capabilities are environmental inputs. When available, the candidate may use them normally. When a genuinely required capability is unavailable, the evaluator should record that external limitation instead of adding product machinery or inventing an AURA failure.
 
 An AURA playbook may still be the hidden job under test. Its essential business method and quality invariants matter. Incidental implementation details do not: a capable model/harness may use a better tool, delegation pattern, execution order, or equivalent method when the result remains rigorous and truthful.
 
@@ -37,13 +65,7 @@ The candidate must not receive the qualification directory, target contract/miss
 
 Checkpoints, timed fixture release, evaluation mapping, and controller receipts are evaluator bookkeeping. They exist to observe the test—not to tell AURA how to work.
 
-## Representative workflow
-
-Run the software gate first when practical:
-
-```bash
-python3 tests/run_all.py
-```
+## Representative real-work workflow
 
 Prepare one representative job:
 
@@ -83,6 +105,8 @@ A truthful external limitation is better than fabricated completion. Maintainer-
 - `external_service`
 - `qualification_fixture`
 - `no_material_result`
+
+`external_capability` means the active model/harness genuinely lacks something needed for the requested external result. That is an environment limitation, not evidence that AURA should acquire or own the capability.
 
 `external_authority` means a real permission/scope boundary outside AURA—for example the user, account, platform, law, or organization has not permitted an external act. It is **not** an AURA Approval object or generic AURA authority system.
 
@@ -127,11 +151,11 @@ A deterministic hard-pass is only an integrity floor. It cannot turn mediocre wo
 
 Use the smallest layer that answers the question:
 
-0. software integrity;
+0. AURA product integrity — separate deterministic product gate;
 1. atomic job quality;
 2. competitive / field readiness;
 3. composition quality;
-4. capability and media execution;
+4. medium-specific outcome quality, without benchmarking generic host capability;
 5. domain and cross-domain missions;
 6. reliability across repeated/model/harness runs where material;
 7. observed real-world outcomes.
@@ -141,6 +165,8 @@ Do not use one giant run as a substitute for understanding these layers separate
 ## Benchmark businesses
 
 Controlled benchmark organizations provide grounded first-party context while keeping tests repeatable. Synthetic business context never authorizes synthetic external evidence: when a task requires current public research, the candidate must use legitimate sources/capabilities available in the environment.
+
+Ordinary supplied files may be part of a benchmark scenario because real users also provide files. The evaluator should not test whether the host can generically decode or open those file types. If the chosen environment cannot use a genuinely necessary input, classify the limitation rather than teaching AURA to own file transport or parsing.
 
 ## Repetition and diagnosis
 
