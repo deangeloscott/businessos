@@ -1,44 +1,61 @@
 #!/usr/bin/env python3
-"""Regression for qualification product-integrity snapshots without runtime/provider machinery."""
+"""Qualification product-integrity regression using only current snapshot primitives."""
 from pathlib import Path
-import json,os,shutil,sys,tempfile
+import shutil,sys,tempfile
 ROOT=Path(__file__).resolve().parents[1]
-sys.path.insert(0,str(ROOT))
 sys.path.insert(0,str(ROOT/'qualification'))
-from common import ensure_run_dir,write_json,write_text,product_integrity_snapshot,detect_product_integrity_mutation,finalize_product_integrity_snapshot
+from common import product_snapshot,snapshot_diff
+from prepare_run import copy_product
 
 
 def req(cond,msg):
     if not cond:raise AssertionError(msg)
 
+
+def changed(before,after):
+    diff=snapshot_diff(before,after)
+    return diff,any(diff.values())
+
+
 def main():
-    temp_root=Path(tempfile.mkdtemp(prefix='businessos-qual-product-integrity-'))
-    prior_workspace=os.environ.get('BUSINESSOS_WORKSPACE');workspace=temp_root/'workspace';os.environ['BUSINESSOS_WORKSPACE']=str(workspace)
+    temp_root=Path(tempfile.mkdtemp(prefix='aura-qual-product-integrity-'))
     try:
-        run_dir=ensure_run_dir(temp_root/'qualification-runs'/'product-integrity')
-        bundle=run_dir/'bundle';bundle.mkdir(parents=True,exist_ok=True);input_file=bundle/'request.txt';input_file.write_text('test input\n')
-        startup=product_integrity_snapshot(run_dir,bundle,[input_file]);req(startup.get('hash'),'startup product integrity hash missing')
-        write_json(run_dir/'run.json',{'id':'product-integrity-regression','status':'running'});write_text(run_dir/'notes.md','run-local qualification state\n')
-        workspace.mkdir(parents=True,exist_ok=True);(workspace/'runtime').mkdir(parents=True,exist_ok=True);(workspace/'runtime'/'host-owned-note.json').write_text('{"note":"runtime state belongs to the active host"}\n')
-        req(detect_product_integrity_mutation(startup).get('mutated') is False,'workspace/run-local qualification state was falsely classified as product mutation')
-        protected=ROOT/'core/capabilities/catalog.json';original=protected.read_text()
-        try:
-            protected.write_text(original+'\n')
-            diff=detect_product_integrity_mutation(startup);req(diff.get('mutated') is True,'actual staged product mutation was not detected');req(any('core/capabilities/catalog.json' in x for x in diff.get('changed_paths',[])),'protected product path absent from mutation diff')
-        finally:protected.write_text(original)
-        req(detect_product_integrity_mutation(startup).get('mutated') is False,'restored product tree remained falsely marked mutated')
-        readme=ROOT/'README.md';readme_original=readme.read_text()
-        try:
-            readme.write_text(readme_original+'\n')
-            final=finalize_product_integrity_snapshot(run_dir,startup);req(final.get('status')=='invalid_product_mutation','finalization did not reject product-tree mutation')
-        finally:readme.write_text(readme_original)
-        clean=finalize_product_integrity_snapshot(run_dir,startup);req(clean.get('status')=='valid','clean product tree did not validate after restore')
-        retired=['scripts/bootstrap_environment.py','scripts/resolve_capability.py','scripts/preflight_capabilities.py','core/providers/registry.json','core/schemas/runtime/capability-binding.schema.json','core/schemas/runtime/scheduler-bindings.schema.json']
-        for rel in retired:req(not (ROOT/rel).exists(),f'qualification still ships retired runtime/provider machinery: {rel}')
-        print('qualification product-integrity regression passed: workspace state allowed, AURA product mutation detected, retired runtime machinery absent')
+        product=copy_product(ROOT,temp_root/'product')
+        workspace=temp_root/'workspace';workspace.mkdir()
+        baseline=product_snapshot(product)
+        req(baseline.get('digest') and baseline.get('file_count',0)>0,'staged product integrity baseline missing')
+
+        # Organization/runtime state lives outside the staged product and must not alter
+        # the protected product snapshot.
+        (workspace/'runtime').mkdir(parents=True)
+        (workspace/'runtime'/'host-owned-note.json').write_text('{"note":"runtime state belongs to the active host"}\n')
+        diff,mutated=changed(baseline,product_snapshot(product))
+        req(not mutated,f'external workspace state was falsely classified as staged product mutation: {diff}')
+
+        protected=product/'core/capabilities/catalog.json';original=protected.read_text()
+        protected.write_text(original+'\n')
+        diff,mutated=changed(baseline,product_snapshot(product))
+        req(mutated,'actual staged product mutation was not detected')
+        req('core/capabilities/catalog.json' in diff.get('modified',[]),'protected product path absent from mutation diff')
+        protected.write_text(original)
+        diff,mutated=changed(baseline,product_snapshot(product))
+        req(not mutated,f'restored staged product remained marked mutated: {diff}')
+
+        readme=product/'README.md';readme_original=readme.read_text();readme.write_text(readme_original+'\n')
+        diff,mutated=changed(baseline,product_snapshot(product))
+        req(mutated and 'README.md' in diff.get('modified',[]),'ordinary staged product source mutation was not detected')
+        readme.write_text(readme_original)
+        diff,mutated=changed(baseline,product_snapshot(product))
+        req(not mutated,f'clean staged product did not return to baseline: {diff}')
+
+        retired=[
+            'scripts/bootstrap_environment.py','scripts/resolve_capability.py','scripts/preflight_capabilities.py',
+            'core/providers/registry.json','core/schemas/runtime/capability-binding.schema.json',
+            'core/schemas/runtime/scheduler-bindings.schema.json'
+        ]
+        for rel in retired:req(not (product/rel).exists(),f'staged AURA product still ships retired runtime/provider machinery: {rel}')
+        print('qualification product-integrity regression passed: external workspace state allowed, staged product mutation detected, source checkout untouched')
     finally:
-        if prior_workspace is None:os.environ.pop('BUSINESSOS_WORKSPACE',None)
-        else:os.environ['BUSINESSOS_WORKSPACE']=prior_workspace
         shutil.rmtree(temp_root,ignore_errors=True)
 
 if __name__=='__main__':main()
