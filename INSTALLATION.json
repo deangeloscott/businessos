@@ -1,6 +1,7 @@
 {
   "format_version": "1.0",
-  "source_version": "1.8.4",
+  "source_version": "0.1.0",
+  "maturity": "alpha",
   "edition": "full",
   "display_name": "ViralTrac AURA",
   "public_name": "ViralTrac AURA",
