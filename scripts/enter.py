@@ -58,7 +58,7 @@ def _playbook_context(business_id,contract_id,focus,operator_ref,team_ref,role_r
             business_id,contract_id,focus=focus,operator_ref=operator_ref,team_ref=team_ref,
             role_ref=role_ref,task_preferences=task_preferences,output_type=output_type,channel=channel,
         )
-        process=build_process_plan(contract_id)
+        process=build_process_plan(contract_id=contract_id)
         return context,process
     except ValueError as exc:
         return {'error':str(exc)},None
