@@ -1,28 +1,20 @@
 #!/usr/bin/env python3
-"""Keep PreferenceProfile limited to reusable expression and work-method choices.
+"""Keep PreferenceProfile structurally limited to reusable choice customization.
 
-A PreferenceProfile is durable organizational/user customization, not a store for the
-current task's action boundary or external permission state. Current-task constraints stay
-with the request/work context. A real durable organizational decision may be remembered
-as a DecisionRecord when that decision itself has future value.
+AURA can enforce that permission/authorization namespaces are not PreferenceProfile
+fields. It cannot reliably infer from arbitrary prose whether a sentence is a temporary
+task constraint, a durable organizational policy/decision, or a genuine preference;
+that semantic judgment belongs to the active model/user.
 """
 import re
 
-# These key families describe permission/action-boundary state rather than preference.
+# Reserved structural namespaces that are categorically not preference data. This is a
+# storage-type boundary, not a natural-language intent classifier.
 FORBIDDEN_KEY_FRAGMENTS={
     'authorization','authorisation','permission','permissions','approval','approvals','consent',
     'allowed_actions','prohibited_actions','authorized_actions','authorised_actions',
     'external_action_boundary','external_action_boundaries','production_action_boundary','production_action_boundaries',
 }
-ACTION=r'(?:publish|publishing|deploy|deployment|ship|launch|spend|purchase|buy|contact|message|email|call|connect|link|modify|change|edit|run|execute|submit|send|post|release|activate)'
-ACTION_BOUNDARY_PATTERNS=[
-    re.compile(rf"\b(?:do\s+not|don['’]?t|never|must\s+not|may\s+not|cannot|can['’]?t)\s+{ACTION}\b",re.I),
-    re.compile(rf"\b(?:must|need\s+to|needs\s+to|required\s+to|requires?\s+you\s+to)\s+(?:ask|obtain|get|have|receive)\b.{{0,60}}\b(?:approval|authorization|authorisation|permission|consent)\b",re.I),
-    re.compile(r"\b(?:explicit\s+)?(?:approval|authorization|authorisation|permission|consent)\s+(?:is\s+|are\s+)?required\b",re.I),
-    re.compile(rf"\b(?:authorized|authorised|approved|permitted)\s+to\s+{ACTION}\b",re.I),
-    re.compile(r"\b(?:not\s+authorized|not\s+authorised|not\s+approved|not\s+permitted)\b",re.I),
-    re.compile(r"\bwithout\s+(?:asking|approval|authorization|authorisation|permission|consent)\b",re.I),
-]
 
 
 def _norm_key(key):return re.sub(r'[^a-z0-9]+','_',str(key).lower()).strip('_')
@@ -35,24 +27,17 @@ def forbidden_preference_key(key):
     )
 
 
-def forbidden_preference_text(value):
-    if not isinstance(value,str):return False
-    text=' '.join(value.split())
-    return any(pattern.search(text) for pattern in ACTION_BOUNDARY_PATTERNS)
-
-
 def preference_semantic_errors(preferences,prefix='preferences'):
+    """Validate only the structural preference namespace; do not interpret prose."""
     errors=[]
     def walk(value,path):
         if isinstance(value,dict):
             for key,item in value.items():
                 if forbidden_preference_key(key):
-                    errors.append(f'{path}.{key}: action/permission state is not a reusable PreferenceProfile value')
+                    errors.append(f'{path}.{key}: permission/action-authority namespace is not PreferenceProfile data')
                 walk(item,f'{path}.{key}')
         elif isinstance(value,list):
             for i,item in enumerate(value):walk(item,f'{path}[{i}]')
-        elif isinstance(value,str) and forbidden_preference_text(value):
-            errors.append(f'{path}: current action boundary is not a reusable PreferenceProfile value: {" ".join(value.split())!r}')
     if not isinstance(preferences,dict):return [f'{prefix}: preferences must be an object']
     walk(preferences,prefix)
     return errors
@@ -63,8 +48,7 @@ def validate_preference_semantics(preferences,prefix='preferences'):
     if errors:
         raise ValueError(
             '; '.join(errors[:10])+
-            '. Keep reusable style/work-method choices in PreferenceProfile; keep current task constraints in the request/work context. '
-            'Persist a DecisionRecord only when a real durable organizational decision itself has future value. '
-            'External account, legal, platform, and environment permission state remains outside PreferenceProfile.'
+            '. Keep reusable style/work-method choices in PreferenceProfile. '
+            'The active model/user decides whether free-form instructions belong to the current request, a durable organizational decision/policy, or a true reusable preference; AURA does not infer that from prose.'
         )
     return preferences
