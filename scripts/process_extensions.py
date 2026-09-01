@@ -75,7 +75,7 @@ def local_playbook_candidates(task,business_id,team_ref=None,role_ref=None,opera
     words=set(re.findall(r'[a-z0-9]{2,}',query));rows=[]
     for extension in local_playbooks(business_id,team_ref,role_ref,operator_ref):
         contract_id=str(extension.get('local_contract_id') or '');title=str(extension.get('title') or '');purpose=str(extension.get('purpose') or '')
-        text=' '.join([contract_id,title,purpose,*[str(term) for term in extension.get('route_terms') or []]]).lower();score=10000 if query==contract_id.lower() else len(words & set(re.findall(r'[a-z0-9]{2,}',text)))*3
+        text=' '.join([contract_id,title,purpose,*[str(term) for term in extension.get('discovery_terms') or []]]).lower();score=10000 if query==contract_id.lower() else len(words & set(re.findall(r'[a-z0-9]{2,}',text)))*3
         if title and title.lower() in query:score+=6
         if score<=0:continue
         rows.append((score,{'score':score,'contract_id':contract_id,'owner_system':extension.get('owner_system'),'status':'available','local_playbook':True,'process_extension_id':extension.get('id'),'selection_authority':False,'reason':'organization-local playbook candidate only; the active model/user must judge semantic applicability'}))
