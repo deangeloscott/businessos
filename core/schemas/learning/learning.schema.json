@@ -38,8 +38,7 @@
     "owner_scope": {
       "enum": [
         "domain",
-        "business",
-        "system"
+        "business"
       ]
     },
     "owner_system": {
@@ -103,9 +102,6 @@
       "type": "number",
       "minimum": 0,
       "maximum": 1
-    },
-    "system_learning_eligible": {
-      "type": "boolean"
     },
     "extensions": {
       "type": "object"
