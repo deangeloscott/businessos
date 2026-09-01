@@ -38,20 +38,29 @@ context:
 # Customer Churn Risk Monitoring
 
 ## Purpose
-Detect observable lifecycle conditions associated with elevated churn so the business can investigate and respond appropriately, while distinguishing likelihood of loss from the value/consequence at risk.
+Review observable lifecycle conditions that may indicate elevated churn risk so the business can investigate and respond appropriately, while keeping likelihood of loss separate from the value/consequence at risk.
 
 ## Business Outcome
-Surface actionable, interpretable risk early and prioritize responsible response without opaque/sensitive profiling or treating account value as churn probability.
+Surface actionable, interpretable churn-risk evidence early enough for responsible response without opaque/sensitive profiling or treating account value as churn probability.
 
 ## Run When
-Run on an appropriate cadence for active customers where early churn prevention is valuable.
+Use for a bounded churn-risk review when the user requests it, when saved monitoring intent indicates another review would be useful, or when new customer evidence could materially change an existing risk assessment. Any recurring execution/reminder belongs to the active harness/runtime.
 
 ## Process
-1. [DETERMINISTIC] Use approved risk indicators grounded in prior Journey/Customer Insights/Learnings such as missed value milestones, unresolved failures, usage/adoption decline, support escalation, renewal issues, billing/process problems, or explicit feedback.
-2. [DETERMINISTIC] Calculate current indicator state and suppress duplicate alerts until material change/review condition occurs.
-3. [AI] Classify the plausible actionable mechanism and distinguish data anomaly, expected seasonality, healthy lower usage, customer lifecycle differences, deliberate reduced need, or actual deterioration.
-4. [HYBRID] Keep risk likelihood/evidence separate from consequence/value-at-risk. Revenue, LTV, margin, strategic importance, or customer value may help prioritize attention only after a risk is supported; high account value must never increase the inferred probability of churn by itself.
-5. [HYBRID] Do not infer sensitive traits or use opaque scores without interpretable contributing factors. Preserve uncertainty and avoid individual profiling where cohort/process monitoring is sufficient.
-6. [AI] Determine whether the next step is investigation, Customer Success/human outreach, service recovery, education, product/process fix, commercial/renewal review, or no action. Prioritize restoration of customer value over manipulative retention.
-7. [DETERMINISTIC] Create scoped risk Observation/Action only when threshold/evidence is met and record the contributing factors, confidence, and any separately calculated value-at-risk.
-8. [DETERMINISTIC] Track whether risk resolved, whether customer value was restored, and use outcomes to recalibrate indicators without converting one rescue into a universal rule.
+1. [HYBRID] Reuse supported Journey/Customer Insights/Learnings and current evidence to choose interpretable risk indicators relevant to this business, such as missed value milestones, unresolved failures, usage/adoption decline, support escalation, renewal issues, billing/process problems, or explicit feedback. Do not assume a generic indicator is predictive here without evidence.
+2. [DETERMINISTIC] Calculate the observable indicator state from available operational evidence and compare it with prior saved observations/checkpoints when those exist. Repeated unchanged evidence should not create duplicate canonical findings.
+3. [AI] Judge the plausible mechanism and distinguish data anomaly, expected seasonality, healthy lower usage, lifecycle differences, deliberate reduced need, or actual deterioration.
+4. [AI] Keep risk likelihood/evidence separate from consequence/value-at-risk. Revenue, LTV, margin, strategic importance, or customer value may help prioritize attention only after risk is supported; high account value must never increase inferred churn probability by itself.
+5. [AI] Do not infer sensitive traits or use opaque scores without interpretable contributing factors. Preserve uncertainty and prefer cohort/process understanding when individual profiling is unnecessary.
+6. [AI] Determine whether the evidence warrants investigation, human/customer-success outreach, service recovery, education, product/process correction, commercial/renewal review, an Opportunity, continued observation, or no action. Prioritize restoration of customer value over manipulative retention.
+7. [HYBRID] Persist a scoped Observation/Insight and, only when a durable intervention candidate is genuinely justified, an Opportunity with contributing evidence, uncertainty, and separately calculated value-at-risk where useful. Do not create a generic Action or runtime alert object merely because an indicator crossed a threshold.
+8. [HYBRID] When later outcome evidence becomes available, compare whether the risk resolved and whether customer value was restored; update reusable Learning only at the scope justified by repeated/credible evidence.
+
+## Verification
+- Churn likelihood and value-at-risk remain separate.
+- Every material risk conclusion is traceable to interpretable evidence.
+- AURA may remember monitoring intent/checkpoints but does not own the recurring job, alert delivery, or outreach execution.
+- No sensitive or opaque profiling is introduced merely to improve prediction.
+
+## Completion Criteria
+- The organization has an evidence-calibrated view of material churn risk and the most appropriate next response, if any, without an AURA-owned alerting or autonomous retention loop.
