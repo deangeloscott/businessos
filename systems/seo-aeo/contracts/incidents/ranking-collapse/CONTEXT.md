@@ -25,23 +25,26 @@ evidence_inputs:
 # Ranking Collapse Incident
 
 ## Purpose
-Rapidly stabilize and diagnose a broad or high-value ranking/visibility collapse.
+Rapidly understand and recover from a broad or high-value ranking/visibility collapse without turning AURA into an incident-control runtime.
 
 ## Business Outcome
-Improve valuable organic discovery through ranking collapse incident, with a clear SEO/AEO mechanism and connection to the active business Objective.
+Restore valuable organic discovery faster by separating real collapse from measurement noise, identifying plausible causes, and preserving an evidence-backed incident record and recovery learning.
 
 ## Run When
-Run immediately when monitoring or an operator identifies a plausible **ranking collapse incident**. Incident routing overrides normal optimization until containment is complete.
+Use when current evidence or the user indicates a plausible broad/high-value ranking collapse that needs focused diagnosis and response.
 
 ## Process
-1. [HYBRID] Confirm data/provider health and quantify affected pages/topics/markets/devices and first observed time.
-2. [INTEGRATION] Correlate with deployments/Change Events, index/technical state, migrations, manual actions/policy notices, security, competitors, SERP demand shifts, and known ecosystem updates.
-3. [HYBRID] Freeze risky autonomous changes affecting the impacted scope until diagnosis stabilizes.
-4. [AI] Identify reversible likely causes and prioritize restoring known-good access/index/canonical/tracking state before speculative content rewrites.
-5. [HUMAN] Execute/approve recovery actions with frequent verification and preserve incident timeline/evidence.
-6. [HYBRID] Monitor recovery and conduct postmortem/root-cause learning before re-enabling normal autonomy.
+1. [HYBRID] Verify that the apparent collapse is real, not a measurement/provider artifact, and quantify affected pages/topics/markets/devices plus the earliest supported timing.
+2. [HYBRID] Compare the timing with relevant deployments/ChangeEvents, index/technical state, migrations, policy/manual-action notices, security issues, competitor/SERP changes, demand shifts, and known ecosystem developments.
+3. [AI] Identify changes that could plausibly worsen the incident if continued and recommend pausing/reversing them when evidence and reversibility justify it. AURA records the recommendation/context; the active user/harness owns the actual operational change.
+4. [AI] Rank reversible likely causes and favor restoring known-good access/index/canonical/tracking state before speculative content rewrites when the evidence supports that path.
+5. [HYBRID] Execute recovery through the active harness/user using the real tools, permissions, and organizational constraints available; preserve material actions/results in the Incident only when future continuity benefits from them.
+6. [HYBRID] Re-check the affected evidence after changes and preserve the root cause, recovery result, unresolved uncertainty, and reusable Learning when supported. AURA does not own a background recovery monitor or an autonomy toggle.
 
 ## Verification
-- Separate demand, ranking, indexing, SERP-layout, seasonality and tracking effects before assigning a cause.
+- Separate demand, ranking, indexing, SERP-layout, seasonality, measurement, and tracking effects before assigning a cause.
+- Containment/recovery recommendations are evidence-backed and clearly distinguished from actions actually executed.
+- Incident state records organizational meaning; it does not suspend or resume the host runtime.
 
-
+## Completion Criteria
+- The organization has a defensible diagnosis, appropriate recovery/containment actions have been executed or clearly identified by the real owner, and future work can understand what happened and what was learned without an AURA control plane.
