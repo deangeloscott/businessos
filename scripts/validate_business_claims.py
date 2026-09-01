@@ -79,13 +79,12 @@ def _trusted(obj):
     bos=ext.get('businessos',{}) if isinstance(ext.get('businessos'),dict) else {}
     return bos.get('authority') in {'explicit_user','verified_first_party'}
 
-def _is_general_business_claim(text,name):
-    return is_candidate(text,name)
+def _is_general_business_claim(text,name):return is_candidate(text,name)
 
 def _substantive_support(sent,support_objs,name):
-    core=_core_clause(sent); stoks=_tokens(core,name)
+    core=_core_clause(sent);stoks=_tokens(core,name)
     if not stoks:return True
-    support_texts=[_support_text(o) for o in support_objs]; all_support=set(_tokens(' '.join(support_texts),name))
+    support_texts=[_support_text(o) for o in support_objs];all_support=set(_tokens(' '.join(support_texts),name))
     if not all_support:return False
     if 'commitment' in stoks and any(o.get('object_type')=='BusinessClaim' for o in support_objs):return True
     action_pos=next((i for i,t in enumerate(stoks) if t in ACTION_VERBS),None)
@@ -96,8 +95,8 @@ def _substantive_support(sent,support_objs,name):
         overlap=[t for t in objs if t in all_support]
         if objs:
             ratio=len(overlap)/len(set(objs))
-            if ratio < 0.60 and len(set(overlap)) < 2:return False
-        if action not in all_support and len(set(overlap)) < 2:return False
+            if ratio<0.60 and len(set(overlap))<2:return False
+        if action not in all_support and len(set(overlap))<2:return False
         return True
     overlap=set(stoks)&all_support
     if len(overlap)>=2:return True
@@ -137,22 +136,23 @@ def validate_manifest_sentences(manifest,sentences,idx,name,rel):
     return errors
 
 def claim_errors(business_id,objects=None):
-    errors=[]; idx=object_index(business_id); name=business_name(business_id)
+    errors=[];idx=object_index(business_id);name=business_name(business_id)
     if objects is None:objects=list(idx.values())
     else:objects=[(o,ROOT/p) if isinstance(p,str) else (o,p) for o,p in objects]
     for asset,path in objects:
         if asset.get('object_type')!='Asset' or asset.get('owner_system') not in {'content-synthesis','marketing-synthesis'}:continue
         loc=asset.get('location_reference')
         if not loc:continue
-        fp=Path(loc); fp=fp if fp.is_absolute() else ROOT/fp
+        fp=Path(loc);fp=fp if fp.is_absolute() else ROOT/fp
         if not fp.exists():continue
         bos=(asset.get('extensions') or {}).get('businessos',{}) if isinstance(asset.get('extensions'),dict) else {}
-        customer_facing=bos.get('customer_facing', True)
-        if customer_facing is False:continue
-        origin=str(bos.get('origin','')).lower(); produced=bool(bos.get('run_ref') or bos.get('run_id')) and origin not in {'imported','preexisting'}
-        # Existing opaque imports are not retroactively forced through a sidecar until they
-        # are mutated or newly produced. New rendered media may not bypass claim governance.
-        if fp.suffix.lower() not in TEXT_NATIVE_EXTS and not produced:continue
+        if bos.get('customer_facing',True) is False:continue
+        origin=str(bos.get('origin','')).lower()
+        # Pre-existing/imported opaque media may not have an inspectable claim surface.
+        # Any other customer-facing opaque/rendered Asset is treated as work AURA should
+        # be able to inspect through its saved claim-surface sidecar. Run creation is not
+        # evidence of origin and is never required for this truth check.
+        if fp.suffix.lower() not in TEXT_NATIVE_EXTS and origin in {'imported','preexisting'}:continue
         rel=str(path.relative_to(ROOT)) if isinstance(path,Path) and path.is_absolute() else str(path)
         candidates,surface_error=asset_claim_units(asset,fp)
         if surface_error:
