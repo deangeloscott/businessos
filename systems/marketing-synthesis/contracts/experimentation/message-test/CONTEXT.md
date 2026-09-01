@@ -20,19 +20,28 @@ capabilities:
 # Marketing Experiment Design
 
 ## Purpose
-Design interpretable tests of messages, offers, proof, creative concepts, or persuasion structures.
+Design an interpretable test of a message, offer presentation, proof approach, creative concept, or persuasion structure and, when actually requested, run it through the active harness.
 
 ## Business Outcome
-Increase the likelihood of the desired commercial action through evidence-backed marketing experiment design that matches audience awareness, offer, proof, and acquisition context.
+Improve commercial decisions through causal or otherwise defensible evidence rather than treating marketing convention or one winning asset as truth.
 
 ## Run When
-Run when an Opportunity or WorkRequest requires marketing experiment design to remove a commercial persuasion gap or create the required conversion asset.
+When an uncertain marketing hypothesis is material enough that a bounded test can improve the decision. An Opportunity or durable handoff may supply context but is not required merely to design an experiment.
 
 ## Process
-1. [AI] State one primary marketing hypothesis, expected behavioral mechanism, target population, and business outcome.
+1. [AI] State one primary marketing hypothesis, expected behavioral mechanism, eligible population, and business decision/outcome the test should inform.
 2. [HYBRID] Select the smallest meaningful treatment difference; avoid changing multiple major dimensions when causal interpretation matters.
-3. [DETERMINISTIC] Define assignment/control/baseline, sample/window requirements, success metrics, guardrails, stopping rules, and segmentation before launch.
-4. [HYBRID] Check operational/ethical/compliance risks and whether audience exposure is appropriate.
-5. [DETERMINISTIC] Validate tracking and experiment implementation capability.
-6. [INTEGRATION] Launch when authorized or create a Manual Action Packet.
-7. [DETERMINISTIC] Persist Experiment linked to Opportunity/Actions.
+3. [HYBRID] Define assignment/control/baseline or another defensible comparison, sample/window requirements, success metrics, guardrails, stopping rules, and planned segmentation appropriate to the actual setting.
+4. [HYBRID] Identify operational, customer, ethical, legal/platform, contamination, and interpretation risks plus recovery/rollback considerations when relevant.
+5. [HYBRID] Confirm the needed measurement and implementation evidence is realistically obtainable through the active environment. AURA capability declarations do not prove live availability.
+6. [DETERMINISTIC] Persist the Experiment before observing results when durable experiment state will be useful. Link it to the relevant hypothesis, Opportunity/Learning/Asset/evidence as appropriate; do not require an Action object.
+7. [INTEGRATION] If running the experiment is inside the user's current request and the active harness has the necessary real capability/access, execute the bounded test through that system. Otherwise return the complete experiment design or create a real durable handoff only when another actor genuinely needs to execute it. Do not create a Manual Action Packet or internal permission object.
+8. [HYBRID] Verify implementation state when needed for interpretation and later use observed results through appropriate measurement/OutcomeEvaluation methods rather than treating launch as success.
+
+## Verification
+- The test can answer the stated marketing decision at the level of confidence claimed.
+- Treatment, comparison, metrics, guardrails, and interpretation limits are explicit.
+- User request scope and real external constraints govern execution; AURA does not manufacture authorization.
+
+## Completion Criteria
+- A defensible Experiment/design exists and any claimed execution is grounded in actual host state, with no ActionPacket, Manual Action Packet, or mandatory runtime route.
