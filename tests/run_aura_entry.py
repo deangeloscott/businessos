@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Protect the simple harness-neutral AURA front door."""
 from pathlib import Path
-import json, os, subprocess, sys, tempfile
+import json,os,subprocess,sys,tempfile
 
 ROOT=Path(__file__).resolve().parents[1]
 S=ROOT/'scripts'
@@ -38,30 +38,37 @@ def main():
         req(payload.get('run',{}).get('created') is False,'entry must not create a Run merely to begin reasoning')
         req({'aura_playbook','external_skill','model_created','ad_hoc'}<=set(payload.get('method_options',[])),'entry lost method freedom')
         rec=payload.get('recommended_playbook',{})
-        req(rec.get('status') in {'recommended','model_judgment','none'},f'entry returned invalid recommendation state: {rec}')
-        req('not authority' in rec.get('rule',''),'AURA playbook recommendation became execution authority')
-        req('does not decide whether the harness is allowed or able to execute' in payload.get('rule',''),'front door lost runtime ownership boundary')
+        req(rec.get('status') in {'model_judgment','none'},f'unselected entry must leave semantic method choice to the model: {rec}')
+        req(rec.get('contract_id') is None,'candidate discovery silently became playbook selection')
+        req('active model/user' in rec.get('rule','') or 'model/user' in rec.get('rule',''),'playbook candidates became semantic authority')
+        req(payload.get('retrieval',{}).get('context_files')==['CONTEXT.md'],'unselected entry should not front-load redundant AURA policy files')
+        req('semantic intent and execution remain with the active intelligence/runtime' in payload.get('rule',''),'front door lost model/runtime ownership boundary')
         req(not (ws/'runtime/runs'/bid).exists(),'entry created runtime Run state despite optional-Run architecture')
 
         selected_result,selected=enter(request,bid,ws,env,'--selected-contract','content.production.presentation')
         req(selected_result.returncode==0 and selected.get('status')=='ready','explicit AURA playbook selection should remain available')
         req(selected.get('recommended_playbook',{}).get('contract_id')=='content.production.presentation','explicit playbook selection was not preserved')
-        req(selected.get('recommended_playbook',{}).get('selection_mode')=='explicit','explicit selection mode was lost')
+        req(selected.get('recommended_playbook',{}).get('selection_mode')=='explicit_model_selection','explicit model selection mode was lost')
+        req(selected.get('recommended_playbook',{}).get('status')=='selected','explicitly selected playbook was not marked selected')
         req(selected.get('playbook_process') is not None,'selected AURA playbook should expose its reusable process knowledge')
         req(selected.get('run',{}).get('created') is False,'explicit playbook selection still must not auto-create a Run')
+        loaded=selected.get('retrieval',{}).get('context_files',[])
+        req('CONTEXT.md' in loaded and 'core/DEFAULTS.md' not in loaded and 'core/policies/agent-execution.md' not in loaded,'selected playbook context reintroduced redundant universal instruction stack')
 
         # Multiple organizations require real resolution rather than guessing.
         second='entry-regression-two';run([S/'init_business.py',second,'--name','Entry Regression Two'],env)
         unresolved=run([S/'enter.py','Analyze the business.','--workspace',ws],env,check=False)
         data=json.loads(unresolved.stdout)
         req(unresolved.returncode==2 and data.get('status')=='needs_input','ambiguous organization should request only the missing organization choice')
-        req(sorted(data.get('available_business_ids',[]))==sorted([bid,second]),'business-resolution handoff should expose the available organizations')
+        req(sorted(data.get('available_business_ids',[]))==sorted([bid,second]),'business-resolution handoff should expose the stable IDs')
+        names={row['id']:row['name'] for row in data.get('available_businesses',[])}
+        req(names=={bid:'Entry Regression',second:'Entry Regression Two'},f'business-resolution handoff should expose human-readable organization names: {names}')
 
         # External workspace operation must not leak organization state into product source.
         req(not (ROOT/'instances'/bid).exists(),'front-door regression leaked organization state into product instances/')
         req(not (ROOT/'runtime/runs'/bid).exists(),'front-door regression leaked Run state into product runtime/')
 
-    print('AURA entry regression passed: resolve and retrieve without execution-control machinery')
+    print('AURA entry regression passed: organization retrieval + model-owned method selection without execution-control machinery')
 
 
 if __name__=='__main__':main()
