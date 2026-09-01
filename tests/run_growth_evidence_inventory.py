@@ -19,7 +19,7 @@ def run(args,env,check=True):
 
 
 def inventory(bid,workspace,env):
-    p=run([S/'growth_baseline_gate.py',bid],env)
+    p=run([S/'growth_evidence_inventory.py',bid],env)
     return json.loads(p.stdout)
 
 
