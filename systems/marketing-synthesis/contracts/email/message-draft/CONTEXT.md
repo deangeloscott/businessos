@@ -9,7 +9,6 @@ reads:
 - Asset
 - WorkRequest
 writes:
-- WorkRequest
 - Asset
 capabilities:
   required:
@@ -33,19 +32,19 @@ context:
 # Marketing Email Draft
 
 ## Purpose
-Write one email to perform its assigned job in an approved sequence.
+Write one email to perform its assigned job in a sequence or standalone communication.
 
 ## Business Outcome
 Move the reader one appropriate step using clear, relevant, evidence-backed communication.
 
 ## Run When
-Run when a commercial email sequence requires this specific planning, drafting, logic, or QA job.
+Use when a commercial email requires this specific drafting job. An existing sequence Asset or real durable WorkRequest may provide context but is not required.
 
 ## Process
-1. [DETERMINISTIC] Resolve sequence job, recipient state, prior messages/actions, Offer, Customer Insights, proof, and CTA.
+1. [HYBRID] Resolve message job, recipient state, relevant prior messages/actions, Offer, Customer evidence, proof, and CTA from the current context available.
 2. [AI] Write the email around one primary message/action; open with context/value rather than generic greetings/filler.
 3. [AI] Use customer language and specifics appropriate to awareness while avoiding claims not supported by evidence.
 4. [AI] Integrate proof/objection handling only if needed for this message’s job.
 5. [AI] Make CTA and what-happens-next explicit; include alternatives/exit where appropriate.
 6. [HYBRID] Check consent, sensitive personalization, urgency, Offer version, tone, and frequency context.
-7. [DETERMINISTIC] Output subject-body-CTA package linked to sequence position and claim/proof refs.
+7. [AI] Preserve the useful subject/body/CTA package as an Asset with sequence position and claim/proof references when future work benefits from it. Do not create a WorkRequest merely because another AURA method may be used next.
