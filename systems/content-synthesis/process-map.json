@@ -1,5 +1,4 @@
 {
-  "version": "1.4.0",
   "system": "content-synthesis",
   "activities": [
     {"id":"content-brief","entry_contract":"content.intake.content-brief","result":"Define a complete content production job."},
