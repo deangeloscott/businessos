@@ -1,20 +1,16 @@
 #!/usr/bin/env python3
 """Complete an optional organization-owned work receipt.
 
-Every method uses the same continuity primitive. An AURA playbook Run records which
-playbook was actually used, but completion does not certify an internal execution graph,
-provider state, permission state, launch readiness, or business outcome. Those meanings
-belong to the work itself and their dedicated organization state.
+Every method uses the same continuity primitive. A receipt may reference material evidence,
+results, decisions, and unresolved work, but canonical organization objects do not need to
+point back to the receipt. Completion does not certify an execution graph, provider state,
+permission state, launch readiness, or business outcome.
 """
-from pathlib import Path
 import argparse, json
 from jsonschema import Draft202012Validator
 
 from _common import *
-from run_provenance import bind_evidence_paths
 from validate_business import validate_business
-
-EVIDENCE_OBJECT_TYPES={'SourceRecord','Observation','MetricObservation','ProofRecord','BusinessClaim'}
 
 
 def _material_ref(business_id,raw):
@@ -33,31 +29,6 @@ def _refs(business_id,values):
         ref=_material_ref(business_id,raw)
         if ref not in out:out.append(ref)
     return out
-
-
-def _run_linked(obj,business_id,run_id):
-    ext=obj.get('extensions') if isinstance(obj.get('extensions'),dict) else {}
-    bos=ext.get('businessos') if isinstance(ext.get('businessos'),dict) else {}
-    lineage=obj.get('lineage') if isinstance(obj.get('lineage'),list) else []
-    rr=f'runtime/runs/{business_id}/{run_id}'
-    return bos.get('run_id')==run_id or bos.get('run_ref')==rr or run_id in lineage or rr in lineage
-
-
-def _linked_refs(business_id,run_id):
-    evidence=[];results=[];decisions=[]
-    for obj,path in iter_instance_objects(business_id):
-        if not _run_linked(obj,business_id,run_id):continue
-        ref=storage_ref(path);typ=obj.get('object_type')
-        target=decisions if typ=='DecisionRecord' else (evidence if typ in EVIDENCE_OBJECT_TYPES else results)
-        if ref not in target:target.append(ref)
-        if typ=='Asset' and isinstance(obj.get('location_reference'),str):
-            try:
-                loc=resolve_storage_ref(obj['location_reference'])
-                if loc.exists() and loc.is_file():
-                    lref=storage_ref(loc)
-                    if lref not in results:results.append(lref)
-            except Exception:pass
-    return sorted(evidence),sorted(results),sorted(decisions)
 
 
 def _validate_run(run):
@@ -94,28 +65,18 @@ def complete_run(business_id,run_id,evidence=None,result_refs=None,decision_refs
         if text and text not in unresolved_clean:unresolved_clean.append(text)
     summary_text=str(summary).strip() if summary is not None else ''
 
-    touched=[rp]
-    for ref in [*evidence_refs,*results,*decisions]:
-        try:p=resolve_storage_ref(ref)
-        except Exception:continue
-        if p.exists() and p.is_file() and p.suffix.lower()=='.json':touched.append(p)
-    snapshots={p:p.read_bytes() for p in dict.fromkeys(touched)}
+    current=dict(run.get('continuity') or {})
+    def merged(key,new):return list(dict.fromkeys([*(current.get(key) or []),*new]))
+    final_evidence=merged('evidence_refs',evidence_refs)
+    final_results=merged('result_refs',results)
+    final_decisions=merged('decision_refs',decisions)
+    final_unresolved=list(dict.fromkeys([*(current.get('unresolved') or []),*unresolved_clean]))
+    final_summary=summary_text or current.get('summary')
+    if not (final_summary or final_evidence or final_results or final_decisions or final_unresolved):
+        raise ValueError('Run completion requires material organizational meaning: a summary, evidence/result/decision reference, or unresolved item')
 
+    snapshot=rp.read_bytes()
     try:
-        bind_evidence_paths(business_id,run_id,[resolve_storage_ref(x) for x in evidence_refs],'receipt_evidence')
-        bind_evidence_paths(business_id,run_id,[resolve_storage_ref(x) for x in results],'receipt_result')
-        bind_evidence_paths(business_id,run_id,[resolve_storage_ref(x) for x in decisions],'receipt_decision')
-        linked_evidence,linked_results,linked_decisions=_linked_refs(business_id,run_id)
-        current=dict(run.get('continuity') or {})
-        def merged(key,new):return list(dict.fromkeys([*(current.get(key) or []),*new]))
-        final_evidence=merged('evidence_refs',[*evidence_refs,*linked_evidence])
-        final_results=merged('result_refs',[*results,*linked_results])
-        final_decisions=merged('decision_refs',[*decisions,*linked_decisions])
-        final_unresolved=list(dict.fromkeys([*(current.get('unresolved') or []),*unresolved_clean]))
-        final_summary=summary_text or current.get('summary')
-        if not (final_summary or final_evidence or final_results or final_decisions or final_unresolved):
-            raise ValueError('Run completion requires material organizational meaning: a summary, evidence/result/decision reference, or unresolved item')
-
         ts=now();run['method_type']=method_type;run['method_ref']=method_ref
         run['status']='completed';run['updated_at']=ts
         run['continuity']={
@@ -130,14 +91,14 @@ def complete_run(business_id,run_id,evidence=None,result_refs=None,decision_refs
         errors,warnings,counts=validate_business(business_id)
         if errors:raise ValueError('active business validation is not clean:\n- '+'\n- '.join(errors[:12]))
     except Exception:
-        for path,data in snapshots.items():path.write_bytes(data)
+        rp.write_bytes(snapshot)
         raise
 
     return {
         'run_id':run_id,'status':'completed','method_type':method_type,'method_ref':method_ref,
         'continuity':run['continuity'],
         'validation':{'errors':0,'warnings':warnings,'canonical_object_counts':counts},
-        'rule':'This receipt records continuity only. It does not certify playbook conformance, external execution, authorization, production readiness, or business outcomes.'
+        'rule':'This receipt references material continuity one-way. It does not mutate canonical results or certify playbook conformance, external execution, authorization, production readiness, or business outcomes.'
     }
 
 
