@@ -8,12 +8,7 @@ reads:
 - type: Insight
   owner_system: customer-intelligence
 - MetricObservation
-writes:
-- WorkRequest
-- ChangeEvent
-- Experiment
-- MetricObservation
-- OutcomeEvaluation
+writes: []
 capabilities:
   required:
   - none
@@ -21,16 +16,10 @@ capabilities:
   - analytics.read
   - product_analytics.read
   - crm.contact.read
-  - crm.contact.update
-  - crm.opportunity.read
-  - checkout.read
-  - checkout.update
-  - billing.read
-  - support.ticket.read
   - customer_success.read
-  - scheduling.read
-  - email.send
+  - support.ticket.read
   - workflow.update
+  - email.send
   - experiment.run
 context:
 - EconomicContext
@@ -46,15 +35,19 @@ subcontracts:
 Increase sustained customer value/continuation by improving the experience and outcomes that drive durable retention.
 
 ## Business Outcome
-Improve customer progression and value realization through retention optimization, while protecting customer and business guardrails.
+Improve durable retention through better value realization rather than temporary lock-in, indiscriminate discounting, or vanity retention metrics.
 
 ## Run When
-Run when journey evidence or an active Opportunity requires retention optimization to improve a defined customer transition or outcome.
+Use when evidence suggests retention is a material constraint or opportunity. An existing Opportunity may provide context but is not required.
 
 ## Process
-1. [HYBRID] Define retention period/state appropriate to business model and segment, including what constitutes healthy retained value.
-2. [DETERMINISTIC] Cohort retention by acquisition, offer, activation, usage/service milestones, customer experience, and economic attributes.
-3. [AI] Identify likely retention drivers and failure mechanisms using Customer Insights and Optimization evidence.
-4. [HYBRID] Prioritize interventions that improve underlying value realization over temporary lock-in or discounting.
-5. [AI] Design lifecycle, success, education, product/process, service, or expectation interventions and delegate components appropriately.
-6. [DETERMINISTIC] Measure incremental retention, LTV/margin, satisfaction/support, and future expansion guardrails.
+1. [HYBRID] Define the retention period/state appropriate to the business model and segment, including what constitutes healthy retained value.
+2. [HYBRID] Compare retention across relevant cohorts and customer/value states while accounting for tenure, acquisition mix, seasonality, pricing/product changes, and censoring where they matter.
+3. [AI] Identify plausible retention drivers and failure mechanisms using Customer Insights, behavioral/service evidence, outcomes, and economics without treating correlation as motive or cause.
+4. [AI] Prioritize interventions that improve underlying value realization and relationship quality over temporary lock-in or blanket discounting.
+5. [AI] Use whatever additional operating knowledge is relevant—customer success, communication, product/process, persuasion, service recovery, or other expertise—directly through the active model/harness. A WorkRequest is only for a real durable handoff.
+6. [HYBRID] Define and, when evidence is available, evaluate retention, customer value, margin/LTV, satisfaction/support, and future expansion/referral guardrails proportionate to the intervention.
+7. [AI] Persist only durable meanings that actually occurred and matter later, such as a real intervention/change, experiment, measured outcome, updated Insight, or Learning. Do not manufacture a lifecycle bundle.
+
+## Completion Criteria
+- The organization has an evidence-backed retention mechanism and useful intervention/decision, with execution and outcome state reported truthfully and no mandatory AURA lifecycle objects.
