@@ -24,7 +24,7 @@ def contains(text,*parts):
 def make_business(bid):
     base=ROOT/'instances'/bid;base.mkdir(parents=True,exist_ok=True);(base/'instance.json').write_text(json.dumps({'business_id':bid,'enabled_systems':['marketing-synthesis']},indent=2)+'\n');return base
 def learning(base,bid):
-    obj={'id':'lrn_evolution_test','object_type':'Learning','schema_version':'1.0.0','business_id':bid,'owner_scope':'business','owner_system':'marketing-synthesis','statement':'Proof-first landing structure improved qualified conversion in the tested context.','maturity':'validated','status':'active','applies_when':['Evidence-backed landing page work'],'does_not_apply_when':[],'evidence_refs':[],'confidence':0.9,'system_learning_eligible':False,'extensions':{}};p=base/'learning'/'lrn_evolution_test.json';p.parent.mkdir(parents=True,exist_ok=True);p.write_text(json.dumps(obj,indent=2)+'\n');return obj
+    obj={'id':'lrn_evolution_test','object_type':'Learning','schema_version':'1.0.0','business_id':bid,'owner_scope':'business','owner_system':'marketing-synthesis','statement':'Proof-first landing structure improved qualified conversion in the tested context.','maturity':'validated','status':'active','applies_when':['Evidence-backed landing page work'],'does_not_apply_when':[],'evidence_refs':[],'confidence':0.9,'extensions':{}};p=base/'learning'/'lrn_evolution_test.json';p.parent.mkdir(parents=True,exist_ok=True);p.write_text(json.dumps(obj,indent=2)+'\n');return obj
 def _check_contract_shape(rel):
     text=(ROOT/rel).read_text();body=text.split('\n---\n',1)[1] if '\n---\n' in text else text
     for heading in ['## Purpose','## Business Outcome','## Run When','## Process']:
