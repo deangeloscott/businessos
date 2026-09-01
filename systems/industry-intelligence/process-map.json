@@ -1,5 +1,4 @@
 {
-  "version": "1.4.0",
   "system": "industry-intelligence",
   "activities": [
     {"id":"monitoring-plan","entry_contract":"industry.research.monitoring-plan","result":"Define decision-relevant external monitoring."},
