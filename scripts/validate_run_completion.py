@@ -7,7 +7,7 @@ consistent. Contract/subcontract rules apply only to Runs that explicitly claim 
 AURA playbook method.
 """
 from _common import *
-from run_provenance import RUN_BOUND_TYPES
+from run_provenance import RUN_LINKABLE_TYPES
 from completion_evidence import qa_record_ok, subcontract_manifest_errors, validate_evidence
 import json
 
@@ -49,7 +49,7 @@ def _generic_run_errors(business_id,objects,contracts,active_run_id=None):
     errors=[]
     for obj,path in objects:
         typ=obj.get('object_type')
-        if typ not in RUN_BOUND_TYPES:continue
+        if typ not in RUN_LINKABLE_TYPES:continue
         ext=obj.get('extensions') if isinstance(obj.get('extensions'),dict) else {}
         bos=ext.get('businessos') if isinstance(ext.get('businessos'),dict) else {}
         rr=bos.get('run_ref')
