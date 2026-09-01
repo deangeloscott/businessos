@@ -1,6 +1,6 @@
 ---
 id: core.intelligence.manage-insight
-type: service
+type: playbook
 owner_system: core
 reads:
 - Observation
