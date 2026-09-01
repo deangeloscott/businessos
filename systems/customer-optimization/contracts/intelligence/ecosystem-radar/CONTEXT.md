@@ -13,8 +13,6 @@ reads:
 writes:
 - Observation
 - Insight
-- Opportunity
-- WorkRequest
 capabilities:
   required:
   - research.web.read
@@ -38,36 +36,35 @@ subcontracts:
   - id: core.intelligence.ecosystem.evidence-triangulation
   conditional:
   - id: customer-optimization.intelligence.relevance-evaluation
-    when: External evidence must be mapped to an active journey mechanism.
+    when: External evidence needs deeper mapping to an active journey mechanism.
   - id: customer-optimization.experimentation.lifecycle-test
-    when: A promising journey intervention is testable and safe enough for bounded exposure.
-  - id: customer-optimization.learning.domain-learning
-    when: Verified outcomes justify reusable lifecycle guidance.
+    when: A promising journey intervention is testable and a bounded experiment would materially improve the decision.
 ---
 # Customer Optimization Ecosystem Tactic Radar
 
 ## Purpose
-Discover and evaluate external tactics for conversion, qualification, checkout, onboarding, activation, adoption, retention, renewal, repeat purchase, expansion, referral, and service recovery before testing them on customers.
+Discover and evaluate external mechanisms for conversion, qualification, checkout, onboarding, activation, adoption, retention, renewal, repeat purchase, expansion, referral, and service recovery without turning outside tactics into automatic customer interventions.
 
 ## Business Outcome
-Improve customer progression and value realization from credible external learning while protecting customer experience, fairness, business guardrails, and causal interpretation.
+Improve customer progression and value realization from credible external learning while protecting customer experience, fairness, actual business constraints, and causal interpretation.
 
 ## Run When
-Run from the Core ecosystem radar, on demand for customer-journey refresh, or when a material lifecycle/CRO practice or result appears.
+Use on demand for customer-journey refresh or when a material lifecycle/CRO practice or result could affect the active business.
 
 ## Process
-1. [HYBRID] Reuse the active CustomerJourney, bottleneck diagnosis, instrumentation health, prior experiments, domain Learnings, customer evidence, and SourceProfiles before external search.
-2. [AI] Discover journey intervention claims across primary experiments, product/growth research, case studies, communities, practitioner evidence, competitors, and adjacent industries using mechanism-centered semantic discovery.
+1. [HYBRID] Reuse the active CustomerJourney, bottleneck diagnosis, instrumentation state, prior experiments/outcomes, Domain Learning, customer evidence, and SourceProfiles before external search.
+2. [AI] Discover journey-intervention claims across primary experiments, product/growth research, case studies, communities, practitioner evidence, competitors, and adjacent industries only where they can inform the current journey question.
 3. [HYBRID] Use Core triangulation to separate original tests from retellings and assess independent support/contradiction, sample/design quality, freshness, selection effects, metric quality, and commercial context.
-4. [AI] Map each credible tactic to a specific journey transition/friction mechanism and determine whether the active business has the same customer state, constraints, instrumentation, capacity, and value proposition.
-5. [HYBRID] Evaluate customer harm, fairness, dark-pattern risk, compliance, service capacity, reversibility, downstream retention/value, and whether a short-term conversion gain could damage longer-term outcomes.
-6. [HYBRID] Route weak/noisy claims to ignore/watch, knowledge gaps to investigation, and promising low-enough-risk interventions to `customer-optimization.experimentation.lifecycle-test`.
-7. [AI] Interpret active-business results with guardrails and downstream value, not only immediate progression; classify support, contradiction, or inconclusive without masking segment differences.
-8. [DETERMINISTIC] Update customer-optimization domain Learning only when outcome evidence supports reusable scoped guidance and preserve harmful/null interventions for future avoidance.
+4. [AI] Map each credible tactic to a specific journey transition/friction mechanism and determine whether the active business actually has sufficiently similar customer state, constraints, instrumentation, capacity, and value proposition.
+5. [AI] Consider customer harm, fairness, dark-pattern risk, applicable compliance/contract constraints, service capacity, reversibility, downstream retention/value, and whether a short-term conversion gain could damage longer-term outcomes.
+6. [AI] Decide what the evidence warrants next: ignore, watch, investigate, experiment, adapt into a current intervention, revise Learning, or do nothing. Relevance-evaluation and lifecycle-test playbooks are optional methods, not automatic routes.
+7. [AI] Where active-business results exist, interpret them with guardrails and downstream value rather than only immediate progression; preserve segment differences and inconclusive outcomes.
+8. [DETERMINISTIC] Persist only material Observation/Insight evidence and exact references selected by the model/user. Customer Optimization Learning changes only when outcome evidence and semantic judgment support reusable scoped guidance.
 
 ## Verification
-- A conversion proxy cannot override customer harm or downstream-value guardrails.
-- External evidence never substitutes for active-business journey diagnosis.
+- A conversion proxy cannot override observed customer harm or downstream-value evidence.
+- External evidence never substitutes for active-business journey diagnosis or established business facts.
+- No Opportunity, WorkRequest, experiment, or customer-facing change is created merely because the radar observed a tactic.
 
 ## Completion Criteria
-- Material journey tactics have evidence, active-business applicability, customer-risk status, and an owned disposition/test/learning route.
+- Material journey mechanisms are evidence-calibrated and scoped to active-business applicability, with any suggested next method left to capable model/user judgment.
