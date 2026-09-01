@@ -61,12 +61,14 @@ def main():
     if 'core.intelligence.ecosystem.maintain-source-profile' not in (subject_meta.get('subcontracts') or {}).get('required',[]):
         fail('subject monitoring must reuse shared SourceProfile mechanics')
 
-    _,_,routing_body=contract('core.routing.resolve-intent')
-    for phrase in ['durable subject watch/refresh','`core.intelligence.subject-monitoring`','not merely because it contains words such as “track” or “monitor.”']:
-        if phrase not in routing_body:fail(f'semantic intent resolution missing durable monitoring rule: {phrase}')
-
+    # Natural-language semantic intent belongs to the active model/user. Core should expose
+    # useful monitoring/playbook knowledge without retaining a semantic resolver service.
+    if (ROOT/'core/contracts/routing/resolve-intent').exists():
+        fail('retired semantic intent resolver still exists in Core')
     core_map=json.loads((ROOT/'core/process-map.json').read_text())
-    entry_ids=[a.get('entry_contract') for a in core_map.get('activities',[])]
+    activities=core_map.get('activities',[]);entry_ids=[a.get('entry_contract') for a in activities]
+    if any(a.get('id')=='resolve-intent' or a.get('entry_contract')=='core.routing.resolve-intent' for a in activities):
+        fail('Core process map reintroduced semantic intent routing')
     if 'core.intelligence.subject-monitoring' not in entry_ids:fail('Core process map missing durable subject monitoring')
     if 'core.monitoring.status' not in entry_ids:fail('Core process map missing human monitoring status view')
 
@@ -108,6 +110,6 @@ def main():
     for phrase in ['Example Creator','creator','thought_leader','Cadence intent','Notification intent','material_changes_only','Runtime scheduling','external / not inferred by AURA','What topics are changing?','Major positioning shift','Next useful check']:
         if phrase not in grouped:fail(f'tracked-subject grouped human view missing {phrase}')
 
-    print('AURA intelligence maturation regressions passed: shared monitoring, semantic routing, multimodal evidence, contextual intelligence, marketing/customer value, and human/machine legibility')
+    print('AURA intelligence maturation regressions passed: shared monitoring, multimodal evidence, contextual intelligence, model-owned semantic selection, marketing/customer value, and human/machine legibility')
 
 if __name__=='__main__':main()
