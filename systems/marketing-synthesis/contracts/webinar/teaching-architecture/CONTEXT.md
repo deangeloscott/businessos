@@ -9,7 +9,6 @@ reads:
 - Asset
 - WorkRequest
 writes:
-- WorkRequest
 - Asset
 capabilities:
   required:
@@ -39,7 +38,7 @@ Design the educational framework, sequence, examples, and exercises that deliver
 Make the webinar genuinely useful and create the understanding required for informed commercial consideration.
 
 ## Run When
-Run after webinar objective is approved.
+Use after the webinar objective/audience is sufficiently clear.
 
 ## Process
 1. [AI] Define what attendees should know/be able to do by the end and the misconceptions/prerequisites blocking that state.
@@ -48,4 +47,4 @@ Run after webinar objective is approved.
 4. [AI] Add cases/examples/exercises where application is needed and identify evidence/source requirements.
 5. [HYBRID] Confirm the teaching delivers standalone value and remove material that exists only to prolong presentation or hide useful details until the pitch.
 6. [AI] Identify natural bridges where the business solution becomes relevant without interrupting education.
-7. [DETERMINISTIC] Produce module/beat architecture and Content slide/demo requirements.
+7. [AI] Preserve the module/beat architecture and slide/demo requirements as a Marketing-owned Asset. Use presentation/Content capabilities directly when useful; persist a WorkRequest only for a real durable organizational handoff.
