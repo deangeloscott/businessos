@@ -11,10 +11,12 @@ For substantive work performed on behalf of an AURA-managed organization:
 3. Retrieve only memory that can materially improve the current work. `python3 scripts/enter.py "<complete request>" --business-id <id>` is a bounded helper; equivalent direct retrieval is valid when the harness already has the needed context.
 4. AURA operating knowledge is optional. The model/user may select an AURA playbook, adapt one within its real invariants, use an external Skill, create a better method, or work ad hoc. AURA does not semantically own the user's request.
 5. Use the host's actual capabilities normally. AURA capability IDs describe possible playbook needs; AURA does not inventory, bind, rank, install, authorize, or select providers/tools.
-6. Create a Run/work receipt only when durable continuity or provenance is useful. A Run is not required before reasoning begins.
-7. Persist only material organization-owned meaning that a capable future model would benefit from: evidence, current facts/inferences with provenance, durable decisions/instructions, useful results/assets, unresolved work, outcomes, or Learning. Do not persist private reasoning, every tool call, caches, or runtime chatter.
+6. Create a Run/work receipt only when durable continuity or provenance is useful. A Run is not required before reasoning begins or before durable memory can be saved.
+7. Persist only material organization-owned meaning that a capable future model would benefit from. `python3 scripts/remember.py <business-id> --input <json>` is the generic Run-independent create/update path for canonical meaning; use specialized helpers when a type has real lifecycle/evidence semantics. Research evidence may use `persist_research_bundle.py` with truthful AURA-playbook, external-Skill, model-created, ad-hoc, or no method provenance. Do not fabricate a Run or contract merely to make memory writable.
 8. If an AURA playbook was explicitly selected and completion of that playbook is claimed, satisfy its essential quality/evidence invariants. Other methods do not need to masquerade as AURA contracts.
 9. Validate AURA-owned state when it is changed. Organization isolation, provenance/reference integrity, and schema validity are deterministic AURA responsibilities.
+
+Remember evidence, current facts/inferences with provenance, durable decisions/instructions, useful results/assets, unresolved work, outcomes, or Learning when they pass the persistence test. Do not persist private reasoning, every tool call, caches, or runtime chatter.
 
 Unrelated personal/general work should continue through the host normally. During ordinary organizational work, do not modify AURA product source to work around an execution problem. Product-source changes are appropriate when the request itself is to develop, repair, configure, or upgrade AURA.
 
