@@ -8,6 +8,15 @@ import json,re
 RETIRED_CONTRACT_METADATA={'risk','autonomy_ceiling','events','schedule'}
 
 
+def _tokens(value):
+    return sorted(set(re.findall(r'[a-z0-9]{3,}',str(value or '').lower())))
+
+
+def _section(body,name):
+    match=re.search(rf'^## {re.escape(name)}\n(.+?)(?=\n## |\Z)',body,re.M|re.S)
+    return match.group(1).strip() if match else ''
+
+
 def _write_task_navigator(process_maps,inst):
     cat=module_catalog();installed=sorted(installed_modules()-{'core'});maps={d.get('system'):d for d in process_maps if isinstance(d,dict)}
     lines=['# Task Navigator','',f"Installed edition: **{inst.get('display_name','ViralTrac AURA')}**.",'','ViralTrac AURA is an AI-native BusinessOS. Ask for an outcome in plain language; this file is a human browse view, not a requirement to select a playbook manually.','']
@@ -26,14 +35,26 @@ def main():
         meta,body=read_frontmatter(p);cid=meta.get('id')
         if not cid:continue
         if cid in ids:raise SystemExit(f'Duplicate contract id: {cid}')
-        ids.add(cid);title=re.search(r'^#\s+(.+)',body,re.M);purpose=re.search(r'^## Purpose\n(.+?)(?=\n## |\Z)',body,re.M|re.S)
+        ids.add(cid)
+        title_match=re.search(r'^#\s+(.+)',body,re.M)
+        title=title_match.group(1).strip() if title_match else cid
+        purpose=_section(body,'Purpose')
+        run_when=_section(body,'Run When')
         durable_meta={k:v for k,v in meta.items() if k not in RETIRED_CONTRACT_METADATA}
-        rec={**durable_meta,'path':str(p.relative_to(ROOT)),'title':title.group(1).strip() if title else cid,'purpose':purpose.group(1).strip() if purpose else ''}
+        rec={**durable_meta,'path':str(p.relative_to(ROOT)),'title':title,'purpose':purpose}
         rec['read_selectors']=[normalize_selector(x) for x in meta.get('reads',[])];rec['write_types']=[selector_type(x) for x in meta.get('writes',[])];rec['context_types']=meta.get('context',[]);contracts.append(rec)
         for c in meta.get('capabilities',{}).get('required',[])+meta.get('capabilities',{}).get('optional',[]):
             if c!='none':caps.setdefault(c,[]).append(cid)
         deps[cid]={'context':meta.get('context',[]),'reads':rec['read_selectors'],'writes':rec['write_types'],'evidence_inputs':meta.get('evidence_inputs',[])}
-        token_source=' '.join([rec['title'],rec['purpose'],cid]).lower();tokens=sorted(set(re.findall(r'[a-z0-9]{3,}',token_source)));routes.append({'contract_id':cid,'owner_system':meta.get('owner_system'),'tokens':tokens})
+        title_tokens=_tokens(title);purpose_tokens=_tokens(purpose);run_when_tokens=_tokens(run_when);id_tokens=_tokens(cid.replace('.',' ').replace('-',' '))
+        routes.append({
+            'contract_id':cid,
+            'owner_system':meta.get('owner_system'),
+            'tokens':sorted(set(title_tokens+purpose_tokens+run_when_tokens+id_tokens)),
+            'title_tokens':title_tokens,
+            'purpose_tokens':purpose_tokens,
+            'run_when_tokens':run_when_tokens,
+        })
     (gen/'contract-registry.json').write_text(json.dumps({'version':os_version(),'contracts':contracts},indent=2)+'\n',encoding='utf-8')
     (gen/'system-registry.json').write_text(json.dumps({'systems':sorted(set(c.get('owner_system') for c in contracts if c.get('owner_system')))},indent=2)+'\n',encoding='utf-8')
     (gen/'capability-usage-index.json').write_text(json.dumps(caps,indent=2)+'\n',encoding='utf-8')
