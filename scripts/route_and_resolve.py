@@ -1,92 +1,83 @@
 #!/usr/bin/env python3
-from _common import *
+"""Resolve an explicitly selected AURA playbook or return bounded candidates.
+
+Natural-language semantic intent belongs to the active model/user. AURA deterministically
+checks installed knowledge and resolves an explicit playbook ID after that judgment.
+"""
+from _common import ROOT
 import argparse,json,re
 from route_task import route
 from resolve_contract import resolve_contract
-from process_extensions import route_local_playbook,resolve_effective
-from growth_baseline_gate import assess as assess_growth_baseline
+from process_extensions import local_playbooks,resolve_effective
 
-# Broad domain-level business outcomes that should compose several atomic jobs rather
-# than collapsing into whichever narrow contract happens to share the most words.
-DOMAIN_HINTS=[
- (r'\b(?:competitive set|competitive landscape|competitive position|competitor landscape|competitor research|competitive intelligence)\b|\b(?:full|complete|comprehensive) competitor (?:analysis|research)\b|\b(?:research|analy[sz]e|understand|map|assess|establish).*(?:competitors?|competition).*(?:strengths? and weaknesses?|weaknesses? and strengths?|whitespace|where (?:we|i) can win|competitive advantage|landscape|position)', 'competitor.analysis.competitive-position','competitor-intelligence'),
-]
 
-FEATURE_HINTS=[
- (r'\b(?:build|create|develop|maintain|refresh|update)\b.*\b(?:durable|cumulative|reusable|ongoing)\b.*\b(?:understanding|knowledge|intelligence|watch)\b|\b(?:durable|cumulative|reusable)\b.*\b(?:understanding|knowledge|intelligence)\b.*\b(?:future updates?|refresh|keep current|ongoing)\b', 'core.intelligence.subject-monitoring'),
- (r'\b(make|turn|promote|formalize|formalise).*(playbook|process|workflow|standard operating|part of businessos)|\b(playbook|process).*(evolve|evolution|improve businessos)', 'core.learning.playbook-evolution'),
- (r'\binnovation exchange\b|\bshare.*(playbook|workflow|process)\b|\b(import|browse|community).*(playbook|workflow|businessos innovation)', 'core.intelligence.innovation-exchange'),
- (r'\b(?:what|which|show|list|review).*(?:monitoring|monitors|recurring checks|scheduled checks|scheduled monitoring|tracking status)|\bwhat.*(?:watching|tracking).*(?:for us|for me)|\b(?:monitoring|recurring checks).*(?:status|active|due|schedule)', 'core.monitoring.status'),
- (r'\b(?:pause|resume|stop|disable|enable|change|update|adjust|make|set|keep|mute|silence).*(?:watch|monitoring|monitor|tracked subject|recurring check|cadence|notification)|\b(?:watch|monitoring|monitor|tracked subject|recurring check|cadence|notification).*(?:pause|resume|stop|disable|enable|change|update|adjust|silent|quiet|mute|material(?:ly)?\s+chang\w*|every\s+check|all\s+checks|daily|weekly|monthly|quarterly)|\b(?:notify|notification|alert|tell me).*(?:material(?:ly)?\s+chang\w*|every\s+check|all\s+checks|silent|quiet|only)|\b(?:only|don\x27t|do not|never).*(?:notify|alert|tell me).*(?:material(?:ly)?\s+chang\w*|unless|every\s+check|all\s+checks|silent|quiet)|\b(?:daily|weekly|monthly|quarterly|every\s+\d+\s+(?:day|days|week|weeks|month|months)).*(?:watch|monitor|check|pricing|hiring|news|content)', 'core.intelligence.subject-monitoring'),
- (r'\b(?:configure|set ?up|deploy|host|store|version|move|migrate).*(?:viraltrac aura|aura|businessos).*(?:workspace|state root|external state|deployment profile|private git|github organization|gitlab|forgejo)|\b(?:viraltrac aura|aura|businessos).*(?:workspace|state root|external state|deployment profile|private git|github organization|gitlab|forgejo)|\b(?:workspace|state root|external state|deployment profile|private git|github organization|gitlab|forgejo).*(?:viraltrac aura|aura|businessos|set ?up|configure|host|store|deploy|version)', 'core.workspace.configure'),
- (r'\b(use|review|incorporate|ingest|learn from|import).*(human note|knowledge note|obsidian note|note in obsidian|workspace note)|\b(human note|knowledge note|obsidian note).*(use|review|incorporate|ingest|businessos|aura)', 'core.knowledge.ingest-human-note'),
- (r'\b(obsidian|second brain|human knowledge|knowledge layer|human-readable knowledge|human view).*(businessos|aura|workspace|refresh|generate|open)|\b(refresh|generate|update).*(knowledge layer|obsidian|second brain)', 'core.knowledge.refresh-human-layer')
-]
+def _candidate_local(task,business_id,team_ref=None,role_ref=None,operator_ref=None,top=5):
+    if not business_id:return []
+    q=str(task or '').strip().lower();words=set(re.findall(r'[a-z0-9]{2,}',q));rows=[]
+    for ext in local_playbooks(business_id,team_ref,role_ref,operator_ref):
+        cid=str(ext.get('local_contract_id') or '');title=str(ext.get('title') or '');purpose=str(ext.get('purpose') or '')
+        text=' '.join([cid,title,purpose,*[str(x) for x in ext.get('route_terms') or []]]).lower()
+        score=10000 if q==cid.lower() else len(words & set(re.findall(r'[a-z0-9]{2,}',text)))*3
+        if title and title.lower() in q:score+=6
+        if score<=0:continue
+        rows.append((score,{
+            'score':score,'contract_id':cid,'owner_system':ext.get('owner_system'),'status':'available',
+            'local_playbook':True,'process_extension_id':ext.get('id'),'selection_authority':False,
+            'reason':'organization-local playbook candidate only; the active model/user must judge semantic applicability',
+        }))
+    rows.sort(key=lambda item:(item[0],item[1]['contract_id']),reverse=True)
+    return [row for _,row in rows[:top]]
 
-def _selection_result(task,contract_id,business_id=None,team_ref=None,role_ref=None,operator_ref=None,reason=None,selection_mode=None,extra=None):
-    extra=dict(extra or {})
+
+def _selected(task,contract_id,business_id=None,team_ref=None,role_ref=None,operator_ref=None):
     if business_id:
         path,meta,_,exts=resolve_effective(contract_id,business_id,team_ref,role_ref,operator_ref)
         result={
             'task':task,'contract_id':contract_id,'owner_system':meta.get('owner_system'),'status':'available',
-            'reason':reason,'path':str(path.relative_to(ROOT)) if path else None,
-            'process_extension_ids':[x['id'] for x in exts],'local_playbook':bool(meta.get('local_playbook')),'executable':False,
+            'reason':'explicitly selected by the active model/user after semantic judgment',
+            'path':str(path.relative_to(ROOT)) if path else None,
+            'process_extension_ids':[x['id'] for x in exts],'local_playbook':bool(meta.get('local_playbook')),
+            'executable':False,'selection_mode':'explicit_model_selection','semantic_selection_required':False,
+            'business_id':business_id,
         }
-    else:
-        path,meta=resolve_contract(contract_id)
-        result={'task':task,'contract_id':contract_id,'owner_system':meta.get('owner_system'),'status':'available','reason':reason,'path':str(path.relative_to(ROOT)),'executable':False}
-    result.update(extra)
-    result['selection_mode']=selection_mode or 'resolved'
-    result['semantic_selection_required']=contract_id=='core.routing.resolve-intent'
-    if business_id:
-        result['business_id']=business_id
-        if contract_id=='core.opportunity.discover-next-best-work':result['broad_growth_precheck']=assess_growth_baseline(business_id)
-    return result
-
-
-def route_and_resolve(task,business_id=None,team_ref=None,role_ref=None,operator_ref=None,selected_contract_id=None):
-    if selected_contract_id:
-        return _selection_result(
-            task,selected_contract_id,business_id,team_ref,role_ref,operator_ref,
-            reason='selected by the active user/model/harness after semantic method resolution',
-            selection_mode='explicit_semantic_selection',
-        )
-
-    feature_hint=None
-    for pat,cid in FEATURE_HINTS:
-        if re.search(pat,task,re.I):feature_hint={'score':100,'system_score':100,'contract_id':cid,'owner_system':'core','status':'available','reason':'matched explicit AURA/BusinessOS product, monitoring, or workspace feature request'};break
-    local=route_local_playbook(task,business_id,team_ref,role_ref,operator_ref) if business_id and not feature_hint else None
-    domain_hint=None
-    if not feature_hint and not local:
-        for pat,cid,owner in DOMAIN_HINTS:
-            if re.search(pat,task,re.I):domain_hint={'score':100,'system_score':100,'contract_id':cid,'owner_system':owner,'status':'available','reason':'matched broad domain-level business outcome that requires composed execution'};break
-    rows=[feature_hint] if feature_hint else ([local] if local else ([domain_hint] if domain_hint else route(task,5)))
-    if not rows:raise ValueError('No route returned')
-    first=rows[0]
-    if first.get('status')!='available' or not first.get('contract_id'):
-        result={**first,'task':task,'path':None,'executable':False,'selection_mode':'unavailable','semantic_selection_required':False}
-        if business_id:result['business_id']=business_id
         return result
+    path,meta=resolve_contract(contract_id)
+    return {
+        'task':task,'contract_id':contract_id,'owner_system':meta.get('owner_system'),'status':'available',
+        'reason':'explicitly selected by the active model/user after semantic judgment',
+        'path':str(path.relative_to(ROOT)),'executable':False,'selection_mode':'explicit_model_selection',
+        'semantic_selection_required':False,
+    }
 
-    if first.get('contract_id')=='core.routing.resolve-intent':selection_mode='semantic_selection_required'
-    elif feature_hint:selection_mode='deterministic_explicit_feature'
-    elif local:selection_mode='organization_local_playbook'
-    elif domain_hint:selection_mode='deterministic_domain_composite'
-    else:selection_mode='deterministic_high_confidence'
 
-    passthrough={k:v for k,v in first.items() if k not in {'contract_id','owner_system','status','reason','score','system_score'}}
-    return _selection_result(
-        task,first['contract_id'],business_id,team_ref,role_ref,operator_ref,
-        reason=first.get('reason'),selection_mode=selection_mode,extra=passthrough,
-    )
+def route_and_resolve(task,business_id=None,team_ref=None,role_ref=None,operator_ref=None,selected_contract_id=None,top=5):
+    if selected_contract_id:
+        return _selected(task,selected_contract_id,business_id,team_ref,role_ref,operator_ref)
+
+    candidates=_candidate_local(task,business_id,team_ref,role_ref,operator_ref,top)
+    seen={row['contract_id'] for row in candidates}
+    for row in route(task,top):
+        if row.get('contract_id') in seen:continue
+        candidates.append(row);seen.add(row.get('contract_id'))
+        if len(candidates)>=top:break
+    return {
+        'task':task,'contract_id':None,'owner_system':None,
+        'status':'candidates' if candidates else 'no_candidate',
+        'reason':'AURA returns bounded installed playbook candidates but does not semantically choose the method.',
+        'candidates':candidates,
+        'selection_mode':'model_selection_required',
+        'semantic_selection_required':True,
+        'executable':False,
+        **({'business_id':business_id} if business_id else {}),
+    }
 
 
 def main():
-    ap=argparse.ArgumentParser(description='Route one natural-language request and resolve the selected canonical/business-local AURA/BusinessOS playbook.')
+    ap=argparse.ArgumentParser(description='Resolve an explicitly selected AURA playbook or list bounded candidates for model judgment.')
     ap.add_argument('task');ap.add_argument('--business-id');ap.add_argument('--team-ref');ap.add_argument('--role-ref');ap.add_argument('--operator-ref')
-    ap.add_argument('--selected-contract',help='Explicit playbook selected by the active user/model/harness after semantic intent resolution')
-    ap.add_argument('--show',action='store_true');a=ap.parse_args()
-    try:result=route_and_resolve(a.task,a.business_id,a.team_ref,a.role_ref,a.operator_ref,a.selected_contract)
+    ap.add_argument('--selected-contract',help='Playbook ID explicitly selected by the active model/user after semantic judgment')
+    ap.add_argument('--top',type=int,default=5);ap.add_argument('--show',action='store_true');a=ap.parse_args()
+    try:result=route_and_resolve(a.task,a.business_id,a.team_ref,a.role_ref,a.operator_ref,a.selected_contract,a.top)
     except ValueError as e:raise SystemExit(str(e))
     print(json.dumps(result,indent=2))
     if a.show and result.get('contract_id'):
@@ -94,4 +85,6 @@ def main():
         if a.business_id:
             _,_,content,_=resolve_effective(result['contract_id'],a.business_id,a.team_ref,a.role_ref,a.operator_ref);print(content,end='' if content.endswith('\n') else '\n')
         elif result.get('path'):print((ROOT/result['path']).read_text(),end='')
+
+
 if __name__=='__main__':main()
