@@ -4,14 +4,15 @@
 Entry resolves the organization, retrieves useful durable context, and exposes bounded
 AURA playbook candidates. It does not semantically choose the user's method, create a
 Run, inspect host capabilities, check schedulers, calculate permissions, or require work
-to use an AURA contract. The active model/user chooses the method and the harness supplies
+to use an AURA playbook. The active model/user chooses the method and the harness supplies
 its real execution capabilities.
 """
 from pathlib import Path
 import argparse,json,os
 
-from _common import PRODUCT_ROOT,workspace_root,resolve_business,object_index,storage_ref
-from route_and_resolve import route_and_resolve
+from _common import workspace_root,resolve_business,object_index,storage_ref
+from find_playbooks import find_candidates
+from process_extensions import local_playbook_candidates,resolve_effective
 from context_plan import build_plan
 from process_plan import build_process_plan
 
@@ -30,6 +31,26 @@ def _baseline_context(business_id,limit_per_type=3):
         candidates=sorted(by_type[typ],key=lambda x:(x[0].get('updated_at') or x[0].get('created_at') or '',x[0].get('id') or ''),reverse=True)
         for obj,path in candidates[:limit_per_type]:rows.append({'object_ref':obj.get('id'),'object_type':typ,'path':storage_ref(path)})
     return rows
+
+
+def _candidate_playbooks(task,business_id,team_ref=None,role_ref=None,operator_ref=None,top=5):
+    rows=local_playbook_candidates(task,business_id,team_ref,role_ref,operator_ref,top);seen={row['contract_id'] for row in rows}
+    for row in find_candidates(task,top):
+        if row.get('contract_id') in seen:continue
+        rows.append(row);seen.add(row.get('contract_id'))
+        if len(rows)>=top:break
+    return rows[:top]
+
+
+def _selected_playbook(task,business_id,contract_id,team_ref=None,role_ref=None,operator_ref=None):
+    path,meta,_,extensions=resolve_effective(contract_id,business_id,team_ref,role_ref,operator_ref)
+    return {
+        'task':task,'contract_id':contract_id,'owner_system':meta.get('owner_system'),'status':'available',
+        'reason':'explicitly selected by the active model/user after semantic judgment',
+        'path':str(path.relative_to(Path(__file__).resolve().parents[1])) if path else None,
+        'process_extension_ids':[item['id'] for item in extensions],'local_playbook':bool(meta.get('local_playbook')),
+        'selection_mode':'explicit_model_selection','semantic_selection_required':False,
+    }
 
 
 def _playbook_context(business_id,contract_id,focus,operator_ref,team_ref,role_ref,task_preferences,output_type,channel):
@@ -52,8 +73,11 @@ def prepare_work(task,business_id=None,workspace=None,focus=None,operator_ref=No
     if resolved.get('status')!='resolved':
         return {'format_version':'3.0','status':'needs_input','workspace':str(workspace_root()),**{k:v for k,v in resolved.items() if k!='status'}}
     bid=resolved['business_id'];focus=focus or []
-    route=route_and_resolve(task,bid,team_ref,role_ref,operator_ref,selected_contract_id)
-    selected_id=route.get('contract_id') if not route.get('semantic_selection_required') else None
+
+    selected=None;candidates=[]
+    if selected_contract_id:selected=_selected_playbook(task,bid,selected_contract_id,team_ref,role_ref,operator_ref)
+    else:candidates=_candidate_playbooks(task,bid,team_ref,role_ref,operator_ref)
+    selected_id=selected.get('contract_id') if selected else None
     context,process=_playbook_context(bid,selected_id,focus,operator_ref,team_ref,role_ref,task_preferences,output_type,channel)
     baseline=_baseline_context(bid)
 
@@ -68,23 +92,25 @@ def prepare_work(task,business_id=None,workspace=None,focus=None,operator_ref=No
         object_context=[];context_files=['CONTEXT.md']
         capabilities={'required':[],'optional':[],'rule':'No AURA playbook has been selected; use the active harness capabilities normally.'}
 
-    if selected_id:
+    if selected:
         recommendation={
-            'contract_id':selected_id,'owner_system':route.get('owner_system'),'path':route.get('path'),
-            'reason':route.get('reason'),'selection_mode':route.get('selection_mode'),'status':'selected',
+            'contract_id':selected_id,'owner_system':selected.get('owner_system'),'path':selected.get('path'),
+            'reason':selected.get('reason'),'selection_mode':selected.get('selection_mode'),'status':'selected',
             'rule':'This AURA playbook was explicitly selected by the active model/user. It is reusable operating knowledge, not execution authority.'
         }
-    elif route.get('status')=='candidates':
+    elif candidates:
         recommendation={
-            'contract_id':None,'owner_system':None,'path':None,'reason':route.get('reason'),
-            'selection_mode':'model_selection_required','status':'model_judgment','candidates':route.get('candidates',[]),
+            'contract_id':None,'owner_system':None,'path':None,
+            'reason':'AURA found bounded installed playbook candidates but did not choose the method.',
+            'selection_mode':'model_selection_required','status':'model_judgment','candidates':candidates,
             'rule':'Candidates are retrieval hints only. The active model/user decides whether any AURA playbook is a strong fit, combines/adapts knowledge when useful, or uses another method.'
         }
     else:
         recommendation={
-            'contract_id':None,'owner_system':None,'path':None,'reason':route.get('reason'),
+            'contract_id':None,'owner_system':None,'path':None,
+            'reason':'No useful indexed AURA playbook candidate was found.',
             'selection_mode':'none','status':'none','candidates':[],
-            'rule':'No useful indexed AURA playbook candidate was found. The active model/user may work through another sound method.'
+            'rule':'The active model/user may work through another sound method.'
         }
 
     return {
