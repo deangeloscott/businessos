@@ -9,20 +9,14 @@ reads:
 - Asset
 - WorkRequest
 writes:
-- WorkRequest
 - Asset
 capabilities:
   required:
   - none
   optional:
-  - creative.text.generate
   - tracking.read
   - conversion.read
-  - marketing.performance.read
-  - experiment.run
   - cms.page.publish
-  - email.send
-  - social.ad.publish
 context:
 - Brand
 - AudienceSegment
@@ -33,19 +27,23 @@ context:
 # VSL Persuasion QA
 
 ## Purpose
-Review the final VSL as consumed—not only the script—for persuasion integrity, evidence, pacing, and action accuracy.
+Review the actual VSL as consumed—not only the script—for persuasion integrity, evidence, pacing, and action accuracy.
 
 ## Business Outcome
-Catch edits, visuals, claims, or delivery choices that break the approved persuasion mechanism.
+Catch material edits, visuals, claims, delivery choices, or technical defects that weaken or misrepresent the intended persuasion system.
 
 ## Run When
-Run before VSL launch/publication and after material edits.
+Use on a substantive VSL draft/render or live implementation when end-to-end QA can materially improve readiness or identify defects.
 
 ## Process
-1. [DETERMINISTIC] Review the final render with approved script/architecture, Offer version, ProofRecords, and destination.
-2. [AI] Evaluate hook payoff, belief sequence, clarity, proof timing, objection handling, Offer transition, and CTA understanding.
-3. [HYBRID] Check rendered claims, captions/on-screen text, testimonial context, demos, urgency, price/terms, and visual implications.
-4. [AI] Identify pacing/repetition/confusion that can cause qualified drop-off without shortening for its own sake.
-5. [DETERMINISTIC] Verify links/player/CTA/tracking and downstream page message match.
-6. [DETERMINISTIC] Block release on material claim/Offer/destination errors and record QA result.
-7. [DETERMINISTIC] After launch verify live version and measurement baseline.
+1. [HYBRID] Inspect the actual available render against the intended script/architecture, current Offer, supporting evidence, and destination. If only a script/partial render exists, constrain QA to what was actually inspected.
+2. [AI] Evaluate hook payoff, belief sequence, clarity, proof timing, objection handling, Offer transition, pacing, and CTA understanding.
+3. [HYBRID] Check material spoken/on-screen claims, captions, testimonial context, demos, urgency, price/terms, and visual implications against current organizational truth/evidence.
+4. [AI] Identify repetition, pacing, confusion, or production choices that could cause qualified drop-off without shortening for its own sake.
+5. [HYBRID] Verify player/link/CTA/tracking and downstream message match where the available artifact and host capabilities permit it.
+6. [AI] Report material defects, lower-severity improvements, and the evidence/check behind each conclusion. A material defect may justify recommending against release of that version, but AURA does not authorize or block publication.
+7. [HYBRID] If publication/deployment is explicitly requested and actually performed through the host, verify the live version/measurement state when practical. Otherwise keep deployment and outcome unknown/separate.
+8. [AI] Preserve useful QA/readiness meaning on or alongside the Asset when future work benefits from it. Do not create a WorkRequest, Run record, or generic verification lifecycle merely because QA occurred.
+
+## Completion Criteria
+- The inspected VSL version has a clear evidence-backed QA result with material limitations explicit, and no internal AURA handoff or permission gate is required.
