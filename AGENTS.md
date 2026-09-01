@@ -14,6 +14,6 @@ For work performed on behalf of an AURA-managed organization:
 6. Persist only material organization-owned meaning that a capable future model would benefit from: evidence, facts/inferences with provenance, decisions, useful results/assets, unresolved work, outcomes, or Learning. Do not persist private reasoning, every tool call, caches, or runtime chatter.
 7. If an AURA playbook was explicitly selected and completion of that playbook is claimed, satisfy its essential quality/evidence invariants. Other methods do not need to masquerade as AURA contracts.
 
-Unrelated personal/general work should continue through the host normally. Work on the AURA product itself follows `core/policies/operating-scope.md`.
+Unrelated personal/general work should continue through the host normally. During ordinary business operation, do not modify AURA product source to work around an execution problem. Product-source changes are appropriate when the request itself is to develop, repair, configure, or upgrade AURA; see `core/policies/agent-execution.md` and `core/DEFAULTS.md` for that boundary.
 
 The invariant is: **AURA provides organizational intelligence and operational knowledge; the active intelligence/runtime determines how best to work.**
