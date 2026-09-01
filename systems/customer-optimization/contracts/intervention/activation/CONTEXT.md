@@ -8,12 +8,7 @@ reads:
 - type: Insight
   owner_system: customer-intelligence
 - MetricObservation
-writes:
-- WorkRequest
-- ChangeEvent
-- Experiment
-- MetricObservation
-- OutcomeEvaluation
+writes: []
 capabilities:
   required:
   - none
@@ -22,14 +17,8 @@ capabilities:
   - product_analytics.read
   - crm.contact.read
   - crm.contact.update
-  - crm.opportunity.read
-  - checkout.read
-  - checkout.update
-  - billing.read
   - support.ticket.read
   - customer_success.read
-  - scheduling.read
-  - email.send
   - workflow.update
   - experiment.run
 context:
@@ -42,15 +31,19 @@ context:
 Increase the share of acquired customers reaching an evidence-backed early value behavior predictive of durable success.
 
 ## Business Outcome
-Improve customer progression and value realization through activation optimization, while protecting customer and business guardrails.
+Improve early customer value realization without inflating a convenient event that does not predict later success.
 
 ## Run When
-Run when journey evidence or an active Opportunity requires activation optimization to improve a defined customer transition or outcome.
+Use when evidence suggests activation or the path to first meaningful value is a material customer/business constraint. An Opportunity may provide context but is not required.
 
 ## Process
 1. [HYBRID] Validate the activation definition against later value/retention rather than choosing a convenient event.
-2. [DETERMINISTIC] Analyze path/time to activation, prerequisite behaviors, cohort differences, and dropoff.
-3. [AI] Identify barriers: setup, knowledge, missing data/integration, unclear next step, poor fit, product/process issue, delayed external dependency.
-4. [HYBRID] Prioritize interventions by impact on true activation and customer value, not event inflation.
-5. [INTEGRATION] Implement guided actions/workflows/content as authorized.
-6. [DETERMINISTIC] Verify event instrumentation and measure downstream retention/success guardrails.
+2. [HYBRID] Analyze path/time to activation, prerequisite behaviors, cohort differences, and drop-off using the strongest available evidence.
+3. [AI] Identify plausible barriers such as setup, knowledge, missing data/integration, unclear next step, poor fit, product/process failure, or delayed external dependency. Keep unsupported causes as hypotheses.
+4. [AI] Prioritize the smallest interventions likely to improve true activation/customer value rather than merely increasing event counts.
+5. [HYBRID] If execution is requested and the host has the real capability/permission, implement the appropriate workflow/product/process/communication change directly. Otherwise return the actionable intervention design or create a WorkRequest only for a real durable handoff.
+6. [HYBRID] Check instrumentation and define/observe downstream retention, success, support, and customer-experience evidence proportionate to the decision.
+7. [AI] Preserve only durable meanings that actually occurred and will help future work—for example a material change, experiment, outcome, Learning, or updated journey understanding. Do not create a generic lifecycle bundle merely because this playbook ran.
+
+## Completion Criteria
+- The activation mechanism and intervention are evidence-bounded and useful, execution state is truthful, and any retained AURA state corresponds to something that actually occurred.
