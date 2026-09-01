@@ -158,16 +158,42 @@ def business_ids():
     return sorted(p.name for p in root.iterdir() if p.is_dir() and p.name!='_template')
 
 
+def business_directory():
+    """Return the smallest useful organization directory for model-side resolution.
+
+    AURA exposes stable identity; the active model/harness interprets natural-language
+    references and chooses a business_id. No fuzzy/semantic matching belongs here.
+    """
+    rows=[]
+    for business_id in business_ids():
+        base=instance_dir(business_id);name=None
+        bp=base/'context/business.json'
+        if bp.exists():
+            try:
+                value=json.loads(bp.read_text()).get('name')
+                if isinstance(value,str) and value.strip():name=value.strip()
+            except Exception:pass
+        if not name:
+            ip=base/'instance.json'
+            if ip.exists():
+                try:
+                    value=json.loads(ip.read_text()).get('name')
+                    if isinstance(value,str) and value.strip():name=value.strip()
+                except Exception:pass
+        rows.append({'id':business_id,'name':name or business_id})
+    return rows
+
+
 def resolve_business(explicit=None):
     """Resolve exactly one active business without guessing across workspace instances."""
     explicit=explicit or os.environ.get('BUSINESSOS_BUSINESS_ID')
-    ids=business_ids()
+    ids=business_ids();directory=business_directory()
     if explicit:
         if explicit in ids:return {'status':'resolved','business_id':explicit,'resolution':'explicit'}
-        return {'status':'needs_input','missing':['active_business'],'reason':f'Unknown business: {explicit}','available_business_ids':ids}
+        return {'status':'needs_input','missing':['active_business'],'reason':f'Unknown business: {explicit}','available_business_ids':ids,'available_businesses':directory}
     if len(ids)==1:return {'status':'resolved','business_id':ids[0],'resolution':'single_workspace_business'}
-    if not ids:return {'status':'needs_input','missing':['active_business'],'reason':'No initialized business exists in the active organization workspace.','available_business_ids':[]}
-    return {'status':'needs_input','missing':['active_business'],'reason':'Multiple businesses exist in the active organization workspace; the active business is ambiguous.','available_business_ids':ids}
+    if not ids:return {'status':'needs_input','missing':['active_business'],'reason':'No initialized business exists in the active organization workspace.','available_business_ids':[],'available_businesses':[]}
+    return {'status':'needs_input','missing':['active_business'],'reason':'Multiple businesses exist in the active organization workspace; the active business is ambiguous.','available_business_ids':ids,'available_businesses':directory}
 
 
 def write_json_atomic(path,data):
