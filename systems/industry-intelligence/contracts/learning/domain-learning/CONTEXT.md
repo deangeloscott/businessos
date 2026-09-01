@@ -18,17 +18,26 @@ capabilities:
 # Industry Intelligence Learning
 
 ## Purpose
-Improve source coverage, materiality thresholds, event clustering, and response timing based on observed outcomes.
+Turn repeated evidence about external-intelligence usefulness into scoped reusable guidance about what sources, event types, evidence patterns, and response approaches help this organization make better decisions.
 
 ## Business Outcome
-Improve the business response to external change through timely, evidence-backed industry intelligence learning.
+Make future Industry Intelligence more relevant and efficient without converting outcomes into an internal alert/routing optimization system.
 
 ## Run When
-Run during periodic learning cycles or after sufficient OutcomeEvaluations/corrections accumulate.
+Use when enough OutcomeEvaluations, corrections, misses, or repeated Industry work exists to support a reusable pattern. AURA does not run a background learning cycle merely because time passed.
 
 ## Process
-1. [DETERMINISTIC] Review material events, non-material alerts, missed developments, timing, and downstream use.
-2. [AI] Identify source classes/event types that reliably preceded material business effects.
-3. [HYBRID] Calibrate relevance/urgency thresholds against false positives and missed high-impact events.
-4. [AI] Capture context-specific patterns connecting external events to customer/competitor/channel effects.
-5. [DETERMINISTIC] Update domain Learning without rewriting current IndustryEvent facts.
+1. [HYBRID] Review material and non-material findings, missed developments, corrections, decision timing, evidence quality, and how the resulting intelligence actually affected later business decisions or outcomes.
+2. [AI] Identify source classes, evidence combinations, event/mechanism types, or research approaches that repeatedly proved useful or misleading in a defined context.
+3. [AI] State the reusable pattern conditionally: where it applies, where it does not, what evidence supports it, contradictory cases, uncertainty, and what future evidence would revise it.
+4. [AI] Capture context-specific relationships between external developments and customer/competitor/channel/business effects only at the scope the evidence supports; do not convert correlation into a universal rule.
+5. [HYBRID] Create/update a Learning only when forgetting the pattern would materially reduce future quality or efficiency. Keep current IndustryEvent/Insight facts separate from reusable methodological guidance.
+
+## Verification
+- Learning scope does not exceed the supporting outcomes/evidence.
+- Misses and negative cases are considered, not only successes.
+- Source usefulness for one fact type/context is not treated as universal credibility.
+- Learning does not encode alert thresholds, routing authority, scheduler state, or provider/runtime configuration.
+
+## Completion Criteria
+- A future model can use the Learning to do Industry Intelligence better in the applicable context without inheriting a hidden classifier, alert lifecycle, or orchestration rule.
