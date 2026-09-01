@@ -24,33 +24,36 @@ evidence_inputs:
 # SEO Official Policy / Guidance Contradiction Check
 
 ## Purpose
-Check proposed SEO/AEO tactics against current authoritative platform rules, technical eligibility requirements, and Core/business policy while keeping policy status distinct from evidence strength.
+Check proposed SEO/AEO tactics against current authoritative platform rules and technical eligibility requirements while keeping policy status distinct from evidence strength.
 
 ## Business Outcome
-Keep SEO/AEO strategy current, evidence-governed, policy-safe, and connected to measurable organic and business outcomes without creating a parallel strategy-evidence store.
+Keep SEO/AEO strategy current and compatible with actually applicable external/business constraints without turning AURA into a permission or policy-enforcement runtime.
 
 ## Run When
-Run before promoting or executing a materially risky tactic and whenever relevant official policy/guidance changes.
+Use when current authoritative policy/guidance could materially change whether or how an SEO/AEO tactic should be used, or when relevant official guidance has changed.
 
 ## Do Not Run When
-Do not treat a publication, practitioner opinion, competitor behavior, or one business result as a validated tactic by itself. Do not use private cross-business evidence unless Core System Learning governance explicitly permits it.
+Do not treat a publication, practitioner opinion, competitor behavior, or one business result as authoritative policy. Do not use private cross-business evidence unless broader reuse is actually supported.
 
 ## Process
-1. [INTEGRATION] Identify the platforms/surfaces targeted and retrieve the current authoritative documentation or policy from the source map.
-2. [HYBRID] Compare the actual proposed implementation—not merely its marketing label—to documented prohibited, spam, eligibility, quality, or technical requirements.
-3. [AI] Classify policy status independently as allowed, restricted, approval_required, prohibited, unclear, or outdated-policy mismatch.
-4. [HYBRID] Preserve the distinction between an official statement that an outcome is uncertain/unsupported and an actual prohibition.
-5. [HUMAN] Escalate ambiguous high-impact policy interpretations; block deceptive or prohibited implementations under Core/business policy regardless of evidence that they might produce short-term results.
-6. [DETERMINISTIC] Attach the exact SourceRecord/version/date supporting the policy assessment and schedule re-review when the source is likely to change.
+1. [INTEGRATION] Identify the relevant platform/surface and retrieve current authoritative documentation or policy using the active harness's available tools.
+2. [HYBRID] Compare the actual proposed implementation—not merely its label—to documented prohibited, restricted, eligibility, quality, or technical requirements.
+3. [AI] Describe the policy status in the language the evidence supports, for example allowed, restricted/conditional, externally approval-dependent, prohibited, unclear, or outdated-policy mismatch. Do not convert AURA's own uncertainty into an invented permission class.
+4. [AI] Preserve the distinction between an official statement that an outcome is uncertain/unsupported and an actual prohibition or eligibility condition.
+5. [AI] When interpretation is materially ambiguous or high-consequence, surface the ambiguity to the appropriate human/legal/compliance/business owner rather than having AURA manufacture authority. Clearly prohibited or deceptive implementations should be identified as such from the actual applicable source/constraint.
+6. [HYBRID] Preserve the exact SourceRecord/version/date supporting material policy conclusions. If the source is likely to change and future work benefits from awareness, remember refresh/monitoring intent; the harness/runtime owns any actual schedule or notification.
 
-## Decisions / Routing
-- Allowed/restricted claims → evidence assessment / experiment design as appropriate.
-- Prohibited claim → `seo.learning.tactic-deprecation` or Core policy enforcement.
-- Operationally urgent violation → relevant Incident workflow.
+## Related operating knowledge
+- Allowed/conditional tactics may benefit from evidence assessment or experiment design.
+- Contradicted/obsolete tactics may warrant Learning deprecation when evidence supports it.
+- A material live operational violation may warrant an Incident only when the Incident semantics genuinely fit.
+
+These are model/user choices based on the situation, not deterministic runtime routes.
 
 ## Verification
-- Validate every canonical object written, preserve SourceRecord/Observation lineage, and keep evidence strength, conclusion confidence, policy status, and risk as separate dimensions.
-- Any later external state mutation must use an ActionPacket, ChangeEvent, and independent VerificationRecord.
+- Validate canonical objects written and preserve SourceRecord/Observation lineage.
+- Keep evidence strength, conclusion confidence, official-policy status, and practical consequence distinct.
+- A later external state mutation is performed through the active model/harness when actually requested and capable. `ChangeEvent`/`VerificationRecord` may preserve durable facts about a real change/check when useful; they are not permission prerequisites.
 
 ## Measurement
 - Strategy claims become stronger only through relevant observations, experiments, OutcomeEvaluations, replication, or authoritative policy evidence; popularity and confidence language are not outcome evidence.
@@ -59,10 +62,10 @@ Do not treat a publication, practitioner opinion, competitor behavior, or one bu
 - Maintain SEO-specific strategy knowledge as SEO Domain Learning. Propose broader Business or System Learning only when evidence and applicability justify the broader scope.
 
 ## Failure / Fallback
-- If a source cannot be retrieved automatically, create a manual evidence-retrieval Action or use another authoritative source; do not invent the missing evidence.
-- If evidence remains contradictory or insufficient, preserve the uncertainty and keep the claim at hypothesis/experimental maturity instead of forcing a conclusion.
+- If an authoritative source cannot be retrieved automatically, use another appropriate source or create a real human/owner handoff when needed. Do not invent the missing policy or create an AURA action object for a tool limitation.
+- If policy evidence remains contradictory or unclear, preserve the uncertainty rather than forcing a permissive/prohibitive conclusion.
 
 ## Completion Criteria
-- Outputs use current Core Observation/Insight/Experiment/Learning objects rather than legacy strategy-evidence object.
-- Source provenance, contradictory evidence, applicability, confidence, risk, and policy status remain inspectable.
-- No tactic is promoted, deprecated, or blocked for a reason that cannot be traced to evidence or policy.
+- Material policy conclusions are traceable to current authoritative evidence.
+- Uncertainty, evidence strength, applicability, and practical consequence remain distinct.
+- No tactic is promoted, deprecated, blocked, or claimed permissible/prohibited for a reason that cannot be traced to evidence or an actually applicable constraint.
