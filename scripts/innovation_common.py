@@ -13,11 +13,9 @@ def schema_by_title(title):
         except Exception:continue
         if data.get('title')==title:return data
     raise ValueError(f'Unknown schema title: {title}')
-
 def validate_schema(title,obj):
     errors=sorted(Draft202012Validator(schema_by_title(title)).iter_errors(obj),key=lambda error:list(error.path))
     if errors:raise ValueError('; '.join(f"{list(error.path)}: {error.message}" for error in errors))
-
 def _version_tuple(value):
     try:
         parts=tuple(int(x) for x in str(value).split('.'))
@@ -40,6 +38,21 @@ def compatibility_status(compatibility,version=None,target_contract_id=None):
     return 'compatible'
 
 
+def innovation_support_root(business_id):return instance_dir(business_id)/'support'/'innovation-exchange'
+def innovation_package_dir(business_id):return innovation_support_root(business_id)/'packages'
+def innovation_entry_dir(business_id):return innovation_support_root(business_id)/'entries'
+def innovation_entry_path(business_id,entry_id):return innovation_entry_dir(business_id)/f'{entry_id}.json'
+def iter_innovation_entries(business_id):
+    root=innovation_entry_dir(business_id)
+    if not root.exists():return []
+    rows=[]
+    for path in sorted(root.glob('iex_*.json')):
+        try:data=json.loads(path.read_text())
+        except Exception:continue
+        if isinstance(data,dict) and data.get('business_id')==business_id:rows.append((data,path))
+    return rows
+
+
 def find_forbidden_keys(value,path=''):
     hits=[]
     if isinstance(value,dict):
@@ -50,7 +63,6 @@ def find_forbidden_keys(value,path=''):
     elif isinstance(value,list):
         for index,item in enumerate(value):hits.extend(find_forbidden_keys(item,f'{path}[{index}]'))
     return hits
-
 def find_identifying_keys(value,path=''):
     hits=[]
     if isinstance(value,dict):
@@ -61,7 +73,6 @@ def find_identifying_keys(value,path=''):
     elif isinstance(value,list):
         for index,item in enumerate(value):hits.extend(find_identifying_keys(item,f'{path}[{index}]'))
     return hits
-
 def canonical_hash(package):
     data=copy.deepcopy(package);data.setdefault('integrity',{})['content_hash']=None;raw=json.dumps(data,sort_keys=True,separators=(',',':'),ensure_ascii=False).encode();return hashlib.sha256(raw).hexdigest()
 def innovation_fingerprint(process):
