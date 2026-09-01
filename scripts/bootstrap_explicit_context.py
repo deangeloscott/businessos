@@ -290,12 +290,37 @@ def _path(base,obj):
     if typ=='Brand': return base/'context/brand'/f'{oid}.json'
     raise ValueError(typ)
 
+def _merge_existing_business(existing,incoming):
+    if existing.get('object_type')!='Business' or existing.get('id')!=incoming.get('id') or existing.get('business_id')!=incoming.get('business_id'):
+        raise ValueError('Existing canonical Business identity does not match the bootstrap target.')
+    if existing.get('name')!=incoming.get('name'):
+        raise ValueError(f"Existing Business name {existing.get('name')!r} conflicts with initialization name {incoming.get('name')!r}; resolve the organization identity explicitly instead of overwriting it.")
+    out=dict(existing);out['updated_at']=incoming['updated_at']
+    out['lineage']=list(dict.fromkeys([*(existing.get('lineage') or []),*(incoming.get('lineage') or [])]))
+    for key in ('business_models','industries'):
+        values=list(dict.fromkeys([*(existing.get(key) or []),*(incoming.get(key) or [])]))
+        if values:out[key]=values
+    ext=dict(existing.get('extensions') or {})
+    incoming_ext=incoming.get('extensions') or {}
+    for key,value in incoming_ext.items():
+        if key=='businessos' and isinstance(value,dict):
+            bos=dict(ext.get('businessos') or {});bos.update(value);ext['businessos']=bos
+        elif key=='lead_sources':
+            ext[key]=list(dict.fromkeys([*(ext.get(key) or []),*(value or [])]))
+        else:ext[key]=value
+    if ext:out['extensions']=ext
+    _validate(out);return out
+
 def persist_explicit_context(business_id, **kwargs):
     objs=build_objects(business_id,**kwargs); base=ROOT/'instances'/business_id
-    paths=[_path(base,o) for o in objs]
-    existing=[p.relative_to(ROOT).as_posix() for p in paths if p.exists()]
-    if existing: raise FileExistsError('Refusing to overwrite existing canonical bootstrap object(s): '+', '.join(existing))
-    for o,p in zip(objs,paths): p.parent.mkdir(parents=True,exist_ok=True); p.write_text(json.dumps(o,indent=2)+'\n')
+    paths=[_path(base,o) for o in objs];blocked=[]
+    for i,(obj,path) in enumerate(zip(objs,paths)):
+        if not path.exists():continue
+        if obj.get('object_type')=='Business':
+            existing=json.loads(path.read_text());objs[i]=_merge_existing_business(existing,obj);continue
+        blocked.append(path.relative_to(ROOT).as_posix())
+    if blocked: raise FileExistsError('Refusing to overwrite existing canonical bootstrap object(s): '+', '.join(blocked))
+    for o,p in zip(objs,paths): write_json_atomic(p,o)
     return objs,paths
 
 def _merge_lists(*groups):
@@ -307,18 +332,15 @@ def _merge_lists(*groups):
 
 def main():
     epilog='''Recommended conversational intake:
-  1) Write a small facts JSON file in runtime/ or another temporary work path.
-  2) Preserve the user's complete original request. If anything remains after setup, pass that remaining natural-language outcome with --residual-request.
-  3) Run:
-     python3 scripts/bootstrap_explicit_context.py northstar-hvac --facts-file runtime/northstar-facts.json --source-file supplied/business-overview.md --source-file supplied/brand-notes.md --brand-profile-file runtime/brand-profile.json --preference-profile-file runtime/operator-preferences.json --residual-request "determine what we should do next"
-
-If the user requested initialization only, use --initialization-only instead of --residual-request.
+  1) Initialize the organization once with `scripts/init_business.py`; the organization name alone is enough canonical context.
+  2) Add more structured facts only when the user supplies them or first-party material establishes them.
+  3) Preserve the original user request outside this helper and continue it normally after context persistence. AURA setup must not become a routing gate.
 
 Example facts JSON:
 '''+json.dumps(EXAMPLE_FACTS,indent=2)+'''
 
-The business ID is normally positional. --business-id is accepted as an agent-friendly alias. Repeat --source-file for multi-source onboarding instead of manually merging supplied source files; BusinessOS preserves each member reference/hash under the canonical source bundle. When supplied materials contain explicit organization-level brand/voice/style/audience instructions, persist them as first-class Brand state. Prefer `--brand-profile-file runtime/<brand>.json` for a small structured Brand manifest grounded in the original source files; a grounded `brand` object inside the facts JSON remains supported. Do not flatten brand voice/style/audience guidance into BusinessClaim constraints merely because it is convenient. Use --preference-profile-file when the user supplied reusable style/work-method preferences so they exist before residual work begins. Do not put task authorization/approval boundaries (for example, do not publish, ask before spending, or no customer contact without approval) into the preference manifest; those remain current request/Run/action-control requirements and formal approvals use the Approval lifecycle. Keep facts files relative to the workspace when practical (for example runtime/northstar-facts.json) to avoid shell/path quoting errors. Do not reverse-engineer or replace this helper if an invocation fails; run --help and correct the supported call.'''
-    ap=argparse.ArgumentParser(description='Persist explicit user/first-party setup facts as grounded canonical BusinessOS objects. Unknowns remain unknown; unsupported expansion is rejected.',formatter_class=argparse.RawDescriptionHelpFormatter,epilog=epilog)
+The business ID is normally positional. --business-id is accepted as an agent-friendly alias. Repeat --source-file for multi-source onboarding instead of manually merging supplied source files; AURA preserves each member reference/hash under the canonical source bundle. When supplied materials contain explicit organization-level brand/voice/style/audience instructions, persist them as first-class Brand state. Prefer `--brand-profile-file runtime/<brand>.json` for a small structured Brand manifest grounded in the original source files; a grounded `brand` object inside the facts JSON remains supported. Do not flatten brand voice/style/audience guidance into BusinessClaim constraints merely because it is convenient. Use --preference-profile-file when the user supplied reusable style/work-method preferences. Current task/action boundaries remain part of the user's request and real harness/account/legal constraints; do not turn them into AURA approval machinery or reusable preferences unless the organization explicitly intends them to persist. Keep facts files relative to the workspace when practical. Do not reverse-engineer or replace this helper if an invocation fails; run --help and correct the supported call.'''
+    ap=argparse.ArgumentParser(description='Persist explicit user/first-party setup facts as grounded canonical AURA objects. Unknowns remain unknown; unsupported expansion is rejected.',formatter_class=argparse.RawDescriptionHelpFormatter,epilog=epilog)
     ap.add_argument('business_id',nargs='?',help='Active business ID, e.g. northstar-hvac')
     ap.add_argument('--business-id',dest='business_id_alias',help='Alias for the positional business ID; provided for agent/tool-call robustness.')
     ap.add_argument('--facts-json',help='Inline JSON object containing industries/business_models/markets/services/objectives/lead_sources/approved_claims/claim_constraints.')
@@ -333,17 +355,15 @@ The business ID is normally positional. --business-id is accepted as an agent-fr
     ap.add_argument('--source-text',action='append',default=[],help='Verbatim/authoritative statement grounding the structured facts. Repeat to combine multiple explicit user statements.')
     ap.add_argument('--source-file',action='append',default=[],help='User-supplied grounding source file. Repeat for multi-source onboarding; original file refs/hashes are preserved in canonical source provenance.')
     ap.add_argument('--brand-profile-file',action='append',default=[],help='Optional structured Brand manifest JSON grounded in the supplied source files. Repeat only when manifests are non-conflicting; values are merged deterministically. Accepts a Brand-shaped object or {"brand": {...}}.')
-    ap.add_argument('--preference-profile-file',action='append',default=[],help='Optional PreferenceProfile manifest JSON to persist before residual routing. Repeat for multiple business/team/role/operator preference profiles.')
-    ap.add_argument('--residual-request',help='Natural-language part of the original user request that remains after initialization, e.g. "determine what we should do next". When supplied, BusinessOS routes/resolves it automatically after bootstrap.')
-    ap.add_argument('--initialization-only',action='store_true',help='Declare that the user requested initialization/persistence only and there is no remaining outcome to route. Do not use this when the original request also asked what to do next, diagnose, research, create, or otherwise continue.')
+    ap.add_argument('--preference-profile-file',action='append',default=[],help='Optional PreferenceProfile manifest JSON to persist during onboarding. Repeat for multiple business/team/role/operator preference profiles.')
+    ap.add_argument('--residual-request',help='Optional compatibility field that preserves the remaining natural-language request in output. This helper no longer semantically routes it.')
+    ap.add_argument('--initialization-only',action='store_true',help='Compatibility flag. Initialization/context persistence no longer requires declaring completion scope.')
     a=ap.parse_args()
     business_id=a.business_id or a.business_id_alias
     if a.business_id and a.business_id_alias and a.business_id!=a.business_id_alias:
         ap.error('positional business_id and --business-id disagree')
     if not business_id: ap.error('business_id is required (positional or --business-id)')
     if a.residual_request and a.initialization_only: ap.error('use only one of --residual-request or --initialization-only')
-    if not a.residual_request and not a.initialization_only:
-        ap.error('completion scope is required: pass --residual-request "<remaining original user request>" when anything remains after setup, or --initialization-only only when setup/persistence was the entire request')
     try:
         source_members=_load_source_members(a.source_text,a.source_file)
         jf=_load_facts(a.facts_json,a.facts_file,a.facts_stdin)
@@ -389,28 +409,14 @@ The business ID is normally positional. --business-id is accepted as an agent-fr
       'brand_profile_files_used':brand_profile_files,
       'truth_rule':'only grounded explicit facts were persisted; omitted fields remain unknown',
       'validation_required':f'python3 scripts/validate_business.py {business_id} --require-context',
+      'completion_state':'context_persisted',
+      'required_next_action':'Validate active business state, then continue the user\'s actual request using model judgment and the host\'s real capabilities. Use AURA operating knowledge only when it materially helps.',
     }
     if a.residual_request:
-        from route_and_resolve import route_and_resolve
-        try:
-            residual=route_and_resolve(a.residual_request,business_id)
-            payload.update({
-              'completion_state':'initialization_complete_residual_routed',
-              'residual_request':a.residual_request,
-              'residual_route':residual,
-              'required_next_action':'Validate active business state, then perform the resolved residual process before final response. Explicit Brand guidance supplied through the onboarding Brand path is already durable canonical context and must be included when the resolved contract requests Brand. Explicit reusable preferences supplied during onboarding are already persisted and must be resolved into downstream Runs using the applicable operator/team/role refs. Do not replace the residual outcome with a department/tactic menu. Treat broad_growth_precheck as an advisory evidence inventory: inspect the actual available organizational evidence, let the capable model/human judge sufficiency for the decision, gather only a decisive missing gap when needed, and otherwise continue with useful bounded work.',
-            })
-        except Exception as e:
-            payload.update({
-              'completion_state':'initialization_complete_residual_route_unresolved',
-              'residual_request':a.residual_request,
-              'residual_route_error':str(e),
-              'required_next_action':f'Validate active business state, then route the residual request with: python3 scripts/route_and_resolve.py {json.dumps(a.residual_request)} --business-id {business_id} --show. Do not answer the broader request until that handoff is resolved.',
-            })
-    else:
         payload.update({
-          'completion_state':'initialization_only_complete',
-          'required_next_action':'Validate active business state. No residual business outcome was declared for this bootstrap call.',
+          'completion_state':'context_persisted_residual_request_preserved',
+          'residual_request':a.residual_request,
+          'required_next_action':'Validate active business state, then continue the preserved residual request directly. The active model chooses the best method; this bootstrap helper does not semantically route the request.',
         })
     print(json.dumps(payload,indent=2))
 if __name__=='__main__': main()
