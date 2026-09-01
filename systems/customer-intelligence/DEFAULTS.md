@@ -18,7 +18,7 @@ Customer Intelligence provides operating knowledge for evidence-backed interpret
 Customer research may uncover durable observations about competitors, journey friction, product conditions, marketing, or search. Preserve a useful observation once with truthful provenance when future work benefits from it, then let the active model apply whichever operating knowledge is relevant. Do not create duplicate domain-specific Insights merely to simulate a handoff between AURA modules.
 
 ## Learning
-Domain Learning captures what improves customer understanding for this business. Promote broader Business Learning only when evidence spans domains and supports the broader conclusion.
+Record Customer-domain Learning when the reusable conclusion is specific to customer-understanding work. Record business-scoped Learning only when the evidence genuinely supports a broader organization-wide conclusion. Scope is an evidence/applicability judgment, not a deterministic promotion pipeline.
 
 ## Public Signals
 - Public comments, reviews, forums, and social discussion are customer evidence sources, not permission to profile people. Analyze statements and experience themes rather than personality or sensitive traits.
