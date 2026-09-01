@@ -1,16 +1,21 @@
 #!/usr/bin/env python3
-"""Describe composed AURA playbook knowledge without scheduling runtime execution.
+"""Describe reusable AURA playbook composition without constructing an execution graph.
 
-Required/conditional subcontract metadata says what a selected AURA method is composed of.
-The active model/user decides how to reason, sequence, delegate, parallelize, or otherwise
-execute the work in the host environment while preserving any genuinely essential method
-invariants needed to claim playbook conformance.
+Subcontract metadata identifies supporting operating knowledge that is essential or
+conditional to the authored method. It does not specify runtime order, scheduling,
+delegation, service calls, or receipt-completion requirements. The active model/user
+chooses how to apply and sequence relevant knowledge in the real host environment.
 """
 from _common import *
 import argparse,json
 
 
-def registry_map():return {c['id']:c for c in load_registry()['contracts']}
+def contract_map():
+    out={}
+    for path in contract_files():
+        meta,_=read_frontmatter(path);cid=meta.get('id')
+        if cid:out[cid]=meta
+    return out
 
 
 def process_maps():
@@ -30,47 +35,33 @@ def resolve_entry(system=None,activity=None,contract_id=None):
     return maps[system][activity]['entry_contract']
 
 
-def expand(contract_id,reg=None,stack=None,depth=0):
-    reg=reg or registry_map();stack=stack or []
-    if contract_id not in reg:raise ValueError(f'Unknown contract {contract_id}')
-    if contract_id in stack:raise ValueError('Playbook dependency cycle: '+' -> '.join(stack+[contract_id]))
-    contract=reg[contract_id];subcontracts=contract.get('subcontracts') or {}
-    node={'contract_id':contract_id,'owner_system':contract.get('owner_system'),'depth':depth,'required':[],'conditional':[]}
-    nstack=stack+[contract_id]
-    for child in subcontracts.get('required',[]) or []:
+def composition(contract_id,contracts=None,stack=None):
+    contracts=contracts or contract_map();stack=stack or []
+    if contract_id not in contracts:raise ValueError(f'Unknown contract {contract_id}')
+    if contract_id in stack:raise ValueError('Playbook composition cycle: '+' -> '.join(stack+[contract_id]))
+    contract=contracts[contract_id];subs=contract.get('subcontracts') or {};nstack=stack+[contract_id]
+    essential=[];conditional=[]
+    for child in subs.get('required',[]) or []:
         cid=child.get('id') if isinstance(child,dict) else child
-        node['required'].append(expand(cid,reg,nstack,depth+1))
-    for child in subcontracts.get('conditional',[]) or []:
+        essential.append(composition(cid,contracts,nstack))
+    for child in subs.get('conditional',[]) or []:
         if isinstance(child,str):cid,when=child,'condition described by parent playbook'
         else:cid,when=child.get('id'),child.get('when','condition described by parent playbook')
-        node['conditional'].append({'when':when,'playbook':expand(cid,reg,nstack,depth+1)})
-    return node
-
-
-def flatten_required(node):
-    """Return dependency-first components as a reading/conformance aid, not a scheduler."""
-    out=[]
-    def walk(n):
-        for child in n.get('required',[]):walk(child)
-        out.append({'contract_id':n['contract_id'],'owner_system':n['owner_system'],'depth':n['depth']})
-    walk(node);seen=set();result=[]
-    for row in out:
-        if row['contract_id'] in seen:continue
-        seen.add(row['contract_id']);result.append(row)
-    return result
+        conditional.append({'when':when,'knowledge':composition(cid,contracts,nstack)})
+    return {'contract_id':contract_id,'owner_system':contract.get('owner_system'),'essential_knowledge':essential,'conditional_knowledge':conditional}
 
 
 def build_process_plan(system=None,activity=None,contract_id=None):
-    entry=resolve_entry(system,activity,contract_id);tree=expand(entry)
+    entry=resolve_entry(system,activity,contract_id)
     return {
-        'version':os_version(),'entry_contract':entry,'system':system,'activity':activity,
-        'required_playbook_components':flatten_required(tree),'dependency_tree':tree,
-        'rule':'This describes composed AURA operating knowledge. It is not runtime execution order, scheduling, delegation, or orchestration authority; the active model/user/harness decides how best to perform the selected method.'
+        'entry_contract':entry,'system':system,'activity':activity,
+        'composition':composition(entry),
+        'rule':'Browse view only: this describes supporting AURA operating knowledge, not execution order, dependencies between workers, scheduling, delegation, or orchestration authority.'
     }
 
 
 def main():
-    ap=argparse.ArgumentParser(description='Describe the required/conditional knowledge components of a selected AURA playbook without creating an execution plan.')
+    ap=argparse.ArgumentParser(description='Describe the reusable knowledge composition of an AURA playbook without creating an execution plan.')
     ap.add_argument('--system');ap.add_argument('--activity');ap.add_argument('--contract');ap.add_argument('--output');a=ap.parse_args()
     try:data=build_process_plan(a.system,a.activity,a.contract)
     except ValueError as e:raise SystemExit(str(e))
