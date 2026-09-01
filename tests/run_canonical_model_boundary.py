@@ -6,7 +6,7 @@ but their durable reads/writes must stay inside the explicit organization-owned 
 Auxiliary runtime/config/package schemas must not quietly become required business state.
 """
 from pathlib import Path
-import sys
+import json,sys
 
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'scripts'))
@@ -40,6 +40,20 @@ def main():
     # Support/interface schemas are deliberately outside canonical organization state.
     for typ in ('Run','PublisherMetadata','WorkspaceProfile','InnovationPackage','InnovationExchangeEntry','InnovationExchangeIndex'):
         req(typ not in canonical,f'support/interface type {typ} must not become canonical merely because a schema exists')
+
+    # ContextUpdateProposal is useful unresolved organizational memory, not an Approval
+    # object under a different name. A real organizational choice belongs in DecisionRecord.
+    proposal_schema=json.loads((ROOT/'core/schemas/context/context-update-proposal.schema.json').read_text())
+    proposal_props=proposal_schema.get('properties',{})
+    req('approval_ref' not in proposal_props,'ContextUpdateProposal reintroduced an approval token')
+    statuses=set((proposal_props.get('status') or {}).get('enum') or [])
+    req(not ({'approval_required','approved'}&statuses),f'ContextUpdateProposal reintroduced approval lifecycle states: {sorted(statuses)}')
+    req(statuses=={'proposed','applied','rejected','superseded','withdrawn'},f'ContextUpdateProposal lifecycle drifted from unresolved-context semantics: {sorted(statuses)}')
+    req('decision_ref' in proposal_props,'ContextUpdateProposal should optionally link a real DecisionRecord when a decision resolves the proposal')
+
+    common=(ROOT/'scripts/_common.py').read_text()
+    req('def provider_registry(' not in common,'retired provider registry helper re-entered shared Core mechanics')
+    req('|act|' not in common and '|apr|' not in common,'retired ActionPacket/Approval reference prefixes re-entered shared reference scanning')
 
     errors=[]
     for path in contract_files():
