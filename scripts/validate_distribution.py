@@ -38,33 +38,39 @@ def _validate_distribution_product_local():
         for a in d.get('activities',[]):
             try:build_process_plan(d['system'],a['id'])
             except Exception as e:errors.append(f"process plan {d['system']}/{a['id']}: {e}")
+
+    # Candidate discovery is an index/integrity aid, not a semantic owner-selection test.
     for mid in sorted(installed-{'core'}):
         task=catalog[mid].get('smoke_task')
         if not task:continue
-        rows=route(task,3)
-        if not rows or rows[0].get('status')!='available' or rows[0].get('owner_system')!=mid:errors.append(f'route smoke failed for {mid}: {rows}')
+        rows=route(task,5)
+        for row in rows:
+            cid=row.get('contract_id')
+            if cid not in reg:errors.append(f'candidate discovery returned unknown playbook for {mid}: {row}')
+            elif row.get('owner_system') not in installed:errors.append(f'candidate discovery returned uninstalled owner for {mid}: {row}')
+            if row.get('selection_authority') is not False:errors.append(f'candidate discovery claimed semantic authority for {mid}: {row}')
     omitted=[m for m in catalog if m!='core' and m not in installed]
     if omitted:
-        mid=omitted[0];rows=route(catalog[mid].get('smoke_task',''),3)
-        if rows and rows[0].get('status')=='available' and rows[0].get('owner_system')==mid:errors.append(f'omitted module routed as available: {mid}')
+        for mid in omitted[:3]:
+            rows=route(catalog[mid].get('smoke_task',''),5)
+            if any(row.get('owner_system')==mid for row in rows):errors.append(f'omitted module appeared as available candidate: {mid}')
+
     tid='distribution-smoke';dest=ROOT/'instances'/tid
     if dest.exists():shutil.rmtree(dest)
     try:
         init_business(tid,'Distribution Smoke Test');sample=next((c for c in reg.values() if c.get('owner_system')!='core'),None) or next(iter(reg.values()),None)
         if sample:
             plan=build_plan(tid,sample['id'])
-            if inst.get('standalone_distribution'):
-                defaults_rel='core/DEFAULTS.md'
-                if defaults_rel not in plan.get('files',[]):errors.append('standalone context plan did not load Core defaults')
-                else:
-                    defaults=(ROOT/defaults_rel).read_text()
-                    for phrase in [
-                        'Installed modules are packages of AURA operational knowledge, not limits on what a capable human, model, or harness may do.',
-                        'A missing module means its reusable AURA SOP knowledge is unavailable.',
-                        'does **not** prohibit the active model/user from completing that work',
-                        'An uninstalled optional module is never a hidden hard dependency.'
-                    ]:
-                        if phrase not in defaults:errors.append(f'Core defaults lost module-independence invariant: {phrase}')
+            if 'CONTEXT.md' not in plan.get('files',[]):errors.append('context plan lost universal AURA agent contract')
+            for redundant in ('core/DEFAULTS.md','core/policies/agent-execution.md','core/policies/business-isolation.md','core/policies/preferences-and-adaptation.md'):
+                if redundant in plan.get('files',[]):errors.append(f'context plan front-loaded redundant universal instruction: {redundant}')
+            contract=(ROOT/'CONTEXT.md').read_text()
+            for phrase in [
+                'Installed modules are packages of AURA operating knowledge, not limits on what a capable model/harness may do.',
+                'does **not** prohibit another sound method',
+                'The model/user decides semantic applicability.',
+            ]:
+                if phrase not in contract:errors.append(f'root AURA contract lost module/method-independence invariant: {phrase}')
     finally:
         if dest.exists():shutil.rmtree(dest)
     if errors:
