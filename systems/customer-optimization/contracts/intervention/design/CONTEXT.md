@@ -43,13 +43,19 @@ Design the smallest intervention likely to remove the diagnosed cause while prot
 Improve the journey mechanism rather than adding unnecessary complexity.
 
 ## Run When
-Run after root-cause diagnosis identifies an addressable Customer Optimization Opportunity.
+Use after root-cause diagnosis identifies an addressable Customer Optimization Opportunity.
 
 ## Process
-1. [AI] Restate the diagnosed cause, affected customer state, desired next state, mechanism, and constraints.
+1. [AI] Restate the diagnosed cause, affected customer state, desired next state, mechanism, and real constraints.
 2. [AI] Generate intervention options beginning with removing unnecessary steps, delay, ambiguity, handoff, or failure before adding reminders/content/automation.
-3. [AI] Evaluate each option for customer effort, accessibility, operational burden, fit/qualification, risk, reversibility, dependencies, and expected downstream effect.
-4. [HYBRID] Identify delegated needs: Marketing for persuasion, Content for communication, Customer Intelligence for unknown motive, other domain/human for product/sales/legal/finance causes.
-5. [AI] Select the smallest viable change or controlled test capable of validating the mechanism.
-6. [DETERMINISTIC] Define exact actions, success criteria, guardrails, baseline, verification, rollback, and measurement window.
-7. [AI] Create ActionPacket/WorkRequests with ordered dependencies.
+3. [AI] Evaluate each option for customer effort, accessibility, operational burden, fit/qualification, risk, reversibility, dependencies, and expected downstream effect without fabricating impact estimates.
+4. [HYBRID] Identify work that naturally belongs to another owner: Marketing for persuasion, Content for communication, Customer Intelligence for unknown motive, or the appropriate human/domain for product, sales, legal, finance, or operational causes. Create a durable `WorkRequest` only when a real handoff should survive the current session.
+5. [AI] Select the smallest viable change or controlled test capable of validating the mechanism, when the user actually wants a recommendation/design decision.
+6. [HYBRID] Define the implementation needed to test the mechanism: target, change, baseline/comparison, success criteria, guardrails, measurement window, rollback/recovery considerations, dependencies, and verification appropriate to the consequence. These are method design choices, not deterministic permission rules.
+7. [AI] Preserve the intervention design in the smallest useful durable form when future work benefits from it: update the relevant Opportunity/Experiment/Asset or create a real handoff. Do not create an execution packet, approval object, or ordered runtime plan merely to make the design actionable.
+
+## Verification
+- The intervention addresses the diagnosed mechanism rather than a superficial symptom.
+- Success criteria and guardrails are decision rules or evidence-backed expectations, not fabricated forecasts.
+- Any delegated work maps to a real owner/output rather than mirroring model subagents or tool calls.
+- The design does not require AURA to authorize, schedule, or orchestrate execution.
