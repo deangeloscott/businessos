@@ -74,16 +74,17 @@ def build_plan(business_id,contract_id,focus=None,operator_ref=None,team_ref=Non
     if not match:raise ValueError('Unknown contract')
     base=ROOT/'instances'/business_id
     if not base.exists():raise ValueError('Unknown business')
-    owner=match.get('owner_system') or 'core'
-    installed=installed_modules()
+    owner=match.get('owner_system') or 'core';installed=installed_modules()
     if isinstance(task_preferences,(str,Path)):task_preferences=_load_task_preferences(str(task_preferences))
     operator_ref=operator_ref or os.environ.get('BUSINESSOS_OPERATOR_REF')
     team_ref=team_ref or os.environ.get('BUSINESSOS_TEAM_REF')
     role_ref=role_ref or os.environ.get('BUSINESSOS_ROLE_REF')
     prefs=resolve_effective_preferences(business_id,operator_ref,team_ref,role_ref,owner,contract_id,output_type,channel,task_preferences)
 
-    files=['CONTEXT.md','core/DEFAULTS.md','core/policies/agent-execution.md','core/policies/active-business-truth.md','core/policies/preferences-and-adaptation.md','core/policies/business-isolation.md']
-    if owner in {'content-synthesis','marketing-synthesis'}:_add(files,'core/policies/context-provenance-and-claims.md')
+    # Root CONTEXT.md carries the small universal AURA contract. Load additional policy
+    # only when the selected method actually needs it; deterministic validators continue
+    # to enforce schema/reference/isolation integrity without spending model context.
+    files=['CONTEXT.md']
     if owner!='core':_add(files,f'systems/{owner}/DEFAULTS.md')
 
     cp=ROOT/match['path'];stop=(ROOT/f'systems/{owner}/contracts') if owner!='core' else (ROOT/'core/contracts');chain=[]
@@ -95,8 +96,9 @@ def build_plan(business_id,contract_id,focus=None,operator_ref=None,team_ref=Non
     _add(files,match['path'])
 
     read_types={selector_type(x) for x in match.get('read_selectors',[])}
-    write_types=set(match.get('write_types',[]));context_types=set(match.get('context_types',[]))
-    combined=read_types|write_types
+    write_types=set(match.get('write_types',[]));context_types=set(match.get('context_types',[]));combined=read_types|write_types
+    if owner in {'content-synthesis','marketing-synthesis'} or {'BusinessClaim','Brand'} & combined:
+        _add(files,'core/policies/active-business-truth.md');_add(files,'core/policies/context-provenance-and-claims.md')
     if {'SourceRecord','Observation','Insight','Learning','ProofRecord'} & combined:
         _add(files,'core/policies/evidence.md');_add(files,'core/policies/provenance.md')
     if {'SourceRecord','Observation','Insight'} & write_types:_add(files,'core/policies/research-evidence.md')
@@ -135,8 +137,7 @@ def build_plan(business_id,contract_id,focus=None,operator_ref=None,team_ref=Non
     for sel in selectors:
         ns=normalize_selector(sel);source_owner=ns.get('owner_system')
         if source_owner and source_owner not in installed:
-            optional_unavailable.append({**ns,'reason':f'optional module {source_owner} is not installed'})
-            continue
+            optional_unavailable.append({**ns,'reason':f'optional module {source_owner} is not installed'});continue
         if any(object_matches(o,sel) for o,_ in selected.values()):continue
         candidates=[(o,p) for o,p in idx.values() if object_matches(o,sel) and o.get('status') not in {'archived','superseded'}]
         if len(candidates)==1:selected[candidates[0][0]['id']]=candidates[0]
@@ -172,7 +173,7 @@ def build_plan(business_id,contract_id,focus=None,operator_ref=None,team_ref=Non
 
 
 def main():
-    p=argparse.ArgumentParser(description='Build bounded organizational context for a selected AURA playbook.')
+    p=argparse.ArgumentParser(description='Build bounded organizational context for an explicitly selected AURA playbook.')
     p.add_argument('business_id');p.add_argument('contract_id');p.add_argument('--focus',action='append',default=[])
     p.add_argument('--operator-ref');p.add_argument('--team-ref');p.add_argument('--role-ref');p.add_argument('--task-preferences');p.add_argument('--output-type');p.add_argument('--channel')
     a=p.parse_args()
