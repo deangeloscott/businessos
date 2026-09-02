@@ -10,23 +10,24 @@ writes:
 - ChangeEvent
 - Asset
 ---
-# Prune Consolidate
+# Prune & Consolidate
 
 ## Purpose
-Remove or consolidate low-value content only when evidence shows it should not remain independently available.
+Improve, merge, archive, redirect, noindex, or remove content only when evidence shows it should not remain independently available in its current form.
 
 ## Business Outcome
-Improve valuable organic discovery through prune consolidate, with a clear SEO/AEO mechanism and connection to the active business Objective.
+Reduce genuinely low-value or duplicative content while preserving useful demand, links, conversions, customer utility, historical value, and legitimate archival needs.
 
-## Run When
-Run only when an approved Action Packet routes to **Prune Consolidate**, or when an authorized incident response requires it.
+## Use When
+Use when content appears materially outdated, duplicative, low-utility, strategically misaligned, costly to maintain, or better served by another destination.
 
 ## Process
-1. [AI] Identify candidates using duplication, outdatedness, no demand, low utility, quality, maintenance burden, or strategic mismatch.
-2. [HYBRID] Check historical traffic, links, assisted conversions, support/brand value, seasonal demand, and legal/archive needs.
-3. [HYBRID] Choose improve, merge, archive, redirect, noindex, or remove.
-4. [AI] Map retained content/value and destination before deletion.
-5. [HYBRID] Update redirects, links, sitemaps, canonicals, navigation, and feeds where needed.
-6. [HYBRID] Verify and define SEO monitoring for destination/sitewide effects.
+1. Identify candidates using meaningful evidence such as duplication, outdatedness, lack of demand or utility, weak quality, maintenance burden, or strategic mismatch. Low traffic alone is not sufficient proof that a page has no value.
+2. Check historical traffic, backlinks/referrals, assisted conversions, support/customer value, branded demand, seasonality, legal/archive requirements, and relationships to other assets.
+3. Choose the outcome that best preserves useful value: improve, merge, archive, redirect to a true replacement, noindex, or remove.
+4. Before destructive changes, map the content, links, proof, conversion paths, and other legitimate value that should survive elsewhere.
+5. If implementation is requested, update redirects, internal links, navigation, sitemaps/feeds, canonicals, and dependent relationships as needed to match the intended state.
+6. Verify the resulting old/new behavior and observe material discovery or business effects when they matter. AURA may preserve useful monitoring intent; the host owns recurrence.
 
-
+## Proportional Scope
+Prioritize content classes with the clearest evidence and highest maintenance or discovery impact. On large sites, reason by pattern and representative examples before executing mass removal.
