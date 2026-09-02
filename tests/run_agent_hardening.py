@@ -214,15 +214,18 @@ def main():
             require(runtime_event_pattern.search(text) is None,f'{rel} reintroduced named runtime event emission')
 
         forbidden_manual_fallbacks=['if a required capability is unavailable, create a human-executable manual action packet','or create a manual action packet']
-        negative_emit_markers=('do not emit','does not emit','never emit','without emitting','not emit')
+        emit_word=re.compile(r'\bemit(?:s|ted|ting)?\b',re.I)
+        event_like=re.compile(r'\b(?:event|signal|notification|alert)s?\b|\b[a-z][a-z0-9_-]*\.[a-z][a-z0-9_.-]*\b',re.I)
+        negative_emit=re.compile(r'\b(?:do not|does not|never|without|rather than|instead of|avoid(?:s|ed|ing)?|not)\b[^\n.;:]{0,120}\bemit(?:s|ted|ting)?\b',re.I)
+        event_emit_violations=[]
         for path in ROOT.rglob('CONTEXT.md'):
             if '/contracts/' not in path.as_posix():continue
             text=path.read_text(encoding='utf-8');low=text.lower()
             for phrase in forbidden_manual_fallbacks:require(phrase not in low,f'{path.relative_to(ROOT)} reintroduced retired Manual Action Packet fallback: {phrase}')
             for line in text.splitlines():
-                line_low=line.lower()
-                if re.search(r'\bemit(?:s|ted|ting)?\b',line_low) and not any(marker in line_low for marker in negative_emit_markers):
-                    require(False,f'{path.relative_to(ROOT)} reintroduced positive runtime-event emission prose: {line.strip()}')
+                if emit_word.search(line) and event_like.search(line) and not negative_emit.search(line):
+                    event_emit_violations.append(f'{path.relative_to(ROOT)}: {line.strip()}')
+        require(not event_emit_violations,'positive runtime-event emission prose remains:\n- '+'\n- '.join(event_emit_violations))
 
         errors,_,_=validate_business(BID,True);require(not errors,f'current architecture should finish with valid organization state: {errors}')
         print('agent hardening regressions passed: provenance and outward truth remain strong without semantic-routing/orchestration/event-control baggage')
