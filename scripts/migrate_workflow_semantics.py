@@ -36,6 +36,10 @@ BODY_REPLACEMENTS=[
     ('AURA playbook method','AURA Workflow method'),('AURA playbook knowledge','AURA Workflow knowledge'),
     ('provider-neutral capability needs','the tools or resources appropriate to the work'),
     ('provider-neutral capability need','the tools or resources appropriate to the work'),
+    ('subcontract-completion ledger','Workflow-composition metadata'),
+    ('subcontract completion ledger','Workflow-composition metadata'),
+    ('subcontract ledger','Workflow-composition metadata'),
+    ('subcontract execution ledger','Workflow-composition metadata'),
 ]
 
 
