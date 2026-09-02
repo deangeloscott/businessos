@@ -63,8 +63,8 @@
     },
     {
       "id": "social-profile",
-      "entry_workflow": "marketing.social.profile-optimization",
-      "result": "Optimize a social profile for qualified conversion.",
+      "entry_workflow": "marketing.social.profile-audit",
+      "result": "Audit and improve a social profile for qualified conversion.",
       "supporting_workflows": []
     },
     {
