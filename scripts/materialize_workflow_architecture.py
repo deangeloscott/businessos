@@ -67,7 +67,11 @@ def guard_refactor_branch():
 def text_files():
     for path in ROOT.rglob('*'):
         if not path.is_file() or path.suffix.lower() not in TEXT_SUFFIXES:continue
-        if any(part in SKIP_DIRS for part in path.relative_to(ROOT).parts):continue
+        rel=path.relative_to(ROOT)
+        if any(part in SKIP_DIRS for part in rel.parts):continue
+        # Tests intentionally name retired concepts in negative assertions. Do not perform
+        # blind mechanical rewrites there; update tests deliberately in the later validation phase.
+        if rel.parts and rel.parts[0]=='tests':continue
         yield path
 
 
@@ -95,8 +99,6 @@ def _collapse_duplicate_workflow_keys(text):
     """Collapse transitional adjacent aliases after both names become Workflow-native."""
     out=text
     for key in DUPLICATE_WORKFLOW_KEYS:
-        # Handles values such as wid, c['workflow_id'], len(tests), and tests. The old
-        # compatibility fields are adjacent in the authored qualification dictionaries.
         pattern=rf"(['\"]{re.escape(key)}['\"]\s*:\s*([^,\n]+)\s*,)\s*['\"]{re.escape(key)}['\"]\s*:\s*\2\s*,"
         out=re.sub(pattern,r'\1',out)
     return out
@@ -108,7 +110,6 @@ def _rewrite_python_architecture(path):
     new=new.replace(".get('contracts', [])",".get('workflows', [])")
     new=new.replace("['contracts']","['workflows']")
     new=new.replace('["contracts"]','["workflows"]')
-    # Path components written as ROOT/'...'/ 'contracts' /... move with the authored tree.
     new=re.sub(r"(?<=/)'contracts'(?=/)","'workflows'",new)
     new=re.sub(r'(?<=/)"contracts"(?=/)',r'"workflows"',new)
     new=new.replace('RETIRED_CONTRACT_METADATA','RETIRED_WORKFLOW_METADATA')
@@ -136,7 +137,6 @@ def rewrite_architecture_terms():
     for path in text_files():
         if path.suffix.lower()=='.py':_rewrite_python_architecture(path)
 
-    # Qualification should expose one Workflow vocabulary, not compatibility aliases.
     qroot=ROOT/'qualification'
     if qroot.exists():
         for path in qroot.rglob('*.py'):
@@ -274,14 +274,11 @@ def main():
     rewrite_architecture_terms()
     remove_stale_derived_state()
 
-    # Prove the transformed authored/code shape before deleting the recovery helpers.
     assert_python_integrity()
     assert_qualification_shape()
     assert_canonical_shape(allow_one_time_helpers=True)
     regenerate_derived_state()
 
-    # The migration has served its only purpose. Remove it and regenerate once more so
-    # manifests/checksums describe the final product tree rather than development tooling.
     removed=retire_development_fossils()
     remove_stale_derived_state()
     derived=regenerate_derived_state()
