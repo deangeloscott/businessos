@@ -12,7 +12,7 @@ def build_index(directory,exchange_id='local-businessos-exchange',output=None):
         try:pkg=load_package(p);validate_package(pkg,require_export_approval=True)
         except Exception:continue
         if pkg['package_id'] in seen:continue
-        seen.add(pkg['package_id']);proc=pkg['process'];entries.append({'package_id':pkg['package_id'],'innovation_fingerprint':pkg['innovation_fingerprint'],'title':proc['title'],'purpose':proc['purpose'],'owner_system':proc['owner_system'],'target_contract_id':proc.get('target_contract_id'),'local_contract_id':proc.get('local_contract_id'),'detail_level':pkg['detail_level'],'identity_level':pkg['identity_level'],'businessos_version':pkg['businessos_version'],'artifact_reference':p.name,'reported_evidence':pkg.get('evidence_summary')})
+        seen.add(pkg['package_id']);proc=pkg['process'];entries.append({'package_id':pkg['package_id'],'innovation_fingerprint':pkg['innovation_fingerprint'],'title':proc['title'],'purpose':proc['purpose'],'owner_system':proc['owner_system'],'target_contract_id':proc.get('target_contract_id'),'local_contract_id':proc.get('local_contract_id'),'detail_level':pkg['detail_level'],'identity_level':pkg['identity_level'],'aura_version':pkg['aura_version'],'artifact_reference':p.name,'reported_evidence':pkg.get('evidence_summary')})
     idx={'format_version':'1.0','exchange_id':exchange_id,'generated_at':now(),'entries':entries};validate_schema('InnovationExchangeIndex',idx);out=Path(output) if output else directory/'innovation-index.json';out.write_text(json.dumps(idx,indent=2)+'\n');return idx,out
 
 def main():
