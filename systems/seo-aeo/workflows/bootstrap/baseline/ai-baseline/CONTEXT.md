@@ -16,40 +16,33 @@ context:
 - Offer
 - ProductService
 evidence_inputs:
-- Effective Capability Profile
-- Available search analytics local authority AI
+- Available AI answer and first-party evidence
 - prompt/question observations, answer text, citations, mentions, and competing sources
 updates:
   SEOAssetState:
   - organic_performance
-  - technical fields crawl indexability index structured data as applicable
-  - internal_authority external_authority
 ---
 # AI / Answer Visibility Baseline
 
 ## Purpose
-Establish initial brand/competitor answer presence across a weighted prompt universe.
+Establish a reproducible starting view of how the organization and relevant competitors/sources appear across important AI-answer or conversational discovery prompts.
 
 ## Business Outcome
-Improve valuable organic discovery through ai / answer visibility baseline, with a clear SEO/AEO mechanism and connection to the active business Objective.
+Create a useful comparison point for AI-answer visibility, citations, recommendations, and source presence so later changes can be interpreted against real prior evidence.
 
 ## Run When
-Run during initial baseline, scheduled re-baseline, or after a material site/business change when **ai / answer visibility baseline** must be re-observed.
+Use when current answer-visibility state is missing, materially stale, or needed for a concrete AEO diagnosis, opportunity, change evaluation, or trend comparison. A user/runtime may invoke re-baselining; AURA does not own the schedule.
 
 ## Process
-1. [HYBRID] Build or sample a first prompt universe from Demand Intelligence inputs and high-value buyer questions.
-2. [HYBRID] Observe configured answer surfaces with reproducible timestamp/context metadata.
-3. [AI] Extract brand mentions, recommendations, links/citations, cited URLs/domains, competitors, factual claims, and no-answer states.
-4. [DETERMINISTIC] Calculate separate prompt coverage, mention/recommendation/citation shares weighted by business value.
-5. [DETERMINISTIC] Record sampling/nondeterminism limitations and direct referral observations if analytics supports them.
-6. [HYBRID] Write baseline Answer Observations and initial AEO Opportunities.
-
-## Decisions / Routing
-- Route → SEO Organic Demand Intelligence when baseline evidence needs demand interpretation.
-- Route → Competitor Intelligence refresh only when canonical competitor intelligence is missing or stale.
-- Route → Core Opportunity qualification when an SEO intervention is evidence-supported.
+1. [HYBRID] Build or sample a representative prompt/question set from valuable demand, buyer/customer questions, and observed prompt evidence. Do not enumerate every possible wording.
+2. [HYBRID] Observe the answer surfaces that materially matter and preserve prompt, surface/model context, timestamp, and other context needed to interpret nondeterministic results.
+3. [AI] Extract organization/competitor mentions, recommendations, links/citations, cited URLs/domains, material factual claims, source roles, and no-answer states without treating every cited source as a business competitor.
+4. [HYBRID] Summarize coverage, mention/recommendation/citation presence, repeated source patterns, and business-value weighting at the resolution useful for later comparison.
+5. [AI] Preserve sampling and nondeterminism limitations. Connect direct referral or downstream first-party outcomes only where actually observable.
+6. [AI] Remember the baseline observations and material gaps that future work benefits from; do not automatically create AEO Opportunities or route the results through another subsystem.
 
 ## Verification
-- Store the exact prompt/question, surface, timestamp, answer evidence and citation/mention status so observations are reproducible.
-
-
+- Exact material prompts/questions, surfaces, timestamps, answer evidence, and citation/mention status remain reproducible enough for the intended comparison.
+- AI visibility, recommendations, citations, referrals, leads, and revenue remain distinct evidence stages.
+- Repeated strong AI visibility can be treated as a meaningful upstream attention/opportunity signal without being mislabeled as observed downstream business outcome.
+- Supporting demand, competitor, or execution methods remain optional model/user choices.
