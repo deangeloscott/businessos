@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-"""Persist explicitly organization-authored reusable Workflow knowledge.
+"""Persist optional organization-owned reusable Workflow knowledge.
 
-Use this when the organization intentionally defines a reusable local procedure or an
-augmentation to an installed AURA Workflow. The organization supplies the meaning; AURA
-preserves it without inventing tool/provider bindings or fake Learning.
+A ProcessExtension may come from an explicit organization-authored procedure or from
+strong evidence-backed Learning worth preserving for future work. It is retrieval context,
+not semantic authority, a permission boundary, or an execution plan.
 """
 from pathlib import Path
 import argparse,hashlib,json,re
 from _common import *
-from canonical_store import validate_canonical,write_canonical
+from canonical_store import INSTANCE_PATHS,validate_canonical,write_canonical
 
 
 def _canonical_workflow(workflow_id):
@@ -19,11 +19,14 @@ def _canonical_workflow(workflow_id):
     return None
 
 
-def _validate_sources(business_id,refs):
+def _validate_object_refs(business_id,refs,label,required=False,object_type=None):
     refs=list(dict.fromkeys(refs or []))
-    if not refs:raise ValueError('organization-authored operating knowledge requires at least one source_ref to organization-owned source material or decision state')
+    if required and not refs:raise ValueError(f'{label} requires at least one organization-owned reference')
     index=object_index(business_id);missing=[ref for ref in refs if ref not in index]
-    if missing:raise ValueError('Unknown organization source_ref(s): '+', '.join(missing))
+    if missing:raise ValueError(f'Unknown {label} reference(s): '+', '.join(missing))
+    if object_type:
+        wrong=[ref for ref in refs if index[ref][0].get('object_type')!=object_type]
+        if wrong:raise ValueError(f'{label} reference(s) must point to {object_type}: '+', '.join(wrong))
     return refs
 
 
@@ -37,7 +40,7 @@ def _validate_scope(scope,scope_ref):
 
 
 def _validate_method_metadata(reads,writes):
-    valid_types={json.loads(path.read_text()).get('title') for path in schemas()};valid_types.discard(None)
+    valid_types=set(INSTANCE_PATHS)
     unknown_reads=sorted(set(reads)-valid_types);unknown_writes=sorted(set(writes)-valid_types)
     if unknown_reads:raise ValueError('Unknown canonical read type(s): '+', '.join(unknown_reads))
     if unknown_writes:raise ValueError('Unknown canonical write type(s): '+', '.join(unknown_writes))
@@ -48,7 +51,17 @@ def persist_extension(business_id,spec):
     if resolved.get('status')!='resolved':raise ValueError(resolved.get('reason') or 'Organization could not be resolved')
     bid=resolved['business_id']
     if not isinstance(spec,dict):raise ValueError('spec must be a JSON object')
-    mode=spec.get('mode') or 'local_workflow';owner=spec.get('owner_system') or 'core';source_refs=_validate_sources(bid,spec.get('source_refs'));scope=spec.get('scope') or 'business';scope_ref=_validate_scope(scope,spec.get('scope_ref'))
+
+    mode=spec.get('mode') or 'local_workflow';owner=spec.get('owner_system') or 'core';scope=spec.get('scope') or 'business';scope_ref=_validate_scope(scope,spec.get('scope_ref'))
+    source_learning_refs=list(dict.fromkeys(spec.get('source_learning_refs') or []));source_kind=spec.get('source_kind') or ('learning_evolved' if source_learning_refs else 'organization_authored')
+    if source_kind=='learning_evolved':
+        source_learning_refs=_validate_object_refs(bid,source_learning_refs,'source_learning_refs',required=True,object_type='Learning')
+        source_refs=_validate_object_refs(bid,spec.get('source_refs'),'source_refs')
+    elif source_kind=='organization_authored':
+        source_learning_refs=[]
+        source_refs=_validate_object_refs(bid,spec.get('source_refs'),'source_refs',required=True)
+    else:raise ValueError(f'Unsupported ProcessExtension source_kind: {source_kind!r}')
+
     target=spec.get('target_workflow_id');local_id=spec.get('local_workflow_id')
     if mode=='augment_workflow':
         if not _canonical_workflow(target):raise ValueError(f'augment_workflow requires an installed target Workflow id: {target!r}')
@@ -72,14 +85,14 @@ def persist_extension(business_id,spec):
         'status':spec.get('status') or 'active','scope':scope,'scope_ref':scope_ref,
         'applies_when':list(dict.fromkeys(spec.get('applies_when') or [])),'does_not_apply_when':list(dict.fromkeys(spec.get('does_not_apply_when') or [])),
         'reads':reads,'writes':writes,'instructions':instructions,'verification':verification,
-        'source_kind':'organization_authored','source_learning_refs':[],'source_refs':source_refs,
+        'source_kind':source_kind,'source_learning_refs':source_learning_refs,'source_refs':source_refs,
         'evidence_refs':list(dict.fromkeys(spec.get('evidence_refs') or [])),'compatibility':spec.get('compatibility') or {'aura_min':os_version(),'aura_max':None},'extensions':spec.get('extensions') or {},
     }
     validate_canonical('ProcessExtension',obj);written=write_canonical(obj,path,allow_update=path.exists());return obj,written
 
 
 def main():
-    parser=argparse.ArgumentParser(description='Persist explicit organization-authored local Workflow knowledge as a ProcessExtension without fabricating Learning or tool bindings.')
+    parser=argparse.ArgumentParser(description='Persist optional organization-owned local Workflow knowledge from explicit organizational instruction or evidence-backed Learning. This does not make the extension semantic or execution authority.')
     parser.add_argument('business_id');parser.add_argument('--spec-file',required=True);args=parser.parse_args()
     try:spec=json.loads(Path(args.spec_file).read_text(encoding='utf-8'));obj,path=persist_extension(args.business_id,spec)
     except (ValueError,FileExistsError,json.JSONDecodeError,OSError) as exc:raise SystemExit(str(exc))
