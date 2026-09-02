@@ -57,9 +57,11 @@ Installed AURA modules are bodies of operating knowledge, not limits on what the
 
 ## Organization-specific reusable methods
 
-When the organization intentionally defines reusable local procedure knowledge, preserve it as a `ProcessExtension`/local Workflow. When evidence-supported Learning suggests a repeatable method should change, a `WorkflowEvolutionProposal` can capture the narrow evidence-backed change before intentional adoption.
+When the organization intentionally defines reusable local procedure knowledge, preserve it as a `ProcessExtension`/local Workflow when future work materially benefits. Evidence-supported Learning may also be preserved directly as a narrow ProcessExtension when procedural reuse is genuinely useful.
 
-Do not fabricate Learning just to save an organization-authored SOP, and do not turn organization-specific process knowledge into an automatic product-wide rule.
+The model/user decides whether the existing Learning is already sufficient, whether a local extension helps, and whether the stored extension applies to a future task. A ProcessExtension is retrieval context, not semantic authority, a permission boundary, or an execution plan.
+
+Do not fabricate Learning just to save an organization-authored SOP, and do not turn organization-specific process knowledge into an automatic product-wide rule. Canonical AURA changes belong to explicit product-development work.
 
 ## Optional work receipts
 
