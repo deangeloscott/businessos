@@ -7,7 +7,7 @@ canonical derived navigation/index artifact, and then removes the one-time migra
 machinery. It is development tooling, not a product migration feature.
 """
 from pathlib import Path
-import re,shutil,subprocess,sys
+import ast,re,shutil,subprocess,sys
 
 ROOT=Path(__file__).resolve().parents[1]
 SCRIPTS=ROOT/'scripts'
@@ -79,6 +79,23 @@ def rename_workflow_trees():
     return moved
 
 
+def _rewrite_python_architecture(path):
+    text=path.read_text(encoding='utf-8');new=text
+    new=new.replace(".get('contracts',[])",".get('workflows',[])")
+    new=new.replace(".get('contracts', [])",".get('workflows', [])")
+    new=new.replace("['contracts']","['workflows']")
+    new=new.replace('["contracts"]','["workflows"]')
+    # Path components written as ROOT/'...'/ 'contracts' /... should move with the tree.
+    new=re.sub(r"(?<=/)'contracts'(?=/)","'workflows'",new)
+    new=re.sub(r'(?<=/)"contracts"(?=/)',r'"workflows"',new)
+    new=new.replace('RETIRED_CONTRACT_METADATA','RETIRED_WORKFLOW_METADATA')
+    new=new.replace('contract_id','workflow_id')
+    # Transitional qualification code briefly emitted both fields. Once contract_id is
+    # renamed, collapse identical adjacent Workflow keys instead of preserving a duplicate.
+    new=re.sub(r"(['\"]workflow_id['\"]\s*:\s*([A-Za-z_]\w*)\s*,)\s*['\"]workflow_id['\"]\s*:\s*\2\s*,",r'\1',new)
+    if new!=text:path.write_text(new,encoding='utf-8')
+
+
 def rewrite_architecture_terms():
     changed=[]
     for path in text_files():
@@ -95,19 +112,11 @@ def rewrite_architecture_terms():
         )
         registry_script.write_text(text,encoding='utf-8')
 
-    # Python consumers use Workflow-native collection/identifier names directly.
     for path in text_files():
-        if path.suffix.lower()!='.py':continue
-        text=path.read_text(encoding='utf-8');new=text
-        new=new.replace(".get('contracts',[])",".get('workflows',[])")
-        new=new.replace(".get('contracts', [])",".get('workflows', [])")
-        new=new.replace("['contracts']","['workflows']")
-        new=new.replace('["contracts"]','["workflows"]')
-        new=new.replace('RETIRED_CONTRACT_METADATA','RETIRED_WORKFLOW_METADATA')
-        new=new.replace('contract_id','workflow_id')
-        if new!=text:path.write_text(new,encoding='utf-8')
+        if path.suffix.lower()=='.py':_rewrite_python_architecture(path)
 
-    # Qualification is about authored operating knowledge, not the retired Contract model.
+    # Qualification is entirely about authored operating knowledge, so local symbols should
+    # not preserve the retired Contract model either.
     qroot=ROOT/'qualification'
     if qroot.exists():
         for path in qroot.rglob('*.py'):
@@ -116,8 +125,26 @@ def rewrite_architecture_terms():
             new=re.sub(r'\bcontracts\b','workflows',new)
             new=re.sub(r'\bcontract\b','workflow',new)
             new=re.sub(r'\bcid\b','wid',new)
+            new=re.sub(r"(['\"]workflow_id['\"]\s*:\s*([A-Za-z_]\w*)\s*,)\s*['\"]workflow_id['\"]\s*:\s*\2\s*,",r'\1',new)
             if new!=text:path.write_text(new,encoding='utf-8')
     return changed
+
+
+def assert_python_integrity():
+    problems=[]
+    for path in ROOT.rglob('*.py'):
+        if any(part in SKIP_DIRS for part in path.relative_to(ROOT).parts):continue
+        try:tree=ast.parse(path.read_text(encoding='utf-8'),filename=str(path))
+        except SyntaxError as exc:
+            problems.append(f'{path.relative_to(ROOT)}: Python syntax error at {exc.lineno}: {exc.msg}');continue
+        for node in ast.walk(tree):
+            if not isinstance(node,ast.Dict):continue
+            seen=set()
+            for key in node.keys:
+                if isinstance(key,ast.Constant) and isinstance(key.value,str):
+                    if key.value in seen:problems.append(f'{path.relative_to(ROOT)}:{getattr(node,"lineno",0)} duplicate dict key {key.value!r}')
+                    seen.add(key.value)
+    if problems:raise RuntimeError('Python integrity failed after Workflow rewrite:\n'+'\n'.join(problems[:200]))
 
 
 def remove_stale_derived_state():
@@ -159,6 +186,12 @@ def assert_canonical_shape(allow_one_time_helpers=False):
         if re.search(r'^subcontracts:\s*$',text,re.M):problems.append(f'{rel}: subcontract composition remains')
         if 'PlaybookEvolutionProposal' in text:problems.append(f'{rel}: old Playbook evolution semantics remain')
         if 'core.learning.playbook-evolution' in text:problems.append(f'{rel}: old Playbook evolution id remains')
+
+    schema_forbidden=['contract_id','target_contract_id','local_contract_id','proposed_local_contract_id','required_capabilities','optional_capabilities','PlaybookEvolutionProposal']
+    for path in ROOT.rglob('*.schema.json'):
+        text=path.read_text(encoding='utf-8');rel=path.relative_to(ROOT)
+        for token in schema_forbidden:
+            if f'"{token}"' in text:problems.append(f'{rel}: retired schema field/type remains: {token}')
     if problems:raise RuntimeError('Canonical Workflow materialization incomplete:\n'+'\n'.join(problems[:300]))
 
 
@@ -205,6 +238,7 @@ def main():
     remove_stale_derived_state()
 
     # Prove the transformed authored/code shape before deleting the recovery helpers.
+    assert_python_integrity()
     assert_canonical_shape(allow_one_time_helpers=True)
     regenerate_derived_state()
 
@@ -213,6 +247,7 @@ def main():
     removed=retire_development_fossils()
     remove_stale_derived_state()
     derived=regenerate_derived_state()
+    assert_python_integrity()
     assert_canonical_shape(allow_one_time_helpers=False)
 
     print('Workflow semantic migration:',result)
