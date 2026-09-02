@@ -10,24 +10,25 @@ writes:
 - ChangeEvent
 - Asset
 ---
-# Headings Information Architecture
+# Headings & Information Architecture
 
 ## Purpose
-Make page structure easy to scan, understand, and navigate.
+Structure page information so people can scan, understand, navigate, and act on it efficiently.
 
 ## Business Outcome
-Improve valuable organic discovery through headings information architecture, with a clear SEO/AEO mechanism and connection to the active business Objective.
+Improve comprehension and discovery by making the page's hierarchy reflect the user's real questions and decisions rather than a keyword-driven outline.
 
-## Run When
-Run only when an approved Action Packet routes to **Headings Information Architecture**, or when an authorized incident response requires it.
+## Use When
+Use when a page is difficult to scan, repeats or fragments related ideas, buries important decision information, or uses headings that do not accurately describe the content beneath them.
 
 ## Process
-1. [HYBRID] Extract current content/heading outline.
-2. [AI] Map required user questions/tasks and buying decisions to sections.
-3. [HYBRID] Group related information and eliminate redundant/fragmented sections.
-4. [HYBRID] Use clear descriptive headings rather than keyword-stuffed labels.
-5. [HYBRID] Correct heading hierarchy where it improves document structure/accessibility.
-6. [HYBRID] Place important decision information where users can reach it efficiently.
-7. [HYBRID] Add table of contents/jump navigation only when page length/complexity warrants it.
+1. Extract or inspect the current content and heading outline as the user actually experiences it.
+2. Map the important user questions, tasks, and decisions the page should support.
+3. Group related information, remove redundant or fragmented sections, and establish a hierarchy that matches the page's meaning.
+4. Use clear descriptive headings rather than keyword-stuffed labels or heading levels chosen only for styling.
+5. Correct heading hierarchy where doing so improves document structure, accessibility, or navigation; do not enforce a rigid pattern when the content does not need it.
+6. Place consequential decision information where users can reach it without unnecessary hunting.
+7. Add a table of contents, jump navigation, or other local navigation only when page length or complexity makes it genuinely useful.
 
-
+## Proportional Scope
+Restructure only as much as the page's complexity and user task require. A short clear page does not need elaborate hierarchy merely because the Workflow exists.
