@@ -46,7 +46,7 @@ Useful supporting methods may include:
 - `seo.intelligence.ecosystem.evidence-grading`
 - `seo.intelligence.ecosystem.official-contradiction-check`
 - `seo.learning.strategy-experiment-design`
-- `seo.learning.tactic-registry`
+- `seo.aeo.learning.domain-learning`
 
 Use them only when they improve the current decision. They are reusable expert methods, not a required execution chain.
 
