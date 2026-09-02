@@ -10,9 +10,9 @@ BID='customer-facing-draft-provenance';BASE=ROOT/'instances'/BID;RUNS=ROOT/'runt
 def req(c,m):
     if not c:raise AssertionError(m)
 def run(*args,check=True):return subprocess.run([sys.executable,*map(str,args)],cwd=ROOT,capture_output=True,text=True,check=check)
-def write_asset(rid,customer_facing,origin=None,role='internal_working_draft'):
+def write_asset(customer_facing,origin=None,role='internal_working_draft'):
     artifact=BASE/'assets/homepage-draft.md';artifact.parent.mkdir(parents=True,exist_ok=True);artifact.write_text('# Homepage draft\n')
-    asset={'id':f'ast_{BID}_homepage','object_type':'Asset','schema_version':'1.0.0','business_id':BID,'created_at':'2026-08-25T00:00:00+00:00','updated_at':'2026-08-25T00:00:00+00:00','lineage':[],'asset_type':'homepage_copy_draft','owner_system':'marketing-synthesis','business_role':role,'location_reference':str(artifact.relative_to(ROOT)),'version':'1','status':'draft','extensions':{'businessos':{'customer_facing':customer_facing,'run_ref':f'runtime/runs/{BID}/{rid}','run_id':rid,'run_method_type':'aura_playbook','run_method_ref':'marketing.landing-page.copy','run_contract_id':'marketing.landing-page.copy'}}}
+    asset={'id':f'ast_{BID}_homepage','object_type':'Asset','schema_version':'1.0.0','business_id':BID,'created_at':'2026-08-25T00:00:00+00:00','updated_at':'2026-08-25T00:00:00+00:00','lineage':[],'asset_type':'homepage_copy_draft','owner_system':'marketing-synthesis','business_role':role,'location_reference':str(artifact.relative_to(ROOT)),'version':'1','status':'draft','extensions':{'businessos':{'customer_facing':customer_facing}}}
     if origin:asset['extensions']['businessos']['origin']=origin
     path=BASE/'assets'/f"{asset['id']}.json";path.write_text(json.dumps(asset,indent=2)+'\n');return path,artifact
 
@@ -24,7 +24,7 @@ def main():
     try:
         run(S/'init_business.py',BID,'--name','Customer Facing Draft Provenance')
         rid=run(S/'create_run.py',BID,'Draft homepage copy','--contract-id','marketing.landing-page.copy').stdout.strip()
-        asset_path,artifact_path=write_asset(rid,False,'preexisting','internal_working_draft')
+        asset_path,artifact_path=write_asset(False,'preexisting','internal_working_draft')
         completed=run(S/'complete_run.py',BID,rid,'--result',asset_path,'--result',artifact_path,'--summary','Drafted homepage copy.',check=False);output=completed.stderr+completed.stdout
         req(completed.returncode!=0,'misclassified outward marketing draft should fail organization validation')
         req('cannot combine origin=' not in output,f'preexisting origin must remain compatible with later truthful receipt provenance: {output}')
@@ -41,7 +41,7 @@ def main():
 
         historical={'id':f'ast_{BID}_historical','object_type':'Asset','schema_version':'1.0.0','business_id':BID,'created_at':'2026-08-01T00:00:00+00:00','updated_at':'2026-08-01T00:00:00+00:00','lineage':[],'asset_type':'internal_strategy_note','owner_system':'marketing-synthesis','business_role':'internal_strategy','location_reference':None,'version':'1','status':'draft','extensions':{'businessos':{'customer_facing':False,'origin':'preexisting'}}}
         req(not run_completion_errors(BID,[(historical,f'instances/{BID}/assets/{historical["id"]}.json')]),'genuine preexisting internal support Asset should not require a Run')
-        print('customer-facing draft provenance regressions passed: intended audience and optional method provenance remain independent')
+        print('customer-facing draft provenance regressions passed: intended audience and optional one-way receipt provenance remain independent')
     finally:
         for path in [BASE,RUNS]:
             if path.exists():shutil.rmtree(path)
