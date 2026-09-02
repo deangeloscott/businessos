@@ -75,7 +75,7 @@ def prepare_work(task,business_id=None,workspace=None,focus=None,operator_ref=No
     playbook_candidates=[] if playbook else find_playbook_candidates(task,3);workflow_candidates=[] if selected_workflow else _workflow_candidates(task,bid,owner,team_ref,role_ref,operator_ref)
     context,process=_workflow_context(bid,selected_workflow_id,focus,operator_ref,team_ref,role_ref,task_preferences,output_type,channel);baseline=_baseline_context(bid)
     if context and not context.get('error'):
-        object_context=[{'object_ref':oid,'path':path} for oid,path in zip(context.get('object_refs',[]),context.get('object_files',[]))];context_files=context.get('files',[])
+        object_context=context.get('object_context',[]);context_files=context.get('files',[])
     else:object_context=[];context_files=['CONTEXT.md','docs/operating-knowledge.md']
     playbook_view=None
     if playbook:
