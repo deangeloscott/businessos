@@ -12,11 +12,9 @@ def _schema(title):
         except Exception:continue
         if data.get('title')==title:return data
     raise ValueError(f'Unknown schema title: {title}')
-
 def _validate(title,obj):
     errors=sorted(Draft202012Validator(_schema(title)).iter_errors(obj),key=lambda error:list(error.path))
     if errors:raise ValueError('; '.join(f"{list(error.path)}: {error.message}" for error in errors))
-
 def _workflow_exists(workflow_id):
     for path in contract_files():
         try:meta,_=read_frontmatter(path)
@@ -35,12 +33,12 @@ def persist_proposal(business_id,payload):
     for ref in learning_refs:
         if ref not in index or index[ref][0].get('object_type')!='Learning':raise ValueError(f'Unknown Learning reference for {business_id}: {ref}')
 
-    kind=payload.get('change_kind');target=payload.get('target_contract_id');local_id=payload.get('proposed_local_contract_id')
+    kind=payload.get('change_kind');target=payload.get('target_workflow_id');local_id=payload.get('proposed_local_workflow_id')
     if kind=='augment_existing' and (not target or not _workflow_exists(target)):raise ValueError(f'augment_existing requires an installed target Workflow: {target!r}')
     if kind=='new_local_workflow':
-        if not local_id or not re.match(r'^custom\.[a-z0-9][a-z0-9.-]*$',local_id):raise ValueError('new_local_workflow requires proposed_local_contract_id beginning custom.')
+        if not local_id or not re.match(r'^custom\.[a-z0-9][a-z0-9.-]*$',local_id):raise ValueError('new_local_workflow requires proposed_local_workflow_id beginning custom.')
         for obj,_ in iter_instance_objects(business_id):
-            if obj.get('object_type')=='ProcessExtension' and obj.get('local_contract_id')==local_id and obj.get('status')!='retired':raise ValueError(f'Local Workflow id already exists: {local_id}')
+            if obj.get('object_type')=='ProcessExtension' and obj.get('local_workflow_id')==local_id and obj.get('status')!='retired':raise ValueError(f'Local Workflow id already exists: {local_id}')
     if kind not in {'augment_existing','new_local_workflow','canonical_revision'}:raise ValueError(f'Unknown Workflow evolution change_kind: {kind!r}')
     _validate_method_metadata(payload.get('reads') or [],payload.get('writes') or [])
 
@@ -49,7 +47,7 @@ def persist_proposal(business_id,payload):
     obj={
         'id':oid,'object_type':'WorkflowEvolutionProposal','schema_version':'1.0.0','business_id':business_id,
         'created_at':existing.get('created_at') or timestamp,'updated_at':timestamp,'owner_system':payload.get('owner_system'),'change_kind':kind,'proposed_scope':payload.get('proposed_scope','business'),
-        'target_contract_id':target,'proposed_local_contract_id':local_id,'title':payload.get('title') or 'Workflow evolution proposal','summary':payload.get('summary'),
+        'target_workflow_id':target,'proposed_local_workflow_id':local_id,'title':payload.get('title') or 'Workflow evolution proposal','summary':payload.get('summary'),
         'learning_refs':learning_refs,'evidence_refs':list(dict.fromkeys(payload.get('evidence_refs') or [])),'applies_when':list(dict.fromkeys(payload.get('applies_when') or [])),
         'does_not_apply_when':list(dict.fromkeys(payload.get('does_not_apply_when') or [])),'discovery_terms':list(dict.fromkeys(payload.get('discovery_terms') or [])),'reads':list(dict.fromkeys(payload.get('reads') or [])),
         'writes':list(dict.fromkeys(payload.get('writes') or [])),'instructions':payload.get('instructions') or [],'verification':payload.get('verification') or [],
