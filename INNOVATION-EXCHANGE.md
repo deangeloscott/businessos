@@ -17,7 +17,7 @@ When that Learning would materially improve a repeatable procedure:
    `python3 scripts/adopt_process_extension.py <business-id> <proposal-id>`
 4. Resolve organization-local Workflow knowledge with:
 
-   `python3 scripts/resolve_effective_contract.py <business-id> <workflow-id> --show`
+   `python3 scripts/resolve_workflow.py <workflow-id> --business-id <business-id> --show`
 
 A `ProcessExtension` is reusable organization-owned Workflow knowledge, not execution authority. The active model/user may use, adapt, combine, or ignore it when another method is better.
 
