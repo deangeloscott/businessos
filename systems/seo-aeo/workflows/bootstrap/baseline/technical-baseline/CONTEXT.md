@@ -15,38 +15,34 @@ context:
 - Market
 - Offer
 - ProductService
-evidence_inputs:
-- Effective Capability Profile
-- Available search analytics local authority AI
 updates:
   SEOAssetState:
-  - organic_performance
   - technical fields crawl indexability index structured data as applicable
-  - internal_authority external_authority
 ---
 # Technical Baseline
 
 ## Purpose
-Measure current technical search accessibility and site architecture before changes.
+Establish the current technical conditions that materially affect search discovery, rendering, indexing, usability, or future change evaluation.
 
 ## Business Outcome
-Improve valuable organic discovery through technical baseline, with a clear SEO/AEO mechanism and connection to the active business Objective.
+Give technical SEO work a trustworthy starting point without turning every task into a full-site crawl or producing a generic issue inventory disconnected from business value.
 
 ## Run When
-Run during initial baseline, scheduled re-baseline, or after a material site/business change when **technical baseline** must be re-observed.
+Use when technical state is missing, materially stale, or needed for a concrete diagnosis, migration, optimization, or before/after comparison.
 
 ## Process
-1. [INTEGRATION] Crawl representative/full accessible site according to scale and resource controls.
-2. [HYBRID] Collect response/status, redirects, robots, meta directives, canonicals, hreflang, sitemaps, internal links, depth, rendering, metadata, structured data, mobile/performance fields, and media references.
-3. [DETERMINISTIC] Join with webmaster/index observations and server/log evidence where available.
-4. [AI] Classify issues by actual impact pathway: discovery, crawl, render, canonical, index, serving, user experience, conversion, or maintenance risk.
-5. [HYBRID] Separate intentional configurations from defects using Brand Context/site type.
-6. [HYBRID] Write technical baseline plus Opportunities only for material actionable conditions.
+1. [HYBRID] Choose representative templates, URL classes, or a broader crawl according to site scale, uncertainty, and the actual decision. Full-site inspection is useful when justified, not a default requirement.
+2. [HYBRID] Gather relevant response/status, redirect, robots, directive, canonical, hreflang, sitemap, internal-link/depth, rendering, metadata, structured-data, mobile/performance, and media evidence from whatever valid host methods are available.
+3. [HYBRID] Add webmaster/index, server/log, analytics, or first-party evidence when it materially improves the picture.
+4. [AI] Interpret conditions by real mechanism: discovery, crawl, render, canonicalization, index eligibility/selection, serving, user experience, conversion, or maintenance risk. Do not turn every technical difference into a defect.
+5. [AI] Separate intentional configuration, unknown state, and actual failure using business/site context and evidence.
+6. [HYBRID] Preserve the technical baseline and material direct Observations that future work benefits from. Create an Opportunity only when an unresolved actionable condition is worth remembering.
 
-## Decisions / Routing
-- Route → SEO Organic Demand Intelligence when baseline evidence needs demand interpretation.
-- Route → Competitor Intelligence refresh only when canonical competitor intelligence is missing or stale.
-- Route → Core Opportunity qualification when an SEO intervention is evidence-supported.
 ## Deterministic local-site evidence
-When the scoped evidence is a local/first-party website export, do not hand-author material direct site facts from model memory or prose inspection. Run `scripts/inspect_site_evidence.py`, then persist material direct Observations through `scripts/persist_site_observation.py` using the captured fact IDs. Keep consequences, severity, and visibility implications as inference unless separately measured. Follow `core/policies/local-evidence.md`.
+When scoped evidence is a local/first-party website export, `scripts/inspect_site_evidence.py` and `scripts/persist_site_observation.py` may mechanically capture/persist material direct facts. Keep consequences, severity, and visibility implications as inference unless separately measured. Follow `core/policies/local-evidence.md`.
 
+## Verification
+- Scope is proportionate to the decision and site complexity.
+- Direct technical facts remain distinct from severity, cause, and expected impact.
+- Missing tools remain evidence limitations rather than capability-registry objects.
+- Specialist diagnosis or execution Workflows are optional expertise selected by the capable model/user, not required routes.
