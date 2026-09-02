@@ -4,7 +4,7 @@
   "type":"object",
   "additionalProperties":false,
   "properties":{
-    "id":{"type":"string","pattern":"^wev_[A-Za-z0-9_-]+$"},
+    "id":{"type":"string","pattern":"^(?:wev|pev)_[A-Za-z0-9_-]+$"},
     "object_type":{"const":"WorkflowEvolutionProposal"},
     "schema_version":{"type":"string","pattern":"^\\d+\\.\\d+\\.\\d+$"},
     "business_id":{"type":"string","pattern":"^[a-z0-9][a-z0-9_-]{0,63}$"},
