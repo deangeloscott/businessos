@@ -1,25 +1,9 @@
 {
   "system": "seo-aeo",
   "activities": [
-    {
-      "id": "ecosystem-tactic-radar",
-      "entry_contract": "seo.intelligence.ecosystem.tactic-radar",
-      "result": "Discover SEO/AEO tactics and platform findings, corroborate or invalidate them, and preserve useful evidence or Learning only when supported."
-    },
-    {
-      "id": "seo-aeo-experiment",
-      "entry_contract": "seo.learning.strategy-experiment-design",
-      "result": "Design a controlled or defensible quasi-experimental test when an uncertain SEO/AEO tactic is worth testing."
-    },
-    {
-      "id": "seo-aeo-experiment-analysis",
-      "entry_contract": "seo.measurement.experiment-analysis",
-      "result": "Analyze an SEO/AEO experiment without overstating causality and preserve reusable outcome evidence or Learning only when justified."
-    },
-    {
-      "id": "seo-aeo-domain-learning",
-      "entry_contract": "seo.aeo.learning.domain-learning",
-      "result": "Convert sufficiently supported organic-discovery outcomes into reusable context-specific SEO/AEO Learning."
-    }
+    {"id":"ecosystem-tactic-radar","entry_workflow":"seo.intelligence.ecosystem.tactic-radar","result":"Discover SEO/AEO tactics and platform findings, corroborate or invalidate them, and preserve useful evidence or Learning only when supported."},
+    {"id":"seo-aeo-experiment","entry_workflow":"seo.learning.strategy-experiment-design","result":"Design a controlled or defensible quasi-experimental test when an uncertain SEO/AEO tactic is worth testing."},
+    {"id":"seo-aeo-experiment-analysis","entry_workflow":"seo.measurement.experiment-analysis","result":"Analyze an SEO/AEO experiment without overstating causality and preserve reusable outcome evidence or Learning only when justified."},
+    {"id":"seo-aeo-domain-learning","entry_workflow":"seo.aeo.learning.domain-learning","result":"Convert sufficiently supported organic-discovery outcomes into reusable context-specific SEO/AEO Learning."}
   ]
 }
