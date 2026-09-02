@@ -18,25 +18,23 @@ def run(cmd,env,ok=True):
 
 def main():
     retired=[
+        'core/capabilities/catalog.json','docs/adding-a-capability.md',
         'core/providers/registry.json','core/schemas/runtime/capability-binding.schema.json','core/schemas/runtime/scheduler-bindings.schema.json',
         'scripts/preflight_capabilities.py','scripts/resolve_capability.py','scripts/bootstrap_environment.py','scripts/manage_local_capabilities.py',
         'scripts/register_scheduler_binding.py','deployment/operator-profile.json','docs/provider-resolution.md','docs/host-capability-discovery.md'
     ]
-    for rel in retired:req(not (ROOT/rel).exists(),f'retired runtime/provider artifact still exists: {rel}')
-    catalog=json.loads((ROOT/'core/capabilities/catalog.json').read_text())
-    ids={x.get('id') for x in catalog.get('capabilities',[])}
-    for capability in ['research.web.read','webpage.fetch','creative.image.generate','document.read']:
-        req(capability in ids,f'provider-neutral capability vocabulary missing {capability}')
-    guide=(ROOT/'docs/adding-a-capability.md').read_text()
-    for phrase in ['provider-neutral','Host/runtime responsibility','active model/harness/user decides','does not inventory host tools','Deliberate non-goals','research.web.read','webpage.fetch','creative.image.generate','document.read','Do not add aliases merely to mirror']:
-        req(phrase in guide,f'capability guidance missing boundary/current vocabulary: {phrase}')
-    for stale in ['web.search','web.fetch','media.image_generate']:
-        req(stale not in guide,f'capability guidance teaches retired alias: {stale}')
+    for rel in retired:req(not (ROOT/rel).exists(),f'retired runtime/provider/capability artifact still exists: {rel}')
+
+    # The model-facing contract should describe the work naturally and keep the host free
+    # to use whatever tools/Skills actually fit, rather than restoring an AURA tool ontology.
+    skill=(ROOT/'skills/viraltrac-aura/SKILL.md').read_text()
+    for phrase in ['Use the host normally','AURA does not define an allowlist','Use monitoring correctly','actual wakeups, recurrence, retries, and notification delivery']:
+        req(phrase in skill,f'AURA Skill lost monitoring/tool boundary: {phrase}')
 
     tmp=Path(tempfile.mkdtemp(prefix='aura-monitoring-continuity-'));env={**os.environ,'BUSINESSOS_WORKSPACE':str(tmp),'PYTHONDONTWRITEBYTECODE':'1','PYTHONUTF8':'1'};prior=os.environ.get('BUSINESSOS_WORKSPACE')
     try:
         os.environ['BUSINESSOS_WORKSPACE']=str(tmp)
-        init=run([sys.executable,str(ROOT/'scripts/init_business.py'),BID,'--name','Monitoring Continuity'],env)
+        run([sys.executable,str(ROOT/'scripts/init_business.py'),BID,'--name','Monitoring Continuity'],env)
         upsert=[sys.executable,str(ROOT/'scripts/upsert_source_profile.py'),BID]
         pricing=json.dumps({'signal':'pricing changes','mode':'recurring','expression':'monthly','source':'user','next_check_at':'2026-08-28T00:00:00Z','notification_mode':'material_changes_only'})
         run(upsert+['--source-reference','https://example.com/competitor','--display-name','Example Competitor','--subject-key','example_competitor','--subject-name','Example Competitor','--subject-kind','organization','--subject-relationship','competitor','--watch-status','active','--source-modality','text','--monitoring-question','What materially changed?','--cadence-mode','recurring','--cadence-expression','weekly','--cadence-source','user','--notification-mode','material_changes_only','--notification-source','user','--signal-cadence-json',pricing,'--last-checked-at','2026-08-20T00:00:00Z','--next-check-at','2026-08-28T00:00:00Z'],env)
@@ -51,7 +49,7 @@ def main():
         status=run([sys.executable,str(ROOT/'scripts/monitoring_status.py'),BID,'--at','2026-08-29T00:00:00Z'],env).stdout
         req('Runtime scheduling is external to AURA' in status,'human monitoring view implies AURA owns scheduling')
         req(not (tmp/'.businessos/environments').exists(),'monitoring created deprecated runtime binding state')
-        print('AURA monitoring continuity regression passed: semantic intent persists without provider/scheduler runtime machinery')
+        print('AURA monitoring continuity regression passed: semantic monitoring intent persists without a capability ontology or AURA-owned scheduler/runtime')
     finally:
         if prior is None:os.environ.pop('BUSINESSOS_WORKSPACE',None)
         else:os.environ['BUSINESSOS_WORKSPACE']=prior
