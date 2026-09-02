@@ -1,21 +1,12 @@
 #!/usr/bin/env python3
-"""Validate optional AURA work receipts without turning them into an execution gate.
-
-A Run is one-way continuity: the receipt may reference durable organizational evidence or
-results, but canonical objects do not need to reference the receipt back. Validation checks
-receipt shape, method provenance, and resolvable completed refs. It does not require a Run
-for valid work or certify QA, providers, permissions, readiness, or business outcomes.
-"""
+"""Validate optional AURA work receipts without turning them into an execution gate."""
 import json
 from jsonschema import Draft202012Validator
-
 from _common import *
+from operating_knowledge import get_playbook
 
 INTERNAL_MARKETING_ROLES={'internal_brief','internal_strategy','internal_analysis','internal_research','internal_planning'}
-RETIRED_RUN_BACKLINK_FIELDS={
-    'run_ref','run_id','run_method_type','run_method_ref','run_contract_id',
-    'run_binding','run_history_refs','contract_chain'
-}
+RETIRED_RUN_BACKLINK_FIELDS={'run_ref','run_id','run_method_type','run_method_ref','run_contract_id','run_binding','run_history_refs','contract_chain'}
 
 
 def _contracts():
@@ -34,7 +25,7 @@ def _method_type(run):return run.get('method_type') or ('aura_playbook' if run.g
 def _run_files_errors(business_id,contracts):
     errors=[];root=runtime_root()/'runs'/business_id
     if not root.exists():return errors
-    schema=json.loads((PRODUCT_ROOT/'core/schemas/runtime/run.schema.json').read_text())
+    schema=json.loads((PRODUCT_ROOT/'core/schemas/runtime/run.schema.json').read_text());registry=load_registry().get('contracts',[])
     for path in sorted(root.glob('*/run.json')):
         try:run=json.loads(path.read_text())
         except Exception as exc:errors.append(f'{storage_ref(path)} invalid Run JSON: {exc}');continue
@@ -42,11 +33,21 @@ def _run_files_errors(business_id,contracts):
         if run.get('business_id')!=business_id:errors.append(f'{storage_ref(path)} business_id mismatch')
         directory=path.parent
         if (directory/'contract-execution.json').exists():errors.append(f'{storage_ref(directory)} contains retired contract-execution.json; Runs are receipts, not execution ledgers')
-        method=_method_type(run);contract_id=run.get('contract_id');method_ref=run.get('method_ref')
-        if method=='aura_playbook':
-            if not contract_id or contract_id not in contracts:errors.append(f'{storage_ref(path)} aura_playbook Run references unavailable playbook {contract_id!r}')
-            if method_ref not in {None,contract_id}:errors.append(f'{storage_ref(path)} aura_playbook method_ref must equal contract_id')
-        elif contract_id is not None:errors.append(f'{storage_ref(path)} non-AURA Run must not carry contract_id')
+        method=_method_type(run);workflow_id=run.get('contract_id');playbook_id=run.get('playbook_id');method_ref=run.get('method_ref')
+        if method=='aura_workflow':
+            if not workflow_id or workflow_id not in contracts or contracts[workflow_id].get('type')!='workflow':errors.append(f'{storage_ref(path)} aura_workflow Run references unavailable Workflow {workflow_id!r}')
+            if method_ref not in {None,workflow_id}:errors.append(f'{storage_ref(path)} aura_workflow method_ref must equal Workflow ID')
+        elif method=='aura_playbook':
+            if playbook_id:
+                if not get_playbook(playbook_id,registry):errors.append(f'{storage_ref(path)} aura_playbook Run references unavailable Playbook {playbook_id!r}')
+                if method_ref not in {None,playbook_id}:errors.append(f'{storage_ref(path)} aura_playbook method_ref must equal playbook_id')
+                if workflow_id and (workflow_id not in contracts or contracts[workflow_id].get('type')!='workflow'):errors.append(f'{storage_ref(path)} Playbook Run references unavailable supporting Workflow {workflow_id!r}')
+            elif workflow_id:
+                # v0.1.x compatibility: old receipts used aura_playbook for detailed contract methods.
+                if workflow_id not in contracts:errors.append(f'{storage_ref(path)} legacy AURA receipt references unavailable Workflow {workflow_id!r}')
+                if method_ref not in {None,workflow_id}:errors.append(f'{storage_ref(path)} legacy AURA method_ref must equal contract_id')
+            else:errors.append(f'{storage_ref(path)} aura_playbook Run has no Playbook identifier')
+        elif workflow_id is not None or playbook_id is not None:errors.append(f'{storage_ref(path)} non-AURA Run must not claim AURA Playbook/Workflow identifiers')
         continuity=run.get('continuity') if isinstance(run.get('continuity'),dict) else {}
         if not continuity:continue
         if continuity.get('purpose')!='organizational_work_receipt':errors.append(f'{storage_ref(path)} continuity purpose is not organizational_work_receipt')
@@ -63,9 +64,7 @@ def _run_files_errors(business_id,contracts):
 def _canonical_backlink_errors(objects):
     errors=[]
     for obj,path in objects:
-        ext=obj.get('extensions') if isinstance(obj.get('extensions'),dict) else {}
-        bos=ext.get('businessos') if isinstance(ext.get('businessos'),dict) else {}
-        retired=sorted(RETIRED_RUN_BACKLINK_FIELDS & set(bos))
+        ext=obj.get('extensions') if isinstance(obj.get('extensions'),dict) else {};bos=ext.get('businessos') if isinstance(ext.get('businessos'),dict) else {};retired=sorted(RETIRED_RUN_BACKLINK_FIELDS & set(bos))
         if retired:errors.append(f'{path} contains retired canonical-to-Run backlink fields {retired}; optional receipts reference durable results one-way')
         if obj.get('object_type')=='Asset' and obj.get('owner_system')=='marketing-synthesis' and bos.get('customer_facing',True) is False:
             role=str(obj.get('business_role') or '').strip().lower()
