@@ -27,14 +27,15 @@ def adopt_extension(business_id,proposal_id):
     if proposal.get('status') in {'rejected','superseded'}:raise ValueError(f"Proposal is {proposal.get('status')}")
     if proposal.get('change_kind')=='canonical_revision' or proposal.get('proposed_scope')!='business':raise ValueError('Broader/canonical proposals are AURA product-development candidates and are not adopted as organization ProcessExtensions.')
     mode='augment_workflow' if proposal['change_kind']=='augment_existing' else 'local_workflow'
-    if mode=='augment_workflow' and not _workflow_exists(proposal.get('target_contract_id')):raise ValueError(f"Unknown canonical target Workflow: {proposal.get('target_contract_id')}")
+    target=proposal.get('target_workflow_id');local_id=proposal.get('proposed_local_workflow_id')
+    if mode=='augment_workflow' and not _workflow_exists(target):raise ValueError(f"Unknown canonical target Workflow: {target}")
     _validate_method_metadata(proposal.get('reads') or [],proposal.get('writes') or [])
 
     seed=f"{business_id}|{proposal_id}|{mode}";oid='pex_'+hashlib.sha256(seed.encode()).hexdigest()[:20];outdir=ROOT/'instances'/business_id/'learning'/'process-extensions';outdir.mkdir(parents=True,exist_ok=True);path=outdir/f'{oid}.json';existing=json.loads(path.read_text()) if path.exists() else {};timestamp=now()
     obj={
         'id':oid,'object_type':'ProcessExtension','schema_version':'1.0.0','business_id':business_id,
         'created_at':existing.get('created_at') or timestamp,'updated_at':timestamp,
-        'mode':mode,'owner_system':proposal['owner_system'],'target_contract_id':proposal.get('target_contract_id'),'local_contract_id':proposal.get('proposed_local_contract_id'),
+        'mode':mode,'owner_system':proposal['owner_system'],'target_workflow_id':target,'local_workflow_id':local_id,
         'title':proposal['title'],'purpose':proposal['summary'],'discovery_terms':proposal.get('discovery_terms') or [],'status':'active','scope':'business','scope_ref':None,
         'applies_when':proposal.get('applies_when') or [],'does_not_apply_when':proposal.get('does_not_apply_when') or [],'reads':proposal.get('reads') or [],'writes':proposal.get('writes') or [],
         'instructions':proposal.get('instructions') or [],'verification':proposal.get('verification') or [],
