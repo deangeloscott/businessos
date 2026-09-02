@@ -16,20 +16,21 @@ evidence_inputs:
 # Multi-Location and Franchise Governance
 
 ## Purpose
-Scale local optimization while preserving per-location truth, ownership, quality, and exception handling.
+Scale local operations while preserving per-location truth, ownership, quality, and meaningful exceptions.
 
 ## Business Outcome
-Improve valuable organic discovery through multi-location and franchise governance, with a clear SEO/AEO mechanism and connection to the active business Objective.
+Keep multi-location or franchise discovery coherent at brand scale without overwriting real local differences or turning governance into an internal approval bureaucracy.
 
-## Run When
-Run only when an approved Action Packet routes to **Multi-Location and Franchise Governance**, or when an authorized incident response requires it.
+## Use When
+Use when many locations, franchisees, regions, or local operators share brand systems but differ in facts, ownership, offerings, permissions, or performance.
 
 ## Process
-1. [HYBRID] Create a location registry with IDs, ownership/franchise relationships, canonical facts, services, permissions, and lifecycle status.
-2. [HYBRID] Define which fields are centrally governed versus locally editable and establish conflict-resolution rules.
-3. [HYBRID] Template repeatable data structures and QA, not duplicated customer-facing copy.
-4. [HYBRID] Detect location-specific anomalies: closures, moves, duplicates, hours changes, review spikes, profile suspensions, and inconsistent pages.
-5. [HYBRID] Route local changes through per-location autonomy/approval when ownership or legal responsibility differs.
-6. [HYBRID] Roll up metrics at location, region, franchisee, and brand levels without hiding poor individual-location performance.
+1. Maintain the minimum useful location registry: stable identity, ownership/franchise relationships, canonical facts, services, important permissions/constraints, and lifecycle state where those meanings matter later.
+2. Distinguish facts and fields that are genuinely brand-wide from those that are location-specific or locally controlled. Resolve conflicts from real ownership, legal, platform, or organizational authority rather than an AURA autonomy tier.
+3. Standardize repeatable data structures, quality checks, and reusable components where useful, but do not template duplicate customer-facing copy as a substitute for local relevance.
+4. Detect material location-specific exceptions such as closures, moves, duplicates, hours changes, suspensions, inconsistent pages/profiles, review anomalies, or offering changes.
+5. Apply changes through the person/system that actually owns the relevant external surface when the user's request and real permissions allow it. Preserve durable handoff state only when another actor genuinely must continue the work later.
+6. Compare performance at the location, region, franchisee, and brand level when those rollups help decisions, while keeping poor individual-location outcomes visible rather than hiding them in averages.
 
-
+## Proportional Scope
+Use governance only to the degree scale and ownership complexity require. A handful of locations should not inherit enterprise bureaucracy merely because the same Workflow can describe it.
