@@ -10,7 +10,6 @@ from validate_research_evidence import DIRECT_ACQUISITION_METHODS,DISCOVERY_ONLY
 
 
 def fail(msg): raise AssertionError(msg)
-
 def contract(cid):
     for p in ROOT.rglob('CONTEXT.md'):
         if '/contracts/' not in p.as_posix(): continue
@@ -23,8 +22,9 @@ def main():
     policy=ROOT/'core/policies/intelligence-foundation.md'
     if not policy.exists():fail('missing shared intelligence foundation policy')
     ptext=policy.read_text()
-    for phrase in ['The organization is the durable unit of intelligence','Shared mechanics, domain-specific meaning','Capability-neutral','Minimum sufficient research','Contextual comparison','Human and machine legibility']:
+    for phrase in ['The organization is the durable unit of intelligence','Shared mechanics, domain-specific meaning','Tool/model neutral','Minimum sufficient research','Contextual comparison','Human and machine legibility']:
         if phrase not in ptext:fail(f'intelligence foundation missing invariant: {phrase}')
+    if 'universal capability' in ptext.lower() or 'provider-neutral capability' in ptext.lower():fail('intelligence foundation retained invented capability ontology')
 
     research=(ROOT/'core/policies/research-evidence.md').read_text()
     for phrase in ['Modality-specific support boundary','image_inspection','audio_inspection','video_inspection','transcript_read','does not establish tone','Transcript-only evidence can support spoken-language claims']:
@@ -37,13 +37,11 @@ def main():
     unseen_summary={'extensions':{'businessos_evidence':{'capture_status':'captured','acquisition_method':'ai_summary','captured_text':'model summary'}}}
     if _capture_quality(unseen_summary)[0]:fail('AI summary of unseen media must remain discovery-only')
 
-    schema=json.loads((ROOT/'core/schemas/intelligence/source-profile.schema.json').read_text())
-    props=schema.get('properties',{})
+    schema=json.loads((ROOT/'core/schemas/intelligence/source-profile.schema.json').read_text());props=schema.get('properties',{})
     for field in ['subject_key','subject_name','subject_kind','subject_relationships','source_modalities','monitoring_questions','material_change_signals','monitoring_cadence','monitoring_signal_cadences','monitoring_notification','last_material_change_at']:
         if field not in props:fail(f'SourceProfile missing intelligence-maturation field {field}')
     required=set(schema.get('required',[]))
-    if any(field in required for field in ['subject_key','subject_name','subject_kind','source_modalities','monitoring_questions','monitoring_cadence','monitoring_signal_cadences','monitoring_notification']):
-        fail('new subject/watch enrichment must remain optional for backward compatibility')
+    if any(field in required for field in ['subject_key','subject_name','subject_kind','source_modalities','monitoring_questions','monitoring_cadence','monitoring_signal_cadences','monitoring_notification']):fail('new subject/watch enrichment must remain optional for backward compatibility')
     rels=set(props['subject_relationships']['items']['enum'])
     if {'customer','prospect'} & rels:fail('shared public subject monitoring must not become a customer/prospect surveillance relationship model')
 
@@ -54,18 +52,10 @@ def main():
 
     _,subject_meta,subject_body=contract('core.intelligence.subject-monitoring')
     if subject_meta.get('type')!='workflow':fail('subject monitoring must be represented as a Workflow')
-    for phrase in [
-        'one SourceProfile per source/surface','shared `subject_key`','text, documents, images, audio, video, transcripts',
-        'Cadence and `next_check_at` are organizational monitoring intent','never proof that a background task exists',
-        'monitoring_signal_cadences','notification intent separate','material-change-oriented default',
-        'let the current harness/runtime create the real schedule separately',
-    ]:
+    for phrase in ['one SourceProfile per source/surface','shared `subject_key`','text, documents, images, audio, video, transcripts','Cadence and `next_check_at` are organizational monitoring intent','never proof that a background task exists','monitoring_signal_cadences','notification intent separate','material-change-oriented default','let the current harness/runtime create the real schedule separately']:
         if phrase not in subject_body:fail(f'subject monitoring missing behavior: {phrase}')
-    if 'core.intelligence.ecosystem.maintain-source-profile' not in (subject_meta.get('workflows') or {}).get('required',[]):
-        fail('subject monitoring must reuse shared SourceProfile Workflow knowledge')
+    if 'core.intelligence.ecosystem.maintain-source-profile' not in (subject_meta.get('workflows') or {}).get('required',[]):fail('subject monitoring must reuse shared SourceProfile Workflow knowledge')
 
-    # Semantic intent belongs to the active model/user. Core may expose useful operating
-    # knowledge without retaining a semantic resolver service.
     if (ROOT/'core/contracts/routing/resolve-intent').exists():fail('retired semantic intent resolver still exists in Core')
     core_map=json.loads((ROOT/'core/process-map.json').read_text());activities=core_map.get('activities',[]);entry_ids=[a.get('entry_contract') for a in activities]
     if any(a.get('id')=='resolve-intent' or a.get('entry_contract')=='core.routing.resolve-intent' for a in activities):fail('Core process map reintroduced semantic intent routing')
@@ -91,15 +81,7 @@ def main():
     co_map=json.loads((ROOT/'systems/customer-optimization/process-map.json').read_text())
     if 'customer-optimization.measurement.customer-value' not in [a.get('entry_contract') for a in co_map.get('activities',[])]:fail('Customer Optimization process map missing customer-value analysis')
 
-    source_profile={
-        'id':'sprof_demo','object_type':'SourceProfile','subject_name':'Example Creator','subject_kind':'creator',
-        'subject_relationships':['thought_leader'],'source_reference':'https://example.com/channel','source_modalities':['video'],
-        'watch_status':'active','attention_priority':'medium','discovery_reason':'Learn durable content mechanisms.',
-        'monitoring_questions':['What topics are changing?'],'material_change_signals':['Major positioning shift'],
-        'monitoring_cadence':{'mode':'recurring','expression':'weekly','source':'inferred','timezone':None,'notes':None},
-        'monitoring_notification':{'mode':'material_changes_only','source':'policy','notes':None},
-        'last_checked_at':'2026-08-29T00:00:00Z','next_check_at':'2026-09-05T00:00:00Z'
-    }
+    source_profile={'id':'sprof_demo','object_type':'SourceProfile','subject_name':'Example Creator','subject_kind':'creator','subject_relationships':['thought_leader'],'source_reference':'https://example.com/channel','source_modalities':['video'],'watch_status':'active','attention_priority':'medium','discovery_reason':'Learn durable content mechanisms.','monitoring_questions':['What topics are changing?'],'material_change_signals':['Major positioning shift'],'monitoring_cadence':{'mode':'recurring','expression':'weekly','source':'inferred','timezone':None,'notes':None},'monitoring_notification':{'mode':'material_changes_only','source':'policy','notes':None},'last_checked_at':'2026-08-29T00:00:00Z','next_check_at':'2026-09-05T00:00:00Z'}
     profile_path=ROOT/'instances/example/intelligence/source-profiles/sprof_demo.json'
     if _page_for(source_profile)!='Tracked-Subjects':fail('SourceProfile human view is not routed to Tracked-Subjects')
     rendered=_entry(source_profile,profile_path)
