@@ -48,7 +48,6 @@ def render(meta,body):
 def _replace_body(body):
     for old,new in BODY_REPLACEMENTS:body=body.replace(old,new)
     return body
-
 def _write_json(path,obj,dry_run):
     if dry_run:return
     path.parent.mkdir(parents=True,exist_ok=True);tmp=path.with_suffix(path.suffix+'.tmp');tmp.write_text(json.dumps(obj,indent=2)+'\n',encoding='utf-8');os.replace(tmp,path)
@@ -76,6 +75,8 @@ def _migrate_contracts(dry_run):
                 if values:merged[kind]=values
             if merged:meta['workflows']=merged
             composition_blocks+=1;dirty=True
+        migrated_meta=_replace_exact(meta,{OLD_EVOLUTION_ID:NEW_EVOLUTION_ID})
+        if migrated_meta!=meta:meta=migrated_meta;dirty=True
         new_body=_replace_body(body)
         if new_body!=body:body_changes+=1;dirty=True;body=new_body
         if meta.get('id')==OLD_EVOLUTION_ID:meta['id']=NEW_EVOLUTION_ID;dirty=True
@@ -169,8 +170,6 @@ def _migrate_run_receipts(dry_run):
         before=json.dumps(run,sort_keys=True);old_workflow=run.pop('contract_id',None)
         if old_workflow and not run.get('workflow_id'):run['workflow_id']=old_workflow
         method=run.get('method_type');playbook_id=run.get('playbook_id');workflow_id=run.get('workflow_id')
-        # v0.1.1 used aura_playbook for detailed procedure receipts. If no real high-level
-        # Playbook was named, that provenance becomes aura_workflow.
         if method=='aura_playbook' and not playbook_id and workflow_id:
             run['method_type']='aura_workflow';run['method_ref']=workflow_id
             continuity=run.get('continuity')
