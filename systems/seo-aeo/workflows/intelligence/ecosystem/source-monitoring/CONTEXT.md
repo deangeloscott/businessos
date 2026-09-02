@@ -23,23 +23,28 @@ Capture material official search/answer-engine changes and credible SEO/AEO rese
 Keep SEO/AEO strategy current, evidence-linked, and connected to measurable organic and business outcomes without turning AURA into a scheduler or creating a parallel strategy-evidence store.
 
 ## Run When
-Run when the user/runtime invokes this monitoring work because its cadence intent is due, a priority source changes, or another material signal makes a fresh check useful. AURA may remember monitoring intent; the active harness/runtime owns actual scheduling and polling.
+Use when a fresh check of important SEO/AEO sources is useful because the user asks, a runtime invokes the work, a known source changed, or another material signal warrants review. AURA may remember monitoring intent; the active harness/runtime owns actual scheduling and polling.
 
 ## Do Not Run When
 Do not treat a publication, practitioner opinion, competitor behavior, or one business result as a validated tactic by itself. Do not use private cross-business evidence unless the applicable evidence-sharing rules actually permit it.
 
 ## Process
-1. [AI] Maintain a source map grouped by official documentation/changelogs, primary research, replicated practitioner evidence, case studies, communities, and speculative commentary; record which fact types each source can credibly support.
+1. [AI] Maintain or use a source map grouped by official documentation/changelogs, primary research, replicated practitioner evidence, case studies, communities, and speculative commentary; record which fact types each source can credibly support when that distinction matters.
 2. [INTEGRATION] Using the active harness's available capabilities, retrieve new or changed items and record publication/change time separately from retrieval time when known.
-3. [DETERMINISTIC] Deduplicate syndicated or repeated items, preserve the original source identity, and record a content/version hash when useful.
-4. [AI] Classify each material item by affected SEO/AEO mechanism, surface, market applicability, materiality, and which existing Learnings or playbooks could be affected.
+3. [HYBRID] Deduplicate syndicated or repeated items, preserve the original source identity, and record a content/version hash when useful.
+4. [AI] Classify each material item by affected SEO/AEO mechanism, surface, market applicability, materiality, and which existing Learning or operating knowledge could be affected.
 5. [HYBRID] Record direct factual statements as Observations with SourceRecord lineage; do not turn recommendations or speculative claims into facts.
-6. [HYBRID] Route distinct material strategy claims to claim extraction, evidence assessment, and official-guidance contradiction checking before they influence stronger reusable guidance.
+6. [AI] For material strategy claims, use claim extraction, evidence assessment, official-guidance checking, experimentation, or another sound method only when it materially improves the decision. Do not create an internal routing chain merely because those Workflows exist.
+7. [AI] Preserve a material operational concern, unresolved question, Insight, Learning change, or other durable state only when future organizational work benefits from remembering it.
 
-## Decisions / Routing
-- Material source claims → `seo.intelligence.ecosystem.claim-extraction`.
-- Material operational/platform issue → the relevant SEO incident or other appropriate organizational work.
-- A potentially reusable process change → evidence-supported Learning first; broader playbook changes belong in the explicit AURA playbook-evolution path.
+## Related operating knowledge
+Useful methods may include:
+- `seo.intelligence.ecosystem.claim-extraction`
+- `seo.intelligence.ecosystem.evidence-grading`
+- `seo.intelligence.ecosystem.official-contradiction-check`
+- `seo.learning.strategy-experiment-design`
+
+These are optional expert methods selected by the model/user, not runtime routes.
 
 ## Verification
 - Validate written AURA objects and preserve SourceRecord/Observation lineage.
@@ -59,4 +64,4 @@ Do not treat a publication, practitioner opinion, competitor behavior, or one bu
 ## Completion Criteria
 - Material new evidence is captured through current SourceRecord/Observation semantics when useful.
 - Provenance, contradictory evidence, applicability, confidence, and external guidance status remain inspectable.
-- No tactic is promoted, deprecated, or blocked for a reason that cannot be traced to evidence or an actual external constraint.
+- No tactic is promoted, deprecated, blocked, or handed off merely because a monitoring Workflow observed it.
