@@ -37,6 +37,18 @@ COMMON_REPLACEMENTS=[
     ('core/contracts','core/workflows'),
 ]
 
+QUALIFICATION_REPLACEMENTS=[
+    ('contract_tests','workflow_tests'),
+    ('contract_count','workflow_count'),
+    ('contract_path','workflow_path'),
+    ('contract_ids','workflow_ids'),
+    ('contract_acceptance','workflow_acceptance'),
+    ('event_from_contract','event_from_workflow'),
+    ('CONTRACT_ID','WORKFLOW_ID'),
+]
+
+DUPLICATE_WORKFLOW_KEYS=('workflow_id','workflow_path','workflow_count','workflow_tests')
+
 
 def _git(*args,check=True):
     return subprocess.run(['git',*args],cwd=ROOT,text=True,capture_output=True,check=check)
@@ -79,20 +91,29 @@ def rename_workflow_trees():
     return moved
 
 
+def _collapse_duplicate_workflow_keys(text):
+    """Collapse transitional adjacent aliases after both names become Workflow-native."""
+    out=text
+    for key in DUPLICATE_WORKFLOW_KEYS:
+        # Handles values such as wid, c['workflow_id'], len(tests), and tests. The old
+        # compatibility fields are adjacent in the authored qualification dictionaries.
+        pattern=rf"(['\"]{re.escape(key)}['\"]\s*:\s*([^,\n]+)\s*,)\s*['\"]{re.escape(key)}['\"]\s*:\s*\2\s*,"
+        out=re.sub(pattern,r'\1',out)
+    return out
+
+
 def _rewrite_python_architecture(path):
     text=path.read_text(encoding='utf-8');new=text
     new=new.replace(".get('contracts',[])",".get('workflows',[])")
     new=new.replace(".get('contracts', [])",".get('workflows', [])")
     new=new.replace("['contracts']","['workflows']")
     new=new.replace('["contracts"]','["workflows"]')
-    # Path components written as ROOT/'...'/ 'contracts' /... should move with the tree.
+    # Path components written as ROOT/'...'/ 'contracts' /... move with the authored tree.
     new=re.sub(r"(?<=/)'contracts'(?=/)","'workflows'",new)
     new=re.sub(r'(?<=/)"contracts"(?=/)',r'"workflows"',new)
     new=new.replace('RETIRED_CONTRACT_METADATA','RETIRED_WORKFLOW_METADATA')
     new=new.replace('contract_id','workflow_id')
-    # Transitional qualification code briefly emitted both fields. Once contract_id is
-    # renamed, collapse identical adjacent Workflow keys instead of preserving a duplicate.
-    new=re.sub(r"(['\"]workflow_id['\"]\s*:\s*([A-Za-z_]\w*)\s*,)\s*['\"]workflow_id['\"]\s*:\s*\2\s*,",r'\1',new)
+    new=_collapse_duplicate_workflow_keys(new)
     if new!=text:path.write_text(new,encoding='utf-8')
 
 
@@ -115,17 +136,18 @@ def rewrite_architecture_terms():
     for path in text_files():
         if path.suffix.lower()=='.py':_rewrite_python_architecture(path)
 
-    # Qualification is entirely about authored operating knowledge, so local symbols should
-    # not preserve the retired Contract model either.
+    # Qualification should expose one Workflow vocabulary, not compatibility aliases.
     qroot=ROOT/'qualification'
     if qroot.exists():
         for path in qroot.rglob('*.py'):
             text=path.read_text(encoding='utf-8');new=text
+            for old,replacement in QUALIFICATION_REPLACEMENTS:new=new.replace(old,replacement)
             for old,replacement in [('load_contracts','load_workflows'),('parse_contract','parse_workflow'),('contract_id','workflow_id'),('contract_files','workflow_files')]:new=new.replace(old,replacement)
             new=re.sub(r'\bcontracts\b','workflows',new)
             new=re.sub(r'\bcontract\b','workflow',new)
+            new=re.sub(r'\bContract\b','Workflow',new)
             new=re.sub(r'\bcid\b','wid',new)
-            new=re.sub(r"(['\"]workflow_id['\"]\s*:\s*([A-Za-z_]\w*)\s*,)\s*['\"]workflow_id['\"]\s*:\s*\2\s*,",r'\1',new)
+            new=_collapse_duplicate_workflow_keys(new)
             if new!=text:path.write_text(new,encoding='utf-8')
     return changed
 
@@ -145,6 +167,18 @@ def assert_python_integrity():
                     if key.value in seen:problems.append(f'{path.relative_to(ROOT)}:{getattr(node,"lineno",0)} duplicate dict key {key.value!r}')
                     seen.add(key.value)
     if problems:raise RuntimeError('Python integrity failed after Workflow rewrite:\n'+'\n'.join(problems[:200]))
+
+
+def assert_qualification_shape():
+    qroot=ROOT/'qualification'
+    if not qroot.exists():return
+    forbidden=('contract_id','contract_tests','contract_count','contract_path','contract_acceptance','event_from_contract','load_contracts','parse_contract','contract_files','--contract')
+    problems=[]
+    for path in qroot.rglob('*.py'):
+        text=path.read_text(encoding='utf-8')
+        for token in forbidden:
+            if token in text:problems.append(f'{path.relative_to(ROOT)}: retired qualification architecture token remains: {token}')
+    if problems:raise RuntimeError('Qualification Workflow cleanup incomplete:\n'+'\n'.join(problems[:200]))
 
 
 def remove_stale_derived_state():
@@ -210,7 +244,10 @@ def regenerate_derived_state():
     ]
     missing=[rel for rel in required if not (ROOT/rel).exists()]
     if missing:raise RuntimeError('Derived regeneration incomplete: '+', '.join(missing))
-    if (ROOT/'generated/contract-registry.json').exists():raise RuntimeError('Retired contract registry was regenerated')
+    retired=ROOT/'generated/contract-registry.json'
+    if retired.exists():raise RuntimeError('Retired contract registry was regenerated')
+    registry=__import__('json').loads((ROOT/'generated/workflow-registry.json').read_text(encoding='utf-8'))
+    if 'workflows' not in registry or 'contracts' in registry:raise RuntimeError('Workflow registry did not regenerate with one canonical workflows collection')
     return required
 
 
@@ -239,6 +276,7 @@ def main():
 
     # Prove the transformed authored/code shape before deleting the recovery helpers.
     assert_python_integrity()
+    assert_qualification_shape()
     assert_canonical_shape(allow_one_time_helpers=True)
     regenerate_derived_state()
 
@@ -248,6 +286,7 @@ def main():
     remove_stale_derived_state()
     derived=regenerate_derived_state()
     assert_python_integrity()
+    assert_qualification_shape()
     assert_canonical_shape(allow_one_time_helpers=False)
 
     print('Workflow semantic migration:',result)
