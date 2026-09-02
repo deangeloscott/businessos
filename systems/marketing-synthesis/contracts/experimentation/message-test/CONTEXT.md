@@ -34,8 +34,8 @@ When an uncertain marketing hypothesis is material enough that a bounded test ca
 3. [HYBRID] Define assignment/control/baseline or another defensible comparison, sample/window requirements, success metrics, guardrails, stopping rules, and planned segmentation appropriate to the actual setting.
 4. [HYBRID] Identify operational, customer, ethical, legal/platform, contamination, and interpretation risks plus recovery/rollback considerations when relevant.
 5. [HYBRID] Confirm the needed measurement and implementation evidence is realistically obtainable through the active environment. AURA capability declarations do not prove live availability.
-6. [DETERMINISTIC] Persist the Experiment before observing results when durable experiment state will be useful. Link it to the relevant hypothesis, Opportunity/Learning/Asset/evidence as appropriate; do not require an Action object.
-7. [INTEGRATION] If running the experiment is inside the user's current request and the active harness has the necessary real capability/access, execute the bounded test through that system. Otherwise return the complete experiment design or create a real durable handoff only when another actor genuinely needs to execute it. Do not create a Manual Action Packet or internal permission object.
+6. [DETERMINISTIC] Persist the Experiment before observing results when durable experiment state will be useful. Link it to the relevant hypothesis, Opportunity/Learning/Asset/evidence as appropriate; do not require a generic action object.
+7. [INTEGRATION] If running the experiment is inside the user's current request and the active harness has the necessary real capability/access, execute the bounded test through that system. Otherwise return the complete experiment design and use a real durable handoff only when another actor genuinely needs to execute it. Do not create an internal AURA fallback, permission object, or execution chain merely because the active environment cannot run the test now.
 8. [HYBRID] Verify implementation state when needed for interpretation and later use observed results through appropriate measurement/OutcomeEvaluation methods rather than treating launch as success.
 
 ## Verification
@@ -44,4 +44,4 @@ When an uncertain marketing hypothesis is material enough that a bounded test ca
 - User request scope and real external constraints govern execution; AURA does not manufacture authorization.
 
 ## Completion Criteria
-- A defensible Experiment/design exists and any claimed execution is grounded in actual host state, with no ActionPacket, Manual Action Packet, or mandatory runtime route.
+- A defensible Experiment/design exists and any claimed execution is grounded in actual host state without a fabricated internal execution, routing, or permission lifecycle.
