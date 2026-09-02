@@ -82,7 +82,7 @@ def main():
         plan=build_plan(BID,'core.attention.manage')
         req('core/policies/attention-lifecycle.md' in plan['files'],'attention SOP should load attention continuity policy')
         policy=(ROOT/'core/policies/attention-lifecycle.md').read_text()
-        req('Attention is organizational memory' in policy and 'not proof that a background task exists' in policy,'attention policy lost the runtime boundary')
+        req('Attention is organizational memory' in policy and 'proof that a background task exists' in policy and 'not execution authority' in policy,'attention policy lost the runtime boundary')
         req('execution gate' in policy or 'execution' in policy,'attention policy should explicitly keep attention separate from execution authority')
 
         print('attention/platform continuity regression passed without Run, approval, scheduler, or delivery-channel coupling')
