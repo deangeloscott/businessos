@@ -3,7 +3,7 @@
 from _common import *
 import json,re
 
-# Authored workflow metadata is operating knowledge only. Product version belongs to
+# Authored Workflow metadata is operating knowledge only. Product version belongs to
 # VERSION / INSTALLATION.json; runtime/control metadata belongs to the host.
 RETIRED_CONTRACT_METADATA={'version','risk','autonomy_ceiling','events','schedule','capabilities'}
 
@@ -17,20 +17,25 @@ def _section(body,name):
     return match.group(1).strip() if match else ''
 
 
-def _write_task_navigator(process_maps,inst):
-    from operating_knowledge import PLAYBOOK_BY_SYSTEM
+def _write_task_navigator(process_maps,inst,registry):
+    from operating_knowledge import OPERATING_AREAS,playbooks_for_system
     cat=module_catalog();installed=sorted(installed_modules()-{'core'});maps={d.get('system'):d for d in process_maps if isinstance(d,dict)}
-    lines=['# Task Navigator','',f"Installed edition: **{inst.get('display_name','ViralTrac AURA')}**.",'','Ask for the business outcome in normal language. AURA may surface a high-level Playbook and useful Workflows; this file is only a human browse view.','']
+    lines=['# Task Navigator','',f"Installed edition: **{inst.get('display_name','ViralTrac AURA')}**.",'','Ask for the business outcome in normal language. AURA may surface a useful Playbook and supporting Workflows; this file is only a human browse view.','']
     for mid in installed:
-        meta=cat.get(mid,{});playbook=PLAYBOOK_BY_SYSTEM.get(mid)
-        title=playbook.get('title') if playbook else meta.get('display_name',mid)
-        summary=playbook.get('summary') if playbook else meta.get('description','')
-        lines += [f"## {title}",'',summary,'','| Workflow | Result | Workflow ID |','|---|---|---|']
+        meta=cat.get(mid,{});area=OPERATING_AREAS.get(mid,{});title=area.get('title') or meta.get('display_name',mid);summary=area.get('summary') or meta.get('description','')
+        lines += [f"## {title}",'',summary,'','### Playbooks','']
+        rows=playbooks_for_system(mid,registry)
+        if rows:
+            for row in rows:
+                entry=f" — common entry `{row['entry_workflow']}`" if row.get('entry_workflow') else ''
+                lines.append(f"- **{row['title']}** — {row['summary']}{entry}")
+        else:lines.append('- No curated Playbook is required; use relevant Workflows directly.')
+        lines += ['','### Common Workflows','','| Workflow | Result | Workflow ID |','|---|---|---|']
         for a in (maps.get(mid) or {}).get('activities',[]):lines.append(f"| {a.get('id','').replace('-',' ').title()} | {a.get('result','')} | `{a.get('entry_contract','')}` |")
         lines.append('')
     lines += ['## AURA Core','','Core supplies shared organization memory, truth/evidence rules, decisions, continuity, measurement, Learning, and workspace integrity. It supports the business Playbooks rather than acting as another business Playbook.','','| Workflow | Result | Workflow ID |','|---|---|---|']
     for a in (maps.get('core') or {}).get('activities',[]):lines.append(f"| {a.get('id','').replace('-',' ').title()} | {a.get('result','')} | `{a.get('entry_contract','')}` |")
-    lines += ['','See `PLAYBOOKS.md` for the high-level business jobs and `WORKFLOW-INDEX.md` for the detailed reusable procedures.',''];(ROOT/'TASK-NAVIGATOR.md').write_text('\n'.join(lines),encoding='utf-8')
+    lines += ['','See `PLAYBOOKS.md` for the high-level business jobs and `WORKFLOW-INDEX.md` for all detailed reusable procedures.',''];(ROOT/'TASK-NAVIGATOR.md').write_text('\n'.join(lines),encoding='utf-8')
 
 
 def main():
@@ -69,7 +74,7 @@ def main():
     (gen/'schema-registry.json').write_text(json.dumps(sreg,indent=2)+'\n',encoding='utf-8');(gen/'object-type-registry.json').write_text(json.dumps({x.get('title'):x.get('path') for x in sreg if x.get('title')},indent=2)+'\n',encoding='utf-8')
     by_system={}
     for c in contracts:by_system.setdefault(c.get('owner_system','unknown'),[]).append(c)
-    lines=['# Workflow Index','','Generated from AURA workflow frontmatter. These are reusable procedures, not a tool registry or execution graph.','']
+    lines=['# Workflow Index','','Generated from AURA Workflow frontmatter. These are reusable procedures, not a tool registry or execution graph.','']
     for owner in sorted(by_system):
         workflows=[c for c in by_system[owner] if c.get('type')=='workflow']
         if not workflows:continue
@@ -80,18 +85,18 @@ def main():
     (ROOT/'WORKFLOW-INDEX.md').write_text('\n'.join(lines).rstrip()+'\n',encoding='utf-8')
     old=ROOT/'PLAYBOOK-INDEX.md'
     if old.exists():old.unlink()
-    import generate_playbooks;generate_playbooks.main();inst=installation();_write_task_navigator(process_maps,inst);pub=publisher_metadata();publisher=pub.get('publisher',{}) if pub else {}
+    import generate_playbooks;generate_playbooks.main();inst=installation();_write_task_navigator(process_maps,inst,contracts);pub=publisher_metadata();publisher=pub.get('publisher',{}) if pub else {}
     from operating_knowledge import installed_playbooks
-    workflow_count=sum(1 for c in contracts if c.get('type')=='workflow')
+    workflow_count=sum(1 for c in contracts if c.get('type')=='workflow');playbook_count=len(installed_playbooks(contracts))
     manifest_root={
         'version':os_version(),'maturity':inst.get('maturity','alpha'),'edition':inst.get('edition','unmanaged'),'display_name':inst.get('display_name','ViralTrac AURA'),'public_name':inst.get('public_name',publisher.get('product_name','ViralTrac AURA')),'name_expansion':inst.get('name_expansion',publisher.get('product_name_expansion','Agentic Understanding and Reinforcement Architecture')),'descriptor':inst.get('descriptor',publisher.get('product_descriptor','AI-native BusinessOS')),'brand':inst.get('brand','ViralTrac'),'branding':'BRANDING.md','startup_message':inst.get('startup_message','BEGINNERS-GUIDE.md'),'publisher':{'id':publisher.get('id'),'name':publisher.get('name'),'metadata':'PUBLISHER.json'},'portable_first':bool(inst.get('portable_first',False)),'default_environment':inst.get('default_environment','local'),
         'workspace':{'default_root':'product_root','external_root_supported':True,'migration_helper':'scripts/migrate_workspace.py','selectors':['BUSINESSOS_WORKSPACE','.businessos/workspace.json'],'deployment_profiles':'distribution/deployment-profiles.json'},
         'state_locations':{'canonical_business':'instances/<business-id>/','run':'runtime/runs/<business-id>/<run-id>/','human_knowledge':'knowledge/<business-id>/','attachments':'attachments/'},
-        'installed_modules':sorted(installed_modules()),'systems':sorted(by_system),'playbook_count':len(installed_playbooks()),'workflow_count':workflow_count,'contract_count':len(contracts),'schema_count':len(sreg),'entrypoints':{'human':'BEGINNERS-GUIDE.md','deployment':'DEPLOYMENT.md','branding':'BRANDING.md','playbooks':'PLAYBOOKS.md','workflows':'WORKFLOW-INDEX.md','task_navigator':'TASK-NAVIGATOR.md','agent':'CONTEXT.md','skill':'skills/viraltrac-aura/SKILL.md','glossary':'GLOSSARY.md'},'generated_from':'scripts/generate_registry.py'
+        'installed_modules':sorted(installed_modules()),'systems':sorted(by_system),'playbook_count':playbook_count,'workflow_count':workflow_count,'contract_count':len(contracts),'schema_count':len(sreg),'entrypoints':{'human':'BEGINNERS-GUIDE.md','deployment':'DEPLOYMENT.md','branding':'BRANDING.md','playbooks':'PLAYBOOKS.md','workflows':'WORKFLOW-INDEX.md','task_navigator':'TASK-NAVIGATOR.md','agent':'CONTEXT.md','skill':'skills/viraltrac-aura/SKILL.md','glossary':'GLOSSARY.md'},'generated_from':'scripts/generate_registry.py'
     }
     (ROOT/'SYSTEM-MANIFEST.json').write_text(json.dumps(manifest_root,indent=2)+'\n',encoding='utf-8')
     manifest=[]
     for p in sorted([x for x in ROOT.rglob('*') if x.is_file() and 'generated/' not in x.as_posix() and '__pycache__' not in x.as_posix()]):manifest.append({'path':str(p.relative_to(ROOT)),'sha256':hashlib.sha256(p.read_bytes()).hexdigest(),'bytes':p.stat().st_size})
-    (gen/'workspace-manifest.json').write_text(json.dumps({'version':os_version(),'edition':inst.get('edition','unmanaged'),'files':manifest},indent=2)+'\n',encoding='utf-8');(gen/'checksums.txt').write_text('\n'.join(f"{x['sha256']}  {x['path']}" for x in manifest)+'\n',encoding='utf-8');print(f'Generated registry for {len(contracts)} contracts, {workflow_count} workflows, {len(installed_playbooks())} playbooks, {len(sreg)} schemas.')
+    (gen/'workspace-manifest.json').write_text(json.dumps({'version':os_version(),'edition':inst.get('edition','unmanaged'),'files':manifest},indent=2)+'\n',encoding='utf-8');(gen/'checksums.txt').write_text('\n'.join(f"{x['sha256']}  {x['path']}" for x in manifest)+'\n',encoding='utf-8');print(f'Generated registry for {len(contracts)} contracts, {workflow_count} workflows, {playbook_count} playbooks, {len(sreg)} schemas.')
 
 if __name__=='__main__':main()
