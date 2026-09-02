@@ -116,6 +116,7 @@ def retire_development_fossils():
         'scripts/migrate_workflow_semantics.py',
         'scripts/materialize_workflow_architecture.py',
         '.github/workflows/aura-materialize-workflows.yml',
+        '.github/aura-materialization-trigger',
     ]
     removed=[]
     for rel in paths:
