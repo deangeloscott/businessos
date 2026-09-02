@@ -28,27 +28,25 @@ updates:
 # AI Prompt Expansion
 
 ## Purpose
-Translate buyer needs into realistic conversational question/prompt families and discover follow-up constraints.
+Translate real buyer needs into realistic conversational prompt/question families, including the constraints and follow-ups that can change what a useful answer requires.
 
 ## Business Outcome
-Improve valuable organic discovery through ai prompt expansion, with a clear SEO/AEO mechanism and connection to the active business Objective.
+Understand demand that may appear in AI-answer and conversational discovery so the organization can earn more relevant visibility, attention, and downstream business opportunity without mistaking generated prompt volume for observed demand.
 
 ## Run When
-Run during initial or recurring demand research when the system must discover, classify, or update **ai prompt expansion** evidence.
+Use when conversational or AI-answer demand is materially relevant and existing search/customer evidence does not fully represent how people may ask, refine, compare, or constrain the problem.
 
 ## Process
-1. [HYBRID] Start with target audience, awareness/buying stage, jobs/problems, offer, queries, objections, and comparison criteria.
-2. [AI] Generate broad discovery, diagnosis, recommendation, comparison, constraint, local, budget, integration, risk, trust, implementation, and verification prompts.
-3. [HYBRID] Create natural follow-up chains because users may refine an answer conversationally rather than issue one isolated query.
-4. [HYBRID] Integrate observed AI grounding queries, sales/support questions, and prompt data where available.
-5. [HYBRID] Cluster semantic equivalents while retaining materially different constraints and high-value intent.
-6. [AI] Map each prompt cluster to relevant surface(s), business value, likely answer format, and target asset/entity.
-
-## Decisions / Routing
-- Route → Competitor Intelligence refresh only when canonical competitor intelligence is missing or stale.
-- Route → Core Opportunity qualification when an SEO intervention is evidence-supported.
+1. [HYBRID] Start from established audience, problem/job, awareness or buying stage, Offer, search queries, objections, comparison criteria, sales/support language, and observed prompt evidence where available.
+2. [AI] Expand into realistic discovery, diagnosis, recommendation, comparison, constraint, local, budget, integration, risk, trust, implementation, and verification questions that a real user could plausibly ask.
+3. [AI] Model useful follow-up chains when the answer changes as the user adds constraints; do not treat every wording variation as a distinct need.
+4. [HYBRID] Use observed AI prompts, answer behavior, grounding queries, site/customer language, or other evidence to calibrate generated possibilities. Keep generated hypotheses distinguishable from observed demand.
+5. [AI] Cluster semantic equivalents while preserving materially different constraints, intents, audiences, markets, or decision stages.
+6. [AI] Map useful prompt clusters to relevant answer surfaces, business-value pathways, likely answer needs, and owned or missing assets/entities only to the depth needed for the current decision.
+7. [HYBRID] Preserve material OrganicDemandUnits or observations when future work benefits; do not create records for every generated prompt variant.
 
 ## Verification
-- Store the exact prompt/question, surface, timestamp, answer evidence and citation/mention status so observations are reproducible.
-
-
+- Generated prompts are labeled as hypotheses unless supported by observed evidence.
+- Exact observed prompts/questions, surfaces, timestamps, answers, citations, and mention status remain reproducible when material.
+- AI visibility is treated as a meaningful upstream opportunity signal when it can increase exposure or consideration, while downstream traffic, leads, or revenue remain separate observed outcomes.
+- Competitor research or Opportunity creation is optional and used only when it materially improves the next decision.
