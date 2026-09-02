@@ -3,20 +3,16 @@ import yaml
 from _common import ROOT
 
 
-def write_contract(system,relpath,cid,title,purpose,outcome,run_when,steps,*,reads=None,writes=None,capabilities=None,context=None,ctype='playbook',subcontracts=None,evidence_inputs=None,artifact_role=None,completion_evidence=None,references=None):
-    """Author one AURA SOP without runtime/authority/version metadata.
+def write_contract(system,relpath,cid,title,purpose,outcome,run_when,steps,*,reads=None,writes=None,context=None,ctype='workflow',subcontracts=None,evidence_inputs=None,artifact_role=None,completion_evidence=None,references=None):
+    """Author one AURA Workflow without runtime/tool/provider/version metadata.
 
-    Capability IDs are provider-neutral method needs. Live provider/tool discovery,
-    permissions, scheduling, retries, and execution mechanics belong to the active harness.
     Reads/writes/subcontracts/completion evidence describe reusable operating knowledge;
-    they do not create a runtime graph or permission model.
+    they do not create a runtime graph or permission model. Describe real work in natural
+    language inside the Workflow. The active model/harness chooses actual tools, Skills,
+    providers, orchestration, and implementation details.
     """
     p=ROOT/'systems'/system/'contracts'/relpath/'CONTEXT.md';p.parent.mkdir(parents=True,exist_ok=True)
-    meta={
-        'id':cid,'type':ctype,'owner_system':system,
-        'reads':reads or [],'writes':writes or [],
-        'capabilities':capabilities or {'required':['none'],'optional':[]},
-    }
+    meta={'id':cid,'type':ctype,'owner_system':system,'reads':reads or [],'writes':writes or []}
     if artifact_role:meta['artifact_role']=artifact_role
     if completion_evidence:meta['completion_evidence']=completion_evidence
     if context:meta['context']=context
@@ -30,9 +26,9 @@ def write_contract(system,relpath,cid,title,purpose,outcome,run_when,steps,*,rea
 
 
 def add_subcontracts(system,relpath,required=None,conditional=None):
-    """Add composition references without introducing execution/version semantics."""
+    """Add Workflow-composition references without introducing execution semantics."""
     p=ROOT/'systems'/system/'contracts'/relpath/'CONTEXT.md';text=p.read_text(encoding='utf-8');end=text.find('\n---\n',4)
-    meta=yaml.safe_load(text[4:end]) or {};meta.pop('version',None)
+    meta=yaml.safe_load(text[4:end]) or {};meta.pop('version',None);meta.pop('capabilities',None)
     sc={}
     if required:sc['required']=required
     if conditional:sc['conditional']=conditional
@@ -41,7 +37,7 @@ def add_subcontracts(system,relpath,required=None,conditional=None):
 
 
 def write_process_map(system,activities):
-    """Write a navigation/composition map, never an execution graph."""
+    """Write a human/model navigation map of common Workflows, never an execution graph."""
     import json
     p=ROOT/'systems'/system/'process-map.json';data={'system':system,'activities':activities}
     p.write_text(json.dumps(data,indent=2)+'\n')

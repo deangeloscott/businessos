@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Build bounded AURA playbook context from organizational memory and SOP knowledge.
+"""Build bounded organizational context for an explicitly selected AURA Workflow.
 
-This planner deliberately does not inspect host tools, provider bindings, scheduler state,
-operator-device inventories, or live capability availability. A playbook may declare
-provider-neutral capability needs; the active harness resolves those at execution time.
+This planner retrieves useful durable organization state and the selected authored method.
+It does not inspect host tools, provider bindings, scheduler state, permissions, or runtime
+inventories. The active model/harness decides how to accomplish the Workflow using the
+best tools, Skills, resources, and execution approach actually available.
 """
 from _common import *
 import argparse,json,os
@@ -71,7 +72,7 @@ def _add(files,rel):
 def build_plan(business_id,contract_id,focus=None,operator_ref=None,team_ref=None,role_ref=None,task_preferences=None,output_type=None,channel=None):
     focus=focus or []
     match=next((x for x in load_registry().get('contracts',[]) if x.get('id')==contract_id),None)
-    if not match:raise ValueError('Unknown contract')
+    if not match:raise ValueError('Unknown workflow')
     base=ROOT/'instances'/business_id
     if not base.exists():raise ValueError('Unknown business')
     owner=match.get('owner_system') or 'core';installed=installed_modules()
@@ -81,10 +82,7 @@ def build_plan(business_id,contract_id,focus=None,operator_ref=None,team_ref=Non
     role_ref=role_ref or os.environ.get('BUSINESSOS_ROLE_REF')
     prefs=resolve_effective_preferences(business_id,operator_ref,team_ref,role_ref,owner,contract_id,output_type,channel,task_preferences)
 
-    # Root CONTEXT.md carries the small universal AURA contract. Load additional policy
-    # only when the selected method actually needs it; deterministic validators continue
-    # to enforce schema/reference/isolation integrity without spending model context.
-    files=['CONTEXT.md']
+    files=['CONTEXT.md','docs/operating-knowledge.md']
     if owner!='core':_add(files,f'systems/{owner}/DEFAULTS.md')
 
     cp=ROOT/match['path'];stop=(ROOT/f'systems/{owner}/contracts') if owner!='core' else (ROOT/'core/contracts');chain=[]
@@ -156,10 +154,8 @@ def build_plan(business_id,contract_id,focus=None,operator_ref=None,team_ref=Non
     schema_files=[schema_paths[typ] for typ in sorted(write_types) if typ in schema_paths]
     for rel in schema_files+object_files:_add(files,rel)
 
-    required_caps=[c for c in match.get('capabilities',{}).get('required',[]) if c!='none']
-    optional_caps=[c for c in match.get('capabilities',{}).get('optional',[]) if c!='none']
     return {
-        'version':os_version(),'business_id':business_id,'contract_id':contract_id,'focus_refs':focus,
+        'version':os_version(),'business_id':business_id,'workflow_id':contract_id,'contract_id':contract_id,'focus_refs':focus,
         'operator_ref':operator_ref,'team_ref':team_ref,'role_ref':role_ref,
         'effective_preferences':prefs.get('effective_preferences',{}),
         'preference_profiles':[x.get('id') for x in prefs.get('applied_profiles',[])],
@@ -167,17 +163,14 @@ def build_plan(business_id,contract_id,focus=None,operator_ref=None,team_ref=Non
         'files':files,'object_refs':sorted(selected),'object_files':object_files,'schema_files':schema_files,
         'unresolved_selectors':unresolved,'optional_unavailable_selectors':optional_unavailable,
         'evidence_inputs':match.get('evidence_inputs',[]),'material_inputs':_material_inputs(selected,idx,match.get('evidence_inputs',[])),
-        'required_capabilities':required_caps,'optional_capabilities':optional_caps,
-        'capability_rule':'Capability IDs describe this playbook method. The host/harness owns live capability discovery, providers, permissions, retries, and fallbacks.'
+        'execution_rule':'The Workflow describes the outcome, relevant procedure, evidence, and quality requirements. The active model/harness chooses the best available tools, external Skills, providers, orchestration, and implementation details.'
     }
 
 
 def main():
-    p=argparse.ArgumentParser(description='Build bounded organizational context for an explicitly selected AURA playbook.')
+    p=argparse.ArgumentParser(description='Build bounded organizational context for an explicitly selected AURA Workflow.')
     p.add_argument('business_id');p.add_argument('contract_id');p.add_argument('--focus',action='append',default=[])
     p.add_argument('--operator-ref');p.add_argument('--team-ref');p.add_argument('--role-ref');p.add_argument('--task-preferences');p.add_argument('--output-type');p.add_argument('--channel')
-    a=p.parse_args()
-    print(json.dumps(build_plan(a.business_id,a.contract_id,a.focus,a.operator_ref,a.team_ref,a.role_ref,a.task_preferences,a.output_type,a.channel),indent=2,ensure_ascii=False))
-
+    a=p.parse_args();print(json.dumps(build_plan(a.business_id,a.contract_id,a.focus,a.operator_ref,a.team_ref,a.role_ref,a.task_preferences,a.output_type,a.channel),indent=2,ensure_ascii=False))
 
 if __name__=='__main__':main()

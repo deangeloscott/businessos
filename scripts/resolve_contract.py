@@ -9,28 +9,24 @@ def resolve_contract(contract_id):
         try:meta,_=read_frontmatter(p)
         except Exception:continue
         if meta.get('id')==contract_id:matches.append((p,meta))
-    if not matches:raise ValueError(f'Unknown contract id: {contract_id}')
-    if len(matches)>1:raise ValueError(f'Duplicate contract id: {contract_id}')
+    if not matches:raise ValueError(f'Unknown workflow id: {contract_id}')
+    if len(matches)>1:raise ValueError(f'Duplicate workflow id: {contract_id}')
     return matches[0]
 
 
 def _result(contract_id,meta,path=None,business_id=None,exts=None):
     return {
-        'contract_id':contract_id,
-        'business_id':business_id,
-        'path':path,
-        'owner_system':meta.get('owner_system'),
-        'type':meta.get('type'),
-        'capabilities':meta.get('capabilities') or {'required':['none'],'optional':['none']},
+        'workflow_id':contract_id,'contract_id':contract_id,'business_id':business_id,'path':path,
+        'owner_system':meta.get('owner_system'),'type':meta.get('type'),
         'process_extension_ids':[x['id'] for x in (exts or [])],
-        'local_playbook':bool(meta.get('local_playbook')),
+        'local_workflow':bool(meta.get('local_workflow') or meta.get('local_playbook')),
         'executable':False,
-        'boundary':'Contract metadata describes AURA operational knowledge. Live tools/providers/permissions belong to the active harness/runtime.'
+        'boundary':'Workflow metadata describes reusable AURA operating knowledge. The active model/harness chooses actual tools, external Skills, providers, orchestration, permissions, and execution.'
     }
 
 
 def main():
-    ap=argparse.ArgumentParser(description='Resolve an AURA contract ID. With --business-id, include applicable business ProcessExtensions/local playbooks.')
+    ap=argparse.ArgumentParser(description='Resolve an AURA Workflow ID. With --business-id, include applicable organization ProcessExtensions/local Workflows.')
     ap.add_argument('contract_id');ap.add_argument('--business-id');ap.add_argument('--team-ref');ap.add_argument('--role-ref');ap.add_argument('--operator-ref');ap.add_argument('--json',action='store_true');ap.add_argument('--show',action='store_true');a=ap.parse_args()
     if a.business_id:
         from process_extensions import resolve_effective
@@ -47,6 +43,5 @@ def main():
     if a.show:print(p.read_text(),end='')
     elif a.json:print(json.dumps(_result(a.contract_id,meta,rel),indent=2))
     else:print(rel)
-
 
 if __name__=='__main__':main()
