@@ -99,7 +99,7 @@ def build_distribution(edition_id=None,requested_modules=None,output_dir=None,ke
         eid='custom-'+'-'.join(sorted(requested));display='ViralTrac AURA — Custom'
     modules=resolve_modules(requested);available={'core'}|{p.name for p in (ROOT/'systems').iterdir() if p.is_dir()};missing=modules-available
     if missing:raise ValueError('Source workspace does not contain required module(s): '+', '.join(sorted(missing)))
-    outbase=Path(output_dir) if output_dir else ROOT.parent/'distributions';outbase.mkdir(parents=True,exist_ok=True);pkgname=f"{slug(display)}-v{os_version()}";dest=outbase/pkgname
+    outbase=(Path(output_dir) if output_dir else ROOT.parent/'distributions').resolve();outbase.mkdir(parents=True,exist_ok=True);pkgname=f"{slug(display)}-v{os_version()}";dest=outbase/pkgname
     if dest.exists():shutil.rmtree(dest)
     _copy_clean(dest);_prune_modules(dest,modules);_copy_interface_schemas(dest);_write_navigation(dest,eid,display,modules);_write_instance_template(dest,modules);_prune_capabilities(dest);_write_distribution_test(dest)
     (dest/'VERSION').write_text(os_version()+'\n');_run(dest,'scripts/generate_registry.py');_run(dest,'scripts/validate_workspace.py');_run(dest,'tests/run_distribution.py');_run(dest,'scripts/generate_registry.py');_run(dest,'scripts/validate_workspace.py')
