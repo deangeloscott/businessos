@@ -13,20 +13,21 @@ writes:
 # Ecommerce Architecture
 
 ## Purpose
-Organize categories, subcategories, products, filters, and merchandising paths for users and organic discovery.
+Organize categories, collections, products, variants, filters, and merchandising paths around real shopping behavior and durable organic discovery.
 
 ## Business Outcome
-Improve valuable organic discovery through ecommerce architecture, with a clear SEO/AEO mechanism and connection to the active business Objective.
+Help customers and discovery systems reach the right commercial destinations without creating crawl traps, duplicate inventory surfaces, or confusing category overlap.
 
-## Run When
-Run only when an approved Action Packet routes to **Ecommerce Architecture**, or when an authorized incident response requires it.
+## Use When
+Use when an ecommerce site's category tree, product relationships, variants, filters, discontinued inventory, or merchandising structure is limiting discovery, shopping usability, or maintainability.
 
 ## Process
-1. [HYBRID] Inventory category tree, product relationships, variants, facets, internal search, and discontinued inventory behavior.
-2. [AI] Map commercial demand and user shopping tasks to category/collection destinations.
-3. [INTEGRATION] Separate index-worthy landing facets from crawl traps or near-duplicate parameter combinations.
-4. [HYBRID] Define canonical, linking, sitemap, out-of-stock, discontinued, variant, and pagination behavior.
-5. [AI] Identify missing commercial category/collection opportunities and cannibalization between categories/products.
-6. [HYBRID] Stage architecture changes with redirect/canonical/link migration maps and verify revenue/analytics guardrails.
+1. Inventory the current category/collection tree, product relationships, variants, facets, internal search behavior, inventory states, and important merchandising paths.
+2. Map meaningful customer shopping tasks and commercial demand to destinations that deserve to exist. Distinguish navigational convenience from a reason to create another indexable landing page.
+3. Separate useful category or filtered landing experiences from crawl traps, near-duplicate combinations, thin inventory states, and parameter patterns that add no distinct value.
+4. Define coherent behavior for canonicals, internal links, navigation, sitemaps, variants, out-of-stock products, discontinued items, pagination, and filtered states. Use the specialist Workflow when one of those becomes the real problem.
+5. Identify missing commercial destinations and category/product intent collisions. Do not create a new category merely because a keyword can be found; it should serve a real shopping or business need.
+6. For material architecture changes, map affected URLs and relationships, protect revenue and measurement continuity, and verify representative high-value paths before and after implementation.
 
-
+## Proportional Scope
+Start with the categories, product families, and parameter patterns that carry the most business value or risk. Expand when evidence indicates the architecture problem is systemic or broader analysis could materially alter the design.
