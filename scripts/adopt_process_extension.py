@@ -2,23 +2,23 @@
 """Adopt intentionally selected, evidence-backed organization Workflow knowledge."""
 from _common import *
 from jsonschema import Draft202012Validator
-from persist_playbook_evolution import _schema
+from persist_workflow_evolution import _schema
 from persist_process_extension import _validate_method_metadata
 import argparse,json,hashlib,os
 
 
 def _find_proposal(business_id,proposal_id):
     for obj,path in iter_instance_objects(business_id):
-        if obj.get('object_type')=='PlaybookEvolutionProposal' and obj.get('id')==proposal_id:return obj,path
-    raise ValueError(f'Unknown operating-knowledge evolution proposal for {business_id}: {proposal_id}')
+        if obj.get('object_type')=='WorkflowEvolutionProposal' and obj.get('id')==proposal_id:return obj,path
+    raise ValueError(f'Unknown WorkflowEvolutionProposal for {business_id}: {proposal_id}')
 def _validate(obj):
     errors=sorted(Draft202012Validator(_schema('ProcessExtension')).iter_errors(obj),key=lambda error:list(error.path))
     if errors:raise ValueError('; '.join(f"{list(error.path)}: {error.message}" for error in errors))
-def _canonical_contract_exists(contract_id):
+def _workflow_exists(workflow_id):
     for path in contract_files():
         try:meta,_=read_frontmatter(path)
         except Exception:continue
-        if meta.get('id')==contract_id:return True
+        if meta.get('id')==workflow_id and meta.get('type')=='workflow':return True
     return False
 
 
@@ -27,7 +27,7 @@ def adopt_extension(business_id,proposal_id):
     if proposal.get('status') in {'rejected','superseded'}:raise ValueError(f"Proposal is {proposal.get('status')}")
     if proposal.get('change_kind')=='canonical_revision' or proposal.get('proposed_scope')!='business':raise ValueError('Broader/canonical proposals are AURA product-development candidates and are not adopted as organization ProcessExtensions.')
     mode='augment_workflow' if proposal['change_kind']=='augment_existing' else 'local_workflow'
-    if mode=='augment_workflow' and not _canonical_contract_exists(proposal.get('target_contract_id')):raise ValueError(f"Unknown canonical target workflow: {proposal.get('target_contract_id')}")
+    if mode=='augment_workflow' and not _workflow_exists(proposal.get('target_contract_id')):raise ValueError(f"Unknown canonical target Workflow: {proposal.get('target_contract_id')}")
     _validate_method_metadata(proposal.get('reads') or [],proposal.get('writes') or [])
 
     seed=f"{business_id}|{proposal_id}|{mode}";oid='pex_'+hashlib.sha256(seed.encode()).hexdigest()[:20];outdir=ROOT/'instances'/business_id/'learning'/'process-extensions';outdir.mkdir(parents=True,exist_ok=True);path=outdir/f'{oid}.json';existing=json.loads(path.read_text()) if path.exists() else {};timestamp=now()
@@ -39,7 +39,7 @@ def adopt_extension(business_id,proposal_id):
         'applies_when':proposal.get('applies_when') or [],'does_not_apply_when':proposal.get('does_not_apply_when') or [],'reads':proposal.get('reads') or [],'writes':proposal.get('writes') or [],
         'instructions':proposal.get('instructions') or [],'verification':proposal.get('verification') or [],
         'source_kind':'learning_evolved','source_learning_refs':proposal.get('learning_refs') or [],'source_refs':proposal.get('evidence_refs') or [],'evidence_refs':proposal.get('evidence_refs') or [],
-        'compatibility':{'aura_min':os_version(),'aura_max':None},'extensions':{'playbook_evolution_proposal_ref':proposal_id}
+        'compatibility':{'aura_min':os_version(),'aura_max':None},'extensions':{'workflow_evolution_proposal_ref':proposal_id}
     }
     _validate(obj);temporary=path.with_suffix('.tmp');temporary.write_text(json.dumps(obj,indent=2)+'\n');os.replace(temporary,path)
     proposal['status']='adopted';proposal['updated_at']=timestamp;proposal_path.write_text(json.dumps(proposal,indent=2)+'\n');return obj,path
