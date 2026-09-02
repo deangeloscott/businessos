@@ -15,20 +15,21 @@ evidence_inputs:
 # Broken Link Acquisition
 
 ## Purpose
-Find dead external resources where the brand has a genuinely relevant replacement or can create one.
+Find dead external references where the organization has, or can credibly create, a genuinely useful replacement.
 
 ## Business Outcome
-Improve valuable organic discovery through broken link acquisition, with a clear SEO/AEO mechanism and connection to the active business Objective.
+Earn relevant editorial references by solving a real broken-resource problem rather than manufacturing outreach around weak topical similarity.
 
-## Run When
-Run only when an approved Action Packet routes to **Broken Link Acquisition**, or when an authorized incident response requires it.
+## Use When
+Use when relevant external pages contain broken references, competitors have lost linked resources, or the organization owns a strong replacement whose usefulness can be demonstrated.
 
 ## Process
-1. [AI] Identify relevant pages with broken outbound references or competitors' lost/dead linked assets.
-2. [HYBRID] Recover the original referenced purpose/content using available evidence.
-3. [HYBRID] Confirm an owned asset is a materially suitable replacement; if not, create a content/linkable-asset opportunity rather than forcing a fit.
-4. [HYBRID] Qualify the source and contact path.
-5. [AI] Outreach by explaining the broken reference and offering the replacement as one useful option.
-6. [HYBRID] Track outcomes and update opportunity status; avoid scaled low-context outreach.
+1. Identify broken outbound references or lost/dead competitor resources on sources relevant to the organization's audience, market, or subject matter.
+2. Recover enough evidence about the original resource and surrounding context to understand why it was cited and what replacement would actually satisfy that need.
+3. Compare the requirement with owned assets. Use an existing asset only when it is materially suitable; otherwise decide whether creating a better resource is worthwhile rather than forcing a poor fit.
+4. Evaluate the source, page context, likely audience value, editorial legitimacy, and realistic contact path before investing in outreach.
+5. If outreach is requested and the host can perform it, explain the broken reference clearly and offer the replacement as a useful option without misrepresenting affiliation, urgency, or editorial obligation.
+6. Preserve material outcomes or Learning when future authority work benefits from it. An Opportunity object is optional coordination, not a required stage.
 
-
+## Proportional Scope
+Prioritize broken references where relevance, source quality, replacement fit, and business value are strongest. Do not scale low-context prospecting merely because large broken-link datasets are available.
