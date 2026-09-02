@@ -16,40 +16,33 @@ context:
 - Offer
 - ProductService
 evidence_inputs:
-- Effective Capability Profile
-- Available search analytics local authority AI
 - location/profile data, local-result observations, and local competitors
 updates:
   SEOAssetState:
   - organic_performance
-  - technical fields crawl indexability index structured data as applicable
-  - internal_authority external_authority
 ---
 # Local Baseline
 
 ## Purpose
-Establish local entity/profile/site/review/visibility state for applicable businesses.
+Establish a trustworthy starting view of local entity, profile, site, reputation, and visibility state for the locations or service areas that materially matter.
 
 ## Business Outcome
-Improve valuable organic discovery through local baseline, with a clear SEO/AEO mechanism and connection to the active business Objective.
+Give later local-discovery work a useful comparison point for accurate representation, visibility, customer actions, and business opportunity without turning local SEO into a universal full-profile audit.
 
 ## Run When
-Run during initial baseline, scheduled re-baseline, or after a material site/business change when **local baseline** must be re-observed.
+Use when local discovery is applicable and current local state is missing, materially stale, or needed for a concrete diagnosis, optimization, or comparison. A user/runtime may invoke re-baselining; AURA does not own recurrence.
 
 ## Process
-1. [HYBRID] Confirm local strategy type and canonical location/service-area registry.
-2. [HYBRID] Inventory owned/duplicate profiles and important citations with factual completeness/consistency.
-3. [HYBRID] Collect profile engagement/visibility observations, local query results where available, website location assets, ratings/reviews, and local backlinks/citations.
-4. [HYBRID] Segment by location, market, service, query intent, and geographic observation point where relevant.
-5. [AI] Identify material gaps in relevance, prominence, reputation, website support, or entity consistency.
-6. [HYBRID] Write local baseline and route severe profile/suspension/identity issues to Incident handling.
-
-## Decisions / Routing
-- Route → SEO Organic Demand Intelligence when baseline evidence needs demand interpretation.
-- Route → Competitor Intelligence refresh only when canonical competitor intelligence is missing or stale.
-- Route → Core Opportunity qualification when an SEO intervention is evidence-supported.
+1. [HYBRID] Confirm the real local business model and scoped locations/service areas from organization truth before interpreting profiles or results.
+2. [HYBRID] Inspect relevant owned/duplicate profiles, important citations, location pages, identity fields, and factual consistency to the depth needed for the current market question.
+3. [HYBRID] Gather available profile engagement, map/local visibility, website-location, ratings/reviews, citations/backlinks, calls/bookings/directions/site actions, or other useful evidence.
+4. [AI] Segment by location, service, query/task, market, language, or geographic observation point only when those dimensions materially change the diagnosis.
+5. [AI] Identify material strengths, gaps, or uncertainty in relevance, prominence, reputation, website support, entity consistency, eligibility, or customer usefulness.
+6. [AI] Treat local visibility as an important upstream signal where stronger presence can plausibly increase customer exposure and action opportunity; connect to calls, visits, leads, revenue, or other outcomes only when those downstream observations exist.
+7. [HYBRID] Preserve the baseline evidence and any severe unresolved state when future work benefits. Use an Incident only when the issue is genuinely severe enough to require durable cross-session coordination.
 
 ## Verification
-- Verify location eligibility and business facts before changing public profile/location data.
-
-
+- Business/location facts are grounded before public-profile conclusions are made.
+- Local visibility, profile engagement, customer actions, leads, and revenue remain distinct evidence stages.
+- Scope is proportionate to the actual locations and market decision.
+- No capability registry, mandatory Opportunity, or internal routing lifecycle is required.
