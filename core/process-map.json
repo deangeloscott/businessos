@@ -40,7 +40,7 @@
     {
       "id": "evolve-operating-process",
       "entry_workflow": "core.learning.workflow-evolution",
-      "result": "Turn strong reusable Learning into a business Workflow extension, new local Workflow, or canonical AURA revision candidate without overgeneralizing evidence.",
+      "result": "Preserve strong reusable Learning as optional organization-local Workflow knowledge when useful; canonical AURA changes remain explicit product-development work.",
       "supporting_workflows": []
     },
     {
