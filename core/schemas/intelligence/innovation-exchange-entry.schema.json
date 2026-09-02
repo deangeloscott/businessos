@@ -12,8 +12,8 @@
     "innovation_fingerprint":{"type":"string","pattern":"^[a-f0-9]{64}$"},
     "owner_system":{"type":"string","minLength":1},
     "title":{"type":"string","minLength":1},
-    "target_contract_id":{"type":["string","null"]},
-    "local_contract_id":{"type":["string","null"]},
+    "target_workflow_id":{"type":["string","null"]},
+    "local_workflow_id":{"type":["string","null"]},
     "compatibility_status":{"enum":["compatible","review","incompatible"]},
     "package_ids":{"type":"array","items":{"type":"string","pattern":"^ipkg_[A-Za-z0-9_-]+$"},"minItems":1,"uniqueItems":true},
     "source_record_refs":{"type":"array","items":{"type":"string","pattern":"^src_[A-Za-z0-9_-]+$"},"uniqueItems":true},
@@ -22,5 +22,5 @@
     "last_activity_at":{"type":"string","format":"date-time"},
     "extensions":{"type":"object"}
   },
-  "required":["id","business_id","created_at","updated_at","innovation_fingerprint","owner_system","title","target_contract_id","local_contract_id","compatibility_status","package_ids","source_record_refs","reported_evidence","local_evidence","last_activity_at"]
+  "required":["id","business_id","created_at","updated_at","innovation_fingerprint","owner_system","title","target_workflow_id","local_workflow_id","compatibility_status","package_ids","source_record_refs","reported_evidence","local_evidence","last_activity_at"]
 }
