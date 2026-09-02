@@ -45,4 +45,4 @@ Run periodically or when customer alternatives, search behavior, industry events
 4. [AI] Evaluate overlap in audience, job/outcome, offer, budget, distribution, and customer consideration.
 5. [HYBRID] Require stronger evidence before labeling a company a material competitor than before placing it on a watchlist.
 6. [AI] Create/update Competitor records only for materially relevant entities; keep watch candidates scoped.
-7. [DETERMINISTIC] Emit discovery evidence and review cadence.
+7. [HYBRID] Preserve the material discovery evidence and, when future review would help, the semantic monitoring cadence/next useful check. AURA does not emit a runtime event or create scheduler state merely because this knowledge was updated.
