@@ -6,11 +6,13 @@ AURA gives capable AI reusable business operating knowledge without turning that
 
 **Playbook → Workflow → Step**
 
-- A **Playbook** represents a meaningful end-to-end business job, such as Competitor Research, Customer Research, Industry Intelligence, SEO/AEO, Content Synthesis, Marketing Synthesis, or Customer Optimization.
+- A **Playbook** represents a meaningful end-to-end business job, such as Competitor Research, Customer Research, Industry Intelligence, SEO/AEO Growth, Content Strategy, or Customer Journey Optimization.
 - A **Workflow** is a reusable procedure that accomplishes a meaningful part of a Playbook and may also be useful independently.
 - A **Step** is the minimum procedural guidance needed inside a Workflow to make the intended result reliably achievable.
 
 The hierarchy describes knowledge, not execution authority. The active model/user determines which Playbook and Workflows fit the request and how to combine them.
+
+Playbook status is deliberate product knowledge. A Workflow does not become a Playbook merely because it can produce a customer-facing artifact or happens to be a convenient entry point. Narrow variants and supporting procedures should remain Workflows unless they represent a meaningful end-to-end business job in their own right.
 
 ## Minimum sufficient guidance
 
@@ -33,6 +35,26 @@ For example, prefer:
 
 rather than an artificial sequence of provider/tool identifiers or pixel-level interaction instructions that are not themselves requirements.
 
+## Proportionate excellence
+
+Work should use the **smallest sufficient scope and effort that can produce an excellent, decision-useful result**. Expand when additional work has a reasonable chance of materially improving the result or changing the conclusion.
+
+Context determines relevance. A Workflow should provide domain knowledge about what matters; the active model/harness should determine appropriate execution depth from the organization, market, geography, customer, objective, stakes, uncertainty, constraints, available evidence, and likely value of additional work.
+
+This means:
+
+- do not research everything merely because more sources, competitors, queries, agents, or tool calls are available;
+- do not stop early merely to minimize effort when more evidence is reasonably likely to matter;
+- prioritize comparisons that compete for the same customer, need, geography, search intent, channel, or purchase decision;
+- broaden beyond the immediate competitive or evidence set when a wider benchmark materially improves the analysis;
+- treat fixed counts and quotas as justified only when the number itself matters to the method;
+- recognize diminishing returns when additional evidence is unlikely to change a well-supported conclusion;
+- go deeper when stakes, uncertainty, contradictory evidence, or decision consequences justify it.
+
+For local work, local evidence should answer local competitive questions; broader evidence is useful when it serves a different purpose such as best-practice or category benchmarking.
+
+More work is not automatically better work. Less work is not automatically more efficient. The goal is **proportionate excellence**: deep enough for the outcome, truth, and stakes, but never maximal merely because more work is possible.
+
 ## Execution freedom
 
 A Playbook or Workflow describes **what good work requires**, not every possible way to execute it.
@@ -45,8 +67,8 @@ The active model/harness may:
 - discover a better source or method than AURA anticipated;
 - run independent research/workflows in parallel when useful;
 - sequence dependent work when necessary;
-- skip irrelevant workflows;
-- adapt a workflow while preserving the requirements that materially define the job;
+- skip irrelevant Workflows;
+- adapt a Workflow while preserving the requirements that materially define the job;
 - use another sound method entirely when it better serves the outcome.
 
 AURA does not maintain an allowlist of tools or a universal capability vocabulary the host must implement.
