@@ -1,6 +1,6 @@
 # ViralTrac AURA
 
-**Alpha · v0.1.0**  
+**Alpha · v0.1.1**  
 **AURA = Agentic Understanding and Reinforcement Architecture.**
 
 ViralTrac AURA is a portable, local-first **AI-native BusinessOS** that gives AI durable organizational memory, reusable operating knowledge, and lightweight continuity.
