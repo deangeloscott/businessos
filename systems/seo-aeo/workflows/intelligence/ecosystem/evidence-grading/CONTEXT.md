@@ -44,8 +44,8 @@ Do not treat a publication, practitioner opinion, competitor behavior, one busin
 ## Related operating knowledge
 - Current authoritative policy/constraint evidence may be checked with `seo.intelligence.ecosystem.official-contradiction-check` when useful.
 - Testable uncertain claims may use `seo.learning.strategy-experiment-design` when experimentation would materially improve the decision.
-- Mature organization-owned tactic Learning may use `seo.learning.tactic-registry` to keep evidence/applicability coherent.
-- If the organization wants to turn strong Learning into reusable process knowledge, `core.learning.workflow-evolution` is available. Cross-organization sharing uses explicit Innovation Exchange/export/adoption or deliberate AURA product-development work.
+- Mature organization-owned guidance belongs in `seo.aeo.learning.domain-learning` when preserving it will improve future SEO/AEO judgment.
+- If the organization wants to turn strong Learning into reusable canonical process knowledge, `core.learning.workflow-evolution` is available. Cross-organization sharing uses explicit Innovation Exchange/export/adoption or deliberate AURA product-development work.
 
 These are optional operating methods selected by the model/user, not runtime routes.
 
