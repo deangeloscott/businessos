@@ -2,8 +2,8 @@
 """Persist explicitly organization-authored reusable Workflow knowledge.
 
 Use this when the organization intentionally defines a reusable local procedure or an
-augmentation to an installed AURA Workflow. The organization supplies the meaning;
-AURA preserves it without inventing tool/provider bindings or fake Learning.
+augmentation to an installed AURA Workflow. The organization supplies the meaning; AURA
+preserves it without inventing tool/provider bindings or fake Learning.
 """
 from pathlib import Path
 import argparse,hashlib,json,re
@@ -11,11 +11,11 @@ from _common import *
 from canonical_store import validate_canonical,write_canonical
 
 
-def _canonical_contract(contract_id):
+def _canonical_workflow(workflow_id):
     for path in contract_files():
         try:meta,_=read_frontmatter(path)
         except Exception:continue
-        if meta.get('id')==contract_id:return meta
+        if meta.get('id')==workflow_id and meta.get('type')=='workflow':return meta
     return None
 
 
@@ -49,13 +49,13 @@ def persist_extension(business_id,spec):
     bid=resolved['business_id']
     if not isinstance(spec,dict):raise ValueError('spec must be a JSON object')
     mode=spec.get('mode') or 'local_workflow';owner=spec.get('owner_system') or 'core';source_refs=_validate_sources(bid,spec.get('source_refs'));scope=spec.get('scope') or 'business';scope_ref=_validate_scope(scope,spec.get('scope_ref'))
-    target=spec.get('target_contract_id');local_id=spec.get('local_contract_id')
-    if mode in {'augment_workflow','augment_contract'}:
-        if not _canonical_contract(target):raise ValueError(f'augment_workflow requires an installed target workflow id: {target!r}')
-        mode='augment_workflow';local_id=None
-    elif mode in {'local_workflow','local_playbook'}:
-        if not isinstance(local_id,str) or not re.fullmatch(r'custom\.[a-z0-9][a-z0-9.-]*',local_id):raise ValueError('local_workflow requires local_contract_id beginning custom.')
-        mode='local_workflow';target=None
+    target=spec.get('target_workflow_id');local_id=spec.get('local_workflow_id')
+    if mode=='augment_workflow':
+        if not _canonical_workflow(target):raise ValueError(f'augment_workflow requires an installed target Workflow id: {target!r}')
+        local_id=None
+    elif mode=='local_workflow':
+        if not isinstance(local_id,str) or not re.fullmatch(r'custom\.[a-z0-9][a-z0-9.-]*',local_id):raise ValueError('local_workflow requires local_workflow_id beginning custom.')
+        target=None
     else:raise ValueError(f'Unsupported ProcessExtension mode: {mode!r}')
 
     title=str(spec.get('title') or '').strip();purpose=str(spec.get('purpose') or '').strip();instructions=[str(x).strip() for x in spec.get('instructions') or [] if str(x).strip()];verification=[str(x).strip() for x in spec.get('verification') or [] if str(x).strip()]
@@ -67,7 +67,7 @@ def persist_extension(business_id,spec):
     obj={
         'id':oid,'object_type':'ProcessExtension','schema_version':'1.0.0','business_id':bid,
         'created_at':existing.get('created_at') or timestamp,'updated_at':timestamp,
-        'mode':mode,'owner_system':owner,'target_contract_id':target,'local_contract_id':local_id,
+        'mode':mode,'owner_system':owner,'target_workflow_id':target,'local_workflow_id':local_id,
         'title':title,'purpose':purpose,'discovery_terms':list(dict.fromkeys(spec.get('discovery_terms') or [])),
         'status':spec.get('status') or 'active','scope':scope,'scope_ref':scope_ref,
         'applies_when':list(dict.fromkeys(spec.get('applies_when') or [])),'does_not_apply_when':list(dict.fromkeys(spec.get('does_not_apply_when') or [])),
