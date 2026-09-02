@@ -45,7 +45,7 @@ def main():
             if c!='none':caps.setdefault(c,[]).append(cid)
         deps[cid]={'context':meta.get('context',[]),'reads':rec['read_selectors'],'writes':rec['write_types'],'evidence_inputs':meta.get('evidence_inputs',[])}
         title_tokens=_tokens(title);purpose_tokens=_tokens(purpose);run_when_tokens=_tokens(run_when);id_tokens=_tokens(cid.replace('.',' ').replace('-',' '))
-        candidate_rows.append({'contract_id':cid,'owner_system':meta.get('owner_system'),'tokens':sorted(set(title_tokens+purpose_tokens+run_when_tokens+id_tokens)),'title_tokens':title_tokens,'purpose_tokens':purpose_tokens,'run_when_tokens':run_when_tokens})
+        candidate_rows.append({'contract_id':cid,'owner_system':meta.get('owner_system'),'artifact_role':meta.get('artifact_role'),'tokens':sorted(set(title_tokens+purpose_tokens+run_when_tokens+id_tokens)),'title_tokens':title_tokens,'purpose_tokens':purpose_tokens,'run_when_tokens':run_when_tokens})
     (gen/'contract-registry.json').write_text(json.dumps({'version':os_version(),'contracts':contracts},indent=2)+'\n',encoding='utf-8')
     (gen/'system-registry.json').write_text(json.dumps({'systems':sorted(set(c.get('owner_system') for c in contracts if c.get('owner_system')))},indent=2)+'\n',encoding='utf-8')
     (gen/'capability-usage-index.json').write_text(json.dumps(caps,indent=2)+'\n',encoding='utf-8')
