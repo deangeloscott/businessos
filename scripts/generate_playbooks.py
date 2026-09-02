@@ -28,7 +28,7 @@ GROUP_NAMES={
 
 def load_json(path):return json.loads((ROOT/path).read_text(encoding='utf-8'))
 def rel_link(from_file,target):return Path(os.path.relpath(ROOT/target,from_file.parent)).as_posix()
-def contract_map(registry):return {row['id']:row for row in registry}
+def workflow_map(registry):return {row['id']:row for row in registry}
 def workflows_for(registry,system):return [row for row in registry if row.get('owner_system')==system and row.get('type')=='workflow']
 def process_map(system):
     path=ROOT/'core/process-map.json' if system=='core' else ROOT/'systems'/system/'process-map.json'
@@ -63,7 +63,7 @@ def write_root(registry,installed):
 
 
 def write_domain(registry,system):
-    area=OPERATING_AREAS[system];outfile=DOCS/f'{system}.md';cmap=contract_map(registry);pmap=process_map(system);workflows=workflows_for(registry,system);playbooks=playbooks_for_system(system,registry)
+    area=OPERATING_AREAS[system];outfile=DOCS/f'{system}.md';cmap=workflow_map(registry);pmap=process_map(system);workflows=workflows_for(registry,system);playbooks=playbooks_for_system(system,registry)
     lines=[f"# {area['title']}",'',area['summary'],'',
            '**Ask for the outcome in normal language.** Playbooks below are useful end-to-end frames, not commands the user must select. The model may use their entry Workflows, other AURA Workflows, external Skills, or another sound method.','',
            '## Playbooks','']
@@ -80,7 +80,7 @@ def write_domain(registry,system):
               'These reusable procedures may support one or more Playbooks or be used independently. They are not a mandatory sequence.','']
     seen=set()
     for activity in pmap.get('activities',[]):
-        wid=activity.get('entry_contract');workflow=cmap.get(wid,{})
+        wid=activity.get('entry_workflow');workflow=cmap.get(wid,{})
         title=workflow.get('title') or activity.get('id','').replace('-',' ').title();result=' '.join(str(activity.get('result') or '').split())
         link=rel_link(outfile,workflow.get('path')) if workflow.get('path') else None;label=f'[{title}]({link})' if link else title
         lines.append(f'- **{label}** — {result}');seen.add(wid)
@@ -102,12 +102,12 @@ def write_domain(registry,system):
 
 
 def write_core(registry):
-    outfile=DOCS/'core.md';cmap=contract_map(registry);pmap=process_map('core');workflows=workflows_for(registry,'core');seen=set()
+    outfile=DOCS/'core.md';cmap=workflow_map(registry);pmap=process_map('core');workflows=workflows_for(registry,'core');seen=set()
     lines=['# AURA Core Workflows','',
            'AURA Core supplies organization-owned memory, truth/evidence handling, decisions, continuity, measurement, Learning, and workspace integrity used across business Playbooks. It is support infrastructure and reusable operating knowledge, not another business Playbook.','',
            '## Common Workflows','']
     for activity in pmap.get('activities',[]):
-        wid=activity.get('entry_contract');workflow=cmap.get(wid,{});title=workflow.get('title') or activity.get('id','').replace('-',' ').title();link=rel_link(outfile,workflow.get('path')) if workflow.get('path') else None;label=f'[{title}]({link})' if link else title
+        wid=activity.get('entry_workflow');workflow=cmap.get(wid,{});title=workflow.get('title') or activity.get('id','').replace('-',' ').title();link=rel_link(outfile,workflow.get('path')) if workflow.get('path') else None;label=f'[{title}]({link})' if link else title
         lines.append(f"- **{label}** — {' '.join(str(activity.get('result') or '').split())}");seen.add(wid)
     remaining=[workflow for workflow in workflows if workflow.get('id') not in seen]
     if remaining:
@@ -117,7 +117,7 @@ def write_core(registry):
 
 
 def main():
-    registry=load_json('generated/contract-registry.json').get('contracts',[]);installed=set(load_json('INSTALLATION.json').get('installed_modules',[]));DOCS.mkdir(parents=True,exist_ok=True)
+    registry=load_json('generated/workflow-registry.json').get('workflows',[]);installed=set(load_json('INSTALLATION.json').get('installed_modules',[]));DOCS.mkdir(parents=True,exist_ok=True)
     write_root(registry,installed);write_core(registry)
     for system in OPERATING_AREAS:
         if system in installed:write_domain(registry,system)

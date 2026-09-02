@@ -12,7 +12,7 @@ from canonical_store import validate_canonical,write_canonical
 
 
 def _canonical_workflow(workflow_id):
-    for path in contract_files():
+    for path in workflow_files():
         try:meta,_=read_frontmatter(path)
         except Exception:continue
         if meta.get('id')==workflow_id and meta.get('type')=='workflow':return meta

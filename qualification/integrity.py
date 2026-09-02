@@ -3,7 +3,7 @@
 
 Qualification protects the realism of the benchmark: event-specific evidence, evaluator
 blindness, and non-templated deliverables. It does not require or interpret AURA Runs,
-contract-execution manifests, subcontract ledgers, or production completion ceremonies.
+workflow-execution manifests, subcontract ledgers, or production completion ceremonies.
 """
 from pathlib import Path
 from urllib.parse import urlparse
@@ -112,19 +112,19 @@ def normalized_text(path):
     if p.suffix.lower() not in TEXT_EXTS:return ''
     try:text=p.read_text(encoding='utf-8',errors='ignore')
     except OSError:return ''
-    text=text.lower();text=re.sub(r'run_[a-z0-9]+','<run>',text);text=re.sub(r'contract-[a-z0-9-]+','<event>',text);text=re.sub(r'20\d\d-\d\d-\d\d[t ][0-9:.+\-z]+','<time>',text);text=re.sub(r'\b[a-f0-9]{8,}\b','<id>',text);return re.sub(r'\s+',' ',text).strip()
+    text=text.lower();text=re.sub(r'run_[a-z0-9]+','<run>',text);text=re.sub(r'workflow-[a-z0-9-]+','<event>',text);text=re.sub(r'20\d\d-\d\d-\d\d[t ][0-9:.+\-z]+','<time>',text);text=re.sub(r'\b[a-f0-9]{8,}\b','<id>',text);return re.sub(r'\s+',' ',text).strip()
 
 
 def artifact_similarity_flags(results,threshold=0.88,max_examples=5):
     """Surface suspiciously similar cross-job artifacts without prescribing artifact form."""
     samples=[]
     for result in results:
-        if result.get('kind')!='contract_acceptance':continue
+        if result.get('kind')!='workflow_acceptance':continue
         chosen=None;text=''
         for p in [Path(x) for x in result.get('actual_artifacts') or []]:
             text=normalized_text(p)
             if len(text)>=180:chosen=str(p);break
-        if chosen:samples.append((result['event_id'],result.get('contract_id'),chosen,text))
+        if chosen:samples.append((result['event_id'],result.get('workflow_id'),chosen,text))
     matches={eid:[] for eid,_,_,_ in samples}
     for i in range(len(samples)):
         e1,c1,p1,t1=samples[i]
@@ -148,12 +148,12 @@ def exact_duplicate_artifact_flags(results):
             path=Path(raw)
             try:digest=hashlib.sha256(path.read_bytes()).hexdigest()
             except OSError:continue
-            by_hash.setdefault(digest,[]).append((result['event_id'],result.get('contract_id'),str(path)))
+            by_hash.setdefault(digest,[]).append((result['event_id'],result.get('workflow_id'),str(path)))
     flags={}
     for digest,items in by_hash.items():
         if len({x[0] for x in items})<2:continue
-        for eid,cid,path in items:
-            others=[{'event_id':oe,'contract_id':oc,'artifact':op} for oe,oc,op in items if oe!=eid]
+        for eid,wid,path in items:
+            others=[{'event_id':oe,'workflow_id':oc,'artifact':op} for oe,oc,op in items if oe!=eid]
             if others:flags.setdefault(eid,[]).append({'type':'exact_artifact_reuse','sha256':digest,'artifact':path,'others':others})
     return flags
 

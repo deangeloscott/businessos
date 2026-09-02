@@ -16,7 +16,7 @@ def _validate(title,obj):
     errors=sorted(Draft202012Validator(_schema(title)).iter_errors(obj),key=lambda error:list(error.path))
     if errors:raise ValueError('; '.join(f"{list(error.path)}: {error.message}" for error in errors))
 def _workflow_exists(workflow_id):
-    for path in contract_files():
+    for path in workflow_files():
         try:meta,_=read_frontmatter(path)
         except Exception:continue
         if meta.get('id')==workflow_id and meta.get('type')=='workflow':return True

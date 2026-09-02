@@ -66,7 +66,7 @@ def _add(files,rel):
 
 
 def build_plan(business_id,workflow_id,focus=None,operator_ref=None,team_ref=None,role_ref=None,task_preferences=None,output_type=None,channel=None):
-    focus=focus or [];match=next((x for x in load_registry().get('contracts',[]) if x.get('id')==workflow_id),None)
+    focus=focus or [];match=next((x for x in load_registry().get('workflows',[]) if x.get('id')==workflow_id),None)
     if not match or match.get('type')!='workflow':raise ValueError('Unknown AURA Workflow')
     base=ROOT/'instances'/business_id
     if not base.exists():raise ValueError('Unknown business')
@@ -77,7 +77,7 @@ def build_plan(business_id,workflow_id,focus=None,operator_ref=None,team_ref=Non
 
     files=['CONTEXT.md','docs/operating-knowledge.md']
     if owner!='core':_add(files,f'systems/{owner}/DEFAULTS.md')
-    cp=ROOT/match['path'];stop=(ROOT/f'systems/{owner}/contracts') if owner!='core' else (ROOT/'core/contracts');chain=[]
+    cp=ROOT/match['path'];stop=(ROOT/f'systems/{owner}/contracts') if owner!='core' else (ROOT/'core/workflows');chain=[]
     for parent in cp.parents:
         if parent==stop:break
         defaults=parent/'DEFAULTS.md'

@@ -6,12 +6,12 @@ from _common import *
 from operating_knowledge import get_playbook
 
 INTERNAL_MARKETING_ROLES={'internal_brief','internal_strategy','internal_analysis','internal_research','internal_planning'}
-RETIRED_RUN_BACKLINK_FIELDS={'run_ref','run_id','run_method_type','run_method_ref','run_contract_id','run_binding','run_history_refs','contract_chain'}
+RETIRED_RUN_BACKLINK_FIELDS={'run_ref','run_id','run_method_type','run_method_ref','run_workflow_id','run_binding','run_history_refs','contract_chain'}
 
 
 def _workflows():
     out={}
-    for path in contract_files():
+    for path in workflow_files():
         try:meta,_=read_frontmatter(path)
         except Exception:continue
         wid=meta.get('id')
@@ -25,7 +25,7 @@ def _method_type(run):return run.get('method_type') or 'ad_hoc'
 def _run_files_errors(business_id,workflows):
     errors=[];root=runtime_root()/'runs'/business_id
     if not root.exists():return errors
-    schema=json.loads((PRODUCT_ROOT/'core/schemas/runtime/run.schema.json').read_text());registry=load_registry().get('contracts',[])
+    schema=json.loads((PRODUCT_ROOT/'core/schemas/runtime/run.schema.json').read_text());registry=load_registry().get('workflows',[])
     for path in sorted(root.glob('*/run.json')):
         try:run=json.loads(path.read_text())
         except Exception as exc:errors.append(f'{storage_ref(path)} invalid Run JSON: {exc}');continue
@@ -34,7 +34,7 @@ def _run_files_errors(business_id,workflows):
         directory=path.parent
         if (directory/'contract-execution.json').exists():errors.append(f'{storage_ref(directory)} contains retired contract-execution.json; Runs are receipts, not execution ledgers')
         method=_method_type(run);workflow_id=run.get('workflow_id');playbook_id=run.get('playbook_id');method_ref=run.get('method_ref')
-        if 'contract_id' in run:errors.append(f'{storage_ref(path)} contains retired Run contract_id field; use workflow_id')
+        if 'workflow_id' in run:errors.append(f'{storage_ref(path)} contains retired Run workflow_id field; use workflow_id')
         if method=='aura_workflow':
             if not workflow_id or workflow_id not in workflows or workflows[workflow_id].get('type')!='workflow':errors.append(f'{storage_ref(path)} aura_workflow Run references unavailable Workflow {workflow_id!r}')
             if method_ref not in {None,workflow_id}:errors.append(f'{storage_ref(path)} aura_workflow method_ref must equal workflow_id')

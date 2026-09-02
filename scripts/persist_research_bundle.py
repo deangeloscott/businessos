@@ -73,13 +73,13 @@ def _source_provenance(item,ref,acquisition,snapshot_path):
     missing=sorted({'source_type','origin','access_scope'}-set(supplied))
     raise ValueError(f'cannot determine source provenance mechanically for {ref!r}; specify {", ".join(missing)}. AURA will not default ambiguous evidence to public web.')
 
-def _method_extensions(contract_id,method_type,method_ref):
+def _method_extensions(workflow_id,method_type,method_ref):
     ext={}
-    if contract_id:ext['contract_id']=contract_id
+    if workflow_id:ext['workflow_id']=workflow_id
     if method_type or method_ref:ext['businessos_method']={k:v for k,v in {'method_type':method_type,'method_ref':method_ref}.items() if v}
     return ext
 
-def _source(bid,item,run_id,contract_id,method_type,method_ref,ts):
+def _source(bid,item,run_id,workflow_id,method_type,method_ref,ts):
     ref=str(item.get('source_reference') or '').strip()
     if not ref: raise ValueError('each source requires source_reference')
     text=item.get('captured_text');payload=item.get('record_payload');snap=item.get('snapshot_path');pointer=item.get('evidence_pointer')
@@ -92,7 +92,7 @@ def _source(bid,item,run_id,contract_id,method_type,method_ref,ts):
     asset_refs=[];asset_objs=[]
     if snap:
         aid,loc=_copy_snapshot(bid,sid,snap);asset_refs.append(aid)
-        a=_base('Asset',aid,bid,run_id,ts);ext=_method_extensions(contract_id,method_type,method_ref);ext['source_ref']=sid
+        a=_base('Asset',aid,bid,run_id,ts);ext=_method_extensions(workflow_id,method_type,method_ref);ext['source_ref']=sid
         a.update({'asset_type':'evidence_snapshot','owner_system':item.get('owner_system') or 'core','business_role':'source evidence preservation','location_reference':loc,'version':'1','status':'active','extensions':ext})
         _validate('Asset',a);asset_objs.append(a)
     if text or payload is not None or asset_refs:
@@ -101,7 +101,7 @@ def _source(bid,item,run_id,contract_id,method_type,method_ref,ts):
     else:status='pointer_only';method='reference_only'
     ev={'capture_status':status,'capture_method':item.get('capture_method') or method,'acquisition_method':acquisition,'acquisition_reference':item.get('acquisition_reference'),'captured_text':text,'title':item.get('title'),'author_label':item.get('author_label'),'rating':item.get('rating'),'context':item.get('context'),'asset_refs':asset_refs,'evidence_pointer':pointer,'record_payload':payload,'capture_notes':item.get('capture_notes'),'provenance_resolution':provenance['resolution']}
     ev={k:v for k,v in ev.items() if v is not None and v!=[]}
-    extensions={'businessos_evidence':ev,**_method_extensions(contract_id,method_type,method_ref)}
+    extensions={'businessos_evidence':ev,**_method_extensions(workflow_id,method_type,method_ref)}
     s=_base('SourceRecord',sid,bid,run_id,ts);s.update({'source_type':provenance['source_type'],'source_reference':ref,'subject_refs':item.get('subject_refs',[]),'origin':provenance['origin'],'retrieved_at':item.get('retrieved_at') or ts,'published_at':item.get('published_at'),'content_hash':ch,'access_scope':provenance['access_scope'],'extensions':extensions})
     _validate('SourceRecord',s);return s,asset_objs
 
@@ -116,20 +116,20 @@ def _write(obj):
 def persist(bid,bundle):
     base=ROOT/'instances'/bid
     if not base.exists():raise ValueError(f'Unknown business: {bid}; initialize it before research persistence')
-    contract_id=str(bundle.get('contract_id') or '').strip() or None
-    reg=load_registry();match=next((c for c in reg['contracts'] if c.get('id')==contract_id),None) if contract_id else None
-    if contract_id and not match:raise ValueError(f'Unknown contract_id: {contract_id}')
-    method_type=str(bundle.get('method_type') or '').strip() or ('aura_playbook' if contract_id else None)
-    method_ref=str(bundle.get('method_ref') or '').strip() or contract_id
+    workflow_id=str(bundle.get('workflow_id') or '').strip() or None
+    reg=load_registry();match=next((c for c in reg['workflows'] if c.get('id')==workflow_id),None) if workflow_id else None
+    if workflow_id and not match:raise ValueError(f'Unknown workflow_id: {workflow_id}')
+    method_type=str(bundle.get('method_type') or '').strip() or ('aura_playbook' if workflow_id else None)
+    method_ref=str(bundle.get('method_ref') or '').strip() or workflow_id
     if method_type and method_type not in {'aura_playbook','external_skill','model_created','ad_hoc'}:raise ValueError(f'Unknown method_type: {method_type}')
     owner=bundle.get('owner_system') or (match.get('owner_system') if match else None) or 'core'
     if owner not in SYSTEMS_ALLOWED:raise ValueError(f'Unknown owner_system: {owner}')
-    seed=contract_id or method_ref or method_type or 'research';run_id=bundle.get('run_id');ts=now();written=[]
+    seed=workflow_id or method_ref or method_type or 'research';run_id=bundle.get('run_id');ts=now();written=[]
 
     src_objs=[];asset_objs=[]
     for item in bundle.get('sources',[]):
         item=dict(item);item.setdefault('owner_system',owner)
-        s,assets=_source(bid,item,run_id,contract_id,method_type,method_ref,ts);src_objs.append(s);asset_objs.extend(assets)
+        s,assets=_source(bid,item,run_id,workflow_id,method_type,method_ref,ts);src_objs.append(s);asset_objs.extend(assets)
     src_ids=[s['id'] for s in src_objs]
 
     obs_objs=[]
@@ -141,7 +141,7 @@ def persist(bid,bundle):
         refs += [r for r in item.get('source_refs',[]) if r not in refs]
         if not refs:raise ValueError(f'observation {n} requires source_indexes/source_refs')
         oid=item.get('id') or _id('obs',f'{bid}:{seed}:{item.get("statement")}:{"|".join(refs)}')
-        ext=dict(item.get('extensions',{}));ext.update({k:v for k,v in _method_extensions(contract_id,method_type,method_ref).items() if k not in ext})
+        ext=dict(item.get('extensions',{}));ext.update({k:v for k,v in _method_extensions(workflow_id,method_type,method_ref).items() if k not in ext})
         o=_base('Observation',oid,bid,run_id,ts);o.update({'producer_system':item.get('producer_system') or owner,'observation_type':item.get('observation_type') or 'research_observation','subject_refs':item.get('subject_refs',[]),'statement':item.get('statement'),'source_refs':refs,'observed_at':item.get('observed_at') or ts,'method':item.get('method') or 'source_inspection','extraction_confidence':item.get('extraction_confidence'),'extensions':ext})
         _validate('Observation',o);obs_objs.append(o)
     obs_ids=[o['id'] for o in obs_objs]
@@ -156,7 +156,7 @@ def persist(bid,bundle):
         if status in {'supported','active'} and not links:raise ValueError(f'insight {n} status={status} requires supporting observations/evidence')
         if status in {'supported','active'}:_check_frequency_claim(item,n)
         iid=item.get('id') or _id('ins',f'{bid}:{seed}:{item.get("statement")}')
-        ext=dict(item.get('extensions',{}));ext.update({k:v for k,v in _method_extensions(contract_id,method_type,method_ref).items() if k not in ext})
+        ext=dict(item.get('extensions',{}));ext.update({k:v for k,v in _method_extensions(workflow_id,method_type,method_ref).items() if k not in ext})
         ins=_base('Insight',iid,bid,run_id,ts);ins.update({'owner_system':item.get('owner_system') or owner,'insight_type':item.get('insight_type') or 'research_insight','statement':item.get('statement'),'subject_refs':item.get('subject_refs',[]),'evidence_links':links,'confidence':item.get('confidence',0.5),'scope':item.get('scope',{}),'status':status,'reviewed_at':item.get('reviewed_at'),'extensions':ext})
         _validate('Insight',ins);ins_objs.append(ins)
     ins_ids=[i['id'] for i in ins_objs]
@@ -169,7 +169,7 @@ def persist(bid,bundle):
         insrefs=[ins_ids[i] for i in item.get('insight_indexes',[]) if isinstance(i,int) and 0<=i<len(ins_ids)]
         cid=item.get('id') or _id('cmp',f'{bid}:{name.lower()}')
         if any(item.get(k) for k in ['positioning_summary','strategic_summary','strengths','weaknesses']) and not (obsrefs or insrefs):raise ValueError(f'competitor {n} interpretation/strengths/weaknesses require observation_indexes or insight_indexes; preserve evidence before strategic interpretation')
-        ext=dict(item.get('extensions',{}));ext.update({k:v for k,v in _method_extensions(contract_id,method_type,method_ref).items() if k not in ext})
+        ext=dict(item.get('extensions',{}));ext.update({k:v for k,v in _method_extensions(workflow_id,method_type,method_ref).items() if k not in ext})
         c=_base('Competitor',cid,bid,run_id,ts);c.update({'name':name,'identities':{'official_domains':item.get('official_domains',[]),'aliases':item.get('aliases',[]),'profiles':item.get('profiles',[])},'competitor_type':item.get('competitor_type') or 'observed competitor','markets':item.get('markets',[]),'audiences':item.get('audiences',[]),'categories':item.get('categories',[]),'products_services':item.get('products_services',[]),'known_offers':item.get('known_offers',[]),'known_pricing':item.get('known_pricing',[]),'positioning_summary':item.get('positioning_summary'),'strategic_summary':item.get('strategic_summary'),'strengths':item.get('strengths',[]),'weaknesses':item.get('weaknesses',[]),'active_insight_refs':insrefs,'observation_refs':obsrefs,'last_reviewed':item.get('last_reviewed') or ts,'confidence':item.get('confidence',0.5),'extensions':ext})
         _validate('Competitor',c);cmp_objs.append(c)
 
@@ -220,7 +220,7 @@ def main():
   ]
 }
 
-`contract_id` is optional and should be supplied only when an AURA playbook was actually selected. External Skill, model-created, and ad-hoc research may instead use method_type/method_ref or omit method provenance when it is not materially useful. `run_id` is optional.
+`workflow_id` is optional and should be supplied only when an AURA playbook was actually selected. External Skill, model-created, and ad-hoc research may instead use method_type/method_ref or omit method provenance when it is not materially useful. `run_id` is optional.
 
 Declare acquisition_method separately from capture_method. Discovery-only methods such as search_result, search_snippet, directory_preview, ai_summary, unvisited_url, or unknown may be saved, but cannot support an Observation even if captured_text is present. For any source whose provenance is not mechanically determined, specify source_type, origin, and access_scope; AURA will not guess public provenance. Preserve subject_refs when a source/observation/insight concerns a resolved material subject.'''
     p=argparse.ArgumentParser(description='Persist bounded SourceRecords/evidence/Observations/Insights/Competitors from any truthful research method; an AURA contract is optional.',formatter_class=argparse.RawDescriptionHelpFormatter,epilog=epilog)

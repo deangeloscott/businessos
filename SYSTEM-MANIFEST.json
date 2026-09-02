@@ -52,16 +52,18 @@
     "marketing-synthesis",
     "seo-aeo"
   ],
-  "contract_count": 496,
+  "playbook_count": 47,
+  "workflow_count": 472,
   "schema_count": 47,
-  "capability_count": 83,
   "entrypoints": {
     "human": "BEGINNERS-GUIDE.md",
     "deployment": "DEPLOYMENT.md",
     "branding": "BRANDING.md",
     "playbooks": "PLAYBOOKS.md",
+    "workflows": "WORKFLOW-INDEX.md",
     "task_navigator": "TASK-NAVIGATOR.md",
     "agent": "CONTEXT.md",
+    "skill": "skills/viraltrac-aura/SKILL.md",
     "glossary": "GLOSSARY.md"
   },
   "generated_from": "scripts/generate_registry.py"

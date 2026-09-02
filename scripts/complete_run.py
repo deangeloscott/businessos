@@ -36,7 +36,7 @@ def _validate_run(run):
 
 
 def _normalize_method(run):
-    registry=load_registry().get('contracts',[]);byid={x.get('id'):x for x in registry if x.get('id')};method=run.get('method_type') or 'ad_hoc';method_ref=run.get('method_ref');workflow_id=run.get('workflow_id');playbook_id=run.get('playbook_id')
+    registry=load_registry().get('workflows',[]);byid={x.get('id'):x for x in registry if x.get('id')};method=run.get('method_type') or 'ad_hoc';method_ref=run.get('method_ref');workflow_id=run.get('workflow_id');playbook_id=run.get('playbook_id')
     if method=='aura_workflow':
         workflow=byid.get(workflow_id)
         if not workflow or workflow.get('type')!='workflow':raise ValueError(f'AURA Workflow receipt references an unavailable Workflow: {workflow_id!r}')

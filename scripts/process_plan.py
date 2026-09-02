@@ -13,7 +13,7 @@ import argparse,json
 
 def workflow_map():
     out={}
-    for path in contract_files():
+    for path in workflow_files():
         meta,_=read_frontmatter(path);wid=meta.get('id')
         if wid:out[wid]=meta
     return out

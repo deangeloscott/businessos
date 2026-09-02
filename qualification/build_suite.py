@@ -2,7 +2,7 @@
 """Build qualification cases that test real business work, not internal AURA ceremony."""
 from pathlib import Path
 import argparse,json
-from common import ROOT,load_contracts,family_for,fixture_for,competitive_profile,output_policy,write_json
+from common import ROOT,load_workflows,family_for,fixture_for,competitive_profile,output_policy,write_json
 
 RUBRICS=json.loads((ROOT/'qualification/rubrics/rubrics.json').read_text())
 MISSIONS=json.loads((ROOT/'qualification/missions/missions.json').read_text())
@@ -34,12 +34,12 @@ def hard_gates(c):
     return gates
 
 def build():
-    contracts=load_contracts();ids={c['contract_id'] for c in contracts};tests=[]
-    for c in contracts:
+    workflows=load_workflows();ids={c['workflow_id'] for c in workflows};tests=[]
+    for c in workflows:
         if c.get('type')!='workflow':continue
-        normal=workflow_ids((c.get('workflows') or {}).get('required') or [],c['contract_id']);conditional=workflow_ids((c.get('workflows') or {}).get('conditional') or [],c['contract_id'])
-        tests.append({'test_id':'WORKFLOW-'+c['contract_id'].replace('.','-').upper(),'kind':'workflow_acceptance','contract_id':c['contract_id'],'workflow_id':c['contract_id'],'contract_path':c['path'],'workflow_path':c['path'],'owner_system':c['owner_system'],'family':family_for(c['contract_id']),'fixture':fixture_for(c['contract_id'],c['owner_system']),'claim_under_test':{'title':c['title'],'purpose':c['purpose'],'business_outcome':c['business_outcome'],'completion_evidence':c['completion_evidence']},'candidate_task':candidate_task(c),'reads':c['reads'],'writes':c['writes'],'context':c['context'],'normally_used_workflows':normal,'conditional_workflows':conditional,'unknown_composed_workflows':sorted(x for x in normal+conditional if x not in ids),'process_steps':c['process'],'output_policy':output_policy(c),'competitive_profile':competitive_profile(c),'rubric_dimensions':dimensions_for(competitive_profile(c)),'hard_gates':hard_gates(c),'artifact_role':c.get('artifact_role')})
-    return {'format_version':'3.0','suite_name':'AURA Real Business Work Qualification Suite','qualification_model':'output_and_evidence_first','workflow_count':len(tests),'contract_count':len(tests),'workflow_tests':tests,'contract_tests':tests,'composition_missions':MISSIONS.get('composition_missions',[]),'domain_missions':MISSIONS['domain_missions'],'cross_domain_missions':MISSIONS['cross_domain_missions'],'marathon_missions':MISSIONS['marathon_missions']}
+        normal=workflow_ids((c.get('workflows') or {}).get('required') or [],c['workflow_id']);conditional=workflow_ids((c.get('workflows') or {}).get('conditional') or [],c['workflow_id'])
+        tests.append({'test_id':'WORKFLOW-'+c['workflow_id'].replace('.','-').upper(),'kind':'workflow_acceptance','workflow_id':c['workflow_id'],'workflow_path':c['path'],'owner_system':c['owner_system'],'family':family_for(c['workflow_id']),'fixture':fixture_for(c['workflow_id'],c['owner_system']),'claim_under_test':{'title':c['title'],'purpose':c['purpose'],'business_outcome':c['business_outcome'],'completion_evidence':c['completion_evidence']},'candidate_task':candidate_task(c),'reads':c['reads'],'writes':c['writes'],'context':c['context'],'normally_used_workflows':normal,'conditional_workflows':conditional,'unknown_composed_workflows':sorted(x for x in normal+conditional if x not in ids),'process_steps':c['process'],'output_policy':output_policy(c),'competitive_profile':competitive_profile(c),'rubric_dimensions':dimensions_for(competitive_profile(c)),'hard_gates':hard_gates(c),'artifact_role':c.get('artifact_role')})
+    return {'format_version':'3.0','suite_name':'AURA Real Business Work Qualification Suite','qualification_model':'output_and_evidence_first','workflow_count':len(tests),'workflow_tests':tests,'composition_missions':MISSIONS.get('composition_missions',[]),'domain_missions':MISSIONS['domain_missions'],'cross_domain_missions':MISSIONS['cross_domain_missions'],'marathon_missions':MISSIONS['marathon_missions']}
 
 def main():
     ap=argparse.ArgumentParser();ap.add_argument('--out',default='qualification/generated/full-suite.json');ap.add_argument('--stdout',action='store_true');a=ap.parse_args();suite=build()

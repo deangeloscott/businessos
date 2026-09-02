@@ -27,7 +27,7 @@ def compatibility_status(compatibility,version=None,target_workflow_id=None):
     if maximum and version>_version_tuple(maximum):return 'incompatible'
     if target_workflow_id:
         found=False
-        for path in contract_files():
+        for path in workflow_files():
             try:meta,_=read_frontmatter(path)
             except Exception:continue
             if meta.get('id')==target_workflow_id and meta.get('type')=='workflow':found=True;break

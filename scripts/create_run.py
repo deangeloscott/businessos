@@ -32,12 +32,12 @@ def _args(byid):
 
 
 def main():
-    reg=load_registry();byid={x['id']:x for x in reg['contracts']};a=_args(byid)
+    reg=load_registry();byid={x['id']:x for x in reg['workflows']};a=_args(byid)
     if not (ROOT/'instances'/a.business_id).exists():raise SystemExit('Unknown business')
     workflow=byid.get(a.workflow_id) if a.workflow_id else None
     if a.workflow_id and not workflow:raise SystemExit('Unknown AURA Workflow')
     if workflow and workflow.get('type')!='workflow':raise SystemExit(f'{a.workflow_id} is not an AURA Workflow')
-    playbook=get_playbook(a.playbook_id,reg.get('contracts',[])) if a.playbook_id else None
+    playbook=get_playbook(a.playbook_id,reg.get('workflows',[])) if a.playbook_id else None
     if a.playbook_id and not playbook:raise SystemExit('Unknown AURA Playbook')
 
     if playbook:

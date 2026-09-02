@@ -5,7 +5,7 @@ Workflows are reusable procedures inside or alongside Playbooks. The generated i
 retrieval optimization, not semantic authority. The active model/user decides which
 Workflows are useful and may sequence, parallelize, adapt, combine, or replace them.
 """
-from _common import ROOT,contract_files,read_frontmatter
+from _common import ROOT,workflow_files,read_frontmatter
 from functools import lru_cache
 import argparse,json,re
 
@@ -20,7 +20,7 @@ def _index():
 @lru_cache(maxsize=1)
 def _installed_ids():
     ids=set()
-    for path in contract_files():
+    for path in workflow_files():
         try:meta,_=read_frontmatter(path)
         except Exception:continue
         wid=meta.get('id')

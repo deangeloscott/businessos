@@ -66,7 +66,7 @@ def prepare_work(task,business_id=None,workspace=None,focus=None,operator_ref=No
     if workspace:os.environ['BUSINESSOS_WORKSPACE']=str(Path(workspace).expanduser().resolve())
     resolved=resolve_business(business_id)
     if resolved.get('status')!='resolved':return {'format_version':'4.2','status':'needs_input','workspace':str(workspace_root()),**{k:v for k,v in resolved.items() if k!='status'}}
-    bid=resolved['business_id'];focus=focus or [];registry=load_registry().get('contracts',[])
+    bid=resolved['business_id'];focus=focus or [];registry=load_registry().get('workflows',[])
     playbook=get_playbook(selected_playbook_id,registry) if selected_playbook_id else None
     if selected_playbook_id and not playbook:raise ValueError(f'Unknown or unavailable Playbook: {selected_playbook_id}')
     owner=playbook.get('owner_system') if playbook else None

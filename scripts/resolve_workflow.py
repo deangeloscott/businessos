@@ -6,7 +6,7 @@ import argparse,json
 
 def resolve_workflow(workflow_id):
     matches=[]
-    for path in contract_files():
+    for path in workflow_files():
         try:meta,_=read_frontmatter(path)
         except Exception:continue
         if meta.get('id')==workflow_id:matches.append((path,meta))

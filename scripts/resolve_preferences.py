@@ -139,8 +139,8 @@ def resolve_for_run(business_id,run_id,task_preferences=None,output_type=None,ch
     result=resolve_effective_preferences(
         business_id,
         operator_ref=run.get('operator_ref'),team_ref=run.get('team_ref'),role_ref=run.get('role_ref'),
-        system=(load_registry_contract(run.get('contract_id')) or {}).get('owner_system'),
-        contract=run.get('contract_id'),output_type=run.get('preference_output_type') if output_type is None else output_type,channel=run.get('preference_channel') if channel is None else channel,
+        system=(load_registry_contract(run.get('workflow_id')) or {}).get('owner_system'),
+        contract=run.get('workflow_id'),output_type=run.get('preference_output_type') if output_type is None else output_type,channel=run.get('preference_channel') if channel is None else channel,
         task_preferences=task_preferences,
     )
     out.parent.mkdir(parents=True,exist_ok=True)
@@ -150,9 +150,9 @@ def resolve_for_run(business_id,run_id,task_preferences=None,output_type=None,ch
     return result,out
 
 
-def load_registry_contract(contract_id):
-    if not contract_id:return None
-    return next((x for x in load_registry().get('contracts',[]) if x.get('id')==contract_id),None)
+def load_registry_contract(workflow_id):
+    if not workflow_id:return None
+    return next((x for x in load_registry().get('workflows',[]) if x.get('id')==workflow_id),None)
 
 
 def main():
@@ -169,7 +169,7 @@ def main():
             run,rp=_run_context(a.business_id,a.run_id)
             for supplied,stored,label in [(a.operator_ref,run.get('operator_ref'),'operator_ref'),(a.team_ref,run.get('team_ref'),'team_ref'),(a.role_ref,run.get('role_ref'),'role_ref')]:
                 if supplied is not None and supplied!=stored: raise ValueError(f'{label} cannot override an existing Run attribution')
-            if a.contract is not None and a.contract!=run.get('contract_id'): raise ValueError('contract cannot override an existing Run contract')
+            if a.contract is not None and a.contract!=run.get('workflow_id'): raise ValueError('contract cannot override an existing Run contract')
             for supplied,stored,label in [(a.output_type,run.get('preference_output_type'),'output_type'),(a.channel,run.get('preference_channel'),'channel')]:
                 if supplied is not None and supplied!=stored: raise ValueError(f'{label} cannot override an existing Run preference context')
             snapref=run.get('preference_snapshot_ref');out=(ROOT/snapref) if snapref else (rp.parent/'artifacts'/'effective-preferences.json')
@@ -177,7 +177,7 @@ def main():
                 if task is not None: raise ValueError('existing Run preference snapshot is immutable; task preferences must be supplied when creating the Run')
                 result=json.loads(out.read_text())
             else:
-                contract=run.get('contract_id');rc=load_registry_contract(contract);system=a.system or ((rc or {}).get('owner_system'))
+                contract=run.get('workflow_id');rc=load_registry_contract(contract);system=a.system or ((rc or {}).get('owner_system'))
                 result=resolve_effective_preferences(a.business_id,run.get('operator_ref'),run.get('team_ref'),run.get('role_ref'),system,contract,run.get('preference_output_type'),run.get('preference_channel'),task)
                 out.parent.mkdir(parents=True,exist_ok=True);out.write_text(json.dumps(result,indent=2)+'\n')
                 run['preference_snapshot_ref']=out.relative_to(ROOT).as_posix();run['updated_at']=now();rp.write_text(json.dumps(run,indent=2)+'\n')

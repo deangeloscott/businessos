@@ -103,9 +103,9 @@ The final result should be useful to a business person, not just a pile of saved
 
 ## Authoritative AURA playbooks
 
-- [Review Intelligence](../../../systems/customer-intelligence/contracts/evidence-collection/reviews/CONTEXT.md) — `customer.evidence-collection.reviews`
-- [Public Conversation Collection](../../../systems/customer-intelligence/contracts/evidence-collection/public-conversation/CONTEXT.md) — `customer.evidence-collection.public-conversation`
-- [Before/After and Proof Extraction](../../../systems/customer-intelligence/contracts/analysis/before-after-proof/CONTEXT.md) — `customer.analysis.before-after-proof`
-- [Register Reusable Proof](../../../core/contracts/intelligence/register-proof/CONTEXT.md) — `core.intelligence.register-proof`
+- [Review Intelligence](../../../systems/customer-intelligence/workflows/evidence-collection/reviews/CONTEXT.md) — `customer.evidence-collection.reviews`
+- [Public Conversation Collection](../../../systems/customer-intelligence/workflows/evidence-collection/public-conversation/CONTEXT.md) — `customer.evidence-collection.public-conversation`
+- [Before/After and Proof Extraction](../../../systems/customer-intelligence/workflows/analysis/before-after-proof/CONTEXT.md) — `customer.analysis.before-after-proof`
+- [Register Reusable Proof](../../../core/workflows/intelligence/register-proof/CONTEXT.md) — `core.intelligence.register-proof`
 
 These contracts define the actual operating knowledge. This page only explains the flow in simpler language.

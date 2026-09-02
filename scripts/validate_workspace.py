@@ -20,7 +20,7 @@ def main():
     if set(declared)!=present:errors.append(f'INSTALLATION.json modules {sorted(declared)} do not match present modules {sorted(present)}')
     if 'core' not in owners:errors.append('Core must be installed')
     sreg={json.loads(p.read_text()).get('title') for p in schemas()}
-    for p in contract_files():
+    for p in workflow_files():
         try:meta,body=read_frontmatter(p)
         except Exception as exc:errors.append(str(exc));continue
         rel=str(p.relative_to(ROOT));wid=meta.get('id');wtype=meta.get('type')
@@ -62,7 +62,7 @@ def main():
             if re.search(pat,body,re.I):errors.append(f'{rel}: legacy artifact matches {pat}')
 
     all_ids=set(ids)
-    for p in contract_files():
+    for p in workflow_files():
         meta,_=read_frontmatter(p);composition=meta.get('workflows') or {}
         for kind in ('required','conditional'):
             for item in composition.get(kind,[]) or []:
@@ -92,8 +92,8 @@ def main():
             if not entry:errors.append(f'{mp.relative_to(ROOT)}: activity {aid} missing entry_workflow')
             elif entry not in all_ids:errors.append(f'{mp.relative_to(ROOT)}: unknown Workflow {entry}')
             elif types.get(entry)!='workflow':errors.append(f'{mp.relative_to(ROOT)}: entry {entry} must resolve to type workflow, found {types.get(entry)!r}')
-            if 'entry_contract' in activity:errors.append(f'{mp.relative_to(ROOT)}: retired entry_contract key; use entry_workflow')
-            if 'supporting_contracts' in activity:errors.append(f'{mp.relative_to(ROOT)}: retired supporting_contracts key; use supporting_workflows')
+            if 'entry_workflow' in activity:errors.append(f'{mp.relative_to(ROOT)}: retired entry_workflow key; use entry_workflow')
+            if 'supporting_workflows' in activity:errors.append(f'{mp.relative_to(ROOT)}: retired supporting_workflows key; use supporting_workflows')
             for ref in activity.get('supporting_workflows',[]):
                 if ref not in all_ids:errors.append(f'{mp.relative_to(ROOT)}: unknown supporting Workflow {ref}')
 
@@ -124,7 +124,7 @@ def main():
     required_core=['CONTEXT.md','AGENTS.md','AURA-ATTACHMENT.md','skills/viraltrac-aura/SKILL.md','docs/operating-knowledge.md','core/DEFAULTS.md','core/policies/agent-execution.md','core/policies/workflow-evolution.md','core/policies/active-business-truth.md','core/policies/evidence.md','core/policies/provenance.md','core/policies/preferences-and-adaptation.md','core/policies/business-isolation.md','core/policies/context-provenance-and-claims.md','core/policies/monitoring-continuity.md','core/schemas/context/preference-profile.schema.json','core/schemas/decision/decision-record.schema.json','core/schemas/learning/workflow-evolution-proposal.schema.json','scripts/enter.py','scripts/find_playbooks.py','scripts/find_workflows.py','scripts/remember.py','scripts/create_run.py','scripts/complete_run.py','scripts/canonical_store.py','scripts/persist_workflow_evolution.py','scripts/validate_business.py','scripts/resolve_workflow.py','scripts/bootstrap_explicit_context.py','scripts/resolve_preferences.py','scripts/upsert_preference_profile.py','BEGINNERS-GUIDE.md']
     for rel in required_core:
         if not (ROOT/rel).exists():errors.append(f'missing AURA core component {rel}')
-    retired_paths=['core/capabilities/catalog.json','docs/adding-a-capability.md','generated/capability-usage-index.json','generated/playbook-candidate-index.json','PLAYBOOK-INDEX.md','core/schemas/learning/playbook-evolution-proposal.schema.json','scripts/persist_playbook_evolution.py','core/policies/playbook-evolution.md','scripts/resolve_contract.py','scripts/run_lifecycle.py','scripts/reconcile_runs.py','scripts/run_provenance.py','scripts/persist_run_results.py','scripts/finalize_run.py','scripts/finalize_work_receipt.py','scripts/finalize_sop_run.py','scripts/complete_sop_run.py','scripts/record_contract_completion.py','scripts/route_task.py','scripts/route_and_resolve.py','templates/manual-action.md','core/quality/action-quality.md']
+    retired_paths=['core/capabilities/catalog.json','docs/adding-a-capability.md','generated/capability-usage-index.json','generated/playbook-candidate-index.json','PLAYBOOK-INDEX.md','core/schemas/learning/playbook-evolution-proposal.schema.json','scripts/persist_playbook_evolution.py','core/policies/playbook-evolution.md','scripts/resolve_workflow.py','scripts/run_lifecycle.py','scripts/reconcile_runs.py','scripts/run_provenance.py','scripts/persist_run_results.py','scripts/finalize_run.py','scripts/finalize_work_receipt.py','scripts/finalize_sop_run.py','scripts/complete_sop_run.py','scripts/record_contract_completion.py','scripts/route_task.py','scripts/route_and_resolve.py','templates/manual-action.md','core/quality/action-quality.md']
     for rel in retired_paths:
         if (ROOT/rel).exists():errors.append(f'retired control/routing/capability/semantic artifact reappeared: {rel}')
     if installation().get('portable_first') is not True:errors.append('INSTALLATION.json must declare portable_first=true')

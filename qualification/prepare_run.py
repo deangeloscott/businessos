@@ -16,8 +16,8 @@ def fixture_business_id(fixture):
     return fixture_data(fixture)['business_id']
 
 
-def event_from_contract(t):
-    return {'event_id':t['test_id'],'kind':'contract_acceptance','business_id':fixture_business_id(t['fixture']),'fixture':t['fixture'],'contract_id':t['contract_id'],
+def event_from_workflow(t):
+    return {'event_id':t['test_id'],'kind':'workflow_acceptance','business_id':fixture_business_id(t['fixture']),'fixture':t['fixture'],'workflow_id':t['workflow_id'],
             'task':t['candidate_task'],'competitive_profile':t['competitive_profile'],'required_output':t['output_policy']}
 
 
@@ -31,18 +31,18 @@ def mission_dimensions(m,kind):
 
 
 def event_from_mission(m,kind):
-    event={'event_id':m['id'],'kind':kind,'business_id':fixture_business_id(m['fixture']),'fixture':m['fixture'],'contract_id':None,'task':m['task'],
+    event={'event_id':m['id'],'kind':kind,'business_id':fixture_business_id(m['fixture']),'fixture':m['fixture'],'workflow_id':None,'task':m['task'],
            'competitive_profile':'mission','rubric_dimensions':mission_dimensions(m,kind),'required_output':{'actual_output_not_description':True}}
     if m.get('release_fixture'): event['release_fixture']=m['release_fixture']
     return event
 
 
-def select_events(suite,profile,domain=None,contract_ids=None,mission_id=None):
-    requested=set(contract_ids or [])
-    if requested and mission_id: raise SystemExit('--contract and --mission cannot be used together')
-    if requested and profile!='atomic': raise SystemExit('--contract is supported only with --profile atomic so a representative contract run cannot silently include missions')
-    known={t['contract_id'] for t in suite['contract_tests']}; unknown=sorted(requested-known)
-    if unknown: raise SystemExit('Unknown qualification contract filter(s): '+', '.join(unknown))
+def select_events(suite,profile,domain=None,workflow_ids=None,mission_id=None):
+    requested=set(workflow_ids or [])
+    if requested and mission_id: raise SystemExit('--workflow and --mission cannot be used together')
+    if requested and profile!='atomic': raise SystemExit('--workflow is supported only with --profile atomic so a representative workflow run cannot silently include missions')
+    known={t['workflow_id'] for t in suite['workflow_tests']}; unknown=sorted(requested-known)
+    if unknown: raise SystemExit('Unknown qualification workflow filter(s): '+', '.join(unknown))
     mission_groups=(
         ('composition','composition_missions','composition_mission'),
         ('domains','domain_missions','domain_mission'),
@@ -60,10 +60,10 @@ def select_events(suite,profile,domain=None,contract_ids=None,mission_id=None):
         return [event_from_mission(mission,kind)]
     events=[]
     if profile in ('atomic','full'):
-        for t in suite['contract_tests']:
+        for t in suite['workflow_tests']:
             if domain and t['owner_system']!=domain: continue
-            if requested and t['contract_id'] not in requested: continue
-            events.append(event_from_contract(t))
+            if requested and t['workflow_id'] not in requested: continue
+            events.append(event_from_workflow(t))
     if profile in ('composition','full'): events += [event_from_mission(m,'composition_mission') for m in suite.get('composition_missions',[])]
     if profile in ('domains','full'): events += [event_from_mission(m,'domain_mission') for m in suite['domain_missions'] if not domain or m['owner_system']==domain]
     if profile in ('cross-domain','full'): events += [event_from_mission(m,'cross_domain_mission') for m in suite['cross_domain_missions']]
@@ -105,7 +105,7 @@ def apply_candidate_request(events,request):
     if len(events)!=1: raise ValueError('--request requires exactly one selected qualification event')
     text=str(request).strip()
     if not text: raise ValueError('--request cannot be empty')
-    hidden_targets=(('contract',events[0].get('contract_id')),('mission',events[0].get('evaluation_id')))
+    hidden_targets=(('workflow',events[0].get('workflow_id')),('mission',events[0].get('evaluation_id')))
     for target_kind,target in hidden_targets:
         target=str(target or '').strip()
         if target and target.lower() in text.lower():
@@ -222,9 +222,9 @@ def init_business(product_root,workspace,fixture,evaluator_root=None):
 
 
 def main():
-    ap=argparse.ArgumentParser(); ap.add_argument('--profile',choices=['atomic','composition','domains','cross-domain','marathon','full'],default='atomic'); ap.add_argument('--domain'); ap.add_argument('--contract',action='append',default=[],help='Exact contract ID to include in an atomic representative run; repeat for multiple contracts.'); ap.add_argument('--mission',help='Exact mission ID to include in a mission-based qualification profile.'); ap.add_argument('--fixture',help='Maintainer-only benchmark fixture override for exactly one selected qualification event.'); ap.add_argument('--request',help='Maintainer-authored ordinary business request for exactly one selected event. This replaces only the candidate-visible task text; evaluator target/rubric remain hidden.'); ap.add_argument('--run-root',help='Maintainer-only evaluator/checkpoint run root.'); ap.add_argument('--candidate-root',help='Neutral root for candidate-visible product/workspace. Must be physically separate from the evaluator run root.'); ap.add_argument('--run-id'); a=ap.parse_args()
-    if a.profile=='atomic' and not a.domain and not a.contract and not a.mission: raise SystemExit('Atomic qualification requires --contract <exact-contract-id> or --domain <installed-domain>; use --profile full explicitly only for an intentional broad endurance run')
-    suite=build(); selected=select_events(suite,a.profile,a.domain,a.contract,a.mission); evaluator_events=publicize_events(selected)
+    ap=argparse.ArgumentParser(); ap.add_argument('--profile',choices=['atomic','composition','domains','cross-domain','marathon','full'],default='atomic'); ap.add_argument('--domain'); ap.add_argument('--workflow',action='append',default=[],help='Exact workflow ID to include in an atomic representative run; repeat for multiple workflows.'); ap.add_argument('--mission',help='Exact mission ID to include in a mission-based qualification profile.'); ap.add_argument('--fixture',help='Maintainer-only benchmark fixture override for exactly one selected qualification event.'); ap.add_argument('--request',help='Maintainer-authored ordinary business request for exactly one selected event. This replaces only the candidate-visible task text; evaluator target/rubric remain hidden.'); ap.add_argument('--run-root',help='Maintainer-only evaluator/checkpoint run root.'); ap.add_argument('--candidate-root',help='Neutral root for candidate-visible product/workspace. Must be physically separate from the evaluator run root.'); ap.add_argument('--run-id'); a=ap.parse_args()
+    if a.profile=='atomic' and not a.domain and not a.workflow and not a.mission: raise SystemExit('Atomic qualification requires --workflow <exact-workflow-id> or --domain <installed-domain>; use --profile full explicitly only for an intentional broad endurance run')
+    suite=build(); selected=select_events(suite,a.profile,a.domain,a.workflow,a.mission); evaluator_events=publicize_events(selected)
     try:
         evaluator_events=apply_fixture_override(evaluator_events,a.fixture)
         evaluator_events=apply_candidate_request(evaluator_events,a.request)
@@ -261,7 +261,7 @@ def main():
     fixtures=sorted({event['fixture'] for event in evaluator_events})
     for fixture in fixtures: init_business(product_root,workspace,fixture,run_dir/'evaluator')
     baseline=product_snapshot(product_root); write_json(run_dir/'evaluator/product-snapshot.json',baseline)
-    contract_filter=sorted(set(a.contract)); evaluator_queue={'format_version':'2.0','run_id':run_id,'profile':a.profile,'domain_filter':a.domain,'contract_filter':contract_filter,'mission_filter':a.mission,'event_count':len(evaluator_events),'events':evaluator_events}
+    contract_filter=sorted(set(a.workflow)); evaluator_queue={'format_version':'2.0','run_id':run_id,'profile':a.profile,'domain_filter':a.domain,'contract_filter':contract_filter,'mission_filter':a.mission,'event_count':len(evaluator_events),'events':evaluator_events}
     preparation={'profile':a.profile,'domain_filter':a.domain,'contract_filter':contract_filter,'mission_filter':a.mission,'fixture_override':a.fixture,'prepared_at':now(),'candidate_blind':True,'maintainer_authored_request':bool(a.request),'candidate_surface_root':str(candidate_dir)}
     write_json(run_dir/'evaluator/queue.json',evaluator_queue); write_json(run_dir/'evaluator/suite.json',suite); write_json(run_dir/'evaluator/preparation.json',preparation)
     future=any(fixture_data(f).get('timeline') for f in fixtures)

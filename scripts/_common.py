@@ -237,12 +237,12 @@ def read_frontmatter(path):
     if end<0: raise ValueError(f'Unclosed frontmatter: {path}')
     meta=yaml.safe_load(text[4:end]) or {}
     return meta,text[end+5:]
-def contract_files():
-    return sorted([p for p in PRODUCT_ROOT.rglob('CONTEXT.md') if '/contracts/' in p.as_posix()])
+def workflow_files():
+    return sorted([p for p in PRODUCT_ROOT.rglob('CONTEXT.md') if '/workflows/' in p.as_posix()])
 def schemas():
     return sorted(PRODUCT_ROOT.rglob('*.schema.json'))
 def load_registry():
-    p=PRODUCT_ROOT/'generated/contract-registry.json'
+    p=PRODUCT_ROOT/'generated/workflow-registry.json'
     if not p.exists(): raise SystemExit('Run scripts/generate_registry.py first')
     return json.loads(p.read_text())
 def now(): return datetime.datetime.now(datetime.timezone.utc).isoformat()

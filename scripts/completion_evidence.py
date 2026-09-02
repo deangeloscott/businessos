@@ -42,10 +42,10 @@ def _selector_types(items):
     return out
 
 
-def contract_index():
+def workflow_index():
     """Read authored playbook source directly; generated registries are derived views."""
     out={}
-    for path in contract_files():
+    for path in workflow_files():
         try:meta,_=read_frontmatter(path)
         except Exception:continue
         cid=meta.get('id')
@@ -179,7 +179,7 @@ def detector_evidence_errors(contract,paths,business_id):
     cid=contract.get('id')
     for path in paths:
         data=_json(path)
-        if not isinstance(data,dict) or data.get('contract_id')!=cid:continue
+        if not isinstance(data,dict) or data.get('workflow_id')!=cid:continue
         if str(data.get('status','')).lower() not in {'completed','complete','no_finding'}:continue
         if str(data.get('result','')).lower() not in {'no_finding','no_material_finding','no_opportunity','no_material_opportunity'}:continue
         checks=data.get('checks_performed',data.get('checks'));refs=data.get('evidence_refs') or []
@@ -194,7 +194,7 @@ def intelligence_evidence_errors(contract,paths,business_id):
         for value in values:
             if not isinstance(value,dict):continue
             if isinstance(value.get('analysis_record'),dict):value=value['analysis_record']
-            if value.get('contract_id')==cid and all(key in value for key in required):records.append(value)
+            if value.get('workflow_id')==cid and all(key in value for key in required):records.append(value)
     if not records:return [f'{cid} requires an auditable intelligence work record with method, evidence_sample, findings, limitations, and recommended_actions; a concise canonical conclusion alone is not the work record']
     failures=[]
     for record in records:
@@ -283,7 +283,7 @@ def qa_evidence_errors(contract,paths,business_id=None):
     cid=contract.get('id');strict=completion_spec(contract).get('strict_qa_target',False);matched=[]
     for path in paths:
         data=_json(path)
-        if not isinstance(data,dict) or data.get('contract_id')!=cid or str(data.get('status','')).lower() not in {'pass','passed'}:continue
+        if not isinstance(data,dict) or data.get('workflow_id')!=cid or str(data.get('status','')).lower() not in {'pass','passed'}:continue
         target=_qa_target(data,path,business_id) if strict else None
         if strict and target is None:continue
         checks=data.get('checks_performed',data.get('checks'));target_text=_qa_target_text(target)
@@ -293,7 +293,7 @@ def qa_evidence_errors(contract,paths,business_id=None):
             if any(not isinstance(data.get(key),list) for key in ('issues_found','corrections_made','limitations')):continue
         matched.append(data)
     if not matched:
-        suffix=' with matching contract_id, substantive per-check outcomes, no unresolved blockers, and an existing non-self target Asset at the exact tested version' if strict else ' with matching contract_id and substantive per-check outcomes'
+        suffix=' with matching workflow_id, substantive per-check outcomes, no unresolved blockers, and an existing non-self target Asset at the exact tested version' if strict else ' with matching workflow_id and substantive per-check outcomes'
         return [f'{cid} requires a structured JSON QA pass record{suffix}; generic self-attestation is not evidence']
     for data in matched:
         errors=qa_global_readiness_errors(data,business_id)
@@ -301,8 +301,8 @@ def qa_evidence_errors(contract,paths,business_id=None):
     return []
 
 
-def qa_record_ok(contract_id,refs,business_id=None):
-    contract=contract_index().get(contract_id)
+def qa_record_ok(workflow_id,refs,business_id=None):
+    contract=workflow_index().get(workflow_id)
     return bool(contract) and not qa_evidence_errors(contract,_paths(refs),business_id)
 
 
@@ -318,9 +318,9 @@ def _media_family(medium):
     return 'text'
 
 
-def _contains_internal_markers(path,contract_id):
+def _contains_internal_markers(path,workflow_id):
     if Path(path).suffix.lower() not in TEXT_EXTS|{'.svg'}:return False
-    text=_text(path).lower();cid=str(contract_id or '').lower()
+    text=_text(path).lower();cid=str(workflow_id or '').lower()
     if cid and cid in text:return True
     return bool(re.search(r'\bcontract-[a-z0-9-]{8,}\b|\baura_qualification_run\b|\bqualification event\b|\bdeliverable:\s*(?:content|marketing|seo|customer|competitor|industry)\.',text))
 
@@ -353,10 +353,10 @@ def _svg_dimensions(path):
     return (w,h) if w and h else None
 
 
-def _media_integrity_errors(path,family,contract_id):
+def _media_integrity_errors(path,family,workflow_id):
     p=Path(path);ext=p.suffix.lower();data=p.read_bytes();errors=[]
     if len(data)<MIN_MEDIA_BYTES.get(family,1):return [f'{p.name} is too small to be a usable {family} artifact']
-    if _contains_internal_markers(p,contract_id):errors.append(f'{p.name} exposes internal contract/qualification identifiers instead of a customer-facing artifact')
+    if _contains_internal_markers(p,workflow_id):errors.append(f'{p.name} exposes internal contract/qualification identifiers instead of a customer-facing artifact')
     if family in {'image','infographic'}:
         dims=_png_dimensions(data) if ext=='.png' else (_gif_dimensions(data) if ext=='.gif' else (_jpeg_dimensions(data) if ext in {'.jpg','.jpeg'} else (_svg_dimensions(p) if ext=='.svg' else None)))
         if ext=='.pdf' and not data.startswith(b'%PDF'):errors.append(f'{p.name} is not a structurally decodable PDF')
@@ -379,9 +379,9 @@ def _media_integrity_errors(path,family,contract_id):
     return errors
 
 
-def _specification_errors(path,medium,contract_id):
+def _specification_errors(path,medium,workflow_id):
     text=_text(path);low=text.lower();errors=[]
-    if _contains_internal_markers(path,contract_id):errors.append(f'{Path(path).name} exposes internal contract/qualification identifiers instead of the requested deliverable')
+    if _contains_internal_markers(path,workflow_id):errors.append(f'{Path(path).name} exposes internal contract/qualification identifiers instead of the requested deliverable')
     if any(marker in low for marker in ('this file merely says','describes a future presentation without building it','generic operations guide with no production detail')):errors.append('fallback is only a placeholder/keyword shell, not a production-ready specification')
     groups=SPEC_FALLBACKS.get(medium)
     if groups and not all(any(term in low for term in group) for group in groups):errors.append(f'{medium} fallback lacks concrete production structure required to execute the requested medium')

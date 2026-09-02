@@ -26,7 +26,7 @@ def _validate_distribution_product_local():
     tpl=json.loads((ROOT/'instances/_template/instance.json').read_text());expected_enabled=sorted(installed-{'core'})
     if sorted(tpl.get('enabled_systems',[]))!=expected_enabled:errors.append('instance template enabled_systems does not match installed modules')
 
-    generate_registry();validate_workspace();validate_public_distribution();reg={c['id']:c for c in load_registry()['contracts']}
+    generate_registry();validate_workspace();validate_public_distribution();reg={c['id']:c for c in load_registry()['workflows']}
     for wid,workflow in reg.items():
         if workflow.get('type')!='workflow':errors.append(f'{wid} is not typed as Workflow')
         for kind in ('required','conditional'):

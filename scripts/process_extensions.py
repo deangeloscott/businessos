@@ -52,7 +52,7 @@ def get_extension(business_id,extension_id):
 
 def _canonical_workflow(workflow_id):
     matches=[]
-    for path in contract_files():
+    for path in workflow_files():
         try:meta,body=read_frontmatter(path)
         except Exception:continue
         if meta.get('id')==workflow_id:matches.append((path,meta,body))

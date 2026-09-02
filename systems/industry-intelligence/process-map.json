@@ -1,22 +1,107 @@
 {
   "system": "industry-intelligence",
   "activities": [
-    {"id":"monitoring-plan","entry_workflow":"industry.research.monitoring-plan","result":"Define decision-relevant external monitoring intent and evidence needs."},
-    {"id":"priority-sources","entry_workflow":"industry.source-mapping.priority-sources","result":"Map reliable priority industry sources."},
-    {"id":"ecosystem-radar","entry_workflow":"industry.intelligence.ecosystem-radar","result":"Discover and triangulate material industry changes, research, regulation, technologies, market shifts, and emerging practices for business understanding."},
-    {"id":"news-monitoring","entry_workflow":"industry.monitoring.news","result":"Review material news developments."},
-    {"id":"regulatory-monitoring","entry_workflow":"industry.monitoring.regulation","result":"Review and interpret material regulation/standards changes."},
-    {"id":"research-monitoring","entry_workflow":"industry.monitoring.research","result":"Review and evaluate important research."},
-    {"id":"technology-monitoring","entry_workflow":"industry.monitoring.technology","result":"Review important technology/platform changes."},
-    {"id":"social-discussion","entry_workflow":"industry.monitoring.social-discussion","result":"Use public discussion as an early signal without treating popularity as fact."},
-    {"id":"event-detection","entry_workflow":"industry.event.detect","result":"Determine whether evidence represents a durable IndustryEvent worth preserving."},
-    {"id":"event-verification","entry_workflow":"industry.analysis.event-verification","result":"Verify material Event facts."},
-    {"id":"factual-summary","entry_workflow":"industry.event.factual-summary","result":"Maintain a clean factual Event layer."},
-    {"id":"event-evolution","entry_workflow":"industry.analysis.event-evolution","result":"Understand meaningful Event changes and future evidence checkpoints."},
-    {"id":"materiality","entry_workflow":"industry.analysis.materiality","result":"Determine whether the Event can change a business decision."},
-    {"id":"impact-analysis","entry_workflow":"industry.analysis.business-impact","result":"Determine scoped business impact."},
-    {"id":"trend-validation","entry_workflow":"industry.analysis.trend-validation","result":"Validate sustained trends versus temporary attention."},
-    {"id":"scenario-analysis","entry_workflow":"industry.analysis.scenario","result":"Model plausible uncertain futures with indicators."},
-    {"id":"rapid-response","entry_workflow":"industry.analysis.rapid-response","result":"Build a compact evidence-backed understanding of a time-sensitive material development."}
+    {
+      "id": "monitoring-plan",
+      "entry_workflow": "industry.research.monitoring-plan",
+      "result": "Define decision-relevant external monitoring intent and evidence needs.",
+      "supporting_workflows": []
+    },
+    {
+      "id": "priority-sources",
+      "entry_workflow": "industry.source-mapping.priority-sources",
+      "result": "Map reliable priority industry sources.",
+      "supporting_workflows": []
+    },
+    {
+      "id": "ecosystem-radar",
+      "entry_workflow": "industry.intelligence.ecosystem-radar",
+      "result": "Discover and triangulate material industry changes, research, regulation, technologies, market shifts, and emerging practices for business understanding.",
+      "supporting_workflows": []
+    },
+    {
+      "id": "news-monitoring",
+      "entry_workflow": "industry.monitoring.news",
+      "result": "Review material news developments.",
+      "supporting_workflows": []
+    },
+    {
+      "id": "regulatory-monitoring",
+      "entry_workflow": "industry.monitoring.regulation",
+      "result": "Review and interpret material regulation/standards changes.",
+      "supporting_workflows": []
+    },
+    {
+      "id": "research-monitoring",
+      "entry_workflow": "industry.monitoring.research",
+      "result": "Review and evaluate important research.",
+      "supporting_workflows": []
+    },
+    {
+      "id": "technology-monitoring",
+      "entry_workflow": "industry.monitoring.technology",
+      "result": "Review important technology/platform changes.",
+      "supporting_workflows": []
+    },
+    {
+      "id": "social-discussion",
+      "entry_workflow": "industry.monitoring.social-discussion",
+      "result": "Use public discussion as an early signal without treating popularity as fact.",
+      "supporting_workflows": []
+    },
+    {
+      "id": "event-detection",
+      "entry_workflow": "industry.event.detect",
+      "result": "Determine whether evidence represents a durable IndustryEvent worth preserving.",
+      "supporting_workflows": []
+    },
+    {
+      "id": "event-verification",
+      "entry_workflow": "industry.analysis.event-verification",
+      "result": "Verify material Event facts.",
+      "supporting_workflows": []
+    },
+    {
+      "id": "factual-summary",
+      "entry_workflow": "industry.event.factual-summary",
+      "result": "Maintain a clean factual Event layer.",
+      "supporting_workflows": []
+    },
+    {
+      "id": "event-evolution",
+      "entry_workflow": "industry.analysis.event-evolution",
+      "result": "Understand meaningful Event changes and future evidence checkpoints.",
+      "supporting_workflows": []
+    },
+    {
+      "id": "materiality",
+      "entry_workflow": "industry.analysis.materiality",
+      "result": "Determine whether the Event can change a business decision.",
+      "supporting_workflows": []
+    },
+    {
+      "id": "impact-analysis",
+      "entry_workflow": "industry.analysis.business-impact",
+      "result": "Determine scoped business impact.",
+      "supporting_workflows": []
+    },
+    {
+      "id": "trend-validation",
+      "entry_workflow": "industry.analysis.trend-validation",
+      "result": "Validate sustained trends versus temporary attention.",
+      "supporting_workflows": []
+    },
+    {
+      "id": "scenario-analysis",
+      "entry_workflow": "industry.analysis.scenario",
+      "result": "Model plausible uncertain futures with indicators.",
+      "supporting_workflows": []
+    },
+    {
+      "id": "rapid-response",
+      "entry_workflow": "industry.analysis.rapid-response",
+      "result": "Build a compact evidence-backed understanding of a time-sensitive material development.",
+      "supporting_workflows": []
+    }
   ]
 }

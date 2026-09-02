@@ -3,7 +3,7 @@
 
 The candidate receives only the staged AURA product, organization workspace, and
 ordinary business request. The controller observes what materially changed; it does
-not require the candidate to create a particular Run/contract ledger to count as work.
+not require the candidate to create a particular Run/workflow ledger to count as work.
 """
 from pathlib import Path
 import argparse,json
@@ -42,10 +42,10 @@ def _event(rd,queue,event_id=None,prefer_in_progress=False):
 def _changed_objects(before,after):
     b={x.get('id'):x.get('sha256') for x in (before or {}).get('objects',[]) if x.get('id')};return [x for x in (after or {}).get('objects',[]) if x.get('id') and b.get(x.get('id'))!=x.get('sha256')]
 def _changed_runs(before,after):
-    b={x.get('run_id'):(x.get('status'),x.get('method_type'),x.get('method_ref'),x.get('contract_id')) for x in (before or {}).get('runs',[]) if x.get('run_id')};out=[]
+    b={x.get('run_id'):(x.get('status'),x.get('method_type'),x.get('method_ref'),x.get('workflow_id')) for x in (before or {}).get('runs',[]) if x.get('run_id')};out=[]
     for row in (after or {}).get('runs',[]):
         rid=row.get('run_id')
-        if rid and b.get(rid)!=(row.get('status'),row.get('method_type'),row.get('method_ref'),row.get('contract_id')):out.append(row)
+        if rid and b.get(rid)!=(row.get('status'),row.get('method_type'),row.get('method_ref'),row.get('workflow_id')):out.append(row)
     return out
 
 def _asset_location_refs(workspace,changed_objects):
@@ -71,7 +71,7 @@ def _run_refs(workspace,business_id,changed_runs):
             if isinstance(ref,str) and ref not in result_refs:result_refs.append(ref)
         for ref in cont.get('evidence_refs') or []:
             if isinstance(ref,str) and ref not in evidence_refs:evidence_refs.append(ref)
-        observations.append({'run_id':rid,'status':data.get('status'),'method_type':data.get('method_type'),'method_ref':data.get('method_ref'),'contract_id':data.get('contract_id')})
+        observations.append({'run_id':rid,'status':data.get('status'),'method_type':data.get('method_type'),'method_ref':data.get('method_ref'),'workflow_id':data.get('workflow_id')})
     return result_refs,evidence_refs,observations
 
 def _looks_like_artifact(rel):
