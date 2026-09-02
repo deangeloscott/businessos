@@ -17,10 +17,10 @@
       "minLength": 1,
       "description": "A human-meaningful AURA Playbook identifier when that Playbook materially framed the work."
     },
-    "contract_id": {
+    "workflow_id": {
       "type": ["string", "null"],
       "minLength": 1,
-      "description": "Compatibility field for the detailed AURA Workflow ID. Retained so existing v0.1.x receipts remain readable."
+      "description": "A detailed AURA Workflow identifier when that Workflow was materially used."
     },
     "status": {"enum": ["active", "completed"]},
     "focus_refs": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
