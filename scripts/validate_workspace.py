@@ -12,7 +12,7 @@ import json,re
 REQUIRED=['## Purpose','## Business Outcome','## Run When','## Process']
 BAD_VENDOR=['HubSpot','Salesforce','Semrush','Ahrefs','Mailchimp','Klaviyo','OpenAI SDK','Anthropic SDK','Gemini SDK']
 GENERIC=[r'Improve decisions by producing reliable, reusable .* intelligence or execution',r'Run when .* evidence is required for a current intelligence need, refresh, monitoring cycle, or decision',r'Improve valuable organic discovery and its contribution to business outcomes while preserving domain boundaries and evidence lineage']
-RETIRED_CONTRACT_METADATA={'version','risk','autonomy_ceiling','events','schedule','capabilities','subcontracts'}
+RETIRED_WORKFLOW_METADATA={'version','risk','autonomy_ceiling','events','schedule','capabilities','subcontracts'}
 
 
 def main():
@@ -23,17 +23,17 @@ def main():
     for p in contract_files():
         try:meta,body=read_frontmatter(p)
         except Exception as exc:errors.append(str(exc));continue
-        rel=str(p.relative_to(ROOT));cid=meta.get('id');ctype=meta.get('type')
+        rel=str(p.relative_to(ROOT));wid=meta.get('id');wtype=meta.get('type')
         for key in ['id','type','owner_system','reads','writes']:
             if key not in meta:errors.append(f'{rel}: missing metadata {key}')
-        if ctype=='service':errors.append(f'{rel}: retired service framing; AURA operating knowledge is not an internal service')
-        if ctype=='playbook':errors.append(f'{rel}: flattened playbook metadata remains; detailed procedures are Workflows and high-level Playbooks are separate')
-        if ctype not in {None,'workflow'}:errors.append(f'{rel}: unsupported operating-knowledge type {ctype!r}')
-        retired=sorted(RETIRED_CONTRACT_METADATA&set(meta))
+        if wtype=='service':errors.append(f'{rel}: retired service framing; AURA operating knowledge is not an internal service')
+        if wtype=='playbook':errors.append(f'{rel}: flattened playbook metadata remains; detailed procedures are Workflows and high-level Playbooks are separate')
+        if wtype not in {None,'workflow'}:errors.append(f'{rel}: unsupported operating-knowledge type {wtype!r}')
+        retired=sorted(RETIRED_WORKFLOW_METADATA&set(meta))
         if retired:errors.append(f'{rel}: retired/redundant Workflow metadata remains: {retired}')
-        if cid:
-            if cid in ids:errors.append(f'{rel}: duplicate id also at {ids[cid]}')
-            ids[cid]=rel;types[cid]=ctype
+        if wid:
+            if wid in ids:errors.append(f'{rel}: duplicate id also at {ids[wid]}')
+            ids[wid]=rel;types[wid]=wtype
         if meta.get('owner_system') not in owners:errors.append(f'{rel}: invalid owner {meta.get("owner_system")}')
         for section in REQUIRED:
             if section not in body:errors.append(f'{rel}: missing section {section}')
@@ -71,7 +71,7 @@ def main():
                 elif types.get(ref)!='workflow':errors.append(f'{p.relative_to(ROOT)}: composed reference {ref} is not type workflow')
 
     from operating_knowledge import installed_playbooks
-    registry_rows=[{'id':cid,'type':types[cid]} for cid in ids]
+    registry_rows=[{'id':wid,'type':types[wid]} for wid in ids]
     for playbook in installed_playbooks(registry_rows):
         entry=playbook.get('entry_workflow')
         if entry and entry not in all_ids:errors.append(f"Playbook {playbook['id']}: unknown entry Workflow {entry}")
@@ -86,11 +86,13 @@ def main():
         if 'version' in data:errors.append(f'{mp.relative_to(ROOT)}: redundant process-map version; VERSION/INSTALLATION.json are product-version authority')
         seen=set()
         for activity in data.get('activities',[]):
-            aid=activity.get('id');entry=activity.get('entry_contract')
+            aid=activity.get('id');entry=activity.get('entry_workflow')
             if not aid or aid in seen:errors.append(f'{mp.relative_to(ROOT)}: missing/duplicate Workflow activity {aid}')
             seen.add(aid)
-            if entry not in all_ids:errors.append(f'{mp.relative_to(ROOT)}: unknown Workflow {entry}')
+            if not entry:errors.append(f'{mp.relative_to(ROOT)}: activity {aid} missing entry_workflow')
+            elif entry not in all_ids:errors.append(f'{mp.relative_to(ROOT)}: unknown Workflow {entry}')
             elif types.get(entry)!='workflow':errors.append(f'{mp.relative_to(ROOT)}: entry {entry} must resolve to type workflow, found {types.get(entry)!r}')
+            if 'entry_contract' in activity:errors.append(f'{mp.relative_to(ROOT)}: retired entry_contract key; use entry_workflow')
             if 'supporting_contracts' in activity:errors.append(f'{mp.relative_to(ROOT)}: retired supporting_contracts key; use supporting_workflows')
             for ref in activity.get('supporting_workflows',[]):
                 if ref not in all_ids:errors.append(f'{mp.relative_to(ROOT)}: unknown supporting Workflow {ref}')
@@ -119,14 +121,14 @@ def main():
             if not clean or clean.startswith(('http://','https://','mailto:','#')):continue
             if not (page.parent/clean).resolve().exists():errors.append(f'{page.relative_to(ROOT)}: broken local link {target}')
 
-    required_core=['CONTEXT.md','AGENTS.md','AURA-ATTACHMENT.md','skills/viraltrac-aura/SKILL.md','docs/operating-knowledge.md','core/DEFAULTS.md','core/policies/agent-execution.md','core/policies/workflow-evolution.md','core/policies/active-business-truth.md','core/policies/evidence.md','core/policies/provenance.md','core/policies/preferences-and-adaptation.md','core/policies/business-isolation.md','core/policies/context-provenance-and-claims.md','core/policies/monitoring-continuity.md','core/schemas/context/preference-profile.schema.json','core/schemas/decision/decision-record.schema.json','core/schemas/learning/workflow-evolution-proposal.schema.json','scripts/enter.py','scripts/find_playbooks.py','scripts/find_workflows.py','scripts/remember.py','scripts/create_run.py','scripts/complete_run.py','scripts/canonical_store.py','scripts/persist_workflow_evolution.py','scripts/validate_business.py','scripts/resolve_contract.py','scripts/bootstrap_explicit_context.py','scripts/resolve_preferences.py','scripts/upsert_preference_profile.py','BEGINNERS-GUIDE.md']
+    required_core=['CONTEXT.md','AGENTS.md','AURA-ATTACHMENT.md','skills/viraltrac-aura/SKILL.md','docs/operating-knowledge.md','core/DEFAULTS.md','core/policies/agent-execution.md','core/policies/workflow-evolution.md','core/policies/active-business-truth.md','core/policies/evidence.md','core/policies/provenance.md','core/policies/preferences-and-adaptation.md','core/policies/business-isolation.md','core/policies/context-provenance-and-claims.md','core/policies/monitoring-continuity.md','core/schemas/context/preference-profile.schema.json','core/schemas/decision/decision-record.schema.json','core/schemas/learning/workflow-evolution-proposal.schema.json','scripts/enter.py','scripts/find_playbooks.py','scripts/find_workflows.py','scripts/remember.py','scripts/create_run.py','scripts/complete_run.py','scripts/canonical_store.py','scripts/persist_workflow_evolution.py','scripts/validate_business.py','scripts/resolve_workflow.py','scripts/bootstrap_explicit_context.py','scripts/resolve_preferences.py','scripts/upsert_preference_profile.py','BEGINNERS-GUIDE.md']
     for rel in required_core:
         if not (ROOT/rel).exists():errors.append(f'missing AURA core component {rel}')
-    retired_paths=['core/capabilities/catalog.json','docs/adding-a-capability.md','generated/capability-usage-index.json','generated/playbook-candidate-index.json','PLAYBOOK-INDEX.md','core/schemas/learning/playbook-evolution-proposal.schema.json','scripts/persist_playbook_evolution.py','core/policies/playbook-evolution.md','scripts/run_lifecycle.py','scripts/reconcile_runs.py','scripts/run_provenance.py','scripts/persist_run_results.py','scripts/finalize_run.py','scripts/finalize_work_receipt.py','scripts/finalize_sop_run.py','scripts/complete_sop_run.py','scripts/record_contract_completion.py','scripts/route_task.py','scripts/route_and_resolve.py','templates/manual-action.md','core/quality/action-quality.md']
+    retired_paths=['core/capabilities/catalog.json','docs/adding-a-capability.md','generated/capability-usage-index.json','generated/playbook-candidate-index.json','PLAYBOOK-INDEX.md','core/schemas/learning/playbook-evolution-proposal.schema.json','scripts/persist_playbook_evolution.py','core/policies/playbook-evolution.md','scripts/resolve_contract.py','scripts/run_lifecycle.py','scripts/reconcile_runs.py','scripts/run_provenance.py','scripts/persist_run_results.py','scripts/finalize_run.py','scripts/finalize_work_receipt.py','scripts/finalize_sop_run.py','scripts/complete_sop_run.py','scripts/record_contract_completion.py','scripts/route_task.py','scripts/route_and_resolve.py','templates/manual-action.md','core/quality/action-quality.md']
     for rel in retired_paths:
         if (ROOT/rel).exists():errors.append(f'retired control/routing/capability/semantic artifact reappeared: {rel}')
     if installation().get('portable_first') is not True:errors.append('INSTALLATION.json must declare portable_first=true')
-    print(f'Contracts checked: {len(ids)}');print(f'Workflows checked: {sum(1 for value in types.values() if value=="workflow")}');print(f'Errors: {len(errors)}; Warnings: {len(warnings)}')
+    print(f'Workflows checked: {sum(1 for value in types.values() if value=="workflow")}');print(f'Errors: {len(errors)}; Warnings: {len(warnings)}')
     for item in errors[:200]:print('ERROR',item)
     if errors:raise SystemExit(1)
 
