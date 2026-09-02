@@ -31,7 +31,7 @@ Use this only when a durable handoff materially improves continuity. If one capa
 1. [AI] Decide whether the work genuinely benefits from durable cross-actor or cross-session continuity. Do not create a `WorkRequest` merely because tools, subagents, retries, or multiple internal steps are involved.
 2. [HYBRID] Record the objective in business language together with only the constraints, material inputs, and acceptance checks another capable actor would need.
 3. [AI] Preserve links to relevant evidence, observations, assets, prior decisions, or other durable organization state rather than copying transient execution detail into the handoff.
-4. [HYBRID] Keep the same `WorkRequest` current as the durable handoff moves through `queued`, `in_progress`, `blocked`, `completed`, or `cancelled`; the status describes organizational continuity, not permission to act.
+4. [HYBRID] Keep the same `WorkRequest` current as the durable handoff moves through `open`, `in_progress`, `blocked`, `completed`, or `cancelled`; the status describes organizational continuity, not permission to act.
 5. [HYBRID] When completed, link the material deliverables or results worth finding later. When blocked, preserve only blocker context needed to continue intelligently.
 6. [AI] Create or retain an `AttentionItem` only when a material unresolved condition genuinely deserves organizational attention beyond the current work.
 
@@ -43,7 +43,7 @@ Use this only when a durable handoff materially improves continuity. If one capa
 ## Boundary
 Do not create `WorkRequest` objects for internal subagents, tool calls, provider selection, retries, concurrency, or other runtime mechanics. The active human, model, and harness decide how to perform the work.
 
-Do not use this SOP as a gate before work can begin. Its value is continuity, not permission or orchestration.
+Do not use this Workflow as a gate before work can begin. Its value is continuity, not permission or orchestration.
 
 ## Completion Criteria
 The durable handoff accurately reflects what another capable actor would need to understand the objective, relevant context, material status/results, and any unresolved next work worth carrying forward.
