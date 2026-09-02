@@ -13,20 +13,21 @@ writes:
 # Taxonomy Design
 
 ## Purpose
-Design durable content/product/service classifications that reflect user tasks, business offerings, and discovery demand.
+Design durable classifications for content, products, services, and other business entities around how people understand and navigate them.
 
 ## Business Outcome
-Improve valuable organic discovery through taxonomy design, with a clear SEO/AEO mechanism and connection to the active business Objective.
+Create a taxonomy that improves organization, discovery, and maintainability without forcing unrelated intents together or exposing internal labels as user-facing structure when they do not belong there.
 
-## Run When
-Run only when an approved Action Packet routes to **Taxonomy Design**, or when an authorized incident response requires it.
+## Use When
+Use when categories, tags, product/service families, topic structures, or other classifications are missing, overlapping, confusing, or creating discovery and maintenance problems.
 
 ## Process
-1. [AI] Inventory current content and business entities; identify overlapping, missing, and purely internal labels.
-2. [AI] Map audience tasks, offers, topic clusters, product/service families, and market/location dimensions.
-3. [HYBRID] Propose a taxonomy with mutually understandable parent/child relationships; separate navigation labels from internal metadata where useful.
-4. [AI] Test whether important demand can map to one primary canonical destination without forcing unrelated intents together.
-5. [AI] Identify migration implications for existing URLs, breadcrumbs, internal links, faceted paths, and structured data.
-6. [HYBRID] Document naming rules, ownership, allowed values, and future extension rules; route URL-changing work through change-control.
+1. Inventory the relevant content and business entities and distinguish user-facing concepts from purely internal labels or metadata.
+2. Map audience tasks, offers, topic or product/service families, market/location dimensions, and meaningful discovery demand to the classifications that could help organize them.
+3. Define understandable parent/child or peer relationships where hierarchy is useful. Keep navigation labels, URLs, and internal metadata separate when they serve different purposes.
+4. Test whether important intents can map to clear primary destinations without forcing unrelated needs together or multiplying near-duplicate categories.
+5. Identify consequences for URLs, breadcrumbs, internal links, facets, structured data, filters, and existing destination ownership before changing a live taxonomy.
+6. Define naming and extension principles only where they help the taxonomy remain coherent over time. If implementation changes URLs or other consequential site state, handle those real migration effects directly rather than routing through an AURA change-control lifecycle.
 
-
+## Proportional Scope
+Design to the complexity the business actually has. Avoid elaborate classification systems for small inventories, but broaden when scale, multiple dimensions, or future extension materially affect the architecture decision.
