@@ -44,7 +44,7 @@ Do not treat a publication, practitioner opinion, competitor behavior, one busin
 - The active model/user/harness may implement the experiment when execution is actually requested and real capabilities/constraints permit.
 - `seo.measurement.experiment-analysis` may analyze completed experiment evidence.
 - `core.measurement.evaluate-outcome` may preserve an OutcomeEvaluation when the outcome/contribution judgment has durable organizational value.
-- `seo.aeo.learning.domain-learning` or `seo.learning.tactic-registry` may be useful when the resulting evidence supports reusable organization-owned guidance.
+- `seo.aeo.learning.domain-learning` may preserve reusable organization-owned guidance when the resulting evidence supports it.
 
 These are optional methods selected for the actual job, not runtime routes or lifecycle requirements.
 
