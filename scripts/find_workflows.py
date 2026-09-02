@@ -9,8 +9,6 @@ from _common import ROOT,workflow_files,read_frontmatter
 from functools import lru_cache
 import argparse,json,re
 
-PRODUCTION_ACTION_WORDS={'build','create','design','draft','generate','make','produce','write'}
-
 
 def _index():
     path=ROOT/'generated/workflow-candidate-index.json'
@@ -35,7 +33,6 @@ def _score(words,q,wid,row):
     score=(len(words & title_tokens)*5)+(len(words & purpose_tokens)*3)+(len(words & run_when_tokens)*5) if title_tokens or purpose_tokens or run_when_tokens else len(words & set(row.get('tokens') or []))*3
     score+=len(words & id_words)*2
     if any(token in q for token in id_words if len(token)>=5):score+=4
-    if 'production_root' in str(row.get('artifact_role') or '') and words & PRODUCTION_ACTION_WORDS:score+=10
     return score
 
 
