@@ -64,10 +64,10 @@ def main():
     for c in contracts:by_system.setdefault(c.get('owner_system','unknown'),[]).append(c)
     lines=['# Workflow Index','','Generated from AURA Workflow frontmatter. These are reusable procedures, not a tool registry or execution graph.','']
     for owner in sorted(by_system):
-        workflows=[c for c in by_system[owner] if c.get('type')=='workflow']
-        if not workflows:continue
+        owner_workflows=[c for c in by_system[owner] if c.get('type')=='workflow']
+        if not owner_workflows:continue
         lines += [f'## {owner}','']
-        for c in sorted(workflows,key=lambda x:x['id']):
+        for c in sorted(owner_workflows,key=lambda x:x['id']):
             purpose=' '.join(c.get('purpose','').split());lines.append(f"- `{c['id']}` — {c.get('title',c['id'])}"+(f": {purpose}" if purpose else ''))
         lines.append('')
     (ROOT/'WORKFLOW-INDEX.md').write_text('\n'.join(lines).rstrip()+'\n',encoding='utf-8');old=ROOT/'PLAYBOOK-INDEX.md'
