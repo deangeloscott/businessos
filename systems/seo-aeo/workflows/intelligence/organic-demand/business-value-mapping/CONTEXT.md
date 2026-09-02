@@ -18,7 +18,6 @@ context:
 - ProductService
 evidence_inputs:
 - Market search answer evidence
-- location/profile data, local-result observations, and local competitors
 - records topic intent evidence
 updates:
   OrganicDemandUnit:
@@ -28,27 +27,26 @@ updates:
 # Demand Business-Value Mapping
 
 ## Purpose
-Connect every pursued demand unit to a plausible business-value pathway.
+Connect pursued organic/search/answer demand to a credible business-value pathway so attention is prioritized by usefulness and opportunity rather than volume alone.
 
 ## Business Outcome
-Improve valuable organic discovery through demand business-value mapping, with a clear SEO/AEO mechanism and connection to the active business Objective.
+Focus organic-discovery effort on demand where stronger visibility can plausibly create valuable exposure, traffic, consideration, leads, sales, retention, or another business outcome while keeping those stages and their evidence distinct.
 
 ## Run When
-Run during initial or recurring demand research when the system must discover, classify, or update **demand business-value mapping** evidence.
+Use when deciding whether a demand unit is worth pursuing, comparing priorities, or revisiting value after Offers, markets, customer behavior, or outcome evidence change.
 
 ## Process
-1. [AI] Map the demand unit to audience, awareness/buying stage, problem/goal, relevant offer, and desired next action.
-2. [DETERMINISTIC] Join observed conversion/revenue data for current traffic when available.
-3. [HYBRID] Estimate relative business relevance and value using offer economics, lead quality, customer fit, market priority, and conversion proximity; label assumptions.
-4. [AI] Identify supporting/assisted content where direct conversion is unlikely but the asset can legitimately move users to the next stage.
-5. [HYBRID] Reject or downweight high-volume demand with weak/unsupported business pathways.
-6. [AI] Write an interpretable value rationale used by the Opportunity Engine rather than a black-box score.
-
-## Decisions / Routing
-- Route → Competitor Intelligence refresh only when canonical competitor intelligence is missing or stale.
-- Route → Core Opportunity qualification when an SEO intervention is evidence-supported.
+1. [AI] Map the demand unit to audience, problem/goal, awareness or buying stage, relevant Offer or organizational value, and the plausible next action or assisted role.
+2. [HYBRID] Use observed first-party traffic, conversion, lead-quality, revenue, customer, or other outcome evidence when available. Preserve the difference between direct outcomes and upstream signals such as rankings, impressions, citations, mentions, clicks, or engagement.
+3. [AI] Describe the credible value pathway. For example, stronger visibility for valuable demand may increase qualified exposure, which may increase visits or consideration, which may create more lead or revenue opportunities. Treat that pathway as plausible unless downstream steps are actually measured.
+4. [AI] Estimate relative business relevance using customer fit, market priority, Offer economics where actually known, conversion proximity, strategic importance, assisted value, and evidence quality. Keep assumptions visible rather than fabricating precise economics.
+5. [AI] Recognize supporting demand whose value is indirect but real: education, trust, comparison, objection resolution, brand discovery, or post-purchase help may contribute to later outcomes even when the asset is not expected to convert directly.
+6. [AI] Downweight or reject high-volume demand when the audience fit or business pathway is weak, while preserving strategically important low-volume demand when its value is high.
+7. [AI] Produce an interpretable value rationale at the resolution needed for the decision. A numeric score is optional and should never replace the reasoning.
+8. [HYBRID] Update or persist OrganicDemandUnit value evidence only when doing so improves future prioritization or continuity; no Opportunity Engine or qualification lifecycle is required.
 
 ## Verification
-- Verify location eligibility and business facts before changing public profile/location data.
-
-
+- Rankings, visibility, citations, mentions, traffic, conversions, leads, and revenue remain distinct evidence stages.
+- Strong upstream signals may be treated as meaningful business opportunity indicators when the pathway is credible, without being mislabeled as observed downstream outcomes.
+- Unknown economics remain unknown rather than being filled with invented values.
+- Demand prioritization stays tied to the actual organization, market, audience, and objectives rather than generic search volume.
