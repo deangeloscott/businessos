@@ -13,20 +13,27 @@ writes:
 # Faceted Navigation
 
 ## Purpose
-Control combinatorial filter URLs while preserving valuable filtered landing pages.
+Control combinatorial filter and sort URL spaces while preserving filtered experiences or landing pages that serve real customer demand.
 
 ## Business Outcome
-Improve valuable organic discovery through faceted navigation, with a clear SEO/AEO mechanism and connection to the active business Objective.
+Prevent low-value facet combinations from overwhelming crawl/index space without sacrificing useful navigation or valuable filtered discovery.
 
 ## Run When
-Run only when an approved Action Packet routes to **Faceted Navigation**, or when an authorized incident response requires it.
+Use when faceted filters, sorts, parameters, or generated combinations create materially different crawl/index states or a large URL space that needs intentional treatment.
 
 ## Process
-1. [INTEGRATION] Inventory facets, parameter combinations, crawl paths, and corresponding demand.
-2. [AI] Classify combinations as valuable unique landing pages, useful-but-nonindexable user states, or crawl/index waste.
-3. [HYBRID] Define deterministic allow/index/canonical/noindex/block rules that preserve user navigation.
-4. [HYBRID] Create dedicated optimized landing pages for high-value combinations when warranted.
-5. [HYBRID] Ensure internal links and sitemaps do not explode low-value variants.
-6. [INTEGRATION] Crawl-test combinatorial boundaries and index behavior after deployment.
+1. Inventory the relevant facets, parameter patterns, generated combinations, crawl paths, and observable demand at enough depth to understand how the system behaves.
+2. Classify combinations as valuable unique landing pages, useful customer states that do not need independent indexing, redundant variants, or low-value crawl/index waste.
+3. Define the smallest coherent crawl/index/canonical/URL-generation rules that preserve useful navigation while preventing unnecessary combinatorial expansion. Use platform-appropriate mechanisms rather than assuming one universal implementation.
+4. Create or preserve dedicated filtered landing pages only when the combination serves meaningful distinct demand and can provide a genuinely useful experience.
+5. Keep internal links, navigation, sitemaps, canonicals, and generated URLs aligned so low-value combinations are not continually reintroduced as discovery targets.
+6. Test representative valuable, boundary, and waste combinations after changes to verify both user navigation and crawler/index behavior.
 
+## Proportionate Scope
+Sample enough facet dimensions and combination depth to identify the generation pattern and important exceptions. Expand toward broader combinatorial testing when the interaction rules are complex or a small sample cannot establish safe boundaries.
 
+## Verification
+- Useful filtered customer experiences remain functional.
+- Indexability is justified by distinct user/demand value, not merely by the existence of a URL.
+- Controls do not create contradictory canonical, crawl, or internal-link behavior.
+- Boundary testing covers the patterns most likely to create runaway combinations.
