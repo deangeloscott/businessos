@@ -16,20 +16,21 @@ evidence_inputs:
 # Location Page Optimization
 
 ## Purpose
-Create or improve location pages that provide unique local utility and connect local discovery to conversion.
+Create or improve location pages that provide distinct local utility and connect relevant discovery to a real customer action.
 
 ## Business Outcome
-Improve valuable organic discovery through location page optimization, with a clear SEO/AEO mechanism and connection to the active business Objective.
+Help customers understand and act on what is genuinely different or useful about a location without producing doorway-style geographic permutations.
 
-## Run When
-Run only when an approved Action Packet routes to **Location Page Optimization**, or when an authorized incident response requires it.
+## Use When
+Use when a legitimate location or service area deserves a useful page, or when an existing location page is thin, duplicative, inaccurate, poorly connected, or weak at supporting local customer decisions.
 
 ## Process
-1. [AI] Map each legitimate location/service area to local intents, services, offers, proof, and conversion paths.
-2. [HYBRID] Audit existing pages for unique facts, address/service area, hours, staff/team, amenities, directions, parking/access, local testimonials/reviews, images, FAQs, policies, and service availability where applicable.
-3. [AI] Identify duplicated boilerplate and missing local evidence; determine whether a separate page is justified.
-4. [HYBRID] Create/update content, metadata, internal links, structured data, and local-profile website links while preserving factual accuracy.
-5. [HYBRID] Ensure pages are useful to humans even without search traffic and avoid doorway-style permutations.
-6. [HYBRID] Verify indexability, local entity consistency, conversions, and local visibility.
+1. Map each relevant location/service area to the real local intents, available services, offers, proof, and conversion paths it can legitimately support.
+2. Audit the existing page for useful local facts such as address/service area, hours, staff/team, amenities, directions, parking/access, local proof/reviews, images, FAQs, policies, and service availability where applicable.
+3. Identify boilerplate, unsupported claims, missing local evidence, and cases where a separate page is not justified.
+4. Create or improve content, metadata, internal links, structured data, and local-profile website relationships using verified facts and actual local differentiation.
+5. Ensure the page remains useful to a customer even if search traffic did not exist. Avoid pages whose only distinct element is a location name.
+6. Verify indexability, entity consistency, important customer actions, and local visibility/conversion evidence where those outcomes matter.
 
-
+## Proportional Scope
+Give the most attention to locations and pages with meaningful demand, business value, or known problems. Do not force equal content depth across locations whose real information needs differ.
