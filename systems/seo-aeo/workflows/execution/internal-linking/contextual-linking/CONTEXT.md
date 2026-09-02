@@ -9,26 +9,25 @@ writes:
 - SEOAssetState
 - ChangeEvent
 - Asset
-evidence_inputs:
-- backlink/referring-domain/mention evidence and prospect records
 ---
 # Contextual Linking
 
 ## Purpose
-Add useful links where one asset naturally answers the next question or advances the buyer journey.
+Add internal links where another owned asset naturally answers the next question, deepens understanding, or advances a useful journey.
 
 ## Business Outcome
-Improve valuable organic discovery through contextual linking, with a clear SEO/AEO mechanism and connection to the active business Objective.
+Improve user navigation and organic discovery by connecting genuinely related assets without adding filler links or forcing ambiguous intent ownership.
 
-## Run When
-Run only when an approved Action Packet routes to **Contextual Linking**, or when an authorized incident response requires it.
+## Use When
+Use when a target page would benefit from relevant internal discovery paths or when source content naturally creates a useful next-step relationship.
 
 ## Process
-1. [HYBRID] For the target opportunity, find candidate source pages through semantic relevance, shared entities, journey adjacency, and audience overlap.
-2. [HYBRID] Inspect candidate passages to ensure the link is genuinely useful in that local context.
-3. [HYBRID] Choose the correct target when multiple pages compete; open a cannibalization Opportunity if intent ownership is unclear.
-4. [HYBRID] Write or edit the smallest amount of surrounding copy needed to make the link useful and understandable.
-5. [DETERMINISTIC] Log the source-target relationship and intended user/search purpose.
-6. [HYBRID] Verify the rendered link and define SEO monitoring for target/source effects.
+1. Find plausible source pages through semantic relevance, shared entities, journey adjacency, audience overlap, and the actual role of the target page.
+2. Inspect the specific passages where a link could appear and keep only placements that improve the local context for the reader.
+3. If multiple targets appear to serve the same intent, resolve or diagnose that ownership question before distributing links mechanically. Continue into the Cannibalization Workflow when the overlap itself is the real problem; an Opportunity object is not required.
+4. Add or edit only the amount of surrounding copy needed to make the relationship clear, useful, and natural.
+5. Preserve source-target relationship metadata only when it materially helps future architecture, diagnosis, or maintenance; do not log every link merely because a schema can represent it.
+6. If implementation is requested and the host can perform it, verify the rendered link, destination, context, and important user/discovery behavior afterward.
 
-
+## Proportional Scope
+Start with the most valuable target pages and strongest source relationships. Expand when the site's architecture or content network indicates a wider linking gap.
