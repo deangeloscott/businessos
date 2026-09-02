@@ -34,7 +34,6 @@ def _run_files_errors(business_id,workflows):
         directory=path.parent
         if (directory/'contract-execution.json').exists():errors.append(f'{storage_ref(directory)} contains retired contract-execution.json; Runs are receipts, not execution ledgers')
         method=_method_type(run);workflow_id=run.get('workflow_id');playbook_id=run.get('playbook_id');method_ref=run.get('method_ref')
-        if 'workflow_id' in run:errors.append(f'{storage_ref(path)} contains retired Run workflow_id field; use workflow_id')
         if method=='aura_workflow':
             if not workflow_id or workflow_id not in workflows or workflows[workflow_id].get('type')!='workflow':errors.append(f'{storage_ref(path)} aura_workflow Run references unavailable Workflow {workflow_id!r}')
             if method_ref not in {None,workflow_id}:errors.append(f'{storage_ref(path)} aura_workflow method_ref must equal workflow_id')
