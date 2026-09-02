@@ -16,36 +16,32 @@ context:
 - Offer
 - ProductService
 evidence_inputs:
-- Effective Capability Profile
-- Available search analytics local authority AI
+- Available search and first-party performance evidence
 updates:
   SEOAssetState:
   - organic_performance
-  - technical fields crawl indexability index structured data as applicable
-  - internal_authority external_authority
 ---
 # Search Performance Baseline
 
 ## Purpose
-Establish current organic query/page/surface performance and business-value linkage.
+Establish a trustworthy starting view of organic search visibility and performance for the queries, pages, markets, and surfaces that materially matter.
 
 ## Business Outcome
-Improve valuable organic discovery through search performance baseline, with a clear SEO/AEO mechanism and connection to the active business Objective.
+Give later SEO decisions a useful comparison point and connect search visibility to the organization’s business-value pathways without requiring a full-site measurement ritual.
 
 ## Run When
-Run during initial baseline, scheduled re-baseline, or after a material site/business change when **search performance baseline** must be re-observed.
+Use when current search-performance state is missing, materially stale, or needed to evaluate a concrete opportunity, change, diagnosis, or trend. A user/runtime may invoke re-baselining; AURA does not own the schedule.
 
 ## Process
-1. [HYBRID] Ingest the longest reliable recent history plus comparison windows available from search-performance/rank providers.
-2. [DETERMINISTIC] Normalize query/page/date/country/device/search-appearance/surface data and join target assets.
-3. [DETERMINISTIC] Compute impressions, clicks, CTR, average position/visibility observations and trends without over-interpreting averages.
-4. [DETERMINISTIC] Join analytics/conversion/value data where possible; label proxy-only segments.
-5. [AI] Segment branded/nonbranded, intent, topic, audience, awareness stage, market, and asset type where classification is confident.
-6. [HYBRID] Write baseline distributions and initial threshold models for later anomaly/opportunity detection.
+1. [HYBRID] Gather the longest reliable history and comparison context that is useful for the decision from available search-performance, analytics, ranking, or other valid evidence sources.
+2. [HYBRID] Normalize query/page/date/market/device/search-appearance or surface dimensions only where those dimensions materially affect interpretation.
+3. [HYBRID] Describe impressions, clicks, CTR, position/visibility, coverage, trends, and uncertainty without over-interpreting averages or provider-specific metrics.
+4. [HYBRID] Connect search signals to first-party engagement, conversion, lead quality, revenue, or other outcomes where evidence exists. Keep visibility, traffic, and business outcomes distinct while preserving the credible pathway among them.
+5. [AI] Segment branded/nonbranded, intent, topic, audience, market, stage, or asset type only when the segmentation changes a useful conclusion.
+6. [AI] Preserve the baseline distributions, important context, and material unknowns that future comparison will benefit from. Do not create Opportunities or downstream work merely because the baseline exists.
 
-## Decisions / Routing
-- Route → SEO Organic Demand Intelligence when baseline evidence needs demand interpretation.
-- Route → Competitor Intelligence refresh only when canonical competitor intelligence is missing or stale.
-- Route → Core Opportunity qualification when an SEO intervention is evidence-supported.
-
-
+## Verification
+- Baseline evidence is timestamped and scoped enough to make later comparisons meaningful.
+- Ranking/visibility and traffic are treated as meaningful upstream signals where appropriate, not as automatic proof of leads or revenue.
+- Missing integrations remain missing evidence rather than an AURA capability/setup state.
+- Further demand, competitor, diagnosis, or execution methods are optional and chosen directly by the capable model/user.
