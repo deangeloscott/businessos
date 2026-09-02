@@ -50,7 +50,7 @@ def main():
         'evidence-closure map','subject-relevant support-grade evidence','Do not manufacture precision',
         'Visibility, ad longevity, engagement','A deliberately chosen success threshold/stop rule is a decision rule',
         'Do not invent owned-product capabilities, guarantees, integrations, implementation timelines, performance targets, or outcome forecasts',
-        'what would falsify it','a Run is not required to perform or preserve this work',
+        'what would falsify it','a Run is not required to perform, validate, or preserve this work',
         'Do not claim decision-grade completion while a material conclusion outruns its subject-relevant evidence',
     ]:
         if phrase not in body:fail(f'competitive-position missing guardrail: {phrase}')
