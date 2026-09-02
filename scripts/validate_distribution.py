@@ -76,9 +76,9 @@ def _validate_distribution_product_local():
                 if redundant in plan.get('files',[]):errors.append(f'context plan front-loaded redundant universal instruction: {redundant}')
             contract=(ROOT/'CONTEXT.md').read_text()
             for phrase in [
-                'Installed modules organize AURA operating knowledge; they do not limit what a capable model/harness may do.',
+                'Installed AURA modules are bodies of operating knowledge, not limits on what the host may do.',
                 'The model/user decides semantic applicability.',
-                'AURA does not define a tool/provider allowlist.',
+                'AURA does not define a tool allowlist or universal capability vocabulary.',
             ]:
                 if phrase not in contract:errors.append(f'root AURA contract lost method/tool-independence invariant: {phrase}')
     finally:
