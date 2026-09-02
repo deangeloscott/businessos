@@ -12,29 +12,31 @@ writes:
 - Asset
 evidence_inputs:
 - crawl/index state HTTP behavior and URL relationships
-- location/profile data, local-result observations, and local competitors
 ---
 # Sitemaps
 
 ## Purpose
-Maintain accurate discovery sitemaps for canonical, index-worthy URLs.
+Maintain accurate discovery sitemaps that represent the canonical index-worthy URLs the business actually wants search systems to discover and refresh.
 
 ## Business Outcome
-Improve valuable organic discovery through sitemaps, with a clear SEO/AEO mechanism and connection to the active business Objective.
+Improve discovery efficiency and diagnostic clarity without treating sitemap inclusion as an indexing guarantee.
 
 ## Run When
-Run only when an approved Action Packet routes to **Sitemaps**, or when an authorized incident response requires it.
+Use when sitemap generation, coverage, freshness, segmentation, or consistency may materially affect discovery or make crawl/index diagnosis harder.
 
 ## Process
-1. [AI] Inventory sitemap indexes/files and generation logic.
-2. [DETERMINISTIC] Validate XML/syntax, response status, canonical host/protocol, URL count/size, and meaningful `lastmod` behavior if used.
-3. [HYBRID] Exclude redirects, errors, noncanonical, blocked, or intentionally non-indexable URLs.
-4. [AI] Ensure important canonical URLs are represented without treating sitemap presence as an indexing guarantee.
-5. [AI] Segment large or diagnostically useful site sections where helpful.
-6. [INTEGRATION] Publish and notify supported search systems through configured mechanisms.
-7. [INTEGRATION] Define SEO monitoring for submitted-versus-indexed diagnostics and investigate material gaps.
+1. Inspect sitemap indexes/files and the generation logic or source data that determines which URLs appear.
+2. Validate syntax, response status, canonical host/protocol, size/count constraints, and `lastmod` behavior when used; timestamps should reflect meaningful change rather than automatic churn.
+3. Exclude redirects, errors, noncanonical URLs, intentionally non-indexable URLs, blocked/private resources, and other states that contradict the intended sitemap role.
+4. Ensure important canonical index-worthy URLs are represented while keeping sitemap presence distinct from crawl, canonical selection, indexing, or ranking.
+5. Segment very large or diagnostically different URL groups when that improves discovery management or makes submitted-versus-observed problems easier to isolate.
+6. Publish/update the sitemap through the actual site/platform and use supported submission/notification mechanisms when useful and available; successful submission is not proof of crawl or indexing.
+7. Compare submitted URLs with relevant crawl/index evidence when material gaps exist and use the appropriate indexing/crawl/URL method to investigate the cause.
+
+## Proportionate Scope
+Validate representative sitemap generation rules and high-value URL classes first. Expand toward full-file/full-index checks when scale, multiple generators, migration risk, or observed coverage gaps make sampling insufficient.
 
 ## Verification
-- Verify location eligibility and business facts before changing public profile/location data.
-
-
+- Sitemap entries match the intended canonical/indexable state.
+- Generation does not continually reintroduce redirects, errors, noncanonical URLs, or meaningless timestamp changes.
+- Important omissions and submitted-versus-indexed gaps are diagnosed rather than assuming submission itself should fix them.
