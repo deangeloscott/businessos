@@ -43,7 +43,7 @@ Use when new evidence, saved review timing, downstream outcomes, or the current 
 4. [AI] Decide whether to strengthen, weaken, narrow, broaden, supersede, contradict, or leave the Insight unchanged.
 5. [DETERMINISTIC] Preserve prior evidence/lineage and explicit references to any replacement or superseding Insight.
 6. [AI] State what changed, why, confidence, applicability, and what remains uncertain.
-7. [HYBRID] Persist the updated durable Insight state. When the changed understanding materially affects another active decision or Opportunity, surface that implication in the current work or future retrieval rather than emitting an internal dependency-change event.
+7. [HYBRID] Persist the updated durable Insight state. When the changed understanding materially affects another active decision or Opportunity, surface that implication in the current work or future retrieval without creating an internal dependency-change event.
 
 ## Verification
 - Evidence supporting and contradicting the Insight remains inspectable.
