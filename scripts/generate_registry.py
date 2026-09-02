@@ -5,16 +5,12 @@ import json,re
 
 # Authored Workflow metadata is operating knowledge only. Product version belongs to
 # VERSION / INSTALLATION.json; runtime/control metadata belongs to the host.
-RETIRED_CONTRACT_METADATA={'version','risk','autonomy_ceiling','events','schedule','capabilities'}
+RETIRED_CONTRACT_METADATA={'version','risk','autonomy_ceiling','events','schedule','capabilities','subcontracts'}
 
 
-def _tokens(value):
-    return sorted(set(re.findall(r'[a-z0-9]{3,}',str(value or '').lower())))
-
-
+def _tokens(value):return sorted(set(re.findall(r'[a-z0-9]{3,}',str(value or '').lower())))
 def _section(body,name):
-    match=re.search(rf'^## {re.escape(name)}\n(.+?)(?=\n## |\Z)',body,re.M|re.S)
-    return match.group(1).strip() if match else ''
+    match=re.search(rf'^## {re.escape(name)}\n(.+?)(?=\n## |\Z)',body,re.M|re.S);return match.group(1).strip() if match else ''
 
 
 def _write_task_navigator(process_maps,inst,registry):
@@ -41,23 +37,15 @@ def _write_task_navigator(process_maps,inst,registry):
 def main():
     gen=ROOT/'generated';gen.mkdir(exist_ok=True);contracts=[];ids=set();deps={};candidate_rows=[]
     for p in contract_files():
-        meta,body=read_frontmatter(p);cid=meta.get('id')
-        if not cid:continue
-        if cid in ids:raise SystemExit(f'Duplicate contract id: {cid}')
-        ids.add(cid)
-        title_match=re.search(r'^#\s+(.+)',body,re.M);title=title_match.group(1).strip() if title_match else cid
-        purpose=_section(body,'Purpose');run_when=_section(body,'Run When')
-        durable_meta={k:v for k,v in meta.items() if k not in RETIRED_CONTRACT_METADATA}
-        rec={**durable_meta,'path':str(p.relative_to(ROOT)),'title':title,'purpose':purpose}
-        rec['read_selectors']=[normalize_selector(x) for x in meta.get('reads',[])];rec['write_types']=[selector_type(x) for x in meta.get('writes',[])];rec['context_types']=meta.get('context',[]);contracts.append(rec)
-        deps[cid]={'context':meta.get('context',[]),'reads':rec['read_selectors'],'writes':rec['write_types'],'evidence_inputs':meta.get('evidence_inputs',[])}
+        meta,body=read_frontmatter(p);wid=meta.get('id')
+        if not wid:continue
+        if wid in ids:raise SystemExit(f'Duplicate Workflow id: {wid}')
+        ids.add(wid);title_match=re.search(r'^#\s+(.+)',body,re.M);title=title_match.group(1).strip() if title_match else wid;purpose=_section(body,'Purpose');run_when=_section(body,'Run When');durable_meta={k:v for k,v in meta.items() if k not in RETIRED_CONTRACT_METADATA};rec={**durable_meta,'path':str(p.relative_to(ROOT)),'title':title,'purpose':purpose};rec['read_selectors']=[normalize_selector(x) for x in meta.get('reads',[])];rec['write_types']=[selector_type(x) for x in meta.get('writes',[])];rec['context_types']=meta.get('context',[]);contracts.append(rec);deps[wid]={'context':meta.get('context',[]),'reads':rec['read_selectors'],'writes':rec['write_types'],'evidence_inputs':meta.get('evidence_inputs',[])}
         if meta.get('type')=='workflow':
-            title_tokens=_tokens(title);purpose_tokens=_tokens(purpose);run_when_tokens=_tokens(run_when);id_tokens=_tokens(cid.replace('.',' ').replace('-',' '))
-            candidate_rows.append({'workflow_id':cid,'contract_id':cid,'owner_system':meta.get('owner_system'),'artifact_role':meta.get('artifact_role'),'tokens':sorted(set(title_tokens+purpose_tokens+run_when_tokens+id_tokens)),'title_tokens':title_tokens,'purpose_tokens':purpose_tokens,'run_when_tokens':run_when_tokens})
-    (gen/'contract-registry.json').write_text(json.dumps({'version':os_version(),'contracts':contracts},indent=2)+'\n',encoding='utf-8')
-    (gen/'system-registry.json').write_text(json.dumps({'systems':sorted(set(c.get('owner_system') for c in contracts if c.get('owner_system')))},indent=2)+'\n',encoding='utf-8')
-    (gen/'context-dependency-index.json').write_text(json.dumps(deps,indent=2)+'\n',encoding='utf-8')
-    (gen/'workflow-candidate-index.json').write_text(json.dumps(candidate_rows,indent=2)+'\n',encoding='utf-8')
+            title_tokens=_tokens(title);purpose_tokens=_tokens(purpose);run_when_tokens=_tokens(run_when);id_tokens=_tokens(wid.replace('.',' ').replace('-',' '));candidate_rows.append({'workflow_id':wid,'owner_system':meta.get('owner_system'),'artifact_role':meta.get('artifact_role'),'tokens':sorted(set(title_tokens+purpose_tokens+run_when_tokens+id_tokens)),'title_tokens':title_tokens,'purpose_tokens':purpose_tokens,'run_when_tokens':run_when_tokens})
+    # contract-registry.json is retained as an internal v0.1.x storage filename only. Its
+    # records are Workflow metadata and it is not a model-facing hierarchy concept.
+    (gen/'contract-registry.json').write_text(json.dumps({'version':os_version(),'contracts':contracts},indent=2)+'\n',encoding='utf-8');(gen/'system-registry.json').write_text(json.dumps({'systems':sorted(set(c.get('owner_system') for c in contracts if c.get('owner_system')))},indent=2)+'\n',encoding='utf-8');(gen/'context-dependency-index.json').write_text(json.dumps(deps,indent=2)+'\n',encoding='utf-8');(gen/'workflow-candidate-index.json').write_text(json.dumps(candidate_rows,indent=2)+'\n',encoding='utf-8')
     for obsolete in ('capability-usage-index.json','playbook-candidate-index.json','event-subscription-index.json','schedule-index.json','route-index.json'):
         op=gen/obsolete
         if op.exists():op.unlink()
@@ -82,21 +70,15 @@ def main():
         for c in sorted(workflows,key=lambda x:x['id']):
             purpose=' '.join(c.get('purpose','').split());lines.append(f"- `{c['id']}` — {c.get('title',c['id'])}"+(f": {purpose}" if purpose else ''))
         lines.append('')
-    (ROOT/'WORKFLOW-INDEX.md').write_text('\n'.join(lines).rstrip()+'\n',encoding='utf-8')
-    old=ROOT/'PLAYBOOK-INDEX.md'
+    (ROOT/'WORKFLOW-INDEX.md').write_text('\n'.join(lines).rstrip()+'\n',encoding='utf-8');old=ROOT/'PLAYBOOK-INDEX.md'
     if old.exists():old.unlink()
     import generate_playbooks;generate_playbooks.main();inst=installation();_write_task_navigator(process_maps,inst,contracts);pub=publisher_metadata();publisher=pub.get('publisher',{}) if pub else {}
     from operating_knowledge import installed_playbooks
     workflow_count=sum(1 for c in contracts if c.get('type')=='workflow');playbook_count=len(installed_playbooks(contracts))
-    manifest_root={
-        'version':os_version(),'maturity':inst.get('maturity','alpha'),'edition':inst.get('edition','unmanaged'),'display_name':inst.get('display_name','ViralTrac AURA'),'public_name':inst.get('public_name',publisher.get('product_name','ViralTrac AURA')),'name_expansion':inst.get('name_expansion',publisher.get('product_name_expansion','Agentic Understanding and Reinforcement Architecture')),'descriptor':inst.get('descriptor',publisher.get('product_descriptor','AI-native BusinessOS')),'brand':inst.get('brand','ViralTrac'),'branding':'BRANDING.md','startup_message':inst.get('startup_message','BEGINNERS-GUIDE.md'),'publisher':{'id':publisher.get('id'),'name':publisher.get('name'),'metadata':'PUBLISHER.json'},'portable_first':bool(inst.get('portable_first',False)),'default_environment':inst.get('default_environment','local'),
-        'workspace':{'default_root':'product_root','external_root_supported':True,'migration_helper':'scripts/migrate_workspace.py','selectors':['BUSINESSOS_WORKSPACE','.businessos/workspace.json'],'deployment_profiles':'distribution/deployment-profiles.json'},
-        'state_locations':{'canonical_business':'instances/<business-id>/','run':'runtime/runs/<business-id>/<run-id>/','human_knowledge':'knowledge/<business-id>/','attachments':'attachments/'},
-        'installed_modules':sorted(installed_modules()),'systems':sorted(by_system),'playbook_count':playbook_count,'workflow_count':workflow_count,'contract_count':len(contracts),'schema_count':len(sreg),'entrypoints':{'human':'BEGINNERS-GUIDE.md','deployment':'DEPLOYMENT.md','branding':'BRANDING.md','playbooks':'PLAYBOOKS.md','workflows':'WORKFLOW-INDEX.md','task_navigator':'TASK-NAVIGATOR.md','agent':'CONTEXT.md','skill':'skills/viraltrac-aura/SKILL.md','glossary':'GLOSSARY.md'},'generated_from':'scripts/generate_registry.py'
-    }
+    manifest_root={'version':os_version(),'maturity':inst.get('maturity','alpha'),'edition':inst.get('edition','unmanaged'),'display_name':inst.get('display_name','ViralTrac AURA'),'public_name':inst.get('public_name',publisher.get('product_name','ViralTrac AURA')),'name_expansion':inst.get('name_expansion',publisher.get('product_name_expansion','Agentic Understanding and Reinforcement Architecture')),'descriptor':inst.get('descriptor',publisher.get('product_descriptor','AI-native BusinessOS')),'brand':inst.get('brand','ViralTrac'),'branding':'BRANDING.md','startup_message':inst.get('startup_message','BEGINNERS-GUIDE.md'),'publisher':{'id':publisher.get('id'),'name':publisher.get('name'),'metadata':'PUBLISHER.json'},'portable_first':bool(inst.get('portable_first',False)),'default_environment':inst.get('default_environment','local'),'workspace':{'default_root':'product_root','external_root_supported':True,'migration_helper':'scripts/migrate_workspace.py','selectors':['BUSINESSOS_WORKSPACE','.businessos/workspace.json'],'deployment_profiles':'distribution/deployment-profiles.json'},'state_locations':{'canonical_business':'instances/<business-id>/','run':'runtime/runs/<business-id>/<run-id>/','human_knowledge':'knowledge/<business-id>/','attachments':'attachments/'},'installed_modules':sorted(installed_modules()),'systems':sorted(by_system),'playbook_count':playbook_count,'workflow_count':workflow_count,'schema_count':len(sreg),'entrypoints':{'human':'BEGINNERS-GUIDE.md','deployment':'DEPLOYMENT.md','branding':'BRANDING.md','playbooks':'PLAYBOOKS.md','workflows':'WORKFLOW-INDEX.md','task_navigator':'TASK-NAVIGATOR.md','agent':'CONTEXT.md','skill':'skills/viraltrac-aura/SKILL.md','glossary':'GLOSSARY.md'},'generated_from':'scripts/generate_registry.py'}
     (ROOT/'SYSTEM-MANIFEST.json').write_text(json.dumps(manifest_root,indent=2)+'\n',encoding='utf-8')
     manifest=[]
     for p in sorted([x for x in ROOT.rglob('*') if x.is_file() and 'generated/' not in x.as_posix() and '__pycache__' not in x.as_posix()]):manifest.append({'path':str(p.relative_to(ROOT)),'sha256':hashlib.sha256(p.read_bytes()).hexdigest(),'bytes':p.stat().st_size})
-    (gen/'workspace-manifest.json').write_text(json.dumps({'version':os_version(),'edition':inst.get('edition','unmanaged'),'files':manifest},indent=2)+'\n',encoding='utf-8');(gen/'checksums.txt').write_text('\n'.join(f"{x['sha256']}  {x['path']}" for x in manifest)+'\n',encoding='utf-8');print(f'Generated registry for {len(contracts)} contracts, {workflow_count} workflows, {playbook_count} playbooks, {len(sreg)} schemas.')
+    (gen/'workspace-manifest.json').write_text(json.dumps({'version':os_version(),'edition':inst.get('edition','unmanaged'),'files':manifest},indent=2)+'\n',encoding='utf-8');(gen/'checksums.txt').write_text('\n'.join(f"{x['sha256']}  {x['path']}" for x in manifest)+'\n',encoding='utf-8');print(f'Generated navigation for {workflow_count} Workflows, {playbook_count} Playbooks, and {len(sreg)} schemas.')
 
 if __name__=='__main__':main()
