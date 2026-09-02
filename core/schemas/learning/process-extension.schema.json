@@ -10,7 +10,7 @@
     "business_id":{"type":"string","pattern":"^[a-z0-9][a-z0-9_-]{0,63}$"},
     "created_at":{"type":"string","format":"date-time"},
     "updated_at":{"type":"string","format":"date-time"},
-    "mode":{"enum":["augment_workflow","local_workflow","augment_contract","local_playbook"]},
+    "mode":{"enum":["augment_workflow","local_workflow"]},
     "owner_system":{"enum":["core","customer-intelligence","competitor-intelligence","industry-intelligence","seo-aeo","content-synthesis","marketing-synthesis","customer-optimization"]},
     "target_contract_id":{"type":["string","null"]},
     "local_contract_id":{"type":["string","null"]},
@@ -35,8 +35,8 @@
   },
   "required":["id","object_type","schema_version","business_id","created_at","updated_at","mode","owner_system","target_contract_id","local_contract_id","title","purpose","discovery_terms","status","scope","scope_ref","applies_when","does_not_apply_when","reads","writes","instructions","verification","source_learning_refs","evidence_refs","compatibility"],
   "allOf":[
-    {"if":{"properties":{"mode":{"enum":["augment_workflow","augment_contract"]}}},"then":{"properties":{"target_contract_id":{"type":"string","minLength":1}}}},
-    {"if":{"properties":{"mode":{"enum":["local_workflow","local_playbook"]}}},"then":{"properties":{"local_contract_id":{"type":"string","pattern":"^custom\\.[a-z0-9][a-z0-9.-]*$"}}}},
+    {"if":{"properties":{"mode":{"const":"augment_workflow"}}},"then":{"properties":{"target_contract_id":{"type":"string","minLength":1}}}},
+    {"if":{"properties":{"mode":{"const":"local_workflow"}}},"then":{"properties":{"local_contract_id":{"type":"string","pattern":"^custom\\.[a-z0-9][a-z0-9.-]*$"}}}},
     {"anyOf":[
       {"properties":{"source_learning_refs":{"minItems":1}}},
       {"required":["source_refs"],"properties":{"source_refs":{"minItems":1}}}
