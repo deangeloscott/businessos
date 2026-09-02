@@ -30,13 +30,10 @@ RETIRED_IDS={
 
 
 def fail(msg):raise AssertionError(msg)
-
 def req(cond,msg):
     if not cond:fail(msg)
-
 def contains(text,*parts):
     low=text.lower();return all(str(p).lower() in low for p in parts)
-
 def contracts():
     out={}
     for p in ROOT.rglob('CONTEXT.md'):
@@ -44,19 +41,19 @@ def contracts():
         meta,body=read_frontmatter(p)
         if meta.get('id'):out[meta['id']]=(p,meta,body)
     return out
-
-def subcontract_ids(meta):
+def workflow_ids(meta):
     refs=[]
     for kind in ('required','conditional'):
-        for item in (meta.get('subcontracts') or {}).get(kind,[]) or []:
+        for item in (meta.get('workflows') or {}).get(kind,[]) or []:
             refs.append(item.get('id') if isinstance(item,dict) else item)
     return refs
 
 
 def main():
     cs=contracts();missing=(CORE_IDS|DOMAIN_IDS)-set(cs)
-    req(not missing,'missing ecosystem contracts: '+', '.join(sorted(missing)))
-    for cid in RETIRED_IDS:req(cid not in cs,f'retired semantic/routing contract returned: {cid}')
+    req(not missing,'missing ecosystem Workflows: '+', '.join(sorted(missing)))
+    for wid in CORE_IDS|DOMAIN_IDS:req(cs[wid][1].get('type')=='workflow',f'{wid} must be represented as a Workflow')
+    for cid in RETIRED_IDS:req(cid not in cs,f'retired semantic/routing Workflow returned: {cid}')
 
     policy=(ROOT/'core/policies/external-learning.md').read_text()
     for concepts in [
@@ -81,9 +78,7 @@ def main():
     for phrase in ['outcome_events','event_key','Source history changes discovery attention only']:
         req(phrase in helper,f'source profile helper missing {phrase}')
 
-    # Deterministic source identity is limited to exact/mechanical normalization.
-    a='HTTPS://Example.COM:443/Research/Article/'
-    b='https://example.com/Research/Article'
+    a='HTTPS://Example.COM:443/Research/Article/';b='https://example.com/Research/Article'
     req(_normalized_reference(a)==b,'URL normalization must collapse scheme/host casing, default HTTPS port, and trailing slash')
     req(_profile_id('test-business',a)==_profile_id('test-business',b),'mechanically equivalent URLs must share a deterministic profile id')
     req(_profile_id('test-business',b)!=_profile_id('test-business','https://example.com/research/article'),'URL normalization must preserve potentially case-sensitive paths')
@@ -93,22 +88,15 @@ def main():
 
     discovery=cs['core.intelligence.ecosystem.source-discovery'][2]
     for concepts in [
-        ('active model/user','fresh'),
-        ('semantic source identity','model/user'),
-        ('normalization','hashes','exact identifiers'),
-        ('discovery-only','support-grade'),
-        ('additional discovery','unlikely to change the decision'),
-    ]:
-        req(contains(discovery,*concepts),f'source discovery lost boundary: {concepts}')
+        ('active model/user','fresh'),('semantic source identity','model/user'),('normalization','hashes','exact identifiers'),
+        ('discovery-only','support-grade'),('additional discovery','unlikely to change the decision'),
+    ]:req(contains(discovery,*concepts),f'source discovery lost boundary: {concepts}')
 
     triangulation=cs['core.intelligence.ecosystem.evidence-triangulation'][2]
     for concepts in [
-        ('originating evidence','independent support','independent contradiction'),
-        ('echo','independent corroboration'),
-        ('freshness','novelty'),
-        ('semantic','current Insights/Learnings'),
-    ]:
-        req(contains(triangulation,*concepts),f'evidence triangulation lost invariant: {concepts}')
+        ('originating evidence','independent support','independent contradiction'),('echo','independent corroboration'),
+        ('freshness','novelty'),('semantic','current Insights/Learnings'),
+    ]:req(contains(triangulation,*concepts),f'evidence triangulation lost invariant: {concepts}')
 
     source_profile=cs['core.intelligence.ecosystem.maintain-source-profile'][2]
     req(contains(source_profile,'discovery priors only','never use SourceProfile history as support'),'SourceProfile history became evidence authority')
@@ -116,48 +104,37 @@ def main():
 
     core_meta=cs['core.intelligence.ecosystem-radar'][1];core_body=cs['core.intelligence.ecosystem-radar'][2]
     req('schedule' not in core_meta,'Core ecosystem radar reintroduced AURA-owned schedule metadata')
+    req('capabilities' not in core_meta,'Core ecosystem radar reintroduced AURA capability ontology')
     req('SourceProfile' in (core_meta.get('reads') or []),'Core ecosystem radar must reuse durable source/watch state')
     req('WorkRequest' not in (core_meta.get('writes') or []) and 'Opportunity' not in (core_meta.get('writes') or []),'Core radar should not manufacture routed work objects')
-    refs=subcontract_ids(core_meta)
-    req('core.intelligence.ecosystem.source-discovery' in refs and 'core.intelligence.ecosystem.evidence-triangulation' in refs,'Core radar lost shared evidence methods')
+    refs=workflow_ids(core_meta)
+    req('core.intelligence.ecosystem.source-discovery' in refs and 'core.intelligence.ecosystem.evidence-triangulation' in refs,'Core radar lost shared evidence Workflows')
     req('core.intelligence.ecosystem.route-learning' not in refs,'Core radar reintroduced retired route-learning controller')
-    for concepts in [
-        ('active harness/runtime','scheduling'),
-        ('does not automatically invoke or route','domain'),
-        ('model/user','disposition'),
-        ('do not manufacture WorkRequests','Opportunities'),
-    ]:
+    for concepts in [('active harness/runtime','scheduling'),('does not automatically invoke or route','domain'),('model/user','disposition'),('do not manufacture WorkRequests','Opportunities')]:
         req(contains(core_body,*concepts),f'Core radar lost model/runtime boundary: {concepts}')
 
-    # Every domain radar reuses the shared evidence methods but owns no mandatory next-route lifecycle.
     for cid in DOMAIN_IDS:
-        meta,body=cs[cid][1],cs[cid][2];refs=subcontract_ids(meta)
+        meta,body=cs[cid][1],cs[cid][2];refs=workflow_ids(meta)
         for needed in ['core.intelligence.ecosystem.source-discovery','core.intelligence.ecosystem.evidence-triangulation']:
-            req(needed in refs,f'{cid} does not reuse shared Core evidence method {needed}')
+            req(needed in refs,f'{cid} does not reuse shared Core evidence Workflow {needed}')
         req('WorkRequest' not in (meta.get('writes') or []),f'{cid} still writes WorkRequest as radar orchestration')
         req(contains(body,'model') or contains(body,'active model'),f'{cid} lost explicit model judgment')
         req(not contains(body,'exact next route'),f'{cid} still requires an exact routed next method')
 
-    # Community review may suggest evolution but must not route through a disposition controller.
-    community=cs['core.intelligence.community-evidence-review'];crefs=subcontract_ids(community[1])
-    req('core.intelligence.ecosystem.evidence-triangulation' in crefs,'community evidence review lost triangulation')
+    community=cs['core.intelligence.community-evidence-review'];crefs=workflow_ids(community[1])
+    req('core.intelligence.ecosystem.evidence-triangulation' in crefs,'community evidence review lost triangulation Workflow')
     req('core.intelligence.ecosystem.route-learning' not in crefs,'community review reintroduced route-learning')
     req('WorkRequest' not in (community[1].get('writes') or []) and 'Opportunity' not in (community[1].get('writes') or []),'community review became a routing-object producer')
 
     map_expected={
-        'core/process-map.json':'core.intelligence.ecosystem-radar',
-        'systems/competitor-intelligence/process-map.json':'competitor.intelligence.ecosystem-radar',
-        'systems/customer-intelligence/process-map.json':'customer.intelligence.ecosystem-radar',
-        'systems/industry-intelligence/process-map.json':'industry.intelligence.ecosystem-radar',
-        'systems/seo-aeo/process-map.json':'seo.intelligence.ecosystem.tactic-radar',
-        'systems/content-synthesis/process-map.json':'content.intelligence.ecosystem-radar',
-        'systems/marketing-synthesis/process-map.json':'marketing.intelligence.ecosystem-radar',
-        'systems/customer-optimization/process-map.json':'customer-optimization.intelligence.ecosystem-radar',
+        'core/process-map.json':'core.intelligence.ecosystem-radar','systems/competitor-intelligence/process-map.json':'competitor.intelligence.ecosystem-radar',
+        'systems/customer-intelligence/process-map.json':'customer.intelligence.ecosystem-radar','systems/industry-intelligence/process-map.json':'industry.intelligence.ecosystem-radar',
+        'systems/seo-aeo/process-map.json':'seo.intelligence.ecosystem.tactic-radar','systems/content-synthesis/process-map.json':'content.intelligence.ecosystem-radar',
+        'systems/marketing-synthesis/process-map.json':'marketing.intelligence.ecosystem-radar','systems/customer-optimization/process-map.json':'customer-optimization.intelligence.ecosystem-radar',
     }
     for rel,cid in map_expected.items():
-        data=json.loads((ROOT/rel).read_text())
-        req(cid in [a.get('entry_contract') for a in data.get('activities',[])],f'{rel} missing radar activity {cid}')
+        data=json.loads((ROOT/rel).read_text());req(cid in [a.get('entry_contract') for a in data.get('activities',[])],f'{rel} missing radar Workflow {cid}')
 
-    print(f'ecosystem intelligence regressions passed: {len(CORE_IDS)} shared methods + {len(DOMAIN_IDS)} domain radars without routing-control lifecycle')
+    print(f'ecosystem intelligence regressions passed: {len(CORE_IDS)} shared Workflows + {len(DOMAIN_IDS)} domain radars without routing/control authority')
 
 if __name__=='__main__':main()
