@@ -11,7 +11,6 @@ writes:
 - ChangeEvent
 - Asset
 evidence_inputs:
-- location/profile data, local-result observations, and local competitors
 - backlink/referring-domain/mention evidence and prospect records
 ---
 # Backlink Profile Analysis
@@ -20,20 +19,22 @@ evidence_inputs:
 Build an evidence-based view of external links, referring domains, anchors, destinations, quality, risk, and business relevance.
 
 ## Business Outcome
-Improve valuable organic discovery through backlink profile analysis, with a clear SEO/AEO mechanism and connection to the active business Objective.
+Understand which external references materially support discovery and authority, where meaningful weaknesses or dependencies exist, and which apparent signals are merely noise.
 
-## Run When
-Run only when an approved Action Packet routes to **Backlink Profile Analysis**, or when an authorized incident response requires it.
+## Use When
+Use when external-link evidence could materially inform an authority, visibility, risk, competitor, content, migration, or recovery decision.
 
 ## Process
-1. [HYBRID] Ingest all available backlink/referring-domain observations with source and timestamp.
-2. [DETERMINISTIC] Normalize domains/URLs, deduplicate links, identify redirects/canonicals, and preserve first/last seen.
-3. [HYBRID] Enrich each relationship with topical relevance, traffic/visibility proxies, editorial context, placement, destination, anchor, followability, and known risk signals.
-4. [HYBRID] Separate earned/editorial value from self-created, low-value, spammy, or unknown links; do not treat raw link count as authority.
-5. [AI] Map links to assets/topics/business priorities and identify concentrated dependency or lost-link patterns.
-6. [HYBRID] Write a baseline and create opportunities only where an actionable gap or risk exists.
+1. Gather the strongest available backlink and referring-domain observations with source and observation time. Treat third-party indexes as partial observations rather than complete truth.
+2. Normalize domains and destination URLs, deduplicate relationships where appropriate, resolve redirects/canonicals that materially affect interpretation, and preserve meaningful first/last-seen evidence when available.
+3. Evaluate relationships using topical and business relevance, editorial context, audience fit, placement, destination, anchor/context, followability when observable, traffic/visibility proxies, and credible risk signals.
+4. Separate likely earned/editorial value from self-created, low-value, spammy, manipulative, or genuinely unknown relationships. Raw link or domain count is not a sufficient measure of authority or business value.
+5. Map meaningful links and referring sources to assets, topics, markets, and business priorities. Look for concentrated dependency, lost-value patterns, weak destination fit, or strong sources that reveal what earns references.
+6. Preserve a durable baseline or create an Opportunity only when that meaning will help future work. Otherwise continue directly into the relevant authority, content, remediation, or monitoring work.
+
+## Proportional Scope
+Start with the links, domains, destinations, or changes most likely to affect the current decision. Expand when sampling cannot distinguish a systemic pattern, the stakes are high, or broader coverage could materially change the conclusion.
 
 ## Verification
-- Verify location eligibility and business facts before changing public profile/location data.
-
-
+- Distinguish observed links from inferred quality or causal impact.
+- Do not treat third-party authority scores, link counts, or competitor link volume as proof of ranking or revenue impact.
