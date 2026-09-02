@@ -9,7 +9,7 @@ from completion_evidence import completion_spec
 from process_plan import build_process_plan
 from find_playbooks import find_candidates as find_playbook_candidates
 from find_workflows import find_candidates as find_workflow_candidates
-from resolve_contract import resolve_contract
+from resolve_workflow import resolve_workflow
 
 
 def fail(msg):raise AssertionError(msg)
@@ -78,7 +78,7 @@ def main():
     if 'competitor.analysis.pricing' not in [row.get('workflow_id') for row in focused]:fail(f'focused pricing Workflow is not discoverable: {focused}')
     if any(row.get('selection_authority') is not False for row in focused):fail('Workflow discovery claimed semantic authority')
 
-    selected_path,selected_meta=resolve_contract('competitor.analysis.competitive-position')
+    selected_path,selected_meta=resolve_workflow('competitor.analysis.competitive-position')
     if selected_meta.get('type')!='workflow' or not selected_path.exists():fail('explicit competitor Workflow resolution failed')
 
     print('competitor composition regressions passed: Playbook framing and reusable Workflow composition stay useful without routing or execution authority')
