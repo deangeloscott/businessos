@@ -7,7 +7,7 @@ sys.path.insert(0,str(ROOT/'scripts'))
 from find_playbooks import find_candidates as find_playbooks
 from find_workflows import find_candidates as find_workflows
 from operating_knowledge import installed_playbooks
-from resolve_contract import resolve_contract
+from resolve_workflow import resolve_workflow
 
 
 def req(condition,message):
@@ -55,7 +55,7 @@ def main():
 
     exact='content.production.presentation';rows=find_workflows(exact,3,'content-synthesis')
     req(rows and rows[0].get('workflow_id')==exact,'exact Workflow ID should be the highest Workflow candidate')
-    path,meta=resolve_contract(exact)
+    path,meta=resolve_workflow(exact)
     req(meta.get('id')==exact and meta.get('type')=='workflow' and path.exists(),'exact selected Workflow ID did not resolve deterministically')
 
     print('Playbook/Workflow discovery passed: bounded navigation, model-owned semantic selection, exact Workflow resolution')
