@@ -17,23 +17,25 @@ evidence_inputs:
 # Local Profile Suspension Incident
 
 ## Purpose
-Handle loss/restriction of an important local business profile without making risky repeated edits.
+Diagnose and resolve a material local-profile suspension or restriction while avoiding speculative changes that can worsen eligibility, identity, or reinstatement problems.
 
 ## Business Outcome
-Improve valuable organic discovery through local profile suspension incident, with a clear SEO/AEO mechanism and connection to the active business Objective.
+Restore legitimate local discovery and customer access as efficiently as practical while preserving the evidence, decisions, correspondence, root cause, and reusable context future work may need.
 
 ## Run When
-Run immediately when monitoring or an operator identifies a plausible **local profile suspension incident**. Incident routing overrides normal optimization until containment is complete.
+Use when an important local business profile appears suspended, restricted, disabled, or otherwise unavailable and the issue is material enough to warrant focused incident-level attention.
 
 ## Process
-1. [HYBRID] Confirm affected profile/location, notice/reason if provided, recent profile/site/entity changes, and business eligibility facts.
-2. [HYBRID] Freeze nonessential profile automation and preserve canonical location/business evidence.
-3. [HYBRID] Audit name/address/service-area/category/ownership/duplicate/website data against actual business facts and current platform requirements.
-4. [HYBRID] Correct factual issues through authorized channels and assemble verifiable evidence; avoid repeated speculative changes.
-5. [HYBRID] Use the platform's official reinstatement/appeal process when applicable and track correspondence/status.
-6. [HYBRID] After restoration, verify profile/site/citation consistency and document root cause/prevention.
+1. [HYBRID] Confirm the affected profile/location, exact observed state, notice or reason if provided, recent relevant changes, and established business eligibility facts.
+2. [AI] Identify which further profile edits or automated actions could plausibly interfere with diagnosis or reinstatement and recommend avoiding them when justified. The active user/harness controls actual operational behavior; AURA does not freeze automation or override other work.
+3. [HYBRID] Compare name, address/service-area, categories, ownership, duplicates, website, and other implicated fields against real organization truth and current platform requirements.
+4. [AI] Determine the strongest supported cause or unresolved possibilities. Avoid repeated speculative edits merely to see whether something changes.
+5. [HYBRID] Correct factual or eligibility problems through the real authorized platform/account controls available and assemble appropriate verifiable evidence.
+6. [HYBRID] Use the platform’s official reinstatement, verification, support, or appeal process when applicable and preserve material correspondence/status when future continuity benefits.
+7. [HYBRID] After restoration or resolution, verify profile, site, citation, and identity consistency and preserve material root cause/prevention Learning when supported.
 
 ## Verification
-- Verify location eligibility and business facts before changing public profile/location data.
-
-
+- Location eligibility and public business facts are established before profile changes are recommended or made.
+- Recommendations to pause edits and actions actually paused remain distinct.
+- AURA does not create a separate incident-routing priority system, autonomy tier, or runtime freeze control.
+- Incident state exists for durable organizational continuity, not because every profile issue needs an Incident object.
