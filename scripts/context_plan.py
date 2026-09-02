@@ -130,13 +130,13 @@ def build_plan(business_id,workflow_id,focus=None,operator_ref=None,team_ref=Non
     for applied in prefs.get('applied_profiles',[]):_add(files,applied.get('path'))
     if 'ProofRecord' in write_types or any(obj.get('object_type')=='ProofRecord' for obj,_ in selected.values()):_add(files,'core/policies/proof.md')
     for rel in match.get('references',[]):_add(files,rel)
-    object_files=[]
-    for oid,(obj,path) in selected.items():
-        rel=path.relative_to(ROOT).as_posix()
+    selected_items=[];object_files=[]
+    for oid in sorted(selected):
+        obj,path=selected[oid];rel=path.relative_to(ROOT).as_posix();selected_items.append({'object_ref':oid,'object_type':obj.get('object_type'),'path':rel})
         if rel not in object_files:object_files.append(rel)
     schema_registry=json.loads((ROOT/'generated/schema-registry.json').read_text());schema_paths={row.get('title'):row['path'] for row in schema_registry if row.get('title')};schema_files=[schema_paths[typ] for typ in sorted(write_types) if typ in schema_paths]
     for rel in schema_files+object_files:_add(files,rel)
-    return {'version':os_version(),'business_id':business_id,'workflow_id':workflow_id,'focus_refs':focus,'operator_ref':operator_ref,'team_ref':team_ref,'role_ref':role_ref,'effective_preferences':prefs.get('effective_preferences',{}),'preference_profiles':[x.get('id') for x in prefs.get('applied_profiles',[])],'preference_conflicts':prefs.get('conflicts',[]),'files':files,'object_refs':sorted(selected),'object_files':object_files,'schema_files':schema_files,'unresolved_selectors':unresolved,'optional_unavailable_selectors':optional_unavailable,'evidence_inputs':match.get('evidence_inputs',[]),'material_inputs':_material_inputs(selected,idx,match.get('evidence_inputs',[])),'execution_rule':'The Workflow describes the outcome, procedure, evidence, and quality requirements. The active model/harness chooses the best available tools, external Skills, providers, orchestration, and implementation details.'}
+    return {'version':os_version(),'business_id':business_id,'workflow_id':workflow_id,'focus_refs':focus,'operator_ref':operator_ref,'team_ref':team_ref,'role_ref':role_ref,'effective_preferences':prefs.get('effective_preferences',{}),'preference_profiles':[x.get('id') for x in prefs.get('applied_profiles',[])],'preference_conflicts':prefs.get('conflicts',[]),'files':files,'object_context':selected_items,'object_refs':[item['object_ref'] for item in selected_items],'object_files':object_files,'schema_files':schema_files,'unresolved_selectors':unresolved,'optional_unavailable_selectors':optional_unavailable,'evidence_inputs':match.get('evidence_inputs',[]),'material_inputs':_material_inputs(selected,idx,match.get('evidence_inputs',[])),'execution_rule':'The Workflow describes the outcome, procedure, evidence, and quality requirements. The active model/harness chooses the best available tools, external Skills, providers, orchestration, and implementation details.'}
 
 
 def main():
