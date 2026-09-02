@@ -5,7 +5,7 @@ import json,re
 
 # Authored Workflow metadata is operating knowledge only. Product version belongs to
 # VERSION / INSTALLATION.json; runtime/control metadata belongs to the host.
-RETIRED_WORKFLOW_METADATA={'version','risk','autonomy_ceiling','events','schedule','capabilities','subcontracts'}
+RETIRED_WORKFLOW_METADATA={'version','risk','autonomy_ceiling','events','schedule','capabilities','subcontracts','artifact_role'}
 
 
 def _tokens(value):return sorted(set(re.findall(r'[a-z0-9]{3,}',str(value or '').lower())))
@@ -42,7 +42,7 @@ def main():
         if wid in ids:raise SystemExit(f'Duplicate Workflow id: {wid}')
         ids.add(wid);title_match=re.search(r'^#\s+(.+)',body,re.M);title=title_match.group(1).strip() if title_match else wid;purpose=_section(body,'Purpose');run_when=_section(body,'Run When');durable_meta={k:v for k,v in meta.items() if k not in RETIRED_WORKFLOW_METADATA};rec={**durable_meta,'path':str(p.relative_to(ROOT)),'title':title,'purpose':purpose};rec['read_selectors']=[normalize_selector(x) for x in meta.get('reads',[])];rec['write_types']=[selector_type(x) for x in meta.get('writes',[])];rec['context_types']=meta.get('context',[]);workflows.append(rec);deps[wid]={'context':meta.get('context',[]),'reads':rec['read_selectors'],'writes':rec['write_types'],'evidence_inputs':meta.get('evidence_inputs',[])}
         if meta.get('type')=='workflow':
-            title_tokens=_tokens(title);purpose_tokens=_tokens(purpose);run_when_tokens=_tokens(run_when);id_tokens=_tokens(wid.replace('.',' ').replace('-',' '));candidate_rows.append({'workflow_id':wid,'owner_system':meta.get('owner_system'),'artifact_role':meta.get('artifact_role'),'tokens':sorted(set(title_tokens+purpose_tokens+run_when_tokens+id_tokens)),'title_tokens':title_tokens,'purpose_tokens':purpose_tokens,'run_when_tokens':run_when_tokens})
+            title_tokens=_tokens(title);purpose_tokens=_tokens(purpose);run_when_tokens=_tokens(run_when);id_tokens=_tokens(wid.replace('.',' ').replace('-',' '));candidate_rows.append({'workflow_id':wid,'owner_system':meta.get('owner_system'),'tokens':sorted(set(title_tokens+purpose_tokens+run_when_tokens+id_tokens)),'title_tokens':title_tokens,'purpose_tokens':purpose_tokens,'run_when_tokens':run_when_tokens})
     # The Workflow registry is a derived navigation view; authored Workflow files remain the source of truth.
     (gen/'workflow-registry.json').write_text(json.dumps({'version':os_version(),'workflows':workflows},indent=2)+'\n',encoding='utf-8');(gen/'system-registry.json').write_text(json.dumps({'systems':sorted(set(c.get('owner_system') for c in workflows if c.get('owner_system')))},indent=2)+'\n',encoding='utf-8');(gen/'context-dependency-index.json').write_text(json.dumps(deps,indent=2)+'\n',encoding='utf-8');(gen/'workflow-candidate-index.json').write_text(json.dumps(candidate_rows,indent=2)+'\n',encoding='utf-8')
     for obsolete in ('capability-usage-index.json','playbook-candidate-index.json','event-subscription-index.json','schedule-index.json','route-index.json'):
