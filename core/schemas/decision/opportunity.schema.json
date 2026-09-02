@@ -49,7 +49,7 @@
               "basis_refs": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true, "minItems": 1},
               "confidence": {"type": "number", "minimum": 0, "maximum": 1}
             },
-            "required": ["statement", "basis_refs", "confidence"]
+            "required": ["statement", "basis_refs"]
           }
         },
         "unknowns": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true}
@@ -57,7 +57,7 @@
       "required": ["fact_refs", "measured_refs", "inferences", "unknowns"]
     }
   },
-  "required": ["id", "object_type", "schema_version", "business_id", "owner_system", "title", "statement", "status", "objective_refs", "confidence"],
+  "required": ["id", "object_type", "schema_version", "business_id", "owner_system", "title", "statement", "status", "objective_refs"],
   "allOf": [
     {
       "if": {"properties": {"status": {"enum": ["qualified", "prioritized", "committed", "active"]}}, "required": ["status"]},
