@@ -9,7 +9,6 @@ reads:
 - Asset
 - WorkRequest
 writes:
-- WorkRequest
 - Asset
 capabilities:
   required:
@@ -47,5 +46,11 @@ Run before a live/automated webinar launch and after material changes.
 3. [AI] Walk the experience as a registrant/attendee across major states and identify broken expectations or missing context.
 4. [DETERMINISTIC] Check slide/media/demo files, presenter notes, backup plan, permissions, accessibility, and technical dependencies.
 5. [AI] Confirm the CTA transition and follow-up do not contradict the teaching or customer-fit criteria.
-6. [DETERMINISTIC] Run test registration/attendance/action events and verify downstream instrumentation.
-7. [HYBRID] Block launch on material failures and record final readiness/owner for unresolved low-risk issues.
+6. [DETERMINISTIC] Run test registration/attendance/action events when the active harness has the real capability/access, and verify downstream instrumentation from actual host state.
+7. [HYBRID] Identify material failures that make the webinar unsafe, misleading, unusable, or operationally unready and clearly recommend against launch until they are resolved. Preserve a useful QA Asset or unresolved-owner note only when durable continuity helps. The active human/harness/external system owns the actual launch decision and execution.
+
+## Verification
+- The end-to-end attendee path was actually inspected at the depth claimed.
+- Claims, proof, Offer terms, urgency, links, timing, and follow-up remain internally consistent and evidence-bounded.
+- Any technical/runtime checks are grounded in actual host state rather than inferred from the playbook.
+- QA findings distinguish substantive defects from external launch authority or runtime state.
