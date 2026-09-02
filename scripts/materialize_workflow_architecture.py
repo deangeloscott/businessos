@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
-"""One-time development helper that materializes AURA's Workflow-native source tree.
+"""One-time local development helper for the canonical AURA Workflow refactor.
 
-This is intentionally not a product migration feature. It is used once on the refactor
-branch, validates that legacy operating-knowledge architecture is gone, and then deletes
-itself together with the older semantic migration helper and temporary CI runner.
+Run this only on `refactor/aura-playbook-workflow-skill-1`. It materializes the new
+Playbook → Workflow → Step architecture directly in the repository, regenerates every
+canonical derived navigation/index artifact, and then removes the one-time migration
+machinery. It is development tooling, not a product migration feature.
 """
 from pathlib import Path
-import re,shutil,sys
+import re,shutil,subprocess,sys
 
 ROOT=Path(__file__).resolve().parents[1]
 SCRIPTS=ROOT/'scripts'
+EXPECTED_BRANCH='refactor/aura-playbook-workflow-skill-1'
 if str(SCRIPTS) not in sys.path:sys.path.insert(0,str(SCRIPTS))
 
 from migrate_workflow_semantics import migrate
@@ -34,6 +36,20 @@ COMMON_REPLACEMENTS=[
     ('/contracts/','/workflows/'),
     ('core/contracts','core/workflows'),
 ]
+
+
+def _git(*args,check=True):
+    return subprocess.run(['git',*args],cwd=ROOT,text=True,capture_output=True,check=check)
+
+
+def guard_refactor_branch():
+    try:branch=_git('branch','--show-current').stdout.strip()
+    except (subprocess.CalledProcessError,FileNotFoundError) as exc:
+        raise RuntimeError('Run this helper from a normal Git checkout with Git available.') from exc
+    if branch!=EXPECTED_BRANCH:
+        raise RuntimeError(f'Refusing destructive materialization on {branch!r}; expected {EXPECTED_BRANCH!r}.')
+    if _git('diff','--quiet',check=False).returncode or _git('diff','--cached','--quiet',check=False).returncode:
+        raise RuntimeError('Tracked local changes are present. Commit or stash them before materialization.')
 
 
 def text_files():
@@ -68,8 +84,6 @@ def rewrite_architecture_terms():
     for path in text_files():
         if rewrite(path,COMMON_REPLACEMENTS):changed.append(str(path.relative_to(ROOT)))
 
-    # Registry generation is the only place where the old plural collection name itself
-    # represented the operating-knowledge model. Make the derived format Workflow-native.
     registry_script=ROOT/'scripts/generate_registry.py'
     if registry_script.exists():
         text=registry_script.read_text(encoding='utf-8')
@@ -81,20 +95,19 @@ def rewrite_architecture_terms():
         )
         registry_script.write_text(text,encoding='utf-8')
 
-    # Consumers of the derived registry should use the Workflow collection directly.
+    # Python consumers use Workflow-native collection/identifier names directly.
     for path in text_files():
         if path.suffix.lower()!='.py':continue
         text=path.read_text(encoding='utf-8');new=text
         new=new.replace(".get('contracts',[])",".get('workflows',[])")
         new=new.replace(".get('contracts', [])",".get('workflows', [])")
-        new=new.replace('[\'contracts\']','[\'workflows\']')
+        new=new.replace("['contracts']","['workflows']")
         new=new.replace('["contracts"]','["workflows"]')
         new=new.replace('RETIRED_CONTRACT_METADATA','RETIRED_WORKFLOW_METADATA')
         new=new.replace('contract_id','workflow_id')
         if new!=text:path.write_text(new,encoding='utf-8')
 
-    # Qualification is entirely about authored operating knowledge, so its local naming
-    # should not preserve the retired Contract model either.
+    # Qualification is about authored operating knowledge, not the retired Contract model.
     qroot=ROOT/'qualification'
     if qroot.exists():
         for path in qroot.rglob('*.py'):
@@ -107,24 +120,6 @@ def rewrite_architecture_terms():
     return changed
 
 
-def retire_development_fossils():
-    paths=[
-        'scripts/_contract_author.py',
-        'scripts/resolve_effective_contract.py',
-        'scripts/resolve_contract.py',
-        'tests/run_playbook_evolution_exchange.py',
-        'scripts/migrate_workflow_semantics.py',
-        'scripts/materialize_workflow_architecture.py',
-        '.github/workflows/aura-materialize-workflows.yml',
-        '.github/aura-materialization-trigger',
-    ]
-    removed=[]
-    for rel in paths:
-        path=ROOT/rel
-        if path.exists():path.unlink();removed.append(rel)
-    return removed
-
-
 def remove_stale_derived_state():
     generated=ROOT/'generated'
     if generated.exists():shutil.rmtree(generated)
@@ -132,15 +127,13 @@ def remove_stale_derived_state():
     if old.exists():old.unlink()
 
 
-def assert_canonical_shape():
+def assert_canonical_shape(allow_one_time_helpers=False):
     problems=[]
     for path in ROOT.rglob('*'):
         if not path.exists():continue
         rel=path.relative_to(ROOT).as_posix()
         if '/contracts/' in f'/{rel}/' or rel.endswith('/contracts') or rel=='core/contracts':problems.append(f'legacy authored path: {rel}')
 
-    # Active implementation may not depend on retired operating-knowledge identifiers.
-    # Validators/tests are allowed to name retired concepts when asserting they stay gone.
     forbidden={
         'contract_files':'retired Workflow loader name',
         'contract-registry.json':'retired registry filename',
@@ -149,8 +142,10 @@ def assert_canonical_shape():
         'local_contract_id':'retired ProcessExtension field',
         'proposed_local_contract_id':'retired evolution field',
     }
+    helper_names={'validate_workspace.py'}
+    if allow_one_time_helpers:helper_names|={'migrate_workflow_semantics.py','materialize_workflow_architecture.py'}
     for path in (ROOT/'scripts').glob('*.py'):
-        if path.name in {'validate_workspace.py'}:continue
+        if path.name in helper_names:continue
         text=path.read_text(encoding='utf-8');rel=path.relative_to(ROOT).as_posix()
         for token,meaning in forbidden.items():
             if token in text:problems.append(f'{rel}: {meaning}: {token}')
@@ -167,17 +162,63 @@ def assert_canonical_shape():
     if problems:raise RuntimeError('Canonical Workflow materialization incomplete:\n'+'\n'.join(problems[:300]))
 
 
+def run_python(rel):
+    subprocess.run([sys.executable,str(ROOT/rel)],cwd=ROOT,check=True)
+
+
+def regenerate_derived_state():
+    run_python('scripts/generate_registry.py')
+    required=[
+        'generated/workflow-registry.json','generated/workflow-candidate-index.json',
+        'generated/process-map-registry.json','generated/schema-registry.json',
+        'generated/object-type-registry.json','generated/context-dependency-index.json',
+        'generated/system-registry.json','generated/workspace-manifest.json','generated/checksums.txt',
+        'WORKFLOW-INDEX.md','PLAYBOOKS.md','TASK-NAVIGATOR.md','SYSTEM-MANIFEST.json',
+    ]
+    missing=[rel for rel in required if not (ROOT/rel).exists()]
+    if missing:raise RuntimeError('Derived regeneration incomplete: '+', '.join(missing))
+    if (ROOT/'generated/contract-registry.json').exists():raise RuntimeError('Retired contract registry was regenerated')
+    return required
+
+
+def retire_development_fossils():
+    paths=[
+        'scripts/_contract_author.py',
+        'scripts/resolve_effective_contract.py',
+        'scripts/resolve_contract.py',
+        'tests/run_playbook_evolution_exchange.py',
+        'scripts/migrate_workflow_semantics.py',
+        'scripts/materialize_workflow_architecture.py',
+    ]
+    removed=[]
+    for rel in paths:
+        path=ROOT/rel
+        if path.exists():path.unlink();removed.append(rel)
+    return removed
+
+
 def main():
+    guard_refactor_branch()
     result=migrate(False)
     moved=rename_workflow_trees()
     rewrite_architecture_terms()
     remove_stale_derived_state()
-    # Delete one-time development machinery before validating the final product tree.
+
+    # Prove the transformed authored/code shape before deleting the recovery helpers.
+    assert_canonical_shape(allow_one_time_helpers=True)
+    regenerate_derived_state()
+
+    # The migration has served its only purpose. Remove it and regenerate once more so
+    # manifests/checksums describe the final product tree rather than development tooling.
     removed=retire_development_fossils()
-    assert_canonical_shape()
+    remove_stale_derived_state()
+    derived=regenerate_derived_state()
+    assert_canonical_shape(allow_one_time_helpers=False)
+
     print('Workflow semantic migration:',result)
     print('Workflow trees moved:',moved)
     print('Retired development artifacts:',removed)
-    print('Canonical Workflow architecture materialized successfully.')
+    print('Regenerated derived artifacts:',len(derived))
+    print('Canonical Workflow architecture materialized through step 5 successfully.')
 
 if __name__=='__main__':main()
