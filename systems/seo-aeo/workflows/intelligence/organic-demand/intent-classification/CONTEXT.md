@@ -26,24 +26,25 @@ updates:
 # Intent and Journey Classification
 
 ## Purpose
-Classify demand by what the user is trying to accomplish, not only by keyword syntax.
+Understand what the user is actually trying to accomplish and where that need sits in the customer journey rather than relying on keyword syntax alone.
 
 ## Business Outcome
-Improve valuable organic discovery through intent and journey classification, with a clear SEO/AEO mechanism and connection to the active business Objective.
+Match important organic/search/answer demand to the right kind of experience, information, and next step so visibility is more likely to create useful attention and downstream opportunity.
 
 ## Run When
-Run during initial or recurring demand research when the system must discover, classify, or update **intent and journey classification** evidence.
+Use when intent or journey role is uncertain, mixed, changing, or materially affects what asset, answer, or business pathway would be useful.
 
 ## Process
-1. [HYBRID] Review the query/prompt, observed results/answers, modifiers, related queries, and audience/business context.
-2. [AI] Classify primary and secondary intent such as informational, commercial investigation, transactional, navigational, local, comparison, troubleshooting, or post-purchase.
-3. [AI] Map awareness stage: unaware/problem-aware/solution-aware/product-aware/most-aware or the configured equivalent.
-4. [AI] Map buyer journey role and desired next action; distinguish research that can legitimately lead to the brand from irrelevant informational traffic.
-5. [HYBRID] Assign confidence and evidence; mark mixed/ambiguous intent rather than forcing one label.
-6. [AI] Reclassify when observed SERPs/answers/conversion behavior materially contradict the prior label.
+1. [HYBRID] Review the query or prompt together with observed results/answers, modifiers, related questions, audience/market context, and first-party behavior when available.
+2. [AI] Describe the primary task in plain language before assigning any convenient label. Labels such as informational, commercial investigation, transactional, navigational, local, comparison, troubleshooting, or post-purchase are useful summaries, not rigid boxes.
+3. [AI] Infer awareness/readiness or journey stage only to the resolution that changes the decision. Use the organization’s preferred model when one exists; do not force a universal funnel taxonomy.
+4. [AI] Identify the plausible next useful action or assisted role and distinguish demand that can legitimately connect to the organization from traffic that is interesting but commercially irrelevant.
+5. [HYBRID] Preserve mixed or ambiguous intent when the evidence supports multiple tasks rather than forcing a single classification.
+6. [AI] Revisit the interpretation when current search/answer composition, customer behavior, conversion evidence, or market context materially contradicts the prior understanding.
+7. [HYBRID] Update durable demand context only when future work benefits from remembering the classification and its evidence.
 
-## Decisions / Routing
-- Route → Competitor Intelligence refresh only when canonical competitor intelligence is missing or stale.
-- Route → Core Opportunity qualification when an SEO intervention is evidence-supported.
-
-
+## Verification
+- Intent is inferred from evidence and context, not modifiers alone.
+- Classification does not constrain the capable model from recognizing a better or more nuanced task interpretation.
+- Journey stage, desired next action, and business value remain related but distinct.
+- No competitor refresh, Opportunity, or routing step is required merely because intent was classified.
