@@ -36,25 +36,20 @@ def _validate_run(run):
 
 
 def _normalize_method(run):
-    registry=load_registry().get('contracts',[]);byid={x.get('id'):x for x in registry if x.get('id')};method=run.get('method_type') or ('aura_playbook' if run.get('contract_id') else 'ad_hoc');method_ref=run.get('method_ref');workflow_id=run.get('contract_id');playbook_id=run.get('playbook_id')
+    registry=load_registry().get('contracts',[]);byid={x.get('id'):x for x in registry if x.get('id')};method=run.get('method_type') or 'ad_hoc';method_ref=run.get('method_ref');workflow_id=run.get('workflow_id');playbook_id=run.get('playbook_id')
     if method=='aura_workflow':
         workflow=byid.get(workflow_id)
         if not workflow or workflow.get('type')!='workflow':raise ValueError(f'AURA Workflow receipt references an unavailable Workflow: {workflow_id!r}')
-        if method_ref not in {None,workflow_id}:raise ValueError('AURA Workflow method_ref must equal the Workflow ID')
+        if method_ref not in {None,workflow_id}:raise ValueError('AURA Workflow method_ref must equal workflow_id')
+        if playbook_id:raise ValueError('A Workflow-only receipt must not claim a Playbook')
         return method,workflow_id
     if method=='aura_playbook':
-        if playbook_id:
-            if not get_playbook(playbook_id,registry):raise ValueError(f'AURA Playbook receipt references an unavailable Playbook: {playbook_id!r}')
-            if method_ref not in {None,playbook_id}:raise ValueError('AURA Playbook method_ref must equal playbook_id')
-            if workflow_id:
-                workflow=byid.get(workflow_id)
-                if not workflow or workflow.get('type')!='workflow':raise ValueError(f'Playbook receipt references unavailable supporting Workflow: {workflow_id!r}')
-            return method,playbook_id
-        # v0.1.x compatibility: old receipts called detailed contracts "playbooks".
-        if workflow_id and workflow_id in byid:
-            if method_ref not in {None,workflow_id}:raise ValueError('Legacy AURA receipt method_ref must equal contract_id')
-            return method,workflow_id
-        raise ValueError('AURA Playbook receipt requires playbook_id')
+        if not playbook_id or not get_playbook(playbook_id,registry):raise ValueError(f'AURA Playbook receipt references an unavailable Playbook: {playbook_id!r}')
+        if method_ref not in {None,playbook_id}:raise ValueError('AURA Playbook method_ref must equal playbook_id')
+        if workflow_id:
+            workflow=byid.get(workflow_id)
+            if not workflow or workflow.get('type')!='workflow':raise ValueError(f'Playbook receipt references unavailable supporting Workflow: {workflow_id!r}')
+        return method,playbook_id
     if workflow_id or playbook_id:raise ValueError('Non-AURA method receipt must not claim an AURA Playbook/Workflow identifier')
     return method,method_ref
 
