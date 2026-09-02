@@ -1,5 +1,5 @@
 {
-  "version": "0.1.0",
+  "version": "0.1.1",
   "maturity": "alpha",
   "edition": "full",
   "display_name": "ViralTrac AURA",
@@ -52,7 +52,7 @@
     "marketing-synthesis",
     "seo-aeo"
   ],
-  "contract_count": 520,
+  "contract_count": 496,
   "schema_count": 47,
   "capability_count": 83,
   "entrypoints": {

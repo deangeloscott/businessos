@@ -9,12 +9,12 @@ Learn what customers want, dislike, expect, say, buy, avoid, and experience usin
 ## Common jobs
 
 - **[Customer Research Plan](../../systems/customer-intelligence/contracts/research/plan/CONTEXT.md)** — Resolve a customer knowledge need with evidence sufficient for the decision.
-- **[Customer Signal Ecosystem Radar](../../systems/customer-intelligence/contracts/intelligence/ecosystem-radar/CONTEXT.md)** — Detect changing customer needs, language, objections, expectations, and use cases; corroborate them; and compare external signals with first-party evidence when needed.
+- **[Customer Signal Ecosystem Radar](../../systems/customer-intelligence/contracts/intelligence/ecosystem-radar/CONTEXT.md)** — Detect changing customer needs, language, objections, expectations, and use cases; corroborate them; and compare external signals with first-party evidence when useful.
 - **[Customer Interview Intelligence](../../systems/customer-intelligence/contracts/evidence-collection/interviews/CONTEXT.md)** — Collect and code neutral, relevant customer interview evidence.
 - **[Survey Intelligence](../../systems/customer-intelligence/contracts/evidence-collection/surveys/CONTEXT.md)** — Design, run, and interpret a survey with enough reliable responses for the question being asked.
 - **[Sales Conversation Evidence Collection](../../systems/customer-intelligence/contracts/evidence-collection/sales-conversations/CONTEXT.md)** — Extract direct customer evidence from sales conversations.
-- **[Support Intelligence Mining](../../systems/customer-intelligence/contracts/evidence-collection/support/CONTEXT.md)** — Extract recurring customer problems/questions from support evidence.
-- **[Public Conversation Collection](../../systems/customer-intelligence/contracts/evidence-collection/public-conversation/CONTEXT.md)** — Monitor and interpret public customer/audience signals.
+- **[Support Intelligence Mining](../../systems/customer-intelligence/contracts/evidence-collection/support/CONTEXT.md)** — Extract recurring customer problems and questions from support evidence.
+- **[Public Conversation Collection](../../systems/customer-intelligence/contracts/evidence-collection/public-conversation/CONTEXT.md)** — Collect and interpret public customer/audience evidence without treating public visibility as permission for invasive profiling.
 - **[Voice-of-Customer Synthesis](../../systems/customer-intelligence/contracts/analysis/voice-of-customer/CONTEXT.md)** — Produce reusable customer language and themes.
 - **[Pain, Desire & Outcome Analysis](../../systems/customer-intelligence/contracts/analysis/pain-desire/CONTEXT.md)** — Identify pains, desires, and desired outcomes.
 - **[Objection Analysis](../../systems/customer-intelligence/contracts/analysis/objections/CONTEXT.md)** — Identify the objections that stop or delay customers and understand where each objection matters.
@@ -25,11 +25,11 @@ Learn what customers want, dislike, expect, say, buy, avoid, and experience usin
 - **[Customer Feature Need Analysis](../../systems/customer-intelligence/contracts/analysis/feature-needs/CONTEXT.md)** — Interpret feature requests as underlying needs rather than roadmap commands.
 - **[Customer Segmentation Intelligence](../../systems/customer-intelligence/contracts/analysis/segmentation/CONTEXT.md)** — Identify meaningful customer differences and propose segment refinement where justified.
 - **[Customer Insight Refresh](../../systems/customer-intelligence/contracts/analysis/insight-refresh/CONTEXT.md)** — Keep customer insights current and update them when new evidence conflicts with what was previously believed.
-- **[Customer Research Gap Monitoring](../../systems/customer-intelligence/contracts/monitoring/research-gaps/CONTEXT.md)** — Find and prioritize decision-critical customer knowledge gaps.
+- **[Customer Research Gap Review](../../systems/customer-intelligence/contracts/monitoring/research-gaps/CONTEXT.md)** — Run a bounded review for decision-critical customer evidence gaps and identify the smallest useful research action; recurrence belongs to the active runtime.
 
 ## More detailed playbooks
 
-These are smaller, specific playbooks AURA can use inside the larger jobs above. The names are kept simple here; open the linked contract or ask AURA to explain one if you want the exact steps.
+These are smaller, specific playbooks whose knowledge may help inside the larger jobs above. The names are kept simple here; open the linked contract or ask the AI to explain one if you want the exact method.
 
 ### Analysis
 
@@ -82,8 +82,8 @@ These are smaller, specific playbooks AURA can use inside the larger jobs above.
 
 ### Monitoring
 
-- [Customer Research Gap Monitoring](../../systems/customer-intelligence/contracts/monitoring/research-gaps/CONTEXT.md) *(main entry playbook)*
-- [Customer Theme Change Monitoring](../../systems/customer-intelligence/contracts/monitoring/theme-change/CONTEXT.md)
+- [Customer Research Gap Review](../../systems/customer-intelligence/contracts/monitoring/research-gaps/CONTEXT.md) *(main entry playbook)*
+- [Customer Theme Change Review](../../systems/customer-intelligence/contracts/monitoring/theme-change/CONTEXT.md)
 
 ### Research planning
 
@@ -98,8 +98,8 @@ These are smaller, specific playbooks AURA can use inside the larger jobs above.
 
 ## Want to see exactly how one works?
 
-Ask AURA something like:
+Ask the AI something like:
 
-> “Show me the exact steps for Before/After and Proof Extraction, including what it reads, what it saves, and how it knows when it is done.”
+> “Show me the exact method for Before/After and Proof Extraction, including what it reads, what it may save, and the important quality checks.”
 
 The linked contract is the authoritative version. This page is only a simpler map for people.

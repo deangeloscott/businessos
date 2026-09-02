@@ -9,15 +9,15 @@ Create and improve positioning, messaging, offers, ads, landing pages, email, we
 ## Common jobs
 
 - **[Persuasion Barrier Diagnosis](../../systems/marketing-synthesis/contracts/diagnosis/persuasion-barrier/CONTEXT.md)** — Determine whether and why persuasion is limiting qualified action.
-- **[Marketing Ecosystem Tactic Radar](../../systems/marketing-synthesis/contracts/intelligence/ecosystem-radar/CONTEXT.md)** — Discover emerging marketing tactics and measured findings, triangulate them, and route applicable uncertainty into bounded tests rather than copycat implementation.
+- **[Marketing Ecosystem Tactic Radar](../../systems/marketing-synthesis/contracts/intelligence/ecosystem-radar/CONTEXT.md)** — Discover emerging marketing mechanisms and measured findings, triangulate the evidence, and identify what may be worth using or testing without copycat implementation.
 - **[Commercial Positioning Synthesis](../../systems/marketing-synthesis/contracts/strategy/positioning/CONTEXT.md)** — Define commercial position relative to customer needs and alternatives.
 - **[Messaging Architecture](../../systems/marketing-synthesis/contracts/strategy/messaging/CONTEXT.md)** — Create audience-specific message architecture.
 - **[Value Proposition Synthesis](../../systems/marketing-synthesis/contracts/strategy/value-proposition/CONTEXT.md)** — Express differentiated value clearly.
 - **[Persuasion Mechanism Explanation](../../systems/marketing-synthesis/contracts/strategy/mechanism/CONTEXT.md)** — Explain in a credible, easy-to-understand way why or how the product, service, or offer works.
 - **[Proof Architecture](../../systems/marketing-synthesis/contracts/strategy/proof/CONTEXT.md)** — Build persuasion proof architecture.
 - **[Objection Handling Strategy](../../systems/marketing-synthesis/contracts/strategy/objection-handling/CONTEXT.md)** — Address the important concerns that may stop a customer from buying.
-- **[Offer Presentation Strategy](../../systems/marketing-synthesis/contracts/strategy/offer-presentation/CONTEXT.md)** — Present the approved Offer persuasively and accurately.
-- **[Offer Diagnosis](../../systems/marketing-synthesis/contracts/offer/diagnosis/CONTEXT.md)** — Diagnose and propose structural Offer improvements through controlled context updates.
+- **[Offer Presentation Strategy](../../systems/marketing-synthesis/contracts/strategy/offer-presentation/CONTEXT.md)** — Present the established Offer persuasively and accurately.
+- **[Offer Diagnosis](../../systems/marketing-synthesis/contracts/offer/diagnosis/CONTEXT.md)** — Diagnose structural Offer weaknesses and identify the smallest evidence-based improvement worth considering or testing.
 - **[Conversion-Oriented Social Profile Optimization](../../systems/marketing-synthesis/contracts/social/profile-optimization/CONTEXT.md)** — Optimize a social profile for qualified conversion.
 - **[Campaign Concept Development](../../systems/marketing-synthesis/contracts/campaigns/campaign-concept/CONTEXT.md)** — Develop a coherent commercial campaign concept.
 - **[Advertising Creative & Copy](../../systems/marketing-synthesis/contracts/assets/ads/CONTEXT.md)** — Create evidence-based advertising persuasion assets.
@@ -28,7 +28,7 @@ Create and improve positioning, messaging, offers, ads, landing pages, email, we
 - **[Lead Nurture Strategy](../../systems/marketing-synthesis/contracts/assets/nurture/CONTEXT.md)** — Create ongoing lead/customer nurture persuasion.
 - **[Sales Letter](../../systems/marketing-synthesis/contracts/assets/sales-letter/CONTEXT.md)** — Create a long-form sales letter.
 - **[Lead Magnet](../../systems/marketing-synthesis/contracts/assets/lead-magnet/CONTEXT.md)** — Create a lead-generation asset with commercial continuity.
-- **[Quiz / Assessment Conversion Asset](../../systems/marketing-synthesis/contracts/assets/quiz-assessment/CONTEXT.md)** — Create a useful assessment that routes qualified next action.
+- **[Quiz / Assessment Conversion Asset](../../systems/marketing-synthesis/contracts/assets/quiz-assessment/CONTEXT.md)** — Create a useful assessment that supports qualified next action.
 - **[Advertorial](../../systems/marketing-synthesis/contracts/assets/advertorial/CONTEXT.md)** — Create a transparent persuasive advertorial.
 - **[Comparison & Alternative Persuasion](../../systems/marketing-synthesis/contracts/assets/comparison/CONTEXT.md)** — Create an evidence-based commercial comparison.
 - **[Sales Enablement Asset](../../systems/marketing-synthesis/contracts/assets/sales-enablement/CONTEXT.md)** — Create persuasive materials for active sales use.
@@ -36,7 +36,7 @@ Create and improve positioning, messaging, offers, ads, landing pages, email, we
 
 ## More detailed playbooks
 
-These are smaller, specific playbooks AURA can use inside the larger jobs above. The names are kept simple here; open the linked contract or ask AURA to explain one if you want the exact steps.
+These are smaller, specific playbooks whose knowledge may help inside the larger jobs above. The names are kept simple here; open the linked contract or ask the AI to explain one if you want the exact method.
 
 ### Advertising
 
@@ -110,7 +110,6 @@ These are smaller, specific playbooks AURA can use inside the larger jobs above.
 ### Offers
 
 - [Offer Bonus Design](../../systems/marketing-synthesis/contracts/offer/bonuses/CONTEXT.md)
-- [Offer Context Change Proposal](../../systems/marketing-synthesis/contracts/offer/context-proposal/CONTEXT.md)
 - [Offer Diagnosis](../../systems/marketing-synthesis/contracts/offer/diagnosis/CONTEXT.md) *(main entry playbook)*
 - [Offer Guarantee Design](../../systems/marketing-synthesis/contracts/offer/guarantee/CONTEXT.md)
 - [Offer Packaging Design](../../systems/marketing-synthesis/contracts/offer/packaging/CONTEXT.md)
@@ -161,8 +160,8 @@ These are smaller, specific playbooks AURA can use inside the larger jobs above.
 
 ## Want to see exactly how one works?
 
-Ask AURA something like:
+Ask the AI something like:
 
-> “Show me the exact steps for Advertising Angle Matrix, including what it reads, what it saves, and how it knows when it is done.”
+> “Show me the exact method for Advertising Angle Matrix, including what it reads, what it may save, and the important quality checks.”
 
 The linked contract is the authoritative version. This page is only a simpler map for people.

@@ -1,6 +1,6 @@
 # Example Playbook Flow: Research Public Reviews and Conversations
 
-This example shows what a user-level request can turn into inside AURA. It is **not a second set of rules**. The linked contracts remain authoritative.
+This example shows how a capable AI can use AURA memory and operating knowledge for one user-level request. It is **not a second set of rules**. The linked contracts remain authoritative.
 
 ## What the user can say
 
@@ -8,11 +8,11 @@ This example shows what a user-level request can turn into inside AURA. It is **
 
 The user does not need to name websites, tools, folders, contracts, or AURA systems unless they want to.
 
-## What AURA does
+## How the work can proceed
 
 ### 1. Define what the research needs to answer
 
-AURA uses the business, market, product/service, competitors, time window, and current decision to decide what evidence is worth collecting. It should not search every possible source just because a source exists.
+The AI uses relevant organizational context, the market, product/service, competitors, time window, and current decision to judge what evidence is worth collecting. It should not search every possible source just because a source exists.
 
 ### 2. Find the right review and conversation sources
 
@@ -20,7 +20,7 @@ Depending on the business, useful sources might include Google Business Profile,
 
 ### 3. Collect allowed source evidence
 
-For each useful review or public conversation, AURA first opens or retrieves the underlying item. A search result or URL can help find evidence, but it is not enough by itself for an important supported conclusion. AURA preserves the information that is actually available and allowed, such as:
+For each useful review or public conversation, the active model/harness first opens or retrieves the underlying item. A search result or URL can help find evidence, but it is not enough by itself for an important supported conclusion. Preserve the information that is actually available and allowed, such as:
 
 - review/comment text
 - rating
@@ -33,15 +33,15 @@ For each useful review or public conversation, AURA first opens or retrieves the
 
 ### 4. Preserve a screenshot or snapshot when it adds value
 
-AURA normally keeps the useful source text and metadata so the evidence can be searched and checked later. A screenshot is extra preservation, not a requirement for every review. When the source permits it and visual context, proof value, or page change risk matters, AURA can capture the original page/review as a screenshot or snapshot and link it to the same source record.
+Useful source text and metadata should normally remain searchable and checkable later. A screenshot is extra preservation, not a requirement for every review. When the source permits it and visual context, proof value, or page-change risk matters, the active model/harness can capture the original page/review and link it to the same source evidence.
 
 ### 5. Remove duplicates
 
-AURA removes exact duplicates, syndicated copies, reposts, and repeated captures while keeping genuinely different people or meaningful follow-up comments separate.
+Remove exact duplicates, syndicated copies, reposts, and repeated captures while keeping genuinely different people or meaningful follow-up comments separate.
 
 ### 6. Analyze each piece of evidence
 
-AURA can extract:
+The AI can extract:
 
 - praise
 - complaints
@@ -57,11 +57,11 @@ AURA can extract:
 - exact customer wording
 - sentiment about specific parts of the experience
 
-Direct customer statements stay separate from AURA interpretation. If the original evidence was not preserved or cannot be reliably revisited, the interpretation stays provisional instead of being marked as fully supported.
+Direct customer statements stay separate from interpretation. If the original evidence was not preserved or cannot be reliably revisited, the interpretation stays provisional instead of being marked as fully supported.
 
 ### 7. Look for patterns across the evidence
 
-AURA compares reviews and conversations to find recurring themes, emerging issues, differences between products/locations/segments, and contradictions with other evidence such as interviews, support conversations, or sales calls.
+Compare reviews and conversations to find recurring themes, emerging issues, differences between products/locations/segments, and contradictions with other evidence such as interviews, support conversations, or sales calls.
 
 ### 8. Save reusable business knowledge
 
@@ -73,20 +73,20 @@ Useful evidence can become linked AURA objects instead of disappearing inside on
 - **Insight** — a supported pattern or conclusion
 - **ProofRecord** — reusable proof/testimonial evidence when the claim and permission rules support it
 
-### 9. Route useful findings to the right next work
+### 9. Reuse useful findings directly
 
-One review can matter in several places without being copied into separate truth stores. AURA routes a finding only to areas installed in this copy and only when the finding is relevant.
+One finding can matter to several kinds of work without being copied into separate truth stores or routed through internal AURA services. The active model can apply the same supported evidence wherever it is relevant:
 
-- a repeated complaint can inform **Customer Intelligence**
-- a competitor complaint can inform **Competitor Intelligence**
-- checkout or service friction can inform **Customer Optimization**
-- strong customer language can inform **Marketing Synthesis**
-- supported proof can be reused in **Content Synthesis** when relevant
-- supported proof can be reused in **SEO/AEO** when relevant
+- a repeated complaint can inform customer understanding
+- a competitor complaint can inform competitor analysis
+- checkout or service friction can inform customer-journey improvement
+- strong customer language can inform marketing
+- supported proof can be reused in content when relevant
+- supported proof can be reused in SEO/AEO when relevant
 
 ### 10. Stop when more collection is unlikely to change the decision
 
-AURA should collect enough evidence to answer the current question responsibly. It should not keep scraping or researching simply because more data is available. If the job needs ongoing monitoring, it can preserve what was checked and later look for meaningful changes.
+Collect enough evidence to answer the current question responsibly. Do not keep researching simply because more data is available. If the organization wants ongoing monitoring, AURA may preserve the monitoring intent and prior evidence; the active host/runtime owns any actual recurring schedule or future check.
 
 ## What the user should get back
 
@@ -108,4 +108,4 @@ The final result should be useful to a business person, not just a pile of saved
 - [Before/After and Proof Extraction](../../../systems/customer-intelligence/contracts/analysis/before-after-proof/CONTEXT.md) — `customer.analysis.before-after-proof`
 - [Register Reusable Proof](../../../core/contracts/intelligence/register-proof/CONTEXT.md) — `core.intelligence.register-proof`
 
-These contracts define the actual operating rules. This page only explains the flow in simpler language.
+These contracts define the actual operating knowledge. This page only explains the flow in simpler language.

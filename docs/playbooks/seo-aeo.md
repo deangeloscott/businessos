@@ -8,14 +8,14 @@ Improve how the business is found in search engines, local search, AI answers, a
 
 ## Common jobs
 
-- **[SEO/AEO Ecosystem Tactic Radar](../../systems/seo-aeo/contracts/intelligence/ecosystem/tactic-radar/CONTEXT.md)** — Discover new SEO/AEO tactics and platform findings, corroborate or invalidate them, test promising uncertainty, and update SEO learning only when evidence supports it.
-- **[SEO Strategy Experiment Design](../../systems/seo-aeo/contracts/learning/strategy-experiment-design/CONTEXT.md)** — Design a controlled or defensible quasi-experimental test for an uncertain SEO/AEO tactic.
-- **[SEO/AEO Experiment Analysis](../../systems/seo-aeo/contracts/measurement/experiment-analysis/CONTEXT.md)** — Analyze an SEO/AEO experiment without overstating causality and route the result into domain learning.
-- **[SEO/AEO Domain Learning](../../systems/seo-aeo/contracts/learning/domain-learning/CONTEXT.md)** — Convert verified organic-discovery outcomes into reusable context-specific SEO/AEO learning.
+- **[SEO/AEO Ecosystem Tactic Radar](../../systems/seo-aeo/contracts/intelligence/ecosystem/tactic-radar/CONTEXT.md)** — Discover SEO/AEO tactics and platform findings, corroborate or invalidate them, and preserve useful evidence or Learning only when supported.
+- **[SEO Strategy Experiment Design](../../systems/seo-aeo/contracts/learning/strategy-experiment-design/CONTEXT.md)** — Design a controlled or defensible quasi-experimental test when an uncertain SEO/AEO tactic is worth testing.
+- **[SEO/AEO Experiment Analysis](../../systems/seo-aeo/contracts/measurement/experiment-analysis/CONTEXT.md)** — Analyze an SEO/AEO experiment without overstating causality and preserve reusable outcome evidence or Learning only when justified.
+- **[SEO/AEO Domain Learning](../../systems/seo-aeo/contracts/learning/domain-learning/CONTEXT.md)** — Convert sufficiently supported organic-discovery outcomes into reusable context-specific SEO/AEO Learning.
 
 ## More detailed playbooks
 
-These are smaller, specific playbooks AURA can use inside the larger jobs above. The names are kept simple here; open the linked contract or ask AURA to explain one if you want the exact steps.
+These are smaller, specific playbooks whose knowledge may help inside the larger jobs above. The names are kept simple here; open the linked contract or ask the AI to explain one if you want the exact method.
 
 ### AI / answer-engine visibility
 
@@ -135,13 +135,13 @@ These are smaller, specific playbooks AURA can use inside the larger jobs above.
 
 ### Measurement
 
-- [Change Event Evaluation](../../systems/seo-aeo/contracts/measurement/change-evaluation/CONTEXT.md)
-- [Monthly Organic Discovery Business Review](../../systems/seo-aeo/contracts/measurement/monthly-business/CONTEXT.md)
+- [Change Evaluation](../../systems/seo-aeo/contracts/measurement/change-evaluation/CONTEXT.md)
 - [Organic Attribution](../../systems/seo-aeo/contracts/measurement/attribution/CONTEXT.md)
-- [Quarterly Organic Discovery Strategy Review](../../systems/seo-aeo/contracts/measurement/quarterly-strategy/CONTEXT.md)
+- [Organic Discovery Business Review](../../systems/seo-aeo/contracts/measurement/monthly-business/CONTEXT.md)
+- [Organic Discovery Strategy Review](../../systems/seo-aeo/contracts/measurement/quarterly-strategy/CONTEXT.md)
+- [Organic Discovery Tactical Review](../../systems/seo-aeo/contracts/measurement/weekly-tactical/CONTEXT.md)
 - [SEO/AEO Experiment Analysis](../../systems/seo-aeo/contracts/measurement/experiment-analysis/CONTEXT.md) *(main entry playbook)*
 - [Unified SEO/AEO Scorecard](../../systems/seo-aeo/contracts/measurement/scorecard/CONTEXT.md)
-- [Weekly Tactical Report](../../systems/seo-aeo/contracts/measurement/weekly-tactical/CONTEXT.md)
 
 ### Monitoring
 
@@ -149,14 +149,12 @@ These are smaller, specific playbooks AURA can use inside the larger jobs above.
 - [Backlink and Mention Monitoring](../../systems/seo-aeo/contracts/monitoring/backlinks/CONTEXT.md)
 - [CTR Monitoring](../../systems/seo-aeo/contracts/monitoring/ctr/CONTEXT.md)
 - [Competitor Monitoring](../../systems/seo-aeo/contracts/monitoring/competitors/CONTEXT.md)
-- [Data Health Monitoring](../../systems/seo-aeo/contracts/monitoring/data-health/CONTEXT.md)
 - [Indexing Monitoring](../../systems/seo-aeo/contracts/monitoring/indexing/CONTEXT.md)
 - [Local Discovery Monitoring](../../systems/seo-aeo/contracts/monitoring/local/CONTEXT.md)
 - [Organic Conversion and Value Monitoring](../../systems/seo-aeo/contracts/monitoring/organic-outcome-alignment/CONTEXT.md)
 - [Organic Traffic Monitoring](../../systems/seo-aeo/contracts/monitoring/traffic/CONTEXT.md)
 - [Ranking and Search Visibility Monitoring](../../systems/seo-aeo/contracts/monitoring/ranking-visibility/CONTEXT.md)
 - [Reputation Monitoring](../../systems/seo-aeo/contracts/monitoring/search-reputation/CONTEXT.md)
-- [Search / Answer Ecosystem Update Monitoring](../../systems/seo-aeo/contracts/monitoring/ecosystem-updates/CONTEXT.md)
 - [Technical Health Monitoring](../../systems/seo-aeo/contracts/monitoring/technical/CONTEXT.md)
 
 ### Planning
@@ -170,14 +168,13 @@ These are smaller, specific playbooks AURA can use inside the larger jobs above.
 - [Local Baseline](../../systems/seo-aeo/contracts/bootstrap/baseline/local-baseline/CONTEXT.md)
 - [SEO Asset State Inventory](../../systems/seo-aeo/contracts/bootstrap/asset-state-inventory/CONTEXT.md)
 - [SEO Domain Discovery](../../systems/seo-aeo/contracts/bootstrap/domain-discovery/CONTEXT.md)
-- [SEO Instrumentation Coverage](../../systems/seo-aeo/contracts/bootstrap/instrumentation-coverage/CONTEXT.md)
 - [Search Performance Baseline](../../systems/seo-aeo/contracts/bootstrap/baseline/search-baseline/CONTEXT.md)
 - [Technical Baseline](../../systems/seo-aeo/contracts/bootstrap/baseline/technical-baseline/CONTEXT.md)
 
 ## Want to see exactly how one works?
 
-Ask AURA something like:
+Ask the AI something like:
 
-> “Show me the exact steps for SEO Asset State Inventory, including what it reads, what it saves, and how it knows when it is done.”
+> “Show me the exact method for SEO Asset State Inventory, including what it reads, what it may save, and the important quality checks.”
 
 The linked contract is the authoritative version. This page is only a simpler map for people.

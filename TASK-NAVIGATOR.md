@@ -12,11 +12,11 @@ Adaptively discover, resolve, observe, traverse, compare, and interpret competit
 |---|---|---|
 | `research-plan` | Resolve a competitive question with bounded evidence. | `competitor.research.plan` |
 | `source-coverage` | Adapt research depth and evidence-source coverage to the competitive decision. | `competitor.research.adaptive-source-coverage` |
-| `ecosystem-radar` | Discover important competitive movements and tactic claims, verify what is observed versus effective, and route material implications. | `competitor.intelligence.ecosystem-radar` |
+| `ecosystem-radar` | Discover important competitive movements and tactic claims, verify what is observed versus supported, and preserve material implications for direct reuse. | `competitor.intelligence.ecosystem-radar` |
 | `competitive-position` | Compose the relevant competitor jobs into a decision-useful competitive landscape and position. | `competitor.analysis.competitive-position` |
-| `competitor-discovery` | Identify current direct/substitute competitors. | `competitor.discovery.competitive-set` |
+| `competitor-discovery` | Identify current direct and substitute competitors. | `competitor.discovery.competitive-set` |
 | `entity-resolution` | Resolve competitor domains and public profiles to the correct canonical entity. | `competitor.discovery.entity-resolution` |
-| `emerging-competitors` | Detect new competitors entering the relevant customer choice set. | `competitor.discovery.emerging-competitors` |
+| `emerging-competitors` | Identify new competitors entering the relevant customer choice set. | `competitor.discovery.emerging-competitors` |
 | `full-profile` | Build a current evidence-backed competitor profile. | `competitor.analysis.profiling` |
 | `pricing` | Understand current competitor pricing and material changes. | `competitor.analysis.pricing` |
 | `offer-comparison` | Compare customer-facing offer economics and risk. | `competitor.analysis.offer-comparison` |
@@ -25,11 +25,11 @@ Adaptively discover, resolve, observe, traverse, compare, and interpret competit
 | `funnels` | Capture and compare observable acquisition funnels. | `competitor.analysis.funnels` |
 | `advertising` | Understand observable competitor advertising patterns. | `competitor.analysis.advertising` |
 | `content-strategy` | Understand competitor content strategy. | `competitor.analysis.content-strategy` |
-| `customer-sentiment` | Understand recurring customer praise/complaints. | `competitor.analysis.customer-sentiment` |
-| `tactic-validation` | Determine whether a tactic likely works and why. | `competitor.analysis.tactic-validation` |
+| `customer-sentiment` | Understand recurring customer praise and complaints. | `competitor.analysis.customer-sentiment` |
+| `tactic-validation` | Determine what the evidence supports about whether a tactic appears effective and why. | `competitor.analysis.tactic-validation` |
 | `strength-weakness` | Assess scoped competitor strengths and vulnerabilities. | `competitor.analysis.strength-weakness` |
 | `strategy-change` | Detect and interpret strategic movement. | `competitor.analysis.strategic-change` |
-| `competitive-implications` | Route evidence-backed implications to downstream domains. | `competitor.analysis.competitive-implications` |
+| `competitive-implications` | Translate supported competitor evidence into scoped implications the current business work can use directly. | `competitor.analysis.competitive-implications` |
 
 ## Content Synthesis
 
@@ -37,17 +37,17 @@ Research content patterns and turn validated ideas, evidence, and source materia
 
 | Activity | Result | Entry contract |
 |---|---|---|
-| `content-brief` | Define a complete content production job. | `content.intake.content-brief` |
+| `content-brief` | Define a complete content production job from the smallest useful current evidence and constraints. | `content.intake.content-brief` |
 | `audience-context` | Define audience and consumption context. | `content.strategy.audience-context` |
 | `angle` | Choose a useful angle for the source idea. | `content.strategy.angle` |
-| `platform-format` | Select platform/format based on communication job. | `content.strategy.format-platform` |
+| `platform-format` | Select platform/format based on the communication job. | `content.strategy.format-platform` |
 | `platform-native-adaptation` | Express an idea natively for a specific platform. | `content.adaptation.platform-native` |
 | `ecosystem-radar` | Discover emerging content formats, creator patterns, distribution mechanics, and communication tactics; validate what is durable enough to test or learn from. | `content.intelligence.ecosystem-radar` |
-| `trend-discovery` | Find and contextualize unusually strong/trending content. | `content.intelligence.trending-content-discovery` |
-| `creator-monitoring` | Track creator patterns over time. | `content.intelligence.creator-monitoring` |
-| `creative-pattern` | Extract reusable creative mechanisms without copying expression. | `content.intelligence.creative-pattern-extraction` |
-| `cross-niche-transfer` | Adapt a validated mechanism from another niche. | `content.intelligence.cross-niche-pattern-transfer` |
-| `content-performance` | Learn what this business content actually does well. | `content.intelligence.content-performance-analysis` |
+| `trend-discovery` | Find and contextualize unusually strong or trending content without treating popularity as proof of business effectiveness. | `content.intelligence.trending-content-discovery` |
+| `creator-monitoring` | Build or refresh evidence-backed creator/channel understanding and transferable creative mechanisms when useful; recurring execution belongs to the active runtime. | `content.intelligence.creator-monitoring` |
+| `creative-pattern` | Extract reusable creative mechanisms without copying protected expression. | `content.intelligence.creative-pattern-extraction` |
+| `cross-niche-transfer` | Adapt a validated mechanism from another niche when the audience/context fit is defensible. | `content.intelligence.cross-niche-pattern-transfer` |
+| `content-performance` | Learn what this business's content actually appears to do well using available outcome evidence. | `content.intelligence.content-performance-analysis` |
 | `article` | Produce a complete article. | `content.production.article` |
 | `newsletter` | Produce a complete newsletter. | `content.production.newsletter` |
 | `short-video` | Produce platform-native short video. | `content.production.short-video` |
@@ -62,7 +62,7 @@ Research content patterns and turn validated ideas, evidence, and source materia
 | `avatar-video` | Produce an authorized AI-avatar video. | `content.production.avatar-video` |
 | `case-study` | Produce a verified customer case study. | `content.production.case-study` |
 | `demo` | Produce a credible demonstration. | `content.production.demo` |
-| `publish` | Publish an approved content Asset and verify it. | `content.publishing.publish-asset` |
+| `publish` | Publish or schedule the requested content Asset through the active host and verify the resulting external state when practical. | `content.publishing.publish-asset` |
 
 ## Customer Intelligence
 
@@ -71,12 +71,12 @@ Research and maintain evidence-backed understanding of customers, prospects, pai
 | Activity | Result | Entry contract |
 |---|---|---|
 | `customer-research` | Resolve a customer knowledge need with evidence sufficient for the decision. | `customer.research.plan` |
-| `ecosystem-radar` | Detect changing customer needs, language, objections, expectations, and use cases; corroborate them; and compare external signals with first-party evidence when needed. | `customer.intelligence.ecosystem-radar` |
+| `ecosystem-radar` | Detect changing customer needs, language, objections, expectations, and use cases; corroborate them; and compare external signals with first-party evidence when useful. | `customer.intelligence.ecosystem-radar` |
 | `interviews` | Collect and code neutral, decision-relevant customer interview evidence. | `customer.evidence-collection.interviews` |
 | `surveys` | Design, field, and interpret a survey with defensible coverage. | `customer.evidence-collection.surveys` |
 | `sales-conversation-mining` | Extract direct customer evidence from sales conversations. | `customer.evidence-collection.sales-conversations` |
-| `support-mining` | Extract recurring customer problems/questions from support evidence. | `customer.evidence-collection.support` |
-| `public-conversation-mining` | Monitor and interpret public customer/audience signals. | `customer.evidence-collection.public-conversation` |
+| `support-mining` | Extract recurring customer problems and questions from support evidence. | `customer.evidence-collection.support` |
+| `public-conversation-mining` | Collect and interpret public customer/audience evidence without treating public visibility as permission for invasive profiling. | `customer.evidence-collection.public-conversation` |
 | `voice-of-customer` | Produce reusable customer language and themes. | `customer.analysis.voice-of-customer` |
 | `pain-desire` | Identify pains, desires, and desired outcomes. | `customer.analysis.pain-desire` |
 | `objections` | Identify and scope customer objections. | `customer.analysis.objections` |
@@ -86,8 +86,8 @@ Research and maintain evidence-backed understanding of customers, prospects, pai
 | `churn` | Explain customer-stated and evidence-backed reasons for leaving. | `customer.analysis.churn` |
 | `feature-needs` | Interpret feature requests as underlying needs rather than roadmap commands. | `customer.analysis.feature-needs` |
 | `segmentation` | Identify meaningful customer differences and propose segment refinement where justified. | `customer.analysis.segmentation` |
-| `insight-refresh` | Keep Customer Insights current and contradiction-aware. | `customer.analysis.insight-refresh` |
-| `research-gap-monitoring` | Find and prioritize decision-critical customer knowledge gaps. | `customer.monitoring.research-gaps` |
+| `insight-refresh` | Keep Customer Insights current and contradiction-aware when new evidence makes review useful. | `customer.analysis.insight-refresh` |
+| `research-gap-monitoring` | Run a bounded review for decision-critical customer evidence gaps and identify the smallest useful research action; recurrence belongs to the active runtime. | `customer.monitoring.research-gaps` |
 
 ## Customer Optimization
 
@@ -98,13 +98,13 @@ Diagnose and improve conversion, purchase, onboarding, activation, success, rete
 | `journey-mapping` | Define the business-specific customer journey and measurable transitions. | `customer-optimization.journey.mapping` |
 | `instrumentation` | Instrument journey states and transitions. | `customer-optimization.journey.instrumentation` |
 | `data-quality` | Verify journey measurement is trustworthy. | `customer-optimization.instrumentation.data-quality` |
-| `ecosystem-radar` | Discover external customer-journey tactics, verify the evidence and applicability, and route promising low-enough-risk interventions into guarded tests. | `customer-optimization.intelligence.ecosystem-radar` |
-| `transition-analysis` | Find progression/drop-off/delay patterns. | `customer-optimization.journey.transition-analysis` |
+| `ecosystem-radar` | Discover external customer-journey tactics, verify the evidence and active-business applicability, and identify what may be worth investigating, adapting, or testing without automatic intervention. | `customer-optimization.intelligence.ecosystem-radar` |
+| `transition-analysis` | Find progression, drop-off, and delay patterns. | `customer-optimization.journey.transition-analysis` |
 | `bottleneck-prioritization` | Prioritize the journey bottleneck worth solving. | `customer-optimization.diagnosis.bottleneck-prioritization` |
 | `root-cause` | Diagnose why a transition is failing before intervention. | `customer-optimization.diagnosis.root-cause` |
 | `conversion` | Improve pre-purchase progression where journey mechanics are limiting. | `customer-optimization.intervention.conversion` |
 | `qualification` | Improve qualification process and customer fit. | `customer-optimization.intervention.qualification` |
-| `sales-handoff` | Reduce lead/customer handoff loss. | `customer-optimization.intervention.sales-handoff` |
+| `sales-handoff` | Reduce lead/customer context loss, delay, and failure across real sales handoffs. | `customer-optimization.intervention.sales-handoff` |
 | `scheduling` | Improve scheduling/attendance progression. | `customer-optimization.intervention.scheduling` |
 | `checkout` | Improve purchase/checkout progression. | `customer-optimization.intervention.checkout` |
 | `onboarding` | Move customers from purchase/start to meaningful value. | `customer-optimization.intervention.onboarding` |
@@ -121,10 +121,10 @@ Diagnose and improve conversion, purchase, onboarding, activation, success, rete
 | `expansion` | Expand successful customer relationships when eligible. | `customer-optimization.intervention.expansion` |
 | `referral` | Generate advocacy at appropriate value moments. | `customer-optimization.intervention.referral` |
 | `service-recovery` | Recover active failures and prevent recurrence. | `customer-optimization.intervention.service-recovery` |
-| `risk-monitoring` | Detect interpretable churn risk early and distinguish risk likelihood from value-at-risk. | `customer-optimization.monitoring.churn-risk` |
-| `lifecycle-experiment` | Test a journey intervention with guardrails. | `customer-optimization.experimentation.lifecycle-test` |
+| `risk-monitoring` | Review interpretable churn-risk evidence and distinguish risk likelihood from value-at-risk; recurrence belongs to the active runtime. | `customer-optimization.monitoring.churn-risk` |
+| `lifecycle-experiment` | Design or analyze a bounded journey intervention test when experimentation materially improves the decision. | `customer-optimization.experimentation.lifecycle-test` |
 | `cohort-retention` | Understand retention patterns across cohorts. | `customer-optimization.measurement.cohort-retention` |
-| `journey-health` | Monitor journey health and detect material change. | `customer-optimization.monitoring.journey-health` |
+| `journey-health` | Run a bounded journey-health review for material deterioration, improvement, or unresolved evidence; recurrence belongs to the active runtime. | `customer-optimization.monitoring.journey-health` |
 
 ## Industry Intelligence
 
@@ -132,23 +132,23 @@ Monitor, verify, interpret, and track material regulation, research, technology,
 
 | Activity | Result | Entry contract |
 |---|---|---|
-| `monitoring-plan` | Define decision-relevant external monitoring. | `industry.research.monitoring-plan` |
+| `monitoring-plan` | Define decision-relevant external monitoring intent and evidence needs. | `industry.research.monitoring-plan` |
 | `priority-sources` | Map reliable priority industry sources. | `industry.source-mapping.priority-sources` |
-| `ecosystem-radar` | Discover and triangulate material industry changes, research, regulation, technologies, market shifts, and emerging practices before routing them to business impact. | `industry.intelligence.ecosystem-radar` |
-| `news-monitoring` | Detect material news developments. | `industry.monitoring.news` |
-| `regulatory-monitoring` | Detect and interpret material regulation/standards changes. | `industry.monitoring.regulation` |
-| `research-monitoring` | Detect and evaluate important research. | `industry.monitoring.research` |
-| `technology-monitoring` | Detect important technology/platform changes. | `industry.monitoring.technology` |
-| `social-discussion` | Use social discussion as early signal without treating popularity as fact. | `industry.monitoring.social-discussion` |
-| `event-detection` | Create/update the correct canonical IndustryEvent. | `industry.event.detect` |
+| `ecosystem-radar` | Discover and triangulate material industry changes, research, regulation, technologies, market shifts, and emerging practices for business understanding. | `industry.intelligence.ecosystem-radar` |
+| `news-monitoring` | Review material news developments. | `industry.monitoring.news` |
+| `regulatory-monitoring` | Review and interpret material regulation/standards changes. | `industry.monitoring.regulation` |
+| `research-monitoring` | Review and evaluate important research. | `industry.monitoring.research` |
+| `technology-monitoring` | Review important technology/platform changes. | `industry.monitoring.technology` |
+| `social-discussion` | Use public discussion as an early signal without treating popularity as fact. | `industry.monitoring.social-discussion` |
+| `event-detection` | Determine whether evidence represents a durable IndustryEvent worth preserving. | `industry.event.detect` |
 | `event-verification` | Verify material Event facts. | `industry.analysis.event-verification` |
 | `factual-summary` | Maintain a clean factual Event layer. | `industry.event.factual-summary` |
-| `event-evolution` | Track meaningful Event changes and future checkpoints. | `industry.analysis.event-evolution` |
+| `event-evolution` | Understand meaningful Event changes and future evidence checkpoints. | `industry.analysis.event-evolution` |
 | `materiality` | Determine whether the Event can change a business decision. | `industry.analysis.materiality` |
 | `impact-analysis` | Determine scoped business impact. | `industry.analysis.business-impact` |
-| `trend-validation` | Validate sustained trends vs temporary attention. | `industry.analysis.trend-validation` |
+| `trend-validation` | Validate sustained trends versus temporary attention. | `industry.analysis.trend-validation` |
 | `scenario-analysis` | Model plausible uncertain futures with indicators. | `industry.analysis.scenario` |
-| `rapid-response` | Turn a time-sensitive material Event into verified downstream decision support. | `industry.analysis.rapid-response` |
+| `rapid-response` | Build a compact evidence-backed understanding of a time-sensitive material development. | `industry.analysis.rapid-response` |
 
 ## Marketing Synthesis
 
@@ -157,15 +157,15 @@ Diagnose and create commercial persuasion: positioning, messaging, proof archite
 | Activity | Result | Entry contract |
 |---|---|---|
 | `persuasion-diagnosis` | Determine whether and why persuasion is limiting qualified action. | `marketing.diagnosis.persuasion-barrier` |
-| `ecosystem-radar` | Discover emerging marketing tactics and measured findings, triangulate them, and route applicable uncertainty into bounded tests rather than copycat implementation. | `marketing.intelligence.ecosystem-radar` |
+| `ecosystem-radar` | Discover emerging marketing mechanisms and measured findings, triangulate the evidence, and identify what may be worth using or testing without copycat implementation. | `marketing.intelligence.ecosystem-radar` |
 | `positioning` | Define commercial position relative to customer needs and alternatives. | `marketing.strategy.positioning` |
 | `messaging` | Create audience-specific message architecture. | `marketing.strategy.messaging` |
 | `value-proposition` | Express differentiated value clearly. | `marketing.strategy.value-proposition` |
 | `mechanism` | Explain credibly why/how the solution works. | `marketing.strategy.mechanism` |
 | `proof` | Build persuasion proof architecture. | `marketing.strategy.proof` |
 | `objections` | Resolve material purchase objections. | `marketing.strategy.objection-handling` |
-| `offer-presentation` | Present the approved Offer persuasively and accurately. | `marketing.strategy.offer-presentation` |
-| `offer-optimization` | Diagnose and propose structural Offer improvements through controlled context updates. | `marketing.offer.diagnosis` |
+| `offer-presentation` | Present the established Offer persuasively and accurately. | `marketing.strategy.offer-presentation` |
+| `offer-optimization` | Diagnose structural Offer weaknesses and identify the smallest evidence-backed improvement worth considering or testing. | `marketing.offer.diagnosis` |
 | `social-profile` | Optimize a social profile for qualified conversion. | `marketing.social.profile-optimization` |
 | `campaign-concept` | Develop a coherent commercial campaign concept. | `marketing.campaigns.campaign-concept` |
 | `ads` | Create evidence-backed advertising persuasion assets. | `marketing.assets.ads` |
@@ -176,7 +176,7 @@ Diagnose and create commercial persuasion: positioning, messaging, proof archite
 | `nurture` | Create ongoing lead/customer nurture persuasion. | `marketing.assets.nurture` |
 | `sales-letter` | Create a long-form sales letter. | `marketing.assets.sales-letter` |
 | `lead-magnet` | Create a lead-generation asset with commercial continuity. | `marketing.assets.lead-magnet` |
-| `quiz-assessment` | Create a useful assessment that routes qualified next action. | `marketing.assets.quiz-assessment` |
+| `quiz-assessment` | Create a useful assessment that supports qualified next action. | `marketing.assets.quiz-assessment` |
 | `advertorial` | Create a transparent persuasive advertorial. | `marketing.assets.advertorial` |
 | `comparison` | Create an evidence-backed commercial comparison. | `marketing.assets.comparison` |
 | `sales-enablement` | Create persuasive materials for active sales use. | `marketing.assets.sales-enablement` |
@@ -188,10 +188,10 @@ Diagnose, plan, execute, verify, and learn from organic discovery across search,
 
 | Activity | Result | Entry contract |
 |---|---|---|
-| `ecosystem-tactic-radar` | Discover new SEO/AEO tactics and platform findings, corroborate or invalidate them, test promising uncertainty, and update SEO learning only when evidence supports it. | `seo.intelligence.ecosystem.tactic-radar` |
-| `seo-aeo-experiment` | Design a controlled or defensible quasi-experimental test for an uncertain SEO/AEO tactic. | `seo.learning.strategy-experiment-design` |
-| `seo-aeo-experiment-analysis` | Analyze an SEO/AEO experiment without overstating causality and route the result into domain learning. | `seo.measurement.experiment-analysis` |
-| `seo-aeo-domain-learning` | Convert verified organic-discovery outcomes into reusable context-specific SEO/AEO learning. | `seo.aeo.learning.domain-learning` |
+| `ecosystem-tactic-radar` | Discover SEO/AEO tactics and platform findings, corroborate or invalidate them, and preserve useful evidence or Learning only when supported. | `seo.intelligence.ecosystem.tactic-radar` |
+| `seo-aeo-experiment` | Design a controlled or defensible quasi-experimental test when an uncertain SEO/AEO tactic is worth testing. | `seo.learning.strategy-experiment-design` |
+| `seo-aeo-experiment-analysis` | Analyze an SEO/AEO experiment without overstating causality and preserve reusable outcome evidence or Learning only when justified. | `seo.measurement.experiment-analysis` |
+| `seo-aeo-domain-learning` | Convert sufficiently supported organic-discovery outcomes into reusable context-specific SEO/AEO Learning. | `seo.aeo.learning.domain-learning` |
 
 ## Core
 
@@ -199,19 +199,17 @@ Core supplies organization-owned business context, evidence/provenance, decision
 
 | Activity | Result | Entry contract |
 |---|---|---|
-| `resolve-intent` | Interpret an ordinary-language request and choose the smallest useful AURA playbook route when one fits, without forcing uncertain lexical matches or requiring AURA as the method. | `core.routing.resolve-intent` |
 | `configure-workspace` | Choose simple, power-user, or organization deployment; optionally separate organization-owned state from product source; and keep versioning/Obsidian as optional adapters. | `core.workspace.configure` |
 | `refresh-human-knowledge` | Generate a traceable Markdown/Obsidian-friendly human view from canonical AURA state without creating a competing truth store. | `core.knowledge.refresh-human-layer` |
-| `ingest-human-note` | Register a human-authored workspace note as noncanonical source material and route useful claims through normal evidence/context handling. | `core.knowledge.ingest-human-note` |
-| `scan-external-ecosystem` | Discover important external changes, tactics, findings, and signals; verify what is real and relevant; and route promising items to investigation, testing, or learning. | `core.intelligence.ecosystem-radar` |
-| `track-external-subject` | Build or refresh a durable evidence-backed watch for a company, creator, public figure, publication, platform, product, regulator, own organization, or other decision-relevant subject across appropriate sources and modalities. | `core.intelligence.subject-monitoring` |
+| `ingest-human-note` | Register a human-authored workspace note as noncanonical source material and preserve useful claims/evidence through normal context handling. | `core.knowledge.ingest-human-note` |
+| `scan-external-ecosystem` | Discover important external changes, tactics, findings, and signals; verify what the evidence supports; preserve useful organizational evidence or Learning; and let the capable model choose any next method. | `core.intelligence.ecosystem-radar` |
+| `track-external-subject` | Build or refresh a durable evidence-backed watch context for a company, creator, public figure, publication, platform, product, regulator, own organization, or other decision-relevant subject; recurrence belongs to the active runtime. | `core.intelligence.subject-monitoring` |
 | `review-monitoring-status` | Show durable monitoring intent, cadence/materiality, semantic due state, and meaningful unresolved findings without treating AURA as the scheduler or notification runtime. | `core.monitoring.status` |
 | `evolve-operating-process` | Turn strong reusable Learning into a business process extension, new local playbook, or canonical AURA revision candidate without overgeneralizing evidence. | `core.learning.playbook-evolution` |
 | `use-innovation-exchange` | Prepare, import, browse, and evaluate portable AURA process innovations with explicit sharing consent and no required central service. | `core.intelligence.innovation-exchange` |
-| `review-community-innovation` | Separate community reports from independent/local evidence and route promising innovations to test, adopt, or playbook evolution. | `core.intelligence.community-evidence-review` |
-| `diagnose-business-problem` | Narrow a broad unexplained business symptom to evidence-backed likely mechanisms and correctly owned next work before intervention. | `core.diagnosis.business-problem` |
+| `review-community-innovation` | Compare community-reported process innovations with independent/local evidence and decide whether testing, adoption, or playbook evolution is warranted. | `core.intelligence.community-evidence-review` |
+| `diagnose-business-problem` | Narrow a broad unexplained business symptom to evidence-backed likely mechanisms and the most useful next work before intervention. | `core.diagnosis.business-problem` |
 | `discover-next-best-work` | Turn a broad growth/prioritization goal into the highest-value next work supported by current evidence and installed modules. | `core.opportunity.discover-next-best-work` |
-| `coordinate-multi-domain-request` | Decompose and sequence one compound request across several semantic owners while preserving ownership, lineage, and efficient handoffs. | `core.coordination.multi-domain-request` |
 | `bootstrap-business` | Create evidence-backed initial business context from minimal identity, first-party sources, and user-provided information. | `core.context.bootstrap-business` |
 | `owned-business-discovery` | Adaptively map owned/official business surfaces and evidence at the depth needed for the current job. | `core.context.owned-business-discovery` |
 | `brand-profile` | Capture durable brand voice, visual, content, channel, reference, and prohibited-style rules. | `core.context.brand-profile` |

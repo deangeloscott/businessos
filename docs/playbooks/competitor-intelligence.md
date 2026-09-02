@@ -10,11 +10,11 @@ Find the competitors that matter, study what they do, compare them with the busi
 
 - **[Competitor Research Plan](../../systems/competitor-intelligence/contracts/research/plan/CONTEXT.md)** — Resolve a competitive question with bounded evidence.
 - **[Adaptive Competitive Source Coverage](../../systems/competitor-intelligence/contracts/research/adaptive-source-coverage/CONTEXT.md)** — Adapt research depth and evidence-source coverage to the competitive decision.
-- **[Competitive Ecosystem Radar](../../systems/competitor-intelligence/contracts/intelligence/ecosystem-radar/CONTEXT.md)** — Discover important competitive movements and tactic claims, verify what is observed versus effective, and route material implications.
+- **[Competitive Ecosystem Radar](../../systems/competitor-intelligence/contracts/intelligence/ecosystem-radar/CONTEXT.md)** — Discover important competitive movements and tactic claims, verify what is observed versus supported, and preserve material implications for direct reuse.
 - **[Competitive Position & Landscape](../../systems/competitor-intelligence/contracts/analysis/competitive-position/CONTEXT.md)** — Compose the relevant competitor jobs into a decision-useful competitive landscape and position.
-- **[Competitor Discovery](../../systems/competitor-intelligence/contracts/discovery/competitive-set/CONTEXT.md)** — Identify current direct/substitute competitors.
+- **[Competitor Discovery](../../systems/competitor-intelligence/contracts/discovery/competitive-set/CONTEXT.md)** — Identify current direct and substitute competitors.
 - **[Competitor Entity Resolution](../../systems/competitor-intelligence/contracts/discovery/entity-resolution/CONTEXT.md)** — Make sure websites, social profiles, review pages, ad profiles, and other sources belong to the correct competitor before combining the evidence.
-- **[Emerging Competitor Discovery](../../systems/competitor-intelligence/contracts/discovery/emerging-competitors/CONTEXT.md)** — Detect new competitors entering the relevant customer choice set.
+- **[Emerging Competitor Discovery](../../systems/competitor-intelligence/contracts/discovery/emerging-competitors/CONTEXT.md)** — Identify new competitors entering the relevant customer choice set.
 - **[Competitor Profile](../../systems/competitor-intelligence/contracts/analysis/profiling/CONTEXT.md)** — Build a current evidence-based competitor profile.
 - **[Pricing Intelligence](../../systems/competitor-intelligence/contracts/analysis/pricing/CONTEXT.md)** — Understand current competitor pricing and important changes.
 - **[Competitor Offer Comparison](../../systems/competitor-intelligence/contracts/analysis/offer-comparison/CONTEXT.md)** — Compare customer-facing offer economics and risk.
@@ -23,15 +23,15 @@ Find the competitors that matter, study what they do, compare them with the busi
 - **[Funnel Intelligence](../../systems/competitor-intelligence/contracts/analysis/funnels/CONTEXT.md)** — Capture and compare visible customer acquisition funnels.
 - **[Advertising Intelligence](../../systems/competitor-intelligence/contracts/analysis/advertising/CONTEXT.md)** — Understand visible competitor advertising patterns.
 - **[Competitor Content Strategy](../../systems/competitor-intelligence/contracts/analysis/content-strategy/CONTEXT.md)** — Understand competitor content strategy.
-- **[Competitor Customer Sentiment](../../systems/competitor-intelligence/contracts/analysis/customer-sentiment/CONTEXT.md)** — Understand recurring customer praise/complaints.
-- **[Competitor Tactic Validation](../../systems/competitor-intelligence/contracts/analysis/tactic-validation/CONTEXT.md)** — Determine whether a tactic likely works and why.
+- **[Competitor Customer Sentiment](../../systems/competitor-intelligence/contracts/analysis/customer-sentiment/CONTEXT.md)** — Understand recurring customer praise and complaints.
+- **[Competitor Tactic Validation](../../systems/competitor-intelligence/contracts/analysis/tactic-validation/CONTEXT.md)** — Determine what the evidence supports about whether a tactic appears effective and why.
 - **[Competitor Strength and Weakness Assessment](../../systems/competitor-intelligence/contracts/analysis/strength-weakness/CONTEXT.md)** — Identify specific competitor strengths and weaknesses that matter to customers and the business.
 - **[Strategic Change Detection](../../systems/competitor-intelligence/contracts/analysis/strategic-change/CONTEXT.md)** — Detect and interpret strategic movement.
-- **[Competitive Implication Analysis](../../systems/competitor-intelligence/contracts/analysis/competitive-implications/CONTEXT.md)** — Route evidence-based implications to downstream domains.
+- **[Competitive Implication Analysis](../../systems/competitor-intelligence/contracts/analysis/competitive-implications/CONTEXT.md)** — Translate supported competitor evidence into scoped implications the current business work can use directly.
 
 ## More detailed playbooks
 
-These are smaller, specific playbooks AURA can use inside the larger jobs above. The names are kept simple here; open the linked contract or ask AURA to explain one if you want the exact steps.
+These are smaller, specific playbooks whose knowledge may help inside the larger jobs above. The names are kept simple here; open the linked contract or ask the AI to explain one if you want the exact method.
 
 ### Analysis
 
@@ -80,9 +80,6 @@ These are smaller, specific playbooks AURA can use inside the larger jobs above.
 ### Monitoring
 
 - [Competitor Material-Change Monitoring](../../systems/competitor-intelligence/contracts/monitoring/material-change/CONTEXT.md)
-- [Competitor Positioning and Message Change Watch](../../systems/competitor-intelligence/contracts/monitoring/positioning-message-change/CONTEXT.md)
-- [Competitor Pricing and Offer Change Watch](../../systems/competitor-intelligence/contracts/monitoring/pricing-offer-change/CONTEXT.md)
-- [Competitor Product Release Watch](../../systems/competitor-intelligence/contracts/monitoring/product-release-watch/CONTEXT.md)
 
 ### Research planning
 
@@ -93,8 +90,8 @@ These are smaller, specific playbooks AURA can use inside the larger jobs above.
 
 ## Want to see exactly how one works?
 
-Ask AURA something like:
+Ask the AI something like:
 
-> “Show me the exact steps for Advertising Intelligence, including what it reads, what it saves, and how it knows when it is done.”
+> “Show me the exact method for Advertising Intelligence, including what it reads, what it may save, and the important quality checks.”
 
 The linked contract is the authoritative version. This page is only a simpler map for people.

@@ -9,15 +9,15 @@ Find and improve problems in the customer journey, from conversion and purchase 
 ## Common jobs
 
 - **[Customer Journey Mapping](../../systems/customer-optimization/contracts/journey/mapping/CONTEXT.md)** — Define the business-specific customer journey and measurable transitions.
-- **[Journey Instrumentation](../../systems/customer-optimization/contracts/journey/instrumentation/CONTEXT.md)** — Set up tracking so AURA can see how customers move from one important journey stage to another.
+- **[Journey Instrumentation](../../systems/customer-optimization/contracts/journey/instrumentation/CONTEXT.md)** — Determine whether customer-journey transitions can be measured reliably and improve the real source instrumentation when that work is requested.
 - **[Journey Instrumentation Data Quality](../../systems/customer-optimization/contracts/instrumentation/data-quality/CONTEXT.md)** — Check that customer-journey tracking and measurements are reliable enough to use for decisions.
-- **[Customer Optimization Ecosystem Tactic Radar](../../systems/customer-optimization/contracts/intelligence/ecosystem-radar/CONTEXT.md)** — Discover external customer-journey tactics, verify the evidence and applicability, and route promising low-enough-risk interventions into guarded tests.
-- **[Journey Transition Analysis](../../systems/customer-optimization/contracts/journey/transition-analysis/CONTEXT.md)** — Find progression/drop-off/delay patterns.
+- **[Customer Optimization Ecosystem Tactic Radar](../../systems/customer-optimization/contracts/intelligence/ecosystem-radar/CONTEXT.md)** — Discover external customer-journey tactics, verify the evidence and active-business applicability, and identify what may be worth investigating, adapting, or testing without automatic intervention.
+- **[Journey Transition Analysis](../../systems/customer-optimization/contracts/journey/transition-analysis/CONTEXT.md)** — Find progression, drop-off, and delay patterns.
 - **[Journey Bottleneck Prioritization](../../systems/customer-optimization/contracts/diagnosis/bottleneck-prioritization/CONTEXT.md)** — Prioritize the journey bottleneck worth solving.
 - **[Journey Root-Cause Diagnosis](../../systems/customer-optimization/contracts/diagnosis/root-cause/CONTEXT.md)** — Diagnose why a transition is failing before intervention.
 - **[Conversion Optimization](../../systems/customer-optimization/contracts/intervention/conversion/CONTEXT.md)** — Improve pre-purchase progression where journey mechanics are limiting.
 - **[Lead Qualification Optimization](../../systems/customer-optimization/contracts/intervention/qualification/CONTEXT.md)** — Improve qualification process and customer fit.
-- **[Sales Handoff Optimization](../../systems/customer-optimization/contracts/intervention/sales-handoff/CONTEXT.md)** — Reduce lead/customer handoff loss.
+- **[Sales Handoff Optimization](../../systems/customer-optimization/contracts/intervention/sales-handoff/CONTEXT.md)** — Reduce lead/customer context loss, delay, and failure across real sales handoffs.
 - **[Scheduling & No-Show Optimization](../../systems/customer-optimization/contracts/intervention/scheduling/CONTEXT.md)** — Improve scheduling/attendance progression.
 - **[Checkout Optimization](../../systems/customer-optimization/contracts/intervention/checkout/CONTEXT.md)** — Improve purchase/checkout progression.
 - **[Onboarding Optimization](../../systems/customer-optimization/contracts/intervention/onboarding/CONTEXT.md)** — Move customers from purchase/start to meaningful value.
@@ -34,14 +34,14 @@ Find and improve problems in the customer journey, from conversion and purchase 
 - **[Account / Customer Expansion Optimization](../../systems/customer-optimization/contracts/intervention/expansion/CONTEXT.md)** — Expand successful customer relationships when eligible.
 - **[Referral Optimization](../../systems/customer-optimization/contracts/intervention/referral/CONTEXT.md)** — Generate advocacy at appropriate value moments.
 - **[Service Recovery](../../systems/customer-optimization/contracts/intervention/service-recovery/CONTEXT.md)** — Recover active failures and prevent recurrence.
-- **[Customer Churn Risk Monitoring](../../systems/customer-optimization/contracts/monitoring/churn-risk/CONTEXT.md)** — Detect interpretable churn risk early and distinguish risk likelihood from value-at-risk.
-- **[Lifecycle Experiment Design](../../systems/customer-optimization/contracts/experimentation/lifecycle-test/CONTEXT.md)** — Test a journey intervention with guardrails.
+- **[Customer Churn Risk Monitoring](../../systems/customer-optimization/contracts/monitoring/churn-risk/CONTEXT.md)** — Review interpretable churn-risk evidence and distinguish risk likelihood from value-at-risk; recurrence belongs to the active runtime.
+- **[Lifecycle Experiment Design](../../systems/customer-optimization/contracts/experimentation/lifecycle-test/CONTEXT.md)** — Design or analyze a bounded journey intervention test when experimentation materially improves the decision.
 - **[Cohort Retention Analysis](../../systems/customer-optimization/contracts/measurement/cohort-retention/CONTEXT.md)** — Understand retention patterns across cohorts.
-- **[Customer Journey Health Monitoring](../../systems/customer-optimization/contracts/monitoring/journey-health/CONTEXT.md)** — Monitor journey health and detect important change.
+- **[Customer Journey Health Monitoring](../../systems/customer-optimization/contracts/monitoring/journey-health/CONTEXT.md)** — Run a bounded journey-health review for material deterioration, improvement, or unresolved evidence; recurrence belongs to the active runtime.
 
 ## More detailed playbooks
 
-These are smaller, specific playbooks AURA can use inside the larger jobs above. The names are kept simple here; open the linked contract or ask AURA to explain one if you want the exact steps.
+These are smaller, specific playbooks whose knowledge may help inside the larger jobs above. The names are kept simple here; open the linked contract or ask the AI to explain one if you want the exact method.
 
 ### Adoption
 
@@ -117,10 +117,10 @@ These are smaller, specific playbooks AURA can use inside the larger jobs above.
 
 ### Monitoring
 
-- [Activation Risk Monitoring](../../systems/customer-optimization/contracts/monitoring/activation-risk/CONTEXT.md)
+- [Activation Risk Review](../../systems/customer-optimization/contracts/monitoring/activation-risk/CONTEXT.md)
 - [Customer Churn Risk Monitoring](../../systems/customer-optimization/contracts/monitoring/churn-risk/CONTEXT.md) *(main entry playbook)*
 - [Customer Journey Health Monitoring](../../systems/customer-optimization/contracts/monitoring/journey-health/CONTEXT.md) *(main entry playbook)*
-- [Renewal Risk Monitoring](../../systems/customer-optimization/contracts/monitoring/renewal-risk/CONTEXT.md)
+- [Renewal Risk Review](../../systems/customer-optimization/contracts/monitoring/renewal-risk/CONTEXT.md)
 
 ### Onboarding
 
@@ -162,8 +162,8 @@ These are smaller, specific playbooks AURA can use inside the larger jobs above.
 
 ## Want to see exactly how one works?
 
-Ask AURA something like:
+Ask the AI something like:
 
-> “Show me the exact steps for Adoption Path Design, including what it reads, what it saves, and how it knows when it is done.”
+> “Show me the exact method for Adoption Path Design, including what it reads, what it may save, and the important quality checks.”
 
 The linked contract is the authoritative version. This page is only a simpler map for people.

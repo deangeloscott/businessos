@@ -8,17 +8,17 @@ Turn useful ideas, research, proof, and source material into content made for th
 
 ## Common jobs
 
-- **[Content Brief](../../systems/content-synthesis/contracts/intake/content-brief/CONTEXT.md)** — Define a complete content production job.
+- **[Content Brief](../../systems/content-synthesis/contracts/intake/content-brief/CONTEXT.md)** — Define a complete content production job from the smallest useful current evidence and constraints.
 - **[Content Audience and Consumption Context](../../systems/content-synthesis/contracts/strategy/audience-context/CONTEXT.md)** — Define audience and consumption context.
 - **[Angle Development](../../systems/content-synthesis/contracts/strategy/angle/CONTEXT.md)** — Choose a useful angle for the source idea.
-- **[Platform & Format Selection](../../systems/content-synthesis/contracts/strategy/format-platform/CONTEXT.md)** — Select platform/format based on communication job.
+- **[Platform & Format Selection](../../systems/content-synthesis/contracts/strategy/format-platform/CONTEXT.md)** — Select platform/format based on the communication job.
 - **[Platform-Native Adaptation](../../systems/content-synthesis/contracts/adaptation/platform-native/CONTEXT.md)** — Express an idea natively for a specific platform.
 - **[Content Ecosystem Radar](../../systems/content-synthesis/contracts/intelligence/ecosystem-radar/CONTEXT.md)** — Discover emerging content formats, creator patterns, distribution mechanics, and communication tactics; validate what is durable enough to test or learn from.
-- **[Trending Content Discovery](../../systems/content-synthesis/contracts/intelligence/trending-content-discovery/CONTEXT.md)** — Find and contextualize unusually strong/trending content.
-- **[Creator Content Monitoring](../../systems/content-synthesis/contracts/intelligence/creator-monitoring/CONTEXT.md)** — Track creator patterns over time.
+- **[Trending Content Discovery](../../systems/content-synthesis/contracts/intelligence/trending-content-discovery/CONTEXT.md)** — Find and contextualize unusually strong or trending content without treating popularity as proof of business effectiveness.
+- **[Creator Content Monitoring](../../systems/content-synthesis/contracts/intelligence/creator-monitoring/CONTEXT.md)** — Build or refresh evidence-based creator/channel understanding and transferable creative mechanisms when useful; recurring execution belongs to the active runtime.
 - **[Creative Pattern Extraction](../../systems/content-synthesis/contracts/intelligence/creative-pattern-extraction/CONTEXT.md)** — Find the reusable idea or structure behind strong content without copying the original creator.
 - **[Cross-Niche Creative Pattern Transfer](../../systems/content-synthesis/contracts/intelligence/cross-niche-pattern-transfer/CONTEXT.md)** — Adapt a useful content pattern from another niche or category without copying the original content.
-- **[Content Performance Pattern Analysis](../../systems/content-synthesis/contracts/intelligence/content-performance-analysis/CONTEXT.md)** — Learn what this business content actually does well.
+- **[Content Performance Pattern Analysis](../../systems/content-synthesis/contracts/intelligence/content-performance-analysis/CONTEXT.md)** — Learn what this business's content actually appears to do well using available outcome evidence.
 - **[Article Production](../../systems/content-synthesis/contracts/production/article/CONTEXT.md)** — Produce a complete article.
 - **[Newsletter Production](../../systems/content-synthesis/contracts/production/newsletter/CONTEXT.md)** — Produce a complete newsletter.
 - **[Short-Form Video Production](../../systems/content-synthesis/contracts/production/short-video/CONTEXT.md)** — Produce platform-native short video.
@@ -33,11 +33,11 @@ Turn useful ideas, research, proof, and source material into content made for th
 - **[AI Avatar Video Production](../../systems/content-synthesis/contracts/production/avatar-video/CONTEXT.md)** — Produce an authorized AI-avatar video.
 - **[Customer Case Study](../../systems/content-synthesis/contracts/production/case-study/CONTEXT.md)** — Produce a verified customer case study.
 - **[Demonstration Asset Production](../../systems/content-synthesis/contracts/production/demo/CONTEXT.md)** — Produce a credible demonstration.
-- **[Publish or Schedule Content Asset](../../systems/content-synthesis/contracts/publishing/publish-asset/CONTEXT.md)** — Publish an approved content Asset and verify it.
+- **[Publish or Schedule Content Asset](../../systems/content-synthesis/contracts/publishing/publish-asset/CONTEXT.md)** — Publish or schedule the requested content Asset through the active host and verify the resulting external state when practical.
 
 ## More detailed playbooks
 
-These are smaller, specific playbooks AURA can use inside the larger jobs above. The names are kept simple here; open the linked contract or ask AURA to explain one if you want the exact steps.
+These are smaller, specific playbooks whose knowledge may help inside the larger jobs above. The names are kept simple here; open the linked contract or ask the AI to explain one if you want the exact method.
 
 ### Adaptation
 
@@ -79,7 +79,6 @@ These are smaller, specific playbooks AURA can use inside the larger jobs above.
 ### Intake and briefs
 
 - [Content Brief](../../systems/content-synthesis/contracts/intake/content-brief/CONTEXT.md) *(main entry playbook)*
-- [Content Work Request Intake](../../systems/content-synthesis/contracts/intake/work-request/CONTEXT.md)
 
 ### Intelligence and research
 
@@ -144,8 +143,8 @@ These are smaller, specific playbooks AURA can use inside the larger jobs above.
 
 ## Want to see exactly how one works?
 
-Ask AURA something like:
+Ask the AI something like:
 
-> “Show me the exact steps for Platform-Native Adaptation, including what it reads, what it saves, and how it knows when it is done.”
+> “Show me the exact method for Platform-Native Adaptation, including what it reads, what it may save, and the important quality checks.”
 
 The linked contract is the authoritative version. This page is only a simpler map for people.
