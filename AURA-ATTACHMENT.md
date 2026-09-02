@@ -1,18 +1,47 @@
 # AURA Attachment Contract
 
-AURA can be useful even when the active AI starts outside the AURA product or organization workspace.
+AURA can be useful even when the active AI starts outside the AURA product folder or organization workspace.
 
-The goal is **once-only awareness, then relevance-based retrieval**. AURA should not require a daemon, scheduler, background watcher, proprietary plugin, or mandatory MCP server.
+The goal is:
 
-## Harness contract
+**attach once → recognize relevant organization work → retrieve little → work normally → remember what matters**
 
-A harness may attach AURA through any native persistent mechanism it already supports: global instructions, a Skill, an MCP/tool description, an agent profile, workspace configuration, or another equivalent mechanism.
+AURA does not require a daemon, scheduler, background watcher, proprietary plugin, or mandatory MCP server.
 
-The attachment should communicate only this durable contract:
+## Awareness and access are different
 
-> ViralTrac AURA is available at `<AURA_ROOT>`. For substantive work on behalf of an organization managed by AURA, identify the relevant organization, retrieve only the organizational memory and operating knowledge that can materially improve the current work, use the active model/harness capabilities normally, and preserve durable organizational meaning afterward when useful. Ignore AURA for unrelated work. AURA does not own semantic intent, tool/provider selection, permissions, orchestration, scheduling, or execution.
+Two conditions are needed for the normal experience:
 
-That contract is intentionally small. The harness remains responsible for how it exposes files/tools and how the active model reasons and executes.
+1. **Awareness** — the model knows AURA exists, when it is relevant, and the small rules for using it.
+2. **Access** — the harness can actually read/write the AURA product and organization workspace through its permitted file/connector mechanism.
+
+An instruction or Skill cannot bypass filesystem permissions. File access alone also does not guarantee the model knows when AURA should be consulted.
+
+## Preferred adapter: the included Agent Skill
+
+AURA ships a portable Skill at:
+
+```text
+skills/viraltrac-aura/SKILL.md
+```
+
+When the active harness supports Agent Skills, install/copy that Skill using the harness's normal personal/global Skill mechanism. The Skill is intentionally small and progressively points the model toward AURA memory, Playbooks, and Workflows only when relevant.
+
+Do not turn every AURA Workflow into a separate required Skill. The AURA Skill is the attachment/discovery adapter; AURA operating knowledge remains organization-owned/product-owned knowledge that can coexist with any other Skills the user has installed.
+
+## Other valid native adapters
+
+When Skills are unavailable or another host-native mechanism is simpler, attach AURA through:
+
+- persistent/global instructions;
+- an agent profile;
+- workspace configuration;
+- an MCP/tool description or connector;
+- another equivalent persistent mechanism.
+
+The adapter should communicate only the small durable contract below and give the model a way to reach AURA files/helpers.
+
+> ViralTrac AURA is available at `<AURA_ROOT>`. For substantive work for an AURA-managed organization, consult relevant AURA organizational memory and operating knowledge when it can materially improve the work. Use your normal tools, other Skills, and best judgment freely. After useful work, preserve the smallest durable organizational meaning that will materially help future work. Ignore AURA for unrelated work.
 
 ## Normal flow
 
@@ -21,18 +50,50 @@ user request anywhere
         ↓
 model recognizes organization-relevant work
         ↓
-AURA organization directory
+resolve the intended AURA-managed organization
         ↓
-resolve exactly one organization
+retrieve bounded useful memory
         ↓
-retrieve bounded relevant memory / optional SOP knowledge
+surface a relevant Playbook / Workflows when useful
         ↓
-model works with normal harness capabilities
+model uses normal host tools + other Skills + judgment
         ↓
-persist only durable organizational meaning
+actual work
+        ↓
+preserve durable organizational meaning when useful
 ```
 
-If several organizations are plausible, the model should use the organization directory and current conversation context to resolve the intended one. If ambiguity would materially change the work, ask the user. AURA must not guess across organizations.
+If several managed organizations are plausible and the choice would materially change the work, ask rather than guessing.
+
+## Playbooks and Workflows
+
+A Playbook is an end-to-end business job. A Workflow is a reusable procedure inside or alongside a Playbook. A step is the minimum procedural guidance inside a Workflow.
+
+Attachment does not require the model to use AURA operating knowledge. It makes that knowledge discoverable. The model may use:
+
+- an AURA Playbook/Workflow;
+- another installed Skill;
+- both;
+- another sound method.
+
+The outcome, truth standard, evidence, and useful organizational continuity matter more than conformance to one implementation.
+
+## Thin adapter operations
+
+A host adapter only needs enough surface to let the model do things such as:
+
+- list/resolve managed organizations;
+- retrieve bounded organizational context;
+- discover AURA Playbooks and Workflows;
+- read selected operating knowledge;
+- persist/update/forget durable organization-owned meaning;
+- validate AURA-owned state.
+
+The adapter should call AURA-owned files/helpers rather than reimplementing AURA semantics.
+
+## Working directly inside AURA
+
+Harnesses that automatically read `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, or equivalent project instructions may already receive the local AURA contract when they enter the folder. The persistent/global attachment matters most when work starts somewhere else.
 
 ## What attachment must not become
 
@@ -41,35 +102,13 @@ Attachment is not:
 - an AURA orchestration runtime;
 - a semantic intent router;
 - a permission or approval layer;
-- a provider/tool registry;
-- a scheduler or background monitoring daemon;
-- a requirement to load AURA context for unrelated work;
-- a requirement to start a Run before reasoning or persistence.
+- a tool/provider registry;
+- a scheduler or monitoring daemon;
+- a requirement to load AURA for unrelated work;
+- a requirement to create a Run before reasoning or persistence.
 
-MCP can be a useful adapter when a harness already uses MCP, but MCP is not part of AURA's core architecture. The same AURA-owned primitives should remain usable through ordinary files and command-line helpers.
-
-## Portable examples
-
-### Global instruction / agent profile
-
-Store the harness contract above in the harness's persistent instruction mechanism and replace `<AURA_ROOT>` with the local AURA product path.
-
-### Skill or tool adapter
-
-Expose only thin operations such as:
-
-- list managed organizations;
-- retrieve bounded organizational context;
-- discover relevant AURA operating knowledge;
-- persist/update/retire durable organization-owned meaning;
-- validate organization state.
-
-The adapter should call AURA-owned filesystem/helpers rather than reimplement AURA semantics.
-
-### Working directly inside AURA
-
-Harnesses that automatically read `AGENTS.md`, `CLAUDE.md`, or `GEMINI.md` already receive the local adapter when they enter the AURA folder. The attachment contract matters most when the active work starts elsewhere.
+MCP can be a useful adapter when that is how the harness naturally accesses local/remote resources, but it is not a mandatory AURA architecture layer.
 
 ## Invariant
 
-**Attach once → retrieve only when relevant → let the capable model work → remember what matters.**
+**Attach once → retrieve only when relevant → let capable intelligence work → remember what matters.**
