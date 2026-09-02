@@ -11,13 +11,12 @@ from validate_research_evidence import DIRECT_ACQUISITION_METHODS,DISCOVERY_ONLY
 
 def fail(msg): raise AssertionError(msg)
 
-
 def contract(cid):
     for p in ROOT.rglob('CONTEXT.md'):
         if '/contracts/' not in p.as_posix(): continue
         meta,body=read_frontmatter(p)
         if meta.get('id')==cid:return p,meta,body
-    fail(f'missing contract {cid}')
+    fail(f'missing Workflow {cid}')
 
 
 def main():
@@ -46,16 +45,15 @@ def main():
     if any(field in required for field in ['subject_key','subject_name','subject_kind','source_modalities','monitoring_questions','monitoring_cadence','monitoring_signal_cadences','monitoring_notification']):
         fail('new subject/watch enrichment must remain optional for backward compatibility')
     rels=set(props['subject_relationships']['items']['enum'])
-    if {'customer','prospect'} & rels:
-        fail('shared public subject monitoring must not become a customer/prospect surveillance relationship model')
+    if {'customer','prospect'} & rels:fail('shared public subject monitoring must not become a customer/prospect surveillance relationship model')
 
     helper=(ROOT/'scripts/upsert_source_profile.py').read_text()
     for flag in ['--subject-key','--subject-name','--subject-kind','--subject-relationship','--source-modality','--monitoring-question','--material-change-signal','--cadence-mode','--cadence-expression','--cadence-source','--signal-cadence-json','--notification-mode']:
         if flag not in helper:fail(f'SourceProfile helper missing {flag}')
-    if 'Source history changes discovery attention only' not in helper:
-        fail('existing SourceProfile discovery-only invariant was lost')
+    if 'Source history changes discovery attention only' not in helper:fail('existing SourceProfile discovery-only invariant was lost')
 
     _,subject_meta,subject_body=contract('core.intelligence.subject-monitoring')
+    if subject_meta.get('type')!='workflow':fail('subject monitoring must be represented as a Workflow')
     for phrase in [
         'one SourceProfile per source/surface','shared `subject_key`','text, documents, images, audio, video, transcripts',
         'Cadence and `next_check_at` are organizational monitoring intent','never proof that a background task exists',
@@ -63,17 +61,14 @@ def main():
         'let the current harness/runtime create the real schedule separately',
     ]:
         if phrase not in subject_body:fail(f'subject monitoring missing behavior: {phrase}')
-    if 'core.intelligence.ecosystem.maintain-source-profile' not in (subject_meta.get('subcontracts') or {}).get('required',[]):
-        fail('subject monitoring must reuse shared SourceProfile mechanics')
+    if 'core.intelligence.ecosystem.maintain-source-profile' not in (subject_meta.get('workflows') or {}).get('required',[]):
+        fail('subject monitoring must reuse shared SourceProfile Workflow knowledge')
 
-    # Natural-language semantic intent belongs to the active model/user. Core should expose
-    # useful monitoring/playbook knowledge without retaining a semantic resolver service.
-    if (ROOT/'core/contracts/routing/resolve-intent').exists():
-        fail('retired semantic intent resolver still exists in Core')
-    core_map=json.loads((ROOT/'core/process-map.json').read_text())
-    activities=core_map.get('activities',[]);entry_ids=[a.get('entry_contract') for a in activities]
-    if any(a.get('id')=='resolve-intent' or a.get('entry_contract')=='core.routing.resolve-intent' for a in activities):
-        fail('Core process map reintroduced semantic intent routing')
+    # Semantic intent belongs to the active model/user. Core may expose useful operating
+    # knowledge without retaining a semantic resolver service.
+    if (ROOT/'core/contracts/routing/resolve-intent').exists():fail('retired semantic intent resolver still exists in Core')
+    core_map=json.loads((ROOT/'core/process-map.json').read_text());activities=core_map.get('activities',[]);entry_ids=[a.get('entry_contract') for a in activities]
+    if any(a.get('id')=='resolve-intent' or a.get('entry_contract')=='core.routing.resolve-intent' for a in activities):fail('Core process map reintroduced semantic intent routing')
     if 'core.intelligence.subject-monitoring' not in entry_ids:fail('Core process map missing durable subject monitoring')
     if 'core.monitoring.status' not in entry_ids:fail('Core process map missing human monitoring status view')
 
@@ -91,11 +86,10 @@ def main():
 
     _,value_meta,value_body=contract('customer-optimization.measurement.customer-value')
     for phrase in ['customer ROI/value realization','LTV','cost-to-serve','high spend alone','risk likelihood','value-at-risk']:
-        if phrase not in value_body:fail(f'customer-value contract missing {phrase}')
+        if phrase not in value_body:fail(f'customer-value Workflow missing {phrase}')
     if value_meta.get('owner_system')!='customer-optimization':fail('customer-value semantic owner changed')
     co_map=json.loads((ROOT/'systems/customer-optimization/process-map.json').read_text())
-    if 'customer-optimization.measurement.customer-value' not in [a.get('entry_contract') for a in co_map.get('activities',[])]:
-        fail('Customer Optimization process map missing customer-value analysis')
+    if 'customer-optimization.measurement.customer-value' not in [a.get('entry_contract') for a in co_map.get('activities',[])]:fail('Customer Optimization process map missing customer-value analysis')
 
     source_profile={
         'id':'sprof_demo','object_type':'SourceProfile','subject_name':'Example Creator','subject_kind':'creator',
