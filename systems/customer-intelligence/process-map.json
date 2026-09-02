@@ -5,11 +5,7 @@
       "id": "customer-research",
       "entry_workflow": "customer.research.plan",
       "result": "Resolve a customer knowledge need with evidence sufficient for the decision.",
-      "supporting_workflows": [
-        "customer.research.source-prioritization",
-        "customer.research.sample-design",
-        "customer.research.evidence-coverage"
-      ]
+      "supporting_workflows": []
     },
     {
       "id": "ecosystem-radar",
