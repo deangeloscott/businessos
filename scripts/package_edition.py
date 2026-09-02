@@ -46,9 +46,9 @@ def _copy_interface_schemas(dest):
         try:source_by_title[json.loads(sp.read_text()).get('title')]=sp
         except Exception:pass
     needed=set()
-    for cp in dest.rglob('CONTEXT.md'):
-        if '/contracts/' not in cp.as_posix():continue
-        meta,_=read_frontmatter(cp)
+    for wp in dest.rglob('CONTEXT.md'):
+        if '/workflows/' not in wp.as_posix():continue
+        meta,_=read_frontmatter(wp)
         for sel in meta.get('reads',[]):needed.add(selector_type(sel))
         for typ in meta.get('writes',[]):needed.add(selector_type(typ))
     for typ in sorted(needed):
@@ -67,13 +67,13 @@ def _write_navigation(dest,edition_id,display_name,modules):
         mp=dest/'systems'/mid/'process-map.json';lines += [f"## {cat[mid]['display_name']}",'',cat[mid]['description'],'','| Workflow | Result | Workflow ID |','|---|---|---|']
         if mp.exists():
             d=json.loads(mp.read_text())
-            for a in d.get('activities',[]):lines.append(f"| {a['id'].replace('-',' ').title()} | {a.get('result','')} | `{a['entry_contract']}` |")
+            for a in d.get('activities',[]):lines.append(f"| {a['id'].replace('-',' ').title()} | {a.get('result','')} | `{a['entry_workflow']}` |")
         lines.append('')
     lines += ['## Core','','Core supplies organization-owned context, evidence/provenance, decisions, optional continuity, measurement, Learning, reusable operating knowledge, and workspace integrity. It does not define a provider/tool vocabulary or execution runtime.','']
     cp=dest/'core/process-map.json'
     if cp.exists():
         lines += ['| Workflow | Result | Workflow ID |','|---|---|---|'];d=json.loads(cp.read_text())
-        for a in d.get('activities',[]):lines.append(f"| {a['id'].replace('-',' ').title()} | {a.get('result','')} | `{a['entry_contract']}` |")
+        for a in d.get('activities',[]):lines.append(f"| {a['id'].replace('-',' ').title()} | {a.get('result','')} | `{a['entry_workflow']}` |")
         lines.append('')
     (dest/'TASK-NAVIGATOR.md').write_text('\n'.join(lines))
 def _write_distribution_test(dest):
