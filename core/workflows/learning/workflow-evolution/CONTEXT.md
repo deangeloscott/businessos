@@ -8,37 +8,38 @@ reads:
 - Insight
 - ProcessExtension
 writes:
-- WorkflowEvolutionProposal
+- ProcessExtension
 ---
-# Playbook Evolution and System Improvement
+# Workflow Evolution and Local Operating Knowledge
 
 ## Purpose
-Turn sufficiently strong reusable Learning into the narrowest justified operating-knowledge improvement without converting one successful result into universal AURA behavior.
+Turn sufficiently strong reusable Learning into the narrowest useful organization-owned operating knowledge without converting one successful result into universal AURA behavior.
 
 ## Business Outcome
-Let the organization improve how future AI/humans work while keeping AURA portable, model/harness-neutral, evidence-linked, and easy to revise.
+Let future AI/humans benefit from what the organization has learned while keeping that knowledge optional, evidence-linked, portable, model/harness-neutral, and easy to revise.
 
 ## Run When
-Use when evidence-supported Learning appears reusable, the user/model intentionally wants to preserve a successful method, or outside/community evidence suggests an improvement worth evaluating.
+Use when evidence-supported Learning appears reusable and preserving a method would materially improve future organizational work.
 
 ## Do Not Run When
-Do not formalize a method because a result is merely interesting, stylistically preferred, weakly correlated, or unsupported outside its observed scope.
+Do not formalize a method because a result is merely interesting, stylistically preferred, weakly correlated, or unsupported outside its observed scope. Do not create another process object when the existing Learning is already sufficient guidance.
 
 ## Process
-1. [AI] Load the candidate Learning, material OutcomeEvaluations/Insights, contradictory evidence, and overlapping ProcessExtensions.
-2. [HYBRID] Choose the narrowest useful result: keep the existing Learning as sufficient guidance, augment an existing AURA playbook, create a local playbook, or create a domain/system `canonical_revision` candidate.
-3. [AI] State the reusable mechanism conditionally with `applies_when`, `does_not_apply_when`, uncertainty, negative cases, and re-evaluation triggers.
-4. [HYBRID] For a process change, keep only valuable operating knowledge: the tools or resources appropriate to the work, relevant reads/writes, instructions, quality/verification criteria, and useful discovery terms for a new local playbook.
-5. [DETERMINISTIC] Persist a schema-valid WorkflowEvolutionProposal through `scripts/persist_workflow_evolution.py`; ordinary organization work does not edit AURA product source.
-6. [HYBRID] If the organization intentionally chooses a business-scoped proposal, adopt it through `core.learning.adopt-process-extension`. The adoption action is the choice; no separate Approval/autonomy/risk/runtime gate exists.
-7. [HYBRID] Keep `canonical_revision` proposals as product-development candidates. Canonical AURA changes require deliberate source changes plus registry/validation/quality work before release.
+1. [AI] Load the relevant Learning, material OutcomeEvaluations/Insights, contradictory evidence, and overlapping ProcessExtensions.
+2. [AI] Decide whether reusable procedural knowledge would actually help future work. The valid result may simply be to keep the Learning as-is.
+3. [AI] If useful, choose the narrowest organization-local form: augment an installed Workflow or create a local Workflow. State `applies_when`, `does_not_apply_when`, uncertainty/negative cases, useful instructions, and meaningful verification criteria without prescribing tools or orchestration unnecessarily.
+4. [AI] Keep scope no broader than the evidence. Reads/writes describe organization-owned information the method may use or produce; they are not permissions, routing rules, or execution gates.
+5. [DETERMINISTIC] Persist the local knowledge directly as a schema-valid `ProcessExtension` through `scripts/persist_process_extension.py` with `source_kind: learning_evolved`, the supporting `source_learning_refs`, and relevant evidence/provenance. No proposal/adoption lifecycle is required.
+6. [HYBRID] If the improvement belongs in canonical AURA rather than organization-local knowledge, treat it as explicit AURA product-development work. Ordinary organizational work must not silently mutate canonical product source.
+7. [AI] Future models may use, adapt, ignore, deactivate, or supersede the ProcessExtension according to the actual request, evidence, organization instructions, and better available methods. Stored local knowledge is context, not semantic authority.
 
 ## Verification
-- Proposal scope is no broader than its evidence.
+- The preserved knowledge materially improves future work beyond the existing Learning alone.
+- Scope is no broader than the supporting evidence.
 - Supporting and contradictory evidence remain traceable.
-- Capability needs are provider-neutral.
-- The proposal does not encode host/provider/runtime state or generic authority semantics.
+- Instructions preserve useful expertise without encoding provider/runtime state or unnecessary implementation detail.
+- Reads/writes remain descriptive organizational semantics, not permissions or routing authority.
 - No canonical AURA product file was silently mutated.
 
 ## Completion Criteria
-A useful WorkflowEvolutionProposal exists, or the existing Learning remains the appropriate reusable guidance because formalizing another process artifact would not improve future organizational work.
+Either the existing Learning remains sufficient, or a useful evidence-linked ProcessExtension exists as optional organization-owned operating knowledge. No intermediate proposal, approval, or adoption object is required.
