@@ -15,8 +15,8 @@
     "process":{"type":"object","additionalProperties":false,"properties":{
       "mode":{"enum":["augment_workflow","local_workflow"]},
       "owner_system":{"type":"string","minLength":1},
-      "target_contract_id":{"type":["string","null"]},
-      "local_contract_id":{"type":["string","null"]},
+      "target_workflow_id":{"type":["string","null"]},
+      "local_workflow_id":{"type":["string","null"]},
       "title":{"type":"string","minLength":1},
       "purpose":{"type":"string","minLength":1},
       "discovery_terms":{"type":"array","items":{"type":"string"},"uniqueItems":true},
@@ -27,7 +27,7 @@
       "instructions":{"type":"array","items":{"type":"string"},"minItems":1},
       "verification":{"type":"array","items":{"type":"string"},"minItems":1},
       "compatibility":{"type":"object","additionalProperties":false,"properties":{"aura_min":{"type":["string","null"]},"aura_max":{"type":["string","null"]}},"required":["aura_min","aura_max"]}
-    },"required":["mode","owner_system","target_contract_id","local_contract_id","title","purpose","discovery_terms","reads","writes","applies_when","does_not_apply_when","instructions","verification","compatibility"]},
+    },"required":["mode","owner_system","target_workflow_id","local_workflow_id","title","purpose","discovery_terms","reads","writes","applies_when","does_not_apply_when","instructions","verification","compatibility"]},
     "evidence_summary":{"type":["object","null"]},
     "case_study":{"type":["object","null"]},
     "privacy":{"type":"object","additionalProperties":false,"properties":{"raw_private_state_included":{"const":false},"secrets_included":{"const":false},"source_business_identity_included":{"type":"boolean"},"user_approved_export":{"type":"boolean"},"approved_at":{"type":["string","null"]}},"required":["raw_private_state_included","secrets_included","source_business_identity_included","user_approved_export","approved_at"]},
