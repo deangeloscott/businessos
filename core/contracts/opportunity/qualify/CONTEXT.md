@@ -46,7 +46,7 @@ Do not create an Opportunity for delegated production work, transient ideas with
 - Opportunity state does not create execution authority.
 
 ## Failure / Fallback
-- If evidence is insufficient to qualify the intervention responsibly, preserve the unresolved evidence need or keep the Opportunity at the narrowest supported state instead of manufacturing a Manual Action Packet or false precision.
+- If evidence is insufficient to qualify the intervention responsibly, preserve the unresolved evidence need or keep the Opportunity at the narrowest supported state instead of manufacturing internal fallback workflow state or false precision.
 
 ## Completion Criteria
 - The Opportunity provides a useful, evidence-calibrated basis for future comparison or action without pretending that qualification itself is a decision to execute.
