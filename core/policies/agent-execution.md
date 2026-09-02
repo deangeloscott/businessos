@@ -1,72 +1,103 @@
 # Agent Work Policy
 
-AURA supports organizational work with durable memory and reusable operational knowledge. It is not the active model, harness, semantic intent engine, permission system, scheduler, universal orchestrator, or business decision-maker.
+AURA supports organizational work with durable memory and reusable operating knowledge. It is not the active model, harness, semantic intent engine, permission system, scheduler, universal orchestrator, tool/provider registry, or business decision-maker.
 
 ## Core operating loop
 
 1. **Preserve the request.** Keep the user's complete requested outcome and actual action boundary intact.
 2. **Resolve the organization.** For organization-specific work, operate against exactly one active `business_id`.
-3. **Retrieve relevant durable context.** Reuse current business facts, evidence, preferences/instructions, prior decisions, assets/results, unresolved work, outcomes, and Learning before repeating questions or research.
-4. **Choose the best method with model/user judgment.** AURA may surface bounded candidate playbooks or organization-local SOPs. Candidates are retrieval hints, not semantic authority. The model/user may select one, use an external Skill, create another method, or work ad hoc. Do not force work into an AURA contract merely to make it recordable.
-5. **Use the host normally.** The active harness owns its actual tools, models, subagents, concurrency, permissions, retries, scheduling, and live capability discovery. AURA may describe provider-neutral capability needs for an AURA playbook but must not override live host truth.
-6. **Do the real work.** Produce the useful business result the user requested. Do not substitute bookkeeping, setup, routing, or schema creation for the substantive work.
-7. **Persist material organizational meaning.** Save only durable facts/evidence, meaningful decisions, reusable instructions/preferences, material assets/results, real handoffs, unresolved work, outcomes, and evidence-supported Learning that future organizational work would materially benefit from.
-8. **Validate what AURA owns.** Persisted state must be schema-valid, reference-valid, provenance-aware, epistemically honest, and isolated to the correct organization. Apply relevant artifact/evidence/QA checks because they protect the actual work—not because a Run or contract ledger demands them.
-9. **Continue from memory.** Future models should be able to understand what materially happened without needing the original conversation, hidden reasoning, or runtime logs.
+3. **Retrieve little.** Reuse only current business facts, evidence, preferences/instructions, prior decisions, Assets/results, unresolved work, outcomes, and Learning that can materially improve the current job.
+4. **Use operating knowledge when helpful.** AURA may surface a high-level Playbook and detailed Workflows. Candidates are navigation help, not semantic authority.
+5. **Choose the best method with model/user judgment.** Use an AURA Playbook/Workflow, combine it with other Skills, use another Skill or method, or work ad hoc. Sequence or parallelize according to real dependencies.
+6. **Use the host normally.** The active harness owns its actual tools, models, providers, connectors, APIs, browsers, files, subagents, concurrency, permissions, retries, rendering, scheduling, and execution.
+7. **Do the real work.** Produce the useful business result the user requested. Do not substitute bookkeeping, setup, routing, or schema creation for substantive work.
+8. **Persist only material organizational meaning.** Save durable facts/evidence, decisions, reusable instructions/preferences, useful Assets/results, real handoffs, unresolved work, outcomes, and evidence-supported Learning when future work will benefit.
+9. **Validate what AURA owns.** Persisted state must be schema-valid, reference-valid, provenance-aware, epistemically honest, and isolated to the correct organization.
+10. **Continue from memory.** Future models should be able to understand what materially happened without needing the original conversation, hidden reasoning, or runtime logs.
+
+## Minimum sufficient guidance
+
+AURA uses:
+
+**Playbook → Workflow → Step**
+
+- **Playbook** — a meaningful end-to-end business job.
+- **Workflow** — a reusable procedure that helps accomplish part of a Playbook and may also be useful independently.
+- **Step** — the minimum procedural guidance needed to make the Workflow reliably useful.
+
+Specify a Step when it materially protects truth, evidence, scope, non-obvious expertise, quality, or repeatability. Do not prescribe incidental implementation details merely because they can be written down.
+
+AURA should give capable intelligence the **fewest inputs necessary to repeatedly achieve the intended outcome at the required truth and quality standard**.
+
+The model/harness may adapt implementation, use better tools/resources, combine Workflows, use other Skills, or choose another sound method when that better serves the outcome.
+
+## Tools and Skills
+
+AURA does **not** define a universal capability vocabulary, provider registry, or tool allowlist.
+
+Describe what the work requires in natural language. The active model/harness determines how to accomplish it with the real resources available now.
+
+Examples:
+
+- “Research current competitor websites, relevant review sites, social/public conversations, advertising evidence, news, and other sources that materially answer the question.”
+- “Inspect the actual final presentation for readability, factual fidelity, visual hierarchy, and accessibility.”
+
+Those statements describe the work. They do not require functions with particular AURA-created names.
+
+External/user-installed Skills are first-class options. AURA operating knowledge may complement them, be complemented by them, or be replaced by a better Skill/method for the task.
 
 ## Persistence boundary
 
 Before writing durable AURA state, ask:
 
-> Would a capable future model working for this organization materially benefit from knowing this after the current session/runtime is gone?
+> Would a capable future model working for this organization materially benefit from knowing or reusing this after the current session is gone?
 
 Persist when the answer is materially yes. Do **not** persist merely because a schema exists.
 
 Do not store as organizational memory:
+
 - hidden chain-of-thought or scratch reasoning;
 - full chats/transcripts merely for completeness;
 - routine tool calls, retries, temporary calculations, or subagent chatter;
-- transient host capability state;
+- transient host/tool availability;
 - arbitrary execution logs that carry no durable organizational meaning.
 
-Use `scripts/remember.py` for ordinary durable canonical create/update operations. Use a specialized helper only where that object has genuinely special evidence, identity, or state semantics, such as research evidence, preferences, attention, or platform-change history.
+Use `scripts/remember.py` for ordinary durable canonical create/update operations. Use a specialized helper only where genuinely special evidence, identity, or state semantics warrant one.
 
-A bounded Run/work receipt is useful when continuity, method provenance, or later understanding benefits from one. It is not required before ordinary reasoning begins or merely to remember organizational meaning. Canonical results are persisted normally and stand on their own; if a receipt is useful, `scripts/complete_run.py` may reference those already-valid results without adding Run fields back onto them.
+Useful real deliverables should remain in an appropriate durable file/repository/system and be remembered as an `Asset` with the identity/reference/provenance/status future work actually needs. Do not automatically ingest every transient file.
 
-## Method provenance
+## Method provenance and optional Runs
 
-A Run, when useful, identifies the method actually used:
+A Run/work receipt is useful only when bounded continuity or method provenance materially helps later work. It is not required before reasoning, persistence, Asset creation, publication, or validation.
+
+When a receipt is useful, record the method truthfully:
+
 - `aura_playbook`
+- `aura_workflow`
 - `external_skill`
 - `model_created`
 - `ad_hoc`
 
-Every method uses the same optional receipt primitive. An AURA playbook ID records which reusable AURA method informed the work; it does **not** create a contract-execution manifest, subcontract ledger, permission state, execution hierarchy, or special completion regime. External Skill, model-created, and ad-hoc work may create the same legitimate organizational results without fabricated contract IDs.
+A Playbook/Workflow reference records what materially informed the work. It does **not** create an execution graph, conformance regime, permission state, special completion lifecycle, or stronger truth claim.
 
-Method provenance belongs in the optional receipt when preserving it materially improves continuity. Canonical organizational facts/results should not be coupled to a Run merely to record which runtime path produced them. Their own source/evidence/lineage semantics remain authoritative.
+Canonical organizational facts/results stand independently. A receipt may point to them; they should not need Run backlinks merely to exist.
 
-The model supplies substantive business meaning. Deterministic AURA helpers may supply mechanical IDs, timestamps, storage paths, local-reference resolution, schema checks, reference/isolation checks, and safe transactional writes.
+## Organization-specific reusable methods
 
-## AURA playbooks
+A `ProcessExtension` is organization-owned reusable Workflow knowledge. It may augment an installed Workflow or define a local Workflow.
 
-A contract ID identifies reusable AURA operating knowledge, not an executable program, internal service, or authority over the active model/runtime.
+An explicitly supplied organization SOP may be saved directly as organization-authored Workflow knowledge without fabricating Learning first.
 
-When AURA playbook knowledge is useful:
-- load only the relevant playbook/context;
-- apply the parts of its process, evidence discipline, and quality invariants that materially define the job;
-- treat declared writes as **possible durable outputs**, not quotas or permissions;
-- treat capability declarations as provider-neutral method needs;
-- use relevant QA/evidence checks because the actual artifact or decision warrants them.
+When evidence-supported Learning suggests a reusable procedure should change, a `WorkflowEvolutionProposal` may capture the bounded evidence-backed candidate before intentional adoption.
 
-The model/user may adapt incidental implementation details or choose another sound method. Record method provenance honestly only when a receipt is worth preserving; do not create paperwork merely to prove that a playbook ran.
-
-Organization-local `ProcessExtension` playbooks are the organization's own reusable operating knowledge. They are not preferences or notes, and they do not become AURA product-wide source. Explicitly supplied organization SOPs and evidence-supported Learning may both become ProcessExtensions with truthful provenance. AURA may surface them as candidates; the model/user decides semantic applicability.
+Neither construct is execution authority, provider configuration, or automatic self-modification.
 
 ## Truth and evidence
 
 Follow `core/policies/active-business-truth.md`, `core/policies/evidence.md`, `core/policies/provenance.md`, and `core/policies/context-provenance-and-claims.md` where applicable.
 
 Keep distinct:
+
 - explicit user/first-party facts;
 - verified first-party facts;
 - external evidence;
@@ -74,9 +105,11 @@ Keep distinct:
 - candidate strategy/hypothesis;
 - unknown.
 
-Never invent prices, performance, service areas, offers, promises, metrics, audiences, outcomes, tool actions, permissions, or other business facts to make an artifact look complete. `not supplied` / `not found` is not proof of absence.
+**Unknown/not-found is not absent.**
 
-For ordinary organization context, deterministic AURA verifies provenance/reference integrity rather than trying to decide semantic equivalence with keyword or token rules. The capable model interprets meaning. Strong literal support remains appropriate where exact wording materially matters, especially outward-facing BusinessClaims.
+Never invent prices, performance, service areas, offers, promises, metrics, audiences, outcomes, tool actions, permissions, or other business facts to make an artifact look complete.
+
+The capable model interprets semantic meaning and evidence sufficiency. Deterministic AURA verifies structural/reference/provenance facts it can actually know. Strong literal support remains appropriate where exact wording materially matters, especially outward-facing claims.
 
 For outward-facing work, do not turn hypotheses, competitor patterns, placeholders, or inferred details into established company claims. Artifact quality, production readiness, publication/deployment, and measured outcome are separate facts.
 
@@ -86,39 +119,40 @@ Respect actual constraints from the user, organization, law, regulation, contrac
 
 AURA does not create generic `Approval` objects, autonomy ceilings, permission tiers, or `ActionPacket` authority gates. Absence of an AURA decision record does not itself forbid action.
 
-The user's requested scope still matters. A request to analyze does not silently become a request to publish or mutate external state; an explicit request to execute should not be blocked by invented internal ceremony when the harness can perform it and no real constraint prevents it.
+The user's requested scope still matters. A request to analyze does not silently become a request to publish or mutate external state; an explicit request to execute should not be blocked by invented AURA ceremony when the harness can perform it and no real constraint prevents it.
 
 ## Handoffs, changes, verification, and attention
 
 Create durable coordination/state only when it has future organizational value:
+
 - `WorkRequest` for a real handoff worth remembering;
 - `AttentionItem` for a material condition worth future awareness;
 - `ChangeEvent` when remembering a material change will help later work;
-- `VerificationRecord` when verification itself is materially useful for the task, consequence, or future understanding.
+- `VerificationRecord` when verification itself is materially useful.
 
-Do not mirror every subagent call, tool invocation, deployment step, conceptual playbook component, or runtime event into AURA canonical state.
+Do not mirror every subagent call, tool invocation, deployment step, conceptual Workflow component, or runtime event into AURA canonical state.
 
-Verification is not a universal ceremony. Use it where the actual work or consequence warrants it.
+Verification is not universal ceremony. Use it where the actual work or consequence warrants it.
 
-## Monitoring and capabilities
+## Monitoring
 
-AURA may remember monitoring intent: what to watch, why it matters, materiality criteria, cadence intent, last meaningful state, and findings. The host/runtime owns actual schedules, polling, retries, event processing, notification delivery, and scheduler truth.
+AURA may remember monitoring intent: what to watch, why it matters, materiality criteria, cadence intent, last meaningful state, notification intent, and findings.
 
-Likewise, AURA playbooks may declare provider-neutral capabilities. The host/runtime resolves actual tools/providers and live availability. Environment caches/bindings are execution aids, not durable business truth and not universal AURA policy.
+The host/runtime owns actual schedules, polling, retries, wakeups, webhooks, event processing, notification delivery, and scheduler truth. Saving `next_check_at` or cadence intent does not prove automation exists.
 
 ## Product integrity
 
-During ordinary organizational operation, do not modify AURA product source (`core/`, `systems/`, `scripts/`, schemas, tests, registries, manifests) to work around an execution problem. Product changes are appropriate only when the request itself concerns developing, repairing, configuring, or upgrading AURA.
+During ordinary organizational operation, do not modify AURA product source (`core/`, `systems/`, `scripts/`, schemas, tests, registries, manifests) to work around an execution problem. Product changes are appropriate only when the request itself concerns developing, repairing, configuring, migrating, or upgrading AURA.
 
 ## Completion
 
-Judge the work by whether the requested useful result was actually produced at the appropriate quality and truth standard. Judge AURA-owned state separately by whether what was persisted is truthful, structurally sound, well-referenced, and useful later.
+Judge the work by whether the requested useful result was actually produced at the appropriate quality and truth standard. Judge AURA-owned state separately by whether what was persisted is truthful, structurally sound, well-referenced, organization-isolated, and useful later.
 
-If an optional Run exists, completing it means only that its material continuity receipt was closed. Do not equate Run completion with playbook certification, QA, deployment, customer-facing readiness, authorization, capability availability, business outcome, or causal proof.
+If an optional Run exists, completing it means only that its material continuity receipt was closed. Do not equate Run completion with Playbook/Workflow certification, QA, deployment, customer-facing readiness, authorization, tool availability, business outcome, or causal proof.
 
 The intended experience is:
 
-**identify → retrieve little → work normally → remember what matters → continue**
+**identify → retrieve little → work normally → remember what matters → measure/learn → continue**
 
 not:
 
