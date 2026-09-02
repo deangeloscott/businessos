@@ -26,24 +26,25 @@ updates:
 # First-Party Query Mining
 
 ## Purpose
-Mine actual search/site/customer language for opportunities that generic keyword tools may miss.
+Mine actual search, site, sales, support, and customer language for valuable needs and opportunities that generic keyword tools or model-generated ideas may miss.
 
 ## Business Outcome
-Improve valuable organic discovery through first-party query mining, with a clear SEO/AEO mechanism and connection to the active business Objective.
+Ground organic-demand decisions in what real users are already asking, searching, clicking, converting on, or struggling with so discovery work reflects the organization’s actual market rather than generic keyword assumptions.
 
 ## Run When
-Run during initial or recurring demand research when the system must discover, classify, or update **first-party query mining** evidence.
+Use when consented first-party language or search-performance evidence is available and could reveal materially useful demand, intent, or customer wording.
 
 ## Process
-1. [INTEGRATION] Retrieve search-performance queries, site-search terms, support/sales questions, chat/contact reasons, conversion query paths, and other consented first-party language.
-2. [DETERMINISTIC] Normalize case/punctuation only where meaning is preserved and retain raw text/timestamps.
-3. [AI] Classify brand/nonbrand, topic, intent, audience, awareness stage, market/language, current asset, and conversion/value signals.
-4. [HYBRID] Detect rising/new queries, long-tail clusters, high-impression low-click queries, converting low-volume terms, and queries without a good destination.
-5. [DETERMINISTIC] Join to existing OrganicDemandUnits and create new units for materially distinct needs.
-6. [HYBRID] Prioritize observed business-relevant demand over speculative volume estimates.
+1. [INTEGRATION] Retrieve relevant search-performance queries, site-search terms, support/sales questions, chat/contact reasons, conversion query paths, and other consented first-party language available to the active host.
+2. [HYBRID] Preserve raw wording, timing, source, and important context. Normalize case, punctuation, or variants only where meaning is not lost.
+3. [AI] Interpret brand/nonbrand context, topic, intent, audience, awareness stage, market/language, current destination, and available visibility/conversion/value signals at the depth useful for the decision.
+4. [HYBRID] Look for patterns such as rising or newly appearing needs, long-tail clusters, high-impression low-click demand, converting low-volume terms, recurring customer questions, and demand without a good owned destination.
+5. [AI] Distinguish observed demand from inference. A query appearing in first-party data is strong evidence that someone expressed the need, but volume, intent, and business value still require context.
+6. [HYBRID] Reuse or update existing OrganicDemandUnits when that durable organization-level representation is useful; create new ones only for materially distinct needs rather than every phrase variation.
+7. [AI] Prioritize observed business-relevant demand over speculative volume estimates while still allowing external research or model judgment to add context when it improves the decision.
 
-## Decisions / Routing
-- Route → Competitor Intelligence refresh only when canonical competitor intelligence is missing or stale.
-- Route → Core Opportunity qualification when an SEO intervention is evidence-supported.
-
-
+## Verification
+- Raw first-party evidence remains traceable when material.
+- Query wording, inferred intent, visibility, conversion, and business value remain distinct.
+- Low-volume observed demand may still be highly valuable; high-volume demand is not automatically important.
+- Competitor research, Opportunity creation, or another Workflow is optional and used only when it helps the current work.
