@@ -66,17 +66,20 @@ def smoke_prepare():
 
         # Ordinary staged-product mechanics must resolve the prepared external
         # workspace without requiring the candidate to reconstruct maintainer-only
-        # environment variables.
+        # environment variables. A playbook-linked Run is an optional one-way work
+        # receipt; it must not recreate a subcontract/execution manifest.
         env=dict(os.environ)
         env.pop('BUSINESSOS_WORKSPACE',None)
         env.pop('BUSINESSOS_WORKSPACE_CONFIG',None)
         env['PYTHONDONTWRITEBYTECODE']='1'
         create=subprocess.run([sys.executable,str(product/'scripts/create_run.py'),'atlasops','core.intelligence.ecosystem-radar','external controller smoke'],cwd=product,env=env,capture_output=True,text=True)
-        req(create.returncode==0,f'create_run object-form subcontract smoke failed: {create.stdout}\n{create.stderr}')
-        rid=create.stdout.strip().splitlines()[-1]; manifest=workspace/'runtime/runs/atlasops'/rid/'contract-execution.json'; req(manifest.exists(),'create_run smoke did not persist contract-execution manifest')
-        md=json.loads(manifest.read_text()); required=md.get('required_subcontracts') or []
-        req(required and all(isinstance(x,str) for x in required),'create_run must normalize required subcontract metadata to contract-id strings')
-        req('core.intelligence.ecosystem.source-discovery' in required,'object-form required subcontract id was not normalized into Run manifest')
+        req(create.returncode==0,f'optional create_run smoke failed: {create.stdout}\n{create.stderr}')
+        rid=create.stdout.strip().splitlines()[-1]; run_path=workspace/'runtime/runs/atlasops'/rid/'run.json'; req(run_path.exists(),'create_run smoke did not persist optional work receipt')
+        state=json.loads(run_path.read_text()); continuity=state.get('continuity') or []
+        req(state.get('method_type')=='aura_playbook' and state.get('method_ref')=='core.intelligence.ecosystem-radar' and state.get('contract_id')=='core.intelligence.ecosystem-radar','playbook-linked receipt lost truthful method provenance')
+        req((state.get('continuity') or {}).get('purpose')=='organizational_work_receipt','staged product receipt lost organizational continuity purpose')
+        req(not (workspace/'runtime/runs/atlasops'/rid/'contract-execution.json').exists(),'optional receipt recreated retired contract-execution manifest')
+        req('required_subcontracts' not in state,'optional receipt recreated subcontract execution ledger state')
 
         # Timed evidence is released by maintainer tooling after the external before checkpoint and appears as normal supplied business evidence.
         synthetic={'event_id':'TASK-RELEASE','evaluation_id':'SMOKE-RELEASE','kind':'cross_domain_mission','business_id':'atlasops','fixture':'atlasops-saas','contract_id':None,'task':'Use the new business update to reassess the situation.','release_fixture':'later_period','receipt_path':'evaluator/receipts/TASK-RELEASE.json'}
@@ -234,6 +237,6 @@ def main():
     released=[m for m in suite['cross_domain_missions']+suite['marathon_missions'] if m.get('release_fixture')]
     req(len(released)>=2 and {'CROSS-MARKET-CHANGE-001','MARATHON-002'}.issubset({m['id'] for m in released}),'expected longitudinal evidence-release missions missing')
     smoke_prepare(); composition_prepare_smoke(); mission_prepare_smoke(); judge_prompt_smoke()
-    print(f"qualification framework regressions passed: {suite['contract_count']} contract tests, {suite['capability_count']} capability mappings, durable principles/ledger, targeted composition profile, exact blind mission selection, calibrated professional judge, physically isolated blind candidate staging, external checkpoints/receipts/releases, selected-fixture preparation, and production-like run smoke passed")
+    print(f"qualification framework regressions passed: {suite['contract_count']} contract tests, {suite['capability_count']} capability mappings, durable principles/ledger, targeted composition profile, exact blind mission selection, calibrated professional judge, physically isolated blind candidate staging, external checkpoints/receipts/releases, selected-fixture preparation, and production-like optional receipt smoke passed")
 
 if __name__=='__main__': main()
