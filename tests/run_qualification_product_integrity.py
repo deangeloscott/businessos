@@ -32,11 +32,13 @@ def main():
         diff,mutated=changed(baseline,product_snapshot(product))
         req(not mutated,f'external workspace state was falsely classified as staged product mutation: {diff}')
 
-        protected=product/'core/capabilities/catalog.json';original=protected.read_text()
+        # The portable AURA Skill is product source and therefore protected just like
+        # policies, Workflows, schemas, scripts, and human docs.
+        protected=product/'skills/viraltrac-aura/SKILL.md';original=protected.read_text()
         protected.write_text(original+'\n')
         diff,mutated=changed(baseline,product_snapshot(product))
         req(mutated,'actual staged product mutation was not detected')
-        req('core/capabilities/catalog.json' in diff.get('modified',[]),'protected product path absent from mutation diff')
+        req('skills/viraltrac-aura/SKILL.md' in diff.get('modified',[]),'protected Skill path absent from mutation diff')
         protected.write_text(original)
         diff,mutated=changed(baseline,product_snapshot(product))
         req(not mutated,f'restored staged product remained marked mutated: {diff}')
@@ -49,12 +51,13 @@ def main():
         req(not mutated,f'clean staged product did not return to baseline: {diff}')
 
         retired=[
+            'core/capabilities/catalog.json','docs/adding-a-capability.md',
             'scripts/bootstrap_environment.py','scripts/resolve_capability.py','scripts/preflight_capabilities.py',
             'core/providers/registry.json','core/schemas/runtime/capability-binding.schema.json',
             'core/schemas/runtime/scheduler-bindings.schema.json'
         ]
-        for rel in retired:req(not (product/rel).exists(),f'staged AURA product still ships retired runtime/provider machinery: {rel}')
-        print('qualification product-integrity regression passed: external workspace state allowed, staged product mutation detected, source checkout untouched')
+        for rel in retired:req(not (product/rel).exists(),f'staged AURA product still ships retired runtime/provider/capability machinery: {rel}')
+        print('qualification product-integrity regression passed: external workspace state allowed, staged product mutation detected, retired capability/runtime machinery absent, source checkout untouched')
     finally:
         shutil.rmtree(temp_root,ignore_errors=True)
 
