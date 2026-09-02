@@ -77,7 +77,7 @@ def build_plan(business_id,workflow_id,focus=None,operator_ref=None,team_ref=Non
 
     files=['CONTEXT.md','docs/operating-knowledge.md']
     if owner!='core':_add(files,f'systems/{owner}/DEFAULTS.md')
-    cp=ROOT/match['path'];stop=(ROOT/f'systems/{owner}/contracts') if owner!='core' else (ROOT/'core/workflows');chain=[]
+    cp=ROOT/match['path'];stop=(ROOT/f'systems/{owner}/workflows') if owner!='core' else (ROOT/'core/workflows');chain=[]
     for parent in cp.parents:
         if parent==stop:break
         defaults=parent/'DEFAULTS.md'
