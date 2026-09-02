@@ -50,5 +50,5 @@ Run when a decision requires current strategic change detection and canonical co
 3. [HYBRID] Require multiple aligned signals or one unusually direct authoritative signal before asserting strategic movement.
 4. [AI] Generate alternative explanations and identify evidence that would discriminate them.
 5. [HYBRID] Assess likely affected markets/audiences and potential threat/opportunity.
-6. [DETERMINISTIC] Update strategic_summary only when confidence threshold is met; otherwise maintain a candidate Insight.
-7. [DETERMINISTIC] Emit competitor.insight.updated when material.
+6. [AI] Update the durable strategic summary or preserve a candidate Insight only when the evidence supports that interpretation; keep uncertainty explicit when the signal is not strong enough.
+7. [DETERMINISTIC] Persist the selected Competitor, Observation, and Insight state and validate references. Do not emit an AURA runtime event merely because strategic understanding changed.
