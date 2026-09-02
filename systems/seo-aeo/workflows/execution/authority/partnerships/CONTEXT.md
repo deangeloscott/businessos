@@ -15,20 +15,21 @@ evidence_inputs:
 # Authority Partnerships
 
 ## Purpose
-Use legitimate partner ecosystems to create useful co-marketing, references, integrations, directories, or resources.
+Use legitimate partner ecosystems to create useful co-marketing, references, integrations, directories, research, or resources that serve both audiences.
 
 ## Business Outcome
-Improve valuable organic discovery through authority partnerships, with a clear SEO/AEO mechanism and connection to the active business Objective.
+Build durable authority and referral value through real business relationships rather than reciprocal-link schemes or artificial partnership pages.
 
-## Run When
-Run only when an approved Action Packet routes to **Authority Partnerships**, or when an authorized incident response requires it.
+## Use When
+Use when vendors, customers, associations, integrations, sponsors, distributors, communities, or strategic partners create a credible opportunity for mutual audience or business value.
 
 ## Process
-1. [HYBRID] Inventory vendors, customers, associations, integrations, sponsors, communities, distributors, and strategic partners.
-2. [AI] Identify reciprocal business/user value opportunities rather than link swaps for ranking manipulation.
-3. [AI] Define the asset/activity: case study, integration page, directory, co-research, webinar, guide, certification, etc.
-4. [HYBRID] Confirm permissions, claims, trademarks, disclosure, and destination ownership.
-5. [INTEGRATION] Coordinate content/action through the appropriate business owner and publish only after required approval.
-6. [HYBRID] Verify references and define SEO measurement / Core OutcomeEvaluation for referral, lead, authority, and brand outcomes.
+1. Identify the partner relationships and ecosystems that actually exist or are realistically available to the organization.
+2. Determine the specific reciprocal value for users and the businesses involved. Do not pursue a partnership whose only logic is exchanging links or manipulating rankings.
+3. Choose the activity that best expresses that value, such as an integration page, case study, directory inclusion, co-research, event, webinar, guide, certification, resource, or another legitimate collaboration.
+4. Verify permissions, factual claims, trademarks/brand use, disclosures, destination ownership, commercial terms, and any material legal or reputational constraints.
+5. If execution is requested, coordinate or create the actual asset/action using the host's normal communication and production tools. Follow real organizational approval or partner requirements where they exist; AURA does not invent an additional approval lifecycle.
+6. Verify the resulting public reference or collaboration and evaluate referral, lead, authority, brand, relationship, or other outcomes with evidence appropriate to the objective. Preserve material Learning when useful later.
 
-
+## Proportional Scope
+Prioritize partnerships with strong audience fit, real relationship value, and plausible business leverage. Do not expand merely to increase the number of referring domains or co-marketing assets.
