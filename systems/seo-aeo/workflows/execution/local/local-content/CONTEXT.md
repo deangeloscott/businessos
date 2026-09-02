@@ -18,20 +18,21 @@ evidence_inputs:
 # Local Content
 
 ## Purpose
-Create market-specific information only where local differences, events, expertise, or customer needs justify it.
+Create market-specific content only when local differences, evidence, events, expertise, or customer needs justify it.
 
 ## Business Outcome
-Improve valuable organic discovery through local content, with a clear SEO/AEO mechanism and connection to the active business Objective.
+Help local customers answer real questions and discover relevant offerings without mass-producing near-duplicate geographic pages or generic city-name content.
 
-## Run When
-Run only when an approved Action Packet routes to **Local Content**, or when an authorized incident response requires it.
+## Use When
+Use when a location or market has distinct questions, regulations, seasonal needs, events, cases, data, services, comparisons, or community information that materially changes what a useful answer should contain.
 
 ## Process
-1. [AI] Identify location-specific questions, regulations, seasonal needs, events, case studies, datasets, services, comparisons, or community information.
-2. [DETERMINISTIC] Validate that the topic serves real local users and maps to a business/customer journey need.
-3. [HYBRID] Select the correct destination: location page enhancement, standalone resource, event/news item, or no new page.
-4. [AI] Research local facts from authoritative/current sources and distinguish evergreen from time-sensitive facts.
-5. [HYBRID] Create content with unique local evidence and appropriate internal/local-profile relationships.
-6. [HYBRID] Expire/update time-sensitive content and measure qualified local discovery and conversion impact.
+1. Identify location-specific questions or information needs tied to actual customers and business relevance.
+2. Verify that the local angle is real and useful enough to change the content, not merely a place-name variation on generic material.
+3. Choose the right destination: enhance an existing location/service page, create a standalone resource, publish a time-sensitive item, or create nothing new.
+4. Research local facts from current authoritative or first-party sources and distinguish durable facts from time-sensitive observations.
+5. Create or improve the content using unique local evidence, accurate business facts, and useful relationships to relevant location pages/profiles when appropriate.
+6. Revisit or retire time-sensitive material when it becomes stale, and measure qualified local discovery or conversion only when those outcomes matter to the objective.
 
-
+## Proportional Scope
+Invest most deeply where local differences materially affect customer decisions or business value. Avoid exhaustive local content production merely because many geographic modifiers exist.
