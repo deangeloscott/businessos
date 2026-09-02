@@ -1,21 +1,43 @@
-# AURA Process Evolution & Innovation Exchange
+# AURA Workflow Evolution & Innovation Exchange
 
 AURA can preserve strong organization-specific operating improvements without editing canonical AURA product source. Users may also explicitly package/share those improvements with others. Both capabilities are optional.
 
-## Local process evolution
+## Local Workflow evolution
 
 Reusable Learning is ordinary organization-owned memory. Create or update it when the active model/user judges that the evidence supports a durable reusable conclusion; there is no separate Learning-promotion stage.
 
-When that Learning would materially improve a repeatable method:
-1. Use `core.learning.playbook-evolution` to decide whether the Learning itself is sufficient, an existing playbook should gain an organization-local extension, a new local playbook is useful, or a canonical AURA product revision is worth proposing.
-2. Persist a bounded proposal with:
-   `python3 scripts/persist_playbook_evolution.py <business-id> --proposal-file <proposal.json>`
-3. If the organization intentionally chooses a business-scoped proposal, adopt it with:
-   `python3 scripts/adopt_process_extension.py <business-id> <proposal-id>`
-4. Resolve organization-local operating knowledge with:
-   `python3 scripts/resolve_effective_contract.py <business-id> <playbook-id> --show`
+When that Learning would materially improve a repeatable procedure:
 
-A `ProcessExtension` is reusable organization-owned operating knowledge, not execution authority. The active model/user may use, adapt, combine, or ignore it when another method is better.
+1. Use `core.learning.workflow-evolution` to decide whether the Learning itself is sufficient, an existing Workflow should gain an organization-local extension, a new local Workflow is useful, or a canonical AURA product revision is worth proposing.
+2. Persist a bounded proposal with:
+
+   `python3 scripts/persist_workflow_evolution.py <business-id> --proposal-file <proposal.json>`
+3. If the organization intentionally chooses a business-scoped proposal, adopt it with:
+
+   `python3 scripts/adopt_process_extension.py <business-id> <proposal-id>`
+4. Resolve organization-local Workflow knowledge with:
+
+   `python3 scripts/resolve_effective_contract.py <business-id> <workflow-id> --show`
+
+A `ProcessExtension` is reusable organization-owned Workflow knowledge, not execution authority. The active model/user may use, adapt, combine, or ignore it when another method is better.
+
+An organization-authored procedure does **not** need fabricated Learning first. It can be persisted directly as a local Workflow/Workflow extension through `scripts/persist_process_extension.py` when the organization intentionally defines it.
+
+## What should evolve
+
+Do not convert every successful task into a new rule.
+
+Improve reusable Workflow knowledge only when evidence or repeated use shows that a durable change will materially improve future work. Prefer the smallest change that captures the useful lesson.
+
+Workflow evolution should preserve:
+
+- where the Learning/evidence came from;
+- when the improvement applies and does not apply;
+- the few instructions that materially improve repeatability, truth, evidence, or quality;
+- useful verification criteria;
+- discoverability in natural language.
+
+Do not add provider/tool bindings or an invented capability vocabulary. The active model/harness remains free to use better tools, Skills, resources, sequencing, or implementation methods.
 
 ## Optional sharing defaults
 
@@ -85,4 +107,4 @@ Browse an available index without importing anything:
 
 `python3 scripts/browse_innovation_exchange_index.py <innovation-index.json> --query "landing page"`
 
-A configured `exchange_sources` list may help the active model/harness discover indexes. Retrieving remote material remains a host capability; import, interpretation, testing, adoption, and sharing remain explicit local work.
+A configured `exchange_sources` list may help the active model/harness discover indexes. Retrieving remote material remains a host responsibility; import, interpretation, testing, adoption, and sharing remain explicit local work.
