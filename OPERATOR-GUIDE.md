@@ -159,11 +159,11 @@ Completing a Run means only that the useful receipt was closed and its material 
 
 ## Organization-specific reusable Workflows
 
-If an organization intentionally defines a reusable local procedure or wants to augment an installed Workflow, preserve it as a `ProcessExtension` rather than changing AURA product source.
+If an organization intentionally defines a reusable local procedure or wants to augment an installed Workflow, preserve it as a `ProcessExtension` when future work materially benefits rather than changing AURA product source.
 
-If evidence-supported Learning suggests a reusable Workflow should change, `WorkflowEvolutionProposal` can capture that evidence-backed candidate before intentional adoption.
+Evidence-supported Learning may also become a narrow ProcessExtension directly when procedural reuse is genuinely useful. The model/user decides whether the Learning alone is sufficient, whether an extension is worth keeping, and whether that extension applies to future work. There is no required proposal/adoption lifecycle.
 
-Organization-authored procedure knowledge does not need fake Learning first.
+Organization-authored procedure knowledge does not need fake Learning first. Organization-specific operating knowledge is retrieval context, not semantic or execution authority.
 
 ## Truth and customer-facing work
 
@@ -171,7 +171,7 @@ AURA can be flexible about how work is done while staying strict about factual c
 
 Keep the evidence behind important claims. Never say a scan, render, publication, experiment, measurement, deployment, or outside action happened when it did not.
 
-Artifact QA and production readiness are separate from receipt completion. Use the relevant operating knowledge and deterministic claim/media/readiness checks when they materially protect the actual output.
+Artifact QA and production readiness are separate from receipt completion. Use the relevant operating knowledge, evidence/provenance checks, optional review aids, and readiness validation when they materially protect the actual output. Natural-language claim support remains a model/user judgment grounded in current organization truth rather than a deterministic language rules engine.
 
 ## Preferences and instructions
 
