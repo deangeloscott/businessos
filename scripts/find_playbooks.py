@@ -11,6 +11,9 @@ from functools import lru_cache
 import argparse,json,re
 
 
+PRODUCTION_ACTION_WORDS={'build','create','design','draft','generate','make','produce','write'}
+
+
 def _index():
     return json.loads((ROOT/'generated/playbook-candidate-index.json').read_text())
 
@@ -43,6 +46,11 @@ def _candidate_score(words,q,cid,row):
         score=len(words & set(row.get('tokens') or []))*3
     score+=len(words & cid_words)*2
     if any(token in q for token in cid_words if len(token)>=5):score+=4
+    # A generic create/build request should surface an authored production root ahead of
+    # its narrower QA/strategy leaves when both share the same literal subject tokens.
+    # This is still a lexical/metadata hint, never semantic selection authority.
+    if 'production_root' in str(row.get('artifact_role') or '') and words & PRODUCTION_ACTION_WORDS:
+        score+=10
     return score
 
 
@@ -62,7 +70,7 @@ def find_candidates(task,top=5):
         out.append({
             'score':score,'contract_id':cid,'owner_system':row.get('owner_system'),'status':'available',
             'selection_authority':False,
-            'reason':'lexical candidate only; authored title/purpose/Run When cues make this playbook discoverable while the active model/user judges semantic applicability',
+            'reason':'lexical candidate only; authored title/purpose/Run When and structural production cues help discovery while the active model/user judges semantic applicability',
         })
     return out
 
