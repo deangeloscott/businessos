@@ -10,23 +10,29 @@ writes:
 - ChangeEvent
 - Asset
 ---
-# Url Hygiene
+# URL Hygiene
 
 ## Purpose
-Keep URLs stable, canonical, and free from uncontrolled variant explosion.
+Keep URL generation stable and intentional so operational parameters and generated variants do not create unnecessary crawl/index complexity or needless migrations.
 
 ## Business Outcome
-Improve valuable organic discovery through url hygiene, with a clear SEO/AEO mechanism and connection to the active business Objective.
+Prevent uncontrolled URL-variant growth while preserving distinct URLs that serve real customer, market, product, or content needs.
 
 ## Run When
-Run only when an approved Action Packet routes to **Url Hygiene**, or when an authorized incident response requires it.
+Use when URL patterns, parameters, generated routes, alternate views, or proposed URL changes may be creating unnecessary variants or unstable discovery behavior.
 
 ## Process
-1. [HYBRID] Inventory URL patterns and parameter combinations.
-2. [AI] Identify session, tracking, sort/filter, search, calendar, printer, duplicate path, and generated variants.
-3. [AI] Determine which variants represent distinct useful demand versus operational noise.
-4. [INTEGRATION] Define canonical/index/crawl rules and stable URL-generation behavior.
-5. [HYBRID] Avoid URL changes solely for cosmetic keyword reasons when current URLs are stable and functional.
-6. [HYBRID] For necessary URL changes, invoke redirects plus link/sitemap/canonical migration controls.
+1. Inspect the relevant URL patterns and parameter combinations at a scope sufficient to reveal the generation rules rather than treating each observed URL as an independent problem.
+2. Identify session, tracking, sort/filter, search, calendar, printer, duplicate-path, case/protocol/host, generated, or other variants that may create operational noise.
+3. Determine which variants represent distinct useful demand or functionality and which are merely alternate technical representations of the same resource.
+4. Define stable URL-generation, crawl, index, and canonical behavior appropriate to each pattern, using the actual platform/site capabilities rather than prescribing one implementation.
+5. Avoid changing stable functional URLs for cosmetic keyword or style reasons when the migration cost/risk exceeds the likely value.
+6. When URL changes are genuinely necessary, use the relevant redirect, canonical, internal-link, sitemap, hreflang, and migration safeguards directly and verify representative/high-value paths.
 
+## Proportionate Scope
+Analyze representative patterns first. Expand toward full parameter/pattern enumeration when the site generates URLs combinatorially, crawl/index impact is material, or sampling cannot establish the rules safely.
 
+## Verification
+- Useful functional or demand-serving variants are not removed merely to reduce URL count.
+- Stable URLs are preferred over cosmetic churn.
+- URL-generation rules and discovery/index treatment are coherent enough that the same unwanted variant class does not immediately reappear.
