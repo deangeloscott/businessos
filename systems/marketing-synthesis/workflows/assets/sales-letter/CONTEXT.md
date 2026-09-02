@@ -2,7 +2,6 @@
 id: marketing.assets.sales-letter
 type: workflow
 owner_system: marketing-synthesis
-artifact_role: customer_facing_production_root
 reads:
 - Opportunity
 - type: Insight
@@ -31,9 +30,17 @@ Increase the likelihood of the desired commercial action through an evidence-bac
 Use when a sales letter is useful to remove a commercial persuasion gap or create the required conversion asset. An Opportunity or real durable WorkRequest may provide context but is not required.
 
 ## Process
-1. [AI] Define audience/awareness/intent, Offer, problem/outcome, objections, proof, and desired action.
-2. [AI] Choose argument architecture appropriate to market sophistication rather than formulaically applying one copy template.
-3. [AI] Draft with concrete claims, evidence, examples, transition logic, objections, value, terms, risk, and CTA.
-4. [HYBRID] Audit every major promise against proof and canonical Offer/Brand constraints.
-5. [AI] Remove inflated language, redundant persuasion, and pressure unsupported by customer reality.
-6. [HYBRID] Test message continuity and readability. Use relevant Content operating knowledge and the active harness's real document/design capabilities directly when production beyond text is needed; persist a WorkRequest only for a real durable organizational handoff.
+1. Define audience/awareness/intent, Offer, problem/outcome, objections, proof, and desired action.
+2. Choose argument architecture appropriate to market sophistication rather than formulaically applying one copy template.
+3. Draft with concrete claims, evidence, examples, transition logic, objections, value, terms, risk, and CTA.
+4. Audit every major promise against proof and canonical Offer/Brand constraints.
+5. Remove inflated language, redundant persuasion, and pressure unsupported by customer reality.
+6. Test message continuity and readability. Use relevant Content operating knowledge and the active harness's real document/design capabilities directly when production beyond text is needed; persist a WorkRequest only for a real durable organizational handoff.
+
+## Proportionate Scope
+Match length, proof depth, objection handling, examples, and production detail to the buyer's awareness, Offer complexity, stakes, and evidence. Long-form is justified by the decision work required, not by the format name.
+
+## Verification
+- Major claims and Offer terms remain grounded in current truth/evidence.
+- Length and persuasion depth are justified by the decision rather than a copy formula.
+- A WorkRequest is reserved for a real durable handoff, not internal continuation.
