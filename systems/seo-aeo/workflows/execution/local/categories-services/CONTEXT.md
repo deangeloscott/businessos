@@ -16,20 +16,21 @@ evidence_inputs:
 # Local Categories and Services
 
 ## Purpose
-Choose accurate categories, services, and product descriptors that match real offerings and local demand.
+Represent each location with accurate categories, services, and product descriptors that match what customers can actually obtain there.
 
 ## Business Outcome
-Improve valuable organic discovery through local categories and services, with a clear SEO/AEO mechanism and connection to the active business Objective.
+Improve relevant local discovery and conversion without category stuffing, unsupported services, or copying competitor representations that do not fit the business.
 
-## Run When
-Run only when an approved Action Packet routes to **Local Categories and Services**, or when an authorized incident response requires it.
+## Use When
+Use when local categories, attributes, services, or product representations are missing, stale, inaccurate, or plausibly limiting discovery for legitimate offerings.
 
 ## Process
-1. [HYBRID] Inventory actual offerings per location and the language customers use to find them.
-2. [HYBRID] Observe relevant local result categories/attributes and competitor representations without copying inaccurate choices.
-3. [HYBRID] Select the most specific truthful primary category and supporting categories available on each surface.
-4. [AI] Map supported services/products to canonical offerings and location availability.
-5. [HYBRID] Reject category/service stuffing or representations the business cannot substantiate.
-6. [HYBRID] Define SEO measurement / Core OutcomeEvaluation for visibility/conversion changes after significant category/service edits and retain change history.
+1. Establish the real offerings and availability for each relevant location or service area from current business truth.
+2. Observe how customers describe those needs and how relevant local surfaces represent comparable businesses, treating competitor choices as evidence rather than truth for the organization.
+3. Choose the most specific truthful primary and supporting categories available on the relevant surface; platform availability does not make a category accurate.
+4. Map supported services/products to canonical offerings and actual location availability, preserving market-specific differences where real.
+5. Reject keyword stuffing, duplicate category inflation, or any representation the organization cannot substantiate.
+6. If significant changes are implemented, verify the published fields and observe relevant visibility and conversion evidence over an appropriate period. AURA may remember the material change and measurement intent; the host owns any recurring recheck.
 
-
+## Proportional Scope
+Prioritize categories and services tied to meaningful customer demand and business value. Do not optimize every optional field merely because a platform exposes it.
