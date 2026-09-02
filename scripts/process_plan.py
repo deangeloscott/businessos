@@ -33,7 +33,7 @@ def resolve_entry(system=None,activity=None,workflow_id=None):
     maps=process_maps()
     if not system or not activity:raise ValueError('Provide --workflow or both --system and --activity')
     if system not in maps or activity not in maps[system]:raise ValueError('Unknown system/activity')
-    return maps[system][activity]['entry_contract']
+    return maps[system][activity]['entry_workflow']
 
 
 def workflow_composition(workflow_id,workflows=None,stack=None):
@@ -68,8 +68,8 @@ def build_process_plan(system=None,activity=None,workflow_id=None,playbook_id=No
 
 
 def main():
-    ap=argparse.ArgumentParser(description='Describe AURA Playbook/Workflow composition without creating an execution plan.');ap.add_argument('--playbook');ap.add_argument('--system');ap.add_argument('--activity');ap.add_argument('--workflow');ap.add_argument('--contract',help=argparse.SUPPRESS);ap.add_argument('--output');a=ap.parse_args()
-    try:data=build_process_plan(a.system,a.activity,a.workflow or a.contract,a.playbook)
+    ap=argparse.ArgumentParser(description='Describe AURA Playbook/Workflow composition without creating an execution plan.');ap.add_argument('--playbook');ap.add_argument('--system');ap.add_argument('--activity');ap.add_argument('--workflow');ap.add_argument('--output');a=ap.parse_args()
+    try:data=build_process_plan(a.system,a.activity,a.workflow,a.playbook)
     except ValueError as e:raise SystemExit(str(e))
     text=json.dumps(data,indent=2)+'\n'
     if a.output:Path(a.output).write_text(text)
