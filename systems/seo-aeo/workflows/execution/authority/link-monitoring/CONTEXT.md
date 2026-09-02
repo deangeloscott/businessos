@@ -15,20 +15,21 @@ evidence_inputs:
 # Link and Mention Monitoring
 
 ## Purpose
-Detect new, changed, lost, redirected, or harmful external references and decide whether action is needed.
+Detect meaningful new, changed, lost, redirected, or harmful external references and decide whether they warrant attention.
 
 ## Business Outcome
-Improve valuable organic discovery through link and mention monitoring, with a clear SEO/AEO mechanism and connection to the active business Objective.
+Preserve useful authority and awareness of material external-reference changes without treating every provider fluctuation or low-value link as an operational event.
 
-## Run When
-Run only when an approved Action Packet routes to **Link and Mention Monitoring**, or when an authorized incident response requires it.
+## Use When
+Use when changes in external links or mentions could materially affect authority, referral value, reputation, relationships, important assets, or a current business decision.
 
 ## Process
-1. [HYBRID] Ingest new/lost backlink and mention observations; compare with prior state.
-2. [HYBRID] Verify live status, destination, context, anchor, redirects, and whether loss is real or provider noise.
-3. [AI] Classify positive acquisition, natural loss, recoverable loss, changed destination, spam/noise, or reputational issue.
-4. [HYBRID] Create Opportunities only when recovery/correction has plausible value; avoid reacting to every low-value lost link.
-5. [HYBRID] Update asset/competitor/authority state and attribution to prior outreach or PR actions.
-6. [HYBRID] Escalate suspicious sitewide patterns or policy/security concerns to Incident handling.
+1. Compare current link and mention observations with the prior meaningful state, preserving source and observation timing where it affects interpretation.
+2. Verify live status, destination, context, redirects, and the surrounding mention before concluding that a gain, loss, or change is real. Distinguish source/provider noise from an actual external change.
+3. Classify the material meaning: valuable acquisition, natural loss, recoverable loss, destination change, correction need, spam/noise, reputational issue, or another relevant condition.
+4. Decide whether action has plausible value. Continue directly into the appropriate recovery, correction, outreach, reputation, or diagnostic work when useful; create an Opportunity or AttentionItem only when durable coordination or future awareness earns it.
+5. Preserve important resulting state, attribution to prior outreach/PR where evidence supports it, and any reusable Learning. Do not force every observation into canonical state.
+6. If repeated observation matters, record the monitoring intent and what would count as a material change. The host/runtime owns any actual schedule, polling, or notification delivery.
 
-
+## Proportional Scope
+Monitor the sources, assets, markets, and changes whose loss or gain could materially matter. Avoid exhaustive reaction to low-value link churn simply because a provider can report it.
