@@ -10,11 +10,11 @@ real tools, Skills, orchestration, and execution environment.
 from pathlib import Path
 import argparse,json,os
 
-from _common import workspace_root,resolve_business,object_index,storage_ref
+from _common import workspace_root,resolve_business,object_index,storage_ref,load_registry
 from find_playbooks import find_candidates as find_playbook_candidates
 from find_workflows import find_candidates as find_workflow_candidates
 from operating_knowledge import get_playbook
-from process_extensions import local_playbook_candidates,resolve_effective
+from process_extensions import local_workflow_candidates,resolve_effective
 from context_plan import build_plan
 from process_plan import build_process_plan
 
@@ -36,10 +36,11 @@ def _baseline_context(business_id,limit_per_type=3):
 
 def _workflow_candidates(task,business_id,owner_system=None,team_ref=None,role_ref=None,operator_ref=None,top=6):
     rows=[];seen=set()
-    for legacy in local_playbook_candidates(task,business_id,team_ref,role_ref,operator_ref,top):
-        wid=legacy.get('contract_id')
+    for local in local_workflow_candidates(task,business_id,team_ref,role_ref,operator_ref,top):
+        wid=local.get('workflow_id')
         if not wid:continue
-        rows.append({**legacy,'workflow_id':wid,'local_workflow':True});seen.add(wid)
+        if owner_system and local.get('owner_system')!=owner_system:continue
+        rows.append(local);seen.add(wid)
     for row in find_workflow_candidates(task,top,owner_system):
         wid=row.get('workflow_id')
         if not wid or wid in seen:continue
@@ -54,7 +55,7 @@ def _selected_workflow(task,business_id,workflow_id,team_ref=None,role_ref=None,
         'task':task,'workflow_id':workflow_id,'owner_system':meta.get('owner_system'),'status':'available',
         'reason':'explicitly selected by the active model/user after semantic judgment',
         'path':str(path.relative_to(Path(__file__).resolve().parents[1])) if path else None,
-        'process_extension_ids':[item['id'] for item in extensions],'local_workflow':bool(meta.get('local_playbook')),
+        'process_extension_ids':[item['id'] for item in extensions],'local_workflow':bool(meta.get('local_workflow')),
         'selection_mode':'explicit_model_selection','semantic_selection_required':False,
     }
 
@@ -63,27 +64,30 @@ def _workflow_context(business_id,workflow_id,focus,operator_ref,team_ref,role_r
     if not workflow_id:return None,None
     try:
         context=build_plan(business_id,workflow_id,focus=focus,operator_ref=operator_ref,team_ref=team_ref,role_ref=role_ref,task_preferences=task_preferences,output_type=output_type,channel=channel)
-        process=build_process_plan(contract_id=workflow_id)
+        process=build_process_plan(workflow_id=workflow_id)
         return context,process
     except ValueError as exc:return {'error':str(exc)},None
 
 
 def prepare_work(task,business_id=None,workspace=None,focus=None,operator_ref=None,team_ref=None,role_ref=None,task_preferences=None,output_type=None,channel=None,selected_playbook_id=None,selected_workflow_id=None,selected_contract_id=None):
     task=(task or '').strip()
-    if not task:return {'format_version':'4.0','status':'needs_input','missing':['request']}
+    if not task:return {'format_version':'4.1','status':'needs_input','missing':['request']}
     if workspace:os.environ['BUSINESSOS_WORKSPACE']=str(Path(workspace).expanduser().resolve())
     resolved=resolve_business(business_id)
-    if resolved.get('status')!='resolved':return {'format_version':'4.0','status':'needs_input','workspace':str(workspace_root()),**{k:v for k,v in resolved.items() if k!='status'}}
-    bid=resolved['business_id'];focus=focus or []
+    if resolved.get('status')!='resolved':return {'format_version':'4.1','status':'needs_input','workspace':str(workspace_root()),**{k:v for k,v in resolved.items() if k!='status'}}
+    bid=resolved['business_id'];focus=focus or [];registry=load_registry().get('contracts',[])
 
-    # --selected-contract remains a temporary internal compatibility alias while v0.1.x
-    # callers move to the accurate public term --selected-workflow.
+    # Internal compatibility only; public terminology is Workflow.
     selected_workflow_id=selected_workflow_id or selected_contract_id
-    playbook=get_playbook(selected_playbook_id) if selected_playbook_id else None
+    playbook=get_playbook(selected_playbook_id,registry) if selected_playbook_id else None
     if selected_playbook_id and not playbook:raise ValueError(f'Unknown or unavailable Playbook: {selected_playbook_id}')
     owner=playbook.get('owner_system') if playbook else None
 
     selected_workflow=_selected_workflow(task,bid,selected_workflow_id,team_ref,role_ref,operator_ref) if selected_workflow_id else None
+    if selected_workflow and owner and selected_workflow.get('owner_system')!=owner:
+        # Cross-area composition is legitimate, but explicit selection should not silently
+        # imply the Workflow belongs to the selected Playbook's area.
+        selected_workflow={**selected_workflow,'cross_area':True}
     playbook_candidates=[] if playbook else find_playbook_candidates(task,3)
     workflow_candidates=[] if selected_workflow else _workflow_candidates(task,bid,owner,team_ref,role_ref,operator_ref)
     context,process=_workflow_context(bid,selected_workflow_id,focus,operator_ref,team_ref,role_ref,task_preferences,output_type,channel)
@@ -93,17 +97,22 @@ def prepare_work(task,business_id=None,workspace=None,focus=None,operator_ref=No
         object_context=[{'object_ref':oid,'path':path} for oid,path in zip(context.get('object_refs',[]),context.get('object_files',[]))];context_files=context.get('files',[])
     else:object_context=[];context_files=['CONTEXT.md','docs/operating-knowledge.md']
 
+    playbook_view=None
+    if playbook:
+        try:playbook_view=build_process_plan(playbook_id=playbook['id'])
+        except ValueError as exc:playbook_view={'error':str(exc)}
+
     return {
-        'format_version':'4.0','status':'ready','workspace':str(workspace_root()),'business_id':bid,'business_resolution':resolved.get('resolution'),'original_request':task,
+        'format_version':'4.1','status':'ready','workspace':str(workspace_root()),'business_id':bid,'business_resolution':resolved.get('resolution'),'original_request':task,
         'retrieval':{
             'baseline_context':baseline,'workflow_context':object_context,'context_files':context_files,
             'unresolved_selectors':(context or {}).get('unresolved_selectors',[]) if isinstance(context,dict) else [],
             'rule':'Load only what materially helps the request. Absence from retrieved AURA context means AURA has no selected durable record, not that the real-world fact does not exist.'
         },
         'operating_knowledge':{
-            'selected_playbook':playbook,'playbook_candidates':playbook_candidates,
+            'selected_playbook':playbook,'playbook_candidates':playbook_candidates,'playbook_view':playbook_view,
             'selected_workflow':selected_workflow,'workflow_candidates':workflow_candidates,'workflow_process':process if selected_workflow_id else None,
-            'rule':'Playbooks frame end-to-end business jobs; Workflows provide reusable procedures. The active model/user decides what applies, how to combine it, and whether another Skill or method is better.'
+            'rule':'Playbooks frame end-to-end business jobs; Workflows provide reusable procedures. The active model/user decides what applies, how to compose it, and whether another Skill or method is better.'
         },
         'method_options':METHOD_TYPES,
         'execution_rule':'Use the active model/harness normally. AURA does not define a tool/provider allowlist; use the best available tools, external Skills, resources, and orchestration that serve the requested outcome.',
@@ -126,7 +135,7 @@ def main():
     p.add_argument('--selected-playbook');p.add_argument('--selected-workflow');p.add_argument('--selected-contract',help=argparse.SUPPRESS)
     a=p.parse_args()
     try:result=prepare_work(a.task,a.business_id,a.workspace,a.focus,a.operator_ref,a.team_ref,a.role_ref,a.task_preferences,a.output_type,a.channel,a.selected_playbook,a.selected_workflow,a.selected_contract)
-    except (ValueError,json.JSONDecodeError) as exc:result={'format_version':'4.0','status':'needs_judgment','reason':str(exc)}
+    except (ValueError,json.JSONDecodeError) as exc:result={'format_version':'4.1','status':'needs_judgment','reason':str(exc)}
     print(json.dumps(result,indent=2,ensure_ascii=False));raise SystemExit(0 if result.get('status')=='ready' else 2)
 
 if __name__=='__main__':main()
