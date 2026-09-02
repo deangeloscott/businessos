@@ -47,7 +47,7 @@ Do not claim causal effect before the required data quality/observation conditio
 - Effect magnitude, causal confidence, data quality, and recommendation remain distinct.
 
 ## Failure / Fallback
-- If a preferred measurement capability/source is unavailable, use another valid source/method when it can answer the question. Otherwise preserve the limitation or unresolved measurement need instead of creating a Manual Action Packet or fabricating an outcome.
+- If a preferred measurement capability/source is unavailable, use another valid source/method when it can answer the question. Otherwise preserve the limitation or unresolved measurement need rather than manufacturing internal fallback workflow state or fabricating an outcome.
 
 ## Completion Criteria
 - Future work can understand what happened, what can and cannot be attributed, the material uncertainty, and why the conclusion is justified without requiring an event or next-route object.
