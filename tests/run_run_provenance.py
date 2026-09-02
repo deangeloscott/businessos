@@ -72,7 +72,7 @@ def main():
 
         # Capability failure may produce a truthful partial/specification result, but not
         # an AURA-internal manual-action object under a renamed Packet/Package label.
-        negative=('do not ','does not ','never ','without ','not required','rather than ')
+        negative=('do not ','does not ','never ','without ','no ','not required','rather than ')
         for path in ROOT.rglob('CONTEXT.md'):
             if '/contracts/' not in path.as_posix():continue
             for line in path.read_text(encoding='utf-8').splitlines():
