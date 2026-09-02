@@ -35,7 +35,7 @@ def main():
     req(contains_all(evidence,'claim-level provenance','bibliography detached from the claims'),'research evidence policy must keep material claims auditable rather than relying on a detached bibliography')
     req(contains_all(evidence,'test threshold','stop rule','success criterion','not a prediction'),'research evidence policy must distinguish test criteria from predicted outcomes')
 
-    req(contains_all(completion,'intelligence','close evidence before confident synthesis','subject/dimension coverage','unresolved evidence gaps'),'completion policy must distinguish artifact existence from evidence-closed intelligence')
+    req(contains_all(completion,'useful work exists','intelligence','material conclusions','unresolved gaps'),'completion policy must distinguish artifact existence from evidence-supported intelligence without requiring Run conformance')
 
     schema=json.loads((ROOT/'core/schemas/intelligence/source-record.schema.json').read_text())
     subject_schema=(schema.get('properties') or {}).get('subject_refs') or {}
