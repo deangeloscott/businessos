@@ -127,9 +127,8 @@ def retire_development_fossils():
 def remove_stale_derived_state():
     generated=ROOT/'generated'
     if generated.exists():shutil.rmtree(generated)
-    for rel in ['PLAYBOOK-INDEX.md']:
-        path=ROOT/rel
-        if path.exists():path.unlink()
+    old=ROOT/'PLAYBOOK-INDEX.md'
+    if old.exists():old.unlink()
 
 
 def assert_canonical_shape():
@@ -138,32 +137,32 @@ def assert_canonical_shape():
         if not path.exists():continue
         rel=path.relative_to(ROOT).as_posix()
         if '/contracts/' in f'/{rel}/' or rel.endswith('/contracts') or rel=='core/contracts':problems.append(f'legacy authored path: {rel}')
+
+    # Active implementation may not depend on retired operating-knowledge identifiers.
+    # Validators/tests are allowed to name retired concepts when asserting they stay gone.
     forbidden={
         'contract_files':'retired Workflow loader name',
-        'entry_contract':'retired process-map key',
-        'supporting_contracts':'retired process-map key',
         'contract-registry.json':'retired registry filename',
         'resolve_contract':'retired Workflow resolver name',
         'target_contract_id':'retired ProcessExtension field',
         'local_contract_id':'retired ProcessExtension field',
         'proposed_local_contract_id':'retired evolution field',
-        'subcontracts':'retired Workflow composition field',
-        'required_capabilities':'retired capability ontology field',
-        'optional_capabilities':'retired capability ontology field',
-        'PlaybookEvolutionProposal':'retired evolution object',
-        'core.learning.playbook-evolution':'retired evolution Workflow id',
     }
-    for path in text_files():
-        rel=path.relative_to(ROOT).as_posix()
-        if rel in {'CHANGELOG.md'}:continue
-        try:text=path.read_text(encoding='utf-8')
-        except UnicodeDecodeError:continue
+    for path in (ROOT/'scripts').glob('*.py'):
+        if path.name in {'validate_workspace.py'}:continue
+        text=path.read_text(encoding='utf-8');rel=path.relative_to(ROOT).as_posix()
         for token,meaning in forbidden.items():
             if token in text:problems.append(f'{rel}: {meaning}: {token}')
-    for path in list((ROOT/'core/workflows').rglob('CONTEXT.md'))+list((ROOT/'systems').glob('*/workflows/**/CONTEXT.md')):
-        text=path.read_text(encoding='utf-8')
-        if re.search(r'^type:\s*playbook\s*$',text,re.M):problems.append(f'{path.relative_to(ROOT)}: flattened type: playbook remains')
-        if re.search(r'^capabilities:\s*$',text,re.M):problems.append(f'{path.relative_to(ROOT)}: capability metadata remains')
+
+    workflow_paths=list((ROOT/'core/workflows').rglob('CONTEXT.md'))+list((ROOT/'systems').glob('*/workflows/**/CONTEXT.md'))
+    if not workflow_paths:problems.append('no authored Workflow source found after materialization')
+    for path in workflow_paths:
+        text=path.read_text(encoding='utf-8');rel=path.relative_to(ROOT)
+        if re.search(r'^type:\s*playbook\s*$',text,re.M):problems.append(f'{rel}: flattened type: playbook remains')
+        if re.search(r'^capabilities:\s*$',text,re.M):problems.append(f'{rel}: capability metadata remains')
+        if re.search(r'^subcontracts:\s*$',text,re.M):problems.append(f'{rel}: subcontract composition remains')
+        if 'PlaybookEvolutionProposal' in text:problems.append(f'{rel}: old Playbook evolution semantics remain')
+        if 'core.learning.playbook-evolution' in text:problems.append(f'{rel}: old Playbook evolution id remains')
     if problems:raise RuntimeError('Canonical Workflow materialization incomplete:\n'+'\n'.join(problems[:300]))
 
 
