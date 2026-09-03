@@ -21,14 +21,6 @@ context:
 - Objective
 - Offer
 - ProductService
-workflows:
-  conditional:
-  - id: core.intelligence.ecosystem.source-discovery
-    when: Relevant marketing evidence still needs discovery, inspection, or conversion from leads into support-grade source material.
-  - id: core.intelligence.ecosystem.evidence-triangulation
-    when: A material marketing mechanism or performance claim benefits from explicit independence, contradiction, freshness, methodology, or uncertainty analysis.
-  - id: marketing.experimentation.message-test
-    when: A promising uncertain marketing mechanism is testable and a bounded experiment would materially improve the decision.
 ---
 # Marketing Ecosystem Tactic Radar
 
