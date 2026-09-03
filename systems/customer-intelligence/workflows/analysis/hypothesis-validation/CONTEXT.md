@@ -20,10 +20,10 @@ context:
 # Customer Hypothesis Validation
 
 ## Purpose
-Test a strategically important belief about customers before downstream systems build on it.
+Test a strategically important belief about customers before future decisions or work build on it.
 
 ## Business Outcome
-Reduce uncertainty about customers through customer hypothesis validation, so downstream decisions reflect current customer evidence rather than assumption.
+Reduce uncertainty about customers through customer hypothesis validation, so future decisions reflect current customer evidence rather than assumption.
 
 ## Run When
 Run when a decision requires current customer hypothesis validation and existing Customer Insights are missing, stale, too broad, or insufficiently supported.
