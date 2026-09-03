@@ -5,7 +5,7 @@ owner_system: competitor-intelligence
 reads:
 - Competitor
 - type: Insight
-  owner_system: customer-intelligence
+  domain: customer-intelligence
 - Observation
 - SourceRecord
 writes:
@@ -19,10 +19,6 @@ context:
 - Objective
 - Offer
 - ProductService
-workflows:
-  required:
-  - competitor.analysis.funnel-capture
-  - competitor.analysis.funnel-comparison
 ---
 # Funnel Intelligence
 
@@ -37,7 +33,7 @@ Run when a decision requires current funnel intelligence and canonical competito
 
 ## Process
 1. [HYBRID] Define the customer entry point/channel, research depth, scenario, and observable scope; do not fabricate hidden internal steps.
-2. [HYBRID] Use the Funnel Capture subprocess to traverse legitimate public/consented acquisition paths and preserve actual observed steps rather than inferring the funnel from static pages alone.
+2. [HYBRID] Use the Funnel Capture method when it materially helps to traverse legitimate public/consented acquisition paths and preserve actual observed steps rather than inferring the funnel from static pages alone.
 3. [DETERMINISTIC] Normalize steps, fields, gates, CTAs, redirects, timing, follow-up, pricing visibility, access boundaries, and major proof/objection elements across captured paths.
 4. [AI] Infer intended audience/stage and conversion strategy while clearly marking unobservable assumptions and differences caused by market, device, identity, or path.
 5. [HYBRID] Identify materially distinctive friction-reduction, qualification, education, persuasion, or handoff patterns and compare like with like.
