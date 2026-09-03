@@ -24,7 +24,7 @@ Examples include:
 - `Insight` — an evidence-calibrated interpretation worth reusing.
 - `Opportunity` — an optional durable intervention/improvement worth considering.
 - `DecisionRecord` — a real organizational decision worth remembering.
-- `Asset` — a useful produced artifact or internal reusable brief/result.
+- `Asset` — a useful produced artifact or durable reference to one.
 - `WorkRequest` — a real durable handoff across people/models/sessions/time, not internal tool/subagent routing.
 - `AttentionItem` — a material unresolved condition worth future awareness; AURA remembers the meaning, not notification delivery.
 - `ChangeEvent` — a material real-world/organizational change worth preserving when later work benefits from knowing what changed.
@@ -35,15 +35,19 @@ Create or update only the objects whose meaning actually occurred and whose pers
 
 ## Operating knowledge
 
-AURA playbooks/contracts are reusable methods, not executable controllers.
+AURA uses **Playbook → Workflow → Step** as a simple operating-knowledge hierarchy.
 
-A deterministic index may surface bounded candidate playbooks. Candidate retrieval is a navigation aid; the active model/user owns semantic applicability and may select an AURA playbook, adapt useful pieces, use an external Skill, create another method, or work ad hoc.
+- A **Playbook** is a meaningful end-to-end business job.
+- A **Workflow** is reusable procedure knowledge that helps accomplish part of a Playbook and may also be useful independently.
+- A **Step** is the minimum guidance that materially improves repeatability, truth, evidence discipline, scope, or quality.
 
-Provider-neutral capability IDs describe what a method may need. They are not a live provider registry, permission list, or host capability inventory. The active harness resolves actual tools/providers at execution time.
+Playbooks and Workflows are knowledge, not executable controllers. Deterministic indexes may surface bounded candidates, but candidate retrieval is only navigation help. The active model/user owns semantic applicability and may use AURA knowledge, combine it with another Skill, adapt it, choose another sound method, or work ad hoc.
+
+AURA does not maintain a universal provider/capability vocabulary for execution. Workflows describe the business outcome, evidence, constraints, and useful procedure in natural language; the active harness resolves actual tools/providers/Skills at execution time.
 
 ## Context retrieval
 
-Root `CONTEXT.md` contains the small universal agent contract. `scripts/enter.py` and the context planner retrieve the smallest useful relevant organizational context and optional playbook candidates.
+Root `CONTEXT.md` contains the small universal operating guidance for AI using AURA. `scripts/enter.py` and the context planner retrieve the smallest useful relevant organizational context and optional Playbook/Workflow candidates.
 
 They do not:
 
