@@ -105,17 +105,6 @@ def readiness_errors(business_id,objects):
     return errors
 
 
-def qa_global_readiness_errors(data,business_id):
-    """QA wording has no canonical production-readiness authority.
-
-    Structural QA callers still use this hook while that call site exists, but the only
-    readiness truth AURA validates is the target Asset's explicit production_readiness
-    assessment. A QA record may describe its conclusion in natural language without a
-    deterministic synonym parser promoting those words into organizational state.
-    """
-    return []
-
-
 def summarize_readiness(assets,qa_records=None,run_completed=False):
     """Produce a user-facing truth projection without implying launch or outcomes."""
     rows=[]
