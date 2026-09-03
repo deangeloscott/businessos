@@ -21,7 +21,7 @@ def main():
         try:
             bid='explicit-workflow';init_business(bid,'Explicit Workflow Co')
             sop_path=ws/'attachments/client-kickoff.md';sop_path.parent.mkdir(parents=True,exist_ok=True);sop_path.write_text('# Client kickoff\nConfirm goals and access, then produce a written kickoff summary.\n')
-            saved=remember(bid,{'objects':[{'key':'sop_source','object_type':'Asset','content':{'asset_type':'organization_sop','owner_system':'core','business_role':'source operating procedure','location_reference':'attachments/client-kickoff.md','version':'1','status':'active'}}]});source_ref=saved['objects'][0]['id']
+            saved=remember(bid,{'objects':[{'key':'sop_source','object_type':'Asset','content':{'asset_type':'organization_sop','business_role':'source operating procedure','location_reference':'attachments/client-kickoff.md','version':'1','status':'active'}}]});source_ref=saved['objects'][0]['id']
 
             spec={
                 'mode':'local_workflow','workflow_id':'custom.client-kickoff',
