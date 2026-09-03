@@ -218,7 +218,7 @@ def init_business(product_root,workspace,fixture,evaluator_root=None):
         hidden=evaluator_root/'hidden-fixtures'; hidden.mkdir(parents=True,exist_ok=True)
         write_json(hidden/f'{fixture}-releases.json',data['timeline'])
     facts_path=seed_dir/f'{fixture}-facts.json'; facts_path.write_text(json.dumps(bootstrap,indent=2)+'\n',encoding='utf-8')
-    boot=_run([sys.executable,str(product_root/'scripts/bootstrap_explicit_context.py'),bid,'--facts-file',str(facts_path),'--source-file',str(source_path),'--source-reference','supplied business material','--initialization-only'],product_root,env)
+    boot=_run([sys.executable,str(product_root/'scripts/bootstrap_explicit_context.py'),bid,'--facts-file',str(facts_path),'--source-file',str(source_path),'--source-reference','supplied business material'],product_root,env)
     validation=_run([sys.executable,str(product_root/'scripts/validate_business.py'),bid,'--require-context'],product_root,env)
     audit={'fixture':fixture,'business_id':bid,'source_path':str(source_path),'supplied_media_paths':staged_media,'facts_path':str(facts_path),'future_evidence_hidden':bool(data.get('timeline')),'bootstrapped_at':now(),'bootstrap_stdout':boot.stdout,'bootstrap_stderr':boot.stderr,'validation_stdout':validation.stdout,'validation_stderr':validation.stderr}
     write_json(seed_dir/f'{fixture}-bootstrap-audit.json',audit)
