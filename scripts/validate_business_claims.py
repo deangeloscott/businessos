@@ -2,9 +2,10 @@
 """Validate structural provenance for optional customer-facing claim manifests.
 
 AURA can verify that referenced organization truth exists and has an appropriate authority.
-It must not use token overlap, stemming, regex phrase lists, or other home-grown NLP to
-decide whether natural-language customer-facing copy is semantically supported. That
-judgment belongs to the capable model/user applying the active-business truth policy.
+It must not use token overlap, stemming, regex phrase lists, product-module ownership, or
+other home-grown inference to decide whether natural-language customer-facing copy is
+semantically supported. That judgment belongs to the capable model/user applying the
+active-business truth policy.
 """
 from _common import *
 
@@ -45,13 +46,14 @@ def validate_manifest_entries(manifest,idx,rel):
 
 
 def claim_errors(business_id,objects=None):
-    """Validate only explicit claim-manifest provenance; omission is not an error."""
+    """Validate any explicitly supplied Asset claim manifest; omission is not an error."""
     errors=[];idx=object_index(business_id)
     if objects is None:objects=list(idx.values())
     else:objects=[(o,ROOT/p) if isinstance(p,str) else (o,p) for o,p in objects]
     for asset,path in objects:
-        if asset.get('object_type')!='Asset' or asset.get('owner_system') not in {'content-synthesis','marketing-synthesis'}:continue
+        if asset.get('object_type')!='Asset':continue
         bos=(asset.get('extensions') or {}).get('businessos',{}) if isinstance(asset.get('extensions'),dict) else {}
+        if 'claim_manifest' not in bos:continue
         rel=str(path.relative_to(ROOT)) if isinstance(path,Path) and path.is_absolute() else str(path)
         errors.extend(validate_manifest_entries(bos.get('claim_manifest'),idx,rel))
     return errors
