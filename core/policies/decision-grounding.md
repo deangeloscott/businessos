@@ -13,8 +13,12 @@ An Opportunity may recommend action under uncertainty, but it should not present
 
 This is semantic guidance for the capable model/user, not a deterministic prose rules engine. Structural validation may verify that references exist and that objects labeled as measured evidence are appropriate evidence types; it should not use keywords or regexes to decide whether natural-language reasoning is correct.
 
-## Reasoning basis
-A `qualified`, `prioritized`, `committed`, or `active` Opportunity should preserve a `reasoning_basis` so future work can distinguish:
+## Opportunity boundary
+An `Opportunity` preserves a potentially valuable thing the organization may choose to pursue. Its status may reflect investigation, qualification, prioritization, blocking, rejection, supersession, closure, or genuine reopening.
+
+Do **not** turn the Opportunity itself into the execution lifecycle after commitment. When the organization actually decides to pursue something, preserve the decision in a `DecisionRecord` when that decision matters for future context, and use an `Initiative` when the committed body of work needs durable coordination/continuity. Execution progress, outcome evaluation, and Learning remain separate meanings rather than later Opportunity stages.
+
+A `qualified` or `prioritized` Opportunity should preserve a `reasoning_basis` so future work can distinguish:
 - `fact_refs`: canonical objects that establish the factual basis for the decision;
 - `measured_refs`: the subset that directly measures an outcome/performance state, if any;
 - `inferences`: material derived conclusions with `basis_refs`; confidence/uncertainty may be expressed when useful but should not require fake numeric precision;
