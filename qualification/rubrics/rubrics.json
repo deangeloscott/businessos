@@ -6,7 +6,7 @@
     {"id":"accuracy","description":"Factual, computational, and interpretive correctness; uncertainty and unknowns are preserved."},
     {"id":"evidence_quality","description":"Uses enough appropriate evidence, preserves provenance, and does not upgrade weak proxies into proof."},
     {"id":"method_rigor","description":"Performs the material method/invariants needed for the job. Equivalent or improved implementation is acceptable; skipping essential work is not."},
-    {"id":"depth_completeness","description":"Covers the material work implied by the requested outcome and expected SOP without filler or exhaustive work for its own sake."},
+    {"id":"depth_completeness","description":"Covers the material work implied by the requested outcome, business context, and relevant Workflow knowledge without filler or exhaustive work for its own sake."},
     {"id":"professional_quality","description":"A competent professional could use the result without rebuilding the core work from scratch."},
     {"id":"business_alignment","description":"The work is tied to the actual business objective rather than vanity activity or benchmark-shaped output."},
     {"id":"outcome_readiness","description":"The work includes the reasonable research, strategy, execution, QA, and integration that a strong practitioner could perform now to maximize the intended result."},
