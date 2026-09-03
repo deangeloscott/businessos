@@ -5,7 +5,6 @@ PRODUCT_ROOT=Path(__file__).resolve().parents[1]
 _WORKSPACE_ENV='BUSINESSOS_WORKSPACE'
 _WORKSPACE_CONFIG_ENV='BUSINESSOS_WORKSPACE_CONFIG'
 _STATE_NAMESPACES={'instances','runtime','knowledge','attachments'}
-_ENVIRONMENT_OVERLAY_REL=Path('.businessos/environments')
 
 
 def workspace_config_path():
@@ -43,11 +42,10 @@ _BasePath=type(Path())
 
 
 class WorkspacePath(_BasePath):
-    """Workspace path that preserves legacy logical refs relative to ROOT.
+    """Workspace path that keeps portable logical refs relative to the AURA workspace.
 
-    Older helpers commonly call `state_path.relative_to(ROOT)`. When state is external,
-    returning the workspace-relative path preserves portable refs such as
-    `instances/acme/...` and `runtime/runs/acme/...` instead of leaking host paths.
+    When organization state is external, callers may still need stable refs such as
+    `instances/acme/...` and `runtime/runs/acme/...` rather than host-specific paths.
     """
     def relative_to(self, other, *args, **kwargs):
         try:
@@ -62,12 +60,12 @@ class WorkspacePath(_BasePath):
 
 
 class BusinessOSRoot(_BasePath):
-    """Product root with transparent state-namespace redirection.
+    """Product root with transparent routing only for organization-owned state namespaces.
 
     Product files (`core/`, `systems/`, `scripts/`, schemas, tests, distribution metadata)
-    always resolve under PRODUCT_ROOT. Durable/working state namespaces can resolve to an
-    explicitly configured external workspace without forcing every existing helper to
-    know where that workspace lives.
+    resolve under PRODUCT_ROOT. Organization-owned state namespaces may resolve to an
+    explicitly configured external workspace so local-first state stays separate from
+    immutable product source while retaining portable logical references.
     """
     def __truediv__(self, key):
         try:
@@ -95,50 +93,6 @@ def attachments_root(): return workspace_root()/'attachments'
 def instance_dir(business_id): return instances_root()/business_id
 def run_dir_path(business_id,run_id): return runtime_root()/'runs'/business_id/run_id
 def product_instance_template(): return PRODUCT_ROOT/'instances/_template'
-
-
-def environment_product_dir(environment):
-    return PRODUCT_ROOT/'deployment/environments'/str(environment)
-
-
-def environment_overlay_dir(environment,create=False):
-    """Host/environment state owned by the active workspace, never product source."""
-    path=workspace_root()/_ENVIRONMENT_OVERLAY_REL/str(environment)
-    if create:path.mkdir(parents=True,exist_ok=True)
-    return path
-
-
-def environment_exists(environment):
-    return environment_overlay_dir(environment).exists() or environment_product_dir(environment).exists()
-
-
-def environment_names():
-    names=set()
-    for root in (PRODUCT_ROOT/'deployment/environments', workspace_root()/_ENVIRONMENT_OVERLAY_REL):
-        if root.exists():
-            names.update(p.name for p in root.iterdir() if p.is_dir() and p.name!='_template')
-    return sorted(names)
-
-
-def environment_file(environment,relative,writable=False,seed_product_default=True):
-    """Resolve effective environment config with workspace overlay > shipped default.
-
-    Reads prefer workspace-owned host state and fall back per-file to immutable product
-    defaults. Writes always target the workspace overlay. When useful, a shipped default
-    is copied once into the overlay before mutation so normal runtime configuration never
-    dirties the AURA product tree or conflicts with product upgrades.
-    """
-    rel=Path(relative)
-    if rel.is_absolute() or '..' in rel.parts: raise ValueError('Environment-relative path required')
-    if not environment_exists(environment): raise ValueError(f'Unknown environment: {environment}')
-    overlay=environment_overlay_dir(environment,create=writable)/rel
-    product=environment_product_dir(environment)/rel
-    if writable:
-        overlay.parent.mkdir(parents=True,exist_ok=True)
-        if seed_product_default and not overlay.exists() and product.exists() and product.is_file():
-            overlay.write_bytes(product.read_bytes())
-        return overlay
-    return overlay if overlay.exists() else product
 
 
 def workspace_profile():
