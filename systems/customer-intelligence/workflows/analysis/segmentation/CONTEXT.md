@@ -10,15 +10,14 @@ writes:
 - SourceRecord
 - Observation
 - Insight
+- AudienceSegment
+- ContextUpdateProposal
 context:
 - Business
 - Market
 - Objective
 - ProductService
-workflows:
-  required:
-  - customer.research.evidence-coverage
-  - customer.analysis.segment-brief
+- AudienceSegment
 ---
 # Customer Segmentation Intelligence
 
@@ -26,16 +25,22 @@ workflows:
 Identify evidence-backed customer differences that warrant distinct treatment rather than inventing personas.
 
 ## Business Outcome
-Reduce uncertainty about customers through customer segmentation intelligence, so downstream decisions reflect current customer evidence rather than assumption.
+Improve decisions by preserving only customer distinctions that materially change needs, buying behavior, experience, economics, or the action the business should take.
 
 ## Run When
-Run when a decision requires current customer segmentation intelligence and existing Customer Insights are missing, stale, too broad, or insufficiently supported.
+Use when a decision may benefit from more precise customer segmentation and the current AudienceSegment definitions or supporting evidence are too broad, stale, weakly supported, or no longer decision-useful.
 
 ## Process
-1. [AI] Start from canonical Audience Segments and the business decisions segmentation must improve.
-2. [DETERMINISTIC] Assemble valid attributes and behavior/outcome evidence without using prohibited/sensitive characteristics improperly.
-3. [AI] Look for materially different needs, criteria, language, objections, outcomes, and journey behavior across existing segments.
-4. [HYBRID] Test whether proposed segment boundaries are stable, interpretable, reachable/actionable, and large/valuable enough to matter.
-5. [AI] Avoid creating a new segment when the difference is merely channel behavior or a one-off preference.
-6. [HYBRID] Compare alternative segmentations and document what decision would change under each.
-7. [HYBRID] Submit a Context Update Proposal when canonical AudienceSegment definitions should change; do not rewrite Core directly.
+1. [AI] Start from the business decision segmentation must improve and the current canonical AudienceSegments; do not assume new segments are needed.
+2. [HYBRID] Assemble current customer evidence that can reveal meaningful differences in needs, jobs/outcomes, criteria, language, objections, triggers, behavior, value, success, churn, or journey patterns. Draw on evidence-coverage or segment-brief methods when they materially improve the work; neither is a mandatory prerequisite.
+3. [AI] Propose boundaries only where the differences are durable enough to matter and can plausibly change a business decision, experience, message, offer, product choice, or measurement.
+4. [HYBRID] Test candidate segments for evidence strength, stability, interpretability, reachability/actionability, overlap, and sufficient business relevance. Avoid prohibited or inappropriate use of sensitive characteristics.
+5. [AI] Reject distinctions that are merely channel behavior, a one-off preference, sparse anecdotes, convenient demographic labels, or clustering with no decision consequence.
+6. [HYBRID] Compare plausible alternative segmentations and state what decision would change under each, what evidence is missing, and what would falsify the proposed boundary.
+7. [HYBRID] If evidence and an authoritative organization decision establish a corrected AudienceSegment definition, update canonical context through the normal memory path. Preserve a ContextUpdateProposal only when the possible correction remains unresolved and remembering that unresolved candidate will materially help future work.
+
+## Completion Criteria
+- Each segment distinction is traceable to evidence and a meaningful decision consequence.
+- Established evidence, inference, uncertainty, and unresolved gaps remain distinct.
+- Supporting Workflows are optional expert methods, not a composition graph.
+- Canonical context is updated directly when truth is established; unresolved proposals are preserved only when they are useful memory.
