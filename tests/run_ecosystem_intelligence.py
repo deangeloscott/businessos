@@ -63,13 +63,16 @@ def main():
 
     schema=json.loads((ROOT/'core/schemas/intelligence/source-profile.schema.json').read_text())
     req(schema.get('title')=='SourceProfile' and schema.get('additionalProperties') is False,'SourceProfile schema must remain strict')
-    required=set(schema.get('required',[]))
-    for field in ['source_reference','source_kind','owner_systems','watch_status','attention_priority','fact_type_assessments']:
+    props=schema.get('properties',{});required=set(schema.get('required',[]))
+    for field in ['source_reference','source_kind','watch_status','attention_priority','fact_type_assessments']:
         req(field in required,f'SourceProfile missing required field {field}')
+    req('domains' in props and 'domains' not in required,'SourceProfile semantic domains should be available but optional')
+    req('owner_systems' not in props,'SourceProfile regained internal AURA ownership')
 
     helper=(ROOT/'scripts/upsert_source_profile.py').read_text()
-    for phrase in ['outcome_events','event_key','Source history changes discovery attention only']:
+    for phrase in ['outcome_events','event_key','Source history changes discovery attention only','--domain']:
         req(phrase in helper,f'source profile helper missing {phrase}')
+    req('--owner-system' not in helper,'source profile helper regained internal AURA ownership')
 
     a='HTTPS://Example.COM:443/Research/Article/';b='https://example.com/Research/Article'
     req(_normalized_reference(a)==b,'URL normalization must collapse scheme/host casing, default HTTPS port, and trailing slash')
