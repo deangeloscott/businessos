@@ -31,10 +31,10 @@ Improve retention through customer value rather than cancellation obstruction or
 Run after a churn/retention risk mechanism is sufficiently diagnosed.
 
 ## Process
-1. [AI] Restate customer/account state, diagnosed risk mechanism, desired value/recovery state, evidence, urgency, and owner.
+1. [AI] Restate customer/account state, diagnosed risk mechanism, desired value/recovery state, evidence, urgency, and real organizational owner where one exists.
 2. [AI] Generate interventions targeting root cause: value realization, service recovery, adoption help, product/process fix, expectation reset, contract/term review, customer-success conversation, or appropriate exit.
 3. [HYBRID] Reject dark patterns, cancellation friction, guilt, deceptive save offers, or benefits that disadvantage healthy customers unfairly without reason.
 4. [AI] Determine when personalized human intervention is required versus scalable workflow.
-5. [DETERMINISTIC] Define actions, triggers, suppression, deadline, success/guardrail metrics, and rollback/stop conditions.
-6. [AI] Delegate Content/Marketing work only where communication/persuasion is a true component of the intervention.
-7. [DETERMINISTIC] Evaluate retention plus customer outcome/complaints/cost and update Learning.
+5. [DETERMINISTIC] Define concrete intervention steps, triggers, suppression, deadline, success/guardrail metrics, and rollback/stop conditions in the real operating process.
+6. [AI] Use relevant Content or Marketing operating knowledge directly when communication/persuasion is a true component of the intervention. Create a WorkRequest only when a real durable handoff to another actor must survive the current interaction.
+7. [DETERMINISTIC] When outcome evidence becomes available, evaluate retention plus customer outcome/complaints/cost and preserve Learning only when the evidence supports a reusable lesson.
