@@ -54,11 +54,20 @@ def readiness_regression(workspace,env):
     retired={'run_ref','run_id','run_method_type','run_method_ref','run_contract_id','run_binding','run_history_refs','contract_chain'}
     req(not (retired & set(saved.get('extensions',{}).get('businessos',{}))),'Asset regained canonical Run backlinks')
 
+    # Explicit readiness state is authoritative and must be internally consistent.
     pr=saved['extensions']['businessos']['production_readiness'];pr['status']='ready';write(asset_path,saved)
     bad=run([S/'validate_business.py',bid],env,check=False);req(bad.returncode!=0 and 'cannot retain unresolved blockers' in bad.stdout,f'ready assertion retained typed blockers: {bad.stdout}')
-    pr['status']='blocked';saved['extensions']['businessos']['no_blockers']=True;write(asset_path,saved)
-    no_blockers_bad=run([S/'validate_business.py',bid],env,check=False);req(no_blockers_bad.returncode!=0 and 'no_blockers=true conflicts' in no_blockers_bad.stdout,'global no-blockers assertion hid typed readiness blockers')
-    saved['extensions']['businessos'].pop('no_blockers');pr['status']='ready'
+
+    # Loose labels are not a readiness ontology. They may exist as natural-language/local
+    # metadata without deterministic AURA promoting them into canonical readiness truth.
+    pr['status']='blocked';saved['extensions']['businessos']['no_blockers']=True;saved['extensions']['businessos']['launch_ready']=True
+    saved['extensions']['businessos']['readiness_status']='ready_for_launch';write(asset_path,saved)
+    loose=run([S/'validate_business.py',bid],env,check=False)
+    req(loose.returncode==0,f'loose readiness-like labels gained semantic authority: {loose.stdout+loose.stderr}')
+    for key in ('no_blockers','launch_ready','readiness_status'):saved['extensions']['businessos'].pop(key,None)
+
+    # Explicit readiness can still contradict other explicit organizational state.
+    pr['status']='ready'
     for field in ('unresolved_business_facts','missing_authorization','missing_capabilities','other_blockers'):pr[field]=[]
     write(asset_path,saved);placeholder_bad=run([S/'validate_business.py',bid],env,check=False)
     req(placeholder_bad.returncode!=0 and 'placeholder claim entries remain launch-critical or unassessed' in placeholder_bad.stdout,'launch-critical placeholders were allowed to assert ready')
@@ -108,7 +117,7 @@ def main():
     with tempfile.TemporaryDirectory(prefix='aura-organizational-state-truth-') as td:
         workspace=Path(td).resolve();env=os.environ.copy();env['BUSINESSOS_WORKSPACE']=str(workspace);env['PYTHONDONTWRITEBYTECODE']='1'
         readiness_regression(workspace,env);provenance_regression(workspace,env);receipt_independence_regression(workspace,env)
-    print('organizational state truth regressions passed: readiness, provenance, and independent optional receipts')
+    print('organizational state truth regressions passed: explicit readiness, provenance, and independent optional receipts')
 
 
 if __name__=='__main__':main()
