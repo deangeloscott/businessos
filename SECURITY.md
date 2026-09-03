@@ -1,10 +1,10 @@
 # Security and Proprietary Boundary
 
-This repository/distribution contains **ViralTrac AURA**, an AI-native BusinessOS, not the proprietary ViralTrac hosted application.
+This repository/distribution contains **ViralTrac AURA**, organization-owned memory and operating knowledge for capable AI, not the proprietary ViralTrac hosted application.
 
 ## Included
 
-- portable AURA/BusinessOS Playbooks, Workflows, schemas, policies, templates, attachment adapters, and helper scripts;
+- portable AURA Playbooks, Workflows, schemas, policies, templates, attachment adapters, and helper scripts;
 - public/client-facing ViralTrac integration metadata needed to discover and use authorized API, MCP, semantic-data, measurement, action, receipt, and event interfaces when the active harness has access to them.
 
 AURA does not ship a provider/tool capability registry. Its operating knowledge describes needed work in natural language and lets the active model/harness choose the best available tools, Skills, providers, and execution methods.
