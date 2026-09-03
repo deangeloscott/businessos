@@ -34,4 +34,4 @@ Run after comparable competitor funnel captures exist.
 4. [AI] Identify where competitor choices appear to optimize for different customer quality, economics, or sales motion.
 5. [HYBRID] Require performance/customer evidence before claiming a funnel is better merely because it is sophisticated.
 6. [AI] Extract testable mechanism hypotheses and competitive whitespace relevant to this business.
-7. [AI] Route Marketing/Customer Optimization implications without creating those Opportunities inside Competitor Intelligence.
+7. [AI] Preserve Marketing/Customer Optimization implications in the durable competitive result when useful so relevant future work can reuse them directly; do not create foreign-domain Opportunities merely to pass the finding between AURA areas.
