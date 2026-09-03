@@ -4,92 +4,77 @@
     {
       "id": "configure-workspace",
       "entry_workflow": "core.workspace.configure",
-      "result": "Choose simple, power-user, or organization deployment; optionally separate organization-owned state from product source; and keep versioning/Obsidian as optional adapters.",
-      "supporting_workflows": []
+      "result": "Choose simple, power-user, or organization deployment; optionally separate organization-owned state from product source; and keep versioning/Obsidian as optional adapters."
     },
     {
       "id": "refresh-human-knowledge",
       "entry_workflow": "core.knowledge.refresh-human-layer",
-      "result": "Generate a traceable Markdown/Obsidian-friendly human view from canonical AURA state without creating a competing truth store.",
-      "supporting_workflows": []
+      "result": "Generate a traceable Markdown/Obsidian-friendly human view from canonical AURA state without creating a competing truth store."
     },
     {
       "id": "ingest-human-note",
       "entry_workflow": "core.knowledge.ingest-human-note",
-      "result": "Register a human-authored workspace note as noncanonical source material and preserve useful claims/evidence through normal context handling.",
-      "supporting_workflows": []
+      "result": "Register a human-authored workspace note as noncanonical source material and preserve useful claims/evidence through normal context handling."
     },
     {
       "id": "scan-external-ecosystem",
       "entry_workflow": "core.intelligence.ecosystem-radar",
-      "result": "Discover important external changes, tactics, findings, and signals; verify what the evidence supports; preserve useful organizational evidence or Learning; and let the capable model choose any next method.",
-      "supporting_workflows": []
+      "result": "Discover important external changes, tactics, findings, and signals; verify what the evidence supports; preserve useful organizational evidence or Learning; and let the capable model choose any next method."
     },
     {
       "id": "track-external-subject",
       "entry_workflow": "core.intelligence.subject-monitoring",
-      "result": "Build or refresh a durable evidence-backed watch context for a company, creator, public figure, publication, platform, product, regulator, own organization, or other decision-relevant subject; recurrence belongs to the active runtime.",
-      "supporting_workflows": []
+      "result": "Build or refresh a durable evidence-backed watch context for a company, creator, public figure, publication, platform, product, regulator, own organization, or other decision-relevant subject; recurrence belongs to the active runtime."
     },
     {
       "id": "review-monitoring-status",
       "entry_workflow": "core.monitoring.status",
-      "result": "Show durable monitoring intent, cadence/materiality, semantic due state, and meaningful unresolved findings without treating AURA as the scheduler or notification runtime.",
-      "supporting_workflows": []
+      "result": "Show durable monitoring intent, cadence/materiality, semantic due state, and meaningful unresolved findings without treating AURA as the scheduler or notification runtime."
     },
     {
       "id": "evolve-operating-process",
       "entry_workflow": "core.learning.workflow-evolution",
-      "result": "Preserve strong reusable Learning as optional organization-local Workflow knowledge when useful; canonical AURA changes remain explicit product-development work.",
-      "supporting_workflows": []
+      "result": "Preserve strong reusable Learning as optional organization-local Workflow knowledge when useful; canonical AURA changes remain explicit product-development work."
     },
     {
       "id": "use-innovation-exchange",
       "entry_workflow": "core.intelligence.innovation-exchange",
-      "result": "Prepare, import, browse, and evaluate portable AURA process innovations with explicit sharing consent and no required central service.",
-      "supporting_workflows": []
+      "result": "Prepare, import, browse, and evaluate portable AURA process innovations with explicit sharing consent and no required central service."
     },
     {
       "id": "review-community-innovation",
       "entry_workflow": "core.intelligence.community-evidence-review",
-      "result": "Compare community-reported process innovations with independent/local evidence and decide whether testing, adoption, or Workflow evolution is warranted.",
-      "supporting_workflows": []
+      "result": "Compare community-reported process innovations with independent/local evidence and decide whether testing, adoption, or Workflow evolution is warranted."
     },
     {
       "id": "diagnose-business-problem",
       "entry_workflow": "core.diagnosis.business-problem",
-      "result": "Narrow a broad unexplained business symptom to evidence-backed likely mechanisms and the most useful next work before intervention.",
-      "supporting_workflows": []
+      "result": "Narrow a broad unexplained business symptom to evidence-backed likely mechanisms and the most useful next work before intervention."
     },
     {
       "id": "discover-next-best-work",
       "entry_workflow": "core.opportunity.discover-next-best-work",
-      "result": "Turn a broad growth/prioritization goal into the highest-value next work supported by current evidence and available operating knowledge.",
-      "supporting_workflows": []
+      "result": "Turn a broad growth/prioritization goal into the highest-value next work supported by current evidence and available operating knowledge."
     },
     {
       "id": "bootstrap-business",
       "entry_workflow": "core.context.bootstrap-business",
-      "result": "Create evidence-backed initial business context from minimal identity, first-party sources, and user-provided information.",
-      "supporting_workflows": []
+      "result": "Create evidence-backed initial business context from minimal identity, first-party sources, and user-provided information."
     },
     {
       "id": "owned-business-discovery",
       "entry_workflow": "core.context.owned-business-discovery",
-      "result": "Adaptively map owned/official business surfaces and evidence at the depth needed for the current job.",
-      "supporting_workflows": []
+      "result": "Adaptively map owned/official business surfaces and evidence at the depth needed for the current job."
     },
     {
       "id": "brand-profile",
       "entry_workflow": "core.context.brand-profile",
-      "result": "Capture durable brand voice, visual, content, channel, reference, and prohibited-style rules.",
-      "supporting_workflows": []
+      "result": "Capture durable brand voice, visual, content, channel, reference, and prohibited-style rules."
     },
     {
       "id": "query-business-truth",
       "entry_workflow": "core.data.query-business-truth",
-      "result": "Query authoritative first-party business truth through the best currently available host/integration surface and preserve evidence-linked AURA references.",
-      "supporting_workflows": []
+      "result": "Query authoritative first-party business truth through the best currently available host/integration surface and preserve evidence-linked AURA references."
     }
   ]
 }
