@@ -7,7 +7,7 @@ Improve how effectively the right customers progress through discovery, consider
 Journey model, transition performance, conversion/process friction, onboarding, activation, adoption, time-to-value, customer value realization, relationship economics/value-at-risk, retention, renewal, repeat, expansion, referral, lifecycle experimentation, and interpretable churn-risk monitoring.
 
 ## Explicit Non-Scope
-Does not own customer psychology, persuasion assets, content production, organic acquisition, competitor truth, industry intelligence, CRM/product/billing runtime, or operational scheduling. It may consume Customer Intelligence and economic/behavioral evidence without duplicating those semantic owners or turning high account value into a churn-probability score.
+Does not own customer psychology, persuasion assets, content production, organic acquisition, competitor truth, industry intelligence, CRM/product/billing runtime, or operational scheduling. It may consume Customer Intelligence and economic/behavioral evidence directly without duplicating that organizational knowledge or turning high account value into a churn-probability score.
 
 ## Shared behavior
 Use Core canonical organization truth and policies. Reuse current customer, Offer, journey, product/service, behavioral, economic, and measurement evidence before repeating broad research. Evaluate customer-realized outcomes and business economics together when the data supports them; keep unknown LTV, CAC, margin, cost-to-serve, customer ROI, and value-at-risk unknown rather than fabricating precision.
