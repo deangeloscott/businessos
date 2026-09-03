@@ -19,10 +19,6 @@ context:
 - Business
 - Market
 - Objective
-workflows:
-  conditional:
-  - id: core.intelligence.ecosystem.maintain-source-profile
-    when: Creating or refreshing durable source/watch memory would materially improve future monitoring continuity.
 ---
 # Durable Subject Monitoring
 
