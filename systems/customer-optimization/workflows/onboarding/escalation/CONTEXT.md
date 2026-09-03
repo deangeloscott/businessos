@@ -32,9 +32,9 @@ Run when onboarding contains failure/stall conditions requiring differentiated r
 
 ## Process
 1. [DETERMINISTIC] Define stall/failure states from milestone timing, repeated errors, unresolved dependencies, explicit help request, high-value/risk conditions, or technical failure.
-2. [AI] Classify likely issue and determine whether self-service, specialist, support, implementation, account/customer-success, or other owner is appropriate.
+2. [AI] Classify likely issue and determine whether self-service, specialist, support, implementation, account/customer-success, or other real organizational owner is appropriate.
 3. [HYBRID] Avoid escalation based solely on opaque risk score or customer value when customer harm/safety requires support.
 4. [DETERMINISTIC] Define escalation priority, context package, owner, response expectation, and duplicate-suppression.
 5. [AI] Ensure the receiving human/system gets the exact history, attempted steps, evidence, customer state, and next decision—without making the customer repeat everything.
-6. [DETERMINISTIC] Track acceptance, resolution, resumed milestone, and unresolved root cause.
-7. [AI] Feed recurring escalations into systemic friction diagnosis.
+6. [DETERMINISTIC] Track acceptance, resolution, resumed milestone, and unresolved root cause in the real operational process where that state lives.
+7. [AI] Preserve recurring escalation patterns as organizational evidence and use the relevant friction/root-cause operating knowledge directly when systemic diagnosis would help.
