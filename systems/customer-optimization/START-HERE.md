@@ -20,4 +20,4 @@ Customer Optimization owns journey, progression, and value-realization operating
 A WorkRequest is not needed to move reasoning between AURA areas. Use one only for a real durable organizational handoff across actors, sessions, or time. The harness and external systems own workflow execution, customer messaging, scheduling, account permissions, and operational automation.
 
 ## AI execution
-Do not load this entire system. Retrieve the smallest relevant context and choose, combine, adapt, skip, or replace useful methods with model/user judgment. `process-map.json` is a browse/composition aid, not runtime execution order.
+Do not load this entire system. Retrieve the smallest relevant context and choose, combine, adapt, skip, or replace useful methods with model/user judgment. `process-map.json` is a lightweight browse/navigation index, not runtime execution order or a Workflow graph.
