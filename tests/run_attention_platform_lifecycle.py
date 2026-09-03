@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Protect durable attention continuity without making attention an execution gate."""
+"""Protect durable attention/platform history without making age or attention an execution gate."""
 from pathlib import Path
 import json, shutil, subprocess, sys
 
@@ -48,6 +48,18 @@ def main():
         a4=jrun(*args)
         req(a4['attention_id']==a1['attention_id'] and a4['reopened'],'a genuine recurrence should reopen the same semantic item')
 
+        # Archival is an explicit semantic retention decision, never an age threshold.
+        active_archive=run(S/'archive_history.py',BID,a1['attention_id'],'--reason','Historical review complete. Keep for audit only.',check=False)
+        req(active_archive.returncode!=0 and 'only after status=resolved' in active_archive.stderr,'active attention was archived without prior resolution')
+        run(S/'set_attention_status.py',BID,a1['attention_id'],'resolved','--note','Recurrence reviewed and closed.','--at','2026-01-04T00:00:00+00:00')
+        archived=jrun(S/'archive_history.py',BID,a1['attention_id'],'--reason','Historical review complete. Keep for audit only.','--at','2026-01-05T00:00:00+00:00')
+        req(archived['archived_count']==1 and archived['selection_authority'] is False,'explicit attention archive did not preserve authority boundary')
+        hist_attention=BASE/'history'/'AttentionItem'/f"{a1['attention_id']}.json"
+        req(hist_attention.exists(),'resolved attention was not moved to history')
+        hist_obj=json.loads(hist_attention.read_text())
+        req(hist_obj['status']=='archived' and hist_obj['extensions']['archive_reason']=='Historical review complete. Keep for audit only.','historical attention lost explicit archive meaning')
+        req(not (BASE/'operations/attention'/f"{a1['attention_id']}.json").exists(),'archived attention remained in active canonical path')
+
         # Platform knowledge is organization-owned evidence/history. Attention may point
         # to it, but neither object needs a Run or implies a scheduler/notification task.
         src={
@@ -72,9 +84,23 @@ def main():
         )
         req(pa['created'],'material platform change should support one durable attention item')
 
+        current_archive=run(S/'archive_history.py',BID,change['platform_change_id'],'--reason','Old platform state.',check=False)
+        req(current_archive.returncode!=0 and 'only after status=superseded' in current_archive.stderr,'current platform state was archiveable')
+        replacement=jrun(
+            S/'record_platform_change.py',BID,'--platform','Google Search','--topic','FAQ rich results',
+            '--state','FAQ rich-result guidance changed again and supersedes the prior verified state.','--authority','official_platform','--materiality','high',
+            '--source-ref',src['id'],'--verified-at','2026-04-01T00:00:00+00:00'
+        )
+        req(replacement['platform_change_id']!=change['platform_change_id'],'materially changed platform state did not create a new current version')
+        platform_archive=jrun(S/'archive_history.py',BID,change['platform_change_id'],'--reason','Superseded platform state retained only for history.','--at','2026-04-02T00:00:00+00:00')
+        req(platform_archive['archived_count']==1,'superseded platform state was not explicitly archivable')
+        req((BASE/'history'/'PlatformChange'/f"{change['platform_change_id']}.json").exists(),'superseded platform state did not move to history')
+        current=json.loads((BASE/'intelligence/platform-changes'/f"{replacement['platform_change_id']}.json").read_text())
+        req(current['status']=='current','explicit history archival disturbed current platform state')
+
         errors,_,counts=validate_business(BID)
         req(not errors,f'attention/platform organizational state should validate without Run provenance: {errors}')
-        req(counts.get('AttentionItem')==2 and counts.get('PlatformChange')==1,f'expected durable state missing: {counts}')
+        req(counts.get('AttentionItem')==1 and counts.get('PlatformChange')==1,f'active view should contain only current organizational state after explicit archival: {counts}')
         for p in (BASE/'operations/attention').glob('att_*.json'):
             bos=(json.loads(p.read_text()).get('extensions') or {}).get('businessos',{})
             req('run_ref' not in bos and 'run_id' not in bos,'AttentionItem became Run-bound again')
@@ -83,9 +109,13 @@ def main():
         req('core/policies/attention-lifecycle.md' in plan['files'],'attention SOP should load attention continuity policy')
         policy=(ROOT/'core/policies/attention-lifecycle.md').read_text()
         req('Attention is organizational memory' in policy and 'proof that a background task exists' in policy and 'not execution authority' in policy,'attention policy lost the runtime boundary')
-        req('execution gate' in policy or 'execution' in policy,'attention policy should explicitly keep attention separate from execution authority')
+        req('elapsed time is not semantic authority' in policy.lower(),'attention policy reintroduced age as semantic retention authority')
+        req('90 days' not in policy and '180 days' not in policy,'attention policy retained arbitrary age-based archival thresholds')
+        workflow=(ROOT/'core/workflows/attention/manage/CONTEXT.md').read_text()
+        req('archive_history.py' in workflow and 'Elapsed time alone is not a retention decision' in workflow,'attention Workflow did not preserve explicit archival boundary')
+        req(not (S/'maintain_lifecycle.py').exists(),'retired age-based lifecycle helper still exists')
 
-        print('attention/platform continuity regression passed without Run, approval, scheduler, or delivery-channel coupling')
+        print('attention/platform continuity regression passed with explicit history retention and no Run, approval, scheduler, delivery-channel, or age-based semantic authority')
     finally:
         if BASE.exists():shutil.rmtree(BASE)
         runtime=ROOT/'runtime'/BID
