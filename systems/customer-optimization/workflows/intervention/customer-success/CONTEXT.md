@@ -6,7 +6,7 @@ reads:
 - CustomerJourney
 - Opportunity
 - type: Insight
-  owner_system: customer-intelligence
+  domain: customer-intelligence
 - MetricObservation
 writes: []
 context:
