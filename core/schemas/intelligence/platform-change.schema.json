@@ -11,7 +11,6 @@
     "created_at": {"type":"string","format":"date-time"},
     "updated_at": {"type":"string","format":"date-time"},
     "lineage": {"type":"array","items":{"type":"string","minLength":1},"uniqueItems":true},
-    "owner_system": {"enum":["core","customer-intelligence","competitor-intelligence","industry-intelligence","seo-aeo","content-synthesis","marketing-synthesis","customer-optimization"]},
     "platform": {"type":"string","minLength":1},
     "topic": {"type":"string","minLength":1},
     "semantic_key": {"type":"string","minLength":1},
@@ -33,5 +32,5 @@
     "superseded_by": {"type":["string","null"],"pattern":"^plc_[A-Za-z0-9_-]+$"},
     "extensions": {"type":"object","additionalProperties":true}
   },
-  "required": ["id","object_type","schema_version","business_id","owner_system","platform","topic","semantic_key","state_summary","state_fingerprint","status","authority","materiality","first_verified_at","last_verified_at","verification_count"]
+  "required": ["id","object_type","schema_version","business_id","platform","topic","semantic_key","state_summary","state_fingerprint","status","authority","materiality","first_verified_at","last_verified_at","verification_count"]
 }
