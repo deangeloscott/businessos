@@ -33,8 +33,8 @@ Run when a customer experiences a material service/product/process failure, comp
 ## Process
 1. [DETERMINISTIC] Capture customer/account, issue, first observed/time, affected outcome, severity, current state, prior attempts, and evidence without making customer repeat known information.
 2. [AI] Classify immediate customer impact and whether safety/security/legal/financial/critical operational escalation applies.
-3. [HYBRID] Assign the correct operational/human owner and prioritize containment/restoration before explanation or persuasion.
+3. [HYBRID] Assign the correct real operational/human owner and prioritize containment/restoration before explanation or persuasion.
 4. [AI] Define the immediate customer communication: acknowledgment, known facts, next action/owner, expected update—not unsupported cause or promise.
-5. [DETERMINISTIC] Track containment/resolution actions, timestamps, commitments, and customer state.
+5. [DETERMINISTIC] Track containment/resolution actions, timestamps, commitments, and customer state in the real service/operational system where that work lives.
 6. [AI] After stabilization determine remediation/follow-up appropriate to harm and policy without inventing compensation authority.
-7. [DETERMINISTIC] Create systemic root-cause/prevention work and link customer outcome.
+7. [HYBRID] Preserve the systemic question/evidence and use root-cause/prevention operating knowledge directly when follow-up is useful. Create a WorkRequest only when a real durable handoff to another actor must survive the current interaction.
