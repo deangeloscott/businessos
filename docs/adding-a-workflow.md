@@ -6,7 +6,7 @@ A Workflow is smaller than a Playbook. A **Playbook** represents a meaningful en
 
 Create a separate Workflow when it has a genuinely distinct purpose, applicability boundary, evidence/context need, reusable method, or quality/verification knowledge. Keep trivial substeps inside the parent Workflow instead of multiplying files for structural symmetry.
 
-Use a stable namespaced `id` because AURA needs an exact durable identifier for retrieval and references. Historical internal paths may still use the word `contract`; that is only storage compatibility and does not create execution authority.
+Use a stable namespaced `id` because AURA needs an exact durable identifier for retrieval and references.
 
 ## Write for a capable model or human
 
@@ -26,19 +26,32 @@ The model/harness should choose the best tools, external Skills, APIs, browsers,
 
 ## Frontmatter
 
-Keep metadata small and descriptive:
+Keep metadata small and descriptive.
 
+Required:
+
+- `id` — stable namespaced Workflow identifier;
+- `type: workflow`;
+- `owner_system` — the AURA operating area that maintains the knowledge;
 - `reads` — durable organization object types/selectors that may help the procedure;
-- `writes` — durable outputs the procedure may materially produce;
-- `context` — especially relevant durable context types;
-- `workflows` — supporting AURA Workflows that contain useful knowledge;
-- `evidence_inputs` / `artifact_role` / `completion_evidence` — only when they add real value.
+- `writes` — durable outputs the procedure may materially produce.
 
-Do not add a generic capability catalog, provider/tool bindings, permission lists, capability preflight, semantic routing, execution graphs, lifecycle stages, Runs, WorkRequests, or handoffs merely because another Workflow once contained them.
+Add only when they materially improve retrieval or validation:
 
-## Composition
+- `context` — especially relevant durable Business Context types;
+- `evidence_inputs` — external/high-volume evidence categories the work may need;
+- `completion_evidence` — explicit structural evidence expectations when they genuinely help;
+- `references` — exact AURA reference files that should accompany the Workflow.
 
-A Workflow may reference other Workflows as normally useful or conditional knowledge. This does not force execution order. The model may sequence them, parallelize independent work, use only the relevant portions, combine them with outside Skills, or choose another sound method.
+`reads` and `writes` are retrieval/comprehension metadata, not permissions, quotas, or a required object lifecycle.
+
+Do **not** add `workflows`, `artifact_role`, generic capability catalogs, provider/tool bindings, permission lists, capability preflight, semantic routing, execution graphs, lifecycle stages, Runs, WorkRequests, or handoffs merely because an older Workflow architecture once contained them.
+
+## Related Workflows
+
+Keep independently useful procedures independently retrievable. A Playbook/process map may point to useful entry/supporting Workflows where that improves human/model navigation, but Workflow frontmatter itself does not define a composition or execution graph.
+
+The model may sequence related Workflows, parallelize independent work, use only relevant portions, combine them with outside Skills, or choose another sound method.
 
 ## After authoring
 
