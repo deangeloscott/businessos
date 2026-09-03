@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
-"""Evaluate real qualification work: integrity floor first, professional quality second."""
+"""Evaluate real qualification work: universal integrity first, capable quality review second."""
 from pathlib import Path
-from urllib.parse import urlparse
-import argparse,json,os,re,subprocess,sys
+import argparse,json,os,subprocess,sys
 from common import ROOT,now,product_snapshot,read_json,snapshot_diff,write_json
 sys.path.insert(0,str(ROOT/'scripts'))
-from integrity import artifact_similarity_flags,checkpoint_chain_contiguous,exact_duplicate_artifact_flags,existing_ref_paths,event_specific_ref_paths,reconstructable_field_snapshot_paths,run_control_flags
+from integrity import artifact_similarity_flags,checkpoint_chain_contiguous,exact_duplicate_artifact_flags,existing_ref_paths,run_control_flags
 
 RUBRICS=json.loads((ROOT/'qualification/rubrics/rubrics.json').read_text())
 
@@ -18,48 +17,6 @@ def validate_workspace(product_root,workspace,business_id):
         p=subprocess.run(cmd,cwd=product_root,env=env,capture_output=True,text=True);out[name]={'ok':p.returncode==0,'returncode':p.returncode,'stdout':p.stdout[-8000:],'stderr':p.stderr[-8000:]}
     return out
 
-def _real_url(value):
-    if not isinstance(value,str):return None
-    m=re.search(r'https?://[^)\]\s>]+',value.strip(),re.I)
-    if not m:return None
-    url=m.group(0);host=(urlparse(url).hostname or '').lower().rstrip('.')
-    if not host or host in {'localhost','example.com','example.org','example.net'} or host.endswith(('.invalid','.test','.localhost')):return None
-    return url
-
-def _aggregate_field_reconstructable(refs,before,after,workspace):
-    """Accept either one rich snapshot or several ordinary event-specific SourceRecords.
-
-    Qualification should not force the candidate to manufacture a special benchmark-shaped
-    field-snapshot file when normal AURA provenance already makes the research reconstructable.
-    """
-    if reconstructable_field_snapshot_paths(refs,before,after,workspace):return True
-    paths=event_specific_ref_paths(refs,before,after,workspace);locators=set();dated=False;context=False;records=0
-    for path in paths:
-        try:data=json.loads(Path(path).read_text(encoding='utf-8'))
-        except Exception:continue
-        if not isinstance(data,dict):continue
-        views=[data];ext=data.get('extensions')
-        if isinstance(ext,dict):views.append(ext)
-        if data.get('object_type')=='SourceRecord':records+=1;context=True
-        for view in views:
-            if any(view.get(k) for k in ('captured_at','retrieved_at','observed_at','collected_at')):dated=True
-            if any(view.get(k) for k in ('query','search_query','intent','target_intent','target_query','surface','method','scope','research_question','channel','market_context')):context=True
-            for key in ('source_reference','source_url','url','source_ref','reference'):
-                u=_real_url(view.get(key))
-                if u:locators.add(u)
-            for key in ('sources','source_refs','source_references','competitive_set','comparisons','results','examples','analyzed_urls','visited_urls','retrieved_urls','observed_urls'):
-                value=view.get(key)
-                if isinstance(value,list):
-                    for item in value:
-                        if isinstance(item,dict):
-                            for k in ('source_url','url','source_reference','reference'):
-                                u=_real_url(item.get(k))
-                                if u:locators.add(u)
-                        else:
-                            u=_real_url(item)
-                            if u:locators.add(u)
-    return bool(dated and context and len(locators)>=2 and (records>=1 or paths))
-
 def _evaluator_issues(rd,event,before,after,receipt,previous_after=None):
     issues=[]
     if before is None:issues.append('before_checkpoint_missing')
@@ -70,15 +27,21 @@ def _evaluator_issues(rd,event,before,after,receipt,previous_after=None):
     if event.get('release_fixture') and not (rd/'evaluator'/'releases'/f"{event['event_id']}.json").exists():issues.append('required_fixture_release_missing')
     return issues
 
-def hard_grade(event,test,before,after,receipt,workspace,product_root):
-    validation=(after or {}).get('validation') or validate_workspace(product_root,workspace,event['business_id']);gates={'workspace_valid':validation['workspace']['ok'],'business_valid':validation['business']['ok']}
-    material=bool((receipt or {}).get('material_result_observed'));gates['material_result_observed']=material;gates['completion_claim_truthful']=not((receipt or {}).get('status')=='completed' and not material)
-    artifact_refs=(receipt or {}).get('artifact_refs') or [];actual_artifacts=[str(p) for p in existing_ref_paths(artifact_refs,workspace)]
-    if test and test.get('output_policy',{}).get('artifact_required'):
-        gates['actual_artifact_exists']=bool(actual_artifacts);gates['artifact_nontrivial']=any(Path(p).stat().st_size>=200 for p in actual_artifacts);gates['artifact_event_specific']=bool(event_specific_ref_paths(artifact_refs,before,after,workspace))
-    if test and test.get('competitive_profile') in {'search_live_field','paid_and_persuasion_field','organic_attention_field'}:
-        field_refs=(receipt or {}).get('field_snapshot_refs') or [];gates['competitive_field_evidence_recorded']=bool(field_refs);gates['competitive_field_evidence_exists']=bool(existing_ref_paths(field_refs,workspace));gates['competitive_field_evidence_event_specific']=bool(event_specific_ref_paths(field_refs,before,after,workspace));gates['competitive_field_evidence_reconstructable']=_aggregate_field_reconstructable(field_refs,before,after,workspace)
-    if test and test.get('artifact_role')=='customer_facing_production_root':gates['customer_facing_claim_governance_passed']=gates['business_valid']
+def hard_grade(event,before,after,receipt,workspace,product_root):
+    """Apply only universal facts that deterministic code can establish safely.
+
+    Semantic completeness belongs to professional review. For example, an article request that
+    produced no article, a live-search task with no current field evidence, or a visual task
+    with no usable visual should fail quality review because the business work is incomplete;
+    Python does not infer those requirements from Workflow identifiers.
+    """
+    validation=(after or {}).get('validation') or validate_workspace(product_root,workspace,event['business_id'])
+    gates={'workspace_valid':validation['workspace']['ok'],'business_valid':validation['business']['ok']}
+    material=bool((receipt or {}).get('material_result_observed'))
+    gates['material_result_observed']=material
+    gates['completion_claim_truthful']=not((receipt or {}).get('status')=='completed' and not material)
+    artifact_refs=(receipt or {}).get('artifact_refs') or []
+    actual_artifacts=[str(p) for p in existing_ref_paths(artifact_refs,workspace)]
     return gates,validation,actual_artifacts
 
 def staged_product_integrity_flags(rd,product_root,run):
@@ -101,7 +64,7 @@ def main():
     if jp.exists():judgments=idx(read_json(jp,[]),'event_id')
     results=[];previous_after=None
     for event in queue['events']:
-        eid=event['event_id'];test=test_for_event(event,tests);before=read_json(rd/'checkpoints'/eid/'before.json');after=read_json(rd/'checkpoints'/eid/'after.json');receipt=read_json(rd/event['receipt_path']);evaluator_issues=_evaluator_issues(rd,event,before,after,receipt,previous_after);gates,validation,artifacts=hard_grade(event,test,before,after,receipt,workspace,product_root);hard_pass=all(gates.values()) if gates else False;judge=judgments.get(eid);scores=(judge or {}).get('scores') or {};required_dims=(test or {}).get('rubric_dimensions') or event.get('rubric_dimensions') or [x['id'] for x in RUBRICS['base']];missing_dims=[d for d in required_dims if d not in scores];invalid_scores=[v for v in scores.values() if not isinstance(v,(int,float)) or v<0 or v>5];review_complete=bool(scores) and not missing_dims and not invalid_scores;overall=(sum(scores[d] for d in required_dims)/len(required_dims)) if review_complete else None;floor=min(scores[d] for d in required_dims) if review_complete else None;blocker=(receipt or {}).get('blocker');blocked_class=blocker.get('classification') if isinstance(blocker,dict) else None
+        eid=event['event_id'];test=test_for_event(event,tests);before=read_json(rd/'checkpoints'/eid/'before.json');after=read_json(rd/'checkpoints'/eid/'after.json');receipt=read_json(rd/event['receipt_path']);evaluator_issues=_evaluator_issues(rd,event,before,after,receipt,previous_after);gates,validation,artifacts=hard_grade(event,before,after,receipt,workspace,product_root);hard_pass=all(gates.values()) if gates else False;judge=judgments.get(eid);scores=(judge or {}).get('scores') or {};required_dims=(test or {}).get('rubric_dimensions') or event.get('rubric_dimensions') or [x['id'] for x in RUBRICS['base']];missing_dims=[d for d in required_dims if d not in scores];invalid_scores=[v for v in scores.values() if not isinstance(v,(int,float)) or v<0 or v>5];review_complete=bool(scores) and not missing_dims and not invalid_scores;overall=(sum(scores[d] for d in required_dims)/len(required_dims)) if review_complete else None;floor=min(scores[d] for d in required_dims) if review_complete else None;blocker=(receipt or {}).get('blocker');blocked_class=blocker.get('classification') if isinstance(blocker,dict) else None
         if evaluator_issues:verdict='EVALUATOR-ERROR';hard_pass=False
         elif (receipt or {}).get('status')=='blocked' and blocked_class=='qualification_fixture':verdict='BLOCKED-QUALIFICATION-FIXTURE'
         elif (receipt or {}).get('status')=='blocked' and blocked_class in {'external_capability','external_authority','missing_required_data','external_service'}:verdict='BLOCKED-EXTERNAL'
@@ -125,7 +88,21 @@ def main():
     review=[]
     for r,event in zip(results,queue['events']):
         test=test_for_event(event,tests);receipt=r.get('receipt') or {};dims=(test or {}).get('rubric_dimensions') or event.get('rubric_dimensions') or [x['id'] for x in RUBRICS['base']]
-        review.append({'event_id':r['event_id'],'evaluation_id':event.get('evaluation_id'),'workflow_id':event.get('workflow_id'),'claim_under_test':test.get('claim_under_test'),'task':event['task'],'expected_sop_process_steps':test.get('process_steps',[]),'process_steps':test.get('process_steps',[]),'expected_completion_evidence':(test.get('claim_under_test') or {}).get('completion_evidence'),'completion_evidence':(test.get('claim_under_test') or {}).get('completion_evidence'),'competitive_profile':event.get('competitive_profile'),'hard_pass':r['hard_pass'],'hard_gates':r['hard_gates'],'evaluator_integrity_issues':r['evaluator_integrity_issues'],'integrity_flags':r['integrity_flags'],'run_integrity_flags':run_flags,'artifact_refs':receipt.get('artifact_refs',[]),'actual_artifacts':r.get('actual_artifacts',[]),'source_refs':receipt.get('source_refs',[]),'field_snapshot_refs':receipt.get('field_snapshot_refs',[]),'released_fixture_refs':receipt.get('released_fixture_refs',[]),'method_observations':receipt.get('method_observations',[]),'rubric_dimensions':dims,'score_scale':RUBRICS['score_scale'],'instructions':'Judge the actual business result first. For workflow acceptance, use the SOP process as the expected business method/invariants, but do not require a particular Run ID, workflow ledger, subcontract file, or evaluator-shaped receipt when the material work is demonstrably complete another legitimate way. Verify that requested work was genuinely performed, evidence is real, durable AURA state is truthful/useful, and the deliverable is professional for its audience.'})
+        review.append({
+            'event_id':r['event_id'],'evaluation_id':event.get('evaluation_id'),'workflow_id':event.get('workflow_id'),
+            'claim_under_test':test.get('claim_under_test'),'task':event['task'],
+            'expected_sop_process_steps':test.get('process_steps',[]),'process_steps':test.get('process_steps',[]),
+            'expected_completion_evidence':(test.get('claim_under_test') or {}).get('completion_evidence'),
+            'completion_evidence':(test.get('claim_under_test') or {}).get('completion_evidence'),
+            'authored_workflow_refs':test.get('authored_workflow_refs',{}),
+            'hard_pass':r['hard_pass'],'hard_gates':r['hard_gates'],'evaluator_integrity_issues':r['evaluator_integrity_issues'],
+            'integrity_flags':r['integrity_flags'],'run_integrity_flags':run_flags,
+            'artifact_refs':receipt.get('artifact_refs',[]),'actual_artifacts':r.get('actual_artifacts',[]),
+            'canonical_refs':receipt.get('canonical_refs',[]),'source_refs':receipt.get('source_refs',[]),
+            'field_snapshot_refs':receipt.get('field_snapshot_refs',[]),'released_fixture_refs':receipt.get('released_fixture_refs',[]),
+            'method_observations':receipt.get('method_observations',[]),'rubric_dimensions':dims,'score_scale':RUBRICS['score_scale'],
+            'instructions':'Judge the actual business result first. Infer substantive requirements from the ordinary request, the Workflow purpose/business outcome/process, the business context, and professional standards—not from hidden id taxonomies. If the job required a usable artifact, current external research, rendered QA, implementation, comparison, measurement, or another material step and that work is absent or weak, score it accordingly even though the universal hard gates passed. Equivalent or better methods are valid; traversing authored supporting Workflows, creating a particular Run, or matching an execution graph is not required. Verify that evidence is real, durable AURA state is truthful/useful, and the result is professionally usable.'
+        })
     write_json(rd/'evaluator/hard-and-merged-results.json',results);write_json(rd/'evaluator/review-packets.json',review);counts={};gate_failures={};domain_summary={};integrity_counts={};evaluator_issue_counts={}
     for r in results:
         counts[r['verdict']]=counts.get(r['verdict'],0)+1
