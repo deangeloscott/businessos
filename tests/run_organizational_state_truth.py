@@ -30,7 +30,7 @@ def asset_truth_regression(workspace,env):
     business=json.loads((base/'context/business.json').read_text());aid=f'ast_{bid}_landing'
     asset={
         'id':aid,'object_type':'Asset','schema_version':'1.0.0','business_id':bid,'created_at':'2026-08-30T00:00:00+00:00','updated_at':'2026-08-30T00:00:00+00:00','lineage':[business['id']],
-        'asset_type':'landing_page','owner_system':'marketing-synthesis','business_role':'customer_facing_landing_page_draft','location_reference':f'instances/{bid}/assets/landing-page.html','version':'1','status':'draft',
+        'asset_type':'landing_page','business_role':'customer_facing_landing_page_draft','location_reference':f'instances/{bid}/assets/landing-page.html','version':'1','status':'draft',
         'extensions':{'businessos':{'customer_facing':True,'claim_manifest':[
             {'text':'We charge [CONFIRM ACTUAL FEE].','classification':'placeholder','support_refs':[],'launch_critical':True},
             {'text':'Start here: [CONFIRM CTA AND URL].','classification':'placeholder','support_refs':[],'launch_critical':True}]}}
