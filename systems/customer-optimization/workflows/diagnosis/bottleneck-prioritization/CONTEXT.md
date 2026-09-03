@@ -34,7 +34,7 @@ Run when several journey stages show friction, drop-off, delay, or risk and one 
 1. [DETERMINISTIC] Calculate transition volume, conversion, delay/time-in-state, downstream value, support burden, and trend by relevant cohort.
 2. [AI] Identify where observed loss/delay is both material and potentially addressable, distinguishing expected qualification/filtering from harmful friction.
 3. [AI] Evaluate downstream consequence: activation, time-to-value, retention, revenue, cost-to-serve, customer success, and experience.
-4. [AI] Consider confidence, intervention leverage, dependencies, reversibility, and whether another domain actually owns the root cause.
+4. [AI] Consider confidence, intervention leverage, dependencies, reversibility, and whether the root cause is better addressed with other relevant operating knowledge or by a real organizational function outside the current work.
 5. [HYBRID] Avoid prioritizing solely by largest percentage drop where volume/value/customer intent differs.
 6. [DETERMINISTIC] Rank candidate bottlenecks with transparent components/ranges and attach baseline evidence.
 7. [AI] Create/refresh Optimization Opportunities only for qualified bottlenecks.
