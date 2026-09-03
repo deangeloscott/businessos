@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Protect AURA's minimal canonical organization-state boundary.
+"""Protect AURA's canonical organization-state boundary without freezing its taxonomy.
 
 Workflows may use any sound implementation method available to the active model/harness,
-but durable reads/writes must stay inside the explicit organization-owned model. Auxiliary
-runtime/config/package schemas must not quietly become required business state.
+but durable reads/writes/context must stay inside the explicit organization-owned model.
+Auxiliary runtime/config/package schemas must not quietly become required business state.
+This regression protects those boundaries, not today's exact object count.
 """
 from pathlib import Path
 import json,sys
@@ -21,14 +22,7 @@ def req(condition,message):
 
 def main():
     canonical=set(INSTANCE_PATHS)
-
-    required={
-        'Business','BusinessClaim','PreferenceProfile','SourceRecord','Observation','Insight','ProofRecord',
-        'DecisionRecord','Opportunity','Initiative','WorkRequest','AttentionItem','ChangeEvent','VerificationRecord',
-        'Incident','Asset','MetricDefinition','MetricObservation','Experiment','OutcomeEvaluation','Learning',
-        'ProcessExtension'
-    }
-    req(required<=canonical,f'canonical organization model lost expected durable types: {sorted(required-canonical)}')
+    req(canonical,'canonical organization model must contain at least one durable type')
 
     retired={
         'Approval','ActionPacket','EventReactionDecision','ReactiveMonitoringProfile','BusinessOSEventConsumerProfile',
@@ -41,6 +35,11 @@ def main():
     # Support/interface schemas are deliberately outside canonical organization state.
     for typ in ('Run','PublisherMetadata','WorkspaceProfile','InnovationPackage','InnovationExchangeEntry','InnovationExchangeIndex'):
         req(typ not in canonical,f'support/interface type {typ} must not become canonical merely because a schema exists')
+
+    # Canonical state belongs to organization-owned namespaces, never product/runtime/config surfaces.
+    for typ,rel in INSTANCE_PATHS.items():
+        top=str(rel).split('/',1)[0]
+        req(top not in {'runtime','config','distribution','generated'},f'{typ} canonical state leaked into non-organization namespace: {rel}')
 
     # Organization initialization must derive durable directories from the same canonical
     # model rather than a second hand-maintained list.
@@ -73,9 +72,11 @@ def main():
         for item in meta.get('writes',[]) or []:
             typ=selector_type(item)
             if typ not in canonical: errors.append(f'{rel}: write type {typ} is outside canonical organization state')
+        for typ in meta.get('context',[]) or []:
+            if typ not in canonical: errors.append(f'{rel}: context type {typ} is outside canonical organization state')
     req(not errors,'\n'.join(errors[:100]))
 
-    print(f'canonical model boundary passed: {len(canonical)} organization-owned object types with Workflow-native operating knowledge')
+    print(f'canonical model boundary passed: {len(canonical)} current organization-owned object types; taxonomy remains simplifiable')
 
 
 if __name__=='__main__':main()
