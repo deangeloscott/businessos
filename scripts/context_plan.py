@@ -70,7 +70,7 @@ def build_plan(business_id,workflow_id,focus=None,operator_ref=None,team_ref=Non
     if not match or match.get('type')!='workflow':raise ValueError('Unknown AURA Workflow')
     base=ROOT/'instances'/business_id
     if not base.exists():raise ValueError('Unknown business')
-    owner=match.get('owner_system') or 'core';installed=installed_modules()
+    owner=match.get('owner_system') or 'core'
     if isinstance(task_preferences,(str,Path)):task_preferences=_load_task_preferences(str(task_preferences))
     operator_ref=operator_ref or os.environ.get('BUSINESSOS_OPERATOR_REF');team_ref=team_ref or os.environ.get('BUSINESSOS_TEAM_REF');role_ref=role_ref or os.environ.get('BUSINESSOS_ROLE_REF')
     prefs=resolve_effective_preferences(business_id,operator_ref,team_ref,role_ref,owner,workflow_id,output_type,channel,task_preferences)
@@ -86,9 +86,9 @@ def build_plan(business_id,workflow_id,focus=None,operator_ref=None,team_ref=Non
     _add(files,match['path'])
 
     read_types={selector_type(x) for x in match.get('read_selectors',[])};write_types=set(match.get('write_types',[]));context_types=set(match.get('context_types',[]));combined=read_types|write_types
-    if owner in {'content-synthesis','marketing-synthesis'} or {'BusinessClaim','Brand'} & combined:_add(files,'core/policies/active-business-truth.md');_add(files,'core/policies/context-provenance-and-claims.md')
-    if {'SourceRecord','Observation','Insight','Learning','ProofRecord'} & combined:_add(files,'core/policies/evidence.md');_add(files,'core/policies/provenance.md')
-    if {'SourceRecord','Observation','Insight'} & write_types:_add(files,'core/policies/research-evidence.md')
+    if owner in {'content-synthesis','marketing-synthesis'} or {'BusinessClaim','Brand'}&combined:_add(files,'core/policies/active-business-truth.md');_add(files,'core/policies/context-provenance-and-claims.md')
+    if {'SourceRecord','Observation','Insight','Learning','ProofRecord'}&combined:_add(files,'core/policies/evidence.md');_add(files,'core/policies/provenance.md')
+    if {'SourceRecord','Observation','Insight'}&write_types:_add(files,'core/policies/research-evidence.md')
     if 'Opportunity' in write_types:_add(files,'core/policies/decision-grounding.md')
     if 'AttentionItem' in combined:_add(files,'core/policies/attention-lifecycle.md')
     if 'PlatformChange' in combined:_add(files,'core/policies/platform-intelligence.md')
@@ -109,7 +109,7 @@ def build_plan(business_id,workflow_id,focus=None,operator_ref=None,team_ref=Non
                 if robj.get('object_type') in context_types or any(object_matches(robj,s) for s in selectors):selected[ref]=(robj,rpath);nxt.append(ref);seen.add(ref)
         queue=nxt
 
-    unresolved=[];optional_unavailable=[]
+    unresolved=[]
     if owner in {'content-synthesis','marketing-synthesis'}:context_types.add('BusinessClaim')
     for typ in sorted(context_types):
         candidates=[(o,p) for o,p in idx.values() if o.get('object_type')==typ and o.get('status') not in {'archived','superseded'}];already=any(o.get('object_type')==typ for o,_ in selected.values())
@@ -119,8 +119,7 @@ def build_plan(business_id,workflow_id,focus=None,operator_ref=None,team_ref=Non
         elif not already and len(candidates)>1:unresolved.append({'type':typ,'reason':'multiple candidates; resolve from request/focus rather than bulk-loading'})
         elif not already:unresolved.append({'type':typ,'reason':'not present in durable AURA context'})
     for sel in selectors:
-        ns=normalize_selector(sel);source_owner=ns.get('owner_system')
-        if source_owner and source_owner not in installed:optional_unavailable.append({**ns,'reason':f'optional module {source_owner} is not installed'});continue
+        ns=normalize_selector(sel)
         if any(object_matches(o,sel) for o,_ in selected.values()):continue
         candidates=[(o,p) for o,p in idx.values() if object_matches(o,sel) and o.get('status') not in {'archived','superseded'}]
         if len(candidates)==1:selected[candidates[0][0]['id']]=candidates[0]
@@ -136,7 +135,7 @@ def build_plan(business_id,workflow_id,focus=None,operator_ref=None,team_ref=Non
         if rel not in object_files:object_files.append(rel)
     schema_registry=json.loads((ROOT/'generated/schema-registry.json').read_text());schema_paths={row.get('title'):row['path'] for row in schema_registry if row.get('title')};schema_files=[schema_paths[typ] for typ in sorted(write_types) if typ in schema_paths]
     for rel in schema_files+object_files:_add(files,rel)
-    return {'version':os_version(),'business_id':business_id,'workflow_id':workflow_id,'focus_refs':focus,'operator_ref':operator_ref,'team_ref':team_ref,'role_ref':role_ref,'effective_preferences':prefs.get('effective_preferences',{}),'preference_profiles':[x.get('id') for x in prefs.get('applied_profiles',[])],'preference_conflicts':prefs.get('conflicts',[]),'files':files,'object_context':selected_items,'object_refs':[item['object_ref'] for item in selected_items],'object_files':object_files,'schema_files':schema_files,'unresolved_selectors':unresolved,'optional_unavailable_selectors':optional_unavailable,'evidence_inputs':match.get('evidence_inputs',[]),'material_inputs':_material_inputs(selected,idx,match.get('evidence_inputs',[])),'execution_rule':'The Workflow describes the outcome, procedure, evidence, and quality requirements. The active model/harness chooses the best available tools, external Skills, providers, orchestration, and implementation details.'}
+    return {'version':os_version(),'business_id':business_id,'workflow_id':workflow_id,'focus_refs':focus,'operator_ref':operator_ref,'team_ref':team_ref,'role_ref':role_ref,'effective_preferences':prefs.get('effective_preferences',{}),'preference_profiles':[x.get('id') for x in prefs.get('applied_profiles',[])],'preference_conflicts':prefs.get('conflicts',[]),'files':files,'object_context':selected_items,'object_refs':[item['object_ref'] for item in selected_items],'object_files':object_files,'schema_files':schema_files,'unresolved_selectors':unresolved,'evidence_inputs':match.get('evidence_inputs',[]),'material_inputs':_material_inputs(selected,idx,match.get('evidence_inputs',[])),'execution_rule':'The Workflow describes the outcome, procedure, evidence, and quality requirements. The active model/harness chooses the best available tools, external Skills, providers, orchestration, and implementation details.'}
 
 
 def main():
