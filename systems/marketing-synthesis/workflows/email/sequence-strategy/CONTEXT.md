@@ -35,4 +35,4 @@ Use when a commercial email sequence needs planning, message-job design, timing,
 4. [AI] Set timing from customer context/event/deadline and known behavior rather than arbitrary daily cadence.
 5. [HYBRID] Prevent excessive frequency, contradictory messages, or sending after conversion/ineligibility.
 6. [HYBRID] Define useful events, dynamic fields, tracking, holdouts/tests, and terminal states without turning AURA into the scheduler or sending runtime.
-7. [AI] Preserve the sequence map as a Marketing-owned Asset for direct use by drafting, branching, subject/preview, QA, and real send/schedule execution. Do not create a WorkRequest merely to move between those methods.
+7. [AI] Preserve the sequence map as an organization-owned Asset for direct use by drafting, branching, subject/preview, QA, and real send/schedule execution. Do not create a WorkRequest merely to move between those methods.
