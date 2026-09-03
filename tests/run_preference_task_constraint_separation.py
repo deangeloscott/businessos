@@ -72,7 +72,7 @@ def main():
 
         # Valid preferences survive without turning a past task restriction into standing state.
         errors,warnings,counts=validate_business(BID,False);req(not errors,f'valid preference-only business should validate: {errors}')
-        resolved=resolve_effective_preferences(BID,operator_ref='jordan-founder',system='content-synthesis',contract='content.production.article')
+        resolved=resolve_effective_preferences(BID,operator_ref='jordan-founder',system='content-synthesis',workflow='content.production.article')
         effective=resolved['effective_preferences'];req(effective['communication']['style']=='concise and practical','later session lost valid durable preference')
         text=json.dumps(effective).lower();req('publish' not in text and 'approval' not in text and 'permission' not in text,'later session inherited a past task constraint')
         req(counts.get('PreferenceProfile')==1,f'expected one valid PreferenceProfile, got {counts}')
