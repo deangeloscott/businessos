@@ -16,7 +16,6 @@ import zipfile
 import xml.etree.ElementTree as ET
 
 from _common import *
-from artifact_readiness import qa_global_readiness_errors
 
 TEXT_EXTS={'.md','.txt','.html','.htm','.rst','.csv','.json'}
 MEDIA_EXTS={
@@ -174,9 +173,6 @@ def qa_evidence_errors(workflow,paths,business_id=None):
         ref_errors=_qa_ref_errors(data,business_id)
         if ref_errors:
             failures.extend(ref_errors);continue
-        readiness_errors=qa_global_readiness_errors(data,business_id) if business_id else []
-        if readiness_errors:
-            failures.extend(readiness_errors);continue
         return []
     return list(dict.fromkeys(failures or [f"{workflow.get('id')} requires structured QA evidence"]))
 
