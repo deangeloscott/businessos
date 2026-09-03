@@ -25,7 +25,7 @@ No setup required to see the demo.
         cands=scan_claims(BID,p)
         req(cands,'review helper should surface at least some candidate text')
 
-        asset={'id':'ast_claim_fixture','object_type':'Asset','business_id':BID,'owner_system':'content-synthesis','location_reference':str(p.relative_to(ROOT)),'extensions':{'businessos':{'customer_facing':True}}}
+        asset={'id':'ast_claim_fixture','object_type':'Asset','business_id':BID,'location_reference':str(p.relative_to(ROOT)),'extensions':{'businessos':{'customer_facing':True}}}
         req(not claim_errors(BID,[(asset,BASE/'assets/ast_claim_fixture.json')]),'customer-facing Asset must not require a claim manifest')
 
         idx={}
@@ -55,13 +55,13 @@ No setup required to see the demo.
         asset['extensions']['businessos']['claim_manifest']=manifest
         req(not claim_errors(BID,[(asset,BASE/'assets/ast_claim_fixture.json')]),'optional structurally grounded manifest should pass')
 
-        # Product module ownership is not claim-governance authority. Any Asset that
-        # explicitly carries a claim manifest gets the same structural provenance check.
-        other=dict(asset);other['owner_system']='seo-aeo';other['extensions']={'businessos':{'claim_manifest':[{'text':'Anything','classification':'approved_business_claim','support_refs':[]}]}}
-        errs=claim_errors(BID,[(other,BASE/'assets/ast_other_domain.json')])
-        req(any('requires support_refs' in e for e in errs),'claim validation was incorrectly gated by AURA module ownership')
+        # Claim validation applies to the organization-owned Asset itself, independent of
+        # whichever AURA operating-knowledge area or external method may have informed it.
+        other=dict(asset);other['id']='ast_other_method';other['extensions']={'businessos':{'claim_manifest':[{'text':'Anything','classification':'approved_business_claim','support_refs':[]}]}}
+        errs=claim_errors(BID,[(other,BASE/'assets/ast_other_method.json')])
+        req(any('requires support_refs' in e for e in errs),'claim validation was incorrectly gated by AURA method/module context')
 
-        print('claim provenance regressions passed with model-owned semantics and module-independent structural validation')
+        print('claim provenance regressions passed with model-owned semantics and method-independent structural validation')
     finally:
         if BASE.exists():shutil.rmtree(BASE)
 if __name__=='__main__':main()
