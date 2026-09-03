@@ -66,12 +66,12 @@ def _validate_playbooks_and_maps(errors,ids,types):
             aid=activity.get('id');entry=activity.get('entry_workflow')
             if not aid or aid in seen:errors.append(f'{map_path.relative_to(ROOT)}: missing/duplicate activity {aid}')
             seen.add(aid)
+            if 'supporting_workflows' in activity:errors.append(f'{map_path.relative_to(ROOT)}: activity {aid} reintroduced retired Workflow-composition metadata supporting_workflows')
+            unsupported=sorted(set(activity)-{'id','entry_workflow','result'})
+            if unsupported:errors.append(f'{map_path.relative_to(ROOT)}: activity {aid} has unsupported navigation fields {unsupported}')
             if not entry:errors.append(f'{map_path.relative_to(ROOT)}: activity {aid} missing entry_workflow')
             elif entry not in all_ids:errors.append(f'{map_path.relative_to(ROOT)}: unknown Workflow {entry}')
             elif types.get(entry)!='workflow':errors.append(f'{map_path.relative_to(ROOT)}: entry {entry} must resolve to type workflow, found {types.get(entry)!r}')
-            for ref in activity.get('supporting_workflows',[]) or []:
-                if ref not in all_ids:errors.append(f'{map_path.relative_to(ROOT)}: unknown supporting Workflow {ref}')
-                elif types.get(ref)!='workflow':errors.append(f'{map_path.relative_to(ROOT)}: supporting reference {ref} is not type workflow')
 
 def _validate_schemas(errors):
     titles=set()
