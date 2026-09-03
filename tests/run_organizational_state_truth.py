@@ -18,13 +18,13 @@ def write(path,value):
 
 def init_business(workspace,business_id,env):
     run([S/'init_business.py',business_id,'--name',business_id.replace('-',' ').title()],env)
-    run([S/'bootstrap_explicit_context.py',business_id,'--facts-json',json.dumps({'objectives':['Verify organizational state truth']}),'--source-text','The organization objective is to verify organizational state truth.','--initialization-only'],env)
+    run([S/'bootstrap_explicit_context.py',business_id,'--facts-json',json.dumps({'objectives':['Verify organizational state truth']}),'--source-text','The organization objective is to verify organizational state truth.'],env)
     return workspace/'instances'/business_id
 
 
 def readiness_regression(workspace,env):
     bid='readiness-truth';base=init_business(workspace,bid,env)
-    rid=run([S/'create_run.py',bid,'Prepare a truthful customer-facing landing-page draft','--contract-id','marketing.assets.landing-page'],env).stdout.strip()
+    rid=run([S/'create_run.py',bid,'Prepare a truthful customer-facing landing-page draft','--workflow-id','marketing.assets.landing-page'],env).stdout.strip()
     artifact=write(base/'assets'/'landing-page.html','<html><body><p>We charge [CONFIRM ACTUAL FEE].</p><p>Start here: [CONFIRM CTA AND URL].</p></body></html>\n')
     business=json.loads((base/'context/business.json').read_text());aid=f'ast_{bid}_landing'
     readiness={
@@ -68,14 +68,14 @@ def readiness_regression(workspace,env):
 def provenance_regression(workspace,env):
     bid='provenance-truth';base=init_business(workspace,bid,env)
     supplied=write(workspace/'attachments/customer-input.txt','A customer supplied this bounded internal evidence.\n')
-    internal_bundle=write(workspace/'attachments/internal-bundle.json',{'contract_id':'competitor.analysis.customer-sentiment','sources':[{'source_reference':'attachments/customer-input.txt','acquisition_method':'unknown','captured_text':supplied.read_text()}],'observations':[{'statement':'The supplied file contains one bounded internal evidence statement.','source_indexes':[0]}]})
+    internal_bundle=write(workspace/'attachments/internal-bundle.json',{'sources':[{'source_reference':'attachments/customer-input.txt','acquisition_method':'unknown','captured_text':supplied.read_text()}],'observations':[{'statement':'The supplied file contains one bounded internal evidence statement.','source_indexes':[0]}]})
     internal_result=json.loads(run([S/'persist_research_bundle.py',bid,'--bundle-file',internal_bundle],env).stdout);source_row=next(x for x in internal_result['objects_written'] if x['object_type']=='SourceRecord');source=json.loads((workspace/source_row['path']).read_text())
     req(source.get('source_type')=='organization_supplied_file' and source.get('origin')=='organization supplied' and source.get('access_scope')=='business_internal',f'organization-supplied source was misclassified: {source}')
     req(source.get('extensions',{}).get('businessos_evidence',{}).get('provenance_resolution')=='exact_workspace_reference','exact external-workspace provenance was not recorded')
-    public_bundle=write(workspace/'attachments/public-bundle.json',{'contract_id':'competitor.analysis.customer-sentiment','sources':[{'source_type':'review_platform','source_reference':'https://www.yelp.com/biz/aura-public-regression','acquisition_method':'user_provided','captured_text':'A bounded public review excerpt.'}]})
+    public_bundle=write(workspace/'attachments/public-bundle.json',{'sources':[{'source_type':'review_platform','source_reference':'https://www.yelp.com/biz/aura-public-regression','acquisition_method':'user_provided','captured_text':'A bounded public review excerpt.'}]})
     public=json.loads(run([S/'persist_research_bundle.py',bid,'--bundle-file',public_bundle],env).stdout);public_row=next(x for x in public['objects_written'] if x['object_type']=='SourceRecord');public_source=json.loads((workspace/public_row['path']).read_text())
     req(public_source.get('origin')=='public web' and public_source.get('access_scope')=='public','genuine public-web source lost public provenance')
-    ambiguous_bundle=write(workspace/'attachments/ambiguous-bundle.json',{'contract_id':'competitor.analysis.customer-sentiment','sources':[{'source_reference':'provider-record-123','acquisition_method':'api_response','record_payload':{'statement':'bounded record'}}]})
+    ambiguous_bundle=write(workspace/'attachments/ambiguous-bundle.json',{'sources':[{'source_reference':'provider-record-123','acquisition_method':'api_response','record_payload':{'statement':'bounded record'}}]})
     ambiguous=run([S/'persist_research_bundle.py',bid,'--bundle-file',ambiguous_bundle],env,check=False)
     req(ambiguous.returncode!=0 and 'cannot determine source provenance mechanically' in ambiguous.stderr and 'will not default ambiguous evidence to public web' in ambiguous.stderr,'ambiguous provenance was guessed')
     req(not (ROOT/'instances'/bid).exists() and base.exists(),'external workspace provenance regression leaked organization state into product root')
@@ -88,9 +88,9 @@ def complete_receipt(workspace,env,bid,rid,label):
 
 def receipt_independence_regression(workspace,env):
     bid='run-receipt-truth';init_business(workspace,bid,env)
-    first=run([S/'create_run.py',bid,'Inspect one bounded indexing condition','--contract-id','seo.diagnosis.detectors.indexing'],env).stdout.strip()
-    second=run([S/'create_run.py',bid,'Diagnose a separate business question','--contract-id','core.diagnosis.business-problem'],env).stdout.strip()
-    duplicate=run([S/'create_run.py',bid,'Inspect one bounded indexing condition','--contract-id','seo.diagnosis.detectors.indexing'],env).stdout.strip()
+    first=run([S/'create_run.py',bid,'Inspect one bounded indexing condition','--workflow-id','seo.execution.indexing.index-troubleshooting'],env).stdout.strip()
+    second=run([S/'create_run.py',bid,'Diagnose a separate business question','--workflow-id','core.diagnosis.business-problem'],env).stdout.strip()
+    duplicate=run([S/'create_run.py',bid,'Inspect one bounded indexing condition','--workflow-id','seo.execution.indexing.index-troubleshooting'],env).stdout.strip()
     complete_receipt(workspace,env,bid,first,'bounded index-state inspection')
     states={rid:json.loads((workspace/'runtime/runs'/bid/rid/'run.json').read_text()) for rid in (first,second,duplicate)}
     req(states[first].get('status')=='completed','completed receipt did not close')
