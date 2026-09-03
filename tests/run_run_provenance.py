@@ -69,7 +69,7 @@ def main():
 
         negative=('do not ','does not ','never ','without ','no ','not required','rather than ','instead of ')
         for path in ROOT.rglob('CONTEXT.md'):
-            if '/contracts/' not in path.as_posix():continue
+            if '/workflows/' not in path.as_posix():continue
             for line in path.read_text(encoding='utf-8').splitlines():
                 low=line.lower()
                 if ('manual action packet' in low or 'manual action package' in low) and not any(marker in low for marker in negative):req(False,f'{path.relative_to(ROOT)} recreated retired manual-action fallback: {line.strip()}')
