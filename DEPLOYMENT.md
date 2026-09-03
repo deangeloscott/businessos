@@ -10,7 +10,7 @@ AURA has one product architecture. The setups below are not different products o
 
 AURA has product files such as playbooks, instructions, schemas, and helper scripts.
 
-AURA also has organization-owned files such as business context, work history, knowledge, and attachments.
+AURA also has organization-owned files such as business context, useful work history, knowledge, and attachments.
 
 Those can live together for the simplest setup, or separately for safer upgrades and sharing.
 
@@ -22,7 +22,7 @@ Best for trying AURA, one-device use, or people who want the fewest moving parts
 ViralTrac AURA folder
 ├── product files
 ├── instances/       business memory
-├── runtime/         work/continuity state
+├── runtime/         optional work receipts/continuity
 ├── knowledge/       human-readable knowledge
 └── attachments/     optional files
 ```
@@ -100,7 +100,7 @@ AURA product
      ▼
 Organization workspace
 ├── instances/       main structured business records
-├── runtime/         work and recovery state
+├── runtime/         optional work receipts/continuity
 ├── knowledge/       readable views and human notes
 ├── attachments/     optional workspace files
 └── .businessos/     workspace profile
@@ -238,7 +238,7 @@ Use `scripts/migrate_workspace.py` instead of manually copying only one folder a
 When present, migration moves these organization-owned areas together:
 
 - `instances/`
-- `runtime/`
+- `runtime/` (optional bounded work receipts/continuity, when present)
 - `knowledge/`
 - `attachments/`
 
