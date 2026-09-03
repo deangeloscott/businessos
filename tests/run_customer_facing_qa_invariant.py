@@ -16,8 +16,10 @@ def load(rel):
 def main():
     _,pre_meta,pre_body=load('systems/content-synthesis/workflows/qa/pre-publish/CONTEXT.md')
     req(pre_meta.get('id')=='content.qa.pre-publish' and pre_meta.get('type')=='workflow','shared Content pre-publish QA Workflow is missing')
-    for phrase in ('actual final artifact','claim_surface_ref','accessibility','run/work receipt is optional'):
+    for phrase in ('actual final artifact','accessibility','run/work receipt is optional'):
         req(phrase in pre_body.lower(),f'pre-publish QA lost substantive boundary: {phrase}')
+    req('claim_surface_ref' in pre_body and 'do not require a sidecar merely because the medium is opaque' in pre_body.lower(),'opaque-media claim surface should remain optional continuity/provenance support')
+    req('never a substitute for inspecting the artifact itself' in pre_body.lower(),'claim sidecar regained authority over the real rendered artifact')
     req('approval object' in pre_body.lower() and 'publication decision' in pre_body.lower(),'pre-publish QA must preserve real-review needs without becoming launch authority')
 
     # Article can draw on briefs, narrative/proof methods, and final QA when useful, but no
@@ -55,7 +57,7 @@ def main():
     for retired in ('scripts/record_contract_completion.py','scripts/finalize_run.py','scripts/complete_sop_run.py'):
         req(not (ROOT/retired).exists(),f'QA invariant recreated execution-orchestration helper: {retired}')
 
-    print('customer-facing QA regressions passed: strong final-artifact QA remains reusable expert knowledge without required composition, semantic approval, or execution orchestration')
+    print('customer-facing QA regressions passed: strong final-artifact QA remains reusable expert knowledge without required sidecars, composition, semantic approval, or execution orchestration')
 
 
 if __name__=='__main__':main()
