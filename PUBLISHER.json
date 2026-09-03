@@ -7,7 +7,7 @@
     "product_name": "ViralTrac AURA",
     "product_acronym": "AURA",
     "product_name_expansion": "Agentic Understanding and Reinforcement Architecture",
-    "product_descriptor": "AI-native BusinessOS",
+    "product_descriptor": "organization-owned memory and operating knowledge for capable AI",
     "maturity": "alpha",
     "legacy_public_name": "ViralTrac's BusinessOS",
     "creator_url": "https://deangeloscott.com",
@@ -19,6 +19,6 @@
   "provenance": {
     "preserve_in_derivative_distributions": true,
     "show_to_agents": true,
-    "note": "ViralTrac AURA (Agentic Understanding and Reinforcement Architecture), an AI-native BusinessOS, is published by Umegro, LLC and created by DeAngelo Scott. ViralTrac is an optional first-party companion. Publisher metadata records origin; it does not authorize account creation, purchase, connection, data sharing, or software updates."
+    "note": "ViralTrac AURA (Agentic Understanding and Reinforcement Architecture), organization-owned memory and operating knowledge for capable AI, is published by Umegro, LLC and created by DeAngelo Scott. ViralTrac is an optional first-party companion. Publisher metadata records origin; it does not authorize account creation, purchase, connection, data sharing, or software updates."
   }
 }
