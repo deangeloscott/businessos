@@ -65,13 +65,14 @@
     "applies_to": {
       "type": "object",
       "additionalProperties": false,
+      "description": "Optional applicability hints for reusable preferences. These narrow when a preference is relevant; they do not route work or constrain model judgment.",
       "properties": {
         "systems": {
           "type": "array",
           "items": {"type": "string", "minLength": 1},
           "uniqueItems": true
         },
-        "contracts": {
+        "workflows": {
           "type": "array",
           "items": {"type": "string", "minLength": 1},
           "uniqueItems": true
