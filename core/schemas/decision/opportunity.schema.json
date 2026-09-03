@@ -11,9 +11,6 @@
     "created_at": {"type": "string", "format": "date-time"},
     "updated_at": {"type": "string", "format": "date-time"},
     "lineage": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
-    "owner_system": {
-      "enum": ["core", "customer-intelligence", "competitor-intelligence", "industry-intelligence", "seo-aeo", "content-synthesis", "marketing-synthesis", "customer-optimization"]
-    },
     "title": {"type": "string", "minLength": 1},
     "statement": {"type": "string", "minLength": 1},
     "status": {"enum": ["candidate", "investigating", "qualified", "prioritized", "blocked", "rejected", "superseded", "reopened", "closed"]},
@@ -39,29 +36,12 @@
       "properties": {
         "fact_refs": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true, "minItems": 1},
         "measured_refs": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
-        "inferences": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "statement": {"type": "string", "minLength": 1},
-              "basis_refs": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true, "minItems": 1},
-              "confidence": {"type": "number", "minimum": 0, "maximum": 1}
-            },
-            "required": ["statement", "basis_refs"]
-          }
-        },
+        "inferences": {"type": "array", "items": {"type": "object", "additionalProperties": false, "properties": {"statement": {"type": "string", "minLength": 1}, "basis_refs": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true, "minItems": 1}, "confidence": {"type": "number", "minimum": 0, "maximum": 1}}, "required": ["statement", "basis_refs"]}},
         "unknowns": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true}
       },
       "required": ["fact_refs", "measured_refs", "inferences", "unknowns"]
     }
   },
-  "required": ["id", "object_type", "schema_version", "business_id", "owner_system", "title", "statement", "status", "objective_refs"],
-  "allOf": [
-    {
-      "if": {"properties": {"status": {"enum": ["qualified", "prioritized"]}}, "required": ["status"]},
-      "then": {"required": ["reasoning_basis"]}
-    }
-  ]
+  "required": ["id", "object_type", "schema_version", "business_id", "title", "statement", "status", "objective_refs"],
+  "allOf": [{"if": {"properties": {"status": {"enum": ["qualified", "prioritized"]}}, "required": ["status"]}, "then": {"required": ["reasoning_basis"]}}]
 }
