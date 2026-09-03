@@ -11,7 +11,7 @@ import json,os,shutil,sys,tempfile
 ROOT=Path(__file__).resolve().parents[1];sys.path.insert(0,str(ROOT/'scripts'))
 from init_business import init_business
 from enter import prepare_work
-from _common import contract_files,read_frontmatter
+from _common import workflow_files,read_frontmatter
 
 
 def req(condition,message):
@@ -41,7 +41,7 @@ def main():
     for rel in retired:req(not (ROOT/rel).exists(),f'retired control/capability/routing artifact reappeared: {rel}')
 
     count=0
-    for path in contract_files():
+    for path in workflow_files():
         meta,_=read_frontmatter(path);count+=1
         req(meta.get('type')=='workflow',f'{path.relative_to(ROOT)} is not typed as Workflow')
         req('capabilities' not in meta,f'{path.relative_to(ROOT)} retained capability ontology')
