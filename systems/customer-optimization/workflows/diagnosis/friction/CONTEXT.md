@@ -5,7 +5,7 @@ owner_system: customer-optimization
 reads:
 - CustomerJourney
 - type: Insight
-  owner_system: customer-intelligence
+  domain: customer-intelligence
 - Observation
 - MetricObservation
 writes:
@@ -34,5 +34,5 @@ Run when journey evidence or an active Opportunity requires customer friction di
 2. [HYBRID] Gather quantitative behavior, customer feedback, support/sales evidence, technical state, process rules, and relevant marketing promises.
 3. [AI] Generate cause classes: unclear value/instruction, effort, technical failure, process delay, qualification mismatch, trust/risk, price/payment, missing capability, handoff, expectation mismatch, external constraint.
 4. [HYBRID] Test hypotheses against sequence/timing/segment evidence and direct customer evidence; separate correlation from plausible mechanism.
-5. [AI] Determine whether primary ownership remains Customer Optimization or actually belongs to Marketing, Customer Intelligence, Product, Sales, or another future domain.
-6. [HYBRID] Estimate business/customer impact and intervention leverage; create/update Optimization Insight/Opportunity only when diagnosis is sufficient.
+5. [AI] Determine which real business function, constraint, evidence, or specialist operating knowledge is relevant to the diagnosed cause. Use that knowledge directly when it improves the work rather than assigning the diagnosis to an internal AURA owner.
+6. [HYBRID] Estimate business/customer impact and intervention leverage; create/update Optimization Insight/Opportunity only when that distinct durable meaning actually exists and the diagnosis is sufficient.
