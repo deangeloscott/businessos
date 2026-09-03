@@ -35,4 +35,4 @@ Use after the webinar objective/audience is sufficiently clear.
 4. [AI] Add cases/examples/exercises where application is needed and identify evidence/source requirements.
 5. [HYBRID] Confirm the teaching delivers standalone value and remove material that exists only to prolong presentation or hide useful details until the pitch.
 6. [AI] Identify natural bridges where the business solution becomes relevant without interrupting education.
-7. [AI] Preserve the module/beat architecture and slide/demo requirements as a Marketing-owned Asset. Use presentation/Content capabilities directly when useful; persist a WorkRequest only for a real durable organizational handoff.
+7. [AI] Preserve the module/beat architecture and slide/demo requirements as an organization-owned Asset. Use presentation/Content capabilities directly when useful; persist a WorkRequest only for a real durable organizational handoff.
