@@ -21,7 +21,7 @@ def write_op(statement,diagnosis,measured=None,fact_refs=None,inference_refs=Non
     obs=json.loads(obsfiles[0].read_text());oid=obs['id'];facts=fact_refs if fact_refs is not None else [oid];irefs=inference_refs if inference_refs is not None else [oid]
     op={
       'id':f'opp_{BID}_test','object_type':'Opportunity','schema_version':'1.0.0','business_id':BID,
-      'created_at':ts,'updated_at':ts,'lineage':[INDEXING_WORKFLOW],'owner_system':'seo-aeo',
+      'created_at':ts,'updated_at':ts,'lineage':[INDEXING_WORKFLOW],
       'title':'Repair prerequisite indexability configuration','statement':statement,'status':'prioritized',
       'objective_refs':[],'origin_insight_refs':[],'evidence_links':[oid],'affected_refs':[],
       'diagnosis':diagnosis,'constraints':['Diagnostic evidence only'],
