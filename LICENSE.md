@@ -2,7 +2,7 @@
 
 Copyright © 2026 Umegro, LLC. All rights reserved except as expressly granted below.
 
-This license applies to **ViralTrac AURA (Agentic Understanding and Reinforcement Architecture)**, an AI-native BusinessOS, and its included documentation, workflows, schemas, scripts, templates, configuration files, and other materials distributed with it (collectively, the **“AURA Materials”**). This is a source-available license and is **not** an open-source license.
+This license applies to **ViralTrac AURA (Agentic Understanding and Reinforcement Architecture)**, organization-owned memory and operating knowledge for capable AI, and its included documentation, workflows, schemas, scripts, templates, configuration files, and other materials distributed with it (collectively, the **“AURA Materials”**). This is a source-available license and is **not** an open-source license.
 
 ## 1. License grant
 
@@ -41,7 +41,7 @@ A public repository host's built-in viewing and forking functionality may operat
 
 ## 4. Client and service-provider copies
 
-A permitted service provider may maintain separate customized AURA/BusinessOS copies for multiple clients and may deliver those copies to the applicable clients. Such delivery is permitted only for the client's internal business use and as part of the provider's services. The provider may not use this permission to create a general-purpose resale, marketplace, white-label, sublicensing, or competing distribution business for the AURA Materials themselves.
+A permitted service provider may maintain separate customized AURA copies for multiple clients and may deliver those copies to the applicable clients. Such delivery is permitted only for the client's internal business use and as part of the provider's services. The provider may not use this permission to create a general-purpose resale, marketplace, white-label, sublicensing, or competing distribution business for the AURA Materials themselves.
 
 ## 5. Modifications and ownership
 
@@ -59,7 +59,7 @@ No patent, trademark, service, hosted-software, data-access, or other license is
 
 ## 7. No trademark license
 
-“ViralTrac AURA,” “ViralTrac,” “Umegro,” associated logos, and related brand identifiers are trademarks or brand assets of their respective owner. “BusinessOS” is also used descriptively in the materials to explain the product category and technical architecture. This license permits truthful attribution only. It does not grant a trademark license.
+“ViralTrac AURA,” “ViralTrac,” “Umegro,” associated logos, and related brand identifiers are trademarks or brand assets of their respective owner. The repository name `businessos` and some `BUSINESSOS_*` identifiers remain technical compatibility terms in the materials; they are not a separate trademark grant or the current public descriptor for AURA. This license permits truthful attribution only. It does not grant a trademark license.
 
 See `TRADEMARKS.md` for additional brand-use guidance.
 
