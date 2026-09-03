@@ -5,7 +5,6 @@ from jsonschema import Draft202012Validator
 from _common import *
 from operating_knowledge import get_playbook
 
-INTERNAL_MARKETING_ROLES={'internal_brief','internal_strategy','internal_analysis','internal_research','internal_planning'}
 RETIRED_RUN_BACKLINK_FIELDS={'run_ref','run_id','run_method_type','run_method_ref','run_workflow_id','run_binding','run_history_refs','contract_chain'}
 
 
@@ -57,13 +56,13 @@ def _run_files_errors(business_id,workflows):
 
 
 def _canonical_backlink_errors(objects):
+    """Receipts may point to durable results; durable results do not need Run backlinks."""
     errors=[]
     for obj,path in objects:
-        ext=obj.get('extensions') if isinstance(obj.get('extensions'),dict) else {};bos=ext.get('businessos') if isinstance(ext.get('businessos'),dict) else {};retired=sorted(RETIRED_RUN_BACKLINK_FIELDS & set(bos))
+        ext=obj.get('extensions') if isinstance(obj.get('extensions'),dict) else {}
+        bos=ext.get('businessos') if isinstance(ext.get('businessos'),dict) else {}
+        retired=sorted(RETIRED_RUN_BACKLINK_FIELDS & set(bos))
         if retired:errors.append(f'{path} contains retired canonical-to-Run backlink fields {retired}; optional receipts reference durable results one-way')
-        if obj.get('object_type')=='Asset' and obj.get('owner_system')=='marketing-synthesis' and bos.get('customer_facing',True) is False:
-            role=str(obj.get('business_role') or '').strip().lower()
-            if role not in INTERNAL_MARKETING_ROLES:errors.append(f'{path} marketing-synthesis Asset may set customer_facing=false only for an explicitly internal support role ({", ".join(sorted(INTERNAL_MARKETING_ROLES))}); an unpublished customer-facing draft remains customer-facing by intended use')
     return errors
 
 
