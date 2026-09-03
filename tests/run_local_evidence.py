@@ -23,7 +23,7 @@ def seed_site(site):
     site.mkdir(parents=True,exist_ok=True)
     (site/'index.html').write_text('<!doctype html><html><head><title>Northstar HVAC</title><meta name="description" content="HVAC repair"><script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"Northstar HVAC"}</script></head><body><a href="/missing.html">Missing</a></body></html>')
     (site/'robots.txt').write_text('User-agent: *\nDisallow: /private/\n')
-    (site/'sitemap.xml').write_text('<?xml version="1.0"?><urlset xmlns="http://www.sitemaps.org/sitemap/0.9"><url><loc>https://example.test/index.html</loc></url></urlset>')
+    (site/'sitemap.xml').write_text('<?xml version="1.0"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>https://example.test/index.html</loc></url></urlset>')
 
 
 def main():
@@ -70,7 +70,7 @@ def main():
         ts=json.loads((BASE/'instance.json').read_text()).get('created_at') or '2026-01-01T00:00:00+00:00'
         manual_src={'id':f'src_{BID}_manual-site','object_type':'SourceRecord','schema_version':'1.0.0','business_id':BID,'created_at':ts,'updated_at':ts,'lineage':[],'source_type':'first_party_website_export','source_reference':str(SITE_A.relative_to(ROOT)),'origin':'browser/filesystem inspection','retrieved_at':ts,'published_at':None,'content_hash':None,'access_scope':'first_party_local','extensions':{}}
         msp=BASE/'intelligence/sources'/f"{manual_src['id']}.json";msp.write_text(json.dumps(manual_src,indent=2)+'\n')
-        manual_obs={'id':f'obs_{BID}_manual-site','object_type':'Observation','schema_version':'1.0.0','business_id':BID,'created_at':ts,'updated_at':ts,'lineage':[manual_src['id']],'producer_system':'seo-aeo','observation_type':'manual_first_party_observation','subject_refs':[],'statement':'The inspected homepage contains Organization structured data.','source_refs':[manual_src['id']],'observed_at':ts,'method':'browser/filesystem inspection','extraction_confidence':0.95,'extensions':{}}
+        manual_obs={'id':f'obs_{BID}_manual-site','object_type':'Observation','schema_version':'1.0.0','business_id':BID,'created_at':ts,'updated_at':ts,'lineage':[manual_src['id']],'observation_type':'manual_first_party_observation','subject_refs':[],'statement':'The inspected homepage contains Organization structured data.','source_refs':[manual_src['id']],'observed_at':ts,'method':'browser/filesystem inspection','extraction_confidence':0.95,'extensions':{}}
         mop=BASE/'intelligence/observations'/f"{manual_obs['id']}.json";mop.write_text(json.dumps(manual_obs,indent=2)+'\n')
         le,_=local_evidence_errors(BID);require(not any(manual_src['id'] in e or manual_obs['id'] in e for e in le),f'local-evidence helper gated another evidence method: {le}')
 
