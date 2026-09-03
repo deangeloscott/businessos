@@ -9,7 +9,7 @@ reads:
 - Observation
 - Insight
 - type: Insight
-  owner_system: customer-intelligence
+  domain: customer-intelligence
 writes:
 - Competitor
 - Observation
