@@ -5,7 +5,7 @@ owner_system: competitor-intelligence
 reads:
 - Competitor
 - type: Insight
-  owner_system: customer-intelligence
+  domain: customer-intelligence
 - Observation
 - SourceRecord
 writes:
@@ -39,4 +39,4 @@ Run when a decision requires current offer intelligence and canonical competitor
 4. [DETERMINISTIC] Compare with prior state and competitor set.
 5. [AI] Identify apparent audience/stage fit and strategic intent.
 6. [HYBRID] Use customer/win-loss evidence before claiming an offer is effective or preferable.
-7. [DETERMINISTIC] Update competitor Observations/Insights and notify relevant systems if materially changed.
+7. [DETERMINISTIC] Update durable competitor Observations/Insights and surface material changes for relevant organizational work.
