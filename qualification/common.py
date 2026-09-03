@@ -32,28 +32,30 @@ def parse_process(text):
 def parse_workflow(path):
     meta,body=read_frontmatter(path);wid=meta.get('id')
     if not wid:raise ValueError(f'Workflow missing id: {path}')
-    return {'workflow_id':wid,'path':str(Path(path).relative_to(PRODUCT_ROOT)),'type':meta.get('type'),'owner_system':meta.get('owner_system') or wid.split('.')[0],'artifact_role':meta.get('artifact_role'),'reads':meta.get('reads') or [],'writes':meta.get('writes') or [],'context':meta.get('context') or [],'workflows':meta.get('workflows') or {},'title':next((ln[2:].strip() for ln in body.splitlines() if ln.startswith('# ')),wid),'purpose':section(body,'Purpose'),'business_outcome':section(body,'Business Outcome'),'run_when':section(body,'Run When'),'process':parse_process(section(body,'Process')),'completion_evidence':section(body,'Completion Evidence')}
+    return {
+        'workflow_id':wid,'path':str(Path(path).relative_to(PRODUCT_ROOT)),'type':meta.get('type'),
+        'owner_system':meta.get('owner_system') or wid.split('.')[0],
+        'reads':meta.get('reads') or [],'writes':meta.get('writes') or [],'context':meta.get('context') or [],
+        'workflows':meta.get('workflows') or {},
+        'title':next((ln[2:].strip() for ln in body.splitlines() if ln.startswith('# ')),wid),
+        'purpose':section(body,'Purpose'),'business_outcome':section(body,'Business Outcome'),
+        'run_when':section(body,'Run When'),'process':parse_process(section(body,'Process')),
+        'completion_evidence':section(body,'Completion Evidence')
+    }
 def load_workflows():return [parse_workflow(p) for p in workflow_files()]
 def family_for(workflow_id):
     parts=workflow_id.split('.');return '.'.join(parts[:2]) if len(parts)>1 else workflow_id
 def fixture_for(workflow_id,owner):
+    """Choose only the benchmark business context, never the expected method or output.
+
+    This lightweight routing exists so local/ecommerce-specific Workflows receive a plausible
+    fixture. It has no pass/fail authority and does not infer research depth, artifact type,
+    evidence requirements, or quality from the Workflow id.
+    """
     s=workflow_id.lower();tokens={x for x in re.split(r'[^a-z0-9]+',s) if x}
     if {'local','gbp'} & tokens or 'service-area' in s:return 'harbor-hvac'
     if {'product','shopping','cart','checkout','merch','ecommerce'} & tokens:return 'northline-commerce'
     return 'atlasops-saas'
-def competitive_profile(workflow):
-    wid=workflow['workflow_id'].lower();owner=workflow['owner_system']
-    if owner=='seo-aeo':return 'search_live_field' if any(k in wid for k in ('content','page','query','keyword','serp','aeo','answer','citation','opportunity','strategy','brief')) else 'search_technical'
-    if owner=='marketing-synthesis':return 'paid_and_persuasion_field' if any(k in wid for k in ('ad','creative','landing','campaign','offer','vsl','webinar','email','quiz','advertorial')) else 'marketing_outcome'
-    if owner=='content-synthesis':return 'organic_attention_field' if any(k in wid for k in ('trend','creator','platform','content-performance','adaptation')) else 'artifact_excellence'
-    if owner=='competitor-intelligence':return 'competitive_intelligence'
-    if owner=='customer-intelligence':return 'customer_truth'
-    if owner=='industry-intelligence':return 'ecosystem_truth'
-    if owner=='customer-optimization':return 'first_party_outcomes'
-    return 'organizational_memory'
-def output_policy(workflow):
-    wid=workflow['workflow_id'].lower();role=workflow.get('artifact_role');artifact_words=('article','newsletter','video','podcast','carousel','presentation','infographic','image','animation','gif','case-study','demo','landing-page','vsl','webinar','ad','creative','email','quiz','advertorial','asset');artifact_required=bool(role=='customer_facing_production_root' or any(k in wid for k in artifact_words))
-    return {'artifact_required':artifact_required,'declared_writes':workflow.get('writes') or [],'write_expectation':'persist_only_when_materially_produced','actual_output_not_description':artifact_required}
 def tree_snapshot(root):
     root=Path(root);files=[]
     if not root.exists():return {'root':str(root),'files':[],'digest':hashlib.sha256(b'').hexdigest()}
