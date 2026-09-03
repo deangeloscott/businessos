@@ -21,10 +21,11 @@ context:
 - Offer
 - ProductService
 workflows:
-  required:
-  - id: core.intelligence.ecosystem.source-discovery
-  - id: core.intelligence.ecosystem.evidence-triangulation
   conditional:
+  - id: core.intelligence.ecosystem.source-discovery
+    when: Relevant journey/CRO evidence still needs discovery, inspection, or conversion from leads into support-grade source material.
+  - id: core.intelligence.ecosystem.evidence-triangulation
+    when: A material intervention or outcome claim benefits from explicit independence, contradiction, freshness, methodology, or uncertainty analysis.
   - id: customer-optimization.experimentation.lifecycle-test
     when: A promising journey intervention is testable and a bounded experiment would materially improve the decision.
 ---
@@ -41,11 +42,11 @@ Use on demand for customer-journey refresh or when a material lifecycle/CRO prac
 
 ## Process
 1. [HYBRID] Reuse the active CustomerJourney, bottleneck diagnosis, instrumentation state, prior experiments/outcomes, Domain Learning, customer evidence, and SourceProfiles before external search.
-2. [AI] Discover journey-intervention claims across primary experiments, product/growth research, case studies, communities, practitioner evidence, competitors, and adjacent industries only where they can inform the current journey question.
-3. [HYBRID] Use Core triangulation to separate original tests from retellings and assess independent support/contradiction, sample/design quality, freshness, selection effects, metric quality, and commercial context.
+2. [AI] Discover journey-intervention claims across primary experiments, product/growth research, case studies, communities, practitioner evidence, competitors, and adjacent industries only where they can inform the current journey question. Draw on Core source-discovery knowledge when it materially improves coverage or provenance.
+3. [HYBRID] Use Core triangulation when useful to separate original tests from retellings and assess independent support/contradiction, sample/design quality, freshness, selection effects, metric quality, and commercial context. Do not require ceremonial triangulation where the evidence needed for the decision is already sufficient.
 4. [AI] Map each credible tactic to a specific journey transition/friction mechanism and determine whether the active business actually has sufficiently similar customer state, constraints, instrumentation, capacity, and value proposition.
 5. [AI] Consider customer harm, fairness, dark-pattern risk, applicable compliance/contract constraints, service capacity, reversibility, downstream retention/value, and whether a short-term conversion gain could damage longer-term outcomes.
-6. [AI] Decide what the evidence warrants next: ignore, watch, investigate, experiment, adapt into a current intervention, revise Learning, or do nothing. `customer-optimization.experimentation.lifecycle-test` and other relevant playbooks are optional methods, not automatic routes.
+6. [AI] Decide what the evidence warrants next: ignore, watch, investigate, experiment, adapt into a current intervention, revise Learning, or do nothing. `customer-optimization.experimentation.lifecycle-test` and other relevant Playbooks/Workflows are optional methods, not automatic routes.
 7. [AI] Where active-business results exist, interpret them with guardrails and downstream value rather than only immediate progression; preserve segment differences and inconclusive outcomes.
 8. [DETERMINISTIC] Persist only material Observation/Insight evidence and exact references selected by the model/user. Customer Optimization Learning changes only when outcome evidence and semantic judgment support reusable scoped guidance.
 
