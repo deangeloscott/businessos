@@ -10,7 +10,7 @@ Use these terms consistently.
 - **Initiative** — Optional coordination state for several genuinely distinct pieces of work toward one larger outcome.
 - **DecisionRecord** — A durable organizational decision worth remembering, including who/what made it, when, scope, and basis. It is not a permission token.
 - **WorkRequest** — A real durable handoff whose purpose, expected output, context, and unresolved state should survive the current session. It is not a mirror of subagents or tool routing.
-- **AttentionItem** — A deduplicated material condition worth future organizational awareness. AURA owns the meaning and lifecycle, not notification delivery.
+- **AttentionItem** — A deduplicated material condition worth future organizational awareness. AURA may preserve its semantic state; notification delivery belongs to the host.
 - **Asset** — A persistent business artifact or durable reference to one, such as a page, video, email, image, report, presentation, campaign asset, or sales document.
 - **ChangeEvent** — An optional durable record that a material state changed and future work may benefit from remembering it.
 - **VerificationRecord** — Optional durable evidence that an important claimed state was checked, when the task, consequence, or reusable method warrants it.
@@ -29,8 +29,7 @@ Use these terms consistently.
 - **Operator ref** — An optional opaque workspace/session label used for attribution or scoped preferences. It grants no authority and need not contain personal information.
 - **Run** — An optional bounded organization-owned work receipt for material continuity/provenance. A Run may record an AURA Playbook, AURA Workflow, external Skill, model-created method, or ad-hoc method; it is not required to do or save work.
 - **Context Plan** — A bounded set of AURA policy, Workflow, schema, and organization objects selected to help a piece of work. It does not describe the host's full runtime state or choose how the work must execute.
-- **ProcessExtension** — Organization-scoped reusable Workflow knowledge that augments an installed Workflow or defines a local Workflow without mutating canonical AURA product source.
-- **WorkflowEvolutionProposal** — An evidence-backed candidate improvement to reusable Workflow knowledge. It is not an automatic self-modification mechanism or approval gate.
+- **ProcessExtension** — Organization-scoped reusable Workflow knowledge that augments an installed Workflow or defines a local Workflow without mutating canonical AURA product source. It may be authored directly or derived from supported Learning; it does not require a proposal/adoption lifecycle.
 - **InnovationPackage** — An explicitly prepared portable package for sharing reusable process knowledge across organization boundaries without implicitly exposing another organization's private state.
 - **PlatformChange** — A durable, refreshable record of a material external platform/topic state, kept distinct from measured business outcomes.
 
