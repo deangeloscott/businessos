@@ -6,18 +6,12 @@ reads:
 - CustomerJourney
 - Opportunity
 - type: Insight
-  owner_system: customer-intelligence
+  domain: customer-intelligence
 - MetricObservation
 writes: []
 context:
 - EconomicContext
 - Offer
-workflows:
-  required:
-  - customer-optimization.renewal.readiness
-  conditional:
-  - id: customer-optimization.monitoring.renewal-risk
-    when: a bounded pre-renewal risk evidence review is useful
 ---
 # Renewal Optimization
 
@@ -31,8 +25,8 @@ Improve healthy renewal progression and value retention without masking unresolv
 Use when renewal readiness, friction, risk, or process quality is a material customer/business issue. An existing Opportunity may provide context but is not required.
 
 ## Process
-1. [HYBRID] Map the real renewal timeline, notice requirements, value review, decision stakeholders, procurement, pricing/terms, reminders, and failure states relevant to the business/customer segment.
-2. [AI] Combine usage/success/proof, customer expectations, objections, support/relationship evidence, and contract context to identify supported renewal barriers/opportunities without inventing motive.
+1. [HYBRID] Map the real renewal timeline, notice requirements, value review, decision stakeholders, procurement, pricing/terms, reminders, and failure states relevant to the business/customer segment. Draw on `customer-optimization.renewal.readiness` when its specialized method would improve the decision.
+2. [AI] Combine usage/success/proof, customer expectations, objections, support/relationship evidence, and contract context to identify supported renewal barriers/opportunities without inventing motive. Use `customer-optimization.monitoring.renewal-risk` when a bounded pre-renewal risk evidence review would help; neither specialist method is a required execution step.
 3. [AI] Separate process delay, unresolved value, pricing/Offer, relationship, competitive, procurement, and operational causes because they require different responses.
 4. [AI] Design the smallest useful renewal approach with value evidence, decision preparation, appropriate Offer/terms handling, and escalation/recovery where genuinely needed.
 5. [AI] Use Marketing, Content, Customer Intelligence, sales/customer-success, finance/legal, or other relevant operating knowledge/expertise directly when it improves the work. Create a WorkRequest only for a real durable handoff across actors/sessions/time.
