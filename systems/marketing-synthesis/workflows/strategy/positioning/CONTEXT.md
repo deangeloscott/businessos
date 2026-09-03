@@ -4,9 +4,9 @@ type: workflow
 owner_system: marketing-synthesis
 reads:
 - type: Insight
-  owner_system: customer-intelligence
+  domain: customer-intelligence
 - type: Insight
-  owner_system: competitor-intelligence
+  domain: competitor-intelligence
 - Asset
 - MetricObservation
 writes:
@@ -35,4 +35,4 @@ Use when a defined audience/context needs a clearer or stronger commercial posit
 4. [HYBRID] Reject options that depend on capabilities/claims the business cannot support or that are indistinguishable in the market.
 5. [HYBRID] Evaluate options for relevance, credibility, differentiation, strategic durability, economics, and downstream execution consistency.
 6. [AI] Select a scoped commercial position and define where it applies; do not silently rewrite canonical Brand/business truth.
-7. [HYBRID] Preserve the useful positioning as a Marketing-owned strategy Asset. If the organization actually establishes a durable Brand/Offer/business change, update that canonical truth through the normal current-context path with provenance. If the change remains merely proposed, keep it clearly candidate strategy; do not manufacture a ContextUpdateProposal, Opportunity, or WorkRequest solely because positioning was explored.
+7. [HYBRID] Preserve the useful positioning as an organization-owned strategy Asset. If the organization actually establishes a durable Brand/Offer/business change, update that canonical truth through the normal current-context path with provenance. If the change remains merely proposed, keep it clearly candidate strategy; do not manufacture a ContextUpdateProposal, Opportunity, or WorkRequest solely because positioning was explored.
