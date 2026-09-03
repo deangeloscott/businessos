@@ -4,7 +4,7 @@ from pathlib import Path
 import sys
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'scripts'))
-from _common import read_frontmatter
+from _common import read_frontmatter,workflow_files
 from process_plan import build_process_plan
 from find_playbooks import find_candidates as find_playbook_candidates
 from find_workflows import find_candidates as find_workflow_candidates
@@ -14,6 +14,25 @@ def fail(msg):raise AssertionError(msg)
 
 
 def main():
+    # Every Competitor Workflow is authored operating knowledge, never a machine-readable
+    # execution graph or an owner-routing view over organization-owned canonical memory.
+    count=0
+    for workflow_path in workflow_files():
+        workflow_meta,_=read_frontmatter(workflow_path)
+        if workflow_meta.get('owner_system')!='competitor-intelligence':continue
+        count+=1
+        rel=workflow_path.relative_to(ROOT)
+        if workflow_meta.get('type')!='workflow':fail(f'{rel} is not typed as Workflow')
+        if 'workflows' in workflow_meta:fail(f'{rel} regained machine-readable Workflow composition metadata')
+        if 'capabilities' in workflow_meta:fail(f'{rel} regained AURA capability metadata')
+        for selector in workflow_meta.get('reads',[]):
+            if not isinstance(selector,dict):continue
+            retired=set(selector)&{'owner_system','owner_scope','producer_system'}
+            if retired:fail(f'{rel} canonical read selector regained internal ownership keys {sorted(retired)}')
+            unsupported=set(selector)-{'type','domain','scope'}
+            if unsupported:fail(f'{rel} canonical read selector has unsupported keys {sorted(unsupported)}')
+    if not count:fail('no Competitor Intelligence Workflows found')
+
     path=ROOT/'systems/competitor-intelligence/workflows/analysis/competitive-position/CONTEXT.md'
     if not path.exists():fail('missing broad competitive-position Workflow')
     meta,body=read_frontmatter(path)
@@ -56,6 +75,6 @@ def main():
     if 'competitor.analysis.pricing' not in [row.get('workflow_id') for row in focused]:fail(f'focused pricing Workflow is not discoverable: {focused}')
     if any(row.get('selection_authority') is not False for row in focused):fail('Workflow discovery claimed semantic authority')
 
-    print('competitor composition regressions passed: specialist knowledge remains discoverable without composition metadata or routing authority')
+    print(f'competitor composition regressions passed: {count} Workflows remain discoverable operating knowledge without composition metadata or routing authority')
 
 if __name__=='__main__':main()
