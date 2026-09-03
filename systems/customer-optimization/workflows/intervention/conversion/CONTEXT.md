@@ -6,19 +6,12 @@ reads:
 - CustomerJourney
 - Opportunity
 - type: Insight
-  owner_system: customer-intelligence
+  domain: customer-intelligence
 - MetricObservation
 writes: []
 context:
 - EconomicContext
 - Offer
-workflows:
-  required:
-  - customer-optimization.diagnosis.root-cause
-  - customer-optimization.intervention.design
-  conditional:
-  - id: customer-optimization.conversion.form-friction
-    when: form effort or errors are a material mechanism
 ---
 # Conversion Optimization
 
@@ -34,7 +27,7 @@ Run when journey evidence or an active Opportunity requires conversion optimizat
 ## Process
 1. [HYBRID] Confirm diagnosis is primarily progression/process friction rather than message/offer persuasion. When persuasion is the material mechanism, use the relevant Marketing operating knowledge directly rather than creating an internal domain handoff.
 2. [DETERMINISTIC] Map the exact conversion path, fields, steps, errors, delays, device states, eligibility, and abandonment points.
-3. [AI] Identify unnecessary effort, ambiguity, choice overload, trust/process uncertainty, accessibility, technical failures, or real handoff gaps.
+3. [AI] Identify unnecessary effort, ambiguity, choice overload, trust/process uncertainty, accessibility, technical failures, or real handoff gaps. Draw on root-cause diagnosis, intervention-design, or form-friction operating knowledge when those specialist methods materially improve the analysis.
 4. [HYBRID] Select interventions that reduce friction without lowering lead/customer quality or violating required qualification/compliance.
 5. [DETERMINISTIC] Define success/guardrail metrics and a test or rollout approach only when that improves the decision.
 6. [INTEGRATION] Implement authorized journey changes through the active harness when capabilities and permissions exist. Use relevant Content/Marketing methods directly for communication components; persist a WorkRequest only for a real durable organizational handoff.
