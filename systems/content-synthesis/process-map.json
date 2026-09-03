@@ -1,161 +1,31 @@
 {
   "system": "content-synthesis",
   "activities": [
-    {
-      "id": "content-brief",
-      "entry_workflow": "content.intake.content-brief",
-      "result": "Define a complete content production job from the smallest useful current evidence and constraints.",
-      "supporting_workflows": []
-    },
-    {
-      "id": "audience-context",
-      "entry_workflow": "content.strategy.audience-context",
-      "result": "Define audience and consumption context.",
-      "supporting_workflows": []
-    },
-    {
-      "id": "angle",
-      "entry_workflow": "content.strategy.angle",
-      "result": "Choose a useful angle for the source idea.",
-      "supporting_workflows": []
-    },
-    {
-      "id": "platform-format",
-      "entry_workflow": "content.strategy.format-platform",
-      "result": "Select platform/format based on the communication job.",
-      "supporting_workflows": []
-    },
-    {
-      "id": "platform-native-adaptation",
-      "entry_workflow": "content.adaptation.platform-native",
-      "result": "Express an idea natively for a specific platform.",
-      "supporting_workflows": []
-    },
-    {
-      "id": "ecosystem-radar",
-      "entry_workflow": "content.intelligence.ecosystem-radar",
-      "result": "Discover emerging content formats, creator patterns, distribution mechanics, and communication tactics; validate what is durable enough to test or learn from.",
-      "supporting_workflows": []
-    },
-    {
-      "id": "trend-discovery",
-      "entry_workflow": "content.intelligence.trending-content-discovery",
-      "result": "Find and contextualize unusually strong or trending content without treating popularity as proof of business effectiveness.",
-      "supporting_workflows": []
-    },
-    {
-      "id": "creator-monitoring",
-      "entry_workflow": "content.intelligence.creator-monitoring",
-      "result": "Build or refresh evidence-backed creator/channel understanding and transferable creative mechanisms when useful; recurring execution belongs to the active runtime.",
-      "supporting_workflows": []
-    },
-    {
-      "id": "creative-pattern",
-      "entry_workflow": "content.intelligence.creative-pattern-extraction",
-      "result": "Extract reusable creative mechanisms without copying protected expression.",
-      "supporting_workflows": []
-    },
-    {
-      "id": "cross-niche-transfer",
-      "entry_workflow": "content.intelligence.cross-niche-pattern-transfer",
-      "result": "Adapt a validated mechanism from another niche when the audience/context fit is defensible.",
-      "supporting_workflows": []
-    },
-    {
-      "id": "content-performance",
-      "entry_workflow": "content.intelligence.content-performance-analysis",
-      "result": "Learn what this business's content actually appears to do well using available outcome evidence.",
-      "supporting_workflows": []
-    },
-    {
-      "id": "article",
-      "entry_workflow": "content.production.article",
-      "result": "Produce a complete article.",
-      "supporting_workflows": []
-    },
-    {
-      "id": "newsletter",
-      "entry_workflow": "content.production.newsletter",
-      "result": "Produce a complete newsletter.",
-      "supporting_workflows": []
-    },
-    {
-      "id": "short-video",
-      "entry_workflow": "content.production.short-video",
-      "result": "Produce platform-native short video.",
-      "supporting_workflows": []
-    },
-    {
-      "id": "long-video",
-      "entry_workflow": "content.production.long-video",
-      "result": "Produce complete long-form video.",
-      "supporting_workflows": []
-    },
-    {
-      "id": "podcast",
-      "entry_workflow": "content.production.podcast",
-      "result": "Produce audio/podcast content.",
-      "supporting_workflows": []
-    },
-    {
-      "id": "carousel",
-      "entry_workflow": "content.production.carousel",
-      "result": "Produce a sequential visual carousel.",
-      "supporting_workflows": []
-    },
-    {
-      "id": "presentation",
-      "entry_workflow": "content.production.presentation",
-      "result": "Produce a clear presentation/slideshow.",
-      "supporting_workflows": []
-    },
-    {
-      "id": "infographic",
-      "entry_workflow": "content.production.infographic",
-      "result": "Produce an evidence-backed infographic.",
-      "supporting_workflows": []
-    },
-    {
-      "id": "image",
-      "entry_workflow": "content.production.image",
-      "result": "Produce an image/graphic.",
-      "supporting_workflows": []
-    },
-    {
-      "id": "animation",
-      "entry_workflow": "content.production.animation",
-      "result": "Produce explanatory animation.",
-      "supporting_workflows": []
-    },
-    {
-      "id": "gif",
-      "entry_workflow": "content.production.gif",
-      "result": "Produce concise looping motion/GIF.",
-      "supporting_workflows": []
-    },
-    {
-      "id": "avatar-video",
-      "entry_workflow": "content.production.avatar-video",
-      "result": "Produce an authorized AI-avatar video.",
-      "supporting_workflows": []
-    },
-    {
-      "id": "case-study",
-      "entry_workflow": "content.production.case-study",
-      "result": "Produce a verified customer case study.",
-      "supporting_workflows": []
-    },
-    {
-      "id": "demo",
-      "entry_workflow": "content.production.demo",
-      "result": "Produce a credible demonstration.",
-      "supporting_workflows": []
-    },
-    {
-      "id": "publish",
-      "entry_workflow": "content.publishing.publish-asset",
-      "result": "Publish or schedule the requested content Asset through the active host and verify the resulting external state when practical.",
-      "supporting_workflows": []
-    }
+    {"id":"content-brief","entry_workflow":"content.intake.content-brief","result":"Define a complete content production job from the smallest useful current evidence and constraints."},
+    {"id":"audience-context","entry_workflow":"content.strategy.audience-context","result":"Define audience and consumption context."},
+    {"id":"angle","entry_workflow":"content.strategy.angle","result":"Choose a useful angle for the source idea."},
+    {"id":"platform-format","entry_workflow":"content.strategy.format-platform","result":"Select platform/format based on the communication job."},
+    {"id":"platform-native-adaptation","entry_workflow":"content.adaptation.platform-native","result":"Express an idea natively for a specific platform."},
+    {"id":"ecosystem-radar","entry_workflow":"content.intelligence.ecosystem-radar","result":"Discover emerging content formats, creator patterns, distribution mechanics, and communication tactics; validate what is durable enough to test or learn from."},
+    {"id":"trend-discovery","entry_workflow":"content.intelligence.trending-content-discovery","result":"Find and contextualize unusually strong or trending content without treating popularity as proof of business effectiveness."},
+    {"id":"creator-monitoring","entry_workflow":"content.intelligence.creator-monitoring","result":"Build or refresh evidence-backed creator/channel understanding and transferable creative mechanisms when useful; recurring execution belongs to the active runtime."},
+    {"id":"creative-pattern","entry_workflow":"content.intelligence.creative-pattern-extraction","result":"Extract reusable creative mechanisms without copying protected expression."},
+    {"id":"cross-niche-transfer","entry_workflow":"content.intelligence.cross-niche-pattern-transfer","result":"Adapt a validated mechanism from another niche when the audience/context fit is defensible."},
+    {"id":"content-performance","entry_workflow":"content.intelligence.content-performance-analysis","result":"Learn what this business's content actually appears to do well using available outcome evidence."},
+    {"id":"article","entry_workflow":"content.production.article","result":"Produce a complete article."},
+    {"id":"newsletter","entry_workflow":"content.production.newsletter","result":"Produce a complete newsletter."},
+    {"id":"short-video","entry_workflow":"content.production.short-video","result":"Produce platform-native short video."},
+    {"id":"long-video","entry_workflow":"content.production.long-video","result":"Produce complete long-form video."},
+    {"id":"podcast","entry_workflow":"content.production.podcast","result":"Produce audio/podcast content."},
+    {"id":"carousel","entry_workflow":"content.production.carousel","result":"Produce a sequential visual carousel."},
+    {"id":"presentation","entry_workflow":"content.production.presentation","result":"Produce a clear presentation/slideshow."},
+    {"id":"infographic","entry_workflow":"content.production.infographic","result":"Produce an evidence-backed infographic."},
+    {"id":"image","entry_workflow":"content.production.image","result":"Produce an image/graphic."},
+    {"id":"animation","entry_workflow":"content.production.animation","result":"Produce explanatory animation."},
+    {"id":"gif","entry_workflow":"content.production.gif","result":"Produce concise looping motion/GIF."},
+    {"id":"avatar-video","entry_workflow":"content.production.avatar-video","result":"Produce an authorized AI-avatar video."},
+    {"id":"case-study","entry_workflow":"content.production.case-study","result":"Produce a verified customer case study."},
+    {"id":"demo","entry_workflow":"content.production.demo","result":"Produce a credible demonstration."},
+    {"id":"publish","entry_workflow":"content.publishing.publish-asset","result":"Publish or schedule the requested content Asset through the active host and verify the resulting external state when practical."}
   ]
 }
