@@ -34,4 +34,4 @@ Run when competitor customer sentiment is relevant to positioning, product, sale
 4. [DETERMINISTIC] Compare theme frequency by source, date, segment/context where known, and rating/outcome without treating review populations as representative of all customers.
 5. [AI] Identify persistent patterns, changes, and negative cases.
 6. [HYBRID] Separate customer statements from conclusions about the competitor and mark possible manipulation/unreliable evidence.
-7. [AI] Publish competitor sentiment Observations/Insights and relevant signals to Customer Intelligence.
+7. [AI] Publish competitor sentiment Observations/Insights and preserve broader customer-domain relevance when it is materially supported so future customer work can reuse it directly.
