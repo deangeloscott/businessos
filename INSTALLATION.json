@@ -22,7 +22,7 @@
   "default_environment": "local",
   "configurable_workspace_root": true,
   "human_knowledge_layer": true,
-  "deployment_profiles": "distribution/deployment-profiles.json",
+  "workspace_profiles": "distribution/deployment-profiles.json",
   "brand": "ViralTrac",
   "startup_message": "BEGINNERS-GUIDE.md"
 }
