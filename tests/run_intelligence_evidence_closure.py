@@ -49,7 +49,7 @@ def main():
     req('cannot attach Observation' in persist and 'cannot attach Insight' in persist,'competitor persistence must reject resolved wrong-subject canonical attachments')
 
     cpath=ROOT/'systems/competitor-intelligence/workflows/analysis/competitive-position/CONTEXT.md';meta,body=read_frontmatter(cpath)
-    req(not (meta.get('workflows') or {}).get('required'),'decision-grade competitive position must not force a supporting Workflow chain')
+    req('workflows' not in meta,'decision-grade competitive position must not encode a supporting Workflow composition graph')
     req(contains_all(body,'evidence-closure','material competitor','requested/material dimension'),'competitive position must maintain proportionate decision-relevant evidence closure')
     req(contains_all(body,'machine-auditable support','canonical sourcerecord/observation/insight/asset state','run is not required'),'competitive position must preserve reconstructable analysis without making Run storage mandatory')
 
