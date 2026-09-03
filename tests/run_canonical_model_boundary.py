@@ -11,7 +11,7 @@ import json,sys
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'scripts'))
 
-from _common import contract_files,read_frontmatter,selector_type
+from _common import workflow_files,read_frontmatter,selector_type
 from canonical_store import INSTANCE_PATHS
 
 
@@ -26,7 +26,7 @@ def main():
         'Business','BusinessClaim','PreferenceProfile','SourceRecord','Observation','Insight','ProofRecord',
         'DecisionRecord','Opportunity','Initiative','WorkRequest','AttentionItem','ChangeEvent','VerificationRecord',
         'Incident','Asset','MetricDefinition','MetricObservation','Experiment','OutcomeEvaluation','Learning',
-        'WorkflowEvolutionProposal','ProcessExtension'
+        'ProcessExtension'
     }
     req(required<=canonical,f'canonical organization model lost expected durable types: {sorted(required-canonical)}')
 
@@ -34,9 +34,9 @@ def main():
         'Approval','ActionPacket','EventReactionDecision','ReactiveMonitoringProfile','BusinessOSEventConsumerProfile',
         'CapabilityBinding','CapabilityPack','ProviderCapabilitySnapshot','ProviderCompanionProfile',
         'ProviderEventInteroperability','ProviderPreferences','ProviderRegistry','SchedulerBindings','OperatorProfile',
-        'PlaybookEvolutionProposal'
+        'PlaybookEvolutionProposal','WorkflowEvolutionProposal'
     }
-    req(not (retired&canonical),f'retired authority/runtime/flattened-playbook type re-entered canonical state: {sorted(retired&canonical)}')
+    req(not (retired&canonical),f'retired authority/runtime/proposal type re-entered canonical state: {sorted(retired&canonical)}')
 
     # Support/interface schemas are deliberately outside canonical organization state.
     for typ in ('Run','PublisherMetadata','WorkspaceProfile','InnovationPackage','InnovationExchangeEntry','InnovationExchangeIndex'):
@@ -60,9 +60,10 @@ def main():
     common=(ROOT/'scripts/_common.py').read_text()
     req('def provider_registry(' not in common,'retired provider registry helper re-entered shared Core mechanics')
     req('|act|' not in common and '|apr|' not in common,'retired ActionPacket/Approval reference prefixes re-entered shared reference scanning')
+    req('def contract_files(' not in common,'retired contract-file compatibility helper re-entered shared Core mechanics')
 
     errors=[]
-    for path in contract_files():
+    for path in workflow_files():
         meta,_=read_frontmatter(path)
         rel=path.relative_to(ROOT)
         req(meta.get('type')=='workflow',f'{rel}: detailed operating knowledge must be typed workflow')
