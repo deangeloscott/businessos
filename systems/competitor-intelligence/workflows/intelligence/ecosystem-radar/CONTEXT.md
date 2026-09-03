@@ -19,10 +19,11 @@ context:
 - Objective
 - ProductService
 workflows:
-  required:
-  - id: core.intelligence.ecosystem.source-discovery
-  - id: core.intelligence.ecosystem.evidence-triangulation
   conditional:
+  - id: core.intelligence.ecosystem.source-discovery
+    when: Relevant competitor evidence still needs discovery, inspection, or conversion from leads into support-grade source material.
+  - id: core.intelligence.ecosystem.evidence-triangulation
+    when: A material competitor claim benefits from explicit independence, contradiction, freshness, methodology, or uncertainty analysis.
   - id: competitor.monitoring.material-change
     when: A known competitor surface may have materially changed and model/user judgment says change comparison is useful.
   - id: competitor.analysis.tactic-validation
@@ -42,11 +43,11 @@ Use on demand for competitive refresh or when evidence suggests the competitive 
 ## Process
 1. [HYBRID] Reuse the current competitive set, source identities, snapshots, Insights, Learnings, and recent evidence before searching again. The model decides which competitors/surfaces are stale or relevant; deterministic code may compare exact dates/refs but does not decide business materiality.
 2. [AI] Search the competitor dimensions that can change the current decision: entry/exit, pricing/package/product/offer changes, positioning/message shifts, funnels/channels, campaigns, partnerships, hiring/geography signals, substitutes, or other relevant behavior.
-3. [HYBRID] Verify entity identity from evidence, preserve direct observations, and use snapshot/change comparison or Core triangulation where useful. Exact URL/hash reuse may be deterministic; real-world identity remains model judgment.
+3. [HYBRID] Verify entity identity from evidence, preserve direct observations, and use snapshot/change comparison, source-discovery, or Core triangulation where useful. Exact URL/hash reuse may be deterministic; real-world identity remains model judgment.
 4. [AI] Keep three propositions separate: what the competitor demonstrably did, what strategy/mechanism that may imply, and whether credible evidence shows the tactic produced an outcome.
 5. [HYBRID] Use independent evidence, timing, repeated behavior, external outcomes, and `competitor.analysis.tactic-validation` when effectiveness matters. One competitor's apparent success never becomes a universal best practice.
 6. [AI] Evaluate relevance to the active business by the actual customer choice set, market, offer, capabilities, economics, Objective, and response options rather than imitation value.
-7. [AI] Decide what the evidence warrants next: update competitor understanding, watch, investigate, test a hypothesis, consider a business response, or do nothing. Other AURA playbooks may be useful methods, but this radar does not route work to semantic owners or manufacture Opportunities/WorkRequests.
+7. [AI] Decide what the evidence warrants next: update competitor understanding, watch, investigate, test a hypothesis, consider a business response, or do nothing. Other AURA Playbooks/Workflows may be useful methods, but this radar does not route work to semantic owners or manufacture Opportunities/WorkRequests.
 8. [DETERMINISTIC] Persist only material Observation/Insight evidence and exact references chosen by the model/user. Reusable Learning changes occur through the appropriate evidence-based Learning path when genuinely justified, not automatically after a radar cycle.
 
 ## Verification
