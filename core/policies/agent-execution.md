@@ -88,9 +88,9 @@ A `ProcessExtension` is organization-owned reusable Workflow knowledge. It may a
 
 An explicitly supplied organization SOP may be saved directly as organization-authored Workflow knowledge without fabricating Learning first.
 
-When evidence-supported Learning suggests a reusable procedure should change, a `WorkflowEvolutionProposal` may capture the bounded evidence-backed candidate before intentional adoption.
+When evidence-supported Learning suggests a reusable procedure should change, the active model/user may create or update a ProcessExtension directly. Preserve relevant Learning/evidence references when they exist.
 
-Neither construct is execution authority, provider configuration, or automatic self-modification.
+A ProcessExtension is not execution authority, provider configuration, or automatic self-modification.
 
 ## Truth and evidence
 
