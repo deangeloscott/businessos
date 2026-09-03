@@ -75,7 +75,7 @@ def write_domain(registry,system):
         elif entry:
             lines += [f"**Common entry Workflow:** `{entry}`",'']
         else:
-            lines += ['**Composition:** Choose the smallest useful set of Workflows below from the actual request and evidence.','']
+            lines += ['**Use:** Choose the smallest useful set of Workflows or other methods from the actual request and evidence.','']
     lines += ['## Common Workflows','',
               'These reusable procedures may support one or more Playbooks or be used independently. They are not a mandatory sequence.','']
     seen=set()
