@@ -36,7 +36,7 @@ Use when reputation evidence appears relevant to a search, local, or AI-discover
 1. Compare rating, review volume/recency/themes, response coverage, profile accuracy, and other reputation evidence only across the locations, products, sources, and decision paths that materially matter.
 2. Relate that evidence to where it is actually visible in search, local, AI-answer, or customer decision surfaces rather than assuming all reputation data affects discovery equally.
 3. Determine whether the likely mechanism is insufficient authentic review coverage, an unanswered-review backlog, inaccurate profile information, misinformation, a recurring operational complaint, or another cause.
-4. Separate SEO-visible symptoms from operational, product, service, customer-experience, or other root causes. Use the relevant operating knowledge directly when SEO is not the real owner.
+4. Separate SEO-visible symptoms from operational, product, service, customer-experience, or other root causes. Use the operating knowledge or real organizational expertise appropriate to the actual cause rather than routing it through an AURA domain.
 5. When a legitimate search/discovery intervention exists, define the smallest useful response and preserve an Opportunity only when the durable coordination value justifies it.
 6. Evaluate later change using relevant trust, choice, discovery, and business evidence rather than review count alone.
 
