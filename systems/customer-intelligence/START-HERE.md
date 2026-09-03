@@ -19,4 +19,4 @@ Customer Intelligence interprets customer evidence; it does not own persuasion, 
 Other work may directly consume relevant Customer Insights. No relevance event or WorkRequest is required merely to use shared organizational knowledge. Monitoring intent can be remembered; the harness owns recurrence and notifications.
 
 ## AI execution
-Do not load this entire system. Retrieve the smallest relevant context and choose, combine, adapt, skip, or replace useful methods with model/user judgment. `process-map.json` is a browse/composition aid, not runtime execution order.
+Do not load this entire system. Retrieve the smallest relevant context and choose, combine, adapt, skip, or replace useful methods with model/user judgment. `process-map.json` is a lightweight browse/navigation index, not runtime execution order or a Workflow graph.
