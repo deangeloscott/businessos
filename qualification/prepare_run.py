@@ -17,8 +17,10 @@ def fixture_business_id(fixture):
 
 
 def event_from_workflow(t):
-    return {'event_id':t['test_id'],'kind':'workflow_acceptance','business_id':fixture_business_id(t['fixture']),'fixture':t['fixture'],'workflow_id':t['workflow_id'],
-            'task':t['candidate_task'],'competitive_profile':t['competitive_profile'],'required_output':t['output_policy']}
+    return {
+        'event_id':t['test_id'],'kind':'workflow_acceptance','business_id':fixture_business_id(t['fixture']),
+        'fixture':t['fixture'],'workflow_id':t['workflow_id'],'task':t['candidate_task']
+    }
 
 
 def mission_dimensions(m,kind):
@@ -31,8 +33,10 @@ def mission_dimensions(m,kind):
 
 
 def event_from_mission(m,kind):
-    event={'event_id':m['id'],'kind':kind,'business_id':fixture_business_id(m['fixture']),'fixture':m['fixture'],'workflow_id':None,'task':m['task'],
-           'competitive_profile':'mission','rubric_dimensions':mission_dimensions(m,kind),'required_output':{'actual_output_not_description':True}}
+    event={
+        'event_id':m['id'],'kind':kind,'business_id':fixture_business_id(m['fixture']),'fixture':m['fixture'],
+        'workflow_id':None,'task':m['task'],'rubric_dimensions':mission_dimensions(m,kind)
+    }
     if m.get('release_fixture'): event['release_fixture']=m['release_fixture']
     return event
 
@@ -261,8 +265,8 @@ def main():
     fixtures=sorted({event['fixture'] for event in evaluator_events})
     for fixture in fixtures: init_business(product_root,workspace,fixture,run_dir/'evaluator')
     baseline=product_snapshot(product_root); write_json(run_dir/'evaluator/product-snapshot.json',baseline)
-    contract_filter=sorted(set(a.workflow)); evaluator_queue={'format_version':'2.0','run_id':run_id,'profile':a.profile,'domain_filter':a.domain,'contract_filter':contract_filter,'mission_filter':a.mission,'event_count':len(evaluator_events),'events':evaluator_events}
-    preparation={'profile':a.profile,'domain_filter':a.domain,'contract_filter':contract_filter,'mission_filter':a.mission,'fixture_override':a.fixture,'prepared_at':now(),'candidate_blind':True,'maintainer_authored_request':bool(a.request),'candidate_surface_root':str(candidate_dir)}
+    workflow_filter=sorted(set(a.workflow)); evaluator_queue={'format_version':'3.0','run_id':run_id,'profile':a.profile,'domain_filter':a.domain,'workflow_filter':workflow_filter,'mission_filter':a.mission,'event_count':len(evaluator_events),'events':evaluator_events}
+    preparation={'profile':a.profile,'domain_filter':a.domain,'workflow_filter':workflow_filter,'mission_filter':a.mission,'fixture_override':a.fixture,'prepared_at':now(),'candidate_blind':True,'maintainer_authored_request':bool(a.request),'candidate_surface_root':str(candidate_dir)}
     write_json(run_dir/'evaluator/queue.json',evaluator_queue); write_json(run_dir/'evaluator/suite.json',suite); write_json(run_dir/'evaluator/preparation.json',preparation)
     future=any(fixture_data(f).get('timeline') for f in fixtures)
     write_json(run_dir/'run.json',{'run_id':run_id,'created_at':now(),'product_root':str(product_root),'workspace':str(workspace),'candidate_surface_root':str(candidate_dir),'profile':a.profile,'domain_filter':a.domain,'event_count':len(evaluator_events),'status':'prepared','execution_status':'prepared','qualification_status':'NOT_EVALUATED','product_snapshot_digest':baseline['digest'],'benchmark_context_seeded':True,'future_evidence_staged':future,'candidate_blind':True})
