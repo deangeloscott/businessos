@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
-"""Regression checks for shared evidence closure and subject-scoped intelligence provenance."""
+"""Regression checks for evidence closure and subject-scoped intelligence provenance."""
 from pathlib import Path
 import json,sys
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'scripts'))
 from _common import read_frontmatter
-from completion_evidence import completion_spec
 from validate_research_evidence import _subject_mismatch
 
 
@@ -35,7 +34,7 @@ def main():
     req(contains_all(evidence,'claim-level provenance','bibliography detached from the claims'),'research evidence policy must keep material claims auditable rather than relying on a detached bibliography')
     req(contains_all(evidence,'test threshold','stop rule','success criterion','not a prediction'),'research evidence policy must distinguish test criteria from predicted outcomes')
 
-    req(contains_all(completion,'useful work exists','intelligence','material conclusions','unresolved gaps'),'completion policy must distinguish artifact existence from evidence-supported intelligence without requiring Run conformance')
+    req(contains_all(completion,'mechanical validation does not understand the work','substantive qualification','semantic authority'),'completion policy must keep structural verification separate from intelligence judgment')
 
     schema=json.loads((ROOT/'core/schemas/intelligence/source-record.schema.json').read_text())
     subject_schema=(schema.get('properties') or {}).get('subject_refs') or {}
@@ -52,18 +51,18 @@ def main():
     req("'subject_refs':item.get('subject_refs',[])" in persist,'research persistence helper must preserve SourceRecord subject_refs')
     req('cannot attach Observation' in persist and 'cannot attach Insight' in persist,'competitor persistence must reject resolved wrong-subject canonical attachments')
 
-    cpath=ROOT/'systems/competitor-intelligence/contracts/analysis/competitive-position/CONTEXT.md';meta,body=read_frontmatter(cpath)
-    req(completion_spec(meta).get('profile')=='intelligence','decision-grade competitive position must retain optional auditable intelligence conformance profile')
+    cpath=ROOT/'systems/competitor-intelligence/workflows/analysis/competitive-position/CONTEXT.md';meta,body=read_frontmatter(cpath)
+    req(not (meta.get('workflows') or {}).get('required'),'decision-grade competitive position must not force a supporting Workflow chain')
     req(contains_all(body,'evidence-closure','material competitor','requested/material dimension'),'competitive position must maintain proportionate decision-relevant evidence closure')
     req(contains_all(body,'machine-auditable support','canonical sourcerecord/observation/insight/asset state','run is not required'),'competitive position must preserve reconstructable analysis without making Run storage mandatory')
 
-    content_defaults=(ROOT/'systems/content-synthesis/contracts/intelligence/DEFAULTS.md').read_text()
+    content_defaults=(ROOT/'systems/content-synthesis/workflows/intelligence/DEFAULTS.md').read_text()
     req(contains_all(content_defaults,'proportionate auditable support','smallest useful combination','ordinary content-intelligence execution'),'content intelligence must keep auditability while decoupling it from mandatory Run records')
 
-    profiling=(ROOT/'systems/competitor-intelligence/contracts/analysis/profiling/CONTEXT.md').read_text();coverage=(ROOT/'systems/competitor-intelligence/contracts/research/adaptive-source-coverage/CONTEXT.md').read_text()
+    profiling=(ROOT/'systems/competitor-intelligence/workflows/analysis/profiling/CONTEXT.md').read_text();coverage=(ROOT/'systems/competitor-intelligence/workflows/research/adaptive-source-coverage/CONTEXT.md').read_text()
     req('SourceRecord.subject_refs' in profiling,'competitor profiling must preserve resolved subject provenance')
     req(contains_all(coverage,'subject/evidence mismatches','supported','limited','unknown','not_material'),'adaptive source coverage must track decision-relative closure rather than raw source count')
 
-    print('shared intelligence evidence-closure regressions passed: auditability is evidence-owned, subject-scoped, and not Run-dependent')
+    print('shared intelligence evidence-closure regressions passed: auditability is evidence-owned, subject-scoped, model-judged, and not Run-dependent')
 
 if __name__=='__main__': main()
