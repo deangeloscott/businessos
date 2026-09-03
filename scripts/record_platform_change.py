@@ -13,7 +13,7 @@ def records(bid,key):
     return [(o,p) for o,p in iter_instance_objects(bid) if o.get('object_type')=='PlatformChange' and o.get('semantic_key')==key]
 
 
-def record(bid,platform,topic,state_summary,owner_system='core',authority='unknown',materiality='unknown',change_summary=None,effective_at=None,source_refs=None,evidence_refs=None,affected_workflow_refs=None,affected_object_refs=None,verified_at=None,retention_class='durable',reverify_current=False):
+def record(bid,platform,topic,state_summary,owner_system='core',authority='unknown',materiality='unknown',change_summary=None,effective_at=None,source_refs=None,evidence_refs=None,affected_workflow_refs=None,affected_object_refs=None,verified_at=None,reverify_current=False):
     verified_at=verified_at or now();source_refs=source_refs or [];evidence_refs=evidence_refs or [];affected_workflow_refs=affected_workflow_refs or [];affected_object_refs=affected_object_refs or []
     if authority=='unknown': raise ValueError('verified PlatformChange requires a non-unknown authority classification')
     if not (source_refs or evidence_refs): raise ValueError('verified PlatformChange requires --source-ref and/or --evidence-ref provenance')
@@ -72,7 +72,7 @@ def record(bid,platform,topic,state_summary,owner_system='core',authority='unkno
         'source_refs':sorted(set(source_refs)),'evidence_refs':sorted(set(evidence_refs)),
         'affected_workflow_refs':sorted(set(affected_workflow_refs)),'affected_object_refs':sorted(set(affected_object_refs)),
         'supersedes':prior[0]['id'] if prior else None,'superseded_by':None,
-        'retention_class':retention_class,'extensions':{}
+        'extensions':{}
     }
     if prior:
         old,op=prior;old['status']='superseded';old['superseded_by']=new_id;old['updated_at']=verified_at;op.write_text(json.dumps(old,indent=2)+'\n')
@@ -87,12 +87,12 @@ def main():
     ap.add_argument('--materiality',choices=['not_material','low','medium','high','critical','unknown'],default='unknown')
     ap.add_argument('--change-summary');ap.add_argument('--effective-at');ap.add_argument('--source-ref',action='append',default=[]);ap.add_argument('--evidence-ref',action='append',default=[])
     ap.add_argument('--affected-workflow-ref',action='append',default=[]);ap.add_argument('--affected-object-ref',action='append',default=[])
-    ap.add_argument('--verified-at');ap.add_argument('--retention-class',choices=['operational','durable'],default='durable')
+    ap.add_argument('--verified-at')
     ap.add_argument('--reverify-current',action='store_true',help='Authoritative evidence semantically re-verifies the existing current state despite different wording; refresh current identity and retain observed wording/provenance in verification history.')
     a=ap.parse_args()
     if not (ROOT/'instances'/a.business_id).exists():raise SystemExit(f'Unknown business: {a.business_id}')
     try:
-        o,p,result=record(a.business_id,a.platform,a.topic,a.state_summary,a.owner_system,a.authority,a.materiality,a.change_summary,a.effective_at,a.source_ref,a.evidence_ref,a.affected_workflow_ref,a.affected_object_ref,a.verified_at,a.retention_class,a.reverify_current)
+        o,p,result=record(a.business_id,a.platform,a.topic,a.state_summary,a.owner_system,a.authority,a.materiality,a.change_summary,a.effective_at,a.source_ref,a.evidence_ref,a.affected_workflow_ref,a.affected_object_ref,a.verified_at,a.reverify_current)
     except ValueError as e:raise SystemExit(str(e))
     print(json.dumps({'platform_change_id':o['id'],'semantic_key':o['semantic_key'],'status':o['status'],'result':result,'verification_count':o['verification_count'],'path':str(p.relative_to(ROOT))},indent=2))
 
