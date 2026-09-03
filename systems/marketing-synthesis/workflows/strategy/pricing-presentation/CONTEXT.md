@@ -35,4 +35,4 @@ Use when a marketing asset must communicate an established price or commercial s
 4. [AI] Explain units, totals, payment cadence, tiers, ranges, or custom-pricing process clearly and consistently.
 5. [HYBRID] Reject misleading anchoring, fake discounts, omitted recurring commitments, or arithmetic that obscures total cost.
 6. [AI] Pair price with relevant proof/value/risk information without claiming ROI unsupported by evidence.
-7. [HYBRID] Validate all numbers/terms against current Offer truth before outward use and update the affected strategy/Asset when Offer truth changes. Preserve reusable pricing-presentation guidance as a Marketing-owned Asset; do not create a WorkRequest merely because another production method may consume it.
+7. [HYBRID] Validate all numbers/terms against current Offer truth before outward use and update the affected strategy/Asset when Offer truth changes. Preserve reusable pricing-presentation guidance as an organization-owned Asset; do not create a WorkRequest merely because another production method may consume it.
