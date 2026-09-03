@@ -1,6 +1,6 @@
 ---
 id: industry.monitoring.social-discussion
-type: detector
+type: workflow
 owner_system: industry-intelligence
 reads:
 - IndustryEvent
@@ -33,7 +33,7 @@ Use for a bounded public-discussion review when requested, when saved monitoring
 4. [AI] Identify candidate developments, changing narratives, questions, concerns, claims, and emerging terminology while keeping observed discussion separate from factual truth.
 5. [HYBRID] Cross-check material factual claims against stronger/primary sources before updating an IndustryEvent; unresolved social claims remain bounded Observations/hypotheses.
 6. [AI] Judge whether a signal belongs to an existing real-world event, suggests a distinct event worth investigating, represents a durable narrative shift, or is merely conversation without material external meaning.
-7. [HYBRID] Persist only useful SourceRecords/Observations and, when justified, update/create a durable IndustryEvent. Verification/materiality playbooks may be useful next methods if the model/user chooses them; this review does not automatically route work or create runtime events.
+7. [HYBRID] Persist only useful SourceRecords/Observations and, when justified, update/create a durable IndustryEvent. Verification/materiality methods may be useful next if the model/user chooses them; this review does not automatically route work or create runtime events.
 
 ## Verification
 - Social prevalence is not treated as factual or causal proof.
