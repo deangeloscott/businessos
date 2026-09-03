@@ -5,6 +5,7 @@ import json,re
 ROOT=Path(__file__).resolve().parents[1]
 EXPECTED_NAME='ViralTrac AURA'
 EXPECTED_EXPANSION='Agentic Understanding and Reinforcement Architecture'
+EXPECTED_DESCRIPTOR='organization-owned memory and operating knowledge for capable AI'
 EXPECTED_MATURITY='alpha'
 REQUIRED=[
     'VERSION','LICENSE.md','TRADEMARKS.md','SECURITY.md','PUBLIC-DISTRIBUTION.md','PUBLISHER.json','BRANDING.md','DEPLOYMENT.md',
@@ -69,7 +70,7 @@ def validate_public_distribution():
         if publisher.get('product_name')!=EXPECTED_NAME:errors.append(f'publisher product_name must be {EXPECTED_NAME!r}')
         if publisher.get('product_acronym')!='AURA':errors.append('publisher product_acronym must be AURA')
         if publisher.get('product_name_expansion')!=EXPECTED_EXPANSION:errors.append('publisher AURA expansion is missing/incorrect')
-        if publisher.get('product_descriptor')!='AI-native BusinessOS':errors.append('publisher descriptor must remain AI-native BusinessOS')
+        if publisher.get('product_descriptor')!=EXPECTED_DESCRIPTOR:errors.append(f'publisher descriptor must remain {EXPECTED_DESCRIPTOR!r}')
         if publisher.get('maturity')!=EXPECTED_MATURITY:errors.append('publisher maturity must explicitly be alpha')
         if 'updates' in d:errors.append('publisher metadata must not recreate an AURA-owned update subsystem')
 
@@ -82,7 +83,7 @@ def validate_public_distribution():
             if display!=EXPECTED_NAME or public!=EXPECTED_NAME:errors.append('full INSTALLATION.json must expose ViralTrac AURA as exact display/public name')
         elif not display.startswith(EXPECTED_NAME) or public!=display:errors.append('component/custom INSTALLATION.json must expose a ViralTrac AURA family display/public name')
         if d.get('name_expansion')!=EXPECTED_EXPANSION:errors.append('INSTALLATION.json AURA expansion is missing/incorrect')
-        if d.get('descriptor')!='AI-native BusinessOS':errors.append('INSTALLATION.json descriptor must remain AI-native BusinessOS')
+        if d.get('descriptor')!=EXPECTED_DESCRIPTOR:errors.append(f'INSTALLATION.json descriptor must remain {EXPECTED_DESCRIPTOR!r}')
         if d.get('configurable_workspace_root') is not True:errors.append('INSTALLATION.json must declare configurable_workspace_root=true')
         if d.get('human_knowledge_layer') is not True:errors.append('INSTALLATION.json must declare human_knowledge_layer=true')
         if d.get('deployment_profiles')!='distribution/deployment-profiles.json':errors.append('INSTALLATION.json deployment_profiles path is missing/incorrect')
