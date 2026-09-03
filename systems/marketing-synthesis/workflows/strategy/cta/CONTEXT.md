@@ -35,4 +35,4 @@ Use when a Marketing asset/campaign needs a primary commercial next step. An Opp
 4. [AI] Define CTA promise, what happens next, required expectation setting, and any qualification/disqualification needed before action.
 5. [HYBRID] Avoid dark patterns, vague consent, false urgency, or action labels that hide meaningful consequences.
 6. [AI] Remove competing CTAs or explicitly rank secondary actions when they must exist.
-7. [HYBRID] Define useful CTA measurement and use relevant Customer Optimization operating knowledge directly when real journey/form mechanics need work. Preserve the CTA guidance as a Marketing-owned strategy Asset; create a WorkRequest only for a real durable organizational handoff.
+7. [HYBRID] Define useful CTA measurement and use relevant Customer Optimization operating knowledge directly when real journey/form mechanics need work. Preserve the CTA guidance as an organization-owned strategy Asset; create a WorkRequest only for a real durable organizational handoff.
