@@ -36,7 +36,7 @@ Use on a substantive landing-page/homepage draft or live implementation when end
 5. [AI] Distinguish persuasion defects from UX, form, checkout, technical, product, or other journey friction. Use relevant operating knowledge directly rather than routing issues to another AURA service.
 6. [AI] Report material defects, lower-severity improvements, and the evidence/check behind each conclusion. A material defect may justify a recommendation not to launch that version, but AURA does not own launch authorization.
 7. [HYBRID] If the user explicitly requests publication/deployment and the harness has real capability/permission, verify the live version and measurement instrumentation after the external change when practical. Otherwise do not imply deployment occurred.
-8. [AI] Update/preserve the Asset's useful QA/readiness information when future work benefits from it. A separate Run-local pass file, contract-completion record, pre-edit snapshot, or generic VerificationRecord is not required merely to prove QA happened.
+8. [AI] Update/preserve the Asset's useful QA/readiness information when future work benefits from it. A separate Run-local pass file, pre-edit snapshot, or generic VerificationRecord is not required merely to prove QA happened.
 
 ## Verification
 - QA reflects the artifact/version actually inspected rather than an assumed final render.
