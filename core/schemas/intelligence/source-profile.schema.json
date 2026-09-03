@@ -14,7 +14,7 @@
     "source_reference": {"type":"string","minLength":1},
     "display_name": {"type":["string","null"]},
     "source_kind": {"enum":["official","regulator","primary_researcher","academic","publication","practitioner","vendor","data_provider","community","social_account","other"]},
-    "owner_systems": {"type":"array","items":{"enum":["core","customer-intelligence","competitor-intelligence","industry-intelligence","seo-aeo","content-synthesis","marketing-synthesis","customer-optimization"]},"uniqueItems":true},
+    "domains": {"type":"array","items":{"enum":["core","customer-intelligence","competitor-intelligence","industry-intelligence","seo-aeo","content-synthesis","marketing-synthesis","customer-optimization"]},"uniqueItems":true},
     "topic_tags": {"type":"array","items":{"type":"string","minLength":1},"uniqueItems":true},
     "watch_status": {"enum":["seed","candidate","active","paused","deprioritized","blocked","unavailable"]},
     "attention_priority": {"enum":["low","medium","high"]},
@@ -91,5 +91,5 @@
     "next_check_at":{"type":["string","null"],"format":"date-time"},
     "extensions":{"type":"object"}
   },
-  "required":["id","object_type","schema_version","business_id","source_reference","source_kind","owner_systems","topic_tags","watch_status","attention_priority","fact_type_assessments"]
+  "required":["id","object_type","schema_version","business_id","source_reference","source_kind","topic_tags","watch_status","attention_priority","fact_type_assessments"]
 }
