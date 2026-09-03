@@ -12,6 +12,8 @@ Runs may record `operator_ref`, `team_ref`, and `role_ref` plus an effective pre
 
 ## Cross-business boundary
 
-Brand/company facts, customer evidence, private operational state, and business-specific preferences do not silently cross `business_id` boundaries. Reuse across businesses requires an explicit object/policy designed for broader eligibility, such as carefully supported system-level Learning or product operational knowledge.
+Brand/company facts, customer evidence, private operational state, business-specific preferences, and `Learning` do not silently cross `business_id` boundaries. A Learning may be domain-scoped or business-scoped **inside its own organization**; neither scope makes it shared organizational memory for other businesses.
+
+If reusable procedural knowledge should cross organization boundaries, share it deliberately through an InnovationPackage or make it deliberate canonical AURA product-development work. The receiving organization must evaluate imported knowledge against its own evidence and context rather than treating another organization's Learning as local truth.
 
 AURA does not maintain a shared personal identity/permission profile that automatically supplies or authorizes external actions across businesses.
