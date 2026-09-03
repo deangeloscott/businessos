@@ -5,7 +5,7 @@ owner_system: competitor-intelligence
 reads:
 - Competitor
 - type: Insight
-  owner_system: customer-intelligence
+  domain: customer-intelligence
 - Observation
 - SourceRecord
 writes:
@@ -19,9 +19,6 @@ context:
 - Objective
 - Offer
 - ProductService
-workflows:
-  required:
-  - competitor.analysis.tactic-mechanism
 ---
 # Competitor Tactic Validation
 
@@ -35,7 +32,7 @@ Improve competitive decisions through evidence-backed competitor tactic validati
 Run when a decision requires current competitor tactic validation and canonical competitor intelligence is missing, stale, contradictory, or insufficiently specific.
 
 ## Process
-1. [AI] Define the tactic precisely, intended mechanism, audience/context, and what success evidence would look like.
+1. [AI] Define the tactic precisely, intended mechanism, audience/context, and what success evidence would look like. Draw on `competitor.analysis.tactic-mechanism` when its mechanism-analysis method materially improves the judgment.
 2. [DETERMINISTIC] Gather direct observable performance proxies, persistence/history, customer response, market movement, and independent evidence where available.
 3. [HYBRID] Separate adoption/popularity from effectiveness and control for brand scale, budget, channel, timing, and selection effects.
 4. [AI] Identify alternative explanations for apparent success.
