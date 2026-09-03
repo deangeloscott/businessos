@@ -44,7 +44,7 @@ AURA operating knowledge uses a simple hierarchy:
 
 - A **Playbook** is a meaningful end-to-end business job, such as Competitor Research, Customer Research, Landing Page creation, or Presentation production.
 - A **Workflow** is a reusable procedure that helps accomplish part of a Playbook and may also be useful independently.
-- A **Step** is the minimum procedural guidance needed inside a Workflow to make the intended result reliably achievable.
+- A **Step** is the minimum procedural guidance needed inside a Workflow to make its intended result reliably achievable.
 
 You do **not** need to choose these manually. Ask for the outcome in normal language. The model can find relevant AURA knowledge, use another installed Skill, combine both, or use another sound method.
 
@@ -74,7 +74,7 @@ The included AURA Skill can provide awareness. It cannot bypass your AI tool's f
 
 ### 1. Download AURA
 
-Download the current AURA release and unzip it. If you use Git, cloning the repository is also fine.
+Download the current AURA release and unzip it. Release ZIPs are ready to use. If you use Git, cloning the source repository is also fine; after cloning, have your AI/harness run `python3 scripts/generate_registry.py` once because deterministic generated indexes are intentionally not committed. Run it again after pulling source changes to Workflows, schemas, or process maps.
 
 ### 2. Give your AI access to the AURA folder
 
