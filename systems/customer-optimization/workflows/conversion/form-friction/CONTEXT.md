@@ -34,7 +34,7 @@ Run when a lead/application/booking/checkout-adjacent form shows abandonment, er
 1. [DETERMINISTIC] Measure field-level availability where possible: starts, completion, errors, validation, abandonment, time, device, and downstream quality.
 2. [AI] Classify each field as legally/operationally required now, qualification-required now, useful later, inferable, duplicate, or unnecessary.
 3. [AI] Review ordering, input type, instructions, defaults, validation, privacy reassurance, error recovery, and mobile effort.
-4. [HYBRID] Coordinate persuasive field/CTA copy with Marketing while keeping mechanics here.
+4. [HYBRID] Use relevant Marketing operating knowledge directly when persuasive field/CTA copy materially affects the form; keep form mechanics grounded in the actual customer journey rather than creating an internal domain handoff.
 5. [AI] Propose removing/postponing/simplifying fields before adding persuasion around them.
 6. [DETERMINISTIC] Test changes with qualified-completion and downstream-quality guardrails, not raw submission rate alone.
 7. [DETERMINISTIC] Verify live form/event behavior and evaluate outcome.
