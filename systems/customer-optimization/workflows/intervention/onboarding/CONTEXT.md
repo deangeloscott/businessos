@@ -6,19 +6,12 @@ reads:
 - CustomerJourney
 - Opportunity
 - type: Insight
-  owner_system: customer-intelligence
+  domain: customer-intelligence
 - MetricObservation
 writes: []
 context:
 - EconomicContext
 - Offer
-workflows:
-  required:
-  - customer-optimization.onboarding.milestone-design
-  - customer-optimization.onboarding.sequence-design
-  - customer-optimization.onboarding.guidance
-  - customer-optimization.onboarding.escalation
-  - customer-optimization.onboarding.qa
 ---
 # Onboarding Optimization
 
