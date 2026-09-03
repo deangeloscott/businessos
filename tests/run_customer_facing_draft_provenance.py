@@ -6,7 +6,7 @@ ROOT=Path(__file__).resolve().parents[1];S=ROOT/'scripts';sys.path.insert(0,str(
 from validate_run_completion import run_completion_errors
 
 BID='customer-facing-draft-provenance';BASE=ROOT/'instances'/BID;RUNS=ROOT/'runtime'/'runs'/BID
-WORKFLOW='marketing.landing-page.copy'
+WORKFLOW='marketing.assets.landing-page'
 
 
 def req(c,m):
@@ -17,7 +17,7 @@ def write_asset(customer_facing,origin=None,role='homepage_copy_draft'):
     asset={
         'id':f'ast_{BID}_homepage','object_type':'Asset','schema_version':'1.0.0','business_id':BID,
         'created_at':'2026-08-25T00:00:00+00:00','updated_at':'2026-08-25T00:00:00+00:00','lineage':[],
-        'asset_type':'homepage_copy_draft','owner_system':'marketing-synthesis','business_role':role,
+        'asset_type':'homepage_copy_draft','business_role':role,
         'location_reference':str(artifact.relative_to(ROOT)),'version':'1','status':'draft',
         'extensions':{'businessos':{'customer_facing':customer_facing}}
     }
@@ -47,7 +47,7 @@ def main():
         internal={
             'id':f'ast_{BID}_internal','object_type':'Asset','schema_version':'1.0.0','business_id':BID,
             'created_at':'2026-08-01T00:00:00+00:00','updated_at':'2026-08-01T00:00:00+00:00','lineage':[],
-            'asset_type':'working_note','owner_system':'marketing-synthesis','business_role':'internal_working_draft',
+            'asset_type':'working_note','business_role':'internal_working_draft',
             'location_reference':None,'version':'1','status':'draft',
             'extensions':{'businessos':{'customer_facing':False,'origin':'preexisting'}}
         }
