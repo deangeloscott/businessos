@@ -4,7 +4,7 @@
     {
       "id": "simple",
       "name": "Download and Use",
-      "summary": "Use BusinessOS directly from one local folder with no Git, hosted service, or external workspace required.",
+      "summary": "Use ViralTrac AURA directly from one local folder with no Git, hosted service, or external workspace required.",
       "external_workspace_recommended": false,
       "git_strategy": "none",
       "collaboration": "personal",
@@ -15,7 +15,7 @@
     {
       "id": "power_user",
       "name": "Private Versioned Workspace",
-      "summary": "Keep the BusinessOS product separate from an organization-owned workspace and optionally version that workspace with private Git.",
+      "summary": "Keep the AURA product separate from an organization-owned workspace and optionally version that workspace with private Git.",
       "external_workspace_recommended": true,
       "git_strategy": "private_remote_recommended",
       "collaboration": "personal",
@@ -26,14 +26,14 @@
     {
       "id": "organization",
       "name": "Shared Organization Workspace",
-      "summary": "Separate canonical BusinessOS product files from a private team-owned state/knowledge workspace with controlled Git collaboration or equivalent organization infrastructure.",
+      "summary": "Keep the AURA product separate from a private team-owned organization-memory workspace using the collaboration/versioning infrastructure that fits the organization.",
       "external_workspace_recommended": true,
       "git_strategy": "private_remote_recommended",
       "collaboration": "team",
       "knowledge_enabled": true,
-      "knowledge_interface_options": ["obsidian", "vscode", "files", "markdown-editor", "future-businessos-ui"],
+      "knowledge_interface_options": ["obsidian", "vscode", "files", "markdown-editor"],
       "recommended_for": ["teams", "GitHub Organizations", "GitLab", "Forgejo", "company-controlled infrastructure", "permissioned collaboration"]
     }
   ],
-  "invariant": "All profiles use the same BusinessOS contracts and files. Git, Obsidian, hosted services, and external workspaces are optional deployment adapters, not required runtime dependencies."
+  "invariant": "All profiles use the same AURA architecture and organization-memory semantics. Git, Obsidian, hosted storage, collaboration infrastructure, and external workspaces are optional ways to store, review, synchronize, or share organization-owned AURA state; they do not become AURA runtime or execution dependencies."
 }
