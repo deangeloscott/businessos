@@ -1,10 +1,10 @@
 """Truthful production-readiness semantics for governed customer-facing Assets.
 
-Artifact validity, version-specific QA, production readiness, live execution, and measured
-outcomes are different facts.  This module validates and summarizes the small readiness
-extension used on canonical Assets without turning readiness into another Run lifecycle.
+Artifact validity, version-specific QA, production readiness, deployment, and measured
+outcomes are different facts. This module validates and summarizes the explicit,
+version-scoped readiness assessment stored on canonical Assets. It does not infer
+readiness from loose labels, QA wording, Run state, or synonym matching.
 """
-from pathlib import Path
 
 from _common import object_index, resolve_storage_ref
 
@@ -13,11 +13,6 @@ READINESS_STATUSES={'not_assessed','blocked','ready','not_applicable'}
 DEPLOYMENT_STATUSES={'not_performed','performed','not_applicable'}
 MEASUREMENT_STATUSES={'pending','in_progress','observed','not_applicable'}
 BLOCKER_FIELDS=('unresolved_business_facts','missing_authorization','missing_capabilities','other_blockers')
-READY_LABELS={
-    'ready','production_ready','production ready','launch_ready','launch ready',
-    'ready_for_production','ready for production','ready_for_launch','ready for launch',
-    'no_blockers','no blockers',
-}
 
 
 def _businessos(asset):
@@ -27,10 +22,6 @@ def _businessos(asset):
 
 def _nonempty_strings(value):
     return isinstance(value,list) and all(isinstance(x,str) and x.strip() for x in value)
-
-
-def _ready_label(value):
-    return isinstance(value,str) and value.strip().lower().replace('-','_') in READY_LABELS
 
 
 def _refs_resolve(refs,business_id):
@@ -46,7 +37,7 @@ def _refs_resolve(refs,business_id):
 
 
 def readiness_for_asset(asset):
-    """Return a normalized assessment; omission truthfully means not assessed."""
+    """Return the explicit assessment; omission truthfully means not assessed."""
     raw=_businessos(asset).get('production_readiness')
     if not isinstance(raw,dict):
         return {
@@ -63,18 +54,12 @@ def readiness_for_asset(asset):
 
 
 def readiness_errors(business_id,objects):
-    """Reject contradictory readiness assertions without invalidating honest drafts."""
+    """Validate explicit readiness truth without promoting unrelated fields into authority."""
     errors=[]
     for asset,path in objects:
         if asset.get('object_type')!='Asset':continue
         bos=_businessos(asset);raw=bos.get('production_readiness')
-        structured_ready=(
-            _ready_label(asset.get('status')) or bos.get('production_ready') is True or bos.get('launch_ready') is True or bos.get('no_blockers') is True
-            or any(_ready_label(bos.get(key)) for key in ('readiness_status','production_status','launch_status'))
-        )
-        if raw is None:
-            if structured_ready:errors.append(f'{path} Asset asserts production/launch readiness without an exact-version extensions.businessos.production_readiness status=ready assessment')
-            continue
+        if raw is None:continue
         if not isinstance(raw,dict):
             errors.append(f'{path} Asset extensions.businessos.production_readiness must be an object');continue
         required={'status','assessed_version','unresolved_business_facts','missing_authorization','missing_capabilities','other_blockers','deployment_status','measurement_status'}
@@ -98,11 +83,9 @@ def readiness_errors(business_id,objects):
             errors.append(f'{path} Asset production_readiness.status=blocked requires at least one typed unresolved fact, authorization gap, capability gap, or other blocker')
         if status in {'ready','not_applicable'} and blockers:
             errors.append(f'{path} Asset production_readiness.status={status} cannot retain unresolved blockers')
-        if structured_ready and status!='ready':
-            errors.append(f'{path} Asset production/launch-ready status conflicts with production_readiness.status={status!r}')
-        if (bos.get('no_blockers') is True or raw.get('no_blockers') is True) and (status!='ready' or blockers):
-            errors.append(f'{path} Asset extensions.businessos.no_blockers=true conflicts with unresolved or unassessed production readiness')
 
+        # This is not semantic inference: the claim manifest already explicitly marks these
+        # entries as placeholders and explicitly declares whether they are launch-critical.
         manifest=bos.get('claim_manifest') if isinstance(bos.get('claim_manifest'),list) else []
         placeholders=[x for x in manifest if isinstance(x,dict) and x.get('classification')=='placeholder']
         if status=='ready':
@@ -123,19 +106,13 @@ def readiness_errors(business_id,objects):
 
 
 def qa_global_readiness_errors(data,business_id):
-    """Keep artifact QA pass scoped when a QA record also asserts global readiness."""
-    asserted=(data.get('production_ready') is True or data.get('launch_ready') is True or data.get('no_blockers') is True)
-    for key in ('production_readiness','readiness_status'):
-        value=data.get(key)
-        if _ready_label(value):asserted=True
-    if not asserted:return []
-    raw=next((data.get(k) for k in ('tested_asset','target_asset','asset_ref','target_ref') if data.get(k)),None)
-    if not isinstance(raw,str):return ['QA record asserts production/launch readiness without one exact tested Asset']
-    item=object_index(business_id).get(raw)
-    if not item:return [f'QA record asserts production/launch readiness for unresolved Asset {raw!r}']
-    assessment=readiness_for_asset(item[0])
-    if assessment.get('status')!='ready':
-        return [f'QA record may pass artifact/version checks but cannot assert production/launch readiness while Asset {raw} production_readiness.status={assessment.get("status")!r}']
+    """QA wording has no canonical production-readiness authority.
+
+    Structural QA callers still use this hook while that call site exists, but the only
+    readiness truth AURA validates is the target Asset's explicit production_readiness
+    assessment. A QA record may describe its conclusion in natural language without a
+    deterministic synonym parser promoting those words into organizational state.
+    """
     return []
 
 
