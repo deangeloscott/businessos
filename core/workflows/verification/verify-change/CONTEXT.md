@@ -12,7 +12,7 @@ writes:
 # Verify Material Change
 
 ## Purpose
-Establish whether an important claimed post-state is actually true when independent verification is useful to the task, selected SOP, or consequence.
+Establish whether an important claimed post-state is actually true when independent verification is useful to the task, relevant Workflow, or consequence.
 
 ## Business Outcome
 Prevent false success without making independent verification a universal prerequisite for all work.
@@ -25,7 +25,7 @@ When a material ChangeEvent or task needs independent evidence of the resulting 
 - Do not confuse implementation verification with measurement of the later business outcome.
 
 ## Process
-1. [AI] Determine the material claim that needs verification from the ChangeEvent, task, decision, or selected SOP.
+1. [AI] Determine the material claim that needs verification from the ChangeEvent, task, decision, or relevant Workflow knowledge.
 2. [HYBRID] Define the smallest observable post-state evidence that would establish, refute, or leave that claim inconclusive.
 3. [INTEGRATION/HUMAN] Re-read or independently observe the relevant state through the best available host capability or credible human evidence.
 4. [HYBRID] Compare expected and observed state, including unintended effects when material.
