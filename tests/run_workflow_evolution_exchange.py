@@ -30,7 +30,7 @@ def seed_learning(business_id):
     base=ROOT/'instances'/business_id
     obj={
         'id':'lrn_workflow_evolution_test','object_type':'Learning','schema_version':'1.0.0','business_id':business_id,
-        'created_at':now(),'updated_at':now(),'owner_scope':'business','owner_system':'marketing-synthesis',
+        'created_at':now(),'updated_at':now(),'scope':'business',
         'statement':'Proof-first landing structure improved qualified conversion in the tested context.',
         'maturity':'validated','status':'active','applies_when':['Evidence-backed landing-page work'],
         'does_not_apply_when':[],'evidence_refs':[],'confidence':0.9,'extensions':{}
@@ -135,7 +135,7 @@ def main():
         req(not any(obj.get('object_type')=='Insight' for obj,_ in iter_instance_objects(B)),'package import manufactured semantic Insight')
 
         # Imported support may later gain local evidence without turning popularity into truth.
-        evaluation={'id':'eval_exchange_test','object_type':'OutcomeEvaluation','schema_version':'1.0.0','business_id':B,'owner_system':'marketing-synthesis','target_refs':[],'attribution_method':'controlled_test','causal_confidence':0.8,'conclusion':'The imported Workflow was supported in this bounded local test.','extensions':{}}
+        evaluation={'id':'eval_exchange_test','object_type':'OutcomeEvaluation','schema_version':'1.0.0','business_id':B,'target_refs':[],'attribution_method':'controlled_test','causal_confidence':0.8,'conclusion':'The imported Workflow was supported in this bounded local test.','extensions':{}}
         ep=ROOT/'instances'/B/'measurement'/'outcome-evaluations'/'eval_exchange_test.json';ep.parent.mkdir(parents=True,exist_ok=True);ep.write_text(json.dumps(evaluation,indent=2)+'\n')
         record_outcome(B,entry['id'],'supported','eval_exchange_test');again=record_outcome(B,entry['id'],'supported','eval_exchange_test')
         req(again['local_evidence']['supported_count']==1,'duplicate local outcome was not idempotent')
