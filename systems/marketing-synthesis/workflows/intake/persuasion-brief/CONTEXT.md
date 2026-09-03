@@ -34,7 +34,7 @@ Use before material persuasion/marketing production when the current task lacks 
 4. [AI] Separate persuasion problems from journey friction, product/service failure, missing customer knowledge, or sales/operational issues. Surface the real issue rather than masking it with copy; another domain method may be useful, but no internal routing object is required.
 5. [HYBRID] Identify material claim/evidence, legal/compliance, offer-term, price/guarantee, brand, customer-quality, channel, and real organizational constraints. Do not invent a generic approval requirement.
 6. [AI] Define the asset/campaign job, must-preserve facts/proof, desired action, success/guardrail measurements, and testable uncertainty only where they improve the actual work.
-7. [AI] Produce a concise persuasion brief that references durable evidence rather than duplicating upstream research. Persist it as an internal Marketing-owned `Asset` only when future sessions/actors materially benefit; otherwise use it directly in the current task.
+7. [AI] Produce a concise persuasion brief that references durable evidence rather than duplicating upstream research. Persist it as an internal organization-owned `Asset` only when future sessions/actors materially benefit; otherwise use it directly in the current task.
 8. [AI] If a real cross-person/model/session handoff must survive the current runtime, preserve that separately through `core.continuity.manage-handoff`. This playbook does not create a WorkRequest merely to pass context to another AURA playbook.
 
 ## Verification
