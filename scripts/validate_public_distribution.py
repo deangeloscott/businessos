@@ -86,7 +86,8 @@ def validate_public_distribution():
         if d.get('descriptor')!=EXPECTED_DESCRIPTOR:errors.append(f'INSTALLATION.json descriptor must remain {EXPECTED_DESCRIPTOR!r}')
         if d.get('configurable_workspace_root') is not True:errors.append('INSTALLATION.json must declare configurable_workspace_root=true')
         if d.get('human_knowledge_layer') is not True:errors.append('INSTALLATION.json must declare human_knowledge_layer=true')
-        if d.get('deployment_profiles')!='distribution/deployment-profiles.json':errors.append('INSTALLATION.json deployment_profiles path is missing/incorrect')
+        if d.get('workspace_profiles')!='distribution/deployment-profiles.json':errors.append('INSTALLATION.json workspace_profiles path is missing/incorrect')
+        if 'deployment_profiles' in d:errors.append('INSTALLATION.json must not frame workspace/storage choices as deployment profiles')
         if 'host_capability_discovery' in d:errors.append('INSTALLATION.json must not claim AURA-owned host capability discovery')
 
     editions=ROOT/'distribution/editions.json'
