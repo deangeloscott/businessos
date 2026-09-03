@@ -5,7 +5,7 @@ owner_system: competitor-intelligence
 reads:
 - Competitor
 - type: Insight
-  owner_system: customer-intelligence
+  domain: customer-intelligence
 - Observation
 - SourceRecord
 writes:
@@ -19,9 +19,6 @@ context:
 - Objective
 - Offer
 - ProductService
-workflows:
-  required:
-  - competitor.analysis.strategy-hypothesis
 ---
 # Strategic Change Detection
 
@@ -36,7 +33,7 @@ Run when a decision requires current strategic change detection and canonical co
 
 ## Process
 1. [DETERMINISTIC] Gather material changes across product, pricing, packaging, positioning, offers, hiring, partnerships, content, advertising, and customer targets over a defined window.
-2. [AI] Group changes by plausible strategic thesis and timeline.
+2. [AI] Group changes by plausible strategic thesis and timeline. Draw on `competitor.analysis.strategy-hypothesis` when its hypothesis method materially improves the analysis.
 3. [HYBRID] Require multiple aligned signals or one unusually direct authoritative signal before asserting strategic movement.
 4. [AI] Generate alternative explanations and identify evidence that would discriminate them.
 5. [HYBRID] Assess likely affected markets/audiences and potential threat/opportunity.
