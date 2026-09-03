@@ -38,7 +38,7 @@ Run when the business needs to understand customer ROI/value realization, LTV, p
 5. [AI] Test cohort composition, acquisition-source differences, tenure, seasonality, pricing/product changes, survivorship, service model, and other plausible confounders before interpreting differences.
 6. [HYBRID] Separate **risk likelihood** from **value/consequence at risk**. A valuable account may deserve faster attention when an evidence-backed risk exists, but its value does not itself establish churn probability or justify manipulative retention.
 7. [AI] Link relevant Customer Insights (why customers value/leave/expand) to observed behavioral/economic patterns while preserving correlation-versus-causation limits.
-8. [AI] Produce evidence-backed Journey/Customer Optimization Insights and, when warranted, a prioritized Opportunity for onboarding, success, service recovery, retention, acquisition-quality feedback, expansion, or another correctly owned intervention.
+8. [AI] Produce evidence-backed Journey/Customer Optimization Insights and, when remembering worthwhile future work would materially improve continuity, preserve an Opportunity for onboarding, success, service recovery, retention, acquisition-quality feedback, expansion, or another intervention. The model/user may also continue directly into the most relevant work without creating an Opportunity or routing through an AURA domain boundary.
 9. [HYBRID] Protect privacy and fairness: avoid sensitive-trait inference, opaque customer scoring, or punitive treatment based on predicted value. Prefer interpretable contributing factors and aggregate/cohort analysis where individual-level action is unnecessary.
 
 ## Verification
@@ -48,4 +48,4 @@ Run when the business needs to understand customer ROI/value realization, LTV, p
 - Association is not presented as causal effect without appropriate design/evidence.
 
 ## Completion Criteria
-- The organization has a decision-useful, evidence-bounded view of customer and business value, with unknowns explicit and any intervention routed to the correct semantic owner.
+- The organization has a decision-useful, evidence-bounded view of customer and business value, with unknowns explicit and any useful next work available for the capable model/user to continue directly or preserve durably when continuity benefits.
