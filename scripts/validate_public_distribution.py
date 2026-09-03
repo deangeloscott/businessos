@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from pathlib import Path
 import json,re
+from jsonschema import Draft202012Validator
 
 ROOT=Path(__file__).resolve().parents[1]
 EXPECTED_NAME='ViralTrac AURA'
@@ -9,7 +10,7 @@ EXPECTED_DESCRIPTOR='organization-owned memory and operating knowledge for capab
 EXPECTED_MATURITY='alpha'
 REQUIRED=[
     'VERSION','LICENSE.md','TRADEMARKS.md','SECURITY.md','PUBLIC-DISTRIBUTION.md','PUBLISHER.json','BRANDING.md','DEPLOYMENT.md',
-    'distribution/deployment-profiles.json','core/policies/workspace-and-human-knowledge.md','core/schemas/config/workspace-profile.schema.json',
+    'distribution/deployment-profiles.json','core/policies/workspace-and-human-knowledge.md','core/schemas/config/workspace-profile.schema.json','core/schemas/config/publisher-metadata.schema.json',
     'scripts/configure_workspace.py','scripts/migrate_workspace.py','scripts/workspace_status.py','scripts/generate_knowledge_layer.py','scripts/register_human_note.py'
 ]
 RETIRED_UPDATE_PATHS=[
@@ -35,6 +36,7 @@ def validate_public_distribution():
         if not (ROOT/rel).exists():errors.append(f'missing required public-distribution file: {rel}')
     for rel in RETIRED_UPDATE_PATHS:
         if (ROOT/rel).exists():errors.append(f'noncore AURA self-update machinery must not ship: {rel}')
+    if (ROOT/'core/schemas/runtime/publisher-metadata.schema.json').exists():errors.append('publisher metadata must not be modeled as runtime state')
 
     version=(ROOT/'VERSION').read_text().strip() if (ROOT/'VERSION').exists() else ''
     if not re.fullmatch(r'\d+\.\d+\.\d+',version):errors.append(f'VERSION must be simple X.Y.Z semantic version, got {version!r}')
@@ -64,8 +66,13 @@ def validate_public_distribution():
         if unexpected:errors.append(f'contains business instances: {unexpected}')
 
     pub=ROOT/'PUBLISHER.json'
+    publisher_schema=ROOT/'core/schemas/config/publisher-metadata.schema.json'
     if pub.exists():
         d=json.loads(pub.read_text());publisher=d.get('publisher') or {}
+        if publisher_schema.exists():
+            schema=json.loads(publisher_schema.read_text())
+            schema_errors=sorted(Draft202012Validator(schema).iter_errors(d),key=lambda e:list(e.path))
+            for err in schema_errors:errors.append('PUBLISHER.json schema error: '+err.message)
         if not publisher.get('canonical_project_url'):errors.append('canonical public project URL missing')
         if publisher.get('product_name')!=EXPECTED_NAME:errors.append(f'publisher product_name must be {EXPECTED_NAME!r}')
         if publisher.get('product_acronym')!='AURA':errors.append('publisher product_acronym must be AURA')
