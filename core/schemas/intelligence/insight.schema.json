@@ -4,142 +4,36 @@
   "type": "object",
   "additionalProperties": false,
   "properties": {
-    "id": {
-      "type": "string",
-      "pattern": "^ins_[A-Za-z0-9_-]+$"
-    },
-    "object_type": {
-      "const": "Insight"
-    },
-    "schema_version": {
-      "type": "string",
-      "pattern": "^\\d+\\.\\d+\\.\\d+$"
-    },
-    "business_id": {
-      "type": "string",
-      "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$"
-    },
-    "created_at": {
-      "type": "string",
-      "format": "date-time"
-    },
-    "updated_at": {
-      "type": "string",
-      "format": "date-time"
-    },
-    "lineage": {
-      "type": "array",
-      "items": {
-        "type": "string",
-        "minLength": 1
-      },
-      "uniqueItems": true
-    },
-    "owner_system": {
-      "enum": [
-        "core",
-        "customer-intelligence",
-        "competitor-intelligence",
-        "industry-intelligence",
-        "seo-aeo",
-        "content-synthesis",
-        "marketing-synthesis",
-        "customer-optimization"
-      ]
-    },
-    "insight_type": {
-      "type": "string",
-      "minLength": 1
-    },
-    "statement": {
-      "type": "string",
-      "minLength": 1
-    },
-    "subject_refs": {
-      "type": "array",
-      "items": {
-        "type": "string",
-        "minLength": 1
-      },
-      "uniqueItems": true
-    },
+    "id": {"type": "string", "pattern": "^ins_[A-Za-z0-9_-]+$"},
+    "object_type": {"const": "Insight"},
+    "schema_version": {"type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$"},
+    "business_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "updated_at": {"type": "string", "format": "date-time"},
+    "lineage": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+    "domain": {"enum": ["core", "customer-intelligence", "competitor-intelligence", "industry-intelligence", "seo-aeo", "content-synthesis", "marketing-synthesis", "customer-optimization"]},
+    "insight_type": {"type": "string", "minLength": 1},
+    "statement": {"type": "string", "minLength": 1},
+    "subject_refs": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
     "evidence_links": {
       "type": "array",
       "items": {
         "type": "object",
         "properties": {
-          "ref": {
-            "type": "string",
-            "minLength": 1
-          },
-          "relationship": {
-            "enum": [
-              "supports",
-              "contradicts",
-              "contextualizes",
-              "extends",
-              "derived_from"
-            ]
-          },
-          "weight": {
-            "type": [
-              "number",
-              "null"
-            ]
-          },
-          "reason": {
-            "type": [
-              "string",
-              "null"
-            ]
-          }
+          "ref": {"type": "string", "minLength": 1},
+          "relationship": {"enum": ["supports", "contradicts", "contextualizes", "extends", "derived_from"]},
+          "weight": {"type": ["number", "null"]},
+          "reason": {"type": ["string", "null"]}
         },
-        "required": [
-          "ref",
-          "relationship"
-        ],
+        "required": ["ref", "relationship"],
         "additionalProperties": false
       }
     },
-    "confidence": {
-      "type": "number",
-      "minimum": 0,
-      "maximum": 1
-    },
-    "scope": {
-      "type": "object"
-    },
-    "status": {
-      "enum": [
-        "candidate",
-        "supported",
-        "active",
-        "stale",
-        "superseded",
-        "contradicted",
-        "archived"
-      ]
-    },
-    "reviewed_at": {
-      "type": [
-        "string",
-        "null"
-      ],
-      "format": "date-time"
-    },
-    "extensions": {
-      "type": "object"
-    }
+    "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+    "scope": {"type": "object"},
+    "status": {"enum": ["candidate", "supported", "active", "stale", "superseded", "contradicted", "archived"]},
+    "reviewed_at": {"type": ["string", "null"], "format": "date-time"},
+    "extensions": {"type": "object"}
   },
-  "required": [
-    "id",
-    "object_type",
-    "schema_version",
-    "business_id",
-    "owner_system",
-    "statement",
-    "evidence_links",
-    "confidence",
-    "status"
-  ]
+  "required": ["id", "object_type", "schema_version", "business_id", "domain", "statement", "evidence_links", "confidence", "status"]
 }
