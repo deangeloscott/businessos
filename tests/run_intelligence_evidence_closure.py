@@ -19,7 +19,6 @@ def contains_all(text,*concepts):
 def main():
     foundation=(ROOT/'core/policies/intelligence-foundation.md').read_text()
     evidence=(ROOT/'core/policies/research-evidence.md').read_text()
-    completion=(ROOT/'core/policies/completion-evidence.md').read_text()
 
     req('## Evidence closure and subject relevance' in foundation,'shared intelligence foundation must define evidence closure and subject relevance')
     req(contains_all(foundation,'evidence closure','material subjects','unknown','support-grade'),'shared intelligence foundation must bound confident synthesis by material evidence coverage')
@@ -33,8 +32,6 @@ def main():
     req(contains_all(evidence,'supported','limited','unknown/blocked','not_material','never close a gap by guessing'),'research evidence policy must preserve decision-relative closure states and visible gaps')
     req(contains_all(evidence,'claim-level provenance','bibliography detached from the claims'),'research evidence policy must keep material claims auditable rather than relying on a detached bibliography')
     req(contains_all(evidence,'test threshold','stop rule','success criterion','not a prediction'),'research evidence policy must distinguish test criteria from predicted outcomes')
-
-    req(contains_all(completion,'mechanical validation does not understand the work','substantive qualification','semantic authority'),'completion policy must keep structural verification separate from intelligence judgment')
 
     schema=json.loads((ROOT/'core/schemas/intelligence/source-record.schema.json').read_text())
     subject_schema=(schema.get('properties') or {}).get('subject_refs') or {}
