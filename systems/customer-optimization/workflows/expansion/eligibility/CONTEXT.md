@@ -36,5 +36,5 @@ Run when expansion/upsell/cross-sell is a valid business motion.
 3. [AI] Confirm current value realization and absence of unresolved problems that make expansion inappropriate.
 4. [HYBRID] Avoid inferring needs from sensitive data or treating high spend/value alone as eligibility.
 5. [AI] Explain expected incremental outcome, required effort/change, fit, and evidence needed for a responsible expansion conversation.
-6. [DETERMINISTIC] Create a scoped expansion signal/WorkRequest to Marketing/Sales/human owner with reason and expiry.
-7. [AI] Track outcome and whether expansion improved customer value/retention, not only revenue.
+6. [AI] Preserve the scoped eligibility rationale as an Insight/Opportunity when future work benefits from it. Use relevant Marketing/Sales operating knowledge or expertise directly; create a WorkRequest only when a real durable handoff to another actor must survive the current interaction.
+7. [AI] When later evidence becomes available, evaluate whether expansion improved customer value/retention rather than judging it by revenue alone.
