@@ -6,15 +6,12 @@ reads:
 - CustomerJourney
 - Opportunity
 - type: Insight
-  owner_system: customer-intelligence
+  domain: customer-intelligence
 - MetricObservation
 writes: []
 context:
 - EconomicContext
 - Offer
-workflows:
-  required:
-  - customer-optimization.referral.eligibility-timing
 ---
 # Referral Optimization
 
@@ -28,7 +25,7 @@ Generate healthy advocacy and referred-customer value without pressuring custome
 Use when referral/advocacy is a meaningful growth or customer-value opportunity and the organization has enough evidence to design an appropriate mechanism.
 
 ## Process
-1. [HYBRID] Define customer success/eligibility conditions so asks occur around genuine value rather than arbitrary dates or indiscriminate outreach.
+1. [HYBRID] Define customer success/eligibility conditions so asks occur around genuine value rather than arbitrary dates or indiscriminate outreach. Draw on `customer-optimization.referral.eligibility-timing` when its specialized method would improve the decision; it is optional operating knowledge, not a required execution step.
 2. [HYBRID] Analyze current referral sources, timing, friction, incentives where relevant/allowed, referred-customer quality, and customer experience.
 3. [AI] Identify natural advocacy moments such as an achieved outcome, explicit praise, renewal, milestone, support recovery, event/community interaction, or another evidence-backed value moment.
 4. [AI] Design the smallest low-friction ask/mechanism, shareable context, recognition/incentive where appropriate, and opt-out behavior.
