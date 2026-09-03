@@ -15,9 +15,6 @@ context:
 - Market
 - AudienceSegment
 - Offer
-workflows:
-  required:
-  - competitor.research.adaptive-source-coverage
 ---
 # Competitor Research Plan
 
@@ -35,7 +32,7 @@ Run before substantial competitor research when scope, competitor set, depth, ev
 2. [AI] Select research depth: **Rapid** for a narrow answer, **Standard** for normal competitive analysis, **Comprehensive** for broad strategic due diligence/audit, or **Continuous** for monitoring from an existing baseline. Infer from the request unless the user specifies depth.
 3. [AI] Define the competitor set including direct, substitute, emerging, and relevant category benchmarks; do not assume the supplied list is complete.
 4. [AI] Identify fact/evidence classes needed: product, price, packaging, offer, positioning, funnel, content/social, advertising, customer/public sentiment, releases, strategic signals, independent corroboration, or specialist domain evidence.
-5. [HYBRID] Use `competitor.research.adaptive-source-coverage` to choose decision-relevant sources and coverage; examples in the source registry guide discovery but do not limit it.
+5. [HYBRID] Draw on `competitor.research.adaptive-source-coverage` when its coverage method materially improves source selection or stopping logic; examples in the source registry guide discovery but do not limit it.
 6. [AI] Specify historical comparison, contrary evidence, customer evidence, identity-resolution needs, and competing explanations needed to avoid snapshot-only conclusions.
 7. [DETERMINISTIC] Define freshness, coverage, stopping, output, and unresolved-gap requirements; reuse current canonical competitor intelligence and collect only material gaps.
 
