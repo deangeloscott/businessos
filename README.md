@@ -13,7 +13,7 @@ AURA is **not** the AI itself. It is also not a required cloud service, schedule
 
 ## Start in three steps
 
-1. **Download and unzip AURA, or clone the repository.**
+1. **Download and unzip AURA, or clone the repository.** Release ZIPs are ready to use. If you clone the source repository directly, have your AI/harness run `python3 scripts/generate_registry.py` once after cloning (and after source changes to Workflows, schemas, or process maps) because deterministic generated indexes are intentionally not committed.
 2. **Give your AI/harness access to AURA and attach it once.** The included `skills/viraltrac-aura/SKILL.md` is the preferred adapter for Skill-capable harnesses; `AURA-ATTACHMENT.md` includes a small persistent-instruction alternative.
 3. **Tell the AI about your business and what you want in normal language.**
 
