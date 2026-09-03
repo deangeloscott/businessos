@@ -34,4 +34,4 @@ Run when a sequence of competitor changes suggests a material strategic shift.
 4. [AI] State the primary strategy hypothesis, supporting/contradicting evidence, scope, and confidence.
 5. [AI] Define observable predictions that should occur if the hypothesis is correct.
 6. [HYBRID] Avoid claims about private intent, finances, or plans beyond observable evidence.
-7. [DETERMINISTIC] Schedule monitoring of discriminating signals and update/contradict the Insight when evidence changes.
+7. [AI] Preserve useful monitoring intent for discriminating signals and update/contradict the Insight when new evidence arrives. The active harness/runtime owns any actual recurring checks or notifications.
