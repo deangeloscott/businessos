@@ -25,7 +25,7 @@ def main():
         ws=Path(td).resolve();env=os.environ.copy();env['BUSINESSOS_WORKSPACE']=str(ws);env['PYTHONDONTWRITEBYTECODE']='1';bid='entry-regression'
         run([S/'init_business.py',bid,'--name','Entry Regression'],env)
         supplied=ws/'attachments';supplied.mkdir(parents=True);source=supplied/'business-source.txt';source.write_text('The organization wants to create a presentation for a proposal.\n')
-        run([S/'bootstrap_explicit_context.py',bid,'--facts-json',json.dumps({'objectives':['Create a presentation for a proposal']}),'--source-file',source,'--initialization-only'],env)
+        run([S/'bootstrap_explicit_context.py',bid,'--facts-json',json.dumps({'objectives':['Create a presentation for a proposal']}),'--source-file',source],env)
 
         request='Create a presentation for this business proposal.';result,payload=enter(request,bid,ws,env)
         req(result.returncode==0 and payload.get('status')=='ready',f'entry should prepare useful work context: {payload}')
