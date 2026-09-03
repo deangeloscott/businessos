@@ -57,7 +57,8 @@ def main():
         op=selected.get('operating_knowledge') or {};sw=op.get('selected_workflow') or {}
         req(sw.get('workflow_id')=='content.production.presentation','explicit Workflow selection was not preserved')
         req(sw.get('selection_mode')=='explicit_model_selection','explicit model selection mode was lost')
-        req(op.get('workflow_process') is not None,'selected AURA Workflow should expose reusable composition knowledge')
+        req(op.get('workflow_view') is not None,'selected AURA Workflow should expose its reusable browse view')
+        req('workflow_process' not in op,'front door reintroduced process-plan framing for a Workflow browse view')
         req(selected.get('run',{}).get('created') is False,'explicit Workflow selection still must not auto-create a Run')
         loaded=selected.get('retrieval',{}).get('context_files',[])
         req('CONTEXT.md' in loaded and 'core/DEFAULTS.md' not in loaded and 'core/policies/agent-execution.md' not in loaded,'selected Workflow context reintroduced redundant universal instruction stack')
