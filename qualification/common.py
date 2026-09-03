@@ -36,7 +36,6 @@ def parse_workflow(path):
         'workflow_id':wid,'path':str(Path(path).relative_to(PRODUCT_ROOT)),'type':meta.get('type'),
         'owner_system':meta.get('owner_system') or wid.split('.')[0],
         'reads':meta.get('reads') or [],'writes':meta.get('writes') or [],'context':meta.get('context') or [],
-        'workflows':meta.get('workflows') or {},
         'title':next((ln[2:].strip() for ln in body.splitlines() if ln.startswith('# ')),wid),
         'purpose':section(body,'Purpose'),'business_outcome':section(body,'Business Outcome'),
         'run_when':section(body,'Run When'),'process':parse_process(section(body,'Process')),
@@ -68,9 +67,7 @@ def tree_snapshot(root):
         except OSError:files.append({'path':rel,'error':'unreadable'})
     return {'root':str(root),'files':files,'digest':hashlib.sha256(json.dumps(files,sort_keys=True).encode()).hexdigest()}
 def product_snapshot_path_is_mutable(rel):
-    rel=Path(rel);posix=rel.as_posix()
-    if posix=='.businessos/workspace.json':return True
-    return len(rel.parts)>=2 and rel.parts[0]=='.businessos' and rel.parts[1]=='environments'
+    return Path(rel).as_posix()=='.businessos/workspace.json'
 def product_snapshot(root):
     root=Path(root);files=[]
     if not root.exists():return {'root':str(root),'files':[],'digest':hashlib.sha256(b'').hexdigest(),'format_version':'1.0'}
