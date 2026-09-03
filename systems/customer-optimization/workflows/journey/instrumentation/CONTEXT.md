@@ -5,7 +5,7 @@ owner_system: customer-optimization
 reads:
 - CustomerJourney
 - type: Insight
-  owner_system: customer-intelligence
+  domain: customer-intelligence
 - Observation
 - MetricObservation
 writes:
