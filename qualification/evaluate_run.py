@@ -91,17 +91,15 @@ def main():
         review.append({
             'event_id':r['event_id'],'evaluation_id':event.get('evaluation_id'),'workflow_id':event.get('workflow_id'),
             'claim_under_test':test.get('claim_under_test'),'task':event['task'],
-            'expected_sop_process_steps':test.get('process_steps',[]),'process_steps':test.get('process_steps',[]),
-            'expected_completion_evidence':(test.get('claim_under_test') or {}).get('completion_evidence'),
+            'workflow_process_steps':test.get('process_steps',[]),
             'completion_evidence':(test.get('claim_under_test') or {}).get('completion_evidence'),
-            'authored_workflow_refs':test.get('authored_workflow_refs',{}),
             'hard_pass':r['hard_pass'],'hard_gates':r['hard_gates'],'evaluator_integrity_issues':r['evaluator_integrity_issues'],
             'integrity_flags':r['integrity_flags'],'run_integrity_flags':run_flags,
             'artifact_refs':receipt.get('artifact_refs',[]),'actual_artifacts':r.get('actual_artifacts',[]),
             'canonical_refs':receipt.get('canonical_refs',[]),'source_refs':receipt.get('source_refs',[]),
             'field_snapshot_refs':receipt.get('field_snapshot_refs',[]),'released_fixture_refs':receipt.get('released_fixture_refs',[]),
             'method_observations':receipt.get('method_observations',[]),'rubric_dimensions':dims,'score_scale':RUBRICS['score_scale'],
-            'instructions':'Judge the actual business result first. Infer substantive requirements from the ordinary request, the Workflow purpose/business outcome/process, the business context, and professional standards—not from hidden id taxonomies. If the job required a usable artifact, current external research, rendered QA, implementation, comparison, measurement, or another material step and that work is absent or weak, score it accordingly even though the universal hard gates passed. Equivalent or better methods are valid; traversing authored supporting Workflows, creating a particular Run, or matching an execution graph is not required. Verify that evidence is real, durable AURA state is truthful/useful, and the result is professionally usable.'
+            'instructions':'Judge the actual business result first. Infer substantive requirements from the ordinary request, the Workflow purpose/business outcome/process, the business context, and professional standards—not from hidden id taxonomies. If the job required a usable artifact, current external research, rendered QA, implementation, comparison, measurement, or another material step and that work is absent or weak, score it accordingly even though the universal hard gates passed. Equivalent or better methods are valid; creating a particular Run or matching an execution graph is not required. Verify that evidence is real, durable AURA state is truthful/useful, and the result is professionally usable.'
         })
     write_json(rd/'evaluator/hard-and-merged-results.json',results);write_json(rd/'evaluator/review-packets.json',review);counts={};gate_failures={};domain_summary={};integrity_counts={};evaluator_issue_counts={}
     for r in results:
