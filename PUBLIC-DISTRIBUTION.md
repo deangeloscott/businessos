@@ -1,12 +1,12 @@
 # Public Distribution
 
-ViralTrac AURA is distributed as a portable, source-available AI-native BusinessOS.
+ViralTrac AURA is distributed as portable, source-available organization-owned memory and operating knowledge for capable AI.
 
 ## Current maturity
 
-AURA is currently **Alpha**. The version in `VERSION` is the source of truth. Alpha releases may change architecture, interfaces, schemas, playbooks, and operating guidance before 1.0.
+AURA is currently **Alpha**. The version in `VERSION` is the source of truth. Alpha releases may change architecture, interfaces, schemas, Playbooks, and operating guidance before 1.0.
 
-A green product-integrity gate means the release is internally coherent; it does not by itself mean the product is stable or that every workflow has proven real-world excellence.
+A green product-integrity gate means the release is internally coherent; it does not by itself mean the product is stable or that every Workflow has proven real-world excellence.
 
 ## Recommended way to get AURA
 
@@ -16,7 +16,7 @@ Advanced users may clone or fork the public repository. The repository may inclu
 
 ## What ships to users
 
-Curated distributions contain the AURA product source, installed operating knowledge, schemas, navigation, validation helpers, and the minimal distribution test needed to verify the package itself.
+Curated distributions contain the AURA product source, included operating knowledge, schemas, navigation, validation helpers, and the minimal distribution test needed to verify the package itself.
 
 They do **not** include:
 
@@ -50,6 +50,6 @@ Use Git/GitHub, official release assets, or the active harness/user's normal sof
 
 ## License
 
-AURA is **source-available, not open source**. Internal business use, customization, and agency/consulting use for clients are permitted under `LICENSE.md`; white-label resale or repackaging it as someone else's standalone BusinessOS is not.
+AURA is **source-available, not open source**. Internal business use, customization, and agency/consulting use for clients are permitted under `LICENSE.md`; see the license for restrictions on white-label resale and standalone repackaging.
 
 See `BRANDING.md` for naming and maturity guidance and `SECURITY.md` for the public/private boundary.
