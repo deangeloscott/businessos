@@ -33,7 +33,7 @@ Run when creating a competitor, onboarding new evidence surfaces, or when a sour
 4. [AI] Distinguish parent/subsidiary, regional entity, reseller/partner, former identity, and unrelated namesakes when material to the research question.
 5. [HYBRID] Assign each profile/identity a status of verified, probable, ambiguous, or rejected with confidence and evidence references. Do not merge ambiguous evidence into canonical competitor state.
 6. [DETERMINISTIC] Update the Competitor identity block with deduplicated official domains, aliases, and resolved profiles; preserve rejected/ambiguous candidates in evidence rather than silently discarding why they were excluded.
-7. [AI] Route unresolved identity questions for confirmation only when they materially affect downstream research; otherwise continue with verified surfaces and mark coverage partial.
+7. [AI] Surface unresolved identity questions for confirmation only when they materially affect the work; otherwise continue with verified surfaces and mark coverage partial.
 
 ## Verification
-Downstream competitor evidence can be traced to an identity surface whose relationship to the canonical Competitor is explicit and confidence-scored.
+Future competitor evidence can be traced to an identity surface whose relationship to the canonical Competitor is explicit and confidence-scored.
