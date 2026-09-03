@@ -36,4 +36,4 @@ Use when a commercial experience needs a clearer proof strategy or important cla
 4. [AI] Identify proof gaps, stale evidence, overused weak social proof, and claims with no valid support.
 5. [AI] Sequence proof near the question/objection it resolves rather than dumping all testimonials in one section.
 6. [HYBRID] Define claim wording limits and the smallest useful new evidence need; do not use restricted ProofRecords outside their permitted context.
-7. [AI] Preserve the reusable claim-to-proof architecture as a Marketing-owned strategy Asset. Create a separate research task, Opportunity, or durable WorkRequest only when a real unresolved organizational need warrants it.
+7. [AI] Preserve the reusable claim-to-proof architecture as an organization-owned strategy Asset. Create a separate research task, Opportunity, or durable WorkRequest only when a real unresolved organizational need warrants it.
