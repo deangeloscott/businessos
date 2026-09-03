@@ -35,4 +35,4 @@ Use when audience awareness/sophistication is material to a marketing message or
 4. [AI] Identify prerequisite beliefs/information that must exist before the desired action can feel reasonable.
 5. [HYBRID] Segment or branch when materially different awareness states cannot be served by one persuasion path.
 6. [AI] Define what to explain, prove, contrast, or omit for the target state.
-7. [AI] Preserve the useful awareness assumptions, evidence, and variant conditions as a Marketing-owned strategy Asset when future work benefits from them. Do not create a WorkRequest merely because downstream messaging/content methods may use the result.
+7. [AI] Preserve the useful awareness assumptions, evidence, and variant conditions as an organization-owned strategy Asset when future work benefits from them. Do not create a WorkRequest merely because downstream messaging/content methods may use the result.
