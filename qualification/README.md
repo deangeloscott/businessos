@@ -46,11 +46,11 @@ A strong qualification run asks whether the candidate:
 - produced work a competent customer could actually use;
 - held up against strong current alternatives when competitive comparison was relevant.
 
-It does **not** require the candidate to manufacture a particular Run ID, contract-execution ledger, subcontract file, checkpoint, qualification receipt, or evaluator-shaped artifact.
+It does **not** require the candidate to manufacture a particular Run, method trace, checkpoint, evaluator observation, or benchmark-shaped artifact.
 
 It also does **not** test generic model/harness competence as though it belonged to AURA. Files, browsers, APIs, renderers, code execution, schedulers, subagents, and other host capabilities are environmental inputs. When available, the candidate may use them normally. When a genuinely required capability is unavailable, the evaluator should record that external limitation instead of adding product machinery or inventing an AURA failure.
 
-An AURA playbook may still be the hidden job under test. Its essential business method and quality invariants matter. Incidental implementation details do not: a capable model/harness may use a better tool, delegation pattern, execution order, or equivalent method when the result remains rigorous and truthful.
+An AURA Workflow may be the hidden job under test. Its essential business method and quality invariants matter. Incidental implementation details do not: a capable model/harness may use a better tool, delegation pattern, execution order, or equivalent method when the result remains rigorous and truthful.
 
 ## Blind candidate rule
 
@@ -61,18 +61,18 @@ The candidate sees only:
 3. available model/harness capabilities;
 4. an ordinary-language business request.
 
-The candidate must not receive the qualification directory, target contract/mission ID, rubric, checkpoints, receipts, evaluator research, scoring rules, or benchmark metadata.
+The candidate must not receive the qualification directory, target Workflow/mission ID, rubric, checkpoints, evaluator observations, scoring rules, or benchmark metadata.
 
-Checkpoints, timed fixture release, evaluation mapping, and controller receipts are evaluator bookkeeping. They exist to observe the test—not to tell AURA how to work.
+Checkpoints, timed fixture release, evaluation mapping, and controller observations are evaluator bookkeeping. They exist to observe the test—not to tell AURA how to work.
 
-## Representative real-work workflow
+## Representative real-work Workflow
 
 Prepare one representative job:
 
 ```bash
 python3 qualification/prepare_run.py \
   --profile atomic \
-  --contract <contract-id>
+  --workflow <workflow-id>
 ```
 
 Start it:
@@ -93,7 +93,7 @@ python3 qualification/build_judge_prompt.py /path/to/run
 
 Have an independent capable reviewer create `evaluator/judgments.json`, rerun `evaluate_run.py`, and inspect the actual evidence/artifact yourself when the decision matters.
 
-The controller derives its receipt from **observed material business changes and deliverables**. AURA Runs, when present, are optional method/continuity provenance rather than universal proof that work occurred.
+The controller derives its evaluator-side observation from **observed material business changes and deliverables**. AURA Runs, when present, are optional method/continuity provenance rather than universal proof that work occurred.
 
 ## Genuine external blockers
 
@@ -120,19 +120,23 @@ python3 qualification/task_controller.py finish /path/to/run \
 
 ## Evaluation model
 
-Deterministic gates are deliberately small. They protect things such as:
+Deterministic gates are deliberately small and universal. They protect things such as:
 
 - evaluator/checkpoint integrity;
 - valid AURA/workspace state;
+- whether a material result was actually observed;
 - truthful completion claims;
-- actual event-specific deliverables when an artifact was promised;
-- reconstructable current field evidence when the job depends on current external reality;
-- customer-facing claim/state integrity;
-- exact duplicate reuse that proves distinct promised work was not really performed.
+- staged-product integrity;
+- hidden evaluator isolation;
+- exact duplicate artifact reuse when it could masquerade as distinct completed work.
+
+They do **not** infer from a Workflow ID that a particular artifact, source count, research shape, medium, QA record, or field snapshot must exist.
+
+Professional review decides whether the work is actually complete and good. The reviewer receives the ordinary request, Workflow purpose/outcome/process, observed artifacts and AURA state, evidence references, and relevant business context. If the job actually required a usable artifact, current field research, rendered QA, implementation, measurement, comparison, or another substantive step and that work is absent or weak, the reviewer should score it accordingly.
 
 High similarity, automation, unusual execution structure, or absence of an AURA Run may be useful review signals, but they are not automatic failures by themselves.
 
-Professional review decides whether the work is actually good. The reviewer scores the real artifact/evidence for accuracy, evidence quality, method rigor, completeness, professional quality, business alignment, outcome readiness, state integrity, and relevant domain-specific dimensions.
+The reviewer scores the real artifact/evidence for accuracy, evidence quality, method rigor, completeness, professional quality, business alignment, outcome readiness, state integrity, and relevant mission/domain dimensions.
 
 Possible verdicts include:
 
@@ -170,11 +174,11 @@ Ordinary supplied files may be part of a benchmark scenario because real users a
 
 ## Repetition and diagnosis
 
-Models are probabilistic. Repeat important workflows enough to distinguish systematic AURA weaknesses from model variance or one-off execution mistakes.
+Models are probabilistic. Repeat important Workflows enough to distinguish systematic AURA weaknesses from model variance or one-off execution mistakes.
 
 When output is weak, diagnose before changing AURA. Possible causes include:
 
-- AURA method/SOP weakness;
+- AURA Workflow/operating-knowledge weakness;
 - model capability;
 - harness/tool availability;
 - missing business context;
