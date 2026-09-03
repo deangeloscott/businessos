@@ -19,8 +19,8 @@ SCHEMA_PATHS={
     'BusinessClaim':'core/schemas/context/business-claim.schema.json',
     'Brand':'core/schemas/context/brand.schema.json',
 }
-# Retained as provenance metadata and for compatibility with older tests/importers. It is
-# not a trust gate: explicit-user authority is established by source provenance itself.
+# Stable provenance labels for explicit-context capture. They describe how state was
+# persisted; they do not grant semantic authority beyond the underlying source provenance.
 GROUNDING_METHOD='bootstrap_explicit_context'
 GROUNDING_VERSION='2.0'
 
@@ -236,7 +236,6 @@ def build_objects(business_id,industries=None,business_models=None,markets=None,
     ext=_meta(srcid)
     if lead_sources:ext['lead_sources']=lead_sources
     biz['extensions']=ext;objs.append(biz)
-
     if brand:
         b={'id':f'brd_{business_id}','object_type':'Brand','schema_version':'1.0.0','business_id':business_id,'created_at':ts,'updated_at':ts,'lineage':[srcid],'name':brand.get('name') or name}
         for key in ['voice','positioning','visual_identity','content_style','channel_preferences','reference_assets','prohibited_styles','brand_rules','approved_claims','claims_to_avoid']:
@@ -330,12 +329,9 @@ Repeat --source-file for multi-source onboarding; AURA preserves each member ref
     ap.add_argument('--approved-claim',action='append',default=[]);ap.add_argument('--claim-constraint',action='append',default=[])
     ap.add_argument('--source-reference');ap.add_argument('--source-text',action='append',default=[]);ap.add_argument('--source-file',action='append',default=[])
     ap.add_argument('--brand-profile-file',action='append',default=[]);ap.add_argument('--preference-profile-file',action='append',default=[])
-    ap.add_argument('--residual-request',help='Compatibility field that preserves remaining natural-language work in output; this helper does not route it.')
-    ap.add_argument('--initialization-only',action='store_true',help='Compatibility flag; completion scope is not required.')
     a=ap.parse_args();business_id=a.business_id or a.business_id_alias
     if a.business_id and a.business_id_alias and a.business_id!=a.business_id_alias:ap.error('positional business_id and --business-id disagree')
     if not business_id:ap.error('business_id is required (positional or --business-id)')
-    if a.residual_request and a.initialization_only:ap.error('use only one of --residual-request or --initialization-only')
     try:
         source_members=_load_source_members(a.source_text,a.source_file);jf=_load_facts(a.facts_json,a.facts_file,a.facts_stdin)
         brand_manifest,brand_profile_files=_load_brand_profile_files(a.brand_profile_file);merged_brand=_merge_brand_values(jf.get('brand'),brand_manifest)
@@ -360,7 +356,7 @@ Repeat --source-file for multi-source onboarding; AURA preserves each member ref
             if not isinstance(spec,dict) or not isinstance(spec.get('preferences'),dict):raise SystemExit(f'Preference profile manifest {raw!r} must be a JSON object with a preferences object')
             applies=spec.get('applies_to') or {}
             try:
-                p,obj=upsert_preference(business_id,spec.get('name') or 'Onboarding preferences',spec.get('scope') or 'operator',spec.get('subject_ref'),spec['preferences'],spec.get('id'),int(spec.get('priority',0)),spec.get('source_kind') or 'explicit_user',spec.get('source_refs') or ([canonical_source] if canonical_source else []),applies.get('systems') or [],applies.get('contracts') or [],applies.get('output_types') or [],applies.get('channels') or [],spec.get('notes'))
+                p,obj=upsert_preference(business_id,spec.get('name') or 'Onboarding preferences',spec.get('scope') or 'operator',spec.get('subject_ref'),spec['preferences'],spec.get('id'),int(spec.get('priority',0)),spec.get('source_kind') or 'explicit_user',spec.get('source_refs') or ([canonical_source] if canonical_source else []),applies.get('systems') or [],applies.get('workflows') or [],applies.get('output_types') or [],applies.get('channels') or [],spec.get('notes'))
             except Exception as exc:raise SystemExit(f'Could not persist preference profile {raw!r}: {exc}')
             preference_written.append({'id':obj['id'],'scope':obj['scope'],'subject_ref':obj['subject_ref'],'path':p.relative_to(ROOT).as_posix()})
 
@@ -371,8 +367,6 @@ Repeat --source-file for multi-source onboarding; AURA preserves each member ref
       'validation_required':f'python3 scripts/validate_business.py {business_id} --require-context','completion_state':'context_persisted',
       'required_next_action':'Validate active organization state, then continue the user\'s actual request using model judgment and the host\'s real capabilities.'
     }
-    if a.residual_request:
-        payload.update({'completion_state':'context_persisted_residual_request_preserved','residual_request':a.residual_request,'required_next_action':'Validate active organization state, then continue the preserved residual request directly. This helper does not semantically route it.'})
     print(json.dumps(payload,indent=2))
 
 
