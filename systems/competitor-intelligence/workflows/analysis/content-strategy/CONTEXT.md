@@ -5,7 +5,7 @@ owner_system: competitor-intelligence
 reads:
 - Competitor
 - type: Insight
-  owner_system: customer-intelligence
+  domain: customer-intelligence
 - Observation
 - SourceRecord
 writes:
@@ -39,5 +39,5 @@ Run when a decision requires current competitor content strategy and canonical c
 5. [HYBRID] Separate SEO-driven, social/community, thought-leadership, product, and commercial content roles where evidence supports it; do not infer a funnel role solely from format/platform.
 6. [AI] Compare coverage against customer questions/criteria, category narratives, the relevant competitive cohort, and this competitor's own recent baseline when enough evidence exists.
 7. [HYBRID] Treat visible engagement/search performance as surface-specific proxies, not total content ROI. Normalize obvious account-size/age/repost effects where data allows and consider paid amplification, audience scale, celebrity, novelty, and controversy as alternative explanations.
-8. [AI] Abstract transferable topic/format/creative mechanisms from competitor-specific expression; do not direct downstream systems to copy protected content/style.
-9. [DETERMINISTIC] Publish content-strategy Observations/Insights for Content/SEO consumption with source coverage, confidence, and modality limitations explicit.
+8. [AI] Abstract transferable topic/format/creative mechanisms from competitor-specific expression; do not direct future work to copy protected content/style.
+9. [DETERMINISTIC] Publish content-strategy Observations/Insights with source coverage, confidence, and modality limitations explicit so future Content/SEO work can reuse them directly when relevant.
