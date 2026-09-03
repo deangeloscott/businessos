@@ -7,11 +7,11 @@ Primary layers: **1 — atomic job quality** and **2 — competitive/field readi
 
 Use a narrow, externally observable SEO/AEO job to test whether AURA helps a capable model/harness inspect the live search field, understand why a strong current page is useful/competitive, connect that evidence to AtlasOps, and preserve actionable gaps without unnecessary process ceremony.
 
-Hidden target playbook:
+Hidden target Workflow:
 
 `seo.intelligence.organic-competition.page-analysis`
 
-The candidate must not be told the target playbook or shown this file.
+The candidate must not be told the target Workflow or shown this file.
 
 ## Ordinary business request
 
@@ -21,9 +21,9 @@ The request defines the business problem while leaving the candidate free to cho
 
 ## Candidate environment
 
-Use a capable model/harness with reasonable web/search access. The playbook's provider-neutral capability need is `search.serp.read`; the harness decides how that need is satisfied.
+Use a capable model/harness with reasonable web/search access. Search/browser availability is an environment condition, not an AURA capability registry or product invariant. The active model/harness decides how to perform the research with the tools it actually has.
 
-AURA should use minimum-sufficient current research. It does not need to exhaust the web.
+AURA should contribute current organizational context and relevant SEO/AEO operating knowledge while the candidate uses minimum-sufficient current research. It does not need to exhaust the web.
 
 ## Independent evaluator work
 
@@ -49,7 +49,7 @@ The evaluator is checking whether the candidate's investigation and conclusions 
 
 ### Method rigor
 
-The material analytical work of the playbook is present even if the model/harness improves incidental implementation details.
+The material analytical work expressed by the Workflow is present even if the model/harness improves incidental implementation details or uses another equally sound method.
 
 ### Professional quality
 
@@ -63,9 +63,9 @@ The analysis explains meaningful mechanisms that make the selected page useful/c
 
 If the result is weak, separate:
 
-- AURA SOP/method weakness;
+- AURA Workflow/operating-knowledge weakness;
 - model capability;
-- search/web capability;
+- search/web availability;
 - missing business context;
 - execution error;
 - fixture/evaluator limitation;
@@ -80,7 +80,7 @@ python3 tests/run_all.py
 
 python3 qualification/prepare_run.py \
   --profile atomic \
-  --contract seo.intelligence.organic-competition.page-analysis \
+  --workflow seo.intelligence.organic-competition.page-analysis \
   --request 'For AtlasOps, analyze one strong current organic page you find for the intent “field service scheduling software for multi-location teams” as preparation for a new or materially differentiated AtlasOps asset. Explain why that page appears useful and competitive in the live search field, what users and search/AI-answer systems are getting from it, and what AtlasOps would need to provide to be more useful and differentiated. Use enough current evidence to establish the pattern, but stop when more research is unlikely to change the analysis. Persist the useful evidence and gaps in AURA. Do not invent rankings, traffic, or competitor performance you cannot verify.'
 
 python3 qualification/task_controller.py start /path/to/run
