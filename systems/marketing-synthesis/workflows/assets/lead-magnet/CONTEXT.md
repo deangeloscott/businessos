@@ -5,9 +5,9 @@ owner_system: marketing-synthesis
 reads:
 - Opportunity
 - type: Insight
-  owner_system: customer-intelligence
+  domain: customer-intelligence
 - type: Insight
-  owner_system: competitor-intelligence
+  domain: competitor-intelligence
 - Asset
 - WorkRequest
 writes:
