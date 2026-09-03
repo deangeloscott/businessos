@@ -18,14 +18,6 @@ context:
 - Market
 - Objective
 - ProductService
-workflows:
-  conditional:
-  - id: core.intelligence.ecosystem.source-discovery
-    when: Relevant customer evidence still needs discovery, inspection, or conversion from leads into support-grade source material.
-  - id: core.intelligence.ecosystem.evidence-triangulation
-    when: A material customer pattern benefits from explicit independence, contradiction, freshness, methodology, or uncertainty analysis.
-  - id: customer.analysis.insight-refresh
-    when: New evidence may materially strengthen, narrow, contradict, or supersede an existing Customer Insight.
 ---
 # Customer Signal Ecosystem Radar
 
