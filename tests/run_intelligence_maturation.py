@@ -54,9 +54,8 @@ def main():
     if subject_meta.get('type')!='workflow':fail('subject monitoring must be represented as a Workflow')
     for phrase in ['one SourceProfile per source/surface','shared `subject_key`','text, documents, images, audio, video, transcripts','Cadence and `next_check_at` are organizational monitoring intent','never proof that a background task exists','monitoring_signal_cadences','notification intent separate','material-change-oriented default','let the current harness/runtime create the real schedule separately']:
         if phrase not in subject_body:fail(f'subject monitoring missing behavior: {phrase}')
-    if (subject_meta.get('workflows') or {}).get('required'):fail('subject monitoring reintroduced mandatory supporting-Workflow composition')
-    conditional={item.get('id') if isinstance(item,dict) else item for item in (subject_meta.get('workflows') or {}).get('conditional',[])}
-    if 'core.intelligence.ecosystem.maintain-source-profile' not in conditional:fail('subject monitoring lost optional durable SourceProfile expertise')
+    if subject_meta.get('workflows'):fail('subject monitoring reintroduced machine-readable Workflow composition')
+    if 'core.intelligence.ecosystem.maintain-source-profile' not in subject_body or 'not a mandatory stage' not in subject_body:fail('subject monitoring lost advisory SourceProfile operating knowledge')
     if 'AURA capability declarations' in subject_body:fail('subject monitoring reintroduced AURA-owned capability vocabulary')
 
     if (ROOT/'core/contracts/routing/resolve-intent').exists():fail('retired semantic intent resolver still exists in Core')
