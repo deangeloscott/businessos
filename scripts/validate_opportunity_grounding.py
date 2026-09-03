@@ -8,7 +8,7 @@ correct; that judgment belongs to the capable model/user applying the grounding 
 from _common import object_index
 import argparse
 
-STATUS_REQUIRES_BASIS={'qualified','prioritized','committed','active'}
+STATUS_REQUIRES_BASIS={'qualified','prioritized'}
 MEASURED_TYPES={'MetricObservation','OutcomeEvaluation','ProofRecord','Observation','Insight'}
 
 
