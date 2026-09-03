@@ -4,9 +4,9 @@ type: workflow
 owner_system: marketing-synthesis
 reads:
 - type: Insight
-  owner_system: customer-intelligence
+  domain: customer-intelligence
 - type: Insight
-  owner_system: competitor-intelligence
+  domain: competitor-intelligence
 - Asset
 - MetricObservation
 writes:
@@ -36,4 +36,4 @@ Use when the organization needs a coherent campaign concept or materially differ
 4. [AI] Recommend/select the strongest supported concept while preserving legitimate user choice; explain the evidence/mechanism behind the recommendation rather than treating taste as certainty.
 5. [AI] Define message hierarchy, creative system, asset roles, and journey continuity. Specify what each asset is doing (for example attention, education/trust, evaluation, conversion, retention/advocacy) rather than assuming the platform or format determines funnel role.
 6. [HYBRID] Use relevant Content operating knowledge and the active harness's production capabilities directly for downstream assets when the user wants them. Media buying/external execution remains with the real host/provider surfaces; persist a WorkRequest only for a real durable organizational handoff.
-7. [HYBRID] Define useful success/guardrail metrics and an experiment structure only when measurement/testing materially improves the decision. Preserve the selected concept as a Marketing-owned strategy Asset; do not manufacture Insight, Opportunity, or WorkRequest objects merely because campaign strategy was developed.
+7. [HYBRID] Define useful success/guardrail metrics and an experiment structure only when measurement/testing materially improves the decision. Preserve the selected concept as an organization-owned strategy Asset; do not manufacture Insight, Opportunity, or WorkRequest objects merely because campaign strategy was developed.
