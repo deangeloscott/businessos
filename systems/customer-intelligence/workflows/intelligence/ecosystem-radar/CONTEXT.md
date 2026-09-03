@@ -19,10 +19,11 @@ context:
 - Objective
 - ProductService
 workflows:
-  required:
-  - id: core.intelligence.ecosystem.source-discovery
-  - id: core.intelligence.ecosystem.evidence-triangulation
   conditional:
+  - id: core.intelligence.ecosystem.source-discovery
+    when: Relevant customer evidence still needs discovery, inspection, or conversion from leads into support-grade source material.
+  - id: core.intelligence.ecosystem.evidence-triangulation
+    when: A material customer pattern benefits from explicit independence, contradiction, freshness, methodology, or uncertainty analysis.
   - id: customer.analysis.insight-refresh
     when: New evidence may materially strengthen, narrow, contradict, or supersede an existing Customer Insight.
 ---
@@ -39,8 +40,8 @@ Use on demand for customer-signal refresh or when external/first-party evidence 
 
 ## Process
 1. [HYBRID] Reuse current Customer Insights, evidence coverage, segments, SourceProfiles, and recent first-party/public observations before launching new retrieval.
-2. [AI] Discover decision-relevant signals across reviews, communities, social discussion, research, category conversations, sales/support/survey evidence when available, and adjacent emerging use cases. Search depth and sources follow the actual question rather than a fixed domain sweep.
-3. [HYBRID] Preserve direct statements as Observations and use Core triangulation to distinguish independent customer evidence from reposted narratives, influencer interpretation, survey/report repetition, and speculation.
+2. [AI] Discover decision-relevant signals across reviews, communities, social discussion, research, category conversations, sales/support/survey evidence when available, and adjacent emerging use cases. Search depth and sources follow the actual question rather than a fixed domain sweep. Draw on Core source-discovery knowledge when it materially improves the research.
+3. [HYBRID] Preserve direct statements as Observations and use Core triangulation when it helps distinguish independent customer evidence from reposted narratives, influencer interpretation, survey/report repetition, and speculation. Do not perform ceremonial triangulation where the relevant fact is already sufficiently established.
 4. [AI] Separate expressed customer language/behavior from inferred motivation, and test whether apparent change is actually segment, market, journey-stage, time, channel, or sampling/method composition.
 5. [HYBRID] Compare external-market signals with active-business first-party evidence when applicability matters. External prevalence does not establish that this organization's customers share the same pattern.
 6. [AI] Decide whether existing Customer Insights should be retained, narrowed, strengthened, contradicted, superseded, or left unresolved. `customer.analysis.insight-refresh` may be useful operating knowledge; it is not an automatic lifecycle route.
