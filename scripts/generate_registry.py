@@ -4,8 +4,14 @@ from _common import *
 import json,re
 
 # Authored Workflow metadata is operating knowledge only. Product version belongs to
-# VERSION / INSTALLATION.json; runtime/control metadata belongs to the host.
-RETIRED_WORKFLOW_METADATA={'version','risk','autonomy_ceiling','events','schedule','capabilities','subcontracts','artifact_role'}
+# VERSION / INSTALLATION.json; runtime/control metadata belongs to the host. Keep this
+# filter aligned with the product validator so a derived registry cannot preserve metadata
+# AURA has already retired from authored Workflows.
+RETIRED_WORKFLOW_METADATA={
+    'version','risk','autonomy_ceiling','events','schedule','capabilities','subcontracts',
+    'artifact_role','workflows','action','intent','requires_capabilities','preferred_capabilities',
+    'route_when','required_companions','boundaries',
+}
 
 
 def _tokens(value):return sorted(set(re.findall(r'[a-z0-9]{3,}',str(value or '').lower())))
