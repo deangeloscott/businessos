@@ -37,7 +37,7 @@ Use when a webinar has a commercial objective and enough audience, teaching, Off
 6. Present established scope, process, expected outcomes, proof, price/payment, terms, guarantee/risk reversal, availability, and genuine reasons to act now only to the level needed for an informed decision. Validate material facts against current Offer truth.
 7. Address the highest remaining objections, define what belongs before the Offer versus in Q&A, and explain the exact next step after the CTA so the post-webinar journey matches what was promised.
 8. Remove artificial value stacks, unsupported outcome certainty, fake urgency/scarcity, false open loops, exaggerated pain, or education intentionally weakened to force purchase.
-9. Preserve the resulting persuasion/Offer overlay as a directly usable Marketing Asset for script, slides, delivery, follow-up, and QA. Do not create a WorkRequest merely to continue composing the webinar.
+9. Preserve the resulting persuasion/Offer overlay as a directly usable organization-owned Asset for script, slides, delivery, follow-up, and QA. Do not create a WorkRequest merely to continue composing the webinar.
 
 ## Proportionate Scope
 Use only the persuasion and Offer detail necessary for this audience, Offer complexity, decision risk, and webinar objective. A high-consideration sale may require substantially more proof, fit, terms, and objection work than a simple next-step CTA; do not inflate either case to fit a template.
