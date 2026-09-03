@@ -6,15 +6,12 @@ reads:
 - CustomerJourney
 - Opportunity
 - type: Insight
-  owner_system: customer-intelligence
+  domain: customer-intelligence
 - MetricObservation
 writes: []
 context:
 - EconomicContext
 - Offer
-workflows:
-  required:
-  - customer-optimization.adoption.path-design
 ---
 # Adoption Optimization
 
@@ -31,7 +28,7 @@ Run when journey evidence or an active Opportunity requires adoption optimizatio
 1. [AI] Define desired adoption behaviors from customer outcomes and business value, not feature usage in isolation.
 2. [DETERMINISTIC] Segment customers by relevant use-case, maturity, entitlement, tenure, and behavior; identify under-adoption relative to expected value path.
 3. [HYBRID] Join customer feedback/support/success evidence to distinguish lack of awareness, relevance, ability, workflow fit, technical constraint, or poor feature value.
-4. [AI] Design education, in-product/process guidance, success outreach, workflow change, or product escalation accordingly. Use relevant Content/Marketing operating knowledge directly when communication is part of the solution.
+4. [AI] Design education, in-product/process guidance, success outreach, workflow change, or product escalation accordingly. Draw on `customer-optimization.adoption.path-design` or relevant Content/Marketing operating knowledge when those methods materially improve the solution.
 5. [HYBRID] Avoid nudging customers into irrelevant features solely to raise adoption metrics.
 6. [DETERMINISTIC] Measure value realization, retention, support burden, and customer sentiment guardrails when evidence is available.
 7. [HYBRID] If real changes are implemented, verify them when practical. Preserve a WorkRequest, ChangeEvent, Experiment, measurement, evaluation, or Learning only when that meaning actually occurred and future work benefits from remembering it.
