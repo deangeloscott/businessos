@@ -15,7 +15,7 @@ def req(condition,message):
 
 
 def main():
-    registry={row['id']:row for row in json.loads((ROOT/'generated/contract-registry.json').read_text()).get('contracts',[])}
+    registry={row['id']:row for row in json.loads((ROOT/'generated/workflow-registry.json').read_text()).get('workflows',[])}
     playbook_ids={row['id'] for row in installed_playbooks(list(registry.values()))}
     req((ROOT/'generated/workflow-candidate-index.json').exists(),'Workflow candidate index was not generated')
     req(not (ROOT/'generated/playbook-candidate-index.json').exists(),'retired flattened playbook candidate index still exists')
