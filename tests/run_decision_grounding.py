@@ -80,11 +80,21 @@ def main():
         )
         e=errors();require(not e,f'keyword semantics must not be deterministically rejected, got {e}')
 
+        # Opportunity remains a pre-commitment decision object. Commitment/execution/outcome
+        # are represented by their own durable meanings rather than later Opportunity stages.
+        schema=json.loads((ROOT/'core/schemas/decision/opportunity.schema.json').read_text())
+        statuses=set(schema['properties']['status']['enum'])
+        require(not ({'committed','active','evaluating'} & statuses),f'Opportunity regained execution/measurement lifecycle states: {sorted(statuses)}')
+        require({'candidate','investigating','qualified','prioritized','rejected','superseded','closed'} <= statuses,'Opportunity lost useful pre-commitment semantic states')
+
         plan=build_plan(BID,INDEXING_WORKFLOW)
         require('core/policies/decision-grounding.md' in plan['files'],'Opportunity-writing plan must load decision-grounding policy')
         policy=(ROOT/'core/policies/decision-grounding.md').read_text()
         require('reasoning_basis' in policy and 'Leading signals and measured outcomes' in policy and 'not a deterministic prose rules engine' in policy,'decision grounding policy missing model-owned grounding boundaries')
-        print('decision grounding regressions passed with structural validation and model-owned semantics')
+        require('Do **not** turn the Opportunity itself into the execution lifecycle after commitment' in policy,'Opportunity policy regained commitment/execution lifecycle semantics')
+        states=(ROOT/'core/references/lifecycles.md').read_text()
+        require('not required execution state machines' in states and 'Execution and outcome evaluation are not later Opportunity stages' in states,'semantic-state reference regained mandatory lifecycle framing')
+        print('decision grounding regressions passed with structural validation, pre-commitment Opportunity semantics, and model-owned reasoning')
     finally:
         if BASE.exists():shutil.rmtree(BASE)
         if SITE.exists():shutil.rmtree(SITE)
