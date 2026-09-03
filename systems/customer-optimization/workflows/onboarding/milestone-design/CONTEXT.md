@@ -33,8 +33,8 @@ Run when building or redesigning onboarding/implementation.
 ## Process
 1. [AI] Define the meaningful value milestone and customer prerequisites/constraints.
 2. [AI] Work backward to identify only necessary setup, decision, data, integration, training, configuration, or handoff milestones.
-3. [AI] For each milestone define customer purpose, owner, input, completion evidence, dependencies, expected timing, and failure states.
+3. [AI] For each milestone define customer purpose, real operational owner, input, completion evidence, dependencies, expected timing, and failure states.
 4. [AI] Remove internal/admin steps from the customer-facing path where the business can perform them itself.
 5. [HYBRID] Keep required safety/compliance/quality/qualification steps even if they add time.
 6. [DETERMINISTIC] Define milestone events/instrumentation and escalation conditions.
-7. [AI] Update CustomerJourney/onboarding Action plan with the minimal value path.
+7. [AI] Update the CustomerJourney and preserve the useful milestone/intervention design in the relevant Opportunity or organizational documentation when future work benefits; do not create a generic Action plan merely because the method ran.
