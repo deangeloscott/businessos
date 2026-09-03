@@ -21,20 +21,13 @@ def main():
     if meta.get('type')!='workflow':fail('competitive-position must be represented as a Workflow')
     if meta.get('owner_system')!='competitor-intelligence':fail('competitive-position owner regressed')
     if meta.get('completion_evidence'):fail('competitive-position regained a semantic completion-evidence profile')
+    if meta.get('workflows'):fail('competitive-position regained machine-readable composition metadata')
 
-    composition=meta.get('workflows') or {}
-    if composition.get('required'):fail('competitive-position must not force supporting Workflows')
-    conditional={item.get('id') if isinstance(item,dict) else item for item in (composition.get('conditional') or [])}
-    for wid in [
-        'competitor.discovery.competitive-set','competitor.analysis.profiling','competitor.analysis.benchmark',
-        'competitor.analysis.competitive-implications','competitor.analysis.pricing','competitor.analysis.offer-comparison',
-        'competitor.analysis.capability-comparison','competitor.analysis.positioning','competitor.analysis.funnels',
-        'competitor.analysis.advertising','competitor.analysis.content-strategy','competitor.analysis.customer-sentiment',
-        'competitor.analysis.strategic-change','competitor.analysis.tactic-validation',
-    ]:
-        if wid not in conditional:fail(f'competitive-position missing useful conditional knowledge {wid}')
-
+    # Specialist knowledge should stay discoverable/advisory in the authored procedure,
+    # not become a hidden execution graph in front matter.
     for phrase in [
+        '`competitor.discovery.competitive-set`','`competitor.analysis.profiling`','`competitor.analysis.benchmark`',
+        '`competitor.analysis.competitive-implications`','Use the relevant specialist Workflows when they add useful expertise',
         'Do **not** use this as a mandatory wrapper around a narrow request',
         'the active model decides which supporting Workflows, outside methods, tools, and evidence are useful',
         'Explicitly requested material dimensions must not silently disappear',
@@ -45,17 +38,14 @@ def main():
         'what would falsify it','a Run is not required to perform, validate, or preserve this work',
         'Do not claim decision-grade completion while a material conclusion outruns its subject-relevant evidence',
     ]:
-        if phrase not in body:fail(f'competitive-position missing important guardrail: {phrase}')
+        if phrase not in body:fail(f'competitive-position missing important expertise/guardrail: {phrase}')
 
     plan=build_process_plan(workflow_id='competitor.analysis.competitive-position')
-    node=plan.get('workflow_composition') or {}
-    if node.get('workflow_id')!='competitor.analysis.competitive-position':fail('competitive-position root missing from browse view')
-    if node.get('normally_use'):fail('browse view turned supporting knowledge into a normally-required chain')
-    conditional_ids={((item or {}).get('workflow') or {}).get('workflow_id') for item in node.get('conditionally_use') or []}
-    if not {'competitor.discovery.competitive-set','competitor.analysis.pricing'} <= conditional_ids:
-        fail(f'browse view lost conditional competitor knowledge: {conditional_ids}')
+    view=plan.get('workflow_view') or {}
+    if view.get('workflow_id')!='competitor.analysis.competitive-position':fail('competitive-position missing from browse view')
+    if 'workflow_composition' in plan:fail('browse helper recreated a Workflow composition graph')
     rule=plan.get('rule','').lower()
-    if 'not an execution graph' not in rule:fail('Workflow browse view lost explicit non-execution boundary')
+    if 'does not construct' not in rule:fail('Workflow browse view lost explicit non-graph boundary')
 
     # Natural-language discovery surfaces candidates; the model/user owns semantics.
     broad=find_playbook_candidates('Research our competitors and tell us where we can win.',5)
@@ -66,6 +56,6 @@ def main():
     if 'competitor.analysis.pricing' not in [row.get('workflow_id') for row in focused]:fail(f'focused pricing Workflow is not discoverable: {focused}')
     if any(row.get('selection_authority') is not False for row in focused):fail('Workflow discovery claimed semantic authority')
 
-    print('competitor composition regressions passed: useful supporting knowledge remains discoverable without mandatory composition or routing authority')
+    print('competitor composition regressions passed: specialist knowledge remains discoverable without composition metadata or routing authority')
 
 if __name__=='__main__':main()
