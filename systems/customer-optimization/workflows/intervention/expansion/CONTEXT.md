@@ -6,15 +6,12 @@ reads:
 - CustomerJourney
 - Opportunity
 - type: Insight
-  owner_system: customer-intelligence
+  domain: customer-intelligence
 - MetricObservation
 writes: []
 context:
 - EconomicContext
 - Offer
-workflows:
-  required:
-  - customer-optimization.expansion.eligibility
 ---
 # Account / Customer Expansion Optimization
 
@@ -29,7 +26,7 @@ Run when journey evidence or an active Opportunity requires account / customer e
 
 ## Process
 1. [AI] Define expansion types relevant to the business: seats, locations, volume, tier, use cases, departments, services, or products.
-2. [DETERMINISTIC] Identify expansion-ready accounts from success, usage/capacity, organizational signals, contract timing, and unmet needs.
+2. [DETERMINISTIC] Identify expansion-ready accounts from success, usage/capacity, organizational signals, contract timing, and unmet needs. Draw on `customer-optimization.expansion.eligibility` when its eligibility method materially improves the decision.
 3. [HYBRID] Validate with relevant Customer/success evidence so usage alone is not mistaken for intent.
 4. [AI] Map stakeholders, value proof, use-case expansion, procurement/process needs, and likely objections.
 5. [HYBRID] Design the real customer/sales process and use relevant Marketing/Sales operating knowledge directly for commercial communication. Persist a WorkRequest only when a real organizational handoff needs to survive the current session or actor.
