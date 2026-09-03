@@ -1,21 +1,20 @@
 #!/usr/bin/env python3
-"""Regression checks for AURA's shared intelligence maturation invariants."""
+"""Regression checks for durable intelligence without semantic/runtime control."""
 from pathlib import Path
 import json,sys
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'scripts'))
-from _common import read_frontmatter
+from _common import workflow_files,read_frontmatter
 from generate_knowledge_layer import _page_for,_entry,_tracked_subjects
 from validate_research_evidence import DIRECT_ACQUISITION_METHODS,DISCOVERY_ONLY_METHODS,_capture_quality
 
 
 def fail(msg): raise AssertionError(msg)
-def contract(cid):
-    for p in ROOT.rglob('CONTEXT.md'):
-        if '/contracts/' not in p.as_posix(): continue
+def workflow(workflow_id):
+    for p in workflow_files():
         meta,body=read_frontmatter(p)
-        if meta.get('id')==cid:return p,meta,body
-    fail(f'missing Workflow {cid}')
+        if meta.get('id')==workflow_id:return p,meta,body
+    fail(f'missing Workflow {workflow_id}')
 
 
 def main():
@@ -41,7 +40,8 @@ def main():
     for field in ['subject_key','subject_name','subject_kind','subject_relationships','source_modalities','monitoring_questions','material_change_signals','monitoring_cadence','monitoring_signal_cadences','monitoring_notification','last_material_change_at']:
         if field not in props:fail(f'SourceProfile missing intelligence-maturation field {field}')
     required=set(schema.get('required',[]))
-    if any(field in required for field in ['subject_key','subject_name','subject_kind','source_modalities','monitoring_questions','monitoring_cadence','monitoring_signal_cadences','monitoring_notification']):fail('new subject/watch enrichment must remain optional for backward compatibility')
+    optional_monitoring={'subject_key','subject_name','subject_kind','source_modalities','monitoring_questions','monitoring_cadence','monitoring_signal_cadences','monitoring_notification'}
+    if optional_monitoring & required:fail('SourceProfile made optional subject/watch enrichment mandatory for every source')
     rels=set(props['subject_relationships']['items']['enum'])
     if {'customer','prospect'} & rels:fail('shared public subject monitoring must not become a customer/prospect surveillance relationship model')
 
@@ -50,15 +50,18 @@ def main():
         if flag not in helper:fail(f'SourceProfile helper missing {flag}')
     if 'Source history changes discovery attention only' not in helper:fail('existing SourceProfile discovery-only invariant was lost')
 
-    _,subject_meta,subject_body=contract('core.intelligence.subject-monitoring')
+    _,subject_meta,subject_body=workflow('core.intelligence.subject-monitoring')
     if subject_meta.get('type')!='workflow':fail('subject monitoring must be represented as a Workflow')
     for phrase in ['one SourceProfile per source/surface','shared `subject_key`','text, documents, images, audio, video, transcripts','Cadence and `next_check_at` are organizational monitoring intent','never proof that a background task exists','monitoring_signal_cadences','notification intent separate','material-change-oriented default','let the current harness/runtime create the real schedule separately']:
         if phrase not in subject_body:fail(f'subject monitoring missing behavior: {phrase}')
-    if 'core.intelligence.ecosystem.maintain-source-profile' not in (subject_meta.get('workflows') or {}).get('required',[]):fail('subject monitoring must reuse shared SourceProfile Workflow knowledge')
+    if (subject_meta.get('workflows') or {}).get('required'):fail('subject monitoring reintroduced mandatory supporting-Workflow composition')
+    conditional={item.get('id') if isinstance(item,dict) else item for item in (subject_meta.get('workflows') or {}).get('conditional',[])}
+    if 'core.intelligence.ecosystem.maintain-source-profile' not in conditional:fail('subject monitoring lost optional durable SourceProfile expertise')
+    if 'AURA capability declarations' in subject_body:fail('subject monitoring reintroduced AURA-owned capability vocabulary')
 
     if (ROOT/'core/contracts/routing/resolve-intent').exists():fail('retired semantic intent resolver still exists in Core')
-    core_map=json.loads((ROOT/'core/process-map.json').read_text());activities=core_map.get('activities',[]);entry_ids=[a.get('entry_contract') for a in activities]
-    if any(a.get('id')=='resolve-intent' or a.get('entry_contract')=='core.routing.resolve-intent' for a in activities):fail('Core process map reintroduced semantic intent routing')
+    core_map=json.loads((ROOT/'core/process-map.json').read_text());activities=core_map.get('activities',[]);entry_ids=[a.get('entry_workflow') for a in activities]
+    if any(a.get('id')=='resolve-intent' or a.get('entry_workflow')=='core.routing.resolve-intent' for a in activities):fail('Core process map reintroduced semantic intent routing')
     if 'core.intelligence.subject-monitoring' not in entry_ids:fail('Core process map missing durable subject monitoring')
     if 'core.monitoring.status' not in entry_ids:fail('Core process map missing human monitoring status view')
 
@@ -74,12 +77,14 @@ def main():
         for phrase in phrases:
             if phrase not in text:fail(f'{rel} missing intelligence behavior: {phrase}')
 
-    _,value_meta,value_body=contract('customer-optimization.measurement.customer-value')
-    for phrase in ['customer ROI/value realization','LTV','cost-to-serve','high spend alone','risk likelihood','value-at-risk']:
+    _,value_meta,value_body=workflow('customer-optimization.measurement.customer-value')
+    for phrase in ['customer ROI/value realization','LTV','cost-to-serve','high spend alone','risk likelihood','value/consequence at risk']:
         if phrase not in value_body:fail(f'customer-value Workflow missing {phrase}')
-    if value_meta.get('owner_system')!='customer-optimization':fail('customer-value semantic owner changed')
+    if value_meta.get('owner_system')!='customer-optimization':fail('customer-value knowledge owner changed')
+    if 'routed to the correct semantic owner' in value_body:fail('customer-value Workflow reintroduced semantic routing')
+    if 'continue directly' not in value_body:fail('customer-value Workflow lost direct-continuation boundary')
     co_map=json.loads((ROOT/'systems/customer-optimization/process-map.json').read_text())
-    if 'customer-optimization.measurement.customer-value' not in [a.get('entry_contract') for a in co_map.get('activities',[])]:fail('Customer Optimization process map missing customer-value analysis')
+    if 'customer-optimization.measurement.customer-value' not in [a.get('entry_workflow') for a in co_map.get('activities',[])]:fail('Customer Optimization process map missing customer-value analysis')
 
     source_profile={'id':'sprof_demo','object_type':'SourceProfile','subject_name':'Example Creator','subject_kind':'creator','subject_relationships':['thought_leader'],'source_reference':'https://example.com/channel','source_modalities':['video'],'watch_status':'active','attention_priority':'medium','discovery_reason':'Learn durable content mechanisms.','monitoring_questions':['What topics are changing?'],'material_change_signals':['Major positioning shift'],'monitoring_cadence':{'mode':'recurring','expression':'weekly','source':'inferred','timezone':None,'notes':None},'monitoring_notification':{'mode':'material_changes_only','source':'policy','notes':None},'last_checked_at':'2026-08-29T00:00:00Z','next_check_at':'2026-09-05T00:00:00Z'}
     profile_path=ROOT/'instances/example/intelligence/source-profiles/sprof_demo.json'
@@ -91,6 +96,6 @@ def main():
     for phrase in ['Example Creator','creator','thought_leader','Cadence intent','Notification intent','material_changes_only','Runtime scheduling','external / not inferred by AURA','What topics are changing?','Major positioning shift','Next useful check']:
         if phrase not in grouped:fail(f'tracked-subject grouped human view missing {phrase}')
 
-    print('AURA intelligence maturation regressions passed: shared monitoring, multimodal evidence, contextual intelligence, model-owned semantic selection, marketing/customer value, and human/machine legibility')
+    print('AURA intelligence maturation regressions passed: durable monitoring intent, multimodal evidence, contextual intelligence, model-owned semantics, customer value, and human/machine legibility')
 
 if __name__=='__main__':main()
