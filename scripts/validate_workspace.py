@@ -17,6 +17,7 @@ RETIRED_WORKFLOW_METADATA={
     'route_when','required_companions','boundaries',
 }
 RETIRED_PATHS=[
+    'core/DEFAULTS.md','core/policies/agent-execution.md','core/policies/business-isolation.md',
     'core/capabilities/catalog.json','docs/adding-a-capability.md','generated/capability-usage-index.json',
     'generated/playbook-candidate-index.json','PLAYBOOK-INDEX.md',
     'core/schemas/learning/playbook-evolution-proposal.schema.json','scripts/persist_playbook_evolution.py',
@@ -31,11 +32,9 @@ RETIRED_PATHS=[
 ]
 REQUIRED_CORE=[
     'CONTEXT.md','AGENTS.md','AURA-ATTACHMENT.md','skills/viraltrac-aura/SKILL.md',
-    'docs/operating-knowledge.md','core/DEFAULTS.md','core/policies/agent-execution.md',
-    'core/policies/workflow-evolution.md','core/policies/active-business-truth.md',
+    'docs/operating-knowledge.md','core/policies/workflow-evolution.md','core/policies/active-business-truth.md',
     'core/policies/evidence.md','core/policies/provenance.md','core/policies/preferences-and-adaptation.md',
-    'core/policies/business-isolation.md','core/policies/context-provenance-and-claims.md',
-    'core/policies/monitoring-continuity.md','core/schemas/context/preference-profile.schema.json',
+    'core/policies/context-provenance-and-claims.md','core/policies/monitoring-continuity.md','core/schemas/context/preference-profile.schema.json',
     'core/schemas/decision/decision-record.schema.json','core/schemas/learning/process-extension.schema.json',
     'scripts/enter.py','scripts/find_playbooks.py','scripts/find_workflows.py','scripts/remember.py',
     'scripts/create_run.py','scripts/complete_run.py','scripts/canonical_store.py',
@@ -163,7 +162,7 @@ def main():
     for rel in REQUIRED_CORE:
         if not (ROOT/rel).exists():errors.append(f'missing AURA core component {rel}')
     for rel in RETIRED_PATHS:
-        if (ROOT/rel).exists():errors.append(f'retired control/routing/capability artifact reappeared: {rel}')
+        if (ROOT/rel).exists():errors.append(f'retired/redundant AURA artifact reappeared: {rel}')
     for path in sorted((ROOT/'systems').glob('*/contracts')):
         if path.exists():errors.append(f'retired contract tree reappeared: {path.relative_to(ROOT)}')
     if installation().get('portable_first') is not True:errors.append('INSTALLATION.json must declare portable_first=true')
