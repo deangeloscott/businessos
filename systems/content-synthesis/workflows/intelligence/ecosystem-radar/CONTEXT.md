@@ -19,20 +19,6 @@ context:
 - AudienceSegment
 - Market
 - Objective
-workflows:
-  conditional:
-  - id: core.intelligence.ecosystem.source-discovery
-    when: Relevant content/platform evidence still needs discovery, inspection, or conversion from leads into support-grade source material.
-  - id: core.intelligence.ecosystem.evidence-triangulation
-    when: A material content mechanism or trend benefits from explicit independence, contradiction, freshness, methodology, or uncertainty analysis.
-  - id: content.intelligence.trending-content-discovery
-    when: Current unusually strong/trending content needs discovery.
-  - id: content.intelligence.creator-monitoring
-    when: Creator behavior over time is decision-relevant.
-  - id: content.intelligence.trend-validation
-    when: A suspected content trend needs validation beyond attention.
-  - id: content.intelligence.creative-pattern-extraction
-    when: A reusable mechanism should be abstracted without copying protected expression.
 ---
 # Content Ecosystem Radar
 
