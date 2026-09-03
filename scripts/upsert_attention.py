@@ -17,12 +17,12 @@ def _find(business_id,key):
     return None,None
 
 
-def upsert(business_id,key,attention_type,severity,title,reason,recommended_action=None,owner_system='core',source_refs=None,evidence_refs=None,lineage=None,next_review_at=None,retention_class='operational',seen_at=None):
+def upsert(business_id,key,attention_type,severity,title,reason,recommended_action=None,owner_system='core',source_refs=None,evidence_refs=None,lineage=None,next_review_at=None,seen_at=None):
     seen_at=seen_at or now();source_refs=source_refs or [];evidence_refs=evidence_refs or [];lineage=lineage or []
     obj,path=_find(business_id,key);created=False;reopened=False
     if obj is None:
         attention_id=_id(business_id,key);path=_path(business_id,attention_id);created=True
-        obj={'id':attention_id,'object_type':'AttentionItem','schema_version':'1.0.0','business_id':business_id,'created_at':seen_at,'updated_at':seen_at,'lineage':sorted(set(lineage)),'owner_system':owner_system,'dedupe_key':key,'attention_type':attention_type,'severity':severity,'status':'open','title':title,'reason':reason,'recommended_action':recommended_action,'source_refs':sorted(set(source_refs)),'evidence_refs':sorted(set(evidence_refs)),'first_seen':seen_at,'last_seen':seen_at,'occurrence_count':1,'next_review_at':next_review_at,'acknowledged_at':None,'resolved_at':None,'resolution_refs':[],'retention_class':retention_class,'extensions':{}}
+        obj={'id':attention_id,'object_type':'AttentionItem','schema_version':'1.0.0','business_id':business_id,'created_at':seen_at,'updated_at':seen_at,'lineage':sorted(set(lineage)),'owner_system':owner_system,'dedupe_key':key,'attention_type':attention_type,'severity':severity,'status':'open','title':title,'reason':reason,'recommended_action':recommended_action,'source_refs':sorted(set(source_refs)),'evidence_refs':sorted(set(evidence_refs)),'first_seen':seen_at,'last_seen':seen_at,'occurrence_count':1,'next_review_at':next_review_at,'acknowledged_at':None,'resolved_at':None,'resolution_refs':[],'extensions':{}}
     else:
         old_status=obj.get('status')
         if old_status in {'resolved','archived'}:
@@ -41,9 +41,9 @@ def upsert(business_id,key,attention_type,severity,title,reason,recommended_acti
 
 def main():
     parser=argparse.ArgumentParser(description='Create/update one deduplicated AURA AttentionItem. It records a material condition needing awareness, not a permission or task gate.')
-    parser.add_argument('business_id');parser.add_argument('--dedupe-key',required=True);parser.add_argument('--type',dest='attention_type',required=True);parser.add_argument('--severity',choices=SEVERITY,required=True);parser.add_argument('--title',required=True);parser.add_argument('--reason',required=True);parser.add_argument('--recommended-action');parser.add_argument('--owner-system',default='core');parser.add_argument('--source-ref',action='append',default=[]);parser.add_argument('--evidence-ref',action='append',default=[]);parser.add_argument('--lineage-ref',action='append',default=[]);parser.add_argument('--next-review-at');parser.add_argument('--retention-class',choices=['operational','durable'],default='operational');parser.add_argument('--seen-at');args=parser.parse_args()
+    parser.add_argument('business_id');parser.add_argument('--dedupe-key',required=True);parser.add_argument('--type',dest='attention_type',required=True);parser.add_argument('--severity',choices=SEVERITY,required=True);parser.add_argument('--title',required=True);parser.add_argument('--reason',required=True);parser.add_argument('--recommended-action');parser.add_argument('--owner-system',default='core');parser.add_argument('--source-ref',action='append',default=[]);parser.add_argument('--evidence-ref',action='append',default=[]);parser.add_argument('--lineage-ref',action='append',default=[]);parser.add_argument('--next-review-at');parser.add_argument('--seen-at');args=parser.parse_args()
     if not (ROOT/'instances'/args.business_id).exists():raise SystemExit(f'Unknown business: {args.business_id}')
-    try:obj,path,created,reopened=upsert(args.business_id,args.dedupe_key,args.attention_type,args.severity,args.title,args.reason,args.recommended_action,args.owner_system,args.source_ref,args.evidence_ref,args.lineage_ref,args.next_review_at,args.retention_class,args.seen_at)
+    try:obj,path,created,reopened=upsert(args.business_id,args.dedupe_key,args.attention_type,args.severity,args.title,args.reason,args.recommended_action,args.owner_system,args.source_ref,args.evidence_ref,args.lineage_ref,args.next_review_at,args.seen_at)
     except ValueError as exc:raise SystemExit(str(exc))
     print(json.dumps({'attention_id':obj['id'],'status':obj['status'],'created':created,'reopened':reopened,'occurrence_count':obj['occurrence_count'],'path':str(path.relative_to(ROOT))},indent=2))
 
