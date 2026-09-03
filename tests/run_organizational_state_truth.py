@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Focused regressions for readiness, evidence origin, and simple optional receipts."""
+"""Focused regressions for durable Asset truth, evidence origin, and optional receipts."""
 from pathlib import Path
 import json,os,subprocess,sys,tempfile
 
@@ -22,56 +22,50 @@ def init_business(workspace,business_id,env):
     return workspace/'instances'/business_id
 
 
-def readiness_regression(workspace,env):
-    bid='readiness-truth';base=init_business(workspace,bid,env)
+def asset_truth_regression(workspace,env):
+    """AURA remembers the Asset; it does not maintain a shadow production-readiness engine."""
+    bid='asset-truth';base=init_business(workspace,bid,env)
     rid=run([S/'create_run.py',bid,'Prepare a truthful customer-facing landing-page draft','--workflow-id','marketing.assets.landing-page'],env).stdout.strip()
     artifact=write(base/'assets'/'landing-page.html','<html><body><p>We charge [CONFIRM ACTUAL FEE].</p><p>Start here: [CONFIRM CTA AND URL].</p></body></html>\n')
     business=json.loads((base/'context/business.json').read_text());aid=f'ast_{bid}_landing'
-    readiness={
-        'status':'blocked','assessed_version':'1','unresolved_business_facts':['Actual customer fee and waiver policy are not established.','Final CTA destination is not established.'],
-        'missing_authorization':['The current task has not authorized publication/deployment.'],'missing_capabilities':['The current harness does not have publishing access to the target surface.'],'other_blockers':[],
-        'deployment_status':'not_performed','deployment_evidence_refs':[],'measurement_status':'pending','measurement_evidence_refs':[],
-    }
     asset={
         'id':aid,'object_type':'Asset','schema_version':'1.0.0','business_id':bid,'created_at':'2026-08-30T00:00:00+00:00','updated_at':'2026-08-30T00:00:00+00:00','lineage':[business['id']],
         'asset_type':'landing_page','owner_system':'marketing-synthesis','business_role':'customer_facing_landing_page_draft','location_reference':f'instances/{bid}/assets/landing-page.html','version':'1','status':'draft',
         'extensions':{'businessos':{'customer_facing':True,'claim_manifest':[
             {'text':'We charge [CONFIRM ACTUAL FEE].','classification':'placeholder','support_refs':[],'launch_critical':True},
-            {'text':'Start here: [CONFIRM CTA AND URL].','classification':'placeholder','support_refs':[],'launch_critical':True}],
-            'production_readiness':readiness}}
+            {'text':'Start here: [CONFIRM CTA AND URL].','classification':'placeholder','support_refs':[],'launch_critical':True}]}}
     }
     asset_path=write(base/'assets'/f'{aid}.json',asset);before=asset_path.read_bytes()
-    # The truthful Asset is valid on its own. Merely having a separate active receipt does
-    # not become part of the Asset's canonical truth or gate validation.
+
     active=run([S/'validate_business.py',bid],env,check=False)
-    req(active.returncode==0,f'active optional receipt invalidated truthful draft state: {active.stdout+active.stderr}')
-    completed=run([S/'complete_run.py',bid,rid,'--result',asset_path.relative_to(workspace),'--result',artifact.relative_to(workspace),'--summary','Prepared a truthful landing-page draft; production readiness remains blocked by unresolved real-world facts/access.'],env)
+    req(active.returncode==0,f'active optional receipt invalidated truthful draft Asset: {active.stdout+active.stderr}')
+    completed=run([S/'complete_run.py',bid,rid,'--result',asset_path.relative_to(workspace),'--result',artifact.relative_to(workspace),'--summary','Prepared a truthful landing-page draft with unresolved placeholders preserved.'],env)
     result=json.loads(completed.stdout);req(result.get('status')=='completed',f'receipt completion failed: {result}')
     req(asset_path.read_bytes()==before,'receipt completion mutated independent Asset truth')
-    saved=json.loads(asset_path.read_text());row=saved['extensions']['businessos']['production_readiness']
-    req(saved.get('status')=='draft' and row.get('status')=='blocked' and row.get('deployment_status')=='not_performed' and row.get('measurement_status')=='pending','receipt completion changed readiness/deployment/outcome truth')
-    req(row.get('unresolved_business_facts') and row.get('missing_authorization') and row.get('missing_capabilities'),'typed real-world readiness blockers were lost')
+
+    saved=json.loads(asset_path.read_text())
+    req(saved.get('status')=='draft','receipt completion promoted Asset status')
+    bos=saved.get('extensions',{}).get('businessos',{})
+    req('production_readiness' not in bos,'Asset regained AURA-owned production_readiness state')
     retired={'run_ref','run_id','run_method_type','run_method_ref','run_contract_id','run_binding','run_history_refs','contract_chain'}
-    req(not (retired & set(saved.get('extensions',{}).get('businessos',{}))),'Asset regained canonical Run backlinks')
+    req(not (retired & set(bos)),'Asset regained canonical Run backlinks')
 
-    # Explicit readiness state is authoritative and must be internally consistent.
-    pr=saved['extensions']['businessos']['production_readiness'];pr['status']='ready';write(asset_path,saved)
-    bad=run([S/'validate_business.py',bid],env,check=False);req(bad.returncode!=0 and 'cannot retain unresolved blockers' in bad.stdout,f'ready assertion retained typed blockers: {bad.stdout}')
-
-    # Loose labels are not a readiness ontology. They may exist as natural-language/local
-    # metadata without deterministic AURA promoting them into canonical readiness truth.
-    pr['status']='blocked';saved['extensions']['businessos']['no_blockers']=True;saved['extensions']['businessos']['launch_ready']=True
-    saved['extensions']['businessos']['readiness_status']='ready_for_launch';write(asset_path,saved)
+    # Natural-language/local metadata may mention readiness, deployment, access, or review,
+    # but AURA must not promote such labels into a canonical readiness ontology.
+    bos['launch_ready']=True;bos['readiness_status']='ready_for_launch';bos['publishing_access']='missing'
+    write(asset_path,saved)
     loose=run([S/'validate_business.py',bid],env,check=False)
-    req(loose.returncode==0,f'loose readiness-like labels gained semantic authority: {loose.stdout+loose.stderr}')
-    for key in ('no_blockers','launch_ready','readiness_status'):saved['extensions']['businessos'].pop(key,None)
+    req(loose.returncode==0,f'loose readiness-like metadata gained deterministic semantic authority: {loose.stdout+loose.stderr}')
 
-    # Explicit readiness can still contradict other explicit organizational state.
-    pr['status']='ready'
-    for field in ('unresolved_business_facts','missing_authorization','missing_capabilities','other_blockers'):pr[field]=[]
-    write(asset_path,saved);placeholder_bad=run([S/'validate_business.py',bid],env,check=False)
-    req(placeholder_bad.returncode!=0 and 'placeholder claim entries remain launch-critical or unassessed' in placeholder_bad.stdout,'launch-critical placeholders were allowed to assert ready')
-    pr.update(readiness);write(asset_path,saved);req(run([S/'validate_business.py',bid],env).returncode==0,'truthful blocked draft should remain valid')
+    # Protect the architecture itself: readiness is not a first-class AURA helper or
+    # validator concern. Real publication/deployment changes and measured outcomes, when
+    # worth remembering, belong in the durable objects that actually represent those facts.
+    req(not (S/'artifact_readiness.py').exists(),'production-readiness control-plane helper reappeared')
+    validator=(S/'validate_business.py').read_text(encoding='utf-8')
+    req('artifact_readiness' not in validator and 'readiness_errors' not in validator,'business validation regained production-readiness semantics')
+    change_schema=json.loads((ROOT/'core/schemas/action/change-event.schema.json').read_text())
+    metric_schema=json.loads((ROOT/'core/schemas/measurement/metric-observation.schema.json').read_text())
+    req(change_schema.get('title')=='ChangeEvent' and metric_schema.get('title')=='MetricObservation','natural durable owners for real changes/measurements are missing')
 
 
 def provenance_regression(workspace,env):
@@ -116,8 +110,8 @@ def receipt_independence_regression(workspace,env):
 def main():
     with tempfile.TemporaryDirectory(prefix='aura-organizational-state-truth-') as td:
         workspace=Path(td).resolve();env=os.environ.copy();env['BUSINESSOS_WORKSPACE']=str(workspace);env['PYTHONDONTWRITEBYTECODE']='1'
-        readiness_regression(workspace,env);provenance_regression(workspace,env);receipt_independence_regression(workspace,env)
-    print('organizational state truth regressions passed: explicit readiness, provenance, and independent optional receipts')
+        asset_truth_regression(workspace,env);provenance_regression(workspace,env);receipt_independence_regression(workspace,env)
+    print('organizational state truth regressions passed: Asset truth boundary, provenance, and independent optional receipts')
 
 
 if __name__=='__main__':main()
