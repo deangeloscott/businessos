@@ -35,6 +35,6 @@ Run when onboarding a journey, after instrumentation changes, or when metrics co
 2. [DETERMINISTIC] Test event presence, duplicates, ordering, late arrival, identity resolution, missing values, schema/version drift, and source totals.
 3. [AI] Compare instrumented path with how the process actually works, including offline/human steps and exceptions.
 4. [DETERMINISTIC] Reconcile key counts with independent sources where possible and quantify untracked/ambiguous population.
-5. [HYBRID] Block high-confidence diagnosis when missing/broken tracking could plausibly explain the signal.
-6. [DETERMINISTIC] Create instrumentation repair Actions/WorkRequests and verification checks.
-7. [DETERMINISTIC] Document valid measurement windows/limitations and re-baseline after material fixes.
+5. [HYBRID] Do not make high-confidence diagnosis when missing/broken tracking could plausibly explain the signal.
+6. [HYBRID] Define the smallest instrumentation repair and verification needed. If repair is inside the user's request and the active harness has the real system access/permission, make and verify the change there; otherwise preserve the concrete gap/design and create a WorkRequest only when another actor genuinely needs a durable handoff.
+7. [DETERMINISTIC] Document valid measurement windows/limitations and re-baseline after material fixes when evidence becomes available.
