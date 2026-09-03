@@ -20,14 +20,6 @@ context:
 - Objective
 - Offer
 - ProductService
-workflows:
-  conditional:
-  - id: core.intelligence.ecosystem.source-discovery
-    when: Relevant journey/CRO evidence still needs discovery, inspection, or conversion from leads into support-grade source material.
-  - id: core.intelligence.ecosystem.evidence-triangulation
-    when: A material intervention or outcome claim benefits from explicit independence, contradiction, freshness, methodology, or uncertainty analysis.
-  - id: customer-optimization.experimentation.lifecycle-test
-    when: A promising journey intervention is testable and a bounded experiment would materially improve the decision.
 ---
 # Customer Optimization Ecosystem Tactic Radar
 
