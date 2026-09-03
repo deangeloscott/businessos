@@ -6,16 +6,12 @@ reads:
 - CustomerJourney
 - Opportunity
 - type: Insight
-  owner_system: customer-intelligence
+  domain: customer-intelligence
 - MetricObservation
 writes: []
 context:
 - EconomicContext
 - Offer
-workflows:
-  required:
-  - customer-optimization.service-recovery.triage
-  - customer-optimization.service-recovery.prevention
 ---
 # Service Recovery
 
@@ -29,12 +25,12 @@ Recover from real service failures proportionately and learn from the underlying
 Use when a material customer failure, broken promise, support/service breakdown, or recovery need requires coordinated understanding and response. An Opportunity may provide context but is not required.
 
 ## Process
-1. [HYBRID] Determine severity, affected customers, promised versus actual state, immediate harm, and whether a separate real Incident meaning is worth preserving.
+1. [HYBRID] Determine severity, affected customers, promised versus actual state, immediate harm, and whether a separate real Incident meaning is worth preserving. Draw on `customer-optimization.service-recovery.triage` when its specialist method would materially improve this assessment; it is optional operating knowledge, not a required execution step.
 2. [HUMAN] Stabilize urgent customer impact and establish a real accountable organizational owner when high-touch judgment/action is needed; do not confuse this with an AURA semantic owner.
 3. [AI] Reconstruct what happened from system/process/customer evidence without blaming the customer or frontline staff prematurely.
 4. [HYBRID] Define a remedy proportional to harm, contract, business policy, and actual constraints; communicate facts, responsibility, next steps, and timing honestly.
 5. [HYBRID] If remediation/refund/credit/workflow/customer communication is within the user's request and the host has real capability/permission, execute it through the external systems. Otherwise provide the precise action/handoff needed; use a WorkRequest only if that real durable handoff must survive the current interaction.
-6. [HYBRID] Verify the customer's resulting state/outcome when practical and identify the root cause/prevention improvement. Use relevant operating knowledge directly rather than routing Learning to an internal owner.
+6. [HYBRID] Verify the customer's resulting state/outcome when practical and identify the root cause/prevention improvement. Draw on `customer-optimization.service-recovery.prevention` when its specialist method helps. Use relevant operating knowledge directly rather than routing Learning to an internal owner.
 7. [AI] Preserve only durable meaning future work needs: for example the material Incident/ChangeEvent, customer evidence, updated process, outcome, or Learning. Do not create Experiment/Metric/Outcome objects merely because service recovery occurred.
 
 ## Verification
