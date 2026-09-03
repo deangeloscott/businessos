@@ -5,7 +5,7 @@ owner_system: competitor-intelligence
 reads:
 - Competitor
 - type: Insight
-  owner_system: customer-intelligence
+  domain: customer-intelligence
 - Observation
 - SourceRecord
 writes:
@@ -39,5 +39,5 @@ Run when a decision requires current competitor customer sentiment and canonical
 5. [AI] Extract aspect-level strengths, weaknesses, complaints, desired outcomes, switching reasons, and exact comparison language. Keep direct evidence separate from interpretation.
 6. [HYBRID] Separate high-frequency minor issues from lower-frequency severe decision drivers; label frequency claims according to the actual preserved sample rather than implying market-wide prevalence.
 7. [AI] Compare across competitors and relevant customer segments where evidence permits.
-8. [HYBRID] Publish competitor-specific Insights only when the preserved evidence chain supports them; otherwise keep them `candidate`. Contribute broader customer-market observations to Customer Intelligence without claiming our customers share them.
+8. [HYBRID] Publish competitor-specific Insights only when the preserved evidence chain supports them; otherwise keep them `candidate`. Preserve broader customer-market observations as customer-domain knowledge when materially useful without claiming our customers share them.
 9. [DETERMINISTIC] Run research-evidence/business validation before calling the job complete. Candidate opportunities may follow from the evidence, but new active-business promises/services/guarantees require business-specific feasibility and authorization.
