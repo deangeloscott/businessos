@@ -7,6 +7,8 @@ from validate_business import validate_business
 from context_plan import build_plan
 
 BID='decision-grounding-regression';BASE=ROOT/'instances'/BID;SITE=ROOT/'test-inputs'/'_decision-grounding-regression-site'
+INDEXING_WORKFLOW='seo.execution.indexing.index-troubleshooting'
+
 
 def require(cond,msg):
     if not cond:raise AssertionError(msg)
@@ -19,7 +21,7 @@ def write_op(statement,diagnosis,measured=None,fact_refs=None,inference_refs=Non
     obs=json.loads(obsfiles[0].read_text());oid=obs['id'];facts=fact_refs if fact_refs is not None else [oid];irefs=inference_refs if inference_refs is not None else [oid]
     op={
       'id':f'opp_{BID}_test','object_type':'Opportunity','schema_version':'1.0.0','business_id':BID,
-      'created_at':ts,'updated_at':ts,'lineage':['seo.diagnosis.detectors.indexing'],'owner_system':'seo-aeo',
+      'created_at':ts,'updated_at':ts,'lineage':[INDEXING_WORKFLOW],'owner_system':'seo-aeo',
       'title':'Repair prerequisite indexability configuration','statement':statement,'status':'prioritized',
       'objective_refs':[],'origin_insight_refs':[],'evidence_links':[oid],'affected_refs':[],
       'diagnosis':diagnosis,'constraints':['Diagnostic evidence only'],
@@ -35,6 +37,7 @@ def write_op(statement,diagnosis,measured=None,fact_refs=None,inference_refs=Non
     p=BASE/'decisions/opportunities'/f"{op['id']}.json";p.parent.mkdir(parents=True,exist_ok=True);p.write_text(json.dumps(op,indent=2)+'\n');return p,oid
 
 def errors():return validate_business(BID)[0]
+
 
 def main():
     if BASE.exists():shutil.rmtree(BASE)
@@ -65,7 +68,8 @@ def main():
         good.unlink();write_op('A candidate action.','Grounded structurally.',fact_refs=[oid],inference_refs=['obs_missing'])
         e=errors();require(any('inference references missing canonical object' in x for x in e),f'missing inference reference must fail, got {e}')
 
-        # A direct local-site configuration Observation is evidence, but it must not be relabeled measured outcome/performance evidence.
+        # A directly observed local configuration is evidence, but it is not measured
+        # downstream outcome/performance evidence merely because it is important.
         good.unlink();write_op('The page has a noindex directive.','Actual downstream performance remains unknown.',measured=[oid])
         e=errors();require(any('not measured outcome/performance evidence' in x for x in e),f'local config Observation must not satisfy measured outcome support, got {e}')
 
@@ -76,7 +80,7 @@ def main():
         )
         e=errors();require(not e,f'keyword semantics must not be deterministically rejected, got {e}')
 
-        plan=build_plan(BID,'seo.diagnosis.detectors.indexing')
+        plan=build_plan(BID,INDEXING_WORKFLOW)
         require('core/policies/decision-grounding.md' in plan['files'],'Opportunity-writing plan must load decision-grounding policy')
         policy=(ROOT/'core/policies/decision-grounding.md').read_text()
         require('reasoning_basis' in policy and 'Leading signals and measured outcomes' in policy and 'not a deterministic prose rules engine' in policy,'decision grounding policy missing model-owned grounding boundaries')
@@ -86,5 +90,6 @@ def main():
         if SITE.exists():shutil.rmtree(SITE)
         r=ROOT/'runtime/runs'/BID
         if r.exists():shutil.rmtree(r)
+
 
 if __name__=='__main__':main()
