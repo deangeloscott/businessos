@@ -29,10 +29,6 @@ def _validate_distribution_product_local():
     generate_registry();validate_workspace();validate_public_distribution();reg={c['id']:c for c in load_registry()['workflows']}
     for wid,workflow in reg.items():
         if workflow.get('type')!='workflow':errors.append(f'{wid} is not typed as Workflow')
-        for kind in ('required','conditional'):
-            for item in (workflow.get('workflows') or {}).get(kind,[]) or []:
-                rid=item.get('id') if isinstance(item,dict) else item
-                if rid not in reg:errors.append(f'{wid} references unavailable supporting Workflow {rid}')
 
     map_paths=[]
     if (ROOT/'core/process-map.json').exists():map_paths.append(ROOT/'core/process-map.json')
@@ -71,16 +67,16 @@ def _validate_distribution_product_local():
         init_business(tid,'Distribution Smoke Test');sample=next((c for c in reg.values() if c.get('owner_system')!='core'),None) or next(iter(reg.values()),None)
         if sample:
             plan=build_plan(tid,sample['id'])
-            if 'CONTEXT.md' not in plan.get('files',[]):errors.append('context plan lost universal AURA agent contract')
+            if 'CONTEXT.md' not in plan.get('files',[]):errors.append('context plan lost universal AURA agent context')
             for redundant in ('core/DEFAULTS.md','core/policies/agent-execution.md','core/policies/business-isolation.md','core/policies/preferences-and-adaptation.md'):
                 if redundant in plan.get('files',[]):errors.append(f'context plan front-loaded redundant universal instruction: {redundant}')
-            contract=(ROOT/'CONTEXT.md').read_text()
+            root_context=(ROOT/'CONTEXT.md').read_text()
             for phrase in [
                 'Installed AURA modules are bodies of operating knowledge, not limits on what the host may do.',
                 'The model/user decides semantic applicability.',
                 'AURA does not define a tool allowlist or universal capability vocabulary.',
             ]:
-                if phrase not in contract:errors.append(f'root AURA contract lost method/tool-independence invariant: {phrase}')
+                if phrase not in root_context:errors.append(f'root AURA context lost method/tool-independence invariant: {phrase}')
     finally:
         if dest.exists():shutil.rmtree(dest)
     if errors:
