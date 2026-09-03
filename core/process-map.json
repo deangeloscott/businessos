@@ -64,7 +64,7 @@
     {
       "id": "discover-next-best-work",
       "entry_workflow": "core.opportunity.discover-next-best-work",
-      "result": "Turn a broad growth/prioritization goal into the highest-value next work supported by current evidence and installed modules.",
+      "result": "Turn a broad growth/prioritization goal into the highest-value next work supported by current evidence and available operating knowledge.",
       "supporting_workflows": []
     },
     {
