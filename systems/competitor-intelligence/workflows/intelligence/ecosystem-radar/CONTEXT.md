@@ -18,16 +18,6 @@ context:
 - Market
 - Objective
 - ProductService
-workflows:
-  conditional:
-  - id: core.intelligence.ecosystem.source-discovery
-    when: Relevant competitor evidence still needs discovery, inspection, or conversion from leads into support-grade source material.
-  - id: core.intelligence.ecosystem.evidence-triangulation
-    when: A material competitor claim benefits from explicit independence, contradiction, freshness, methodology, or uncertainty analysis.
-  - id: competitor.monitoring.material-change
-    when: A known competitor surface may have materially changed and model/user judgment says change comparison is useful.
-  - id: competitor.analysis.tactic-validation
-    when: Evidence suggests a competitor tactic may be effective rather than merely present and effectiveness matters to the decision.
 ---
 # Competitive Ecosystem Radar
 
