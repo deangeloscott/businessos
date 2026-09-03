@@ -35,4 +35,4 @@ Use before designing a sales-oriented webinar.
 4. [AI] Identify persuasion barriers the webinar—not merely follow-up—must resolve.
 5. [HYBRID] Ensure educational promise is substantial and not withheld value disguised as a pitch.
 6. [HYBRID] Define useful registration, attendance, engagement, CTA, conversion, quality metrics, and session constraints based on the actual webinar context.
-7. [AI] Preserve the objective/audience brief as a Marketing-owned Asset for direct use by teaching, persuasion, script, slide, and execution methods. Do not create a WorkRequest merely to move between them.
+7. [AI] Preserve the objective/audience brief as an organization-owned Asset for direct use by teaching, persuasion, script, slide, and execution methods. Do not create a WorkRequest merely to move between them.
