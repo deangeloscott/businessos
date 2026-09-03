@@ -1,4 +1,4 @@
-# ViralTrac AURA — Agent Contract
+# ViralTrac AURA — Operating Context for AI
 
 AURA provides **durable organization-owned memory and reusable operating knowledge** to a capable model/harness. AURA is not the model, semantic intent engine, orchestrator, permission system, tool/provider selector, scheduler, or business decision-maker.
 
@@ -53,7 +53,7 @@ The model may:
 - work ad hoc when that is better;
 - sequence or parallelize work based on real dependencies.
 
-Installed AURA modules are bodies of operating knowledge, not limits on what the host may do.
+AURA operating areas are bodies of operating knowledge, not limits on what the host may do.
 
 ## Organization-specific reusable methods
 
