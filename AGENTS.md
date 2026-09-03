@@ -1,6 +1,6 @@
 # AURA Harness Entry Adapter
 
-This file is a thin adapter for harnesses that automatically read `AGENTS.md`. Root `CONTEXT.md` defines AURA's operating philosophy. `AURA-ATTACHMENT.md` defines the same small contract for harnesses that should know AURA exists even when work starts outside this folder.
+This file is a thin adapter for harnesses that automatically read `AGENTS.md`. Root `CONTEXT.md` defines AURA's operating philosophy. `AURA-ATTACHMENT.md` defines the same small attachment guidance for harnesses that should know AURA exists even when work starts outside this folder.
 
 AURA provides organization-owned memory and reusable operating knowledge. It does not replace or constrain the active model/harness/user's intelligence, tools, semantic judgment, orchestration, delegation, concurrency, planning, permissions, scheduling, or execution.
 
