@@ -15,24 +15,6 @@ def schema_by_title(title):
 def validate_schema(title,obj):
     errors=sorted(Draft202012Validator(schema_by_title(title)).iter_errors(obj),key=lambda error:list(error.path))
     if errors:raise ValueError('; '.join(f"{list(error.path)}: {error.message}" for error in errors))
-def _version_tuple(value):
-    try:
-        parts=tuple(int(x) for x in str(value).split('.'))
-        if len(parts)!=3:raise ValueError
-        return parts
-    except Exception:raise ValueError(f'Invalid semantic version: {value!r}')
-def compatibility_status(compatibility,version=None,target_workflow_id=None):
-    version=_version_tuple(version or os_version());compatibility=compatibility or {};minimum=compatibility.get('aura_min');maximum=compatibility.get('aura_max')
-    if minimum and version<_version_tuple(minimum):return 'incompatible'
-    if maximum and version>_version_tuple(maximum):return 'incompatible'
-    if target_workflow_id:
-        found=False
-        for path in workflow_files():
-            try:meta,_=read_frontmatter(path)
-            except Exception:continue
-            if meta.get('id')==target_workflow_id and meta.get('type')=='workflow':found=True;break
-        if not found:return 'review'
-    return 'compatible'
 def innovation_support_root(business_id):return instance_dir(business_id)/'support'/'innovation-exchange'
 def innovation_package_dir(business_id):return innovation_support_root(business_id)/'packages'
 def innovation_entry_dir(business_id):return innovation_support_root(business_id)/'entries'
@@ -69,7 +51,7 @@ def find_identifying_keys(value,path=''):
 def canonical_hash(package):
     data=copy.deepcopy(package);data.setdefault('integrity',{})['content_hash']=None;raw=json.dumps(data,sort_keys=True,separators=(',',':'),ensure_ascii=False).encode();return hashlib.sha256(raw).hexdigest()
 def innovation_fingerprint(process):
-    selected={key:process.get(key) for key in ['mode','owner_system','target_workflow_id','local_workflow_id','title','purpose','discovery_terms','reads','writes','applies_when','does_not_apply_when','instructions','verification']};raw=json.dumps(selected,sort_keys=True,separators=(',',':'),ensure_ascii=False).encode();return hashlib.sha256(raw).hexdigest()
+    selected={key:process.get(key) for key in ['mode','workflow_id','title','purpose','discovery_terms','applies_when','does_not_apply_when','instructions','verification']};raw=json.dumps(selected,sort_keys=True,separators=(',',':'),ensure_ascii=False).encode();return hashlib.sha256(raw).hexdigest()
 def load_package(path):
     path=Path(path)
     if not path.exists():raise ValueError(f'Package not found: {path}')

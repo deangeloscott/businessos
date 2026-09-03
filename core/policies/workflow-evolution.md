@@ -1,41 +1,48 @@
-# Workflow Learning and Organizational Improvement
+# AURA Workflow Evolution
 
-AURA may turn strong evidence-supported Learning into better reusable operating knowledge without converting one successful result into a universal rule.
+AURA may improve reusable operating knowledge from real organizational Learning without turning internal product maintenance into customer bureaucracy.
 
-## Use the narrowest useful memory
+## Canonical rule
 
-1. **Learning** — remember a conditional evidence-supported finding.
-2. **Reusable guidance** — reuse that Learning directly when its conditions match.
-3. **ProcessExtension / local Workflow** — preserve a repeatable organization-scoped procedure when procedural guidance adds real value beyond the Learning itself.
-4. **Broader product candidate** — treat a potentially generalizable improvement as AURA product-development input, not organization runtime state.
-5. **Canonical AURA change** — make deliberate product-source changes and validate them before release.
+A `Learning` is durable business memory. A `ProcessExtension` is durable business-scoped reusable operating knowledge.
 
-This is an evidence/scope ladder, not an authority ladder. A capable model may choose a different sound method for a particular job.
+Neither requires an internal proposal, review, adoption, or product-version compatibility lifecycle.
 
-## Evidence-backed local operating knowledge
+A ProcessExtension has one Workflow relationship:
 
-When Learning justifies a reusable organization-specific procedure, preserve the narrowest useful `ProcessExtension` directly. It should:
+- `mode: augment_workflow` with `workflow_id` naming an installed AURA Workflow; or
+- `mode: local_workflow` with an organization-local `custom.*` `workflow_id`.
 
-- cite the Learning and material evidence that motivated it;
-- preserve material limitations or contradictory evidence through the referenced Learning/evidence;
-- state when the method applies and does not apply when those distinctions materially help future work;
-- keep durable domain/process guidance separate from incidental tool, provider, scheduler, or runtime details;
-- include only instructions and verification criteria that materially improve repeatability or quality;
-- augment an installed Workflow or define a local Workflow only when doing so is more useful than reusing the Learning itself;
-- stay at the narrowest organization scope justified by evidence.
+That relationship is for retrieval and composition of knowledge. It is not an execution contract.
 
-AURA does not require a proposal/adoption lifecycle before organization-local operating knowledge can be useful. The model/user supplies the semantic judgment that the procedure is worth preserving; AURA preserves its provenance, scope, structure, and organization ownership.
+## What a ProcessExtension should contain
 
-Do not encode a host tool inventory or provider-neutral capability ontology. Describe the work in natural language and let the active model/harness choose the best available implementation.
+Preserve only the reusable meaning that helps future work:
 
-## Use is optional
+- what the procedure is for;
+- when it applies and does not apply;
+- the few instructions that materially improve the work;
+- optional verification guidance when it is genuinely useful;
+- discoverability terms;
+- scope when narrower than the whole business;
+- provenance to organization Learning, sources, or evidence when those exist.
 
-Persisting a ProcessExtension makes reusable knowledge discoverable. It does not force future models, harnesses, or users to use it, and it does not become execution authority.
+Do not copy AURA Workflow contract metadata such as `reads` / `writes`, product-system ownership, host capabilities, provider bindings, schedules, permissions, or AURA version gates into ProcessExtension state. Those do not become organization-owned operating knowledge merely because a procedure mentions them.
 
-A future capable model may use, adapt, ignore, deactivate, retire, or supersede organization-local operating knowledge based on the actual task and current evidence.
+## Organization-authored procedures
 
-A broadly useful canonical AURA improvement remains product-development work until AURA source is deliberately changed and validated; organization state does not silently mutate product behavior.
+A user/model may intentionally persist a local Workflow or Workflow augmentation directly from explicit organizational instruction. Do not fabricate Learning, a proposal, an approval record, or a fake source reference first.
 
-## Re-evaluation
+## Learning-derived improvements
 
-Revisit local operating knowledge when new outcomes contradict it, the mechanism materially changes, applicability changes, installed AURA knowledge supersedes it, or the organization no longer benefits from it. Evidence can strengthen, narrow, deactivate, replace, or invalidate the method.
+When existing canonical Learning supports a reusable procedural improvement, the active model/user may create or update a ProcessExtension directly. Preserve the relevant Learning/evidence references so the improvement remains traceable.
+
+## Canonical AURA source changes
+
+Editing packaged AURA Playbooks, Workflows, schemas, policies, or scripts is product maintenance outside the active business knowledge lifecycle. Business Learning may inform that work, but a ProcessExtension never mutates product source.
+
+## Sharing
+
+Innovation Exchange packages may carry ProcessExtension operating knowledge and bounded supporting evidence. Importing a package records contributed material as support evidence; it does not make the method true, compatible, adopted, or authoritative for the recipient organization.
+
+Package `format_version` exists only so the portable file can be parsed correctly. AURA product versions are not compatibility gates for reusable operating knowledge.

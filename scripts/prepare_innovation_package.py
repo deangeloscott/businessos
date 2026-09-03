@@ -39,9 +39,14 @@ def prepare_package(business_id,extension_id,detail=None,identity=None,evidence_
     if identity!='named':
         identifying=find_identifying_keys(evidence_summary)+find_identifying_keys(case_study)
         if identifying:raise ValueError('Anonymous/pseudonymous package summary contains direct identifying field(s): '+', '.join(identifying))
-    process={'mode':extension['mode'],'owner_system':extension['owner_system'],'target_workflow_id':extension.get('target_workflow_id'),'local_workflow_id':extension.get('local_workflow_id'),'title':extension['title'],'purpose':extension['purpose'],'discovery_terms':extension.get('discovery_terms') or [],'reads':extension.get('reads') or [],'writes':extension.get('writes') or [],'applies_when':extension.get('applies_when') or [],'does_not_apply_when':extension.get('does_not_apply_when') or [],'instructions':extension.get('instructions') or [],'verification':extension.get('verification') or [],'compatibility':extension.get('compatibility') or {'aura_min':os_version(),'aura_max':None}}
+    process={
+        'mode':extension['mode'],'workflow_id':extension['workflow_id'],'title':extension['title'],'purpose':extension['purpose'],
+        'discovery_terms':extension.get('discovery_terms') or [],'applies_when':extension.get('applies_when') or [],
+        'does_not_apply_when':extension.get('does_not_apply_when') or [],'instructions':extension.get('instructions') or [],
+        'verification':extension.get('verification') or []
+    }
     fingerprint=innovation_fingerprint(process);timestamp=now();package_id='ipkg_'+hashlib.sha256(f'{fingerprint}|{business_id}|{timestamp}'.encode()).hexdigest()[:20]
-    package={'format_version':'1.1','package_id':package_id,'created_at':timestamp,'aura_version':os_version(),'innovation_fingerprint':fingerprint,'detail_level':detail,'identity_level':identity,'contributor':{'display_name':display_name,'pseudonym':pseudonym},'process':process,'evidence_summary':evidence_summary,'case_study':case_study,'privacy':{'raw_private_state_included':False,'secrets_included':False,'source_business_identity_included':identity=='named','user_approved_export':False,'approved_at':None},'integrity':{'algorithm':'sha256','content_hash':None}}
+    package={'format_version':'1.2','package_id':package_id,'created_at':timestamp,'innovation_fingerprint':fingerprint,'detail_level':detail,'identity_level':identity,'contributor':{'display_name':display_name,'pseudonym':pseudonym},'process':process,'evidence_summary':evidence_summary,'case_study':case_study,'privacy':{'raw_private_state_included':False,'secrets_included':False,'source_business_identity_included':identity=='named','user_approved_export':False,'approved_at':None},'integrity':{'algorithm':'sha256','content_hash':None}}
     validate_package(package);path=Path(output) if output else ROOT/'runtime'/'innovation'/business_id/f'{package_id}.draft.json';path.parent.mkdir(parents=True,exist_ok=True);path.write_text(json.dumps(package,indent=2)+'\n');return package,path
 
 def main():
