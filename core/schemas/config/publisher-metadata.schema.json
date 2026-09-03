@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PublisherMetadata",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "format_version": {"type": "string", "minLength": 1},
+    "publisher": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {"type": ["string", "null"]},
+        "name": {"type": ["string", "null"]},
+        "canonical_project_url": {"type": ["string", "null"]},
+        "documentation_url": {"type": ["string", "null"]},
+        "support_url": {"type": ["string", "null"]},
+        "creator_name": {"type": ["string", "null"]},
+        "product_name": {"type": ["string", "null"]},
+        "product_acronym": {"type": ["string", "null"]},
+        "product_name_expansion": {"type": ["string", "null"]},
+        "product_descriptor": {"type": ["string", "null"]},
+        "maturity": {"type": "string", "minLength": 1},
+        "legacy_public_name": {"type": ["string", "null"]},
+        "creator_url": {"type": ["string", "null"]},
+        "publisher_url": {"type": ["string", "null"]}
+      },
+      "required": [
+        "id",
+        "name",
+        "creator_name",
+        "canonical_project_url",
+        "documentation_url",
+        "support_url",
+        "product_name",
+        "product_acronym",
+        "product_name_expansion",
+        "product_descriptor",
+        "maturity",
+        "legacy_public_name",
+        "creator_url",
+        "publisher_url"
+      ]
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "preserve_in_derivative_distributions": {"type": "boolean"},
+        "show_to_agents": {"type": "boolean"},
+        "note": {"type": "string", "minLength": 1}
+      },
+      "required": ["preserve_in_derivative_distributions", "show_to_agents", "note"]
+    }
+  },
+  "required": ["format_version", "publisher", "provenance"]
+}
