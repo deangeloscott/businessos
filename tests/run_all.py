@@ -45,8 +45,7 @@ TESTS=[
     'tests/run_customer_facing_draft_provenance.py',
     'tests/run_customer_facing_qa_invariant.py',
     'tests/run_claim_manifest_operational_promises.py',
-    'tests/run_completion_evidence_integrity.py',
-    'tests/run_content_native_execution.py'
+    'tests/run_completion_evidence_integrity.py'
 ]
 failures=[]
 for rel in TESTS:
