@@ -3,7 +3,7 @@
 **Alpha · v0.1.1**  
 **AURA = Agentic Understanding and Reinforcement Architecture.**
 
-ViralTrac AURA is a portable, local-first **AI-native BusinessOS** that gives capable AI durable organizational memory and reusable operating knowledge so useful work can compound across sessions, models, tools, and people.
+ViralTrac AURA is portable, local-first **organization-owned memory and operating knowledge for capable AI**. It helps useful work compound across sessions, models, tools, and people by preserving durable organizational context, evidence, Learning, and reusable ways of working.
 
 AURA helps an AI understand the organization, reuse relevant context and evidence, find proven ways to do business work, use the best tools and Skills available to it, and preserve what should matter later.
 
@@ -108,9 +108,9 @@ ViralTrac is AURA's optional first-party companion for tracking, attribution, me
 
 ## License
 
-ViralTrac AURA is **source-available, not open source**. Internal/commercial business use, customization, and agency/consulting use for clients are permitted under `LICENSE.md`; white-label resale or repackaging AURA as someone else's standalone BusinessOS is not.
+ViralTrac AURA is **source-available, not open source**. Internal/commercial business use, customization, and agency/consulting use for clients are permitted under `LICENSE.md`; see the license for restrictions on white-label resale and standalone repackaging.
 
-The repository keeps the technical name `businessos` and some `BUSINESSOS_*` compatibility identifiers, while the public product name is **ViralTrac AURA**.
+The repository keeps the technical name `businessos` and some `BUSINESSOS_*` compatibility identifiers. Those are technical continuity details, not AURA's public descriptor or product architecture.
 
 ---
 
