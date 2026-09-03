@@ -4,9 +4,9 @@ type: workflow
 owner_system: marketing-synthesis
 reads:
 - type: Insight
-  owner_system: customer-intelligence
+  domain: customer-intelligence
 - type: Insight
-  owner_system: competitor-intelligence
+  domain: competitor-intelligence
 - Asset
 - MetricObservation
 writes:
@@ -37,4 +37,4 @@ Use when a commercial experience needs a reusable messaging architecture or mate
 5. [AI] Adapt emphasis, sophistication, proof density, friction, and CTA to audience/stage/context without creating contradictory claims across channels. The same format may legitimately have TOF attention, MOF education/trust, or BOF conversion versions.
 6. [HYBRID] Apply organization/user marketing preferences only inside the truth/authorization boundary. A preferred framework may shape analysis; it cannot create a guarantee, scarcity, urgency, testimonial, price, capability, or customer motive.
 7. [HYBRID] Define required message continuity from acquisition source/creative to destination and follow-up so the promise, proof, audience expectation, and CTA remain coherent.
-8. [AI] Preserve the reusable messaging architecture and asset-specific priorities as a Marketing-owned strategy Asset when future work benefits from it. Create a separate Opportunity, WorkRequest, or canonical context change only when that distinct meaning actually exists.
+8. [AI] Preserve the reusable messaging architecture and asset-specific priorities as an organization-owned strategy Asset when future work benefits from it. Create a separate Opportunity, WorkRequest, or canonical context change only when that distinct meaning actually exists.
