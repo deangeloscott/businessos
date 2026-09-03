@@ -34,4 +34,4 @@ Run after sufficient competitor/customer evidence exists or when a strategic com
 4. [AI] Identify where an apparent strength creates tradeoffs or where a weakness is irrelevant to target customers.
 5. [HYBRID] Test alternative explanations and contrary evidence before final classification.
 6. [AI] Scope each assessment by audience/market/time and assign confidence/evidence links.
-7. [AI] Publish Insights and whitespace/threat signals; downstream systems decide intervention.
+7. [AI] Publish reusable Insights and whitespace/threat signals; the active model/user decides whether any intervention is warranted and which method to use.
