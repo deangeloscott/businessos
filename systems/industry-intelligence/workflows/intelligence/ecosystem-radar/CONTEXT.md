@@ -16,20 +16,6 @@ context:
 - Market
 - Objective
 - ProductService
-workflows:
-  conditional:
-  - id: core.intelligence.ecosystem.source-discovery
-    when: Relevant industry evidence still needs discovery, inspection, or conversion from leads into support-grade source material.
-  - id: core.intelligence.ecosystem.evidence-triangulation
-    when: A material industry claim benefits from explicit independence, contradiction, freshness, methodology, or uncertainty analysis.
-  - id: industry.source-mapping.priority-sources
-    when: The organization's established source map would improve coverage, efficiency, or source selection for this question.
-  - id: industry.analysis.event-verification
-    when: A material event/change needs factual verification.
-  - id: industry.analysis.materiality
-    when: A verified event may materially affect an active business decision.
-  - id: industry.analysis.business-impact
-    when: A material event warrants business-specific impact analysis.
 ---
 # Industry Ecosystem Radar
 
