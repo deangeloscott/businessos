@@ -17,11 +17,13 @@ context:
 - Objective
 - ProductService
 workflows:
-  required:
-  - id: core.intelligence.ecosystem.source-discovery
-  - id: core.intelligence.ecosystem.evidence-triangulation
-  - id: industry.source-mapping.priority-sources
   conditional:
+  - id: core.intelligence.ecosystem.source-discovery
+    when: Relevant industry evidence still needs discovery, inspection, or conversion from leads into support-grade source material.
+  - id: core.intelligence.ecosystem.evidence-triangulation
+    when: A material industry claim benefits from explicit independence, contradiction, freshness, methodology, or uncertainty analysis.
+  - id: industry.source-mapping.priority-sources
+    when: The organization's established source map would improve coverage, efficiency, or source selection for this question.
   - id: industry.analysis.event-verification
     when: A material event/change needs factual verification.
   - id: industry.analysis.materiality
@@ -41,11 +43,11 @@ Give the business timely external awareness while keeping verified events, forec
 Use on demand for an industry refresh or when an external development could materially affect the business.
 
 ## Process
-1. [HYBRID] Reuse the Industry Source Map, current Industry Insights/Learnings, SourceProfiles, and recent evidence before expanding the search.
+1. [HYBRID] Reuse the Industry Source Map, current Industry Insights/Learnings, SourceProfiles, and recent evidence when they are relevant before expanding the search.
 2. [AI] Define the event/mechanism classes actually relevant to the decision: regulation/standards, technology/platforms, research/science, market structure, supply/demand, distribution, category behavior, macro inputs, or adjacent threats/opportunities.
-3. [HYBRID] Use Core discovery across relevant priority and open sources, preserve support-grade evidence, and triangulate material claims with original provenance, independent corroboration, contradiction, freshness, and novelty.
+3. [HYBRID] Discover relevant priority and open sources using the best available research approach. Draw on Core source-discovery, evidence-triangulation, and the established priority-source method when they materially improve the work. Preserve support-grade evidence for material claims and distinguish original provenance, independent corroboration, contradiction, freshness, and novelty where those distinctions matter.
 4. [AI] Distinguish an observed event, forecast, sustained trend, practitioner tactic, and interpretation; do not force all external developments into one lifecycle or tactic category.
-5. [AI] Use event verification, materiality, or business-impact playbooks when those methods can materially improve the answer. The active model/user decides applicability and sequencing rather than AURA routing events through a fixed chain.
+5. [AI] Use event verification, materiality, or business-impact Workflows when those methods can materially improve the answer. The active model/user decides applicability and sequencing rather than AURA routing events through a fixed chain.
 6. [AI] For uncertain practice/tactic claims, identify the mechanism and uncertainty and use whatever relevant method the active model/harness can perform. Create a durable handoff only when a real human/owner handoff needs to survive the current runtime; do not manufacture an Industry WorkRequest.
 7. [DETERMINISTIC] Persist only material Industry Insight/evidence meaning and exact references selected by the model/user. Reusable Industry Learning changes only when evidence supports that broader guidance.
 8. [AI] Return the few developments that could change a decision, what is verified versus uncertain, applicable business implications, and any suggested next check/method without encoding a mandatory next route.
