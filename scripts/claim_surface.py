@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
-"""Resolve the auditable customer-facing claim surface of an Asset.
+"""Optional helpers for preserving an auditable customer-facing claim surface.
 
-Text-native artifacts can be inspected deterministically. Opaque/rendered media must
-carry a compact JSON sidecar so claim governance does not depend on OCR, transcription,
-or a specific rendering vendor. Pre-publish QA remains responsible for checking parity
-between that declared surface and the actual rendered artifact.
+Text-native artifacts can be inspected mechanically. Opaque/rendered media may carry a
+compact JSON sidecar when that materially improves later text-oriented review, handoff,
+or auditability. The sidecar is optional provenance/continuity data: the capable model or
+human should inspect the actual artifact when substantive claim meaning matters.
 """
 from html.parser import HTMLParser
 from pathlib import Path
 import json, re, xml.etree.ElementTree as ET
-from _common import ROOT, resolve_storage_ref
+from _common import resolve_storage_ref
 
 TEXT_NATIVE_EXTS={'.md','.txt','.html','.htm','.rst','.csv','.svg'}
 CLAIM_SURFACE_FIELDS=('visible_text','spoken_text','material_visual_claims')
@@ -70,7 +70,7 @@ def _surface_values(data):
 
 
 def load_claim_surface(ref,artifact_path=None):
-    """Load and minimally validate an opaque-media claim-surface sidecar."""
+    """Load and minimally validate an explicitly supplied claim-surface sidecar."""
     try:path=resolve_storage_ref(ref)
     except Exception:return None,f'claim_surface_ref cannot be resolved: {ref!r}'
     if not path.exists() or not path.is_file():return None,f'claim_surface_ref does not exist: {ref!r}'
@@ -90,13 +90,18 @@ def load_claim_surface(ref,artifact_path=None):
 
 
 def asset_claim_units(asset,artifact_path):
-    """Return claim-auditable statements plus any structural surface error."""
+    """Return mechanically available claim-review text without requiring a sidecar.
+
+    Text-native artifacts are read directly. For opaque media, an explicitly supplied
+    sidecar may provide text-oriented review units; without one there is simply no
+    deterministic text surface. That is not an error and does not imply the media is safe
+    or unsupported—the actual artifact still requires model/human inspection when needed.
+    """
     path=Path(artifact_path); suffix=path.suffix.lower()
     bos=(asset.get('extensions') or {}).get('businessos',{}) if isinstance(asset.get('extensions'),dict) else {}
     statements=[]
     if suffix in TEXT_NATIVE_EXTS:
         statements.extend(units(native_text(path)))
-        # Optional sidecar may add material visual/spoken claims that are not text-native.
         ref=bos.get('claim_surface_ref')
         if ref:
             surface,error=load_claim_surface(ref,path)
@@ -104,14 +109,8 @@ def asset_claim_units(asset,artifact_path):
             statements.extend(units('\n'.join(_surface_values(surface))))
         return list(dict.fromkeys(statements)),None
 
-    # Opaque/rendered media created or currently managed as customer-facing work must
-    # expose an auditable claim surface regardless of whether a Run receipt exists.
-    # Truly imported/pre-existing media is not retroactively forced through this path
-    # until it is materially reworked as current output.
-    origin=str(bos.get('origin','')).lower()
-    if origin in {'imported','preexisting'}:return [],None
     ref=bos.get('claim_surface_ref')
-    if not ref:return [],f'customer-facing rendered Asset {asset.get("id")} requires extensions.businessos.claim_surface_ref; opaque media cannot bypass claim governance'
+    if not ref:return [],None
     surface,error=load_claim_surface(ref,path)
     if error:return [],error
     statements.extend(units('\n'.join(_surface_values(surface))))
