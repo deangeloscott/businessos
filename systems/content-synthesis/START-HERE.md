@@ -22,4 +22,4 @@ Content may directly consume relevant Insights, ProofRecords, SEO requirements, 
 The active model/user chooses, combines, adapts, skips, or replaces useful methods. The harness owns rendering, platform APIs, scheduling, publishing mechanics, retries, and permissions.
 
 ## AI execution
-Do not load this entire system. Retrieve the smallest relevant context and use the knowledge that improves the actual communication job. `process-map.json` is a browse/composition aid, not runtime execution order.
+Do not load this entire system. Retrieve the smallest relevant context and use the knowledge that improves the actual communication job. `process-map.json` is a lightweight browse/navigation index, not runtime execution order or a Workflow graph.
