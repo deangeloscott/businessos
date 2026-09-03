@@ -1,5 +1,5 @@
 {
-  "format_version":"2.0",
+  "format_version":"2.1",
   "score_scale":{"0":"not performed","1":"fundamentally inadequate","2":"materially incomplete or flawed","3":"professionally acceptable","4":"strong and competitive","5":"exceptional expert-level execution"},
   "minimums":{"hard_gates":"all_pass","dimension_floor":3.0,"acceptable_overall":3.3,"competitive_overall":4.0,"exceptional_overall":4.6},
   "base":[
@@ -24,7 +24,7 @@
     "paid_and_persuasion_field":["ad_library_or_market_sampling","proxy_calibration","message_and_offer_analysis","creative_mechanism_analysis","persuasion_quality","funnel_continuity","competitive_marketing_readiness"],
     "marketing_outcome":["customer_insight_use","offer_and_message_fit","persuasion_quality","measurement_readiness"],
     "first_party_outcomes":["bottleneck_diagnosis","causal_discipline","intervention_quality","measurement_design","commercial_relevance"],
-    "cross_domain_system":["cross_domain_coordination","semantic_ownership","evidence_reuse","next_best_work_quality","execution_completeness"],
+    "cross_domain_system":["cross_domain_coordination","truth_ownership","evidence_reuse","next_best_work_quality","execution_completeness"],
     "marathon_system":["long_horizon_coherence","state_compounding","evidence_reuse","contradiction_handling","priority_adaptation","process_learning","operating_efficiency"]
   },
   "profile_descriptions":{
@@ -35,12 +35,14 @@
     "leader_comparison":"Samples enough strong current leaders to identify expected patterns and meaningful differences; a few representative leaders are usually sufficient unless the field is ambiguous or another sample could materially change the conclusion.",
     "competitive_search_readiness":"Finished work plausibly competes for the intended search/answer outcome, acknowledging authority or external constraints content alone cannot solve.",
     "ad_library_or_market_sampling":"Samples enough relevant active, persistent, or visibly strong creatives/competitors and surrounding funnel evidence to understand the market pattern; expands only when additional sampling could materially change the conclusion.",
-    "proxy_calibration":"Treats longevity, views, shares, engagement, repeated creative families, and platform metrics as evidence of differing strength—not direct proof of profit unless first-party data exists.",
+    "proxy_calibration":"Treats longevity, views, shares, engagement, repeated creative families, and platform metrics as meaningful visibility/attention/distribution signals whose relevance depends on the objective; they are not automatically proof of profit, conversion, or causal effectiveness without supporting evidence.",
+    "performance_proxy_calibration":"Treats visible attention and distribution metrics as real upstream outcomes/signals when they matter to the objective, while distinguishing them from qualified action, revenue, profit, retention, or causal effect unless those are actually measured.",
     "baseline_normalization":"Normalizes visible content performance against creator/account baseline, age, format, audience size, and distribution where possible.",
     "mechanism_extraction":"Extracts transferable mechanisms rather than copying protected expression, branding, or exact creative.",
     "appropriate_detail":"Uses the level of detail the audience and communication task require; more detail is not automatically better.",
     "artifact_usability":"Produces the actual promised artifact in an immediately usable form rather than a description of what could be produced.",
-    "cross_domain_coordination":"Uses the right semantic owners and handoffs across domains instead of duplicating the same problem or research in multiple systems.",
+    "cross_domain_coordination":"Combines the relevant bodies of organizational knowledge coherently, reuses canonical evidence instead of duplicating truth, and continues directly when the active model can do the work; create a durable handoff only when one genuinely needs to survive people, systems, or time.",
+    "truth_ownership":"Uses the canonical owner of durable organizational truth while allowing any relevant Workflow/model to consume that truth without copying competing representations.",
     "state_compounding":"Later work becomes better informed by accumulated AURA state instead of repeatedly starting from scratch.",
     "contradiction_handling":"Later contradictory evidence revises confidence, hypotheses, or Learning rather than being ignored to preserve a convenient narrative."
   }
