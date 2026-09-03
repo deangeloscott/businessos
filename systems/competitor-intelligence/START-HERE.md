@@ -18,4 +18,4 @@ Competitor Intelligence preserves competitor evidence and decision-useful interp
 Observed competitor behavior, inferred strategy, proxy performance signals, and actual evidence of effectiveness must remain separate. The active model/user decides what the evidence means for the current business decision and which method, if any, is useful next.
 
 ## AI execution
-Do not load this entire system. Retrieve the smallest relevant context and choose, combine, adapt, skip, or replace useful methods with model/user judgment. `process-map.json` is a browse/composition aid, not runtime execution order.
+Do not load this entire system. Retrieve the smallest relevant context and choose, combine, adapt, skip, or replace useful methods with model/user judgment. `process-map.json` is a lightweight browse/navigation index, not runtime execution order or a Workflow graph.
