@@ -4,9 +4,9 @@ type: workflow
 owner_system: marketing-synthesis
 reads:
 - type: Insight
-  owner_system: customer-intelligence
+  domain: customer-intelligence
 - type: Insight
-  owner_system: competitor-intelligence
+  domain: competitor-intelligence
 - Asset
 - MetricObservation
 writes:
@@ -35,4 +35,4 @@ Use when a defined audience/context needs a clearer or stronger value propositio
 4. [AI] Generate value proposition variants emphasizing materially different customer value mechanisms.
 5. [HYBRID] Evaluate relevance, differentiation, credibility, proof availability, and fit to Offer/Brand.
 6. [AI] Select primary/secondary proposition and define scope/context.
-7. [AI] Preserve the useful proposition and its evidence/usage scope as a Marketing-owned strategy Asset. Create a separate Opportunity, WorkRequest, or canonical context change only when that distinct meaning actually exists.
+7. [AI] Preserve the useful proposition and its evidence/usage scope as an organization-owned strategy Asset. Create a separate Opportunity, WorkRequest, or canonical context change only when that distinct meaning actually exists.
