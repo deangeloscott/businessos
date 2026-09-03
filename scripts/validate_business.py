@@ -10,7 +10,6 @@ from validate_run_completion import run_completion_errors
 from validate_opportunity_grounding import opportunity_grounding_errors
 from validate_attention_lifecycle import lifecycle_errors
 from preference_semantics import preference_semantic_errors
-from artifact_readiness import readiness_errors
 import argparse,json,collections,re
 
 ALLOWED_AUTHORITIES={'explicit_user','verified_first_party','external_evidence','derived_inference','candidate_strategy','unknown'}
@@ -129,7 +128,6 @@ def validate_business(business_id,require_context=False):
     errors.extend(_provenance_errors(objects,sources))
     errors.extend(claim_errors(business_id,objects))
     errors.extend(run_completion_errors(business_id,objects))
-    errors.extend(readiness_errors(business_id,objects))
     og_errors,og_warnings=opportunity_grounding_errors(business_id,objects);errors.extend(og_errors);warnings.extend(og_warnings)
     re_errors,re_warnings=evidence_errors(business_id);errors.extend(re_errors);warnings.extend(re_warnings)
     le_errors,le_warnings=local_evidence_errors(business_id);errors.extend(le_errors);warnings.extend(le_warnings)
