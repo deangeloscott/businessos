@@ -18,4 +18,4 @@ Industry Intelligence owns reusable operating knowledge for understanding extern
 The active model/user chooses which methods are useful next. The active harness/runtime owns browsing/tools, scheduling, notifications, execution, and delegation mechanics.
 
 ## AI execution
-Do not load this entire system. Retrieve the smallest relevant context and choose, combine, adapt, skip, or replace useful methods with model/user judgment. Candidate Playbooks and `process-map.json` are navigation/composition help, not semantic routing authority or runtime order.
+Do not load this entire system. Retrieve the smallest relevant context and choose, combine, adapt, skip, or replace useful methods with model/user judgment. Candidate Playbooks and `process-map.json` are lightweight navigation help, not semantic routing authority, Workflow composition, or runtime order.
