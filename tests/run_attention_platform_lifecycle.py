@@ -105,6 +105,15 @@ def main():
             bos=(json.loads(p.read_text()).get('extensions') or {}).get('businessos',{})
             req('run_ref' not in bos and 'run_id' not in bos,'AttentionItem became Run-bound again')
 
+        # Retention classification belonged to the retired age-based lifecycle. Explicit
+        # status + explicit archive choice is sufficient; no dead retention class should return.
+        attention_schema=json.loads((ROOT/'core/schemas/action/attention-item.schema.json').read_text())
+        platform_schema=json.loads((ROOT/'core/schemas/intelligence/platform-change.schema.json').read_text())
+        req('retention_class' not in attention_schema.get('properties',{}),'AttentionItem regained obsolete retention_class')
+        req('retention_class' not in platform_schema.get('properties',{}),'PlatformChange regained obsolete retention_class')
+        req('retention_class' not in (S/'upsert_attention.py').read_text(),'attention creation regained retention-class plumbing')
+        req('retention_class' not in (S/'record_platform_change.py').read_text(),'platform-change creation regained retention-class plumbing')
+
         plan=build_plan(BID,'core.attention.manage')
         req('core/policies/attention-lifecycle.md' in plan['files'],'attention SOP should load attention continuity policy')
         policy=(ROOT/'core/policies/attention-lifecycle.md').read_text()
@@ -115,7 +124,7 @@ def main():
         req('archive_history.py' in workflow and 'Elapsed time alone is not a retention decision' in workflow,'attention Workflow did not preserve explicit archival boundary')
         req(not (S/'maintain_lifecycle.py').exists(),'retired age-based lifecycle helper still exists')
 
-        print('attention/platform continuity regression passed with explicit history retention and no Run, approval, scheduler, delivery-channel, or age-based semantic authority')
+        print('attention/platform continuity regression passed with explicit history retention and no Run, approval, scheduler, delivery-channel, age-based, or retention-class semantic authority')
     finally:
         if BASE.exists():shutil.rmtree(BASE)
         runtime=ROOT/'runtime'/BID
