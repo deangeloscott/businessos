@@ -4,9 +4,9 @@ type: workflow
 owner_system: marketing-synthesis
 reads:
 - type: Insight
-  owner_system: customer-intelligence
+  domain: customer-intelligence
 - type: Insight
-  owner_system: competitor-intelligence
+  domain: competitor-intelligence
 - Asset
 - MetricObservation
 writes:
@@ -16,10 +16,6 @@ context:
 - Brand
 - Objective
 - Offer
-workflows:
-  conditional:
-  - id: marketing.offer.diagnosis
-    when: evidence suggests the actual Offer structure, not only presentation, is limiting response
 ---
 # Offer Presentation Strategy
 
@@ -38,5 +34,5 @@ Use when an existing Offer needs clearer or stronger commercial presentation. An
 3. [AI] Determine presentation order and emphasis: value/outcome, mechanism, inclusions, proof, risk reversal, price/terms, fit, CTA.
 4. [HYBRID] Ensure presentation does not silently change actual commercial terms. If the organization wants to consider a real Offer change, use `marketing.offer.diagnosis` or direct business reasoning as useful; proposing a change is not adopting it.
 5. [AI] Identify information/proof gaps that prevent credible presentation.
-6. [AI] Preserve asset-ready Offer presentation guidance as a Marketing-owned strategy Asset.
+6. [AI] Preserve asset-ready Offer presentation guidance as an organization-owned strategy Asset.
 7. [HYBRID] If the organization actually establishes a new Offer term/structure, update canonical Offer truth through the normal current-context path with provenance. Keep unresolved ideas labeled as candidate strategy; do not manufacture a ContextUpdateProposal, WorkRequest, approval object, or Opportunity merely because a change was considered.
