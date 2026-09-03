@@ -104,7 +104,7 @@ def main():
         meta,body=ws[wid][1],ws[wid][2]
         req('schedule' not in meta,f'{wid} reintroduced AURA-owned schedule metadata')
         req('capabilities' not in meta,f'{wid} reintroduced AURA capability ontology')
-        req(not (meta.get('workflows') or {}).get('required'),f'{wid} reintroduced mandatory supporting-Workflow composition')
+        req('workflows' not in meta,f'{wid} reintroduced supporting-Workflow composition metadata')
         req('WorkRequest' not in (meta.get('writes') or []),f'{wid} writes WorkRequest as orchestration state')
         req('route-learning' not in body,f'{wid} reintroduced retired route-learning controller')
         req(contains(body,'model') or contains(body,'active model'),f'{wid} lost explicit capable-model judgment')
@@ -128,6 +128,6 @@ def main():
     for rel,wid in map_expected.items():
         data=json.loads((ROOT/rel).read_text());req(wid in [a.get('entry_workflow') for a in data.get('activities',[])],f'{rel} missing radar Workflow {wid}')
 
-    print(f'ecosystem intelligence regressions passed: shared evidence methods + {len(DOMAIN_IDS)} domain radars without required composition, routing, or runtime authority')
+    print(f'ecosystem intelligence regressions passed: shared evidence methods + {len(DOMAIN_IDS)} domain radars without composition, routing, or runtime authority')
 
 if __name__=='__main__':main()
