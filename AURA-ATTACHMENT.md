@@ -1,4 +1,4 @@
-# AURA Attachment Contract
+# AURA Attachment Guide
 
 AURA can be useful even when the active AI starts outside the AURA product folder or organization workspace.
 
@@ -39,7 +39,7 @@ When Skills are unavailable or another host-native mechanism is simpler, attach 
 - an MCP/tool description or connector;
 - another equivalent persistent mechanism.
 
-The adapter should communicate only the small durable contract below and give the model a way to reach AURA files/helpers.
+The adapter should communicate only the small durable guidance below and give the model a way to reach AURA files/helpers.
 
 > ViralTrac AURA is available at `<AURA_ROOT>`. For substantive work for an AURA-managed organization, consult relevant AURA organizational memory and operating knowledge when it can materially improve the work. Use your normal tools, other Skills, and best judgment freely. After useful work, preserve the smallest durable organizational meaning that will materially help future work. Ignore AURA for unrelated work.
 
@@ -93,7 +93,7 @@ The adapter should call AURA-owned files/helpers rather than reimplementing AURA
 
 ## Working directly inside AURA
 
-Harnesses that automatically read `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, or equivalent project instructions may already receive the local AURA contract when they enter the folder. The persistent/global attachment matters most when work starts somewhere else.
+Harnesses that automatically read `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, or equivalent project instructions may already receive the local AURA guidance when they enter the folder. The persistent/global attachment matters most when work starts somewhere else.
 
 ## What attachment must not become
 
