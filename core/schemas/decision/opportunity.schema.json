@@ -16,7 +16,7 @@
     },
     "title": {"type": "string", "minLength": 1},
     "statement": {"type": "string", "minLength": 1},
-    "status": {"enum": ["candidate", "investigating", "qualified", "prioritized", "committed", "active", "evaluating", "closed", "blocked", "rejected", "superseded", "reopened"]},
+    "status": {"enum": ["candidate", "investigating", "qualified", "prioritized", "blocked", "rejected", "superseded", "reopened", "closed"]},
     "objective_refs": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
     "origin_insight_refs": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
     "evidence_links": {"type": "array"},
@@ -60,7 +60,7 @@
   "required": ["id", "object_type", "schema_version", "business_id", "owner_system", "title", "statement", "status", "objective_refs"],
   "allOf": [
     {
-      "if": {"properties": {"status": {"enum": ["qualified", "prioritized", "committed", "active"]}}, "required": ["status"]},
+      "if": {"properties": {"status": {"enum": ["qualified", "prioritized"]}}, "required": ["status"]},
       "then": {"required": ["reasoning_basis"]}
     }
   ]
