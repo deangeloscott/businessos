@@ -13,7 +13,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'scripts'))
 
 from _common import workflow_files,read_frontmatter,selector_type
-from canonical_store import INSTANCE_PATHS
+from canonical_store import INSTANCE_PATHS,schema_entry
 
 
 def req(condition,message):
@@ -40,6 +40,16 @@ def main():
     for typ,rel in INSTANCE_PATHS.items():
         top=str(rel).split('/',1)[0]
         req(top not in {'runtime','config','distribution','generated'},f'{typ} canonical state leaked into non-organization namespace: {rel}')
+
+    # The organization owns durable memory. Operating-knowledge areas may classify semantic
+    # domain where useful, but canonical truth must not belong to or be produced by an AURA
+    # subsystem. This is intentionally dynamic so new canonical types inherit the invariant.
+    retired_ownership_fields={'owner_system','owner_systems','producer_system'}
+    for typ in canonical:
+        _,schema=schema_entry(typ)
+        props=set((schema.get('properties') or {}))
+        leaked=sorted(retired_ownership_fields & props)
+        req(not leaked,f'{typ} canonical schema reintroduced internal AURA ownership/producer fields: {leaked}')
 
     # Organization initialization must derive durable directories from the same canonical
     # model rather than a second hand-maintained list.
@@ -69,6 +79,11 @@ def main():
         for selector in meta.get('reads',[]) or []:
             typ=selector_type(selector)
             if typ not in canonical: errors.append(f'{rel}: read type {typ} is outside canonical organization state')
+            if isinstance(selector,dict):
+                stale=sorted({'owner_system','owner_scope'} & set(selector))
+                if stale:errors.append(f'{rel}: canonical read selector reintroduced internal ownership fields {stale}; use semantic domain/scope when classification is useful')
+                unsupported=sorted(set(selector)-{'type','domain','scope'})
+                if unsupported:errors.append(f'{rel}: unsupported canonical read selector keys {unsupported}')
         for item in meta.get('writes',[]) or []:
             typ=selector_type(item)
             if typ not in canonical: errors.append(f'{rel}: write type {typ} is outside canonical organization state')
