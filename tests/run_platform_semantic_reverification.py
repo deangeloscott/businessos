@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""RC11 regressions for semantic PlatformChange re-verification across wording changes."""
+"""Regressions for semantic PlatformChange re-verification across wording changes."""
 from pathlib import Path
 import json, shutil, subprocess, sys
 ROOT=Path(__file__).resolve().parents[1]; S=ROOT/'scripts'
