@@ -8,11 +8,9 @@ The goal is not to prescribe every move. Give capable intelligence the **fewest 
 
 Workflow frontmatter is lightweight machine-readable retrieval/context metadata. The body contains the actual operating knowledge. Generated indexes and navigation are derived; do not edit them manually.
 
-Internal source paths and stable IDs may still use the historical word `contract` for compatibility. That is an implementation detail, not a model-facing concept and not execution authority.
-
 ## Required frontmatter
 
-Use only:
+Use:
 
 - `id` — stable namespaced Workflow identifier;
 - `type: workflow`;
@@ -20,13 +18,18 @@ Use only:
 - `reads` — durable organization object types/selectors that may help the Workflow;
 - `writes` — durable outputs the Workflow may materially produce.
 
-Add `context`, `workflows`, `evidence_inputs`, `artifact_role`, `completion_evidence`, or explicit references only when they add real value.
+Add only when they materially improve retrieval or validation:
 
-- `reads` and `writes` help retrieval/comprehension. They are not permissions, quotas, or a required object lifecycle.
-- `workflows.required` / `workflows.conditional` identify other reusable Workflows that contain important supporting knowledge. They do **not** define execution order, service calls, handoffs, scheduling, or a required Run ledger.
-- `completion_evidence` may describe useful structural evidence expectations for validation or qualification. It does not create a separate completion regime.
+- `context` — especially relevant durable Business Context types;
+- `evidence_inputs` — external/high-volume evidence categories the work may need;
+- `completion_evidence` — explicit structural evidence expectations when genuinely useful;
+- `references` — exact AURA reference files that should accompany the Workflow.
 
-Do **not** add generic capability IDs, tool/provider bindings, `version`, `risk`, `autonomy_ceiling`, Approval, ActionPacket, scheduler, event, host-discovery, runtime-permission, or execution-status metadata to Workflows.
+`reads` and `writes` help retrieval/comprehension. They are not permissions, quotas, or a required object lifecycle.
+
+Do **not** add `workflows`, `artifact_role`, generic capability IDs, tool/provider bindings, `version`, `risk`, `autonomy_ceiling`, Approval, ActionPacket, scheduler, event, host-discovery, runtime-permission, semantic-routing, or execution-status metadata to Workflows.
+
+Related reusable procedures may be referenced from Playbook/process-map navigation when that improves discovery. Workflow frontmatter itself does not define a composition or execution graph.
 
 ## Required body
 
@@ -64,11 +67,11 @@ Do not persist an object merely because it appears in `writes`. Persist it only 
 
 Likewise, do not force a request through an AURA Workflow merely so the work can be recorded. A capable model may use a Playbook, one or more Workflows, an external Skill, a model-created method, or ad hoc reasoning as appropriate.
 
-## Workflow composition
+## Related Workflows
 
-Use `workflows.required` only when supporting operating knowledge is normally essential to performing this Workflow well. Use `workflows.conditional` when it matters only under a stated condition.
+Keep independently useful procedures independently retrievable. A Playbook or process map may point to related entry/supporting Workflows for navigation, but those references do not force execution order.
 
-Composition metadata means **knowledge composition**, not runtime orchestration. The model may sequence, parallelize, adapt, combine, partially use, or replace methods based on the actual job.
+The model may sequence related Workflows, parallelize independent work, use only relevant portions, combine them with outside Skills, or choose another sound method.
 
 Do not split natural work merely to create departments, service boundaries, queues, or handoffs. Create another Workflow only when the procedure is independently reusable or materially distinct.
 
