@@ -4,7 +4,7 @@ type: workflow
 owner_system: seo-aeo
 reads:
 - type: Insight
-  owner_system: seo-aeo
+  domain: seo-aeo
 - Learning
 - SourceRecord
 - Observation
@@ -47,7 +47,7 @@ These are model/user choices based on the situation, not deterministic runtime r
 
 ## Verification
 - Material policy conclusions are traceable to current authoritative evidence.
-- Evidence strength, conclusion confidence, official-policy status, applicability, and practical consequence remain distinct.
+- Evidence strength, material uncertainty, official-policy status, applicability, and practical consequence remain distinct.
 - No private state from another organization is implicitly consumed.
 - A later external state mutation is performed through the active model/harness when actually requested and capable; optional ChangeEvent/VerificationRecord state is memory, not permission.
 
