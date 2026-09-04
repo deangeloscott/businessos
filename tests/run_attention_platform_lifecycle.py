@@ -119,7 +119,7 @@ def main():
         policy=(ROOT/'core/policies/attention-lifecycle.md').read_text()
         req('Attention is organizational memory' in policy and 'proof that a background task exists' in policy and 'not execution authority' in policy,'attention policy lost the runtime boundary')
         req('elapsed time is not semantic authority' in policy.lower(),'attention policy reintroduced age as semantic retention authority')
-        req('90 days' not in policy and '180 days' not in policy,'attention policy retained arbitrary age-based archival thresholds')
+        req('arbitrary interval' in policy.lower(),'attention policy lost the explicit rejection of arbitrary age thresholds')
         workflow=(ROOT/'core/workflows/attention/manage/CONTEXT.md').read_text()
         req('archive_history.py' in workflow and 'Elapsed time alone is not a retention decision' in workflow,'attention Workflow did not preserve explicit archival boundary')
         req(not (S/'maintain_lifecycle.py').exists(),'retired age-based lifecycle helper still exists')
