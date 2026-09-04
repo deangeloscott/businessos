@@ -1,6 +1,6 @@
 ---
 id: seo.incidents.local-profile-suspension
-type: incident
+type: workflow
 owner_system: seo-aeo
 reads:
 - SEOAssetState
