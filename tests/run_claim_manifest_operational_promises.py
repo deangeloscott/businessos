@@ -21,7 +21,6 @@ A 30-minute walkthrough with our team.
 No setup required to see the demo.
 """)
 
-        # Candidate scanning remains an optional review aid; its output is not semantic authority.
         cands=scan_claims(BID,p)
         req(cands,'review helper should surface at least some candidate text')
 
@@ -45,18 +44,18 @@ No setup required to see the demo.
         manifest=[{'text':'CrewBeacon provides written estimates.','classification':'approved_business_claim','support_refs':['clm_supported']}]
         req(not validate_manifest_entries(manifest,idx,'asset.json'),'trusted support refs should pass structural claim validation')
 
-        # Semantic equivalence is intentionally not decided by deterministic validation.
         semantically_questionable=[{'text':'CrewBeacon guarantees every lead closes tomorrow.','classification':'approved_business_claim','support_refs':['clm_supported']}]
         req(not validate_manifest_entries(semantically_questionable,idx,'asset.json'),'deterministic validator must not police natural-language semantic equivalence')
 
         invalid=[{'text':'Anything','classification':'model_says_true','support_refs':['clm_supported']}]
         req(any('invalid classification' in e for e in validate_manifest_entries(invalid,idx,'asset.json')),'manifest vocabulary remains structurally bounded when used')
 
+        # claim_errors resolves support from durable organization memory, so persist the
+        # trusted claim before exercising an Asset's optional manifest end to end.
+        claim_path=BASE/'context/claims/clm_supported.json';claim_path.parent.mkdir(parents=True,exist_ok=True);claim_path.write_text(json.dumps(claim,indent=2)+'\n')
         asset['extensions']['businessos']['claim_manifest']=manifest
         req(not claim_errors(BID,[(asset,BASE/'assets/ast_claim_fixture.json')]),'optional structurally grounded manifest should pass')
 
-        # Claim validation applies to the organization-owned Asset itself, independent of
-        # whichever AURA operating-knowledge area or external method may have informed it.
         other=dict(asset);other['id']='ast_other_method';other['extensions']={'businessos':{'claim_manifest':[{'text':'Anything','classification':'approved_business_claim','support_refs':[]}]}}
         errs=claim_errors(BID,[(other,BASE/'assets/ast_other_method.json')])
         req(any('requires support_refs' in e for e in errs),'claim validation was incorrectly gated by AURA method/module context')
