@@ -70,6 +70,22 @@ def main():
     competitor_profiles=props('Competitor')['identities']['properties']['profiles']['items'].get('properties',{})
     req('confidence' not in competitor_profiles,'Competitor identity match reintroduced numeric confidence beside qualitative/evidence state')
 
+    # One durable meaning gets one natural canonical home. Brand owns expression; reusable
+    # outward claim truth belongs in BusinessClaim. Objective rank is optional organization
+    # context, never a required value fabricated from input/storage order.
+    brand_props=set(props('Brand'))
+    req(not ({'approved_claims','claims_to_avoid'}&brand_props),'Brand reintroduced duplicate claim ownership; use BusinessClaim')
+    _,objective_schema=schema_entry('Objective')
+    req('priority' not in set(objective_schema.get('required') or []),'Objective priority became mandatory instead of explicit optional context')
+    bootstrap=(ROOT/'scripts/bootstrap_explicit_context.py').read_text()
+    req("'priority':i" not in bootstrap and '"priority":i' not in bootstrap,'onboarding reintroduced objective priority from list position')
+
+    # Canonical ids must remain unambiguous across object types. PreferenceProfile formerly
+    # shared prf_* with ProofRecord; keep their namespaces distinct.
+    pref_pattern=props('PreferenceProfile')['id'].get('pattern');proof_pattern=props('ProofRecord')['id'].get('pattern')
+    req(pref_pattern and proof_pattern and pref_pattern!=proof_pattern,'PreferenceProfile and ProofRecord id namespaces collided')
+    req(pref_pattern.startswith('^pref_') and proof_pattern.startswith('^prf_'),'expected distinct pref_* and prf_* canonical namespaces')
+
     init_text=(ROOT/'scripts/init_business.py').read_text()
     req('from canonical_store import INSTANCE_PATHS' in init_text,'init_business must derive organization directories from canonical_store.INSTANCE_PATHS')
     req('operations/action-packets' not in init_text and 'operations/approvals' not in init_text,'retired ActionPacket/Approval directories re-entered organization initialization')
