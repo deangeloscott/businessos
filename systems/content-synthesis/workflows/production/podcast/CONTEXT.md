@@ -2,7 +2,6 @@
 id: content.production.podcast
 type: workflow
 owner_system: content-synthesis
-artifact_role: customer_facing_production_root
 reads:
 - WorkRequest
 - Opportunity
@@ -15,15 +14,6 @@ writes:
 context:
 - AudienceSegment
 - Brand
-workflows:
-  required:
-  - content.intake.content-brief
-  - content.strategy.audience-context
-  - content.strategy.core-message
-  - content.strategy.narrative-structure
-  - content.production.outline
-  - content.production.audio-direction
-  - content.qa.pre-publish
 ---
 # Podcast Episode Production
 
@@ -37,10 +27,10 @@ Create or improve podcast episode production so the source idea is communicated 
 Run when an Opportunity or WorkRequest requires podcast episode production and existing Assets do not already satisfy the communication need.
 
 ## Process
-1. [AI] Define listener promise, format (solo/interview/cohost/narrative), expected listening context, depth, and CTA.
+1. [AI] Define listener promise, format (solo/interview/cohost/narrative), expected listening context, depth, and CTA. Draw on current audience, message, narrative, outline, audio-direction, or related operating knowledge only when useful.
 2. [AI] Build episode arc with cold open/introduction, segments/questions, stories/examples, transitions, synthesis, and close.
 3. [HYBRID] For interviews, design questions that elicit evidence/stories rather than scripted agreement.
 4. [AI] Produce host script/talking points, research notes, pronunciation/source notes, and edit markers.
-5. [INTEGRATION] Record/generate/edit audio where capabilities exist or produce a complete recording/edit packet.
-6. [HYBRID] Review audio quality, factual claims, pacing, repetition, ads/disclosures, and final metadata/show notes.
-7. [DETERMINISTIC] Save episode Asset and transcript/source references.
+5. [INTEGRATION] Record/generate/edit audio where capabilities exist or preserve a complete recording/edit specification when that remains useful.
+6. [HYBRID] Review audio quality, factual claims, pacing, repetition, ads/disclosures, and final metadata/show notes. Draw on pre-publish QA operating knowledge when an additional integrated review is useful.
+7. [DETERMINISTIC] Save the useful versioned episode Asset and transcript/source references.
