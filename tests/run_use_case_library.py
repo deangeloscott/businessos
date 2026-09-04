@@ -31,7 +31,7 @@ def main():
                 path=BASE/p[key];req(path.is_file(),f"missing {key} for {c['id']}: {p[key]}")
             request=(BASE/p['request']).read_text(encoding='utf-8').strip();req(request,f"empty request: {c['id']}")
             lower=request.lower();req(not any(x in lower for x in forbidden),f"candidate request leaks evaluator framing: {c['id']}")
-            judge=(BASE/p['judge']).read_text(encoding='utf-8');req('Expected business outcome' in judge,f"judge guidance lacks outcome framing: {c['id']}")
+            judge=(BASE/p['judge']).read_text(encoding='utf-8');req('# Expected' in judge,f"judge guidance lacks outcome framing: {c['id']}")
     req(longitudinal>=2,'need at least two longitudinal/change-oriented cases')
     p=subprocess.run([sys.executable,str(ROOT/'qualification/use_case_coverage.py')],cwd=ROOT,capture_output=True,text=True)
     req(p.returncode==0,f'use-case coverage validation failed:\n{p.stdout}\n{p.stderr}')
