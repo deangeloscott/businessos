@@ -1,0 +1,71 @@
+{
+  "format_version": "1.0",
+  "purpose": "Maintainer-only index for realistic blind AURA business-use qualification. Never expose this file or its paths to the candidate.",
+  "cases": [
+    {
+      "id": "saas-positioning-page",
+      "kind": "cross-domain",
+      "industry": "b2b-saas",
+      "fixture": "atlasops-saas",
+      "request": "requests/saas-positioning-page.md",
+      "judge": "judges/saas-positioning-page.md",
+      "domains": ["customer-intelligence", "competitor-intelligence", "marketing-synthesis"],
+      "workflows": ["competitor.analysis.competitive-position", "marketing.strategy.positioning", "marketing.assets.landing-page"]
+    },
+    {
+      "id": "local-service-lead-conversion",
+      "kind": "cross-domain",
+      "industry": "local-services",
+      "fixture": "harbor-hvac",
+      "request": "requests/local-service-lead-conversion.md",
+      "judge": "judges/local-service-lead-conversion.md",
+      "domains": ["customer-intelligence", "competitor-intelligence", "seo-aeo", "customer-optimization"],
+      "workflows": []
+    },
+    {
+      "id": "ecommerce-offer-launch",
+      "kind": "cross-domain",
+      "industry": "ecommerce",
+      "fixture": "northline-commerce",
+      "request": "requests/ecommerce-offer-launch.md",
+      "judge": "judges/ecommerce-offer-launch.md",
+      "domains": ["customer-intelligence", "competitor-intelligence", "marketing-synthesis", "content-synthesis"],
+      "workflows": []
+    },
+    {
+      "id": "research-to-executive-brief",
+      "kind": "composed",
+      "industry": "b2b-saas",
+      "fixture": "atlasops-saas",
+      "request": "requests/research-to-executive-brief.md",
+      "judge": "judges/research-to-executive-brief.md",
+      "domains": ["industry-intelligence", "competitor-intelligence", "core"],
+      "workflows": ["core.intelligence.ecosystem-radar"]
+    },
+    {
+      "id": "saas-memory-evolution",
+      "kind": "longitudinal",
+      "industry": "b2b-saas",
+      "fixture": "atlasops-saas",
+      "domains": ["customer-intelligence", "marketing-synthesis", "core"],
+      "workflows": ["marketing.assets.landing-page"],
+      "stages": [
+        {
+          "request": "requests/saas-memory-01-customer-direction.md",
+          "judge": "judges/saas-memory-01-customer-direction.md"
+        },
+        {
+          "request": "requests/saas-memory-02-launch-page.md",
+          "judge": "judges/saas-memory-02-launch-page.md",
+          "fresh_model_context": true
+        },
+        {
+          "request": "requests/saas-memory-03-new-evidence.md",
+          "judge": "judges/saas-memory-03-new-evidence.md",
+          "release_fixture": "later_period",
+          "fresh_model_context": true
+        }
+      ]
+    }
+  ]
+}
