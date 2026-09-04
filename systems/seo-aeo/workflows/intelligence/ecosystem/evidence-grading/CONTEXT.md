@@ -4,7 +4,7 @@ type: workflow
 owner_system: seo-aeo
 reads:
 - type: Insight
-  owner_system: seo-aeo
+  domain: seo-aeo
 - Learning
 - Observation
 - SourceRecord
@@ -15,14 +15,11 @@ writes:
 - Learning
 evidence_inputs:
 - eligible s
-updates:
-  Insight:
-  - updated evidence links confidence
 ---
 # SEO Strategy Evidence Assessment
 
 ## Purpose
-Assess the strength, relevance, confidence, applicability, and uncertainty of evidence supporting or contradicting an SEO/AEO strategy claim without collapsing those dimensions into one grade.
+Assess the strength, relevance, applicability, and uncertainty of evidence supporting or contradicting an SEO/AEO strategy claim without collapsing those dimensions into one score.
 
 ## Business Outcome
 Keep SEO/AEO strategy current, evidence-backed, and connected to measurable organic/business outcomes without creating a parallel strategy store or importing private Learning from another organization.
@@ -38,7 +35,7 @@ Do not treat a publication, practitioner opinion, competitor behavior, one busin
 2. [AI] Assess source authority for the fact type, methodological quality, sample size/diversity, controls, recency, platform specificity, reproducibility, and whether the observed outcome is a business result or only a proxy.
 3. [AI] Describe evidence strength at the resolution useful for the decision—for example direct/authoritative, strongly replicated, strong organization-specific evidence, credible emerging evidence, plausible hypothesis, speculative, or contradicted/obsolete. Keep policy prohibition/status separate from evidence strength.
 4. [AI] Record applicability conditions and distinguish platform-documented behavior, external inference, public/general evidence, and active-organization evidence. Deterministic AURA validates references/provenance; the capable model judges semantic applicability.
-5. [AI] Set conclusion confidence independently from evidence strength and preserve unresolved contradictions or causal ambiguity.
+5. [AI] State material uncertainty, contradictions, causal ambiguity, and how strongly the evidence supports the conclusion in ordinary language rather than manufacturing a universal confidence score.
 6. [HYBRID] Create/update the candidate Insight or organization-owned SEO Domain Learning at the narrowest justified maturity. Never promote a tactic merely because wording sounds confident or it is popular.
 
 ## Related operating knowledge
@@ -51,7 +48,7 @@ These are optional operating methods selected by the model/user, not runtime rou
 
 ## Verification
 - Source/Observation lineage remains inspectable.
-- Evidence strength, conclusion confidence, policy status, applicability, and practical consequence remain distinct.
+- Evidence strength, uncertainty, policy status, applicability, and practical consequence remain distinct.
 - No private state from another organization is implicitly consumed.
 - Any later external mutation is performed by the active host when requested/capable; optional ChangeEvent/VerificationRecord state is memory, not permission.
 
