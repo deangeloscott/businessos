@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Validate intra-organization canonical references from the canonical organization model."""
 from _common import *
-from canonical_store import INSTANCE_PATHS,schema_entry
+from canonical_store import INSTANCE_PATHS
 import argparse,json,re
 
 
@@ -10,12 +10,18 @@ def canonical_reference_pattern():
 
     Retired canonical prefixes disappear when their canonical types disappear; new canonical
     types become reference-valid automatically. Runtime/config/package interface schemas do
-    not become canonical references merely because they also have ids.
+    not become canonical references merely because they also have ids. This derives directly
+    from source schemas and does not require generated registries.
     """
+    schema_by_title={}
+    for path in schemas():
+        try:data=json.loads(path.read_text())
+        except Exception:continue
+        title=data.get('title')
+        if title in INSTANCE_PATHS:schema_by_title[title]=data
     prefixes=set()
     for title in INSTANCE_PATHS:
-        try:_,data=schema_entry(title)
-        except Exception:continue
+        data=schema_by_title.get(title) or {}
         pattern=(((data.get('properties') or {}).get('id') or {}).get('pattern') or '')
         match=re.match(r'^\^([A-Za-z0-9]+)_',pattern)
         if match:prefixes.add(match.group(1))
