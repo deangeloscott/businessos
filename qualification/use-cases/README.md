@@ -10,12 +10,12 @@ The library is maintainer-only. **Candidates must never see this directory, its 
 
 ```text
 qualification/use-cases/
-  library.json          # maintainer-only coverage and pairing metadata
+  library.json          # maintainer-only pairing and coverage metadata
   requests/             # ordinary user requests, source material for the harness
   judges/               # hidden expected-outcome guidance for independent review
 ```
 
-Business context continues to come from ordinary staged organization material. When a case is prepared, the candidate receives only:
+Business context comes from ordinary staged organization material under `qualification/fixtures/`. When a case is prepared, the candidate receives only:
 
 1. a neutral staged AURA product with no `qualification/` or test files;
 2. a neutral organization workspace containing normal business files;
@@ -23,6 +23,33 @@ Business context continues to come from ordinary staged organization material. W
 4. the model/harness's ordinary tools and Skills.
 
 The candidate does **not** receive a case folder, case ID, target Workflow, coverage metadata, rubric, judge file, expected outcome, checkpoint, receipt, evaluator state, or benchmark terminology.
+
+## Current shape
+
+The library is intentionally organized around **real business jobs**, not around one artificial prompt per Workflow. It currently includes dozens of cases spanning:
+
+- B2B SaaS;
+- local services;
+- ecommerce;
+- creator/media;
+- professional services;
+- customer research and objection/segment work;
+- competitor/pricing/positioning work;
+- industry and market-change research;
+- SEO/AEO and local discovery;
+- content and creative production;
+- offers, pages, campaigns, and nurture;
+- conversion, retention, and subscription work;
+- cross-domain prioritization;
+- longitudinal memory and contradictory/new evidence.
+
+Run the small maintainer coverage view at any time:
+
+```bash
+python3 qualification/use_case_coverage.py
+```
+
+That report is descriptive only. It tells us what the library appears to exercise; it never tells the candidate how to work.
 
 ## Requests
 
@@ -50,12 +77,14 @@ The independent judge should inspect the actual result, evidence, relevant organ
 
 - which industries and business shapes are represented;
 - which operating areas are exercised;
-- which authored Workflows are exercised directly or as part of larger work;
-- whether the case is atomic, composed, cross-domain, or longitudinal.
+- which authored Workflows are clearly exercised directly or as part of larger work;
+- whether the case is composed, cross-domain, or longitudinal.
 
 Coverage metadata is never candidate-visible and is not an execution specification.
 
-The goal is not one synthetic prompt per Workflow. The goal is a compact set of **high-value, realistic business jobs** whose combined coverage gives strong evidence that AURA's operating knowledge works in actual use.
+The goal is **not** one synthetic prompt per Workflow. The goal is a compact but broad set of high-value, realistic business jobs whose combined coverage gives strong evidence that AURA's operating knowledge works in actual use.
+
+As the library matures, explicit Workflow coverage should expand toward the full authored inventory. That mapping is for maintainer confidence and gap-finding only. A case can validly exercise additional Workflows that were not predeclared, and the model is never required to invoke the mapped ones by ID.
 
 ## Longitudinal cases
 
@@ -70,9 +99,27 @@ The existing qualification staging boundary remains mandatory:
 - candidate product/workspace and evaluator state are physically separate;
 - `qualification/`, tests, judge files, case metadata, checkpoints, and evaluator files are not copied into the staged product;
 - candidate-visible paths use neutral names;
-- hidden criteria remain evaluator-side for the entire run.
+- hidden criteria remain evaluator-side for the entire run;
+- the candidate should not have filesystem access to the source checkout.
 
 If a harness cannot enforce that boundary, do not use it for blind qualification.
+
+## How to run one case
+
+```bash
+python3 qualification/prepare_run.py --case <case-id>
+python3 qualification/task_controller.py start /path/to/run
+```
+
+Give the worker only the neutral product/workspace and the printed ordinary request. After the worker finishes:
+
+```bash
+python3 qualification/task_controller.py finish /path/to/run
+python3 qualification/evaluate_run.py /path/to/run
+python3 qualification/build_judge_prompt.py /path/to/run
+```
+
+Use a fresh independent judge context, then rerun `evaluate_run.py` after `evaluator/judgments.json` is written.
 
 ## Product-template possibility
 
