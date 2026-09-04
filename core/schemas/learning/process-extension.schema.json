@@ -3,247 +3,39 @@
   "title": "ProcessExtension",
   "type": "object",
   "additionalProperties": false,
-  "description": "Organization-owned reusable operating knowledge that either augments an installed AURA Workflow or defines an organization-local Workflow. It is retrieval context, not execution authority or a product-version contract.",
+  "description": "Organization-owned reusable operating knowledge that augments an installed AURA Workflow or defines an organization-local custom.* Workflow. It is retrieval context, not execution authority or a product-version contract.",
   "properties": {
-    "id": {
-      "type": "string",
-      "pattern": "^pex_[A-Za-z0-9_-]+$"
-    },
-    "object_type": {
-      "const": "ProcessExtension"
-    },
-    "schema_version": {
-      "type": "string",
-      "pattern": "^\\d+\\.\\d+\\.\\d+$"
-    },
-    "business_id": {
-      "type": "string",
-      "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$"
-    },
-    "created_at": {
-      "type": "string",
-      "format": "date-time"
-    },
-    "updated_at": {
-      "type": "string",
-      "format": "date-time"
-    },
-    "mode": {
-      "enum": [
-        "augment_workflow",
-        "local_workflow"
-      ]
-    },
-    "workflow_id": {
-      "type": "string",
-      "minLength": 1
-    },
-    "title": {
-      "type": "string",
-      "minLength": 1
-    },
-    "purpose": {
-      "type": "string",
-      "minLength": 1
-    },
-    "discovery_terms": {
-      "type": "array",
-      "items": {
-        "type": "string",
-        "minLength": 2
-      },
-      "uniqueItems": true
-    },
-    "status": {
-      "enum": [
-        "active",
-        "inactive",
-        "retired"
-      ]
-    },
-    "scope": {
-      "enum": [
-        "business",
-        "team",
-        "role",
-        "operator"
-      ]
-    },
-    "scope_ref": {
-      "type": [
-        "string",
-        "null"
-      ]
-    },
-    "applies_when": {
-      "type": "array",
-      "items": {
-        "type": "string",
-        "minLength": 1
-      },
-      "uniqueItems": true
-    },
-    "does_not_apply_when": {
-      "type": "array",
-      "items": {
-        "type": "string",
-        "minLength": 1
-      },
-      "uniqueItems": true
-    },
-    "instructions": {
-      "type": "array",
-      "items": {
-        "type": "string",
-        "minLength": 1
-      },
-      "minItems": 1
-    },
-    "verification": {
-      "type": "array",
-      "items": {
-        "type": "string",
-        "minLength": 1
-      },
-      "uniqueItems": true
-    },
-    "source_kind": {
-      "enum": [
-        "organization_authored",
-        "learning_evolved"
-      ]
-    },
-    "source_learning_refs": {
-      "type": "array",
-      "items": {
-        "type": "string",
-        "pattern": "^lrn_[A-Za-z0-9_-]+$"
-      },
-      "uniqueItems": true
-    },
-    "source_refs": {
-      "type": "array",
-      "items": {
-        "type": "string",
-        "minLength": 1
-      },
-      "uniqueItems": true
-    },
-    "evidence_refs": {
-      "type": "array",
-      "items": {
-        "type": "string",
-        "minLength": 1
-      },
-      "uniqueItems": true
-    },
-    "extensions": {
-      "type": "object"
-    }
+    "id": {"type": "string", "pattern": "^pex_[A-Za-z0-9_-]+$"},
+    "object_type": {"const": "ProcessExtension"},
+    "schema_version": {"type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$"},
+    "business_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "updated_at": {"type": "string", "format": "date-time"},
+    "workflow_id": {"type": "string", "minLength": 1},
+    "title": {"type": "string", "minLength": 1},
+    "purpose": {"type": "string", "minLength": 1},
+    "discovery_terms": {"type": "array", "items": {"type": "string", "minLength": 2}, "uniqueItems": true},
+    "status": {"enum": ["active", "inactive", "retired"]},
+    "scope": {"enum": ["business", "team", "role", "operator"]},
+    "scope_ref": {"type": ["string", "null"]},
+    "applies_when": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+    "does_not_apply_when": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+    "instructions": {"type": "array", "items": {"type": "string", "minLength": 1}, "minItems": 1},
+    "verification": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+    "source_learning_refs": {"type": "array", "items": {"type": "string", "pattern": "^lrn_[A-Za-z0-9_-]+$"}, "uniqueItems": true},
+    "source_refs": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+    "evidence_refs": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+    "extensions": {"type": "object"}
   },
-  "required": [
-    "id",
-    "object_type",
-    "schema_version",
-    "business_id",
-    "created_at",
-    "updated_at",
-    "mode",
-    "workflow_id",
-    "title",
-    "purpose",
-    "status",
-    "scope",
-    "instructions",
-    "source_kind"
-  ],
+  "required": ["id", "object_type", "schema_version", "business_id", "created_at", "updated_at", "workflow_id", "title", "purpose", "status", "scope", "instructions"],
   "allOf": [
     {
-      "if": {
-        "properties": {
-          "mode": {
-            "const": "local_workflow"
-          }
-        },
-        "required": [
-          "mode"
-        ]
-      },
-      "then": {
-        "properties": {
-          "workflow_id": {
-            "pattern": "^custom\\.[a-z0-9][a-z0-9.-]*$"
-          }
-        }
-      }
+      "if": {"properties": {"scope": {"const": "business"}}, "required": ["scope"]},
+      "then": {"properties": {"scope_ref": {"type": "null"}}}
     },
     {
-      "if": {
-        "properties": {
-          "scope": {
-            "const": "business"
-          }
-        },
-        "required": [
-          "scope"
-        ]
-      },
-      "then": {
-        "properties": {
-          "scope_ref": {
-            "type": "null"
-          }
-        }
-      }
-    },
-    {
-      "if": {
-        "properties": {
-          "scope": {
-            "enum": [
-              "team",
-              "role",
-              "operator"
-            ]
-          }
-        },
-        "required": [
-          "scope"
-        ]
-      },
-      "then": {
-        "properties": {
-          "scope_ref": {
-            "type": "string",
-            "minLength": 1
-          }
-        },
-        "required": [
-          "scope_ref"
-        ]
-      }
-    },
-    {
-      "if": {
-        "properties": {
-          "source_kind": {
-            "const": "learning_evolved"
-          }
-        },
-        "required": [
-          "source_kind"
-        ]
-      },
-      "then": {
-        "required": [
-          "source_learning_refs"
-        ],
-        "properties": {
-          "source_learning_refs": {
-            "minItems": 1
-          }
-        }
-      }
+      "if": {"properties": {"scope": {"enum": ["team", "role", "operator"]}}, "required": ["scope"]},
+      "then": {"properties": {"scope_ref": {"type": "string", "minLength": 1}}, "required": ["scope_ref"]}
     }
   ]
 }
