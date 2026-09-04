@@ -22,6 +22,14 @@ Build a coherent campaign concept and the useful persuasive work needed to carry
 
 **Common entry Workflow:** [Campaign Concept Development](../../systems/marketing-synthesis/workflows/campaigns/campaign-concept/CONTEXT.md)
 
+### Offer Design & Optimization
+
+Diagnose and improve how value is packaged, priced, de-risked, and presented so the offer is more compelling without inventing unsupported value or urgency.
+
+*Try:* “Improve the offer itself, not just the copy around it.”
+
+**Common entry Workflow:** [Offer Diagnosis](../../systems/marketing-synthesis/workflows/offer/diagnosis/CONTEXT.md)
+
 ### Advertising Creative & Copy
 
 Create persuasive ad concepts/copy/creative requirements matched to audience, awareness, funnel/journey role, channel/placement context, current field evidence where useful, and destination.
