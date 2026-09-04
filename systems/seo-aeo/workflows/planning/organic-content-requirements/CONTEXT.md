@@ -7,9 +7,9 @@ reads:
 - OrganicDemandUnit
 - SEOAssetState
 - type: Insight
-  owner_system: customer-intelligence
+  domain: customer-intelligence
 - type: Insight
-  owner_system: competitor-intelligence
+  domain: competitor-intelligence
 - OrganicCompetitorState
 writes:
 - Asset
@@ -38,7 +38,7 @@ Do not add an SEO requirements layer when organic/search/answer discovery is not
 4. [HYBRID] Define search-presentation needs, internal-link/architecture context, structured-data eligibility, localization, crawl/index considerations, and AI-answer/source requirements only where actually relevant.
 5. [AI] Keep organic-discovery requirements separate from creative format and persuasion strategy. Reuse current Brand/Offer/Customer/Marketing context directly where useful rather than routing a request to another AURA system.
 6. [AI] Define the measurements/observations that would later show whether the intended organic mechanism occurred, without forecasting unobserved rankings, citations, traffic, leads, or revenue.
-7. [AI] Produce a concise requirements brief that references durable evidence instead of copying upstream research. Persist it as an internal SEO-owned `Asset` only when future sessions/actors materially benefit; otherwise use the requirements directly in the current work.
+7. [AI] Produce a concise requirements brief that references durable evidence instead of copying upstream research. Persist it as an organization-owned `Asset` only when future sessions/actors materially benefit; otherwise use the requirements directly in the current work.
 8. [AI] If a real handoff across people/models/sessions must survive the current runtime, `core.continuity.manage-handoff` may preserve that organizational handoff separately. This playbook does not create a WorkRequest merely to move work from SEO to Content.
 
 ## Verification
