@@ -1,5 +1,38 @@
 # Changelog
 
+## 0.1.2 — Alpha
+
+This release is the validated architecture-closure baseline for the first-principles AURA refactor. It makes the simplified AURA model the canonical product on `main`: organization-owned memory and reusable operating knowledge for capable AI, without recreating a hidden execution control plane around the model.
+
+### What changed
+
+- Standardized operating knowledge around the simple **Playbook → Workflow → Step** hierarchy and retired Contract-era execution semantics.
+- Removed the remaining capability-ontology, routing, provider-resolution, approval, mandatory lifecycle, composition-graph, and internal handoff residue that did not belong in AURA.
+- Kept reasoning, planning, tool choice, providers, orchestration, scheduling, retries, concurrency, and execution mechanics with the active model/harness.
+- Tightened the canonical organization-memory boundary to **39 organization-owned object types**, with support/interface records kept outside canonical memory and reference traversal.
+- Simplified durable memory semantics around facts, evidence, observations, Insights, decisions, Opportunities, Assets, measurements, outcomes, Learning, preferences, and genuine continuity.
+- Removed generic semantic confidence/priority scoring where it invented precision instead of preserving evidence and uncertainty honestly.
+- Simplified organization-local operating knowledge and Innovation Exchange around direct Workflow identity and Learning provenance without proposal/runtime bureaucracy.
+- Cleaned component packaging so each edition ships only the operating knowledge, schemas, navigation, and user-facing documentation it actually contains.
+- Regenerated the human-facing Playbook and Workflow navigation from the final authored source.
+- Preserved the detailed refactor history with the `aura-architecture-closure-c233a55` tag while squashing the completed architecture update into one coherent `main` commit.
+
+### Validation
+
+The v0.1.2 architecture-closure baseline passed from a clean committed checkout:
+
+- **466 authored Workflows** and **42 Playbooks** generated and validated with **0 errors and 0 warnings**;
+- **34/34 AURA product-integrity suites**;
+- **4/4 qualification-harness self-test suites**;
+- full-distribution validation plus all **9 named component editions**;
+- deterministic regeneration with a clean working tree afterward.
+
+### Current status
+
+AURA is ready for real users and capable AI systems to use and test as an **Alpha** product. The architecture and deterministic integrity layer are validated. The next phase is real-work product proof: whether AURA consistently improves useful business work, memory, retrieval, continuity, Learning, and later work because the organization remembers what matters.
+
+Alpha still means interfaces and Playbooks/Workflows may change before 1.0 when real usage exposes genuine weaknesses.
+
 ## 0.1.1 — Alpha
 
 This release closes the first-principles AURA architecture refactor and establishes the new validated Alpha baseline for real-world use and qualification.
