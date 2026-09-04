@@ -115,11 +115,6 @@
                   "rejected"
                 ]
               },
-              "confidence": {
-                "type": "number",
-                "minimum": 0,
-                "maximum": 1
-              },
               "evidence_refs": {
                 "type": "array",
                 "items": {
@@ -137,7 +132,6 @@
               "external_id",
               "region",
               "status",
-              "confidence",
               "evidence_refs"
             ]
           }
@@ -192,28 +186,6 @@
         "null"
       ]
     },
-    "strategic_summary": {
-      "type": [
-        "string",
-        "null"
-      ]
-    },
-    "strengths": {
-      "type": "array",
-      "items": {
-        "type": "string",
-        "minLength": 1
-      },
-      "uniqueItems": true
-    },
-    "weaknesses": {
-      "type": "array",
-      "items": {
-        "type": "string",
-        "minLength": 1
-      },
-      "uniqueItems": true
-    },
     "active_insight_refs": {
       "type": "array",
       "items": {
@@ -236,11 +208,6 @@
         "null"
       ]
     },
-    "confidence": {
-      "type": "number",
-      "minimum": 0,
-      "maximum": 1
-    },
     "extensions": {
       "type": "object"
     }
@@ -251,7 +218,6 @@
     "schema_version",
     "business_id",
     "name",
-    "competitor_type",
-    "confidence"
+    "competitor_type"
   ]
 }
