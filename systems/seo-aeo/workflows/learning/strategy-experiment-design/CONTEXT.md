@@ -4,7 +4,7 @@ type: workflow
 owner_system: seo-aeo
 reads:
 - type: Learning
-  owner_system: seo-aeo
+  domain: seo-aeo
 - Observation
 - MetricDefinition
 writes:
