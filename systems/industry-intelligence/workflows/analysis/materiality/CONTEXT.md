@@ -18,10 +18,6 @@ context:
 - Objective
 - Offer
 - ProductService
-workflows:
-  conditional:
-  - id: industry.analysis.impact-pathway
-    when: materiality depends on a multi-step causal pathway
 ---
 # Materiality Assessment
 
@@ -37,7 +33,7 @@ When a verified or sufficiently credible IndustryEvent could materially affect a
 ## Process
 1. [AI] Identify potentially affected markets, audiences, products/services, capabilities, economics, compliance, channels, competitors, and timelines from the actual evidence and current business context.
 2. [HYBRID] Assess magnitude, probability/uncertainty, timing, persistence, reversibility, and proximity to active Objectives without inventing precision.
-3. [AI] Distinguish direct operational effect, customer-behavior effect, competitive effect, narrative/content relevance, and speculative second-order effects.
+3. [AI] Distinguish direct operational effect, customer-behavior effect, competitive effect, narrative/content relevance, and speculative second-order effects. Draw on impact-pathway operating knowledge when a multi-step causal chain materially affects the decision; it is not a required subworkflow.
 4. [AI] Use any organization-defined materiality criteria or thresholds as decision context when they actually exist; do not invent a configured threshold framework merely to classify the event.
 5. [AI] Generate plausible alternative interpretations and state what evidence would materially change the assessment.
 6. [AI] State relevance, urgency where real, uncertainty, affected business mechanisms, and possible next considerations without assigning mandatory domain routes or responses.
