@@ -1,6 +1,6 @@
 ---
 id: content.intelligence.creator-monitoring
-type: detector
+type: workflow
 owner_system: content-synthesis
 reads:
 - SourceProfile
