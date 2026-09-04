@@ -34,6 +34,32 @@ Give a capable model/harness the normal AURA product, organization workspace, or
 
 This is the evidence that matters most.
 
+## Preferred pre-user qualification: blind real-world use cases
+
+The simplest useful pre-user proof is the maintainer-only library under [`use-cases/`](use-cases/README.md).
+
+Each use case pairs:
+
+- an ordinary business request;
+- ordinary organization context/fixtures;
+- separate hidden expected-outcome guidance for an independent judge;
+- small evaluator-only coverage metadata.
+
+The candidate never receives the use-case folder, case ID, coverage metadata, judge file, rubric, or evaluator state. `prepare_run.py --case <id>` copies a neutral AURA product and organization workspace outside the source checkout, gives the candidate only the plain request text, and stages the matching judge guidance only in the physically separate evaluator tree.
+
+The library should stay compact and realistic. One strong case may naturally exercise several Workflows or operating areas. We care about whether AURA helps solve the real business job, not about manufacturing one synthetic prompt for every implementation detail.
+
+A longitudinal case is simply several ordinary requests against the same organization workspace, with fresh model context where useful and later evidence released naturally. This tests whether useful work actually compounds and whether organizational understanding evolves when evidence changes.
+
+Example preparation:
+
+```bash
+python3 qualification/prepare_run.py \
+  --case saas-positioning-page
+```
+
+Then use the same blind controller/evaluator flow described below.
+
 ## What qualification protects
 
 A strong qualification run asks whether the candidate:
@@ -61,13 +87,15 @@ The candidate sees only:
 3. available model/harness capabilities;
 4. an ordinary-language business request.
 
-The candidate must not receive the qualification directory, target Workflow/mission ID, rubric, checkpoints, evaluator observations, scoring rules, or benchmark metadata.
+The candidate must not receive the source checkout, qualification directory, use-case library, case ID, target Workflow/mission ID, judge criteria, rubric, checkpoints, evaluator observations, scoring rules, or benchmark metadata.
+
+The candidate runtime should be scoped to the neutral staged product/workspace tree, not the maintainer repository. File/folder names and supplied business material should look like ordinary organizational work, not benchmark fixtures.
 
 Checkpoints, timed fixture release, evaluation mapping, and controller observations are evaluator bookkeeping. They exist to observe the test—not to tell AURA how to work.
 
 ## Representative real-work Workflow
 
-Prepare one representative job:
+The older atomic Workflow path remains useful when diagnosing one specific body of operating knowledge:
 
 ```bash
 python3 qualification/prepare_run.py \
@@ -75,7 +103,9 @@ python3 qualification/prepare_run.py \
   --workflow <workflow-id>
 ```
 
-Start it:
+For pre-user product proof, prefer the realistic use-case library unless an isolated Workflow question actually needs answering.
+
+Start a prepared event:
 
 ```bash
 python3 qualification/task_controller.py start /path/to/run
@@ -132,7 +162,7 @@ Deterministic gates are deliberately small and universal. They protect things su
 
 They do **not** infer from a Workflow ID that a particular artifact, source count, research shape, medium, QA record, or field snapshot must exist.
 
-Professional review decides whether the work is actually complete and good. The reviewer receives the ordinary request, Workflow purpose/outcome/process, observed artifacts and AURA state, evidence references, and relevant business context. If the job actually required a usable artifact, current field research, rendered QA, implementation, measurement, comparison, or another substantive step and that work is absent or weak, the reviewer should score it accordingly.
+Professional review decides whether the work is actually complete and good. For real-world use cases, the reviewer also receives the separate evaluator-only expected-outcome guidance paired with the request. That guidance describes what excellent business work should accomplish; it is not an execution checklist.
 
 High similarity, automation, unusual execution structure, or absence of an AURA Run may be useful review signals, but they are not automatic failures by themselves.
 
@@ -151,21 +181,6 @@ Possible verdicts include:
 
 A deterministic hard-pass is only an integrity floor. It cannot turn mediocre work into `ACCEPTABLE`.
 
-## Qualification layers
-
-Use the smallest layer that answers the question:
-
-0. AURA product integrity — separate deterministic product gate;
-1. atomic job quality;
-2. competitive / field readiness;
-3. composition quality;
-4. medium-specific outcome quality, without benchmarking generic host capability;
-5. domain and cross-domain missions;
-6. reliability across repeated/model/harness runs where material;
-7. observed real-world outcomes.
-
-Do not use one giant run as a substitute for understanding these layers separately.
-
 ## Benchmark businesses
 
 Controlled benchmark organizations provide grounded first-party context while keeping tests repeatable. Synthetic business context never authorizes synthetic external evidence: when a task requires current public research, the candidate must use legitimate sources/capabilities available in the environment.
@@ -174,7 +189,7 @@ Ordinary supplied files may be part of a benchmark scenario because real users a
 
 ## Repetition and diagnosis
 
-Models are probabilistic. Repeat important Workflows enough to distinguish systematic AURA weaknesses from model variance or one-off execution mistakes.
+Models are probabilistic. Repeat important cases enough to distinguish systematic AURA weaknesses from model variance or one-off execution mistakes.
 
 When output is weak, diagnose before changing AURA. Possible causes include:
 
