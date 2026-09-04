@@ -56,7 +56,7 @@ def main():
         create_and_complete('external_skill','Bounded external Skill fixture','competitor-research-skill')
         create_and_complete('model_created','Bounded model-created fixture','model-created:conversion-diagnostic')
         create_and_complete('ad_hoc','Bounded ad-hoc fixture')
-        create_and_complete('aura_workflow','Inspect bounded indexing evidence',workflow_id='seo.diagnosis.detectors.indexing')
+        create_and_complete('aura_workflow','Inspect bounded technical search evidence',workflow_id='seo.diagnosis.technical-opportunity')
         create_and_complete('aura_playbook','Research competitors end to end',playbook_id='competitor-research')
 
         validated=run(S/'validate_business.py',BID,check=False);req(validated.returncode==0,f'combined receipt validation failed: {validated.stdout+validated.stderr}')
