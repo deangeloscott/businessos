@@ -1,6 +1,6 @@
 # ViralTrac AURA
 
-**Alpha · v0.1.1**  
+**Alpha · v0.1.2**  
 **AURA = Agentic Understanding and Reinforcement Architecture.**
 
 ViralTrac AURA is portable, local-first **organization-owned memory and operating knowledge for capable AI**. It helps useful work compound across sessions, models, tools, and people by preserving durable organizational context, evidence, Learning, and reusable ways of working.
@@ -13,7 +13,7 @@ AURA is **not** the AI itself. It is also not a required cloud service, schedule
 
 ## Start in three steps
 
-1. **Download and unzip AURA, or clone the repository.** Release ZIPs are ready to use. If you clone the source repository directly, have your AI/harness run `python3 scripts/generate_registry.py` once after cloning (and after source changes to Workflows, schemas, or process maps) because deterministic generated indexes are intentionally not committed.
+1. **Download and unzip the latest official AURA release, or clone the repository.** Release ZIPs are curated, validated end-user packages; `main` is the current source and may be newer between releases. If you clone the source repository directly, have your AI/harness run `python3 scripts/generate_registry.py` once after cloning (and after source changes to Workflows, schemas, or process maps) because deterministic generated indexes are intentionally not committed.
 2. **Give your AI/harness access to AURA and attach it once.** The included `skills/viraltrac-aura/SKILL.md` is the preferred adapter for Skill-capable harnesses; `AURA-ATTACHMENT.md` includes a small persistent-instruction alternative.
 3. **Tell the AI about your business and what you want in normal language.**
 
