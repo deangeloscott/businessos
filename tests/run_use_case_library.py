@@ -13,7 +13,7 @@ def req(cond,msg):
 
 
 def main():
-    cases=LIB.get('cases',[]);req(len(cases)>=30,'real-world library is unexpectedly small')
+    cases=LIB.get('cases',[]);req(len(cases)>=50,'real-world library is unexpectedly small')
     ids=[c.get('id') for c in cases];req(len(ids)==len(set(ids)),'duplicate use-case ids')
     required_industries={'b2b-saas','local-services','ecommerce','creator-media','professional-services'}
     industries={c.get('industry') for c in cases};req(required_industries<=industries,f'missing representative industries: {required_industries-industries}')
@@ -36,6 +36,8 @@ def main():
     p=subprocess.run([sys.executable,str(ROOT/'qualification/use_case_coverage.py')],cwd=ROOT,capture_output=True,text=True)
     req(p.returncode==0,f'use-case coverage validation failed:\n{p.stdout}\n{p.stderr}')
     summary=json.loads(p.stdout);req(summary['use_cases']==len(cases),'coverage helper case count mismatch');req(summary['domain_count']>=8,'coverage helper lost domain coverage')
-    print(f"real-world use-case library regressions passed: {len(cases)} cases, {len(industries)} industries, {len(domains)} operating areas, blind request/judge separation")
+    req(summary['authored_playbooks']==42,'unexpected authored Playbook inventory')
+    req(summary['playbooks_remaining']==0 and summary['playbooks_covered']==42,'real-world library no longer covers every authored Playbook')
+    print(f"real-world use-case library regressions passed: {len(cases)} cases, {len(industries)} industries, {len(domains)} operating areas, {summary['playbooks_covered']}/{summary['authored_playbooks']} Playbooks, blind request/judge separation")
 
 if __name__=='__main__':main()
