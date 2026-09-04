@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Regression checks for the real-work qualification harness.
 
-Protect evaluator isolation, truthful ordinary requests, full Workflow coverage, real result
-observation, optional continuity, and capable professional review. Do not infer task semantics
-from Workflow ids or make execution ledgers/composition shapes part of correctness.
+Protect evaluator isolation, truthful ordinary requests, real-world use-case privacy,
+real result observation, optional continuity, and capable professional review. Do not infer
+task semantics from Workflow ids or make execution ledgers/composition shapes part of correctness.
 """
 from pathlib import Path
 import inspect,json,os,subprocess,sys,tempfile
@@ -55,7 +55,30 @@ def profile_smoke(profile,mission,kind):
 
 def judge_prompt_smoke():
     with tempfile.TemporaryDirectory(prefix='aura-judge-prompt-') as td:
-        rd=Path(td);ev=rd/'evaluator';ev.mkdir();(ev/'review-packets.json').write_text(json.dumps([{'event_id':'TASK-0001','hard_pass':True,'rubric_dimensions':['accuracy']}])+'\n');p=subprocess.run([sys.executable,str(ROOT/'qualification/build_judge_prompt.py'),str(rd)],cwd=ROOT,capture_output=True,text=True,env={**os.environ,'PYTHONDONTWRITEBYTECODE':'1'});req(p.returncode==0,'judge prompt generation failed');instructions=(ev/'JUDGE-INSTRUCTIONS.md').read_text();req('Treat **5 as rare**' in instructions and 'Distinguish relevance from proof' in instructions,'professional judge calibration weakened')
+        rd=Path(td);ev=rd/'evaluator';ev.mkdir();(ev/'review-packets.json').write_text(json.dumps([{'event_id':'TASK-0001','hard_pass':True,'rubric_dimensions':['accuracy']}])+'\n');p=subprocess.run([sys.executable,str(ROOT/'qualification/build_judge_prompt.py'),str(rd)],cwd=ROOT,capture_output=True,text=True,env={**os.environ,'PYTHONDONTWRITEBYTECODE':'1'});req(p.returncode==0,'judge prompt generation failed');instructions=(ev/'JUDGE-INSTRUCTIONS.md').read_text();req('Treat **5 as rare**' in instructions and 'Distinguish relevance from proof' in instructions,'professional judge calibration weakened');req('expected-outcome guidance' in instructions and 'candidate must never receive' in instructions.lower(),'judge prompt lost hidden use-case guidance boundary')
+
+
+def use_case_smoke():
+    lib_root=ROOT/'qualification/use-cases';library=json.loads((lib_root/'library.json').read_text());cases=library.get('cases',[]);ids=[c.get('id') for c in cases]
+    req(cases and len(ids)==len(set(ids)),'real-world use-case library missing or has duplicate ids')
+    for case in cases:
+        refs=[]
+        if case.get('stages'):
+            for stage in case['stages']:refs += [stage.get('request'),stage.get('judge')]
+        else:refs += [case.get('request'),case.get('judge')]
+        req(all(refs),'use-case request/judge pairing incomplete')
+        for ref in refs:
+            p=(lib_root/ref).resolve();req(p.is_file(),f'use-case source missing: {ref}');req(lib_root.resolve() in p.parents,'use-case source escaped maintainer-only library')
+    with tempfile.TemporaryDirectory(prefix='aura-usecase-evaluator-') as td,tempfile.TemporaryDirectory(prefix='aura-usecase-workspaces-') as cd:
+        cmd=[sys.executable,str(ROOT/'qualification/prepare_run.py'),'--case','saas-positioning-page','--run-root',td,'--candidate-root',cd,'--run-id','usecase-smoke'];p=subprocess.run(cmd,cwd=ROOT,capture_output=True,text=True,env={**os.environ,'PYTHONDONTWRITEBYTECODE':'1'});req(p.returncode==0,f'use-case preparation failed:\n{p.stdout}\n{p.stderr}')
+        rd=Path(td)/'usecase-smoke';run=json.loads((rd/'run.json').read_text());queue=json.loads((rd/'evaluator/queue.json').read_text());product=Path(run['product_root']);workspace=Path(run['workspace']);events=queue.get('events',[])
+        req(run.get('profile')=='use-case' and queue.get('case_filter')=='saas-positioning-page','use-case identity not retained evaluator-side');req(len(events)==1 and events[0].get('kind')=='use_case','use-case event preparation failed');req(events[0].get('event_id')=='TASK-0001','candidate-facing task id is not opaque')
+        judge=rd/'evaluator/judges/TASK-0001.md';req(judge.is_file() and 'Expected outcome' in judge.read_text(),'hidden use-case judge guidance was not staged evaluator-side')
+        req(not (product/'qualification').exists() and not (product/'tests').exists(),'candidate product exposed qualification/test source');req(not (Path(run['candidate_surface_root'])/'evaluator').exists(),'candidate surface exposed evaluator tree');req('qualification' not in product.as_posix().lower() and 'evaluator' not in workspace.as_posix().lower(),'candidate-visible paths reveal testing/evaluator intent')
+        start=subprocess.run([sys.executable,str(ROOT/'qualification/task_controller.py'),'start',str(rd)],cwd=ROOT,capture_output=True,text=True,env={**os.environ,'PYTHONDONTWRITEBYTECODE':'1'});req(start.returncode==0,f'use-case controller start failed: {start.stdout}\n{start.stderr}');msg=json.loads(start.stdout).get('candidate_message','').strip();expected=(lib_root/'requests/saas-positioning-page.md').read_text().strip();req(msg==expected,'candidate did not receive the ordinary request verbatim');req('saas-positioning-page' not in msg.lower() and 'expected outcome' not in msg.lower(),'candidate request leaked use-case/judge metadata')
+    with tempfile.TemporaryDirectory(prefix='aura-longitudinal-evaluator-') as td,tempfile.TemporaryDirectory(prefix='aura-longitudinal-workspaces-') as cd:
+        cmd=[sys.executable,str(ROOT/'qualification/prepare_run.py'),'--case','saas-memory-evolution','--run-root',td,'--candidate-root',cd,'--run-id','longitudinal-smoke'];p=subprocess.run(cmd,cwd=ROOT,capture_output=True,text=True,env={**os.environ,'PYTHONDONTWRITEBYTECODE':'1'});req(p.returncode==0,f'longitudinal use-case preparation failed:\n{p.stdout}\n{p.stderr}')
+        rd=Path(td)/'longitudinal-smoke';queue=json.loads((rd/'evaluator/queue.json').read_text());events=queue.get('events',[]);req(len(events)==3,'longitudinal case did not produce three ordinary requests');req(len({e.get('business_id') for e in events})==1,'longitudinal stages lost shared organization workspace');req(events[1].get('fresh_model_context') is True and events[2].get('fresh_model_context') is True,'longitudinal fresh-context intent missing evaluator-side');req(events[2].get('release_fixture')=='later_period','longitudinal contradictory/new evidence release missing');req(all((rd/'evaluator/judges'/f"{e['event_id']}.md").is_file() for e in events),'longitudinal judge guidance not isolated per stage')
 
 
 def main():
@@ -79,7 +102,7 @@ def main():
     mission_text=' '.join(m.get('task','') for key in ('composition_missions','domain_missions','cross_domain_missions','marathon_missions') for m in suite.get(key,[])).lower();retired=('action package','execution receipt','complete its run','complete their run','authorized work through execution','authorization, action planning');req(not any(x in mission_text for x in retired),'candidate-visible mission text reintroduced execution-control architecture')
     seed_source=inspect.getsource(init_business);req('bootstrap_explicit_context.py' in seed_source and '--require-context' in seed_source,'qualification setup must ground fixture context canonically');req('hidden-fixtures' in seed_source and 'timeline' in seed_source,'longitudinal evidence path missing')
     evaluator=(ROOT/'qualification/evaluate_run.py').read_text();req('Infer substantive requirements from the ordinary request' in evaluator and 'Python does not infer those requirements from Workflow identifiers' in evaluator,'professional evaluator did not inherit semantic completeness responsibility')
-    smoke_prepare();profile_smoke('composition',None,'composition_mission');profile_smoke('cross-domain','CROSS-MARKET-CHANGE-001','cross_domain_mission');judge_prompt_smoke()
-    print(f"qualification framework regressions passed: {suite['workflow_count']} Workflow tests, semantic-neutral hard floor, blind candidate isolation, longitudinal releases, and capable professional review")
+    smoke_prepare();profile_smoke('composition',None,'composition_mission');profile_smoke('cross-domain','CROSS-MARKET-CHANGE-001','cross_domain_mission');judge_prompt_smoke();use_case_smoke()
+    print(f"qualification framework regressions passed: {suite['workflow_count']} Workflow tests plus blind real-world use cases, semantic-neutral hard floor, isolated judge criteria, longitudinal releases, and capable professional review")
 
 if __name__=='__main__':main()
