@@ -37,7 +37,7 @@ def import_package(business_id,package_path):
     local=dict(old.get('local_evidence',{})) if old else {'supported_count':0,'contradicted_count':0,'neutral_count':0,'outcome_events':[]}
     entry={
         'id':entry_id,'business_id':business_id,'created_at':old.get('created_at') if old else timestamp,'updated_at':timestamp,
-        'innovation_fingerprint':fingerprint,'mode':process['mode'],'workflow_id':process['workflow_id'],'title':process['title'],
+        'innovation_fingerprint':fingerprint,'workflow_id':process['workflow_id'],'title':process['title'],
         'package_ids':package_ids,'source_record_refs':source_refs,'reported_evidence':reported,'local_evidence':local,'last_activity_at':timestamp,
         'extensions':{'package_paths':sorted(set((old.get('extensions',{}).get('package_paths',[]) if old else [])+[source_reference])),'latest_detail_level':package['detail_level']}
     }
