@@ -11,7 +11,8 @@ PLAYBOOK_MAP=json.loads((BASE/'playbook-coverage.json').read_text()).get('covera
 
 def authored_playbooks():
     text=(ROOT/'PLAYBOOKS.md').read_text(encoding='utf-8')
-    return {m.group(1).strip() for m in re.finditer(r'^- \*\*(.+?)\*\* —',text,re.M)}
+    names={m.group(1).strip() for m in re.finditer(r'^- \*\*(.+?)\*\* —',text,re.M)}
+    return names-{'Playbook','Workflow','Step'}
 
 
 def main():
