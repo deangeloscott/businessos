@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from _common import ROOT, now
+from _common import ROOT, now, workspace_root
 from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import urlparse
@@ -192,7 +192,7 @@ def build_manifest(source_root, business_id=None, captured_at=None, source_locat
 
 def _safe_rel(path):
     p=Path(path).resolve()
-    try: return p.relative_to(ROOT).as_posix()
+    try: return p.relative_to(workspace_root().resolve()).as_posix()
     except ValueError: raise ValueError('site root must be inside the BusinessOS workspace so evidence can be reproduced portably')
 
 def persist_inspection(business_id,source_root):

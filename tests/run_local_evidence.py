@@ -5,7 +5,7 @@ AURA's inspector is useful for reproducible evidence, but it is not the only leg
 way a capable model/harness may inspect first-party material.
 """
 from pathlib import Path
-import json,shutil,subprocess,sys
+import json,os,shutil,subprocess,sys,tempfile
 ROOT=Path(__file__).resolve().parents[1];SCRIPTS=ROOT/'scripts';sys.path.insert(0,str(SCRIPTS))
 from validate_business import validate_business
 from validate_local_evidence import local_evidence_errors
@@ -17,8 +17,8 @@ SITE_A=ROOT/'test-inputs'/'_local-evidence-regression-site-a';SITE_B=ROOT/'test-
 
 def require(cond,msg):
     if not cond:raise AssertionError(msg)
-def run(*args,check=True):
-    return subprocess.run([sys.executable,*map(str,args)],cwd=ROOT,capture_output=True,text=True,check=check)
+def run(*args,check=True,env=None):
+    return subprocess.run([sys.executable,*map(str,args)],cwd=ROOT,capture_output=True,text=True,check=check,env=env)
 def seed_site(site):
     site.mkdir(parents=True,exist_ok=True)
     (site/'index.html').write_text('<!doctype html><html><head><title>Northstar HVAC</title><meta name="description" content="HVAC repair"><script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"Northstar HVAC"}</script></head><body><a href="/missing.html">Missing</a></body></html>')
@@ -44,6 +44,50 @@ def main():
         require(ma['source_root']==SITE_A.relative_to(ROOT).as_posix() and mb['source_root']==SITE_B.relative_to(ROOT).as_posix(),'capture locator provenance was lost')
         ins_a2=json.loads(run(SCRIPTS/'inspect_site_evidence.py',BID,str(SITE_A.relative_to(ROOT))).stdout)
         require(ins_a2['source_ref']==ins_a['source_ref'] and ins_a2['manifest_path']==ins_a['manifest_path'],'same locator + snapshot should reuse capture identity')
+
+        # A configured external organization workspace must support the same deterministic
+        # evidence helper without modifying or treating product source as organization state.
+        with tempfile.TemporaryDirectory(prefix='aura-local-evidence-external-') as td:
+            temp_root=Path(td)
+            external_workspace=temp_root/'workspace'
+            external_workspace.mkdir()
+            workspace_link=temp_root/'workspace-link.json'
+            workspace_link.write_text(json.dumps({
+                'format_version':'1.0',
+                'workspace_root':str(external_workspace),
+                'profile':'power_user',
+                'knowledge_enabled':True
+            })+'\n')
+            ext_env=dict(os.environ)
+            ext_env.pop('BUSINESSOS_WORKSPACE',None)
+            ext_env['BUSINESSOS_WORKSPACE_CONFIG']=str(workspace_link)
+
+            ext_bid='local-evidence-external-regression'
+            run(SCRIPTS/'init_business.py',ext_bid,'--name','External Local Evidence Regression',env=ext_env)
+            ext_site=external_workspace/'attachments'/'supplied'/'site'
+            seed_site(ext_site)
+
+            ext=json.loads(run(
+                SCRIPTS/'inspect_site_evidence.py',
+                ext_bid,
+                str(ext_site),
+                env=ext_env
+            ).stdout)
+
+            require(
+                ext['manifest_path'].startswith(f'instances/{ext_bid}/evidence/local-site/'),
+                f"external workspace evidence path was not portable: {ext['manifest_path']}"
+            )
+            require(
+                (external_workspace/ext['manifest_path']).exists(),
+                'external workspace evidence manifest was not persisted in organization state'
+            )
+            source_path=external_workspace/'instances'/ext_bid/'intelligence/sources'/f"{ext['source_ref']}.json"
+            source=json.loads(source_path.read_text())
+            require(
+                source['source_reference']=='attachments/supplied/site',
+                f"external workspace source locator was not portable: {source['source_reference']}"
+            )
 
         jf=next((x for x in ins_a['fact_index'] if x['kind']=='html.jsonld_block' and x['path']=='index.html'),None)
         require(jf and 'is valid JSON' in jf['rendered'] and 'https://schema.org' in jf['rendered'],f'valid JSON-LD capture regressed: {jf}')
