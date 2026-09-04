@@ -20,7 +20,7 @@ Understand competitors, substitutes, competitive movement, and supported implica
 | Research Plan | Resolve a competitive question with bounded evidence. | `competitor.research.plan` |
 | Source Coverage | Adapt research depth and evidence-source coverage to the competitive decision. | `competitor.research.adaptive-source-coverage` |
 | Ecosystem Radar | Discover important competitive movements and tactic claims, verify what is observed versus supported, and preserve material implications for direct reuse. | `competitor.intelligence.ecosystem-radar` |
-| Competitive Position | Compose the relevant competitor jobs into a decision-useful competitive landscape and position. | `competitor.analysis.competitive-position` |
+| Competitive Position | Build a decision-useful competitive landscape and position using relevant evidence and specialist methods. | `competitor.analysis.competitive-position` |
 | Competitor Discovery | Identify current direct and substitute competitors. | `competitor.discovery.competitive-set` |
 | Entity Resolution | Resolve competitor domains and public profiles to the correct canonical entity. | `competitor.discovery.entity-resolution` |
 | Emerging Competitors | Identify new competitors entering the relevant customer choice set. | `competitor.discovery.emerging-competitors` |
@@ -45,28 +45,21 @@ Turn useful ideas, evidence, and source material into strong audience-appropriat
 ### Playbooks
 
 - **Content Strategy and Synthesis** — Turn audience context, evidence, ideas, performance signals, and communication goals into a strong content approach before or across specific formats. — common entry `content.intake.content-brief`
-- **AI Avatar Video Production** — Produce an approved avatar-presented video when synthetic presentation is appropriate, transparent, and efficient for the communication job. — common entry `content.production.avatar-video`
 - **Animation / Motion Production** — Use motion to explain change, sequence, causality, demonstration, or attention hierarchy. — common entry `content.production.animation`
 - **Article Production** — Produce a useful, evidence-backed article with appropriate depth, structure, and reader progression. — common entry `content.production.article`
 - **Audio Asset Production** — Produce voiceover, narration, clip, or other audio asset optimized for its actual use context. — common entry `content.production.audio`
-- **Captions and On-Screen Text** — Design captions/on-screen text that improve comprehension and accessibility without overwhelming the visual. — common entry `content.production.captions`
 - **Carousel / Slideshow Production** — Turn an idea into a sequential visual argument where each frame earns the next. — common entry `content.production.carousel`
-- **Content Thumbnail Concept** — Design a thumbnail/cover image that quickly communicates the content’s real subject, tension, or outcome at browsing scale. — common entry `content.production.thumbnail`
 - **Customer Case Study** — Turn verified customer evidence and ProofRecords into a useful, accurate account of context, intervention, mechanism, and outcome. — common entry `content.production.case-study`
-- **Demonstration Asset Production** — Execute an approved demonstration plan and produce a clear, verifiable demonstration Asset. — common entry `content.production.demo`
-- **Derivative Asset Package** — Create only the useful supporting or derivative forms of an approved core Asset—such as full/bullet scripts, shot list, captions, clips, thumbnail concepts, audio, or graphics—without creating unnecessary variants. — common entry `content.production.derivative-package`
+- **Demonstration Asset Production** — Produce a clear, verifiable demonstration that visibly proves or teaches the intended mechanism, use case, or result. — common entry `content.production.demo`
 - **FAQ Content Production** — Create evidence-backed answers to recurring audience questions in a form that is easy to find and understand. — common entry `content.production.faq`
-- **GIF / Looping Motion Production** — Create a short looping motion Asset that demonstrates, emphasizes, or explains one idea more effectively than a static image. — common entry `content.production.gif`
 - **Image / Graphic Production** — Create a visual asset whose composition communicates the intended idea rather than adding decoration. — common entry `content.production.image`
 - **Infographic Production** — Turn evidence or a structured idea into a clear visual explanation whose information hierarchy works even when the viewer only scans it. — common entry `content.production.infographic`
-- **LinkedIn Native Content** — Create professional-network content that is native to feed behavior rather than an article pasted into a post. — common entry `content.production.linkedin`
-- **Long-Form Clip Extraction** — Identify self-contained short clips from a longer Asset without distorting the original meaning. — common entry `content.production.clip-extraction`
-- **Long-Form Video Production** — Create sustained video communication with narrative/educational progression, demonstrations, and retention-aware structure. — common entry `content.production.long-video`
-- **Newsletter Production** — Create a relationship-oriented email/newsletter suited to inbox context and the audience expectation. — common entry `content.production.newsletter`
-- **Platform-Native Adaptation** — Transform a validated core idea into genuinely native expressions for selected platforms rather than superficial reformatting. — common entry `content.adaptation.platform-native`
+- **Long-Form Video Production** — Create sustained video communication with narrative or educational progression, demonstrations, and retention-aware structure. — common entry `content.production.long-video`
+- **Newsletter Production** — Create a relationship-oriented email or newsletter suited to inbox context and the audience expectation. — common entry `content.production.newsletter`
 - **Podcast Episode Production** — Create an audio-first episode whose structure and delivery fit listening context. — common entry `content.production.podcast`
 - **Presentation / Slideshow Production** — Build a presentation that supports a live or asynchronous audience journey instead of turning a document into slides. — common entry `content.production.presentation`
-- **Short-Form Video Production** — Express one useful idea quickly through platform-native visual/audio pacing and proof. — common entry `content.production.short-video`
+- **Short-Form Video Production** — Express one useful idea quickly through platform-native visual and audio pacing and proof. — common entry `content.production.short-video`
+- **Content Repurposing & Adaptation** — Turn a validated core asset or idea into the smallest useful set of derivative and platform-native assets without unnecessary variants or distorted meaning.
 
 ### Common Workflows
 
@@ -105,7 +98,7 @@ Understand customers, prospects, needs, language, decisions, and experiences fro
 
 ### Playbooks
 
-- **Customer Research** — Resolve an important customer knowledge need with evidence appropriate to the decision, using the relevant research and analysis workflows. — common entry `customer.research.plan`
+- **Customer Research** — Resolve an important customer knowledge need with evidence appropriate to the decision, using the relevant research and analysis Workflows. — common entry `customer.research.plan`
 - **Voice of Customer** — Build reusable evidence-backed understanding of the language, pains, desires, objections, outcomes, and decision criteria customers actually express. — common entry `customer.analysis.voice-of-customer`
 
 ### Common Workflows
@@ -214,18 +207,19 @@ Create and improve persuasive strategy, campaigns, offers, and customer-facing m
 
 - **Marketing Strategy and Messaging** — Develop or improve positioning, messaging, value proposition, mechanism, proof, objection handling, and offer presentation around current customer and business truth. — common entry `marketing.strategy.messaging`
 - **Campaign Development** — Build a coherent campaign concept and the useful persuasive work needed to carry it across the relevant customer-facing surfaces. — common entry `marketing.campaigns.campaign-concept`
-- **Advertising Creative & Copy** — Create persuasive ad concepts/copy/creative requirements matched to audience, awareness, funnel/journey role, channel/placement context, current field evidence where useful, and destination. — common entry `marketing.assets.ads`
+- **Offer Design & Optimization** — Diagnose and improve how value is packaged, priced, de-risked, and presented so the offer is more compelling without inventing unsupported value or urgency. — common entry `marketing.offer.diagnosis`
+- **Advertising Creative & Copy** — Create persuasive ad concepts, copy, and creative requirements matched to audience, awareness, journey role, placement context, evidence, and destination. — common entry `marketing.assets.ads`
 - **Advertorial** — Create clearly compliant editorial-style persuasion that educates while transparently serving a commercial objective. — common entry `marketing.assets.advertorial`
 - **Commercial Email Sequence** — Design a multi-email persuasion sequence where each message has a distinct job and builds appropriately on prior context. — common entry `marketing.assets.email-sequence`
 - **Comparison & Alternative Persuasion** — Help qualified buyers evaluate alternatives honestly using customer decision criteria and current competitive evidence. — common entry `marketing.assets.comparison`
 - **Landing Page Persuasion** — Create a landing page or homepage that continues acquisition intent and moves the right visitor toward the desired action without overstating business truth. — common entry `marketing.assets.landing-page`
 - **Lead Magnet** — Create an exchange-worthy asset that solves a bounded valuable problem and naturally relates to the next commercial step. — common entry `marketing.assets.lead-magnet`
 - **Lead Nurture Strategy** — Move not-yet-ready prospects toward a better-informed decision over time rather than repeatedly asking for the sale. — common entry `marketing.assets.nurture`
-- **Quiz / Assessment Conversion Asset** — Create a diagnostic experience that gives the participant useful feedback while qualifying/segmenting toward a relevant next action. — common entry `marketing.assets.quiz-assessment`
-- **Sales Enablement Asset** — Create persuasive evidence/tools that help sellers and buyers resolve real decision questions consistently. — common entry `marketing.assets.sales-enablement`
-- **Sales Letter** — Create long-form written persuasion appropriate to audience sophistication and Offer complexity. — common entry `marketing.assets.sales-letter`
+- **Quiz / Assessment Conversion Asset** — Create a diagnostic experience that gives the participant useful feedback while qualifying or segmenting toward a relevant next action. — common entry `marketing.assets.quiz-assessment`
+- **Sales Enablement Asset** — Create persuasive evidence and tools that help sellers and buyers resolve real decision questions consistently. — common entry `marketing.assets.sales-enablement`
+- **Sales Letter** — Create long-form written persuasion appropriate to audience sophistication and offer complexity. — common entry `marketing.assets.sales-letter`
 - **Video Sales Letter** — Build a sustained video persuasion narrative tied to an Offer and measurable commercial action. — common entry `marketing.assets.vsl`
-- **Webinar Persuasion** — Design a webinar that creates genuine understanding/value while logically leading qualified attendees to an Offer. — common entry `marketing.assets.webinar`
+- **Webinar Persuasion** — Design a webinar that creates genuine understanding and value while logically leading qualified attendees to an Offer. — common entry `marketing.assets.webinar`
 
 ### Common Workflows
 
@@ -265,6 +259,7 @@ Improve valuable organic discovery across search, answer engines, AI interfaces,
 
 - **SEO/AEO Growth** — Find and improve the highest-value realistic opportunities for organic discovery across search engines, answer engines, AI interfaces, and local discovery.
 - **SEO/AEO Experimentation and Learning** — Test uncertain SEO/AEO tactics when testing is worthwhile, evaluate the results without overstating causality, and preserve reusable Learning when supported. — common entry `seo.learning.strategy-experiment-design`
+- **SEO/AEO Site Migration** — Plan and execute a domain, CMS, architecture, or URL migration while protecting organic discovery, attribution, and recoverability. — common entry `seo.execution.technical.site-migration`
 
 ### Common Workflows
 
@@ -287,11 +282,11 @@ Core supplies shared organization memory, truth/evidence rules, decisions, conti
 | Scan External Ecosystem | Discover important external changes, tactics, findings, and signals; verify what the evidence supports; preserve useful organizational evidence or Learning; and let the capable model choose any next method. | `core.intelligence.ecosystem-radar` |
 | Track External Subject | Build or refresh a durable evidence-backed watch context for a company, creator, public figure, publication, platform, product, regulator, own organization, or other decision-relevant subject; recurrence belongs to the active runtime. | `core.intelligence.subject-monitoring` |
 | Review Monitoring Status | Show durable monitoring intent, cadence/materiality, semantic due state, and meaningful unresolved findings without treating AURA as the scheduler or notification runtime. | `core.monitoring.status` |
-| Evolve Operating Process | Turn strong reusable Learning into a business Workflow extension, new local Workflow, or canonical AURA revision candidate without overgeneralizing evidence. | `core.learning.workflow-evolution` |
+| Evolve Operating Process | Preserve strong reusable Learning as optional organization-local Workflow knowledge when useful; canonical AURA changes remain explicit product-development work. | `core.learning.workflow-evolution` |
 | Use Innovation Exchange | Prepare, import, browse, and evaluate portable AURA process innovations with explicit sharing consent and no required central service. | `core.intelligence.innovation-exchange` |
 | Review Community Innovation | Compare community-reported process innovations with independent/local evidence and decide whether testing, adoption, or Workflow evolution is warranted. | `core.intelligence.community-evidence-review` |
 | Diagnose Business Problem | Narrow a broad unexplained business symptom to evidence-backed likely mechanisms and the most useful next work before intervention. | `core.diagnosis.business-problem` |
-| Discover Next Best Work | Turn a broad growth/prioritization goal into the highest-value next work supported by current evidence and installed modules. | `core.opportunity.discover-next-best-work` |
+| Discover Next Best Work | Turn a broad growth/prioritization goal into the highest-value next work supported by current evidence and available operating knowledge. | `core.opportunity.discover-next-best-work` |
 | Bootstrap Business | Create evidence-backed initial business context from minimal identity, first-party sources, and user-provided information. | `core.context.bootstrap-business` |
 | Owned Business Discovery | Adaptively map owned/official business surfaces and evidence at the depth needed for the current job. | `core.context.owned-business-discovery` |
 | Brand Profile | Capture durable brand voice, visual, content, channel, reference, and prohibited-style rules. | `core.context.brand-profile` |
