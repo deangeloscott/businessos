@@ -7,7 +7,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'scripts'))
 
 from init_business import init_business
-from _common import now,iter_instance_objects,workflow_files,read_frontmatter
+from _common import now,iter_instance_objects,workflow_files,read_frontmatter,instance_dir
 from persist_process_extension import persist_extension
 from process_extensions import resolve_effective,local_workflow_candidates
 from prepare_innovation_package import prepare_package
@@ -27,7 +27,7 @@ def req(condition,message):
 
 
 def seed_learning(business_id):
-    base=ROOT/'instances'/business_id
+    base=instance_dir(business_id)
     obj={
         'id':'lrn_workflow_evolution_test','object_type':'Learning','schema_version':'1.0.0','business_id':business_id,
         'created_at':now(),'updated_at':now(),'scope':'business',
@@ -61,7 +61,6 @@ def main():
 
     process_schema=json.loads((ROOT/'core/schemas/learning/process-extension.schema.json').read_text())
     req(process_schema.get('additionalProperties') is False,'ProcessExtension schema must remain strict')
-    text=json.dumps(process_schema)
     for retired_name in ('mode','source_kind','required_capabilities','optional_capabilities','target_contract_id','local_contract_id','target_workflow_id','local_workflow_id','owner_system','reads','writes','compatibility','proposal_ref','approval'):
         req(retired_name not in process_schema.get('properties',{}),f'ProcessExtension retained redundant/control field {retired_name}')
     req('workflow_id' in process_schema.get('properties',{}),'ProcessExtension lost Workflow relationship')
@@ -96,7 +95,6 @@ def main():
         req('Proof-first landing-page extension' in content,'effective Workflow omitted organization extension')
         req('capabilities' not in meta,'retired capability ontology leaked into effective Workflow metadata')
 
-        # Explicit organization-authored procedures require no fabricated Learning or source reference.
         local={
             'scope':'business','workflow_id':'custom.marketing.proof-first-landing',
             'title':'Proof First Landing Workflow','purpose':'Reusable organization-local procedure for proof-first landing-page work.',
@@ -121,7 +119,6 @@ def main():
         package,draft=prepare_package(A,local_extension['id'],detail='workflow_only',identity='anonymous')
         req(package['format_version']=='1.3','InnovationPackage format was not advanced for simplified process representation')
         req(package['privacy']['user_approved_export'] is False,'prepared package must remain unapproved')
-        package_text=json.dumps(package)
         for retired_name in ('mode','source_kind','capabilities','compatibility','aura_version','owner_system','reads','writes','target_workflow_id','local_workflow_id'):
             req(retired_name not in package.get('process',{}),f'InnovationPackage process retained retired/redundant field {retired_name}')
         req(package['process'].get('workflow_id')=='custom.marketing.proof-first-landing','shared process lost Workflow identity')
@@ -141,7 +138,7 @@ def main():
         req(not any(obj.get('object_type')=='Insight' for obj,_ in iter_instance_objects(B)),'package import manufactured semantic Insight')
 
         evaluation={'id':'eval_exchange_test','object_type':'OutcomeEvaluation','schema_version':'1.0.0','business_id':B,'target_refs':[],'attribution_method':'controlled_test','conclusion':'The imported Workflow was supported in this bounded local test.','extensions':{}}
-        ep=ROOT/'instances'/B/'measurement'/'outcome-evaluations'/'eval_exchange_test.json';ep.parent.mkdir(parents=True,exist_ok=True);ep.write_text(json.dumps(evaluation,indent=2)+'\n')
+        ep=instance_dir(B)/'measurement'/'outcome-evaluations'/'eval_exchange_test.json';ep.parent.mkdir(parents=True,exist_ok=True);ep.write_text(json.dumps(evaluation,indent=2)+'\n')
         record_outcome(B,entry['id'],'supported','eval_exchange_test');again=record_outcome(B,entry['id'],'supported','eval_exchange_test')
         req(again['local_evidence']['supported_count']==1,'duplicate local outcome was not idempotent')
         feed=list_entries(B);req(feed and feed[0]['local_supported']==1 and feed[0]['organization_local'] is True,'Innovation Exchange did not surface local outcome evidence/Workflow identity')
