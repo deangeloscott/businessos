@@ -7,7 +7,7 @@ from validate_business import validate_business
 from context_plan import build_plan
 
 BID='decision-grounding-regression';BASE=ROOT/'instances'/BID;SITE=ROOT/'test-inputs'/'_decision-grounding-regression-site'
-INDEXING_WORKFLOW='seo.execution.indexing.index-troubleshooting'
+INDEXING_WORKFLOW='seo.diagnosis.technical-opportunity'
 
 
 def require(cond,msg):
@@ -47,7 +47,7 @@ def main():
         SITE.mkdir(parents=True,exist_ok=True)
         (SITE/'index.html').write_text('<!doctype html><html><head><title>HVAC Replacement</title><meta name="robots" content="noindex,follow"></head><body>Replacement</body></html>')
         (SITE/'robots.txt').write_text('User-agent: *\nDisallow: /resources/\n')
-        (SITE/'sitemap.xml').write_text('<?xml version="1.0"?><urlset xmlns="http://www.sitemaps.org/sitemap/0.9"></urlset>')
+        (SITE/'sitemap.xml').write_text('<?xml version="1.0"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></urlset>')
         ins=json.loads(run(SCRIPTS/'inspect_site_evidence.py',BID,str(SITE.relative_to(ROOT))).stdout)
         f=next(x for x in ins['fact_index'] if x['kind']=='html.meta_robots')
         po=json.loads(run(SCRIPTS/'persist_site_observation.py',BID,'--source-ref',ins['source_ref'],'--fact-id',f['id'],'--observation-type','noindex_directive','--id-suffix','noindex').stdout)
@@ -68,20 +68,15 @@ def main():
         good.unlink();write_op('A candidate action.','Grounded structurally.',fact_refs=[oid],inference_refs=['obs_missing'])
         e=errors();require(any('inference references missing canonical object' in x for x in e),f'missing inference reference must fail, got {e}')
 
-        # A directly observed local configuration is evidence, but it is not measured
-        # downstream outcome/performance evidence merely because it is important.
         good.unlink();write_op('The page has a noindex directive.','Actual downstream performance remains unknown.',measured=[oid])
         e=errors();require(any('not measured outcome/performance evidence' in x for x in e),f'local config Observation must not satisfy measured outcome support, got {e}')
 
-        # Natural-language interpretation belongs to the model/policy layer, not deterministic regex validation.
         good.unlink();write_op(
             'This could be our highest-value page and traffic may be down; verify those business claims before treating them as established fact.',
             'The model must interpret and ground the statement using the policy; the structural validator should not police keywords.'
         )
         e=errors();require(not e,f'keyword semantics must not be deterministically rejected, got {e}')
 
-        # Opportunity remains a pre-commitment decision object. Commitment/execution/outcome
-        # are represented by their own durable meanings rather than later Opportunity stages.
         schema=json.loads((ROOT/'core/schemas/decision/opportunity.schema.json').read_text())
         statuses=set(schema['properties']['status']['enum'])
         require(not ({'committed','active','evaluating'} & statuses),f'Opportunity regained execution/measurement lifecycle states: {sorted(statuses)}')
