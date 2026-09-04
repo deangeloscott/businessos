@@ -5,6 +5,8 @@ from build_suite import build
 from common import ROOT, now, product_snapshot, write_json
 
 FIXTURES=ROOT/'qualification/fixtures'
+USE_CASE_ROOT=ROOT/'qualification/use-cases'
+USE_CASE_LIBRARY=json.loads((USE_CASE_ROOT/'library.json').read_text())
 RUBRICS=json.loads((ROOT/'qualification/rubrics/rubrics.json').read_text())
 
 
@@ -14,6 +16,43 @@ def fixture_data(fixture):
 
 def fixture_business_id(fixture):
     return fixture_data(fixture)['business_id']
+
+
+def _use_case_file(rel):
+    p=(USE_CASE_ROOT/rel).resolve()
+    try:p.relative_to(USE_CASE_ROOT.resolve())
+    except ValueError:raise SystemExit(f'Use-case path escapes library: {rel}')
+    if not p.is_file():raise SystemExit(f'Use-case file missing: {rel}')
+    return p
+
+
+def _use_case(case_id):
+    for case in USE_CASE_LIBRARY.get('cases',[]):
+        if case.get('id')==case_id:return case
+    known=', '.join(sorted(c.get('id','') for c in USE_CASE_LIBRARY.get('cases',[]) if c.get('id')))
+    raise SystemExit(f'Unknown use case: {case_id}. Available: {known}')
+
+
+def use_case_dimensions(case):
+    base=[x['id'] for x in RUBRICS['base']]
+    domains=case.get('domains') or []
+    if case.get('kind')=='longitudinal':profile='marathon_system'
+    elif len(domains)!=1:profile='cross_domain_system'
+    else:
+        owner=domains[0]; profile={'core':'organizational_memory','customer-intelligence':'customer_truth','competitor-intelligence':'competitive_intelligence','industry-intelligence':'ecosystem_truth','seo-aeo':'search_live_field','content-synthesis':'artifact_excellence','marketing-synthesis':'paid_and_persuasion_field','customer-optimization':'first_party_outcomes'}.get(owner,'cross_domain_system')
+    return base + list(RUBRICS['profiles'].get(profile,[]))
+
+
+def events_from_use_case(case_id):
+    case=_use_case(case_id); fixture=case['fixture']; dims=use_case_dimensions(case); stages=case.get('stages') or []
+    if stages:
+        events=[]
+        for i,stage in enumerate(stages,1):
+            event={'event_id':f'USECASE-{case_id.upper()}-{i:02d}','kind':'use_case','case_id':case_id,'business_id':fixture_business_id(fixture),'fixture':fixture,'workflow_id':None,'task':_use_case_file(stage['request']).read_text().strip(),'rubric_dimensions':dims,'judge_source':stage['judge'],'fresh_model_context':bool(stage.get('fresh_model_context'))}
+            if stage.get('release_fixture'):event['release_fixture']=stage['release_fixture']
+            events.append(event)
+        return events
+    return [{'event_id':f'USECASE-{case_id.upper()}','kind':'use_case','case_id':case_id,'business_id':fixture_business_id(fixture),'fixture':fixture,'workflow_id':None,'task':_use_case_file(case['request']).read_text().strip(),'rubric_dimensions':dims,'judge_source':case['judge']}]
 
 
 def event_from_workflow(t):
@@ -226,13 +265,20 @@ def init_business(product_root,workspace,fixture,evaluator_root=None):
 
 
 def main():
-    ap=argparse.ArgumentParser(); ap.add_argument('--profile',choices=['atomic','composition','domains','cross-domain','marathon','full'],default='atomic'); ap.add_argument('--domain'); ap.add_argument('--workflow',action='append',default=[],help='Exact workflow ID to include in an atomic representative run; repeat for multiple workflows.'); ap.add_argument('--mission',help='Exact mission ID to include in a mission-based qualification profile.'); ap.add_argument('--fixture',help='Maintainer-only benchmark fixture override for exactly one selected qualification event.'); ap.add_argument('--request',help='Maintainer-authored ordinary business request for exactly one selected event. This replaces only the candidate-visible task text; evaluator target/rubric remain hidden.'); ap.add_argument('--run-root',help='Maintainer-only evaluator/checkpoint run root.'); ap.add_argument('--candidate-root',help='Neutral root for candidate-visible product/workspace. Must be physically separate from the evaluator run root.'); ap.add_argument('--run-id'); a=ap.parse_args()
-    if a.profile=='atomic' and not a.domain and not a.workflow and not a.mission: raise SystemExit('Atomic qualification requires --workflow <exact-workflow-id> or --domain <installed-domain>; use --profile full explicitly only for an intentional broad endurance run')
-    suite=build(); selected=select_events(suite,a.profile,a.domain,a.workflow,a.mission); evaluator_events=publicize_events(selected)
-    try:
-        evaluator_events=apply_fixture_override(evaluator_events,a.fixture)
-        evaluator_events=apply_candidate_request(evaluator_events,a.request)
-    except ValueError as e: raise SystemExit(str(e))
+    ap=argparse.ArgumentParser(); ap.add_argument('--case',help='Maintainer-only real-world use-case id from qualification/use-cases/library.json. Candidate never sees the case id or library.'); ap.add_argument('--profile',choices=['atomic','composition','domains','cross-domain','marathon','full'],default='atomic'); ap.add_argument('--domain'); ap.add_argument('--workflow',action='append',default=[],help='Exact workflow ID to include in an atomic representative run; repeat for multiple workflows.'); ap.add_argument('--mission',help='Exact mission ID to include in a mission-based qualification profile.'); ap.add_argument('--fixture',help='Maintainer-only benchmark fixture override for exactly one selected qualification event.'); ap.add_argument('--request',help='Maintainer-authored ordinary business request for exactly one selected event. This replaces only the candidate-visible task text; evaluator target/rubric remain hidden.'); ap.add_argument('--run-root',help='Maintainer-only evaluator/checkpoint run root.'); ap.add_argument('--candidate-root',help='Neutral root for candidate-visible product/workspace. Must be physically separate from the evaluator run root.'); ap.add_argument('--run-id'); a=ap.parse_args()
+    if a.case and (a.domain or a.workflow or a.mission or a.fixture or a.request):raise SystemExit('--case uses its own hidden fixture/request pairing and cannot be combined with --domain, --workflow, --mission, --fixture, or --request')
+    if not a.case and a.profile=='atomic' and not a.domain and not a.workflow and not a.mission: raise SystemExit('Atomic qualification requires --workflow <exact-workflow-id> or --domain <installed-domain>; use --profile full explicitly only for an intentional broad endurance run')
+    suite=build()
+    if a.case:
+        selected=events_from_use_case(a.case); effective_profile='use-case'
+    else:
+        selected=select_events(suite,a.profile,a.domain,a.workflow,a.mission); effective_profile=a.profile
+    evaluator_events=publicize_events(selected)
+    if not a.case:
+        try:
+            evaluator_events=apply_fixture_override(evaluator_events,a.fixture)
+            evaluator_events=apply_candidate_request(evaluator_events,a.request)
+        except ValueError as e: raise SystemExit(str(e))
     run_id=a.run_id or ('aura-qualification-'+uuid.uuid4().hex[:10]); root=Path(a.run_root).expanduser().resolve() if a.run_root else Path(tempfile.gettempdir())/'aura-qualification-runs'; run_dir=root/run_id
     if run_dir.exists(): raise SystemExit(f'Run already exists: {run_dir}')
     try: run_dir.relative_to(ROOT.resolve()); raise SystemExit('Qualification run root must be outside the AURA product tree to prevent recursive staging or product contamination')
@@ -241,7 +287,11 @@ def main():
         candidate_dir=candidate_surface(a.candidate_root); _ensure_separate(candidate_dir,run_dir)
     except ValueError as e: raise SystemExit(str(e))
     if candidate_dir.exists(): raise SystemExit(f'Candidate surface already exists: {candidate_dir}')
-    run_dir.mkdir(parents=True); (run_dir/'evaluator').mkdir(); (run_dir/'checkpoints').mkdir()
+    run_dir.mkdir(parents=True); (run_dir/'evaluator').mkdir(); (run_dir/'checkpoints').mkdir(); (run_dir/'evaluator/judges').mkdir()
+    for event in evaluator_events:
+        judge_source=event.pop('judge_source',None)
+        if judge_source:
+            (run_dir/'evaluator/judges'/f"{event['event_id']}.md").write_text(_use_case_file(judge_source).read_text(),encoding='utf-8')
     product_root=copy_product(ROOT,candidate_dir/'product'); generation_env=dict(os.environ); generation_env['PYTHONDONTWRITEBYTECODE']='1'; generation_env['PYTHONUTF8']='1'; _run([sys.executable,str(product_root/'scripts/generate_registry.py')],product_root,generation_env)
     workspace=candidate_dir/'workspace'; workspace.mkdir(parents=True)
 
@@ -265,11 +315,11 @@ def main():
     fixtures=sorted({event['fixture'] for event in evaluator_events})
     for fixture in fixtures: init_business(product_root,workspace,fixture,run_dir/'evaluator')
     baseline=product_snapshot(product_root); write_json(run_dir/'evaluator/product-snapshot.json',baseline)
-    workflow_filter=sorted(set(a.workflow)); evaluator_queue={'format_version':'3.0','run_id':run_id,'profile':a.profile,'domain_filter':a.domain,'workflow_filter':workflow_filter,'mission_filter':a.mission,'event_count':len(evaluator_events),'events':evaluator_events}
-    preparation={'profile':a.profile,'domain_filter':a.domain,'workflow_filter':workflow_filter,'mission_filter':a.mission,'fixture_override':a.fixture,'prepared_at':now(),'candidate_blind':True,'maintainer_authored_request':bool(a.request),'candidate_surface_root':str(candidate_dir)}
+    workflow_filter=sorted(set(a.workflow)); evaluator_queue={'format_version':'3.0','run_id':run_id,'profile':effective_profile,'case_filter':a.case,'domain_filter':a.domain,'workflow_filter':workflow_filter,'mission_filter':a.mission,'event_count':len(evaluator_events),'events':evaluator_events}
+    preparation={'profile':effective_profile,'case_filter':a.case,'domain_filter':a.domain,'workflow_filter':workflow_filter,'mission_filter':a.mission,'fixture_override':a.fixture,'prepared_at':now(),'candidate_blind':True,'maintainer_authored_request':bool(a.request),'candidate_surface_root':str(candidate_dir)}
     write_json(run_dir/'evaluator/queue.json',evaluator_queue); write_json(run_dir/'evaluator/suite.json',suite); write_json(run_dir/'evaluator/preparation.json',preparation)
     future=any(fixture_data(f).get('timeline') for f in fixtures)
-    write_json(run_dir/'run.json',{'run_id':run_id,'created_at':now(),'product_root':str(product_root),'workspace':str(workspace),'candidate_surface_root':str(candidate_dir),'profile':a.profile,'domain_filter':a.domain,'event_count':len(evaluator_events),'status':'prepared','execution_status':'prepared','qualification_status':'NOT_EVALUATED','product_snapshot_digest':baseline['digest'],'benchmark_context_seeded':True,'future_evidence_staged':future,'candidate_blind':True})
-    print(json.dumps({'run_id':run_id,'run_dir':str(run_dir),'product_root':str(product_root),'workspace':str(workspace),'event_count':len(evaluator_events),'candidate_blind':True,'next_command':f'python3 qualification/task_controller.py start "{run_dir}"','candidate_exposure':'Give the model only the neutral staged product/workspace paths and the plain business request printed by task_controller.py start. Keep evaluator/checkpoint paths outside the candidate filesystem scope.'},indent=2))
+    write_json(run_dir/'run.json',{'run_id':run_id,'created_at':now(),'product_root':str(product_root),'workspace':str(workspace),'candidate_surface_root':str(candidate_dir),'profile':effective_profile,'case_filter':a.case,'domain_filter':a.domain,'event_count':len(evaluator_events),'status':'prepared','execution_status':'prepared','qualification_status':'NOT_EVALUATED','product_snapshot_digest':baseline['digest'],'benchmark_context_seeded':True,'future_evidence_staged':future,'candidate_blind':True})
+    print(json.dumps({'run_id':run_id,'run_dir':str(run_dir),'product_root':str(product_root),'workspace':str(workspace),'event_count':len(evaluator_events),'candidate_blind':True,'next_command':f'python3 qualification/task_controller.py start "{run_dir}"','candidate_exposure':'Give the model only the neutral staged product/workspace paths and the plain business request printed by task_controller.py start. Do not give the candidate access to the source checkout, evaluator tree, use-case library, judge files, checkpoints, or queue metadata.'},indent=2))
 
 if __name__=='__main__': main()
