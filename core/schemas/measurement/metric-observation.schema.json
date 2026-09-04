@@ -4,90 +4,22 @@
   "type": "object",
   "additionalProperties": false,
   "properties": {
-    "id": {
-      "type": "string",
-      "pattern": "^mobs_[A-Za-z0-9_-]+$"
-    },
-    "object_type": {
-      "const": "MetricObservation"
-    },
-    "schema_version": {
-      "type": "string",
-      "pattern": "^\\d+\\.\\d+\\.\\d+$"
-    },
-    "business_id": {
-      "type": "string",
-      "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$"
-    },
-    "created_at": {
-      "type": "string",
-      "format": "date-time"
-    },
-    "updated_at": {
-      "type": "string",
-      "format": "date-time"
-    },
-    "lineage": {
-      "type": "array",
-      "items": {
-        "type": "string",
-        "minLength": 1
-      },
-      "uniqueItems": true
-    },
-    "metric_ref": {
-      "type": "string",
-      "minLength": 1
-    },
-    "window_start": {
-      "type": "string",
-      "format": "date-time"
-    },
-    "window_end": {
-      "type": "string",
-      "format": "date-time"
-    },
+    "id": {"type": "string", "pattern": "^mobs_[A-Za-z0-9_-]+$"},
+    "object_type": {"const": "MetricObservation"},
+    "schema_version": {"type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$"},
+    "business_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "updated_at": {"type": "string", "format": "date-time"},
+    "lineage": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+    "metric_ref": {"type": "string", "minLength": 1},
+    "window_start": {"type": "string", "format": "date-time"},
+    "window_end": {"type": "string", "format": "date-time"},
     "value": {},
-    "dimensions": {
-      "type": "object"
-    },
-    "source_ref": {
-      "type": "string",
-      "minLength": 1
-    },
-    "source_quality": {
-      "type": "string",
-      "minLength": 1
-    },
-    "subject_refs": {
-      "type": "array",
-      "items": {
-        "type": "string",
-        "minLength": 1
-      },
-      "uniqueItems": true
-    },
-    "confidence": {
-      "type": [
-        "number",
-        "null"
-      ],
-      "minimum": 0,
-      "maximum": 1
-    },
-    "extensions": {
-      "type": "object"
-    }
+    "dimensions": {"type": "object"},
+    "source_ref": {"type": "string", "minLength": 1},
+    "source_quality": {"type": "string", "minLength": 1},
+    "subject_refs": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+    "extensions": {"type": "object"}
   },
-  "required": [
-    "id",
-    "object_type",
-    "schema_version",
-    "business_id",
-    "metric_ref",
-    "window_start",
-    "window_end",
-    "value",
-    "source_ref"
-  ]
+  "required": ["id", "object_type", "schema_version", "business_id", "metric_ref", "window_start", "window_end", "value", "source_ref"]
 }
