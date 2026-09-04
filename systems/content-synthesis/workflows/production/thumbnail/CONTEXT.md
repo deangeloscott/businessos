@@ -2,7 +2,6 @@
 id: content.production.thumbnail
 type: workflow
 owner_system: content-synthesis
-artifact_role: customer_facing_production_root
 reads:
 - Insight
 - Opportunity
@@ -12,7 +11,6 @@ reads:
 - PlatformProfile
 writes:
 - Asset
-- WorkRequest
 context:
 - Brand
 - AudienceSegment
@@ -37,4 +35,4 @@ Run for platforms/formats where a thumbnail or cover materially affects selectio
 4. [HYBRID] Reject deceptive before/after, fabricated reaction, unreadable complexity, misleading scale, or synthetic evidence presented as real.
 5. [AI] Specify composition, focal subject, minimal text if needed, visual hierarchy, and brand/platform constraints.
 6. [DETERMINISTIC] Define mobile/small-size legibility and variant-test plan where relevant.
-7. [AI] Create a Content WorkRequest/Asset brief for image production and verify final title-thumbnail match.
+7. [INTEGRATION] Create or render the useful thumbnail/cover Asset with the active model/harness's available image/design capability, or preserve a production-ready visual specification when rendering is unavailable and the specification remains useful. Verify final title-thumbnail expectation match.
