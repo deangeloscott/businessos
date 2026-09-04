@@ -4,9 +4,9 @@ type: workflow
 owner_system: seo-aeo
 reads:
 - type: Insight
-  owner_system: industry-intelligence
+  domain: industry-intelligence
 - type: Learning
-  owner_system: seo-aeo
+  domain: seo-aeo
 writes:
 - SourceRecord
 - Observation
@@ -48,11 +48,11 @@ These are optional expert methods selected by the model/user, not runtime routes
 
 ## Verification
 - Validate written AURA objects and preserve SourceRecord/Observation lineage.
-- Keep evidence strength, conclusion confidence, applicability, uncertainty, and external platform/policy status distinct.
+- Keep evidence strength, applicability, material uncertainty, and external platform/policy status distinct.
 - Do not fabricate a runtime Event merely because monitoring found something important.
 
 ## Measurement
-- Strategy claims become stronger only through relevant observations, experiments, OutcomeEvaluations, replication, or authoritative guidance; popularity and confidence language are not outcome evidence.
+- Strategy claims become stronger only through relevant observations, experiments, OutcomeEvaluations, replication, or authoritative guidance; popularity and confident wording are not outcome evidence.
 
 ## Learning
 - Maintain SEO-specific strategy knowledge as SEO Domain Learning only when the accumulated evidence materially supports durable organizational learning.
@@ -63,5 +63,5 @@ These are optional expert methods selected by the model/user, not runtime routes
 
 ## Completion Criteria
 - Material new evidence is captured through current SourceRecord/Observation semantics when useful.
-- Provenance, contradictory evidence, applicability, confidence, and external guidance status remain inspectable.
+- Provenance, contradictory evidence, applicability, material uncertainty, and external guidance status remain inspectable.
 - No tactic is promoted, deprecated, blocked, or handed off merely because a monitoring Workflow observed it.
