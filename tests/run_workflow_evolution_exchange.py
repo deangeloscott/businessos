@@ -33,7 +33,7 @@ def seed_learning(business_id):
         'created_at':now(),'updated_at':now(),'scope':'business',
         'statement':'Proof-first landing structure improved qualified conversion in the tested context.',
         'maturity':'validated','status':'active','applies_when':['Evidence-backed landing-page work'],
-        'does_not_apply_when':[],'evidence_refs':[],'confidence':0.9,'extensions':{}
+        'does_not_apply_when':[],'evidence_refs':[],'extensions':{}
     }
     path=base/'learning'/'business'/f"{obj['id']}.json";path.parent.mkdir(parents=True,exist_ok=True);path.write_text(json.dumps(obj,indent=2)+'\n');return obj
 
@@ -66,6 +66,8 @@ def main():
     for retired_name in ('required_capabilities','optional_capabilities','target_contract_id','local_contract_id','target_workflow_id','local_workflow_id','owner_system','reads','writes','compatibility','proposal_ref','approval'):
         req(retired_name not in text,f'ProcessExtension retained retired control/contract field {retired_name}')
 
+    learning_schema=json.loads((ROOT/'core/schemas/learning/learning.schema.json').read_text())
+    req('confidence' not in learning_schema.get('properties',{}),'Learning regained duplicate numeric confidence score')
     outcome_schema=json.loads((ROOT/'core/schemas/measurement/outcome-evaluation.schema.json').read_text())
     req('causal_confidence' not in outcome_schema.get('properties',{}),'OutcomeEvaluation regained forced numeric causal confidence')
 
@@ -148,7 +150,7 @@ def main():
         req(workflow_path and workflow_meta.get('type')=='workflow','Workflow learning procedure is not authored as reusable knowledge')
         exchange_path,exchange_meta=workflow_by_id('core.intelligence.innovation-exchange')
         req(exchange_path and exchange_meta.get('type')=='workflow','Innovation Exchange procedure is not authored as reusable knowledge')
-        print('organization-local Workflow learning + Innovation Exchange regressions passed without proposal, capability, version, runtime authority')
+        print('organization-local Workflow learning + Innovation Exchange regressions passed without proposal, capability, version, or runtime authority')
     finally:
         if prior is None:os.environ.pop('BUSINESSOS_WORKSPACE',None)
         else:os.environ['BUSINESSOS_WORKSPACE']=prior
