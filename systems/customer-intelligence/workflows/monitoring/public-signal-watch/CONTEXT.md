@@ -1,6 +1,6 @@
 ---
 id: customer.monitoring.public-signal-watch
-type: detector
+type: workflow
 owner_system: customer-intelligence
 reads:
 - Observation
