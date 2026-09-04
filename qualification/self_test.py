@@ -2,9 +2,9 @@
 """Maintainer-only self-test for the qualification/evaluator harness.
 
 This does not test whether AURA is a good product and is not part of the AURA
-product-integrity gate. It only checks that the blind evaluator, recovery,
-integrity, and staged-product observation machinery are trustworthy enough to
-use when running real-work qualification.
+product-integrity gate. It only checks that the blind evaluator, real-world case
+library, recovery, integrity, and staged-product observation machinery are
+trustworthy enough to use when running real-work qualification.
 """
 from pathlib import Path
 import os,subprocess,sys
@@ -13,13 +13,14 @@ ROOT=Path(__file__).resolve().parents[1]
 env=dict(os.environ);env['PYTHONDONTWRITEBYTECODE']='1';env['PYTHONUTF8']='1'
 SELF_TESTS=[
     'tests/run_qualification_framework.py',
+    'tests/run_use_case_library.py',
     'tests/run_qualification_resume.py',
     'tests/run_qualification_integrity.py',
     'tests/run_qualification_product_integrity.py',
 ]
 
 product_gate=(ROOT/'tests/run_all.py').read_text(encoding='utf-8')
-if 'run_qualification_' in product_gate:
+if 'run_qualification_' in product_gate or 'run_use_case_library' in product_gate:
     raise SystemExit('AURA product-integrity gate must not count qualification-harness self-tests')
 
 failures=[]
