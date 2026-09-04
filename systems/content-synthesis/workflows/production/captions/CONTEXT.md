@@ -2,7 +2,6 @@
 id: content.production.captions
 type: workflow
 owner_system: content-synthesis
-artifact_role: customer_facing_production_root
 reads:
 - Insight
 - Opportunity
@@ -12,7 +11,6 @@ reads:
 - PlatformProfile
 writes:
 - Asset
-- WorkRequest
 context:
 - Brand
 - AudienceSegment
@@ -28,7 +26,7 @@ Design captions/on-screen text that improve comprehension and accessibility with
 Make audiovisual content understandable in muted/noisy contexts and reinforce key information.
 
 ## Run When
-Run for video/animation/social content where captions or text overlays are appropriate.
+Use for video/animation/social content where captions or text overlays are appropriate.
 
 ## Process
 1. [DETERMINISTIC] Resolve final script/audio timing and platform caption constraints.
@@ -37,4 +35,4 @@ Run for video/animation/social content where captions or text overlays are appro
 4. [HYBRID] Check names, figures, technical terms, punctuation, timing, speaker changes, and claims against source/script.
 5. [DETERMINISTIC] Enforce safe areas, reading speed, contrast, line length, and accessibility requirements.
 6. [AI] Avoid redundant text that competes with diagrams/demonstrations or changes the meaning through shortening.
-7. [DETERMINISTIC] Produce caption file/text-overlay plan and verify against final render.
+7. [DETERMINISTIC] Produce and preserve the useful caption file/text-overlay Asset and verify it against the final render when one exists.
