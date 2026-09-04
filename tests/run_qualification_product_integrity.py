@@ -32,6 +32,15 @@ def main():
         diff,mutated=changed(baseline,product_snapshot(product))
         req(not mutated,f'external workspace state was falsely classified as staged product mutation: {diff}')
 
+        # AURA-generated registries/manifests are disposable derived views. Normal use may
+        # regenerate them, so they must not be mistaken for candidate mutation of product source.
+        generated=product/'generated';generated.mkdir(parents=True,exist_ok=True)
+        (generated/'workspace-manifest.json').write_text('{"derived":true}\n')
+        (generated/'checksums.txt').write_text('derived\n')
+        diff,mutated=changed(baseline,product_snapshot(product))
+        req(not mutated,f'derived generated views were falsely classified as staged product mutation: {diff}')
+        shutil.rmtree(generated)
+
         # The portable AURA Skill is product source and therefore protected just like
         # policies, Workflows, schemas, scripts, and human docs.
         protected=product/'skills/viraltrac-aura/SKILL.md';original=protected.read_text()
@@ -57,7 +66,7 @@ def main():
             'core/schemas/runtime/scheduler-bindings.schema.json'
         ]
         for rel in retired:req(not (product/rel).exists(),f'staged AURA product still ships retired runtime/provider/capability machinery: {rel}')
-        print('qualification product-integrity regression passed: external workspace state allowed, staged product mutation detected, retired capability/runtime machinery absent, source checkout untouched')
+        print('qualification product-integrity regression passed: external workspace and derived generated state allowed, staged source mutation detected, retired capability/runtime machinery absent, source checkout untouched')
     finally:
         shutil.rmtree(temp_root,ignore_errors=True)
 
