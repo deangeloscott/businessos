@@ -52,9 +52,6 @@
     "marketing-synthesis",
     "seo-aeo"
   ],
-  "playbook_count": 42,
-  "workflow_count": 472,
-  "schema_count": 47,
   "entrypoints": {
     "human": "BEGINNERS-GUIDE.md",
     "storage_setup": "DEPLOYMENT.md",
