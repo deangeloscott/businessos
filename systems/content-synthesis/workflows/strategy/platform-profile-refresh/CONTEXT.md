@@ -29,6 +29,6 @@ Run when a consequential content decision lacks a current PlatformProfile, the p
 1. [DETERMINISTIC] Define the exact platform/surface, market where relevant, profile freshness requirement, and decisions the profile must support.
 2. [INTEGRATION] Retrieve current authoritative platform documentation where available, direct platform observations, and relevant business analytics/Content Learning.
 3. [AI] Separate durable interaction/format behavior from speculative algorithm folklore and from business-specific performance patterns.
-4. [HYBRID] Record current native behaviors, format constraints, attention/interaction patterns, distribution notes, contradictions, and confidence with source references.
+4. [HYBRID] Record current native behaviors, format constraints, attention/interaction patterns, distribution notes, contradictions, unresolved uncertainty, and source references without manufacturing a scalar confidence score.
 5. [DETERMINISTIC] Set `observed_at`, an appropriate `review_after`, status, and supersession link/state where a prior profile exists.
 6. [HYBRID] Validate that every consequential rule is either sourced, business-learned, or explicitly marked uncertain before publishing the PlatformProfile.
