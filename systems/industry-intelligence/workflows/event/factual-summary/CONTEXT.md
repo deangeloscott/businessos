@@ -22,7 +22,7 @@ context:
 Produce a source-grounded account of what happened before adding business or audience interpretation.
 
 ## Business Outcome
-Give all downstream systems a stable factual layer that can be updated without mixing facts with recommendations.
+Give future work a stable factual layer that can be updated without mixing facts with recommendations.
 
 ## Run When
 Run after an Event is verified or materially updated.
@@ -34,4 +34,4 @@ Run after an Event is verified or materially updated.
 4. [AI] Include material dates such as announcement, effective, enforcement, release, study period, or next milestone where applicable.
 5. [HYBRID] Remove audience advice, business recommendations, speculation, and “so what” interpretation from the factual layer.
 6. [DETERMINISTIC] Link each material factual statement to evidence and preserve version/update history.
-7. [AI] Produce a concise updated summary that downstream Insights can reference.
+7. [AI] Produce a concise updated summary that later Insights and decisions can reference.
