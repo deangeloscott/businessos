@@ -4,15 +4,14 @@ type: workflow
 owner_system: marketing-synthesis
 reads:
 - type: Insight
-  owner_system: customer-intelligence
+  domain: customer-intelligence
 - type: Insight
-  owner_system: competitor-intelligence
+  domain: competitor-intelligence
 - Asset
 - MetricObservation
 writes:
 - Insight
 - Opportunity
-- WorkRequest
 context:
 - AudienceSegment
 - Brand
@@ -28,7 +27,7 @@ Determine why the current commercial communication may not move the right audien
 Increase the likelihood of the desired commercial action through evidence-backed persuasion barrier diagnosis that matches audience awareness, offer, proof, and acquisition context.
 
 ## Run When
-Run when an Opportunity or WorkRequest requires persuasion barrier diagnosis to remove a commercial persuasion gap or create the required conversion asset.
+Use when a commercial decision or piece of work needs persuasion-barrier diagnosis before changing messaging or creating a conversion asset.
 
 ## Process
 1. [AI] Define target audience, awareness/buyer stage, desired action, Offer, acquisition context, and current message/asset path.
@@ -37,4 +36,4 @@ Run when an Opportunity or WorkRequest requires persuasion barrier diagnosis to 
 4. [DETERMINISTIC] Compare funnel/asset metrics to locate where response deteriorates; distinguish persuasion from technical/journey friction.
 5. [HYBRID] Test diagnosis against direct customer evidence and competing explanations.
 6. [AI] State the smallest plausible persuasion intervention and what result would support/refute it.
-7. [HYBRID] Create/update Marketing Opportunity only when the primary problem is persuasion/commercial communication; route journey problems to Customer Optimization.
+7. [HYBRID] Preserve an Opportunity only when the possible work is durable and worth remembering. If the primary problem is journey/operational friction rather than persuasion, use the relevant Customer Optimization operating knowledge directly instead of creating an internal AURA handoff.
