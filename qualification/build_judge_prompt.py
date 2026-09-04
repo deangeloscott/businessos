@@ -13,8 +13,10 @@ You are judging AURA's actual business work, not its internal bookkeeping. Revie
 
 {excluded} event(s) were excluded from this normal quality pass because they did not clear the deterministic business-work/integrity floor. Use `--include-hard-failures` only when diagnostic quality scoring is useful.
 
+For real-world use-case runs, case-specific expected-outcome guidance may exist at `{rd/'evaluator/judges'}/<event_id>.md`. That guidance is evaluator-only. Use it to understand what excellent business work should accomplish, not as an execution checklist. The candidate must never receive or be given access to these files.
+
 For each event:
-1. Inspect the ordinary business task, Workflow purpose/process, actual artifacts, cited evidence/source records, durable AURA changes, integrity warnings, and any optional method/continuity observations in `{rd/'evaluator/hard-and-merged-results.json'}`.
+1. Inspect the ordinary business task, any evaluator-only expected-outcome guidance for that event, Workflow purpose/process where applicable, actual artifacts, cited evidence/source records, durable AURA changes, integrity warnings, and any optional method/continuity observations in `{rd/'evaluator/hard-and-merged-results.json'}`.
 2. Determine whether the substantive business work was actually performed. A generic template, placeholder, outline, fake tool claim, short surrogate for a different promised medium, or bookkeeping-only file is not completion.
 3. For a Workflow-acceptance event, treat the Workflow process as expected **business method and quality expertise**, not as a demand for exact internal files or sequence. Equivalent or better implementation may pass; skipping material research, analysis, production, QA, implementation, or measurement should reduce `method_rigor`, completeness, and relevant outcome dimensions when that work was actually necessary.
 4. Do **not** require a particular AURA Run, Workflow ID in a receipt, checkpoint-shaped artifact, provider, model, or tool trace as proof of quality. Optional method provenance can help reconstruct what happened but is not the business result.
