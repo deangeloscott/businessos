@@ -18,7 +18,7 @@ def _evidence_counts(summary):
 
 def prepare_package(business_id,extension_id,detail=None,identity=None,evidence_summary=None,case_study=None,display_name=None,pseudonym=None,output=None):
     extension=get_extension(business_id,extension_id);config=_sharing_config(business_id);detail=detail or config.get('default_detail_level') or 'workflow_only';identity=identity or config.get('default_identity_level') or 'anonymous'
-    if extension.get('mode') not in {'augment_workflow','local_workflow'}:raise ValueError('Only current Workflow knowledge can be prepared for sharing')
+    if not extension.get('workflow_id'):raise ValueError('Only reusable Workflow knowledge can be prepared for sharing')
     if detail not in {'workflow_only','anonymized_evidence','full_case_study'}:raise ValueError('Unknown detail level')
     if identity not in {'anonymous','pseudonymous','named'}:raise ValueError('Unknown identity level')
     if identity=='anonymous':display_name=None;pseudonym=None
@@ -40,13 +40,13 @@ def prepare_package(business_id,extension_id,detail=None,identity=None,evidence_
         identifying=find_identifying_keys(evidence_summary)+find_identifying_keys(case_study)
         if identifying:raise ValueError('Anonymous/pseudonymous package summary contains direct identifying field(s): '+', '.join(identifying))
     process={
-        'mode':extension['mode'],'workflow_id':extension['workflow_id'],'title':extension['title'],'purpose':extension['purpose'],
+        'workflow_id':extension['workflow_id'],'title':extension['title'],'purpose':extension['purpose'],
         'discovery_terms':extension.get('discovery_terms') or [],'applies_when':extension.get('applies_when') or [],
         'does_not_apply_when':extension.get('does_not_apply_when') or [],'instructions':extension.get('instructions') or [],
         'verification':extension.get('verification') or []
     }
     fingerprint=innovation_fingerprint(process);timestamp=now();package_id='ipkg_'+hashlib.sha256(f'{fingerprint}|{business_id}|{timestamp}'.encode()).hexdigest()[:20]
-    package={'format_version':'1.2','package_id':package_id,'created_at':timestamp,'innovation_fingerprint':fingerprint,'detail_level':detail,'identity_level':identity,'contributor':{'display_name':display_name,'pseudonym':pseudonym},'process':process,'evidence_summary':evidence_summary,'case_study':case_study,'privacy':{'raw_private_state_included':False,'secrets_included':False,'source_business_identity_included':identity=='named','user_approved_export':False,'approved_at':None},'integrity':{'algorithm':'sha256','content_hash':None}}
+    package={'format_version':'1.3','package_id':package_id,'created_at':timestamp,'innovation_fingerprint':fingerprint,'detail_level':detail,'identity_level':identity,'contributor':{'display_name':display_name,'pseudonym':pseudonym},'process':process,'evidence_summary':evidence_summary,'case_study':case_study,'privacy':{'raw_private_state_included':False,'secrets_included':False,'source_business_identity_included':identity=='named','user_approved_export':False,'approved_at':None},'integrity':{'algorithm':'sha256','content_hash':None}}
     validate_package(package);path=Path(output) if output else ROOT/'runtime'/'innovation'/business_id/f'{package_id}.draft.json';path.parent.mkdir(parents=True,exist_ok=True);path.write_text(json.dumps(package,indent=2)+'\n');return package,path
 
 def main():
