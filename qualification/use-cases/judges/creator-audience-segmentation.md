@@ -1,0 +1,3 @@
+# Expected business outcome
+
+A strong result should derive decision-useful segments from real behavioral/qualitative differences rather than demographic invention or arbitrary personas. It should explain what evidence supports each distinction and how editorial, paid membership, or sponsor communication should change. The segmentation should be simple enough to operate and preserve uncertainty where evidence is incomplete.

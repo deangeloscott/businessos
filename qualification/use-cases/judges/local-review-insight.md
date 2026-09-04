@@ -1,0 +1,3 @@
+# Expected business outcome
+
+A strong result should synthesize recurring themes from actual customer evidence, distinguish praise, friction, questions, and isolated anecdotes, and avoid inventing sentiment statistics not supported by the data. It should produce reusable customer insights and a prioritized set of concrete changes to pages, proof, expectation-setting, or follow-up. Durable state should capture the reusable meaning rather than duplicating raw comments.

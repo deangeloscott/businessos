@@ -1,0 +1,3 @@
+# Expected business outcome
+
+A strong result should select a well-supported research finding and translate it into channel-native public assets without overstating the evidence. Each format should preserve the core insight while using appropriate structure and attention mechanics. The package should teach real value, fit SignalCraft's brand, and create a credible path to deeper content rather than resorting to sensational claims.

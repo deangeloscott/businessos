@@ -1,0 +1,3 @@
+# Expected business outcome
+
+A strong result should derive a credible persuasive angle from Northline customer/offer evidence and current creative context where useful, then produce complete channel-ready ad copy/creative directions plus message-matched landing content. Variants should test meaningful hypotheses rather than trivial wording changes. The work should preserve premium positioning and avoid invented testimonials, sourcing claims, performance, or discounts.

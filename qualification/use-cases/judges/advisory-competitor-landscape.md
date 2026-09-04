@@ -1,0 +1,3 @@
+# Expected business outcome
+
+A strong result should define the relevant alternative set—including substitutes such as fractional operators or internal action where appropriate—using current evidence. It should compare decision-relevant dimensions rather than superficial website features, distinguish fact from inference, and identify credible whitespace that fits ClearPath's actual offer/client evidence. The brief should directly inform positioning and sales choices.

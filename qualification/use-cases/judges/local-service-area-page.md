@@ -1,0 +1,3 @@
+# Expected business outcome
+
+A strong result should create a substantive local service-area page that serves homeowner intent rather than swapping city names into generic copy. It should use real Harbor service/customer evidence, current local/search context where material, and truthful geographic/business facts. The page should make service relevance, proof, objections, and conversion action clear without inventing local presence, reviews, licenses, or performance.

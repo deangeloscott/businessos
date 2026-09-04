@@ -1,0 +1,1 @@
+Use the client evidence we actually have to create the strongest case-study-style proof asset ClearPath can honestly publish without inventing client metrics. I want a finished piece that shows the situation, operating problem, what ClearPath did, and why the approach mattered, while being explicit about anything we cannot claim.

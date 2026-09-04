@@ -1,0 +1,3 @@
+# Expected business outcome
+
+A strong result should analyze the actual lost-deal evidence, distinguish recurring root causes from surface labels, avoid treating counts as causal proof, and prioritize commercially meaningful friction. It should translate the diagnosis into specific changes to messaging, proof, implementation communication, sales enablement, or follow-up where supported. The result should be concise enough for a decision meeting while preserving reusable customer truth in AURA.

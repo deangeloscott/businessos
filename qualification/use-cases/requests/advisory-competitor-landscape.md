@@ -1,0 +1,1 @@
+ClearPath competes against boutique consultants, larger transformation firms, fractional operators, and sometimes doing nothing. Research the current landscape enough to understand the meaningful alternatives for our target clients and tell me where ClearPath can credibly win. I need a decision-grade competitive brief, not a long list of consultancy websites.

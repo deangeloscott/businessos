@@ -1,0 +1,3 @@
+# Expected business outcome
+
+A strong result should use current credible sources, distinguish material changes from routine announcements, connect developments to SignalCraft's audience, and calibrate uncertainty. It should synthesize a small number of durable implications instead of producing a long news list. Persisted AURA meaning should capture verified changes and reusable implications without freezing speculation as fact.

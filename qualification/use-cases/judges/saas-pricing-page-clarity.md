@@ -1,0 +1,3 @@
+# Expected business outcome
+
+A strong result should preserve the known offer truth while resolving the real buyer uncertainty around scope, coexistence, implementation, proof, and next action. It should produce finished pricing-page copy or an implementation-ready page revision, not merely advice. It must not invent packaging, discounts, integrations, guarantees, or ROI. The page should improve decision clarity for qualified buyers without overpromising.

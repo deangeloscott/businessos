@@ -1,0 +1,1 @@
+We need a current view of how the field-service software market is packaging and pricing for teams like AtlasOps targets. Research what is publicly observable now, normalize the comparisons enough to make them useful, and tell me whether anything has changed our competitive or offer assumptions. Do not guess hidden enterprise pricing or treat list price as proof of value.

@@ -1,0 +1,3 @@
+# Expected business outcome
+
+A strong result should make the diagnostic and implementation offers meaningfully distinct while staying within known price/scope truth. It should resolve buyer uncertainty about fit, process, deliverables, transition between offers, and next action. The final copy should be usable on a services/pricing page or sales asset without invented guarantees, outcomes, or deliverables.

@@ -1,0 +1,1 @@
+Prospects still do not understand the difference between the $7,500 diagnostic and the larger implementation engagement. Use our buyer/client evidence and rewrite the offer explanation so a good-fit prospect can tell which one they need, what happens, what they get, and what the next step is. Do not invent deliverables or guarantees.

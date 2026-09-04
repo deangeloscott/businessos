@@ -1,0 +1,3 @@
+# Expected business outcome
+
+A strong result should choose an intent that can plausibly lead to valuable discovery and purchase, inspect enough current search/answer competition to understand the bar, and create a finished page that combines useful education with an appropriate commerce path. It should avoid generic SEO filler, preserve product/sourcing truth, and use current evidence without claiming unobserved ranking or citation outcomes.

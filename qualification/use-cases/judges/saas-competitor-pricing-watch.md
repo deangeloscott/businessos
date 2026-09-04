@@ -1,0 +1,3 @@
+# Expected business outcome
+
+A strong result should use current public evidence, distinguish visible pricing from quote-based or unknown pricing, normalize units/commitments without erasing meaningful packaging differences, and separate observation from inference. It should identify material implications for AtlasOps positioning or offer design only where supported. Durable evidence should be reconstructable, and hidden or unavailable enterprise terms must remain unknown rather than guessed.

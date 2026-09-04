@@ -1,0 +1,1 @@
+Take one of the strongest current research findings relevant to SignalCraft readers and turn it into a concise public package: one LinkedIn post, one short X thread, and one visual explainer outline. The point is to teach something useful and drive qualified readers back to the deeper work without stripping away the evidence or turning it into hype.

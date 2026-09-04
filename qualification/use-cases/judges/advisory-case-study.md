@@ -1,0 +1,3 @@
+# Expected business outcome
+
+A strong result should turn available client evidence into persuasive proof without fabricating names, metrics, savings, timelines, or outcomes. It should clearly distinguish observed client problems, ClearPath's method, supported result/learning, and unknowns. The finished case-study-style asset should be useful for website/sales contexts and demonstrate implementation value rather than generic consulting claims.

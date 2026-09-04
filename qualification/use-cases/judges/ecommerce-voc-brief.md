@@ -1,0 +1,3 @@
+# Expected business outcome
+
+A strong result should synthesize the supplied first-party evidence into reusable customer language, motivations, objections, desired outcomes, and meaningful segments without flattening contradictory evidence. Quantitative patterns should remain tied to their actual measures, and qualitative themes should not be presented as population statistics. The brief should be directly useful across marketing/product/lifecycle decisions and persist durable customer meaning cleanly.

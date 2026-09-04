@@ -1,0 +1,1 @@
+Go through the customer feedback and review-type evidence we have for Harbor and tell me what it actually says about why homeowners trust us, what frustrates them, and what keeps coming up before or after service. Turn that into a small set of reusable customer insights plus the concrete website or follow-up changes we should make first.

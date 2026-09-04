@@ -1,0 +1,1 @@
+Give me the SignalCraft editor's view of what materially changed in AI agents and business automation over the last few weeks. I do not want a news dump. Verify the important developments, group them into the changes that actually matter for lean teams, tell me what is still noise or uncertain, and preserve the few things worth remembering for future coverage.

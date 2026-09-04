@@ -1,0 +1,3 @@
+# Expected business outcome
+
+A strong result should use SignalCraft reader/content evidence to clarify the free-versus-paid value difference and produce complete membership-page copy. It should make the offer, audience fit, proof, objections, and next action clear while preserving the $24/month truth and avoiding invented features, member outcomes, or urgency. The finished page should feel consistent with SignalCraft's evidence-led trust positioning.
