@@ -1,0 +1,3 @@
+# Expected business outcome
+
+A strong result should diagnose the supported churn drivers from cancellation, support, and customer evidence instead of defaulting to discounts. It should create a practical save/cancel experience that offers relevant alternatives such as pause, skip, frequency, timing, or selection control when justified. Copy should remain brand-appropriate and customer-respectful. The result should be implementable without inventing unavailable product functionality, deployment, or retention impact.

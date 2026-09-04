@@ -1,0 +1,3 @@
+# Expected business outcome
+
+A strong result should use Northline customer evidence to identify the real first-purchase questions and persuasion gaps, then produce a complete product-page draft rather than generic CRO advice. The page should preserve premium positioning while making the offer, selection experience, proof, objections, shipping/expectations, and purchase action clear. External competitive examples may inform the work but must not create invented product or performance claims. The result should be implementation-ready enough that a team is not rebuilding the core page strategy.

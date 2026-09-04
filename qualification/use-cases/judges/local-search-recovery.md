@@ -1,0 +1,3 @@
+# Expected business outcome
+
+A strong result should diagnose the most commercially important local/organic problem from available evidence, distinguish observed issues from hypotheses, and inspect the live local/search field where necessary. Recommendations should prioritize qualified service demand rather than generic SEO activity. Where the environment allows, the candidate should produce the actual page/content/local-profile drafts or implementation-ready changes rather than stop at a checklist. Location, service, and competitor claims must remain evidence-grounded.

@@ -1,0 +1,3 @@
+# Expected business outcome
+
+A strong result should derive positioning from supported client problems, lost-deal friction, offer reality, and current competitive context where material. It should choose a credible wedge rather than generic differentiation and produce finished persuasive page copy. The page should make implementation, scope, proof needs, and next action clear while avoiding invented client results or savings. Current competitor claims should be evidence-backed.

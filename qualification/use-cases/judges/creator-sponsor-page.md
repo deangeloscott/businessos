@@ -1,0 +1,3 @@
+# Expected business outcome
+
+A strong result should use real audience/sponsor evidence to resolve the known buying questions, clearly explain fit and editorial boundaries, and create a persuasive but credible sponsor page plus outreach email. It should not manufacture audience demographics, package performance, or sponsor ROI. The offer should be concrete enough for a qualified buyer to understand the next step while preserving SignalCraft's reader-trust positioning.

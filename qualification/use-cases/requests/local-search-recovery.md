@@ -1,0 +1,1 @@
+Organic and local lead volume for Harbor HVAC has softened. Figure out what is most likely going wrong across the site, local search presence, service-area coverage, and current competitive field, then make the highest-value improvements you can without publishing anything live. I care more about booked service calls than vanity traffic.

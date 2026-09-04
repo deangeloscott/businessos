@@ -1,0 +1,3 @@
+# Expected business outcome
+
+A strong result should choose a valuable intent that fits AtlasOps rather than chasing volume, inspect enough current search/answer competition to understand the real bar, and turn that evidence into a finished customer-facing asset. The asset should satisfy the important intent, differentiate credibly, preserve factual/brand constraints, provide a sensible next action, and be professionally usable. Research should materially influence the asset instead of living in a detached report. Do not reward unobserved ranking, traffic, or AI-citation claims.

@@ -1,0 +1,1 @@
+We have a new month of funnel data, fresh customer feedback, and a possible competitor or market change. Reassess AtlasOps based on what is actually new. Tell me which prior assumptions still hold, which should change, and do any follow-up work that is justified now. Do not chase a trend just because it is new, and verify external claims before acting on them.

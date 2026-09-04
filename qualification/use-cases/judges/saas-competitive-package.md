@@ -1,0 +1,3 @@
+# Expected business outcome
+
+A strong result should establish a credible current comparison set, separate direct competitors from substitutes or broader suites where useful, and ground material claims about positioning, capabilities, pricing, or implementation in real evidence. Observation and inference should remain distinct. The recommendation should identify defensible whitespace rather than generic differentiation and should translate that position into actionable messaging, offer, proof, or funnel implications. Current external evidence should be reconstructable when it materially drives the conclusion.

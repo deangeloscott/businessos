@@ -1,0 +1,62 @@
+{
+  "format_version": "1.0",
+  "business_id": "signalcraft",
+  "name": "SignalCraft",
+  "category": "independent research newsletter and creator education business",
+  "objective": "Grow qualified newsletter subscribers, paid research members, and sponsor revenue without sacrificing reader trust.",
+  "bootstrap_facts": {
+    "industries": ["independent research media", "creator education"],
+    "objectives": ["Grow qualified newsletter subscribers, paid research members, and sponsor revenue without sacrificing reader trust."],
+    "brand": {
+      "voice": {"tone": ["clear", "curious", "evidence-led", "practical"]},
+      "positioning": {"statement": "SignalCraft turns fast-moving AI and automation developments into practical operating guidance for lean teams."},
+      "prohibited_styles": ["AI hype", "unsupported certainty", "generic thought-leadership filler"]
+    }
+  },
+  "offers": [
+    {"name": "SignalCraft Weekly", "price": "free", "notes": "Weekly research and practical operating guidance."},
+    {"name": "SignalCraft Pro", "price": "$24/month", "notes": "Monthly deep research, implementation notes, and member briefings."},
+    {"name": "Research Sponsorship", "price": "custom", "notes": "Never invent package reach or guaranteed sponsor outcomes."}
+  ],
+  "audiences": [
+    {"segment": "Lean operations and growth leaders", "pain": "too many AI tools and claims, not enough reliable implementation guidance", "desired": "know what matters and what to do next"},
+    {"segment": "Technical founders and builders", "pain": "fast-moving tooling landscape and shallow summaries", "desired": "evidence-backed synthesis and concrete operating implications"}
+  ],
+  "first_party": {
+    "newsletter": {"subscribers": 48200, "average_open_rate": 0.48, "average_click_rate": 0.068, "paid_members": 2140},
+    "content_history": [
+      {"title": "The AI Agent Stack for Lean Teams", "views": 70400, "new_subscribers": 1810, "paid_member_starts": 94},
+      {"title": "50 Prompts Worth Saving", "views": 111000, "new_subscribers": 610, "paid_member_starts": 21},
+      {"title": "What Agentic Automation Actually Replaces", "views": 43800, "new_subscribers": 1260, "paid_member_starts": 112}
+    ],
+    "reader_survey": [
+      "I want fewer tool lists and more examples of what a small team can actually automate.",
+      "I trust SignalCraft when you show the source and tell me what is still uncertain.",
+      "The deep dives are why I pay. The quick roundups are useful but interchangeable.",
+      "I want to know where agents break in real operations, not just what the demos can do.",
+      "A short weekly summary plus one serious monthly implementation brief is ideal."
+    ],
+    "sponsor_pipeline": {"monthly_inquiries": 24, "qualified_conversations": 11, "booked_sponsors": 7},
+    "sponsor_feedback": [
+      "The audience sounds relevant, but I cannot tell which roles actually read the newsletter.",
+      "I need examples of how sponsorship is integrated without feeling like a banner ad.",
+      "The current page does not make the packages or editorial boundaries clear."
+    ],
+    "known_constraints": [
+      "Do not invent audience demographics, sponsor ROI, or publication performance not present in evidence.",
+      "Research claims about current AI products or companies require current external evidence when material.",
+      "Do not publish or contact sponsors from this environment; local drafts are allowed."
+    ]
+  },
+  "timeline": {
+    "later_period": {
+      "newsletter": {"subscribers": 51700, "average_open_rate": 0.42, "average_click_rate": 0.066, "paid_members": 2390},
+      "new_reader_feedback": [
+        "I am forwarding the implementation briefs to our operations lead more than to our engineering team.",
+        "The weekly email feels busier lately, but the research links are still useful."
+      ],
+      "sponsor_feedback": ["We need clearer case examples and role-level audience fit before renewing."],
+      "market_events": ["A major AI-agent vendor announces a new business automation product; verify current public evidence before treating it as decision-relevant."]
+    }
+  }
+}

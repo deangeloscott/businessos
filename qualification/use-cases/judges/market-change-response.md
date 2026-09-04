@@ -1,0 +1,3 @@
+# Expected business outcome
+
+A strong result should compare new evidence with prior organizational understanding, preserve what remains supported, and revise or supersede what no longer does. External market/competitor changes should be verified before driving action. The candidate should distinguish signal from noise, update durable AURA meaning cleanly, and complete any justified follow-up work rather than merely noting the change. Stale conclusions should not remain dominant after contradictory evidence.

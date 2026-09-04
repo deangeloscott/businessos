@@ -1,0 +1,50 @@
+{
+  "format_version": "1.0",
+  "business_id": "clearpath",
+  "name": "ClearPath Advisory",
+  "category": "boutique operations consultancy for growing professional-services firms",
+  "objective": "Increase qualified strategy calls and proposal win rate while positioning around implementation, not generic consulting advice.",
+  "bootstrap_facts": {
+    "industries": ["professional services consulting"],
+    "objectives": ["Increase qualified strategy calls and proposal win rate while positioning around implementation, not generic consulting advice."],
+    "brand": {
+      "voice": {"tone": ["senior", "plainspoken", "practical", "specific"]},
+      "positioning": {"statement": "ClearPath helps growing service businesses fix delivery handoffs, management systems, and operating bottlenecks without burying teams in transformation theater."},
+      "prohibited_styles": ["consulting jargon", "fear-based claims", "guaranteed savings"]
+    }
+  },
+  "offers": [
+    {"name": "Operating Bottleneck Diagnostic", "price": "$7,500", "notes": "Two-week diagnostic with findings and prioritized intervention plan."},
+    {"name": "Operating System Redesign", "price": "from $35,000", "notes": "Implementation scope varies by team and process."}
+  ],
+  "audiences": [
+    {"segment": "Founder-led service firms, 20-150 employees", "pain": "growth has outpaced management systems and handoffs", "desired": "more reliable delivery without adding unnecessary management layers"},
+    {"segment": "COO / operations leaders", "pain": "cross-team work stalls between sales, delivery, and account management", "desired": "clear ownership, faster flow, fewer escalations"}
+  ],
+  "first_party": {
+    "monthly_funnel": {"sessions": 4200, "diagnostic_downloads": 132, "strategy_calls": 34, "proposals": 11, "wins": 4},
+    "lost_deal_reasons": [
+      {"reason": "offer felt too generic", "count": 8},
+      {"reason": "unclear what implementation would look like", "count": 6},
+      {"reason": "no immediate urgency", "count": 5},
+      {"reason": "price", "count": 4}
+    ],
+    "client_interviews": [
+      "We did not need another strategy deck. We needed someone to help fix the handoffs.",
+      "Sales was promising things delivery could not see until kickoff.",
+      "The founder was still the escalation path for everything important.",
+      "The diagnostic was useful because it showed us which operating problem was causing the others.",
+      "I was worried this would become a six-month transformation program."
+    ],
+    "content_history": [
+      {"title": "Why Service Firms Break at 50 Employees", "views": 9200, "strategy_call_assists": 18},
+      {"title": "The Handoff Audit", "views": 5100, "strategy_call_assists": 22},
+      {"title": "Operations Maturity Model", "views": 14300, "strategy_call_assists": 9}
+    ],
+    "known_constraints": [
+      "Do not invent client results, savings, or case-study outcomes.",
+      "No CRM or email platform is connected; create local drafts only.",
+      "Current competitor claims require current public evidence where material."
+    ]
+  }
+}

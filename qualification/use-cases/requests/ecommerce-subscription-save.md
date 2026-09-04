@@ -1,0 +1,1 @@
+Our subscription cancellations are telling us customers often have too much coffee or want more control over timing. Figure out what is really driving avoidable churn and design the strongest save experience we could implement. Create the cancellation-flow messaging, lifecycle changes, and any customer-facing copy needed, but do not pretend anything has been deployed.

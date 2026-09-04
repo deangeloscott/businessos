@@ -1,0 +1,1 @@
+People download our operating diagnostic, but too few turn into serious strategy calls. Use what we know about why buyers hesitate and what past clients valued, then create the email nurture sequence we should send after the download. I want the actual emails, not just a funnel diagram, and they should help a good-fit prospect decide whether a call with ClearPath is worth it.

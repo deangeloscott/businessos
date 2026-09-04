@@ -1,0 +1,1 @@
+Use the strongest SignalCraft research angle already supported by our audience and content history and turn it into a cross-channel package for the next week. I need the actual newsletter teaser, LinkedIn post, short X thread, and a simple carousel script or slide-by-slide outline. Each should feel native to the channel instead of being the same paragraph reformatted.

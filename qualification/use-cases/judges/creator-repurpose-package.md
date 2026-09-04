@@ -1,0 +1,3 @@
+# Expected business outcome
+
+A strong result should select a genuinely strong supported idea, preserve its truth across formats, and create the requested channel-native assets rather than one generic message copied four ways. Each asset should have a clear audience/job, appropriate structure and length, and SignalCraft's evidence-led tone. Claims should remain supported even when compressed. The package should be usable by a real content team with minimal rewriting.

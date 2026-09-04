@@ -1,0 +1,3 @@
+# Expected business outcome
+
+A strong result should prioritize from actual business evidence and expected commercial leverage rather than touching every domain for completeness. The candidate should explain the chosen intervention succinctly, then complete the substantive work that can be done in the environment. Cross-domain evidence should be reused where it materially improves the decision. The result should preserve useful continuity and a truthful measurement/recheck path without inventing outcomes.

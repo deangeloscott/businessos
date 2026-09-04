@@ -1,0 +1,3 @@
+# Expected business outcome
+
+A strong result should convert real customer/proof evidence into persuasive local-service copy without manufacturing trust claims. The page should address important homeowner concerns, make service/geographic relevance clear, use proof at the right moments, and create a credible conversion path. Competitor context may inform differentiation but should not produce unsupported comparative claims. The finished copy should be usable as a real page draft, not merely a list of recommendations.

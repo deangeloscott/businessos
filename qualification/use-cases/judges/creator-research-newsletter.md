@@ -1,0 +1,3 @@
+# Expected business outcome
+
+A strong result should conduct current research sufficient to distinguish real operating capability from hype, synthesize rather than list vendors, and produce a finished SignalCraft-style newsletter issue. Claims about current products, companies, or capabilities should be traceable to credible sources and calibrated for uncertainty. The issue should deliver practical implications for lean operators, fit the known reader preference for evidence-led implementation guidance, and be compelling enough to publish after normal editorial review.

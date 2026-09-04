@@ -1,0 +1,3 @@
+# Expected business outcome
+
+A strong result should use ClearPath's real buyer objections and client language to design a coherent nurture sequence with distinct jobs across messages. It should educate, build proof, clarify implementation, and create an appropriate call-to-action without manufacturing urgency, savings, or case results. The actual emails should be polished enough to load into an email platform after normal review.

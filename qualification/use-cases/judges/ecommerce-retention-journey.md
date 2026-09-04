@@ -1,0 +1,3 @@
+# Expected business outcome
+
+A strong result should identify the evidence-backed post-purchase friction, respect that repeat purchase and subscription are different outcomes, and create a coherent journey that helps customers choose, brew, reorder, or subscribe when appropriate. It should include the actual implementation-ready messages/assets rather than only a lifecycle map. Timing and personalization should be plausible from the supplied evidence, and the candidate must not claim deployment or lift without a live system and measurement.

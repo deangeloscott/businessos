@@ -1,0 +1,3 @@
+# Expected business outcome
+
+A strong result should identify the objections materially supported by AtlasOps evidence, distinguish recurring buyer friction from isolated comments, and prioritize the issues that plausibly affect qualified conversion. It should preserve important uncertainty, avoid turning correlation into causation, and translate the findings into concrete messaging, proof, sales-enablement, or page implications. The result should be usable by marketing/sales without redoing the analysis, and durable AURA state should capture only reusable customer truth rather than every intermediate note.
