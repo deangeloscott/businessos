@@ -66,6 +66,13 @@ def main():
     req(statuses=={'proposed','applied','rejected','superseded','withdrawn'},f'ContextUpdateProposal lifecycle drifted from unresolved-context semantics: {sorted(statuses)}')
     req('decision_ref' in proposal_props,'ContextUpdateProposal should optionally link a real DecisionRecord when a decision resolves the proposal')
 
+    # IndustryEvent is the evolving factual external event. Materiality interpretation belongs
+    # in Insights/decisions rather than generic scoring or domain-routing fields on the event.
+    event_schema=json.loads((ROOT/'systems/industry-intelligence/schemas/industry-event.schema.json').read_text())
+    event_props=set((event_schema.get('properties') or {}))
+    event_ghosts={'relevance','urgency','confidence','affected_domain_candidates'} & event_props
+    req(not event_ghosts,f'IndustryEvent reintroduced interpretive scoring/routing fields: {sorted(event_ghosts)}')
+
     common=(ROOT/'scripts/_common.py').read_text()
     req('def provider_registry(' not in common,'retired provider registry helper re-entered shared Core mechanics')
     req('|act|' not in common and '|apr|' not in common,'retired ActionPacket/Approval reference prefixes re-entered shared reference scanning')
