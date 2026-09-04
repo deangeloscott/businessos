@@ -16,12 +16,6 @@ reads:
 writes:
 - Observation
 - Insight
-workflows:
-  conditional:
-  - id: core.intelligence.ecosystem.source-discovery
-    when: Relevant current evidence still needs to be discovered, inspected, or converted from discovery leads into support-grade source material.
-  - id: core.intelligence.ecosystem.evidence-triangulation
-    when: A material finding would benefit from explicit independence, contradiction, freshness, methodology, or uncertainty analysis across sources.
 ---
 # External Ecosystem Intelligence Radar
 
