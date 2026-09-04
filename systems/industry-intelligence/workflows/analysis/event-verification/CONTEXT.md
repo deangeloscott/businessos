@@ -21,7 +21,7 @@ context:
 # Industry Event Verification
 
 ## Purpose
-Verify high-impact event claims before the Business OS treats them as decision facts.
+Verify high-impact event claims before AURA treats them as decision-relevant facts.
 
 ## Business Outcome
 Improve the business response to external change through timely, evidence-backed industry event verification.
@@ -35,4 +35,4 @@ Run when a decision or monitoring signal requires current industry event verific
 3. [INTEGRATION] Retrieve primary/independent corroboration and current status/date.
 4. [HYBRID] Resolve discrepancies by directness, authority for the fact, freshness, and whether sources refer to different event stages.
 5. [AI] Classify each claim confirmed, partially confirmed, disputed, outdated, or unverified.
-6. [HYBRID] Update IndustryEvent confidence/summary and prohibit strong downstream claims that rely on unverified components.
+6. [HYBRID] Update the IndustryEvent factual summary, status, source/observation links, and unresolved points without collapsing verification into a numeric confidence score. Preserve interpretation separately when it becomes a durable Insight.
