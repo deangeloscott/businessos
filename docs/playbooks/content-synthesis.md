@@ -14,19 +14,11 @@ Turn audience context, evidence, ideas, performance signals, and communication g
 
 **Common entry Workflow:** [Content Brief](../../systems/content-synthesis/workflows/intake/content-brief/CONTEXT.md)
 
-### AI Avatar Video Production
-
-Produce an approved avatar-presented video when synthetic presentation is appropriate, transparent, and efficient for the communication job.
-
-*Try:* “Create the avatar video we need for this job.”
-
-**Common entry Workflow:** [AI Avatar Video Production](../../systems/content-synthesis/workflows/production/avatar-video/CONTEXT.md)
-
 ### Animation / Motion Production
 
 Use motion to explain change, sequence, causality, demonstration, or attention hierarchy.
 
-*Try:* “Create the animation we need for this job.”
+*Try:* “Create an animation or motion asset that explains this clearly.”
 
 **Common entry Workflow:** [Animation / Motion Production](../../systems/content-synthesis/workflows/production/animation/CONTEXT.md)
 
@@ -34,7 +26,7 @@ Use motion to explain change, sequence, causality, demonstration, or attention h
 
 Produce a useful, evidence-backed article with appropriate depth, structure, and reader progression.
 
-*Try:* “Create the article we need for this job.”
+*Try:* “Create the article we need for this topic and audience.”
 
 **Common entry Workflow:** [Article Production](../../systems/content-synthesis/workflows/production/article/CONTEXT.md)
 
@@ -42,79 +34,47 @@ Produce a useful, evidence-backed article with appropriate depth, structure, and
 
 Produce voiceover, narration, clip, or other audio asset optimized for its actual use context.
 
-*Try:* “Create the audio we need for this job.”
+*Try:* “Create the audio asset we need for this communication job.”
 
 **Common entry Workflow:** [Audio Asset Production](../../systems/content-synthesis/workflows/production/audio/CONTEXT.md)
-
-### Captions and On-Screen Text
-
-Design captions/on-screen text that improve comprehension and accessibility without overwhelming the visual.
-
-*Try:* “Create the captions we need for this job.”
-
-**Common entry Workflow:** [Captions and On-Screen Text](../../systems/content-synthesis/workflows/production/captions/CONTEXT.md)
 
 ### Carousel / Slideshow Production
 
 Turn an idea into a sequential visual argument where each frame earns the next.
 
-*Try:* “Create the carousel we need for this job.”
+*Try:* “Turn this idea into a strong carousel.”
 
 **Common entry Workflow:** [Carousel / Slideshow Production](../../systems/content-synthesis/workflows/production/carousel/CONTEXT.md)
-
-### Content Thumbnail Concept
-
-Design a thumbnail/cover image that quickly communicates the content’s real subject, tension, or outcome at browsing scale.
-
-*Try:* “Create the thumbnail we need for this job.”
-
-**Common entry Workflow:** [Content Thumbnail Concept](../../systems/content-synthesis/workflows/production/thumbnail/CONTEXT.md)
 
 ### Customer Case Study
 
 Turn verified customer evidence and ProofRecords into a useful, accurate account of context, intervention, mechanism, and outcome.
 
-*Try:* “Create the case study we need for this job.”
+*Try:* “Turn this verified customer result into a credible case study.”
 
 **Common entry Workflow:** [Customer Case Study](../../systems/content-synthesis/workflows/production/case-study/CONTEXT.md)
 
 ### Demonstration Asset Production
 
-Execute an approved demonstration plan and produce a clear, verifiable demonstration Asset.
+Produce a clear, verifiable demonstration that visibly proves or teaches the intended mechanism, use case, or result.
 
-*Try:* “Create the demo we need for this job.”
+*Try:* “Create a demonstration that clearly shows how this works.”
 
 **Common entry Workflow:** [Demonstration Asset Production](../../systems/content-synthesis/workflows/production/demo/CONTEXT.md)
-
-### Derivative Asset Package
-
-Create only the useful supporting or derivative forms of an approved core Asset—such as full/bullet scripts, shot list, captions, clips, thumbnail concepts, audio, or graphics—without creating unnecessary variants.
-
-*Try:* “Create the derivative package we need for this job.”
-
-**Common entry Workflow:** [Derivative Asset Package](../../systems/content-synthesis/workflows/production/derivative-package/CONTEXT.md)
 
 ### FAQ Content Production
 
 Create evidence-backed answers to recurring audience questions in a form that is easy to find and understand.
 
-*Try:* “Create the faq we need for this job.”
+*Try:* “Create a useful FAQ from the questions our audience actually has.”
 
 **Common entry Workflow:** [FAQ Content Production](../../systems/content-synthesis/workflows/production/faq/CONTEXT.md)
-
-### GIF / Looping Motion Production
-
-Create a short looping motion Asset that demonstrates, emphasizes, or explains one idea more effectively than a static image.
-
-*Try:* “Create the gif we need for this job.”
-
-**Common entry Workflow:** [GIF / Looping Motion Production](../../systems/content-synthesis/workflows/production/gif/CONTEXT.md)
 
 ### Image / Graphic Production
 
 Create a visual asset whose composition communicates the intended idea rather than adding decoration.
 
-*Try:* “Create the image we need for this job.”
+*Try:* “Create the image or graphic we need to communicate this idea.”
 
 **Common entry Workflow:** [Image / Graphic Production](../../systems/content-synthesis/workflows/production/image/CONTEXT.md)
 
@@ -122,55 +82,31 @@ Create a visual asset whose composition communicates the intended idea rather th
 
 Turn evidence or a structured idea into a clear visual explanation whose information hierarchy works even when the viewer only scans it.
 
-*Try:* “Create the infographic we need for this job.”
+*Try:* “Turn this evidence into a clear infographic.”
 
 **Common entry Workflow:** [Infographic Production](../../systems/content-synthesis/workflows/production/infographic/CONTEXT.md)
 
-### LinkedIn Native Content
-
-Create professional-network content that is native to feed behavior rather than an article pasted into a post.
-
-*Try:* “Create the linkedin we need for this job.”
-
-**Common entry Workflow:** [LinkedIn Native Content](../../systems/content-synthesis/workflows/production/linkedin/CONTEXT.md)
-
-### Long-Form Clip Extraction
-
-Identify self-contained short clips from a longer Asset without distorting the original meaning.
-
-*Try:* “Create the clip extraction we need for this job.”
-
-**Common entry Workflow:** [Long-Form Clip Extraction](../../systems/content-synthesis/workflows/production/clip-extraction/CONTEXT.md)
-
 ### Long-Form Video Production
 
-Create sustained video communication with narrative/educational progression, demonstrations, and retention-aware structure.
+Create sustained video communication with narrative or educational progression, demonstrations, and retention-aware structure.
 
-*Try:* “Create the long video we need for this job.”
+*Try:* “Create the long-form video we need for this subject.”
 
 **Common entry Workflow:** [Long-Form Video Production](../../systems/content-synthesis/workflows/production/long-video/CONTEXT.md)
 
 ### Newsletter Production
 
-Create a relationship-oriented email/newsletter suited to inbox context and the audience expectation.
+Create a relationship-oriented email or newsletter suited to inbox context and the audience expectation.
 
-*Try:* “Create the newsletter we need for this job.”
+*Try:* “Create this edition of our newsletter.”
 
 **Common entry Workflow:** [Newsletter Production](../../systems/content-synthesis/workflows/production/newsletter/CONTEXT.md)
-
-### Platform-Native Adaptation
-
-Transform a validated core idea into genuinely native expressions for selected platforms rather than superficial reformatting.
-
-*Try:* “Create the platform native we need for this job.”
-
-**Common entry Workflow:** [Platform-Native Adaptation](../../systems/content-synthesis/workflows/adaptation/platform-native/CONTEXT.md)
 
 ### Podcast Episode Production
 
 Create an audio-first episode whose structure and delivery fit listening context.
 
-*Try:* “Create the podcast we need for this job.”
+*Try:* “Create the podcast episode we need for this topic.”
 
 **Common entry Workflow:** [Podcast Episode Production](../../systems/content-synthesis/workflows/production/podcast/CONTEXT.md)
 
@@ -178,17 +114,25 @@ Create an audio-first episode whose structure and delivery fit listening context
 
 Build a presentation that supports a live or asynchronous audience journey instead of turning a document into slides.
 
-*Try:* “Create the presentation we need for this job.”
+*Try:* “Build the presentation we need for this audience and objective.”
 
 **Common entry Workflow:** [Presentation / Slideshow Production](../../systems/content-synthesis/workflows/production/presentation/CONTEXT.md)
 
 ### Short-Form Video Production
 
-Express one useful idea quickly through platform-native visual/audio pacing and proof.
+Express one useful idea quickly through platform-native visual and audio pacing and proof.
 
-*Try:* “Create the short video we need for this job.”
+*Try:* “Create a short-form video that communicates this idea effectively.”
 
 **Common entry Workflow:** [Short-Form Video Production](../../systems/content-synthesis/workflows/production/short-video/CONTEXT.md)
+
+### Content Repurposing & Adaptation
+
+Turn a validated core asset or idea into the smallest useful set of derivative and platform-native assets without unnecessary variants or distorted meaning.
+
+*Try:* “Turn this core asset into the useful derivative content we should actually publish.”
+
+**Use:** Choose the smallest useful set of Workflows or other methods from the actual request and evidence.
 
 ## Common Workflows
 
