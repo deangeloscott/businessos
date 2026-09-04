@@ -29,10 +29,12 @@ def main():
     req('confidence' not in learning_schema.get('properties',{}),'Learning regained duplicate numeric confidence score')
     prior=os.environ.get('BUSINESSOS_WORKSPACE');tmp=Path(tempfile.mkdtemp(prefix='aura-workspace-regression-'));migrated=tmp.parent/(tmp.name+'-migrated')
     try:
+        # Isolate this regression from any developer/user workspace selected outside the test.
+        os.environ['BUSINESSOS_WORKSPACE']=str(tmp)
         cfg=configure(tmp,'organization',knowledge_enabled=True,write_link=False,force=True);req(cfg['external_state'] and cfg['profile']=='organization','external organization workspace not configured')
         req((tmp/'.businessos/workspace.json').exists() and (tmp/'WORKSPACE.md').exists(),'portable workspace metadata missing')
         req(not (tmp/'.businessos/environments').exists(),'workspace created deprecated runtime environment overlays')
-        os.environ['BUSINESSOS_WORKSPACE']=str(tmp);req(common.workspace_root().resolve()==tmp.resolve(),'workspace selection failed')
+        req(common.workspace_root().resolve()==tmp.resolve(),'workspace selection failed')
         dest=init_business(BID,'Workspace Regression Business');req(dest.resolve()==tmp.joinpath('instances',BID).resolve(),'business initialized outside workspace')
         learning={'id':'lrn_workspace_regression','object_type':'Learning','schema_version':'1.0.0','business_id':BID,'scope':'business','statement':'Generated human views remain derived from canonical state.','maturity':'validated','status':'active','evidence_refs':[],'extensions':{}}
         lp=dest/'learning/business/lrn_workspace_regression.json';lp.parent.mkdir(parents=True,exist_ok=True);lp.write_text(json.dumps(learning,indent=2)+'\n')
