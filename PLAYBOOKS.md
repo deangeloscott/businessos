@@ -2,7 +2,7 @@
 
 AURA gives capable AI reusable **Playbooks** and **Workflows** while leaving reasoning, tool choice, orchestration, and execution to the active model/harness. Tell the AI what outcome you want in normal language; you do not need to choose a Playbook or Workflow manually.
 
-This edition currently exposes **42 Playbooks** backed by **472 detailed Workflows**. Playbook count is intentionally much smaller than Workflow count because a Playbook is an end-to-end business job, not every reusable procedure.
+This edition currently exposes **42 Playbooks** backed by **466 detailed Workflows**. Playbook count is intentionally much smaller than Workflow count because a Playbook is an end-to-end business job, not every reusable procedure.
 
 ## The hierarchy
 

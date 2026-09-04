@@ -10,11 +10,11 @@ AURA Core supplies organization-owned memory, truth/evidence handling, decisions
 - **[External Ecosystem Intelligence Radar](../../core/workflows/intelligence/ecosystem/radar/CONTEXT.md)** — Discover important external changes, tactics, findings, and signals; verify what the evidence supports; preserve useful organizational evidence or Learning; and let the capable model choose any next method.
 - **[Durable Subject Monitoring](../../core/workflows/intelligence/subject-monitoring/CONTEXT.md)** — Build or refresh a durable evidence-backed watch context for a company, creator, public figure, publication, platform, product, regulator, own organization, or other decision-relevant subject; recurrence belongs to the active runtime.
 - **[Review Monitoring Intent](../../core/workflows/monitoring/status/CONTEXT.md)** — Show durable monitoring intent, cadence/materiality, semantic due state, and meaningful unresolved findings without treating AURA as the scheduler or notification runtime.
-- **[Playbook Evolution and System Improvement](../../core/workflows/learning/workflow-evolution/CONTEXT.md)** — Turn strong reusable Learning into a business Workflow extension, new local Workflow, or canonical AURA revision candidate without overgeneralizing evidence.
+- **[Workflow Evolution and Local Operating Knowledge](../../core/workflows/learning/workflow-evolution/CONTEXT.md)** — Preserve strong reusable Learning as optional organization-local Workflow knowledge when useful; canonical AURA changes remain explicit product-development work.
 - **[AURA Innovation Exchange](../../core/workflows/intelligence/innovation-exchange/CONTEXT.md)** — Prepare, import, browse, and evaluate portable AURA process innovations with explicit sharing consent and no required central service.
 - **[Community Innovation Evidence Review](../../core/workflows/intelligence/community-evidence-review/CONTEXT.md)** — Compare community-reported process innovations with independent/local evidence and decide whether testing, adoption, or Workflow evolution is warranted.
 - **[Diagnose Broad Business Problem](../../core/workflows/diagnosis/business-problem/CONTEXT.md)** — Narrow a broad unexplained business symptom to evidence-backed likely mechanisms and the most useful next work before intervention.
-- **[Discover Next Best Work](../../core/workflows/opportunity/discover-next-best-work/CONTEXT.md)** — Turn a broad growth/prioritization goal into the highest-value next work supported by current evidence and installed modules.
+- **[Discover Next Best Work](../../core/workflows/opportunity/discover-next-best-work/CONTEXT.md)** — Turn a broad growth/prioritization goal into the highest-value next work supported by current evidence and available operating knowledge.
 - **[Bootstrap Business Context](../../core/workflows/context/bootstrap-business/CONTEXT.md)** — Create evidence-backed initial business context from minimal identity, first-party sources, and user-provided information.
 - **[Adaptive Owned Business Discovery](../../core/workflows/context/owned-business-discovery/CONTEXT.md)** — Adaptively map owned/official business surfaces and evidence at the depth needed for the current job.
 - **[Capture Brand Profile](../../core/workflows/context/brand-profile/CONTEXT.md)** — Capture durable brand voice, visual, content, channel, reference, and prohibited-style rules.
@@ -22,7 +22,6 @@ AURA Core supplies organization-owned memory, truth/evidence handling, decisions
 
 ## Additional Core Workflows
 
-- [Adopt Business Process Extension](../../core/workflows/learning/adopt-process-extension/CONTEXT.md)
 - [Create Initiative](../../core/workflows/coordination/create-initiative/CONTEXT.md)
 - [Design Experiment](../../core/workflows/measurement/design-experiment/CONTEXT.md)
 - [Evaluate Outcome](../../core/workflows/measurement/evaluate-outcome/CONTEXT.md)

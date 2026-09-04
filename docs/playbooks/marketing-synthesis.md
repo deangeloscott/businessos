@@ -32,9 +32,9 @@ Diagnose and improve how value is packaged, priced, de-risked, and presented so 
 
 ### Advertising Creative & Copy
 
-Create persuasive ad concepts/copy/creative requirements matched to audience, awareness, funnel/journey role, channel/placement context, current field evidence where useful, and destination.
+Create persuasive ad concepts, copy, and creative requirements matched to audience, awareness, journey role, placement context, evidence, and destination.
 
-*Try:* “Create the ads we need for this job.”
+*Try:* “Create the advertising creative and copy we need for this campaign.”
 
 **Common entry Workflow:** [Advertising Creative & Copy](../../systems/marketing-synthesis/workflows/assets/ads/CONTEXT.md)
 
@@ -42,7 +42,7 @@ Create persuasive ad concepts/copy/creative requirements matched to audience, aw
 
 Create clearly compliant editorial-style persuasion that educates while transparently serving a commercial objective.
 
-*Try:* “Create the advertorial we need for this job.”
+*Try:* “Create a transparent advertorial for this offer and audience.”
 
 **Common entry Workflow:** [Advertorial](../../systems/marketing-synthesis/workflows/assets/advertorial/CONTEXT.md)
 
@@ -50,7 +50,7 @@ Create clearly compliant editorial-style persuasion that educates while transpar
 
 Design a multi-email persuasion sequence where each message has a distinct job and builds appropriately on prior context.
 
-*Try:* “Create the email sequence we need for this job.”
+*Try:* “Create the commercial email sequence we need for this audience and offer.”
 
 **Common entry Workflow:** [Commercial Email Sequence](../../systems/marketing-synthesis/workflows/assets/email-sequence/CONTEXT.md)
 
@@ -58,7 +58,7 @@ Design a multi-email persuasion sequence where each message has a distinct job a
 
 Help qualified buyers evaluate alternatives honestly using customer decision criteria and current competitive evidence.
 
-*Try:* “Create the comparison we need for this job.”
+*Try:* “Create an honest comparison that helps qualified buyers evaluate their options.”
 
 **Common entry Workflow:** [Comparison & Alternative Persuasion](../../systems/marketing-synthesis/workflows/assets/comparison/CONTEXT.md)
 
@@ -66,7 +66,7 @@ Help qualified buyers evaluate alternatives honestly using customer decision cri
 
 Create a landing page or homepage that continues acquisition intent and moves the right visitor toward the desired action without overstating business truth.
 
-*Try:* “Create the landing page we need for this job.”
+*Try:* “Create or improve this landing page so qualified visitors understand and act.”
 
 **Common entry Workflow:** [Landing Page Persuasion](../../systems/marketing-synthesis/workflows/assets/landing-page/CONTEXT.md)
 
@@ -74,7 +74,7 @@ Create a landing page or homepage that continues acquisition intent and moves th
 
 Create an exchange-worthy asset that solves a bounded valuable problem and naturally relates to the next commercial step.
 
-*Try:* “Create the lead magnet we need for this job.”
+*Try:* “Create a lead magnet worth exchanging contact information for.”
 
 **Common entry Workflow:** [Lead Magnet](../../systems/marketing-synthesis/workflows/assets/lead-magnet/CONTEXT.md)
 
@@ -82,31 +82,31 @@ Create an exchange-worthy asset that solves a bounded valuable problem and natur
 
 Move not-yet-ready prospects toward a better-informed decision over time rather than repeatedly asking for the sale.
 
-*Try:* “Create the nurture we need for this job.”
+*Try:* “Build a nurture approach for prospects who are interested but not ready to buy.”
 
 **Common entry Workflow:** [Lead Nurture Strategy](../../systems/marketing-synthesis/workflows/assets/nurture/CONTEXT.md)
 
 ### Quiz / Assessment Conversion Asset
 
-Create a diagnostic experience that gives the participant useful feedback while qualifying/segmenting toward a relevant next action.
+Create a diagnostic experience that gives the participant useful feedback while qualifying or segmenting toward a relevant next action.
 
-*Try:* “Create the quiz assessment we need for this job.”
+*Try:* “Create a useful assessment that also helps us qualify the right next step.”
 
 **Common entry Workflow:** [Quiz / Assessment Conversion Asset](../../systems/marketing-synthesis/workflows/assets/quiz-assessment/CONTEXT.md)
 
 ### Sales Enablement Asset
 
-Create persuasive evidence/tools that help sellers and buyers resolve real decision questions consistently.
+Create persuasive evidence and tools that help sellers and buyers resolve real decision questions consistently.
 
-*Try:* “Create the sales enablement we need for this job.”
+*Try:* “Create the sales enablement asset our team needs for this buyer decision.”
 
 **Common entry Workflow:** [Sales Enablement Asset](../../systems/marketing-synthesis/workflows/assets/sales-enablement/CONTEXT.md)
 
 ### Sales Letter
 
-Create long-form written persuasion appropriate to audience sophistication and Offer complexity.
+Create long-form written persuasion appropriate to audience sophistication and offer complexity.
 
-*Try:* “Create the sales letter we need for this job.”
+*Try:* “Create a sales letter for this offer and audience.”
 
 **Common entry Workflow:** [Sales Letter](../../systems/marketing-synthesis/workflows/assets/sales-letter/CONTEXT.md)
 
@@ -114,15 +114,15 @@ Create long-form written persuasion appropriate to audience sophistication and O
 
 Build a sustained video persuasion narrative tied to an Offer and measurable commercial action.
 
-*Try:* “Create the vsl we need for this job.”
+*Try:* “Create the VSL we need for this offer.”
 
 **Common entry Workflow:** [Video Sales Letter](../../systems/marketing-synthesis/workflows/assets/vsl/CONTEXT.md)
 
 ### Webinar Persuasion
 
-Design a webinar that creates genuine understanding/value while logically leading qualified attendees to an Offer.
+Design a webinar that creates genuine understanding and value while logically leading qualified attendees to an Offer.
 
-*Try:* “Create the webinar we need for this job.”
+*Try:* “Build a useful webinar that naturally leads qualified attendees to our offer.”
 
 **Common entry Workflow:** [Webinar Persuasion](../../systems/marketing-synthesis/workflows/assets/webinar/CONTEXT.md)
 
@@ -140,7 +140,7 @@ These reusable procedures may support one or more Playbooks or be used independe
 - **[Objection Handling Strategy](../../systems/marketing-synthesis/workflows/strategy/objection-handling/CONTEXT.md)** — Resolve material purchase objections.
 - **[Offer Presentation Strategy](../../systems/marketing-synthesis/workflows/strategy/offer-presentation/CONTEXT.md)** — Present the established Offer persuasively and accurately.
 - **[Offer Diagnosis](../../systems/marketing-synthesis/workflows/offer/diagnosis/CONTEXT.md)** — Diagnose structural Offer weaknesses and identify the smallest evidence-backed improvement worth considering or testing.
-- **[Conversion-Oriented Social Profile Optimization](../../systems/marketing-synthesis/workflows/social/profile-optimization/CONTEXT.md)** — Optimize a social profile for qualified conversion.
+- **[Social Profile Audit & Optimization](../../systems/marketing-synthesis/workflows/social/profile-audit/CONTEXT.md)** — Audit and improve a social profile for qualified conversion.
 - **[Campaign Concept Development](../../systems/marketing-synthesis/workflows/campaigns/campaign-concept/CONTEXT.md)** — Develop a coherent commercial campaign concept.
 - **[Advertising Creative & Copy](../../systems/marketing-synthesis/workflows/assets/ads/CONTEXT.md)** — Create evidence-backed advertising persuasion assets.
 - **[Landing Page Persuasion](../../systems/marketing-synthesis/workflows/assets/landing-page/CONTEXT.md)** — Create a complete conversion-focused landing page.
@@ -201,19 +201,14 @@ Use these when the specific need arises. A Workflow can be useful even when no b
 ### Offers
 
 - [Offer Bonus Design](../../systems/marketing-synthesis/workflows/offer/bonuses/CONTEXT.md)
-- [Offer Guarantee Design](../../systems/marketing-synthesis/workflows/offer/guarantee/CONTEXT.md)
+- [Offer Guarantee & Risk-Reversal Design](../../systems/marketing-synthesis/workflows/offer/guarantee/CONTEXT.md)
 - [Offer Packaging Design](../../systems/marketing-synthesis/workflows/offer/packaging/CONTEXT.md)
 - [Offer Terms Optimization](../../systems/marketing-synthesis/workflows/offer/terms/CONTEXT.md)
-
-### Social
-
-- [Conversion-Oriented Social Profile Audit](../../systems/marketing-synthesis/workflows/social/profile-audit/CONTEXT.md)
 
 ### Strategy
 
 - [Audience Awareness and Sophistication](../../systems/marketing-synthesis/workflows/strategy/awareness/CONTEXT.md)
 - [Commercial CTA Strategy](../../systems/marketing-synthesis/workflows/strategy/cta/CONTEXT.md)
-- [Guarantee and Risk-Reversal Design](../../systems/marketing-synthesis/workflows/strategy/guarantee-risk-reversal/CONTEXT.md)
 - [Marketing Claim Validation](../../systems/marketing-synthesis/workflows/strategy/claim-validation/CONTEXT.md)
 - [Marketing Proof Selection](../../systems/marketing-synthesis/workflows/strategy/proof-selection/CONTEXT.md)
 - [Pricing Presentation](../../systems/marketing-synthesis/workflows/strategy/pricing-presentation/CONTEXT.md)
@@ -221,7 +216,6 @@ Use these when the specific need arises. A Workflow can be useful even when no b
 
 ### Video sales letters
 
-- [VSL Offer and CTA Section](../../systems/marketing-synthesis/workflows/vsl/offer-cta/CONTEXT.md)
 - [VSL Persuasion Architecture](../../systems/marketing-synthesis/workflows/vsl/persuasion-architecture/CONTEXT.md)
 - [VSL Persuasion QA](../../systems/marketing-synthesis/workflows/vsl/qa/CONTEXT.md)
 - [VSL Script](../../systems/marketing-synthesis/workflows/vsl/script/CONTEXT.md)
@@ -232,7 +226,6 @@ Use these when the specific need arises. A Workflow can be useful even when no b
 - [Webinar End-to-End QA](../../systems/marketing-synthesis/workflows/webinar/qa/CONTEXT.md)
 - [Webinar Follow-Up Sequence](../../systems/marketing-synthesis/workflows/webinar/follow-up/CONTEXT.md)
 - [Webinar Objective and Audience](../../systems/marketing-synthesis/workflows/webinar/objective/CONTEXT.md)
-- [Webinar Offer Transition](../../systems/marketing-synthesis/workflows/webinar/offer-transition/CONTEXT.md)
 - [Webinar Persuasion Architecture](../../systems/marketing-synthesis/workflows/webinar/persuasion-architecture/CONTEXT.md)
 - [Webinar Registration Experience](../../systems/marketing-synthesis/workflows/webinar/registration/CONTEXT.md)
 - [Webinar Reminder Sequence](../../systems/marketing-synthesis/workflows/webinar/reminders/CONTEXT.md)

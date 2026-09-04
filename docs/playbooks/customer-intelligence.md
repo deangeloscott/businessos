@@ -8,7 +8,7 @@ Understand customers, prospects, needs, language, decisions, and experiences fro
 
 ### Customer Research
 
-Resolve an important customer knowledge need with evidence appropriate to the decision, using the relevant research and analysis workflows.
+Resolve an important customer knowledge need with evidence appropriate to the decision, using the relevant research and analysis Workflows.
 
 *Try:* “Research our customers and tell me what they care about most.”
 
@@ -82,6 +82,7 @@ Use these when the specific need arises. A Workflow can be useful even when no b
 ### Monitoring
 
 - [Customer Theme Change Review](../../systems/customer-intelligence/workflows/monitoring/theme-change/CONTEXT.md)
+- [Public Customer Signal Watch](../../systems/customer-intelligence/workflows/monitoring/public-signal-watch/CONTEXT.md)
 
 ### Research
 

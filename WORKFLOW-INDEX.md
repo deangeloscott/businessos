@@ -8,7 +8,7 @@ Generated from AURA Workflow frontmatter. These are reusable procedures, not a t
 - `competitor.analysis.benchmark` — Competitive Benchmark: Compare the business and competitors on decision-relevant dimensions using transparent measures.
 - `competitor.analysis.capability-comparison` — Competitor Capability Comparison: Compare product/service capabilities in the customer context that makes them valuable.
 - `competitor.analysis.competitive-implications` — Competitive Implication Analysis: Translate supported competitor changes, differences, strengths, and weaknesses into scoped implications for this business without turning Competitor Intelligence into a cross-domain router.
-- `competitor.analysis.competitive-position` — Competitive Position & Landscape: Build a decision-useful competitive position by composing the existing Competitor Intelligence jobs needed for the question instead of collapsing a broad landscape request into one narrow analysis step.
+- `competitor.analysis.competitive-position` — Competitive Position & Landscape: Build a decision-useful competitive position by drawing on the Competitor Intelligence knowledge that actually helps answer the question instead of collapsing a broad landscape request into one narrow analysis step or forcing a fixed composition graph.
 - `competitor.analysis.competitor-brief` — Current Competitor Brief: Assemble a concise current view of a priority competitor from canonical state and active Insights.
 - `competitor.analysis.content-strategy` — Competitor Content Strategy: Understand the narratives, topics, formats, cadence, distribution, multimodal execution, and apparent audience role of competitor content.
 - `competitor.analysis.customer-sentiment` — Competitor Customer Sentiment: Understand what customers praise, dislike, expect, and compare about competitors.
@@ -48,6 +48,7 @@ Generated from AURA Workflow frontmatter. These are reusable procedures, not a t
 - `content.intake.content-brief` — Content Brief: Define the communication job precisely enough that a capable model can produce strong content without rediscovering the audience, evidence, platform context, and material requirements.
 - `content.intelligence.content-performance-analysis` — Content Performance Pattern Analysis: Learn which topics, formats, hooks, structures, depths, and creative mechanisms work for this business while separating content quality from distribution and commercial effects.
 - `content.intelligence.creative-pattern-extraction` — Creative Pattern Extraction: Extract the reusable mechanism behind strong content so the business can learn from it without imitating the source's protected expression, identity, or exact creative.
+- `content.intelligence.creator-monitoring` — Creator Content Monitoring: Build or refresh a durable, cross-source understanding of selected creators/channels for content mechanisms, topics, teachings, messaging/style, offers, and meaningful shifts that can inform original business content.
 - `content.intelligence.cross-niche-pattern-transfer` — Cross-Niche Creative Pattern Transfer: Adapt a validated creative mechanism from another niche or category to the business's own audience and subject without copying the original content.
 - `content.intelligence.ecosystem-radar` — Content Ecosystem Radar: Discover emerging content formats, distribution behaviors, creator patterns, platform mechanics, and communication tactics, then determine what mechanisms are actually supported and transferable.
 - `content.intelligence.performance-normalization` — Content Performance Normalization: Normalize observed content performance so unusually large distribution or creator baseline does not masquerade as creative effectiveness.
@@ -90,7 +91,7 @@ Generated from AURA Workflow frontmatter. These are reusable procedures, not a t
 - `content.production.visual-direction` — Content Visual Direction: Define a coherent visual language that supports the message, brand, and platform before asset generation.
 - `content.publishing.distribution-package` — Content Distribution Package: Prepare the platform-specific publication components needed to distribute an Asset cleanly across intended destinations.
 - `content.publishing.publish-asset` — Publish or Schedule Content Asset: Publish or schedule the intended content Asset through the active harness when the user's requested action and real external constraints permit it.
-- `content.publishing.schedule` — Content Scheduling: Choose and create an appropriate publication time based on audience/platform needs, dependencies, and campaign/event constraints.
+- `content.publishing.schedule` — Content Scheduling: Choose a useful publication time and preserve the scheduling context while leaving timer, queue, API, account, and notification mechanics to the active host.
 - `content.qa.accessibility` — Content Accessibility QA: Check whether the Asset can be perceived and understood by relevant users across common accessibility needs.
 - `content.qa.brand` — Brand Voice & Policy QA: Ensure content applies canonical Brand communication without inventing new brand rules or sacrificing clarity.
 - `content.qa.editorial` — Editorial QA: Ensure the finished communication is clear, coherent, useful, non-repetitive, and appropriate to audience/context.
@@ -98,7 +99,7 @@ Generated from AURA Workflow frontmatter. These are reusable procedures, not a t
 - `content.qa.originality` — Content Originality QA: Ensure inspiration and pattern learning have not become copying of another creator’s distinctive expression.
 - `content.qa.platform` — Platform-Native QA: Verify that the final Asset actually conforms to the intended platform’s consumption behavior and technical constraints.
 - `content.qa.pre-publish` — Content Pre-Publish QA: Perform the final integrated check that the correct Asset is accurate, complete, native, accessible, and ready for the intended destination.
-- `content.rendering.package-asset` — Render & Package Content Asset: Turn approved source content/design instructions into the final deliverable formats required by the target medium/platform.
+- `content.rendering.package-asset` — Render & Package Content Asset: Turn ready source content/design instructions into the final deliverable formats required by the target medium or destination while leaving rendering machinery to the active host.
 - `content.research.research-plan` — Content Research Plan: Determine what additional factual/contextual research is required to create an accurate, useful asset after reusing existing intelligence.
 - `content.research.source-support` — Content Source & Evidence Support: Fill source/evidence gaps needed to communicate an already valid idea accurately without recreating broad customer/competitor/industry research.
 - `content.strategy.angle` — Angle Development: Find the most useful/interesting truthful framing of an idea for the defined audience and objective.
@@ -135,17 +136,16 @@ Generated from AURA Workflow frontmatter. These are reusable procedures, not a t
 - `core.intelligence.record-platform-change` — Record Verified Platform Change: Maintain a current, evidence-backed record of an external platform/topic state that future organizational work may need, independently from AURA software releases or runtime routing.
 - `core.intelligence.register-proof` — Register Reusable Proof: Turn direct evidence into reusable ProofRecord memory without overstating what the evidence proves or losing source, permission, and usage constraints.
 - `core.intelligence.subject-monitoring` — Durable Subject Monitoring: Create or refresh a bounded, organization-owned watch for a decision-relevant public/authorized subject while keeping runtime scheduling and domain interpretation outside the monitoring record itself.
-- `core.knowledge.ingest-human-note` — Ingest Human Knowledge Note: Bring a human-authored Markdown/text note into BusinessOS as provenance-backed source material without assuming the note is verified canonical business truth.
+- `core.knowledge.ingest-human-note` — Ingest Human Knowledge Note: Bring a human-authored Markdown/text note into AURA as provenance-backed source material without assuming the note is verified canonical business truth.
 - `core.knowledge.refresh-human-layer` — Refresh Human Knowledge Layer: Generate an easy-to-browse Markdown view of canonical AURA state—including durable tracked subjects/sources—without creating a second source of truth.
-- `core.learning.adopt-process-extension` — Adopt Business Process Extension: Make an intentionally selected, business-scoped WorkflowEvolutionProposal available as reusable AURA operational knowledge without modifying canonical AURA source.
-- `core.learning.workflow-evolution` — Playbook Evolution and System Improvement: Turn sufficiently strong reusable Learning into the narrowest justified operating-knowledge improvement without converting one successful result into universal AURA behavior.
+- `core.learning.workflow-evolution` — Workflow Evolution and Local Operating Knowledge: Turn sufficiently strong reusable Learning into the narrowest useful organization-owned operating knowledge without converting one successful result into universal AURA behavior.
 - `core.measurement.design-experiment` — Design Experiment: Design a disciplined experiment when causal learning would materially improve a business decision.
 - `core.measurement.evaluate-outcome` — Evaluate Outcome: Determine what happened after an intervention and how confidently the observed result can be attributed, without turning measurement into a runtime routing lifecycle.
 - `core.measurement.publish-metric` — Publish Metric Observation: Create a comparable, evidence-linked metric observation from an authoritative or explicitly derived measurement without turning measurement into an internal event stream.
 - `core.monitoring.status` — Review Monitoring Intent: Give the user one understandable view of what the organization has asked AURA to keep watching, why it matters, intended cadence/materiality, what appears due for another useful check, and what meaningful findings remain unresolved.
 - `core.opportunity.discover-next-best-work` — Discover Next Best Work: Translate a broad business goal or prioritization request into the highest-value next work supported by the **minimum sufficient evidence**.
 - `core.opportunity.qualify` — Qualify Opportunity: Turn a diagnosed condition and plausible intervention into a comparable, evidence-backed business opportunity without making Opportunity state an execution or permission lifecycle.
-- `core.verification.verify-change` — Verify Material Change: Establish whether an important claimed post-state is actually true when independent verification is useful to the task, selected SOP, or consequence.
+- `core.verification.verify-change` — Verify Material Change: Establish whether an important claimed post-state is actually true when independent verification is useful to the task, relevant Workflow, or consequence.
 - `core.workspace.configure` — Configure AURA Workspace: Configure where organization-owned ViralTrac AURA state lives and which deployment experience is being used without changing AURA's operating semantics or making Git, Obsidian, or hosted infrastructure mandatory.
 
 ## customer-intelligence
@@ -155,7 +155,7 @@ Generated from AURA Workflow frontmatter. These are reusable procedures, not a t
 - `customer.analysis.churn` — Churn Reason Analysis: Understand customer-stated and evidenced reasons for leaving without conflating correlation with customer motivation.
 - `customer.analysis.decision-drivers` — Customer Decision Driver Analysis: Identify the factors and evidence-backed motivations that materially influence customer choice and how their importance varies by context.
 - `customer.analysis.feature-needs` — Customer Feature Need Analysis: Interpret feature requests as evidence of underlying customer needs, workflows, and desired outcomes.
-- `customer.analysis.hypothesis-validation` — Customer Hypothesis Validation: Test a strategically important belief about customers before downstream systems build on it.
+- `customer.analysis.hypothesis-validation` — Customer Hypothesis Validation: Test a strategically important belief about customers before future decisions or work build on it.
 - `customer.analysis.insight-refresh` — Customer Insight Refresh: Re-evaluate an existing Customer Insight against new, stale, or contradictory evidence.
 - `customer.analysis.jobs-outcomes` — Customer Job and Desired Outcome Analysis: Identify the progress customers are trying to make and the outcomes they use to judge success.
 - `customer.analysis.language` — Customer Language & Terminology: Maintain how customers naturally describe problems, outcomes, products, alternatives, and category concepts.
@@ -188,6 +188,7 @@ Generated from AURA Workflow frontmatter. These are reusable procedures, not a t
 - `customer.evidence-collection.surveys` — Survey Intelligence: Analyze structured and open-ended surveys while accounting for sampling and question-design limitations.
 - `customer.intelligence.ecosystem-radar` — Customer Signal Ecosystem Radar: Detect changing customer needs, language, objections, expectations, desired outcomes, category behaviors, and use cases from external and first-party evidence without mistaking market conversation for active-customer truth.
 - `customer.learning.domain-learning` — Customer Intelligence Learning: Turn repeated evidence about customer-research quality into reusable guidance about which sources, methods, segment scopes, and assumptions produce reliable customer understanding.
+- `customer.monitoring.public-signal-watch` — Public Customer Signal Watch: Review new public customer questions, praise, complaints, needs, and experience for meaningful changes without making AURA the monitoring runtime or treating every mention as important.
 - `customer.monitoring.research-gaps` — Customer Research Gap Review: Identify important customer decisions that currently depend on missing, stale, narrow, contradictory, or weak evidence.
 - `customer.monitoring.theme-change` — Customer Theme Change Review: Review whether customer concerns, language, criteria, expectations, or use-context have materially changed without overreacting to noise or source-mix artifacts.
 - `customer.research.evidence-coverage` — Customer Evidence Coverage Audit: Determine whether available customer evidence is sufficiently representative, current, and direct for the decision being made.
@@ -206,7 +207,7 @@ Generated from AURA Workflow frontmatter. These are reusable procedures, not a t
 - `customer-optimization.diagnosis.root-cause` — Journey Root-Cause Diagnosis: Determine why a journey transition is failing, delayed, or producing poor customer outcomes before designing an intervention.
 - `customer-optimization.diagnosis.segment-difference` — Journey Segment Difference Analysis: Determine whether journey performance/friction differs meaningfully across customer groups and why.
 - `customer-optimization.expansion.eligibility` — Customer Expansion Eligibility: Identify when an existing customer has achieved enough value and has a genuine additional need for expanded scope/capability.
-- `customer-optimization.experimentation.lifecycle-test` — Lifecycle Experiment Design: Test a customer-journey intervention while protecting customer outcomes and business guardrails.
+- `customer-optimization.experimentation.lifecycle-test` — Lifecycle Experiment Design: Design an interpretable test of a customer-journey intervention while protecting customer outcomes and business guardrails and, when actually requested, run it through the active harness.
 - `customer-optimization.instrumentation.data-quality` — Journey Instrumentation Data Quality: Verify that journey events, identities, states, and metrics are trustworthy enough for optimization decisions.
 - `customer-optimization.intelligence.ecosystem-radar` — Customer Optimization Ecosystem Tactic Radar: Discover and evaluate external mechanisms for conversion, qualification, checkout, onboarding, activation, adoption, retention, renewal, repeat purchase, expansion, referral, and service recovery without turning outside tactics into automatic customer interventions.
 - `customer-optimization.intervention.activation` — Activation Optimization: Increase the share of acquired customers reaching an evidence-backed early value behavior predictive of durable success.
@@ -262,7 +263,7 @@ Generated from AURA Workflow frontmatter. These are reusable procedures, not a t
 - `industry.analysis.competitor-response` — Industry Event Competitor Response Analysis: Track how material competitors respond to an external Event without duplicating canonical competitor strategy.
 - `industry.analysis.event-deduplication` — Event Deduplication & Clustering: Resolve many articles/updates into one coherent view of the same evolving real-world IndustryEvent when the evidence supports that interpretation.
 - `industry.analysis.event-evolution` — Event Evolution Tracking: Maintain one coherent evolving event state as new facts, dates, interpretations, and impacts emerge.
-- `industry.analysis.event-verification` — Industry Event Verification: Verify high-impact event claims before the Business OS treats them as decision facts.
+- `industry.analysis.event-verification` — Industry Event Verification: Verify high-impact event claims before AURA treats them as decision-relevant facts.
 - `industry.analysis.impact-pathway` — Industry Impact Pathway Analysis: Trace how an external development could cause concrete effects on customers, competitors, operations, economics, compliance, or discovery.
 - `industry.analysis.materiality` — Materiality Assessment: Determine whether an external development is important enough to change business attention or decisions, without turning materiality into an internal event trigger.
 - `industry.analysis.narrative-vs-fact` — Industry Narrative vs Fact Analysis: Separate what is objectively changing from what the market is repeatedly saying or believing about it.
@@ -285,8 +286,9 @@ Generated from AURA Workflow frontmatter. These are reusable procedures, not a t
 - `industry.monitoring.news` — News Monitoring: Find materially relevant current industry developments while suppressing duplicate/low-value coverage and keeping real-world events distinct from AURA runtime events.
 - `industry.monitoring.regulation` — Regulatory Monitoring: Track proposed, adopted, effective, amended, and enforced regulatory/standards developments with exact jurisdiction/status distinctions and no AURA-owned alert scheduler.
 - `industry.monitoring.research` — Research Evidence Review: Find and evaluate credible research that could materially change customer, product, market, operational, or strategy assumptions.
+- `industry.monitoring.social-discussion` — Industry Social Discussion Monitoring: Review public industry/category discussion for meaningful emerging narratives, questions, risks, and developments while filtering memes, isolated virality, and repeated copies of the same story.
 - `industry.monitoring.technology` — Technology & Platform Change Review: Review technology/platform changes that may alter capabilities, customer expectations, channel behavior, dependencies, or business risk/opportunity.
-- `industry.research.monitoring-plan` — Industry Monitoring Plan: Define what external developments matter, where to monitor them, and how quickly they must be surfaced.
+- `industry.research.monitoring-plan` — Industry Monitoring Plan: Define which external developments are worth revisiting, which evidence surfaces matter, and how freshness or future conditions should affect later review without making AURA the scheduler.
 - `industry.research.source-validation` — Industry Source Validation: Evaluate whether an industry source is suitable for discovering or supporting a specific fact.
 - `industry.source-mapping.priority-sources` — Industry Source Map: Define authoritative and useful sources by event type so monitoring coverage is deliberate rather than news-volume driven.
 
@@ -299,17 +301,17 @@ Generated from AURA Workflow frontmatter. These are reusable procedures, not a t
 - `marketing.ads.qa` — Advertising Launch QA: Verify ads, creative, claims, Offer, destinations, tracking, and variant mapping before activation.
 - `marketing.ads.variant-plan` — Advertising Variant Test Plan: Define creative/copy variants so each comparison teaches something interpretable.
 - `marketing.assets.ads` — Advertising Creative & Copy: Create persuasive ad concepts/copy/creative requirements matched to audience, awareness, funnel/journey role, channel/placement context, current field evidence where useful, and destination.
-- `marketing.assets.advertorial` — Advertorial: Create clearly compliant editorial-style persuasion that educates while transparently serving a commercial objective.
+- `marketing.assets.advertorial` — Advertorial: Create clearly disclosed editorial-style persuasion that educates while transparently serving a commercial objective.
 - `marketing.assets.comparison` — Comparison & Alternative Persuasion: Help qualified buyers evaluate alternatives honestly using customer decision criteria and current competitive evidence.
 - `marketing.assets.email-sequence` — Commercial Email Sequence: Design a multi-email persuasion sequence where each message has a distinct job and builds appropriately on prior context.
 - `marketing.assets.landing-page` — Landing Page Persuasion: Create a landing page or homepage that continues acquisition intent and moves the right visitor toward the desired action without overstating business truth.
 - `marketing.assets.lead-magnet` — Lead Magnet: Create an exchange-worthy asset that solves a bounded valuable problem and naturally relates to the next commercial step.
 - `marketing.assets.nurture` — Lead Nurture Strategy: Move not-yet-ready prospects toward a better-informed decision over time rather than repeatedly asking for the sale.
-- `marketing.assets.quiz-assessment` — Quiz / Assessment Conversion Asset: Create a diagnostic experience that gives the participant useful feedback while qualifying/segmenting toward a relevant next action.
-- `marketing.assets.sales-enablement` — Sales Enablement Asset: Create persuasive evidence/tools that help sellers and buyers resolve real decision questions consistently.
+- `marketing.assets.quiz-assessment` — Quiz / Assessment Conversion Asset: Create a diagnostic experience that gives the participant useful feedback while qualifying or segmenting toward a relevant next action.
+- `marketing.assets.sales-enablement` — Sales Enablement Asset: Create persuasive evidence and tools that help sellers and buyers resolve real decision questions consistently.
 - `marketing.assets.sales-letter` — Sales Letter: Create long-form written persuasion appropriate to audience sophistication and Offer complexity.
 - `marketing.assets.vsl` — Video Sales Letter: Build a sustained video persuasion narrative tied to an Offer and measurable commercial action.
-- `marketing.assets.webinar` — Webinar Persuasion: Design a webinar that creates genuine understanding/value while logically leading qualified attendees to an Offer.
+- `marketing.assets.webinar` — Webinar Persuasion: Design a webinar that creates genuine understanding/value while logically leading qualified attendees to an Offer when a commercial decision is part of the job.
 - `marketing.campaigns.campaign-concept` — Campaign Concept Development: Create a coherent commercial campaign concept linking audience, decision context, evidence, Offer, message, creative mechanism, channels/assets, and measurable action.
 - `marketing.diagnosis.persuasion-barrier` — Persuasion Barrier Diagnosis: Determine why the current commercial communication may not move the right audience toward the desired action before generating new copy.
 - `marketing.email.branching` — Email Sequence Branching: Define how observed recipient state changes the next message or exits the sequence.
@@ -327,19 +329,17 @@ Generated from AURA Workflow frontmatter. These are reusable procedures, not a t
 - `marketing.landing-page.proof-objections` — Landing Page Proof and Objection Architecture: Place the right evidence and objection resolution into the landing page at the moments of highest doubt.
 - `marketing.landing-page.qa` — Landing Page Persuasion QA: Verify the requested landing-page version preserves message match, evidence, Offer accuracy, persuasion flow, action integrity, and usable rendering.
 - `marketing.learning.domain-learning` — Marketing Domain Learning: Turn repeated commercial-persuasion outcomes into scoped reusable guidance about positioning, message, proof, offer presentation, objection handling, creative concepts, and persuasion structure.
-- `marketing.measurement.commercial-response` — Marketing Outcome Analysis: Interpret commercial response and return scoped marketing/customer evidence without overclaiming causality.
+- `marketing.measurement.commercial-response` — Marketing Outcome Analysis: Interpret commercial response and preserve scoped marketing/customer evidence without overclaiming causality.
 - `marketing.offer.bonuses` — Offer Bonus Design: Evaluate whether a complementary addition could remove a supported implementation/value barrier or accelerate value without cluttering the Offer.
 - `marketing.offer.diagnosis` — Offer Diagnosis: Determine whether weak commercial response is caused by the actual Offer structure rather than only its presentation, and identify the smallest evidence-backed structural improvement worth considering or testing.
-- `marketing.offer.guarantee` — Offer Guarantee Design: Design precise candidate risk-reversal/guarantee terms that the organization could actually administer without presenting a proposed promise as current business truth.
+- `marketing.offer.guarantee` — Offer Guarantee & Risk-Reversal Design: Determine whether legitimate risk reversal can remove a real purchase barrier and, when appropriate, design precise terms the organization could actually administer without presenting a proposed promise as current truth.
 - `marketing.offer.packaging` — Offer Packaging Design: Design candidate ways to bundle, tier, scope, or sequence established products/services/outcomes without treating a proposed package as current Offer truth.
 - `marketing.offer.terms` — Offer Terms Optimization: Evaluate whether commitment, payment, cancellation, trial, eligibility, or contractual terms are blocking otherwise-qualified customers and design the narrowest credible alternative.
-- `marketing.social.profile-audit` — Conversion-Oriented Social Profile Audit: Evaluate whether a social profile clearly communicates who the business helps, why it matters, why to trust it, and what qualified visitors should do next.
-- `marketing.social.profile-optimization` — Conversion-Oriented Social Profile Optimization: Implement an evidence-backed social profile that converts qualified profile interest into the intended next action.
+- `marketing.social.profile-audit` — Social Profile Audit & Optimization: Evaluate and improve a social profile so qualified visitors can quickly understand who the business helps, why it matters, why to trust it, and what to do next.
 - `marketing.strategy.awareness` — Audience Awareness and Sophistication: Determine what the audience already knows/believes about the problem, solutions, brand, alternatives, and Offer.
 - `marketing.strategy.claim-validation` — Marketing Claim Validation: Verify that consequential marketing claims are true, appropriately scoped, current, and supported before outward use.
 - `marketing.strategy.cta` — Commercial CTA Strategy: Choose and phrase the next commercial action that best advances qualified prospects without unnecessary friction or premature commitment.
 - `marketing.strategy.ethical-urgency` — Urgency and Scarcity Validation: Use genuine timing, capacity, availability, or consequence only when it is real and relevant.
-- `marketing.strategy.guarantee-risk-reversal` — Guarantee and Risk-Reversal Design: Evaluate how legitimate risk reversal can reduce a real purchase barrier without creating unsustainable or deceptive commitments.
 - `marketing.strategy.mechanism` — Persuasion Mechanism Explanation: Develop the credible explanation for how the product/service/approach creates the promised outcome and why alternatives may fail.
 - `marketing.strategy.messaging` — Messaging Architecture: Define what the audience needs to notice, understand, believe, and do in what order across a commercial experience.
 - `marketing.strategy.objection-handling` — Objection Handling Strategy: Address evidence-backed buyer objections honestly without manipulative dismissal.
@@ -349,15 +349,13 @@ Generated from AURA Workflow frontmatter. These are reusable procedures, not a t
 - `marketing.strategy.proof` — Proof Architecture: Determine which claims require what proof and how proof should be sequenced to reduce uncertainty.
 - `marketing.strategy.proof-selection` — Marketing Proof Selection: Select the proof most capable of resolving the audience’s specific doubt at each persuasion point.
 - `marketing.strategy.value-proposition` — Value Proposition Synthesis: Express why the defined audience should choose the Offer relative to alternatives using supported value and proof.
-- `marketing.vsl.offer-cta` — VSL Offer and CTA Section: Design the exact transition from education/persuasion into Offer, terms, fit, risk, and next action.
-- `marketing.vsl.persuasion-architecture` — VSL Persuasion Architecture: Design the ordered belief progression that moves a qualified viewer from current understanding to the Offer and action.
+- `marketing.vsl.persuasion-architecture` — VSL Persuasion Architecture: Design the ordered belief progression that moves a qualified viewer from current understanding through a clear commercial decision and appropriate next action.
 - `marketing.vsl.qa` — VSL Persuasion QA: Review the actual VSL as consumed—not only the script—for persuasion integrity, evidence, pacing, and action accuracy.
 - `marketing.vsl.script` — VSL Script: Write the complete conversion-focused VSL script from an approved persuasion architecture.
 - `marketing.vsl.visual-brief` — VSL Visual Brief: Specify the visual proof, demonstrations, diagrams, text, and production needs required by the VSL persuasion sequence.
 - `marketing.webinar.follow-up` — Webinar Follow-Up Sequence: Follow up based on attendance/engagement/action so people receive the appropriate next step after the webinar.
 - `marketing.webinar.objective` — Webinar Objective and Audience: Define the commercial and educational job of a webinar before building teaching or slides.
-- `marketing.webinar.offer-transition` — Webinar Offer Transition: Design the transition from teaching into the commercial Offer so it follows logically from what attendees just learned.
-- `marketing.webinar.persuasion-architecture` — Webinar Persuasion Architecture: Overlay the necessary belief, proof, objection, and Offer progression onto the educational structure without corrupting it.
+- `marketing.webinar.persuasion-architecture` — Webinar Persuasion Architecture: Overlay the necessary belief, proof, objection, and commercial progression onto useful teaching so qualified attendees can make an informed Offer decision without corrupting the webinar’s standalone value.
 - `marketing.webinar.qa` — Webinar End-to-End QA: Verify the complete webinar system—registration, session, teaching, slides, Offer, links, reminders, and follow-up—before live delivery.
 - `marketing.webinar.registration` — Webinar Registration Experience: Design the registration persuasion and expectation-setting needed to attract the right attendees.
 - `marketing.webinar.reminders` — Webinar Reminder Sequence: Create a reminder sequence that helps registered people attend without spam or manufactured urgency.
@@ -367,125 +365,121 @@ Generated from AURA Workflow frontmatter. These are reusable procedures, not a t
 
 ## seo-aeo
 
-- `seo.aeo.learning.domain-learning` — SEO/AEO Domain Learning: Turn repeated verified organic-discovery outcomes into scoped reusable guidance for future diagnosis, intervention choice, and measurement.
+- `seo.aeo.learning.domain-learning` — SEO/AEO Domain Learning: Turn sufficiently supported organic-discovery outcomes, corrections, contradictions, and repeated work into scoped reusable guidance for future SEO/AEO judgment.
 - `seo.bootstrap.asset-state-inventory` — SEO Asset State Inventory: Understand the current search-relevant state of owned pages/assets while keeping one canonical Asset identity and preserving only SEO-specific state that future work will actually reuse.
-- `seo.bootstrap.baseline.ai-baseline` — AI / Answer Visibility Baseline: Establish initial brand/competitor answer presence across a weighted prompt universe.
-- `seo.bootstrap.baseline.authority-baseline` — Authority and Reputation Baseline: Establish external references, mentions, reviews, trust sources, and competitor context.
-- `seo.bootstrap.baseline.local-baseline` — Local Baseline: Establish local entity/profile/site/review/visibility state for applicable businesses.
-- `seo.bootstrap.baseline.search-baseline` — Search Performance Baseline: Establish current organic query/page/surface performance and business-value linkage.
-- `seo.bootstrap.baseline.technical-baseline` — Technical Baseline: Measure current technical search accessibility and site architecture before changes.
+- `seo.bootstrap.baseline.ai-baseline` — AI / Answer Visibility Baseline: Establish a reproducible starting view of how the organization and relevant competitors/sources appear across important AI-answer or conversational discovery prompts.
+- `seo.bootstrap.baseline.authority-baseline` — Authority and Reputation Baseline: Establish a useful starting view of the organization’s external references, mentions, reviews, trust sources, and relevant competitive context.
+- `seo.bootstrap.baseline.local-baseline` — Local Baseline: Establish a trustworthy starting view of local entity, profile, site, reputation, and visibility state for the locations or service areas that materially matter.
+- `seo.bootstrap.baseline.search-baseline` — Search Performance Baseline: Establish a trustworthy starting view of organic search visibility and performance for the queries, pages, markets, and surfaces that materially matter.
+- `seo.bootstrap.baseline.technical-baseline` — Technical Baseline: Establish the current technical conditions that materially affect search discovery, rendering, indexing, usability, or future change evaluation.
 - `seo.bootstrap.domain-discovery` — SEO Domain Discovery: Initialize SEO-specific scope from minimal business information without recreating general Business Context, host capability state, or a parallel context-change workflow.
+- `seo.diagnosis.ai-citation-gap` — AI Citation & Recommendation Gap: Understand high-value prompts where relevant competitors or sources appear but the organization is absent, inaccurately represented, or poorly cited, and determine whether a legitimate AEO response exists.
+- `seo.diagnosis.backlink-gap` — Authority & Backlink Gap: Identify relevant authority relationships, references, or assets present in the competitor/topic ecosystem that the organization could legitimately earn or create value for.
+- `seo.diagnosis.content-gap` — Content & Information Gap: Identify valuable user needs, decision questions, or answer components that owned assets do not currently serve well enough.
+- `seo.diagnosis.discovery-feature-opportunity` — Discovery Feature Opportunity: Identify valuable result formats or discovery-surface features the business could legitimately qualify for or better serve.
+- `seo.diagnosis.local-gap` — Local Visibility Gap: Identify material local discovery or conversion gaps by location, service, query, profile, reputation, or local competitive context and distinguish controllable causes from geography or other constraints.
+- `seo.diagnosis.new-demand` — Emerging Demand: Determine whether newly observable or newly relevant demand represents a meaningful opportunity for the organization rather than noise, seasonality, or speculative interest.
+- `seo.diagnosis.ranking-decay` — Ranking Visibility Loss Diagnosis & Recovery: Determine whether valuable organic visibility has materially declined, explain the most plausible mechanism, and guide proportionate recovery without treating every fluctuation as actionable.
+- `seo.diagnosis.ranking-upside` — Ranking Upside: Identify owned assets already visible for valuable demand where a realistic relevance, quality, architecture, technical, or authority improvement could materially increase business value.
+- `seo.diagnosis.search-reputation-risk` — Search Reputation Risk: Diagnose reputation or review conditions that materially affect organic, local, or answer-surface discovery without treating broad reputation management as an SEO responsibility.
+- `seo.diagnosis.technical-opportunity` — Technical SEO Opportunity Diagnosis: Turn crawl, indexing, rendering, performance, architecture, and related technical evidence into a root-cause diagnosis worth acting on.
+- `seo.diagnosis.traffic-decay` — Organic Traffic Loss Diagnosis & Recovery: Determine whether valuable organic traffic has materially declined, separate the possible mechanisms, and guide proportionate recovery without assuming ranking loss.
 - `seo.execution.aeo.aeo-content-optimization` — Answer-Oriented Content Optimization: Improve owned information so it is clear, useful, evidence-rich, retrievable, and appropriate for both human search and answer systems.
-- `seo.execution.aeo.ai-referral-measurement` — AI Referral and Assisted Conversion Measurement: Measure observable visits and business outcomes from answer surfaces without treating unobservable influence as zero.
-- `seo.execution.aeo.answer-observation` — AI Answer Observation: Record reproducible observations of how relevant answer systems respond to priority questions.
-- `seo.execution.aeo.citation-extraction` — AI Citation and Link Extraction: Determine which sources and owned assets are cited/linked in answers and for which question contexts.
-- `seo.execution.aeo.competitive-answer-share` — Competitive Answer Share: Measure relative brand/competitor representation across a controlled prompt universe.
-- `seo.execution.aeo.factual-accuracy` — AI Factual Accuracy: Detect high-value incorrect, outdated, or ambiguous claims about the brand and route corrections to authoritative information sources.
-- `seo.execution.aeo.question-universe` — Question / Prompt Universe: Build and continuously refresh the high-value questions and conversational prompts through which buyers may discover or evaluate the brand/category.
-- `seo.execution.aeo.source-gap` — AI Source Gap Analysis: Identify what information sources answer systems repeatedly rely on and what owned/earned information is missing or uncompetitive.
-- `seo.execution.aeo.surface-configuration` — Answer Surface Configuration: Define which AI/generative/answer surfaces matter for a brand and how each can be observed without assuming identical behavior.
-- `seo.execution.architecture.crawl-depth` — Crawl Depth Optimization: Reduce unnecessary path depth for high-value assets while preserving meaningful information architecture.
-- `seo.execution.architecture.ecommerce-architecture` — Ecommerce Architecture: Organize categories, subcategories, products, filters, and merchandising paths for users and organic discovery.
-- `seo.execution.architecture.hub-spoke` — Hub-and-Spoke Architecture: Create coherent topic/service hubs that help users traverse a subject and concentrate internal discovery signals.
-- `seo.execution.architecture.local-architecture` — Local Site Architecture: Represent locations and service areas without producing thin, duplicative doorway pages.
-- `seo.execution.architecture.multilingual-architecture` — Multilingual / Multiregional Architecture: Represent languages and markets so each audience reaches the intended localized experience.
-- `seo.execution.architecture.navigation` — Navigation Architecture: Make important user and crawler pathways discoverable without bloating global navigation or flattening meaningful hierarchy.
-- `seo.execution.architecture.taxonomy` — Taxonomy Design: Design durable content/product/service classifications that reflect user tasks, business offerings, and discovery demand.
+- `seo.execution.aeo.ai-referral-measurement` — AI Referral and Assisted Conversion Measurement: Measure observable visits and business outcomes associated with answer surfaces without treating unobservable influence as zero or overstating attribution.
+- `seo.execution.aeo.answer-observation` — AI Answer Observation: Capture reproducible evidence of how relevant answer systems respond to priority questions so later analysis is based on observed behavior rather than model memory.
+- `seo.execution.aeo.citation-extraction` — AI Citation and Link Extraction: Determine which sources and owned assets are cited or linked in answer-system observations and in what question contexts.
+- `seo.execution.aeo.competitive-answer-share` — Competitive Answer Share: Measure relative brand and competitor representation across a defined, decision-relevant prompt universe.
+- `seo.execution.aeo.factual-accuracy` — AI Factual Accuracy: Detect important incorrect, outdated, unsupported, or ambiguous claims about the organization in answer systems and identify the authoritative information that may need correction.
+- `seo.execution.aeo.question-universe` — Question / Prompt Universe: Build and refresh the high-value questions and conversational prompts through which buyers may discover, compare, or evaluate the brand, Offer, category, or problem.
+- `seo.execution.aeo.source-gap` — AI Source Gap Analysis: Identify what information sources answer systems repeatedly rely on and what useful owned or earned information is missing or uncompetitive.
+- `seo.execution.aeo.surface-configuration` — Answer Surface Selection & Observation Design: Determine which AI, generative-search, assistant, answer-engine, voice, or platform-native discovery surfaces materially matter for the business and how observations from each should be interpreted.
+- `seo.execution.architecture.crawl-depth` — Crawl Depth Optimization: Make high-value assets meaningfully discoverable through the site's internal-link architecture without flattening useful hierarchy.
+- `seo.execution.architecture.ecommerce-architecture` — Ecommerce Architecture: Organize categories, collections, products, variants, filters, and merchandising paths around real shopping behavior and durable organic discovery.
+- `seo.execution.architecture.hub-spoke` — Hub-and-Spoke Architecture: Create coherent topic, service, or solution clusters that help people navigate related needs and make relationships between useful assets clear.
+- `seo.execution.architecture.local-architecture` — Local Site Architecture: Represent real locations, service areas, and market-specific offerings in a way that helps customers and organic discovery without producing thin doorway pages.
+- `seo.execution.architecture.multilingual-architecture` — Multilingual / Multiregional Architecture: Represent languages and markets so people reach the intended localized experience and discovery systems can understand the relationships between versions.
+- `seo.execution.architecture.navigation` — Navigation Architecture: Make important user and crawler pathways discoverable without bloating navigation or flattening meaningful hierarchy.
+- `seo.execution.architecture.taxonomy` — Taxonomy Design: Design durable classifications for content, products, services, and other business entities around how people understand and navigate them.
 - `seo.execution.authority.backlink-profile` — Backlink Profile Analysis: Build an evidence-based view of external links, referring domains, anchors, destinations, quality, risk, and business relevance.
-- `seo.execution.authority.broken-link-acquisition` — Broken Link Acquisition: Find dead external resources where the brand has a genuinely relevant replacement or can create one.
-- `seo.execution.authority.competitor-link-gap` — Competitor Link Gap: Find external sources that credibly reference competitors or the topic but not the owned brand.
-- `seo.execution.authority.digital-pr` — Digital PR: Create newsworthy, evidence-backed stories/assets that can earn relevant editorial coverage and citations.
-- `seo.execution.authority.directories-citations` — Directories and Citations: Create or correct authoritative business listings where presence helps users, local verification, or industry discovery.
-- `seo.execution.authority.guest-expert-contribution` — Guest / Expert Contribution: Contribute genuine expertise to third-party audiences when the contribution itself has business/editorial value.
-- `seo.execution.authority.link-monitoring` — Link and Mention Monitoring: Detect new, changed, lost, redirected, or harmful external references and decide whether action is needed.
-- `seo.execution.authority.opportunity-qualification` — Authority Opportunity Qualification: Decide whether an off-page opportunity is worth pursuing and which legitimate strategy fits it.
-- `seo.execution.authority.outreach` — Authority Outreach: Execute personalized, ethical outreach for already-qualified authority opportunities.
-- `seo.execution.authority.partnerships` — Authority Partnerships: Use legitimate partner ecosystems to create useful co-marketing, references, integrations, directories, or resources.
-- `seo.execution.authority.resource-page-acquisition` — Resource Page Acquisition: Earn inclusion on curated resources/directories when the owned resource genuinely belongs.
-- `seo.execution.authority.response-negotiation` — Outreach Response and Negotiation: Handle replies to authority outreach while protecting brand, editorial integrity, budget, and policy boundaries.
-- `seo.execution.authority.unlinked-mentions` — Unlinked Brand Mention Recovery: Turn legitimate existing brand references into accurate links where a link would improve the source for its audience.
-- `seo.execution.indexing.deindex-removal` — Deindexing and Removal: Remove or consolidate URLs from discovery/indexes intentionally while protecting users, links, legal requirements, and replacements.
-- `seo.execution.indexing.index-status` — Index Status Tracking: Track whether priority assets move through expected discovery, crawl, canonical, and index states.
-- `seo.execution.indexing.index-troubleshooting` — Indexing Troubleshooting: Diagnose why a material asset is not being indexed/served rather than repeatedly resubmitting it.
-- `seo.execution.indexing.indexnow` — IndexNow Notification: Notify participating search engines of eligible URL additions, updates, or deletions when an IndexNow-capable adapter is configured.
-- `seo.execution.indexing.publish-discovery` — Publish and Discovery Signaling: Ensure newly published or materially changed assets are accessible, linked, represented in discovery files, and handed to monitoring.
-- `seo.execution.internal-linking.anchor-text` — Internal Anchor Text: Use descriptive, varied, context-appropriate internal anchor text that clarifies destination purpose.
-- `seo.execution.internal-linking.authority-routing` — Internal Authority Routing: Route internal prominence toward strategically important pages without harming navigation or creating manipulative link patterns.
-- `seo.execution.internal-linking.broken-internal-links` — Broken Internal Links: Detect and resolve internal links that lead to errors, redirects, wrong canonicals, or retired assets.
-- `seo.execution.internal-linking.contextual-linking` — Contextual Linking: Add useful links where one asset naturally answers the next question or advances the buyer journey.
-- `seo.execution.internal-linking.ongoing-link-automation` — Ongoing Internal Link Automation: Continuously propose or execute high-confidence internal links as content changes, with controls against spam and duplication.
-- `seo.execution.internal-linking.orphan-recovery` — Orphan Page Recovery: Find valuable assets with no meaningful internal discovery path and either reconnect, consolidate, or retire them.
-- `seo.execution.local.categories-services` — Local Categories and Services: Choose accurate categories, services, and product descriptors that match real offerings and local demand.
-- `seo.execution.local.local-citations-links` — Local Citations and Links: Earn/correct locally meaningful references that reinforce discoverability and trust.
-- `seo.execution.local.local-content` — Local Content: Create market-specific information only where local differences, events, expertise, or customer needs justify it.
-- `seo.execution.local.local-eligibility-model` — Local Eligibility and Market Model: Determine whether local discovery is relevant and represent locations/service areas/franchise relationships accurately.
-- `seo.execution.local.local-media` — Local Media Optimization: Maintain useful, accurate visual assets for local profiles and location pages.
-- `seo.execution.local.location-pages` — Location Page Optimization: Create or improve location pages that provide unique local utility and connect local discovery to conversion.
-- `seo.execution.local.map-visibility` — Map Visibility Monitoring and Optimization: Measure local result presence and diagnose why visibility/conversion differs by query and geography.
-- `seo.execution.local.multi-location-franchise` — Multi-Location and Franchise Governance: Scale local optimization while preserving per-location truth, ownership, quality, and exception handling.
-- `seo.execution.local.nap-consistency` — Business Identity / NAP Consistency: Maintain a canonical business identity across owned and important third-party sources.
-- `seo.execution.local.profile-completeness` — Local Profile Completeness: Ensure each authorized local profile accurately and comprehensively represents the business.
-- `seo.execution.on-page.cannibalization` — Cannibalization: Resolve harmful overlap among owned pages without assuming every multi-URL ranking is a problem.
-- `seo.execution.on-page.direct-answers-faq` — Direct Answers Faq: Answer recurring user questions directly while keeping the page natural and useful.
-- `seo.execution.on-page.entities-evidence` — Entities Evidence: Clarify important entities, relationships, facts, and proof.
-- `seo.execution.on-page.freshness` — Freshness: Refresh content when changed facts, market conditions, user expectations, or competitive quality make it stale.
-- `seo.execution.on-page.headings-information-architecture` — Headings Information Architecture: Make page structure easy to scan, understand, and navigate.
+- `seo.execution.authority.broken-link-acquisition` — Broken Link Acquisition: Find dead external references where the organization has, or can credibly create, a genuinely useful replacement.
+- `seo.execution.authority.competitor-link-gap` — Competitor Link Gap: Find relevant external sources that reference competitors, substitute solutions, or the topic but not the owned organization, then understand why those references exist.
+- `seo.execution.authority.digital-pr` — Digital PR: Create genuinely newsworthy, useful, or evidence-backed stories and resources that relevant publishers or communities may choose to reference.
+- `seo.execution.authority.directories-citations` — Directories & Citations: Create, correct, or retire legitimate business listings and citations where accurate presence materially helps users, entity verification, local discovery, or industry discovery.
+- `seo.execution.authority.guest-expert-contribution` — Guest / Expert Contribution: Contribute genuine expertise to third-party audiences when the contribution itself has editorial, audience, or business value.
+- `seo.execution.authority.link-monitoring` — Link and Mention Monitoring: Detect meaningful new, changed, lost, redirected, or harmful external references and decide whether they warrant attention.
+- `seo.execution.authority.outreach` — Authority Outreach: Evaluate and pursue legitimate authority opportunities through relevant, personalized outreach and sound response handling.
+- `seo.execution.authority.partnerships` — Authority Partnerships: Use legitimate partner ecosystems to create useful co-marketing, references, integrations, directories, research, or resources that serve both audiences.
+- `seo.execution.authority.resource-page-acquisition` — Resource Page Acquisition: Earn inclusion on curated resource pages or directories when the organization or its resource genuinely belongs there.
+- `seo.execution.authority.unlinked-mentions` — Unlinked Brand Mention Recovery: Turn legitimate existing brand or entity references into accurate links when a link would improve the source for its audience.
+- `seo.execution.indexing.deindex-removal` — Deindexing and Removal: Remove, consolidate, restrict, or retire URLs intentionally while protecting users, valid replacements, accumulated signals, legal obligations, and business continuity.
+- `seo.execution.indexing.index-troubleshooting` — Indexing Diagnosis & Recovery: Determine whether important URLs are in the intended discovery, crawl, canonical, eligibility, index, and serving state; diagnose material mismatches; and apply the smallest justified recovery.
+- `seo.execution.indexing.publish-discovery` — Publish and Discovery Signaling: Help newly published, materially changed, or intentionally removed URLs become correctly discoverable by the relevant search surfaces without treating submission as indexing.
+- `seo.execution.internal-linking.anchor-text` — Internal Anchor Text: Use descriptive, natural internal anchor text that helps people understand the destination and reinforces the site's real information structure.
+- `seo.execution.internal-linking.authority-routing` — Internal Authority Routing: Use internal-link prominence to support strategically important pages when those links are also genuinely useful to users.
+- `seo.execution.internal-linking.broken-internal-links` — Broken Internal Links: Find and repair internal links that lead to errors, unnecessary redirects, incorrect destinations, noncanonical variants, or retired assets.
+- `seo.execution.internal-linking.contextual-linking` — Contextual Linking: Add internal links where another owned asset naturally answers the next question, deepens understanding, or advances a useful journey.
+- `seo.execution.internal-linking.orphan-recovery` — Orphan Page Recovery: Find valuable assets with no meaningful internal discovery path and decide whether to reconnect, consolidate, redirect, retire, or leave them intentionally isolated.
+- `seo.execution.local.categories-services` — Local Categories and Services: Represent each location with accurate categories, services, and product descriptors that match what customers can actually obtain there.
+- `seo.execution.local.local-content` — Local Content: Create market-specific content only when local differences, evidence, events, expertise, or customer needs justify it.
+- `seo.execution.local.local-eligibility-model` — Local Eligibility and Market Model: Determine whether local discovery applies to the business and represent locations, service areas, franchise relationships, and market boundaries accurately.
+- `seo.execution.local.local-media` — Local Media Optimization: Maintain accurate, useful visual assets for real locations, services, and local customer decisions.
+- `seo.execution.local.location-pages` — Location Page Optimization: Create or improve location pages that provide distinct local utility and connect relevant discovery to a real customer action.
+- `seo.execution.local.map-visibility` — Map Visibility Monitoring and Optimization: Observe local-result presence by meaningful query and geography, then diagnose why visibility or conversion differs.
+- `seo.execution.local.multi-location-franchise` — Multi-Location and Franchise Governance: Scale local operations while preserving per-location truth, ownership, quality, and meaningful exceptions.
+- `seo.execution.local.nap-consistency` — Business Identity / NAP Consistency: Keep the organization's public local identity accurate and coherent across owned and important third-party sources.
+- `seo.execution.local.profile-completeness` — Local Profile Completeness: Ensure each legitimate local profile accurately represents the business with the fields that materially help customers and discovery.
+- `seo.execution.on-page.cannibalization` — Cannibalization & Intent Ownership: Determine whether multiple owned assets create harmful search/answer intent ambiguity and resolve it only when consolidation, differentiation, or signal alignment is likely to improve the combined outcome.
+- `seo.execution.on-page.direct-answers-faq` — Direct Answers / FAQ: Answer recurring customer questions directly where doing so improves understanding, task completion, qualification, or discovery.
+- `seo.execution.on-page.entities-evidence` — Entities & Evidence: Make important entities, relationships, facts, claims, and supporting evidence clear enough for people and discovery systems to interpret accurately.
+- `seo.execution.on-page.freshness` — Freshness: Refresh content when changed facts, products, markets, user expectations, or quality standards make the current asset materially stale.
+- `seo.execution.on-page.headings-information-architecture` — Headings & Information Architecture: Structure page information so people can scan, understand, navigate, and act on it efficiently.
 - `seo.execution.on-page.intent-alignment` — Intent Alignment: Align an existing page with the actual high-value user intent it should satisfy.
-- `seo.execution.on-page.organic-conversion-alignment` — Conversion Alignment: Align organic intent and search promise with the landing experience; delegate general persuasion or journey mechanics when they are the true cause.
-- `seo.execution.on-page.prune-consolidate` — Prune Consolidate: Remove or consolidate low-value content only when evidence shows it should not remain independently available.
-- `seo.execution.on-page.title-snippet` — Title Snippet: Improve qualified result CTR without misrepresenting page content.
-- `seo.execution.on-page.topical-coverage` — Topical Coverage: Close meaningful content gaps without padding or duplicating other pages.
-- `seo.execution.technical.canonicals` — Canonicals: Consolidate duplicate/near-duplicate URL signals without suppressing legitimately distinct pages.
-- `seo.execution.technical.core-web-vitals` — Core Web Vitals: Improve real-user loading, interaction, and visual stability when it materially affects experience/business outcomes.
-- `seo.execution.technical.crawl-access` — Crawl Access: Ensure valuable assets can be discovered and fetched by intended crawlers without exposing unwanted/private areas.
-- `seo.execution.technical.crawl-budget` — Crawl Budget: Improve discovery efficiency on very large or frequently changing sites when crawl capacity is a demonstrated constraint.
-- `seo.execution.technical.duplicate-content` — Duplicate Content: Reduce waste/confusion from duplicate and near-duplicate assets while preserving useful variants.
-- `seo.execution.technical.faceted-navigation` — Faceted Navigation: Control combinatorial filter URLs while preserving valuable filtered landing pages.
-- `seo.execution.technical.indexability` — Indexability: Diagnose whether valuable pages are eligible for indexing and why eligible pages may still be absent.
-- `seo.execution.technical.international-hreflang` — International Hreflang: Represent market/language variants correctly and avoid cross-market canonical conflicts.
-- `seo.execution.technical.javascript-rendering` — Javascript Rendering: Ensure important content, links, metadata, and directives survive the rendering path.
-- `seo.execution.technical.media-seo` — Media Seo: Make important image/video assets discoverable, descriptive, performant, and connected to relevant pages.
-- `seo.execution.technical.mobile` — Mobile: Ensure mobile users/crawlers receive complete, usable core content and metadata.
-- `seo.execution.technical.page-speed` — Page Speed: Reduce unnecessary latency and page weight beyond named CWV thresholds.
-- `seo.execution.technical.pagination` — Pagination: Maintain discoverable multi-page sequences without losing deep items or creating duplicate traps.
-- `seo.execution.technical.redirects` — Redirects: Design and validate redirects that preserve user journeys, discovery, and historical value.
-- `seo.execution.technical.robots` — Robots: Safely manage robots.txt crawler controls.
-- `seo.execution.technical.site-migration` — Site Migration: Plan and execute domain/CMS/architecture/URL migrations without avoidable discovery or attribution loss.
-- `seo.execution.technical.sitemaps` — Sitemaps: Maintain accurate discovery sitemaps for canonical, index-worthy URLs.
-- `seo.execution.technical.status-codes` — Status Codes: Correct HTTP response behavior that interferes with users, discovery, or diagnosis.
-- `seo.execution.technical.structured-data` — Structured Data: Implement accurate supported structured data that matches visible content and real business facts.
-- `seo.execution.technical.url-hygiene` — Url Hygiene: Keep URLs stable, canonical, and free from uncontrolled variant explosion.
+- `seo.execution.on-page.organic-conversion-alignment` — Organic Experience & Conversion Alignment: Determine whether organic acquisition intent, search/result promise, destination choice, and landing experience align well enough to create the intended user and business outcome—and improve the part SEO/AEO can actually influence.
+- `seo.execution.on-page.prune-consolidate` — Prune & Consolidate: Improve, merge, archive, redirect, noindex, or remove content only when evidence shows it should not remain independently available in its current form.
+- `seo.execution.on-page.title-snippet` — Search Presentation & CTR: Determine whether a material click-through gap is actually caused by controllable search-result presentation and improve titles/snippet-supporting content when the evidence supports that mechanism.
+- `seo.execution.on-page.topical-coverage` — Topical Coverage: Close meaningful information gaps that prevent a page from satisfying its intended task, without padding the page or duplicating other assets.
+- `seo.execution.technical.canonicals` — Duplicate & Canonical Consolidation: Resolve duplicate and near-duplicate owned URLs/assets so search/discovery signals are coherent without suppressing legitimately distinct customer intents, markets, languages, or page purposes.
+- `seo.execution.technical.crawl-access` — Crawl Access: Ensure valuable public assets can be discovered and fetched by intended crawlers while preserving intentional privacy, security, and low-value crawl boundaries.
+- `seo.execution.technical.crawl-budget` — Crawl Budget: Improve discovery efficiency on very large, complex, or frequently changing sites when crawl capacity or crawl allocation is a demonstrated constraint.
+- `seo.execution.technical.faceted-navigation` — Faceted Navigation: Control combinatorial filter and sort URL spaces while preserving filtered experiences or landing pages that serve real customer demand.
+- `seo.execution.technical.international-hreflang` — International & Hreflang Relationships: Represent legitimate language/market variants clearly enough that users and search systems can reach the appropriate version without cross-market canonical or alternate-language conflicts.
+- `seo.execution.technical.media-seo` — Media Discoverability: Make important image and video Assets discoverable, understandable, performant enough for their use, and correctly connected to the pages and customer needs they support.
+- `seo.execution.technical.pagination` — Pagination: Keep multi-page collections and sequence states discoverable when their deeper items/content matter, without collapsing distinct pages or multiplying unnecessary URL traps.
+- `seo.execution.technical.redirects` — Redirects: Design and validate redirects that preserve user journeys, discovery, and historical value when URLs genuinely move or disappear.
+- `seo.execution.technical.rendering-parity` — Rendering & Device Parity: Ensure important content, links, metadata, directives, media, and task-critical interactions survive the site's delivery/rendering path across the device and crawler contexts that materially matter.
+- `seo.execution.technical.site-migration` — Site Migration: Plan, execute, and verify a domain, CMS, architecture, platform, or URL migration while protecting organic discovery, attribution, and recoverability.
+- `seo.execution.technical.sitemaps` — Sitemaps: Maintain accurate discovery sitemaps that represent the canonical index-worthy URLs the business actually wants search systems to discover and refresh.
+- `seo.execution.technical.status-codes` — HTTP Status & Soft-Error Behavior: Correct HTTP response and soft-error behavior that misleads users, crawlers, or downstream diagnosis.
+- `seo.execution.technical.structured-data` — Structured Data: Use structured data where it accurately represents page content, entities, and business facts and can improve machine understanding or eligible search experiences.
+- `seo.execution.technical.url-hygiene` — URL Hygiene: Keep URL generation stable and intentional so operational parameters and generated variants do not create unnecessary crawl/index complexity or needless migrations.
+- `seo.execution.technical.web-performance` — Web Performance: Improve real-user loading, responsiveness, and visual stability by diagnosing the performance bottlenecks that materially affect user experience or business outcomes.
+- `seo.incidents.local-profile-suspension` — Local Profile Suspension Incident: Diagnose and resolve a material local-profile suspension or restriction while avoiding speculative changes that can worsen eligibility, identity, or reinstatement problems.
+- `seo.incidents.manual-action-or-policy` — Manual Action / Policy Incident: Handle search/platform policy notices or credible evidence of a policy-related visibility problem with evidence-backed remediation, without making AURA the authority that pauses or resumes runtime behavior.
 - `seo.intelligence.ecosystem.claim-extraction` — SEO Strategy Claim Extraction: Convert articles, announcements, experiments, and observed outcomes into atomic, testable SEO/AEO claims with explicit source lineage and applicability.
-- `seo.intelligence.ecosystem.evidence-grading` — SEO Strategy Evidence Assessment: Assess the strength, relevance, confidence, applicability, and uncertainty of evidence supporting or contradicting an SEO/AEO strategy claim without collapsing those dimensions into one grade.
+- `seo.intelligence.ecosystem.evidence-grading` — SEO Strategy Evidence Assessment: Assess the strength, relevance, applicability, and uncertainty of evidence supporting or contradicting an SEO/AEO strategy claim without collapsing those dimensions into one score.
 - `seo.intelligence.ecosystem.official-contradiction-check` — SEO Official Policy / Guidance Contradiction Check: Check proposed SEO/AEO tactics against current authoritative platform rules and technical eligibility requirements while keeping policy status distinct from evidence strength.
 - `seo.intelligence.ecosystem.source-monitoring` — SEO Ecosystem Source Monitoring: Capture material official search/answer-engine changes and credible SEO/AEO research as reusable sources and observations without automatically changing operating guidance.
 - `seo.intelligence.ecosystem.tactic-radar` — SEO/AEO Ecosystem Tactic Radar: Discover and evaluate emerging SEO/AEO mechanisms, tactics, platform changes, practitioner findings, and research without automatically promoting them into an experiment or Learning lifecycle.
-- `seo.intelligence.organic-competition.discover-answer` — Answer Competitor / Source Discovery: Identify/search-analyze organic competitors and answer sources without maintaining a duplicate broad business competitor profile.
-- `seo.intelligence.organic-competition.discover-search` — Search Competitor Discovery: Identify/search-analyze organic competitors and answer sources without maintaining a duplicate broad business competitor profile.
-- `seo.intelligence.organic-competition.domain-analysis` — Competitor Domain Analysis: Build an interpretable domain-level model of how a competitor wins discovery and business attention.
-- `seo.intelligence.organic-competition.gap-analysis` — Competitive Gap Analysis: Convert competitor observations into specific, business-relevant opportunities rather than a list of things competitors have.
-- `seo.intelligence.organic-competition.movement-monitoring` — Competitor Movement Monitoring: Detect material changes in competitor visibility, assets, authority, answers, reputation, and offers.
-- `seo.intelligence.organic-competition.page-analysis` — Competitor Page Analysis: Compare a specific competing page/asset against the owned or missing asset for a defined intent.
-- `seo.intelligence.organic-demand.ai-prompt-expansion` — AI Prompt Expansion: Translate buyer needs into realistic conversational question/prompt families and discover follow-up constraints.
-- `seo.intelligence.organic-demand.business-value-mapping` — Demand Business-Value Mapping: Connect every pursued demand unit to a plausible business-value pathway.
-- `seo.intelligence.organic-demand.first-party-query-mining` — First-Party Query Mining: Mine actual search/site/customer language for opportunities that generic keyword tools may miss.
-- `seo.intelligence.organic-demand.intent-classification` — Intent and Journey Classification: Classify demand by what the user is trying to accomplish, not only by keyword syntax.
-- `seo.intelligence.organic-demand.refresh-rerank` — Demand Refresh and Rerank: Continuously update demand observations and priorities as markets, search behavior, products, and outcomes change.
-- `seo.intelligence.organic-demand.seed-generation` — Demand Seed Generation: Generate an initial comprehensive but business-filtered set of topics, needs, questions, entities, and queries.
-- `seo.intelligence.organic-demand.semantic-clustering` — Semantic Demand Clustering: Group demand by shared underlying need while preserving distinct intents that deserve separate assets.
-- `seo.intelligence.organic-demand.serp-expansion` — Search Result Expansion: Use observed search-result ecosystems to discover adjacent queries, intents, entities, result formats, and competitors.
+- `seo.intelligence.organic-competition.discover-answer` — Answer Competitor / Source Discovery: Identify the brands, publishers, communities, databases, marketplaces, and other sources that materially shape answer-engine visibility without maintaining a duplicate broad business-competitor profile.
+- `seo.intelligence.organic-competition.discover-search` — Search Competitor Discovery: Identify the domains, pages, and entity types that materially compete for important search demand without maintaining a duplicate broad business-competitor profile.
+- `seo.intelligence.organic-competition.domain-analysis` — Competitor Domain Analysis: Build an interpretable domain-level model of how a materially relevant competitor earns discovery and business attention.
+- `seo.intelligence.organic-competition.gap-analysis` — Competitive Gap Analysis: Convert competitor and market observations into specific business-relevant gaps without turning every difference into an Opportunity or copying what competitors do.
+- `seo.intelligence.organic-competition.movement-monitoring` — Competitor Movement Monitoring: Detect material changes in competitor visibility, assets, authority, answers, reputation, and Offers that could change the organization's organic-discovery decisions.
+- `seo.intelligence.organic-competition.page-analysis` — Competitor Page Analysis: Compare a specific competing page or asset against the owned or missing asset for a defined intent and determine what, if anything, is materially better about the competing experience.
+- `seo.intelligence.organic-demand.ai-prompt-expansion` — AI Prompt Expansion: Translate real buyer needs into realistic conversational prompt/question families, including the constraints and follow-ups that can change what a useful answer requires.
+- `seo.intelligence.organic-demand.business-value-mapping` — Demand Business-Value Mapping: Connect pursued organic/search/answer demand to a credible business-value pathway so attention is prioritized by usefulness and opportunity rather than volume alone.
+- `seo.intelligence.organic-demand.first-party-query-mining` — First-Party Query Mining: Mine actual search, site, sales, support, and customer language for valuable needs and opportunities that generic keyword tools or model-generated ideas may miss.
+- `seo.intelligence.organic-demand.intent-classification` — Intent and Journey Classification: Understand what the user is actually trying to accomplish and where that need sits in the customer journey rather than relying on keyword syntax alone.
+- `seo.intelligence.organic-demand.refresh-rerank` — Demand Refresh and Reprioritization: Update organic-demand understanding and priorities as customer behavior, markets, search/answer surfaces, Offers, and observed outcomes change.
+- `seo.intelligence.organic-demand.seed-generation` — Demand Seed Generation: Generate a broad but business-grounded starting set of topics, needs, questions, entities, and queries without mistaking model-generated possibilities for observed demand.
+- `seo.intelligence.organic-demand.semantic-clustering` — Semantic Demand Clustering: Group demand by shared underlying need while preserving distinct intents, audiences, constraints, or destinations that deserve separate treatment.
+- `seo.intelligence.organic-demand.serp-expansion` — Search Result Expansion: Use observed search-result ecosystems to discover adjacent needs, intents, entities, formats, and competitors that seed research alone may miss.
 - `seo.learning.strategy-experiment-design` — SEO Strategy Experiment Design: Design a controlled or defensible quasi-experimental test for an uncertain SEO/AEO tactic so its causal/business effect can improve organization-owned SEO Learning.
-- `seo.learning.tactic-deprecation` — SEO Tactic Deprecation: Narrow, contradict, supersede, or deprecate SEO Domain Learning when evidence weakens, external platform guidance changes, or measured outcomes are consistently harmful.
-- `seo.learning.tactic-promotion` — SEO Tactic Promotion: Promote SEO Domain Learning to a stronger evidence/maturity level when justified, without overgeneralizing one business result or turning ordinary organization work into self-modifying AURA source.
-- `seo.learning.tactic-registry` — SEO Tactic Learning Registry Maintenance: Maintain SEO/AEO tactics as SEO Domain Learning with explicit mechanisms, evidence, applicability, maturity, status, and links to the playbooks they may inform.
 - `seo.measurement.attribution` — Organic Attribution: Connect observed organic discovery to business outcomes using the strongest available evidence while making attribution uncertainty explicit.
 - `seo.measurement.change-evaluation` — Change Evaluation: Evaluate whether a specific SEO/AEO change likely helped, harmed, had little effect, or remains inconclusive without overstating causality.
 - `seo.measurement.experiment-analysis` — SEO/AEO Experiment Analysis: Analyze controlled or defensible quasi-controlled SEO/AEO experiments without overstating causality or generalizing beyond the tested context.
-- `seo.measurement.monthly-business` — Organic Discovery Business Review: Connect a meaningful reporting period of SEO/AEO work to business outcomes, explanations, decisions, and the evidence needed for what comes next.
-- `seo.measurement.quarterly-strategy` — Organic Discovery Strategy Review: Reassess organic-discovery markets, demand, competitors, asset portfolio, strategy evidence, and investment direction over a strategically meaningful horizon.
-- `seo.measurement.scorecard` — Unified SEO/AEO Scorecard: Create a layered view of organic-discovery performance where intermediate visibility metrics remain interpretable but never replace business value.
-- `seo.measurement.weekly-tactical` — Organic Discovery Tactical Review: Produce a compact operational view of material organic-discovery changes, current work, risks, and evidence-backed next priorities.
-- `seo.monitoring.ai-visibility` — AI / Answer Visibility Monitoring: Refresh high-value prompt observations and detect material changes in brand representation, citations, competitors, and factual accuracy without turning AURA into the answer-surface monitoring runtime.
+- `seo.measurement.organic-discovery-review` — Organic Discovery Review: Give the organization an evidence-backed view of organic-discovery performance, explanations, current work, and justified priorities at the horizon required by the decision.
+- `seo.monitoring.ai-visibility` — AI / Answer Visibility Monitoring: Refresh high-value prompt observations and detect material changes in brand representation, recommendations, citations, competitors, and factual accuracy without turning AURA into the answer-surface monitoring runtime.
 - `seo.monitoring.backlinks` — Backlink and Mention Monitoring: Review meaningful new, lost, or changed external references and authority signals without treating link-provider noise as organizational truth.
 - `seo.monitoring.competitors` — Competitor Monitoring: Review business/search/answer competitor movements that may materially affect organic-discovery decisions without duplicating Competitor Intelligence or creating an SEO dispatch loop.
 - `seo.monitoring.ctr` — CTR Monitoring: Review click-through behavior relative to query/page position and result context without treating CTR movement as a self-explanatory optimization signal.

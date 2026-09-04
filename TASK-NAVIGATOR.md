@@ -20,7 +20,7 @@ Understand competitors, substitutes, competitive movement, and supported implica
 | Research Plan | Resolve a competitive question with bounded evidence. | `competitor.research.plan` |
 | Source Coverage | Adapt research depth and evidence-source coverage to the competitive decision. | `competitor.research.adaptive-source-coverage` |
 | Ecosystem Radar | Discover important competitive movements and tactic claims, verify what is observed versus supported, and preserve material implications for direct reuse. | `competitor.intelligence.ecosystem-radar` |
-| Competitive Position | Build a decision-useful competitive landscape and position using relevant evidence and specialist methods. | `competitor.analysis.competitive-position` |
+| Competitive Position | Build a decision-useful competitive landscape and position using the relevant evidence and specialist methods. | `competitor.analysis.competitive-position` |
 | Competitor Discovery | Identify current direct and substitute competitors. | `competitor.discovery.competitive-set` |
 | Entity Resolution | Resolve competitor domains and public profiles to the correct canonical entity. | `competitor.discovery.entity-resolution` |
 | Emerging Competitors | Identify new competitors entering the relevant customer choice set. | `competitor.discovery.emerging-competitors` |
@@ -235,7 +235,7 @@ Create and improve persuasive strategy, campaigns, offers, and customer-facing m
 | Objections | Resolve material purchase objections. | `marketing.strategy.objection-handling` |
 | Offer Presentation | Present the established Offer persuasively and accurately. | `marketing.strategy.offer-presentation` |
 | Offer Optimization | Diagnose structural Offer weaknesses and identify the smallest evidence-backed improvement worth considering or testing. | `marketing.offer.diagnosis` |
-| Social Profile | Optimize a social profile for qualified conversion. | `marketing.social.profile-optimization` |
+| Social Profile | Audit and improve a social profile for qualified conversion. | `marketing.social.profile-audit` |
 | Campaign Concept | Develop a coherent commercial campaign concept. | `marketing.campaigns.campaign-concept` |
 | Ads | Create evidence-backed advertising persuasion assets. | `marketing.assets.ads` |
 | Landing Page | Create a complete conversion-focused landing page. | `marketing.assets.landing-page` |
@@ -258,7 +258,7 @@ Improve valuable organic discovery across search, answer engines, AI interfaces,
 ### Playbooks
 
 - **SEO/AEO Growth** — Find and improve the highest-value realistic opportunities for organic discovery across search engines, answer engines, AI interfaces, and local discovery.
-- **SEO/AEO Experimentation and Learning** — Test uncertain SEO/AEO tactics when testing is worthwhile, evaluate the results without overstating causality, and preserve reusable Learning when supported. — common entry `seo.learning.strategy-experiment-design`
+- **SEO/AEO Experimentation and Learning** — Test uncertain SEO/AEO tactics when testing is worthwhile, evaluate results without overstating causality, and preserve reusable Learning when supported. — common entry `seo.learning.strategy-experiment-design`
 - **SEO/AEO Site Migration** — Plan and execute a domain, CMS, architecture, or URL migration while protecting organic discovery, attribution, and recoverability. — common entry `seo.execution.technical.site-migration`
 
 ### Common Workflows
