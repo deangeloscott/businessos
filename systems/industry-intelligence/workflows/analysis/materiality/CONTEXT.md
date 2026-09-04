@@ -40,8 +40,8 @@ When a verified or sufficiently credible IndustryEvent could materially affect a
 3. [AI] Distinguish direct operational effect, customer-behavior effect, competitive effect, narrative/content relevance, and speculative second-order effects.
 4. [AI] Use any organization-defined materiality criteria or thresholds as decision context when they actually exist; do not invent a configured threshold framework merely to classify the event.
 5. [AI] Generate plausible alternative interpretations and state what evidence would materially change the assessment.
-6. [AI] State relevance, urgency where real, confidence, affected business mechanisms, and possible next considerations without assigning mandatory domain routes or responses.
-7. [HYBRID] Persist or update an Industry Insight only when the interpreted materiality has durable organizational value. Do not emit an AURA runtime event because a threshold was crossed.
+6. [AI] State relevance, urgency where real, uncertainty, affected business mechanisms, and possible next considerations without assigning mandatory domain routes or responses.
+7. [HYBRID] Persist or update an Industry Insight only when the interpreted materiality has durable organizational value. Keep the IndustryEvent itself factual; do not turn it into a scored decision or AURA runtime event.
 
 ## Verification
 - Materiality conclusions are traceable to the IndustryEvent/evidence and active business context.
