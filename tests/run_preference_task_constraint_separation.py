@@ -31,13 +31,13 @@ def main():
         upsert(BID,'Jordan communication preferences','operator','jordan-founder',{
             'communication':{'style':'concise and practical'},
             'output':{'visual_or_structured_when_helpful':True}
-        },'prf_tasksep_jordan')
+        },'pref_tasksep_jordan')
 
         # Clearly permission-shaped namespaces are structurally not PreferenceProfile data.
         expect_reject(lambda:upsert(BID,'Bad action preferences','operator','jordan-founder',{
             'communication':{'style':'concise'},
             'approval_boundaries':{'external_production_actions':'strict approval required'}
-        },'prf_tasksep_bad_key'))
+        },'pref_tasksep_bad_key'))
 
         # AURA must not parse arbitrary prose to infer whether it is a temporary task
         # constraint, durable policy/decision, or preference. The capable model/user owns
@@ -59,13 +59,13 @@ def main():
 
         # Direct writes that use a categorically wrong permission namespace remain invalid.
         bad={
-          'id':'prf_tasksep_manual_bad','object_type':'PreferenceProfile','schema_version':'1.8.4','business_id':BID,
+          'id':'pref_tasksep_manual_bad','object_type':'PreferenceProfile','schema_version':'1.8.4','business_id':BID,
           'created_at':'2026-08-25T00:00:00+00:00','updated_at':'2026-08-25T00:00:00+00:00','lineage':[],
           'name':'Manual bad preference','scope':'operator','subject_ref':'jordan-founder','status':'active','priority':0,
           'source_kind':'explicit_user','source_refs':[],'applies_to':{},
           'preferences':{'approval_boundaries':{'customer_contact':'required'}},'notes':None,'extensions':{}
         }
-        bp=BASE/'context/preferences/prf_tasksep_manual_bad.json';bp.write_text(json.dumps(bad,indent=2)+'\n')
+        bp=BASE/'context/preferences/pref_tasksep_manual_bad.json';bp.write_text(json.dumps(bad,indent=2)+'\n')
         errors,_,_=validate_business(BID,False)
         req(any('permission' in e.lower() or 'preference' in e.lower() for e in errors),f'manual invalid preference namespace was not detected: {errors}')
         bp.unlink()
