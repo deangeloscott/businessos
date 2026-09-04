@@ -16,10 +16,6 @@ writes:
 - Observation
 - ContextUpdateProposal
 context: []
-workflows:
-  conditional:
-  - id: core.context.owned-business-discovery
-    when: Additional first-party/owned-surface discovery can materially improve the current work or the user asks AURA to map the business more broadly.
 ---
 # Bootstrap Business Context
 
