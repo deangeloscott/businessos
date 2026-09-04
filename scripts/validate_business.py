@@ -10,7 +10,6 @@ from validate_run_completion import run_completion_errors
 from validate_opportunity_grounding import opportunity_grounding_errors
 from validate_attention_lifecycle import lifecycle_errors
 from preference_semantics import preference_semantic_errors
-from artifact_readiness import readiness_errors
 import argparse,json,collections,re
 
 ALLOWED_AUTHORITIES={'explicit_user','verified_first_party','external_evidence','derived_inference','candidate_strategy','unknown'}
@@ -33,28 +32,17 @@ def _source_text(src):
     ext=src.get('extensions') if isinstance(src.get('extensions'),dict) else {}
     bos=ext.get('businessos') if isinstance(ext.get('businessos'),dict) else {}
     evidence=ext.get('businessos_evidence') if isinstance(ext.get('businessos_evidence'),dict) else {}
-    for value in (
-        ext.get('verbatim_user_statement'),bos.get('verbatim_user_statement'),
-        evidence.get('captured_text'),
-    ):
+    for value in (ext.get('verbatim_user_statement'),bos.get('verbatim_user_statement'),evidence.get('captured_text')):
         if isinstance(value,str) and value.strip():return value
     return None
 
 
 def _provenance_errors(objects,sources):
-    """Validate source/authority mechanics while leaving semantic interpretation to the model.
-
-    Deterministic AURA can prove that a source exists, belongs to the organization, and
-    carries the claimed authority. It should not use a home-grown tokenizer/stemmer to
-    decide whether a model's semantic normalization is equivalent to the source text.
-    Exact literal support remains required for explicit outward BusinessClaim records.
-    """
     errors=[]
     for obj,path in objects:
         if obj.get('object_type')=='SourceRecord':continue
         typ=obj.get('object_type');bos=_businessos_ext(obj)
         authority=bos.get('authority') or (obj.get('authority') if typ=='BusinessClaim' else None)
-
         if typ in STRATEGIC_TYPES:
             if not authority:
                 errors.append(f'{path} {typ} requires extensions.businessos.authority; use explicit_user/verified_first_party for established organization guidance or derived_inference/candidate_strategy for model-created strategy')
@@ -63,7 +51,6 @@ def _provenance_errors(objects,sources):
             if authority in {'derived_inference','candidate_strategy'}:
                 basis=bos.get('basis_refs') or obj.get('lineage') or []
                 if not basis:errors.append(f'{path} {typ} {authority} requires basis_refs/lineage')
-
         if authority!='explicit_user':continue
         if typ not in EXPLICIT_CONTEXT_TYPES:
             errors.append(f'{path} explicit_user authority is not allowed for {typ}; preserve the appropriate evidence/decision/inference semantics instead')
@@ -76,7 +63,6 @@ def _provenance_errors(objects,sources):
         if _source_authority(src)!='explicit_user':
             errors.append(f'{path} explicit_user source {srcid} is not marked explicit_user authority')
             continue
-
         if typ=='BusinessClaim':
             if obj.get('authority')!='explicit_user':
                 errors.append(f'{path} explicit-user BusinessClaim must declare authority=explicit_user')
@@ -113,6 +99,7 @@ def validate_business(business_id,require_context=False):
         try:data=json.loads(p.read_text())
         except Exception as e:errors.append(f'{p.relative_to(ROOT)} invalid JSON: {e}');continue
         vals=data if isinstance(data,list) else [data]
+        historical='history' in p.relative_to(base).parts
         for obj in vals:
             if not isinstance(obj,dict) or not obj.get('object_type'):continue
             typ=obj.get('object_type');oid=obj.get('id');rel=str(p.relative_to(ROOT))
@@ -123,13 +110,13 @@ def validate_business(business_id,require_context=False):
             if oid:
                 if oid in ids:errors.append(f'duplicate object id {oid}: {ids[oid]} and {rel}')
                 ids[oid]=rel
-            counts[typ]+=1;objects.append((obj,rel))
+            if not historical:counts[typ]+=1
+            objects.append((obj,rel))
             if typ=='PreferenceProfile':errors.extend(f'{rel} {e}' for e in preference_semantic_errors(obj.get('preferences') or {}))
             if typ=='SourceRecord' and oid:sources[oid]=obj
     errors.extend(_provenance_errors(objects,sources))
     errors.extend(claim_errors(business_id,objects))
     errors.extend(run_completion_errors(business_id,objects))
-    errors.extend(readiness_errors(business_id,objects))
     og_errors,og_warnings=opportunity_grounding_errors(business_id,objects);errors.extend(og_errors);warnings.extend(og_warnings)
     re_errors,re_warnings=evidence_errors(business_id);errors.extend(re_errors);warnings.extend(re_warnings)
     le_errors,le_warnings=local_evidence_errors(business_id);errors.extend(le_errors);warnings.extend(le_warnings)

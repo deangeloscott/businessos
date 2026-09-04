@@ -1,21 +1,27 @@
 # Decision Grounding & Inference Policy
 
-Use this policy whenever a workflow creates or materially updates an `Opportunity` or another canonical decision object.
+Use this policy whenever a Workflow creates or materially updates an `Opportunity` or another canonical decision object.
 
 ## Core rule
-A verified fact does **not** automatically verify every consequence the model infers from that fact. BusinessOS must preserve the boundary between:
+A verified fact does **not** automatically verify every consequence inferred from that fact. Preserve the boundary between:
 - established business/context facts;
 - direct observations and measured outcomes;
 - derived causal/strategic inference;
 - unknown or unmeasured state.
 
-An Opportunity may recommend action under uncertainty, but it may not phrase an unsupported inference as established business, economic, search-performance, customer, or AI-answer truth.
+An Opportunity may recommend action under uncertainty, but it should not present unsupported inference as established business, economic, search-performance, customer, or AI-answer truth.
 
-## Required reasoning basis
-A `qualified`, `prioritized`, `committed`, or `active` Opportunity must include `reasoning_basis`:
+This is semantic guidance for the capable model/user, not a deterministic prose rules engine. Structural validation may verify that references exist and that objects labeled as measured evidence are appropriate evidence types; it should not use keywords or regexes to decide whether natural-language reasoning is correct.
+
+## Opportunity boundary
+An `Opportunity` preserves a potentially valuable thing the organization may choose to pursue. Its status may reflect investigation, qualification, prioritization, blocking, rejection, supersession, closure, or genuine reopening.
+
+Do **not** turn the Opportunity itself into the execution lifecycle after commitment. When the organization actually decides to pursue something, preserve the decision in a `DecisionRecord` when that decision matters for future context, and use an `Initiative` when the committed body of work needs durable coordination/continuity. Execution progress, outcome evaluation, and Learning remain separate meanings rather than later Opportunity stages.
+
+A `qualified` or `prioritized` Opportunity should preserve a `reasoning_basis` so future work can distinguish:
 - `fact_refs`: canonical objects that establish the factual basis for the decision;
 - `measured_refs`: the subset that directly measures an outcome/performance state, if any;
-- `inferences`: material derived conclusions, each with `basis_refs` and confidence;
+- `inferences`: material derived conclusions with `basis_refs`; confidence/uncertainty may be expressed when useful but should not require fake numeric precision;
 - `unknowns`: material state that remains unverified/unmeasured.
 
 Use canonical object IDs, not file paths, as reasoning refs. `evidence_links` may still preserve richer provenance/pointers, but it is not a substitute for this boundary.
@@ -23,16 +29,12 @@ Use canonical object IDs, not file paths, as reasoning refs. `evidence_links` ma
 ## Economics and value
 Do not infer active-business economics from a service/category label, market convention, or technical importance.
 
-Without business-specific economic evidence, do not call a service/page/customer segment:
-- highest-value / most valuable;
-- most profitable / highest-margin;
-- highest-revenue / biggest revenue driver;
-- a high-value service **as an active-business economic fact**.
+Without business-specific economic evidence, do not present relative economics such as “most profitable,” “highest revenue,” or “highest margin” as established active-business facts. A technically important page/service can still be described as business-relevant, commercial-intent, conversion-path, priority, dependency-critical, or otherwise important when that interpretation is supported by known objectives/context and the observed condition.
 
-A technical page can still be called **business-relevant**, **commercial-intent**, **conversion-path**, **priority**, or **dependency-critical** when those descriptions are supported by known scope/objectives and the observed condition. If relative economics are unknown, say so.
+When exact economics are unknown, preserve that uncertainty rather than inventing precision. The model may still make a reasoned decision from the best evidence available.
 
 ## Performance and causal outcomes
-Do not convert prerequisites/signals into measured outcomes.
+Do not convert prerequisites/signals into downstream measured outcomes.
 
 Examples:
 - Observable: a page contains `noindex`.
@@ -47,12 +49,16 @@ Examples:
 - Inference: the configuration signals a preferred/consolidated URL and may impair independent indexing of the source page.
 - Not established without search-engine evidence: the source URL is actually deindexed, cannot rank, or has lost traffic.
 
-Use calibrated language such as `may`, `can`, `likely`, `risk`, `suggests`, or explicit `Inference:` framing where the consequence is derived rather than measured. Preserve the relevant unknowns.
+Use calibrated reasoning when consequences are inferred rather than measured and preserve relevant unknowns. The exact wording and interpretation belong to the active model/user, not a keyword validator.
 
-## Measured claims
-Claims about actual rankings, traffic, impressions, clicks, CTR, leads, conversions, revenue, search demand, competitor visibility, or AI-answer mentions/citations require outcome/performance evidence appropriate to that claim.
+## Leading signals and measured outcomes
+Rankings, search/Maps visibility, AI-answer citations or recommendations, links, impressions, clicks, traffic, engagement, and similar upstream signals can be genuinely valuable because they affect exposure, discovery, attention, and downstream opportunity. They should not be dismissed merely because revenue has not yet been observed.
 
-If such evidence is absent, convert the statement to a hypothesis/inference or mark the state unknown. Do not manufacture a number, direction, relative position, or causal effect.
+At the same time, preserve what each signal actually establishes. A ranking gain is evidence of improved search visibility; it is not automatically evidence of incremental revenue. An AI citation can increase exposure/opportunity; it does not by itself prove conversion or profit. Use the strongest relevant evidence available and keep distinct stages of the causal pathway distinct when that distinction matters to the decision.
+
+Claims about actual observed performance should be grounded in evidence appropriate to the claim. If downstream impact is not measured, the model can still reason from leading evidence while stating the remaining uncertainty.
 
 ## Priority is still allowed
-Incomplete measurement does not prevent BusinessOS from prioritizing obvious prerequisite work. A deterministic technical defect can be ranked first because of dependency order, reversibility, risk, and alignment with a known Objective without inventing ROI or asserting an unmeasured outcome.
+Incomplete measurement does not prevent prioritization. A deterministic technical defect can be addressed first because of dependency order, reversibility, risk, and alignment with a known Objective without inventing ROI or asserting an unmeasured outcome.
+
+Likewise, the model may prioritize visibility, traffic, authority, or other leading improvements when those are valuable for the current business objective. No universal numeric score or fixed signal hierarchy is required; use context-sensitive judgment.

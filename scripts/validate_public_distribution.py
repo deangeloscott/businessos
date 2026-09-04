@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
 from pathlib import Path
 import json,re
+from jsonschema import Draft202012Validator
 
 ROOT=Path(__file__).resolve().parents[1]
 EXPECTED_NAME='ViralTrac AURA'
 EXPECTED_EXPANSION='Agentic Understanding and Reinforcement Architecture'
+EXPECTED_DESCRIPTOR='organization-owned memory and operating knowledge for capable AI'
 EXPECTED_MATURITY='alpha'
 REQUIRED=[
     'VERSION','LICENSE.md','TRADEMARKS.md','SECURITY.md','PUBLIC-DISTRIBUTION.md','PUBLISHER.json','BRANDING.md','DEPLOYMENT.md',
-    'distribution/deployment-profiles.json','core/policies/workspace-and-human-knowledge.md','core/schemas/config/workspace-profile.schema.json',
+    'distribution/deployment-profiles.json','core/policies/workspace-and-human-knowledge.md','core/schemas/config/workspace-profile.schema.json','core/schemas/config/publisher-metadata.schema.json',
     'scripts/configure_workspace.py','scripts/migrate_workspace.py','scripts/workspace_status.py','scripts/generate_knowledge_layer.py','scripts/register_human_note.py'
 ]
 RETIRED_UPDATE_PATHS=[
@@ -34,6 +36,7 @@ def validate_public_distribution():
         if not (ROOT/rel).exists():errors.append(f'missing required public-distribution file: {rel}')
     for rel in RETIRED_UPDATE_PATHS:
         if (ROOT/rel).exists():errors.append(f'noncore AURA self-update machinery must not ship: {rel}')
+    if (ROOT/'core/schemas/runtime/publisher-metadata.schema.json').exists():errors.append('publisher metadata must not be modeled as runtime state')
 
     version=(ROOT/'VERSION').read_text().strip() if (ROOT/'VERSION').exists() else ''
     if not re.fullmatch(r'\d+\.\d+\.\d+',version):errors.append(f'VERSION must be simple X.Y.Z semantic version, got {version!r}')
@@ -63,13 +66,18 @@ def validate_public_distribution():
         if unexpected:errors.append(f'contains business instances: {unexpected}')
 
     pub=ROOT/'PUBLISHER.json'
+    publisher_schema=ROOT/'core/schemas/config/publisher-metadata.schema.json'
     if pub.exists():
         d=json.loads(pub.read_text());publisher=d.get('publisher') or {}
+        if publisher_schema.exists():
+            schema=json.loads(publisher_schema.read_text())
+            schema_errors=sorted(Draft202012Validator(schema).iter_errors(d),key=lambda e:list(e.path))
+            for err in schema_errors:errors.append('PUBLISHER.json schema error: '+err.message)
         if not publisher.get('canonical_project_url'):errors.append('canonical public project URL missing')
         if publisher.get('product_name')!=EXPECTED_NAME:errors.append(f'publisher product_name must be {EXPECTED_NAME!r}')
         if publisher.get('product_acronym')!='AURA':errors.append('publisher product_acronym must be AURA')
         if publisher.get('product_name_expansion')!=EXPECTED_EXPANSION:errors.append('publisher AURA expansion is missing/incorrect')
-        if publisher.get('product_descriptor')!='AI-native BusinessOS':errors.append('publisher descriptor must remain AI-native BusinessOS')
+        if publisher.get('product_descriptor')!=EXPECTED_DESCRIPTOR:errors.append(f'publisher descriptor must remain {EXPECTED_DESCRIPTOR!r}')
         if publisher.get('maturity')!=EXPECTED_MATURITY:errors.append('publisher maturity must explicitly be alpha')
         if 'updates' in d:errors.append('publisher metadata must not recreate an AURA-owned update subsystem')
 
@@ -82,10 +90,11 @@ def validate_public_distribution():
             if display!=EXPECTED_NAME or public!=EXPECTED_NAME:errors.append('full INSTALLATION.json must expose ViralTrac AURA as exact display/public name')
         elif not display.startswith(EXPECTED_NAME) or public!=display:errors.append('component/custom INSTALLATION.json must expose a ViralTrac AURA family display/public name')
         if d.get('name_expansion')!=EXPECTED_EXPANSION:errors.append('INSTALLATION.json AURA expansion is missing/incorrect')
-        if d.get('descriptor')!='AI-native BusinessOS':errors.append('INSTALLATION.json descriptor must remain AI-native BusinessOS')
+        if d.get('descriptor')!=EXPECTED_DESCRIPTOR:errors.append(f'INSTALLATION.json descriptor must remain {EXPECTED_DESCRIPTOR!r}')
         if d.get('configurable_workspace_root') is not True:errors.append('INSTALLATION.json must declare configurable_workspace_root=true')
         if d.get('human_knowledge_layer') is not True:errors.append('INSTALLATION.json must declare human_knowledge_layer=true')
-        if d.get('deployment_profiles')!='distribution/deployment-profiles.json':errors.append('INSTALLATION.json deployment_profiles path is missing/incorrect')
+        if d.get('workspace_profiles')!='distribution/deployment-profiles.json':errors.append('INSTALLATION.json workspace_profiles path is missing/incorrect')
+        if 'deployment_profiles' in d:errors.append('INSTALLATION.json must not frame workspace/storage choices as deployment profiles')
         if 'host_capability_discovery' in d:errors.append('INSTALLATION.json must not claim AURA-owned host capability discovery')
 
     editions=ROOT/'distribution/editions.json'

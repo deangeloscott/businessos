@@ -1,12 +1,13 @@
 # Security and Proprietary Boundary
 
-This repository/distribution contains **ViralTrac AURA**, an AI-native BusinessOS, not the proprietary ViralTrac hosted application.
+This repository/distribution contains **ViralTrac AURA**, organization-owned memory and operating knowledge for capable AI, not the proprietary ViralTrac hosted application.
 
 ## Included
 
-- portable AURA/BusinessOS workflows, schemas, policies, templates, and helper scripts;
-- provider-neutral capability definitions;
-- public/client-facing ViralTrac integration metadata needed to discover and use authorized API, MCP, semantic-data, measurement, action, receipt, and event capabilities.
+- portable AURA Playbooks, Workflows, schemas, policies, templates, attachment adapters, and helper scripts;
+- public/client-facing ViralTrac integration metadata needed to discover and use authorized API, MCP, semantic-data, measurement, action, receipt, and event interfaces when the active harness has access to them.
+
+AURA does not ship a provider/tool capability registry. Its operating knowledge describes needed work in natural language and lets the active model/harness choose the best available tools, Skills, providers, and execution methods.
 
 ## Not included
 
@@ -20,7 +21,7 @@ Knowing that a public/client API or tool exists does not grant access to it. Vir
 
 ## Workspace separation
 
-AURA can optionally keep organization-owned state outside the product source tree. External workspaces may contain canonical business state, run/recovery state, human knowledge, and permitted attachments. They are never part of the public product distribution merely because the product points to them. Local `.businessos/workspace.json` pointers can contain host-specific paths and must not be packaged or published.
+AURA can optionally keep organization-owned state outside the product source tree. External workspaces may contain canonical business state, optional work receipts/recovery state, human knowledge, and permitted attachments. They are never part of the public product distribution merely because the product points to them. Local `.businessos/workspace.json` pointers can contain host-specific paths and must not be packaged or published.
 
 ## Security reporting
 

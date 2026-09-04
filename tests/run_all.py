@@ -20,7 +20,7 @@ TESTS=[
     'tests/run_monitoring_continuity.py',
     'tests/run_monitoring_pause.py',
     'tests/run_attention_platform_lifecycle.py',
-    'tests/run_playbook_evolution_exchange.py',
+    'tests/run_workflow_evolution_exchange.py',
     'tests/run_explicit_operating_knowledge.py',
     'tests/run_workspace_human_knowledge.py',
     'tests/run_component_distributions.py',
@@ -37,16 +37,13 @@ TESTS=[
     'tests/run_run_provenance.py',
     'tests/run_run_continuity_receipt.py',
     'tests/run_organizational_state_truth.py',
-    'tests/run_growth_evidence_inventory.py',
     'tests/run_platform_python_compat.py',
     'tests/run_platform_semantic_reverification.py',
     'tests/run_local_evidence.py',
     'tests/run_decision_grounding.py',
     'tests/run_customer_facing_draft_provenance.py',
     'tests/run_customer_facing_qa_invariant.py',
-    'tests/run_claim_manifest_operational_promises.py',
-    'tests/run_completion_evidence_integrity.py',
-    'tests/run_content_native_execution.py'
+    'tests/run_claim_manifest_operational_promises.py'
 ]
 failures=[]
 for rel in TESTS:

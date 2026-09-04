@@ -13,7 +13,7 @@ A saved sharing preference is never standing permission to disclose business dat
 ## Detail and identity are independent
 
 Contribution detail:
-- `workflow_only` — portable process, capabilities, applicability, instructions, and verification only.
+- `workflow_only` — portable Workflow purpose, applicability, instructions, discovery terms, and optional verification guidance only.
 - `anonymized_evidence` — workflow plus bounded non-identifying evidence summary.
 - `full_case_study` — workflow plus a user-approved bounded case-study summary.
 

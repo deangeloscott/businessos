@@ -2,7 +2,7 @@
 
 Use the **minimum sufficient work** needed to reach a reliable business decision or useful result. Thoroughness is valuable where it changes quality; exhaustive work is not a default virtue.
 
-AURA provides durable context and reusable process knowledge. The active model/harness owns actual orchestration, tools, subagents, concurrency, retries, and execution depth.
+AURA provides durable context and reusable operating knowledge. The active model/harness owns actual orchestration, tools, subagents, concurrency, retries, and execution depth.
 
 ## Resource objective
 
@@ -15,7 +15,7 @@ Do not invent cost, staffing, implementation time, resource availability, or ROI
 1. Reuse current authoritative context, evidence, prior results, and Learning before gathering more.
 2. Define the decision/result being unlocked and the smallest unresolved questions that could materially change it.
 3. Prefer the cheapest reliable evidence source and shallowest adequate depth first.
-4. Reassess after meaningful evidence increments. Deepen only when unresolved uncertainty can materially change the result or the selected SOP/task actually requires stronger evidence.
+4. Reassess after meaningful evidence increments. Deepen only when unresolved uncertainty can materially change the result or the task/relevant Workflow genuinely requires stronger evidence.
 5. Stop when additional work is unlikely to improve the decision/result enough to justify its cost.
 
 ## Orchestration discipline

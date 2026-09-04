@@ -3,7 +3,7 @@
 
 The candidate receives only the staged AURA product, organization workspace, and
 ordinary business request. The controller observes what materially changed; it does
-not require the candidate to create a particular Run/contract ledger to count as work.
+not require the candidate to create a particular Run/workflow ledger to count as work.
 """
 from pathlib import Path
 import argparse,json
@@ -42,10 +42,10 @@ def _event(rd,queue,event_id=None,prefer_in_progress=False):
 def _changed_objects(before,after):
     b={x.get('id'):x.get('sha256') for x in (before or {}).get('objects',[]) if x.get('id')};return [x for x in (after or {}).get('objects',[]) if x.get('id') and b.get(x.get('id'))!=x.get('sha256')]
 def _changed_runs(before,after):
-    b={x.get('run_id'):(x.get('status'),x.get('method_type'),x.get('method_ref'),x.get('contract_id')) for x in (before or {}).get('runs',[]) if x.get('run_id')};out=[]
+    b={x.get('run_id'):(x.get('status'),x.get('method_type'),x.get('method_ref'),x.get('workflow_id')) for x in (before or {}).get('runs',[]) if x.get('run_id')};out=[]
     for row in (after or {}).get('runs',[]):
         rid=row.get('run_id')
-        if rid and b.get(rid)!=(row.get('status'),row.get('method_type'),row.get('method_ref'),row.get('contract_id')):out.append(row)
+        if rid and b.get(rid)!=(row.get('status'),row.get('method_type'),row.get('method_ref'),row.get('workflow_id')):out.append(row)
     return out
 
 def _asset_location_refs(workspace,changed_objects):
@@ -71,7 +71,7 @@ def _run_refs(workspace,business_id,changed_runs):
             if isinstance(ref,str) and ref not in result_refs:result_refs.append(ref)
         for ref in cont.get('evidence_refs') or []:
             if isinstance(ref,str) and ref not in evidence_refs:evidence_refs.append(ref)
-        observations.append({'run_id':rid,'status':data.get('status'),'method_type':data.get('method_type'),'method_ref':data.get('method_ref'),'contract_id':data.get('contract_id')})
+        observations.append({'run_id':rid,'status':data.get('status'),'method_type':data.get('method_type'),'method_ref':data.get('method_ref'),'workflow_id':data.get('workflow_id')})
     return result_refs,evidence_refs,observations
 
 def _looks_like_artifact(rel):
@@ -117,14 +117,14 @@ def derive_receipt(rd,run,event,blocker_classification=None,blocker_detail=None)
         blocker={'classification':blocker_classification,'detail':blocker_detail or 'A genuinely required condition was unavailable during the business task.'};status='blocked'
     elif material_result:status='completed'
     else:status='blocked';blocker={'classification':'no_material_result','detail':'The controller observed no material persisted business result or deliverable for this task.'}
-    receipt={'format_version':'3.0','generated_by':'qualification_controller','generated_at':now(),'event_id':eid,'business_id':event['business_id'],'status':status,'material_result_observed':material_result,'work_run_ids':[x.get('run_id') for x in method_observations if x.get('run_id')],'method_observations':method_observations,'artifact_refs':artifact_refs,'canonical_refs':canonical_refs,'source_refs':source_refs,'field_snapshot_refs':field_refs,'released_fixture_refs':released_refs,'summary':f'Controller observed {len(changed_objects)} changed canonical object(s), {len(artifact_refs)} usable artifact(s), and {len(method_observations)} optional work receipt(s).','blocker':blocker,'quality_notes':'Controller-generated observation only; professional quality and SOP effectiveness are evaluated from the actual work.'};write_json(_receipt_path(rd,event),receipt);return receipt
+    receipt={'format_version':'3.0','generated_by':'qualification_controller','generated_at':now(),'event_id':eid,'business_id':event['business_id'],'status':status,'material_result_observed':material_result,'work_run_ids':[x.get('run_id') for x in method_observations if x.get('run_id')],'method_observations':method_observations,'artifact_refs':artifact_refs,'canonical_refs':canonical_refs,'source_refs':source_refs,'field_snapshot_refs':field_refs,'released_fixture_refs':released_refs,'summary':f'Controller observed {len(changed_objects)} changed canonical object(s), {len(artifact_refs)} usable artifact(s), and {len(method_observations)} optional work receipt(s).','blocker':blocker,'quality_notes':'Controller-generated observation only; professional quality and Workflow effectiveness are evaluated from the actual work.'};write_json(_receipt_path(rd,event),receipt);return receipt
 
 def start(run_dir,event_id=None):
     rd,run,queue=_load(run_dir);event,state=_event(rd,queue,event_id)
     if not event:return {'status':'complete','message':'All prepared business tasks are terminal. Run the evaluator.'}
     if not state['before_checkpoint']:capture_checkpoint(Path(run['product_root']),Path(run['workspace']),rd,event['event_id'],'before',event['business_id'])
     if event.get('release_fixture') and not (rd/'evaluator'/'releases'/f"{event['event_id']}.json").exists():release_event(rd,event['event_id'])
-    run['execution_status']='in_progress';run['active_event_id']=event['event_id'];write_json(rd/'run.json',run);return {'status':'ready','product_root':run['product_root'],'workspace':run['workspace'],'business_id':event['business_id'],'business_request':event['task'],'candidate_message':event['task'],'maintainer_note':'Give the model only the staged product/workspace and candidate_message. Do not give it the qualification run directory, evaluator files, event ID, checkpoints, receipts, target SOP, or scoring metadata.','finish_command':f'python3 qualification/task_controller.py finish "{rd}"'}
+    run['execution_status']='in_progress';run['active_event_id']=event['event_id'];write_json(rd/'run.json',run);return {'status':'ready','product_root':run['product_root'],'workspace':run['workspace'],'business_id':event['business_id'],'business_request':event['task'],'candidate_message':event['task'],'maintainer_note':'Give the model only the staged product/workspace and candidate_message. Do not give it the qualification run directory, evaluator files, event ID, checkpoints, receipts, target Workflow, or scoring metadata.','finish_command':f'python3 qualification/task_controller.py finish "{rd}"'}
 def finish(run_dir,event_id=None,blocker_classification=None,blocker_detail=None):
     rd,run,queue=_load(run_dir);active=event_id or run.get('active_event_id');event,state=_event(rd,queue,active,prefer_in_progress=True)
     if not event:raise SystemExit('No unfinished business task is available to finish')

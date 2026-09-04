@@ -1,0 +1,40 @@
+---
+id: customer-optimization.expansion.eligibility
+type: workflow
+owner_system: customer-optimization
+reads:
+- CustomerJourney
+- Observation
+- Insight
+- Opportunity
+- MetricObservation
+- Experiment
+writes:
+- Observation
+- Insight
+- Opportunity
+context:
+- AudienceSegment
+- Offer
+- Objective
+- EconomicContext
+---
+# Customer Expansion Eligibility
+
+## Purpose
+Identify when an existing customer has achieved enough value and has a genuine additional need for expanded scope/capability.
+
+## Business Outcome
+Create expansion from customer success and fit instead of premature upselling.
+
+## Run When
+Run when expansion/upsell/cross-sell is a valid business motion.
+
+## Process
+1. [DETERMINISTIC] Resolve customer goals, current Offer/product/service, realized outcomes, usage/adoption, limits, support/issues, additional needs, account/stakeholder context, and eligible expansion options.
+2. [AI] Identify a specific unmet/next-stage job that the additional Offer can credibly solve.
+3. [AI] Confirm current value realization and absence of unresolved problems that make expansion inappropriate.
+4. [HYBRID] Avoid inferring needs from sensitive data or treating high spend/value alone as eligibility.
+5. [AI] Explain expected incremental outcome, required effort/change, fit, and evidence needed for a responsible expansion conversation.
+6. [AI] Preserve the scoped eligibility rationale as an Insight/Opportunity when future work benefits from it. Use relevant Marketing/Sales operating knowledge or expertise directly; create a WorkRequest only when a real durable handoff to another actor must survive the current interaction.
+7. [AI] When later evidence becomes available, evaluate whether expansion improved customer value/retention rather than judging it by revenue alone.

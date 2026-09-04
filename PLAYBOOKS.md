@@ -1,106 +1,119 @@
 # What AURA Can Do
 
-This is the plain-language guide to the work AURA can help with.
+AURA gives capable AI reusable **Playbooks** and **Workflows** while leaving reasoning, tool choice, orchestration, and execution to the active model/harness. Tell the AI what outcome you want in normal language; you do not need to choose a Playbook or Workflow manually.
 
-**You do not need to choose a playbook before asking for help.** Tell the AI what you want to accomplish in normal language. AURA can supply relevant organizational memory and reusable operating knowledge; the active model/user chooses the method. Use this guide when you want to browse what is possible or understand how a job works.
+This edition currently exposes **42 Playbooks** backed by **466 detailed Workflows**. Playbook count is intentionally much smaller than Workflow count because a Playbook is an end-to-end business job, not every reusable procedure.
 
-This copy currently includes **472 detailed playbooks** across the installed AURA areas. The contracts and process maps remain the source of truth; this guide is only a simpler view of them.
+## The hierarchy
 
-## How to use this guide
+**Playbook → Workflow → Step**
 
-- **Just ask:** “Research our competitors and tell me what matters.”
-- **Browse an area:** open one of the sections below.
-- **Ask about a playbook:** “Show me how Review Intelligence works.”
-- **Ask for the detailed method:** “Show me the steps, inputs, outputs, and evidence rules for that playbook.”
+- **Playbook** — a meaningful end-to-end business job that bundles relevant operating knowledge.
+- **Workflow** — a reusable procedure that helps accomplish part of a Playbook and may also be useful independently.
+- **Step** — the minimum guidance needed inside a Workflow to make the intended result reliably achievable.
 
-## AURA areas
+A Playbook is not an execution graph. The model chooses which Workflows matter, how to sequence or parallelize them, which host tools or external Skills to use, and whether another sound method is better.
 
-### [AURA Core](docs/playbooks/core.md)
+## Business areas
 
-Keep organizational context, evidence, decisions, continuity, and reusable operating knowledge organized so capable AI can work from what the organization already knows.
+### [Competitive Intelligence](docs/playbooks/competitor-intelligence.md)
 
-**34 detailed playbooks.**
+Understand competitors, substitutes, competitive movement, and supported implications.
 
-*Try:* “What should we work on first?”
+**2 Playbooks** in this area.
 
-### [Competitor Intelligence](docs/playbooks/competitor-intelligence.md)
-
-Find the competitors that matter, study what they do, compare them with the business, and watch for important changes.
-
-**37 detailed playbooks.**
-
-*Try:* “What are our competitors doing better than us?”
+- **Competitor Research** — Identify the competitors and substitutes that matter, understand what they are doing, compare the business against them, and derive supported implications.
+- **Competitor Monitoring** — Keep important competitive movement current and distinguish observed changes from unsupported assumptions about effectiveness or intent.
 
 ### [Customer Intelligence](docs/playbooks/customer-intelligence.md)
 
-Learn what customers want, dislike, expect, say, buy, avoid, and experience using real customer evidence.
+Understand customers, prospects, needs, language, decisions, and experiences from appropriate evidence.
 
-**44 detailed playbooks.**
+**2 Playbooks** in this area.
 
-*Try:* “What do customers care about most when choosing us?”
+- **Customer Research** — Resolve an important customer knowledge need with evidence appropriate to the decision, using the relevant research and analysis Workflows.
+- **Voice of Customer** — Build reusable evidence-backed understanding of the language, pains, desires, objections, outcomes, and decision criteria customers actually express.
 
 ### [Industry Intelligence](docs/playbooks/industry-intelligence.md)
 
-Track news, research, regulation, technology, market changes, and other outside developments that could matter to the business.
+Understand material external developments in the market, regulation, research, technology, and industry.
 
-**32 detailed playbooks.**
+**2 Playbooks** in this area.
 
-*Try:* “What changed in our industry that matters to us?”
+- **Industry Intelligence** — Discover and evaluate material news, research, regulation, technology, market shifts, and other external changes that could affect the organization.
+- **Industry Rapid Response** — Build a fast, evidence-backed understanding of a time-sensitive external development and its plausible business implications.
 
 ### [SEO/AEO](docs/playbooks/seo-aeo.md)
 
-Improve how the business is found in search engines, local search, AI answers, and other organic discovery surfaces.
+Improve valuable organic discovery across search, answer engines, AI interfaces, local discovery, and related surfaces.
 
-**130 detailed playbooks.**
+**3 Playbooks** in this area.
 
-*Try:* “What are our biggest SEO/AEO opportunities?”
+- **SEO/AEO Growth** — Find and improve the highest-value realistic opportunities for organic discovery across search engines, answer engines, AI interfaces, and local discovery.
+- **SEO/AEO Experimentation and Learning** — Test uncertain SEO/AEO tactics when testing is worthwhile, evaluate results without overstating causality, and preserve reusable Learning when supported.
+- **SEO/AEO Site Migration** — Plan and execute a domain, CMS, architecture, or URL migration while protecting organic discovery, attribution, and recoverability.
 
 ### [Content Synthesis](docs/playbooks/content-synthesis.md)
 
-Turn useful ideas, research, proof, and source material into content made for the right audience, format, and platform.
+Turn useful ideas, evidence, and source material into strong audience-appropriate content.
 
-**66 detailed playbooks.**
+**16 Playbooks** in this area.
 
-*Try:* “Turn our best customer insights into useful content.”
+- **Content Strategy and Synthesis** — Turn audience context, evidence, ideas, performance signals, and communication goals into a strong content approach before or across specific formats.
+- **Animation / Motion Production** — Use motion to explain change, sequence, causality, demonstration, or attention hierarchy.
+- **Article Production** — Produce a useful, evidence-backed article with appropriate depth, structure, and reader progression.
+- **Audio Asset Production** — Produce voiceover, narration, clip, or other audio asset optimized for its actual use context.
+- **Carousel / Slideshow Production** — Turn an idea into a sequential visual argument where each frame earns the next.
+- **Customer Case Study** — Turn verified customer evidence and ProofRecords into a useful, accurate account of context, intervention, mechanism, and outcome.
+- **Demonstration Asset Production** — Produce a clear, verifiable demonstration that visibly proves or teaches the intended mechanism, use case, or result.
+- **FAQ Content Production** — Create evidence-backed answers to recurring audience questions in a form that is easy to find and understand.
+- **Image / Graphic Production** — Create a visual asset whose composition communicates the intended idea rather than adding decoration.
+- **Infographic Production** — Turn evidence or a structured idea into a clear visual explanation whose information hierarchy works even when the viewer only scans it.
+- **Long-Form Video Production** — Create sustained video communication with narrative or educational progression, demonstrations, and retention-aware structure.
+- **Newsletter Production** — Create a relationship-oriented email or newsletter suited to inbox context and the audience expectation.
+- **Podcast Episode Production** — Create an audio-first episode whose structure and delivery fit listening context.
+- **Presentation / Slideshow Production** — Build a presentation that supports a live or asynchronous audience journey instead of turning a document into slides.
+- **Short-Form Video Production** — Express one useful idea quickly through platform-native visual and audio pacing and proof.
+- **Content Repurposing & Adaptation** — Turn a validated core asset or idea into the smallest useful set of derivative and platform-native assets without unnecessary variants or distorted meaning.
 
 ### [Marketing Synthesis](docs/playbooks/marketing-synthesis.md)
 
-Create and improve positioning, messaging, offers, ads, landing pages, email, webinars, VSLs, and other persuasive marketing.
+Create and improve persuasive strategy, campaigns, offers, and customer-facing marketing assets.
 
-**72 detailed playbooks.**
+**15 Playbooks** in this area.
 
-*Try:* “Create a campaign around our biggest customer objection.”
+- **Marketing Strategy and Messaging** — Develop or improve positioning, messaging, value proposition, mechanism, proof, objection handling, and offer presentation around current customer and business truth.
+- **Campaign Development** — Build a coherent campaign concept and the useful persuasive work needed to carry it across the relevant customer-facing surfaces.
+- **Offer Design & Optimization** — Diagnose and improve how value is packaged, priced, de-risked, and presented so the offer is more compelling without inventing unsupported value or urgency.
+- **Advertising Creative & Copy** — Create persuasive ad concepts, copy, and creative requirements matched to audience, awareness, journey role, placement context, evidence, and destination.
+- **Advertorial** — Create clearly compliant editorial-style persuasion that educates while transparently serving a commercial objective.
+- **Commercial Email Sequence** — Design a multi-email persuasion sequence where each message has a distinct job and builds appropriately on prior context.
+- **Comparison & Alternative Persuasion** — Help qualified buyers evaluate alternatives honestly using customer decision criteria and current competitive evidence.
+- **Landing Page Persuasion** — Create a landing page or homepage that continues acquisition intent and moves the right visitor toward the desired action without overstating business truth.
+- **Lead Magnet** — Create an exchange-worthy asset that solves a bounded valuable problem and naturally relates to the next commercial step.
+- **Lead Nurture Strategy** — Move not-yet-ready prospects toward a better-informed decision over time rather than repeatedly asking for the sale.
+- **Quiz / Assessment Conversion Asset** — Create a diagnostic experience that gives the participant useful feedback while qualifying or segmenting toward a relevant next action.
+- **Sales Enablement Asset** — Create persuasive evidence and tools that help sellers and buyers resolve real decision questions consistently.
+- **Sales Letter** — Create long-form written persuasion appropriate to audience sophistication and offer complexity.
+- **Video Sales Letter** — Build a sustained video persuasion narrative tied to an Offer and measurable commercial action.
+- **Webinar Persuasion** — Design a webinar that creates genuine understanding and value while logically leading qualified attendees to an Offer.
 
 ### [Customer Optimization](docs/playbooks/customer-optimization.md)
 
-Find and improve problems in the customer journey, from conversion and purchase through onboarding, retention, repeat purchase, expansion, and referral.
+Improve the customer journey from qualification and purchase through value, retention, expansion, recovery, and referral.
 
-**57 detailed playbooks.**
+**2 Playbooks** in this area.
 
-*Try:* “Where are customers getting stuck or dropping out?”
+- **Customer Journey Optimization** — Understand the journey, identify the most important progression problem, diagnose the likely cause, improve it, and evaluate what changed.
+- **Retention and Churn** — Understand why customers leave or fail to realize value, improve the relevant experience, and evaluate durable retention rather than manipulating short-term staying behavior.
 
-## What a playbook means
+## AURA Core
 
-A playbook is reusable operating knowledge for a specific kind of job. It can tell the AI:
-
-1. **When the method is useful.**
-2. **What information or evidence it needs.**
-3. **Which capabilities may help.**
-4. **What substantive work the method includes.**
-5. **What durable results or evidence may be worth remembering.**
-6. **What quality or verification checks materially define good work.**
-
-The active model/user may combine relevant playbook knowledge when one business request spans several kinds of work. The playbooks do not form an internal service or routing graph.
-
-## Worked example
-
-### [Research public reviews and conversations](docs/playbooks/examples/research-public-reviews.md)
-
-See a plain-language example of how a capable AI can use AURA context and operating knowledge to find reviews, preserve useful source text and screenshots when allowed, remove duplicates, analyze themes and customer language, save reusable evidence, and reuse relevant findings directly in later work.
+AURA Core supplies shared organizational memory, truth/evidence handling, decisions, continuity, measurement, Learning, and workspace integrity. It is support for the business work rather than another business Playbook. See [AURA Core Workflows](docs/playbooks/core.md).
 
 ## For advanced users
 
-- `TASK-NAVIGATOR.md` shows the main activities and their entry contracts.
-- `PLAYBOOK-INDEX.md` lists the contract-level playbooks directly from contract metadata.
-- `generated/contract-registry.json` and `generated/process-map-registry.json` are machine-readable indexes.
-- Each contract `CONTEXT.md` contains the authoritative detailed operating instructions.
+- `TASK-NAVIGATOR.md` shows the installed Playbooks and common Workflow entry points.
+- `WORKFLOW-INDEX.md` lists all detailed Workflow IDs.
+- Each Workflow `CONTEXT.md` contains its outcome, when-to-use guidance, steps, evidence needs, and quality requirements.
+- `docs/operating-knowledge.md` explains the minimum-sufficient-guidance philosophy.

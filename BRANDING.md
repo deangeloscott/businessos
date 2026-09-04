@@ -8,11 +8,11 @@ AURA stands for **Agentic Understanding and Reinforcement Architecture**.
 
 ## Descriptor
 
-ViralTrac AURA is an **AI-native BusinessOS**: a portable, organization-owned layer for durable business memory, reusable operating knowledge, evidence, continuity, outcomes, and Learning around capable AI.
+ViralTrac AURA is **organization-owned memory and operating knowledge for capable AI**: a portable layer that preserves durable business context, evidence, continuity, outcomes, Learning, and reusable ways of working across sessions, models, tools, and people.
 
 AURA is not the model, agent harness, tool runtime, scheduler, provider router, permission system, or proprietary control plane.
 
-“BusinessOS” remains a useful descriptor/category and may continue to appear in technical documentation and compatibility identifiers. It is not the primary public product name.
+The repository name `businessos` and some `BUSINESSOS_*` technical identifiers remain for compatibility. **BusinessOS is not AURA's current public descriptor or product architecture.**
 
 ## Maturity
 
@@ -24,10 +24,10 @@ Do not describe an alpha release as stable, production-ready, or generally avail
 
 ## Naming rules
 
-- On first external/public mention, prefer: **ViralTrac AURA (Agentic Understanding and Reinforcement Architecture), an AI-native BusinessOS**.
+- On first external/public mention, prefer: **ViralTrac AURA (Agentic Understanding and Reinforcement Architecture), organization-owned memory and operating knowledge for capable AI**.
 - After first mention, use **ViralTrac AURA**. Use bare **AURA** only when the ViralTrac context is unmistakable.
-- Do not present the current product publicly as “ViralTrac's BusinessOS” or “ViralTrac BusinessOS” except when describing historical versions or compatibility-sensitive identifiers.
-- Preserve stable technical identifiers such as the repository name `businessos`, `BUSINESSOS_*` environment variables, existing contract IDs, object extensions, and established filesystem conventions unless changing them has clear user value.
+- Do not present the current product publicly as “ViralTrac's BusinessOS,” “ViralTrac BusinessOS,” or an “AI-native BusinessOS” except when describing historical versions or compatibility-sensitive identifiers.
+- Preserve stable technical identifiers such as the repository name `businessos`, `BUSINESSOS_*` environment variables, existing Workflow IDs, object extensions, and established filesystem conventions unless changing them has clear user value.
 - Component distributions use the AURA family name, for example **ViralTrac AURA — Content** and **ViralTrac AURA — SEO/AEO**.
 - ViralTrac is an optional first-party companion and must not be presented as required for AURA operation.
 

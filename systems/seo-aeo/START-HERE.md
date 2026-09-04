@@ -3,19 +3,21 @@
 Improve valuable organic discovery across search, answer engines, AI interfaces, local discovery, and related organic surfaces.
 
 ## Common jobs
-- Ranking/indexing/technical/AEO problem → `contracts/diagnosis/`
-- Organic demand and current search/answer understanding → `contracts/intelligence/`
-- Technical/on-page/architecture/internal linking → `contracts/execution/`
+- Ranking/indexing/technical/AEO problem → `workflows/diagnosis/`
+- Organic demand and current search/answer understanding → `workflows/intelligence/`
+- Technical/on-page/architecture/internal linking/local/authority/AEO work → `workflows/execution/`
 - Organic content requirements → `seo.planning.organic-content-requirements`
-- Search/policy incident → `contracts/incidents/`
-- Bounded monitoring/evidence checks → `contracts/monitoring/`
-- Organic measurement/attribution/reviews → `contracts/measurement/`
+- Material search/policy/local-profile incident → `workflows/incidents/`
+- Bounded monitoring/evidence checks → `workflows/monitoring/`
+- Organic measurement/attribution/reviews → `workflows/measurement/`
 - Reusable SEO/AEO Learning → `seo.aeo.learning.domain-learning`
 
 ## Boundary
-SEO/AEO owns reusable operating knowledge and durable state for organic discovery, not generic content production, customer truth, broad competitor truth, runtime scheduling, or tool/provider control. Reuse relevant organizational evidence directly. Another domain can consume SEO evidence/requirements without a WorkRequest or duplicate Opportunity.
+SEO/AEO owns reusable operating knowledge and durable organization-specific state for organic discovery, not generic content production, customer truth, broad competitor truth, runtime scheduling, or tool/provider control. Reuse relevant organizational evidence and operating knowledge directly. Another domain can consume SEO evidence or requirements without a WorkRequest, duplicate Opportunity, or formal routing step.
 
-Monitoring intent/checkpoints may be remembered in AURA; the active harness/runtime owns recurrence and notifications. External changes are executed through the host's real tools/permissions, not an AURA approval/autonomy lifecycle.
+Rankings, search/AI/local visibility, citations, mentions, links, and traffic can be meaningful upstream signals because they affect exposure and the opportunity for downstream business value. Keep them distinct from customer actions, leads, revenue, and other outcomes when those later stages are not directly observed.
+
+Monitoring intent/checkpoints may be remembered in AURA; the active harness/runtime owns recurrence and notifications. External changes are executed through the host's real tools and permissions, not an AURA approval/autonomy lifecycle.
 
 ## AI execution
-Do not load this entire system. Retrieve the smallest relevant context and choose the useful method with model/user judgment. Playbook candidates are navigation help, not semantic routing authority.
+Do not load this entire system. Retrieve the smallest relevant context and choose whatever useful Playbook, Workflow, tool, or direct reasoning best serves the job. Navigation is help, not semantic routing authority.

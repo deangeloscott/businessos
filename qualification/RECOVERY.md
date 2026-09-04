@@ -4,7 +4,7 @@ AURA qualification should survive model/provider outages, terminal closures, hos
 
 The durable unit is the **qualification run directory + staged AURA product + organization workspace**, not one chat/session/model connection.
 
-The candidate/model must remain blind during recovery. Do not solve an infrastructure interruption by exposing qualification files, event IDs, receipts, checkpoints, target contracts, rubrics, or evaluator instructions.
+The candidate/model must remain blind during recovery. Do not solve an infrastructure interruption by exposing qualification files, event IDs, evaluator observations, checkpoints, target Workflows, rubrics, or evaluator instructions.
 
 ## Inspect an interrupted run
 
@@ -32,12 +32,12 @@ It does not create candidate-facing recovery instructions.
 2. Completed tasks are frozen qualification history. Do not redo them just to improve a score.
 3. If the unfinished task already has a before-checkpoint, preserve it as the task baseline.
 4. Reuse the same staged AURA product and organization workspace.
-5. Inspect compatible active/incomplete AURA Runs created after the baseline and resume from the smallest incomplete point rather than creating duplicate work merely because the model changed.
+5. If a useful optional AURA Run exists for the unfinished work, it may help the replacement model resume continuity. Do not require or create one merely because the model changed.
 6. Give the replacement candidate only the same normal product/workspace and the original ordinary business request. Do not give it the qualification run directory.
 7. Do not set `AURA_QUALIFICATION_RUN` in the candidate process. `BUSINESSOS_WORKSPACE` is sufficient for normal AURA operation.
 8. A provider outage, rate limit, model retirement, lost network connection, or terminal closure is an **execution-environment interruption**, not by itself an AURA pass or failure.
 9. Record model/provider/harness changes in evaluator-side logs so later review can distinguish AURA behavior from environment sensitivity.
-10. After the candidate finishes, let the external controller take the after-checkpoint and derive the bookkeeping receipt.
+10. After the candidate finishes, let the external controller take the after-checkpoint and derive its evaluator-side observation.
 
 ## Resume the same task
 

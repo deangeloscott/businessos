@@ -1,9 +1,9 @@
 # Portable-First Requirement
 
-**ViralTrac AURA (Agentic Understanding and Reinforcement Architecture)** is a portable, AI-native BusinessOS. This is a hard architectural invariant.
+**ViralTrac AURA (Agentic Understanding and Reinforcement Architecture)** is portable, organization-owned memory and operating knowledge for capable AI. Portability is a hard architectural invariant.
 
 ## Required invariant
-A complete or standalone AURA/BusinessOS distribution must remain usable from its files without requiring a proprietary server, database, hosted control plane, UI, scheduler, vector store, version-control provider, second-brain application, or other optional infrastructure merely to understand and perform supported work.
+A complete or standalone AURA distribution must remain usable from its files without requiring a proprietary server, database, hosted control plane, UI, scheduler, vector store, version-control provider, second-brain application, or other optional infrastructure merely to understand and perform supported work.
 
 The default operating model is:
 

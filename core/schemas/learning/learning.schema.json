@@ -4,119 +4,28 @@
   "type": "object",
   "additionalProperties": false,
   "properties": {
-    "id": {
-      "type": "string",
-      "pattern": "^lrn_[A-Za-z0-9_-]+$"
-    },
-    "object_type": {
-      "const": "Learning"
-    },
-    "schema_version": {
-      "type": "string",
-      "pattern": "^\\d+\\.\\d+\\.\\d+$"
-    },
-    "business_id": {
-      "type": "string",
-      "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$"
-    },
-    "created_at": {
-      "type": "string",
-      "format": "date-time"
-    },
-    "updated_at": {
-      "type": "string",
-      "format": "date-time"
-    },
-    "lineage": {
-      "type": "array",
-      "items": {
-        "type": "string",
-        "minLength": 1
-      },
-      "uniqueItems": true
-    },
-    "owner_scope": {
-      "enum": [
-        "domain",
-        "business"
-      ]
-    },
-    "owner_system": {
-      "enum": [
-        "core",
-        "customer-intelligence",
-        "competitor-intelligence",
-        "industry-intelligence",
-        "seo-aeo",
-        "content-synthesis",
-        "marketing-synthesis",
-        "customer-optimization"
-      ]
-    },
-    "statement": {
-      "type": "string",
-      "minLength": 1
-    },
-    "maturity": {
-      "enum": [
-        "hypothesis",
-        "experimental",
-        "emerging",
-        "validated",
-        "standard"
-      ]
-    },
-    "status": {
-      "enum": [
-        "active",
-        "contradicted",
-        "deprecated",
-        "superseded"
-      ]
-    },
-    "applies_when": {
-      "type": "array",
-      "items": {
-        "type": "string",
-        "minLength": 1
-      },
-      "uniqueItems": true
-    },
-    "does_not_apply_when": {
-      "type": "array",
-      "items": {
-        "type": "string",
-        "minLength": 1
-      },
-      "uniqueItems": true
-    },
-    "evidence_refs": {
-      "type": "array",
-      "items": {
-        "type": "string",
-        "minLength": 1
-      },
-      "uniqueItems": true
-    },
-    "confidence": {
-      "type": "number",
-      "minimum": 0,
-      "maximum": 1
-    },
-    "extensions": {
-      "type": "object"
-    }
+    "id": {"type": "string", "pattern": "^lrn_[A-Za-z0-9_-]+$"},
+    "object_type": {"const": "Learning"},
+    "schema_version": {"type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$"},
+    "business_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "updated_at": {"type": "string", "format": "date-time"},
+    "lineage": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+    "scope": {"enum": ["domain", "business"]},
+    "domain": {"enum": ["core", "customer-intelligence", "competitor-intelligence", "industry-intelligence", "seo-aeo", "content-synthesis", "marketing-synthesis", "customer-optimization"]},
+    "statement": {"type": "string", "minLength": 1},
+    "maturity": {"enum": ["hypothesis", "experimental", "emerging", "validated", "standard"]},
+    "status": {"enum": ["active", "contradicted", "deprecated", "superseded"]},
+    "applies_when": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+    "does_not_apply_when": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+    "evidence_refs": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+    "extensions": {"type": "object"}
   },
-  "required": [
-    "id",
-    "object_type",
-    "schema_version",
-    "business_id",
-    "owner_scope",
-    "statement",
-    "maturity",
-    "status",
-    "evidence_refs",
-    "confidence"
+  "required": ["id", "object_type", "schema_version", "business_id", "scope", "statement", "maturity", "status", "evidence_refs"],
+  "allOf": [
+    {
+      "if": {"properties": {"scope": {"const": "domain"}}, "required": ["scope"]},
+      "then": {"required": ["domain"]}
+    }
   ]
 }

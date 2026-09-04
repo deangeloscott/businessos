@@ -1,92 +1,84 @@
-# Industry Intelligence Playbooks
+# Industry Intelligence
 
-Track news, research, regulation, technology, market changes, and other outside developments that could matter to the business.
+Understand material external developments in the market, regulation, research, technology, and industry.
 
-**You can ask for the outcome in normal language.** You do not need to know the names below. This page is here so you can see what is possible.
+**Ask for the outcome in normal language.** Playbooks below are useful end-to-end frames, not commands the user must select. The model may use their entry Workflows, other AURA Workflows, external Skills, or another sound method.
 
-*Example:* “What changed in our industry that matters to us?”
+## Playbooks
 
-## Common jobs
+### Industry Intelligence
 
-- **[Industry Monitoring Plan](../../systems/industry-intelligence/contracts/research/monitoring-plan/CONTEXT.md)** — Define relevant external monitoring intent and evidence needs.
-- **[Industry Source Map](../../systems/industry-intelligence/contracts/source-mapping/priority-sources/CONTEXT.md)** — Map reliable priority industry sources.
-- **[Industry Ecosystem Radar](../../systems/industry-intelligence/contracts/intelligence/ecosystem-radar/CONTEXT.md)** — Discover and triangulate material industry changes, research, regulation, technologies, market shifts, and emerging practices for business understanding.
-- **[News Monitoring](../../systems/industry-intelligence/contracts/monitoring/news/CONTEXT.md)** — Find important news developments that could affect the business.
-- **[Regulatory Monitoring](../../systems/industry-intelligence/contracts/monitoring/regulation/CONTEXT.md)** — Find and explain important regulation or standards changes that could affect the business.
-- **[Research Evidence Review](../../systems/industry-intelligence/contracts/monitoring/research/CONTEXT.md)** — Review and evaluate important research.
-- **[Technology & Platform Change Review](../../systems/industry-intelligence/contracts/monitoring/technology/CONTEXT.md)** — Review important technology/platform changes.
-- **[Industry Social Discussion Monitoring](../../systems/industry-intelligence/contracts/monitoring/social-discussion/CONTEXT.md)** — Use public discussion as an early signal without treating popularity as fact.
-- **[Industry Event Detection](../../systems/industry-intelligence/contracts/event/detect/CONTEXT.md)** — Preserve an important industry event with enough evidence and context for later verification, analysis, and reuse.
-- **[Industry Event Verification](../../systems/industry-intelligence/contracts/analysis/event-verification/CONTEXT.md)** — Check the important facts about an industry event before using it for business decisions.
-- **[Industry Event Factual Summary](../../systems/industry-intelligence/contracts/event/factual-summary/CONTEXT.md)** — Maintain a clean factual Event layer.
-- **[Event Evolution Tracking](../../systems/industry-intelligence/contracts/analysis/event-evolution/CONTEXT.md)** — Understand meaningful Event changes and future evidence checkpoints.
-- **[Materiality Assessment](../../systems/industry-intelligence/contracts/analysis/materiality/CONTEXT.md)** — Decide whether an industry event is important enough to change a business decision or action.
-- **[Business Impact Analysis](../../systems/industry-intelligence/contracts/analysis/business-impact/CONTEXT.md)** — Explain the specific ways an industry event could affect this business.
-- **[Industry Trend Validation](../../systems/industry-intelligence/contracts/analysis/trend-validation/CONTEXT.md)** — Validate sustained trends versus temporary attention.
-- **[Scenario Analysis](../../systems/industry-intelligence/contracts/analysis/scenario/CONTEXT.md)** — Model plausible uncertain futures with indicators.
-- **[Rapid Response Intelligence](../../systems/industry-intelligence/contracts/analysis/rapid-response/CONTEXT.md)** — Quickly verify a time-sensitive industry event and turn it into useful business guidance.
+Discover and evaluate material news, research, regulation, technology, market shifts, and other external changes that could affect the organization.
 
-## More detailed playbooks
+*Try:* “What changed in our industry that actually matters to us?”
 
-These are smaller, specific playbooks whose knowledge may help inside the larger jobs above. The names are kept simple here; open the linked contract or ask the AI to explain one if you want the exact method.
+**Common entry Workflow:** [Industry Ecosystem Radar](../../systems/industry-intelligence/workflows/intelligence/ecosystem-radar/CONTEXT.md)
+
+### Industry Rapid Response
+
+Build a fast, evidence-backed understanding of a time-sensitive external development and its plausible business implications.
+
+*Try:* “This just happened in our industry. Figure out what it means for us.”
+
+**Common entry Workflow:** [Rapid Response Intelligence](../../systems/industry-intelligence/workflows/analysis/rapid-response/CONTEXT.md)
+
+## Common Workflows
+
+These reusable procedures may support one or more Playbooks or be used independently. They are not a mandatory sequence.
+
+- **[Industry Monitoring Plan](../../systems/industry-intelligence/workflows/research/monitoring-plan/CONTEXT.md)** — Define decision-relevant external monitoring intent and evidence needs.
+- **[Industry Source Map](../../systems/industry-intelligence/workflows/source-mapping/priority-sources/CONTEXT.md)** — Map reliable priority industry sources.
+- **[Industry Ecosystem Radar](../../systems/industry-intelligence/workflows/intelligence/ecosystem-radar/CONTEXT.md)** — Discover and triangulate material industry changes, research, regulation, technologies, market shifts, and emerging practices for business understanding.
+- **[News Monitoring](../../systems/industry-intelligence/workflows/monitoring/news/CONTEXT.md)** — Review material news developments.
+- **[Regulatory Monitoring](../../systems/industry-intelligence/workflows/monitoring/regulation/CONTEXT.md)** — Review and interpret material regulation/standards changes.
+- **[Research Evidence Review](../../systems/industry-intelligence/workflows/monitoring/research/CONTEXT.md)** — Review and evaluate important research.
+- **[Technology & Platform Change Review](../../systems/industry-intelligence/workflows/monitoring/technology/CONTEXT.md)** — Review important technology/platform changes.
+- **[Industry Social Discussion Monitoring](../../systems/industry-intelligence/workflows/monitoring/social-discussion/CONTEXT.md)** — Use public discussion as an early signal without treating popularity as fact.
+- **[Industry Event Detection](../../systems/industry-intelligence/workflows/event/detect/CONTEXT.md)** — Determine whether evidence represents a durable IndustryEvent worth preserving.
+- **[Industry Event Verification](../../systems/industry-intelligence/workflows/analysis/event-verification/CONTEXT.md)** — Verify material Event facts.
+- **[Industry Event Factual Summary](../../systems/industry-intelligence/workflows/event/factual-summary/CONTEXT.md)** — Maintain a clean factual Event layer.
+- **[Event Evolution Tracking](../../systems/industry-intelligence/workflows/analysis/event-evolution/CONTEXT.md)** — Understand meaningful Event changes and future evidence checkpoints.
+- **[Materiality Assessment](../../systems/industry-intelligence/workflows/analysis/materiality/CONTEXT.md)** — Determine whether the Event can change a business decision.
+- **[Business Impact Analysis](../../systems/industry-intelligence/workflows/analysis/business-impact/CONTEXT.md)** — Determine scoped business impact.
+- **[Industry Trend Validation](../../systems/industry-intelligence/workflows/analysis/trend-validation/CONTEXT.md)** — Validate sustained trends versus temporary attention.
+- **[Scenario Analysis](../../systems/industry-intelligence/workflows/analysis/scenario/CONTEXT.md)** — Model plausible uncertain futures with indicators.
+- **[Rapid Response Intelligence](../../systems/industry-intelligence/workflows/analysis/rapid-response/CONTEXT.md)** — Build a compact evidence-backed understanding of a time-sensitive material development.
+
+## Additional Workflows
+
+Use these when the specific need arises. A Workflow can be useful even when no broader Playbook is needed.
 
 ### Analysis
 
-- [Audience Implication of an Industry Event](../../systems/industry-intelligence/contracts/analysis/audience-implication/CONTEXT.md)
-- [Business Impact Analysis](../../systems/industry-intelligence/contracts/analysis/business-impact/CONTEXT.md) *(main entry playbook)*
-- [Event Deduplication & Clustering](../../systems/industry-intelligence/contracts/analysis/event-deduplication/CONTEXT.md)
-- [Event Evolution Tracking](../../systems/industry-intelligence/contracts/analysis/event-evolution/CONTEXT.md) *(main entry playbook)*
-- [External Opportunity Analysis](../../systems/industry-intelligence/contracts/analysis/opportunity/CONTEXT.md)
-- [Industry Event Competitor Response Analysis](../../systems/industry-intelligence/contracts/analysis/competitor-response/CONTEXT.md)
-- [Industry Event Outcome Review](../../systems/industry-intelligence/contracts/analysis/post-event-outcome-review/CONTEXT.md)
-- [Industry Event Verification](../../systems/industry-intelligence/contracts/analysis/event-verification/CONTEXT.md) *(main entry playbook)*
-- [Industry Impact Pathway Analysis](../../systems/industry-intelligence/contracts/analysis/impact-pathway/CONTEXT.md)
-- [Industry Narrative vs Fact Analysis](../../systems/industry-intelligence/contracts/analysis/narrative-vs-fact/CONTEXT.md)
-- [Industry Research Quality Assessment](../../systems/industry-intelligence/contracts/analysis/research-quality/CONTEXT.md)
-- [Industry Trend Validation](../../systems/industry-intelligence/contracts/analysis/trend-validation/CONTEXT.md) *(main entry playbook)*
-- [Materiality Assessment](../../systems/industry-intelligence/contracts/analysis/materiality/CONTEXT.md) *(main entry playbook)*
-- [Rapid Response Intelligence](../../systems/industry-intelligence/contracts/analysis/rapid-response/CONTEXT.md) *(main entry playbook)*
-- [Regulatory Requirement Extraction](../../systems/industry-intelligence/contracts/analysis/regulatory-obligation/CONTEXT.md)
-- [Scenario Analysis](../../systems/industry-intelligence/contracts/analysis/scenario/CONTEXT.md) *(main entry playbook)*
-- [Threat Analysis](../../systems/industry-intelligence/contracts/analysis/threat/CONTEXT.md)
+- [Audience Implication of an Industry Event](../../systems/industry-intelligence/workflows/analysis/audience-implication/CONTEXT.md)
+- [Event Deduplication & Clustering](../../systems/industry-intelligence/workflows/analysis/event-deduplication/CONTEXT.md)
+- [External Opportunity Analysis](../../systems/industry-intelligence/workflows/analysis/opportunity/CONTEXT.md)
+- [Industry Event Competitor Response Analysis](../../systems/industry-intelligence/workflows/analysis/competitor-response/CONTEXT.md)
+- [Industry Event Outcome Review](../../systems/industry-intelligence/workflows/analysis/post-event-outcome-review/CONTEXT.md)
+- [Industry Impact Pathway Analysis](../../systems/industry-intelligence/workflows/analysis/impact-pathway/CONTEXT.md)
+- [Industry Narrative vs Fact Analysis](../../systems/industry-intelligence/workflows/analysis/narrative-vs-fact/CONTEXT.md)
+- [Industry Research Quality Assessment](../../systems/industry-intelligence/workflows/analysis/research-quality/CONTEXT.md)
+- [Regulatory Requirement Extraction](../../systems/industry-intelligence/workflows/analysis/regulatory-obligation/CONTEXT.md)
+- [Threat Analysis](../../systems/industry-intelligence/workflows/analysis/threat/CONTEXT.md)
 
 ### Events and changes
 
-- [Industry Event Detection](../../systems/industry-intelligence/contracts/event/detect/CONTEXT.md) *(main entry playbook)*
-- [Industry Event Factual Summary](../../systems/industry-intelligence/contracts/event/factual-summary/CONTEXT.md) *(main entry playbook)*
-- [Industry Event Follow-Up](../../systems/industry-intelligence/contracts/event/follow-up/CONTEXT.md)
-- [Industry Event Timeline](../../systems/industry-intelligence/contracts/event/timeline/CONTEXT.md)
-- [Industry Event Update Diff](../../systems/industry-intelligence/contracts/event/update-diff/CONTEXT.md)
-
-### Intelligence and research
-
-- [Industry Ecosystem Radar](../../systems/industry-intelligence/contracts/intelligence/ecosystem-radar/CONTEXT.md) *(main entry playbook)*
+- [Industry Event Follow-Up](../../systems/industry-intelligence/workflows/event/follow-up/CONTEXT.md)
+- [Industry Event Timeline](../../systems/industry-intelligence/workflows/event/timeline/CONTEXT.md)
+- [Industry Event Update Diff](../../systems/industry-intelligence/workflows/event/update-diff/CONTEXT.md)
 
 ### Learning and improvement
 
-- [Industry Intelligence Learning](../../systems/industry-intelligence/contracts/learning/domain-learning/CONTEXT.md)
+- [Industry Intelligence Learning](../../systems/industry-intelligence/workflows/learning/domain-learning/CONTEXT.md)
 
 ### Monitoring
 
-- [Market & Category Review](../../systems/industry-intelligence/contracts/monitoring/market/CONTEXT.md)
-- [News Monitoring](../../systems/industry-intelligence/contracts/monitoring/news/CONTEXT.md) *(main entry playbook)*
-- [Regulatory Monitoring](../../systems/industry-intelligence/contracts/monitoring/regulation/CONTEXT.md) *(main entry playbook)*
-- [Research Evidence Review](../../systems/industry-intelligence/contracts/monitoring/research/CONTEXT.md) *(main entry playbook)*
-- [Technology & Platform Change Review](../../systems/industry-intelligence/contracts/monitoring/technology/CONTEXT.md) *(main entry playbook)*
+- [Market & Category Review](../../systems/industry-intelligence/workflows/monitoring/market/CONTEXT.md)
 
-### Research planning
+### Research
 
-- [Industry Monitoring Plan](../../systems/industry-intelligence/contracts/research/monitoring-plan/CONTEXT.md) *(main entry playbook)*
-- [Industry Source Validation](../../systems/industry-intelligence/contracts/research/source-validation/CONTEXT.md)
+- [Industry Source Validation](../../systems/industry-intelligence/workflows/research/source-validation/CONTEXT.md)
 
-### Source mapping
+## Working principle
 
-- [Industry Source Map](../../systems/industry-intelligence/contracts/source-mapping/priority-sources/CONTEXT.md) *(main entry playbook)*
-
-## Want to see exactly how one works?
-
-Ask the AI something like:
-
-> “Show me the exact method for Audience Implication of an Industry Event, including what it reads, what it may save, and the important quality checks.”
-
-The linked contract is the authoritative version. This page is only a simpler map for people.
+Use the fewest instructions and Workflows necessary to repeatedly achieve the desired outcome at the required truth and quality standard. Preserve non-obvious expertise, evidence requirements, and real constraints; let the capable model/harness choose implementation details, tools, providers, external Skills, and orchestration unless the implementation itself matters.

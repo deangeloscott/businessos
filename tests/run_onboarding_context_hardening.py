@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""RC14 regressions for multi-source onboarding, explicit Brand grounding, and pre-Run preference persistence."""
+"""Regressions for multi-source onboarding, explicit Brand grounding, and pre-Run preference persistence."""
 from pathlib import Path
 import hashlib, json, os, shutil, subprocess, sys
 ROOT=Path(__file__).resolve().parents[1]; S=ROOT/'scripts'; sys.path.insert(0,str(S))
@@ -45,6 +45,7 @@ def main():
         pref={
             'name':"Jordan's communication preferences",
             'scope':'operator','subject_ref':'jordan-founder','source_kind':'explicit_user',
+            'applies_to':{'workflows':['core.diagnosis.business-problem']},
             'preferences':{'communication':{'concise':True,'practical':True},'output':{'visual_or_structured_when_helpful':True}},
             'notes':'Explicit reusable operator preference supplied during onboarding.'
         }
@@ -52,7 +53,7 @@ def main():
         statement='I prefer concise practical communication and visual or structured outputs when they help.'
         cp=run(S/'bootstrap_explicit_context.py',BID,'--facts-file',facts_path,
                '--source-file',overview,'--source-file',brand,'--source-text',statement,
-               '--preference-profile-file',pref_path,'--initialization-only')
+               '--preference-profile-file',pref_path)
         payload=json.loads(cp.stdout)
         req(len(payload.get('preference_profiles_written') or [])==1,'onboarding must persist reusable preference before returning')
         req(payload['preference_profiles_written'][0]['subject_ref']=='jordan-founder','operator preference subject lost')
@@ -77,6 +78,9 @@ def main():
 
         prfs=list((BASE/'context/preferences').glob('*.json'))
         req(len(prfs)==1,'expected one onboarding PreferenceProfile')
+        profile=json.loads(prfs[0].read_text())
+        req((profile.get('applies_to') or {}).get('workflows')==['core.diagnosis.business-problem'],'Workflow applicability was not preserved')
+        req('contracts' not in (profile.get('applies_to') or {}),'Contract-era preference applicability reappeared')
 
         # The first downstream Run can immediately snapshot the already-persisted operator preference.
         rid=run(S/'create_run.py',BID,'core.diagnosis.business-problem','Diagnose first useful growth problem','--operator-ref','jordan-founder').stdout.strip()
@@ -84,6 +88,8 @@ def main():
         sd=json.loads(snap.read_text())
         req(sd['effective_preferences']['communication']['concise'] is True,'first downstream Run missed onboarding preference')
         req(sd['effective_preferences']['communication']['practical'] is True,'first downstream Run missed onboarding preference')
+        req(sd['context']['workflow']=='core.diagnosis.business-problem','preference snapshot did not preserve Workflow applicability context')
+        req('contract' not in sd['context'],'Contract-era preference context reappeared')
 
         errors,warnings,counts=validate_business(BID,True)
         req(not errors,f'active business must validate after multi-source onboarding: {errors}')

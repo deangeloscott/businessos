@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 """Import an approved InnovationPackage without manufacturing organizational conclusions."""
 from _common import *
-from innovation_common import load_package,validate_package,validate_schema,compatibility_status,innovation_package_dir,innovation_entry_path
+from innovation_common import load_package,validate_package,validate_schema,innovation_package_dir,innovation_entry_path
 import argparse,json,hashlib,os
 
 
 def _write_json(path,obj):
     path.parent.mkdir(parents=True,exist_ok=True);temporary=path.with_suffix(path.suffix+'.tmp');temporary.write_text(json.dumps(obj,indent=2)+'\n');os.replace(temporary,path)
-
 def _counts(summary):
     summary=summary or {};return {key:int(summary.get(key,0) or 0) for key in ['replication_count','supported_count','contradicted_count','neutral_count']}
 
@@ -15,7 +14,7 @@ def _counts(summary):
 def import_package(business_id,package_path):
     base=instance_dir(business_id)
     if not base.exists():raise ValueError(f'Unknown business: {business_id}')
-    package=load_package(package_path);validate_package(package,require_export_approval=True);process=package['process'];fingerprint=package['innovation_fingerprint'];timestamp=now();compatibility=compatibility_status(process.get('compatibility') or {},os_version(),process.get('target_contract_id'))
+    package=load_package(package_path);validate_package(package,require_export_approval=True);process=package['process'];fingerprint=package['innovation_fingerprint'];timestamp=now()
 
     package_dir=innovation_package_dir(business_id);package_dir.mkdir(parents=True,exist_ok=True);stored=package_dir/f"{package['package_id']}.json";_write_json(stored,package)
     source_id='src_iex_'+hashlib.sha256(f"{business_id}|{package['package_id']}".encode()).hexdigest()[:18];source_path=base/'intelligence'/'sources'/f'{source_id}.json';existing_source=json.loads(source_path.read_text()) if source_path.exists() else {};source_reference=storage_ref(stored)
@@ -38,17 +37,18 @@ def import_package(business_id,package_path):
     local=dict(old.get('local_evidence',{})) if old else {'supported_count':0,'contradicted_count':0,'neutral_count':0,'outcome_events':[]}
     entry={
         'id':entry_id,'business_id':business_id,'created_at':old.get('created_at') if old else timestamp,'updated_at':timestamp,
-        'innovation_fingerprint':fingerprint,'owner_system':process['owner_system'],'title':process['title'],'target_contract_id':process.get('target_contract_id'),'local_contract_id':process.get('local_contract_id'),
-        'compatibility_status':compatibility,'package_ids':package_ids,'source_record_refs':source_refs,'reported_evidence':reported,'local_evidence':local,'last_activity_at':timestamp,
+        'innovation_fingerprint':fingerprint,'workflow_id':process['workflow_id'],'title':process['title'],
+        'package_ids':package_ids,'source_record_refs':source_refs,'reported_evidence':reported,'local_evidence':local,'last_activity_at':timestamp,
         'extensions':{'package_paths':sorted(set((old.get('extensions',{}).get('package_paths',[]) if old else [])+[source_reference])),'latest_detail_level':package['detail_level']}
     }
     validate_schema('InnovationExchangeEntry',entry);_write_json(entry_path,entry);return entry,source,stored
 
 
 def main():
-    parser=argparse.ArgumentParser(description='Import an approved portable InnovationPackage as organization-local support data plus a canonical SourceRecord. The importer does not create an Insight or adopt the method.');parser.add_argument('business_id');parser.add_argument('package_path');args=parser.parse_args()
+    parser=argparse.ArgumentParser(description='Import an approved portable InnovationPackage as organization-local support data plus a canonical SourceRecord. The importer does not create an Insight or adopt the Workflow.');parser.add_argument('business_id');parser.add_argument('package_path');args=parser.parse_args()
     try:entry,source,stored=import_package(args.business_id,args.package_path)
     except (ValueError,json.JSONDecodeError) as exc:raise SystemExit(str(exc))
-    print(json.dumps({'exchange_entry_id':entry['id'],'compatibility_status':entry['compatibility_status'],'source_record_ref':source['id'],'stored_package':storage_ref(stored),'rule':'Imported package is evidence of a contributed method, not proof of effectiveness or an organizational Insight.'},indent=2))
+    print(json.dumps({'exchange_entry_id':entry['id'],'workflow_id':entry['workflow_id'],'source_record_ref':source['id'],'stored_package':storage_ref(stored),'rule':'Imported package is evidence of contributed operating knowledge, not proof of effectiveness or an organizational Insight.'},indent=2))
+
 
 if __name__=='__main__':main()

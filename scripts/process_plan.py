@@ -1,20 +1,20 @@
 #!/usr/bin/env python3
-"""Describe reusable AURA playbook composition without constructing an execution graph.
+"""Describe an explicitly selected AURA Playbook or Workflow as a browse view.
 
-Subcontract metadata identifies supporting operating knowledge that is essential or
-conditional to the authored method. It does not specify runtime order, scheduling,
-delegation, service calls, or receipt-completion requirements. The active model/user
-chooses how to apply and sequence relevant knowledge in the real host environment.
+This helper resolves authored navigation only. It does not construct an execution graph,
+select supporting methods, prescribe order, schedule work, delegate, or create receipts.
+The active model/user decides which knowledge and methods are useful for the real task.
 """
 from _common import *
+from operating_knowledge import get_playbook
 import argparse,json
 
 
-def contract_map():
+def workflow_map():
     out={}
-    for path in contract_files():
-        meta,_=read_frontmatter(path);cid=meta.get('id')
-        if cid:out[cid]=meta
+    for path in workflow_files():
+        meta,_=read_frontmatter(path);wid=meta.get('id')
+        if wid:out[wid]=meta
     return out
 
 
@@ -27,43 +27,40 @@ def process_maps():
     return out
 
 
-def resolve_entry(system=None,activity=None,contract_id=None):
-    if contract_id:return contract_id
+def resolve_entry(system=None,activity=None,workflow_id=None):
+    if workflow_id:return workflow_id
     maps=process_maps()
-    if not system or not activity:raise ValueError('Provide --contract or both --system and --activity')
+    if not system or not activity:raise ValueError('Provide --workflow or both --system and --activity')
     if system not in maps or activity not in maps[system]:raise ValueError('Unknown system/activity')
-    return maps[system][activity]['entry_contract']
+    return maps[system][activity]['entry_workflow']
 
 
-def composition(contract_id,contracts=None,stack=None):
-    contracts=contracts or contract_map();stack=stack or []
-    if contract_id not in contracts:raise ValueError(f'Unknown contract {contract_id}')
-    if contract_id in stack:raise ValueError('Playbook composition cycle: '+' -> '.join(stack+[contract_id]))
-    contract=contracts[contract_id];subs=contract.get('subcontracts') or {};nstack=stack+[contract_id]
-    essential=[];conditional=[]
-    for child in subs.get('required',[]) or []:
-        cid=child.get('id') if isinstance(child,dict) else child
-        essential.append(composition(cid,contracts,nstack))
-    for child in subs.get('conditional',[]) or []:
-        if isinstance(child,str):cid,when=child,'condition described by parent playbook'
-        else:cid,when=child.get('id'),child.get('when','condition described by parent playbook')
-        conditional.append({'when':when,'knowledge':composition(cid,contracts,nstack)})
-    return {'contract_id':contract_id,'owner_system':contract.get('owner_system'),'essential_knowledge':essential,'conditional_knowledge':conditional}
+def workflow_view(workflow_id,workflows=None):
+    workflows=workflows or workflow_map()
+    if workflow_id not in workflows:raise ValueError(f'Unknown Workflow {workflow_id}')
+    workflow=workflows[workflow_id]
+    return {'workflow_id':workflow_id,'owner_system':workflow.get('owner_system'),'path':next((str(p.relative_to(ROOT)) for p in workflow_files() if read_frontmatter(p)[0].get('id')==workflow_id),None)}
 
 
-def build_process_plan(system=None,activity=None,contract_id=None):
-    entry=resolve_entry(system,activity,contract_id)
-    return {
-        'entry_contract':entry,'system':system,'activity':activity,
-        'composition':composition(entry),
-        'rule':'Browse view only: this describes supporting AURA operating knowledge, not execution order, dependencies between workers, scheduling, delegation, or orchestration authority.'
-    }
+def build_process_plan(system=None,activity=None,workflow_id=None,playbook_id=None):
+    workflows=workflow_map()
+    if playbook_id:
+        playbook=get_playbook(playbook_id)
+        if not playbook:raise ValueError(f'Unknown Playbook {playbook_id}')
+        entry=playbook.get('entry_workflow')
+        return {
+            'playbook':playbook,
+            'entry_workflow':entry,
+            'entry_workflow_view':workflow_view(entry,workflows) if entry else None,
+            'rule':'Playbook browse view only. Use the smallest useful set of Workflows or other methods for the real request; the active model/user owns semantic selection, ordering, parallelism, adaptation, tools, external Skills, and execution.'
+        }
+    entry=resolve_entry(system,activity,workflow_id)
+    return {'entry_workflow':entry,'system':system,'activity':activity,'workflow_view':workflow_view(entry,workflows),'rule':'Workflow browse view only. AURA does not construct a supporting-method or execution graph.'}
 
 
 def main():
-    ap=argparse.ArgumentParser(description='Describe the reusable knowledge composition of an AURA playbook without creating an execution plan.')
-    ap.add_argument('--system');ap.add_argument('--activity');ap.add_argument('--contract');ap.add_argument('--output');a=ap.parse_args()
-    try:data=build_process_plan(a.system,a.activity,a.contract)
+    ap=argparse.ArgumentParser(description='Describe an AURA Playbook/Workflow entry without creating an execution plan.');ap.add_argument('--playbook');ap.add_argument('--system');ap.add_argument('--activity');ap.add_argument('--workflow');ap.add_argument('--output');a=ap.parse_args()
+    try:data=build_process_plan(a.system,a.activity,a.workflow,a.playbook)
     except ValueError as e:raise SystemExit(str(e))
     text=json.dumps(data,indent=2)+'\n'
     if a.output:Path(a.output).write_text(text)

@@ -5,7 +5,6 @@ PRODUCT_ROOT=Path(__file__).resolve().parents[1]
 _WORKSPACE_ENV='BUSINESSOS_WORKSPACE'
 _WORKSPACE_CONFIG_ENV='BUSINESSOS_WORKSPACE_CONFIG'
 _STATE_NAMESPACES={'instances','runtime','knowledge','attachments'}
-_ENVIRONMENT_OVERLAY_REL=Path('.businessos/environments')
 
 
 def workspace_config_path():
@@ -43,11 +42,10 @@ _BasePath=type(Path())
 
 
 class WorkspacePath(_BasePath):
-    """Workspace path that preserves legacy logical refs relative to ROOT.
+    """Workspace path that keeps portable logical refs relative to the AURA workspace.
 
-    Older helpers commonly call `state_path.relative_to(ROOT)`. When state is external,
-    returning the workspace-relative path preserves portable refs such as
-    `instances/acme/...` and `runtime/runs/acme/...` instead of leaking host paths.
+    When organization state is external, callers may still need stable refs such as
+    `instances/acme/...` and `runtime/runs/acme/...` rather than host-specific paths.
     """
     def relative_to(self, other, *args, **kwargs):
         try:
@@ -62,12 +60,12 @@ class WorkspacePath(_BasePath):
 
 
 class BusinessOSRoot(_BasePath):
-    """Product root with transparent state-namespace redirection.
+    """Product root with transparent routing only for organization-owned state namespaces.
 
     Product files (`core/`, `systems/`, `scripts/`, schemas, tests, distribution metadata)
-    always resolve under PRODUCT_ROOT. Durable/working state namespaces can resolve to an
-    explicitly configured external workspace without forcing every existing helper to
-    know where that workspace lives.
+    resolve under PRODUCT_ROOT. Organization-owned state namespaces may resolve to an
+    explicitly configured external workspace so local-first state stays separate from
+    immutable product source while retaining portable logical references.
     """
     def __truediv__(self, key):
         try:
@@ -95,50 +93,6 @@ def attachments_root(): return workspace_root()/'attachments'
 def instance_dir(business_id): return instances_root()/business_id
 def run_dir_path(business_id,run_id): return runtime_root()/'runs'/business_id/run_id
 def product_instance_template(): return PRODUCT_ROOT/'instances/_template'
-
-
-def environment_product_dir(environment):
-    return PRODUCT_ROOT/'deployment/environments'/str(environment)
-
-
-def environment_overlay_dir(environment,create=False):
-    """Host/environment state owned by the active workspace, never product source."""
-    path=workspace_root()/_ENVIRONMENT_OVERLAY_REL/str(environment)
-    if create:path.mkdir(parents=True,exist_ok=True)
-    return path
-
-
-def environment_exists(environment):
-    return environment_overlay_dir(environment).exists() or environment_product_dir(environment).exists()
-
-
-def environment_names():
-    names=set()
-    for root in (PRODUCT_ROOT/'deployment/environments', workspace_root()/_ENVIRONMENT_OVERLAY_REL):
-        if root.exists():
-            names.update(p.name for p in root.iterdir() if p.is_dir() and p.name!='_template')
-    return sorted(names)
-
-
-def environment_file(environment,relative,writable=False,seed_product_default=True):
-    """Resolve effective environment config with workspace overlay > shipped default.
-
-    Reads prefer workspace-owned host state and fall back per-file to immutable product
-    defaults. Writes always target the workspace overlay. When useful, a shipped default
-    is copied once into the overlay before mutation so normal runtime configuration never
-    dirties the AURA product tree or conflicts with product upgrades.
-    """
-    rel=Path(relative)
-    if rel.is_absolute() or '..' in rel.parts: raise ValueError('Environment-relative path required')
-    if not environment_exists(environment): raise ValueError(f'Unknown environment: {environment}')
-    overlay=environment_overlay_dir(environment,create=writable)/rel
-    product=environment_product_dir(environment)/rel
-    if writable:
-        overlay.parent.mkdir(parents=True,exist_ok=True)
-        if seed_product_default and not overlay.exists() and product.exists() and product.is_file():
-            overlay.write_bytes(product.read_bytes())
-        return overlay
-    return overlay if overlay.exists() else product
 
 
 def workspace_profile():
@@ -237,12 +191,12 @@ def read_frontmatter(path):
     if end<0: raise ValueError(f'Unclosed frontmatter: {path}')
     meta=yaml.safe_load(text[4:end]) or {}
     return meta,text[end+5:]
-def contract_files():
-    return sorted([p for p in PRODUCT_ROOT.rglob('CONTEXT.md') if '/contracts/' in p.as_posix()])
+def workflow_files():
+    return sorted([p for p in PRODUCT_ROOT.rglob('CONTEXT.md') if '/workflows/' in p.as_posix()])
 def schemas():
     return sorted(PRODUCT_ROOT.rglob('*.schema.json'))
 def load_registry():
-    p=PRODUCT_ROOT/'generated/contract-registry.json'
+    p=PRODUCT_ROOT/'generated/workflow-registry.json'
     if not p.exists(): raise SystemExit('Run scripts/generate_registry.py first')
     return json.loads(p.read_text())
 def now(): return datetime.datetime.now(datetime.timezone.utc).isoformat()
@@ -258,7 +212,7 @@ def installation():
     if p.exists():
         return json.loads(p.read_text())
     installed=['core']+[p.name for p in sorted((PRODUCT_ROOT/'systems').iterdir()) if p.is_dir()] if (PRODUCT_ROOT/'systems').exists() else ['core']
-    return {'format_version':'1.0','source_version':os_version(),'edition':'unmanaged','display_name':'ViralTrac AURA','public_name':'ViralTrac AURA','name_expansion':'Agentic Understanding and Reinforcement Architecture','descriptor':'AI-native BusinessOS','installed_modules':installed,'standalone_distribution':False}
+    return {'format_version':'1.0','source_version':os_version(),'edition':'unmanaged','display_name':'ViralTrac AURA','public_name':'ViralTrac AURA','name_expansion':'Agentic Understanding and Reinforcement Architecture','descriptor':'organization-owned memory and operating knowledge for capable AI','installed_modules':installed,'standalone_distribution':False}
 def installed_modules():
     return set(installation().get('installed_modules',[]))
 def publisher_metadata():
@@ -281,6 +235,7 @@ def normalize_selector(sel):
     if isinstance(sel,dict): return sel
     return {'type':sel}
 def iter_instance_objects(business_id):
+    """Iterate canonical-style organization objects, excluding noncanonical support files."""
     base=instance_dir(business_id)
     if not base.exists(): return []
     out=[]
@@ -289,14 +244,14 @@ def iter_instance_objects(business_id):
         except Exception: continue
         vals=data if isinstance(data,list) else [data]
         for obj in vals:
-            if isinstance(obj,dict) and obj.get('id') and obj.get('business_id')==business_id:
+            if isinstance(obj,dict) and obj.get('id') and obj.get('object_type') and obj.get('business_id')==business_id:
                 out.append((obj,p))
     for p in base.rglob('*.jsonl'):
         try:
             for line in p.read_text().splitlines():
                 if not line.strip(): continue
                 obj=json.loads(line)
-                if isinstance(obj,dict) and obj.get('id') and obj.get('business_id')==business_id: out.append((obj,p))
+                if isinstance(obj,dict) and obj.get('id') and obj.get('object_type') and obj.get('business_id')==business_id: out.append((obj,p))
         except Exception: continue
     return out
 def object_index(business_id):
@@ -309,5 +264,11 @@ def object_matches(obj,selector):
         if obj.get(k)!=v: return False
     return True
 def refs_in_object(obj):
-    pat=re.compile(r'\b(?:src|sprof|obs|ins|prf|opp|ini|wrk|chg|ver|ast|mdef|mobs|exp|eval|lrn|inc|att|plc|cup|cmp|plt|jrn|iev|ocs|odm|sas|aud|brd|biz|eco|mkt|obj|off|prd|clm)_[A-Za-z0-9_-]+\b')
+    """Return reference-shaped strings; callers decide whether they resolve canonically.
+
+    Do not maintain a second list of object-ID prefixes here. Canonical object namespaces
+    evolve with their schemas, while the consumers of this helper already intersect these
+    candidates with an actual organization object index before treating them as references.
+    """
+    pat=re.compile(r'(?<![A-Za-z0-9_-])[A-Za-z][A-Za-z0-9]*_[A-Za-z0-9_-]+(?![A-Za-z0-9_-])')
     return set(pat.findall(json.dumps(obj)))

@@ -4,109 +4,24 @@
   "type": "object",
   "additionalProperties": false,
   "properties": {
-    "id": {
-      "type": "string",
-      "pattern": "^mdef_[A-Za-z0-9_-]+$"
-    },
-    "object_type": {
-      "const": "MetricDefinition"
-    },
-    "schema_version": {
-      "type": "string",
-      "pattern": "^\\d+\\.\\d+\\.\\d+$"
-    },
-    "business_id": {
-      "type": "string",
-      "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$"
-    },
-    "created_at": {
-      "type": "string",
-      "format": "date-time"
-    },
-    "updated_at": {
-      "type": "string",
-      "format": "date-time"
-    },
-    "lineage": {
-      "type": "array",
-      "items": {
-        "type": "string",
-        "minLength": 1
-      },
-      "uniqueItems": true
-    },
-    "name": {
-      "type": "string",
-      "minLength": 1
-    },
-    "description": {
-      "type": "string",
-      "minLength": 1
-    },
-    "unit": {
-      "type": "string",
-      "minLength": 1
-    },
-    "direction": {
-      "enum": [
-        "higher_better",
-        "lower_better",
-        "target_range",
-        "informational"
-      ]
-    },
-    "formula": {
-      "type": [
-        "string",
-        "null"
-      ]
-    },
-    "aggregation": {
-      "type": [
-        "string",
-        "null"
-      ]
-    },
-    "dimensions": {
-      "type": "array",
-      "items": {
-        "type": "string",
-        "minLength": 1
-      },
-      "uniqueItems": true
-    },
-    "owner": {
-      "type": "string",
-      "minLength": 1
-    },
-    "source_expectations": {
-      "type": "array",
-      "items": {
-        "type": "string",
-        "minLength": 1
-      },
-      "uniqueItems": true
-    },
-    "objective_refs": {
-      "type": "array",
-      "items": {
-        "type": "string",
-        "minLength": 1
-      },
-      "uniqueItems": true
-    },
-    "extensions": {
-      "type": "object"
-    }
+    "id": {"type": "string", "pattern": "^mdef_[A-Za-z0-9_-]+$"},
+    "object_type": {"const": "MetricDefinition"},
+    "schema_version": {"type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$"},
+    "business_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "updated_at": {"type": "string", "format": "date-time"},
+    "lineage": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+    "name": {"type": "string", "minLength": 1},
+    "description": {"type": "string", "minLength": 1},
+    "unit": {"type": "string", "minLength": 1},
+    "direction": {"enum": ["higher_better", "lower_better", "target_range", "informational"]},
+    "formula": {"type": ["string", "null"]},
+    "aggregation": {"type": ["string", "null"]},
+    "dimensions": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+    "owner": {"type": "string", "minLength": 1},
+    "source_expectations": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+    "objective_refs": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+    "extensions": {"type": "object"}
   },
-  "required": [
-    "id",
-    "object_type",
-    "schema_version",
-    "business_id",
-    "name",
-    "unit",
-    "direction",
-    "owner"
-  ]
+  "required": ["id", "object_type", "schema_version", "business_id", "name", "unit", "direction"]
 }

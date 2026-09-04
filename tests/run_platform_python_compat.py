@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""RC10 regression for portable PlatformChange helper syntax and stable identity."""
+"""Regression for portable PlatformChange helper syntax and stable identity."""
 from pathlib import Path
 import importlib.util, hashlib, sys
 ROOT=Path(__file__).resolve().parents[1]

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""RC12 regressions for bootstrap-generated IDs and complete canonical-reference parsing."""
+"""Regressions for bootstrap-generated IDs and complete canonical-reference parsing."""
 from pathlib import Path
 import json, shutil, subprocess, sys
 ROOT=Path(__file__).resolve().parents[1]; S=ROOT/'scripts'; sys.path.insert(0,str(S))
@@ -27,7 +27,7 @@ def main():
         facts={'claim_constraints':statements}
         facts_path=tmp/'facts.json'; facts_path.write_text(json.dumps(facts,indent=2)+'\n')
         source_path=tmp/'source.txt'; source_path.write_text('\n'.join(x+'.' for x in statements)+'\n')
-        run(S/'bootstrap_explicit_context.py',BID,'--facts-file',facts_path,'--source-file',source_path,'--initialization-only')
+        run(S/'bootstrap_explicit_context.py',BID,'--facts-file',facts_path,'--source-file',source_path)
         claim_files=sorted((BASE/'context'/'claims').glob('*.json'))
         req(len(claim_files)==2,f'expected two claims, got {len(claim_files)}')
         ids=[json.loads(p.read_text())['id'] for p in claim_files]
@@ -35,14 +35,14 @@ def main():
         errs=reference_errors(BID)
         req(not errs,f'fresh bootstrap output must not create false unresolved refs: {errs}')
 
-        # Migration safety: schema-valid historical/custom IDs may end in '-' or '_'.
-        # Reference extraction must preserve the entire ID instead of dropping the final separator.
-        legacy='clm_'+BID+'_legacy-'
-        (BASE/'context'/'claims'/f'{legacy}.json').write_text(json.dumps({'id':legacy,'object_type':'BusinessClaim','business_id':BID},indent=2)+'\n')
+        # Reference extraction must preserve every character allowed by the canonical ID
+        # pattern, including a trailing separator in a schema-valid custom identifier.
+        custom='clm_'+BID+'_custom-'
+        (BASE/'context'/'claims'/f'{custom}.json').write_text(json.dumps({'id':custom,'object_type':'BusinessClaim','business_id':BID},indent=2)+'\n')
         holder=BASE/'intelligence'/'observations'/f'obs_{BID}_holder.json'
-        holder.write_text(json.dumps({'id':f'obs_{BID}_holder','object_type':'Observation','business_id':BID,'lineage':[legacy]},indent=2)+'\n')
+        holder.write_text(json.dumps({'id':f'obs_{BID}_holder','object_type':'Observation','business_id':BID,'lineage':[custom]},indent=2)+'\n')
         errs=reference_errors(BID)
-        req(not errs,f'reference parser must preserve trailing separators in existing valid IDs: {errs}')
+        req(not errs,f'reference parser must preserve complete schema-valid IDs: {errs}')
         print('bootstrap/reference ID regressions passed')
     finally:
         if BASE.exists(): shutil.rmtree(BASE)

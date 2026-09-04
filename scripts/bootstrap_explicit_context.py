@@ -19,8 +19,8 @@ SCHEMA_PATHS={
     'BusinessClaim':'core/schemas/context/business-claim.schema.json',
     'Brand':'core/schemas/context/brand.schema.json',
 }
-# Retained as provenance metadata and for compatibility with older tests/importers. It is
-# not a trust gate: explicit-user authority is established by source provenance itself.
+# Stable provenance labels for explicit-context capture. They describe how state was
+# persisted; they do not grant semantic authority beyond the underlying source provenance.
 GROUNDING_METHOD='bootstrap_explicit_context'
 GROUNDING_VERSION='2.0'
 
@@ -84,7 +84,9 @@ def _facts_from_mapping(raw):
 
 def _normalize_brand(brand):
     if brand is None:return None
-    allowed={'name','voice','positioning','visual_identity','content_style','channel_preferences','reference_assets','prohibited_styles','brand_rules','approved_claims','claims_to_avoid'}
+    claim_fields=sorted({'approved_claims','claims_to_avoid'}&set(brand))
+    if claim_fields:raise ValueError('Brand profile claim field(s) '+', '.join(claim_fields)+' belong in BusinessClaim. Supply approved_claims or claim_constraints at the top level so AURA preserves one canonical owner for reusable claim truth.')
+    allowed={'name','voice','positioning','visual_identity','content_style','channel_preferences','reference_assets','prohibited_styles','brand_rules'}
     unknown=sorted(set(brand)-allowed)
     if unknown:raise ValueError('Unknown brand key(s): '+', '.join(unknown)+'. Allowed keys: '+', '.join(sorted(allowed)))
     return {k:v for k,v in brand.items() if v not in (None,[],{})}
@@ -236,10 +238,9 @@ def build_objects(business_id,industries=None,business_models=None,markets=None,
     ext=_meta(srcid)
     if lead_sources:ext['lead_sources']=lead_sources
     biz['extensions']=ext;objs.append(biz)
-
     if brand:
         b={'id':f'brd_{business_id}','object_type':'Brand','schema_version':'1.0.0','business_id':business_id,'created_at':ts,'updated_at':ts,'lineage':[srcid],'name':brand.get('name') or name}
-        for key in ['voice','positioning','visual_identity','content_style','channel_preferences','reference_assets','prohibited_styles','brand_rules','approved_claims','claims_to_avoid']:
+        for key in ['voice','positioning','visual_identity','content_style','channel_preferences','reference_assets','prohibited_styles','brand_rules']:
             if key in brand:b[key]=brand[key]
         b['extensions']={'businessos':{'fact_status':'known','authority':'explicit_user','source_ref':srcid,'grounding_method':GROUNDING_METHOD,'grounding_version':GROUNDING_VERSION,'explicit_brand_profile':True}}
         objs.append(b)
@@ -248,7 +249,7 @@ def build_objects(business_id,industries=None,business_models=None,markets=None,
     for service in services:
         sid=slug(service) or 'service';objs.append({'id':f'prd_{business_id}_{sid}','object_type':'ProductService','schema_version':'1.0.0','business_id':business_id,'created_at':ts,'updated_at':ts,'lineage':[srcid],'name':service,'kind':'service','description':service,'extensions':_meta(srcid)})
     for i,objective in enumerate(objectives,1):
-        sid=slug(objective) or f'objective-{i}';objs.append({'id':f'obj_{business_id}_{sid}','object_type':'Objective','schema_version':'1.0.0','business_id':business_id,'created_at':ts,'updated_at':ts,'lineage':[srcid],'name':objective,'priority':i,'extensions':_meta(srcid)})
+        sid=slug(objective) or f'objective-{i}';objs.append({'id':f'obj_{business_id}_{sid}','object_type':'Objective','schema_version':'1.0.0','business_id':business_id,'created_at':ts,'updated_at':ts,'lineage':[srcid],'name':objective,'extensions':_meta(srcid)})
     for i,statement in enumerate(approved_claims,1):
         sid=slug(statement)[:48].rstrip('-_') or f'approved-{i}'
         objs.append({'id':f'clm_{business_id}_{sid}','object_type':'BusinessClaim','schema_version':'1.0.0','business_id':business_id,'created_at':ts,'updated_at':ts,'lineage':[srcid],'statement':statement,'claim_kind':'approved_business_claim','status':'approved','authority':'explicit_user','source_ref':srcid,'support_quote':statement,'extensions':_meta(srcid)})
@@ -320,7 +321,7 @@ def main():
 Example facts JSON:
 '''+json.dumps(EXAMPLE_FACTS,indent=2)+'''
 
-Repeat --source-file for multi-source onboarding; AURA preserves each member reference/hash. Explicit organization-level brand/voice/style instructions belong in Brand state. Reusable work/output preferences belong in PreferenceProfile state. Current task/action boundaries remain part of the user's request and real harness/account/legal constraints; do not turn them into AURA approval machinery or reusable preferences unless the organization explicitly intends them to persist.'''
+Repeat --source-file for multi-source onboarding; AURA preserves each member reference/hash. Explicit organization-level brand/voice/style instructions belong in Brand state; reusable claims, promises, claim constraints, and prohibitions belong in BusinessClaim. Reusable work/output preferences belong in PreferenceProfile state. Current task/action boundaries remain part of the user's request and real harness/account/legal constraints; do not turn them into AURA approval machinery or reusable preferences unless the organization explicitly intends them to persist.'''
     ap=argparse.ArgumentParser(description='Persist explicit user/first-party organization context with exact source provenance. The model supplies semantic interpretation; AURA validates structure and literal outward claims.',formatter_class=argparse.RawDescriptionHelpFormatter,epilog=epilog)
     ap.add_argument('business_id',nargs='?');ap.add_argument('--business-id',dest='business_id_alias')
     ap.add_argument('--facts-json');ap.add_argument('--facts-file');ap.add_argument('--facts-stdin',action='store_true')
@@ -330,12 +331,9 @@ Repeat --source-file for multi-source onboarding; AURA preserves each member ref
     ap.add_argument('--approved-claim',action='append',default=[]);ap.add_argument('--claim-constraint',action='append',default=[])
     ap.add_argument('--source-reference');ap.add_argument('--source-text',action='append',default=[]);ap.add_argument('--source-file',action='append',default=[])
     ap.add_argument('--brand-profile-file',action='append',default=[]);ap.add_argument('--preference-profile-file',action='append',default=[])
-    ap.add_argument('--residual-request',help='Compatibility field that preserves remaining natural-language work in output; this helper does not route it.')
-    ap.add_argument('--initialization-only',action='store_true',help='Compatibility flag; completion scope is not required.')
     a=ap.parse_args();business_id=a.business_id or a.business_id_alias
     if a.business_id and a.business_id_alias and a.business_id!=a.business_id_alias:ap.error('positional business_id and --business-id disagree')
     if not business_id:ap.error('business_id is required (positional or --business-id)')
-    if a.residual_request and a.initialization_only:ap.error('use only one of --residual-request or --initialization-only')
     try:
         source_members=_load_source_members(a.source_text,a.source_file);jf=_load_facts(a.facts_json,a.facts_file,a.facts_stdin)
         brand_manifest,brand_profile_files=_load_brand_profile_files(a.brand_profile_file);merged_brand=_merge_brand_values(jf.get('brand'),brand_manifest)
@@ -360,7 +358,7 @@ Repeat --source-file for multi-source onboarding; AURA preserves each member ref
             if not isinstance(spec,dict) or not isinstance(spec.get('preferences'),dict):raise SystemExit(f'Preference profile manifest {raw!r} must be a JSON object with a preferences object')
             applies=spec.get('applies_to') or {}
             try:
-                p,obj=upsert_preference(business_id,spec.get('name') or 'Onboarding preferences',spec.get('scope') or 'operator',spec.get('subject_ref'),spec['preferences'],spec.get('id'),int(spec.get('priority',0)),spec.get('source_kind') or 'explicit_user',spec.get('source_refs') or ([canonical_source] if canonical_source else []),applies.get('systems') or [],applies.get('contracts') or [],applies.get('output_types') or [],applies.get('channels') or [],spec.get('notes'))
+                p,obj=upsert_preference(business_id,spec.get('name') or 'Onboarding preferences',spec.get('scope') or 'operator',spec.get('subject_ref'),spec['preferences'],spec.get('id'),int(spec.get('priority',0)),spec.get('source_kind') or 'explicit_user',spec.get('source_refs') or ([canonical_source] if canonical_source else []),applies.get('systems') or [],applies.get('workflows') or [],applies.get('output_types') or [],applies.get('channels') or [],spec.get('notes'))
             except Exception as exc:raise SystemExit(f'Could not persist preference profile {raw!r}: {exc}')
             preference_written.append({'id':obj['id'],'scope':obj['scope'],'subject_ref':obj['subject_ref'],'path':p.relative_to(ROOT).as_posix()})
 
@@ -371,8 +369,6 @@ Repeat --source-file for multi-source onboarding; AURA preserves each member ref
       'validation_required':f'python3 scripts/validate_business.py {business_id} --require-context','completion_state':'context_persisted',
       'required_next_action':'Validate active organization state, then continue the user\'s actual request using model judgment and the host\'s real capabilities.'
     }
-    if a.residual_request:
-        payload.update({'completion_state':'context_persisted_residual_request_preserved','residual_request':a.residual_request,'required_next_action':'Validate active organization state, then continue the preserved residual request directly. This helper does not semantically route it.'})
     print(json.dumps(payload,indent=2))
 
 

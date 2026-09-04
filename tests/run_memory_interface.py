@@ -26,7 +26,7 @@ def main():
                 'provenance':{'method_type':'ad_hoc','method_ref':'active model'},
                 'objects':[{
                     'key':'draft_asset','object_type':'Asset','content':{
-                        'asset_type':'draft','owner_system':'core','business_role':'useful durable draft',
+                        'asset_type':'draft','business_role':'useful durable draft',
                         'location_reference':'attachments/draft.md','version':'1','status':'active'
                     }
                 }]
@@ -72,13 +72,13 @@ def main():
             linked=remember(bid,{'objects':[
                 {
                     'key':'obsolete_source','object_type':'Asset','content':{
-                        'asset_type':'note','owner_system':'core','business_role':'temporary context',
+                        'asset_type':'note','business_role':'temporary context',
                         'version':'1','status':'active'
                     }
                 },
                 {
                     'key':'dependent_asset','object_type':'Asset','lineage_refs':['@obsolete_source'],'content':{
-                        'asset_type':'brief','owner_system':'core','business_role':'depends on temporary context',
+                        'asset_type':'brief','business_role':'depends on temporary context',
                         'version':'1','status':'active'
                     }
                 }
@@ -95,7 +95,6 @@ def main():
 
             bundle={
                 'method_type':'external_skill','method_ref':'first-party-review',
-                'owner_system':'core',
                 'sources':[{
                     'source_type':'first_party_note','origin':'organization supplied','access_scope':'business_internal',
                     'source_reference':'attachments/customer-note.txt','acquisition_method':'user_provided',

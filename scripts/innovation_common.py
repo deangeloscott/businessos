@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 from _common import *
 from jsonschema import Draft202012Validator
-import copy,hashlib,json,re,zipfile
+import copy,hashlib,json,zipfile
 
 IDENTIFYING_KEYS={'business_id','business_name','company_name','client_name','customer_name','domain','email','phone'}
 FORBIDDEN_KEYS={'password','passwd','secret','client_secret','api_key','apikey','access_token','refresh_token','private_key','credential','credentials','session_cookie','cookie','auth_token'}
-
 
 def schema_by_title(title):
     for path in schemas():
@@ -16,28 +15,6 @@ def schema_by_title(title):
 def validate_schema(title,obj):
     errors=sorted(Draft202012Validator(schema_by_title(title)).iter_errors(obj),key=lambda error:list(error.path))
     if errors:raise ValueError('; '.join(f"{list(error.path)}: {error.message}" for error in errors))
-def _version_tuple(value):
-    try:
-        parts=tuple(int(x) for x in str(value).split('.'))
-        if len(parts)!=3:raise ValueError
-        return parts
-    except Exception:raise ValueError(f'Invalid semantic version: {value!r}')
-
-
-def compatibility_status(compatibility,version=None,target_contract_id=None):
-    version=_version_tuple(version or os_version());compatibility=compatibility or {};minimum=compatibility.get('aura_min');maximum=compatibility.get('aura_max')
-    if minimum and version<_version_tuple(minimum):return 'incompatible'
-    if maximum and version>_version_tuple(maximum):return 'incompatible'
-    if target_contract_id:
-        found=False
-        for path in contract_files():
-            try:meta,_=read_frontmatter(path)
-            except Exception:continue
-            if meta.get('id')==target_contract_id:found=True;break
-        if not found:return 'review'
-    return 'compatible'
-
-
 def innovation_support_root(business_id):return instance_dir(business_id)/'support'/'innovation-exchange'
 def innovation_package_dir(business_id):return innovation_support_root(business_id)/'packages'
 def innovation_entry_dir(business_id):return innovation_support_root(business_id)/'entries'
@@ -51,8 +28,6 @@ def iter_innovation_entries(business_id):
         except Exception:continue
         if isinstance(data,dict) and data.get('business_id')==business_id:rows.append((data,path))
     return rows
-
-
 def find_forbidden_keys(value,path=''):
     hits=[]
     if isinstance(value,dict):
@@ -76,7 +51,7 @@ def find_identifying_keys(value,path=''):
 def canonical_hash(package):
     data=copy.deepcopy(package);data.setdefault('integrity',{})['content_hash']=None;raw=json.dumps(data,sort_keys=True,separators=(',',':'),ensure_ascii=False).encode();return hashlib.sha256(raw).hexdigest()
 def innovation_fingerprint(process):
-    selected={key:process.get(key) for key in ['mode','owner_system','target_contract_id','local_contract_id','title','purpose','discovery_terms','reads','writes','required_capabilities','optional_capabilities','applies_when','does_not_apply_when','instructions','verification']};raw=json.dumps(selected,sort_keys=True,separators=(',',':'),ensure_ascii=False).encode();return hashlib.sha256(raw).hexdigest()
+    selected={key:process.get(key) for key in ['workflow_id','title','purpose','discovery_terms','applies_when','does_not_apply_when','instructions','verification']};raw=json.dumps(selected,sort_keys=True,separators=(',',':'),ensure_ascii=False).encode();return hashlib.sha256(raw).hexdigest()
 def load_package(path):
     path=Path(path)
     if not path.exists():raise ValueError(f'Package not found: {path}')

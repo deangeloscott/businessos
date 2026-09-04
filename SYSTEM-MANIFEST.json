@@ -5,7 +5,7 @@
   "display_name": "ViralTrac AURA",
   "public_name": "ViralTrac AURA",
   "name_expansion": "Agentic Understanding and Reinforcement Architecture",
-  "descriptor": "AI-native BusinessOS",
+  "descriptor": "organization-owned memory and operating knowledge for capable AI",
   "brand": "ViralTrac",
   "branding": "BRANDING.md",
   "startup_message": "BEGINNERS-GUIDE.md",
@@ -24,11 +24,11 @@
       "BUSINESSOS_WORKSPACE",
       ".businessos/workspace.json"
     ],
-    "deployment_profiles": "distribution/deployment-profiles.json"
+    "workspace_profiles": "distribution/deployment-profiles.json"
   },
   "state_locations": {
     "canonical_business": "instances/<business-id>/",
-    "run": "runtime/runs/<business-id>/<run-id>/",
+    "work_receipts": "runtime/runs/<business-id>/<run-id>/",
     "human_knowledge": "knowledge/<business-id>/",
     "attachments": "attachments/"
   },
@@ -52,16 +52,15 @@
     "marketing-synthesis",
     "seo-aeo"
   ],
-  "contract_count": 496,
-  "schema_count": 47,
-  "capability_count": 83,
   "entrypoints": {
     "human": "BEGINNERS-GUIDE.md",
-    "deployment": "DEPLOYMENT.md",
+    "storage_setup": "DEPLOYMENT.md",
     "branding": "BRANDING.md",
     "playbooks": "PLAYBOOKS.md",
+    "workflows": "WORKFLOW-INDEX.md",
     "task_navigator": "TASK-NAVIGATOR.md",
     "agent": "CONTEXT.md",
+    "skill": "skills/viraltrac-aura/SKILL.md",
     "glossary": "GLOSSARY.md"
   },
   "generated_from": "scripts/generate_registry.py"

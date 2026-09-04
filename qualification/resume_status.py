@@ -13,16 +13,16 @@ def _event_runs(run_dir,event,before):
     if not workspace.exists(): return []
     base=workspace/'runtime'/'runs'/event.get('business_id','')
     if not base.exists(): return []
-    before_map={r.get('run_id'):(r.get('status'),r.get('contract_id')) for r in (before or {}).get('runs',[]) if r.get('run_id')}
+    before_map={r.get('run_id'):(r.get('status'),r.get('workflow_id')) for r in (before or {}).get('runs',[]) if r.get('run_id')}
     rows=[]
     for p in sorted(base.glob('*/run.json')):
         d=_read_json(p)
         if not isinstance(d,dict): continue
         rid=d.get('run_id'); prior=before_map.get(rid)
-        changed=prior is None or prior!=(d.get('status'),d.get('contract_id'))
+        changed=prior is None or prior!=(d.get('status'),d.get('workflow_id'))
         if not changed: continue
-        if event.get('contract_id') and d.get('contract_id')!=event.get('contract_id'): continue
-        rows.append({'run_id':rid,'contract_id':d.get('contract_id'),'status':d.get('status'),'path':str(p)})
+        if event.get('workflow_id') and d.get('workflow_id')!=event.get('workflow_id'): continue
+        rows.append({'run_id':rid,'workflow_id':d.get('workflow_id'),'status':d.get('status'),'path':str(p)})
     return rows
 
 
@@ -32,7 +32,7 @@ def classify(run_dir,event):
     if after is not None and receipt is not None: state='terminal'
     elif before is not None or after is not None or receipt is not None: state='in_progress'
     else: state='pending'
-    return {'event_id':eid,'kind':event.get('kind'),'business_id':event.get('business_id'),'contract_id':event.get('contract_id'),'state':state,'before_checkpoint':before is not None,'controller_receipt':receipt is not None,'receipt_status':receipt.get('status') if isinstance(receipt,dict) else None,'after_checkpoint':after is not None,'receipt_path':str(receipt_path),'event_runs':_event_runs(run_dir,event,before)}
+    return {'event_id':eid,'kind':event.get('kind'),'business_id':event.get('business_id'),'workflow_id':event.get('workflow_id'),'state':state,'before_checkpoint':before is not None,'controller_receipt':receipt is not None,'receipt_status':receipt.get('status') if isinstance(receipt,dict) else None,'after_checkpoint':after is not None,'receipt_path':str(receipt_path),'event_runs':_event_runs(run_dir,event,before)}
 
 
 def _resume_text(run_dir,queue,rows):
@@ -40,7 +40,7 @@ def _resume_text(run_dir,queue,rows):
     if not remaining: return f'# AURA Qualification Recovery\n\nThe prepared work in `{run_dir}` is complete. Run the evaluator.\n'
     idx,row=remaining[0]; event=queue['events'][idx]
     lines=['# AURA Qualification Recovery','',f'Run: `{run_dir}`',f'Completed tasks before resume point: **{idx} of {len(rows)}**.','',
-           'The candidate/model should still receive only the normal AURA product/workspace and an ordinary business request. Do not expose evaluator metadata, contract targets, checkpoints, receipts, or qualification rules.','',
+           'The candidate/model should still receive only the normal AURA product/workspace and an ordinary business request. Do not expose evaluator metadata, workflow targets, checkpoints, receipts, or qualification rules.','',
            '**Request to give the candidate:**','',event.get('task','')]
     if row['state']=='in_progress':
         lines += ['', 'This task already has its original before-checkpoint. Keep that baseline and resume the existing AURA workspace rather than restarting the benchmark.']

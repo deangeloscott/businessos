@@ -25,7 +25,7 @@ def collect_runs(workspace,business_id):
     for p in sorted(base.glob('*/run.json')):
         try:obj=json.loads(p.read_text())
         except Exception:continue
-        out.append({'run_id':obj.get('run_id'),'method_type':obj.get('method_type'),'method_ref':obj.get('method_ref'),'contract_id':obj.get('contract_id'),'status':obj.get('status'),'path':str(p.relative_to(workspace))})
+        out.append({'run_id':obj.get('run_id'),'method_type':obj.get('method_type'),'method_ref':obj.get('method_ref'),'workflow_id':obj.get('workflow_id'),'status':obj.get('status'),'path':str(p.relative_to(workspace))})
     return out
 
 

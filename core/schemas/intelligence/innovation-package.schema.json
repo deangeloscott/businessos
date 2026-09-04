@@ -1,39 +1,63 @@
 {
-  "$schema":"https://json-schema.org/draft/2020-12/schema",
-  "title":"InnovationPackage",
-  "type":"object",
-  "additionalProperties":false,
-  "properties":{
-    "format_version":{"const":"1.0"},
-    "package_id":{"type":"string","pattern":"^ipkg_[A-Za-z0-9_-]+$"},
-    "created_at":{"type":"string","format":"date-time"},
-    "aura_version":{"type":"string","pattern":"^\\d+\\.\\d+\\.\\d+$"},
-    "innovation_fingerprint":{"type":"string","pattern":"^[a-f0-9]{64}$"},
-    "detail_level":{"enum":["workflow_only","anonymized_evidence","full_case_study"]},
-    "identity_level":{"enum":["anonymous","pseudonymous","named"]},
-    "contributor":{"type":"object","additionalProperties":false,"properties":{"display_name":{"type":["string","null"]},"pseudonym":{"type":["string","null"]}},"required":["display_name","pseudonym"]},
-    "process":{"type":"object","additionalProperties":false,"properties":{
-      "mode":{"enum":["augment_contract","local_playbook"]},
-      "owner_system":{"type":"string","minLength":1},
-      "target_contract_id":{"type":["string","null"]},
-      "local_contract_id":{"type":["string","null"]},
-      "title":{"type":"string","minLength":1},
-      "purpose":{"type":"string","minLength":1},
-      "discovery_terms":{"type":"array","items":{"type":"string"},"uniqueItems":true},
-      "reads":{"type":"array","items":{"type":"string"},"uniqueItems":true},
-      "writes":{"type":"array","items":{"type":"string"},"uniqueItems":true},
-      "required_capabilities":{"type":"array","items":{"type":"string"},"uniqueItems":true},
-      "optional_capabilities":{"type":"array","items":{"type":"string"},"uniqueItems":true},
-      "applies_when":{"type":"array","items":{"type":"string"},"uniqueItems":true},
-      "does_not_apply_when":{"type":"array","items":{"type":"string"},"uniqueItems":true},
-      "instructions":{"type":"array","items":{"type":"string"},"minItems":1},
-      "verification":{"type":"array","items":{"type":"string"},"minItems":1},
-      "compatibility":{"type":"object","additionalProperties":false,"properties":{"aura_min":{"type":["string","null"]},"aura_max":{"type":["string","null"]}},"required":["aura_min","aura_max"]}
-    },"required":["mode","owner_system","target_contract_id","local_contract_id","title","purpose","discovery_terms","reads","writes","required_capabilities","optional_capabilities","applies_when","does_not_apply_when","instructions","verification","compatibility"]},
-    "evidence_summary":{"type":["object","null"]},
-    "case_study":{"type":["object","null"]},
-    "privacy":{"type":"object","additionalProperties":false,"properties":{"raw_private_state_included":{"const":false},"secrets_included":{"const":false},"source_business_identity_included":{"type":"boolean"},"user_approved_export":{"type":"boolean"},"approved_at":{"type":["string","null"]}},"required":["raw_private_state_included","secrets_included","source_business_identity_included","user_approved_export","approved_at"]},
-    "integrity":{"type":"object","additionalProperties":false,"properties":{"algorithm":{"const":"sha256"},"content_hash":{"type":["string","null"]}},"required":["algorithm","content_hash"]}
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "InnovationPackage",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "format_version": {"const": "1.3"},
+    "package_id": {"type": "string", "pattern": "^ipkg_[A-Za-z0-9_-]+$"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "innovation_fingerprint": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "detail_level": {"enum": ["workflow_only", "anonymized_evidence", "full_case_study"]},
+    "identity_level": {"enum": ["anonymous", "pseudonymous", "named"]},
+    "contributor": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "display_name": {"type": ["string", "null"]},
+        "pseudonym": {"type": ["string", "null"]}
+      },
+      "required": ["display_name", "pseudonym"]
+    },
+    "process": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Portable reusable Workflow knowledge. A custom.* workflow_id identifies organization-local knowledge; other ids identify augmentation of an installed AURA Workflow. Package format compatibility is separate from AURA product versions.",
+      "properties": {
+        "workflow_id": {"type": "string", "minLength": 1},
+        "title": {"type": "string", "minLength": 1},
+        "purpose": {"type": "string", "minLength": 1},
+        "discovery_terms": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+        "applies_when": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+        "does_not_apply_when": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+        "instructions": {"type": "array", "items": {"type": "string", "minLength": 1}, "minItems": 1},
+        "verification": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true}
+      },
+      "required": ["workflow_id", "title", "purpose", "discovery_terms", "applies_when", "does_not_apply_when", "instructions", "verification"]
+    },
+    "evidence_summary": {"type": ["object", "null"]},
+    "case_study": {"type": ["object", "null"]},
+    "privacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "raw_private_state_included": {"const": false},
+        "secrets_included": {"const": false},
+        "source_business_identity_included": {"type": "boolean"},
+        "user_approved_export": {"type": "boolean"},
+        "approved_at": {"type": ["string", "null"]}
+      },
+      "required": ["raw_private_state_included", "secrets_included", "source_business_identity_included", "user_approved_export", "approved_at"]
+    },
+    "integrity": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "algorithm": {"const": "sha256"},
+        "content_hash": {"type": ["string", "null"]}
+      },
+      "required": ["algorithm", "content_hash"]
+    }
   },
-  "required":["format_version","package_id","created_at","aura_version","innovation_fingerprint","detail_level","identity_level","contributor","process","evidence_summary","case_study","privacy","integrity"]
+  "required": ["format_version", "package_id", "created_at", "innovation_fingerprint", "detail_level", "identity_level", "contributor", "process", "evidence_summary", "case_study", "privacy", "integrity"]
 }

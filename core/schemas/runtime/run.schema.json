@@ -8,14 +8,19 @@
     "business_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$"},
     "task": {"type": "string", "minLength": 1},
     "method_type": {
-      "enum": ["aura_playbook", "external_skill", "model_created", "ad_hoc"],
-      "description": "How the work was actually performed. This records method provenance, not execution authority."
+      "enum": ["aura_playbook", "aura_workflow", "external_skill", "model_created", "ad_hoc"],
+      "description": "How the work was actually performed. This is optional provenance, not execution authority or conformance state."
     },
     "method_ref": {"type": ["string", "null"], "minLength": 1},
-    "contract_id": {
+    "playbook_id": {
       "type": ["string", "null"],
       "minLength": 1,
-      "description": "AURA playbook identifier when method_type is aura_playbook. Optional for all other work."
+      "description": "A human-meaningful AURA Playbook identifier when that Playbook materially framed the work."
+    },
+    "workflow_id": {
+      "type": ["string", "null"],
+      "minLength": 1,
+      "description": "A detailed AURA Workflow identifier when that Workflow was materially used."
     },
     "status": {"enum": ["active", "completed"]},
     "focus_refs": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
@@ -33,7 +38,7 @@
         "format_version": {"type": "string", "minLength": 1},
         "purpose": {"const": "organizational_work_receipt"},
         "state": {"enum": ["active", "completed"]},
-        "method_type": {"enum": ["aura_playbook", "external_skill", "model_created", "ad_hoc"]},
+        "method_type": {"enum": ["aura_playbook", "aura_workflow", "external_skill", "model_created", "ad_hoc"]},
         "method_ref": {"type": ["string", "null"], "minLength": 1},
         "summary": {"type": ["string", "null"]},
         "evidence_refs": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
@@ -47,19 +52,5 @@
     "created_at": {"type": "string", "format": "date-time"},
     "updated_at": {"type": "string", "format": "date-time"}
   },
-  "required": [
-    "run_id",
-    "business_id",
-    "task",
-    "method_type",
-    "status",
-    "created_at",
-    "updated_at"
-  ],
-  "allOf": [
-    {
-      "if": {"properties": {"method_type": {"const": "aura_playbook"}}, "required": ["method_type"]},
-      "then": {"required": ["contract_id"]}
-    }
-  ]
+  "required": ["run_id", "business_id", "task", "method_type", "status", "created_at", "updated_at"]
 }

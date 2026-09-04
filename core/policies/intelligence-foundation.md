@@ -6,7 +6,7 @@ AURA helps organizational intelligence accumulate across sessions, models, and t
 
 - **The organization is the durable unit of intelligence.** Material evidence, Observations, Insights, decisions, measurements, and Learning can survive the conversation/model/harness that discovered them.
 - **Shared mechanics, domain-specific meaning.** AURA can preserve sources, evidence, subject/watch state, references, and current/history mechanics. The capable model/user determines what evidence means for customers, competitors, industry, discovery, content, persuasion, or customer progression.
-- **Capability-neutral.** Playbooks describe evidence/business needs. The active model/harness chooses the real tools and providers. AURA does not inventory or bind host capabilities.
+- **Tool/model neutral.** Workflows describe the evidence, business outcome, real constraints, and useful method in natural language. The active model/harness chooses the best appropriate tools, providers, Skills, and execution methods it actually has. AURA does not inventory, bind, or limit them through its own tool ontology.
 - **Minimum sufficient research.** Do not research, archive, or monitor everything because it is technically possible. Expand depth, coverage, cadence, or modalities only when doing so can materially improve the decision, reduce important uncertainty, preserve a useful baseline, or satisfy a real evidence requirement.
 - **No competing truth stores.** Canonical organization state and linked evidence remain authoritative. Human-readable views are replaceable interfaces, not a second truth system.
 
@@ -15,7 +15,7 @@ AURA helps organizational intelligence accumulate across sessions, models, and t
 Relevant evidence may be text, webpages, PDFs, tables, screenshots, images, audio, video, transcripts, captions, comments, structured records, or mixed-media pages.
 
 When a material conclusion depends on non-text evidence:
-1. inspect the underlying media using capabilities actually available to the host;
+1. inspect the underlying media using the best appropriate tools/resources available to the host;
 2. preserve the smallest auditable evidence or reproducible pointer needed for the claim;
 3. distinguish what was observed from the model's interpretation;
 4. record material acquisition limitations;

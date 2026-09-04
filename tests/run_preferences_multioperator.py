@@ -28,22 +28,22 @@ def main():
         upsert(BID,'Business presentation defaults','business',BID,{
             'presentation':{'slide_density':'balanced','speaker_notes':'brief'},
             'writing':{'tone':'professional'}
-        },'prf_pref_business',0,'explicit_organization')
+        },'pref_pref_business',0,'explicit_organization')
         upsert(BID,'Sales team defaults','team','team_sales',{
             'presentation':{'slide_density':'concise','include_appendix':True}
-        },'prf_pref_sales',0,'explicit_organization')
+        },'pref_pref_sales',0,'explicit_organization')
         upsert(BID,'Presenter role defaults','role','role_presenter',{
             'writing':{'tone':'consultative'}
-        },'prf_pref_presenter',0,'explicit_organization')
+        },'pref_pref_presenter',0,'explicit_organization')
         upsert(BID,'Alice preferences','operator','operator_alice',{
             'presentation':{'speaker_notes':'detailed','diagrams_over_bullets':True}
-        },'prf_pref_alice',0,'explicit_user',systems=['content-synthesis'])
+        },'pref_pref_alice',0,'explicit_user',systems=['content-synthesis'])
         upsert(BID,'Bob preferences','operator','operator_bob',{
             'presentation':{'speaker_notes':'brief','diagrams_over_bullets':False}
-        },'prf_pref_bob',0,'explicit_user',systems=['content-synthesis'])
+        },'pref_pref_bob',0,'explicit_user',systems=['content-synthesis'])
         upsert(BID,'SEO-only preference','operator','operator_alice',{
             'presentation':{'slide_density':'seo-only-should-not-apply'}
-        },'prf_pref_alice_seo',10,'explicit_user',systems=['seo-aeo'])
+        },'pref_pref_alice_seo',10,'explicit_user',systems=['seo-aeo'])
 
         alice=resolve_effective_preferences(BID,'operator_alice','team_sales','role_presenter','content-synthesis','content.production.presentation')
         ap=alice['effective_preferences']
@@ -52,7 +52,7 @@ def main():
         assert_eq(ap['presentation']['diagrams_over_bullets'],True,'alice operator preference')
         assert_eq(ap['presentation']['include_appendix'],True,'team preference retained')
         assert_eq(ap['writing']['tone'],'consultative','role overrides business')
-        if 'prf_pref_alice_seo' in [x['id'] for x in alice['applied_profiles']]: raise AssertionError('nonmatching system preference applied')
+        if 'pref_pref_alice_seo' in [x['id'] for x in alice['applied_profiles']]: raise AssertionError('nonmatching system preference applied')
 
         bob=resolve_effective_preferences(BID,'operator_bob','team_sales','role_presenter','content-synthesis','content.production.presentation')
         bp=bob['effective_preferences']
@@ -105,7 +105,7 @@ def main():
         # Equal-scope/equal-priority conflicts must not be resolved by arbitrary file/id order.
         upsert(BID,'Alice conflicting preference','operator','operator_alice',{
             'presentation':{'speaker_notes':'minimal'}
-        },'prf_pref_alice_conflict',0,'explicit_user',systems=['content-synthesis'])
+        },'pref_pref_alice_conflict',0,'explicit_user',systems=['content-synthesis'])
         try:
             resolve_effective_preferences(BID,'operator_alice','team_sales','role_presenter','content-synthesis','content.production.presentation')
             raise AssertionError('equal-precedence conflict was silently resolved')
@@ -113,10 +113,10 @@ def main():
             if 'Unresolved equal-precedence preference conflict' not in str(e): raise
 
         # Higher priority inside one scope is intentional and deterministic.
-        (BASE/'context/preferences/prf_pref_alice_conflict.json').unlink()
+        (BASE/'context/preferences/pref_pref_alice_conflict.json').unlink()
         upsert(BID,'Alice high-priority preference','operator','operator_alice',{
             'presentation':{'speaker_notes':'minimal'}
-        },'prf_pref_alice_high',5,'explicit_user',systems=['content-synthesis'])
+        },'pref_pref_alice_high',5,'explicit_user',systems=['content-synthesis'])
         hi=resolve_effective_preferences(BID,'operator_alice','team_sales','role_presenter','content-synthesis','content.production.presentation')
         assert_eq(hi['effective_preferences']['presentation']['speaker_notes'],'minimal','same-scope priority override')
 

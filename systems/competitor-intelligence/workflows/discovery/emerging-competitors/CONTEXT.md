@@ -1,0 +1,37 @@
+---
+id: competitor.discovery.emerging-competitors
+type: workflow
+owner_system: competitor-intelligence
+reads:
+- Competitor
+- SourceRecord
+- Observation
+- Insight
+writes:
+- Observation
+- Insight
+context:
+- Business
+- Market
+- AudienceSegment
+- Offer
+---
+# Emerging Competitor Discovery
+
+## Purpose
+Detect new or previously peripheral alternatives becoming strategically relevant.
+
+## Business Outcome
+Prevent the competitive set from becoming stale as customers, technology, and category structure change.
+
+## Run When
+Run periodically or when customer alternatives, search behavior, industry events, or lost deals reveal new entities.
+
+## Process
+1. [AI] Gather candidate entities from customer alternatives, industry events, search/AEO overlap, reviews, communities, partnerships, funding/product launches, and sales evidence.
+2. [DETERMINISTIC] Deduplicate entities and match to existing Competitor records.
+3. [AI] Classify candidate relationship: direct, substitute, emerging, adjacent, platform, or non-competitor reference.
+4. [AI] Evaluate overlap in audience, job/outcome, offer, budget, distribution, and customer consideration.
+5. [HYBRID] Require stronger evidence before labeling a company a material competitor than before placing it on a watchlist.
+6. [AI] Create/update Competitor records only for materially relevant entities; keep watch candidates scoped.
+7. [HYBRID] Preserve the material discovery evidence and, when future review would help, the semantic monitoring cadence/next useful check. AURA does not emit a runtime event or create scheduler state merely because this knowledge was updated.

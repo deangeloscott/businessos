@@ -54,7 +54,7 @@ def main():
         run(S/'init_business.py',BID,'--name','CrewBeacon')
         cp=run(S/'bootstrap_explicit_context.py',BID,'--facts-file',facts_path,
                '--source-file',overview,'--source-file',brand_notes,
-               '--brand-profile-file',brand_path,'--initialization-only')
+               '--brand-profile-file',brand_path)
         payload=json.loads(cp.stdout)
         req(payload.get('brand_profile_files_used')==[brand_path.relative_to(ROOT).as_posix()],f'brand profile file not reported: {payload}')
 
