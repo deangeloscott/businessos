@@ -13,6 +13,8 @@ from prepare_run import init_business,apply_candidate_request,candidate_surface,
 from checkpoint import capture_checkpoint
 from release_fixture import release_event
 from common import fixture_for
+sys.path.insert(0,str(ROOT/'scripts'))
+from _common import workflow_files
 
 
 def req(c,m):
@@ -70,7 +72,7 @@ def main():
     with tempfile.TemporaryDirectory(prefix='aura-workspaces-unit-') as cd,tempfile.TemporaryDirectory(prefix='aura-evaluator-unit-') as ed:
         surface=candidate_surface(cd);req('qualification' not in surface.as_posix().lower(),'neutral candidate surface leaked benchmark marker');req(_ensure_separate(surface,Path(ed)/'run') is True,'separate candidate/evaluator trees rejected')
 
-    suite=build();manifest=json.loads((ROOT/'SYSTEM-MANIFEST.json').read_text());expected=manifest.get('workflow_count');req(suite['workflow_count']==expected,f"qualification Workflow coverage {suite['workflow_count']} != manifest {expected}");tests=suite['workflow_tests'];ids=[t['workflow_id'] for t in tests];req(len(ids)==len(set(ids)),'duplicate Workflow qualification tests');req(all(t['hard_gates'] and t['rubric_dimensions'] and t['candidate_task'] for t in tests),'every Workflow needs universal gates, professional rubric, and ordinary task');req(all('capabilities' not in t for t in tests),'retired capability ontology leaked into qualification cases')
+    suite=build();expected=len(workflow_files());req(suite['workflow_count']==expected,f"qualification Workflow coverage {suite['workflow_count']} != authored Workflow inventory {expected}");tests=suite['workflow_tests'];ids=[t['workflow_id'] for t in tests];req(len(ids)==len(set(ids)),'duplicate Workflow qualification tests');req(all(t['hard_gates'] and t['rubric_dimensions'] and t['candidate_task'] for t in tests),'every Workflow needs universal gates, professional rubric, and ordinary task');req(all('capabilities' not in t for t in tests),'retired capability ontology leaked into qualification cases')
     universal={'workspace_valid','business_valid','material_result_observed','completion_claim_truthful'};req(all(set(t['hard_gates'])==universal for t in tests),'atomic Workflow suite regained task-specific deterministic semantic gates');req(all(not ({'artifact_role','competitive_profile','output_policy','authored_workflow_refs'} & set(t)) for t in tests),'atomic Workflow suite retained retired semantic/composition metadata')
     req(fixture_for('content.production.article','content-synthesis')=='atlasops-saas','fixture router misclassified production as ecommerce');req(fixture_for('seo-aeo.execution.product-page','seo-aeo')=='northline-commerce','explicit product work lost ecommerce fixture');req(fixture_for('seo-aeo.local.service-area','seo-aeo')=='harbor-hvac','local/service-area work lost HVAC fixture')
     owners={m['owner_system'] for m in suite['domain_missions']};required={'core','customer-intelligence','competitor-intelligence','industry-intelligence','seo-aeo','content-synthesis','marketing-synthesis','customer-optimization'};req(owners==required,f'domain mission coverage mismatch: {owners ^ required}');req({m['id'] for m in suite.get('composition_missions',[])}=={'COMPOSE-SEO-CONTENT-001'},'targeted composition mission missing');req(len(suite['cross_domain_missions'])>=5 and len(suite['marathon_missions'])>=2,'mission coverage too small')
