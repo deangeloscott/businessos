@@ -9,12 +9,6 @@ reads:
 - Learning
 writes:
 - Insight
-workflows:
-  conditional:
-  - id: core.intelligence.ecosystem.evidence-triangulation
-    when: A material community claim benefits from explicit independence, contradiction, methodology, applicability, freshness, or uncertainty analysis.
-  - id: core.learning.workflow-evolution
-    when: Evidence supports a reusable organization-local process improvement and preserving procedural knowledge would materially improve future work.
 ---
 # Community Innovation Evidence Review
 
