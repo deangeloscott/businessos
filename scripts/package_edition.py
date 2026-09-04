@@ -36,6 +36,15 @@ def _prune_modules(dest,modules):
     sdir=dest/'systems'
     for p in list(sdir.iterdir()):
         if p.is_dir() and p.name not in modules:shutil.rmtree(p)
+    # Human Playbook pages are module-specific derived/navigation surfaces. Do not ship
+    # pages for modules that the component edition intentionally excludes, otherwise their
+    # links point at absent Workflow trees and make a correct partial distribution look broken.
+    docs=dest/'docs/playbooks'
+    if docs.exists():
+        for page in docs.glob('*.md'):
+            if page.stem not in modules:page.unlink()
+        examples=docs/'examples'
+        if examples.exists() and 'customer-intelligence' not in modules:shutil.rmtree(examples)
 def _copy_interface_schemas(dest):
     present_titles={}
     for sp in dest.rglob('*.schema.json'):
