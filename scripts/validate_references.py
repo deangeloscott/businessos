@@ -1,23 +1,25 @@
 #!/usr/bin/env python3
-"""Validate intra-organization canonical references from the canonical schema model."""
+"""Validate intra-organization canonical references from the canonical organization model."""
 from _common import *
+from canonical_store import INSTANCE_PATHS,schema_entry
 import argparse,json,re
 
 
 def canonical_reference_pattern():
-    """Build the reference grammar from canonical object ID schemas.
+    """Build the reference grammar from canonical organization-object ID schemas.
 
-    Retired object prefixes disappear when their schemas disappear; new canonical types
-    become reference-valid automatically. This avoids a second hand-maintained model.
+    Retired canonical prefixes disappear when their canonical types disappear; new canonical
+    types become reference-valid automatically. Runtime/config/package interface schemas do
+    not become canonical references merely because they also have ids.
     """
     prefixes=set()
-    for path in schemas():
-        try:data=json.loads(path.read_text())
+    for title in INSTANCE_PATHS:
+        try:_,data=schema_entry(title)
         except Exception:continue
         pattern=(((data.get('properties') or {}).get('id') or {}).get('pattern') or '')
         match=re.match(r'^\^([A-Za-z0-9]+)_',pattern)
         if match:prefixes.add(match.group(1))
-    if not prefixes:raise ValueError('No canonical ID prefixes could be derived from schemas')
+    if not prefixes:raise ValueError('No canonical ID prefixes could be derived from the canonical organization model')
     joined='|'.join(sorted((re.escape(prefix) for prefix in prefixes),key=len,reverse=True))
     return re.compile(rf'(?<![A-Za-z0-9_-])(?:{joined})_[A-Za-z0-9_-]+(?![A-Za-z0-9_-])')
 
@@ -36,8 +38,7 @@ def reference_errors(business_id):
         vals=data if isinstance(data,list) else [data]
         for item in vals:
             if isinstance(item,dict) and item.get('id'):index[item['id']]=file
-    errors=[]
-    pat=canonical_reference_pattern()
+    errors=[];pat=canonical_reference_pattern()
     for oid,file in index.items():
         try:data=json.loads(file.read_text())
         except Exception:continue
