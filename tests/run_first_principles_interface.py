@@ -38,6 +38,7 @@ def main():
             req(not errors,f'name-only canonical organization must validate: {errors}')
             req(counts.get('Business')==1,'name-only initialization lost canonical Business')
 
+            created_at=business['created_at']
             persist_explicit_context(
                 bid,
                 industries=['retail bakery'],
