@@ -12,8 +12,8 @@ def build_index(directory,exchange_id='local-aura-exchange',output=None):
         try:pkg=load_package(p);validate_package(pkg,require_export_approval=True)
         except Exception:continue
         if pkg['package_id'] in seen:continue
-        seen.add(pkg['package_id']);proc=pkg['process'];entries.append({'package_id':pkg['package_id'],'innovation_fingerprint':pkg['innovation_fingerprint'],'mode':proc['mode'],'workflow_id':proc['workflow_id'],'title':proc['title'],'purpose':proc['purpose'],'detail_level':pkg['detail_level'],'identity_level':pkg['identity_level'],'artifact_reference':p.name,'reported_evidence':pkg.get('evidence_summary')})
-    idx={'format_version':'1.1','exchange_id':exchange_id,'generated_at':now(),'entries':entries};validate_schema('InnovationExchangeIndex',idx);out=Path(output) if output else directory/'innovation-index.json';out.write_text(json.dumps(idx,indent=2)+'\n');return idx,out
+        seen.add(pkg['package_id']);proc=pkg['process'];entries.append({'package_id':pkg['package_id'],'innovation_fingerprint':pkg['innovation_fingerprint'],'workflow_id':proc['workflow_id'],'title':proc['title'],'purpose':proc['purpose'],'detail_level':pkg['detail_level'],'identity_level':pkg['identity_level'],'artifact_reference':p.name,'reported_evidence':pkg.get('evidence_summary')})
+    idx={'format_version':'1.2','exchange_id':exchange_id,'generated_at':now(),'entries':entries};validate_schema('InnovationExchangeIndex',idx);out=Path(output) if output else directory/'innovation-index.json';out.write_text(json.dumps(idx,indent=2)+'\n');return idx,out
 
 def main():
     ap=argparse.ArgumentParser(description='Build a portable searchable Innovation Exchange index from approved Workflow-knowledge packages.');ap.add_argument('directory');ap.add_argument('--exchange-id',default='local-aura-exchange');ap.add_argument('--output');a=ap.parse_args()
