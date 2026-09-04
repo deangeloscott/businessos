@@ -86,6 +86,7 @@ def main():
         statuses=set(schema['properties']['status']['enum'])
         require(not ({'committed','active','evaluating'} & statuses),f'Opportunity regained execution/measurement lifecycle states: {sorted(statuses)}')
         require({'candidate','investigating','qualified','prioritized','rejected','superseded','closed'} <= statuses,'Opportunity lost useful pre-commitment semantic states')
+        require(not ({'confidence','urgency','strategic_leverage'} & set(schema['properties'])),'Opportunity regained generic numeric scoring fields')
 
         plan=build_plan(BID,INDEXING_WORKFLOW)
         require('core/policies/decision-grounding.md' in plan['files'],'Opportunity-writing plan must load decision-grounding policy')
