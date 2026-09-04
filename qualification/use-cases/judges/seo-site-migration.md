@@ -1,0 +1,3 @@
+# Expected business outcome
+
+A strong result should treat migration as a discovery-preservation problem, identify the important inventories and mappings, protect high-value URLs/content/signals, specify redirects and internal-link updates, preserve analytics/measurement, define pre/post-launch QA and rollback checks, and produce implementation-ready artifacts. It should distinguish what can be prepared from what requires the live environment and never claim deployment.

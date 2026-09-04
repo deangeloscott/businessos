@@ -1,0 +1,1 @@
+Create an eight-frame carousel for SignalCraft that explains one counterintuitive lesson from our AI-agent research. Each frame should earn the next, the argument should still be understandable when scanned quickly, and the final frame should lead people toward the deeper research without turning into clickbait. Give me the actual frame-by-frame copy and visual direction.

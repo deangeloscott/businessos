@@ -1,0 +1,3 @@
+# Expected business outcome
+
+A strong result should use visual composition to reduce customer decision friction, with a clear information hierarchy and phone/print-friendly structure. It must stay within known product/customer facts and avoid invented flavor, origin, or brew claims. If rendered, the graphic should be legible and purposeful; if not, the source/specification should be sufficiently concrete for direct production and the limitation should be truthful.

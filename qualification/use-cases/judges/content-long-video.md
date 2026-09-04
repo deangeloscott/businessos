@@ -1,0 +1,3 @@
+# Expected business outcome
+
+A strong result should support sustained viewing with a coherent narrative, accurate current claims, useful demonstrations/examples, visual progression, and retention-aware pacing. Script length should plausibly fit the requested duration. The package must be materially closer to production than an outline. If rendering is unavailable, the candidate should provide complete production source and state the limitation truthfully.

@@ -1,0 +1,3 @@
+# Expected business outcome
+
+A strong result should structure the comparison around real buyer decision criteria, distinguish categories/substitutes clearly, use current evidence for material competitor claims, and acknowledge where another option may fit better. It should produce a finished persuasive comparison page that helps qualified buyers self-select without cherry-picking or invented superiority. Unknown competitor terms/capabilities must remain unknown.

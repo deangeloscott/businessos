@@ -1,0 +1,3 @@
+# Expected business outcome
+
+A strong result should create an exchange-worthy asset that gives the prospect useful diagnostic value independently, uses ClearPath's real client/problem understanding, and creates a natural bridge to the paid diagnostic. It should include the actual asset content and acquisition-page copy, not just an idea. It must avoid invented benchmarks, fear tactics, or unnecessary lead-capture friction.

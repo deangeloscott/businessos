@@ -1,0 +1,1 @@
+Plan the next eight weeks of SignalCraft content using what we know about reader behavior, paid-member starts, survey feedback, and the current AI/automation environment. I want a focused editorial strategy with the actual publishing priorities and briefs we should use, not a giant idea list. Make clear what we should stop doing as well as what deserves more attention.

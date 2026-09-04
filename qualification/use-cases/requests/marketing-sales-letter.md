@@ -1,0 +1,1 @@
+Write the long-form sales letter ClearPath could use for founder-led service firms that know operations are breaking but are skeptical of consultants and transformation programs. Use our actual client language, objections, and offer truth to build the argument for the $7,500 Operating Bottleneck Diagnostic. Make it persuasive without invented urgency, savings, or case results.

@@ -1,0 +1,3 @@
+# Expected business outcome
+
+A strong result should turn customer/competitive/business truth into a practical seller/buyer tool: strong discovery questions, supported proof, objection handling, comparison guidance, and next-step material. It should help reps answer real decision questions consistently without scripting deceptive claims. Unsupported capabilities, integrations, results, or competitor weaknesses must not appear.

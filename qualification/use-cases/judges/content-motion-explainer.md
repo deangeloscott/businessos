@@ -1,0 +1,3 @@
+# Expected business outcome
+
+A strong result should use motion/sequencing to make the distinction easier to understand rather than decorating a text explanation. The script, scenes, on-screen text, timing, and transitions should support a coherent 45-second learning arc, remain technically accurate, and fit SignalCraft's tone. If rendering is unavailable, the candidate must provide genuinely production-ready source and state that limitation truthfully.

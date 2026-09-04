@@ -1,0 +1,3 @@
+# Expected business outcome
+
+A strong result should create a sustained persuasion narrative tied to the real diagnostic offer, with a clear problem/mechanism progression, supported proof, objection handling, offer explanation, and measurable action. Spoken-word volume should plausibly fit 6–8 minutes. Visual beats should support the argument. If video rendering is unavailable, the source package must be production-ready and the candidate must not claim rendered media exists.

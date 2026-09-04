@@ -1,0 +1,3 @@
+# Expected business outcome
+
+A strong result should turn evidence into a scannable visual explanation with truthful comparisons, clear hierarchy, appropriate chart/visual forms, and source/uncertainty notes. It should not imply causality from simple performance differences or invent missing metrics. If rendered, the infographic should work visually; if not, the specification should be production-ready rather than a vague outline.

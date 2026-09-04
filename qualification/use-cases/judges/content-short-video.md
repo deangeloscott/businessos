@@ -1,0 +1,3 @@
+# Expected business outcome
+
+A strong result should communicate one useful idea quickly through a strong but non-misleading hook, concise spoken structure, visual pacing, proof/example, and platform-appropriate close. The script should fit roughly 60 seconds and remain evidence-grounded. If rendering is unavailable, the package should still be production-ready and no rendered-media claim should be made.

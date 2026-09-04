@@ -1,0 +1,3 @@
+# Expected business outcome
+
+A strong result should provide genuine editorial value while remaining transparently commercial. It should use Northline's real product/customer evidence, avoid fake publication framing, invented reviews, health/sourcing claims, or manipulative disclosure, and lead naturally to the Discovery Box. The finished piece should be persuasive enough to publish after normal compliance/editorial review.

@@ -1,0 +1,3 @@
+# Expected business outcome
+
+A strong result should use real audience/performance evidence to choose a small number of editorial priorities, connect them to free-reader, paid-member, and trust goals, and produce an actionable eight-week plan/brief set. It should explicitly deprioritize low-value patterns, avoid chasing current news without relevance, and preserve room for new evidence. The strategy should make downstream content production easier rather than adding planning ceremony.

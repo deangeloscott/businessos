@@ -1,0 +1,1 @@
+Create a 60-second SignalCraft short video around one useful myth about AI agents that our audience would care about. Give me the full hook, spoken script, visual beats, on-screen text, proof/example, and close. It should work natively as a short video, not as a newsletter excerpt. Render it if the environment supports that; otherwise leave production-ready source.

@@ -1,0 +1,3 @@
+# Expected business outcome
+
+A strong result should demonstrate a concrete mechanism/use case rather than describe product benefits abstractly. The flow should make the before/problem, AtlasOps interaction, and resulting operational understanding visible while staying inside known capabilities. Unsupported integrations, automated outcomes, or UI functionality must not be invented. The asset/source should be useful for a real demo or sales context.

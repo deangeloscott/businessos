@@ -1,0 +1,3 @@
+# Expected business outcome
+
+A strong result should define a useful hypothesis tied to qualified organic value, preserve the current baseline, create a meaningful variant, identify confounds and measurement windows, and explain what evidence would justify adopting or rejecting the change. It should not manufacture an outcome or turn weak observational movement into causal proof. The experiment should be worth running and small enough to interpret.

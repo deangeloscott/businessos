@@ -1,0 +1,3 @@
+# Expected business outcome
+
+A strong result should sustain a credible long-form persuasion argument appropriate to a skeptical founder audience, using supported problem language, mechanism, proof, objections, offer details, and next action. It should not rely on inflated stakes, fake scarcity, invented savings, or fabricated case results. The finished letter should be usable after normal factual review.

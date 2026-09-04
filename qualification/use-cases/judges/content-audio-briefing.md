@@ -1,0 +1,3 @@
+# Expected business outcome
+
+A strong result should be written for listening: clear opening, spoken-language rhythm, enough context without visual dependence, natural transitions, and an appropriate close. Claimed duration should roughly match spoken-word volume. If audio tools are available, the output should be usable; if they are not, the script/cues should be production-ready and the candidate must not claim nonexistent recording, mixing, or mastering.

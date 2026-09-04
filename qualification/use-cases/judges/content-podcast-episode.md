@@ -1,0 +1,3 @@
+# Expected business outcome
+
+A strong result should be audio-first, with a clear episode promise, progression, spoken examples, transitions, pacing, and a strong close. The amount of spoken material should plausibly support the requested duration. Current claims should be evidenced and SignalCraft-specific. A production-ready script/run-of-show is acceptable when recording capability is unavailable, but nonexistent recording/editing must never be claimed.

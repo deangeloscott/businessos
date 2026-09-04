@@ -1,0 +1,3 @@
+# Expected business outcome
+
+A strong result should create a genuinely diagnostic experience rather than a disguised contact form. Questions and scoring should map sensibly to supported operating patterns, results should provide useful feedback, and next steps should be relevant rather than universally sales-driven. The logic should be implementable and must not pretend to produce clinical/scientific certainty or invented benchmarks.

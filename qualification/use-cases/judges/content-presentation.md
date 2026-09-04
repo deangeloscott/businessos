@@ -1,0 +1,3 @@
+# Expected business outcome
+
+A strong result should create a coherent audience journey across slides, with each slide earning its place and supporting a live/asynchronous explanation rather than turning prose into bullets. Client evidence and offer truth should be used honestly. If rendering is available, the deck should be usable; otherwise slide content/layout/source should be production-ready and the candidate must not claim a rendered deck exists.
