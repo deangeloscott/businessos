@@ -72,7 +72,7 @@ def _validate_distribution_product_local():
                 if redundant in plan.get('files',[]):errors.append(f'context plan front-loaded redundant universal instruction: {redundant}')
             root_context=(ROOT/'CONTEXT.md').read_text()
             for phrase in [
-                'Installed AURA modules are bodies of operating knowledge, not limits on what the host may do.',
+                'AURA operating areas are bodies of operating knowledge, not limits on what the host may do.',
                 'The model/user decides semantic applicability.',
                 'AURA does not define a tool allowlist or universal capability vocabulary.',
             ]:
