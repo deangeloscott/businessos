@@ -6,9 +6,9 @@ reads:
 - SourceRecord
 - Observation
 - type: Insight
-  owner_system: industry-intelligence
+  domain: industry-intelligence
 - type: Learning
-  owner_system: seo-aeo
+  domain: seo-aeo
 writes:
 - Observation
 - Insight
