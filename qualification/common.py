@@ -11,6 +11,7 @@ SECTION_RE=re.compile(r'^##\s+(.+?)\s*$',re.M)
 PRODUCT_SNAPSHOT_IGNORED_DIRS={'.git','__pycache__','.pytest_cache','.venv','venv'}
 PRODUCT_SNAPSHOT_IGNORED_FILES={'.DS_Store'}
 PRODUCT_SNAPSHOT_IGNORED_SUFFIXES={'.pyc','.pyo'}
+SNAPSHOT_DIFF_IGNORED_PREFIXES=('generated/',)
 
 def now():return datetime.datetime.now(datetime.timezone.utc).isoformat()
 def read_json(path,default=None):
@@ -84,7 +85,10 @@ def product_snapshot(root):
         except OSError:files.append({'path':rel.as_posix(),'error':'unreadable'})
     return {'format_version':'1.0','root':str(root),'files':files,'digest':hashlib.sha256(json.dumps(files,sort_keys=True).encode()).hexdigest(),'file_count':len(files)}
 def snapshot_diff(before,after):
-    b={x['path']:x.get('sha256') for x in before.get('files',[])};a={x['path']:x.get('sha256') for x in after.get('files',[])};return {'created':sorted(set(a)-set(b)),'deleted':sorted(set(b)-set(a)),'modified':sorted(k for k in set(a)&set(b) if a[k]!=b[k])}
+    def visible(path):
+        p=str(path).replace('\\','/')
+        return not any(p.startswith(prefix) for prefix in SNAPSHOT_DIFF_IGNORED_PREFIXES)
+    b={x['path']:x.get('sha256') for x in before.get('files',[]) if visible(x['path'])};a={x['path']:x.get('sha256') for x in after.get('files',[]) if visible(x['path'])};return {'created':sorted(set(a)-set(b)),'deleted':sorted(set(b)-set(a)),'modified':sorted(k for k in set(a)&set(b) if a[k]!=b[k])}
 def workspace_from_env():
     raw=os.environ.get('BUSINESSOS_WORKSPACE')
     if not raw:raise SystemExit('BUSINESSOS_WORKSPACE must point to the qualification workspace')
