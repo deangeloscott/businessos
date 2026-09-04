@@ -34,4 +34,4 @@ Run whenever monitoring retrieves a potentially relevant external development.
 4. [HYBRID] Require adequate source support before creating a material Event; keep unverified early signals scoped.
 5. [DETERMINISTIC] Link the Observation to the matching Event or create a new Event with first-observed timestamp and source refs.
 6. [AI] Classify event type, affected markets/entities, current status, and what remains unknown.
-7. [DETERMINISTIC] Trigger verification/materiality only when the event contains genuinely new information.
+7. [AI] Use the verification or materiality Workflows when genuinely new information makes either useful; do not treat Event detection as a runtime trigger.
