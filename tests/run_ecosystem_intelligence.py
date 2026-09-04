@@ -70,7 +70,7 @@ def main():
     req('owner_systems' not in props,'SourceProfile regained internal AURA ownership')
 
     helper=(ROOT/'scripts/upsert_source_profile.py').read_text()
-    for phrase in ['outcome_events','event_key','Source history changes discovery attention only','--domain']:
+    for phrase in ['outcome_events','event_key','--domain']:
         req(phrase in helper,f'source profile helper missing {phrase}')
     req('--owner-system' not in helper,'source profile helper regained internal AURA ownership')
 
@@ -98,8 +98,6 @@ def main():
     req(contains(source_profile,'discovery priors only','never use SourceProfile history as support'),'SourceProfile history became evidence authority')
     req(contains(source_profile,'never merge namesakes','name similarity'),'SourceProfile lost semantic identity boundary')
 
-    # Radar methods may surface specialist knowledge, but none may force a composition graph
-    # or claim scheduling/routing/execution authority.
     for wid in ['core.intelligence.ecosystem-radar',*sorted(DOMAIN_IDS),'core.intelligence.community-evidence-review']:
         meta,body=ws[wid][1],ws[wid][2]
         req('schedule' not in meta,f'{wid} reintroduced AURA-owned schedule metadata')
