@@ -263,5 +263,11 @@ def object_matches(obj,selector):
         if obj.get(k)!=v: return False
     return True
 def refs_in_object(obj):
-    pat=re.compile(r'\b(?:src|sprof|obs|ins|prf|opp|ini|wrk|chg|ver|ast|mdef|mobs|exp|eval|lrn|inc|att|plc|cup|cmp|plt|jrn|iev|ocs|odm|sas|aud|brd|biz|eco|mkt|obj|off|prd|clm)_[A-Za-z0-9_-]+\b')
+    """Return reference-shaped strings; callers decide whether they resolve canonically.
+
+    Do not maintain a second list of object-ID prefixes here. Canonical object namespaces
+    evolve with their schemas, while the consumers of this helper already intersect these
+    candidates with an actual organization object index before treating them as references.
+    """
+    pat=re.compile(r'(?<![A-Za-z0-9_-])[A-Za-z][A-Za-z0-9]*_[A-Za-z0-9_-]+(?![A-Za-z0-9_-])')
     return set(pat.findall(json.dumps(obj)))
