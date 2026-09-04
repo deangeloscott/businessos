@@ -1,6 +1,6 @@
 ---
 id: seo.incidents.manual-action-or-policy
-type: incident
+type: workflow
 owner_system: seo-aeo
 reads:
 - SEOAssetState
