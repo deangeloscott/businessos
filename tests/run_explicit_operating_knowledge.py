@@ -24,18 +24,17 @@ def main():
             saved=remember(bid,{'objects':[{'key':'sop_source','object_type':'Asset','content':{'asset_type':'organization_sop','business_role':'source operating procedure','location_reference':'attachments/client-kickoff.md','version':'1','status':'active'}}]});source_ref=saved['objects'][0]['id']
 
             spec={
-                'mode':'local_workflow','workflow_id':'custom.client-kickoff',
+                'workflow_id':'custom.client-kickoff',
                 'title':'Client Kickoff','purpose':'Use the organization\'s established client kickoff procedure.',
                 'discovery_terms':['client kickoff','kickoff new client'],'source_refs':[source_ref],
                 'instructions':['Confirm the client goal and required access.','Produce a written kickoff summary that records material decisions and unresolved items.'],
                 'verification':['The kickoff summary reflects the supplied goal, access state, material decisions, and unresolved items.']
             }
             extension,path=persist_extension(bid,spec)
-            req(extension['mode']=='local_workflow','explicit SOP was not represented as a local Workflow')
             req(extension['workflow_id']=='custom.client-kickoff','explicit local Workflow lost its single canonical Workflow relationship')
+            req('mode' not in extension and 'source_kind' not in extension,'ProcessExtension recreated redundant relationship/provenance classification')
             req('local_workflow_id' not in extension and 'target_workflow_id' not in extension,'ProcessExtension recreated retired dual Workflow identifiers')
             req('owner_system' not in extension,'organization-local Workflow regained product-system ownership')
-            req(extension['source_kind']=='organization_authored','explicit SOP was not marked organization-authored')
             req(extension['source_learning_refs']==[],'explicit SOP fabricated Learning provenance')
             req(extension['source_refs']==[source_ref],'explicit SOP lost its real source provenance')
             req(extension.get('discovery_terms')==['client kickoff','kickoff new client'],'explicit SOP lost its retrieval cues')
@@ -52,7 +51,7 @@ def main():
             req(meta.get('local_workflow') is True and meta.get('type')=='workflow' and 'Confirm the client goal' in content,'explicit model-selected local Workflow did not resolve as operating knowledge')
 
             errors,_,_=validate_business(bid,True);req(not errors,f'explicit operating knowledge must validate: {errors}')
-            print('explicit operating knowledge regression passed: organization SOPs become local Workflows with one workflow_id, no product-system owner, no routing/capability ontology, and no fake Learning')
+            print('explicit operating knowledge regression passed: organization SOPs become custom.* local Workflows with direct provenance, no redundant mode/source labels, no product-system owner, no routing/capability ontology, and no fake Learning')
         finally:
             if old is None:os.environ.pop('BUSINESSOS_WORKSPACE',None)
             else:os.environ['BUSINESSOS_WORKSPACE']=old
