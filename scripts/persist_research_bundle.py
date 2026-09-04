@@ -125,7 +125,7 @@ def persist(bid,bundle):
         links += item.get('evidence_links',[]);status=item.get('status') or 'candidate'
         if status in {'supported','active'} and not links:raise ValueError(f'insight {n} status={status} requires supporting observations/evidence')
         iid=item.get('id') or _id('ins',f'{bid}:{seed}:{item.get("statement")}');ext=dict(item.get('extensions',{}));ext.update({k:v for k,v in _method_extensions(workflow_id,method_type,method_ref).items() if k not in ext})
-        ins=_base('Insight',iid,bid,ts);ins.update({'domain':item.get('domain') or domain,'insight_type':item.get('insight_type') or 'research_insight','statement':item.get('statement'),'subject_refs':item.get('subject_refs',[]),'evidence_links':links,'confidence':item.get('confidence',0.5),'scope':item.get('scope',{}),'status':status,'reviewed_at':item.get('reviewed_at'),'extensions':ext});_validate('Insight',ins);ins_objs.append(ins)
+        ins=_base('Insight',iid,bid,ts);ins.update({'domain':item.get('domain') or domain,'insight_type':item.get('insight_type') or 'research_insight','statement':item.get('statement'),'subject_refs':item.get('subject_refs',[]),'evidence_links':links,'scope':item.get('scope',{}),'status':status,'reviewed_at':item.get('reviewed_at'),'extensions':ext});_validate('Insight',ins);ins_objs.append(ins)
     ins_ids=[i['id'] for i in ins_objs]
 
     cmp_objs=[]
@@ -133,9 +133,9 @@ def persist(bid,bundle):
         name=str(item.get('name') or '').strip()
         if not name:raise ValueError(f'competitor {n} requires name')
         obsrefs=[obs_ids[i] for i in item.get('observation_indexes',[]) if isinstance(i,int) and 0<=i<len(obs_ids)];insrefs=[ins_ids[i] for i in item.get('insight_indexes',[]) if isinstance(i,int) and 0<=i<len(ins_ids)];cid=item.get('id') or _id('cmp',f'{bid}:{name.lower()}')
-        if any(item.get(k) for k in ['positioning_summary','strategic_summary','strengths','weaknesses']) and not (obsrefs or insrefs):raise ValueError(f'competitor {n} interpretation/strengths/weaknesses require observation_indexes or insight_indexes; preserve evidence before strategic interpretation')
+        if item.get('positioning_summary') and not (obsrefs or insrefs):raise ValueError(f'competitor {n} positioning_summary requires observation_indexes or insight_indexes; preserve evidence before summarizing current positioning')
         ext=dict(item.get('extensions',{}));ext.update({k:v for k,v in _method_extensions(workflow_id,method_type,method_ref).items() if k not in ext})
-        c=_base('Competitor',cid,bid,ts);c.update({'name':name,'identities':{'official_domains':item.get('official_domains',[]),'aliases':item.get('aliases',[]),'profiles':item.get('profiles',[])},'competitor_type':item.get('competitor_type') or 'observed competitor','markets':item.get('markets',[]),'audiences':item.get('audiences',[]),'categories':item.get('categories',[]),'products_services':item.get('products_services',[]),'known_offers':item.get('known_offers',[]),'known_pricing':item.get('known_pricing',[]),'positioning_summary':item.get('positioning_summary'),'strategic_summary':item.get('strategic_summary'),'strengths':item.get('strengths',[]),'weaknesses':item.get('weaknesses',[]),'active_insight_refs':insrefs,'observation_refs':obsrefs,'last_reviewed':item.get('last_reviewed') or ts,'confidence':item.get('confidence',0.5),'extensions':ext});_validate('Competitor',c);cmp_objs.append(c)
+        c=_base('Competitor',cid,bid,ts);c.update({'name':name,'identities':{'official_domains':item.get('official_domains',[]),'aliases':item.get('aliases',[]),'profiles':item.get('profiles',[])},'competitor_type':item.get('competitor_type') or 'observed competitor','markets':item.get('markets',[]),'audiences':item.get('audiences',[]),'categories':item.get('categories',[]),'products_services':item.get('products_services',[]),'known_offers':item.get('known_offers',[]),'known_pricing':item.get('known_pricing',[]),'positioning_summary':item.get('positioning_summary'),'active_insight_refs':insrefs,'observation_refs':obsrefs,'last_reviewed':item.get('last_reviewed') or ts,'extensions':ext});_validate('Competitor',c);cmp_objs.append(c)
 
     all_objs=asset_objs+src_objs+obs_objs+ins_objs+cmp_objs;public_sources={s['id']:s for s in src_objs};observation_map={o['id']:o for o in obs_objs};insight_map={i['id']:i for i in ins_objs}
     for o in obs_objs:
@@ -174,7 +174,7 @@ def main():
   "domain": "competitor-intelligence",
   "sources": [{"source_type":"review_platform","source_reference":"https://...","subject_refs":["cmp_..."],"acquisition_method":"direct_page_read","captured_text":"Exact review text...","rating":1}],
   "observations": [{"statement":"Reviewer reported surprise charges.","subject_refs":["cmp_..."],"source_indexes":[0],"observation_type":"customer_complaint"}],
-  "insights": [{"statement":"Unexpected charges are a recurring concern in the sampled evidence.","subject_refs":["cmp_..."],"observation_indexes":[0],"status":"supported","confidence":0.7}]
+  "insights": [{"statement":"Unexpected charges are a recurring concern in the sampled evidence.","subject_refs":["cmp_..."],"observation_indexes":[0],"status":"supported"}]
 }
 
 `workflow_id` is optional and should be supplied only when an AURA Workflow materially framed the research. `domain` is optional semantic classification for durable Insights, not an owner, router, or permission boundary. External Skills, model-created methods, and ad-hoc research may instead use method_type/method_ref or omit method provenance when it is not materially useful.
