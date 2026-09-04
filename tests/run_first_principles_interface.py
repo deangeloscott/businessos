@@ -38,7 +38,6 @@ def main():
             req(not errors,f'name-only canonical organization must validate: {errors}')
             req(counts.get('Business')==1,'name-only initialization lost canonical Business')
 
-            created_at=business['created_at']
             persist_explicit_context(
                 bid,
                 industries=['retail bakery'],
@@ -68,6 +67,12 @@ def main():
             objective=json.loads(objective_path.read_text())
             req(objective['name']=='Improve wholesale packaging and fulfillment' and objective['priority']==1,'direct current-truth correction was not preserved')
 
+            # Noncanonical support/interface files may live under an organization but must
+            # not enter the canonical object index merely because they have id/business_id.
+            support_path=base/'support/example/support_entry.json';support_path.parent.mkdir(parents=True,exist_ok=True)
+            support_path.write_text(json.dumps({'id':'support_probe','business_id':bid,'title':'Support-only entry'},indent=2)+'\n')
+            req('support_probe' not in object_index(bid),'noncanonical support entry leaked into canonical organization memory')
+
             # Forget is deletion, not a hidden lifecycle. It works only when canonical
             # state no longer depends on the object and does not manufacture history.
             forgotten=forget(bid,objective_ref)
@@ -84,7 +89,7 @@ def main():
             req({row['id'] for row in resolved.get('available_businesses',[])}=={bid,second},'ambiguous resolution did not expose organization directory')
             req(not (workspace/'runtime/runs').exists(),'organization entry/memory created Run state')
 
-            print('first-principles AURA interface regressions passed: lightweight entry, direct memory correction, forgetting, and organization isolation')
+            print('first-principles AURA interface regressions passed: lightweight entry, direct memory correction, support isolation, forgetting, and organization isolation')
         finally:
             if old is None:os.environ.pop('BUSINESSOS_WORKSPACE',None)
             else:os.environ['BUSINESSOS_WORKSPACE']=old
