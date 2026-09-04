@@ -235,6 +235,7 @@ def normalize_selector(sel):
     if isinstance(sel,dict): return sel
     return {'type':sel}
 def iter_instance_objects(business_id):
+    """Iterate canonical-style organization objects, excluding noncanonical support files."""
     base=instance_dir(business_id)
     if not base.exists(): return []
     out=[]
@@ -243,14 +244,14 @@ def iter_instance_objects(business_id):
         except Exception: continue
         vals=data if isinstance(data,list) else [data]
         for obj in vals:
-            if isinstance(obj,dict) and obj.get('id') and obj.get('business_id')==business_id:
+            if isinstance(obj,dict) and obj.get('id') and obj.get('object_type') and obj.get('business_id')==business_id:
                 out.append((obj,p))
     for p in base.rglob('*.jsonl'):
         try:
             for line in p.read_text().splitlines():
                 if not line.strip(): continue
                 obj=json.loads(line)
-                if isinstance(obj,dict) and obj.get('id') and obj.get('business_id')==business_id: out.append((obj,p))
+                if isinstance(obj,dict) and obj.get('id') and obj.get('object_type') and obj.get('business_id')==business_id: out.append((obj,p))
         except Exception: continue
     return out
 def object_index(business_id):
