@@ -91,23 +91,6 @@
       "type": "string",
       "minLength": 1
     },
-    "relevance": {
-      "type": "number"
-    },
-    "urgency": {
-      "type": "number"
-    },
-    "confidence": {
-      "type": "number"
-    },
-    "affected_domain_candidates": {
-      "type": "array",
-      "items": {
-        "type": "string",
-        "minLength": 1
-      },
-      "uniqueItems": true
-    },
     "extensions": {
       "type": "object"
     }
@@ -122,7 +105,6 @@
     "status",
     "first_observed",
     "latest_update",
-    "summary",
-    "confidence"
+    "summary"
   ]
 }
