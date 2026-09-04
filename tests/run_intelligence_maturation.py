@@ -48,7 +48,7 @@ def main():
     helper=(ROOT/'scripts/upsert_source_profile.py').read_text()
     for flag in ['--subject-key','--subject-name','--subject-kind','--subject-relationship','--source-modality','--monitoring-question','--material-change-signal','--cadence-mode','--cadence-expression','--cadence-source','--signal-cadence-json','--notification-mode']:
         if flag not in helper:fail(f'SourceProfile helper missing {flag}')
-    if 'Source history changes discovery attention only' not in helper:fail('existing SourceProfile discovery-only invariant was lost')
+    if '--owner-system' in helper:fail('SourceProfile helper regained internal AURA ownership')
 
     _,subject_meta,subject_body=workflow('core.intelligence.subject-monitoring')
     if subject_meta.get('type')!='workflow':fail('subject monitoring must be represented as a Workflow')
