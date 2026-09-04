@@ -20,6 +20,8 @@ def _scope_applies(extension,team_ref=None,role_ref=None,operator_ref=None):
     return False
 
 
+def _is_local(extension):return str(extension.get('workflow_id') or '').startswith('custom.')
+
 def all_extensions(business_id):return [obj for obj,_ in iter_instance_objects(business_id) if obj.get('object_type')=='ProcessExtension']
 
 def active_extensions(business_id,team_ref=None,role_ref=None,operator_ref=None):
@@ -28,7 +30,6 @@ def active_extensions(business_id,team_ref=None,role_ref=None,operator_ref=None)
         if extension.get('status')!='active' or not _scope_applies(extension,team_ref,role_ref,operator_ref):continue
         out.append(extension)
     return sorted(out,key=lambda extension:(SCOPE_ORDER.get(extension.get('scope'),99),extension.get('id','')))
-
 def get_extension(business_id,extension_id):
     for extension in all_extensions(business_id):
         if extension.get('id')==extension_id:return extension
@@ -48,7 +49,7 @@ def _canonical_workflow(workflow_id):
 
 
 def local_workflows(business_id,team_ref=None,role_ref=None,operator_ref=None):
-    return [extension for extension in active_extensions(business_id,team_ref,role_ref,operator_ref) if extension.get('mode')=='local_workflow']
+    return [extension for extension in active_extensions(business_id,team_ref,role_ref,operator_ref) if _is_local(extension)]
 
 
 def local_workflow_candidates(task,business_id,team_ref=None,role_ref=None,operator_ref=None,top=6):
@@ -88,6 +89,6 @@ def resolve_effective(workflow_id,business_id,team_ref=None,role_ref=None,operat
         return None,meta,'\n'.join(body),[local]
     canonical=_canonical_workflow(workflow_id)
     if not canonical:raise ValueError(f'Unknown Workflow id for {business_id}: {workflow_id}')
-    path,meta,_=canonical;extensions=[extension for extension in active_extensions(business_id,team_ref,role_ref,operator_ref) if extension.get('mode')=='augment_workflow' and extension.get('workflow_id')==workflow_id];effective_meta=_merge_metadata(meta,extensions);content=path.read_text()
+    path,meta,_=canonical;extensions=[extension for extension in active_extensions(business_id,team_ref,role_ref,operator_ref) if not _is_local(extension) and extension.get('workflow_id')==workflow_id];effective_meta=_merge_metadata(meta,extensions);content=path.read_text()
     if extensions:content+='\n\n## Active Organization Workflow Extensions\n\nThese organization-scoped extensions add relevant operating knowledge to this AURA Workflow. They do not create runtime authority or prevent the active intelligence from choosing another valid method. If applicable extensions conflict semantically, the model/user resolves that conflict from actual organization context.\n\n'+'\n'.join(_extension_markdown(extension) for extension in extensions)
     return path,effective_meta,content,extensions
