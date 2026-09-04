@@ -66,6 +66,9 @@ def main():
     for retired_name in ('required_capabilities','optional_capabilities','target_contract_id','local_contract_id','target_workflow_id','local_workflow_id','owner_system','reads','writes','compatibility','proposal_ref','approval'):
         req(retired_name not in text,f'ProcessExtension retained retired control/contract field {retired_name}')
 
+    outcome_schema=json.loads((ROOT/'core/schemas/measurement/outcome-evaluation.schema.json').read_text())
+    req('causal_confidence' not in outcome_schema.get('properties',{}),'OutcomeEvaluation regained forced numeric causal confidence')
+
     prior=os.environ.get('BUSINESSOS_WORKSPACE');tmp=Path(tempfile.mkdtemp(prefix='aura-workflow-learning-'));os.environ['BUSINESSOS_WORKSPACE']=str(tmp)
     try:
         init_business(A,'Workflow Learning A');init_business(B,'Workflow Learning B');seed_learning(A)
@@ -135,7 +138,7 @@ def main():
         req(not any(obj.get('object_type')=='Insight' for obj,_ in iter_instance_objects(B)),'package import manufactured semantic Insight')
 
         # Imported support may later gain local evidence without turning popularity into truth.
-        evaluation={'id':'eval_exchange_test','object_type':'OutcomeEvaluation','schema_version':'1.0.0','business_id':B,'target_refs':[],'attribution_method':'controlled_test','causal_confidence':0.8,'conclusion':'The imported Workflow was supported in this bounded local test.','extensions':{}}
+        evaluation={'id':'eval_exchange_test','object_type':'OutcomeEvaluation','schema_version':'1.0.0','business_id':B,'target_refs':[],'attribution_method':'controlled_test','conclusion':'The imported Workflow was supported in this bounded local test.','extensions':{}}
         ep=ROOT/'instances'/B/'measurement'/'outcome-evaluations'/'eval_exchange_test.json';ep.parent.mkdir(parents=True,exist_ok=True);ep.write_text(json.dumps(evaluation,indent=2)+'\n')
         record_outcome(B,entry['id'],'supported','eval_exchange_test');again=record_outcome(B,entry['id'],'supported','eval_exchange_test')
         req(again['local_evidence']['supported_count']==1,'duplicate local outcome was not idempotent')
@@ -145,7 +148,7 @@ def main():
         req(workflow_path and workflow_meta.get('type')=='workflow','Workflow learning procedure is not authored as reusable knowledge')
         exchange_path,exchange_meta=workflow_by_id('core.intelligence.innovation-exchange')
         req(exchange_path and exchange_meta.get('type')=='workflow','Innovation Exchange procedure is not authored as reusable knowledge')
-        print('organization-local Workflow learning + Innovation Exchange regressions passed without proposal, capability, version, or runtime authority')
+        print('organization-local Workflow learning + Innovation Exchange regressions passed without proposal, capability, version, runtime authority')
     finally:
         if prior is None:os.environ.pop('BUSINESSOS_WORKSPACE',None)
         else:os.environ['BUSINESSOS_WORKSPACE']=prior
