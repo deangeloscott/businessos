@@ -29,8 +29,8 @@ def upsert(business_id,name,scope,subject_ref,preferences,profile_id=None,priori
     if not profile_id:
         raw=f'{business_id}-{scope}-{subject_ref}-{name}'
         sid=slug(raw)[:72].rstrip('-_') or 'preference'
-        profile_id='prf_'+sid
-    if not re.fullmatch(r'prf_[A-Za-z0-9_-]+',profile_id): raise ValueError('profile_id must match prf_[A-Za-z0-9_-]+')
+        profile_id='pref_'+sid
+    if not re.fullmatch(r'pref_[A-Za-z0-9_-]+',profile_id): raise ValueError('profile_id must match pref_[A-Za-z0-9_-]+')
     d=base/'context/preferences';d.mkdir(parents=True,exist_ok=True);path=d/(profile_id+'.json')
     ts=now();created=ts;lineage=[]
     if path.exists():
