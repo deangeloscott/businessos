@@ -84,7 +84,9 @@ def _facts_from_mapping(raw):
 
 def _normalize_brand(brand):
     if brand is None:return None
-    allowed={'name','voice','positioning','visual_identity','content_style','channel_preferences','reference_assets','prohibited_styles','brand_rules','approved_claims','claims_to_avoid'}
+    claim_fields=sorted({'approved_claims','claims_to_avoid'}&set(brand))
+    if claim_fields:raise ValueError('Brand profile claim field(s) '+', '.join(claim_fields)+' belong in BusinessClaim. Supply approved_claims or claim_constraints at the top level so AURA preserves one canonical owner for reusable claim truth.')
+    allowed={'name','voice','positioning','visual_identity','content_style','channel_preferences','reference_assets','prohibited_styles','brand_rules'}
     unknown=sorted(set(brand)-allowed)
     if unknown:raise ValueError('Unknown brand key(s): '+', '.join(unknown)+'. Allowed keys: '+', '.join(sorted(allowed)))
     return {k:v for k,v in brand.items() if v not in (None,[],{})}
@@ -238,7 +240,7 @@ def build_objects(business_id,industries=None,business_models=None,markets=None,
     biz['extensions']=ext;objs.append(biz)
     if brand:
         b={'id':f'brd_{business_id}','object_type':'Brand','schema_version':'1.0.0','business_id':business_id,'created_at':ts,'updated_at':ts,'lineage':[srcid],'name':brand.get('name') or name}
-        for key in ['voice','positioning','visual_identity','content_style','channel_preferences','reference_assets','prohibited_styles','brand_rules','approved_claims','claims_to_avoid']:
+        for key in ['voice','positioning','visual_identity','content_style','channel_preferences','reference_assets','prohibited_styles','brand_rules']:
             if key in brand:b[key]=brand[key]
         b['extensions']={'businessos':{'fact_status':'known','authority':'explicit_user','source_ref':srcid,'grounding_method':GROUNDING_METHOD,'grounding_version':GROUNDING_VERSION,'explicit_brand_profile':True}}
         objs.append(b)
@@ -247,7 +249,7 @@ def build_objects(business_id,industries=None,business_models=None,markets=None,
     for service in services:
         sid=slug(service) or 'service';objs.append({'id':f'prd_{business_id}_{sid}','object_type':'ProductService','schema_version':'1.0.0','business_id':business_id,'created_at':ts,'updated_at':ts,'lineage':[srcid],'name':service,'kind':'service','description':service,'extensions':_meta(srcid)})
     for i,objective in enumerate(objectives,1):
-        sid=slug(objective) or f'objective-{i}';objs.append({'id':f'obj_{business_id}_{sid}','object_type':'Objective','schema_version':'1.0.0','business_id':business_id,'created_at':ts,'updated_at':ts,'lineage':[srcid],'name':objective,'priority':i,'extensions':_meta(srcid)})
+        sid=slug(objective) or f'objective-{i}';objs.append({'id':f'obj_{business_id}_{sid}','object_type':'Objective','schema_version':'1.0.0','business_id':business_id,'created_at':ts,'updated_at':ts,'lineage':[srcid],'name':objective,'extensions':_meta(srcid)})
     for i,statement in enumerate(approved_claims,1):
         sid=slug(statement)[:48].rstrip('-_') or f'approved-{i}'
         objs.append({'id':f'clm_{business_id}_{sid}','object_type':'BusinessClaim','schema_version':'1.0.0','business_id':business_id,'created_at':ts,'updated_at':ts,'lineage':[srcid],'statement':statement,'claim_kind':'approved_business_claim','status':'approved','authority':'explicit_user','source_ref':srcid,'support_quote':statement,'extensions':_meta(srcid)})
@@ -319,7 +321,7 @@ def main():
 Example facts JSON:
 '''+json.dumps(EXAMPLE_FACTS,indent=2)+'''
 
-Repeat --source-file for multi-source onboarding; AURA preserves each member reference/hash. Explicit organization-level brand/voice/style instructions belong in Brand state. Reusable work/output preferences belong in PreferenceProfile state. Current task/action boundaries remain part of the user's request and real harness/account/legal constraints; do not turn them into AURA approval machinery or reusable preferences unless the organization explicitly intends them to persist.'''
+Repeat --source-file for multi-source onboarding; AURA preserves each member reference/hash. Explicit organization-level brand/voice/style instructions belong in Brand state; reusable claims, promises, claim constraints, and prohibitions belong in BusinessClaim. Reusable work/output preferences belong in PreferenceProfile state. Current task/action boundaries remain part of the user's request and real harness/account/legal constraints; do not turn them into AURA approval machinery or reusable preferences unless the organization explicitly intends them to persist.'''
     ap=argparse.ArgumentParser(description='Persist explicit user/first-party organization context with exact source provenance. The model supplies semantic interpretation; AURA validates structure and literal outward claims.',formatter_class=argparse.RawDescriptionHelpFormatter,epilog=epilog)
     ap.add_argument('business_id',nargs='?');ap.add_argument('--business-id',dest='business_id_alias')
     ap.add_argument('--facts-json');ap.add_argument('--facts-file');ap.add_argument('--facts-stdin',action='store_true')
