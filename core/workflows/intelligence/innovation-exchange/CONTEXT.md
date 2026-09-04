@@ -10,14 +10,6 @@ reads:
 writes:
 - SourceRecord
 - Learning
-workflows:
-  required:
-  - id: core.intelligence.ecosystem.evidence-triangulation
-  conditional:
-  - id: core.intelligence.community-evidence-review
-    when: imported/community evidence is decision-relevant
-  - id: core.learning.workflow-evolution
-    when: evidence supports a reusable organization-local process improvement
 ---
 # AURA Innovation Exchange
 
@@ -36,10 +28,10 @@ Use when a user wants to share a local improvement, import a contributed `Innova
 3. [DETERMINISTIC] Build a bounded local draft with `scripts/prepare_innovation_package.py`; never copy canonical organization state wholesale.
 4. [HUMAN] Export/share only through `scripts/export_innovation_package.py ... --approve` or an equivalent explicit current-task user instruction. No background upload or automatic submission is allowed.
 5. [DETERMINISTIC] Validate imported JSON/ZIP packages with `scripts/validate_innovation_package.py`, then use `scripts/import_innovation_package.py`. Import may maintain local package/index/exchange support files and creates a canonical `SourceRecord` pointing to the exact stored contribution evidence. It does not manufacture an `Insight`, `Learning`, confidence score, or adoption decision.
-6. [AI] Interpret the contribution with the organization's other evidence. Judge reported outcomes, provenance, novelty, contradictions, freshness, and applicability; popularity or repetition does not prove effectiveness.
+6. [AI] Interpret the contribution with the organization's other evidence. Judge reported outcomes, provenance, novelty, contradictions, freshness, and applicability; popularity or repetition does not prove effectiveness. Draw on evidence-triangulation or community-evidence-review operating knowledge when those methods materially improve the decision; neither is a mandatory stage.
 7. [DETERMINISTIC] Use `scripts/build_innovation_exchange_index.py` to create a folder/repository discovery manifest and `scripts/browse_innovation_exchange_index.py` to search an available index before importing. Use `scripts/list_innovation_exchange.py` for locally imported support data when useful. Retrieving remote material remains a host capability.
 8. [HYBRID] When the active organization tests an imported innovation, preserve the real `OutcomeEvaluation` and record its association with the imported support state through `scripts/record_innovation_outcome.py`. The helper records evidence mechanics only; the model/user decides what the result means.
-9. [AI] If the accumulated evidence supports a durable organizational conclusion, preserve an `Insight` or `Learning` through normal AURA memory. If a reusable process improvement is warranted, the model/user may use the relevant process-evolution operating knowledge. Do not invent an automatic promotion pipeline.
+9. [AI] If the accumulated evidence supports a durable organizational conclusion, preserve an `Insight` or `Learning` through normal AURA memory. If a reusable process improvement is warranted, `core.learning.workflow-evolution` may be useful operating knowledge. The model/user decides whether to use it; do not invent an automatic promotion pipeline.
 
 ## Verification
 - No external submission occurred without an explicit current-task user instruction.
