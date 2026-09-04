@@ -12,7 +12,7 @@ import json,sys
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'scripts'))
 
-from _common import workflow_files,read_frontmatter,selector_type
+from _common import workflow_files,read_frontmatter,selector_type,refs_in_object
 from canonical_store import INSTANCE_PATHS,schema_entry
 
 
@@ -81,10 +81,12 @@ def main():
     req("'priority':i" not in bootstrap and '"priority":i' not in bootstrap,'onboarding reintroduced objective priority from list position')
 
     # Canonical ids must remain unambiguous across object types. PreferenceProfile formerly
-    # shared prf_* with ProofRecord; keep their namespaces distinct.
+    # shared prf_* with ProofRecord; keep their namespaces distinct. Reference traversal must
+    # also discover new namespaces without another hand-maintained prefix registry.
     pref_pattern=props('PreferenceProfile')['id'].get('pattern');proof_pattern=props('ProofRecord')['id'].get('pattern')
     req(pref_pattern and proof_pattern and pref_pattern!=proof_pattern,'PreferenceProfile and ProofRecord id namespaces collided')
     req(pref_pattern.startswith('^pref_') and proof_pattern.startswith('^prf_'),'expected distinct pref_* and prf_* canonical namespaces')
+    req('pref_reference_probe' in refs_in_object({'profile_ref':'pref_reference_probe'}),'shared reference traversal failed to recognize the current PreferenceProfile namespace')
 
     init_text=(ROOT/'scripts/init_business.py').read_text()
     req('from canonical_store import INSTANCE_PATHS' in init_text,'init_business must derive organization directories from canonical_store.INSTANCE_PATHS')
@@ -101,6 +103,7 @@ def main():
     req('def provider_registry(' not in common,'retired provider registry helper re-entered shared Core mechanics')
     req('|act|' not in common and '|apr|' not in common,'retired ActionPacket/Approval reference prefixes re-entered shared reference scanning')
     req('def contract_files(' not in common,'retired contract-file compatibility helper re-entered shared Core mechanics')
+    req('(?:src|sprof|' not in common,'shared reference traversal reintroduced a hand-maintained object-prefix registry')
 
     errors=[]
     for path in workflow_files():
