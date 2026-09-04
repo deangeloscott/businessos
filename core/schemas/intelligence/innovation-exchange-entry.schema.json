@@ -5,169 +5,53 @@
   "additionalProperties": false,
   "description": "Organization-local support index for imported InnovationPackages. This is not canonical organization truth and intentionally has no object_type.",
   "properties": {
-    "id": {
-      "type": "string",
-      "pattern": "^iex_[A-Za-z0-9_-]+$"
-    },
-    "business_id": {
-      "type": "string",
-      "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$"
-    },
-    "created_at": {
-      "type": "string",
-      "format": "date-time"
-    },
-    "updated_at": {
-      "type": "string",
-      "format": "date-time"
-    },
-    "innovation_fingerprint": {
-      "type": "string",
-      "pattern": "^[a-f0-9]{64}$"
-    },
-    "mode": {
-      "enum": [
-        "augment_workflow",
-        "local_workflow"
-      ]
-    },
-    "workflow_id": {
-      "type": "string",
-      "minLength": 1
-    },
-    "title": {
-      "type": "string",
-      "minLength": 1
-    },
-    "package_ids": {
-      "type": "array",
-      "items": {
-        "type": "string",
-        "pattern": "^ipkg_[A-Za-z0-9_-]+$"
-      },
-      "minItems": 1,
-      "uniqueItems": true
-    },
-    "source_record_refs": {
-      "type": "array",
-      "items": {
-        "type": "string",
-        "pattern": "^src_[A-Za-z0-9_-]+$"
-      },
-      "uniqueItems": true
-    },
+    "id": {"type": "string", "pattern": "^iex_[A-Za-z0-9_-]+$"},
+    "business_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "updated_at": {"type": "string", "format": "date-time"},
+    "innovation_fingerprint": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "workflow_id": {"type": "string", "minLength": 1},
+    "title": {"type": "string", "minLength": 1},
+    "package_ids": {"type": "array", "items": {"type": "string", "pattern": "^ipkg_[A-Za-z0-9_-]+$"}, "minItems": 1, "uniqueItems": true},
+    "source_record_refs": {"type": "array", "items": {"type": "string", "pattern": "^src_[A-Za-z0-9_-]+$"}, "uniqueItems": true},
     "reported_evidence": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "contribution_count": {
-          "type": "integer",
-          "minimum": 1
-        },
-        "reported_replication_count": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "reported_supported_count": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "reported_contradicted_count": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "reported_neutral_count": {
-          "type": "integer",
-          "minimum": 0
-        }
+        "contribution_count": {"type": "integer", "minimum": 1},
+        "reported_replication_count": {"type": "integer", "minimum": 0},
+        "reported_supported_count": {"type": "integer", "minimum": 0},
+        "reported_contradicted_count": {"type": "integer", "minimum": 0},
+        "reported_neutral_count": {"type": "integer", "minimum": 0}
       },
-      "required": [
-        "contribution_count",
-        "reported_replication_count",
-        "reported_supported_count",
-        "reported_contradicted_count",
-        "reported_neutral_count"
-      ]
+      "required": ["contribution_count", "reported_replication_count", "reported_supported_count", "reported_contradicted_count", "reported_neutral_count"]
     },
     "local_evidence": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "supported_count": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "contradicted_count": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "neutral_count": {
-          "type": "integer",
-          "minimum": 0
-        },
+        "supported_count": {"type": "integer", "minimum": 0},
+        "contradicted_count": {"type": "integer", "minimum": 0},
+        "neutral_count": {"type": "integer", "minimum": 0},
         "outcome_events": {
           "type": "array",
           "items": {
             "type": "object",
             "additionalProperties": false,
             "properties": {
-              "event_key": {
-                "type": "string",
-                "minLength": 1
-              },
-              "outcome": {
-                "enum": [
-                  "supported",
-                  "contradicted",
-                  "neutral"
-                ]
-              },
-              "evidence_ref": {
-                "type": "string",
-                "minLength": 1
-              },
-              "recorded_at": {
-                "type": "string",
-                "format": "date-time"
-              }
+              "event_key": {"type": "string", "minLength": 1},
+              "outcome": {"enum": ["supported", "contradicted", "neutral"]},
+              "evidence_ref": {"type": "string", "minLength": 1},
+              "recorded_at": {"type": "string", "format": "date-time"}
             },
-            "required": [
-              "event_key",
-              "outcome",
-              "evidence_ref",
-              "recorded_at"
-            ]
+            "required": ["event_key", "outcome", "evidence_ref", "recorded_at"]
           }
         }
       },
-      "required": [
-        "supported_count",
-        "contradicted_count",
-        "neutral_count",
-        "outcome_events"
-      ]
+      "required": ["supported_count", "contradicted_count", "neutral_count", "outcome_events"]
     },
-    "last_activity_at": {
-      "type": "string",
-      "format": "date-time"
-    },
-    "extensions": {
-      "type": "object"
-    }
+    "last_activity_at": {"type": "string", "format": "date-time"},
+    "extensions": {"type": "object"}
   },
-  "required": [
-    "id",
-    "business_id",
-    "created_at",
-    "updated_at",
-    "innovation_fingerprint",
-    "mode",
-    "workflow_id",
-    "title",
-    "package_ids",
-    "source_record_refs",
-    "reported_evidence",
-    "local_evidence",
-    "last_activity_at"
-  ]
+  "required": ["id", "business_id", "created_at", "updated_at", "innovation_fingerprint", "workflow_id", "title", "package_ids", "source_record_refs", "reported_evidence", "local_evidence", "last_activity_at"]
 }
