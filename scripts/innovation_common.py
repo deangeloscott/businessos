@@ -51,7 +51,7 @@ def find_identifying_keys(value,path=''):
 def canonical_hash(package):
     data=copy.deepcopy(package);data.setdefault('integrity',{})['content_hash']=None;raw=json.dumps(data,sort_keys=True,separators=(',',':'),ensure_ascii=False).encode();return hashlib.sha256(raw).hexdigest()
 def innovation_fingerprint(process):
-    selected={key:process.get(key) for key in ['mode','workflow_id','title','purpose','discovery_terms','applies_when','does_not_apply_when','instructions','verification']};raw=json.dumps(selected,sort_keys=True,separators=(',',':'),ensure_ascii=False).encode();return hashlib.sha256(raw).hexdigest()
+    selected={key:process.get(key) for key in ['workflow_id','title','purpose','discovery_terms','applies_when','does_not_apply_when','instructions','verification']};raw=json.dumps(selected,sort_keys=True,separators=(',',':'),ensure_ascii=False).encode();return hashlib.sha256(raw).hexdigest()
 def load_package(path):
     path=Path(path)
     if not path.exists():raise ValueError(f'Package not found: {path}')
