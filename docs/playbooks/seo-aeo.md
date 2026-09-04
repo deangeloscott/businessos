@@ -12,7 +12,7 @@ Find and improve the highest-value realistic opportunities for organic discovery
 
 *Try:* “Find our highest-value SEO/AEO opportunities and do the useful work to improve them.”
 
-**Composition:** Choose the smallest useful set of Workflows below from the actual request and evidence.
+**Use:** Choose the smallest useful set of Workflows or other methods from the actual request and evidence.
 
 ### SEO/AEO Experimentation and Learning
 
@@ -21,6 +21,14 @@ Test uncertain SEO/AEO tactics when testing is worthwhile, evaluate the results 
 *Try:* “Test whether this SEO/AEO tactic actually helps us and learn from the result.”
 
 **Common entry Workflow:** [SEO Strategy Experiment Design](../../systems/seo-aeo/workflows/learning/strategy-experiment-design/CONTEXT.md)
+
+### SEO/AEO Site Migration
+
+Plan and execute a domain, CMS, architecture, or URL migration while protecting organic discovery, attribution, and recoverability.
+
+*Try:* “We're migrating our site. Help us preserve SEO/AEO and catch migration problems.”
+
+**Common entry Workflow:** [Site Migration](../../systems/seo-aeo/workflows/execution/technical/site-migration/CONTEXT.md)
 
 ## Common Workflows
 
