@@ -3,7 +3,7 @@
 from pathlib import Path
 import json,sys,tempfile
 ROOT=Path(__file__).resolve().parents[1];sys.path.insert(0,str(ROOT/'qualification'))
-from integrity import artifact_similarity_flags,checkpoint_chain_contiguous,event_specific_ref_paths,run_control_flags
+from integrity import artifact_similarity_flags,checkpoint_chain_contiguous,event_specific_ref_paths,exact_duplicate_artifact_flags,run_control_flags
 from build_suite import build
 
 def req(cond,msg):
@@ -15,6 +15,8 @@ def main():
         req(event_specific_ref_paths(['attachments/field.json'],before,after,ws),'new event evidence must be auditable as event-specific');req(not event_specific_ref_paths(['attachments/field.json'],{'workspace':{'files':[{'path':'attachments/field.json','sha256':'abc'}]}},after,ws),'unchanged prior evidence must not count as event-specific');req(checkpoint_chain_contiguous({'workspace':{'digest':'same'}},{'workspace':{'digest':'same'}}),'adjacent evaluator checkpoints should remain auditable')
         a=root/'a.md';b=root/'b.md';c=root/'c.md';body='# Deliverable\n\nGeneric operational guidance for the target audience.\n'*12;a.write_text(body);b.write_text(body);c.write_text(body)
         flags=artifact_similarity_flags([{'event_id':'E1','kind':'workflow_acceptance','workflow_id':'one','actual_artifacts':[str(a)]},{'event_id':'E2','kind':'workflow_acceptance','workflow_id':'two','actual_artifacts':[str(b)]},{'event_id':'E3','kind':'workflow_acceptance','workflow_id':'three','actual_artifacts':[str(c)]}],max_examples=1);req(flags.get('E1'),'highly similar cross-job artifacts must still be surfaced for review')
+        duplicate=exact_duplicate_artifact_flags([{'event_id':'E1','actual_artifacts':[str(a)]},{'event_id':'E2','actual_artifacts':[str(b)]}]);req(duplicate.get('E1') and duplicate.get('E2'),'byte-identical artifacts at distinct paths must remain an integrity failure signal')
+        evolving=exact_duplicate_artifact_flags([{'event_id':'L1','actual_artifacts':[str(a)]},{'event_id':'L2','actual_artifacts':[str(a)]}]);req(not evolving,'the same durable artifact path reused across longitudinal events must not be misclassified as duplicate masquerading')
         scratch=ws/'scratch';scratch.mkdir();ordinary=scratch/'batch_work.py';ordinary.write_text("for event in events: print('complete real work')\n");ordinary_flags=run_control_flags(root,ws);req(not any(x.get('path')==str(ordinary) for x in ordinary_flags),'ordinary batch automation must not be treated as qualification manipulation')
         control_script=scratch/'qualification-control.py';control_script.write_text("for event in events:\n    print('evaluator/suite.json evaluator/queue.json')\n");control=run_control_flags(root,ws);req(any(x.get('type')=='candidate_evaluator_spec_access' and x.get('path')==str(control_script) for x in control),'candidate access to evaluator-private material must remain visible');req(any(x.get('type')=='mass_completion_runner' and x.get('path')==str(control_script) for x in control),'looping over multiple evaluator-private surfaces should remain an integrity signal')
 
