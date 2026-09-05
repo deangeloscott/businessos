@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """Run one blind qualification event through any command-line model/harness.
 
-This is maintainer tooling, not AURA runtime architecture. It does only three things
+This is maintainer tooling, not AURA runtime architecture. It does four small things
 that should not be left to ad-hoc shell scripts:
 - pin the staged organization workspace for AURA helpers;
-- preserve the candidate-visible command output for professional review;
-- record a harness execution failure as an external qualification blocker while
-  returning success to the surrounding batch so later independent cases can continue.
+- preserve each candidate execution attempt for diagnosis;
+- promote only a successful candidate-visible response into review evidence;
+- leave interrupted work in progress instead of inventing a semantic blocker.
 
 The wrapped command must contain either `{candidate_prompt}` or
 `{candidate_message}` as an argument placeholder. Example:
@@ -15,7 +15,7 @@ The wrapped command must contain either `{candidate_prompt}` or
       your-agent-cli -p '{candidate_prompt}'
 """
 from pathlib import Path
-import argparse,json,os,subprocess,sys
+import argparse,json,os,shutil,subprocess,sys
 from common import now,read_json,write_json
 from task_controller import start,finish
 
@@ -64,6 +64,13 @@ def execute(command,cwd,env,log_path):
         return proc.wait()
 
 
+def attempt_paths(rd,event_id):
+    root=rd/'evaluator'/'candidate-attempts'/event_id;root.mkdir(parents=True,exist_ok=True)
+    number=1
+    while (root/f'attempt-{number:02d}.json').exists() or (root/f'attempt-{number:02d}.txt').exists():number+=1
+    return number,root/f'attempt-{number:02d}.json',root/f'attempt-{number:02d}.txt'
+
+
 def main():
     ap=argparse.ArgumentParser(description='Run one blind AURA qualification event through a command-line model/harness.')
     ap.add_argument('run_dir')
@@ -86,38 +93,42 @@ def main():
     surface=Path(run['candidate_surface_root'])
     response_ref=f'evaluator/candidate-responses/{event_id}.txt'
     response_path=rd/response_ref
-    execution_ref=f'evaluator/candidate-executions/{event_id}.json'
-    execution_path=rd/execution_ref
-    if response_path.exists() or execution_path.exists():
-        raise SystemExit(f'Candidate execution evidence already exists for {event_id}; preserve it and prepare a fresh run for a clean retry')
+    if response_path.exists():
+        raise SystemExit(f'A successful candidate response already exists for {event_id}; preserve it rather than rerunning completed candidate work')
 
+    attempt_no,execution_path,attempt_output=attempt_paths(rd,event_id)
+    execution_ref=execution_path.relative_to(rd).as_posix()
+    output_ref=attempt_output.relative_to(rd).as_posix()
     rendered=render_command(command,started,run)
     record={
-        'format_version':'1.0','event_id':event_id,'started_at':now(),'status':'running',
+        'format_version':'2.0','event_id':event_id,'attempt':attempt_no,'started_at':now(),'status':'running',
         'candidate_surface_root':str(surface),'workspace_pin':str(run['workspace']),
-        'response_ref':response_ref,'command_program':rendered[0]
+        'attempt_output_ref':output_ref,'command_program':rendered[0]
     }
     write_json(execution_path,record)
-    code=execute(rendered,surface,candidate_environment(run),response_path)
+    code=execute(rendered,surface,candidate_environment(run),attempt_output)
     record.update({'finished_at':now(),'exit_code':code,'status':'completed' if code==0 else 'harness_error'})
     write_json(execution_path,record)
 
     if code==0:
+        response_path.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(attempt_output,response_path)
         controller=finish(rd,event_id=event_id)
-        blocker=None
+        recovery=None
     else:
-        detail=f'Candidate model/harness command exited with status {code}; see {execution_ref}. This is an external execution failure, not evidence of an AURA product defect.'
-        controller=finish(rd,event_id=event_id,blocker_classification='external_capability',blocker_detail=detail)
-        blocker='external_capability'
+        controller={'status':'interrupted','event_id':event_id}
+        recovery=(
+            f'Candidate model/harness command exited with status {code}. The qualification task remains in progress with its original before-checkpoint. '
+            f'Attempt evidence is preserved at {execution_ref} and {output_ref}. Retry the same task with run_candidate.py or inspect qualification/resume_status.py; do not classify the process error as an AURA result.'
+        )
 
     print(json.dumps({
-        'run_dir':str(rd),'event_id':event_id,'candidate_exit_code':code,
-        'candidate_response':str(response_path),'candidate_execution':str(execution_path),
-        'workspace_pin':str(run['workspace']),'qualification_blocker':blocker,
-        'controller_status':controller.get('status'),'remaining':controller.get('remaining')
+        'run_dir':str(rd),'event_id':event_id,'attempt':attempt_no,'candidate_exit_code':code,
+        'candidate_response':str(response_path) if code==0 else None,
+        'candidate_attempt_output':str(attempt_output),'candidate_execution':str(execution_path),
+        'workspace_pin':str(run['workspace']),'controller_status':controller.get('status'),
+        'remaining':controller.get('remaining'),'recovery':recovery
     },indent=2))
-    # Candidate-process failures are recorded above instead of terminating a surrounding
-    # multi-case shell campaign. Runner/controller failures still exit nonzero normally.
+    if code!=0:raise SystemExit(code)
 
 
 if __name__=='__main__':main()

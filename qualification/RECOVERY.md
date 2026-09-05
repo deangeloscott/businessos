@@ -35,11 +35,11 @@ It does not create candidate-facing recovery instructions.
 5. If a useful optional AURA Run exists for the unfinished work, it may help the replacement model resume continuity. Do not require or create one merely because the model changed.
 6. Give the replacement candidate only the same normal product/workspace and the original ordinary business request. Do not give it the qualification run directory.
 7. Do not set `AURA_QUALIFICATION_RUN` in the candidate process. `BUSINESSOS_WORKSPACE` is sufficient for normal AURA operation.
-8. A provider outage, rate limit, model retirement, lost network connection, or terminal closure is an **execution-environment interruption**, not by itself an AURA pass or failure.
+8. A provider outage, rate limit, model retirement, lost network connection, terminal closure, or nonzero candidate-process exit is an **execution-environment interruption**, not by itself an AURA pass, failure, or semantic blocker.
 9. Record model/provider/harness changes in evaluator-side logs so later review can distinguish AURA behavior from environment sensitivity.
-10. After the candidate finishes, let the external controller take the after-checkpoint and derive its evaluator-side observation.
+10. After the candidate actually finishes the business work, let the external controller take the after-checkpoint and derive its evaluator-side observation.
 
-## Resume the same task
+## Resume the same task manually
 
 Run:
 
@@ -57,20 +57,30 @@ When the business work is complete:
 python3 qualification/task_controller.py finish /path/to/run
 ```
 
-For a genuine external blocker, classify it maintainer-side with `--blocker-classification` and, when useful, `--blocker-detail`.
+For a genuine external blocker in the business task itself, classify it maintainer-side with `--blocker-classification` and, when useful, `--blocker-detail`.
 
-## Maintainer launcher
+## CLI candidate runner
 
-If using `qualification/launch.py`, the launcher performs the controller start/finish boundaries automatically around a successful candidate process.
+For command-line model/harness execution, use:
 
-Its command template may use only candidate-safe placeholders:
+```bash
+python3 qualification/run_candidate.py /path/to/run -- \
+  your-agent-cli -p '{candidate_prompt}'
+```
 
-- `{request}`
+`run_candidate.py` performs the controller start/finish boundaries around a **successful** candidate process, pins `BUSINESSOS_WORKSPACE`, and preserves the successful candidate-visible response for review.
+
+If the candidate process exits nonzero, the runner preserves that attempt under `evaluator/candidate-attempts/<event-id>/`, leaves the qualification task in progress with its original before-checkpoint, and exits nonzero. Retry the same task with the same command or a replacement model/harness after resolving the interruption. It does not convert a generic process error into `external_capability` or any other business-task blocker.
+
+Supported candidate-safe placeholders are:
+
+- `{candidate_prompt}`
+- `{candidate_message}`
 - `{workspace}`
 - `{product_root}`
-- `{business_id}`
+- `{candidate_surface}`
 
-It deliberately does not support `{run_dir}` or `{instructions}` because those would reveal the qualification environment to the candidate.
+The runner deliberately does not expose the qualification run directory, evaluator metadata, event ID, checkpoints, or judge instructions to the candidate.
 
 ## Why this matters
 
