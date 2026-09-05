@@ -77,8 +77,7 @@ def qualification_status(counts):
     return 'QUALIFIED' if total and qualified==total else 'NOT_QUALIFIED'
 
 
-def event_dimensions(event):
-    return event.get('rubric_dimensions') or [x['id'] for x in RUBRICS['base']]
+RUBRIC_DIMENSIONS=[x['id'] for x in RUBRICS['base']]
 
 
 def main():
@@ -99,7 +98,7 @@ def main():
         evaluator_issues=_evaluator_issues(rd,event,before,after,receipt,previous_after)
         gates,validation,artifacts=hard_grade(event,before,after,receipt,workspace,product_root)
         hard_pass=all(gates.values()) if gates else False
-        judge=judgments.get(eid);scores=(judge or {}).get('scores') or {};required_dims=event_dimensions(event)
+        judge=judgments.get(eid);scores=(judge or {}).get('scores') or {};required_dims=RUBRIC_DIMENSIONS
         missing_dims=[d for d in required_dims if d not in scores]
         invalid_scores=[v for v in scores.values() if not isinstance(v,(int,float)) or v<0 or v>5]
         review_complete=bool(scores) and not missing_dims and not invalid_scores
@@ -151,7 +150,7 @@ def main():
 
     review=[]
     for result,event in zip(results,queue['events']):
-        receipt=result.get('receipt') or {};dims=event_dimensions(event)
+        receipt=result.get('receipt') or {};dims=RUBRIC_DIMENSIONS
         claim=event.get('claim_under_test') or {}
         review.append({
             'event_id':result['event_id'],'evaluation_id':event.get('evaluation_id'),'workflow_id':event.get('workflow_id'),

@@ -6,19 +6,6 @@ from common import ROOT, load_workflows, now, product_snapshot, write_json
 FIXTURES=ROOT/'qualification/fixtures'
 USE_CASE_ROOT=ROOT/'qualification/use-cases'
 USE_CASE_LIBRARY=json.loads((USE_CASE_ROOT/'library.json').read_text())
-RUBRICS=json.loads((ROOT/'qualification/rubrics/rubrics.json').read_text())
-
-OWNER_PROFILES={
-    'core':'organizational_memory',
-    'customer-intelligence':'customer_truth',
-    'competitor-intelligence':'competitive_intelligence',
-    'industry-intelligence':'ecosystem_truth',
-    'seo-aeo':'search_live_field',
-    'content-synthesis':'artifact_excellence',
-    'marketing-synthesis':'paid_and_persuasion_field',
-    'customer-optimization':'first_party_outcomes',
-}
-
 
 def fixture_data(fixture):
     path=FIXTURES/f'{fixture}.json'
@@ -51,25 +38,8 @@ def _workflow(workflow_id):
     raise SystemExit(f'Unknown Workflow diagnostic target: {workflow_id}')
 
 
-def _dimensions(profile=None):
-    base=[x['id'] for x in RUBRICS['base']]
-    return base + list(RUBRICS['profiles'].get(profile,[]))
-
-
-def use_case_dimensions(case):
-    domains=case.get('domains') or []
-    if case.get('kind')=='longitudinal':profile='marathon_system'
-    elif len(domains)!=1:profile='cross_domain_system'
-    else:profile=OWNER_PROFILES.get(domains[0],'cross_domain_system')
-    return _dimensions(profile)
-
-
-def workflow_dimensions(workflow):
-    return _dimensions(OWNER_PROFILES.get(workflow.get('owner_system')))
-
-
 def events_from_use_case(case_id):
-    case=_use_case(case_id);fixture=case['fixture'];dims=use_case_dimensions(case);stages=case.get('stages') or []
+    case=_use_case(case_id);fixture=case['fixture'];stages=case.get('stages') or []
     if stages:
         events=[]
         for i,stage in enumerate(stages,1):
@@ -78,7 +48,7 @@ def events_from_use_case(case_id):
                 'kind':'use_case','case_id':case_id,'business_id':fixture_business_id(fixture),
                 'fixture':fixture,'workflow_id':None,
                 'task':_use_case_file(stage['request']).read_text().strip(),
-                'rubric_dimensions':dims,'judge_source':stage['judge'],
+                'judge_source':stage['judge'],
                 'fresh_model_context':bool(stage.get('fresh_model_context')),
             }
             if stage.get('release_fixture'):event['release_fixture']=stage['release_fixture']
@@ -88,7 +58,7 @@ def events_from_use_case(case_id):
         'event_id':f'USECASE-{case_id.upper()}','kind':'use_case','case_id':case_id,
         'business_id':fixture_business_id(fixture),'fixture':fixture,'workflow_id':None,
         'task':_use_case_file(case['request']).read_text().strip(),
-        'rubric_dimensions':dims,'judge_source':case['judge'],
+        'judge_source':case['judge'],
     }]
 
 
@@ -127,7 +97,6 @@ def event_from_workflow(workflow_id,fixture,request=None):
         'workflow_id':workflow_id,
         'owner_system':workflow.get('owner_system'),
         'task':task,
-        'rubric_dimensions':workflow_dimensions(workflow),
         'claim_under_test':{
             'title':workflow.get('title'),
             'purpose':workflow.get('purpose'),

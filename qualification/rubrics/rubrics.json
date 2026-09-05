@@ -1,49 +1,28 @@
 {
-  "format_version":"2.1",
-  "score_scale":{"0":"not performed","1":"fundamentally inadequate","2":"materially incomplete or flawed","3":"professionally acceptable","4":"strong and competitive","5":"exceptional expert-level execution"},
-  "minimums":{"hard_gates":"all_pass","dimension_floor":3.0,"acceptable_overall":3.3,"competitive_overall":4.0,"exceptional_overall":4.6},
-  "base":[
-    {"id":"accuracy","description":"Factual, computational, and interpretive correctness; uncertainty and unknowns are preserved."},
-    {"id":"evidence_quality","description":"Uses enough appropriate evidence, preserves provenance, and does not upgrade weak proxies into proof."},
-    {"id":"method_rigor","description":"Performs the material method/invariants needed for the job. Equivalent or improved implementation is acceptable; skipping essential work is not."},
-    {"id":"depth_completeness","description":"Covers the material work implied by the requested outcome, business context, and relevant Workflow knowledge without filler or exhaustive work for its own sake."},
-    {"id":"professional_quality","description":"A competent professional could use the result without rebuilding the core work from scratch."},
-    {"id":"business_alignment","description":"The work is tied to the actual business objective rather than vanity activity or benchmark-shaped output."},
-    {"id":"outcome_readiness","description":"The work includes the reasonable research, strategy, execution, QA, and integration that a strong practitioner could perform now to maximize the intended result."},
-    {"id":"state_integrity","description":"Persisted AURA state truthfully preserves material organizational meaning, provenance, decisions/results/outcomes/unresolved work as appropriate, without inventing facts or manufacturing ceremony solely for qualification."}
-  ],
-  "profiles":{
-    "organizational_memory":["semantic_ownership","truth_provenance_integrity","continuity_usefulness"],
-    "customer_truth":["signal_coverage","pattern_rigor","segmentation_and_context","decision_usefulness"],
-    "competitive_intelligence":["competitive_set_quality","source_coverage","comparison_rigor","tactic_evidence_calibration","strategic_implication_quality"],
-    "ecosystem_truth":["freshness","source_authority","corroboration_and_counterevidence","business_applicability"],
-    "search_technical":["diagnostic_correctness","technical_completeness","priority_quality","implementation_readiness"],
-    "search_live_field":["live_serp_or_answer_environment","intent_and_surface_fit","leader_comparison","differentiation_strategy","algorithm_expectation_fit","competitive_search_readiness"],
-    "artifact_excellence":["audience_fit","clarity_and_information_design","appropriate_detail","originality","format_execution","artifact_usability"],
-    "organic_attention_field":["field_sampling","performance_proxy_calibration","baseline_normalization","mechanism_extraction","platform_native_fit","competitive_attention_readiness"],
-    "paid_and_persuasion_field":["ad_library_or_market_sampling","proxy_calibration","message_and_offer_analysis","creative_mechanism_analysis","persuasion_quality","funnel_continuity","competitive_marketing_readiness"],
-    "marketing_outcome":["customer_insight_use","offer_and_message_fit","persuasion_quality","measurement_readiness"],
-    "first_party_outcomes":["bottleneck_diagnosis","causal_discipline","intervention_quality","measurement_design","commercial_relevance"],
-    "cross_domain_system":["cross_domain_coordination","truth_ownership","evidence_reuse","next_best_work_quality","execution_completeness"],
-    "marathon_system":["long_horizon_coherence","state_compounding","evidence_reuse","contradiction_handling","priority_adaptation","process_learning","operating_efficiency"]
+  "format_version": "3.0",
+  "score_scale": {
+    "0": "not performed",
+    "1": "fundamentally inadequate",
+    "2": "materially incomplete or flawed",
+    "3": "professionally acceptable",
+    "4": "strong and competitive",
+    "5": "exceptional expert-level execution"
   },
-  "profile_descriptions":{
-    "method_rigor":"Uses the essential business method needed for the result while allowing the model/harness to improve incidental implementation details.",
-    "truth_provenance_integrity":"Durable facts, evidence, decisions, results, and Learning remain truthfully classified and traceable to their basis.",
-    "continuity_usefulness":"Persisted state helps a capable future model continue the organization’s work rather than recording transient execution chatter or empty ceremony.",
-    "live_serp_or_answer_environment":"Inspects enough of the current search/AI-answer field to ground the work in present reality rather than relying only on model memory; expands when more evidence could materially change the judgment.",
-    "leader_comparison":"Samples enough strong current leaders to identify expected patterns and meaningful differences; a few representative leaders are usually sufficient unless the field is ambiguous or another sample could materially change the conclusion.",
-    "competitive_search_readiness":"Finished work plausibly competes for the intended search/answer outcome, acknowledging authority or external constraints content alone cannot solve.",
-    "ad_library_or_market_sampling":"Samples enough relevant active, persistent, or visibly strong creatives/competitors and surrounding funnel evidence to understand the market pattern; expands only when additional sampling could materially change the conclusion.",
-    "proxy_calibration":"Treats longevity, views, shares, engagement, repeated creative families, and platform metrics as meaningful visibility/attention/distribution signals whose relevance depends on the objective; they are not automatically proof of profit, conversion, or causal effectiveness without supporting evidence.",
-    "performance_proxy_calibration":"Treats visible attention and distribution metrics as real upstream outcomes/signals when they matter to the objective, while distinguishing them from qualified action, revenue, profit, retention, or causal effect unless those are actually measured.",
-    "baseline_normalization":"Normalizes visible content performance against creator/account baseline, age, format, audience size, and distribution where possible.",
-    "mechanism_extraction":"Extracts transferable mechanisms rather than copying protected expression, branding, or exact creative.",
-    "appropriate_detail":"Uses the level of detail the audience and communication task require; more detail is not automatically better.",
-    "artifact_usability":"Produces the actual promised artifact in an immediately usable form rather than a description of what could be produced.",
-    "cross_domain_coordination":"Combines the relevant bodies of organizational knowledge coherently, reuses canonical evidence instead of duplicating truth, and continues directly when the active model can do the work; create a durable handoff only when one genuinely needs to survive people, systems, or time.",
-    "truth_ownership":"Uses the canonical owner of durable organizational truth while allowing any relevant Workflow/model to consume that truth without copying competing representations.",
-    "state_compounding":"Later work becomes better informed by accumulated AURA state instead of repeatedly starting from scratch.",
-    "contradiction_handling":"Later contradictory evidence revises confidence, hypotheses, or Learning rather than being ignored to preserve a convenient narrative."
-  }
+  "minimums": {
+    "hard_gates": "all_pass",
+    "dimension_floor": 3.0,
+    "acceptable_overall": 3.3,
+    "competitive_overall": 4.0,
+    "exceptional_overall": 4.6
+  },
+  "base": [
+    {"id": "accuracy", "description": "Factual, computational, and interpretive correctness; uncertainty and unknowns are preserved."},
+    {"id": "evidence_quality", "description": "Uses enough appropriate evidence, preserves provenance, and does not upgrade weak proxies into proof."},
+    {"id": "method_rigor", "description": "Performs the material method/invariants needed for the job. Equivalent or improved implementation is acceptable; skipping essential work is not."},
+    {"id": "depth_completeness", "description": "Covers the material work implied by the requested outcome, business context, and relevant Workflow knowledge without filler or exhaustive work for its own sake."},
+    {"id": "professional_quality", "description": "A competent professional could use the result without rebuilding the core work from scratch."},
+    {"id": "business_alignment", "description": "The work is tied to the actual business objective rather than vanity activity or benchmark-shaped output."},
+    {"id": "outcome_readiness", "description": "The work includes the reasonable research, strategy, execution, QA, and integration that a strong practitioner could perform now to maximize the intended result."},
+    {"id": "state_integrity", "description": "Persisted AURA state truthfully preserves material organizational meaning, provenance, decisions/results/outcomes/unresolved work as appropriate, without inventing facts or manufacturing ceremony solely for qualification."}
+  ]
 }
