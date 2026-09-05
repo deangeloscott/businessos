@@ -1,5 +1,39 @@
 # Changelog
 
+## 0.1.3 — Alpha
+
+This release moves AURA from architecture closure into evidence-backed Alpha use. The product architecture remains centered on organization-owned memory and reusable operating knowledge for capable AI; the work since v0.1.2 focused on proving that architecture with real business work, fixing defects exposed by that proof, and removing qualification machinery that no longer served the product.
+
+### What changed
+
+- Established a maintainer-only library of **57 realistic business-use cases** across **5 industries** and all **8 operating areas**. The library uses ordinary requests plus separate hidden judge guidance and is intentionally excluded from user distributions.
+- Completed a representative **10-case real-work campaign**, with all **10 selected cases ultimately qualifying** after product, harness, and evaluator defects were diagnosed and corrected. This is representative evidence; it does **not** mean all 57 library cases were executed.
+- Proved longitudinal continuity across fresh model contexts and later contradictory/new evidence: useful organization state carried forward and prior understanding was revised when better evidence arrived.
+- Fixed a real AURA external-workspace/local-evidence defect exposed by qualification, preserving the boundary between mutable organization state and immutable product source.
+- Hardened qualification observation and isolation by pinning the intended workspace, capturing the candidate-visible result as legitimate review evidence, isolating judging to the exact run, correcting duplicate detection for evolving shared artifacts, and strengthening claim-grounding review.
+- Simplified qualification from first principles: removed the generated all-Workflow suite, synthetic missions/cases, semantic rubric profiles, exhaustive Playbook-coverage obligation, duplicate candidate launcher, and duplicate recovery program.
+- Reduced qualification to two task modes: **real-world use cases** for primary product proof and **focused Workflow diagnostics** only when evidence points to one specific body of operating knowledge.
+- Kept provider/model/harness process failures classified as execution interruptions rather than automatically turning them into AURA semantic blockers.
+- Corrected the release entry point so public releases are built from the curated **full AURA edition** rather than archiving the maintainer checkout. The release builder now strips qualification/developer state, reruns source gates, validates the fresh ZIP, and smoke-tests a separate organization workspace.
+
+### Validation
+
+The current v0.1.3 release baseline has demonstrated:
+
+- **466 authored Workflows** and **42 Playbooks** generated and validated with **0 errors and 0 warnings**;
+- **34/34 AURA product-integrity suites**;
+- **4/4 qualification-harness self-test suites**;
+- a **57-case** realistic qualification library spanning 5 industries and 8 operating areas;
+- a representative **10/10 qualified** real-work campaign, including longitudinal memory/evidence evolution.
+
+The release packaging command reruns both source gates and then validates the freshly unpacked curated distribution before publication.
+
+### Current status
+
+AURA's first-principles architecture, source coherence, deterministic integrity, representative real-work proof, longitudinal continuity proof, and qualification simplification are now closed to a strong Alpha standard. The next phase is normal Alpha use: put AURA in real hands, observe what happens over time, and change the product only when real evidence exposes a reusable weakness that matters to users.
+
+Alpha still means interfaces and Playbooks/Workflows may change before 1.0 when real usage earns those changes.
+
 ## 0.1.2 — Alpha
 
 This release is the validated architecture-closure baseline for the first-principles AURA refactor. It makes the simplified AURA model the canonical product on `main`: organization-owned memory and reusable operating knowledge for capable AI, without recreating a hidden execution control plane around the model.
