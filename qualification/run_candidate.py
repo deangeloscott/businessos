@@ -118,7 +118,7 @@ def main():
         controller={'status':'interrupted','event_id':event_id}
         recovery=(
             f'Candidate model/harness command exited with status {code}. The qualification task remains in progress with its original before-checkpoint. '
-            f'Attempt evidence is preserved at {execution_ref} and {output_ref}. Retry the same task with run_candidate.py or inspect qualification/resume_status.py; do not classify the process error as an AURA result.'
+            f'Attempt evidence is preserved at {execution_ref} and {output_ref}. Retry the same task with run_candidate.py or inspect task_controller.py status; do not classify the process error as an AURA result.'
         )
 
     print(json.dumps({

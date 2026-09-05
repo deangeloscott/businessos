@@ -14,17 +14,7 @@ From the source checkout containing maintainer qualification tools:
 python3 qualification/task_controller.py status /path/to/run
 ```
 
-or for more recovery detail:
-
-```bash
-python3 qualification/resume_status.py /path/to/run --write-instructions
-```
-
-`resume_status.py` writes maintainer-only guidance to:
-
-`evaluator/RECOVERY.md`
-
-It does not create candidate-facing recovery instructions.
+The controller reports terminal/in-progress/pending tasks and the ordinary business request that should resume next. It does not create candidate-facing recovery instructions or expose evaluator metadata to the candidate.
 
 ## Recovery rules
 
@@ -32,7 +22,7 @@ It does not create candidate-facing recovery instructions.
 2. Completed tasks are frozen qualification history. Do not redo them just to improve a score.
 3. If the unfinished task already has a before-checkpoint, preserve it as the task baseline.
 4. Reuse the same staged AURA product and organization workspace.
-5. If a useful optional AURA Run exists for the unfinished work, it may help the replacement model resume continuity. Do not require or create one merely because the model changed.
+5. If a useful optional AURA Run exists for the unfinished work, the replacement model may discover and use it through normal AURA continuity. Qualification should not preselect or surface a hidden target Run for the candidate.
 6. Give the replacement candidate only the same normal product/workspace and the original ordinary business request. Do not give it the qualification run directory.
 7. Do not set `AURA_QUALIFICATION_RUN` in the candidate process. `BUSINESSOS_WORKSPACE` is sufficient for normal AURA operation.
 8. A provider outage, rate limit, model retirement, lost network connection, terminal closure, or nonzero candidate-process exit is an **execution-environment interruption**, not by itself an AURA pass, failure, or semantic blocker.
