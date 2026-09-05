@@ -93,18 +93,27 @@ def artifact_similarity_flags(results,threshold=0.88,max_examples=5):
 
 
 def exact_duplicate_artifact_flags(results):
+    """Detect byte-identical artifacts copied across distinct paths/events.
+
+    Reusing the same path across longitudinal events is not duplicate masquerading: an
+    organization should normally revise the same durable asset in place. Evaluation happens
+    after the whole run, so rereading that shared path would otherwise hash the final bytes
+    for every event and falsely mark legitimate evolution as exact reuse.
+    """
     by_hash={}
     for result in results:
         for raw in result.get('actual_artifacts') or []:
             path=Path(raw)
-            try:digest=hashlib.sha256(path.read_bytes()).hexdigest()
+            try:
+                resolved=str(path.resolve())
+                digest=hashlib.sha256(path.read_bytes()).hexdigest()
             except OSError:continue
-            by_hash.setdefault(digest,[]).append((result['event_id'],result.get('workflow_id'),str(path)))
+            by_hash.setdefault(digest,[]).append((result['event_id'],result.get('workflow_id'),str(path),resolved))
     flags={}
     for digest,items in by_hash.items():
         if len({x[0] for x in items})<2:continue
-        for eid,wid,path in items:
-            others=[{'event_id':oe,'workflow_id':ow,'artifact':op} for oe,ow,op in items if oe!=eid]
+        for eid,wid,path,resolved in items:
+            others=[{'event_id':oe,'workflow_id':ow,'artifact':op} for oe,ow,op,oresolved in items if oe!=eid and oresolved!=resolved]
             if others:flags.setdefault(eid,[]).append({'type':'exact_artifact_reuse','sha256':digest,'artifact':path,'others':others})
     return flags
 
