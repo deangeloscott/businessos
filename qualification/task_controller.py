@@ -90,6 +90,14 @@ def _existing_refs(refs,workspace):
             if norm not in out:out.append(norm)
     return out
 
+def _candidate_response_ref(rd,event):
+    rel=f"evaluator/candidate-responses/{event['event_id']}.txt";p=rd/rel
+    if not p.is_file():return None
+    try:
+        if not p.read_text(encoding='utf-8',errors='replace').strip():return None
+    except OSError:return None
+    return rel
+
 def derive_receipt(rd,run,event,blocker_classification=None,blocker_detail=None):
     eid=event['event_id'];workspace=Path(run['workspace']);before=read_json(rd/'checkpoints'/eid/'before.json',{}) or {};after=read_json(rd/'checkpoints'/eid/'after.json',{}) or {};changed_objects=_changed_objects(before,after);changed_runs=_changed_runs(before,after);changed_paths=_changed_workspace_paths(before,after);run_results,run_evidence,method_observations=_run_refs(workspace,event['business_id'],changed_runs);artifact_refs=[]
     candidate_artifact_refs=[ref for ref in run_results if _looks_like_artifact(ref)]+_asset_location_refs(workspace,changed_objects)+[p for p in changed_paths if _looks_like_artifact(p)]
@@ -111,13 +119,13 @@ def derive_receipt(rd,run,event,blocker_classification=None,blocker_detail=None)
     if isinstance(released,str):
         try:released_refs.append(Path(released).resolve().relative_to(workspace.resolve()).as_posix())
         except ValueError:released_refs.append(released)
-    material_result=bool(canonical_refs or artifact_refs);blocker=None
+    response_ref=_candidate_response_ref(rd,event);material_result=bool(canonical_refs or artifact_refs or response_ref);blocker=None
     if blocker_classification:
         if blocker_classification not in VALID_BLOCKERS:raise SystemExit('Invalid blocker classification: '+blocker_classification)
         blocker={'classification':blocker_classification,'detail':blocker_detail or 'A genuinely required condition was unavailable during the business task.'};status='blocked'
     elif material_result:status='completed'
-    else:status='blocked';blocker={'classification':'no_material_result','detail':'The controller observed no material persisted business result or deliverable for this task.'}
-    receipt={'format_version':'3.0','generated_by':'qualification_controller','generated_at':now(),'event_id':eid,'business_id':event['business_id'],'status':status,'material_result_observed':material_result,'work_run_ids':[x.get('run_id') for x in method_observations if x.get('run_id')],'method_observations':method_observations,'artifact_refs':artifact_refs,'canonical_refs':canonical_refs,'source_refs':source_refs,'field_snapshot_refs':field_refs,'released_fixture_refs':released_refs,'summary':f'Controller observed {len(changed_objects)} changed canonical object(s), {len(artifact_refs)} usable artifact(s), and {len(method_observations)} optional work receipt(s).','blocker':blocker,'quality_notes':'Controller-generated observation only; professional quality and Workflow effectiveness are evaluated from the actual work.'};write_json(_receipt_path(rd,event),receipt);return receipt
+    else:status='blocked';blocker={'classification':'no_material_result','detail':'The controller observed no material business result in the candidate response, persisted organization state, or usable deliverables.'}
+    receipt={'format_version':'3.0','generated_by':'qualification_controller','generated_at':now(),'event_id':eid,'business_id':event['business_id'],'status':status,'material_result_observed':material_result,'candidate_response_ref':response_ref,'work_run_ids':[x.get('run_id') for x in method_observations if x.get('run_id')],'method_observations':method_observations,'artifact_refs':artifact_refs,'canonical_refs':canonical_refs,'source_refs':source_refs,'field_snapshot_refs':field_refs,'released_fixture_refs':released_refs,'summary':f"Controller observed {len(changed_objects)} changed canonical object(s), {len(artifact_refs)} usable artifact(s), {len(method_observations)} optional work receipt(s), and {'a' if response_ref else 'no'} captured candidate response.",'blocker':blocker,'quality_notes':'Controller-generated observation only; professional quality and Workflow effectiveness are evaluated from the actual work.'};write_json(_receipt_path(rd,event),receipt);return receipt
 
 def start(run_dir,event_id=None):
     rd,run,queue=_load(run_dir);event,state=_event(rd,queue,event_id)
