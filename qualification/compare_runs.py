@@ -21,16 +21,17 @@ def main():
         if va=='MISSING' or vb=='MISSING': classification='MISSING-RESULT'
         elif va in REVIEW or vb in REVIEW: classification='REVIEW-INCOMPLETE'
         elif va=='BLOCKED-QUALIFICATION-FIXTURE' or vb=='BLOCKED-QUALIFICATION-FIXTURE': classification='QUALIFICATION-FIXTURE-GAP'
-        elif va=='BLOCKED-EXTERNAL' or vb=='BLOCKED-EXTERNAL': classification='ENVIRONMENT-SENSITIVE'
-        elif va in GOOD and vb in GOOD: classification='ROBUST-PASS'
+        elif va=='BLOCKED-EXTERNAL' or vb=='BLOCKED-EXTERNAL': classification='EXTERNAL-BLOCKER-PRESENT'
+        elif va in GOOD and vb in GOOD: classification='REPEATED-PASS'
         elif va in BAD and vb in BAD: classification='REPEATED-FAILURE / DIAGNOSE'
-        else: classification='CANDIDATE-SENSITIVE'
+        else: classification='MIXED-RESULT / DIAGNOSE'
         rows.append({'event_id':eid,'run_a_verdict':va,'run_b_verdict':vb,'run_a_score':(x or {}).get('overall_quality_score'),'run_b_score':(y or {}).get('overall_quality_score'),'run_a_failed_gates':failed_a,'run_b_failed_gates':failed_b,'common_failed_gates':sorted(set(failed_a)&set(failed_b)),'classification':classification})
     counts={}
     for r in rows: counts[r['classification']]=counts.get(r['classification'],0)+1
     out=Path(a.out).expanduser().resolve() if a.out else ra.parent/f'comparison-{ra.name}-vs-{rb.name}.json'; write_json(out,{'run_a':str(ra),'run_b':str(rb),'counts':counts,'events':rows})
     md=out.with_suffix('.md'); lines=['# AURA Qualification Run Comparison','',f'- Run A: `{ra}`',f'- Run B: `{rb}`','','## Summary','']+[f'- **{k}**: {v}' for k,v in sorted(counts.items())]+['','## Repeated failures requiring diagnosis','']
     repeated=[r for r in rows if r['classification']=='REPEATED-FAILURE / DIAGNOSE']; lines += [f"- `{r['event_id']}` — common failed gates: {', '.join(r['common_failed_gates']) or 'quality/result failure'}" for r in repeated] or ['- None']
+    mixed=[r for r in rows if r['classification']=='MIXED-RESULT / DIAGNOSE']; lines += ['','## Mixed results requiring diagnosis',''] + ([f"- `{r['event_id']}` — {r['run_a_verdict']} vs {r['run_b_verdict']}" for r in mixed] if mixed else ['- None'])
     gaps=[r for r in rows if r['classification']=='QUALIFICATION-FIXTURE-GAP']; lines += ['','## Qualification fixture gaps',''] + ([f"- `{r['event_id']}`" for r in gaps] if gaps else ['- None'])
     md.write_text('\n'.join(lines)+'\n',encoding='utf-8'); print(json.dumps({'json':str(out),'markdown':str(md),'counts':counts},indent=2))
 if __name__=='__main__': main()
