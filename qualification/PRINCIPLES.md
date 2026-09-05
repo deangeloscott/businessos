@@ -12,27 +12,45 @@ Qualification is maintainer tooling. It observes AURA; AURA does not optimize it
 
 Keep these separate:
 
-1. **AURA product integrity** — deterministic checks for things AURA itself owns: schemas, references, business isolation, retrieval/state semantics, truth boundaries, packaging, and other architectural invariants. Run with `python3 tests/run_all.py`.
-2. **Qualification-harness integrity** — maintainer-only checks that the blind evaluator, checkpoints, recovery, scoring inputs, and staged-product observation are trustworthy. Run with `python3 qualification/self_test.py`. These checks do not count as AURA product tests.
+1. **AURA product integrity** — deterministic checks for things AURA itself owns: schemas, references, organization isolation, retrieval/state semantics, truth boundaries, packaging, and other architectural invariants. Run with `python3 tests/run_all.py`.
+2. **Qualification-harness integrity** — maintainer-only checks that realistic cases, blind isolation, checkpoints, recovery, scoring inputs, candidate-result observation, and staged-product protection are trustworthy. Run with `python3 qualification/self_test.py`. These checks do not count as AURA product tests.
 3. **Real-work qualification** — give a capable model/harness an ordinary business task with AURA and judge the actual business result. This is the evidence that AURA is useful.
 
 Do not collapse these into one score or one release-test count.
 
 ## Protected invariants
 
-1. **Test normal use, not test-taking.** The candidate receives a normal AURA product/workspace, its real model/harness capabilities, and an ordinary business request. Hidden targets, rubrics, checkpoints, evaluator observations, and scoring stay evaluator-side.
+1. **Test normal use, not test-taking.** The candidate receives a normal AURA product/workspace, its real model/harness capabilities, and an ordinary business request. Hidden targets, judge guidance, rubrics, checkpoints, evaluator observations, and scoring stay evaluator-side.
 2. **AURA must cooperate with intelligence, not constrain it.** Qualification must not reward AURA for limiting model/harness reasoning, tools, delegation, concurrency, planning, or judgment. Equivalent or improved implementation is allowed when essential business work remains rigorous and truthful.
 3. **Test real work, not internal ceremony.** No particular internal execution record, receipt, checkpoint-shaped artifact, or method trace is universal proof of success. Material results, real evidence, truthful durable state, and actual deliverables matter.
-4. **A selected AURA Workflow still has substance.** For Workflow qualification, the reviewer should judge whether the essential business method/quality invariants were actually satisfied. Do this through `method_rigor` and the real work—not by demanding an exact execution graph.
+4. **A selected AURA Workflow still has substance.** When a specific Workflow is deliberately isolated for diagnosis, the reviewer should judge whether its essential business method and quality invariants were actually satisfied. Do this through professional review, not an execution graph.
 5. **Use minimum-sufficient evidence.** Start with a credible evidence set and expand only when more investigation could materially change the result, confidence, or competitive judgment.
 6. **Deterministic gates protect universal integrity, not task semantics or taste.** They may verify evaluator integrity, valid AURA/workspace state, whether a material result was actually observed, truthful completion, and other facts that are safe to decide mechanically. They must not infer from Workflow names that a particular artifact, source count, field-research shape, word count, slide count, magic phrase, or benchmark-specific file is mandatory.
-7. **Professional quality and task-specific completeness are judged externally.** A human or independent capable model judges accuracy, evidence, method rigor, usefulness, craft, business alignment, outcome readiness, and whether the actual job required an artifact, current research, implementation, QA, measurement, or another material step. Current-field comparison is used only when it materially improves the judgment.
+7. **Professional quality and task-specific completeness are judged externally.** A human or independent capable model judges accuracy, evidence, method rigor, usefulness, craft, business alignment, outcome readiness, and whether the actual job required an artifact, current research, implementation, QA, measurement, or another material step.
 8. **Automation is allowed.** A model/harness may automate, delegate, parallelize, or otherwise use its capabilities. Automation fails only when it substitutes generic/fabricated work for the real job or violates another real integrity requirement.
 9. **A truthful blocker beats fabricated completion.** Real external capability, permission/scope, data, or service limits should be recorded evaluator-side. AURA should not invent an internal Approval/authority system to represent them.
 10. **Outcome readiness is not an observed outcome.** Rankings, citations, leads, conversion, revenue, retention, and similar results require later real-world evidence.
 11. **Bad output triggers diagnosis, not automatic product rules.** Separate AURA weaknesses from model, harness, context, fixture, evaluator, execution, and random-variance failures.
 12. **A benchmark rule belongs in AURA only when it improves ordinary customer work.** Otherwise it stays evaluator-side or is removed.
-13. **Do not test the host as if it were AURA.** Generic abilities such as opening/decoding files, browsing, calling APIs, rendering media, running code, choosing tools, using subagents, or scheduling belong to the active model/harness/environment. Qualification may treat those capabilities as environmental conditions and judge the business result AURA helped produce, but it must not turn generic host competence into an AURA product invariant.
+13. **Do not test the host as if it were AURA.** Generic abilities such as opening/decoding files, browsing, calling APIs, rendering media, running code, choosing tools, using subagents, or scheduling belong to the active model/harness/environment.
+
+## Qualification shape
+
+Keep the qualification surface small.
+
+### Real-world use cases
+
+This is the primary proof. Use a compact but broad library of realistic business jobs. A case may exercise one Workflow, many Workflows, multiple operating areas, or several sessions over time. Hidden coverage metadata describes what we think the case exercises; it never becomes an execution requirement.
+
+### Focused Workflow diagnostics
+
+When actual evidence points to one specific body of operating knowledge, isolate that Workflow with an explicit benchmark organization and an ordinary request. This is a debugging microscope, not a release requirement to execute every Workflow individually.
+
+### Repetition and field outcomes
+
+Repeat important cases only when needed to distinguish model variance from systematic weakness. Where authorized real-world work exists, later field outcomes are the strongest evidence and should be preserved with causal uncertainty intact.
+
+There is no separate generated all-Workflow suite, mission taxonomy, profile hierarchy, or mandatory composition benchmark. If a realistic case already tests the meaningful business outcome, qualification should not recreate the same test under another abstraction.
 
 ## Integrity floor
 
@@ -45,13 +63,13 @@ The deterministic qualification floor should stay narrow and universal. Typical 
 - exact duplicate artifact reuse is surfaced when it could masquerade as distinct completed work;
 - the candidate did not access hidden evaluator material or mutate the staged product.
 
-Whether a particular task needed a finished deliverable, current external evidence, rendered QA, implementation, a larger sample, or a specific kind of provenance is a **semantic quality judgment** made from the ordinary request, Workflow expertise, business context, actual result, and professional standards.
+Whether a particular task needed a finished deliverable, current external evidence, rendered QA, implementation, a larger sample, or a specific kind of provenance is a **semantic quality judgment** made from the ordinary request, relevant Workflow expertise, business context, actual result, and professional standards.
 
 Missing evaluator bookkeeping is an **evaluator error**, not evidence that AURA failed.
 
 ## Method rigor
 
-For an AURA Workflow under test, distinguish:
+For an AURA Workflow under focused diagnosis, distinguish:
 
 - **essential invariant** — necessary business work/quality requirement;
 - **useful default** — normally helpful but adaptable;
@@ -70,39 +88,13 @@ Do not require AURA to use the evaluator's exact sources or method. Compare the 
 
 Visible proxies such as ad longevity, views, shares, engagement, or repeated creative families can be meaningful visibility, attention, distribution, or persistence signals when those outcomes matter. They are not automatically direct proof of profitability, conversion, retention, or causal effectiveness without evidence that supports those stronger conclusions.
 
-## Layered real-work qualification
-
-### Layer 0 — AURA product integrity
-Schemas, references, business isolation, persistence, Playbook/Workflow discovery, migrations, packaging, and other deterministic AURA invariants. This is the separate `tests/run_all.py` product gate, not a model/harness benchmark.
-
-### Layer 1 — Atomic job quality
-One meaningful job from an ordinary request. Inspect the actual result.
-
-### Layer 2 — Competitive / field readiness
-Where relevant, independently compare against enough strong current alternatives to judge whether the work is competitive.
-
-### Layer 3 — Composition quality
-Test whether multiple bodies of operating knowledge and organizational memory compound into one coherent result rather than disconnected fragments.
-
-### Layer 4 — Medium-specific outcome quality
-When a business job naturally calls for a particular medium or artifact, judge whether the AURA-assisted result is useful and appropriate for that medium. Do **not** benchmark generic host abilities such as parsing a PDF, decoding an image, rendering a video, or using a particular tool. If a required host capability is genuinely unavailable, record the external limitation truthfully rather than scoring AURA as though it owned that capability.
-
-### Layer 5 — Domain and cross-domain missions
-Test larger outcome-oriented problems, evidence reuse, prioritization, coordination, persistence, and judgment.
-
-### Layer 6 — Reliability
-Repeat important Workflows across runs and, where meaningful, capable models/harnesses. Do not multiply every test across everything by default.
-
-### Layer 7 — Observed real-world outcomes
-Use authorized real organizations/work to measure what happened later while preserving causal uncertainty.
-
 ## Diagnosis before product change
 
 Before modifying AURA because of a qualification failure, answer:
 
 1. What real customer-facing weakness occurred?
 2. Is it attributable to AURA rather than model/harness capability, missing context, execution error, randomness, fixture design, or evaluator error?
-3. What first-principles AURA responsibility would improve by changing the product—organizational memory, operational knowledge, continuity, truth, measurement, Learning, retrieval, or integrity?
+3. What first-principles AURA responsibility would improve by changing the product—organizational memory, operating knowledge, continuity, truth, measurement, Learning, retrieval, or integrity?
 4. Could the proposed fix constrain intelligence, duplicate runtime responsibility, create bureaucracy, or optimize for the benchmark instead of the user?
 5. What fresh real-work run would demonstrate improvement?
 

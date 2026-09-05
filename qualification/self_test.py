@@ -2,9 +2,8 @@
 """Maintainer-only self-test for the qualification/evaluator harness.
 
 This does not test whether AURA is a good product and is not part of the AURA
-product-integrity gate. It only checks that the blind evaluator, real-world case
-library, recovery, integrity, and staged-product observation machinery are
-trustworthy enough to use when running real-work qualification.
+product-integrity gate. It only checks the realistic use-case library, blind evaluator
+isolation/recovery, integrity boundaries, and staged-product observation machinery.
 """
 from pathlib import Path
 import os,subprocess,sys
@@ -12,7 +11,6 @@ import os,subprocess,sys
 ROOT=Path(__file__).resolve().parents[1]
 env=dict(os.environ);env['PYTHONDONTWRITEBYTECODE']='1';env['PYTHONUTF8']='1'
 SELF_TESTS=[
-    'tests/run_qualification_framework.py',
     'tests/run_use_case_library.py',
     'tests/run_qualification_resume.py',
     'tests/run_qualification_integrity.py',

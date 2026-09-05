@@ -10,8 +10,9 @@ import difflib,hashlib,json,re
 
 TEXT_EXTS={'.md','.txt','.html','.htm','.rst','.csv'}
 EVALUATOR_MARKERS=(
-    'evaluator/suite.json','evaluator\\suite.json','evaluator/queue.json','evaluator\\queue.json',
+    'evaluator/queue.json','evaluator\\queue.json',
     'evaluator/product-snapshot.json','evaluator\\product-snapshot.json',
+    'evaluator/judgments.json','evaluator\\judgments.json',
     'qualification/evaluate_run.py','qualification\\evaluate_run.py',
     'qualification/task_controller.py','qualification\\task_controller.py',
 )
@@ -39,16 +40,13 @@ def _snapshot_files(checkpoint):
 
 
 def checkpoint_chain_contiguous(previous_after,current_before):
-    prior=((previous_after or {}).get('workspace') or {}).get('digest');current=((current_before or {}).get('workspace') or {}).get('digest')
+    prior=((previous_after or {}).get('workspace') or {}).get('digest')
+    current=((current_before or {}).get('workspace') or {}).get('digest')
     return bool(prior and current and prior==current)
 
 
 def event_specific_ref_paths(refs,before,after,workspace):
-    """Return referenced files that were created or changed during this benchmark event.
-
-    This is an audit primitive only. It does not decide whether a particular kind or amount
-    of evidence was semantically required by the business task.
-    """
+    """Return referenced files created or changed during this benchmark event."""
     before_files=_snapshot_files(before);after_files=_snapshot_files(after);out=[];ws=Path(workspace).resolve()
     for p in existing_ref_paths(refs,workspace):
         try:rel=p.resolve().relative_to(ws).as_posix()
@@ -63,14 +61,19 @@ def normalized_text(path):
     if p.suffix.lower() not in TEXT_EXTS:return ''
     try:text=p.read_text(encoding='utf-8',errors='ignore')
     except OSError:return ''
-    text=text.lower();text=re.sub(r'run_[a-z0-9]+','<run>',text);text=re.sub(r'workflow-[a-z0-9-]+','<event>',text);text=re.sub(r'20\d\d-\d\d-\d\d[t ][0-9:.+\-z]+','<time>',text);text=re.sub(r'\b[a-f0-9]{8,}\b','<id>',text);return re.sub(r'\s+',' ',text).strip()
+    text=text.lower()
+    text=re.sub(r'run_[a-z0-9]+','<run>',text)
+    text=re.sub(r'workflow-[a-z0-9-]+','<event>',text)
+    text=re.sub(r'20\d\d-\d\d-\d\d[t ][0-9:.+\-z]+','<time>',text)
+    text=re.sub(r'\b[a-f0-9]{8,}\b','<id>',text)
+    return re.sub(r'\s+',' ',text).strip()
 
 
 def artifact_similarity_flags(results,threshold=0.88,max_examples=5):
-    """Surface suspiciously similar cross-job artifacts without prescribing artifact form."""
+    """Surface suspiciously similar artifacts as a review signal, never as a quality verdict."""
     samples=[]
     for result in results:
-        if result.get('kind')!='workflow_acceptance':continue
+        if result.get('kind') not in {'workflow_diagnostic','use_case'}:continue
         chosen=None;text=''
         for p in [Path(x) for x in result.get('actual_artifacts') or []]:
             text=normalized_text(p)
@@ -81,32 +84,27 @@ def artifact_similarity_flags(results,threshold=0.88,max_examples=5):
         e1,w1,p1,t1=samples[i]
         for j in range(i+1,len(samples)):
             e2,w2,p2,t2=samples[j]
-            if w1==w2:continue
+            if w1 and w1==w2:continue
             ratio=difflib.SequenceMatcher(None,t1,t2,autojunk=True).ratio()
             if ratio<threshold:continue
-            matches[e1].append({'other_event':e2,'other_workflow':w2,'similarity':round(ratio,3),'artifact':p1,'other_artifact':p2});matches[e2].append({'other_event':e1,'other_workflow':w1,'similarity':round(ratio,3),'artifact':p2,'other_artifact':p1})
+            matches[e1].append({'other_event':e2,'other_workflow':w2,'similarity':round(ratio,3),'artifact':p1,'other_artifact':p2})
+            matches[e2].append({'other_event':e1,'other_workflow':w1,'similarity':round(ratio,3),'artifact':p2,'other_artifact':p1})
     out={}
     for eid,items in matches.items():
         if not items:continue
-        ranked=sorted(items,key=lambda x:(-x['similarity'],x['other_event']));out[eid]=[{'type':'high_artifact_similarity','match_count':len(items),'max_similarity':ranked[0]['similarity'],'examples':ranked[:max_examples]}]
+        ranked=sorted(items,key=lambda x:(-x['similarity'],x['other_event']))
+        out[eid]=[{'type':'high_artifact_similarity','match_count':len(items),'max_similarity':ranked[0]['similarity'],'examples':ranked[:max_examples]}]
     return out
 
 
 def exact_duplicate_artifact_flags(results):
-    """Detect byte-identical artifacts copied across distinct paths/events.
-
-    Reusing the same path across longitudinal events is not duplicate masquerading: an
-    organization should normally revise the same durable asset in place. Evaluation happens
-    after the whole run, so rereading that shared path would otherwise hash the final bytes
-    for every event and falsely mark legitimate evolution as exact reuse.
-    """
+    """Detect byte-identical artifacts copied across distinct paths/events."""
     by_hash={}
     for result in results:
         for raw in result.get('actual_artifacts') or []:
             path=Path(raw)
             try:
-                resolved=str(path.resolve())
-                digest=hashlib.sha256(path.read_bytes()).hexdigest()
+                resolved=str(path.resolve());digest=hashlib.sha256(path.read_bytes()).hexdigest()
             except OSError:continue
             by_hash.setdefault(digest,[]).append((result['event_id'],result.get('workflow_id'),str(path),resolved))
     flags={}
@@ -135,7 +133,9 @@ def _log_requested_evaluator_material(text):
             if any(marker in line.lower() for marker in EVALUATOR_MARKERS):return True
             continue
         if not isinstance(payload,dict):continue
-        step=payload.get('step_update') if isinstance(payload.get('step_update'),dict) else payload;info=step.get('tool_info') if isinstance(step.get('tool_info'),dict) else {};requested=[]
+        step=payload.get('step_update') if isinstance(payload.get('step_update'),dict) else payload
+        info=step.get('tool_info') if isinstance(step.get('tool_info'),dict) else {}
+        requested=[]
         if isinstance(info.get('parameters'),dict):requested.append(info['parameters'])
         for key in ('tool','command','command_line','input'):
             if step.get(key) is not None:requested.append(step[key])
@@ -148,11 +148,12 @@ def run_control_flags(run_dir,workspace=None):
 
     Ordinary batch automation, AURA helper use, or creating several artifacts is not a
     benchmark-integrity problem. The boundary is candidate access to evaluator-private
-    specifications/queues/snapshots or candidate-authored benchmark-control scripts.
+    queues, judgments, snapshots, or candidate-authored benchmark-control scripts.
     """
     rd=Path(run_dir);flags=[]
     for p in sorted(rd.glob('*.py')):flags.append({'type':'candidate_authored_run_control_script','path':str(p)})
-    for p in sorted((rd/'candidate').glob('*.py')) if (rd/'candidate').exists() else []:flags.append({'type':'candidate_authored_run_control_script','path':str(p)})
+    for p in sorted((rd/'candidate').glob('*.py')) if (rd/'candidate').exists() else []:
+        flags.append({'type':'candidate_authored_run_control_script','path':str(p)})
     roots=[]
     if workspace:
         ws=Path(workspace);roots.extend([ws/'scratch',ws/'runtime'])
@@ -164,11 +165,13 @@ def run_control_flags(run_dir,workspace=None):
             except OSError:continue
             hits=sum(1 for marker in EVALUATOR_MARKERS if marker in text)
             if hits:flags.append({'type':'candidate_evaluator_spec_access','path':str(p),'marker_count':hits})
-            if hits>=2 and re.search(r'\b(for|while)\b',text):flags.append({'type':'mass_completion_runner','path':str(p),'marker_count':hits,'reason':'loops over evaluator-private qualification surfaces'})
+            if hits>=2 and re.search(r'\b(for|while)\b',text):
+                flags.append({'type':'mass_completion_runner','path':str(p),'marker_count':hits,'reason':'loops over evaluator-private qualification surfaces'})
     for logs in (rd/'evaluator'/'logs',rd/'candidate-logs'):
         if not logs.exists():continue
         for p in sorted(logs.glob('*.stdout.log')):
             try:text=p.read_text(encoding='utf-8',errors='ignore').lower()
             except OSError:continue
-            if _log_requested_evaluator_material(text):flags.append({'type':'candidate_evaluator_spec_access','path':str(p)})
+            if _log_requested_evaluator_material(text):
+                flags.append({'type':'candidate_evaluator_spec_access','path':str(p)})
     return flags
