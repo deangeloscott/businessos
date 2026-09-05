@@ -10,7 +10,7 @@ The library is maintainer-only. **Candidates must never see this directory, its 
 
 ```text
 qualification/use-cases/
-  library.json          # maintainer-only pairing and coverage metadata
+  library.json          # maintainer-only pairing and descriptive coverage metadata
   requests/             # ordinary user requests, source material for the harness
   judges/               # hidden expected-outcome guidance for independent review
 ```
@@ -49,7 +49,7 @@ Run the small maintainer coverage view at any time:
 python3 qualification/use_case_coverage.py
 ```
 
-That report is descriptive only. It tells us what the library appears to exercise; it never tells the candidate how to work.
+That report is descriptive only. It summarizes the breadth represented by the current library; it never creates a release obligation or tells the candidate how to work.
 
 ## Requests
 
@@ -77,14 +77,14 @@ The independent judge should inspect the actual result, evidence, relevant organ
 
 - which industries and business shapes are represented;
 - which operating areas are exercised;
-- which authored Workflows are clearly exercised directly or as part of larger work;
+- which authored Workflows are obviously exercised directly in a case;
 - whether the case is composed, cross-domain, or longitudinal.
 
 Coverage metadata is never candidate-visible and is not an execution specification.
 
-The goal is **not** one synthetic prompt per Workflow. The goal is a compact but broad set of high-value, realistic business jobs whose combined coverage gives strong evidence that AURA's operating knowledge works in actual use.
+The goal is **not** one synthetic prompt per Workflow, complete Playbook inventory coverage, or a hidden release checklist. The goal is a compact but broad set of high-value, realistic business jobs whose combined evidence gives confidence that AURA's operating knowledge works in actual use.
 
-As the library matures, explicit Workflow coverage should expand toward the full authored inventory. That mapping is for maintainer confidence and gap-finding only. A case can validly exercise additional Workflows that were not predeclared, and the model is never required to invoke the mapped ones by ID.
+Workflow tags are optional descriptive annotations for cases that clearly exercise a particular Workflow. An authored Workflow being untagged is not by itself a qualification gap, and adding a Workflow does not create an obligation to add a matching case. Use a focused Workflow diagnostic only when real evidence gives a reason to isolate that body of operating knowledge.
 
 ## Longitudinal cases
 

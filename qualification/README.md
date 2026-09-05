@@ -47,7 +47,7 @@ Each case pairs:
 - an ordinary business request;
 - ordinary organization context/fixtures;
 - separate hidden expected-outcome guidance for an independent judge;
-- small evaluator-only coverage metadata.
+- small evaluator-only descriptive coverage metadata.
 
 Prepare one case:
 
@@ -55,7 +55,7 @@ Prepare one case:
 python3 qualification/prepare_run.py --case <case-id>
 ```
 
-One strong case may naturally exercise several Workflows or operating areas. We care about whether AURA helps solve the real business job, not about manufacturing one synthetic prompt for every Workflow.
+One strong case may naturally exercise several Workflows or operating areas. We care about whether AURA helps solve the real business job, not about manufacturing one synthetic prompt for every Workflow or maintaining exhaustive Workflow coverage.
 
 ### Focused Workflow diagnostic — optional microscope
 
@@ -166,7 +166,7 @@ Professional review decides whether the work is actually complete and good. For 
 
 High similarity, automation, unusual execution structure, or absence of an AURA Run may be useful review signals, but they are not automatic failures by themselves.
 
-The reviewer scores the real artifact/evidence for accuracy, evidence quality, method rigor, completeness, professional quality, business alignment, outcome readiness, state integrity, and relevant business dimensions.
+The reviewer scores the real artifact/evidence for accuracy, evidence quality, method rigor, completeness, professional quality, business alignment, outcome readiness, and state integrity.
 
 Possible verdicts include:
 

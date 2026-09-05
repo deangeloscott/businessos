@@ -55,8 +55,8 @@ def main():
     coverage=subprocess.run([sys.executable,str(ROOT/'qualification/use_case_coverage.py')],cwd=ROOT,capture_output=True,text=True)
     req(coverage.returncode==0,f'use-case coverage validation failed:\n{coverage.stdout}\n{coverage.stderr}')
     summary=json.loads(coverage.stdout);req(summary['use_cases']==len(cases),'coverage helper case count mismatch');req(summary['domain_count']>=len(required_domains),'coverage helper lost operating-area breadth')
-    req(summary['authored_playbooks']>0,'authored Playbook inventory unexpectedly empty')
-    req(summary['playbooks_remaining']==0 and summary['playbooks_covered']==summary['authored_playbooks'],'real-world library no longer covers every authored Playbook')
+    req(summary['explicit_workflows_covered']>0,'descriptive Workflow coverage unexpectedly empty')
+    req(summary['authored_workflows']>=summary['explicit_workflows_covered'],'descriptive Workflow coverage count is internally inconsistent')
 
     rd,run,queue=run_prepare(['--case','saas-positioning-page'],'usecase-smoke')
     events=queue.get('events',[]);req(run.get('mode')=='use-case' and queue.get('case_filter')=='saas-positioning-page','use-case identity not retained evaluator-side');req(len(events)==1 and events[0].get('kind')=='use_case','use-case event preparation failed');req(events[0].get('event_id')=='TASK-0001','candidate-facing task id is not opaque')
@@ -71,9 +71,9 @@ def main():
     rd,run,queue=run_prepare(['--workflow',workflow_id,'--fixture','atlasops-saas','--request',ordinary],'workflow-diagnostic-smoke')
     events=queue.get('events',[]);req(run.get('mode')=='workflow-diagnostic' and len(events)==1,'focused Workflow diagnostic did not remain one explicit diagnostic');event=events[0];req(event.get('kind')=='workflow_diagnostic' and event.get('workflow_id')==workflow_id,'focused Workflow target was not retained evaluator-side');req(event.get('task')==ordinary,'focused diagnostic did not preserve maintainer-authored ordinary request');req(event.get('claim_under_test') and event.get('workflow_process_steps'),'focused diagnostic lost authored Workflow knowledge for professional review')
 
-    for retired in ('qualification/build_suite.py','qualification/missions','qualification/cases'):
+    for retired in ('qualification/build_suite.py','qualification/missions','qualification/cases','qualification/use-cases/playbook-coverage.json'):
         req(not (ROOT/retired).exists(),f'retired qualification machinery still exists: {retired}')
 
-    print(f"real-world qualification library regressions passed: {len(cases)} cases, {len(industries)} industries, {len(domains)} operating areas, {summary['playbooks_covered']}/{summary['authored_playbooks']} Playbooks; focused Workflow diagnostics remain available without a generated all-Workflow suite")
+    print(f"real-world qualification library regressions passed: {len(cases)} cases, {len(industries)} industries, {len(domains)} operating areas, {summary['explicit_workflows_covered']} explicitly tagged Workflow examples; focused diagnostics remain available without exhaustive per-Workflow coverage requirements")
 
 if __name__=='__main__':main()
