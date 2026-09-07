@@ -263,9 +263,22 @@ For multiple computers, you can keep the live workspace on one machine, use priv
 
 ## Optional local tools
 
-Programs such as browsers, FFmpeg, yt-dlp, document converters, image tools, local search tools, renderers, and other command-line programs may improve particular jobs.
+AURA does not require or manage a particular tool stack. Prefer strong capabilities already available in the active model/harness—such as browsing/search, browser automation or computer use, transcription, image generation, file handling, and rendering—when they solve the job well. Add local or specialist tools only when they materially improve the requested outcome.
 
-They are not an AURA capability registry. The model/harness should use the best appropriate tools actually available for the requested outcome.
+Useful optional examples include:
+
+- **FFmpeg** — reliable media inspection, clipping, transcoding, audio/video manipulation, frames, filters, captions, and deterministic rendering.
+- **yt-dlp** — retrieve permitted online media when source/reference material is legitimately needed for research, analysis, transcription, or production.
+- **HyperFrames** — agent-native video, motion-graphics, captions, explainers, product videos, talking-head recuts, and deterministic HTML/CSS/media-to-video rendering: <https://github.com/heygen-com/hyperframes>.
+- **video-use** — agent-oriented raw-footage editing that can combine transcription, edit decisions, rendering, self-review, and animation overlays: <https://github.com/browser-use/video-use>.
+- **Manim** — precise programmatic mathematical, technical, scientific, diagrammatic, and explanatory animation: <https://github.com/ManimCommunity/manim>.
+- **DaVinci Resolve** — a professional nonlinear editing, color, audio, motion/Fusion, and finishing environment when the production needs a full NLE.
+- **DaVinci Resolve MCP** — an optional agent bridge for operating supported DaVinci Resolve editing/post-production capabilities directly from an MCP-capable harness: <https://github.com/samuelgursky/davinci-resolve-mcp>.
+- **Document converters, image tools, local search/indexing tools, and specialist renderers** — useful when the requested artifact or environment benefits from them.
+
+If the harness already provides strong browser/computer-use or transcription capability, use it rather than installing a duplicate merely because one is named here. Tools such as Playwright/Chromium or local Whisper-family transcription can still be useful fallbacks when they fill a real host capability gap.
+
+These are examples, not an official AURA stack, dependency list, capability registry, or routing system. The model/harness should use the best appropriate tools, Skills, APIs, connectors, local programs, or other resources actually available for the requested outcome.
 
 ## Do I need ViralTrac?
 
