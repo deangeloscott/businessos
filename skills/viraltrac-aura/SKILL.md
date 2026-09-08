@@ -33,6 +33,10 @@ Do not invoke AURA merely because it exists. Ignore it for unrelated personal/ge
 10. **Use receipts sparingly.** A Run is an optional bounded work receipt when continuity/provenance materially benefits. Do not create one merely to begin work or to make memory writable.
 11. **Validate AURA-owned state after material changes.** Schema validity, references, provenance mechanics, and organization isolation belong to AURA; semantic judgment remains with the model/user.
 
+## ViralTrac when available
+
+ViralTrac is AURA's optional first-party companion for attribution, tracking, measurement, experiments, first-party business evidence, artifacts, and supported growth actions. When it is available and materially useful, discover and use its current interface through the host rather than assuming fixed capabilities; if it exposes MCP/bootstrap/tool-group guidance, let that product-specific metadata guide ViralTrac tool use. AURA Playbooks and Workflows remain business operating expertise, while ViralTrac playbooks are product-specific guidance that may complement them. Keep ViralTrac operational data authoritative there, respect its current execution/permission/receipt boundaries, and preserve back into AURA only the durable organizational meaning that will materially help future work.
+
 ## Playbooks, Workflows, and Steps
 
 - **Playbook** — an end-to-end business job such as Competitor Research or Customer Research.
