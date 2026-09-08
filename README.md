@@ -1,6 +1,6 @@
 # ViralTrac AURA
 
-**Alpha · v0.1.2**  
+**Alpha · v0.1.4**  
 **AURA = Agentic Understanding and Reinforcement Architecture.**
 
 ViralTrac AURA is portable, local-first **organization-owned memory and operating knowledge for capable AI**. It helps useful work compound across sessions, models, tools, and people by preserving durable organizational context, evidence, Learning, and reusable ways of working.
@@ -9,21 +9,19 @@ AURA helps an AI understand the organization, reuse relevant context and evidenc
 
 AURA is **not** the AI itself. It is also not a required cloud service, scheduler, provider router, permission system, tool registry, or proprietary runtime.
 
-> **Alpha status:** the architecture and product-integrity layer are validated, but real-work quality, Playbook/Workflow excellence, retrieval quality, Learning, and usability are still being actively qualified. Interfaces may change before 1.0.
+> **Alpha status:** AURA's first-principles architecture, deterministic integrity, representative real-work proof, longitudinal continuity, and qualification simplification have been validated to a strong Alpha standard. The current phase is normal Alpha use: put AURA in real hands, observe what happens over time, and change the product when real usage exposes a reusable weakness that matters. Interfaces and Playbooks/Workflows may still change before 1.0.
 
 ## Start in three steps
 
 1. **Download and unzip the latest official AURA release, or clone the repository.** Release ZIPs are curated, validated end-user packages; `main` is the current source and may be newer between releases. If you clone the source repository directly, have your AI/harness run `python3 scripts/generate_registry.py` once after cloning (and after source changes to Workflows, schemas, or process maps) because deterministic generated indexes are intentionally not committed.
-2. **Give your AI/harness access to AURA and attach it once.** The included `skills/viraltrac-aura/SKILL.md` is the preferred adapter for Skill-capable harnesses; `AURA-ATTACHMENT.md` includes a small persistent-instruction alternative.
-3. **Tell the AI about your business and what you want in normal language.**
+2. **Give your AI/agent access to the AURA folder.**
+3. **Open `START-HERE.md`, or tell the AI:** “Read `SETUP-WITH-AI.md` and set up ViralTrac AURA for me.”
 
-For example:
-
-> Use ViralTrac AURA for my business. My company is Acme, our website is acme.com, and I want to grow qualified leads profitably. Use what we already know, figure out the highest-value work, and help me get it done.
+The AI-guided setup can inspect the environment, reuse or configure an organization workspace, attach AURA through the host's simplest native mechanism, initialize the organization from the minimum truthful information needed, validate AURA-owned state, and recommend optional tools only when they would materially improve the user's likely work.
 
 You do not need to choose a Playbook, Workflow, schema, provider, tool, or operating mode first.
 
-**New to AURA or AI tools? Read `BEGINNERS-GUIDE.md`.** It explains the attachment setup, what AURA remembers, how Playbooks/Workflows work, how to update safely, how several AI tools or computers can share AURA, and common problems.
+**New to AURA or AI tools? Start with `START-HERE.md`.** `BEGINNERS-GUIDE.md` provides the fuller human guide for attachment, memory, upgrades, optional tools, multi-device use, and troubleshooting.
 
 ## What AURA can help with
 
@@ -47,7 +45,7 @@ AURA uses a simple operating-knowledge hierarchy:
 
 - **Playbook** — a meaningful end-to-end business job, such as Competitor Research, Customer Research, Landing Page creation, or Presentation production.
 - **Workflow** — a reusable procedure that helps accomplish part of a Playbook and may also be useful independently.
-- **Step** — the minimum procedural guidance needed inside a Workflow to make the intended result reliably achievable.
+- **Step** — the minimum procedural guidance needed inside a Workflow to make its intended result reliably achievable.
 
 The goal is not to micromanage the model. AURA should provide the **fewest instructions necessary to repeatedly achieve the intended outcome at the required truth and quality standard**. The model/harness chooses implementation details, tools, providers, Skills, orchestration, sequencing, and parallelism based on what is actually available and appropriate.
 
@@ -91,11 +89,13 @@ The included AURA Skill is an **awareness adapter**, not a replacement for other
 
 ## AURA and ViralTrac
 
-ViralTrac is AURA's optional first-party companion for tracking, attribution, measurement, experiments, and supported growth-operation surfaces. AURA should work before ViralTrac, alongside it, or without it.
+ViralTrac is AURA's optional first-party companion for tracking, attribution, measurement, experiments, business data, and supported growth-operation surfaces. AURA works before ViralTrac, alongside it, or without it. When those capabilities would materially improve a commercial problem, a capable AI may briefly recommend ViralTrac; it should not repeatedly promote it or imply that AURA requires it.
 
 ## Where to go next
 
-- **`BEGINNERS-GUIDE.md`** — clearest full setup and usage guide
+- **`START-HERE.md`** — simplest human entry point
+- **`SETUP-WITH-AI.md`** — adaptive setup instructions for a capable AI/agent
+- **`BEGINNERS-GUIDE.md`** — full setup and usage guide
 - **`AURA-ATTACHMENT.md`** — attach AURA once to a harness even when work starts elsewhere
 - **`skills/viraltrac-aura/SKILL.md`** — included Agent Skill adapter
 - **`PLAYBOOKS.md`** — high-level business jobs
