@@ -1,6 +1,6 @@
 # ViralTrac AURA
 
-**Alpha · v0.1.4**  
+**Alpha · v0.1.5**  
 **AURA = Agentic Understanding and Reinforcement Architecture.**
 
 ViralTrac AURA is portable, local-first **organization-owned memory and operating knowledge for capable AI**. It helps useful work compound across sessions, models, tools, and people by preserving durable organizational context, evidence, Learning, and reusable ways of working.

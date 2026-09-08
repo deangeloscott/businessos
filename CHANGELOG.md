@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.1.5 — Alpha
+
+This small patch ships the clarified AURA ↔ ViralTrac interoperability guidance added after v0.1.4. It changes documentation and persistent agent guidance only; it does not add a bridge service, routing layer, capability registry, synchronization subsystem, or new execution architecture.
+
+### What changed
+
+- Strengthened `integrations/viraltrac/README.md` with the combined operating model: AURA supplies durable organizational context and business operating knowledge; the active model applies judgment; ViralTrac supplies current first-party evidence and specialist capabilities where useful; durable outcomes and Learning flow back into AURA without copying ViralTrac's operational data plane.
+- Clarified that AURA Playbooks/Workflows are business operating expertise while ViralTrac agent/operator playbooks are product-specific guidance for using ViralTrac surfaces. They may be composed semantically by the model and are not fixed one-to-one routes.
+- Added guidance to discover ViralTrac through its current host-accessible interface, including AI-native bootstrap/MCP/tool-group metadata when available, rather than hard-coding assumed capabilities.
+- Added a compact `ViralTrac when available` section to the persistent AURA Skill so future attached models understand how to use ViralTrac alongside AURA while respecting ViralTrac's current authorization, execution, evidence, and receipt boundaries.
+
+### Product boundary
+
+ViralTrac remains optional. AURA remains the durable organizational memory and operating-knowledge layer, not a controller for ViralTrac. The active model/harness still chooses methods and tools, ViralTrac remains authoritative for its operational data and supported actions, and only durable organizational meaning should be consolidated back into AURA.
+
+### Validation
+
+No Playbook, Workflow, schema, deterministic helper, canonical memory boundary, or runtime behavior changed in this patch. The standard release packaging command remains responsible for rerunning source integrity, public-distribution checks, product tests, qualification self-tests, fresh-ZIP validation, and the external-workspace consumer smoke test before the v0.1.5 release asset is published.
+
 ## 0.1.4 — Alpha
 
 This patch release aligns the public AURA package with the current Alpha experience after v0.1.3. It does not introduce a new execution architecture or control layer; it makes setup and first use substantially easier while preserving AURA's model/harness boundaries.
