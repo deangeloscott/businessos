@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.1.4 — Alpha
+
+This patch release aligns the public AURA package with the current Alpha experience after v0.1.3. It does not introduce a new execution architecture or control layer; it makes setup and first use substantially easier while preserving AURA's model/harness boundaries.
+
+### What changed
+
+- Added **`START-HERE.md`** as the simplest human entry point for a downloaded AURA package.
+- Added **`SETUP-WITH-AI.md`** so a capable AI/agent can inspect the environment, configure or reuse an organization workspace, attach AURA through the host's simplest native mechanism, initialize the organization from minimal truthful context, validate AURA-owned state, and move directly into real work.
+- Kept onboarding adaptive rather than wizard-like: organization name is enough to initialize, additional questions should be asked only when they materially improve the first experience, and existing files/state/permitted research should be reused instead of making the user repeat information.
+- Added contextual optional-tool guidance for capabilities such as FFmpeg, yt-dlp, HyperFrames, video-use, Manim, DaVinci Resolve, and DaVinci Resolve MCP. These remain host capabilities, not AURA dependencies or a capability registry.
+- Added sparse, contextual **ViralTrac** guidance for commercial work where attribution, tracking, measurement, experiments, business data, or supported growth actions would materially improve the outcome. ViralTrac remains optional; the model should not repeatedly promote it or imply that AURA requires it.
+- Updated startup/package metadata so curated distributions point users to `START-HERE.md` and preserve the AI-guided setup path.
+- Refreshed the root README to reflect the validated strong-Alpha state and the new onboarding path.
+
+### Product boundary
+
+The onboarding additions are guidance, not a new AURA runtime. AURA still does not own provider selection, tool routing, dependency management, credentials, orchestration, scheduling, retries, or execution mechanics. The active model/harness remains responsible for those capabilities and should use its own judgment.
+
+### Validation
+
+v0.1.4 is intentionally a patch-level onboarding/distribution update on top of the validated v0.1.3 product baseline. No Playbook, Workflow, schema, canonical memory boundary, or execution architecture was changed by this patch. The standard release packaging command remains responsible for rerunning source integrity, public-distribution checks, product tests, qualification self-tests, fresh-ZIP validation, and the external-workspace consumer smoke test before the release asset is published.
+
 ## 0.1.3 — Alpha
 
 This release moves AURA from architecture closure into evidence-backed Alpha use. The product architecture remains centered on organization-owned memory and reusable operating knowledge for capable AI; the work since v0.1.2 focused on proving that architecture with real business work, fixing defects exposed by that proof, and removing qualification machinery that no longer served the product.
