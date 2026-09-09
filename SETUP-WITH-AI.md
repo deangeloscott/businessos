@@ -113,7 +113,7 @@ For ordinary durable create/update work, use:
 python3 scripts/remember.py <business-id> --input <json-file>
 ```
 
-The persistence interface handles mechanical identity/type/update details where they can be safely inferred. Specialized helpers remain appropriate when their semantics genuinely matter.
+The persistence interface handles mechanical identity, update, and local-reference details where they can be safely inferred. New canonical objects still name their semantic `object_type`. Specialized helpers remain appropriate when their semantics genuinely matter.
 
 After material persistence, report only a small truthful receipt from the actual persistence result, for example:
 
