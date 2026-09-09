@@ -212,7 +212,7 @@ def remember(business_id,payload):
         'operation':'updated' if row['existing'] else 'created','removed_fields':list(row['remove_fields']),'path':storage_ref(row['path'])
     } for row in prepared]
     return {
-        'format_version':'1.1','status':'persisted','business_id':bid,'objects':rows,'receipt':_receipt(rows),
+        'format_version':'1.0','status':'persisted','business_id':bid,'objects':rows,'receipt':_receipt(rows),
         'validation':{'status':'clean','warnings':warnings[:5],'canonical_object_counts':counts},
         'semantic_boundary':'Only caller-authored organizational meaning was persisted; AURA supplied mechanical canonical wrapping, explicit field removal, storage, and integrity validation.',
     }
