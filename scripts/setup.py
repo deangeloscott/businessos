@@ -13,6 +13,16 @@ from init_business import init_business
 from doctor import doctor
 
 
+def _ensure_generated():
+    required=[PRODUCT_ROOT/'generated/workflow-registry.json',PRODUCT_ROOT/'generated/schema-registry.json']
+    if all(path.exists() for path in required):return False
+    import generate_registry
+    generate_registry.main()
+    missing=[str(path.relative_to(PRODUCT_ROOT)) for path in required if not path.exists()]
+    if missing:raise ValueError('AURA generated indexes are still missing after regeneration: '+', '.join(missing))
+    return True
+
+
 def _target_path(value):
     if value is None:return workspace_root().resolve()
     p=Path(os.path.expanduser(os.path.expandvars(str(value))))
@@ -64,8 +74,9 @@ def _resolve_or_initialize(organization=None,business_id=None):
 
 
 def setup(workspace=None,profile=None,organization=None,business_id=None,knowledge_enabled=True,write_link=True,run_doctor=True):
-    target=_target_path(workspace);changes=[]
-    current=workspace_root().resolve();target_profile=_profile_for(target,profile)
+    changes=[]
+    if _ensure_generated():changes.append({'action':'generated_indexes_refreshed'})
+    target=_target_path(workspace);current=workspace_root().resolve();target_profile=_profile_for(target,profile)
     profile_path=target/'.businessos/workspace.json'
     needs_config=(workspace is not None and target!=current) or not profile_path.exists()
     if target==current and profile_path.exists():
