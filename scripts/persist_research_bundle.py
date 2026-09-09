@@ -3,10 +3,11 @@
 from _common import *
 from canonical_store import validate_canonical, canonical_path, write_canonical
 from validate_research_evidence import evidence_errors, public_source_locator_error, is_public_source, PUBLIC_NARRATIVE_TYPES, DIRECT_ACQUISITION_METHODS, KNOWN_ACQUISITION_METHODS, AUTHORITATIVE_POINTER_METHODS
-import argparse, json, hashlib, shutil
+import argparse, json, hashlib, shutil, collections
 
 DOMAINS=SYSTEMS
 STATE_NAMESPACES={'instances','runtime','knowledge','attachments'}
+CONFIDENCE_LABELS={'low','medium','high'}
 
 
 def _validate(title,obj):validate_canonical(title,obj)
@@ -81,12 +82,24 @@ def _source(bid,item,workflow_id,method_type,method_ref,ts):
     extensions={'businessos_evidence':ev,**_method_extensions(workflow_id,method_type,method_ref)}
     s=_base('SourceRecord',sid,bid,ts);s.update({'source_type':provenance['source_type'],'source_reference':ref,'subject_refs':item.get('subject_refs',[]),'origin':provenance['origin'],'retrieved_at':item.get('retrieved_at') or ts,'published_at':item.get('published_at'),'content_hash':ch,'access_scope':provenance['access_scope'],'extensions':extensions});_validate('SourceRecord',s);return s,asset_objs
 
+def _observation_confidence(item,extensions):
+    value=item.get('extraction_confidence')
+    if not isinstance(value,str):return value
+    label=value.strip().lower()
+    if label not in CONFIDENCE_LABELS:raise ValueError('observation extraction_confidence labels must be low, medium, or high; use a 0..1 number for quantitative confidence')
+    bos=extensions.setdefault('businessos',{});bos['extraction_confidence_label']=label
+    return None
+
 def _write(obj):
     p=canonical_path(obj['business_id'],obj)
     if p.exists():
         old=json.loads(p.read_text())
         if old==obj:return p
     return write_canonical(obj,p)
+
+def _receipt(written):
+    types=collections.Counter(obj.get('object_type') for obj,_ in written)
+    return {'status':'saved','objects':len(written),'object_types':dict(sorted(types.items())),'validation':'passed'}
 
 def persist(bid,bundle):
     base=ROOT/'instances'/bid
@@ -112,8 +125,8 @@ def persist(bid,bundle):
             refs.append(src_ids[i])
         refs += [r for r in item.get('source_refs',[]) if r not in refs]
         if not refs:raise ValueError(f'observation {n} requires source_indexes/source_refs')
-        oid=item.get('id') or _id('obs',f'{bid}:{seed}:{item.get("statement")}:{"|".join(refs)}');ext=dict(item.get('extensions',{}));ext.update({k:v for k,v in _method_extensions(workflow_id,method_type,method_ref).items() if k not in ext})
-        o=_base('Observation',oid,bid,ts);o.update({'observation_type':item.get('observation_type') or 'research_observation','subject_refs':item.get('subject_refs',[]),'statement':item.get('statement'),'source_refs':refs,'observed_at':item.get('observed_at') or ts,'method':item.get('method') or 'source_inspection','extraction_confidence':item.get('extraction_confidence'),'extensions':ext});_validate('Observation',o);obs_objs.append(o)
+        oid=item.get('id') or _id('obs',f'{bid}:{seed}:{item.get("statement")}:{"|".join(refs)}');ext=dict(item.get('extensions',{}));ext.update({k:v for k,v in _method_extensions(workflow_id,method_type,method_ref).items() if k not in ext});confidence=_observation_confidence(item,ext)
+        o=_base('Observation',oid,bid,ts);o.update({'observation_type':item.get('observation_type') or 'research_observation','subject_refs':item.get('subject_refs',[]),'statement':item.get('statement'),'source_refs':refs,'observed_at':item.get('observed_at') or ts,'method':item.get('method') or 'source_inspection','extraction_confidence':confidence,'extensions':ext});_validate('Observation',o);obs_objs.append(o)
     obs_ids=[o['id'] for o in obs_objs]
 
     ins_objs=[]
@@ -179,10 +192,12 @@ def main():
 
 `workflow_id` is optional and should be supplied only when an AURA Workflow materially framed the research. `domain` is optional semantic classification for durable Insights, not an owner, router, or permission boundary. External Skills, model-created methods, and ad-hoc research may instead use method_type/method_ref or omit method provenance when it is not materially useful.
 
+Observation `extraction_confidence` may be a 0..1 number. Qualitative `low`/`medium`/`high` labels are preserved without inventing numeric precision: the canonical numeric field remains null and the label is retained in AURA extensions.
+
 Declare acquisition_method separately from capture_method. Discovery-only methods such as search_result, search_snippet, directory_preview, ai_summary, unvisited_url, or unknown may be saved, but cannot support an Observation even if captured_text is present. For any source whose provenance is not mechanically determined, specify source_type, origin, and access_scope; AURA will not guess public provenance. Preserve subject_refs when a source/observation/insight concerns a resolved material subject. AURA validates structural provenance; the capable model is responsible for whether the evidence substantively supports the natural-language interpretation.'''
     p=argparse.ArgumentParser(description='Persist bounded SourceRecords/evidence/Observations/Insights/Competitors from any truthful research method; AURA operating knowledge is optional.',formatter_class=argparse.RawDescriptionHelpFormatter,epilog=epilog);p.add_argument('business_id');p.add_argument('--bundle-file',required=True);a=p.parse_args()
     try:bundle=json.loads(Path(a.bundle_file).read_text());written,warns=persist(a.business_id,bundle)
     except (ValueError,FileExistsError,json.JSONDecodeError) as e:raise SystemExit(str(e)+'\nSupported path: run `python3 scripts/persist_research_bundle.py --help`; do not create a replacement canonical writer.')
-    print(json.dumps({'business_id':a.business_id,'objects_written':[{'id':o['id'],'object_type':o['object_type'],'path':storage_ref(p)} for o,p in written],'warnings':warns,'next_validation':f'python3 scripts/validate_business.py {a.business_id} --require-context'},indent=2))
+    print(json.dumps({'business_id':a.business_id,'objects_written':[{'id':o['id'],'object_type':o['object_type'],'path':storage_ref(p)} for o,p in written],'receipt':_receipt(written),'warnings':warns,'next_validation':f'python3 scripts/validate_business.py {a.business_id} --require-context'},indent=2))
 
 if __name__=='__main__':main()
