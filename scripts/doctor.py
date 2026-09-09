@@ -20,9 +20,13 @@ def doctor(business_id=None):
     if resolved.get('status')!='resolved':
         return {'format_version':'1.0','status':'not_ready','workspace_root':str(workspace_root()),'business_id':None,'checks':[{'name':'organization_resolution','ok':False,'detail':resolved.get('reason')}],'reason':resolved.get('reason'),'available_businesses':resolved.get('available_businesses',[])}
     bid=resolved['business_id'];checks.append({'name':'organization_resolution','ok':True,'detail':resolved.get('resolution')})
-    retrieval=prepare_work('AURA readiness probe: retrieve minimal organization context only.',bid)
-    retrieval_ok=retrieval.get('status')=='ready' and retrieval.get('business_id')==bid
-    checks.append({'name':'retrieval','ok':retrieval_ok,'detail':f"baseline={len((retrieval.get('retrieval') or {}).get('baseline_context') or [])}"})
+    try:
+        retrieval=prepare_work('AURA readiness probe: retrieve minimal organization context only.',bid)
+        retrieval_ok=retrieval.get('status')=='ready' and retrieval.get('business_id')==bid
+        retrieval_detail=f"baseline={len((retrieval.get('retrieval') or {}).get('baseline_context') or [])}"
+    except Exception as exc:
+        retrieval_ok=False;retrieval_detail=str(exc)
+    checks.append({'name':'retrieval','ok':retrieval_ok,'detail':retrieval_detail})
 
     probe_id=None;probe_ok=False;cleanup_ok=True
     try:
@@ -41,9 +45,14 @@ def doctor(business_id=None):
                 cleanup_ok=False;checks.append({'name':'probe_cleanup','ok':False,'detail':str(exc)})
             else:checks.append({'name':'probe_cleanup','ok':probe_id not in object_index(bid),'detail':'temporary probe removed'})
 
-    errors,warnings,_=validate_business(bid,True)
-    checks.append({'name':'organization_validation','ok':not errors,'detail':f'errors={len(errors)} warnings={len(warnings)}'})
-    workspace_check=_workspace_validation();checks.append({'name':'workspace_validation','ok':workspace_check['ok'],'detail':'; '.join(workspace_check['summary']) or f"exit={workspace_check['returncode']}"})
+    try:
+        errors,warnings,_=validate_business(bid,True);business_ok=not errors;business_detail=f'errors={len(errors)} warnings={len(warnings)}'
+    except Exception as exc:
+        business_ok=False;business_detail=str(exc)
+    checks.append({'name':'organization_validation','ok':business_ok,'detail':business_detail})
+    try:workspace_check=_workspace_validation()
+    except Exception as exc:workspace_check={'ok':False,'returncode':None,'summary':[str(exc)]}
+    checks.append({'name':'workspace_validation','ok':workspace_check['ok'],'detail':'; '.join(workspace_check['summary']) or f"exit={workspace_check['returncode']}"})
     ready=all(row['ok'] for row in checks) and probe_ok and cleanup_ok
     return {'format_version':'1.0','status':'ready' if ready else 'not_ready','workspace_root':str(workspace_root()),'business_id':bid,'checks':checks,'receipt':'AURA readiness verified.' if ready else 'AURA readiness check found a problem.'}
 
