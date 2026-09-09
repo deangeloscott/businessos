@@ -26,7 +26,7 @@ def doctor(business_id=None):
 
     probe_id=None;probe_ok=False;cleanup_ok=True
     try:
-        persisted=remember(bid,{'objects':[{'kind':'Asset','content':{'asset_type':'aura_doctor_probe','business_role':'temporary AURA readiness probe','version':'1','status':'active'}}]})
+        persisted=remember(bid,{'objects':[{'object_type':'Asset','content':{'asset_type':'aura_doctor_probe','business_role':'temporary AURA readiness probe','version':'1','status':'active'}}]})
         row=persisted['objects'][0];probe_id=row['id'];probe_path=Path(workspace_root())/row['path']
         current=object_index(bid).get(probe_id)
         probe_ok=bool(current and current[0].get('asset_type')=='aura_doctor_probe' and probe_path.exists())
