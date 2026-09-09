@@ -34,10 +34,10 @@ def main():
             req(second['business_id']==bid and business_ids()==[bid],'repeat setup duplicated or switched organization state')
             req(not any(row.get('action')=='organization_initialized' for row in second['changes']),'repeat setup reinitialized existing organization')
 
-            created=remember(bid,{'objects':[{'kind':'asset','content':{'asset_type':'brief','business_role':'durable setup test artifact','version':'1','status':'active'}}]})
+            created=remember(bid,{'objects':[{'object_type':'Asset','content':{'asset_type':'brief','business_role':'durable setup test artifact','version':'1','status':'active'}}]})
             row=created['objects'][0];asset_ref=row['id']
             req(row['key']=='object_1','generic persistence should supply a mechanical local key when none is needed')
-            req(row['object_type']=='Asset','kind alias did not resolve to canonical object type')
+            req(row['object_type']=='Asset','generic persistence changed the caller-authored canonical type')
             req(created['receipt']=={'status':'saved','objects':1,'created':1,'updated':0,'object_types':{'Asset':1},'validation':'passed'},f'compact persistence receipt is wrong: {created.get("receipt")}')
 
             updated=remember(bid,{'objects':[{'object_ref':asset_ref,'content':{'business_role':'updated durable setup test artifact'}}]})
