@@ -18,8 +18,9 @@ def req(condition,message):
 
 def main():
     with tempfile.TemporaryDirectory(prefix='aura-setup-readiness-') as td:
-        ws=Path(td).resolve();old=os.environ.get('BUSINESSOS_WORKSPACE')
-        os.environ.pop('BUSINESSOS_WORKSPACE',None)
+        root=Path(td).resolve();initial=root/'initial';ws=root/'workspace';initial.mkdir()
+        old_workspace=os.environ.get('BUSINESSOS_WORKSPACE');old_config=os.environ.get('BUSINESSOS_WORKSPACE_CONFIG')
+        os.environ['BUSINESSOS_WORKSPACE']=str(initial);os.environ.pop('BUSINESSOS_WORKSPACE_CONFIG',None)
         try:
             first=setup(workspace=ws,organization='Setup Readiness Org',write_link=False)
             req(first['status']=='ready',f'first setup did not prove readiness: {first}')
@@ -63,7 +64,9 @@ def main():
             errors,_,_=validate_business(bid,True);req(not errors,f'setup/persistence state must remain valid: {errors}')
             print('AURA setup/readiness regressions passed: idempotent setup, real readiness proof, smoother persistence, compact receipts')
         finally:
-            if old is None:os.environ.pop('BUSINESSOS_WORKSPACE',None)
-            else:os.environ['BUSINESSOS_WORKSPACE']=old
+            if old_workspace is None:os.environ.pop('BUSINESSOS_WORKSPACE',None)
+            else:os.environ['BUSINESSOS_WORKSPACE']=old_workspace
+            if old_config is None:os.environ.pop('BUSINESSOS_WORKSPACE_CONFIG',None)
+            else:os.environ['BUSINESSOS_WORKSPACE_CONFIG']=old_config
 
 if __name__=='__main__':main()
