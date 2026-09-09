@@ -20,54 +20,17 @@ SPECIALIZED_TYPES={
     'PlatformChange':'Use scripts/record_platform_change.py so current/superseded platform state is versioned safely.',
     'PreferenceProfile':'Use scripts/upsert_preference_profile.py so applicability and preference semantics remain governed.',
 }
-CONFIDENCE_LABELS={'low','medium','high'}
-
-
-def _type_lookup():
-    registry=json.loads((PRODUCT_ROOT/'generated/schema-registry.json').read_text())
-    out={}
-    for row in registry:
-        title=row.get('title')
-        if not isinstance(title,str) or not title:continue
-        key=re.sub(r'[^a-z0-9]+','',title.lower())
-        out.setdefault(key,[]).append(title)
-    return out
-
-
-def _canonical_type(value):
-    if not isinstance(value,str) or not value.strip():return None
-    raw=value.strip()
-    try:schema_entry(raw);return raw
-    except ValueError:pass
-    key=re.sub(r'[^a-z0-9]+','',raw.lower());matches=_type_lookup().get(key,[])
-    if len(matches)==1:return matches[0]
-    if len(matches)>1:raise ValueError(f'Ambiguous canonical object kind {value!r}: {matches}')
-    raise ValueError(f'Unknown canonical object kind: {value}')
 
 
 def _item_type(item,index,number):
-    existing_ref=item.get('object_ref');raw_type=item.get('object_type');raw_kind=item.get('kind')
-    supplied=[_canonical_type(v) for v in (raw_type,raw_kind) if isinstance(v,str) and v.strip()]
-    if len(set(supplied))>1:raise ValueError(f'objects[{number-1}] object_type and kind disagree.')
-    existing_type=None
+    existing_ref=item.get('object_ref');typ=item.get('object_type')
     if existing_ref:
         if existing_ref not in index:raise ValueError(f'Unknown canonical object_ref for update: {existing_ref}')
         existing_type=index[existing_ref][0].get('object_type')
-    typ=supplied[0] if supplied else existing_type
-    if not typ:raise ValueError(f'objects[{number-1}] requires kind/object_type when creating a new canonical object.')
-    if existing_type and typ!=existing_type:raise ValueError(f'object_ref {existing_ref} is {existing_type}, not {typ}.')
+        if typ is None:typ=existing_type
+        elif typ!=existing_type:raise ValueError(f'object_ref {existing_ref} is {existing_type}, not {typ}.')
+    if not isinstance(typ,str) or not typ:raise ValueError(f'objects[{number-1}] requires object_type when creating a new canonical object.')
     schema_entry(typ);return typ
-
-
-def _normalize_content(typ,content):
-    out=dict(content);confidence_label=None;confidence_explicit=False
-    if typ=='Observation' and 'extraction_confidence' in out:
-        confidence_explicit=True;value=out.get('extraction_confidence')
-        if isinstance(value,str):
-            label=value.strip().lower()
-            if label not in CONFIDENCE_LABELS:raise ValueError('Observation extraction_confidence labels must be low, medium, or high; use a 0..1 number for quantitative confidence.')
-            confidence_label=label;out['extraction_confidence']=None
-    return out,confidence_label,confidence_explicit
 
 
 def _id_prefix(object_type):
@@ -123,7 +86,6 @@ def remember(business_id,payload):
         existing_ref=item.get('object_ref');typ=_item_type(item,index,number);content=item.get('content')
         if typ in SPECIALIZED_TYPES:raise ValueError(f'{typ} uses a specialized supported interface. {SPECIALIZED_TYPES[typ]}')
         if not isinstance(content,dict):raise ValueError(f'objects[{number-1}].content must contain caller-authored semantic fields.')
-        content,confidence_label,confidence_explicit=_normalize_content(typ,content)
         forbidden=sorted(MECHANICAL_FIELDS & set(content))
         if forbidden:raise ValueError('Mechanical fields belong to AURA, not content: '+', '.join(forbidden))
         remove_fields=item.get('remove_fields',[])
@@ -150,7 +112,7 @@ def remember(business_id,payload):
             existing={};path=None;oid=_new_id(typ,bid,known_ids);known_ids.add(oid)
         if oid in targets:raise ValueError(f'Canonical object is targeted more than once in one input: {oid}')
         targets.add(oid);aliases[key]=oid
-        prepared.append({'item':item,'type':typ,'content':content,'remove_fields':remove_fields,'existing':existing,'path':path,'id':oid,'key':key,'confidence_label':confidence_label,'confidence_explicit':confidence_explicit})
+        prepared.append({'item':item,'type':typ,'content':content,'remove_fields':remove_fields,'existing':existing,'path':path,'id':oid,'key':key})
 
     ts=now();objects=[]
     for row in prepared:
@@ -176,18 +138,13 @@ def remember(business_id,payload):
         elif lineage:
             raise ValueError(f'{typ} does not support lineage_refs; preserve provenance in a schema-supported field instead.')
         if 'extensions' in properties:
-            if 'extensions' in remove_fields and not supplied_extensions and not provenance and not row['confidence_label']:
+            if 'extensions' in remove_fields and not supplied_extensions and not provenance:
                 obj.pop('extensions',None)
             else:
                 obj['extensions']=_merge_extensions(old_extensions,supplied_extensions)
                 if provenance:
                     bos=obj['extensions'].setdefault('businessos',{});bos['memory_provenance']=dict(provenance)
-                if typ=='Observation' and row['confidence_explicit']:
-                    bos=obj['extensions'].setdefault('businessos',{})
-                    if row['confidence_label']:bos['extraction_confidence_label']=row['confidence_label']
-                    else:bos.pop('extraction_confidence_label',None)
-                    if not bos:obj['extensions'].pop('businessos',None)
-        elif supplied_extensions or provenance or row['confidence_label']:
+        elif supplied_extensions or provenance:
             raise ValueError(f'{typ} does not support extensions/provenance payloads.')
         if 'observed_at' in properties and not obj.get('observed_at'):obj['observed_at']=ts
         validate_canonical(typ,obj);row['object']=obj;objects.append(obj)
@@ -220,7 +177,7 @@ def remember(business_id,payload):
 
 def main():
     ap=argparse.ArgumentParser(description='Remember durable organization-owned meaning without requiring a Run or AURA playbook.')
-    ap.add_argument('business_id');ap.add_argument('--input',required=True,help='JSON file containing a non-empty objects list and optional provenance object. New objects may use kind or object_type; updates infer type from object_ref. key is optional unless @local references are needed.')
+    ap.add_argument('business_id');ap.add_argument('--input',required=True,help='JSON file containing a non-empty objects list and optional provenance object. New objects require object_type; updates can infer it from object_ref. key is optional unless @local references are needed.')
     a=ap.parse_args()
     try:payload=json.loads(Path(a.input).read_text(encoding='utf-8'));result=remember(a.business_id,payload)
     except (ValueError,FileExistsError,json.JSONDecodeError,OSError) as exc:raise SystemExit(str(exc))
