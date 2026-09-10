@@ -8,22 +8,21 @@ You do **not** need to learn AURA's internal structure before you begin.
 
 Give your AI/agent access to this AURA folder and say:
 
-> **Read `SETUP-WITH-AI.md` and set up ViralTrac AURA for me. Ask me only for information you actually need, check the environment for useful capabilities, and recommend optional tools only if they would materially improve the kind of work I want to do.**
+> **Read `SETUP-WITH-AI.md` and set up ViralTrac AURA for me. Ask only for information you actually need, prove that AURA is ready, then start the work I want done.**
 
-The agent should then:
+The normal setup path is intentionally small. The agent should use AURA's idempotent `scripts/setup.py` entry point, which reuses existing state, initializes only the smallest truthful organization identity when needed, and runs `scripts/doctor.py` to prove that retrieval and persistence actually work.
 
-1. inspect the AURA installation and active AI/harness;
-2. reuse any existing AURA workspace/organization instead of duplicating it;
-3. configure a sensible organization workspace when needed;
-4. attach the included AURA Skill or use the host's simplest native persistent-instruction mechanism when useful;
-5. initialize the organization from the smallest truthful information needed;
-6. learn additional business context progressively rather than forcing a long setup questionnaire;
-7. validate AURA-owned state;
-8. inspect existing host capabilities and relevant optional tools;
-9. explain briefly when setup is complete;
-10. start on the user's first real business outcome.
+Host attachment stays host-native. If the active harness supports Agent Skills, it can install/copy the included `skills/viraltrac-aura/` Skill through that host's normal mechanism. If the harness already reads AURA project instructions directly, redundant attachment is unnecessary.
 
-Optional tools are **not AURA dependencies**. The agent should prefer strong capabilities already built into the host. Depending on the user's work, it may suggest things such as FFmpeg, yt-dlp, HyperFrames, video-use, Manim, DaVinci Resolve, or DaVinci Resolve MCP when they would genuinely add useful capability.
+A successful setup should leave the user with:
+
+1. a usable AURA product installation;
+2. a selected organization workspace;
+3. the intended organization initialized or reused without invented facts;
+4. AURA readiness verified through real retrieve/write/read/delete/validation checks; and
+5. a clear path to start normal organization work immediately.
+
+Optional tools are **not AURA dependencies**. The agent should use the host's existing tools normally and recommend another tool only when the user's actual work reveals a meaningful capability gap.
 
 **ViralTrac is also optional.** For commercial work where attribution, measurement, experimentation, tracking, or supported growth actions would materially improve the outcome, the agent may briefly recommend ViralTrac as AURA's first-party companion. It should not repeatedly promote ViralTrac, interrupt unrelated work, or imply that AURA requires it.
 

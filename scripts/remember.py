@@ -8,7 +8,7 @@ fields; AURA does not infer what should change. A Run or playbook contract is op
 context, not a prerequisite for organizational memory.
 """
 from pathlib import Path
-import argparse,json,re,secrets
+import argparse,json,re,secrets,collections
 
 from _common import *
 from canonical_store import canonical_path,schema_entry,validate_canonical,write_canonical
@@ -20,6 +20,17 @@ SPECIALIZED_TYPES={
     'PlatformChange':'Use scripts/record_platform_change.py so current/superseded platform state is versioned safely.',
     'PreferenceProfile':'Use scripts/upsert_preference_profile.py so applicability and preference semantics remain governed.',
 }
+
+
+def _item_type(item,index,number):
+    existing_ref=item.get('object_ref');typ=item.get('object_type')
+    if existing_ref:
+        if existing_ref not in index:raise ValueError(f'Unknown canonical object_ref for update: {existing_ref}')
+        existing_type=index[existing_ref][0].get('object_type')
+        if typ is None:typ=existing_type
+        elif typ!=existing_type:raise ValueError(f'object_ref {existing_ref} is {existing_type}, not {typ}.')
+    if not isinstance(typ,str) or not typ:raise ValueError(f'objects[{number-1}] requires object_type when creating a new canonical object.')
+    schema_entry(typ);return typ
 
 
 def _id_prefix(object_type):
@@ -56,6 +67,12 @@ def _merge_extensions(existing,supplied):
     return out
 
 
+def _receipt(rows):
+    created=sum(row['operation']=='created' for row in rows);updated=sum(row['operation']=='updated' for row in rows)
+    types=collections.Counter(row['object_type'] for row in rows)
+    return {'status':'saved','objects':len(rows),'created':created,'updated':updated,'object_types':dict(sorted(types.items())),'validation':'passed'}
+
+
 def remember(business_id,payload):
     resolved=resolve_business(business_id)
     if resolved.get('status')!='resolved':raise ValueError(resolved.get('reason') or 'Organization could not be resolved.')
@@ -66,9 +83,7 @@ def remember(business_id,payload):
     index=object_index(bid);known_ids=set(index);aliases={};prepared=[];targets=set()
     for number,item in enumerate(items,1):
         if not isinstance(item,dict):raise ValueError(f'objects[{number-1}] must be an object.')
-        typ=item.get('object_type');content=item.get('content');existing_ref=item.get('object_ref')
-        if not isinstance(typ,str) or not typ:raise ValueError(f'objects[{number-1}] requires object_type.')
-        schema_entry(typ)
+        existing_ref=item.get('object_ref');typ=_item_type(item,index,number);content=item.get('content')
         if typ in SPECIALIZED_TYPES:raise ValueError(f'{typ} uses a specialized supported interface. {SPECIALIZED_TYPES[typ]}')
         if not isinstance(content,dict):raise ValueError(f'objects[{number-1}].content must contain caller-authored semantic fields.')
         forbidden=sorted(MECHANICAL_FIELDS & set(content))
@@ -84,14 +99,12 @@ def remember(business_id,payload):
         if overlap:raise ValueError('A field cannot be updated and removed in the same object: '+', '.join(overlap))
         if remove_fields and not existing_ref:
             raise ValueError(f'objects[{number-1}].remove_fields is only valid when updating an existing canonical object.')
-        key=item.get('key') or existing_ref
+        key=item.get('key') or existing_ref or f'object_{number}'
         if not isinstance(key,str) or not re.fullmatch(r'[A-Za-z][A-Za-z0-9_-]*',key):
-            raise ValueError(f'objects[{number-1}] requires a simple unique key (letters/numbers/_/-).')
+            raise ValueError(f'objects[{number-1}] key must be simple letters/numbers/_/-. Omit it when local cross-object references are not needed.')
         if key in aliases:raise ValueError(f'Duplicate local memory key: {key}')
         if existing_ref:
-            if existing_ref not in index:raise ValueError(f'Unknown canonical object_ref for update: {existing_ref}')
             existing,path=index[existing_ref]
-            if existing.get('object_type')!=typ:raise ValueError(f'object_ref {existing_ref} is {existing.get("object_type")}, not {typ}.')
             missing=[field for field in remove_fields if field not in existing]
             if missing:raise ValueError('Cannot remove fields that are not present on the current object: '+', '.join(sorted(missing)))
             oid=existing_ref
@@ -156,7 +169,7 @@ def remember(business_id,payload):
         'operation':'updated' if row['existing'] else 'created','removed_fields':list(row['remove_fields']),'path':storage_ref(row['path'])
     } for row in prepared]
     return {
-        'format_version':'1.0','status':'persisted','business_id':bid,'objects':rows,
+        'format_version':'1.0','status':'persisted','business_id':bid,'objects':rows,'receipt':_receipt(rows),
         'validation':{'status':'clean','warnings':warnings[:5],'canonical_object_counts':counts},
         'semantic_boundary':'Only caller-authored organizational meaning was persisted; AURA supplied mechanical canonical wrapping, explicit field removal, storage, and integrity validation.',
     }
@@ -164,7 +177,7 @@ def remember(business_id,payload):
 
 def main():
     ap=argparse.ArgumentParser(description='Remember durable organization-owned meaning without requiring a Run or AURA playbook.')
-    ap.add_argument('business_id');ap.add_argument('--input',required=True,help='JSON file containing a non-empty objects list and optional provenance object. Updates may include remove_fields for obsolete top-level semantic fields.')
+    ap.add_argument('business_id');ap.add_argument('--input',required=True,help='JSON file containing a non-empty objects list and optional provenance object. New objects require object_type; updates can infer it from object_ref. key is optional unless @local references are needed.')
     a=ap.parse_args()
     try:payload=json.loads(Path(a.input).read_text(encoding='utf-8'));result=remember(a.business_id,payload)
     except (ValueError,FileExistsError,json.JSONDecodeError,OSError) as exc:raise SystemExit(str(exc))

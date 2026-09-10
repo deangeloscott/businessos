@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.1.6 — Alpha
+
+Simplifies AURA's setup and persistence interfaces while keeping host attachment, reasoning, tools, and execution with the active model/harness.
+
+### What changed
+
+- Added an idempotent setup helper that composes existing workspace and organization primitives and generates missing navigation indexes.
+- Added a local readiness check for retrieval, temporary persistence/readback/cleanup, and structural validation. Host attachment remains separately owned by the host.
+- Removed redundant update-type and local-key requirements from ordinary memory writes when those values can be determined mechanically.
+- Preserved qualitative research confidence labels without inventing numeric precision.
+- Added compact persistence results for truthful save receipts, without persistent receipt objects or mandatory Runs.
+- Simplified setup guidance and corrected JSON output, missing-index recovery, and readiness failure reporting.
+
+### Validation
+
+The standard release gate checks product integrity, public distribution, qualification tooling, the fresh release ZIP, and an external organization workspace. New regressions cover setup idempotence, probe cleanup, persistence conveniences, and source-checkout setup failures.
+
 ## 0.1.5 — Alpha
 
 This small patch ships the clarified AURA ↔ ViralTrac interoperability guidance added after v0.1.4. It changes documentation and persistent agent guidance only; it does not add a bridge service, routing layer, capability registry, synchronization subsystem, or new execution architecture.
