@@ -5,7 +5,7 @@ This is a thin composition layer over existing AURA primitives. It does not inst
 third-party software, configure credentials, or guess a host's Skill mechanism.
 """
 from pathlib import Path
-import argparse,json,os,re
+import argparse,json,os,re,subprocess,sys
 
 from _common import PRODUCT_ROOT,business_directory,business_ids,resolve_business,slug,workspace_profile,workspace_root
 from configure_workspace import configure
@@ -14,10 +14,9 @@ from doctor import doctor
 
 
 def _ensure_generated():
-    required=[PRODUCT_ROOT/'generated/workflow-registry.json',PRODUCT_ROOT/'generated/schema-registry.json']
+    required=[PRODUCT_ROOT/'generated'/name for name in ('workflow-registry.json','schema-registry.json','workflow-candidate-index.json')]
     if all(path.exists() for path in required):return False
-    import generate_registry
-    generate_registry.main()
+    subprocess.run([sys.executable,str(PRODUCT_ROOT/'scripts/generate_registry.py')],cwd=PRODUCT_ROOT,stdout=sys.stderr,check=True)
     missing=[str(path.relative_to(PRODUCT_ROOT)) for path in required if not path.exists()]
     if missing:raise ValueError('AURA generated indexes are still missing after regeneration: '+', '.join(missing))
     return True
@@ -126,7 +125,7 @@ def main():
     p.add_argument('--json',action='store_true')
     a=p.parse_args()
     try:r=setup(a.workspace,a.profile,a.organization,a.business_id,not a.no_knowledge,not a.no_link,not a.no_doctor)
-    except (ValueError,FileExistsError,OSError,json.JSONDecodeError) as exc:raise SystemExit(str(exc))
+    except (ValueError,FileExistsError,OSError,json.JSONDecodeError,subprocess.CalledProcessError) as exc:raise SystemExit(str(exc))
     if a.json:print(json.dumps(r,indent=2,ensure_ascii=False))
     else:
         print(f"AURA setup: {r['status']}")

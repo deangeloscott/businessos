@@ -13,7 +13,7 @@ AURA is **not** the AI itself. It is also not a required cloud service, schedule
 
 ## Start in three steps
 
-1. **Download and unzip the latest official AURA release, or clone the repository.** Release ZIPs are curated, validated end-user packages; `main` is the current source and may be newer between releases. If you clone the source repository directly, have your AI/harness run `python3 scripts/generate_registry.py` once after cloning (and after source changes to Workflows, schemas, or process maps) because deterministic generated indexes are intentionally not committed.
+1. **Download and unzip the latest official AURA release, or clone the repository.** Release ZIPs are curated, validated end-user packages; `main` is the current source and may be newer between releases. AI-guided setup generates missing indexes for source checkouts automatically. After editing Workflows, schemas, or process maps, regenerate them with `python3 scripts/generate_registry.py`.
 2. **Give your AI/agent access to the AURA folder.**
 3. **Open `START-HERE.md`, or tell the AI:** “Read `SETUP-WITH-AI.md` and set up ViralTrac AURA for me.”
 

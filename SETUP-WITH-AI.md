@@ -49,6 +49,8 @@ It does **not** create another setup subsystem. The existing workspace, organiza
 
 ## What `doctor.py` proves
 
+Doctor verifies AURA's local mechanics in the executing process. It does not verify that the host has loaded the Skill, that future sessions can locate AURA, or that the model will perform business work well. Confirm host attachment separately through the host when needed.
+
 Readiness means more than "the files exist." The doctor checks that AURA can:
 
 1. resolve the intended organization;

@@ -16,7 +16,13 @@ def _workspace_validation():
 
 
 def doctor(business_id=None):
-    checks=[];resolved=resolve_business(business_id)
+    checks=[]
+    try:root=str(workspace_root())
+    except Exception as exc:
+        return {'format_version':'1.0','status':'not_ready','workspace_root':None,'business_id':None,'checks':[{'name':'workspace_resolution','ok':False,'detail':str(exc)}],'reason':str(exc)}
+    try:resolved=resolve_business(business_id)
+    except Exception as exc:
+        return {'format_version':'1.0','status':'not_ready','workspace_root':root,'business_id':None,'checks':[{'name':'organization_resolution','ok':False,'detail':str(exc)}],'reason':str(exc)}
     if resolved.get('status')!='resolved':
         return {'format_version':'1.0','status':'not_ready','workspace_root':str(workspace_root()),'business_id':None,'checks':[{'name':'organization_resolution','ok':False,'detail':resolved.get('reason')}],'reason':resolved.get('reason'),'available_businesses':resolved.get('available_businesses',[])}
     bid=resolved['business_id'];checks.append({'name':'organization_resolution','ok':True,'detail':resolved.get('resolution')})
@@ -24,7 +30,7 @@ def doctor(business_id=None):
         retrieval=prepare_work('AURA readiness probe: retrieve minimal organization context only.',bid)
         retrieval_ok=retrieval.get('status')=='ready' and retrieval.get('business_id')==bid
         retrieval_detail=f"baseline={len((retrieval.get('retrieval') or {}).get('baseline_context') or [])}"
-    except Exception as exc:
+    except (Exception,SystemExit) as exc:
         retrieval_ok=False;retrieval_detail=str(exc)
     checks.append({'name':'retrieval','ok':retrieval_ok,'detail':retrieval_detail})
 
@@ -54,7 +60,7 @@ def doctor(business_id=None):
     except Exception as exc:workspace_check={'ok':False,'returncode':None,'summary':[str(exc)]}
     checks.append({'name':'workspace_validation','ok':workspace_check['ok'],'detail':'; '.join(workspace_check['summary']) or f"exit={workspace_check['returncode']}"})
     ready=all(row['ok'] for row in checks) and probe_ok and cleanup_ok
-    return {'format_version':'1.0','status':'ready' if ready else 'not_ready','workspace_root':str(workspace_root()),'business_id':bid,'checks':checks,'receipt':'AURA readiness verified.' if ready else 'AURA readiness check found a problem.'}
+    return {'format_version':'1.0','status':'ready' if ready else 'not_ready','workspace_root':root,'business_id':bid,'checks':checks,'receipt':'AURA local retrieval, persistence, and validation checks passed. Host attachment is not verified by this check.' if ready else 'AURA local readiness check found a problem.'}
 
 
 def main():
@@ -62,7 +68,7 @@ def main():
     p.add_argument('--business-id');p.add_argument('--json',action='store_true');a=p.parse_args();r=doctor(a.business_id)
     if a.json:print(json.dumps(r,indent=2,ensure_ascii=False))
     else:
-        print(f"AURA readiness: {r['status'].upper()}")
+        print(f"AURA local readiness: {r['status'].upper()} (host attachment not checked)")
         if r.get('business_id'):print(f"organization={r['business_id']}")
         for row in r.get('checks',[]):print(('✓' if row['ok'] else '✗')+f" {row['name']}: {row.get('detail') or ''}")
     raise SystemExit(0 if r['status']=='ready' else 1)
