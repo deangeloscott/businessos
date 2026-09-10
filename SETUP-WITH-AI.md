@@ -8,6 +8,34 @@ The goal is simple: connect AURA to a usable organization workspace, establish t
 
 Do not turn setup into a capability registry, dependency manager, questionnaire, host framework, or execution system.
 
+## Upgrading an existing installation
+
+For an upgrade, reuse the existing organization workspace before considering initialization.
+
+1. **Locate existing state.** Use the old installation's `scripts/workspace_status.py --json` to resolve its actual workspace and organization IDs. Ask for the old installation or workspace location if it cannot be determined from available context. Missing organizations in a newly downloaded folder do not mean the old data is gone.
+2. **Preserve it.** Back up the existing workspace using the host's normal file tools before changing it. Check the new release's migration instructions and preserve any locally customized product files or saved artifacts outside the workspace. Keep the old installation until verification is complete.
+3. **Reuse or move the workspace.** Reuse an external workspace in place. If organization data lives inside the old product folder, use the old installation's helper to copy and hash-verify it into a separate, non-nested workspace:
+
+   ```bash
+   python3 scripts/migrate_workspace.py "/path/to/separate-workspace" --no-activate --json
+   ```
+
+   Confirm the source workspace in the result. `--no-activate` preserves the old installation's workspace selection. This helper copies organizational files; release-specific data-format migrations remain separate.
+
+4. **Connect the new product.** From the new AURA folder, select the verified workspace and an existing organization ID:
+
+   ```bash
+   python3 scripts/setup.py \
+     --workspace "/path/to/existing-workspace" \
+     --business-id <existing-business-id> \
+     --json
+   ```
+
+   Omit `--organization` during this handoff so a missing organization is reported rather than initialized. Resolve an unexpected workspace or missing organization before continuing. Setup already runs doctor; repeat checks only when diagnosing a problem.
+5. **Finish the handoff.** Update the host's existing Skill or persistent instruction if it still references the old product, using the host's native mechanism. Confirm the expected organizations remain visible and familiar memory and important saved artifacts are accessible. Check attachment in a fresh session when needed. Report the new product path, retained workspace, and verification result before retiring the old installation.
+
+Local readiness proves AURA mechanics; it does not prove every external artifact is accessible or every future version is compatible with existing data.
+
 ## Preferred setup path
 
 AURA now has one product-owned setup entry point:

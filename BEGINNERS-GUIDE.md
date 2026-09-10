@@ -241,13 +241,13 @@ old AURA version ─┐
 new AURA version ─┘
 ```
 
-For an update:
+Download and unzip the new release, give your AI access to the old installation and new folder, and say:
 
-1. keep the organization workspace;
-2. obtain the new AURA product version;
-3. follow any release-specific migration step;
-4. point the new product copy at the same workspace;
-5. validate before deleting the older copy.
+> Read the new version's `SETUP-WITH-AI.md` and upgrade my existing AURA installation, preserving my organizations and saved work.
+
+The AI should locate and back up your existing workspace, follow any release-specific migration instructions, connect the new product to that workspace, and verify existing memory and important saved artifacts. If your data lives inside the old product folder, the existing migration helper can copy and verify it into a separate workspace first. The AI also updates the harness's existing attachment when needed. Keep the old installation until the handoff is verified.
+
+If the AI cannot locate your old installation or workspace, it should ask where it is. You do not need to recreate your organizations or learn the internal commands. See [Upgrading an existing installation](SETUP-WITH-AI.md#upgrading-an-existing-installation) for the agent's procedure.
 
 AURA does not run its own software updater.
 
