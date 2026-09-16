@@ -412,4 +412,100 @@ When executing specific business objectives, proceed to the corresponding domain
 * **[03-brand-business-websites.md](file:///Users/deangeloscott/businessos/recipes/web-design/03-brand-business-websites.md):** Corporate & Brand Authority (The 5-Second Filter, Persona-Based Information Architecture, B2B Software Simulation, The Proof Vault).
 * **[04-multistep-sales-funnels.md](file:///Users/deangeloscott/businessos/recipes/web-design/04-multistep-sales-funnels.md):** Direct-Response Funnel Systems (Advertorials, Book Funnels/SLO, 5-Day Challenges, Webinars, Hybrid VSLs, Skool Community Funnels, 1-Click Upsells).
 
+---
+
+## 10. Foundational References, Theoretical Attribution & Source Directory
+
+Every principle, heuristic, metric, and framework in this library is grounded in rigorous scientific research, large-scale empirical usability datasets, and proven direct-response marketing methodologies. The following directory provides the primary sources, seminal texts, and foundational research institutes for operators seeking deep-dive study:
+
+### 1. Empirical Usability & Conversion Research Institutes
+* **Baymard Institute (Copenhagen & Global):**
+  * *Primary Contribution:* Over 130,000 hours of large-scale empirical e-commerce usability testing.
+  * *Key Findings Used:* The ~70% cart abandonment baseline; 35% UX recovery potential; the dropdown menu selector failure mode; linear checkout architecture; the 14-to-6 form field reduction law.
+  * *Source & Reference:* Baymard Institute E-Commerce Usability Reports & PDP/Checkout Benchmark Studies.
+* **Nielsen Norman Group (NN/g — Jakob Nielsen, Don Norman, Bruce Tognazzini):**
+  * *Primary Contribution:* Human-computer interaction (HCI), ocular tracking research, and cognitive ergonomics.
+  * *Key Findings Used:* Bruce Tognazzini's *False Bottom (Illusion of Completeness)* phenomenon; F-shaped and Layer-Cake scanning patterns; plain language readability standards.
+  * *Seminal Works:* *Prioritizing Web Usability* (Nielsen & Loranger); NN/g Research Articles on Scanning & Scrolling Behavior.
+* **Medill Spiegel Research Center (Northwestern University):**
+  * *Primary Contribution:* Quantitative econometrics of consumer online reviews and purchase probability.
+  * *Key Findings Used:* The 4.2 to 4.7 star rating conversion peak; the "Too Good to Be True" 5.0-star skepticism penalty; the finding that 82% of buyers specifically seek out negative reviews as credibility anchors.
+  * *Seminal Study:* *"How Online Reviews Influence Sales"* (Spiegel Research Center).
+* **CXL Institute & Speero (Peep Laja):**
+  * *Primary Contribution:* Scientific conversion rate optimization, eye-tracking heatmaps, and form field cognitive load.
+  * *Key Findings Used:* The Field Cliff drop-off curve; inline form validation on blur; intent-based form length calibration.
+* **Steven Hoober (4ourth Mobile):**
+  * *Primary Contribution:* Observational research on mobile device touch mechanics (1,333+ participant field studies).
+  * *Key Findings Used:* The Mobile Thumb Zone mapping (49% one-handed use, 75% thumb-driven interactions); bottom 40% viewport conversion anchoring.
+
+### 2. Cognitive Psychology & Behavioral Economics
+* **Daniel Kahneman & Amos Tversky:**
+  * *Primary Contribution:* Behavioral economics, cognitive heuristics, and dual-process cognition.
+  * *Key Findings Used:* System 1 (Intuitive/Limbic) vs. System 2 (Analytical/Prefrontal) processing; Prospect Theory (Loss Aversion: losses hurt 2x more than gains pleasure).
+  * *Seminal Work:* *Thinking, Fast and Slow* (Kahneman, 2011).
+* **Robert B. Cialdini, Ph.D.:**
+  * *Primary Contribution:* The 7 Universal Principles of Influence.
+  * *Key Findings Used:* Reciprocity (free value first), Commitment & Consistency (quiz micro-steps), Social Proof, Authority, Liking, Scarcity (authentic inventory constraints), and Unity.
+  * *Seminal Work:* *Influence: The Psychology of Persuasion* (1984, expanded 2021).
+* **Classical Ergonomic & Interaction Laws:**
+  * *Hick's Law (William Edmund Hick):* Decision time increases logarithmically with the number of choices ($T = b \cdot \log_2(n + 1)$); mandates 5–7 item navigation caps.
+  * *Fitts's Law (Paul Fitts):* Movement time to a target depends on distance and width; mandates 48x48px mobile touch targets and full-width sticky CTAs.
+  * *Miller's Law (George A. Miller):* Working memory capacity limits ($7 \pm 2$ chunks); mandates modular section chunking.
+  * *The Von Restorff Effect (Hedwig von Restorff):* The Isolation Effect; mandates reserving the 10% conversion accent color exclusively for primary actions.
+
+### 3. Direct-Response Architecture, Copywriting & Funnel Systems
+* **Eugene Schwartz:**
+  * *Primary Contribution:* The definitive foundations of market-aware copywriting.
+  * *Key Frameworks Used:* The 5 Stages of Prospect Awareness (Unaware $\to$ Most Aware); The 5 Stages of Market Sophistication (Virgin Claim $\to$ Elaborated Mechanism $\to$ Identity).
+  * *Seminal Work:* *Breakthrough Advertising* (1966).
+* **Alex Hormozi (Acquisition.com):**
+  * *Primary Contribution:* Modern offer architecture, value engineering, and high-velocity acquisition.
+  * *Key Frameworks Used:* The Value Equation ($(\text{Outcome} \times \text{Likelihood}) / (\text{Delay} \times \text{Effort})$); Grand Slam Offers; Acute-Problem Lead Magnets; "Give away secrets, sell implementation."
+  * *Seminal Works:* *$100M Offers* (2021), *$100M Leads* (2023).
+* **Russell Brunson (ClickFunnels):**
+  * *Primary Contribution:* Modern digital direct-response sales funnel frameworks.
+  * *Key Frameworks Used:* The Value Ladder; The Perfect Webinar (The Big Domino, Epiphany Bridge, 3 False Beliefs); Hook-Story-Offer; Free + Shipping Book Funnels; In-Line Order Bumps ($17–$37) and 1-Click Upsell sequences.
+  * *Seminal Works:* *DotCom Secrets* (2015), *Expert Secrets* (2017), *Traffic Secrets* (2020).
+* **April Dunford (Ambient Strategy):**
+  * *Primary Contribution:* Enterprise positioning and market category context.
+  * *Key Frameworks Used:* The 5-Second Positioning Filter (Category, Audience, Outcome); elimination of aspirational corporate jargon.
+  * *Seminal Work:* *Obviously Awesome: How to Nail Product Positioning so Customers Get It, Buy It, Love It* (2019).
+* **Dan Henry (GetClients.com):**
+  * *Primary Contribution:* High-ticket consulting and application sales funnels.
+  * *Key Frameworks Used:* VSL-to-Application call funnels; the 12-phase consultative sales script; direct-to-high-ticket validation before building low-ticket funnels.
+  * *Seminal Work:* *Digital Millionaire Secrets* (2018).
+* **Ryan Levesque (The ASK Method Company):**
+  * *Primary Contribution:* Zero-party data collection and interactive diagnostic funnels.
+  * *Key Frameworks Used:* The Ask Method; 4-stage quiz funnels; micro-commitments; dynamic bucket segmentation.
+  * *Seminal Work:* *Ask: The Counterintuitive Online Method to Discover Exactly What Your Customers Want to Buy* (2015).
+* **Pedro Adao:**
+  * *Primary Contribution:* The 5-Day Challenge Funnel model.
+  * *Key Frameworks Used:* Free admission + VIP double-dip upgrades ($97–$197); daily micro-commitments; graduation day stack pitches.
+* **Sam Ovens (Skool / Consulting.com):**
+  * *Primary Contribution:* Community-driven customer acquisition and continuity.
+  * *Key Frameworks Used:* Free community as the master lead magnet; Level 1–9 gamified leaderboard course unlocking; peer-proof organic ascension to paid masterminds.
+* **Alex Becker (Hyros):**
+  * *Primary Contribution:* Multi-touch server-side ad attribution and long-tail customer lifetime value.
+  * *Key Frameworks Used:* The 90-Day to 2-Year LTV cash payback horizon; unlisted high-density YouTube VSLs; multi-layered objection retargeting.
+* **Daniel Fazio ("Cold Email Wizard" / Client Ascension):**
+  * *Primary Contribution:* Lean B2B customer acquisition and outbound infrastructure.
+  * *Key Frameworks Used:* Google Doc/Notion/Loom minimalist VSL funnels; AI-assisted agency fulfillment; organic-to-community acquisition.
+* **Ravi Abuvala (Scaling With Systems):**
+  * *Primary Contribution:* Sales floor operational division of labor.
+  * *Key Frameworks Used:* The Setter-Closer framework (15-min triage call $\to$ 45-min closing strategy session); the Critical Constraint™ diagnostic.
+* **Joshua Gavin (Josh Gavin):**
+  * *Primary Contribution:* Backend-first offer publishing and self-liquidating digital offer funnels.
+
+### 4. Technical Performance & Autonomous AI Agent Standards
+* **W3C & Google Chrome Platform Team:**
+  * *Primary Contribution:* Quantitative web user experience measurement.
+  * *Key Standards Used:* Core Web Vitals (Largest Contentful Paint $\le 1.8$s, Interaction to Next Paint $\le 100$ms, Cumulative Layout Shift $0.00$); The W3C Speculation Rules API for predictive background prerendering.
+* **Jeremy Howard (Answer.AI / Fast.ai):**
+  * *Primary Contribution:* The open standard for machine-readable web curation.
+  * *Key Standards Used:* The `/llms.txt` and `/llms-full.txt` root specification for token-efficient AI agent scraping and indexing.
+* **Schema.org Consortium (W3C, Google, Microsoft, Yahoo):**
+  * *Primary Contribution:* Structured semantic data vocabularies.
+  * *Key Standards Used:* The JSON-LD `@graph` architecture (`Organization`, `Product`, `Offer`, `AggregateRating`, `Service`, `FAQPage`) for Generative Engine Optimization (GEO).
+
+
 
