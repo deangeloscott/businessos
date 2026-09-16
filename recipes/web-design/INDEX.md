@@ -329,6 +329,12 @@ The four domain tracks in this library are not isolated silos; in production, hi
 │ [Track 01: Self-Serve Tier Checkout] + [Track 02: In-App Enterprise Demo Request for High Volume]│
 │ • Why it works: Serves self-service SMB users with instant digital onboarding while routing      │
 │   high-volume enterprise accounts into consultative sales conversations.                         │
+├──────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ COMPOSITION E: THE AFFILIATE & AUTHORITY REVIEW PUBLISHER ENGINE                                 │
+│ [Organic Search / Paid Intent] ──► [Track 04: "Best X for Y" Comparison Matrix & Verdict Box] ──►│
+│ [Track 04: Opt-In Bridge for Custom Bonus Stack] ──► [Track 04: Vendor Hoplink + rel="sponsored"]│
+│ • Why it works: Captures commercial comparison intent with unbiased testing methodology,         │
+│   differentiates via custom implementation bonuses, and captures the lead before redirection.    │
 └──────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -466,6 +472,10 @@ Every principle, heuristic, metric, and framework in this library is grounded in
   * *Primary Contribution:* Modern digital direct-response sales funnel frameworks.
   * *Key Frameworks Used:* The Value Ladder; The Perfect Webinar (The Big Domino, Epiphany Bridge, 3 False Beliefs); Hook-Story-Offer; Free + Shipping Book Funnels; In-Line Order Bumps ($17–$37) and 1-Click Upsell sequences.
   * *Seminal Works:* *DotCom Secrets* (2015), *Expert Secrets* (2017), *Traffic Secrets* (2020).
+* **Jason Fladlien (Rapid Crush):**
+  * *Primary Contribution:* One-to-many live sales choreography, the $100M+ webinar sales methodology, and affiliate bridge bonus architecture.
+  * *Key Frameworks Used:* The "Two Paths" Seamless Pitch Transition; The "Solving Problems Created by the Solution" Bonus Framework; The 5 Master Closes (If All This Did, Money as Stored Energy, Divided by 365, Us vs. Them, Future Pace); The Affiliate Bridge Funnel & Exclusive Differentiating Bonus Stack.
+  * *Seminal Work:* *One to Many: The Secret to Webinar Success* (2018).
 * **April Dunford (Ambient Strategy):**
   * *Primary Contribution:* Enterprise positioning and market category context.
   * *Key Frameworks Used:* The 5-Second Positioning Filter (Category, Audience, Outcome); elimination of aspirational corporate jargon.
