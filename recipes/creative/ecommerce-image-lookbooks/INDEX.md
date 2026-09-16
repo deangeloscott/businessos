@@ -357,3 +357,21 @@ Every photographic law, visual grammar rule, cognitive framing stage, and archet
   * *Primary Contribution:* Market Awareness Stages and prospect sophistication.
   * *Key Frameworks Used:* Schwartz's 5 Stages of Awareness mapped to the 4 Universal Commerce Classes (*Unaware* $\to$ Habitat/Ritual; *Solution/Product Aware* $\to$ Proof/Specimen).
   * *Seminal Work:* *Breakthrough Advertising* (1966).
+
+### VI. Master Commercial Studio Photographers & DTC Creative Directors
+* **Karl Taylor (Karl Taylor Education / Hasselblad Global Ambassador):**
+  * *Primary Contribution:* World-renowned master commercial advertising, tabletop, liquid splash, and luxury watch photographer.
+  * *Key Frameworks Used:* Precise specular highlight shaping on cylindrical and curved metals; darkfield vs. brightfield illumination on transparent glassware; high-speed flash duration freeze techniques for fluid viscosity.
+  * *Practical Resource:* Karl Taylor Commercial Product & Studio Lighting Masterclasses.
+* **Zack Arias (DEDPXL / Commercial Photographer):**
+  * *Primary Contribution:* Studio lighting fundamentals, exposure discipline, and cyclorama mastery.
+  * *Key Frameworks Used:* The pure white seamless studio packshot protocol (Class 1: The Specimen); balancing foreground subject light against white backdrop exposure to eliminate bounce contamination, lens flare, and wrap-around wash.
+  * *Seminal Resources:* *White Seamless: A Comprehensive Guide to Commercial Studio Lighting* (2010); *Photography Q&A* (New Riders, 2013).
+* **David Ogilvy (Ogilvy & Mather):**
+  * *Primary Contribution:* The science of advertising layout, visual storytelling, and image psychology.
+  * *Key Frameworks Used:* Visual Hierarchy (Image $\to$ Caption $\to$ Headline); "Story Appeal" in commercial photography; demonstrating that product captions placed directly under images are read 20% more than headline copy and must carry the core proof claim.
+  * *Seminal Works:* *Confessions of an Advertising Man* (1963), *Ogilvy on Advertising* (1983).
+* **Nik Sharma (Sharma Brands):**
+  * *Primary Contribution:* Direct-to-consumer (DTC) visual merchandising, landing page architecture, and e-commerce conversion design.
+  * *Key Frameworks Used:* Mobile PDP image carousel choreography (objection-busting slot order); unboxing and texture proof prioritization; pairing visual micro-claims with high-converting mobile layout patterns.
+  * *Practical Resource:* *Nik Sharma's DTC Performance Creative & Visual Merchandising Frameworks* (Continuous publication).

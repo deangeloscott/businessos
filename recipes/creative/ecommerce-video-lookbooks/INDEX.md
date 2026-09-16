@@ -788,3 +788,20 @@ Every kinematic law, optical principle, neurobiological contact rule, and tempor
   * *Primary Contribution:* Mobile sound-off feed video consumption behavior.
   * *Key Frameworks Used:* Mode 1 Silent Visual Autonomy (69%–80% of mobile users watch feed video with sound muted; 80% more likely to watch entire video when visual micro-labels are present).
   * *Seminal Study:* *Video Mobile Behavior: The Impact of Captions and Sound-Off Viewing* (Verizon Media & Publicis Media, 2019).
+
+### VII. Legendary Direct-Response Video Directors & Modern Performance Operators
+* **The Harmon Brothers (Daniel & Benton Harmon, Harmon Brothers Agency):**
+  * *Primary Contribution:* Pioneers of high-converting, viral direct-response video commercials responsible for over $1B+ in trackable DTC sales (Squatty Potty, Purple Mattress, Lume Deodorant, Poo-Pourri, Chatbooks).
+  * *Key Frameworks Used:* The Pattern-Interrupt / Shock Torture Hook (0–3s); the Visceral Physical Problem Dramatization; the Internal Teardown Mechanism; addressing price resistance through comparative demonstration.
+  * *Seminal Work / Resource:* *From Script to Screen: The Harmon Brothers Video Ad Blueprint* (2018).
+* **Sir Roger Deakins (CBE, ASC, BSC):**
+  * *Primary Contribution:* 2-time Academy Award-winning cinematographer (*1917*, *Blade Runner 2049*, *Skyfall*, *No Country for Old Men*).
+  * *Key Frameworks Used:* Motivated naturalistic lighting; disciplined eye-level camera placement; practical camera movement along singular deliberate axes (Law 1: Single Dominant Motion Vector) without gratuitous digital drifting; texture rendering through contrast rather than saturation.
+  * *Seminal Works:* *Byways* (2021); *Team Deakins Cinematography Podcast & Lighting Masterclass Archives*.
+* **Cody Plofker (CMO, Jones Road Beauty) & Dara Denney (Performance Creative Director):**
+  * *Primary Contribution:* Foremost modern practitioners of algorithmic direct-response video advertising on Meta and TikTok.
+  * *Key Frameworks Used:* The Atomic Modular Creative Matrix ($4 \text{ Hooks} \times 3 \text{ Bodies} \times 2 \text{ Outros}$); rapid iteration based on platform drop-off curves (Thumb-Stop / Hook Rate vs. Hold Rate); native mobile safe-zone composition; unboxing and texture application pacing.
+  * *Practical Resources:* *Cody Plofker's DTC Growth Newsletter*; *Dara Denney's Performance Creative Masterclasses & Video Ad Breakdown Series*.
+* **Nick Green & Todd Sullivan (Founders, Thrive Market & ButcherBox):**
+  * *Primary Contribution:* High-retention subscription e-commerce video merchandising and cold traffic acquisition.
+  * *Key Frameworks Used:* The "Unboxing Pull" and "Pantry Stockup Ritual" video archetypes; translating raw physical volume and packaging tactile quality into perceived subscription value.
