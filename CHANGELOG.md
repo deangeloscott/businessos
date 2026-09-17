@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.1.7 — Alpha
+
+Introduces the universal creative recipe layer, including studio-grade E-Commerce Image Lookbooks, Kinesthetic Video Lookbooks, and Web Design & Conversion Architecture, grounded in empirical UX benchmarks, physical optical principles, and world-class direct-response practitioner frameworks.
+
+### What changed
+
+- **E-Commerce Image Lookbooks v2.2:** Added 90 photographic archetypes across 6 physical product scales (< 6" micro-intimate to 12'+ mobility) governed by the 5-Block Director's Rig protocol and 16 brand aesthetic dialects.
+- **E-Commerce Video Lookbooks v1.2:** Added the Bilateral Anchor (Frame 0 $\to$ Frame N) Sandwich Pipeline for zero-hallucination AI video, 180° shutter kinematics, world-model physics constraints, and the $4 \times 3 \times 2 = 24$ Atomic Modular Creative Matrix.
+- **Web Design & Conversion Architecture:** Added 4 core tracks (E-Commerce Stores, Lead Generation, Brand/Corporate, Multi-Step Sales Funnels), 10 design dialects, the 7 fundamental conversion laws, Jason Fladlien's webinar closes, affiliate bridge funnels, and Wirecutter-style authority comparison review site architecture.
+- **Empirical & Practitioner Attribution Directories:** Documented comprehensive references across all recipe indexes, citing empirical UX research (Baymard, NN/g, Spiegel), optical physics (ASC, Hunter/Biver/Fuqua), cognitive neuroscience (Sweller, Rizzolatti, Gallese, Peck), and master commercial practitioners (Karl Taylor, Zack Arias, Roger Deakins, Harmon Brothers, Alex Hormozi, Russell Brunson, Jason Fladlien, Nik Sharma, Cody Plofker, Dara Denney).
+
+### Validation
+
+The standard release gate checks all 35 product integrity suites, qualification tooling (57 real-world test cases across 5 industries), public distribution checks across 9 editions, the fresh release ZIP unpack, and external organization workspace smoke tests.
+
 ## 0.1.6 — Alpha
 
 Simplifies AURA's setup and persistence interfaces while keeping host attachment, reasoning, tools, and execution with the active model/harness.
