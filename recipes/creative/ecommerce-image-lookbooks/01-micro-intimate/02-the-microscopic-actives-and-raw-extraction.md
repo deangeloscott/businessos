@@ -1,30 +1,23 @@
 # Scale 01 — Archetype 02: The Microscopic Actives & Raw Extraction
 
-> Standalone starting point from the [Scale 01 menu](../01-micro-intimate.md). Adapt the bracketed inputs to the actual product, evidence, platform, and tool; inspect generated geometry, text, and any implied performance claim.
->
-> Optional context: [image library index](../INDEX.md) · [brand dialects](../DIALECTS.md)
+* **Visual job:** The Proof
+* **Good for:** making a documented ingredient, source, or formulation story tangible in a still image.
+* **Fits:** vitamin C serums, botanical tinctures, face oils, mineral sunscreens, and peptide creams.
 
-* **Universal Class:** The Proof
-* **Example Products (Illustrative Guidance, Not an Allowlist):** Vitamin C serum, peptide eye cream, cold-pressed face oil, botanical tincture, mineral sunscreen.
-1. **Strategic Intent & Conversion Role:**  
-   Brand storytelling and ingredient authority (PDP Slot 2 or 5). Visually justifies premium pricing by making the supplied ingredient story tangible; it is a generic illustration unless the composition and sourcing are documented.
-2. **The Physical Stage (The 95%):**  
-   Textured raw stone or wet slate surface. The hero product sits grounded in the center, flanked by 1–2 deconstructed raw ingredient specimens (e.g. vanilla pods, fresh rosemary sprig, sea buckthorn berries).
-3. **Optical & Lighting Directives:**  
-   * *Lens:* 85mm Prime.  
-   * *Aperture:* f/5.6.  
-   * *Lighting:* Soft, natural overcast skylight (5600K) coming from a 60° overhead angle. Gentle contrast with rich deep greens and natural earth tones.
-4. **Sensory & Synesthetic Triggers:**  
-   Olfactory simulation: visible moisture on botanical petals, broken seeds displaying oily sheen, microscopic crystals catching light.
-5. **Invariant Guardrails & Crop Safe-Zones:**  
-   Raw ingredients must be strictly authentic to formulation. Product maintains 65%–70% visual weight; props are pushed into soft bokeh.
-* **Director's Rig Prompt Blueprint:**
+## The idea
+
+Place the hero product beside one or two raw materials that genuinely belong to its story. The contrast between finished formula and visible source can make provenance, texture, or craft easier to imagine; it remains an illustration unless the ingredient and sourcing details are supplied.
+
+## Borrow this treatment
+
+Ground the composition on slate, stone, or another restrained material. Let the product stay dominant while a cut seed, botanical, mineral, or other relevant specimen carries the sensory cue: moisture on a leaf, an oily broken seed, or a crystal catching light. Soft natural light and shallow separation keep the supporting material from becoming clutter.
+
+## Make it yours
+
+Choose only references supported by the product information. Substitute the actual ingredient, material, or source, and change the surface or light to fit the brand. If the connection is unknown, use a clearly conceptual atmosphere rather than implying a formulation fact.
+
+## Optional prompt seed
+
 ```text
-[BLOCK 1: HERO]: Commercial still-life photograph of [HERO PRODUCT: Packaging, material, finish, volume], centered and commanding 70% of frame weight in tack-sharp focus with label facing forward.
-[BLOCK 2: OPTICAL RIG]: 85mm prime macro lens, f/4.5 aperture, eye-level perspective.
-[BLOCK 3: LIGHTING RIG]: Soft diffused 5400K daylight from camera-left with subtle rim lighting carving the packaging silhouette, crisp contact shadow beneath base.
-[BLOCK 4: SUBORDINATE STAGE]: Grounded on a honed slate or unsealed limestone slab. In the soft-focus foreground and background (f/2.8 bokeh, 2 stops darker), 1-2 raw botanical elements [BOTANICAL SPECIMENS: e.g., fresh rosemary sprig or cold-pressed seeds] rest softly blurred.
-[BLOCK 5: EXCLUSIONS]: Negative: artificial neon colors, synthetic plastic props, cluttered kitchen, floating product, ungrounded shadows, blurry product label.
+Create a tactile still life of the supplied [PRODUCT] with one or two relevant [INGREDIENTS OR SOURCE MATERIALS] beside it. Keep the product dominant and legible; use stone or slate, natural texture, and soft directional light to make the source story feel tangible. Preserve only the supplied ingredient and sourcing details, and treat any unverified connection as an illustration.
 ```
-
----

@@ -10,6 +10,38 @@ A sales funnel is not a standalone website; it is a **focused path that can make
 
 In modern direct-response marketing, a funnel can use **Front-End Customer Acquisition Cost (CAC) Liquidation**: pre-purchase order bumps and post-purchase offers may raise contribution per buyer enough to offset acquisition cost. This is a unit-economics hypothesis, not automatically net profit or permission to scale. Scale only while contribution margin, fulfillment capacity, refunds, platform constraints, and customer quality remain healthy.
 
+## Quick starts: borrow a useful shape
+
+These are optional concepts for when the offer needs a clearer path from attention to action. A funnel can be one page, several pages, or no funnel at all; choose only the steps that help this audience make the next informed decision.
+
+### Educational bridge to an offer
+
+Match the visitor's problem and the traffic promise, explain a useful mechanism or insight, then introduce the offer as one way to act. Make the commercial relationship clear and keep any evidence, comparison, or urgency accurate.
+
+**Borrowable shape:** problem and context → useful explanation or demonstration → what changes with the offer → fit and terms → next action.
+
+### Teaching event or challenge
+
+Give participants a small win early, use each session to answer the next real question, and present a paid path only when it is relevant. Make the schedule, deliverables, price, support, and any deadline or capacity limit explicit.
+
+**Borrowable shape:** promise and expectations → first action → guided progress → complete offer and fit → optional enrollment or follow-up.
+
+### Purchase with a relevant continuation
+
+After the core decision, offer an addition that solves the next problem created by using the product or service. Keep the price, terms, consent, decline path, and delivery clear; stop when the additional offer no longer improves the customer's situation.
+
+**Borrowable shape:** core offer → immediate next need → optional addition → easy accept or decline → confirmation and onboarding.
+
+### Editorial comparison or review
+
+Help a reader choose among real options with a quick verdict, meaningful criteria, strengths and limitations, methodology, and clear commercial disclosure. A sponsored or affiliate page can still be useful; describe its relationship and testing basis accurately.
+
+**Borrowable shape:** who needs what → options and fit → criteria and evidence → verdict by use case → disclosed next action.
+
+For a filled example, see [the illustrative advertorial blueprint](#2-advertorials-presell-bridges-the-cold-traffic-unfreezer) below and adapt its disclosure, mechanism, and bridge to the actual offer.
+
+The diagram below is one illustrative value path; a simpler page, direct offer, or different sequence may fit better.
+
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
 │                                   THE COMPLETE VALUE MAXIMIZATION PIPELINE                                             │
@@ -89,7 +121,7 @@ Sending cold, scroll-interrupted traffic from social media directly to a hard-se
 
 ## 3. The Free + Shipping Book Funnel (The Buyer Acquisition Machine)
 
-A buyer who commits monetary capital (even $7.95 for shipping) is psychologically distinct from a free lead. Book funnels convert cold traffic into buyers while liquidating acquisition costs.
+A buyer who commits monetary capital, even a small shipping charge, may behave differently from a free lead. A book funnel can turn cold traffic into an initial purchase and may improve acquisition economics when the offer, fulfillment, and customer fit support it.
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
@@ -112,7 +144,7 @@ A buyer who commits monetary capital (even $7.95 for shipping) is psychologicall
 
 This arithmetic is an illustrative revenue mix: `$113.80 - $45.00 = $68.80` before product cost, shipping, fulfillment, payment fees, taxes, refunds, chargebacks, support, overhead, and the time value of money. Call it net profit only after those costs and the accounting definition are known.
 
-* **The Authority Artifact:** A physical book sitting on an executive's desk or nightstand builds lasting authority that digital PDFs cannot replicate.
+* **The authority artifact:** A physical book can remain visible and useful in a way a digital file may not. Treat that as a possible benefit, not a guaranteed authority effect.
 
 ---
 
@@ -141,11 +173,13 @@ Pioneered by **Pedro Adao** and **Russell Brunson**, multi-day challenges create
 │ • Delivers immediate, measurable results. Participants experience tangible momentum.   │
 ├────────────────────────────────────────────────────────────────────────────────────────┤
 │ [ DAY 4: THE BIG REVEAL & STACK PITCH ]                                                │
-│ • Unveils the complete, comprehensive backend system ($3,000 to $10,000 offer).        │
+│ • Introduces the fuller backend system and offer terms (the price and scope depend on  │
+│   the actual program).                                                                 │
 │ • Presents the full Offer Stack: Curriculum + Tools + Coaching + Risk Reversal.        │
 ├────────────────────────────────────────────────────────────────────────────────────────┤
 │ [ DAY 5: GRADUATION, LIVE HOT SEATS & SCARCITY DEADLINE ]                              │
-│ • Celebrates member breakthroughs; live hot-seat coaching; hard enrollment deadline.  │
+│ • Celebrates member breakthroughs; live hot-seat coaching; an enrollment deadline only │
+│   when the deadline is real.                                                           │
 └────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -183,7 +217,7 @@ The **Perfect Webinar Framework** (associated with Russell Brunson's teaching) i
 ```
 
 ### Jason Fladlien's Master Webinar Principles (*One to Many*)
-Widely recognized as the pioneer of high-converting webinar sales (generating over $100M+ in gross webinar transactions), **Jason Fladlien** established the foundational mechanics of one-to-many live closing:
+**Jason Fladlien** is associated with one-to-many live webinar sales methods. The following patterns are teaching references, not proof that a particular script or presenter will produce a given result:
 
 1. **The "Two Paths" Pitch Transition:**
    * Amateurs awkwardly pause or apologize before pitching (*"Now I have something to sell you..."*), triggering defensive skepticism.
@@ -322,7 +356,7 @@ The **Affiliate Bridge & Bonus Funnel** can address these problems when the affi
 ```
 
 #### The Rule of Affiliate Bonus Dominance:
-* When selling an affiliate product, you do not compete on price (the vendor sets the price). You **compete entirely on the implementation environment**.
+* When selling an affiliate product, the vendor may set the core price, so a useful implementation bonus or service can provide a legitimate reason to choose the affiliate. It should not be the only possible source of differentiation in every case.
 * If a vendor sells a $2,000 course on e-commerce, a differentiated affiliate may offer a documented implementation package: *"Buy through my link, and our agency will provide [verified deliverables] over [real period]."* A bonus can reduce implementation risk; it cannot guarantee the buyer's outcome.
 
 ---
@@ -355,9 +389,10 @@ For consumer technology, financial services, and software recommendations (the *
 │    • Constructive negative points anchor trust (Spiegel Paradox).                                │
 ├──────────────────────────────────────────────────────────────────────────────────────────────────┤
 │ 5. REGULATORY & ATTRIBUTION COMPLIANCE INVARIANTS                                                │
-│    • Clear and conspicuous FTC disclosure at the very top of the page before any outbound links: │
-│      *"We may earn a commission when you buy through links on our site. Learn more."*            │
-│    • Disclose the commercial relationship clearly and use the link attributes required by the    │
-│      applicable platform and search guidance (often `rel="sponsored"`, with `nofollow` as needed).│
+│    • Clear, conspicuous disclosure near the recommendation and outbound links; use wording and  │
+│      placement required for the actual relationship and jurisdiction. Example:                 │
+│      *"We may earn a commission when you buy through links on our site."*                      │
+│    • Use the link attributes required by the applicable platform and search guidance (often     │
+│      `rel="sponsored"`, with `nofollow` as needed).                                          │
 └──────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```

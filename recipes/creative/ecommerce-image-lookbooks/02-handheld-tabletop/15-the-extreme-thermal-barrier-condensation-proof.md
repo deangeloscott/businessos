@@ -1,28 +1,23 @@
-# Scale 02 — Archetype 15: The Extreme Thermal Barrier / Condensation Proof
+# Scale 02 — Archetype 15: The Insulation & Condensation Comparison
 
-> Standalone starting point from the [Scale 02 menu](../02-handheld-tabletop.md). Adapt the bracketed inputs to the actual product, evidence, platform, and tool; inspect generated geometry, text, and any implied performance claim.
->
-> Optional context: [image library index](../INDEX.md) · [brand dialects](../DIALECTS.md)
+* **Visual job:** The Proof
+* **Good for:** making temperature, condensation, and cold-drink use easier to evaluate.
+* **Fits:** vacuum tumblers, iced shakers, thermal presses, insulated bottles, and flasks.
 
-* **Universal Class:** The Proof
-* **Example Products (Illustrative Guidance, Not an Allowlist):** Double-wall vacuum tumbler, stainless steel iced shaker, thermal French press, insulated water bottle, chilled sake flask.
-1. **Strategic Intent & Conversion Role:**  
-   PDP Slot 2 or 5 (Thermal Insulation Demonstration). Addresses the doubt about insulated drinkware: *"Will ice melt in 2 hours, and will this sweat all over my desk?"* Pair the visual with the actual duration, contents, ambient conditions, and observed result when making a factual claim.
-2. **The Physical Stage (The 95%):**  
-   A high-impact demonstration on a polished wooden desk or slate surface. The hero tumbler/flask is shown with the relevant contents and a visible surface condition. A dry exterior can dramatize relief, but the elapsed time and environmental conditions must come from a real test before being stated.
-3. **Optical & Lighting Directives:**  
-   * *Lens:* 85mm Prime.  
-   * *Aperture:* f/5.6.  
-   * *Lighting:* Crisp 5500K catalog lighting with sharp side kickers highlighting the powder-coated matte exterior texture and the crystal-clear ice cubes visible inside the open top.
-4. **Sensory & Synesthetic Triggers:**  
-   Frigid sub-zero confidence: ice cubes with sharp crisp edges, zero water rings on expensive furniture, cold touch without sweat.
-5. **Invariant Guardrails & Crop Safe-Zones:**  
-   Make the exterior condition legible and connect any performance language to the supplied test record. Product occupies a useful share of the frame without turning a crop percentage into a guarantee.
-* **Director's Rig Prompt Blueprint:**
+## The idea
+
+Show the relevant inside and outside condition together: ice or hot contents, a dry or beaded exterior, and the surface the product rests on. The image makes the buyer's desk, bag, or hand concern visible; a duration or performance statement still needs a real test.
+
+## Borrow this treatment
+
+Use a clean desk, slate, wood, or another surface where a water ring would matter. Make the opening, contents, exterior, and contact area readable in one frame. Crisp side light can reveal ice and powder-coated texture; a dry surface can carry relief when it is documented or clearly conceptual.
+
+## Make it yours
+
+Use the actual contents, ambient conditions, elapsed time, and observed result for factual communication. Change the temperature story for a hot drink, flask, or food container. Do not infer hours of insulation or zero condensation from a beautiful still life.
+
+## Optional prompt seed
+
 ```text
-[BLOCK 1: HERO THERMAL PROOF]: Commercial insulation demonstration of [HERO PRODUCT: Insulated travel tumbler / flask], centered and occupying 75% of vertical frame height in tack-sharp focus.
-[BLOCK 2: THERMAL RESULT]: The top lid is open, revealing the supplied test contents and conditions. Show the documented exterior temperature/condensation observation when available; otherwise use the dry exterior as an illustrative ideal and avoid claiming zero melting or zero condensation.
-[BLOCK 3: OPTICS]: 85mm prime lens, eye-level perspective, f/5.6 aperture.
-[BLOCK 4: STAGE & LIGHT]: 5500K commercial studio daylight with crisp side kickers carving the powder-coated texture, grounded on a dark walnut desk.
-[BLOCK 5: EXCLUSIONS]: Negative: condensation sweat drops on exterior, puddle of water on desk, melted slush, blurry logo, dark underexposed shadows.
+Create a clear thermal-use image of the supplied [PRODUCT] with [HOT OR COLD CONTENTS]. Show the relevant [ICE, STEAM, EXTERIOR CONDITION, OR SURFACE] so the buyer can understand the use and the concern it addresses. Include documented time and conditions when making a performance claim; otherwise keep the result illustrative.
 ```

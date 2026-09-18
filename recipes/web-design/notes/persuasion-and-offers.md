@@ -15,7 +15,7 @@ Avoid passive, administrative labels like *"Submit"*, *"Click Here"*, or *"Next"
 | :--- | :--- | :--- | :--- |
 | **Low Commitment** | Curious, skeptical, exploring | *"See How It Works"*, *"Explore Live Sandbox"*, *"View Case Studies"*, *"Browse Catalog"* | Asking for purchase or sign-up too early |
 | **Medium Commitment**| Problem-aware, seeking utility | *"Get the Free Implementation Checklist"*, *"Calculate Your Fleet Savings"*, *"Grade Your Architecture"* | Generic labels like *"Download PDF"* |
-| **High Commitment** | Solution-aware, ready to act | *"Claim Your Starter Kit & Save 40%"*, *"Lock In Your VIP Ticket"*, *"Schedule Strategy Call"* | Cold, high-friction words like *"Submit Order"* |
+| **High Commitment** | Solution-aware, ready to act | *"Get the starter kit"*, *"Reserve a real event place"*, *"Schedule a strategy call"* | Cold, high-friction words like *"Submit Order"* |
 
 ### 2. The 1-Sentence Reassurance Anchor (Beneath the CTA)
 Positioned immediately beneath the primary conversion button, this single line of micro-copy defuses the immediate risk associated with that specific action:
@@ -25,7 +25,7 @@ Positioned immediately beneath the primary conversion button, this single line o
 * **For SaaS Trials:** `No credit card required • Full feature access for 14 days • Cancel anytime`
 
 ### 3. Urgency: Authentic vs. Synthetic
-* **The "Synthetic Urgency" Penalty:** Evergreen JavaScript countdown timers that reset upon page reload, fake live visitor counters, or simulated purchase popups (*"Someone in Dallas just bought this"*) destroy brand credibility and attract regulatory penalties. Sophisticated buyers detect synthetic urgency instantly.
+* **The "Synthetic Urgency" Risk:** Evergreen JavaScript countdown timers that reset upon page reload, fake live visitor counters, or simulated purchase popups (*"Someone in Dallas just bought this"*) can damage brand credibility and create regulatory or platform risk. A visitor may notice the mismatch quickly.
 * **Authentic Urgency Drivers:**
   * *Operational Delivery Cutoffs:* Real-time shipping deadline clocks (*"Order within 2h 14m for delivery by Thursday"*) only when the fulfillment system can support the displayed promise.
   * *Cohort & Event Deadlines:* Hard calendar cutoffs for live masterclasses or 5-day challenge enrollments.
@@ -59,7 +59,7 @@ Uncertainty creates inertia. A guarantee can transfer defined risk from the buye
 
 ### 6. Persuasion Technique Spectrum (White-Hat, Grey-Hat, Black-Hat)
 
-The model should understand persuasion mechanisms and their tradeoffs so it can choose deliberately. These labels describe the tactic's transparency and risk; they are not AURA permission tiers or a substitute for the real legal, contractual, platform, customer, and organizational constraints.
+The model can use these labels to understand persuasion mechanisms and tradeoffs and choose deliberately. They describe the tactic's transparency and risk; they are not AURA permission tiers or a substitute for the real legal, contractual, platform, customer, and organizational constraints.
 
 | Mode | Typical mechanisms | Strength | Main failure mode |
 | :--- | :--- | :--- | :--- |
@@ -67,7 +67,7 @@ The model should understand persuasion mechanisms and their tradeoffs so it can 
 | **Grey-hat** | Aggressive loss-aversion framing, selective emphasis, generic ideal-versus-poor contrast, curiosity, strong commitment devices, tightly framed offer stacks | Can create urgency and attention when the material remains accurate and the audience understands the tradeoff | Omission, overstatement, or context collapse can make the asset misleading or brittle |
 | **Black-hat / adversarial** | Fabricated proof, impersonation, fake scarcity, hidden charges, dark patterns, cloaking, deceptive testimonials, or deliberate misdirection | Short-lived attention in some environments | Trust, platform, contractual, legal, and downstream business damage; often not reproducible |
 
-The model may explain any category, but it should name the mechanism, expected upside, evidence burden, and downside before choosing. A decisive position such as “best fit for serious buyers” or “the only option that meets [documented criterion]” is available when the evidence and offer actually support it. Do not present a generic contrast or conceptual visualization as a measured product test.
+The model can consider the mechanism, likely upside, evidence burden, and downside when choosing among these approaches. A decisive position such as “best fit for serious buyers” or “the only option that meets [documented criterion]” is available when the evidence and offer actually support it. Do not present a generic contrast or conceptual visualization as a measured product test.
 
 ### 7. Comparison Truth Modes: Agitate Pain, Then Show Relief
 
@@ -95,32 +95,32 @@ The four domain tracks in this library are not isolated silos; in production, hi
 │ COMPOSITION A: THE DIRECT-TO-CONSUMER GROWTH ENGINE                                              │
 │ [Cold Social Ad] ──► [Track 04: Advertorial / Quiz] ──► [Track 01: Modular PDP Buy Box] ──►      │
 │                      [Track 01: Cart Drawer with Tiered Shipping] ──► [Track 04: 1-Click OTO]    │
-│ • Why it works: Warms cold traffic via an educational bridge, closes via a frictionless PDP,    │
-│   and maximizes AOV using goal-gradient cart drawers and post-purchase one-click upsells.        │
+│ • Why it might help: An educational bridge can warm cold traffic, a focused PDP can close the   │
+│   decision, and relevant additions may improve order value when the economics support them.      │
 ├──────────────────────────────────────────────────────────────────────────────────────────────────┤
 │ COMPOSITION B: THE ENTERPRISE B2B & CONSULTING APPOINTMENT PIPELINE                              │
 │ [Track 03: Brand Authority Hub] ──► [Track 04: Case Study VSL] ──►                              │
 │ [Track 02: Multi-Step Qualifier] ──► [Track 02: Native Scheduler & Indoctrination Homework]     │
-│ • Why it works: Establishes institutional credibility on the main website, pre-sells the        │
-│   mechanism through video, applies intentional friction to filter budget, and protects show-rates│
+│ • Why it might help: The main site can establish credibility, a video can explain the mechanism,│
+│   and targeted qualification can make the conversation more useful when capacity is limited.     │
 ├──────────────────────────────────────────────────────────────────────────────────────────────────┤
 │ COMPOSITION C: THE COMMUNITY & KNOWLEDGE ASCENSION ENGINE                                        │
 │ [Track 02: Acute Lead Magnet Tool] ──► [Track 04: Free Gamified Skool Community] ──►             │
 │ [Track 04: 5-Day Live Challenge or Masterclass] ──► [Track 02: High-Ticket Mastermind Call]     │
-│ • Why it works: Captures initial leads with immediate utility, nurtures them inside an active    │
-│   peer ecosystem, builds urgency via live immersion, and ascends qualified buyers to advisory.   │
+│ • Why it might help: Immediate utility can earn attention; an active community can       │
+│   support learning, and a relevant next offer can serve people who want deeper help.     │
 ├──────────────────────────────────────────────────────────────────────────────────────────────────┤
 │ COMPOSITION D: THE PRODUCT-LED SAAS HYBRID                                                       │
-│ [Track 03: Brand Site with Runnable API] ──► [Track 02: Low-Friction Self-Serve Signup] ──►       │
+│ [Track 03: Brand Site with Runnable API] ──► [Track 02: Self-Serve Signup] ──►                    │
 │ [Track 01: Self-Serve Tier Checkout] + [Track 02: In-App Enterprise Demo Request for High Volume]│
-│ • Why it works: Serves self-service SMB users with instant digital onboarding while routing      │
-│   high-volume enterprise accounts into consultative sales conversations.                         │
+│ • Why it might help: Self-serve onboarding can serve smaller accounts while a consultative path  │
+│   supports larger or more complex accounts when the product and sales model warrant it.          │
 ├──────────────────────────────────────────────────────────────────────────────────────────────────┤
 │ COMPOSITION E: THE AFFILIATE & AUTHORITY REVIEW PUBLISHER ENGINE                                 │
 │ [Organic Search / Paid Intent] ──► [Track 04: "Best X for Y" Comparison Matrix & Verdict Box] ──►│
 │ [Track 04: Opt-In Bridge for Custom Bonus Stack] ──► [Track 04: Vendor Hoplink + rel="sponsored"]│
-│ • Why it works: Captures commercial comparison intent with unbiased testing methodology,         │
-│   differentiates via custom implementation bonuses, and captures the lead before redirection.    │
+│ • Why it might help: A transparent comparison can answer commercial intent, a legitimate bonus   │
+│   can differentiate the affiliate, and an optional bridge can add context before redirection.    │
 └──────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 

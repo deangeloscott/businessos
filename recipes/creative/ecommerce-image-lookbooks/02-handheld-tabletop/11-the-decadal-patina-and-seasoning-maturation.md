@@ -1,30 +1,23 @@
 # Scale 02 — Archetype 11: The Decadal Patina & Seasoning Maturation
 
-> Standalone starting point from the [Scale 02 menu](../02-handheld-tabletop.md). Adapt the bracketed inputs to the actual product, evidence, platform, and tool; inspect generated geometry, text, and any implied performance claim.
->
-> Optional context: [image library index](../INDEX.md) · [brand dialects](../DIALECTS.md)
+* **Visual job:** The Proof
+* **Good for:** showing how a material may mature through use and making an heirloom or longevity story emotionally tangible.
+* **Fits:** leather sleeves, copper shakers, cast-iron pans, brass mills, and pocket tools.
 
-* **Universal Class:** The Proof
-* **Example Products (Illustrative Guidance, Not an Allowlist):** Leather flask sleeve, raw copper cocktail shaker, cast-iron skillet, brass pepper mill, EDC pocketknife.
-1. **Strategic Intent & Conversion Role:**  
-   PDP Slot 5 & Heritage Story. Shows how a natural material may mature through use and makes the long-term value proposition emotionally tangible. A real elapsed-time comparison needs documented samples; a generated “after” state is an illustration.
-2. **The Physical Stage (The 95%):**  
-   Warm craftsman workshop or sunlit kitchen butcher block. A side-by-side: a brand-new item on the left and either a documented later sample or a clearly labeled conceptual mature state on the right, displaying the intended patina without inventing elapsed time or condition.
-3. **Optical & Lighting Directives:**  
-   * *Lens:* 85mm Prime.  
-   * *Aperture:* f/5.6.  
-   * *Lighting:* Warm, low-contrast natural daylight grazing across the textured, weathered surfaces.
-4. **Sensory & Synesthetic Triggers:**  
-   The deep romance of heirloom ownership: brass darkening into rich bronze, oiled leather softening to the touch, seasoned cast iron glistening with non-stick maturity.
-5. **Invariant Guardrails & Crop Safe-Zones:**  
-   Aging must look like dignified, authentic material seasoning—never broken, chipped, or degraded.
-* **Director's Rig Prompt Blueprint:**
+## The idea
+
+Place an unused item beside a documented later sample, or beside a clearly labeled conceptual mature state. The viewer can see the intended relationship between new and seasoned material without an invented elapsed-time record.
+
+## Borrow this treatment
+
+Use a workshop bench, kitchen surface, or another setting that supports touch and use. Raking light can reveal softened leather, darkened metal, seasoning, grain, and creases. Keep the later state dignified and specific rather than simply making it look damaged.
+
+## Make it yours
+
+Use the actual material, wear pattern, maintenance, and time record. Change the arrangement or surface for the product. If the after-state is imagined, label it as an illustration and do not infer durability, performance, or a particular number of years from appearance alone.
+
+## Optional prompt seed
+
 ```text
-[BLOCK 1: HERO COMPARISON]: A side-by-side e-commerce material longevity comparison of [HERO PRODUCT: Material, brass/leather/steel/timber], occupying 80% of frame width on a weathered timber workbench.
-[BLOCK 2: COMPARISON GRAMMAR]: ON THE LEFT: The brand-new item out of the box with raw factory finish. ON THE RIGHT (THE HERO): [DOCUMENTED LATER SAMPLE OR CLEARLY LABELED CONCEPTUAL MATURE STATE] showing the supplied patina, burnished edges, and intended character. Do not invent three years of use or a durability result.
-[BLOCK 3: OPTICS]: 85mm prime lens, eye-level perspective, f/5.6 aperture for tactile surface definition.
-[BLOCK 4: STAGE & LIGHT]: Warm 3500K natural workshop daylight grazing across the materials to highlight depth and grain, soft contact shadows.
-[BLOCK 5: EXCLUSIONS]: Negative: broken parts, rusted junk, dirty grime, peeling plastic, synthetic materials, cluttered workshop tools.
+Create a side-by-side material story for the supplied [PRODUCT]: a new state beside [DOCUMENTED LATER SAMPLE OR LABELED CONCEPTUAL MATURE STATE]. Use raking light and a tactile [SURFACE] to reveal the supplied patina, seasoning, or softening. Keep the contrast graceful and identify any conceptual after-state clearly.
 ```
-
----

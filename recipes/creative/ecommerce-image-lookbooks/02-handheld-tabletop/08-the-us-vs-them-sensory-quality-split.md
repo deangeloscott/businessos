@@ -1,30 +1,23 @@
-# Scale 02 — Archetype 08: The "Us vs. Them" Sensory Quality Split
+# Scale 02 — Archetype 08: The “Us vs. Them” Sensory Quality Split
 
-> Standalone starting point from the [Scale 02 menu](../02-handheld-tabletop.md). Adapt the bracketed inputs to the actual product, evidence, platform, and tool; inspect generated geometry, text, and any implied performance claim.
->
-> Optional context: [image library index](../INDEX.md) · [brand dialects](../DIALECTS.md)
+* **Visual job:** The Proof
+* **Good for:** a direct generic poor-versus-premium contrast when a sensory or material difference should be understood immediately.
+* **Fits:** olive oil, cold brew, matcha, jam, kombucha, and other visibly comparable goods.
 
-* **Universal Class:** The Proof
-* **Example Products (Illustrative Guidance, Not an Allowlist):** Cold-pressed extra virgin olive oil, cold brew concentrate, ceremonial matcha tin, artisanal jam, craft kombucha.
-1. **Strategic Intent & Conversion Role:**  
-   PDP Slot 6 & Bottom-of-Funnel Conversion. Visually dismantles a generic lower-quality alternative by making color, density, or ingredient experience legible side-by-side. The comparison may be intentionally stark; identify the left state as generic and ground the hero side in supplied facts.
-2. **The Physical Stage (The 95%):**  
-   A clean side-by-side split on a seamless neutral surface. ON THE LEFT: a generic lower-quality reference state, with no competitor name or logo. ON THE RIGHT (The Hero): [HERO PRODUCT] in matching glassware showing its supplied or observed color, viscosity, and sediment character. Use a conceptual ideal when the result is not documented.
-3. **Optical & Lighting Directives:**  
-   * *Lens:* 85mm Prime.  
-   * *Aperture:* f/8 for equal sharpness on both glasses.  
-   * *Lighting:* Balanced 5400K clinical daylight with back-fill illuminating fluid clarity.
-4. **Sensory & Synesthetic Triggers:**  
-   Immediate visual justification for a premium position: richer hue, higher viscosity, natural sedimentation, or another supplied differentiator. Replace any price delta with the actual offer economics, and do not infer formulation quality from appearance alone.
-5. **Invariant Guardrails & Crop Safe-Zones:**  
-   Recommended grammar: generic problem/reference on the left (about 45%) and the hero solution on the right (about 55%), with clear text zones. Reverse or resize the panels if the platform or message benefits.
-* **Director's Rig Prompt Blueprint:**
+## The idea
+
+Put the hero product beside a generic lower-quality reference and make one buyer-relevant difference visible: color, texture, clarity, density, finish, or use experience. The strong contrast can maximize pain and relief without naming a competitor or inventing a test.
+
+## Borrow this treatment
+
+Use matching glassware or surfaces so the eye compares like with like. Let the generic side carry the chosen compromise and the hero side carry its supplied or observed advantage. Keep the left/right order, labels, and panel weight flexible for reading direction, placement, and message.
+
+## Make it yours
+
+Choose one supportable difference, not a pile of vague “premium” cues. Use actual contents, color, and performance records for the hero; call the alternative generic or illustrative. Change the intensity or use a more transparent explanation when a stark split would mislead the audience.
+
+## Optional prompt seed
+
 ```text
-[BLOCK 1: HERO COMPARISON]: A side-by-side e-commerce beverage/food comparison photograph on a clean, seamless light-gray studio cyclorama.
-[BLOCK 2: COMPARISON GRAMMAR]: ON THE LEFT (about 45% width): A generic lower-quality reference poured into a matching glass, showing the weak sensory state the buyer wants to avoid. ON THE RIGHT (about 55% width — THE HERO): [HERO PRODUCT] poured into an identical glass, displaying supplied or observed [COLOR / TEXTURE]. Use a conceptual ideal if no sample is available, and identify the left state as generic rather than a named competitor.
-[BLOCK 3: OPTICS]: 85mm prime lens, eye-level perspective, f/8 tack-sharp focus across both glasses.
-[BLOCK 4: STAGE & LIGHT]: 5400K studio daylight with clean back-rim lighting illuminating liquid clarity, crisp contact floor shadows.
-[BLOCK 5: EXCLUSIONS]: Negative: messy spills, kitchen counter clutter, dark gloomy shadows, reversed placement, blurry glass.
+Create a striking comparison between the supplied [HERO PRODUCT] and a clearly generic [LOWER-QUALITY REFERENCE]. Make [MEANINGFUL DIFFERENCE] visible through matching [GLASSWARE, SURFACE, OR USE STATE], with the generic side showing [COMPROMISE] and the hero side showing the supplied [BENEFIT OR OBSERVED RESULT]. Keep names, claims, and test conditions grounded in the source.
 ```
-
----

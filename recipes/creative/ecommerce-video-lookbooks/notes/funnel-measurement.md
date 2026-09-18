@@ -1,42 +1,28 @@
 # Video Funnel Measurement
 
-> Optional video craft notes. Open this only when it materially helps the selected starting point; the compact index and standalone assembly remain usable without it.
->
-> Preserves the optional direct-response measurement and modular creative guidance.
+> Optional craft notes. Use this when a video is being tested or optimized. It does not choose the business goal or require a testing matrix.
 
-## Direct-Response Video Funnel Architecture & Measurement
+## Measure the job the video was meant to do
 
-To learn whether a video is doing its job, map each segment to a measurable viewer or business question. The figures below are not universal benchmarks: set targets from the account baseline, spend, audience, platform, and experiment design, then compare like with like.
+Map the opening, action, explanation, and next step to questions that can be answered with the available data:
 
-```
-┌────────────────────────────────────────────────────────────────────────────────────────┐
-│                   THE DIRECT-RESPONSE VIDEO FUNNEL METRICS MATRIX                      │
-├─────────────────────┬──────────────────┬─────────────────┬─────────────────────────────┤
-│ VIDEO SEGMENT       │ FUNNEL ROLE      │ BENCHMARK KPI   │ KINETIC AI OBJECTIVE        │
-├─────────────────────┼──────────────────┼─────────────────┼─────────────────────────────┤
-│ 0.0s – 1.5s         │ The Thumb-Stop   │ Set from baseline│ Context, contrast, tension  │
-│ 1.5s – 5.0s         │ The Demonstration│ Set from baseline│ Evidence or useful contrast │
-│ 5.0s – 10.0s        │ The Mechanism    │ Set from baseline│ Internal teardown / how     │
-│ 10.0s – 15.0s       │ The Conversion   │ Set from baseline│ Packaging reveal & clear CTA│
-└─────────────────────┴──────────────────┴─────────────────┴─────────────────────────────┘
-```
+| Part of the video | Question |
+|---|---|
+| Opening | Did the intended audience notice and understand the situation? |
+| Action or demonstration | Did viewers stay long enough to see the mechanism, contrast, or result? |
+| Explanation or use | Did the video reduce the relevant objection or improve comprehension? |
+| Next step | Did qualified viewers take the intended action, and did the downstream result hold up? |
 
-### The Atomic Modular Creative Matrix ($4 \times 3 \times 2 = 24$ Ads)
-For algorithmic advertising, a modular matrix can make testing and iteration cheaper than one monolithic edit. Treat the matrix as a planning example, not a claim about every platform or a guaranteed fatigue window. Build **Atomic Modular Bricks** when the account has enough evidence and traffic to learn from them:
+Set targets from the account baseline, spend, audience, platform, and experiment design. Compare like with like and include guardrails such as qualified leads, margin, returns, refunds, activation, or retention when they matter. A stronger thumb-stop can still produce worse business outcomes if the additional attention is unqualified or the promise creates a poor fit.
 
-* **4 Distinct Hooks (0.0s – 3.0s):**
-  1. *The Torture Impact Hook:* High-velocity drop, scratch, or water blast.
-  2. *The Inversion Hazard Hook:* Tumbler inverted over expensive electronics.
-  3. *The Extreme Macro ASMR Hook:* 120fps slow-mo droplet or tactile click.
-  4. *The Polarizing Split Hook:* Side-by-side generic lower-quality reference vs. our supplied hero; do not imply a named competitor or unsupported product fact.
-* **3 Distinct Demonstration Bodies (3.0s – 8.0s):**
-  1. *Internal Engineering Teardown:* Exploded view showing supplied materials/components versus a generic poor construction reference when that contrast is relevant.
-  2. *Real-World Stress Demonstration:* Supplied hill-climb or deluge conditions, or a clearly illustrative generic contrast.
-  3. *Multi-Body Fit / Absorption Test:* Side-by-side demonstration across use cases.
-* **2 Distinct Conversion Outros (8.0s – 12.0s):**
-  1. *In-Hand Ergonomic Scale & Unboxing:* Clean studio unboxing and hand grip.
-  2. *Supported Offer & Guarantee:* Crisp product packshot settle with a real guarantee, availability, or next step; never invented scarcity.
+## Optional modular testing
 
-$$\text{Total Production Yield} = 4 \text{ Hooks} \times 3 \text{ Bodies} \times 2 \text{ Outros} = \mathbf{24\text{ Unique Video Ads}}$$
+When an account has enough traffic and a real learning question, separate a video into a few interchangeable parts:
 
----
+- **Hooks:** a problem or tension, a sensory detail, a generic poor-versus-premium contrast, or a direct product reveal.
+- **Bodies:** a mechanism, a supported demonstration, a use sequence, or a clear comparison.
+- **Outros:** a product settle, a supported offer, a real guarantee, or a clear next step.
+
+Mixing a small number of hooks, bodies, and outros can make iteration cheaper than rebuilding every edit. The exact number is a planning choice, not a platform law or a guaranteed fatigue window. Keep the variants meaningfully different and change one useful question at a time when the test needs to teach you something.
+
+Do not invent scarcity, guarantees, test results, or outcomes to make an outro stronger. When the work is being tested, existing AURA measurement and experiment workflows are useful references for evaluating the business result.

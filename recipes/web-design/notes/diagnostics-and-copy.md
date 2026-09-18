@@ -8,6 +8,8 @@
 
 To keep web properties resilient and adaptive without relying on brittle, soon-to-be-obsolete checklists, an AI model or operator can use these three cognitive frameworks when the telemetry and market context warrant them:
 
+The signals, thresholds, and language examples below are starting points. A behavioral signal can have several causes, and the quoted customer language is illustrative unless it is tied to a real, permissioned source. Use the organization's data, research, and constraints before turning any of it into a diagnosis or published copy.
+
 ### 1. The Conversion Diagnostic Triad (Signals and Starting Hypotheses)
 When a page underperforms, avoid changing aesthetics or copy blindly. These signal-to-intervention pairs are useful starting hypotheses: telemetry can suggest an orientation, conviction, or friction issue, but the same signal can have several causes. Check measurement, traffic, device, offer, and operational context before choosing a change.
 
@@ -63,12 +65,12 @@ While prospect awareness helps determine *how much* education is required, **Mar
 Strong direct-response copy is often grounded in the customer's raw, unvarnished language. Use customer phrases as inputs and evidence, then author, adapt, or synthesize the final copy so it fits the offer, audience, and channel. When AI models generate copy without grounding in customer voice, they can default to sterile corporate abstraction.
 
 High-performance copy mines three specific semantic categories:
-* **The Raw Pain Language:** Harvested from anonymous forums (Reddit, specialized community boards, 1-star competitor reviews).
+* **The Raw Pain Language:** Gathered from permissioned or appropriately cited customer research, support conversations, surveys, interviews, public forums, or reviews. Preserve context and privacy.
   * *Synthetic Corporate:* *"Our tool optimizes database latency issues."*
-  * *VoC Ground Truth:* *"I was dreading the 2:00 AM PagerDuty alerts because our PostgreSQL queries kept timing out during batch billing."*
+  * *Illustrative customer-language example:* *"I was dreading the 2:00 AM alerts because our database queries kept timing out during batch billing."*
 * **The Skepticism Anchor:** The exact doubt preventing purchase.
-  * *VoC Ground Truth:* *"I was skeptical that this was just another overpriced wrapper around the OpenAI API."* (Addressing this skepticism in the H2 subheadline can make the objection explicit and give the reader language that feels familiar.)
+  * *Illustrative customer-language example:* *"I was skeptical that this was just another overpriced wrapper."* (Addressing a real, relevant skepticism in the H2 subheadline can make the objection explicit; do not imply that an invented quote came from a customer.)
 * **The Dream State Metric:** The specific, tangible picture of success.
-  * *VoC Ground Truth:* *"I just want to open my laptop on Monday morning and see our sales calendar full without having to send 200 cold DMs."*
+  * *Illustrative customer-language example:* *"I just want to open my laptop on Monday morning and see a healthier sales calendar without sending 200 cold DMs."*
 
 ---

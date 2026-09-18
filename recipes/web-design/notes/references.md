@@ -16,7 +16,7 @@ These recipes are optional starting points. Follow a link only when the job need
 
 ## Directory Map: How to Navigate This Library
 
-When executing specific business objectives, proceed to the corresponding domain file:
+When a job has no clear starting idea, open the relevant track and borrow one of its quick starts. When the plan is already clear, jump to the matching section or skip the track. The deeper material in each file remains available as optional craft reference:
 
 * **[DIALECTS.md](../DIALECTS.md):** Ten Web UI/UX Design Dialects (color palettes, font pairings, border radii, surface depth, and animation tokens).
 * **[01-ecommerce-stores.md](../01-ecommerce-stores.md):** E-Commerce (faceted PLP, modular PDP, sticky buy box, cart drawer, and checkout patterns).
@@ -122,5 +122,4 @@ The following directory records useful research, standards, and practitioner fra
 * **Schema.org Consortium (W3C, Google, Microsoft, Yahoo):**
   * *Primary Contribution:* Structured semantic data vocabularies.
   * *Key Standards Used:* The JSON-LD `@graph` architecture (`Organization`, `Product`, `Offer`, `AggregateRating`, `Service`, `FAQPage`) for Generative Engine Optimization (GEO).
-
 

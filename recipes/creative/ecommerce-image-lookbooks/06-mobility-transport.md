@@ -1,11 +1,11 @@
 # Scale 06: Micro-Mobility, Vehicles & Adventure Transport Lookbook
-### Master Archetypes for Micro-Mobility, Transport & Overland Systems
+### Starting points for micro-mobility, transport, and overland systems
 *Categories: E-Bikes, Electric Scooters, Rooftop Overland Tents, Cargo Trailers, Adventure Rigs, Skateboards, OneWheels*
 
 ---
 
 ## Overview & Scale Dynamics
-Micro-mobility and adventure transport represent an explosive, high-ticket e-commerce sector ($1,000 to $8,000+). These products are mechanical, electrical, and kinetic—purchased to navigate city streets, conquer mountain trails, or transform a vehicle into an outdoor campsite.
+These products are mechanical, electrical, and kinetic—purchased to navigate city streets, explore trails, carry people or equipment, or transform a vehicle into an outdoor campsite.
 
 Shoppers face high-stakes functional doubts:
 1. *Battery & Range Anxiety:* "How do I charge it? Is the battery removable?"
@@ -13,17 +13,17 @@ Shoppers face high-stakes functional doubts:
 3. *Kinetic Stability & Power:* "Will this climb steep hills? Does it feel stable at 20 mph?"
 4. *Weather & Durability Dread:* "Can I ride this in the rain, or will the electronics short out?"
 
-Every archetype here is a reference for **kinetic motion, modular utility, real-world scale, and persuasive pain-to-relief framing**. Use the optional five-block scaffold when useful. Generic underpowered, unsafe, or inconvenient states may be dramatized beside the hero to make the value obvious; actual speed, range, load, IP rating, safety, mileage, grade, and storage claims require the supplied product data or observed test.
+These optional starting points make **kinetic motion, modular utility, real-world scale, and persuasive pain-to-relief framing** easier to express. Use one when it helps, borrow a single move, combine it with another idea, or continue with a better plan. Generic underpowered, unsafe, or inconvenient states may be dramatized beside the hero to make the value obvious; supplied product data or observed tests ground actual speed, range, load, IP rating, safety, mileage, grade, and storage claims.
 
 ---
 
-## Archetype menu
+## Starting-point menu
 
-Open one archetype directly when you already know the visual job. Each file is self-contained; the index and dialect notes are optional.
+Open one starting point directly when you already know the visual job. Each file is self-contained; the index and dialect notes are optional.
 
-| # | Archetype | Commerce job |
+| # | Starting point | Commerce job |
 |---:|---|---|
-| 01 | [The Compliant Studio Side-Profile Hero](06-mobility-transport/01-the-compliant-studio-side-profile-hero.md) | The Specimen |
+| 01 | [The Studio Side-Profile Hero](06-mobility-transport/01-the-compliant-studio-side-profile-hero.md) | The Specimen |
 | 02 | [The Kinetic Urban Commute (Panning Velocity)](06-mobility-transport/02-the-kinetic-urban-commute-panning-velocity.md) | The Ritual |
 | 03 | [The Battery Swap & Modular Charging Access](06-mobility-transport/03-the-battery-swap-and-modular-charging-access.md) | The Ritual |
 | 04 | [The Trunk-Fold & Compact Spatial Proof](06-mobility-transport/04-the-trunk-fold-and-compact-spatial-proof.md) | The Specimen |

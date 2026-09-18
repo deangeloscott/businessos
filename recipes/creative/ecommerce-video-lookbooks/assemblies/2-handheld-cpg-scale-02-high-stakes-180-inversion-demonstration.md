@@ -1,34 +1,31 @@
-# Video Assembly 2: Handheld CPG (Scale 02) — High-Stakes 180° Inversion Demonstration
+# Video idea: Trust under tension
 
-> Standalone worked starting point. Adapt the product facts, source material, platform, duration, and evidence to the current job; the example is a craft reference, not a required script or performance guarantee.
+> A quick, adaptable starting point for making a seal, latch, closure, or containment benefit feel decisive. Borrow the idea, change the product and the stakes, combine it with another approach, or skip it when a calmer demonstration is clearer. The tumbler example is a worked execution, not a test result by itself.
 
-* **Class:** Class 2 (The Documented Kinetic Demonstration)
-* **Scale File:** [02 — Handheld & tabletop](../../ecommerce-image-lookbooks/02-handheld-tabletop.md) | **Duration:** 5.0s (120 frames at 24fps)
-* **Placement & Intent:** Retargeting / Consideration Ad (BOFU Objection Killer)
-* **Frame 0 (Start Anchor):** 16oz stainless steel insulated tumbler upright on concrete counter next to an open, illuminated MacBook keyboard.
-* **Frame N (End Anchor):** Tumbler held completely upside down (180° inverted) directly over the dry laptop keyboard; use a documented dry result or label the frame as a conceptual relief state.
+**Job:** Documented demonstration or illustrative pain-to-relief contrast · [handheld/tabletop scale](../../ecommerce-image-lookbooks/02-handheld-tabletop.md) · useful for an objection-focused ad or product-page proof.
+
+## The idea
+
+Put the product above a consequence the viewer understands, perform one controlled action that would expose a weak closure, then hold on the result. The tension comes from the relationship between the product and the vulnerable surface; the relief comes from a clear, quiet end state. A generic poor-quality reference or conceptual dry result can dramatize the contrast. A factual “passed test” requires the supplied fill, conditions, protocol, and observed result.
+
+The same structure can suit a leak-resistant bottle over documents, a case over electronics, a latch holding a packed bag, or a container surviving a controlled shake. Choose stakes that are meaningful and safe for the actual product.
+
+## One concrete execution
+
+The worked example is a 5-second vertical shot: a stainless tumbler beside an open laptop, a hand lifts and rotates it over the keyboard, two deliberate shakes create the peak, and the shot holds on the dry surface. A smooth push-in can increase tension, but a locked camera may be clearer for a real test.
+
+1. **Set the stakes:** 0.0–1.0s, establish the product, fill state, and vulnerable surface.
+2. **Perform the action:** 1.0–4.0s, invert or stress the closure with controlled, legible movement.
+3. **Hold the result:** 4.0–5.0s, settle without hiding the contact area or outcome.
+
+Keep rigid packaging, lid, hand, liquid, and target surface continuous. A hard highlight moving across brushed metal and a firm contact shadow can make the object feel substantial. They support the story visually; they do not establish seal performance.
+
+## Adapt it
+
+Use the real product, source footage, measured test, and safe setup when a claim matters. If the result is unknown, label the frame or copy as conceptual and let the scene show the intended relief without asserting a passed test. Change the camera, duration, number of shakes, or vulnerable surface when those choices better serve the audience.
+
+## Optional shot brief
 
 ```text
-BLOCK 1 (ANCHOR & RIGID BODY):
-Image-to-Video conditioned on Frame 0 start anchor and Frame N end anchor. Tumbler body is a rigid, non-deformable brushed 18/8 stainless steel cylinder. The matte black polymer lid and latch mechanism are solid rigid bodies.
-
-BLOCK 2 (CAMERA KINEMATICS):
-Smooth 35mm wide-angle push-in on a motorized slider, tracking forward 12 inches at eye level, maintaining both the inverted tumbler lid and the laptop keyboard in sharp crisp focus at f/4.0.
-
-BLOCK 3 (SPEED RAMP CADENCE):
-0.0s–1.0s fast 1.5x speed as hand grips and inverts the tumbler. 1.0s–4.0s held in tense, rock-solid real-time (24fps) inversion. 4.0s–5.0s settled locked hold with zero motion.
-
-BLOCK 4 (SUBJECT KINETIC ACTION):
-A confident human hand firmly grips the stainless steel tumbler, lifts it, and rotates it completely upside down (180° inversion) directly above the open laptop keys. The tumbler is given two deliberate downward shakes. If this is a documented demonstration, show the supplied fill, hold time, shake protocol, and observed result; if it is synthetic, frame the dry-keyboard outcome as an illustration of the desired relief rather than a test claim.
-
-BLOCK 5 (SPECULAR & SHADOW):
-Hard overhead studio directional light sweeps a crisp linear specular highlight along the brushed steel body during the rotation. Sharp contact occlusion shadow cast by the inverted tumbler directly across the laptop spacebar and trackpad.
-
-BLOCK 6 (PARALLAX STAGE):
-Foreground tumbler moves rapidly down-frame, creating dynamic parallax over the stationary keyboard. Background minimalist concrete wall sits in soft focus 2 stops underexposed.
-
-BLOCK 7 (TEMPORAL INVARIANTS):
-Inspect tumbler and lid continuity, liquid behavior, keyboard geometry, hand anatomy, contact shadows, and frame stability. Treat visual stability as a craft check, not evidence of seal performance.
+Create a short demonstration of [PRODUCT] protecting [VULNERABLE SURFACE OR CONSEQUENCE]. Establish [FILL / CLOSURE / CONDITIONS], perform one controlled [INVERSION / SHAKE / LATCH / IMPACT] that would reveal a weak design, then hold on the observed or clearly labeled conceptual result. Keep the product, liquid, hand, and surface continuous. Use [CAMERA MOVE OR LOCKED VIEW] and lighting that keeps the closure and result easy to inspect. Treat any unverified dry or intact state as illustration; use the supplied test record for factual labels.
 ```
-
----

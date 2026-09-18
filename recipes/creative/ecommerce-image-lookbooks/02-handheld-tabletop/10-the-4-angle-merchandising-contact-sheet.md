@@ -1,34 +1,23 @@
 # Scale 02 — Archetype 10: The 4-Angle Merchandising Contact Sheet
 
-> Standalone starting point from the [Scale 02 menu](../02-handheld-tabletop.md). Adapt the bracketed inputs to the actual product, evidence, platform, and tool; inspect generated geometry, text, and any implied performance claim.
->
-> Optional context: [image library index](../INDEX.md) · [brand dialects](../DIALECTS.md)
+* **Visual job:** The Specimen
+* **Good for:** giving an analytical shopper several useful views without making them open four separate assets.
+* **Fits:** coffee pouches, condiment bottles, tumblers, pocket tools, and supplement canisters.
 
-* **Universal Class:** The Specimen
-* **Example Products (Illustrative Guidance, Not an Allowlist):** Coffee bean pouch, specialty condiment bottle, travel tumbler, EDC pocketknife, dietary supplement canister.
-1. **Strategic Intent & Conversion Role:**  
-   Amazon Secondary Image & Mobile Quick-Shop. Packs 4 critical angles into a single image to help analytical buyers evaluate form, contents, and finish at a glance.
-2. **The Physical Stage (The 95%):**  
-   A seamless 2x2 grid on a consistent neutral off-white background:
-   * *Top Left:* Front hero packshot.
-   * *Top Right:* 45° dynamic perspective with cap off.
-   * *Bottom Left:* Back label showing crisp, readable ingredients and nutrition facts.
-   * *Bottom Right:* Macro close-up on formula/texture or seal.
-3. **Optical & Lighting Directives:**  
-   * *Lens:* 85mm Prime.  
-   * *Aperture:* f/11 (uniform sharpness across all four panels).  
-   * *Lighting:* Identical 5200K daylight balance across all four quadrants to ensure perfect visual rhythm.
-4. **Sensory & Synesthetic Triggers:**  
-   Information completeness; absolute transparency; zero hidden angles or small-print deception.
-5. **Invariant Guardrails & Crop Safe-Zones:**  
-   Back-label panel text must be digitally sharp and 100% legible when zoomed on mobile screens.
-* **Director's Rig Prompt Blueprint:**
+## The idea
+
+Use a small set of complementary views to answer the questions a single hero shot cannot: front identity, use or opening, back information, and a material or closure detail. The value is information completeness, not a mandatory four-panel grid.
+
+## Borrow this treatment
+
+Start with the views that matter for the product and arrange them with consistent background and light. A front hero, an opened or in-hand state, an ingredient or specification panel, and a macro detail are a useful pattern; remove a panel when it adds no information. Make back-label text genuinely readable or provide it separately.
+
+## Make it yours
+
+Choose the smallest set that resolves the buyer's questions and fit the intended crop or platform. Use supplied labels and references, and inspect small text at the final size. A carousel, turntable, or individual gallery may communicate better than a contact sheet.
+
+## Optional prompt seed
+
 ```text
-[BLOCK 1: HERO CONTACT SHEET]: A clean 2x2 merchandising multi-angle contact sheet of [HERO PRODUCT: Form factor, materials, branding].
-[BLOCK 2: QUADRANT LAYOUT]: Top-Left: Pure front hero packshot. Top-Right: 45-degree angle with cap/lid open. Bottom-Left: Back label showing tack-sharp readable ingredients/specifications. Bottom-Right: Extreme macro close-up of [DETAIL: Pour spout, texture, or seal].
-[BLOCK 3: OPTICS]: 85mm lens, f/11 aperture for edge-to-edge tack-sharp consistency across all four quadrants.
-[BLOCK 4: STAGE & LIGHT]: Seamless neutral off-white studio cyclorama with uniform 5200K softbox lighting across all panels.
-[BLOCK 5: EXCLUSIONS]: Negative: mismatched lighting, unreadable small text, blurry panels, uneven grid borders, domestic clutter.
+Create a compact merchandising set for the supplied [PRODUCT] with the views most useful to a buyer: [VIEW 1], [VIEW 2], [VIEW 3], and [VIEW 4 if needed]. Keep lighting, scale, and identity consistent, make any text legible at the target size, and remove any panel that does not answer a real question.
 ```
-
----

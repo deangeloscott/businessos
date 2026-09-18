@@ -1,28 +1,26 @@
-# Scale 04 — Archetype 15: The Acoustic Isolation & Whisper-Quiet Proof
+# Scale 04 — Archetype 15: The Noise & Vibration Comparison
 
-> Standalone starting point from the [Scale 04 menu](../04-countertop-appliances.md). Adapt the bracketed inputs to the actual product, evidence, platform, and tool; inspect generated geometry, text, and any implied performance claim.
+> A quick, adaptable visual starting point. Borrow the idea, change the product or treatment freely, combine it with another approach, or skip it when you already have a better direction.
 >
 > Optional context: [image library index](../INDEX.md) · [brand dialects](../DIALECTS.md)
 
-* **Universal Class:** The Proof
-* **Example Products (Illustrative Guidance, Not an Allowlist):** High-torque commercial blender, precision burr grinder, countertop ice maker, air fryer compressor.
-1. **Strategic Intent & Conversion Role:**  
-   PDP Slot 4 (Acoustic Noise De-risking). Dismantles the morning fear: *"Will turning this on wake up my spouse and kids?"* Use a measured sound level and distance when making a noise claim.
-2. **The Physical Stage (The 95%):**  
-   Early morning modern residential kitchen bathed in soft blue dawn light. The appliance is shown at the documented operating condition; a glass of water may dramatize vibration, but a still surface alone is not a noise measurement or proof of dampening.
-3. **Optical & Lighting Directives:**  
-   * *Lens:* 50mm Prime.  
-   * *Aperture:* f/3.5.  
-   * *Lighting:* Serene 4000K blue dawn morning light with soft under-cabinet LED fill.
-4. **Sensory & Synesthetic Triggers:**  
-   Acoustic serenity: dense motor dampening, silent mechanical purr instead of high-pitched plastic screech.
-5. **Invariant Guardrails & Crop Safe-Zones:**  
-   Appliance occupies 75% of visual weight in sharp focus. The stillness of the early morning house must be palpable.
-* **Director's Rig Prompt Blueprint:**
+* **Visual job:** The Proof
+* **Illustrative examples:** High-torque commercial blender, precision burr grinder, countertop ice maker, air fryer compressor.
+
+## The idea
+
+Make a noise question concrete by placing the product in the shared environment where quiet operation matters. Show a calm domestic scene, a visual comparison, or a measured test setup that lets the viewer imagine the difference. Stillness and restrained styling can suggest serenity, but a sound level or “quiet” claim needs the supplied measurement and distance.
+
+## Borrowable execution
+
+- **What to make felt:** Acoustic serenity: dense motor dampening, silent mechanical purr instead of high-pitched plastic screech.
+- **One visual treatment:** Lens: 50mm Prime. Aperture: f/3.5. Lighting: Serene 4000K blue dawn morning light with soft under-cabinet LED fill.
+- **Check:** Keep the appliance, operating state, and relevant context readable. If the image supports a sound claim, pair it with the supplied measurement, distance, and operating condition.
+
+## Optional execution prompt
+
+Use the idea above directly if that is all you need. The following is one concrete prompt seed to borrow, edit, combine, or skip:
+
 ```text
-[BLOCK 1: HERO & ACOUSTIC DEMONSTRATION]: Commercial lifestyle photograph of [HERO PRODUCT: Blender, grinder, or ice maker] running at the documented condition on a kitchen counter in early morning, occupying a useful share of frame weight in tack-sharp focus.
-[BLOCK 2: ACOUSTIC DETAIL]: A glass of water may visualize vibration beside the running machine. Pair any quietness claim with measured sound level, distance, and operating condition; a still surface alone is not acoustic evidence.
-[BLOCK 3: OPTICS]: 50mm prime lens, eye-level perspective, f/3.5 aperture for shallow atmospheric depth.
-[BLOCK 4: STAGE & LIGHT]: Serene 4000K early-morning dawn window light streaming softly onto a dark quartz countertop; quiet tranquil background.
-[BLOCK 5: EXCLUSIONS]: Negative: violent shaking, blurred blender jar, messy spills, loud harsh flash, noisy kitchen clutter.
+Commercial lifestyle photograph of [HERO PRODUCT: Blender, grinder, or ice maker] running at the documented condition on a kitchen counter in early morning, occupying a useful share of frame weight in tack-sharp focus. A glass of water may visualize vibration beside the running machine. Pair any quietness claim with measured sound level, distance, and operating condition; a still surface alone is not acoustic evidence. 50mm prime lens, eye-level perspective, f/3.5 aperture for shallow atmospheric depth. Serene 4000K early-morning dawn window light streaming softly onto a dark quartz countertop; quiet tranquil background. Avoid: violent shaking, blurred blender jar, messy spills, loud harsh flash, noisy kitchen clutter.
 ```

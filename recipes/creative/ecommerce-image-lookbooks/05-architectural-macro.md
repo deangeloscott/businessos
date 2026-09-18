@@ -1,11 +1,11 @@
 # Scale 05: Architectural Macro & High-Ticket E-Commerce Lookbook
-### Master Archetypes for Products 3 to 10+ Feet (1 to 3+ Meters)
+### Starting points for products 3 to 10+ feet (1 to 3+ meters)
 *Categories: Saunas, Cold Plunges, Modular Sectionals, Dining Tables, Home Gym Systems, Freestanding Bathtubs, Outdoor Living*
 
 ---
 
 ## Overview & Scale Dynamics
-This scale represents the absolute pinnacle of e-commerce investment ($2,000 to $15,000+). These are not casual purchases; they are freight-delivered, semi-permanent architectural installations that reshape the customer's living space.
+Large products in this scale often require delivery, installation, and careful space planning. They are semi-permanent architectural purchases that can reshape the customer's living space.
 
 Customer hesitation is driven by intense practical and emotional stakes:
 1. *Spatial Panic:* "Will this dwarf my room, block doorways, or look claustrophobic?"
@@ -13,15 +13,15 @@ Customer hesitation is driven by intense practical and emotional stakes:
 3. *Engineering Skepticism:* "Why does this cost $6,000? Is it built to last 20 years?"
 4. *Logistical Dread:* "How does the water drain? What breaker does it require? Will it fit through my gate?"
 
-Every archetype here is a reference for **architectural perspective control, spatial anchoring, structural craftsmanship, and calm high-ticket persuasion**. Use the optional five-block scaffold when useful. A generic stressful space versus a premium sanctuary can be an effective pain-to-relief contrast; it does not establish the product's dimensions, capacity, weathering, longevity, utilities, or installation outcome. Use supplied CAD, room measurements, manuals, materials, and observed tests, then inspect the rendered scene against them.
+These optional starting points make **architectural perspective, spatial anchoring, structural craftsmanship, and calm high-ticket persuasion** easier to express. Use one when it helps, borrow a single move, combine it with another idea, or continue with a better plan. A generic stressful space versus a premium sanctuary can be an effective pain-to-relief contrast; supplied CAD, room measurements, manuals, materials, and observed tests ground factual details.
 
 ---
 
-## Archetype menu
+## Starting-point menu
 
-Open one archetype directly when you already know the visual job. Each file is self-contained; the index and dialect notes are optional.
+Open one starting point directly when you already know the visual job. Each file is self-contained; the index and dialect notes are optional.
 
-| # | Archetype | Commerce job |
+| # | Starting point | Commerce job |
 |---:|---|---|
 | 01 | [The Architectural Sanctuary Hero](05-architectural-macro/01-the-architectural-sanctuary-hero.md) | The Habitat |
 | 02 | [The Twilight / Blue Hour Glow](05-architectural-macro/02-the-twilight-blue-hour-glow.md) | The Habitat |

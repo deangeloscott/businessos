@@ -2,6 +2,8 @@
 
 Recipes are optional, reusable craft references for a capable model or operator. They capture non-obvious patterns, examples, decision heuristics, and production checks that can improve a result when the situation calls for them.
 
+Think of them as a shelf of good ideas, not a runtime, workflow, or rulebook. If the user or model already has a better plan, use it. If there is no plan yet, open a small menu, borrow one promising starting point, and adapt it to the actual product, audience, evidence, channel, and goal. There is no need to fill every slot, read every linked file, or create an intermediate prompt unless that would make the requested work easier.
+
 ## Start small
 
 Open the smallest useful reference:

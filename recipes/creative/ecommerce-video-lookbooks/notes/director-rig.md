@@ -1,34 +1,20 @@
-# Video Director's Rig
+# Video Direction: Optional Shot-Brief Ingredients
 
-> Optional video craft notes. Open this only when it materially helps the selected starting point; the compact index and standalone assembly remain usable without it.
->
-> Preserves the optional seven-block motion scaffold.
+> Optional video craft notes. Use these when a selected starting point needs a clearer shot brief. A recipe, reference clip, storyboard, 3D scene, or tool-native control may be more useful; nothing here is required syntax.
 
-## Optional 7-Block Kinesthetic Director's Rig Scaffold
+A strong short brief usually names the viewer job, the action that carries it, what must stay continuous, and the few visual cues that make the result readable. Borrow the ingredients that remove ambiguity:
 
-To direct a complex generative shot, an operator can assemble the relevant blocks below. They are a checklist of useful decisions, not a mandatory syntax or a promise of repeatability. Omit blocks that do not serve the shot, and use a real plate, storyboard, 3D scene, or tool-specific control when that is more reliable.
+- **Reference and continuity:** a supplied image, start/end pair, storyboard, or real clip when identity needs protection; list the rigid parts that must stay stable and the materials allowed to deform.
+- **Camera and path:** locked tripod, push, orbit, tracking, crane, or another path; choose position, distance, and speed for the action.
+- **Rhythm:** set up, act, reveal or resolve. Use exact timing or capture/playback math only when the source and tool support it.
+- **Visible mechanics:** fluid thickness, latch resistance, fabric movement, spray, wheel contact, hand pressure, or another observable action. Use measured values only when supplied.
+- **Light and depth:** highlight path, contact shadow, reflections, foreground/background separation, and particles when they make the subject easier to read.
+- **Likely failures:** only the risks that would damage this shot: label drift, impossible joints, finger penetration, unreadable result, seam flash, or judder. A negative phrase is a request to inspect, not a guarantee.
+
+## Copyable shot brief
 
 ```text
-BLOCK 1: [ANCHORS & CONTINUITY]
-→ Identify a supplied start/end frame, storyboard, real clip, or single reference when identity needs protection. Declare which rigid parts must remain stable and which materials may deform.
-
-BLOCK 2: [CAMERA KINEMATICS & TRAJECTORY]
-→ Choose a camera path (orbital arc, dolly push, crane, locked tripod), perspective, and speed curve that make the intended action legible.
-
-BLOCK 3: [SPEED & RHYTHM]
-→ Specify timing only where it helps. If using slow motion, distinguish capture rate from playback rate (for example, 120→24 fps = 0.2×; 120→30 fps = 0.25×).
-
-BLOCK 4: [SUBJECT ACTION & MICRO-MECHANICS]
-→ Describe the visible action: fluid thickness/cohesion, latch resistance, fabric flutter, spray, wheel rotation, contact, and result. Use measured values only when sourced.
-
-BLOCK 5: [LIGHT & SHADOW]
-→ Describe the highlight path, contact shadow, and contrast that help the viewer read material and depth; inspect the final render.
-
-BLOCK 6: [DEPTH & ENVIRONMENT]
-→ Use depth separation or particles (steam, mist, dust, road spray) only when they support the communication job and do not obscure the product.
-
-BLOCK 7: [CHECKS & EXCLUSIONS]
-→ List the few failures that would invalidate the shot (logo/label drift, impossible joints, finger penetration, unreadable result, seam flash, or frame judder), then inspect and rerender or recut as needed. A negative prompt is not a guarantee.
+Create [DURATION / FORMAT] of [PRODUCT] for [VIEWER JOB]. Show [ONE CLEAR ACTION] from [CAMERA POSITION OR PATH], with a pace that makes [IMPORTANT MOMENT] easy to read. Preserve [IDENTITY / RIGID PARTS / CONTACT] and let [FLUID / FABRIC / OTHER MATERIAL] change naturally. Use [LIGHT / DEPTH CUE] to reveal [MATERIAL OR RESULT]. Include [CONDITIONS OR NUMBERS] only when supplied; otherwise make the scene clearly illustrative. Inspect [RELEVANT FAILURE MODES] in the finished sequence.
 ```
 
----
+The model can fill this directly from the task, write a better prompt for a particular tool, or ignore it and use another method.

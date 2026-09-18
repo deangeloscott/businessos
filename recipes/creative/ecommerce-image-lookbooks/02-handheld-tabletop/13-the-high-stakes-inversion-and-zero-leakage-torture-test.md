@@ -1,30 +1,23 @@
-# Scale 02 — Archetype 13: The High-Stakes Inversion & Zero-Leakage Torture Test
+# Scale 02 — Archetype 13: The High-Stakes Seal-Integrity Demonstration
 
-> Standalone starting point from the [Scale 02 menu](../02-handheld-tabletop.md). Adapt the bracketed inputs to the actual product, evidence, platform, and tool; inspect generated geometry, text, and any implied performance claim.
->
-> Optional context: [image library index](../INDEX.md) · [brand dialects](../DIALECTS.md)
+* **Visual job:** The Proof
+* **Good for:** dramatizing the cost of a leak and showing a documented seal or closure test.
+* **Fits:** travel tumblers, thermoses, oil spouts, coffee canisters, and tech pouches.
 
-* **Universal Class:** The Proof
-* **Example Products (Illustrative Guidance, Not an Allowlist):** Insulated travel tumbler, vacuum thermos, leakproof olive oil pour spout, airtight coffee canister, fountain pen, waterproof tech pouch.
-1. **Strategic Intent & Conversion Role:**  
-   PDP Slot 2 or Paid Social Performance Ad (Dismantles Spill & Seal Failure Anxiety). Addresses the customer hesitation: *"Will this leak in my bag and ruin my laptop, clothes, or documents?"* Use a documented test for a factual result; use the high-stakes setup as a dramatic concept when the result is unknown.
-2. **The Physical Stage (The 95%):**  
-   A high-stakes commercial demonstration set on a clean studio surface. The sealed hero product is turned completely upside down (180° inversion) suspended over a high-value, moisture-vulnerable surface (`[HIGH-STAKES SURFACE: open laptop keyboard, crisp white silk shirt, dry legal documents, car leather]`). If the scene is illustrative, make the setup clear and omit a factual “passed test” caption.
-3. **Optical & Lighting Directives:**  
-   * *Lens:* 85mm Prime.  
-   * *Aperture:* f/8 for tack-sharp focus across both the inverted cap seal and the dry surface below.  
-   * *Lighting:* High-contrast 5500K commercial catalog studio lighting with rim kickers emphasizing the bone-dry seam.
-4. **Sensory & Synesthetic Triggers:**  
-   High tension followed by relief: a dry surface and legible seal mechanism when documented, or an intentionally idealized outcome for concept work. Do not claim hermetic performance from a render alone.
-5. **Invariant Guardrails & Crop Safe-Zones:**  
-   The product occupies enough frame weight for the seal and vulnerable surface to be understood. If using a factual claim, retain the test conditions and observed result in the supporting record.
-* **Director's Rig Prompt Blueprint:**
+## The idea
+
+Turn the product upside down above something the buyer cares about—a laptop, documents, clothing, or a bag. The tension makes the seal problem immediate; only a real test record supports saying the product passed.
+
+## Borrow this treatment
+
+Use a clean high-stakes setup with the closure and vulnerable surface both visible. An inverted hero, a dry protected surface, and a legible seam can create strong pain-to-relief communication. If the result is conceptual, label it as a demonstration concept and leave the outcome open rather than manufacturing a pass.
+
+## Make it yours
+
+Use the actual closure, test method, duration, contents, and observed result. Change the surface and angle to fit the audience. The scene may be dramatic, but it must not imply hermeticity, waterproofing, or zero leakage without supporting evidence.
+
+## Optional prompt seed
+
 ```text
-[BLOCK 1: HERO & INVERSION DEMONSTRATION]: A high-converting commercial e-commerce seal integrity setup. [HERO PRODUCT: Tumbler, flask, or sealed bottle] is held completely upside down in a 180-degree inversion, with the clearance chosen from the real test setup.
-[BLOCK 2: HIGH-STAKES RESULT]: The inverted spout is suspended above [VULNERABLE SURFACE: e.g., an open premium aluminum laptop keyboard or crisp white cotton fabric]. Show the supplied or observed result and conditions. If this is a concept, use the ideal dry outcome as illustration and omit “hermetic,” “zero leaks,” or “passed test” language.
-[BLOCK 3: OPTICS]: 85mm prime lens, eye-level perspective, f/8 aperture keeping the inverted seal and the dry surface below in tack-sharp focus.
-[BLOCK 4: STAGE & LIGHT]: Clean 5500K studio cyclorama lighting with sharp edge highlights along the container's metallic body and crisp contact shadows.
-[BLOCK 5: EXCLUSIONS]: Negative: water droplets, leaks, wet smudges, messy counter, dark shadows, tilted camera, blurry seal.
+Create a high-tension seal demonstration for the supplied [PRODUCT], inverted above [VULNERABLE SURFACE]. Make the closure and the surface easy to inspect, with the hero product clearly identifiable. Use [DOCUMENTED TEST RESULT AND CONDITIONS] if available; otherwise label the setup conceptual and do not claim a passed or zero-leakage test.
 ```
-
----

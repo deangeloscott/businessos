@@ -1,30 +1,23 @@
 # Scale 03 — Archetype 05: High-Fashion Direct Flash
 
-> Standalone starting point from the [Scale 03 menu](../03-body-worn-apparel.md). Adapt the bracketed inputs to the actual product, evidence, platform, and tool; inspect generated geometry, text, and any implied performance claim.
->
-> Optional context: [image library index](../INDEX.md) · [brand dialects](../DIALECTS.md)
+* **Visual job:** The Habitat
+* **Good for:** giving apparel a sharp editorial identity when conventional catalog polish would feel anonymous.
+* **Fits:** leather coats, sunglasses, slip dresses, designer sneakers, and structured accessories.
 
-* **Universal Class:** The Habitat
-* **Example Products (Illustrative Guidance, Not an Allowlist):** Leather trench coat, luxury sunglasses, satin slip dress, designer sneakers, architectural sunglasses.
-1. **Strategic Intent & Conversion Role:**  
-   Paid Social (TikTok / Meta Feed pattern-interrupt) & Brand Campaign. Channels contemporary editorial energy (Balenciaga, Aimé Leon Dore, SKIMS).
-2. **The Physical Stage (The 95%):**  
-   Night-time urban street, concrete parking garage, or minimalist industrial interior. Model captured in a candid, high-status pose.
-3. **Optical & Lighting Directives:**  
-   * *Lens:* 35mm Prime.  
-   * *Aperture:* f/8.  
-   * *Lighting:* Hard, point-source direct flash mounted on-camera. Deep drop shadow immediately behind the model, zero ambient light wash.
-4. **Sensory & Synesthetic Triggers:**  
-   Auditory and cultural memory of fashion week, paparazzi energy, raw self-assured style.
-5. **Invariant Guardrails & Crop Safe-Zones:**  
-   Flash must not blow out fabric highlights (e.g. white shirts must retain textile texture and not become solid blinding white).
-* **Director's Rig Prompt Blueprint:**
+## The idea
+
+Place the garment in a specific urban or industrial night world and let direct flash create confidence, immediacy, and a little tension. The styling can feel like a captured fashion moment rather than a conventional product shoot.
+
+## Borrow this treatment
+
+Use one concrete setting—a parking structure, street corner, stairwell, or spare interior—and a composed candid pose. Hard light, deep shadow, and close framing can make fabric and hardware graphic; keep enough detail in bright areas to preserve the garment.
+
+## Make it yours
+
+Choose the model, posture, crop, styling, and degree of flash for the brand. A softer or ambient editorial treatment may carry the same attitude with more usable detail. Inspect highlights, texture, anatomy, and color before publishing.
+
+## Optional prompt seed
+
 ```text
-[BLOCK 1: HERO]: High-fashion editorial flash photograph of [HERO PRODUCT: Garment, color, fabric, silhouette] on a model posing with detached editorial confidence, occupying 75% of vertical frame height.
-[BLOCK 2: OPTICAL RIG]: 35mm prime lens, eye-level angle, f/8 aperture with subtle 35mm analog film grain.
-[BLOCK 3: LIGHTING RIG]: Hard, point-source direct on-camera paparazzi flash casting a sharp, graphic black drop shadow directly onto the back wall, 0% ambient fill.
-[BLOCK 4: SUBORDINATE STAGE]: Minimalist raw concrete garage or moody urban night interior, background underexposed (-2 EV) to lock full contrast on the garment.
-[BLOCK 5: EXCLUSIONS]: Negative: blown-out white fabric, cheesy commercial smile, distorted limbs, blurry details, soft pastel lighting.
+Create a high-fashion editorial image of the supplied [GARMENT] in a specific [URBAN OR INDUSTRIAL SETTING]. Use direct flash and a confident candid pose to create sharp graphic shadows while preserving fabric texture, color, and hardware. Keep the garment unmistakable and adapt the styling to [BRAND ATTITUDE].
 ```
-
----

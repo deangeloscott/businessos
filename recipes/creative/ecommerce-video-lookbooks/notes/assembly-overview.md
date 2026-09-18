@@ -1,16 +1,12 @@
-# Video Assembly Overview
+# Video Starting-Point Overview
 
-> Optional video craft notes. Open this only when it materially helps the selected starting point; the compact index and standalone assembly remain usable without it.
->
-> Preserves the shared purpose and scope of the four worked assembly references.
+> Optional navigation. Open a worked assembly when you want a concrete idea quickly; use another recipe, a different tool, or your own plan when it fits better.
 
-## End-to-End Production Assembly Walkthroughs
+The four examples cover four useful actions:
 
-These four worked assemblies demonstrate the motion scaffold across different product scales. Open the closest one, keep the useful beats, and replace its product facts, evidence, timing, and placement details with the current job:
+1. [Texture in motion](../assemblies/1-micro-cosmetics-scale-01-dermal-absorption-and-viscous-squeeze.md) — dispense, contact, and spread a cosmetic or other tactile product.
+2. [Trust under tension](../assemblies/2-handheld-cpg-scale-02-high-stakes-180-inversion-demonstration.md) — stress a closure or containment benefit above a meaningful consequence.
+3. [Weather in motion](../assemblies/3-body-worn-apparel-scale-03-hydrostatic-deluge-demonstration-and-stride.md) — let an environmental force meet a moving garment or product.
+4. [Effort relief in motion](../assemblies/4-mobility-and-transport-scale-06-hill-climb-torque-demonstration.md) — make a climb, carry, fold, or other challenge legible.
 
-1. [Micro/cosmetics — dermal absorption and viscous squeeze](../assemblies/1-micro-cosmetics-scale-01-dermal-absorption-and-viscous-squeeze.md)
-2. [Handheld CPG — high-stakes 180° inversion demonstration](../assemblies/2-handheld-cpg-scale-02-high-stakes-180-inversion-demonstration.md)
-3. [Body-worn apparel — hydrostatic deluge and stride](../assemblies/3-body-worn-apparel-scale-03-hydrostatic-deluge-demonstration-and-stride.md)
-4. [Mobility and transport — hill-climb torque demonstration](../assemblies/4-mobility-and-transport-scale-06-hill-climb-torque-demonstration.md)
-
-The assembly files are standalone worked starting points. The [assembly menu](../assemblies/INDEX.md) is the shorter route when you are choosing among them.
+Each file puts a transferable idea first and keeps its specific product, setting, timing, and shot choices as a worked execution. Replace them freely. Use documented conditions for factual demonstrations; treat generated or idealized outcomes as illustrative when the record is absent.

@@ -1,10 +1,12 @@
 # Web Design & Conversion Architecture
 
-A compact menu for four reusable web tracks. Open the track that matches the commercial job, then use its sections as adaptable starting points. The optional notes preserve shared marketing, persuasion, technical, and diagnostic knowledge without making every page brief carry the entire library.
+A compact menu for four reusable web tracks. Open the track that matches the commercial job, then borrow a quick start or jump directly to the section that fits the plan. The optional notes preserve shared marketing, persuasion, technical, and diagnostic knowledge without making every page brief carry the entire library.
+
+If there is already a clear page or funnel idea, use it and skip this menu. If there is no plan yet, choose the closest quick start, ask the model to adapt it to the supplied context, and change or combine it freely.
 
 ## Choose a track
 
-| Track | Use when | Open |
+| Track | Borrow a starting point when | Open |
 |---|---|---|
 | E-commerce store | Building catalog, product detail, cart, or checkout experiences. | [01 — E-commerce stores](01-ecommerce-stores.md) |
 | Lead generation | Creating lead magnets, forms, quizzes, applications, or booking flows. | [02 — Lead generation](02-lead-generation.md) |
@@ -24,9 +26,9 @@ Open only the note that materially improves the current starting point:
 
 ## Fast use
 
-1. Name the audience, traffic source, commercial job, offer, evidence, platform, and desired action.
-2. Open one track and borrow only the sections that answer the visitor's real decision questions.
+1. Give the model the audience, traffic source, commercial job, offer, evidence, platform, and desired action when those are known.
+2. Open one track and borrow a quick start or only the sections that answer the visitor's real decision questions.
 3. Follow an optional note or AURA workflow when it supplies missing judgment, evidence, or QA; adapt or skip it when it does not.
 4. Inspect the implemented page on the actual devices, states, and integrations that matter.
 
-The web recipes are optional craft references. Existing AURA workflows own organizational truth, evidence, accessibility, and workflow-level QA; this library supplies reusable web concepts and starting briefs.
+The web recipes are optional craft references. Relevant AURA workflows can provide further organizational context, evidence, accessibility, and QA guidance when useful; this library supplies reusable web concepts and starting briefs.

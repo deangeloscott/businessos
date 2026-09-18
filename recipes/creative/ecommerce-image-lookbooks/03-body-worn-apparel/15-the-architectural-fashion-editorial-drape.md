@@ -1,28 +1,23 @@
 # Scale 03 — Archetype 15: The Architectural Fashion Editorial Drape
 
-> Standalone starting point from the [Scale 03 menu](../03-body-worn-apparel.md). Adapt the bracketed inputs to the actual product, evidence, platform, and tool; inspect generated geometry, text, and any implied performance claim.
->
-> Optional context: [image library index](../INDEX.md) · [brand dialects](../DIALECTS.md)
+* **Visual job:** The Habitat
+* **Good for:** giving structured or luxurious outerwear a memorable, restrained editorial world.
+* **Fits:** mountain parkas, wool overcoats, cashmere trenches, heavy overshirts, and flight jackets.
 
-* **Universal Class:** The Habitat
-* **Example Products (Illustrative Guidance, Not an Allowlist):** Technical mountain parka, structured wool overcoat, cashmere trench, heavy twill overshirt, leather flight jacket.
-1. **Strategic Intent & Conversion Role:**  
-   Hero Header / Brand Lookbook (Luxury Price Ceiling Justification). Competes at the highest tier of international luxury editorial fashion (Arc'teryx Veilance, Prada Linea Rossa, Jil Sander).
-2. **The Physical Stage (The 95%):**  
-   Dramatic architectural setting: brutalist concrete museum steps, coastal granite cliff, or minimalist sculpture pavilion. Model standing in quiet, contemplative poise.
-3. **Optical & Lighting Directives:**  
-   * *Lens:* 85mm Prime.  
-   * *Aperture:* f/2.8.  
-   * *Lighting:* Moody, diffused overcast daylight or low blue-hour twilight with subtle architectural rim lighting sculpting the garment's structural silhouette.
-4. **Sensory & Synesthetic Triggers:**  
-   Pure architectural elegance: crisp collar stance, heavy drape, laser-cut hemlines, museum-grade textile dignity.
-5. **Invariant Guardrails & Crop Safe-Zones:**  
-   The garment occupies 75% of frame weight. Zero strange AI drapery artifacts or flapping capes.
-* **Director's Rig Prompt Blueprint:**
+## The idea
+
+Let the garment's silhouette echo a strong architectural setting. Quiet posture, concrete, stone, or a sculptural pavilion can make collar stance, volume, drape, and hardware feel intentional without crowding the frame.
+
+## Borrow this treatment
+
+Use one dramatic but simple structure and diffused overcast or blue-hour light. Keep the model poised, the background subordinate, and the garment's shape readable. A slight rim or tonal contrast can separate heavy fabric from the architecture without turning it into a costume.
+
+## Make it yours
+
+Choose the architecture, model, pose, palette, and crop for the brand. Change to a domestic, natural, or abstract setting when the garment's meaning calls for it. Inspect drapery, shadows, hems, and anatomy; remove any cape-like or floating artifact.
+
+## Optional prompt seed
+
 ```text
-[BLOCK 1: HERO EDITORIAL]: Luxury architectural fashion editorial photograph of [HERO PRODUCT: Outerwear silhouette, fabric, color, hardware]. The garment is the undisputed hero, commanding 75% of frame height on an editorial model standing in poised profile.
-[BLOCK 2: OPTICAL RIG]: 85mm prime lens, eye-level perspective, f/2.8 aperture for creamy cinematic subject separation.
-[BLOCK 3: LIGHTING RIG]: Moody, diffused overcast 5600K daylight with soft directional fill sculpting the jacket's structural silhouette and taped matte hardware.
-[BLOCK 4: SUBORDINATE STAGE]: Minimalist raw limestone or concrete architectural pavilion in the background, 2.5 stops darker in soft bokeh.
-[BLOCK 5: EXCLUSIONS]: Negative: cheesy commercial poses, distorted fabric flaps, cape artifacts, ungrounded shadows, busy city streets, bright saturated colors.
+Create a restrained editorial image of the supplied [GARMENT] in a simple [ARCHITECTURAL SETTING]. Use poised posture, diffused directional light, and enough contrast to reveal the garment's [SILHOUETTE, DRAPE, OR HARDWARE] while keeping the background quiet. Adapt the mood to [BRAND] and preserve the actual garment construction.
 ```

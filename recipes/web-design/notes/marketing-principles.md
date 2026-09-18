@@ -6,15 +6,11 @@
 
 ## How This Library Works
 
-This library is a set of **optional, platform-agnostic craft references** for designing, structuring, writing, and engineering high-converting digital web properties. It provides a shared vocabulary across **four specialized architectural tracks**, **ten design dialects**, reusable section patterns, and a **7-block briefing pattern**.
+This library is a set of **optional, platform-agnostic craft references** for designing, structuring, writing, and engineering useful web properties. It provides a shared vocabulary across **four specialized tracks**, **ten design dialects**, reusable section patterns, and an optional **7-block briefing pattern**.
 
-In modern digital business, web design cannot be treated as decorative canvas art or as crude, dated direct-response hype. A strong standard is **Conversion-First Kinetic Architecture**: a unified discipline where cognitive psychology, direct-response copywriting, visual ergonomics, measurable web performance, and machine-readable content support one another.
+Good web work connects the page's visual language, message, interaction, performance, and machine-readable content to the visitor's actual decision. The balance differs by audience, offer, platform, and evidence.
 
-An operator or AI model may use:
-1. **A Domain Track File** (`01` through `04`) matching the commercial objective (E-Commerce, Lead Generation, Brand Website, or Multi-Step Funnel).
-2. **A Section Archetype Flow** that answers the visitor's actual decision questions.
-3. **A Design Dialect** from `DIALECTS.md` when a consistent visual system helps.
-4. **The 7-Block Web Brief** when a compact prompt or audit frame improves clarity.
+An operator or AI model may use a domain track, a section pattern, a design dialect, the 7-block brief, or none of them. Choose the smallest reference that makes the current work clearer. The examples are ingredients to borrow and recombine, not a required assembly order.
 
 Use the fewest references that improve the requested outcome. Existing AURA Workflows own organizational truth, evidence, claim quality, and workflow-level QA; this library supplies optional craft knowledge and never requires a fixed route or prompt syntax.
 
@@ -37,9 +33,9 @@ Use the fewest references that improve the requested outcome. Existing AURA Work
 
 ---
 
-## Seven Behavioral Frameworks for Web Conversion & Usability
+## Optional Frameworks for Web Conversion & Usability
 
-Generative AI models and human designers often fail in web production for predictable reasons: prioritizing aesthetic trends over visual contrast, creating cognitive overload, failing to provide continuation cues, and treating all traffic as having identical awareness. The following seven frameworks are useful starting points. Apply them when they fit the audience, evidence, platform, and commercial objective; adapt or omit them when they do not.
+Generative AI models and human designers can run into predictable web-production problems: prioritizing aesthetic trends over visual contrast, creating cognitive overload, failing to provide continuation cues, or treating all traffic as having identical awareness. The following frameworks are useful starting points. Apply them when they fit the audience, evidence, platform, and commercial objective; adapt or omit them when they do not.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -62,12 +58,12 @@ Generative AI models and human designers often fail in web production for predic
   * *High-stakes or capacity-limited decision:* Add only the qualification questions that improve fit, readiness, economics, or service quality. Thoughtful qualification can signal competence; irrelevant questions simply lose good prospects.
 
 ### Framework 2: The First-Screen Positioning Filter (Category, Audience, Outcome)
-* **The Principle:** A first-time visitor should quickly understand what the offer is, who it serves, and why it may matter. The exact time depends on traffic, device, and page complexity.
+* **The Principle:** A first-time visitor should quickly understand what the offer is, who it serves, and why it may matter. The time available depends on traffic, device, and page complexity.
 * **The Practice:** The primary above-the-fold hero section should communicate:
   1. *What is this product/service?* (The Market Category).
   2. *Who is it specifically for?* (The Target Audience).
   3. *What transformation or measurable outcome does it produce?* (The Core Promise).
-  * *Banned Anti-Pattern:* Vague poetic aspirations (*"Empowering seamless global workflow synergy"*).
+  * *Watch for:* Vague poetic aspirations (*"Empowering seamless global workflow synergy"*) that leave the category, audience, or outcome unclear.
 
 ### Framework 3: Continuation Cues (Avoiding a False Bottom)
 * **The Principle:** A full-bleed hero can look complete and hide the next decision. Test whether the layout makes continuation obvious for the actual device and audience.
@@ -78,15 +74,15 @@ Generative AI models and human designers often fail in web production for predic
 * **The Practice:** Preserve authentic review distributions, useful negative feedback, dates, sample size, and context. Never manufacture criticism or suppress material defects to create an artificial credibility signal.
 
 ### Framework 5: Layer-Cake Scanning (Subheadings Carry the Argument)
-* **The Principle:** Users do not read web pages word-for-word; they scan in layer-cake and F-shaped patterns.
+* **The Principle:** Many visitors scan web pages rather than reading every line, often using headings, lead-ins, and visible structure to decide where to spend attention.
 * **The Practice:** A visitor who scans the H1, H2s, H3s, and bold bullet lead-ins should be able to reconstruct the main value proposition, mechanism, proof, and next step. Body copy supplies the detail needed for verification and fit.
 
 ### Framework 6: Dual-Consumer Clarity (Humans + Machines)
-* **The Principle:** Web properties are consumed by biological humans operating touchscreens and autonomous AI agents/crawlers (ChatGPT Search, Perplexity, Gemini, Claude, procurement bots) parsing semantic text.
+* **The Principle:** Web properties may be consumed by people, assistive technology, search systems, AI systems, procurement tools, and other clients that benefit from clear semantic content.
 * **The Practice:** Render core text, pricing, and meaningful navigation in accessible semantic HTML whenever practical. Add structured data, a sitemap, and other machine-readable references when they accurately describe the page and the target systems use them. A proposed file such as `/llms.txt` can assist some consumers, but it does not ensure crawling, citation, or recommendation.
 
 ### Framework 7: Visual Contrast and Accent Isolation (A 60-30-10 Starting Point)
-* **The Principle:** When every visual element is saturated, nothing commands attention. The eye requires vast neutral ground to identify the singular point of action (The Von Restorff Isolation Effect).
+* **The Principle:** When every visual element competes for attention, important actions become harder to find. A restrained base and intentional contrast can help hierarchy; the exact ratio depends on the brand and interface.
 * **The Starting Point:**
   * **60% Dominant Base:** Clean canvas background (neutral light or deep slate) providing whitespace.
   * **30% Structural Secondary:** Typographic hierarchy, container cards, subtle borders, and navigation.
@@ -117,14 +113,14 @@ Many high-performing pages use some of these section archetypes, but no page nee
 
 ### Archetype 1: The Context Hero
 * **Function:** Stops the scroll, hooks attention, and establishes market context.
-* **Components:** Category kicker label (uppercase, 12px), primary outcome H1 (40–64px), clarifying mechanism H2 (18–22px), high-contrast primary CTA, secondary exploratory micro-link, and an authentic product simulation or hero visual.
+* **Components:** Category label, primary outcome H1, clarifying mechanism or audience context, clear primary CTA, secondary exploratory link when useful, and an authentic product simulation or hero visual. Type sizes are design choices to test against the brand, device, and accessibility needs.
 
 ### Archetype 2: The Trust Strip
 * **Function:** Defuses early cynicism immediately below the hero fold.
-* **Components:** Monochromatic SVG client/press marquees (uniform visual weight), current accreditations that the organization actually holds, or supported customer/usage metrics (*"Over 40,000+ teams onboarded"* only when verified).
+* **Components:** Monochromatic SVG client or press marks with balanced visual weight, current accreditations the organization actually holds, or supported customer and usage metrics (*"Over 40,000+ teams onboarded"* only when verified).
 
 ### Archetype 3: The Mechanism Split (Old Way vs. New Way)
-* **Function:** Dismantles false vehicle beliefs and proves why existing alternative solutions fail.
+* **Function:** Makes a meaningful difference or mechanism easier to understand. Show why the proposed path may fit the buyer better, including relevant tradeoffs, rather than implying every alternative fails.
 * **Components:** A two-column contrast grid: Left column highlights the painful, fragmented, manual "Old Way"; right column highlights the automated, unified, superior "New Way."
 
 ### Archetype 4: The Proving Ground (Empirical Demonstrations)
@@ -145,7 +141,7 @@ Many high-performing pages use some of these section archetypes, but no page nee
 
 ### Archetype 8: The Terminal Anchor (The Closing Call-to-Action)
 * **Function:** Captures visitors who have scrolled to the bottom of the page in analytical verification mode.
-* **Components:** High-contrast background container, condensed restatement of the primary promise, a prominent CTA button, and reassurance text (*"No credit card required"*, *"Cancel anytime"*).
+* **Components:** High-contrast background container when it suits the design, a concise restatement of the primary promise, a prominent CTA button, and reassurance text such as *"No credit card required"* or *"Cancel anytime"* only when those terms are true.
 
 ---
 
@@ -162,24 +158,25 @@ To generate or audit a web page, an operator or AI model can use the **7-Block W
 │ • Traffic Source: Cold Social (Meta/TikTok) | High-Intent Search | Retarget │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │ BLOCK 2: COMMERCIAL ECONOMICS & VALUE EQUATION                              │
-│ • Economic Goal: Zero-CAC SLO | Impulse E-Comm | High-Ticket Booking | MRR  │
-│ • Hormozi Value Equation Drivers: Dream Outcome, Proof, Speed, Zero Friction│
+│ • Economic goal: impulse commerce, qualified booking, recurring value, or another real objective │
+│ • Value drivers: desired outcome, confidence, speed, effort, and the offer's actual economics   │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │ BLOCK 3: INFORMATION ARCHITECTURE & SECTION FLOW                            │
 │ • Candidate section sequence (e.g., 1 ──► 2 ──► 3 ──► 4 ──► 6), adapted to     │
 │   the visitor's questions and the real journey                              │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │ BLOCK 4: PERSUASION, COPYWRITING & HEADLINE CADENCE                         │
-│ • H1 / H2 Formulas: Outcome + Timeframe without the Hated Obstacle          │
+│ • H1 / H2 formulas: outcome and timeframe when truthful, without the main obstacle │
 │ • Layer-Cake Scanning Structure: Descriptive H2/H3 subheadings              │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │ BLOCK 5: VISUAL DIALECT & DESIGN TOKENS                                     │
-│ • Dialect Selected from DIALECTS.md (e.g., High-Tech Precision Slate)       │
-│ • 60-30-10 Color Architecture: Explicit Canvas, Structural, and Accent hex  │
+│ • Optional dialect or existing brand system (e.g., High-Tech Precision Slate)       │
+│ • Color roles and contrast choices that preserve hierarchy and accessibility         │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │ BLOCK 6: USABILITY, ERGONOMICS & COGNITIVE EASE                             │
-│ • Mobile Thumb Zone: Pinned sticky dock with 48x48px min touch targets      │
-│ • Flesch-Kincaid Grade 6–8 readability; 60–75 Characters Per Line (CPL)     │
+│ • Mobile ergonomics: reachable controls and comfortable touch targets              │
+│   checked on the real device mix                                                   │
+│ • Readable language and line lengths suited to the audience and content             │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │ BLOCK 7: TECHNICAL PERFORMANCE & MACHINE READABILITY                        │
 │ • Current Core Web Vitals targets and budgets chosen from a real baseline    │
@@ -188,4 +185,3 @@ To generate or audit a web page, an operator or AI model can use the **7-Block W
 ```
 
 ---
-

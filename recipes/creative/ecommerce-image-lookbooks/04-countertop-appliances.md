@@ -1,5 +1,5 @@
 # Scale 04: Countertop Appliances & Heavy Gear E-Commerce Lookbook
-### Master Archetypes for Products 1.5 to 3 Feet (45–90 cm)
+### Starting points for products 1.5 to 3 feet (45–90 cm)
 *Categories: Espresso Machines, Pizza Ovens, Smart Grills, Blenders, Portable Power Stations, Professional Audio, Heavy Power Tools*
 
 ---
@@ -8,20 +8,20 @@
 Products at this scale bridge the gap between portable consumer items and major domestic machinery. They carry premium price tags ($300 to $3,000+) and occupy permanent physical footprint in kitchens, patios, workshops, or studios.
 
 Shoppers often hesitate over four practical doubts:
-1. *Will it fit under standard 18-inch upper kitchen cabinets?*
+1. *Will it fit under my cabinets?*
 2. *Is it built of real heavy-gauge metal or cheap painted plastic?*
 3. *Is cleaning and maintaining it a nightmare?*
 4. *Where do the cords, water tanks, and vent exhausts actually go?*
 
-Every archetype in this scale is a reference for making footprint, materials, mechanism, operation, and maintenance legible. Use the optional five-block scaffold when useful. A generic poor-versus-premium construction contrast can sharpen pain and relief, but generated cutaways and operating states do not establish the hero product's internals, output, clean time, temperature, noise, or longevity. Use supplied CAD, service documentation, included-accessory lists, test data, and real dimensions, then inspect the rendered result.
+These optional starting points make footprint, materials, mechanism, operation, and maintenance easier to show. Use one when it helps, borrow a single move, combine it with another idea, or continue with a better plan. A generic poor-versus-premium construction contrast can sharpen pain and relief, while supplied CAD, service documentation, included-accessory lists, test data, and real dimensions keep factual details grounded.
 
 ---
 
-## Archetype menu
+## Starting-point menu
 
-Open one archetype directly when you already know the visual job. Each file is self-contained; the index and dialect notes are optional.
+Open one starting point directly when you already know the visual job. Each file is self-contained; the index and dialect notes are optional.
 
-| # | Archetype | Commerce job |
+| # | Starting point | Commerce job |
 |---:|---|---|
 | 01 | [The Master Countertop Hero](04-countertop-appliances/01-the-master-countertop-hero.md) | The Specimen |
 | 02 | [The Active Performance State](04-countertop-appliances/02-the-active-performance-state.md) | The Ritual |
@@ -34,10 +34,10 @@ Open one archetype directly when you already know the visual job. Each file is s
 | 09 | [The Sensory Output Proof](04-countertop-appliances/09-the-sensory-output-proof.md) | The Proof |
 | 10 | [The Complete Tool & Accessory Bundle](04-countertop-appliances/10-the-complete-tool-and-accessory-bundle.md) | The Specimen |
 | 11 | [The 10-Year Workhorse & Heavy-Cycle Resilience](04-countertop-appliances/11-the-10-year-workhorse-and-heavy-cycle-resilience.md) | The Proof |
-| 12 | [The Engineering Teardown: Commercial Metal vs. Plastic Competitor](04-countertop-appliances/12-the-engineering-teardown-commercial-metal-vs-plastic-competitor.md) | The Proof |
+| 12 | [The Engineering Contrast: Metal vs. Generic Reference](04-countertop-appliances/12-the-engineering-teardown-commercial-metal-vs-plastic-competitor.md) | The Proof |
 | 13 | [The Floating Exploded Architectural Void](04-countertop-appliances/13-the-floating-exploded-architectural-void.md) | The Specimen |
 | 14 | [The Thermal Heat Map & PID Stability Proof](04-countertop-appliances/14-the-thermal-heat-map-and-pid-stability-proof.md) | The Proof |
-| 15 | [The Acoustic Isolation & Whisper-Quiet Proof](04-countertop-appliances/15-the-acoustic-isolation-and-whisper-quiet-proof.md) | The Proof |
+| 15 | [The Noise & Vibration Comparison](04-countertop-appliances/15-the-acoustic-isolation-and-whisper-quiet-proof.md) | The Proof |
 
 ## Optional references
 

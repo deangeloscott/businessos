@@ -6,12 +6,12 @@ A compact menu of reusable motion starting points for product demonstrations, se
 
 | Need | Open |
 |---|---|
-| A full worked multi-shot concept | [Four production assemblies](assemblies/INDEX.md) |
+| A concrete video idea to adapt | [Four video starting points](assemblies/INDEX.md) |
 | A short guide to choosing among the four assemblies | [Assembly overview](notes/assembly-overview.md) |
-| Motion, anchors, physical continuity, and optical cues | [Core motion architecture](notes/core-motion.md) |
+| Motion, anchors, physical continuity, and optical cues | [Core motion principles](notes/core-motion.md) |
 | Placement, audience intent, and platform adaptation | [Platform and placement notes](notes/platform-placement.md) |
 | A product demonstration, sensory ritual, habitat, or specimen structure | [Video commerce jobs](notes/video-jobs.md) |
-| A compact shot-brief scaffold | [Director's rig](notes/director-rig.md) |
+| Optional shot-brief ingredients | [Director's rig](notes/director-rig.md) |
 | Match cuts, spatial continuity, and narrative beats | [Continuity and narrative](notes/continuity-and-narrative.md) |
 | Hooks, modular variants, and measurement | [Funnel measurement](notes/funnel-measurement.md) |
 | Sound-off comprehension and tactile Foley | [Sensory and audio](notes/sensory-audio.md) |
@@ -20,9 +20,6 @@ A compact menu of reusable motion starting points for product demonstrations, se
 
 ## Fast use
 
-1. State the product, viewer job, platform, duration, source references, and any documented result.
-2. Open one assembly or note that matches the job; use a single anchor, real footage, storyboard, 3D scene, or another tool-native control when it is more reliable.
-3. Keep identity, geometry, contact, and evidence boundaries visible in the brief, then inspect the rendered sequence.
-4. Add a paired [image scale menu](../ecommerce-image-lookbooks/INDEX.md) when a product reference or start/end anchor helps.
+Start with the product and viewer job, then open one assembly or note only if it helps. Supply source references and documented results when they matter. Use a single anchor, real footage, storyboard, 3D scene, or another tool-native control when it is more reliable, and inspect the finished sequence. Add a paired [image scale menu](../ecommerce-image-lookbooks/INDEX.md) when a product reference or start/end anchor helps.
 
-The video references are optional craft knowledge. Existing AURA workflows own organizational truth and workflow-level QA; this library supplies reusable motion direction.
+The video references are optional craft knowledge. Open an existing AURA workflow or QA reference when it adds useful context; this library supplies reusable motion direction while the model and user retain judgment about the work.

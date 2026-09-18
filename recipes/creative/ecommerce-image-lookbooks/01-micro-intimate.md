@@ -5,19 +5,17 @@
 ---
 
 ## Overview & Scale Dynamics
-At this physical scale, buyers cannot physically inspect fine seams, feel product weight, smell botanical extracts, or test skin absorption. Purchases are held back by fears of skin irritation, sticky residue, cheap synthetic fillers, poor clasp durability, or mismatched expectations on fluid volume.
-
-Every archetype in this scale is a reference for **macro fidelity, tactile simulation, and careful product geometry**. Use the optional five-block scaffold when it helps, then adapt lens, lighting, crop, and styling to the actual product and tool. A close-up can dramatize texture or the pain of a poor experience, but it does not establish a formulation, absorption, shelf-life, safety, or compatibility result by itself. Before publishing a factual claim, compare the render with supplied packaging/formula references or a documented observation.
+Use this menu when a small product needs close detail, human scale, touch, texture, or a quiet ritual. The archetypes are optional starting points: open one when it helps, borrow a move, combine ideas, or use another plan. Keep product geometry, label details, and any factual formulation or performance claim tied to the supplied references.
 
 ---
 
 ## Archetype menu
 
-Open one archetype directly when you already know the visual job. Each file is self-contained; the index and dialect notes are optional.
+Browse the menu when you need an idea, or open one directly when its visual job fits. Each file is self-contained; the index and dialect notes are optional.
 
 | # | Archetype | Commerce job |
 |---:|---|---|
-| 01 | [The Compliant Hero Packshot](01-micro-intimate/01-the-compliant-hero-packshot.md) | The Specimen |
+| 01 | [The Catalog Hero Packshot](01-micro-intimate/01-the-compliant-hero-packshot.md) | The Specimen |
 | 02 | [The Microscopic Actives & Raw Extraction](01-micro-intimate/02-the-microscopic-actives-and-raw-extraction.md) | The Proof |
 | 03 | [The Viscosity, Slump & Micro-Macro Texture Swatch](01-micro-intimate/03-the-viscosity-slump-and-micro-macro-texture-swatch.md) | The Ritual |
 | 04 | [The Domestic Vanity Altar (In-Situ Sanctuary)](01-micro-intimate/04-the-domestic-vanity-altar-in-situ-sanctuary.md) | The Habitat |
@@ -28,8 +26,8 @@ Open one archetype directly when you already know the visual job. Each file is s
 | 09 | [The Formulation Purity Split](01-micro-intimate/09-the-formulation-purity-split.md) | The Proof |
 | 10 | [The Regimen Bundle (Routine Trio Staging)](01-micro-intimate/10-the-regimen-bundle-routine-trio-staging.md) | The Specimen |
 | 11 | [The Temporal Stability & Shelf-Life Proof](01-micro-intimate/11-the-temporal-stability-and-shelf-life-proof.md) | The Proof |
-| 12 | [The Multi-Tone Universal Compatibility Matrix](01-micro-intimate/12-the-multi-tone-universal-compatibility-matrix.md) | The Proof |
-| 13 | [The Immediate Dermal Absorption & Clear Finish Proof](01-micro-intimate/13-the-immediate-dermal-absorption-and-clear-finish-proof.md) | The Proof |
+| 12 | [The Multi-Tone Finish Comparison](01-micro-intimate/12-the-multi-tone-universal-compatibility-matrix.md) | The Proof |
+| 13 | [The Application & Clear-Finish Comparison](01-micro-intimate/13-the-immediate-dermal-absorption-and-clear-finish-proof.md) | The Proof |
 | 14 | [The Olfactory & Botanical Atmospheric Landscape](01-micro-intimate/14-the-olfactory-and-botanical-atmospheric-landscape.md) | The Habitat |
 | 15 | [The Precision Micro-Tolerance & Mechanism Teardown](01-micro-intimate/15-the-precision-micro-tolerance-and-mechanism-teardown.md) | The Specimen |
 

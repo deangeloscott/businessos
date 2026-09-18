@@ -5,15 +5,13 @@
 ---
 
 ## Overview & Scale Dynamics
-Apparel, footwear, and accessories are high-volume, high-return categories where **fit mismatches, fabric hand-feel expectations, unrealistic digital rendering, and inaccurate color reproduction** can create costly friction. Use the organization's actual return and sizing data when quantifying the problem.
-
-Every archetype in this scale is a reference for showing **fabric drape, color, movement, fit, and interior capacity**. Use the optional five-block scaffold when useful. Generic “cheap versus premium” contrasts may intensify the pain-to-relief story, but a rendered garment does not establish waterproofing, stretch recovery, durability, or fit for every body; use supplied tech packs, size data, samples, or documented tests.
+Use this menu when a garment, footwear, bag, or accessory needs its silhouette, drape, fit, movement, material, or capacity made clear. The archetypes are optional starting points: open one when it helps, borrow a move, combine ideas, or use another plan. Keep color, fit, weather, stretch, durability, and construction claims tied to the supplied tech pack, sample, size data, or test.
 
 ---
 
 ## Archetype menu
 
-Open one archetype directly when you already know the visual job. Each file is self-contained; the index and dialect notes are optional.
+Browse the menu when you need an idea, or open one directly when its visual job fits. Each file is self-contained; the index and dialect notes are optional.
 
 | # | Archetype | Commerce job |
 |---:|---|---|

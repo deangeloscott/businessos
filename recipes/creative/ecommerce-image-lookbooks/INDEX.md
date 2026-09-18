@@ -1,6 +1,6 @@
 # E-Commerce Image Lookbooks
 
-A compact menu for 90 standalone visual starting points across six physical product scales. Choose the scale that matches the product, then open one archetype directly. The archetype file contains the usable prompt and local adaptation guidance; the optional notes add shared craft reasoning without loading the library all at once.
+A compact menu for 90 standalone visual starting points across six physical product scales. Choose a scale when browsing helps, then open one archetype directly. Each archetype puts a borrowable idea first and keeps a copyable prompt seed optional; use your own plan or another method whenever it is better.
 
 ## Choose a scale
 
@@ -26,11 +26,11 @@ A compact menu for 90 standalone visual starting points across six physical prod
 
 Open these only when they improve the current decision or prompt:
 
-- [Creative principles and selection](notes/creative-principles.md) — shared visual jobs, commerce classes, awareness framing, decision matrices, and production checks.
-- [Director's rig and worked examples](notes/director-rig.md) — optional five-block prompt scaffold and four complete examples.
+- [Creative principles and selection](notes/creative-principles.md) — shared visual jobs, composition, persuasion, and inspection.
+- [Image direction and worked examples](notes/director-rig.md) — optional prompt ingredients and four concrete examples.
 - [Directory and foundational references](notes/references.md) — full navigation map and source list.
 - [Brand dialects](DIALECTS.md) — 16 optional lighting, palette, mood, and finish modifiers.
 
 ## Use with AURA
 
-Recipes are optional craft references. Use the fewest files that materially help, adapt them to the actual product, evidence, platform, source material, and tool, and inspect the finished output. Existing AURA workflows own organizational truth and workflow-level QA; this library supplies reusable image direction.
+Recipes are optional craft references. Use the fewest files that materially help, adapt them to the actual product, evidence, platform, source material, and tool, and inspect the finished output. Existing AURA workflows can provide organizational context and further QA guidance when useful; this library supplies reusable image direction.

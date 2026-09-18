@@ -6,7 +6,7 @@
 
 ## 1. How Web Dialects Work
 
-A **Design Dialect** is not merely a color palette or a font pairing. It is a **cohesive visual and cognitive operating system** that establishes the emotional tone, perceived market value, and subconscious trust signals of a web property.
+A **Design Dialect** is more than a color palette or font pairing. It is a coherent visual language—not a required design system or conversion formula—that can help coordinate the emotional tone, hierarchy, and perceived character of a web property.
 
 Just as the [E-Commerce Image Lookbooks](../creative/ecommerce-image-lookbooks/DIALECTS.md) govern photographic set design, lighting, and camera grades, these ten web design dialects govern the digital canvas:
 * **The 60-30-10 Chromatic Starting Point:** Canvas background (60%), structural containers/text (30%), and a conversion accent (10%). Adjust the ratio for brand, accessibility, hierarchy, and content.
@@ -14,7 +14,7 @@ Just as the [E-Commerce Image Lookbooks](../creative/ecommerce-image-lookbooks/D
 * **Surface Depth & Micro-Elevation:** Flat vs. skeuomorphic vs. glassmorphic elevation, border radii, and box-shadow profiles.
 * **Kinetic Interaction Cadence:** Hover states, micro-transitions, and tactile feedback.
 
-When building or prompting a web experience, an operator may select **one primary dialect** to make visual choices easier to coordinate. Blend, adapt, or skip dialects when the brand, audience, accessibility needs, platform, or evidence calls for it; no dialect guarantees consistency or conversion.
+When building or prompting a web experience, an operator may select **one primary dialect** to make visual choices easier to coordinate. Blend, adapt, or skip dialects when the brand, audience, accessibility needs, platform, or evidence calls for it; no dialect guarantees consistency or conversion. The color values, type pairings, dimensions, and effects are starting points; preserve readability and accessibility and use available brand or platform tokens when they are better.
 
 ---
 

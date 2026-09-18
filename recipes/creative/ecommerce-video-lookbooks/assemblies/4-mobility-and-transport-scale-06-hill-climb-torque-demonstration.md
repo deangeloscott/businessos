@@ -1,34 +1,31 @@
-# Video Assembly 4: Mobility & Transport (Scale 06) — Hill-Climb Torque Demonstration
+# Video idea: Effort relief in motion
 
-> Standalone worked starting point. Adapt the product facts, source material, platform, duration, and evidence to the current job; the example is a craft reference, not a required script or performance guarantee.
+> A quick, adaptable starting point for showing a product carrying a person or load through a meaningful challenge. Borrow the idea, change the route or action, combine it with a different story, or skip it when a static view answers the buyer's question better. The hill-climb example is a worked execution, not a measured performance result by itself.
 
-* **Class:** Class 2 (The Documented Kinetic Demonstration)
-* **Scale File:** [06 — Mobility & transport](../../ecommerce-image-lookbooks/06-mobility-transport.md) | **Duration:** 5.0s (120 frames at 24fps)
-* **Placement & Intent:** Retargeting Ad & Amazon Video Hero
-* **Frame 0 (Start Anchor):** Electric all-terrain commuter bike at the base of a supplied or illustrative steep paved incline.
-* **Frame N (End Anchor):** E-bike midway up the incline; if speed, grade, load, effort, and battery state matter, use the documented test result rather than inventing them.
+**Job:** Documented demonstration or kinetic habitat · [mobility/transport scale](../../ecommerce-image-lookbooks/06-mobility-transport.md) · useful for an objection-focused ad, product page, or brand hero.
+
+## The idea
+
+Make the effort or relief legible through one continuous action: climb, carry, turn, fold, tow, or navigate. Keep the product large enough to read and the environment clear enough to show the challenge. A rider's posture, wheel contact, load, route, and pace can make the benefit felt without requiring a voiceover.
+
+For a factual performance claim, carry the supplied grade, rider or payload, speed, mode, cadence, battery state, and observed result into the asset. Without that record, use the movement as an illustrative expression of intended relief and avoid invented numbers or “effortless” guarantees.
+
+## One concrete execution
+
+The worked example is a 5-second vertical tracking shot: an all-terrain commuter bike enters a measured or illustrative incline, climbs at a steady pace, and reaches a visible rise. A low camera can make the slope readable; a side track can make wheel contact and rider posture clearer.
+
+1. **Entry:** 0.0–0.6s, establish the product, rider/load, direction, and grade.
+2. **Challenge:** 0.6–3.5s, hold a stable tracking relationship while the climb or task unfolds.
+3. **Relief:** 3.5–5.0s, reveal the crest, destination, or recovered posture without cutting away from the result.
+
+Use long shadows or a moving background to emphasize direction, but let the product and contact remain readable. Inspect frame geometry, wheel circles, pedal cadence, rider anatomy, clothing, background, and any performance label separately.
+
+## Adapt it
+
+The same idea can show a scooter crossing a rough surface, a cargo rig carrying a documented load, a folding vehicle moving through a tight route, or a tool completing a demanding task. Change camera position, duration, speed treatment, and sound to suit the source and platform. Real footage, 3D, or a storyboard may be more reliable than generated motion for a measurable result.
+
+## Optional shot brief
 
 ```text
-BLOCK 1 (ANCHOR & RIGID BODY):
-Image-to-Video conditioned on Frame 0 start anchor and Frame N end anchor. Hydroformed aluminum bike frame, battery casing, motor hub, and handlebars remain visually rigid; inspect for implausible structural flex.
-
-BLOCK 2 (CAMERA KINEMATICS):
-Low-angle tracking camera mounted on a stabilization chase vehicle parallel to the e-bike, 35mm lens at f/3.5, keeping the bottom bracket and rear motor hub locked in the lower-third frame.
-
-BLOCK 3 (SPEED RAMP CADENCE):
-0.0s–0.6s real-time entry into the hill. 0.6s–3.5s steady-speed tracking up the supplied grade at the documented or deliberately illustrative pace. 3.5s–5.0s gentle crane-up revealing the crest of the hill.
-
-BLOCK 4 (SUBJECT KINETIC ACTION):
-The rider leans slightly forward with a controlled posture as the rear hub motor and tires carry the bike uphill. If this is a performance claim, show the documented grade, rider and payload, speed, mode, cadence, battery state, and observed effort; if synthetic, use the motion to illustrate intended torque relief without claiming measured wattage or effortless performance.
-
-BLOCK 5 (SPECULAR & SHADOW):
-Low-angle morning sun creates long crisp contact shadows of the spinning tires on the steep asphalt. Golden specular edge highlights sweep along the matte-olive top tube as the bike ascends.
-
-BLOCK 6 (PARALLAX STAGE):
-Steep hillside grade provides dramatic diagonal perspective. A distant skyline may move through the frame to make the climb legible, but parallax is a visual cue, not proof of measured elevation gain.
-
-BLOCK 7 (TEMPORAL INVARIANTS):
-Inspect frame geometry, wheel circles and spoke motion, pedal cadence, rider anatomy, clothing flutter, and background continuity. Treat these as render checks separate from the measured performance record.
+Create a short sequence of [PRODUCT] completing [CHALLENGE] for [VIEWER]. Make the route, contact, load, and useful result clear through one continuous action. Track or lock the camera according to what needs to be inspected. Preserve the supplied product geometry and rider/operator interaction. Include [GRADE / LOAD / SPEED / MODE / BATTERY / RESULT] only when documented; otherwise treat the scene as an illustrative expression of relief and inspect wheels, anatomy, contact, and continuity.
 ```
-
----
