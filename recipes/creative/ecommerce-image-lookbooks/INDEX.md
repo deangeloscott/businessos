@@ -8,7 +8,7 @@
 
 This library is a set of **90 reusable visual archetypes** organized across **6 physical product scales** (15 archetypes per scale), **4 commerce jobs**, and **16 optional brand dialects**. It is a craft reference: the model or operator selects, combines, adapts, or replaces a pattern according to the actual outcome, platform, tool, source material, and evidence available.
 
-For a strong result, select:
+One useful way to browse the library is to select:
 1. **The Product Scale File** (`01` through `06`) matching the product's physical dimensions.
 2. **The Commerce Archetype Class** (*The Specimen*, *The Proof*, *The Habitat*, or *The Ritual*).
 3. **The Desired Archetype** (each designed to address a customer question or fulfill a platform requirement).

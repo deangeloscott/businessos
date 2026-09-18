@@ -1,10 +1,10 @@
 # E-Commerce Video Lookbooks
 ### Master Directory, Kinesthetic Motion Architecture & Adaptable Director's Craft References
-*Version 1.3 — Evidence-aware kinetic video system*
+*Version 1.3 — Evidence-aware kinetic video craft reference*
 
 ---
 
-## 1. How This Video System Works
+## 1. How This Video Library Works
 
 This library is a set of reusable motion and production references for digital commerce video. It helps a model or operator choose camera movement, action, pacing, continuity, sound, and platform treatment across available tools. It is not a required operating system, model allowlist, or guarantee of conversion performance.
 
@@ -187,7 +187,7 @@ By describing these behaviors in clear language, a capable model or human direct
 
 ## 5. Full-Funnel Placement & User Intent Matrix
 
-In commercial e-commerce, video creative cannot be treated as a one-size-fits-all asset. A high-converting top-of-funnel ad will cause immediate bounces if embedded on a Product Detail Page (PDP), and a calm PDP loop will fail to stop the thumb on a social feed.
+In commercial e-commerce, video creative works in context. A top-of-funnel ad can create a mismatch and increase bounces when embedded on a Product Detail Page (PDP), while a calm PDP loop may not stop the thumb on a social feed. Match the opening, pace, information density, and sound treatment to the viewer's intent.
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────────────────────┐
@@ -222,7 +222,7 @@ In commercial e-commerce, video creative cannot be treated as a one-size-fits-al
   * *Constraint:* The buyer already knows what the product is; they are hesitating on price, quality, fit, or the cost of staying with the current problem.
   * *Execution:* Use a documented stress test, a generic ideal-versus-poor contrast, or a mechanism explanation. Close with a supported offer, warranty, or next step; do not let a generated scene stand in for a test.
 * **Placement 3: PDP Primary Carousel Video (Slot 1 or 2)**
-  * *Constraint:* The buyer is on the page. Aggressive music, fast cuts, and hype copy cause annoyance and cognitive overload.
+  * *Constraint:* The buyer is on the page. Aggressive music, fast cuts, and hype copy can distract or overload when the buyer needs calm product inspection.
   * *Execution:* A calm loop, clean rotation, or short mechanism sequence can work when it answers the PDP question. Design and inspect the loop seam; do not require a 360° turn or a specific background.
 * **Placement 4: PDP Mid-Page Feature Modules**
   * *Constraint:* Inline video embedded in Shopify / headless product descriptions should protect page speed and Core Web Vitals (LCP/INP); test the real page on representative devices.
@@ -253,7 +253,7 @@ Every major commerce platform has distinct algorithmic incentives, technical enc
 * **UI Safe-Zone:** Keep primary text and product focus clear of the placement's current controls; verify the rendered crop in the target app.
 
 #### 2. Meta Reels & Instagram Ads
-* **Aesthetic Standard:** Elevated, aspirational, editorial. High production value and beautiful lighting perform exceptionally well.
+* **Aesthetic Choice:** Elevated, aspirational, editorial treatment can suit a polished brand and product. Native-feeling, lo-fi, or demonstration-led work can be a better fit for another audience or offer; choose the treatment that makes the first beat and proposition clear.
 * **Audio Choice:** Make the essential proposition understandable on sound-off when the placement needs it; add captions or concise callouts only when they clarify the visible action. Do not force text into every frame.
 * **Multi-Format Adaptation:** Prepare alternate crops when the distribution plan needs them; preserve the subject, comparison, labels, and CTA in each actual placement rather than assuming one crop will hold.
 

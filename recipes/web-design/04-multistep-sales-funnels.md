@@ -6,7 +6,7 @@
 
 ## 1. Executive Summary & Funnel Economics
 
-A sales funnel is not a standalone website; it is a **linear persuasion pipeline engineered to eliminate all exploratory distractions, maximize immediate transaction velocity, and extract maximum customer lifetime value (LTV)**.
+A sales funnel is not a standalone website; it is a **focused path that can make the next decision clear, reduce unnecessary exploration, and improve customer economics when the offer and audience support it**.
 
 In modern direct-response marketing, a funnel can use **Front-End Customer Acquisition Cost (CAC) Liquidation**: pre-purchase order bumps and post-purchase offers may raise contribution per buyer enough to offset acquisition cost. This is a unit-economics hypothesis, not automatically net profit or permission to scale. Scale only while contribution margin, fulfillment capacity, refunds, platform constraints, and customer quality remain healthy.
 

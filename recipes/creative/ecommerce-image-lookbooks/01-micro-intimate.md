@@ -172,7 +172,7 @@ Every archetype in this scale is a reference for **macro fidelity, tactile simul
 * **Universal Class:** The Specimen
 * **Example Products (Illustrative Guidance, Not an Allowlist):** 15ml eye serum, lip balm stick, solid fragrance compact, mini pill case, fine signet ring.
 1. **Strategic Intent & Conversion Role:**  
-   PDP Slot 4 (Spatial De-risking). Permanently resolves customer confusion about bottle or jewelry dimensions by comparing it against universal human anatomy.
+   PDP Slot 4 (Spatial De-risking). Helps resolve customer confusion about bottle or jewelry dimensions by comparing it against a familiar human scale reference.
 2. **The Physical Stage (The 95%):**  
    An open, resting adult palm holding the product upright or resting flat, or a casual shot of the product slipping into a tailored denim pocket or luxury leather pouch.
 3. **Optical & Lighting Directives:**  
@@ -180,7 +180,7 @@ Every archetype in this scale is a reference for **macro fidelity, tactile simul
    * *Aperture:* f/4 for balanced depth between palm and packaging.  
    * *Lighting:* Clean, neutral 5400K daylight from an open window.
 4. **Sensory & Synesthetic Triggers:**  
-   Immediate cognitive scale realization: *"Ah, it's about 4 inches tall and fits perfectly in my hand."* Reassurance of portable, travel-friendly convenience.
+   Intended cognitive scale realization: *"Ah, it's about 4 inches tall and fits comfortably in my hand."* Reassurance of portable, travel-friendly convenience when the supplied dimensions support it.
 5. **Invariant Guardrails & Crop Safe-Zones:**  
    The human hand must be proportionally standard (no deceptive lens distortion making the product look larger or smaller than its true physical volume).
 * **Director's Rig Prompt Blueprint:**
@@ -328,7 +328,7 @@ Every archetype in this scale is a reference for **macro fidelity, tactile simul
 * **Universal Class:** The Proof
 * **Example Products (Illustrative Guidance, Not an Allowlist):** Blue tansy face oil, botanical barrier salve, concentrated night serum, peptide essence, dry body oil.
 1. **Strategic Intent & Conversion Role:**  
-   PDP Slot 2 or Paid Social Hook (Overcomes Staining & Greasiness Anxiety). Eliminates the common customer objection to intensely colored or rich oils: *"Will this stain my skin blue/yellow, or leave me looking greasy?"*
+   PDP Slot 2 or Paid Social Hook (Overcomes Staining & Greasiness Anxiety). Makes a common customer objection to intensely colored or rich oils easier to evaluate: *"Will this stain my skin blue/yellow, or leave me looking greasy?"*
 2. **The Physical Stage (The 95%):**  
    A woman's natural forearm resting on a clean, neutral white linen or marble studio surface, occupying 70% of frame weight. 
 3. **Optical & Lighting Directives:**  

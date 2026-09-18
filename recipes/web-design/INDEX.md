@@ -4,7 +4,7 @@
 
 ---
 
-## 1. How This System Works
+## 1. How This Library Works
 
 This library is a set of **optional, platform-agnostic craft references** for designing, structuring, writing, and engineering high-converting digital web properties. It provides a shared vocabulary across **four specialized architectural tracks**, **ten design dialects**, reusable section patterns, and a **7-block briefing pattern**.
 
@@ -56,7 +56,7 @@ Generative AI models and human designers often fail in web production for predic
 ```
 
 ### Framework 1: The Friction Valve (Calibrate Friction to Stakes)
-* **The Principle:** Friction is not universally bad; it is an economic valve. Eliminating all friction on high-ticket B2B or complex services floods fulfillment with unqualified leads ("casual scrollers"), destroying sales pipeline efficiency. Conversely, adding friction to an impulse consumer purchase collapses conversion.
+* **The Principle:** Friction is not universally bad; it is an economic valve. Removing every qualification step from a high-ticket B2B or complex service can increase unqualified demand and strain fulfillment. Adding unnecessary friction to an impulse consumer purchase can reduce completion. Calibrate the exchange to the decision, audience, and delivery capacity.
 * **The Practice:**
   * *Low-stakes entry:* Reduce avoidable effort and ask only for information needed to deliver the promised value.
   * *High-stakes or capacity-limited decision:* Add only the qualification questions that improve fit, readiness, economics, or service quality. Thoughtful qualification can signal competence; irrelevant questions simply lose good prospects.
@@ -365,34 +365,34 @@ The four domain tracks in this library are not isolated silos; in production, hi
 
 To keep web properties resilient and adaptive without relying on brittle, soon-to-be-obsolete checklists, an AI model or operator can use these three cognitive frameworks when the telemetry and market context warrant them:
 
-### 1. The Conversion Diagnostic Triad (Root-Cause Failure Deduction)
-When a page underperforms, weak optimization involves random aesthetic guesswork (changing button colors, rewriting copy blindly). World-class conversion engineering uses **deductive failure triage** based on user telemetry to pinpoint the exact cognitive breakdown:
+### 1. The Conversion Diagnostic Triad (Signals and Starting Hypotheses)
+When a page underperforms, avoid changing aesthetics or copy blindly. These signal-to-intervention pairs are useful starting hypotheses: telemetry can suggest an orientation, conviction, or friction issue, but the same signal can have several causes. Check measurement, traffic, device, offer, and operational context before choosing a change.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────────────────────┐
 │                               THE CONVERSION DIAGNOSTIC TRIAD                                   │
 ├───────────────────┬──────────────────────────────────────────┬──────────────────────────────────┤
-│ BEHAVIORAL SIGNAL │ PRIMARY ROOT-CAUSE FAILURE               │ STRATEGIC INTERVENTION           │
+│ BEHAVIORAL SIGNAL │ POSSIBLE EXPLANATION / CHECK            │ STRATEGIC INTERVENTION           │
 ├───────────────────┼──────────────────────────────────────────┼──────────────────────────────────┤
-│ **High Bounce Rate**  │ **THE ORIENTATION / ATTENTION FAILURE**  │ • Re-calibrate 5-Second Filter   │
-│ (<15s on page,    │ • Visitor cannot deduce category or      │ • Align H1 directly to Ad Hook   │
-│ <25% scroll depth)│   audience in the first 5 seconds.       │ • Add Continuation Cues to kill │
-│                   │ • Ad hook disconnected from page H1.     │   the False Bottom illusion      │
+│ **High Bounce Rate**  │ **ORIENTATION / ATTENTION GAP**      │ • Re-calibrate 5-Second Filter   │
+│ (<15s on page,    │ • Visitor may not deduce category or      │ • Align H1 directly to Ad Hook   │
+│ <25% scroll depth)│   audience in the first 5 seconds.       │ • Add Continuation Cues to reduce│
+│                   │ • Ad hook may be disconnected from H1.  │   the False Bottom illusion      │
 ├───────────────────┼──────────────────────────────────────────┼──────────────────────────────────┤
-│ **Deep Scroll,**  │ **THE CONVICTION / BELIEF FAILURE**      │ • Elevate Proof to Tier 1/2      │
-│ **Zero Clicks**   │ • Prospect understands the promise, but  │ • Introduce empirical demos      │
-│ (High time on     │   considers it unsubstantiated hype.     │ • Shift focus from "What it is"  │
+│ **Deep Scroll,**  │ **CONVICTION / BELIEF GAP**             │ • Elevate Proof to Tier 1/2      │
+│ **Zero Clicks**   │ • Promise may be clear, but buyer may see│ • Introduce empirical demos      │
+│ (High time on     │   unsupported hype or lack proof.        │ • Shift focus from "What it is"  │
 │ page, no CTA tap) │ • Lack of mechanism explanation or proof.│   to the *New Mechanism* itself  │
 ├───────────────────┼──────────────────────────────────────────┼──────────────────────────────────┤
-│ **High CTA Clicks,│ **THE DECISION ANXIETY / FRICTION LEAK** │ • Inject Reassurance micro-copy  │
-│ Abandoned Cart**  │ • Prospect desires the outcome, but the  │ • Add split-payment BNPL options │
+│ **High CTA Clicks,│ **DECISION ANXIETY / FRICTION**         │ • Inject Reassurance micro-copy  │
+│ Abandoned Cart**  │ • Prospect may desire the outcome, but  │ • Add split-payment BNPL options │
 │ (Checkout / Form  │   perceived risk or effort is too high.  │ • Upgrade to Action Guarantee    │
 │ drop-off >65%)    │ • Hidden costs or fear of commitment.    │ • Remove non-essential fields    │
 └───────────────────┴──────────────────────────────────────────┴──────────────────────────────────┘
 ```
 
 ### 2. Schwartz's 5 Stages of Market Sophistication (Combating Ad Fatigue)
-While prospect awareness dictates *how much* education is required, **Market Sophistication** dictates *how jaded and skeptical* the competitive environment is. Applying a Stage 1 promise to a Stage 4 market causes immediate ad fatigue and rejection:
+While prospect awareness helps determine *how much* education is required, **Market Sophistication** helps indicate *how familiar and skeptical* the competitive environment may be. Applying a Stage 1 promise to a Stage 4 market may feel familiar or be discounted, so test the promise against the audience and competing claims:
 
 ```
 ┌──────────────┬──────────────────────────────┬──────────────────────────────┬─────────────────────────────┐
@@ -402,28 +402,29 @@ While prospect awareness dictates *how much* education is required, **Market Sop
 │ (Virgin)     │ Zero direct competitors.     │ No fancy mechanism needed.   │  Directly to Your Door."    │
 ├──────────────┼──────────────────────────────┼──────────────────────────────┼─────────────────────────────┤
 │ **Stage 2**  │ Competitors Enter            │ Enlarge the claim.           │ *"Fresh Groceries Delivered │
-│ (Enlarged)   │ Everyone makes basic claims. │ Faster, bigger, or cheaper.  │  in Under 15 Minutes."      │
+│ (Enlarged)   │ Basic claims may blend in.  │ Faster, bigger, or cheaper.  │  in Under 15 Minutes."      │
 ├──────────────┼──────────────────────────────┼──────────────────────────────┼─────────────────────────────┤
 │ **Stage 3**  │ Claims Burned Out            │ The New Mechanism.           │ *"How Micro-Fulfillment Dark│
-│ (Mechanism)  │ Prospects tune out promises. │ Explain *how* it works.      │  Nodes Deliver in 8 Minutes"*│
+│ (Mechanism)  │ Basic promises may blend in.│ Explain *how* it works.      │  Nodes Deliver in 8 Minutes"*│
 ├──────────────┼──────────────────────────────┼──────────────────────────────┼─────────────────────────────┤
 │ **Stage 4**  │ Mechanisms Copied            │ The Elaborated Mechanism.    │ *"Why Automated Robotic     │
 │ (Elaborated) │ Competing mechanisms abound. │ Superiority of your process. │  Sorting Beats Manual Hubs"*│
 ├──────────────┼──────────────────────────────┼──────────────────────────────┼─────────────────────────────┤
 │ **Stage 5**  │ Total Saturation & Cynicism  │ Tribal Identity & Philosophy.│ *"Murder Your Thirst."      │
-│ (Identity)   │ Claims/mechanisms ignored.   │ Shared ethos and belonging.  │ (Liquid Death / Apple style)│
+│ (Identity)   │ Claims/mechanisms may be     │ Shared ethos and belonging.  │ (Liquid Death / Apple style)│
+│              │ discounted.                 │                              │                             │
 └──────────────┴──────────────────────────────┴──────────────────────────────┴─────────────────────────────┘
 ```
 
 ### 3. Voice-of-Customer (VoC) Mining & Semantic Resonance
-The highest-converting direct-response copy is never authored from synthetic marketing imagination; **it is harvested verbatim from the customer's raw, unvarnished language**. When AI models generate copy without grounding in customer voice, they default to sterile corporate abstraction. 
+Strong direct-response copy is often grounded in the customer's raw, unvarnished language. Use customer phrases as inputs and evidence, then author, adapt, or synthesize the final copy so it fits the offer, audience, and channel. When AI models generate copy without grounding in customer voice, they can default to sterile corporate abstraction.
 
 High-performance copy mines three specific semantic categories:
 * **The Raw Pain Language:** Harvested from anonymous forums (Reddit, specialized community boards, 1-star competitor reviews).
   * *Synthetic Corporate:* *"Our tool optimizes database latency issues."*
   * *VoC Ground Truth:* *"I was dreading the 2:00 AM PagerDuty alerts because our PostgreSQL queries kept timing out during batch billing."*
 * **The Skepticism Anchor:** The exact doubt preventing purchase.
-  * *VoC Ground Truth:* *"I was skeptical that this was just another overpriced wrapper around the OpenAI API."* (Directly addressing this skepticism in the H2 subheadline dismantles resistance immediately).
+  * *VoC Ground Truth:* *"I was skeptical that this was just another overpriced wrapper around the OpenAI API."* (Addressing this skepticism in the H2 subheadline can make the objection explicit and give the reader language that feels familiar.)
 * **The Dream State Metric:** The specific, tangible picture of success.
   * *VoC Ground Truth:* *"I just want to open my laptop on Monday morning and see our sales calendar full without having to send 200 cold DMs."*
 

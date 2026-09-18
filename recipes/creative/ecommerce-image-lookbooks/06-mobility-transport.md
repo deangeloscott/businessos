@@ -100,7 +100,7 @@ Every archetype here is a reference for **kinetic motion, modular utility, real-
 * **Universal Class:** The Specimen
 * **Example Products (Illustrative Guidance, Not an Allowlist):** Folding commuter e-bike, folding electric scooter, compact cargo bike, collapsible adventure trailer.
 1. **Strategic Intent & Conversion Role:**  
-   PDP Slot 4 (Portability De-risking). Eliminates the fear: *"Will this folding bike/scooter actually fit in my car trunk or under my desk?"*
+   PDP Slot 4 (Portability De-risking). Helps answer the question: *"Will this folding bike/scooter actually fit in my car trunk or under my desk?"*
 2. **The Physical Stage (The 95%):**  
    The open trunk of the actual vehicle model supplied for the brief, or a clearly labeled illustrative vehicle. Show the measured folded footprint and remaining clearance rather than assuming a standard trunk or room to spare.
 3. **Optical & Lighting Directives:**  
@@ -108,7 +108,7 @@ Every archetype here is a reference for **kinetic motion, modular utility, real-
    * *Aperture:* f/5.6.  
    * *Lighting:* Diffused daylight with soft fill illuminating inside the dark trunk liner.
 4. **Sensory & Synesthetic Triggers:**  
-   Instant spatial certainty: *"It takes up less than half the trunk—I can take this on road trips easily."* Smooth folding hinge levers and magnetic clasp closures.
+   A clear spatial read: *"It takes up less than half the trunk—I can take this on road trips easily."* Show smooth folding hinge levers and magnetic clasp closures when they are part of the supplied product.
 5. **Invariant Guardrails & Crop Safe-Zones:**  
    Car trunk must be standard, recognizable consumer vehicle proportions (not an oversized commercial van).
 * **Director's Rig Prompt Blueprint:**
@@ -152,7 +152,7 @@ Every archetype here is a reference for **kinetic motion, modular utility, real-
 * **Universal Class:** The Habitat
 * **Example Products (Illustrative Guidance, Not an Allowlist):** Long-tail cargo e-bike, modular front utility rack, dual-child trailer, heavy-duty delivery rig.
 1. **Strategic Intent & Conversion Role:**  
-   PDP Slot 3 & Utility Upsell. Proves the vehicle can replace a car for real-world errands, grocery runs, and child transport.
+   PDP Slot 3 & Utility Upsell. Illustrates how the vehicle could support real-world errands, grocery runs, and child transport; capacity and safety claims require the supplied rating and conditions.
 2. **The Physical Stage (The 95%):**  
    An active city street or farmers market setting. The rear cargo rack is fully loaded with packed canvas pannier bags overflowing with fresh produce, child seat with helmet, or modular delivery crate.
 3. **Optical & Lighting Directives:**  
@@ -282,7 +282,7 @@ Every archetype here is a reference for **kinetic motion, modular utility, real-
 * **Universal Class:** The Specimen
 * **Example Products (Illustrative Guidance, Not an Allowlist):** Step-through e-bike frame, diamond-frame mountain bike, stand-up folding scooter, cargo bike chassis.
 1. **Strategic Intent & Conversion Role:**  
-   PDP Slot 4 & Sizing De-risking. Eliminates return friction and cart abandonment caused by fit anxiety: *"Will this frame fit someone 5'3" or 6'2"? What is the exact standover height and reach?"* Provides definitive sizing clarity for confident checkout.
+   PDP Slot 4 & Sizing De-risking. Helps address fit anxiety: *"Will this frame fit someone 5'3" or 6'2"? What is the exact standover height and reach?"* Provide sizing clarity from the supplied geometry and fit guidance.
 2. **The Physical Stage (The 95%):**  
    A clean, technical studio environment with a subtle architectural CAD grid background (RGB 245, 245, 248). The vehicle is presented in pure side-profile orthographic projection with crisp, high-contrast graphic measurement dimension lines:
    * Standover clearance (ground to top-tube).
@@ -364,7 +364,7 @@ Every archetype here is a reference for **kinetic motion, modular utility, real-
 * **Universal Class:** The Proof
 * **Example Products (Illustrative Guidance, Not an Allowlist):** IPX7 sealed e-bike, all-weather electric scooter, weatherproof adventure trailer, waterproof battery box.
 1. **Strategic Intent & Conversion Role:**  
-   PDP Slot 2 & Waterproof Certification (Eliminates Rain & Short-Circuit Dread). Makes the stated weather protection and its limits visible. Use the actual certification/test record; never turn a render into a guarantee against all water exposure.
+   PDP Slot 2 & Waterproof Certification (Makes Rain & Short-Circuit Concerns Visible). Makes the stated weather protection and its limits visible. Use the actual certification/test record; never turn a render into a guarantee against all water exposure.
 2. **The Physical Stage (The 95%):**  
    Intense commercial studio or test track rain chamber deluge. A heavy curtain of water pours over the vehicle under the documented test setup, or an illustrative deluge dramatizes the intended protection without claiming a pass.
 3. **Optical & Lighting Directives:**  

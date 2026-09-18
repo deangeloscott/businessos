@@ -21,7 +21,7 @@ Every archetype here is a reference for **architectural perspective control, spa
 * **Universal Class:** The Habitat
 * **Example Products (Illustrative Guidance, Not an Allowlist):** Red cedar outdoor barrel sauna, stainless steel cold plunge, modular velvet sectional, solid walnut dining table, commercial half-rack gym.
 1. **Strategic Intent & Conversion Role:**  
-   Homepage Hero, Luxury Catalog Main (Slot 1), and Brand Flagship. Completely eliminates aesthetic hesitation by proving the product elevates world-class interior or landscape architecture.
+   Homepage Hero, Luxury Catalog Main (Slot 1), and Brand Flagship. Reduces aesthetic uncertainty by showing how the product can sit within a considered interior or landscape context.
 2. **The Physical Stage (The 95%):**  
    *Outdoor (Saunas, Plunges):* Staged on a cantilevered cedar or dark basalt patio, bordered by architectural gravel and mature Scots pine trees.  
    *Indoor (Sectionals, Dining, Gyms):* A minimalist open-concept loft with floor-to-ceiling glass, polished concrete floors, and raw lime plaster walls.
@@ -178,7 +178,7 @@ Every archetype here is a reference for **architectural perspective control, spa
 * **Universal Class:** The Specimen
 * **Example Products (Illustrative Guidance, Not an Allowlist):** Cold plunge garden hose drain port, sauna 240V junction box, hot tub filtration pack, sectional modular connector bracket.
 1. **Strategic Intent & Conversion Role:**  
-   PDP Technical Specifications & FAQs. Eliminates the silent fear of DIY plumbing or complicated electrical rewiring.
+   PDP Technical Specifications & FAQs. Makes DIY plumbing and electrical requirements easier to inspect and discuss.
 2. **The Physical Stage (The 95%):**  
    Clean macro-level architectural documentation of the maintenance access: brass garden hose drain valve, recessed 120V/240V industrial plug box, or quick-access filter housing.
 3. **Optical & Lighting Directives:**  

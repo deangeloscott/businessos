@@ -353,7 +353,7 @@ Every archetype in this scale is a reference for showing **fabric drape, color, 
 * **Universal Class:** The Proof
 * **Example Products (Illustrative Guidance, Not an Allowlist):** Climbing jacket, stretch commuter trousers, running shell, technical fleece, articulated work pants.
 1. **Strategic Intent & Conversion Role:**  
-   PDP Slot 4 (Kinetic Mobility De-risking). Eliminates the common customer fear: *"Will this bind across my back when I reach up, or pull out of my waist?"*
+   PDP Slot 4 (Kinetic Mobility De-risking). Helps answer the common customer question: *"Will this bind across my back when I reach up, or pull out of my waist?"*
 2. **The Physical Stage (The 95%):**  
    Modern climbing gym wall, outdoor boulder, or minimal studio stage. An athletic model captured in extreme physical articulation (reaching high overhead, deep high-knee step).
 3. **Optical & Lighting Directives:**  

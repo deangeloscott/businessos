@@ -123,7 +123,7 @@ Every archetype in this scale is a reference for making handheld products legibl
 * **Universal Class:** The Specimen
 * **Example Products (Illustrative Guidance, Not an Allowlist):** 16oz insulated travel mug, 750ml glass wine bottle, EDC titanium flashlight, ground coffee can, hot sauce bottle.
 1. **Strategic Intent & Conversion Role:**  
-   PDP Slot 4 (Scale & Ergonomics). Permanently eliminates customer anxiety around package size, volume, and ease of handling.
+   PDP Slot 4 (Scale & Ergonomics). Helps reduce uncertainty around package size, volume, and ease of handling.
 2. **The Physical Stage (The 95%):**  
    A casual, authentic human hand naturally holding the product upright, unscrewing the cap, or pouring from it. Shot in a bright, modern domestic or outdoor setting.
 3. **Optical & Lighting Directives:**  
@@ -227,7 +227,7 @@ Every archetype in this scale is a reference for making handheld products legibl
 * **Universal Class:** The Specimen
 * **Example Products (Illustrative Guidance, Not an Allowlist):** Glass-bottled pantry kit, wine shipment box, artisanal coffee subscription box, ceramic tableware set, EDC gear case.
 1. **Strategic Intent & Conversion Role:**  
-   PDP Slot 7 & Post-Purchase Reassurance. Eliminates fear of shipping damage (e.g. broken bottles) and proves gifting appeal.
+   PDP Slot 7 & Post-Purchase Reassurance. Helps set expectations around protective packaging and gifting appeal.
 2. **The Physical Stage (The 95%):**  
    A freshly opened custom corrugated shipping box resting on an entryway console table or kitchen island. The protective pulp insert or custom branded tissue is peeled back, revealing the products nested securely in pristine condition.
 3. **Optical & Lighting Directives:**  
@@ -253,7 +253,7 @@ Every archetype in this scale is a reference for making handheld products legibl
 * **Universal Class:** The Specimen
 * **Example Products (Illustrative Guidance, Not an Allowlist):** Coffee bean pouch, specialty condiment bottle, travel tumbler, EDC pocketknife, dietary supplement canister.
 1. **Strategic Intent & Conversion Role:**  
-   Amazon Secondary Image & Mobile Quick-Shop. Packs 4 critical angles into a single image to give analytical buyers 100% confidence in a single glance.
+   Amazon Secondary Image & Mobile Quick-Shop. Packs 4 critical angles into a single image to help analytical buyers evaluate form, contents, and finish at a glance.
 2. **The Physical Stage (The 95%):**  
    A seamless 2x2 grid on a consistent neutral off-white background:
    * *Top Left:* Front hero packshot.
@@ -309,7 +309,7 @@ Every archetype in this scale is a reference for making handheld products legibl
 * **Universal Class:** The Ritual
 * **Example Products (Illustrative Guidance, Not an Allowlist):** Ceramic olive oil pourer, single-estate dark maple syrup, raw honey jar, cold brew nitro dispenser, aged balsamic vinegar.
 1. **Strategic Intent & Conversion Role:**  
-   PDP Slot 2 or Hero Header (Sensory Dopamine & Visceral Craving). Triggers immediate salivary appetite by proving thick, golden, unadulterated fluid viscosity.
+   PDP Slot 2 or Hero Header (Sensory Dopamine & Visceral Craving). Uses a thick, golden pour and clear sensory detail to make the fluid's supplied viscosity and desirability easier to imagine.
 2. **The Physical Stage (The 95%):**  
    Artisanal kitchen surface: charred Shou Sugi Ban wood or warm terracotta. The bottle is the undisputed hero (occupying 75% vertical frame height) with golden oil/liquid actively drizzling into a subordinate ceramic dish or sourdough slice in blurred lower foreground.
 3. **Optical & Lighting Directives:**  
