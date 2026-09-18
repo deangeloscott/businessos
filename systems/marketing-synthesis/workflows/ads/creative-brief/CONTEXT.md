@@ -36,3 +36,6 @@ Use when an ad angle needs clear visual/audio production requirements; media buy
 5. [AI] Define format/duration/variant requirements and what is fixed versus open to creative execution.
 6. [HYBRID] Preserve the useful creative brief as an Asset and use relevant Content operating knowledge plus the active harness's real generation/rendering capabilities directly when available. Persist a WorkRequest only for a real durable organizational handoff to a separate executor.
 7. [HYBRID] Verify produced creative against angle, claims, and destination before activation when the media is available.
+
+## Optional craft reference
+For a web destination or comparison-led ad, consult the [Web Design & Conversion Architecture index](../../../../../recipes/web-design/INDEX.md) for the shared persuasion technique spectrum and comparison truth modes. Keep the ad's visual contrast and pain → relief framing aligned with the evidence and the destination's real offer.

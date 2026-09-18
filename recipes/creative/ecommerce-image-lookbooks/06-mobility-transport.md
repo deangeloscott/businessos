@@ -13,7 +13,7 @@ Shoppers face high-stakes functional doubts:
 3. *Kinetic Stability & Power:* "Will this climb steep hills? Does it feel stable at 20 mph?"
 4. *Weather & Durability Dread:* "Can I ride this in the rain, or will the electronics short out?"
 
-Every archetype here is engineered with **kinetic velocity physics, modular utility proof, real-world scale**, and strict adherence to the **5-Block Director's Rig Protocol**.
+Every archetype here is a reference for **kinetic motion, modular utility, real-world scale, and persuasive pain-to-relief framing**. Use the optional five-block scaffold when useful. Generic underpowered, unsafe, or inconvenient states may be dramatized beside the hero to make the value obvious; actual speed, range, load, IP rating, safety, mileage, grade, and storage claims require the supplied product data or observed test.
 
 ---
 
@@ -32,7 +32,7 @@ Every archetype here is engineered with **kinetic velocity physics, modular util
 4. **Sensory & Synesthetic Triggers:**  
    Machined mechanical precision: the tautness of the drive chain/belt, cold density of hydroformed aluminum tubing, rugged rubber tire tread.
 5. **Invariant Guardrails & Crop Safe-Zones:**  
-   Vehicle occupies 82% to 85% of total frame width. Frame decals, motor brand badges, and battery housing must be 100% faithful to CAD specs.
+   Vehicle occupies a useful share of the frame. Frame decals, motor badges, and battery housing should match supplied CAD/product references; inspect the final render rather than assuming fidelity.
 * **Director's Rig Prompt Blueprint:**
 ```text
 [BLOCK 1: HERO]: Commercial hero side-profile photograph of [HERO PRODUCT: Brand, vehicle type, frame geometry, matte/gloss finish, tire size]. Positioned in true parallel profile occupying 82% of frame width in tack-sharp focus.
@@ -50,7 +50,7 @@ Every archetype here is engineered with **kinetic velocity physics, modular util
 1. **Strategic Intent & Conversion Role:**  
    PDP Slot 2 & Paid Social Hero Ad. Visualizes the exhilarating speed, freedom, and effortless momentum of gliding through city traffic.
 2. **The Physical Stage (The 95%):**  
-   A dynamic urban protected bike lane or downtown bridge during morning golden hour. The rider is captured in active motion at 20 mph.
+   A dynamic urban protected bike lane or downtown bridge during morning golden hour. Show the supplied/documented speed when speed is part of the claim; otherwise use an illustrative pace.
 3. **Optical & Lighting Directives:**  
    * *Lens:* 50mm Prime mounted on a tracking chase vehicle.  
    * *Shutter Speed:* 1/30s to 1/60s panning shutter. The vehicle frame, handlebars, and rider’s torso are tack-sharp, while the background cityscape, asphalt, and wheel spokes blur into smooth horizontal motion streaks.  
@@ -61,7 +61,7 @@ Every archetype here is engineered with **kinetic velocity physics, modular util
    Rider must wear safety gear (helmet, clean commuter wardrobe). Frame must remain tack-sharp despite motion-blurred background.
 * **Director's Rig Prompt Blueprint:**
 ```text
-[BLOCK 1: HERO & VELOCITY]: Dynamic panning commercial tracking photograph of [HERO PRODUCT: E-bike / scooter] ridden at 20 mph, centered and occupying 75% of frame weight in tack-sharp focus.
+[BLOCK 1: HERO & VELOCITY]: Dynamic panning commercial tracking photograph of [HERO PRODUCT: E-bike / scooter] ridden at [DOCUMENTED OR CLEARLY ILLUSTRATIVE PACE], centered and occupying a useful share of frame weight in tack-sharp focus.
 [BLOCK 2: KINETIC OPTICS]: 50mm prime lens on chase vehicle, 1/40s shutter speed panning horizontally: the frame, belt drive, and rider are tack-sharp while wheel spokes, asphalt road, and city bridge blur into smooth horizontal motion streaks.
 [BLOCK 3: LIGHTING RIG]: Low-angle 3500K morning golden-hour sun casting warm highlights along the hydroformed frame and rider's clean commuter outerwear.
 [BLOCK 4: SUBORDINATE STAGE]: Clean urban skyline at golden hour, background 2 stops darker in smooth motion blur.
@@ -74,21 +74,21 @@ Every archetype here is engineered with **kinetic velocity physics, modular util
 * **Universal Class:** The Ritual
 * **Example Products (Illustrative Guidance, Not an Allowlist):** Removable downtube e-bike battery, modular scooter battery pack, portable camping generator power cell.
 1. **Strategic Intent & Conversion Role:**  
-   PDP Slot 4 (Range & Logistics De-risking). Permanently resolves customer anxiety: *"How do I charge this if I live in a 3rd-floor apartment without an outdoor outlet?"*
+   PDP Slot 4 (Range & Logistics De-risking). Addresses customer anxiety: *"How do I charge this if I live in a 3rd-floor apartment without an outdoor outlet?"* Use the product's actual battery weight, connector, charge method, and support documentation.
 2. **The Physical Stage (The 95%):**  
-   A clean, sunlit domestic entryway or garage. A hand is shown unlocking and sliding the integrated lithium-ion battery pack out of the downtube, holding it effortlessly like a portable briefcase.
+   A clean, sunlit domestic entryway or garage. A hand is shown unlocking and sliding the supplied removable battery pack out of the downtube, holding it securely in the documented manner.
 3. **Optical & Lighting Directives:**  
    * *Lens:* 50mm Prime.  
    * *Aperture:* f/4.  
    * *Lighting:* Clean, high-clarity natural daylight illuminating the battery connector pins, key lock mechanism, and handle grip.
 4. **Sensory & Synesthetic Triggers:**  
-   The satisfying mechanical "click" of the security lock disengaging; the relief of knowing the battery weighs under 8 lbs and charges at any standard wall outlet.
+   The satisfying mechanical “click” of the security lock disengaging; the relief of knowing the supplied battery weight and charging requirements.
 5. **Invariant Guardrails & Crop Safe-Zones:**  
    Battery keyhole, LED charge-indicator lights, and carrying handle must match production engineering exactly.
 * **Director's Rig Prompt Blueprint:**
 ```text
-[BLOCK 1: HERO & BATTERY SWAP]: Commercial battery modularity photograph of [HERO PRODUCT: E-bike frame with downtube open]. The removable lithium-ion battery pack is held effortlessly by an authentic adult hand, occupying 75% of frame weight in tack-sharp focus.
-[BLOCK 2: MODULAR DETAIL]: Shows the quick-release key cylinder, gold-plated hermetic connector terminals, integrated ergonomic carry handle, and glowing LED fuel gauge.
+[BLOCK 1: HERO & BATTERY SWAP]: Commercial battery modularity photograph of [HERO PRODUCT: E-bike frame with downtube open]. The supplied removable battery pack is held by an authentic adult hand in the documented handling position, occupying a useful share of frame weight in tack-sharp focus.
+[BLOCK 2: MODULAR DETAIL]: Shows the supplied key cylinder, connector terminals, carry handle, and charge indicator; do not invent construction, plating, or display details.
 [BLOCK 3: OPTICS]: 50mm prime lens, eye-level perspective, f/4 aperture keeping battery and bike frame in crisp focus.
 [BLOCK 4: STAGE & LIGHT]: Clean 5200K entryway natural daylight with crisp directional shadows on polished concrete floor.
 [BLOCK 5: EXCLUSIONS]: Negative: messy tangled charger cords, dirty garage junk, distorted hands, broken plastic latches, dark shadows.
@@ -102,7 +102,7 @@ Every archetype here is engineered with **kinetic velocity physics, modular util
 1. **Strategic Intent & Conversion Role:**  
    PDP Slot 4 (Portability De-risking). Eliminates the fear: *"Will this folding bike/scooter actually fit in my car trunk or under my desk?"*
 2. **The Physical Stage (The 95%):**  
-   The open trunk of a standard compact sedan (e.g. Toyota Corolla or Honda Civic). The folded e-bike or scooter rests neatly inside the cargo area with room to spare for a weekend duffel bag.
+   The open trunk of the actual vehicle model supplied for the brief, or a clearly labeled illustrative vehicle. Show the measured folded footprint and remaining clearance rather than assuming a standard trunk or room to spare.
 3. **Optical & Lighting Directives:**  
    * *Lens:* 35mm Prime looking down into the open trunk.  
    * *Aperture:* f/5.6.  
@@ -113,8 +113,8 @@ Every archetype here is engineered with **kinetic velocity physics, modular util
    Car trunk must be standard, recognizable consumer vehicle proportions (not an oversized commercial van).
 * **Director's Rig Prompt Blueprint:**
 ```text
-[BLOCK 1: HERO & TRUNK SPATIAL PROOF]: Commercial spatial demonstration photograph of [HERO PRODUCT: Folding e-bike / scooter] in its fully folded compact geometry, resting neatly inside the open trunk of a standard consumer sedan, occupying 75% of frame weight.
-[BLOCK 2: SPATIAL DETAIL]: Demonstrates ample remaining cargo room, with visible clearance around the folded frame and space for an adjacent weekend duffel bag.
+[BLOCK 1: HERO & TRUNK SPATIAL DEMONSTRATION]: Commercial spatial demonstration photograph of [HERO PRODUCT: Folding e-bike / scooter] in its fully folded compact geometry, resting inside [ACTUAL VEHICLE MODEL OR CLEARLY LABELED ILLUSTRATIVE VEHICLE].
+[BLOCK 2: SPATIAL DETAIL]: Shows the supplied folded dimensions and measured clearance around the frame; include an adjacent bag only if the documented route supports it.
 [BLOCK 3: OPTICS]: 35mm prime lens, 35-degree downward angle into open trunk, f/5.6 aperture for sharp depth of field.
 [BLOCK 4: STAGE & LIGHT]: Clean 5200K daylight with targeted soft interior fill illuminating the charcoal carpet trunk lining clearly.
 [BLOCK 5: EXCLUSIONS]: Negative: oversized commercial cargo van, scratched car paint, messy trash, ungrounded shadows, confusing folding hinges.
@@ -128,21 +128,21 @@ Every archetype here is engineered with **kinetic velocity physics, modular util
 1. **Strategic Intent & Conversion Role:**  
    PDP Slot 5 (Interface Craftsmanship & Technology). Puts the buyer directly in the cockpit, proving digital clarity and ergonomic control.
 2. **The Physical Stage (The 95%):**  
-   First-person rider's point-of-view looking over the handlebars. Focus is on the high-contrast color LCD/OLED display (showing speed, battery percentage, and pedal-assist level), ergonomic lock-on grips, thumb throttle, and hydraulic brake levers.
+   First-person rider's point-of-view looking over the handlebars. Focus is on the supplied LCD/OLED display and controls, with speed, battery percentage, and assist level shown only when they match the actual product state.
 3. **Optical & Lighting Directives:**  
    * *Lens:* 35mm Prime from rider's eye-level.  
    * *Aperture:* f/4 (cockpit controls in tack-sharp focus, front wheel and asphalt road softly falling off ahead).  
-   * *Lighting:* Bright overhead daylight showing zero glare on the anti-reflective display glass.
+   * *Lighting:* Bright overhead daylight arranged to keep the supplied display readable; inspect glare and reflections.
 4. **Sensory & Synesthetic Triggers:**  
    The crisp tactile squeeze of hydraulic brake levers; high-resolution readability of the digital speedometer in full sunlight.
 5. **Invariant Guardrails & Crop Safe-Zones:**  
-   Screen UI, battery percentage font, and speedometer numbers must be 100% physically accurate to firmware design.
+   Screen UI, battery percentage font, and speedometer numbers must match supplied firmware references or a documented observed state; do not invent readings.
 * **Director's Rig Prompt Blueprint:**
 ```text
 [BLOCK 1: HERO COCKPIT POV]: First-person rider's point-of-view cockpit photograph looking over the handlebars of [HERO PRODUCT: E-bike / scooter], occupying 80% of frame weight in tack-sharp focus.
-[BLOCK 2: INTERFACE DETAIL]: Focus is locked on the high-contrast color digital display reading '20 MPH - Pedal Assist 3 - 88% Battery', flanked by ergonomic lock-on rubber grips, thumb throttle, and mineral oil hydraulic brake levers.
+[BLOCK 2: INTERFACE DETAIL]: Focus is locked on the supplied high-contrast digital display reading [DOCUMENTED UI STATE], flanked by the supplied grips, controls, and brake levers.
 [BLOCK 3: OPTICS]: 35mm prime lens from rider's eye height, f/4 aperture with asphalt road softly blurred ahead.
-[BLOCK 4: STAGE & LIGHT]: Crisp 5500K midday sunlight showing zero glare or reflection on the anti-reflective matte screen glass.
+[BLOCK 4: STAGE & LIGHT]: Crisp daylight arranged for readable screen contrast; preserve realistic reflections and inspect for glare.
 [BLOCK 5: EXCLUSIONS]: Negative: unreadable glare, cracked screen, tangled loose cables, blurry speedometer, dirty handlebars.
 ```
 
@@ -160,13 +160,13 @@ Every archetype here is engineered with **kinetic velocity physics, modular util
    * *Aperture:* f/4.  
    * *Lighting:* Warm late-afternoon natural city light.
 4. **Sensory & Synesthetic Triggers:**  
-   Unshakable structural utility: heavy welded aluminum rear racks holding 100+ lbs without frame flex; freeing oneself from car parking and gas stations.
+   Structural utility: show the supplied rack construction and documented payload conditions; a loaded scene can dramatize relief from car-dependent errands without claiming a payload or frame result from the render.
 5. **Invariant Guardrails & Crop Safe-Zones:**  
-   Cargo accessories shown must be authentic to manufacturer weight ratings (e.g. 50 kg max payload).
+   Cargo accessories and load must match the supplied manufacturer rating and test/setup conditions; do not invent a payload limit.
 * **Director's Rig Prompt Blueprint:**
 ```text
 [BLOCK 1: HERO CARGO UTILITY]: Commercial utility lifestyle photograph of [HERO PRODUCT: Cargo e-bike / utility rig] fully loaded with weekend cargo, centered and commanding 75% of frame weight in tack-sharp focus.
-[BLOCK 2: CARGO DETAIL]: Showcases heavy-duty integrated aluminum rear rack carrying [CARGO PAYLOAD: e.g., two weatherized canvas pannier bags packed with farmers market goods], proving zero frame flex and rock-solid balance.
+[BLOCK 2: CARGO DETAIL]: Shows the supplied integrated rack carrying [CARGO PAYLOAD WITH DOCUMENTED MASS OR CLEARLY ILLUSTRATIVE LOAD]. Use the scene to make balance and utility legible; a render does not prove frame flex or payload capacity.
 [BLOCK 3: OPTICS]: 50mm prime lens, eye-level perspective, f/4 aperture for crisp vehicle focus.
 [BLOCK 4: STAGE & LIGHT]: Warm 4200K late-afternoon city daylight illuminating the painted frame and cargo bags, clean street setting in soft bokeh.
 [BLOCK 5: EXCLUSIONS]: Negative: falling cargo, loose straps, cluttered junk, traffic jam, ungrounded shadows, blurry frame details.
@@ -186,7 +186,7 @@ Every archetype here is engineered with **kinetic velocity physics, modular util
    * *Aperture:* f/5.6.  
    * *Lighting:* Dramatic golden hour sunset backlighting the ridge, balanced against interior tent illumination and exterior landscape mood.
 4. **Sensory & Synesthetic Triggers:**  
-   Freedom, silence, fresh mountain air; the rugged satisfaction of a 30-second hydraulic tent deployment anywhere on earth.
+   Freedom, silence, fresh mountain air; the rugged satisfaction of the supplied deployment sequence. State deployment time or site range only from documentation or observation.
 5. **Invariant Guardrails & Crop Safe-Zones:**  
    Tent canvas tension, gas-strut hardware, and vehicle mounting brackets must be structurally accurate to real engineering.
 * **Director's Rig Prompt Blueprint:**
@@ -204,20 +204,20 @@ Every archetype here is engineered with **kinetic velocity physics, modular util
 * **Universal Class:** The Proof
 * **Example Products (Illustrative Guidance, Not an Allowlist):** City commuter e-bike, smart LED electric scooter, night-riding cargo trike.
 1. **Strategic Intent & Conversion Role:**  
-   PDP Slot 4 & Safety De-risking. Proves high-visibility night commuting safety, removing the fear of riding after dark.
+   PDP Slot 4 & Safety De-risking. Makes night visibility and beam shape legible. Use the actual optical specification and a responsible test context for safety language.
 2. **The Physical Stage (The 95%):**  
-   A dark, wet city street at night. The vehicle’s integrated 500-lumen LED headlight casts a clean, wide throw of light across asphalt ahead, while the integrated rear brake light and reflective tire sidewalls glow brilliantly.
+   A dark, wet city street at night. The vehicle's supplied headlight specification and beam pattern are visible across the asphalt, with the supplied rear light and reflective details legible.
 3. **Optical & Lighting Directives:**  
    * *Lens:* 50mm Prime at f/2.8.  
    * *Lighting:* Long exposure night shot capturing the luminous beam of the headlight cutting through darkness, with city streetlights reflecting in wet pavement.
 4. **Sensory & Synesthetic Triggers:**  
-   Unshakable safety and confidence: seeing 50 feet ahead in pitch darkness; being undeniably visible to cars from 360 degrees.
+   Safety-oriented confidence: show the documented field of view, beam cutoff, and visibility conditions without promising a universal distance or 360-degree result.
 5. **Invariant Guardrails & Crop Safe-Zones:**  
    Headlight beam pattern must reflect actual optical lens design (German StVZO cut-off beam pattern vs blinding floodlight).
 * **Director's Rig Prompt Blueprint:**
 ```text
 [BLOCK 1: HERO NIGHT SAFETY]: Commercial night commuter photograph of [HERO PRODUCT: E-bike / scooter] on a dark wet city street at night, occupying 75% of frame weight in tack-sharp focus.
-[BLOCK 2: LIGHTING BEAM DETAIL]: The integrated 500-lumen German-engineered StVZO headlight projects a razor-sharp, wide horizontal beam of light across the wet asphalt ahead, with brilliant red LED taillight and reflective tire sidewalls glowing 360 degrees.
+[BLOCK 2: LIGHTING BEAM DETAIL]: The supplied headlight and rear-light system projects its documented beam pattern across wet asphalt; show the supported lumen/optical specification and test context when relevant, without inventing distance or 360-degree visibility.
 [BLOCK 3: OPTICS]: 50mm prime lens, f/2.8 aperture, 1/15s exposure with tack-sharp focus on the illuminated bike frame.
 [BLOCK 4: STAGE & LIGHT]: Ambient midnight city darkness with distant golden streetlights reflecting softly in damp pavement.
 [BLOCK 5: EXCLUSIONS]: Negative: blinding washed-out flare, blurry frame, pitch black unreadable bike, car traffic danger, distorted reflections.
@@ -225,26 +225,26 @@ Every archetype here is engineered with **kinetic velocity physics, modular util
 
 ---
 
-### Archetype 09: All-Weather Water & Mud Torture Test
+### Archetype 09: All-Weather Water & Mud Demonstration
 * **Universal Class:** The Proof
 * **Example Products (Illustrative Guidance, Not an Allowlist):** Fat-tire trail e-bike, IPX6 sealed commuter scooter, all-terrain electric board, gravel cargo rig.
 1. **Strategic Intent & Conversion Role:**  
-   PDP Slot 2 (Durability & IPX Water-Resistance Proof). Completely dispels the fear that rain, puddles, or mud will destroy the motor or battery.
+   PDP Slot 2 (Durability & Water-Resistance Demonstration). Addresses the fear that rain, puddles, or mud will damage the motor or battery. Match any claim to the actual IP rating, test method, and limits.
 2. **The Physical Stage (The 95%):**  
-   Active trail or rain-slicked city street: splashing through a 3-inch deep standing water puddle, with droplets spraying dynamically from the tires. The sealed motor hub and battery casing are shown wet and unbothered.
+   Active trail or rain-slicked city street: show the documented water exposure or a clearly illustrative splash scene. Make the supplied motor/battery protection and its limits legible; do not assume a depth or an unbothered result.
 3. **Optical & Lighting Directives:**  
    * *Lens:* 85mm Prime.  
    * *Shutter Speed:* 1/2000s freeze-frame capturing individual suspended water droplets spraying from the tire tread.  
    * *Aperture:* f/4.  
    * *Lighting:* Directional side light illuminating the water arc and water beading off the powder-coated frame.
 4. **Sensory & Synesthetic Triggers:**  
-   Invulnerability and all-season reliability: knowing you can commute in a downpour with complete confidence in the IPX6 sealed electrical harness.
+   All-season reliability: make the product's documented weather limits and protective construction visible without turning an image into an unrestricted safety promise.
 5. **Invariant Guardrails & Crop Safe-Zones:**  
    Water sealing claims must reflect real IPX testing ratings.
 * **Director's Rig Prompt Blueprint:**
 ```text
-[BLOCK 1: HERO & MUD TORTURE]: High-speed freeze action photograph of [HERO PRODUCT: E-bike / scooter] cutting through a 3-inch standing water puddle on a rugged trail, occupying 75% of frame weight in tack-sharp focus.
-[BLOCK 2: PROOF DETAIL]: 1/2000s shutter speed freezes individual water droplets spraying in dynamic arcs from the knobby tires, while the sealed motor hub and battery casing repel mud and water without interruption.
+[BLOCK 1: HERO & MUD DEMONSTRATION]: High-speed freeze action photograph of [HERO PRODUCT: E-bike / scooter] in the supplied or clearly illustrative water exposure, occupying a useful share of frame weight in tack-sharp focus.
+[BLOCK 2: RESULT DETAIL]: Freeze individual droplets and show the observed water/mud behavior. If this is a factual demonstration, include the documented depth, duration, rating, and result; otherwise use the splash as a generic contrast without claiming uninterrupted operation.
 [BLOCK 3: OPTICS]: 85mm prime lens, f/4 aperture locking tack-sharp focus on the wet frame and splashing water beads.
 [BLOCK 4: STAGE & LIGHT]: Crisp 5800K overcast daylight with directional side rim-light illuminating the water spray; misty trail background.
 [BLOCK 5: EXCLUSIONS]: Negative: stalled submerged bike, muddy mess obscuring brand logo, blurry motion, cartoon water, sunny dry day.
@@ -252,25 +252,25 @@ Every archetype here is engineered with **kinetic velocity physics, modular util
 
 ---
 
-### Archetype 10: The 10,000-Mile Commuter Battle Proof
+### Archetype 10: The Documented Long-Use Commuter Demonstration
 * **Universal Class:** The Proof
 * **Example Products (Illustrative Guidance, Not an Allowlist):** Gates carbon belt drive e-bike, heavy-duty commercial cargo bike, daily urban electric scooter.
 1. **Strategic Intent & Conversion Role:**  
-   PDP Slot 5 & Durability Authority. Proves that this vehicle is a multi-year automotive replacement, not a disposable seasonal toy.
+   PDP Slot 5 & Durability Authority. Uses a documented mileage/service record or a clearly labeled conceptual wear state to explain long-term value. A generated patina does not prove that the vehicle replaced a car or reached a mileage.
 2. **The Physical Stage (The 95%):**  
-   Close-up on a well-loved commuter bike after 2 years of daily use: subtle authentic road patina, light dust on the frame, crisp un-cracked tire tread, and an illuminated odometer reading "10,420 MILES" with the battery health display reading 94%.
+   Close-up on a well-loved commuter bike with [DOCUMENTED SERVICE AGE, MILEAGE, AND BATTERY CONDITION] or a clearly labeled conceptual long-use state. Show authentic road patina without inventing an odometer or battery percentage.
 3. **Optical & Lighting Directives:**  
    * *Lens:* 50mm Prime.  
    * *Aperture:* f/5.6.  
    * *Lighting:* Honest, crisp morning workshop daylight.
 4. **Sensory & Synesthetic Triggers:**  
-   Proven ROI and pride of ownership: the product has paid for itself three times over in saved transit/gas costs and still performs like day one.
+   Pride of ownership and long-use value: connect mileage, service history, battery condition, cost savings, or current performance only to the supplied record; a patina scene can remain a conceptual long-use illustration.
 5. **Invariant Guardrails & Crop Safe-Zones:**  
    Patina must look like authentic, dignified road use; frame welds and structural components must remain visibly sound and crack-free.
 * **Director's Rig Prompt Blueprint:**
 ```text
-[BLOCK 1: HERO COMMUTER LONGEVITY]: Commercial durability photograph of [HERO PRODUCT: E-bike / scooter] after 10,000 documented commuter miles, centered and occupying 75% of frame weight in tack-sharp focus.
-[BLOCK 2: MILEAGE DETAIL]: The illuminated digital handlebar display reads '10,420 TOTAL MILES - Battery Health: 94%', while the Gates carbon belt drive and hydraulic brakes show pristine mechanical maintenance and honest, dignified road patina.
+[BLOCK 1: HERO COMMUTER LONGEVITY]: Commercial long-use photograph of [HERO PRODUCT: E-bike / scooter] after [DOCUMENTED SERVICE AGE/MILEAGE OR CLEARLY LABELED CONCEPTUAL USE], centered and occupying a useful share of frame weight in tack-sharp focus.
+[BLOCK 2: MILEAGE DETAIL]: The supplied display or service record shows [DOCUMENTED MILEAGE/BATTERY STATE], while the supplied belt drive, brakes, and surface state show observed maintenance and honest road patina. Do not invent an odometer, battery health, or ROI.
 [BLOCK 3: OPTICS]: 50mm prime lens, eye-level perspective, f/5.6 aperture keeping display and frame components in crisp focus.
 [BLOCK 4: STAGE & LIGHT]: Honest 5000K morning workshop daylight with soft directional shadows on a clean concrete floor.
 [BLOCK 5: EXCLUSIONS]: Negative: broken frame, rusted chain, flat tires, cracked screen, dirty neglected junk, dark unreadable display.
@@ -308,26 +308,26 @@ Every archetype here is engineered with **kinetic velocity physics, modular util
 
 ---
 
-### Archetype 12: The 30% Incline Hill-Climb Torque Proof
+### Archetype 12: The Hill-Climb Torque Demonstration
 * **Universal Class:** The Proof
 * **Example Products (Illustrative Guidance, Not an Allowlist):** 750W commuter e-bike, high-torque cargo bike, dual-motor electric scooter, electric mountain bike.
 1. **Strategic Intent & Conversion Role:**  
-   PDP Slot 2 or Paid Social Ad Hook (Overcomes Underpowered Motor Dread). Obliterates the #1 customer hesitation for e-bikes and scooters: *"Will this motor actually haul me up steep neighborhood hills, or will I have to pedal like crazy and sweat through my shirt?"*
+   PDP Slot 2 or Paid Social Ad Hook (Overcomes Underpowered Motor Dread). Addresses the hesitation: *"Will this motor haul me up my hill, or will I have to pedal hard?"* Use the actual grade, rider, payload, speed, assist mode, battery state, and test result for a performance claim.
 2. **The Physical Stage (The 95%):**  
-   Low-angle photograph looking up a steep 25%–30% paved incline hill in crisp morning sunlight. An everyday commuter rider is seated comfortably, effortlessly cruising up the steep grade without standing or sweating; an illuminated handlebar cockpit screen reads "18 MPH - Hill Climb Assist Active".
+   Low-angle photograph looking up the measured paved incline. Show the actual rider, payload, speed, assist mode, and conditions from the test, or use a clearly conceptual idealized hill scene without performance numbers.
 3. **Optical & Lighting Directives:**  
    * *Lens:* 50mm Prime lens at low angle looking up the hill.  
    * *Aperture:* f/5.6 for sharp focus on the vehicle and rider.  
    * *Lighting:* Crisp, clean morning sunlight casting long directional shadows down the hill, highlighting the steep gradient.
 4. **Sensory & Synesthetic Triggers:**  
-   Effortless torque conquest: relaxed seated posture on a brutal incline, smooth electric momentum, zero sweating, clear open hill ahead.
+   Torque relief: a relaxed posture and smooth momentum can dramatize the desired experience; “effortless,” zero sweating, and a specific grade require evidence.
 5. **Invariant Guardrails & Crop Safe-Zones:**  
    Vehicle occupies 75% of the frame. Background is a clean, minimal street looking out to an open bay or sky, with zero parked sedans or suburban house clutter.
 * **Director's Rig Prompt Blueprint:**
 ```text
-[BLOCK 1: HERO & TORQUE PROOF]: A high-converting direct-response commercial photograph of [HERO PRODUCT: Matte commuter e-bike / scooter, color, motor specs]. The vehicle occupies 75% of the frame, captured from a low angle looking up a steep 30% paved incline hill in crisp morning sunlight.
-[BLOCK 2: PROOF DETAIL]: An everyday commuter rider is seated comfortably, effortlessly cruising up the steep grade without standing or sweating; an illuminated handlebar cockpit screen reads '18 MPH - Hill Climb Assist Active'.
-[BLOCK 3: OPTICS]: Tack-sharp 50mm lens, eye-level to bike, f/5.6 aperture proving undeniable motor torque and grade incline.
+[BLOCK 1: HERO & TORQUE DEMONSTRATION]: A high-converting direct-response commercial photograph of [HERO PRODUCT: Matte commuter e-bike / scooter, color, motor specs]. The vehicle occupies a useful share of the frame, captured from a low angle looking up the supplied measured incline or a clearly illustrative steep hill.
+[BLOCK 2: RESULT DETAIL]: An everyday commuter rider is shown under the supplied rider/payload, speed, assist-mode, battery, and grade conditions, or in a clearly illustrative relief state. Use the documented cockpit state; do not invent effort, sweat, speed, or motor output.
+[BLOCK 3: OPTICS]: Use a lens and aperture that keep the vehicle and grade readable; describe the scene as a visual demonstration, not proof of torque unless the test record supports it.
 [BLOCK 4: SUBORDINATE STAGE]: A clean, minimal urban street with softly blurred sky and distant bay view, with zero parked cars, zero traffic, and zero distracting houses.
 [BLOCK 5: EXCLUSIONS]: Negative: parked cars, suburban clutter, traffic, trash cans, blurry bike, off-center, dark shadows, sweating rider.
 ```
@@ -352,7 +352,7 @@ Every archetype here is engineered with **kinetic velocity physics, modular util
 * **Director's Rig Prompt Blueprint:**
 ```text
 [BLOCK 1: HERO & TRACKING VELOCITY]: Close-tracking commercial hero photograph of [HERO PRODUCT: Commuter e-bike / scooter, Gates carbon belt drive, color]. The vehicle frame and drive components occupy 75% of the frame, shot from a 45-degree front-three-quarter profile at axle height.
-[BLOCK 2: TRACKING DETAIL]: The matte frame, hydroformed downtube, and hydraulic disc brakes are tack-sharp in the foreground. A rider in tailored outerwear is visible in the upper frame, but tack-sharp focus is 100% locked on the mechanical frame.
+[BLOCK 2: TRACKING DETAIL]: The matte frame, supplied downtube, and brake components are tack-sharp in the foreground. A rider in tailored outerwear is visible in the upper frame; keep focus on the mechanical frame and inspect component fidelity.
 [BLOCK 3: OPTICS]: 50mm prime lens at axle height, 1/40s tracking shutter speed creating smooth horizontal motion blur.
 [BLOCK 4: SUBORDINATE STAGE]: Soft-focus urban bridge at twilight with smooth 1/40s horizontal motion-blurred lights, keeping full visual focus on the sharp vehicle.
 [BLOCK 5: EXCLUSIONS]: Negative: distant landscape, tiny bike, wide shot, daytime, cars, suburban houses, distracting scenery.
@@ -360,26 +360,26 @@ Every archetype here is engineered with **kinetic velocity physics, modular util
 
 ---
 
-### Archetype 14: The Monsoon Water Immersion & Sealed Electronic Torture Test
+### Archetype 14: The Monsoon Water Exposure & Electronic Demonstration
 * **Universal Class:** The Proof
 * **Example Products (Illustrative Guidance, Not an Allowlist):** IPX7 sealed e-bike, all-weather electric scooter, weatherproof adventure trailer, waterproof battery box.
 1. **Strategic Intent & Conversion Role:**  
-   PDP Slot 2 & Waterproof Certification (Eliminates Rain & Short-Circuit Dread). Proves that torrential rain, standing water, and road spray will never penetrate the hermetically sealed electronics.
+   PDP Slot 2 & Waterproof Certification (Eliminates Rain & Short-Circuit Dread). Makes the stated weather protection and its limits visible. Use the actual certification/test record; never turn a render into a guarantee against all water exposure.
 2. **The Physical Stage (The 95%):**  
-   Intense commercial studio or test track rain chamber deluge. A heavy curtain of water pours over the vehicle while it runs with full illumination, proving airtight IPX-rated seals.
+   Intense commercial studio or test track rain chamber deluge. A heavy curtain of water pours over the vehicle under the documented test setup, or an illustrative deluge dramatizes the intended protection without claiming a pass.
 3. **Optical & Lighting Directives:**  
    * *Lens:* 85mm Prime.  
    * *Shutter Speed:* 1/2000s high-speed freeze.  
    * *Aperture:* f/4.  
    * *Lighting:* Crisp 5500K side-rim lighting illuminating water streams bouncing off the sealed downtube and motor housing.
 4. **Sensory & Synesthetic Triggers:**  
-   Total weather invulnerability: hearing rain blast against sealed alloy, watching water sheet cleanly off silicone-gasketed ports without a single drop entering.
+   Weather confidence: show the supplied seal construction and observed water behavior while preserving the product's stated exposure limits.
 5. **Invariant Guardrails & Crop Safe-Zones:**  
-   Digital display screen and headlights must remain fully illuminated and active under full water blast.
+   If the supplied test record documents display/headlight operation under a specified water exposure, preserve that observed state and the stated limits. For a conceptual scene, do not imply operation, hermetic sealing, or certification; show intended weather resilience as clearly illustrative.
 * **Director's Rig Prompt Blueprint:**
 ```text
-[BLOCK 1: HERO WATER DELUGE PROOF]: Commercial waterproof torture photograph of [HERO PRODUCT: E-bike / scooter, sealed electronic housing] under a high-pressure torrential water deluge, occupying 75% of frame weight.
-[BLOCK 2: PROOF DETAIL]: 1/2000s shutter speed captures heavy sheets of water blasting over the frame, with droplets bouncing off the hermetically sealed silicone port covers and battery casing while the cockpit display and headlights glow brightly without shorting.
+[BLOCK 1: HERO WATER DELUGE DEMONSTRATION]: Commercial water-exposure photograph of [HERO PRODUCT: E-bike / scooter, supplied electronic housing] under the documented test setup or a clearly illustrative deluge, occupying a useful share of frame weight.
+[BLOCK 2: RESULT DETAIL]: Capture the supplied exposure conditions, seal construction, display state, and observed result. If the scene is conceptual, dramatize intended weather relief without claiming hermetic sealing, uninterrupted operation, or a certification pass.
 [BLOCK 3: OPTICS]: 85mm prime lens, eye-level perspective, f/4 aperture locking tack-sharp focus on the sealed motor casing and water splash.
 [BLOCK 4: STAGE & LIGHT]: High-contrast 5500K studio rim-lighting illuminating the flying water droplets against a dark charcoal industrial floor.
 [BLOCK 5: EXCLUSIONS]: Negative: short circuit, flickering screen, foggy moisture inside display, submerged wreckage, cartoon water.
@@ -391,21 +391,21 @@ Every archetype here is engineered with **kinetic velocity physics, modular util
 * **Universal Class:** The Specimen
 * **Example Products (Illustrative Guidance, Not an Allowlist):** Folding e-bike, ultra-compact commuter scooter, lightweight carbon road bike, folding trailer.
 1. **Strategic Intent & Conversion Role:**  
-   PDP Slot 4 & Multi-Modal Transit De-risking. Eliminates the final last-mile friction: *"Can I roll this into a crowded apartment elevator, office cubicle, or commuter train without annoying people?"*
+   PDP Slot 4 & Multi-Modal Transit De-risking. Addresses the last-mile friction: *"Can I roll this into my elevator, office, or commuter train without annoying people?"* Use the actual folded footprint, route, and handling requirements.
 2. **The Physical Stage (The 95%):**  
-   A modern, clean high-rise residential elevator or subway train vestibule. The vehicle is shown folded into its vertical rolling footprint, occupying less than 2 square feet of floor space beside its commuter owner.
+   A modern, clean high-rise residential elevator or subway train vestibule. The vehicle is shown folded into its supplied footprint beside its commuter owner; label floor area only from measured dimensions.
 3. **Optical & Lighting Directives:**  
    * *Lens:* 35mm Prime.  
    * *Aperture:* f/5.6.  
    * *Lighting:* Clean, diffused modern architectural elevator lighting with soft contact floor shadows.
 4. **Sensory & Synesthetic Triggers:**  
-   Effortless multi-modal lifestyle: 10-second magnetic fold, smooth rolling transport wheels, zero greasy chain stains on trousers.
+   Multi-modal relief: show the supplied fold sequence and rolling interface. State fold time or cleanliness benefits only when measured or documented.
 5. **Invariant Guardrails & Crop Safe-Zones:**  
-   Elevator/transit dimensions must reflect standard urban scale. The folded footprint must be clearly visible on the floor plane.
+   Elevator and transit dimensions must reflect the actual route and product footprint. The folded footprint should be clearly visible on the floor plane.
 * **Director's Rig Prompt Blueprint:**
 ```text
-[BLOCK 1: HERO MULTI-MODAL PROOF]: Commercial spatial demonstration photograph of [HERO PRODUCT: Folding e-bike / scooter] folded into its ultra-compact vertical rolling geometry, standing inside a sleek modern high-rise elevator, occupying 70% of frame weight.
-[BLOCK 2: MULTI-MODAL DETAIL]: The folded vehicle occupies less than 2 square feet of floor space standing neatly beside an everyday commuter, demonstrating effortless rolling transport and apartment-friendly storage.
+[BLOCK 1: HERO MULTI-MODAL DEMONSTRATION]: Commercial spatial demonstration photograph of [HERO PRODUCT: Folding e-bike / scooter] folded into its supplied vertical rolling geometry, standing inside a sleek modern high-rise elevator.
+[BLOCK 2: MULTI-MODAL DETAIL]: Show the measured folded footprint beside an everyday commuter and make the actual handling/storage conditions legible. If the route is not verified, keep it a concept rather than promising effortless transport.
 [BLOCK 3: OPTICS]: 35mm prime lens, eye-level perspective, f/5.6 aperture for sharp architectural clarity.
 [BLOCK 4: STAGE & LIGHT]: Soft diffused 4500K modern elevator interior lighting, clean brushed stainless steel walls and dark slate floor.
 [BLOCK 5: EXCLUSIONS]: Negative: greasy bike chain stains, awkward bulky fold, cramped unreadable framing, broken latches, dirty public transit.

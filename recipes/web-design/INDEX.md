@@ -1,20 +1,22 @@
 # Web Design & Conversion Architecture
-### Master Directory, Universal Behavioral Laws & The Web Architecture Rig Standard
-*Version 1.0 — Platform-Agnostic Natural Language Operating System*
+### Master Directory, Behavioral Frameworks & Web Architecture References
+*Version 1.1 — Platform-Agnostic Natural Language Craft Reference*
 
 ---
 
 ## 1. How This System Works
 
-This library is a **drop-in, zero-overhead operational architecture** for designing, structuring, writing, and engineering high-converting digital web properties. It provides a shared conceptual framework across **four specialized architectural tracks**, styled through **ten universal design dialects**, and governed by the **7-Block Web Architecture Rig Protocol**.
+This library is a set of **optional, platform-agnostic craft references** for designing, structuring, writing, and engineering high-converting digital web properties. It provides a shared vocabulary across **four specialized architectural tracks**, **ten design dialects**, reusable section patterns, and a **7-block briefing pattern**.
 
-In modern digital business, web design cannot be treated as decorative canvas art, nor can it be treated as crude, dated direct-response hype. The top 0.01% standard is **Conversion-First Kinetic Architecture**: a unified discipline where cognitive psychology, direct-response copywriting, visual ergonomics, sub-second web performance, and autonomous AI-crawler discoverability operate as a single system.
+In modern digital business, web design cannot be treated as decorative canvas art or as crude, dated direct-response hype. A strong standard is **Conversion-First Kinetic Architecture**: a unified discipline where cognitive psychology, direct-response copywriting, visual ergonomics, measurable web performance, and machine-readable content support one another.
 
-Instead of engineering web pages from raw, unconstrained prompts or generic design templates, an operator or AI model selects:
-1. **The Domain Track File** (`01` through `04`) matching the commercial objective (E-Commerce, Lead Generation, Brand Website, or Multi-Step Funnel).
-2. **The Section Archetype Flow** (the narrative sequence of psychological conversion blocks).
-3. **The Design Dialect** from `DIALECTS.md` (establishing typography, palette, surface depth, contrast, and visual rhythm).
-4. **The 7-Block Web Architecture Rig** (the standardized generation protocol ensuring zero structural hallucinations).
+An operator or AI model may use:
+1. **A Domain Track File** (`01` through `04`) matching the commercial objective (E-Commerce, Lead Generation, Brand Website, or Multi-Step Funnel).
+2. **A Section Archetype Flow** that answers the visitor's actual decision questions.
+3. **A Design Dialect** from `DIALECTS.md` when a consistent visual system helps.
+4. **The 7-Block Web Brief** when a compact prompt or audit frame improves clarity.
+
+Use the fewest references that improve the requested outcome. Existing AURA Workflows own organizational truth, evidence, claim quality, and workflow-level QA; this library supplies optional craft knowledge and never requires a fixed route or prompt syntax.
 
 ```
 ┌─────────────────────────┐     ┌─────────────────────────┐     ┌─────────────────────────┐
@@ -24,81 +26,81 @@ Instead of engineering web pages from raw, unconstrained prompts or generic desi
 └─────────────────────────┘     └─────────────────────────┘     └─────────────────────────┘
                                              │
                                              ▼
-                        [THE 7-BLOCK WEB ARCHITECTURE RIG PROTOCOL]
+                        [OPTIONAL 7-BLOCK WEB BRIEF]
                                              │
                                              ▼
-                 [WORLD-CLASS, HIGH-CONVERTING, HIGH-PERFORMANCE WEB SYSTEM]
-                 • Sub-1.8s LCP / 0ms Speculative Navigation / Zero CLS
-                 • 100% Machine-Readable for AI Crawlers (/llms.txt + JSON-LD)
-                 • Calibrated Friction Valve / High Downstream LTV
+                 [WEB EXPERIENCE FITTED TO THE REAL CONTEXT]
+                 • Measured performance targets chosen for the page and audience
+                 • Semantic, accessible content where discoverability matters
+                 • Calibrated friction and evidence-backed persuasion
 ```
 
 ---
 
-## 2. The 7 Fundamental Laws of Web Conversion & Usability
+## 2. Seven Behavioral Frameworks for Web Conversion & Usability
 
-Generative AI models and human designers fail in web production for predictable reasons: prioritizing aesthetic trends over visual contrast, creating cognitive overload, failing to provide continuation cues, and treating all traffic as having identical awareness. The following seven laws are the non-negotiable engineering rules governing all web generation in this system:
+Generative AI models and human designers often fail in web production for predictable reasons: prioritizing aesthetic trends over visual contrast, creating cognitive overload, failing to provide continuation cues, and treating all traffic as having identical awareness. The following seven frameworks are useful starting points. Apply them when they fit the audience, evidence, platform, and commercial objective; adapt or omit them when they do not.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│             THE 7 FUNDAMENTAL LAWS OF WEB CONVERSION & USABILITY            │
+│          SEVEN WEB CONVERSION & USABILITY FRAMEWORKS                       │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│ 1. THE FRICTION VALVE LAW               (Calibrate Friction to Stakes)      │
-│ 2. THE 5-SECOND POSITIONING LAW         (Category, Audience, Outcome)       │
-│ 3. THE CONTINUATION CUE LAW             (Anti-False Bottom & Scroll Depth)  │
-│ 4. THE 4.2–4.7 CREDIBILITY PEAK LAW     (The Spiegel Social Proof Paradox)  │
-│ 5. THE LAYER-CAKE SCANNING LAW          (Subheadings Tell the Full Story)   │
-│ 6. THE DUAL-CONSUMER INVARIANT LAW      (Humans + Headless AI Agents)       │
-│ 7. THE 60-30-10 VISUAL CHROMATIC LAW    (Isolation of the Conversion Accent)│
+│ 1. THE FRICTION VALVE                   (Calibrate Friction to Stakes)      │
+│ 2. THE FIRST-SCREEN POSITIONING FILTER  (Category, Audience, Outcome)       │
+│ 3. THE CONTINUATION CUE                 (Avoiding a False Bottom)           │
+│ 4. BALANCED CREDIBILITY SIGNALS         (Contextual Social Proof)            │
+│ 5. LAYER-CAKE SCANNING                  (Subheadings Carry the Argument)    │
+│ 6. DUAL-CONSUMER CLARITY                (Humans + Machines)                 │
+│ 7. VISUAL CONTRAST & ACCENT ISOLATION   (A 60-30-10 Starting Point)         │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Law 1: The Friction Valve Law (Calibrate Friction to Stakes)
+### Framework 1: The Friction Valve (Calibrate Friction to Stakes)
 * **The Principle:** Friction is not universally bad; it is an economic valve. Eliminating all friction on high-ticket B2B or complex services floods fulfillment with unqualified leads ("casual scrollers"), destroying sales pipeline efficiency. Conversely, adding friction to an impulse consumer purchase collapses conversion.
-* **The Rule:**
-  * *Top-of-Funnel / Low Stakes (<$50 impulse or free lead magnet):* Friction must approach zero (1–2 fields max, single-tap express wallets, zero account creation).
-  * *Bottom-of-Funnel / High Stakes ($3,000+ consulting, enterprise contracts):* Apply **Intentional Qualification Friction** (multi-step diagnostic questions, revenue filters, calendar verification). Serious buyers perceive thoughtful qualification as proof of competence.
+* **The Practice:**
+  * *Low-stakes entry:* Reduce avoidable effort and ask only for information needed to deliver the promised value.
+  * *High-stakes or capacity-limited decision:* Add only the qualification questions that improve fit, readiness, economics, or service quality. Thoughtful qualification can signal competence; irrelevant questions simply lose good prospects.
 
-### Law 2: The 5-Second Positioning Law (Category, Audience, Outcome)
-* **The Principle:** If a first-time visitor cannot answer three questions within five seconds of landing, the page fails, regardless of aesthetics.
-* **The Rule:** The primary above-the-fold hero section must explicitly communicate:
+### Framework 2: The First-Screen Positioning Filter (Category, Audience, Outcome)
+* **The Principle:** A first-time visitor should quickly understand what the offer is, who it serves, and why it may matter. The exact time depends on traffic, device, and page complexity.
+* **The Practice:** The primary above-the-fold hero section should communicate:
   1. *What is this product/service?* (The Market Category).
   2. *Who is it specifically for?* (The Target Audience).
   3. *What transformation or measurable outcome does it produce?* (The Core Promise).
   * *Banned Anti-Pattern:* Vague poetic aspirations (*"Empowering seamless global workflow synergy"*).
 
-### Law 3: The Continuation Cue Law (Anti-False Bottom)
-* **The Principle:** The Nielsen Norman Group identified the "False Bottom" (Illusion of Completeness) as a premier usability killer. Full-bleed, 100vh hero sections with solid backgrounds trick the user's brain into concluding the page has ended, dropping scroll depth by 40%–60%.
-* **The Rule:** The viewport must always provide **visual continuation cues**: the next section’s cards, text, or imagery must peek above the fold line, accompanied by a directional visual rhythm, subtle gradient bleeding, or sticky navigation that invites the scroll.
+### Framework 3: Continuation Cues (Avoiding a False Bottom)
+* **The Principle:** A full-bleed hero can look complete and hide the next decision. Test whether the layout makes continuation obvious for the actual device and audience.
+* **The Practice:** Where further information is important, let the next section, a directional cue, or a clear navigation affordance signal that useful content continues. A full viewport hero can still be right when the context calls for it.
 
-### Law 4: The 4.2–4.7 Credibility Peak Law (The Spiegel Paradox)
-* **The Principle:** Northwestern University’s Medill Spiegel Research Center proved that purchase likelihood does not peak at 5.0 stars; **it peaks between 4.2 and 4.7 stars**. A perfect 5.0 rating triggers the consumer’s "too good to be true" skepticism reflex. Furthermore, **82% of shoppers specifically seek out critical reviews**.
-* **The Rule:** Never sanitize social proof to uniform perfection. Feature balanced, authentic reviews. Highlight constructive negative reviews that critique subjective minor preferences (*"Slightly heavier than expected"* or *"Took 4 days to deliver"*) to anchor unshakeable trust in core product claims.
+### Framework 4: Balanced Credibility Signals (The Review Context)
+* **The Principle:** Some review datasets report stronger purchase confidence in a credible mid-to-high rating range than at a perfect score, but the relationship varies by category, sample, and source. A rating is not a universal conversion target.
+* **The Practice:** Preserve authentic review distributions, useful negative feedback, dates, sample size, and context. Never manufacture criticism or suppress material defects to create an artificial credibility signal.
 
-### Law 5: The Layer-Cake Scanning Law (Subheadings Tell the Full Story)
+### Framework 5: Layer-Cake Scanning (Subheadings Carry the Argument)
 * **The Principle:** Users do not read web pages word-for-word; they scan in layer-cake and F-shaped patterns.
-* **The Rule:** A visitor reading **only the H1, H2s, H3s, and bold bullet lead-ins** must fully understand the entire value proposition, mechanism, proof, and offer stack without needing to read a single paragraph of body text. Body copy exists solely to provide secondary detail for analytical System 2 verification.
+* **The Practice:** A visitor who scans the H1, H2s, H3s, and bold bullet lead-ins should be able to reconstruct the main value proposition, mechanism, proof, and next step. Body copy supplies the detail needed for verification and fit.
 
-### Law 6: The Dual-Consumer Invariant Law (Humans + Headless AI Agents)
+### Framework 6: Dual-Consumer Clarity (Humans + Machines)
 * **The Principle:** Web properties are consumed by biological humans operating touchscreens and autonomous AI agents/crawlers (ChatGPT Search, Perplexity, Gemini, Claude, procurement bots) parsing semantic text.
-* **The Rule:** Never rely on heavy client-side JavaScript execution to render core textual content or pricing. Deliver fully formed, server-side rendered (SSR) or static semantic HTML (`<header>`, `<nav>`, `<main>`, `<article>`, `<section>`, `<footer>`). Pair the DOM with a comprehensive **JSON-LD Schema `@graph`** and an authoritative root **`/llms.txt`** file.
+* **The Practice:** Render core text, pricing, and meaningful navigation in accessible semantic HTML whenever practical. Add structured data, a sitemap, and other machine-readable references when they accurately describe the page and the target systems use them. A proposed file such as `/llms.txt` can assist some consumers, but it does not ensure crawling, citation, or recommendation.
 
-### Law 7: The 60-30-10 Visual Chromatic Law (Isolation of the Conversion Accent)
+### Framework 7: Visual Contrast and Accent Isolation (A 60-30-10 Starting Point)
 * **The Principle:** When every visual element is saturated, nothing commands attention. The eye requires vast neutral ground to identify the singular point of action (The Von Restorff Isolation Effect).
-* **The Rule:**
+* **The Starting Point:**
   * **60% Dominant Base:** Clean canvas background (neutral light or deep slate) providing whitespace.
   * **30% Structural Secondary:** Typographic hierarchy, container cards, subtle borders, and navigation.
-  * **10% High-Energy Conversion Accent:** Reserved **strictly and exclusively** for primary interactive actions: Primary CTA buttons, checkout triggers, and active progress milestones.
+  * **10% High-Energy Conversion Accent:** Often reserved for primary actions so they are easy to find; adapt the ratio and accent use to brand, accessibility, hierarchy, and interaction evidence.
 
 ---
 
-## 3. The 8 Universal Web Section Archetypes
+## 3. Eight Reusable Web Section Archetypes
 
-Every high-performing web page across all four tracks is composed of a strategic arrangement of these eight universal section archetypes:
+Many high-performing pages use some of these section archetypes, but no page needs all eight. Select the sections that answer the visitor's actual decision questions:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                    THE 8 UNIVERSAL WEB SECTION ARCHETYPES                   │
+│                 EIGHT REUSABLE WEB SECTION ARCHETYPES                       │
 ├──────────────────────┬──────────────────────┬───────────────────────────────┤
 │ ARCHETYPE            │ COMMERCIAL ROLE      │ CORE COGNITIVE OBJECTIVE      │
 ├──────────────────────┼──────────────────────┼───────────────────────────────┤
@@ -119,15 +121,15 @@ Every high-performing web page across all four tracks is composed of a strategic
 
 ### Archetype 2: The Trust Strip
 * **Function:** Defuses early cynicism immediately below the hero fold.
-* **Components:** Monochromatic SVG client/press marquees (uniform visual weight), third-party accreditation badges (SOC2, ISO, FDA-registered, USDA Organic), or high-volume metrics (*"Over 40,000+ teams onboarded"*).
+* **Components:** Monochromatic SVG client/press marquees (uniform visual weight), current accreditations that the organization actually holds, or supported customer/usage metrics (*"Over 40,000+ teams onboarded"* only when verified).
 
 ### Archetype 3: The Mechanism Split (Old Way vs. New Way)
 * **Function:** Dismantles false vehicle beliefs and proves why existing alternative solutions fail.
 * **Components:** A two-column contrast grid: Left column highlights the painful, fragmented, manual "Old Way"; right column highlights the automated, unified, superior "New Way."
 
 ### Archetype 4: The Proving Ground (Empirical Demonstrations)
-* **Function:** Provides irrefutable physical or mathematical proof that the mechanism works.
-* **Components:** Torture-test video clips, teardowns, interactive ROI calculators, side-by-side split screens, or clinical trial metric graphs.
+* **Function:** Makes the mechanism easier to believe through relevant evidence or a clearly labeled demonstration.
+* **Components:** Documented test clips, teardowns, interactive ROI calculators, side-by-side split screens, or clinical-trial metric graphs when the underlying method, sample, and scope are available.
 
 ### Archetype 5: The Social Vault (Distributed Proof)
 * **Function:** Validates the experience of real peers across different use cases.
@@ -139,7 +141,7 @@ Every high-performing web page across all four tracks is composed of a strategic
 
 ### Archetype 7: The Hesitation Shield (Risk Reversal & FAQs)
 * **Function:** Systematically answers the top five unresolved objections before purchase.
-* **Components:** High-legibility accordion cards answering the hardest questions directly, paired with an ironclad guarantee badge (30-day money-back, lifetime replacement, or performance milestone assurance).
+* **Components:** High-legibility accordion cards answering the hardest questions directly, paired with a guarantee or risk-reversal term that the business actually offers and can honor.
 
 ### Archetype 8: The Terminal Anchor (The Closing Call-to-Action)
 * **Function:** Captures visitors who have scrolled to the bottom of the page in analytical verification mode.
@@ -147,13 +149,13 @@ Every high-performing web page across all four tracks is composed of a strategic
 
 ---
 
-## 4. The 7-Block Web Architecture Rig Standard
+## 4. The 7-Block Web Brief
 
-To generate or audit any web page with 0.01% precision, an operator or AI model must construct the directive using the **7-Block Web Architecture Rig**:
+To generate or audit a web page, an operator or AI model can use the **7-Block Web Brief** as a compact thinking frame. It is a prompt aid, not a required syntax or execution protocol:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                  THE 7-BLOCK WEB ARCHITECTURE RIG PROTOCOL                  │
+│                         THE 7-BLOCK WEB BRIEF                              │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │ BLOCK 1: TRAFFIC TEMPERATURE & AWARENESS STATE                              │
 │ • Awareness Level: Unaware | Problem-Aware | Solution-Aware | Product-Aware │
@@ -164,8 +166,8 @@ To generate or audit any web page with 0.01% precision, an operator or AI model 
 │ • Hormozi Value Equation Drivers: Dream Outcome, Proof, Speed, Zero Friction│
 ├─────────────────────────────────────────────────────────────────────────────┤
 │ BLOCK 3: INFORMATION ARCHITECTURE & SECTION FLOW                            │
-│ • Ordered sequence of Section Archetypes (e.g., 1 ──► 2 ──► 3 ──► 4 ──► 6)   │
-│ • Continuation cues engineered at every fold transition                     │
+│ • Candidate section sequence (e.g., 1 ──► 2 ──► 3 ──► 4 ──► 6), adapted to     │
+│   the visitor's questions and the real journey                              │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │ BLOCK 4: PERSUASION, COPYWRITING & HEADLINE CADENCE                         │
 │ • H1 / H2 Formulas: Outcome + Timeframe without the Hated Obstacle          │
@@ -179,32 +181,30 @@ To generate or audit any web page with 0.01% precision, an operator or AI model 
 │ • Mobile Thumb Zone: Pinned sticky dock with 48x48px min touch targets      │
 │ • Flesch-Kincaid Grade 6–8 readability; 60–75 Characters Per Line (CPL)     │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│ BLOCK 7: TECHNICAL PERFORMANCE & AGENTIC INVARIANTS                         │
-│ • Core Web Vitals: LCP ≤ 1.8s (preloaded AVIF/WebP), INP ≤ 100ms, CLS 0.00  │
-│ • Speculation Rules API for 0ms prerendering; SSR HTML; JSON-LD @graph      │
+│ BLOCK 7: TECHNICAL PERFORMANCE & MACHINE READABILITY                        │
+│ • Current Core Web Vitals targets and budgets chosen from a real baseline    │
+│ • Eligible speculation, semantic HTML, structured data, and accessible copy │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 5. Technical & Machine Discoverability Standards
+## 5. Technical & Machine Discoverability Patterns
 
-A web page that loads slowly or cannot be parsed by machines is an economic liability. World-class sites meet the following technical criteria:
+A web page that loads slowly or cannot be parsed by the intended systems can become an economic liability. Use the following as implementation patterns and measurable targets, then verify the actual artifact in the real deployment context.
 
-### 1. Core Web Vitals (CWV) Invariants
-* **Largest Contentful Paint (LCP) $\le 1.8\text{s}$:**
-  * The Hero Image/Visual must never be lazy-loaded. It must be explicitly preloaded in the document `<head>`:
+### 1. Core Web Vitals (CWV) Targets
+* **Largest Contentful Paint (LCP):** Set a target from the current Core Web Vitals guidance and the page's measured baseline. A 1.8-second budget can be a useful stretch target for a critical commerce page, but it is not a universal guarantee.
+  * When the hero image is the LCP candidate, it often should not be lazy-loaded and may benefit from an explicit preload:
     ```html
     <link rel="preload" as="image" href="/hero.webp" fetchpriority="high">
     <img src="/hero.webp" alt="Primary Specimen" fetchpriority="high" loading="eager" width="800" height="600">
     ```
-* **Interaction to Next Paint (INP) $\le 100\text{ms}$:**
-  * Keep the main thread clear during user interaction. Defer non-critical tracking scripts (Meta Pixel, Google Tag Manager, analytics) to Web Workers using tools like Partytown.
-* **Cumulative Layout Shift (CLS) $= 0.00$:**
-  * Every image, video, and iframe must have explicit `width`, `height`, or CSS `aspect-ratio` attributes declared to prevent layout jumps during loading.
+* **Interaction to Next Paint (INP):** Keep the main thread clear during interaction. Defer or isolate non-critical scripts where the host stack supports it, and measure the deployed experience. A 100ms budget is an ambitious target rather than a promise.
+* **Cumulative Layout Shift (CLS):** Reserve space for images, video, and iframes with dimensions or `aspect-ratio`; zero is an excellent goal, while the actual result must be measured at relevant breakpoints.
 
-### 2. The Speculation Rules API (Instant 0ms Navigations)
-Modern browsers support predictive prerendering. Injecting a speculation rules script prerenders high-probability conversion links in an invisible background tab:
+### 2. The Speculation Rules API (Eligible Prefetch/Prerender)
+Modern browsers can predictively prefetch or prerender eligible navigations. The browser, response headers, device resources, privacy rules, navigation eligibility, and application behavior determine whether this happens; it is not an instant or 0ms navigation guarantee. Use it only for likely, safe navigations and measure cost and benefit:
 ```html
 <script type="speculationrules">
 {
@@ -219,8 +219,8 @@ Modern browsers support predictive prerendering. Injecting a speculation rules s
 </script>
 ```
 
-### 3. The Autonomous Agent Discoverability Standard (`/llms.txt`)
-To ensure AI search engines and procurement agents accurately discover and cite products, host a clean Markdown index at the domain root (`/llms.txt`):
+### 3. Machine-Readable Product and Service Information (`/llms.txt` as an Optional Convention)
+To make important information easier for crawlers, assistants, and procurement systems to inspect, provide accurate semantic HTML, stable URLs, a sitemap, structured data, and clear documentation. A root `/llms.txt` file is an optional proposal that some consumers may use; it cannot ensure discovery, citation, or recommendation:
 ```markdown
 # [Brand Name]
 
@@ -235,14 +235,16 @@ To ensure AI search engines and procurement agents accurately discover and cite 
 - [API / Developer Documentation](/docs/api)
 ```
 
+Treat every structured field and catalog entry as a customer-facing claim: keep price, availability, ratings, credentials, and specifications current and supported.
+
 ---
 
 ## 6. The Micro-Copy, Reassurance, Urgency, Scarcity & Guarantee Architecture
 
-While macro-layout and typography establish hierarchy, conversion decisions frequently hinge on the **micro-copy environment surrounding the primary action button**. When a user's cursor or thumb hovers over a CTA, System 2 analytical hesitation peaks. The following frameworks govern how to eliminate this friction:
+While macro-layout and typography establish hierarchy, conversion decisions frequently hinge on the **micro-copy environment surrounding the primary action button**. When a user's cursor or thumb hovers over a CTA, analytical hesitation can rise. The following frameworks can help an operator diagnose and reduce avoidable friction; adapt or skip them when the offer, audience, or evidence calls for something else:
 
 ### 1. CTA Action Verb Calibration (Matching Psychological Temperature)
-A call-to-action button should never use passive, administrative labels like *"Submit"*, *"Click Here"*, or *"Next"*. The verb must reflect the prospect's commitment level and desired transformation:
+Avoid passive, administrative labels like *"Submit"*, *"Click Here"*, or *"Next"* when a more specific action helps. Match the verb to the prospect's commitment level and the real next step:
 
 | Commitment Level | Prospect Mindset | Calibrated Action Verb Patterns | Failure Mode to Avoid |
 | :--- | :--- | :--- | :--- |
@@ -260,42 +262,61 @@ Positioned immediately beneath the primary conversion button, this single line o
 ### 3. Urgency: Authentic vs. Synthetic
 * **The "Synthetic Urgency" Penalty:** Evergreen JavaScript countdown timers that reset upon page reload, fake live visitor counters, or simulated purchase popups (*"Someone in Dallas just bought this"*) destroy brand credibility and attract regulatory penalties. Sophisticated buyers detect synthetic urgency instantly.
 * **Authentic Urgency Drivers:**
-  * *Operational Delivery Cutoffs:* Real-time shipping deadline clocks (*"Order within 2h 14m for guaranteed Thursday delivery"*).
+  * *Operational Delivery Cutoffs:* Real-time shipping deadline clocks (*"Order within 2h 14m for delivery by Thursday"*) only when the fulfillment system can support the displayed promise.
   * *Cohort & Event Deadlines:* Hard calendar cutoffs for live masterclasses or 5-day challenge enrollments.
   * *Dynamic Inventory Warnings:* Direct database feeds displaying true unit limits (*"Low Stock: Only 3 units left in Size Large"*).
 
 ### 4. Scarcity & Loss Aversion Framing (Prospect Theory)
-According to Daniel Kahneman and Amos Tversky's Prospect Theory, the psychological pain of losing is approximately **twice as impactful as the pleasure of gaining**. High-converting web copy frames the cost of inaction alongside the benefits of action:
-* **Capacity Scarcity:** Legitimate operational limits (e.g., *"Our senior engineering team onboards only 4 enterprise implementations per month to maintain SLA guarantees"*).
-* **Loss Aversion Framing:** Quantifying the cost of the status quo (e.g., *"Every month of delayed deployment costs your fleet an estimated $3,400 in unmonitored idle fuel waste"*).
+Prospect Theory gives marketers a useful loss-aversion lens: losses can feel more salient than equivalent gains, but the effect depends on context. High-converting web copy can frame the cost of inaction alongside the benefits of action:
+  * **Capacity Scarcity:** Legitimate operational limits (e.g., *"Our senior engineering team onboards only 4 enterprise implementations per month to maintain the documented service level"*) when the limit is real.
+* **Loss Aversion Framing:** Quantifying the cost of the status quo (e.g., *"Every month of delayed deployment costs your fleet an estimated $3,400 in unmonitored idle fuel waste"*) when the estimate's inputs, time period, and uncertainty are clear.
 
-### 5. The 3 Classes of Guarantees (Systemic Risk Reversal)
-Uncertainty creates inertia. The guarantee transfers the risk from the buyer to the seller:
+### 5. Three Guarantee and Risk-Reversal Patterns
+Uncertainty creates inertia. A guarantee can transfer defined risk from the buyer to the seller, but only when the organization has actually approved, priced, and can honor the terms. The examples below are templates, not ready-to-publish offers:
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
 │                          THE 3 CLASSES OF RISK REVERSAL                                │
 ├────────────────────────────────────────────────────────────────────────────────────────┤
 │ CLASS 1: UNCONDITIONAL SATISFACTION (The Baseline Reassurance)                         │
-│ • "30-Day Money-Back Guarantee: If this product doesn't exceed your expectations for    │
-│    any reason, email our support team for a prompt 100% refund. Zero questions asked." │
+│ • "30-Day Money-Back Guarantee: [insert the real eligibility, window, and refund terms]"│
 ├────────────────────────────────────────────────────────────────────────────────────────┤
 │ CLASS 2: ACTION-BASED / CONDITIONAL (The Competence Signal)                            │
-│ • Signals total confidence in the operational mechanism:                               │
-│ • "Deploy the Cold Outbound System for 60 days. If you send at least 1,000 verified    │
-│    emails and do not generate at least 15 qualified sales calls, we will work with     │
-│    your team 1-on-1 for free until you hit that milestone."                            │
+│ • Can signal confidence in a documented operational mechanism:                         │
+│ • "Use [offer] for [period]. If the documented condition is not met, [state the real   │
+│    remedy, eligibility, measurement, and support terms]."                              │
 ├────────────────────────────────────────────────────────────────────────────────────────┤
 │ CLASS 3: BETTER-THAN-MONEY-BACK (The Ultimate Conviction Anchor)                       │
-│ • Completely eliminates downside risk:                                                 │
-│ • "If our diagnostic audit does not identify at least $25,000 in annualized AWS waste,  │
-│    we will refund 100% of your audit fee plus pay you $500 for wasting your time."     │
+│ • Can reduce defined downside risk without eliminating it:                              │
+│ • "If the documented diagnostic condition is not met, [state the real remedy]."        │
 └────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
+### 6. Persuasion Technique Spectrum (White-Hat, Grey-Hat, Black-Hat)
+
+The model should understand persuasion mechanisms and their tradeoffs so it can choose deliberately. These labels describe the tactic's transparency and risk; they are not AURA permission tiers or a substitute for the real legal, contractual, platform, customer, and organizational constraints.
+
+| Mode | Typical mechanisms | Strength | Main failure mode |
+| :--- | :--- | :--- | :--- |
+| **White-hat** | Clear value, customer language, supported proof, useful education, real scarcity, transparent comparison, pain → mechanism → relief | Durable trust, repeatability, and compounding distribution | May require more evidence and patience |
+| **Grey-hat** | Aggressive loss-aversion framing, selective emphasis, generic ideal-versus-poor contrast, curiosity, strong commitment devices, tightly framed offer stacks | Can create urgency and attention when the material remains accurate and the audience understands the tradeoff | Omission, overstatement, or context collapse can make the asset misleading or brittle |
+| **Black-hat / adversarial** | Fabricated proof, impersonation, fake scarcity, hidden charges, dark patterns, cloaking, deceptive testimonials, or deliberate misdirection | Short-lived attention in some environments | Trust, platform, contractual, legal, and downstream business damage; often not reproducible |
+
+The model may explain any category, but it should name the mechanism, expected upside, evidence burden, and downside before choosing. A decisive position such as “best fit for serious buyers” or “the only option that meets [documented criterion]” is available when the evidence and offer actually support it. Do not present a generic contrast or conceptual visualization as a measured product test.
+
+### 7. Comparison Truth Modes: Agitate Pain, Then Show Relief
+
+High-persuasion comparison can intentionally place a user's offer beside a generic low-quality status quo or the strongest comparable alternative. Where a generic contrast is the goal, the endpoints may deliberately dramatize the relevant extremes—a representative lowest-fit path beside a representative best-fit path—to make the pain and relief legible. Label the frame so it does not imply that every alternative shares the worst defect or that an illustrative scene is a measured test:
+
+1. **Verified comparison:** Name the alternatives, criteria, test conditions, date, and evidence. State where each option fits better.
+2. **Representative contrast:** Show a generic poor-quality path beside the user's ideal path to dramatize a real buyer problem. Label it as illustrative or conceptual; do not imply a named competitor, laboratory result, or measured product performance.
+3. **Aspirational treatment:** Show the desired end state and the cost of remaining stuck without making a performance claim.
+
+In each mode, connect status quo pain to the mechanism and then to the relief the offer can actually deliver. Strong positioning can make the user's product the preferred or only viable choice for a defined buyer and criterion; broaden that claim only when the evidence and fit justify it.
+
 ---
 
-## 7. Illustrative Cross-Track Compositions (Non-Prescriptive Examples)
+## 8. Illustrative Cross-Track Compositions (Non-Prescriptive Examples)
 
 The four domain tracks in this library are not isolated silos; in production, high-performing organizations frequently combine them to create cohesive customer journeys. 
 
@@ -340,9 +361,9 @@ The four domain tracks in this library are not isolated silos; in production, hi
 
 ---
 
-## 8. Strategic Cognitive Diagnostics & Market Calibration
+## 9. Strategic Cognitive Diagnostics & Market Calibration
 
-To ensure web properties remain permanently resilient and adaptive without relying on brittle, soon-to-be-obsolete checklists, an AI model or operator must employ these three enduring cognitive frameworks:
+To keep web properties resilient and adaptive without relying on brittle, soon-to-be-obsolete checklists, an AI model or operator can use these three cognitive frameworks when the telemetry and market context warrant them:
 
 ### 1. The Conversion Diagnostic Triad (Root-Cause Failure Deduction)
 When a page underperforms, weak optimization involves random aesthetic guesswork (changing button colors, rewriting copy blindly). World-class conversion engineering uses **deductive failure triage** based on user telemetry to pinpoint the exact cognitive breakdown:
@@ -408,56 +429,56 @@ High-performance copy mines three specific semantic categories:
 
 ---
 
-## 9. Directory Map: How to Navigate This Library
+## 10. Directory Map: How to Navigate This Library
 
 When executing specific business objectives, proceed to the corresponding domain file:
 
-* **[DIALECTS.md](file:///Users/deangeloscott/businessos/recipes/web-design/DIALECTS.md):** The 10 Universal Web UI/UX Design Dialects (Color palettes, font pairings, border radii, surface depth, and animation tokens).
-* **[01-ecommerce-stores.md](file:///Users/deangeloscott/businessos/recipes/web-design/01-ecommerce-stores.md):** High-Performance E-Commerce (Faceted PLP, Modular PDP, Sticky Buy Box, Goal-Gradient Mini-Cart Drawer, Linear Checkout).
-* **[02-lead-generation.md](file:///Users/deangeloscott/businessos/recipes/web-design/02-lead-generation.md):** High-Velocity Lead Generation (Narrow Lead Magnets, Intentional Friction, Quiz Funnels, 2-Step Application & Calendar Booking).
-* **[03-brand-business-websites.md](file:///Users/deangeloscott/businessos/recipes/web-design/03-brand-business-websites.md):** Corporate & Brand Authority (The 5-Second Filter, Persona-Based Information Architecture, B2B Software Simulation, The Proof Vault).
-* **[04-multistep-sales-funnels.md](file:///Users/deangeloscott/businessos/recipes/web-design/04-multistep-sales-funnels.md):** Direct-Response Funnel Systems (Advertorials, Book Funnels/SLO, 5-Day Challenges, Webinars, Hybrid VSLs, Skool Community Funnels, 1-Click Upsells).
+* **[DIALECTS.md](DIALECTS.md):** Ten Web UI/UX Design Dialects (color palettes, font pairings, border radii, surface depth, and animation tokens).
+* **[01-ecommerce-stores.md](01-ecommerce-stores.md):** E-Commerce (faceted PLP, modular PDP, sticky buy box, cart drawer, and checkout patterns).
+* **[02-lead-generation.md](02-lead-generation.md):** Lead Generation (lead magnets, qualification friction, quiz funnels, applications, and calendar booking).
+* **[03-brand-business-websites.md](03-brand-business-websites.md):** Brand Authority (positioning, persona-based information architecture, product demonstration, and proof placement).
+* **[04-multistep-sales-funnels.md](04-multistep-sales-funnels.md):** Direct-Response Funnels (advertorials, book funnels, challenges, webinars, VSLs, community, and upsells).
 
 ---
 
-## 10. Foundational References, Theoretical Attribution & Source Directory
+## 11. Foundational References, Theoretical Attribution & Source Directory
 
-Every principle, heuristic, metric, and framework in this library is grounded in rigorous scientific research, large-scale empirical usability datasets, and proven direct-response marketing methodologies. The following directory provides the primary sources, seminal texts, and foundational research institutes for operators seeking deep-dive study:
+The following directory records useful research, standards, and practitioner frameworks behind the library. It is a reading map, not proof that every number or tactic applies universally. Verify current primary sources, scope, and assumptions before turning a reference into customer-facing copy or an implementation target:
 
 ### 1. Empirical Usability & Conversion Research Institutes
 * **Baymard Institute (Copenhagen & Global):**
-  * *Primary Contribution:* Over 130,000 hours of large-scale empirical e-commerce usability testing.
-  * *Key Findings Used:* The ~70% cart abandonment baseline; 35% UX recovery potential; the dropdown menu selector failure mode; linear checkout architecture; the 14-to-6 form field reduction law.
+  * *Primary Contribution:* Large-scale empirical e-commerce usability testing.
+  * *Key Findings Used:* Cart-abandonment context, checkout and product-page failure modes, selector usability, and the value of reducing unnecessary form work. Treat published rates and recovery estimates as study-specific baselines, not promises.
   * *Source & Reference:* Baymard Institute E-Commerce Usability Reports & PDP/Checkout Benchmark Studies.
 * **Nielsen Norman Group (NN/g — Jakob Nielsen, Don Norman, Bruce Tognazzini):**
   * *Primary Contribution:* Human-computer interaction (HCI), ocular tracking research, and cognitive ergonomics.
   * *Key Findings Used:* Bruce Tognazzini's *False Bottom (Illusion of Completeness)* phenomenon; F-shaped and Layer-Cake scanning patterns; plain language readability standards.
   * *Seminal Works:* *Prioritizing Web Usability* (Nielsen & Loranger); NN/g Research Articles on Scanning & Scrolling Behavior.
 * **Medill Spiegel Research Center (Northwestern University):**
-  * *Primary Contribution:* Quantitative econometrics of consumer online reviews and purchase probability.
-  * *Key Findings Used:* The 4.2 to 4.7 star rating conversion peak; the "Too Good to Be True" 5.0-star skepticism penalty; the finding that 82% of buyers specifically seek out negative reviews as credibility anchors.
+  * *Primary Contribution:* Quantitative research on consumer reviews and purchase probability.
+  * *Key Findings Used:* Review credibility, rating context, and the role of negative reviews. The reported ranges depend on study design and category; do not optimize every business toward a universal star-rating target.
   * *Seminal Study:* *"How Online Reviews Influence Sales"* (Spiegel Research Center).
 * **CXL Institute & Speero (Peep Laja):**
-  * *Primary Contribution:* Scientific conversion rate optimization, eye-tracking heatmaps, and form field cognitive load.
-  * *Key Findings Used:* The Field Cliff drop-off curve; inline form validation on blur; intent-based form length calibration.
+  * *Primary Contribution:* Conversion research, experimentation, and form/interaction analysis.
+  * *Key Findings Used:* Nonlinear form-friction patterns, inline validation, and intent-based form-length calibration. Use an organization's baseline and experiment results for local decisions.
 * **Steven Hoober (4ourth Mobile):**
   * *Primary Contribution:* Observational research on mobile device touch mechanics (1,333+ participant field studies).
-  * *Key Findings Used:* The Mobile Thumb Zone mapping (49% one-handed use, 75% thumb-driven interactions); bottom 40% viewport conversion anchoring.
+  * *Key Findings Used:* Mobile reachability and thumb-zone patterns that can inform placement. Validate the layout on the actual device mix instead of treating a single study percentage as a universal rule.
 
 ### 2. Cognitive Psychology & Behavioral Economics
 * **Daniel Kahneman & Amos Tversky:**
   * *Primary Contribution:* Behavioral economics, cognitive heuristics, and dual-process cognition.
-  * *Key Findings Used:* System 1 (Intuitive/Limbic) vs. System 2 (Analytical/Prefrontal) processing; Prospect Theory (Loss Aversion: losses hurt 2x more than gains pleasure).
+  * *Key Findings Used:* Dual-process decision models and Prospect Theory's loss-aversion framing. Use loss framing to clarify real costs of inaction, not to invent them.
   * *Seminal Work:* *Thinking, Fast and Slow* (Kahneman, 2011).
 * **Robert B. Cialdini, Ph.D.:**
-  * *Primary Contribution:* The 7 Universal Principles of Influence.
+  * *Primary Contribution:* Widely used principles of influence.
   * *Key Findings Used:* Reciprocity (free value first), Commitment & Consistency (quiz micro-steps), Social Proof, Authority, Liking, Scarcity (authentic inventory constraints), and Unity.
   * *Seminal Work:* *Influence: The Psychology of Persuasion* (1984, expanded 2021).
 * **Classical Ergonomic & Interaction Laws:**
-  * *Hick's Law (William Edmund Hick):* Decision time increases logarithmically with the number of choices ($T = b \cdot \log_2(n + 1)$); mandates 5–7 item navigation caps.
-  * *Fitts's Law (Paul Fitts):* Movement time to a target depends on distance and width; mandates 48x48px mobile touch targets and full-width sticky CTAs.
-  * *Miller's Law (George A. Miller):* Working memory capacity limits ($7 \pm 2$ chunks); mandates modular section chunking.
-  * *The Von Restorff Effect (Hedwig von Restorff):* The Isolation Effect; mandates reserving the 10% conversion accent color exclusively for primary actions.
+  * *Hick's Law (William Edmund Hick):* Decision time generally increases with the number and complexity of choices; use it to simplify navigation when the task benefits, not as a fixed item cap.
+  * *Fitts's Law (Paul Fitts):* Movement time depends on target distance and width; use it alongside accessibility guidance and device testing when sizing controls.
+  * *Working-memory research:* Chunk related information and use clear hierarchy; avoid treating a single capacity estimate as a universal content limit.
+  * *The Von Restorff Effect (Hedwig von Restorff):* Distinctive elements attract attention; use contrast intentionally and preserve accessibility rather than reserving a color by rote.
 
 ### 3. Direct-Response Architecture, Copywriting & Funnel Systems
 * **Eugene Schwartz:**
@@ -473,7 +494,7 @@ Every principle, heuristic, metric, and framework in this library is grounded in
   * *Key Frameworks Used:* The Value Ladder; The Perfect Webinar (The Big Domino, Epiphany Bridge, 3 False Beliefs); Hook-Story-Offer; Free + Shipping Book Funnels; In-Line Order Bumps ($17–$37) and 1-Click Upsell sequences.
   * *Seminal Works:* *DotCom Secrets* (2015), *Expert Secrets* (2017), *Traffic Secrets* (2020).
 * **Jason Fladlien (Rapid Crush):**
-  * *Primary Contribution:* One-to-many live sales choreography, the $100M+ webinar sales methodology, and affiliate bridge bonus architecture.
+  * *Primary Contribution:* One-to-many live sales choreography, webinar sales methodology, and affiliate bridge bonus architecture.
   * *Key Frameworks Used:* The "Two Paths" Seamless Pitch Transition; The "Solving Problems Created by the Solution" Bonus Framework; The 5 Master Closes (If All This Did, Money as Stored Energy, Divided by 365, Us vs. Them, Future Pace); The Affiliate Bridge Funnel & Exclusive Differentiating Bonus Stack.
   * *Seminal Work:* *One to Many: The Secret to Webinar Success* (2018).
 * **April Dunford (Ambient Strategy):**
@@ -508,14 +529,11 @@ Every principle, heuristic, metric, and framework in this library is grounded in
 
 ### 4. Technical Performance & Autonomous AI Agent Standards
 * **W3C & Google Chrome Platform Team:**
-  * *Primary Contribution:* Quantitative web user experience measurement.
-  * *Key Standards Used:* Core Web Vitals (Largest Contentful Paint $\le 1.8$s, Interaction to Next Paint $\le 100$ms, Cumulative Layout Shift $0.00$); The W3C Speculation Rules API for predictive background prerendering.
+  * *Primary Contribution:* Web platform standards and user-experience measurement.
+  * *Key Standards Used:* Current Core Web Vitals guidance, semantic HTML, and the Speculation Rules API for eligible predictive prefetch/prerender. Use current official thresholds and measure deployed behavior; no API guarantees 0ms navigation.
 * **Jeremy Howard (Answer.AI / Fast.ai):**
-  * *Primary Contribution:* The open standard for machine-readable web curation.
-  * *Key Standards Used:* The `/llms.txt` and `/llms-full.txt` root specification for token-efficient AI agent scraping and indexing.
+  * *Primary Contribution:* A proposed convention for machine-readable web curation.
+  * *Key Standards Used:* The `/llms.txt` and `/llms-full.txt` proposal. Treat adoption and retrieval benefits as conditional on the consuming system.
 * **Schema.org Consortium (W3C, Google, Microsoft, Yahoo):**
   * *Primary Contribution:* Structured semantic data vocabularies.
   * *Key Standards Used:* The JSON-LD `@graph` architecture (`Organization`, `Product`, `Offer`, `AggregateRating`, `Service`, `FAQPage`) for Generative Engine Optimization (GEO).
-
-
-

@@ -7,13 +7,13 @@
 ## Overview & Scale Dynamics
 This scale represents the absolute pinnacle of e-commerce investment ($2,000 to $15,000+). These are not casual purchases; they are freight-delivered, semi-permanent architectural installations that reshape the customer's living space.
 
-Customer hesitation is driven by intense psychological stakes:
+Customer hesitation is driven by intense practical and emotional stakes:
 1. *Spatial Panic:* "Will this dwarf my room, block doorways, or look claustrophobic?"
 2. *Aesthetic Fear:* "Will this look like an ugly industrial box in my home?"
 3. *Engineering Skepticism:* "Why does this cost $6,000? Is it built to last 20 years?"
 4. *Logistical Dread:* "How does the water drain? What breaker does it require? Will it fit through my gate?"
 
-Every archetype here is engineered with **architectural perspective control, spatial anchoring, structural craftsmanship proof**, and strict adherence to the **5-Block Director's Rig Protocol**.
+Every archetype here is a reference for **architectural perspective control, spatial anchoring, structural craftsmanship, and calm high-ticket persuasion**. Use the optional five-block scaffold when useful. A generic stressful space versus a premium sanctuary can be an effective pain-to-relief contrast; it does not establish the product's dimensions, capacity, weathering, longevity, utilities, or installation outcome. Use supplied CAD, room measurements, manuals, materials, and observed tests, then inspect the rendered scene against them.
 
 ---
 
@@ -74,21 +74,21 @@ Every archetype here is engineered with **architectural perspective control, spa
 * **Universal Class:** The Specimen
 * **Example Products (Illustrative Guidance, Not an Allowlist):** 2-person barrel sauna, freestanding soaking tub, modular sectional sofa, compact squat rack.
 1. **Strategic Intent & Conversion Role:**  
-   PDP Slot 4 (Spatial & Ergonomic De-risking). Permanently resolves the buyer's panic: *"Will my head hit the ceiling? Will my knees be cramped?"*
+   PDP Slot 4 (Spatial & Ergonomic De-risking). Addresses the buyer's panic: *"Will my head hit the ceiling? Will my knees be cramped?"* Use an actual measured fit or label the scene as illustrative.
 2. **The Physical Stage (The 95%):**  
    Inside the sauna, cold plunge, or on the sectional sofa. A tall adult model (e.g. 6'1" / 185 cm) is seated comfortably upright, demonstrating generous physical clearance.
 3. **Optical & Lighting Directives:**  
    * *Lens:* 28mm or 35mm Wide-Angle with zero wide-angle distortion (level camera angle).  
    * *Aperture:* f/5.6.  
-   * *Lighting:* Warm diffused interior light showing clear 4 to 6 inches of headroom above the model's head and natural legroom.
+   * *Lighting:* Warm diffused interior light that makes the measured headroom and natural legroom legible.
 4. **Sensory & Synesthetic Triggers:**  
    Complete bodily comfort and spaciousness: relaxed open shoulders, un-cramped posture, breathing room.
 5. **Invariant Guardrails & Crop Safe-Zones:**  
-   Model dimensions must reflect real adult proportions. Clear text safe zones for callouts: *"6'1" Model Shown with 5" Headroom Clearance"*.
+   Model dimensions must reflect the actual model and product measurements. Add a clearance callout only after calculating it from those measurements.
 * **Director's Rig Prompt Blueprint:**
 ```text
 [BLOCK 1: HERO & ERGONOMIC CLEARANCE]: Commercial interior scale photograph inside [HERO PRODUCT: Barrel sauna / sectional sofa / tub], occupying 80% of frame weight.
-[BLOCK 2: ERGONOMIC DETAIL]: A tall adult model (6'1", 185 cm) is seated comfortably upright on the bench, clearly demonstrating a generous 5-to-6-inch vertical headroom clearance between their head and the curved ceiling, with relaxed legs and open posture.
+[BLOCK 2: ERGONOMIC DETAIL]: [ACTUAL MODEL MEASUREMENTS] is seated comfortably upright on the bench. Show the measured headroom and legroom from the supplied product dimensions; add a label only for a calculated clearance. If unknown, show the posture without a numeric promise.
 [BLOCK 3: OPTICS]: 32mm wide architectural prime lens, level eye-line, zero wide-angle warping, f/5.6 aperture keeping model and cedar wall slats in sharp focus.
 [BLOCK 4: STAGE & LIGHT]: Soft diffused 2900K warm interior timber illumination casting gentle natural shadows across wood grain and unretouched skin.
 [BLOCK 5: EXCLUSIONS]: Negative: cramped hunching posture, distorted body proportions, wide-angle fisheye curved walls, harsh shadows, claustrophobic framing.
@@ -100,7 +100,7 @@ Every archetype here is engineered with **architectural perspective control, spa
 * **Universal Class:** The Proof
 * **Example Products (Illustrative Guidance, Not an Allowlist):** Red cedar sauna stave ball-and-socket joinery, cold plunge commercial refrigeration fittings, modular sofa solid oak frame, gym rack 11-gauge steel welds.
 1. **Strategic Intent & Conversion Role:**  
-   PDP Slot 5 (Materiality & Price Justification). Visually proves why the product costs thousands of dollars by exposing industrial-grade engineering that cheap flat-pack furniture cannot match.
+   PDP Slot 5 (Materiality & Price Justification). Makes the supplied structural materials and joinery visible beside a generic lower-quality reference when useful. The comparison can explain premium value without inventing materials or a competitor's failure.
 2. **The Physical Stage (The 95%):**  
    Extreme macro framing on a structural connection point: the precision ball-and-socket cedar wood joinery, heavy TIG-welded powder-coated steel frame, or double-pane tempered glass compression gasket.
 3. **Optical & Lighting Directives:**  
@@ -110,12 +110,12 @@ Every archetype here is engineered with **architectural perspective control, spa
 4. **Sensory & Synesthetic Triggers:**  
    The smell of real kiln-dried Canadian Western Red Cedar; cold, immovable density of heavy-gauge steel; airtight satisfying seal of tempered glass.
 5. **Invariant Guardrails & Crop Safe-Zones:**  
-   Grain patterns, wood species, and hardware materials must be 100% truthful to the physical product specs.
+   Grain patterns, wood species, and hardware materials should follow the physical product specs; when unknown, use a neutral close-up rather than a false species or grade.
 * **Director's Rig Prompt Blueprint:**
 ```text
 [BLOCK 1: HERO MACRO JOINERY]: Extreme macro structural photograph of [HERO DETAIL: e.g., solid Western Red Cedar tongue-and-groove stave joinery or continuous TIG weld on heavy 11-gauge steel tube]. Occupying 85% of frame in tack-sharp focus.
 [BLOCK 2: OPTICAL RIG]: 100mm True Macro lens, f/5.6 aperture, locking focus onto tight wood growth rings, smooth chamfered edges, and marine-grade stainless hardware.
-[BLOCK 3: LIGHTING RIG]: Raking directional daylight at 30 degrees highlighting deep timber texture, satin finish, and precision zero-tolerance joint gap.
+[BLOCK 3: LIGHTING RIG]: Raking directional daylight at 30 degrees highlighting deep timber texture, satin finish, and the supplied joint geometry.
 [BLOCK 4: SUBORDINATE STAGE]: Clean architectural context, background falling into soft creamy bokeh.
 [BLOCK 5: EXCLUSIONS]: Negative: loose gaps, cheap plywood, plastic veneer, splintered wood, chipped paint, digital artifacts, blurry focus.
 ```
@@ -230,7 +230,7 @@ Every archetype here is engineered with **architectural perspective control, spa
 * **Universal Class:** The Proof
 * **Example Products (Illustrative Guidance, Not an Allowlist):** Outdoor barrel sauna, commercial cold plunge, marine-grade aluminum fire pit, stain-resistant performance fabric sectional.
 1. **Strategic Intent & Conversion Role:**  
-   PDP Slot 2 & Durability Proof. Proves extreme resilience against weather (rain, snow, UV) or heavy family wear (pets, stains, heavy use).
+   PDP Slot 2 & Durability Demonstration. Makes weather or wear resistance visually legible. Use the product's actual material and test data for any durability claim; the scene can remain an illustrative ideal.
 2. **The Physical Stage (The 95%):**  
    *Outdoor:* A cedar sauna or cold plunge standing resolute in fresh winter snow or a light rainstorm, with water beading off treated timber.  
    *Indoor:* Extreme close-up of water beading on stain-resistant performance fabric or liquid rolling off a sealed walnut tabletop.
@@ -239,13 +239,13 @@ Every archetype here is engineered with **architectural perspective control, spa
    * *Aperture:* f/5.6.  
    * *Lighting:* Natural outdoor overcast or crisp studio directional light highlighting water-beading surface tension.
 4. **Sensory & Synesthetic Triggers:**  
-   Invulnerability and long-term investment security: knowing this product will withstand 10+ years of harsh weather or family life without deteriorating.
+   Long-term investment security: show the supplied weathering or care story without promising a lifespan that has not been established.
 5. **Invariant Guardrails & Crop Safe-Zones:**  
    Weathering resistance claims must be backed by real engineering data.
 * **Director's Rig Prompt Blueprint:**
 ```text
-[BLOCK 1: HERO WEATHER PROOF]: High-performance outdoor torture photograph of [HERO PRODUCT: Red cedar barrel sauna / cold plunge] standing resilient in a fresh winter snowfall, occupying 75% of frame weight.
-[BLOCK 2: WEATHER DETAIL]: Fresh white snow blankets the curved roof while spherical water droplets bead cleanly across the treated timber staves, with clear interior warmth glowing through the steamed glass door.
+[BLOCK 1: HERO WEATHER DEMONSTRATION]: High-performance outdoor photograph of [HERO PRODUCT: Red cedar barrel sauna / cold plunge] standing in the supplied weather condition, occupying a useful share of frame weight.
+[BLOCK 2: WEATHER DETAIL]: Show the supplied or observed surface behavior under the stated condition. If the render is an aspirational illustration, keep the snow, water beads, and interior glow as visual storytelling rather than a durability result.
 [BLOCK 3: OPTICS]: 70mm prime lens, eye-level perspective, f/5.6 aperture keeping timber texture and snow in sharp focus.
 [BLOCK 4: STAGE & LIGHT]: Crisp overcast winter daylight (6000K) balanced with 2700K warm interior illumination, misty pine trees in soft background.
 [BLOCK 5: EXCLUSIONS]: Negative: rotting wood, peeling paint, rusted bands, cartoon snowflakes, muddy dirty ground.
@@ -282,9 +282,9 @@ Every archetype here is engineered with **architectural perspective control, spa
 * **Universal Class:** The Proof
 * **Example Products (Illustrative Guidance, Not an Allowlist):** Red cedar outdoor sauna, Grade-A teak patio dining set, thermally modified ash cold plunge, architectural cedar pergola.
 1. **Strategic Intent & Conversion Role:**  
-   PDP Slot 6 & Capital Investment Reassurance ($5,000–$25,000+). Eliminates buyer hesitation regarding outdoor deterioration: *"Will this rot or look weathered and ruined in 5 years?"* Proves that noble architectural materials evolve into a breathtaking, dignified silver-grey patina rather than degrading.
+   PDP Slot 6 & Capital Investment Reassurance. Addresses outdoor deterioration: *"Will this rot or look weathered and ruined over time?"* A documented aging sample can support the story; a generated silver-grey state is an illustration of the intended material evolution.
 2. **The Physical Stage (The 95%):**  
-   A rugged coastal or montane architectural setting. A side-by-side or mature retrospective installation: fresh honey-golden timber at initial delivery contrasted against the identical structure after 5 to 10 years of natural four-season exposure—displaying an even, luminous silvery patina, perfectly tight miter joints, zero board warping, and hinges opening with effortless glide.
+   A rugged coastal or montane architectural setting. A side-by-side or mature retrospective installation: fresh timber at initial delivery contrasted against a documented later sample or clearly labeled conceptual mature state. Show the supplied patina, joints, board condition, and hardware behavior without inventing five-to-ten-year exposure.
 3. **Optical & Lighting Directives:**  
    * *Lens:* 50mm Prime.  
    * *Aperture:* f/8 for expansive depth of field encompassing timber grain and the environmental horizon.  
@@ -295,8 +295,8 @@ Every archetype here is engineered with **architectural perspective control, spa
    Depict authentic natural silvering characteristic of premium rot-resistant species, never synthetic peeling sealants or fungal decay.
 * **Director's Rig Prompt Blueprint:**
 ```text
-[BLOCK 1: HERO DECADAL LONGEVITY]: Architectural longevity photograph of [HERO PRODUCT: Red cedar sauna / teak suite] displaying 7-year dignified outdoor weathering, centered and occupying 70% of frame weight in tack-sharp focus.
-[BLOCK 2: PATINA DETAIL]: Shows noble, even silver-platinum timber patina across the heartwood staves, with zero board warping, airtight miter seams, and stainless steel tension bands gleaming without corrosion.
+[BLOCK 1: HERO LONGEVITY]: Architectural longevity photograph of [HERO PRODUCT: Red cedar sauna / teak suite] displaying [DOCUMENTED AGING SAMPLE OR CLEARLY LABELED CONCEPTUAL MATURE STATE], centered and occupying a useful share of frame weight in tack-sharp focus.
+[BLOCK 2: PATINA DETAIL]: Shows the supplied or observed timber patina across the heartwood staves, with joint, board, and hardware condition matched to the record. Do not infer weathering age, airtightness, or corrosion resistance from a generated surface.
 [BLOCK 3: OPTICS]: 50mm prime lens, level horizon, f/8 aperture for deep environmental clarity.
 [BLOCK 4: STAGE & LIGHT]: Soft diffused coastal afternoon daylight grazing across the silvery wood grain, grounded on an architectural stone plinth.
 [BLOCK 5: EXCLUSIONS]: Negative: rotting black wood, green mold, cracked splintered boards, peeling polyurethane varnish, cheap vinyl, suburban fences.
@@ -308,7 +308,7 @@ Every archetype here is engineered with **architectural perspective control, spa
 * **Universal Class:** The Specimen
 * **Example Products (Illustrative Guidance, Not an Allowlist):** 4-person outdoor barrel sauna, 6-seat modular sectional sofa, 8-seater solid timber dining table, dual-lounge cold plunge.
 1. **Strategic Intent & Conversion Role:**  
-   PDP Slot 4 & Capacity De-risking. Eradicates the fear of cramped capacity claims (*"Does a 4-person sauna actually fit 4 adults, or is it a squeeze?"*). Proves physical dimensions through authentic human spatial validation.
+   PDP Slot 4 & Capacity De-risking. Addresses cramped capacity claims (*"Does a 4-person sauna actually fit 4 adults, or is it a squeeze?"*) through a measured, representative spatial demonstration. A render does not replace the capacity specification.
 2. **The Physical Stage (The 95%):**  
    Clean architectural elevation or interior cutaway of the product. Three or four diverse adults are seated comfortably upright with visible shoulder clearance and natural knee room.
 3. **Optical & Lighting Directives:**  
@@ -316,9 +316,9 @@ Every archetype here is engineered with **architectural perspective control, spa
    * *Aperture:* f/8 for uniform focus across all seats.  
    * *Lighting:* Bright, clean architectural interior illumination showing every bench and corner clearly.
 4. **Sensory & Synesthetic Triggers:**  
-   Spacious ease: open relaxed shoulders, uncrowded posture, generous legroom, verified social capacity.
+   Spacious ease: open relaxed shoulders, uncrowded posture, generous legroom, and clearly stated measured capacity when available.
 5. **Invariant Guardrails & Crop Safe-Zones:**  
-   Models must reflect real adult proportions. Clear text safe zones for capacity callouts: *"Seats 4 Adults with 6" Shoulder Clearance"*.
+   Models must reflect the actual people and product scale. Add capacity and shoulder-clearance callouts only from measured dimensions.
 * **Director's Rig Prompt Blueprint:**
 ```text
 [BLOCK 1: HERO CAPACITY PROOF]: Commercial architectural capacity photograph of [HERO PRODUCT: e.g., 4-person outdoor sauna / 6-piece sectional sofa], occupying 80% of frame width in tack-sharp focus.
@@ -370,7 +370,7 @@ Every archetype here is engineered with **architectural perspective control, spa
 4. **Sensory & Synesthetic Triggers:**  
    Visceral tension release: tight shoulders dropping, deep therapeutic exhale, soothing heat/cold immersion washing away fatigue.
 5. **Invariant Guardrails & Crop Safe-Zones:**  
-   Strict directional grammar: Left represents the Problem/Stress; Right (The Hero) represents the Serene Recovery Sanctuary.
+   Recommended grammar: left represents Problem/Stress and right represents the Serene Recovery Sanctuary. Keep the contrast legible, but adapt direction and panel ratio to the platform and narrative.
 * **Director's Rig Prompt Blueprint:**
 ```text
 [BLOCK 1: HERO CONTRAST PROOF]: A high-converting commercial e-commerce contrast photograph on a clean architectural deck, occupying 85% of total frame width.
@@ -386,9 +386,9 @@ Every archetype here is engineered with **architectural perspective control, spa
 * **Universal Class:** The Specimen
 * **Example Products (Illustrative Guidance, Not an Allowlist):** Flat-pack cedar sauna kit, modular 5-piece sectional sofa, commercial gym power cage, solid slab dining table.
 1. **Strategic Intent & Conversion Role:**  
-   PDP Slot 7 & Delivery De-risking (Eliminates Freight Fear & Buyer Hesitation). Overcomes the silent dealbreaker: *"Will this massive freight crate fit through my standard 32-inch garden gate, front door, or basement stairwell?"*
+   PDP Slot 7 & Delivery De-risking (Reduces Freight Fear & Buyer Hesitation). Addresses the dealbreaker: *"Will this freight crate fit through my gate, front door, or stairwell?"* Use the actual route measurements and crate dimensions.
 2. **The Physical Stage (The 95%):**  
-   A clean architectural gateway or residential entryway. Demonstrates the flat-pack modular crates and panel dimensions, showing every piece engineered to clear standard doorways effortlessly.
+   A clean architectural gateway or residential entryway. Demonstrates the actual crate and panel dimensions through the actual route; if fit is unknown, show a planning diagram or concept rather than effortless passage.
 3. **Optical & Lighting Directives:**  
    * *Lens:* 35mm Prime.  
    * *Aperture:* f/8.  
@@ -396,11 +396,11 @@ Every archetype here is engineered with **architectural perspective control, spa
 4. **Sensory & Synesthetic Triggers:**  
    Logistical confidence: numbered modular panels, tool-free locking cam mechanisms, heavy-duty weatherized freight crating arriving pristine.
 5. **Invariant Guardrails & Crop Safe-Zones:**  
-   Gate and doorway dimensions must reflect standard architectural residential widths (32"–36").
+   Gate, doorway, stair, and turning dimensions must reflect the measured delivery route; there is no safe universal “standard” width for a freight promise.
 * **Director's Rig Prompt Blueprint:**
 ```text
-[BLOCK 1: HERO LOGISTICAL PROOF]: Commercial delivery de-risking photograph of [HERO PRODUCT: Flat-pack modular sauna / sectional sofa], showing its modular components passing through a standard 34-inch residential gate/doorway, occupying 75% of frame weight.
-[BLOCK 2: MODULAR ASSEMBLY DETAIL]: Highlights precision-engineered modular panels and heavy-duty pre-assembled wall sections, proving all crates pass easily through standard residential entryways with simple two-person assembly.
+[BLOCK 1: HERO LOGISTICAL DEMONSTRATION]: Commercial delivery de-risking photograph of [HERO PRODUCT: Flat-pack modular sauna / sectional sofa], showing its modular components against the measured residential route.
+[BLOCK 2: MODULAR ASSEMBLY DETAIL]: Highlights the supplied panel dimensions, pre-assembled sections, hardware, and required crew. If the route is verified, show the pass-through; otherwise make the unresolved fit visible instead of claiming easy access.
 [BLOCK 3: OPTICS]: 35mm prime lens, eye-level perspective, f/8 aperture keeping gateway and panels in sharp focus.
 [BLOCK 4: STAGE & LIGHT]: Bright, welcoming 5200K natural daylight on a clean entryway patio with soft contact shadows.
 [BLOCK 5: EXCLUSIONS]: Negative: broken wood crates, messy styrofoam peanuts, chaotic delivery truck, oversized intimidating parts, ungrounded shadows.

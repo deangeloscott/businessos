@@ -1,6 +1,6 @@
 # Web UI/UX Design Dialects
 ### Master Style Engine, Design Tokens & Aesthetic Calibration Matrix
-*Version 1.0 — Platform-Agnostic Visual Operating System*
+*Version 1.1 — Platform-Agnostic Visual Craft Reference*
 
 ---
 
@@ -9,20 +9,20 @@
 A **Design Dialect** is not merely a color palette or a font pairing. It is a **cohesive visual and cognitive operating system** that establishes the emotional tone, perceived market value, and subconscious trust signals of a web property.
 
 Just as the [E-Commerce Image Lookbooks](../creative/ecommerce-image-lookbooks/DIALECTS.md) govern photographic set design, lighting, and camera grades, these ten web design dialects govern the digital canvas:
-* **The 60-30-10 Chromatic Balance:** Canvas background (60%), structural containers/text (30%), and the isolated conversion accent (10%).
+* **The 60-30-10 Chromatic Starting Point:** Canvas background (60%), structural containers/text (30%), and a conversion accent (10%). Adjust the ratio for brand, accessibility, hierarchy, and content.
 * **Typographic Hierarchy & Modular Scale:** Font pairings, line-heights, letter-spacing, and rhythmic weight.
 * **Surface Depth & Micro-Elevation:** Flat vs. skeuomorphic vs. glassmorphic elevation, border radii, and box-shadow profiles.
 * **Kinetic Interaction Cadence:** Hover states, micro-transitions, and tactile feedback.
 
-When building or prompting a web experience, an operator selects **one primary dialect** to guarantee visual consistency across every section archetype.
+When building or prompting a web experience, an operator may select **one primary dialect** to make visual choices easier to coordinate. Blend, adapt, or skip dialects when the brand, audience, accessibility needs, platform, or evidence calls for it; no dialect guarantees consistency or conversion.
 
 ---
 
-## 2. The 10 Universal Web UI/UX Design Dialects
+## 2. Ten Reusable Web UI/UX Design Dialects
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                    THE 10 UNIVERSAL WEB DESIGN DIALECTS                     │
+│                    TEN REUSABLE WEB DESIGN DIALECTS                        │
 ├────┬─────────────────────────────┬──────────────────────────────────────────┤
 │ ## │ DIALECT NAME                │ PRIMARY INDUSTRY CONTEXT                 │
 ├────┼─────────────────────────────┼──────────────────────────────────────────┤
@@ -71,9 +71,9 @@ When building or prompting a web experience, an operator selects **one primary d
 
 ---
 
-### Dialect 03: The Kinetic Direct-Response Standard (High-Velocity CVR)
+### Dialect 03: The Kinetic Direct-Response Standard (High-Velocity Conversion)
 
-* **Philosophy:** Built exclusively to maximize transaction velocity, eliminate hesitation, and direct visual attention straight into the conversion funnel.
+* **Philosophy:** Tuned to increase transaction clarity and momentum while preserving informed choice, accessible interaction, and the option to pause or learn.
 * **Chromatic Architecture:**
   * **60% Canvas:** Pure Optical White (`#FFFFFF`).
   * **30% Structural:** High-Legibility Jet Black (`#111827`), Charcoal body (`#374151`), Light Slate card backgrounds (`#F8FAFC`).
@@ -189,7 +189,7 @@ When building or prompting a web experience, an operator selects **one primary d
 
 ---
 
-## 3. Universal Design Token Reference Table
+## 3. Design Token Reference Table
 
 | Dialect Name | Canvas Hex (60%) | Structural Hex (30%) | Accent Hex (10%) | Primary Typography Pairing | Corner Radius | Shadow Profile |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |

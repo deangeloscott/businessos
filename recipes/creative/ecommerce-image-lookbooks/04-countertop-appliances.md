@@ -7,13 +7,13 @@
 ## Overview & Scale Dynamics
 Products at this scale bridge the gap between portable consumer items and major domestic machinery. They carry premium price tags ($300 to $3,000+) and occupy permanent physical footprint in kitchens, patios, workshops, or studios.
 
-Shoppers are paralyzed by four specific doubts:
+Shoppers often hesitate over four practical doubts:
 1. *Will it fit under standard 18-inch upper kitchen cabinets?*
 2. *Is it built of real heavy-gauge metal or cheap painted plastic?*
 3. *Is cleaning and maintaining it a nightmare?*
 4. *Where do the cords, water tanks, and vent exhausts actually go?*
 
-Every archetype in this scale adheres strictly to the **5-Block Director's Rig Protocol**.
+Every archetype in this scale is a reference for making footprint, materials, mechanism, operation, and maintenance legible. Use the optional five-block scaffold when useful. A generic poor-versus-premium construction contrast can sharpen pain and relief, but generated cutaways and operating states do not establish the hero product's internals, output, clean time, temperature, noise, or longevity. Use supplied CAD, service documentation, included-accessory lists, test data, and real dimensions, then inspect the rendered result.
 
 ---
 
@@ -74,21 +74,21 @@ Every archetype in this scale adheres strictly to the **5-Block Director's Rig P
 * **Universal Class:** The Specimen
 * **Example Products (Illustrative Guidance, Not an Allowlist):** Heavy countertop mixer, bean-to-cup espresso machine, high-capacity toaster oven, commercial blender.
 1. **Strategic Intent & Conversion Role:**  
-   PDP Slot 4 (Spatial De-risking). Permanently eliminates the #1 return reason for countertop appliances: *"It was too tall to fit under my cabinets."*
+   PDP Slot 4 (Spatial De-risking). Addresses the fear: *"It may be too tall to fit under my cabinets."* The composition should be calculated from the appliance and cabinet measurements supplied for this brief.
 2. **The Physical Stage (The 95%):**  
-   A standard American/European kitchen setup with standard 18-inch (45 cm) vertical clearance between the countertop and the base of the upper wall cabinets.
+   A kitchen setup measured for the actual product. Do not assume a universal cabinet clearance: use the supplied countertop-to-cabinet measurement and appliance height, including any lid, hopper, handle, or operating clearance.
 3. **Optical & Lighting Directives:**  
    * *Lens:* 35mm Architectural Perspective with vertical shift correction.  
    * *Aperture:* f/8.  
    * *Lighting:* Natural, realistic under-cabinet task lighting (3000K warm LED) combined with soft room daylight.
 4. **Sensory & Synesthetic Triggers:**  
-   Cognitive certainty: seeing a full 2 to 3 inches of clear breathing space above the appliance, proving it slides under standard cabinetry effortlessly.
+   Cognitive certainty: seeing the calculated gap above the appliance and enough working clearance to operate it. The example gap may be positive, zero, or negative; do not force a fit the dimensions do not support.
 5. **Invariant Guardrails & Crop Safe-Zones:**  
-   Upper cabinet proportions must strictly reflect standard architectural 18-inch clearance (no optical trickery making an oversized machine look small).
+   Cabinet and appliance proportions must reflect the supplied measurements; annotate the gap when the viewer needs a precise decision.
 * **Director's Rig Prompt Blueprint:**
 ```text
 [BLOCK 1: HERO & CABINET CLEARANCE]: Commercial spatial clearance photograph of [HERO PRODUCT: Appliance, dimensions, finish] positioned on a kitchen counter directly beneath standard upper kitchen wall cabinets, occupying 75% of frame weight.
-[BLOCK 2: CLEARANCE DETAIL]: Proves standard architectural clearance with a visible, generous 2-to-3-inch gap between the top of the appliance and the underside of the 18-inch high upper cabinet overhang.
+[BLOCK 2: CLEARANCE DETAIL]: Show the actual measured relationship between the appliance's highest operating point and the underside of the cabinet. Calculate and label the gap from the supplied dimensions; if it does not fit, make that limitation legible instead of inventing breathing room.
 [BLOCK 3: OPTICS]: 35mm architectural lens with zero vertical keystone distortion, f/8 aperture keeping appliance and cabinets in uniform focus.
 [BLOCK 4: STAGE & LIGHT]: Realistic 3200K under-cabinet task LED strip lighting combined with soft natural daylight; clean quartz countertop.
 [BLOCK 5: EXCLUSIONS]: Negative: distorted cabinet dimensions, warped vertical lines, cluttered spices, messy dirty counters, tilted camera.
@@ -100,7 +100,7 @@ Every archetype in this scale adheres strictly to the **5-Block Director's Rig P
 * **Universal Class:** The Proof
 * **Example Products (Illustrative Guidance, Not an Allowlist):** Solid brass steam lever, diamond-knurled grind size collar, analog dual-pressure gauge, billet aluminum power dial.
 1. **Strategic Intent & Conversion Role:**  
-   PDP Slot 5 (Materiality & Luxury Proof). Justifies premium pricing by showing surgical industrial craftsmanship that cheap plastic appliances cannot fake.
+   PDP Slot 5 (Materiality & Craftsmanship). Justifies a premium position by making supplied machining, material, and interface details visible beside a generic lower-quality reference when useful. Do not attribute unverified internals to any competitor.
 2. **The Physical Stage (The 95%):**  
    Extreme macro shot focused on the primary physical touchpoint: the diamond-knurled solid brass rotary dial, laser-etched pressure gauge, or satisfying click-toggle power switch.
 3. **Optical & Lighting Directives:**  
@@ -152,7 +152,7 @@ Every archetype in this scale adheres strictly to the **5-Block Director's Rig P
 * **Universal Class:** The Proof
 * **Example Products (Illustrative Guidance, Not an Allowlist):** Pop-out burr set, removable magnetic drip tray, dishwasher-safe blender blade assembly, removable water reservoir.
 1. **Strategic Intent & Conversion Role:**  
-   PDP Slot 4 & Friction Elimination. Dismantles the silent dealbreaker: *"Will this take 45 minutes to scrub every time I use it?"*
+   PDP Slot 4 & Friction Elimination. Dismantles the silent dealbreaker: *"Will this take too long to clean every time I use it?"* Use the actual care instructions and measured workflow for any time claim.
 2. **The Physical Stage (The 95%):**  
    The appliance with all modular removable parts neatly pulled out and arranged beside the main body on a clean counter: removable water reservoir, magnetic drip tray, pop-out burr set, or dishwasher-safe blades.
 3. **Optical & Lighting Directives:**  
@@ -160,9 +160,9 @@ Every archetype in this scale adheres strictly to the **5-Block Director's Rig P
    * *Aperture:* f/8 (every modular piece in sharp focus).  
    * *Lighting:* Bright, clean, optimistic studio daylight.
 4. **Sensory & Synesthetic Triggers:**  
-   Simplicity and relief: smooth, rounded corners with zero inaccessible gunk traps, proving cleanup takes less than 60 seconds.
+   Simplicity and relief: show the actual removable parts, access paths, and cleaning surfaces. A fast-clean concept can dramatize the pain-to-relief sequence; do not claim a sub-minute result without an observed procedure.
 5. **Invariant Guardrails & Crop Safe-Zones:**  
-   Only officially removable parts may be shown detached.
+   Only officially removable parts may be shown detached, based on the supplied manual or product reference.
 * **Director's Rig Prompt Blueprint:**
 ```text
 [BLOCK 1: HERO & MODULAR DISASSEMBLY]: Commercial maintenance photograph of [HERO PRODUCT: Appliance] with its modular components neatly detached and displayed on a clean counter, occupying 80% of frame width.
@@ -230,7 +230,7 @@ Every archetype in this scale adheres strictly to the **5-Block Director's Rig P
 * **Universal Class:** The Proof
 * **Example Products (Illustrative Guidance, Not an Allowlist):** Clear glass espresso cup with thick tiger crema, wood-fired pizza with leopard-spotted crust, silky vortex smoothie.
 1. **Strategic Intent & Conversion Role:**  
-   PDP Slot 2 & Social Ad Proof. Proves the machine’s real-world results: perfection in every extraction, cook, or charge.
+   PDP Slot 2 & Social Ad Demonstration. Shows a plausible real-world output and makes the mechanism legible. Any result or “every time” language needs the actual recipe, settings, and evidence.
 2. **The Physical Stage (The 95%):**  
    The appliance positioned directly alongside its freshly created masterpiece: clear glass cup with dense hazelnut crema, blistered Neapolitan pizza on a wooden peel, or live battery readout powering a full workstation.
 3. **Optical & Lighting Directives:**  
@@ -282,7 +282,7 @@ Every archetype in this scale adheres strictly to the **5-Block Director's Rig P
 * **Universal Class:** The Proof
 * **Example Products (Illustrative Guidance, Not an Allowlist):** Dual-boiler espresso machine, commercial burr grinder, cast-iron waffle maker, heavy power tool, commercial blender.
 1. **Strategic Intent & Conversion Role:**  
-   PDP Slot 6 & High-Ticket Investment Reassurance. Obliterates consumer fear of planned obsolescence: *"Will this $1,000+ machine still perform like new after 5,000 cycles?"* Proves industrial longevity and heirloom engineering.
+   PDP Slot 6 & High-Ticket Investment Reassurance. Addresses planned-obsolescence anxiety: *"How will this machine hold up over time?"* Use a documented service history, cycle test, or warranty for longevity claims; a clean patina concept is not a ten-year record.
 2. **The Physical Stage (The 95%):**  
    An artisan test kitchen or bustling café back-counter. A machine showing authentic signs of seasoned, heavy-duty service: warm burnishing on solid brass levers or group heads, subtle micro-buff marks on a stainless drip tray, paired with pristine mechanical components and calibrated gauges.
 3. **Optical & Lighting Directives:**  
@@ -295,8 +295,8 @@ Every archetype in this scale adheres strictly to the **5-Block Director's Rig P
    Distinguish cleanly between durable operational patina and dirt: equipment must be spotless and hygienic, showing material maturation rather than poor maintenance.
 * **Director's Rig Prompt Blueprint:**
 ```text
-[BLOCK 1: HERO LONGEVITY]: Commercial longevity photograph of [HERO PRODUCT: Commercial appliance, stainless steel/brass/copper materials] displaying 10-year seasoned operational patina, centered and occupying 75% of frame weight in tack-sharp focus.
-[BLOCK 2: PATINA DETAIL]: Shows authentic, dignified operational character: subtle satin burnishing on the solid brass group head lever, pristine pressure gauges holding factory calibration, and flawless mirror polish on the drip tray.
+[BLOCK 1: HERO LONGEVITY]: Commercial longevity photograph of [HERO PRODUCT: Commercial appliance, stainless steel/brass/copper materials] displaying [DOCUMENTED SERVICE AGE OR CLEARLY LABELED CONCEPTUAL PATINA], centered and occupying a useful share of frame weight in tack-sharp focus.
+[BLOCK 2: PATINA DETAIL]: Shows the supplied or observed operational character: subtle burnishing, current gauge condition, and the actual surface state. Do not imply factory calibration or ten-year performance without a record.
 [BLOCK 3: OPTICS]: 60mm prime lens, eye-level perspective, f/5.6 aperture for deep mechanical focus.
 [BLOCK 4: STAGE & LIGHT]: Warm 4200K culinary lighting grazing across the cast metal chassis, grounded on an artisan kitchen counter.
 [BLOCK 5: EXCLUSIONS]: Negative: dirty grime, broken parts, cheap rust, peeling chrome, synthetic plastic chassis, cluttered background.
@@ -308,7 +308,7 @@ Every archetype in this scale adheres strictly to the **5-Block Director's Rig P
 * **Universal Class:** The Proof
 * **Example Products (Illustrative Guidance, Not an Allowlist):** Dual-boiler espresso machine, commercial high-torque blender, precision burr grinder, portable power station, heavy table saw.
 1. **Strategic Intent & Conversion Role:**  
-   PDP Slot 2 or Paid Social Performance Ad (Direct Price Justification). Eliminates sticker shock for $800–$3,000+ equipment by empirically exposing why budget competitors fail (cheap plastic gears, thin aluminum thermoblocks) versus our commercial-grade internals (solid forged brass, massive dual copper boilers, all-metal gear train).
+   PDP Slot 2 or Paid Social Performance Ad (Direct Price Justification). Uses a generic lower-quality construction reference beside the hero's supplied internals to explain a premium price. The contrast can be forceful; attribute failures and materials only when the source supports them.
 2. **The Physical Stage (The 95%):**  
    A side-by-side engineering comparison photograph on a clean, seamless neutral light-gray studio cyclorama with zero background clutter, occupying 85% of total frame width.
 3. **Optical & Lighting Directives:**  
@@ -318,11 +318,11 @@ Every archetype in this scale adheres strictly to the **5-Block Director's Rig P
 4. **Sensory & Synesthetic Triggers:**  
    Instant cognitive justification: massive forged brass vs flimsy white nylon; heavy copper tubing vs cheap crimped rubber hose; commercial industrial permanence.
 5. **Invariant Guardrails & Crop Safe-Zones:**  
-   Strict directional grammar: ON THE LEFT (45% width): Opened budget competitor cutaway. ON THE RIGHT (55% width - THE HERO): Our premium machine with side panel removed showcasing solid brass and copper internals.
+   Recommended grammar: ON THE LEFT (about 45% width): generic lower-quality reference. ON THE RIGHT (about 55% width — THE HERO): supplied hero machine internals. Identify the left state as generic and adapt the ratio to the actual comparison.
 * **Director's Rig Prompt Blueprint:**
 ```text
 [BLOCK 1: HERO COMPARISON]: A side-by-side e-commerce engineering comparison photograph of two appliances on a clean, seamless neutral light-gray studio cyclorama with zero background clutter, occupying 85% of total frame width.
-[BLOCK 2: COMPARISON GRAMMAR]: ON THE LEFT (45% of width): An opened budget competitor cutaway showing thin, oxidized aluminum heating element and brittle white nylon plastic tubing. ON THE RIGHT (55% of width - THE HERO): Our premium [HERO PRODUCT: e.g., commercial dual-boiler espresso machine / blender] with side panel removed, showcasing heavy solid forged brass group head, massive dual copper boilers, and thick copper piping.
+[BLOCK 2: COMPARISON GRAMMAR]: ON THE LEFT (about 45% of width): A generic lower-quality reference cutaway, showing the weak construction the buyer wants to avoid without a competitor name or logo. ON THE RIGHT (about 55% of width — THE HERO): [HERO PRODUCT] with the side panel removed, showing only the supplied, documented internals. The contrast may be stark; label generic versus verified hero attributes clearly.
 [BLOCK 3: OPTICS]: 60mm prime lens, eye-level perspective, tack-sharp f/8 depth of field across both machines.
 [BLOCK 4: STAGE & LIGHT]: High-contrast commercial catalog lighting (5500K) with crisp contact floor shadows and zero distracting background fixtures.
 [BLOCK 5: EXCLUSIONS]: Negative: kitchen background, countertops, blenders, messy wires, dark shadows, tilted horizon, artistic blur, café background.
@@ -360,9 +360,9 @@ Every archetype in this scale adheres strictly to the **5-Block Director's Rig P
 * **Universal Class:** The Proof
 * **Example Products (Illustrative Guidance, Not an Allowlist):** Dual-boiler espresso machine, countertop pizza oven, precision induction cooker, battery power station cooling.
 1. **Strategic Intent & Conversion Role:**  
-   PDP Slot 2 or Technical Specifications (Thermal Management Proof). Eradicates the fear of temperature fluctuations, thermal bridging, or exterior cabinet scorching.
+   PDP Slot 2 or Technical Specifications (Thermal Management Demonstration). Addresses fear of temperature fluctuations, thermal bridging, or exterior cabinet scorching. Use supplied thermal test conditions for numbers and claims.
 2. **The Physical Stage (The 95%):**  
-   Clean studio lab setup. Side-by-side or split visual demonstrating thermodynamic stability: internal boiler/stone saturated at peak operating heat (e.g. 200°F or 900°F) while the exterior cool-touch double-insulated body remains at safe ambient room temperature.
+   Clean studio lab setup. Side-by-side or split visual showing the internal and exterior temperature relationship from the actual test. Do not reuse generic peak temperatures or imply a safe-touch result without the product's measurements and conditions.
 3. **Optical & Lighting Directives:**  
    * *Lens:* 50mm Prime.  
    * *Aperture:* f/8.  
@@ -370,11 +370,11 @@ Every archetype in this scale adheres strictly to the **5-Block Director's Rig P
 4. **Sensory & Synesthetic Triggers:**  
    Technical peace of mind: knowing you get exact repeatable temperature on every shot/cook without burning hands on the exterior body.
 5. **Invariant Guardrails & Crop Safe-Zones:**  
-   Temperature numbers and thermal callout zones must be technically grounded in real engineering testing.
+   Temperature numbers, thermal callouts, and “cool-touch” language must come from real engineering testing.
 * **Director's Rig Prompt Blueprint:**
 ```text
-[BLOCK 1: HERO THERMAL PROOF]: Commercial engineering thermal demonstration photograph of [HERO PRODUCT: Appliance, cutaway / active state] on a clean studio cyclorama, occupying 80% of frame width.
-[BLOCK 2: THERMAL DETAIL]: Highlights thermodynamic isolation: internal heating core saturated at peak operating temperature while the double-walled exterior brushed stainless steel chassis remains cool-touch and bone-dry.
+[BLOCK 1: HERO THERMAL DEMONSTRATION]: Commercial engineering thermal demonstration photograph of [HERO PRODUCT: Appliance, cutaway / active state] on a clean studio cyclorama, occupying a useful share of frame width.
+[BLOCK 2: THERMAL DETAIL]: Show the supplied test's internal and exterior temperature relationship. If no test exists, use a clearly conceptual heat-map illustration and avoid “cool-touch,” “safe,” or exact temperature language.
 [BLOCK 3: OPTICS]: 50mm prime lens, eye-level perspective, f/8 aperture for uniform focal clarity.
 [BLOCK 4: STAGE & LIGHT]: 5200K commercial studio lighting with subtle back-rim illumination emphasizing thick ceramic insulation baffling.
 [BLOCK 5: EXCLUSIONS]: Negative: melting plastic, warped casing, messy cables, smoke, fire hazard, domestic clutter.
@@ -386,9 +386,9 @@ Every archetype in this scale adheres strictly to the **5-Block Director's Rig P
 * **Universal Class:** The Proof
 * **Example Products (Illustrative Guidance, Not an Allowlist):** High-torque commercial blender, precision burr grinder, countertop ice maker, air fryer compressor.
 1. **Strategic Intent & Conversion Role:**  
-   PDP Slot 4 (Acoustic Noise De-risking). Dismantles the universal morning fear: *"Will turning this on at 6:30 AM wake up my spouse and kids?"*
+   PDP Slot 4 (Acoustic Noise De-risking). Dismantles the morning fear: *"Will turning this on wake up my spouse and kids?"* Use a measured sound level and distance when making a noise claim.
 2. **The Physical Stage (The 95%):**  
-   Early morning modern residential kitchen bathed in soft blue dawn light. The appliance is running at full power (e.g. grinding coffee beans or blending ice) while a glass of water on the same counter shows zero vibration ripples, proving heavy cast dampening.
+   Early morning modern residential kitchen bathed in soft blue dawn light. The appliance is shown at the documented operating condition; a glass of water may dramatize vibration, but a still surface alone is not a noise measurement or proof of dampening.
 3. **Optical & Lighting Directives:**  
    * *Lens:* 50mm Prime.  
    * *Aperture:* f/3.5.  
@@ -399,8 +399,8 @@ Every archetype in this scale adheres strictly to the **5-Block Director's Rig P
    Appliance occupies 75% of visual weight in sharp focus. The stillness of the early morning house must be palpable.
 * **Director's Rig Prompt Blueprint:**
 ```text
-[BLOCK 1: HERO & ACOUSTIC PROOF]: Commercial lifestyle photograph of [HERO PRODUCT: Blender, grinder, or ice maker] running smoothly on a kitchen counter in early morning, occupying 75% of frame weight in tack-sharp focus.
-[BLOCK 2: ACOUSTIC DETAIL]: Demonstrates heavy vibration-damped operation: directly beside the running machine, a glass of water rests on the stone counter with a mirror-smooth, completely undisturbed surface showing zero vibration ripples.
+[BLOCK 1: HERO & ACOUSTIC DEMONSTRATION]: Commercial lifestyle photograph of [HERO PRODUCT: Blender, grinder, or ice maker] running at the documented condition on a kitchen counter in early morning, occupying a useful share of frame weight in tack-sharp focus.
+[BLOCK 2: ACOUSTIC DETAIL]: A glass of water may visualize vibration beside the running machine. Pair any quietness claim with measured sound level, distance, and operating condition; a still surface alone is not acoustic evidence.
 [BLOCK 3: OPTICS]: 50mm prime lens, eye-level perspective, f/3.5 aperture for shallow atmospheric depth.
 [BLOCK 4: STAGE & LIGHT]: Serene 4000K early-morning dawn window light streaming softly onto a dark quartz countertop; quiet tranquil background.
 [BLOCK 5: EXCLUSIONS]: Negative: violent shaking, blurred blender jar, messy spills, loud harsh flash, noisy kitchen clutter.

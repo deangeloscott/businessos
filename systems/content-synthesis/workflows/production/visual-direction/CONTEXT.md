@@ -37,3 +37,6 @@ Run when an asset needs a visual concept beyond existing brand templates or supp
 5. [AI] Specify consistency rules across frames/slides/scenes and what may intentionally vary.
 6. [AI] Identify assets requiring real screenshots/proof versus generated illustration.
 7. [DETERMINISTIC] Produce a visual-direction brief for image/video/presentation generation or human production.
+
+## Optional craft references
+When the brief is commerce-oriented, consult the [image lookbooks](../../../../../recipes/creative/ecommerce-image-lookbooks/INDEX.md), [image dialects](../../../../../recipes/creative/ecommerce-image-lookbooks/DIALECTS.md), and [video lookbook](../../../../../recipes/creative/ecommerce-video-lookbooks/INDEX.md) for adaptable visual choices. Treat a generic ideal-versus-poor contrast as an illustrative communication device unless supplied evidence supports a factual comparison.

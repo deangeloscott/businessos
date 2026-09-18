@@ -36,3 +36,6 @@ Use when a landing page requires material proof and objection handling.
 5. [HYBRID] Avoid dismissing legitimate objections or presenting exceptional outcomes as typical.
 6. [AI] Specify proof/objection placement and any useful visual/content production requirements.
 7. [HYBRID] Preserve the useful proof/objection architecture and claim relationships in the relevant Asset, then use Content or final claim-validation methods directly as needed. Persist a WorkRequest only for a real durable organizational handoff.
+
+## Optional craft reference
+The [Web Design & Conversion Architecture index](../../../../../recipes/web-design/INDEX.md) describes comparison truth modes and a persuasion technique spectrum that can help select a demonstration, comparison, or pain → mechanism → relief treatment. Use measured, illustrative, and aspirational material as distinct modes.

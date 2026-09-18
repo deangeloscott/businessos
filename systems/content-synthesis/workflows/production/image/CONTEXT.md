@@ -34,3 +34,6 @@ Use when an image or graphic is the useful communication output and existing Ass
 4. [INTEGRATION] Generate or assemble the image with the appropriate creative capability available to the active model/harness/user.
 5. [HYBRID] Inspect the final image for visual errors, legibility, unintended artifacts, brand fit, accessibility/alt-text needs, and platform crop/safe areas. Draw on additional QA knowledge when it materially improves the artifact; no separate QA Workflow is mandatory merely because it exists.
 6. [DETERMINISTIC] Save the useful versioned Asset plus source/prompt/design provenance where future work benefits.
+
+## Optional craft references
+For commerce imagery, the [e-commerce image lookbooks](../../../../../recipes/creative/ecommerce-image-lookbooks/INDEX.md) and [brand dialects](../../../../../recipes/creative/ecommerce-image-lookbooks/DIALECTS.md) are bounded references for composition, scale, comparison, and tactile detail. They do not replace source verification, inspection, or the workflow's Asset/ProofRecord decisions.

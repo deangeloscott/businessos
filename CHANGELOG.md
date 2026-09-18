@@ -1,5 +1,20 @@
 # Changelog
 
+## Unreleased
+
+Refines the optional recipe layer so the web-design references improve judgment without becoming a mandatory protocol or competing AURA hierarchy.
+
+### What changed
+
+- Recast the web-design index, four tracks, and dialects as selectable craft references with conditional heuristics, measurable targets, and explicit adaptation points.
+- Added a shared comparison truth model and white-hat / grey-hat / black-hat persuasion vocabulary, preserving generic ideal-versus-poor contrast and pain → mechanism → relief while separating verified, illustrative, and aspirational work.
+- Corrected unsupported conversion lifts, guarantees, 0ms navigation and `/llms.txt` discovery claims, exponential Hick/field-cliff language, false net-profit math, and blanket lead-capture, email-domain, booking-window, payment, and scaling defaults.
+- Added concise recipe navigation/shared guidance and optional links from relevant Marketing Synthesis Workflows; recipes remain outside the Playbook → Workflow → Step hierarchy.
+
+### Validation
+
+Regenerated normal AURA navigation/checksums; workspace validation passed (466 Workflows, 0 errors/0 warnings); Workflow discovery/selection, nine component distributions, and the full 35-suite product-integrity gate passed. No new recipe registry, schema, runtime, or execution layer was introduced.
+
 ## 0.1.7 — Alpha
 
 Introduces the universal creative recipe layer, including studio-grade E-Commerce Image Lookbooks, Kinesthetic Video Lookbooks, and Web Design & Conversion Architecture, grounded in empirical UX benchmarks, physical optical principles, and world-class direct-response practitioner frameworks.

@@ -37,3 +37,6 @@ Run before filming/generating a video with multiple shots or demonstrations.
 5. [AI] Group shots into an efficient production order without changing final narrative order.
 6. [DETERMINISTIC] Mark required versus optional coverage and technical specs for the target platform/render.
 7. [AI] Produce a capture checklist suitable for human, generative, or hybrid production.
+
+## Optional craft references
+For product or commerce shoots, the [video lookbook](../../../../../recipes/creative/ecommerce-video-lookbooks/INDEX.md) and paired [image lookbooks](../../../../../recipes/creative/ecommerce-image-lookbooks/INDEX.md) provide optional scale, motion, continuity, and comparison patterns. Use the shot list to mark which beats are documented demonstrations versus generic illustrative contrasts; do not let a recipe substitute for the actual evidence requirement.

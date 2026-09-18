@@ -36,3 +36,6 @@ Use after message match/persuasion context is sufficiently known and before or d
 5. [HYBRID] When form, checkout, process, accessibility, or other journey mechanics are the real constraint, use relevant Customer Optimization operating knowledge directly rather than compensating with more copy or creating an internal handoff.
 6. [AI] Define mobile/scan hierarchy, repeated CTA points only where visitor readiness naturally changes, and optional FAQ/technical detail placement.
 7. [AI] Preserve the useful section architecture and content/creative requirements as an Asset. Use copy, Content, or journey methods directly as needed; persist a WorkRequest only for a real durable organizational handoff.
+
+## Optional craft reference
+Use the [Web Design & Conversion Architecture index](../../../../../recipes/web-design/INDEX.md) when its section archetypes, first-screen positioning filter, continuation cues, or 7-block brief would clarify the requested page. Treat them as selectable craft references rather than a required page sequence.

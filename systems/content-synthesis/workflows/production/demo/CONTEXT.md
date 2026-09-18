@@ -36,3 +36,6 @@ Use when a demonstration is useful and the required access/materials and real-wo
 5. [HYBRID] Verify that the final edit is representative, truthful, privacy-safe, and not synthetic evidence presented as real.
 6. [DETERMINISTIC] Link verification evidence and create/update a ProofRecord only if the demo legitimately supports a reusable claim.
 7. [AI] Package the demo for the intended format/platform and use derivative-content operating knowledge directly when it adds value. Create a WorkRequest only for a genuine durable handoff, not as routine production plumbing.
+
+## Optional craft references
+The [video lookbook](../../../../../recipes/creative/ecommerce-video-lookbooks/INDEX.md) and [image lookbooks](../../../../../recipes/creative/ecommerce-image-lookbooks/INDEX.md) can help stage pain-to-relief, premium-versus-poor, mechanism, and tactile contrasts. Keep the workflow's evidence boundary: a generic or generated contrast can illustrate an idea, while a reusable performance claim requires the documented conditions and observed result.

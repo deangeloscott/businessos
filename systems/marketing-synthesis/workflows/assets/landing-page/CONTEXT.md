@@ -43,6 +43,9 @@ Use when the organization needs landing-page or homepage persuasion to remove a 
 ## Proportionate Scope
 Use only the research, page depth, proof, sections, design guidance, and QA needed to support the actual visitor decision and requested fidelity. Expand when the Offer or acquisition context is complex, high-stakes, or uncertain; do not add sections merely to satisfy a page template.
 
+## Optional craft reference
+When web-specific layout, conversion patterns, or technical discoverability guidance would materially improve the page, consult the [Web Design & Conversion Architecture recipes](../../../../../recipes/web-design/INDEX.md) and the relevant [lead-generation track](../../../../../recipes/web-design/02-lead-generation.md) or [brand-site track](../../../../../recipes/web-design/03-brand-business-websites.md). These are optional references; adapt them to the actual audience, evidence, platform, and journey.
+
 ## Verification
 - The page matches the acquisition promise and the real Offer/audience context.
 - Material outward claims are supported, honestly provisional/general, or visibly placeholders rather than invented business facts.

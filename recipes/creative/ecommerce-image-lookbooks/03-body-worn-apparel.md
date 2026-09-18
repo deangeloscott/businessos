@@ -5,9 +5,9 @@
 ---
 
 ## Overview & Scale Dynamics
-Apparel, footwear, and accessories represent the highest-volume yet highest-return sector in e-commerce (return rates routinely surpass 30%). Returns are almost entirely driven by **fit mismatches, fabric stiffness/cheapness, unrealistic digital rendering, and inaccurate color reproduction**.
+Apparel, footwear, and accessories are high-volume, high-return categories where **fit mismatches, fabric hand-feel expectations, unrealistic digital rendering, and inaccurate color reproduction** can create costly friction. Use the organization's actual return and sizing data when quantifying the problem.
 
-Every archetype in this scale is engineered to **prove fabric drape, true-to-life color, authentic movement, and interior capacity**, strictly governed by the **5-Block Director's Rig Protocol**.
+Every archetype in this scale is a reference for showing **fabric drape, color, movement, fit, and interior capacity**. Use the optional five-block scaffold when useful. Generic “cheap versus premium” contrasts may intensify the pain-to-relief story, but a rendered garment does not establish waterproofing, stretch recovery, durability, or fit for every body; use supplied tech packs, size data, samples, or documented tests.
 
 ---
 
@@ -67,7 +67,7 @@ Every archetype in this scale is engineered to **prove fabric drape, true-to-lif
 * **Universal Class:** The Proof
 * **Example Products (Illustrative Guidance, Not an Allowlist):** Heavyweight raw selvedge denim, merino wool knit, Cordura ballistic nylon backpack, waterproof taped zipper jacket, cashmere scarf.
 1. **Strategic Intent & Conversion Role:**  
-   PDP Slot 5 (Material Quality Proof). Directly eliminates customer fear of cheap, thin, synthetic fabric by showing extreme microscopic craftsmanship.
+   PDP Slot 5 (Material Quality Explanation). Directly addresses fear of cheap, thin, synthetic fabric by making the supplied construction details visible. A macro view can illustrate the desired quality, while thread count and material claims still require the tech pack.
 2. **The Physical Stage (The 95%):**  
    Extreme macro framing on a critical construction zone: the heavy ribbed collar, reinforced bar-tack stitching on a pocket, selvage denim edge, or waterproof taped zipper seam.
 3. **Optical & Lighting Directives:**  
@@ -77,7 +77,7 @@ Every archetype in this scale is engineered to **prove fabric drape, true-to-lif
 4. **Sensory & Synesthetic Triggers:**  
    Tactile haptic simulation: the dry grain of raw denim, brushed softness of cashmere, or dense technical weave of ballistic Cordura nylon.
 5. **Invariant Guardrails & Crop Safe-Zones:**  
-   Thread count, stitch density, and seam thickness must be accurate to technical garment tech packs.
+   Thread count, stitch density, and seam thickness should follow the technical garment tech pack when stated; otherwise show texture without inventing measurements.
 * **Director's Rig Prompt Blueprint:**
 ```text
 [BLOCK 1: HERO MACRO]: Extreme macro textile photograph of [HERO PRODUCT TEXTILE: Weave type, fiber material, GSM weight, construction zone, e.g. 14oz raw selvedge denim or 8mm taped waterproof zipper]. Occupying 85% of frame in microscopic tack-sharp focus.
@@ -145,7 +145,7 @@ Every archetype in this scale is engineered to **prove fabric drape, true-to-lif
 * **Universal Class:** The Proof
 * **Example Products (Illustrative Guidance, Not an Allowlist):** 3-layer GORE-TEX jacket, DWR trail hiking pants, all-weather trail runners, waterproof duffel.
 1. **Strategic Intent & Conversion Role:**  
-   PDP Slot 2 (Technical Performance Proof for Outerwear & Trail Gear). Proves water-repellency, windproofing, and rugged outdoor durability.
+   PDP Slot 2 (Technical Performance Demonstration for Outerwear & Trail Gear). Makes water-repellency, windproofing, or ruggedness visually legible. Use a documented test for factual performance language; a generic ideal rain scene can dramatize the desired relief.
 2. **The Physical Stage (The 95%):**  
    Damp outdoor mountain or trail setting: mist-covered granite boulders, rainfall, or cold alpine ridge. The jacket or shoe is shown actively repelling water.
 3. **Optical & Lighting Directives:**  
@@ -155,11 +155,11 @@ Every archetype in this scale is engineered to **prove fabric drape, true-to-lif
 4. **Sensory & Synesthetic Triggers:**  
    Tactile protection: hearing rain drumming on a tight hood, knowing you are dry and insulated inside; surface tension of perfectly spherical water beads rolling off DWR coating.
 5. **Invariant Guardrails & Crop Safe-Zones:**  
-   Water-beading must match the true performance rating of the fabric (GORE-TEX / DWR behavior).
+   Water-beading, saturation, and seam behavior should match supplied fabric documentation or observed testing. If unknown, keep the scene illustrative and avoid naming a rating.
 * **Director's Rig Prompt Blueprint:**
 ```text
 [BLOCK 1: HERO & WEATHER PROOF]: Rugged outdoor performance photograph of [HERO PRODUCT: Technical shell jacket, trail shoes, or pack] in an intense mountain rainstorm. Product occupies 75% of the frame in tack-sharp focus.
-[BLOCK 2: PROOF DETAIL]: Raindrops visibly bead into crisp, spherical pearls across the textured water-repellent membrane (lotus effect), rolling cleanly off shoulders and seams without soaking through.
+[BLOCK 2: PERFORMANCE DETAIL]: Raindrops visibly bead or spread across the textured membrane according to the supplied fabric reference or documented test. A high-contrast ideal can be used for concept work, but do not imply waterproof performance from the generated frame alone.
 [BLOCK 3: OPTICAL RIG]: 85mm prime lens, f/4 aperture, sharp focus on fabric texture and water beads.
 [BLOCK 4: STAGE & LIGHT]: Cold 6000K overcast mountain daylight with soft directional rim lighting. Background is misty pine trees and wet granite, 2 stops darker.
 [BLOCK 5: EXCLUSIONS]: Negative: saturated soaked wet fabric, cartoon water droplets, sunny sky, plastic raincoat look, unnatural model posture.
@@ -223,21 +223,21 @@ Every archetype in this scale is engineered to **prove fabric drape, true-to-lif
 * **Universal Class:** The Proof
 * **Example Products (Illustrative Guidance, Not an Allowlist):** High-rise performance leggings, 4-way stretch boardshorts, compression base layer, comfort-stretch denim.
 1. **Strategic Intent & Conversion Role:**  
-   PDP Slot 5 (Activewear, Denim & Performance Wear). Proves 4-way stretch, recovery memory, and squat-proof opacity.
+   PDP Slot 5 (Activewear, Denim & Performance Wear). Makes stretch, recovery, and opacity easy to inspect. Use the garment's supplied stretch and opacity data for claims rather than treating a generated frame as a test.
 2. **The Physical Stage (The 95%):**  
-   Macro close-up of hands stretching the waistband, legging fabric, or denim seam outward, demonstrating elastic recovery and zero sheer transparency.
+   Macro close-up of hands stretching the waistband, legging fabric, or denim seam outward, showing the intended tension and recovery behavior. If recovery has not been observed, do not state that it is guaranteed.
 3. **Optical & Lighting Directives:**  
    * *Lens:* 100mm Macro.  
    * *Aperture:* f/5.6.  
    * *Lighting:* Crisp side-light revealing the micro-elastane fibers under tension without flattening the fabric depth.
 4. **Sensory & Synesthetic Triggers:**  
-   Muscular support, buttery softness, zero restriction, reassurance of squat-proof opacity under maximum stretch.
+   Muscular support, softness, low restriction, and opacity can be communicated as sensory goals; “squat-proof,” maximum stretch, and zero restriction require a supplied specification or test.
 5. **Invariant Guardrails & Crop Safe-Zones:**  
    Fabric must demonstrate realistic structural recovery; weave must not look artificially blurred or digitized.
 * **Director's Rig Prompt Blueprint:**
 ```text
 [BLOCK 1: HERO & ELASTICITY]: Macro physical tension photograph of [HERO PRODUCT: Fabric, knit type, color]. Two natural hands grip and stretch the fabric horizontally, demonstrating extreme 4-way stretch elasticity across 75% of the frame.
-[BLOCK 2: OPACITY PROOF]: Under full stretch tension, the textile weave remains 100% opaque with zero sheer see-through transparency and zero micro-tears.
+[BLOCK 2: OPACITY DETAIL]: Under the chosen, documented stretch condition, show the textile weave and opacity clearly. If the condition is illustrative, avoid “100% opaque,” “zero tears,” or other absolute performance wording.
 [BLOCK 3: OPTICS]: 100mm True Macro lens, f/5.6 aperture, locking tack-sharp focus on taut elastane fibers and knit structure.
 [BLOCK 4: STAGE & LIGHT]: Raking 5400K directional studio side-light revealing surface ribbing and elasticity; neutral studio background in soft bokeh.
 [BLOCK 5: EXCLUSIONS]: Negative: see-through fabric, distorted fingers, blurry weave, synthetic plastic shine, domestic clutter.
@@ -249,7 +249,7 @@ Every archetype in this scale is engineered to **prove fabric drape, true-to-lif
 * **Universal Class:** The Specimen
 * **Example Products (Illustrative Guidance, Not an Allowlist):** Cashmere crewneck, handmade leather shoes, bespoke suit jacket, luxury sunglasses case, silk robe.
 1. **Strategic Intent & Conversion Role:**  
-   PDP Slot 7 (Gifting & Delivery Confidence). Proves the premium unboxing experience from the moment the package arrives.
+   PDP Slot 7 (Gifting & Delivery Confidence). Shows the intended unboxing experience. Packaging and fulfillment details must come from the actual delivery configuration.
 2. **The Physical Stage (The 95%):**  
    Garment neatly folded inside custom embossed matte black box, wrapped in branded translucent glassine tissue paper, sealed with a foil sticker. Heavy cotton embossed hangtag resting on the collar.
 3. **Optical & Lighting Directives:**  
@@ -275,9 +275,9 @@ Every archetype in this scale is engineered to **prove fabric drape, true-to-lif
 * **Universal Class:** The Proof
 * **Example Products (Illustrative Guidance, Not an Allowlist):** Raw indigo selvedge jeans, full-grain leather boots, waxed canvas field coat, heavy wool knitwear, leather belt.
 1. **Strategic Intent & Conversion Role:**  
-   PDP Slot 6 & Brand Longevity Storytelling. Dismantles customer anxiety regarding fast fashion: *"Will this fall apart after a year, or will it mature?"* Justifies heirloom pricing by proving that daily wear enhances character.
+   PDP Slot 6 & Brand Longevity Storytelling. Dismantles anxiety about fast fashion: *"Will this fall apart after a year, or will it mature?"* A documented wear study can support the claim; a generated later state is a material-aging illustration.
 2. **The Physical Stage (The 95%):**  
-   Rustic craftsman workbench or sunlit oak floorboards. A side-by-side: unworn, crisp piece on the left, paired alongside the identical piece documented after 3 to 5 years of daily wear on the right—displaying authentic whiskering, honeycomb breaks, burnishing, and intact stitching.
+   Rustic craftsman workbench or sunlit oak floorboards. A side-by-side: unworn piece on the left and a documented later sample or clearly labeled conceptual mature state on the right, displaying the intended wear pattern without inventing elapsed time.
 3. **Optical & Lighting Directives:**  
    * *Lens:* 85mm Prime.  
    * *Aperture:* f/5.6 for uniform edge-to-edge sharpness across both pieces.  
@@ -289,7 +289,7 @@ Every archetype in this scale is engineered to **prove fabric drape, true-to-lif
 * **Director's Rig Prompt Blueprint:**
 ```text
 [BLOCK 1: HERO COMPARISON]: A side-by-side material longevity photograph of [HERO PRODUCT: Raw denim / leather / waxed canvas], occupying 80% of frame width on an aged timber workbench.
-[BLOCK 2: COMPARISON GRAMMAR]: ON THE LEFT: The brand-new, stiff, unworn original garment. ON THE RIGHT (THE HERO): The identical garment documented after 5 years of authentic daily wear, showing rich golden patina, natural honeycomb fade creases, softened grain, and intact lockstitching.
+[BLOCK 2: COMPARISON GRAMMAR]: ON THE LEFT: The brand-new, unworn original garment. ON THE RIGHT (THE HERO): [DOCUMENTED LATER SAMPLE OR CLEARLY LABELED CONCEPTUAL MATURE STATE], showing the supplied patina, fade creases, softened grain, and stitching condition. Do not invent a five-year record.
 [BLOCK 3: OPTICS]: 85mm prime lens, eye-level perspective, f/5.6 aperture keeping both pieces in tack-sharp focus.
 [BLOCK 4: STAGE & LIGHT]: Raking 4500K workshop daylight casting dimensional shadows into fabric creases, soft contact floor shadows.
 [BLOCK 5: EXCLUSIONS]: Negative: ripped ruined rags, cheap acid wash, artificial laser distress, synthetic plastic fabrics, messy tools.
@@ -301,7 +301,7 @@ Every archetype in this scale is engineered to **prove fabric drape, true-to-lif
 * **Universal Class:** The Proof
 * **Example Products (Illustrative Guidance, Not an Allowlist):** 3-layer technical mountain shell, wool overcoat, selvedge denim jacket, structured blazer, down parka.
 1. **Strategic Intent & Conversion Role:**  
-   PDP Sizing Guide & Slot 2/4 (Eradicates Sizing & Layering Anxiety). Stops expensive "bracketed sizing" returns (where customers buy Medium and Large, then return one) by demonstrating exact drape differences between a base-layer fit and an over-layer fit.
+   PDP Sizing Guide & Slot 2/4 (Reduces Sizing & Layering Anxiety). Demonstrates drape differences between a base-layer fit and an over-layer fit using the organization's actual size chart and representative models.
 2. **The Physical Stage (The 95%):**  
    Clean, seamless light-gray studio cyclorama with zero background clutter. Two real, athletic men/women standing naturally side-by-side with genuine, candid expressions and unretouched skin.
 3. **Optical & Lighting Directives:**  
@@ -309,13 +309,13 @@ Every archetype in this scale is engineered to **prove fabric drape, true-to-lif
    * *Aperture:* f/8 for tack-sharp focus across both jackets from collar to hem.  
    * *Lighting:* Clean 5500K commercial catalog studio lighting with soft contact floor shadows.
 4. **Sensory & Synesthetic Triggers:**  
-   Immediate fit certainty: seeing exactly how sleeves fall at the wrist, shoulder seam placement, and chest room when worn alone vs. layered over a hoodie.
+   Better fit understanding: seeing how sleeves fall, where shoulder seams sit, and how much chest room remains when worn alone versus layered. The image supports the size guide; it cannot represent every body.
 5. **Invariant Guardrails & Crop Safe-Zones:**  
    Both models must stand in natural, relaxed postures with candid expressions. Avoid 4-model cramming that triggers wax-mannequin artifacts.
 * **Director's Rig Prompt Blueprint:**
 ```text
 [BLOCK 1: HERO & SIZING PROOF]: A commercial e-commerce sizing and fit comparison photograph of two athletic models standing naturally side-by-side on a clean, seamless light-gray studio cyclorama with zero background clutter. The garments occupy 80% of the visual frame.
-[BLOCK 2: COMPARISON GRAMMAR]: ON THE LEFT: An athletic model (e.g. 5'11", 170 lbs) wearing [HERO PRODUCT: Outerwear piece, color] in Size Medium over a lightweight base layer, showing a tailored, athletic fit with sleeves ending cleanly at the wrist. ON THE RIGHT: A taller, broader model (e.g. 6'2", 210 lbs) wearing the identical garment in Size Large layered over a thick insulated hoodie, showing generous chest room and zero binding across the shoulders.
+[BLOCK 2: COMPARISON GRAMMAR]: ON THE LEFT: [MODEL A'S ACTUAL HEIGHT, BODY MEASUREMENTS, SIZE, AND BASE LAYER FROM THE SIZE GUIDE] wearing [HERO PRODUCT]. ON THE RIGHT: [MODEL B'S ACTUAL MEASUREMENTS, SIZE, AND LAYERING CONDITION]. Show sleeves, shoulder seams, and chest room clearly; avoid “zero binding” unless it is an observed result.
 [BLOCK 3: OPTICS]: 75mm prime portrait lens, eye-level perspective, f/8 tack-sharp focus across both garments from collar to hem.
 [BLOCK 4: STAGE & LIGHT]: Clean 5500K commercial catalog studio lighting with soft contact floor shadows, seamless neutral studio cyclorama with zero props.
 [BLOCK 5: EXCLUSIONS]: Negative: wax figures, stiff mannequins, wooden barn, uncanny valley, CGI render, cartoon, four models, identical faces, distorted hands, stiff poses.
@@ -327,7 +327,7 @@ Every archetype in this scale is engineered to **prove fabric drape, true-to-lif
 * **Universal Class:** The Proof
 * **Example Products (Illustrative Guidance, Not an Allowlist):** 3-layer technical shell, waterproof trail jacket, storm-proof poncho, all-weather commuting pants, alpine mountaineering shell.
 1. **Strategic Intent & Conversion Role:**  
-   PDP Slot 2 or Paid Social Performance Hook (Hydrostatic Waterproof Proof). Proves beyond any marketing claim that the technical membrane repels heavy torrential water under pressure without wetting out.
+   PDP Slot 2 or Paid Social Performance Hook (Water-Resistance Demonstration). Makes the pain of a soaked garment and the relief of water beading visually immediate. Use the supplied hydrostatic/DWR test and conditions for any performance claim.
 2. **The Physical Stage (The 95%):**  
    An authentic outdoor hiker or trail runner standing at a natural 3/4 profile in a driving misty alpine coastal rainstorm. The jacket fits anatomically and realistically with clean architectural lines and zero bizarre fabric extensions.
 3. **Optical & Lighting Directives:**  
@@ -337,11 +337,11 @@ Every archetype in this scale is engineered to **prove fabric drape, true-to-lif
 4. **Sensory & Synesthetic Triggers:**  
    High-performance security: round water pearls sheeting cleanly off the DWR-treated membrane (lotus effect), storm hood cinched neatly, taped matte zippers bone-dry.
 5. **Invariant Guardrails & Crop Safe-Zones:**  
-   Zero cape-like or tentacle-like fabric hallucinations. Jacket occupies 75% of frame with clean, anatomical silhouette.
+   Inspect for cape-like or tentacle-like fabric hallucinations. Jacket should have a clean, anatomical silhouette at the intended crop.
 * **Director's Rig Prompt Blueprint:**
 ```text
 [BLOCK 1: HERO & DELUGE PROOF]: An editorial outdoor performance photograph of [HERO PRODUCT: 3-layer technical shell jacket, color, hood cinched]. The jacket is the undisputed hero, occupying 75% of the frame on an athletic model standing at a natural three-quarter profile in a misty coastal rainstorm.
-[BLOCK 2: MEMBRANE PERFORMANCE]: Raindrops visibly bead into perfect round pearls on the DWR-treated textured membrane (lotus effect), rolling smoothly off the shoulders and micro-welded seams. The anatomical technical cut is clean, modern, and realistic, with zero extra fabric or cape flaps.
+[BLOCK 2: MEMBRANE PERFORMANCE]: Raindrops visibly bead, sheet, or soak according to the supplied DWR/membrane reference and test conditions. Keep the anatomical technical cut clean and realistic; if the output is an illustration, say so in the brief rather than presenting it as a pass/fail test.
 [BLOCK 3: OPTICAL RIG]: 85mm prime lens, f/2.8 aperture, tack-sharp focus locked on the textured textile weave and water beading.
 [BLOCK 4: SUBORDINATE STAGE]: Soft moody Pacific Northwest coastal mist and blurred pine trees in the background, 2.5 stops darker.
 [BLOCK 5: EXCLUSIONS]: Negative: cape, capelet, flowing fabric behind back, extra limbs, awkward posture, CGI render, plastic skin, distorted anatomy, cartoon, bright sunny day, cluttered urban street.
@@ -361,13 +361,13 @@ Every archetype in this scale is engineered to **prove fabric drape, true-to-lif
    * *Aperture:* f/5.6.  
    * *Lighting:* Clean, high-speed directional studio flash (1/2000s freeze) highlighting the underarm gussets, articulated elbow darts, and hemline stability.
 4. **Sensory & Synesthetic Triggers:**  
-   Zero restriction, total kinetic freedom: showing that the jacket hem stays locked at the hip even with both arms extended overhead.
+   Show the intended range of motion: underarm gussets and articulated seams should remain legible during a representative movement. Do not imply zero restriction for all bodies from one pose.
 5. **Invariant Guardrails & Crop Safe-Zones:**  
    Underarm gussets and articulation darts must be clearly visible and in tack-sharp focus.
 * **Director's Rig Prompt Blueprint:**
 ```text
 [BLOCK 1: HERO & MOBILITY PROOF]: High-speed athletic action photograph of [HERO PRODUCT: Technical jacket / performance pants, color, articulated cut]. Model is captured mid-movement in full overhead arm reach or dynamic lunge, occupying 75% of frame weight.
-[BLOCK 2: ERGONOMIC DETAIL]: The garment's underarm gusset and articulated elbow darts are demonstrated under full extension, showing the hem staying anchored at the hip with zero pulling or waist rise.
+[BLOCK 2: ERGONOMIC DETAIL]: The garment's underarm gusset and articulated elbow darts are visible under a representative extension, showing the observed hem and seam behavior. Use the supplied fit evidence for any promise about pulling or waist rise.
 [BLOCK 3: OPTICS]: 50mm prime lens, eye-level perspective, f/5.6 aperture at 1/2000s shutter speed freezing movement without blur.
 [BLOCK 4: STAGE & LIGHT]: Crisp 5500K directional rim lighting highlighting seam stretch and fabric flexion, neutral studio wall 2 stops darker.
 [BLOCK 5: EXCLUSIONS]: Negative: motion blur, baggy bunched fabric, riding-up waistline, awkward yoga pose, distorted joints, cluttered gym background.

@@ -1,16 +1,16 @@
 # Universal Brand Dialects
 ### Cross-Cutting Aesthetic Modifiers for E-Commerce Archetypes
-*Version 2.1 — The 16 Master Brand Styling & Art Direction Lenses*
+*Version 2.2 — The 16 optional brand styling & art-direction lenses*
 
 ---
 
 ## 1. What Is a Brand Dialect?
 
-A **Brand Dialect** is an aesthetic modifier. While the Scale Archetypes (`01` through `06`) define the **spatial and functional setup** (e.g. a tabletop scene, a macro close-up, an apparel movement shot, or an architectural patio), a Brand Dialect defines the **mood, lighting physics, material palette, color grading, and cultural attitude**.
+A **Brand Dialect** is an optional aesthetic modifier. While the Scale Archetypes (`01` through `06`) define the **spatial and functional setup** (for example, a tabletop scene, macro close-up, apparel movement shot, or architectural patio), a Brand Dialect suggests mood, lighting, material palette, color grade, and cultural attitude.
 
-In the **5-Block Director's Rig Protocol**, a Brand Dialect specifically dictates the settings for **Block 3 (Lighting Rig & Specular Control)** and **Block 4 (Subordinate Stage & Depth Separation)** without corrupting **Block 1 (The Hero Subject)**.
+Apply only the parts that improve the communication job. A dialect may shape light, stage, styling, typography, motion, or post-production without overruling product facts, accessibility, platform requirements, or the viewer's need to understand the product. It does not require a particular prompt syntax, fixed contrast ratio, or universal prop list. If a dialect's aesthetic conflicts with label legibility, scale, or a supported claim, keep the communication requirement and adapt the aesthetic.
 
-Any archetype in this library can be viewed through any dialect lens:
+Any archetype in this library can be viewed through any dialect lens, when the combination serves the brief:
 * *Scale 02 Archetype 04 (Sensory Pour Climax)* + **Dialect 02: Playful Utility** = Saturated morning sun, olive oil splatters, vibrant yellow linen napkin, candid kitchen energy.
 * *Scale 02 Archetype 04 (Sensory Pour Climax)* + **Dialect 03: Quiet Luxury** = Muted chiaroscuro, unsealed limestone, raw linen, single ceramic object, silent contemplative tone.
 * *Scale 02 Archetype 04 (Sensory Pour Climax)* + **Dialect 13: Solar Mediterranean Riviera** = High-noon terracotta patio, golden sun glare, glistening sea-salt crystals, dopamine-fueled hedonism.
@@ -331,21 +331,25 @@ Any archetype in this library can be viewed through any dialect lens:
 
 ## 3. How to Apply a Dialect to Any Scale Archetype
 
-In the **5-Block Director's Rig Protocol**, apply a dialect by populating **Block 3** and **Block 4** with that dialect's specific directives:
+When using the optional five-block scaffold, a dialect often contributes to Blocks 3 and 4. It may also affect model styling, copy space, motion, or finishing. Preserve the scale archetype's functional job and adapt the dialect to the target tool:
 
 ```text
 [BLOCK 1: HERO SUBJECT & BOUNDING BOX]
-→ Product type, dimensions, exact materials, and label orientation occupying 70%+ frame weight.
+→ Product type, supplied dimensions, exact materials, and label orientation at a prominence appropriate to the job.
 
 [BLOCK 2: OPTICAL & CAMERA RIG]
 → Lens, angle, elevation, and aperture dictated by the Scale Archetype.
 
 [BLOCK 3: LIGHTING RIG & SPECULAR CONTROL]
-→ POPULATE FROM DIALECT: Lighting Signature, Color Temperature (Kelvin), Specular Highlights, Contact Occlusion Shadow.
+→ Adapt the dialect's lighting signature, color temperature, reflections, and contact treatment to the product and legibility requirements.
 
 [BLOCK 4: SUBORDINATE STAGE & DEPTH SEPARATION]
-→ POPULATE FROM DIALECT: Surface Texture, Stage Materials, Palette & Props (forced 2-3 stops darker or blurred).
+→ Adapt surface texture, stage materials, palette, and props; use depth separation when it serves hierarchy, while allowing an equal-weight comparison when that is the point.
 
 [BLOCK 5: NEGATIVE CONSTRAINTS & EXCLUSIONS]
-→ POPULATE FROM DIALECT ANTI-PATTERNS + Universal anti-hallucination anchors.
+→ Add only relevant dialect anti-patterns and model failure checks. Inspect the result; a negative prompt is not a guarantee.
+
+### Dialect selection and output check
+
+Choose a dialect because it clarifies a promise, audience, or status signal, not because it is fashionable. After generation, check product identity, dimensions, label text, material behavior, human anatomy, contrast, and crop safety. A beautiful dialect cannot convert an unsupported performance statement into proof; use supplied references or a documented demonstration for that.
 ```

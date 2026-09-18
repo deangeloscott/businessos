@@ -9,7 +9,7 @@ This is the heartland of consumer packaged goods (CPG) and direct-to-consumer co
 
 Key conversion friction points include taste/scent uncertainty, doubts about packaging durability (e.g. glass breaking in transit), seal failure/leakage anxiety, scale mismatches, and distinguishing artisanal quality from mass-market industrial filler.
 
-All archetypes in this scale adhere strictly to the **5-Block Director's Rig Protocol**.
+Every archetype in this scale is a reference for making handheld products legible in use, at human scale, and in a meaningful setting. Use the optional five-block scaffold when useful. Generic ideal-versus-poor contrasts are welcome for direct-response pain-to-relief communication, but a generated frame does not establish ingredient identity, packaging performance, shipping outcome, thermal behavior, or longevity. Load actual packaging, dimensions, formulation, fulfillment, and test references before making those claims, then inspect the render at the target crop.
 
 ---
 
@@ -175,7 +175,7 @@ All archetypes in this scale adhere strictly to the **5-Block Director's Rig Pro
 * **Universal Class:** The Proof
 * **Example Products (Illustrative Guidance, Not an Allowlist):** Specialty whole-bean coffee bag, organic granola pouch, loose-leaf tea tin, raw snack bar, hot sauce bottle.
 1. **Strategic Intent & Conversion Role:**  
-   PDP Slot 2 or 5 (Transparency & Quality Proof). Visually proves clean, high-grade, real-food ingredients inside the product without relying on boring text bullet points.
+   PDP Slot 2 or 5 (Transparency & Quality Explanation). Makes supplied formulation or sourcing facts visible without relying on text alone. Use a generic illustrative ingredient scene when the exact contents are unknown, and do not present it as a literal ingredient disclosure.
 2. **The Physical Stage (The 95%):**  
    Top-down 90° overhead flat-lay (knolling) on a neutral stone, butcher paper, or matte linen backdrop. The hero package is centered, surrounded by neatly arranged, geometric piles of actual raw ingredients.
 3. **Optical & Lighting Directives:**  
@@ -185,7 +185,7 @@ All archetypes in this scale adhere strictly to the **5-Block Director's Rig Pro
 4. **Sensory & Synesthetic Triggers:**  
    Purity, craftsmanship, and raw culinary beauty. The tactile contrast between smooth packaging and raw textured spices/seeds.
 5. **Invariant Guardrails & Crop Safe-Zones:**  
-   Ingredients must be strictly 1:1 with actual formulation. Package typography must remain oriented correctly for easy reading.
+   Ingredients should match the supplied formulation when the image is used as a factual disclosure. If the source is incomplete, keep the props generic and label the scene as illustrative. Inspect package typography separately because generation may alter it.
 * **Director's Rig Prompt Blueprint:**
 ```text
 [BLOCK 1: HERO]: Top-down 90-degree overhead knolling photograph. In the center, [HERO PRODUCT: Bag, tin, or bottle] occupies 50% of the frame with label facing straight up in tack-sharp focus.
@@ -201,21 +201,21 @@ All archetypes in this scale adhere strictly to the **5-Block Director's Rig Pro
 * **Universal Class:** The Proof
 * **Example Products (Illustrative Guidance, Not an Allowlist):** Cold-pressed extra virgin olive oil, cold brew concentrate, ceremonial matcha tin, artisanal jam, craft kombucha.
 1. **Strategic Intent & Conversion Role:**  
-   PDP Slot 6 & Bottom-of-Funnel Conversion. Visually dismantles cheap commercial alternatives by showing color, density, or ingredient superiority side-by-side.
+   PDP Slot 6 & Bottom-of-Funnel Conversion. Visually dismantles a generic lower-quality alternative by making color, density, or ingredient experience legible side-by-side. The comparison may be intentionally stark; identify the left state as generic and ground the hero side in supplied facts.
 2. **The Physical Stage (The 95%):**  
-   A clean side-by-side split on a seamless neutral surface. ON THE LEFT: Generic mass-market competitor. ON THE RIGHT (The Hero): Our premium product in glassware showing rich natural color, viscosity, and sediment purity.
+   A clean side-by-side split on a seamless neutral surface. ON THE LEFT: a generic lower-quality reference state, with no competitor name or logo. ON THE RIGHT (The Hero): [HERO PRODUCT] in matching glassware showing its supplied or observed color, viscosity, and sediment character. Use a conceptual ideal when the result is not documented.
 3. **Optical & Lighting Directives:**  
    * *Lens:* 85mm Prime.  
    * *Aperture:* f/8 for equal sharpness on both glasses.  
    * *Lighting:* Balanced 5400K clinical daylight with back-fill illuminating fluid clarity.
 4. **Sensory & Synesthetic Triggers:**  
-   Immediate visual justification for why your product costs 30% more: richer hue, higher viscosity, natural sedimentation, zero artificial clarity.
+   Immediate visual justification for a premium position: richer hue, higher viscosity, natural sedimentation, or another supplied differentiator. Replace any price delta with the actual offer economics, and do not infer formulation quality from appearance alone.
 5. **Invariant Guardrails & Crop Safe-Zones:**  
-   Strict directional grammar: Competitor on Left (45%), Our Product on Right (55%). Dedicated high-contrast text zones.
+   Recommended grammar: generic problem/reference on the left (about 45%) and the hero solution on the right (about 55%), with clear text zones. Reverse or resize the panels if the platform or message benefits.
 * **Director's Rig Prompt Blueprint:**
 ```text
 [BLOCK 1: HERO COMPARISON]: A side-by-side e-commerce beverage/food comparison photograph on a clean, seamless light-gray studio cyclorama.
-[BLOCK 2: COMPARISON GRAMMAR]: ON THE LEFT (45% width): A generic store-brand alternative poured into a glass, showing thin, watery, pale artificial liquid with artificial clarity. ON THE RIGHT (55% width - THE HERO): [HERO PRODUCT] poured into an identical glass, displaying rich, dense, vibrant [COLOR / TEXTURE: e.g., deep golden-green viscosity, dense velvety crema, rich micro-sediment], next to the elegant hero bottle.
+[BLOCK 2: COMPARISON GRAMMAR]: ON THE LEFT (about 45% width): A generic lower-quality reference poured into a matching glass, showing the weak sensory state the buyer wants to avoid. ON THE RIGHT (about 55% width — THE HERO): [HERO PRODUCT] poured into an identical glass, displaying supplied or observed [COLOR / TEXTURE]. Use a conceptual ideal if no sample is available, and identify the left state as generic rather than a named competitor.
 [BLOCK 3: OPTICS]: 85mm prime lens, eye-level perspective, f/8 tack-sharp focus across both glasses.
 [BLOCK 4: STAGE & LIGHT]: 5400K studio daylight with clean back-rim lighting illuminating liquid clarity, crisp contact floor shadows.
 [BLOCK 5: EXCLUSIONS]: Negative: messy spills, kitchen counter clutter, dark gloomy shadows, reversed placement, blurry glass.
@@ -283,9 +283,9 @@ All archetypes in this scale adhere strictly to the **5-Block Director's Rig Pro
 * **Universal Class:** The Proof
 * **Example Products (Illustrative Guidance, Not an Allowlist):** Leather flask sleeve, raw copper cocktail shaker, cast-iron skillet, brass pepper mill, EDC pocketknife.
 1. **Strategic Intent & Conversion Role:**  
-   PDP Slot 5 & Heritage Proof. Proves that natural materials don't wear out—they mature gracefully and gain personal character over years of daily ritual.
+   PDP Slot 5 & Heritage Story. Shows how a natural material may mature through use and makes the long-term value proposition emotionally tangible. A real elapsed-time comparison needs documented samples; a generated “after” state is an illustration.
 2. **The Physical Stage (The 95%):**  
-   Warm craftsman workshop or sunlit kitchen butcher block. A side-by-side: a brand-new pristine item on the left, next to the identical item after 3 years of daily use on the right, displaying rich patina, softened edges, and heirloom beauty.
+   Warm craftsman workshop or sunlit kitchen butcher block. A side-by-side: a brand-new item on the left and either a documented later sample or a clearly labeled conceptual mature state on the right, displaying the intended patina without inventing elapsed time or condition.
 3. **Optical & Lighting Directives:**  
    * *Lens:* 85mm Prime.  
    * *Aperture:* f/5.6.  
@@ -297,7 +297,7 @@ All archetypes in this scale adhere strictly to the **5-Block Director's Rig Pro
 * **Director's Rig Prompt Blueprint:**
 ```text
 [BLOCK 1: HERO COMPARISON]: A side-by-side e-commerce material longevity comparison of [HERO PRODUCT: Material, brass/leather/steel/timber], occupying 80% of frame width on a weathered timber workbench.
-[BLOCK 2: COMPARISON GRAMMAR]: ON THE LEFT: The brand-new pristine item out of the box with raw factory finish. ON THE RIGHT (THE HERO): The identical item after 3 years of continuous daily use, displaying an authentic, rich, glowing golden-brown patina, burnished edges, and heirloom character.
+[BLOCK 2: COMPARISON GRAMMAR]: ON THE LEFT: The brand-new item out of the box with raw factory finish. ON THE RIGHT (THE HERO): [DOCUMENTED LATER SAMPLE OR CLEARLY LABELED CONCEPTUAL MATURE STATE] showing the supplied patina, burnished edges, and intended character. Do not invent three years of use or a durability result.
 [BLOCK 3: OPTICS]: 85mm prime lens, eye-level perspective, f/5.6 aperture for tactile surface definition.
 [BLOCK 4: STAGE & LIGHT]: Warm 3500K natural workshop daylight grazing across the materials to highlight depth and grain, soft contact shadows.
 [BLOCK 5: EXCLUSIONS]: Negative: broken parts, rusted junk, dirty grime, peeling plastic, synthetic materials, cluttered workshop tools.
@@ -335,21 +335,21 @@ All archetypes in this scale adhere strictly to the **5-Block Director's Rig Pro
 * **Universal Class:** The Proof
 * **Example Products (Illustrative Guidance, Not an Allowlist):** Insulated travel tumbler, vacuum thermos, leakproof olive oil pour spout, airtight coffee canister, fountain pen, waterproof tech pouch.
 1. **Strategic Intent & Conversion Role:**  
-   PDP Slot 2 or Paid Social Performance Ad (Dismantles Spill & Seal Failure Anxiety). Eliminates the #1 customer hesitation for liquid and handheld vessels: *"Will this leak in my bag and ruin my laptop, clothes, or documents?"*
+   PDP Slot 2 or Paid Social Performance Ad (Dismantles Spill & Seal Failure Anxiety). Addresses the customer hesitation: *"Will this leak in my bag and ruin my laptop, clothes, or documents?"* Use a documented test for a factual result; use the high-stakes setup as a dramatic concept when the result is unknown.
 2. **The Physical Stage (The 95%):**  
-   A high-stakes commercial demonstration set on a clean studio surface. The sealed hero product is turned completely upside down (180° inversion) suspended directly over a high-value, moisture-vulnerable surface (`[HIGH-STAKES SURFACE: open laptop keyboard, crisp white silk shirt, dry legal documents, car leather]`).
+   A high-stakes commercial demonstration set on a clean studio surface. The sealed hero product is turned completely upside down (180° inversion) suspended over a high-value, moisture-vulnerable surface (`[HIGH-STAKES SURFACE: open laptop keyboard, crisp white silk shirt, dry legal documents, car leather]`). If the scene is illustrative, make the setup clear and omit a factual “passed test” caption.
 3. **Optical & Lighting Directives:**  
    * *Lens:* 85mm Prime.  
    * *Aperture:* f/8 for tack-sharp focus across both the inverted cap seal and the dry surface below.  
    * *Lighting:* High-contrast 5500K commercial catalog studio lighting with rim kickers emphasizing the bone-dry seam.
 4. **Sensory & Synesthetic Triggers:**  
-   High tension followed by absolute relief: zero droplet seepage, unbroken airtight silicone gasket seal, bone-dry surface below.
+   High tension followed by relief: a dry surface and legible seal mechanism when documented, or an intentionally idealized outcome for concept work. Do not claim hermetic performance from a render alone.
 5. **Invariant Guardrails & Crop Safe-Zones:**  
-   The product occupies 70% of frame weight. The vulnerable surface below must be visibly pristine and dry.
+   The product occupies enough frame weight for the seal and vulnerable surface to be understood. If using a factual claim, retain the test conditions and observed result in the supporting record.
 * **Director's Rig Prompt Blueprint:**
 ```text
-[BLOCK 1: HERO & INVERSION PROOF]: A high-converting commercial e-commerce seal integrity demonstration. [HERO PRODUCT: Tumbler, flask, or sealed bottle] is held completely upside down in a 180-degree inversion, occupying 70% of frame height.
-[BLOCK 2: HIGH-STAKES PROOF]: The inverted sealed spout is suspended directly 2 inches above [VULNERABLE SURFACE: e.g., an open premium aluminum laptop keyboard or crisp white cotton fabric]. Not a single drop of liquid escapes; the rubber/silicone seal is bone-dry and hermetically locked under pressure.
+[BLOCK 1: HERO & INVERSION DEMONSTRATION]: A high-converting commercial e-commerce seal integrity setup. [HERO PRODUCT: Tumbler, flask, or sealed bottle] is held completely upside down in a 180-degree inversion, with the clearance chosen from the real test setup.
+[BLOCK 2: HIGH-STAKES RESULT]: The inverted spout is suspended above [VULNERABLE SURFACE: e.g., an open premium aluminum laptop keyboard or crisp white cotton fabric]. Show the supplied or observed result and conditions. If this is a concept, use the ideal dry outcome as illustration and omit “hermetic,” “zero leaks,” or “passed test” language.
 [BLOCK 3: OPTICS]: 85mm prime lens, eye-level perspective, f/8 aperture keeping the inverted seal and the dry surface below in tack-sharp focus.
 [BLOCK 4: STAGE & LIGHT]: Clean 5500K studio cyclorama lighting with sharp edge highlights along the container's metallic body and crisp contact shadows.
 [BLOCK 5: EXCLUSIONS]: Negative: water droplets, leaks, wet smudges, messy counter, dark shadows, tilted camera, blurry seal.
@@ -387,9 +387,9 @@ All archetypes in this scale adhere strictly to the **5-Block Director's Rig Pro
 * **Universal Class:** The Proof
 * **Example Products (Illustrative Guidance, Not an Allowlist):** Double-wall vacuum tumbler, stainless steel iced shaker, thermal French press, insulated water bottle, chilled sake flask.
 1. **Strategic Intent & Conversion Role:**  
-   PDP Slot 2 or 5 (Thermal Insulation Proof). Eradicates the #1 doubt about insulated drinkware: *"Will ice melt in 2 hours, and will this sweat all over my desk?"*
+   PDP Slot 2 or 5 (Thermal Insulation Demonstration). Addresses the doubt about insulated drinkware: *"Will ice melt in 2 hours, and will this sweat all over my desk?"* Pair the visual with the actual duration, contents, ambient conditions, and observed result when making a factual claim.
 2. **The Physical Stage (The 95%):**  
-   A high-impact demonstration on a polished wooden desk or slate surface. The hero tumbler/flask is packed with ice cubes, yet the powder-coated exterior is 100% bone-dry with zero condensation sweat rings on the desk.
+   A high-impact demonstration on a polished wooden desk or slate surface. The hero tumbler/flask is shown with the relevant contents and a visible surface condition. A dry exterior can dramatize relief, but the elapsed time and environmental conditions must come from a real test before being stated.
 3. **Optical & Lighting Directives:**  
    * *Lens:* 85mm Prime.  
    * *Aperture:* f/5.6.  
@@ -397,11 +397,11 @@ All archetypes in this scale adhere strictly to the **5-Block Director's Rig Pro
 4. **Sensory & Synesthetic Triggers:**  
    Frigid sub-zero confidence: ice cubes with sharp crisp edges, zero water rings on expensive furniture, cold touch without sweat.
 5. **Invariant Guardrails & Crop Safe-Zones:**  
-   The exterior wall must be visibly dry, proving vacuum insulation performance. Product occupies 75% of vertical frame height.
+   Make the exterior condition legible and connect any performance language to the supplied test record. Product occupies a useful share of the frame without turning a crop percentage into a guarantee.
 * **Director's Rig Prompt Blueprint:**
 ```text
 [BLOCK 1: HERO THERMAL PROOF]: Commercial insulation demonstration of [HERO PRODUCT: Insulated travel tumbler / flask], centered and occupying 75% of vertical frame height in tack-sharp focus.
-[BLOCK 2: THERMAL PROOF]: The top lid is open, revealing solid, crystal-clear ice cubes packed to the brim with zero melting. The exterior matte powder-coated wall and the polished wood surface beneath the base are 100% bone-dry with zero condensation sweat or water rings.
+[BLOCK 2: THERMAL RESULT]: The top lid is open, revealing the supplied test contents and conditions. Show the documented exterior temperature/condensation observation when available; otherwise use the dry exterior as an illustrative ideal and avoid claiming zero melting or zero condensation.
 [BLOCK 3: OPTICS]: 85mm prime lens, eye-level perspective, f/5.6 aperture.
 [BLOCK 4: STAGE & LIGHT]: 5500K commercial studio daylight with crisp side kickers carving the powder-coated texture, grounded on a dark walnut desk.
 [BLOCK 5: EXCLUSIONS]: Negative: condensation sweat drops on exterior, puddle of water on desk, melted slush, blurry logo, dark underexposed shadows.

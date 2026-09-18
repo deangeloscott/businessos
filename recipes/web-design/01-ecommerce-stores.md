@@ -1,12 +1,12 @@
 # Track 01: High-Performance E-Commerce Stores
 ### The Frictionless Commercial Engine — Catalog Architecture, PDPs, Cart Drawers & Checkout
-*Version 1.0 — Platform-Agnostic Natural Language Operating System*
+*Version 1.1 — Platform-Agnostic Natural Language Craft Reference*
 
 ---
 
-## 1. Executive Summary & Operational Invariants
+## 1. Executive Summary & Decision Patterns
 
-In digital commerce, the website is not a catalog showcase; it is a **friction-removal and value-amplification machine**. According to the Baymard Institute (synthesizing over 130,000 hours of empirical usability testing across major global retailers), **68% to 70% of online shopping carts are abandoned**. Critically, **35% of that lost revenue is recoverable solely through checkout, buy box, and product page UX improvements**.
+In digital commerce, the website is not only a catalog showcase; it is a **friction-removal and value-amplification surface**. Baymard and other research programs commonly report cart-abandonment rates near 70%, but the observed rate varies by category, device, traffic, and measurement method. Treat published baselines and recovery estimates as diagnostic context, not a promised lift.
 
 High-converting e-commerce sites systematically solve the **Tactile Uncertainty Gap** (the buyer's inability to physically touch, weigh, feel, or test the product) while minimizing cognitive input fatigue.
 
@@ -32,27 +32,26 @@ High-converting e-commerce sites systematically solve the **Tactile Uncertainty 
 
 ## 2. Product Listing Pages (PLP) & Catalog Architecture
 
-The Collection Page (PLP) must function as an intelligent, high-speed routing terminal. Its sole job is to guide the shopper to the exact right product without cognitive friction.
+The Collection Page (PLP) should function as an intelligent, high-speed routing surface. Its job is to guide the shopper to a suitable product with as little avoidable cognitive friction as the catalog and audience allow.
 
 ### 1. Faceted Navigation & Filters
-* **Mental Model Taxonomy:** Filter facets must reflect how the customer thinks about their problem, not internal warehouse SKU categories. For example, in skincare: filter by *Skin Concern (Redness, Acne, Dryness)*, not *Viscosity Formulation Class B*.
+* **Mental Model Taxonomy:** Filter facets should reflect how the customer thinks about their problem, not internal warehouse SKU categories. For example, in skincare: filter by *Skin Concern (Redness, Acne, Dryness)*, not *Viscosity Formulation Class B*.
 * **Desktop vs. Mobile Facet Ergonomics:**
   * *Desktop:* Sticky vertical left-hand sidebar with collapsible accordion facets and active filter tags at the top with "Clear All" affordance.
-  * *Mobile:* A slide-over bottom sheet triggered by a prominent filter button in the thumb zone. The bottom sheet must display a sticky footer button with a live dynamic counter: *"View 38 Results"* that updates in real time without page reloads.
-* **Inline Variant Swatches:** Product cards in the grid must feature interactive color or finish swatches. Tapping or hovering a swatch must instantly swap the card's thumbnail image via CSS/JS without triggering a page navigation.
+  * *Mobile:* A slide-over bottom sheet can work when the catalog has meaningful facets. A sticky footer button with a live counter such as *"View 38 Results"* can reduce uncertainty when the result set updates quickly.
+* **Inline Variant Swatches:** Use interactive color or finish swatches when the variants are material to the choice. Tapping or hovering can swap the card's thumbnail without navigation when the platform supports it and the behavior remains accessible.
 
 ### 2. The Pagination Law: "Load More" vs. Infinite Scroll
 * **The Usability Failure of Pure Infinite Scroll:** Pure infinite scroll is a recognized failure mode. It traps users, makes the footer unreachable, breaks browser history (clicking "Back" from a PDP drops the user at the top of the collection), and exhausts mobile device memory.
-* **The 0.01% Standard (Dynamic "Load More" with Progress Anchoring):**
-  * Display a clear progress bar: *"Viewing 24 of 96 Products"*.
-  * Provide a high-contrast *"Load More"* button.
-  * When clicked, the browser loads the next 24 items asynchronously while appending `?page=2` to the URL history state. When a user navigates to a PDP and hits the browser's Back button, their scroll position is restored to the exact product card they left.
+* **A Useful Default (Dynamic "Load More" with Progress Anchoring):**
+  * Consider a clear progress label such as *"Viewing 24 of 96 Products"* and a high-contrast *"Load More"* button when it serves the catalog.
+  * If items load asynchronously, preserve meaningful URL/history state, keyboard access, back-button behavior, and scroll position. Test the actual implementation instead of assuming a specific page size or restoration behavior.
 
 ### 3. Inline Grid Trust & Urgency Signposts
-* Never force shoppers to click into a PDP just to check basic credibility. Every product card on the PLP grid must display:
+* Reduce unnecessary clicks to answer basic purchase questions. Product cards can display, when current and supported:
   * Average star rating and total review count (e.g., `★ 4.8 (342)`).
-  * Inventory thresholds for scarcity (*"Low Stock — Only 4 Left"*).
-  * Dynamic localized delivery promises (*"Order in 2h for delivery by Thursday"*).
+  * Inventory thresholds for scarcity (*"Low Stock — Only 4 Left"*) only when backed by the live inventory source.
+  * Dynamic localized delivery promises (*"Order in 2h for delivery by Thursday"*) only when the fulfillment system can honor the displayed window.
 
 ---
 
@@ -79,23 +78,23 @@ The PDP is the central transaction surface. The desktop layout balances a high-r
 │                                          │     Free Returns / Carbon Neutral           │
 ├──────────────────────────────────────────┴─────────────────────────────────────────────┤
 │ BELOW-THE-FOLD: PROGRESSIVE OBJECTION DECONSTRUCTION                                  │
-│ • Interactive "Us vs. Them" Comparison Table (Proprietary mechanism vs. competitors)   │
-│ • Torture-Test Video Module (Stress test proving durability under extreme conditions)  │
+│ • Interactive comparison table (documented criteria or clearly labeled illustrative contrast)│
+│ • Test or demonstration module (conditions, scope, and result shown when measured)       │
 │ • Technical Specifications Accordion (Materials, dimensions, care instructions)        │
 │ • Filterable Customer Review Engine (Search reviews by keyword, size, and fit profile) │
 └────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### 1. The Media Matrix: Dismantling the Tactile Uncertainty Gap
-A world-class PDP does not rely on 2 or 3 basic photos. It deploys a curated 6-to-8 asset gallery mapping directly to the **4 Universal Commerce Classes** from the AURA creative library:
+A strong PDP may need more than 2 or 3 basic photos. A curated 6-to-8 asset gallery can map to the **4 Commerce Classes** from the AURA creative library:
 1. **The Specimen (Class 1):** Unadorned product truth. Pure cyclorama background, perfect geometry, zero props. Proves exact color and proportions.
-2. **The Proof (Class 2):** The objection-crusher. Macro stitching, water-repellent lotus effect beading, tear-down cross sections, or drop-test torture visuals.
+2. **The Proof (Class 2):** The objection-crusher. Macro stitching, water-repellent beading, tear-down cross sections, or drop-test visuals. If the asset depicts a test, show the actual conditions and result; if it is conceptual, label it as such.
 3. **The Habitat (Class 3):** Contextual aspiration. The product in its native habitat (the architectural kitchen, the alpine trail, the luxury vanity).
 4. **The Ritual (Class 4):** Sensory human contact. The cream being smoothed on skin, the boot striking gravel, the knife slicing a tomato, the mechanical dial clicking.
 
 ### 2. The Sticky Buy Box Engine
-* **Variant Selectors (The Dropdown Ban):** Baymard research confirms that dropdown menus for size, color, or style create severe cognitive friction and hide out-of-stock options. High-converting PDPs use **explicit pill buttons**. Out-of-stock variants must display with a strikethrough and a single-tap *"Notify When Available"* modal trigger.
-* **Pricing & Installment Clarity:** Display the full price prominently. If the item costs over $50, always display the split-payment alternative (*"or 4 interest-free payments of $24.75 with Klarna/Afterpay"*).
+* **Variant Selectors:** Prefer explicit, scannable options for size, color, or style when a pill or swatch makes the choice easier. A dropdown can be better for long or complex sets. Show unavailable variants accurately and offer a notification path only when it exists.
+* **Pricing & Installment Clarity:** Display the full price prominently. Offer split payments when the provider, jurisdiction, price, and audience make them useful; disclose total cost, eligibility, fees, and terms.
 * **Primary Call-to-Action (CTA):**
   * Bounding height of at least 50px to 54px.
   * High-contrast solid conversion accent color (following the 60-30-10 rule).
@@ -103,15 +102,15 @@ A world-class PDP does not rely on 2 or 3 basic photos. It deploys a curated 6-t
 * **Express Wallet Row:** Place native Apple Pay, Google Pay, and Shop Pay buttons directly beneath the primary CTA. For mobile shoppers with biometric authentication enabled, this bypasses the cart and checkout forms entirely.
 
 ### 3. The Mobile Sticky Conversion Dock
-On mobile devices (where over 70% of e-commerce traffic originates), the moment the primary "Add to Bag" button scrolls out of the viewport, a **Sticky Conversion Dock** must animate into the bottom thumb zone:
-* Displays: Small product thumbnail, title, active variant, dynamic price, and a full-width CTA button.
-* Satisfies the **Steven Hoober Thumb Reach Zone** (bottom 40% of the screen), allowing the customer to purchase at any point while reading through below-the-fold reviews or specs.
+On mobile devices, measure whether a **Sticky Conversion Dock** helps the actual audience once the primary "Add to Bag" button leaves the viewport:
+* It can display a small product thumbnail, title, active variant, current price, and an accessible CTA.
+* Place it where it remains reachable without obscuring content, browser controls, consent surfaces, or assistive technology. Validate the interaction on the real device mix.
 
 ---
 
 ## 4. The Slide-Out Mini-Cart Drawer (The AOV Multiplier)
 
-Redirecting a shopper to a standalone `/cart` page is an obsolete anti-pattern that breaks browsing momentum. A slide-out mini-cart drawer keeps the shopper in their browsing context while gamifying order value.
+Redirecting a shopper to a standalone `/cart` page can break browsing momentum in some catalogs. A slide-out mini-cart drawer is one option for keeping the shopper in context while presenting useful order information and relevant additions.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -146,61 +145,61 @@ Redirecting a shopper to a standalone `/cart` page is an obsolete anti-pattern t
 
 ### The 3 Core Mechanics of the Cart Drawer:
 1. **Tiered Goal-Gradient Progress Bar:**
-   * Set the primary threshold **15% to 30% above your store's median AOV**.
-   * Example: If median AOV is $65, set the free shipping threshold at $75 or $80.
-   * Add a secondary milestone: *"Add $35 more to unlock a Free Travel Pouch"*. This gamification reliably increases AOV by **18% to 28%**.
+   * Set a threshold from shipping economics, margin, customer expectations, and measured order behavior. A value somewhat above the store's median AOV can be a testable starting hypothesis, not a universal rule.
+   * Example: If median AOV is $65, test a $75 or $80 free-shipping threshold only after checking margin and fulfillment cost.
+   * Add a secondary milestone such as *"Add $35 more to unlock a Free Travel Pouch"* only when the reward is real and the incremental lift is measured rather than assumed.
 2. **Frictionless 1-Click Cross-Sells:**
-   * Display exactly 1 or 2 complementary items directly inside the drawer.
-   * The customer can add them with a single tap without being redirected to a separate PDP.
-   * Price items at under 30% of the current cart subtotal so the addition feels like a low-friction impulse decision.
+   * Start with 1 or 2 complementary items directly inside the drawer and adjust from relevance and performance.
+   * Let the customer add them in context when the platform supports it, while preserving variant, price, accessibility, and consent clarity.
+   * Choose price and presentation from real product margins, complementarity, and observed customer behavior rather than a fixed percentage.
 3. **Dynamic Quantity Modifiers:**
    * Inline `[-] [N] [+]` steppers and a single-click trash icon.
-   * Subtotals, shipping bars, and tax estimates must update instantly via AJAX/Fetch without full-drawer re-rendering or screen flashes.
+   * Subtotals, shipping bars, and tax estimates should update quickly and predictably without unnecessary full-drawer re-rendering or screen flashes.
 
 ---
 
 ## 5. The Optimized Linear Checkout Architecture
 
-Checkout design is where transactions are won or lost. Baymard Institute research reveals that **64% of desktop and mobile checkout experiences are rated as mediocre or poor**.
+Checkout design is where transactions are won or lost. Baymard research has found a large share of checkout experiences need improvement; use the current study, device mix, and local funnel data rather than treating one percentage as a universal baseline.
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
-│                        THE LINEAR CHECKOUT OPTIMIZATION MATRIX                         │
+│                        THE LINEAR CHECKOUT DECISION MATRIX                             │
 ├──────────────────────────────────────┬─────────────────────────────────────────────────┤
-│ CONVENTIONAL CHECKOUT FAILURE        │ THE 0.01% CONVERSION-OPTIMIZED STANDARD         │
+│ COMMON CHECKOUT FAILURE              │ A STRONG DEFAULT TO TEST                       │
 ├──────────────────────────────────────┼─────────────────────────────────────────────────┤
 │ Forced account creation with password│ Guest Checkout by default; account creation is  │
 │ confirmation prior to billing entry. │ offered on the Thank-You page with 1 click.     │
 ├──────────────────────────────────────┼─────────────────────────────────────────────────┤
-│ Separate fields for First Name, Last │ Single "Full Name" input field.                 │
-│ Name, Address Line 2, Company.       │ (Reduces form field fatigue by 30%).            │
+│ Separate fields for First Name, Last │ Use the smallest field set that preserves      │
+│ Name, Address Line 2, Company.       │ fulfillment, tax, support, and legal needs.    │
 ├──────────────────────────────────────┼─────────────────────────────────────────────────┤
-│ Manual entry of City, State, and Zip │ Google Places / Address Autocomplete API.       │
-│ causing typing errors and typos.     │ (Fills 4 fields automatically in 1 tap).        │
+│ Manual entry of City, State, and Zip │ Offer accessible address autocomplete when     │
+│ causing typing errors and typos.     │ accurate for the customer's location.          │
 ├──────────────────────────────────────┼─────────────────────────────────────────────────┤
 │ Forcing manual entry of both billing │ "Billing address same as shipping" pre-checked  │
 │ and shipping addresses separately.   │ by default; only reveals fields when unticked.  │
 ├──────────────────────────────────────┼─────────────────────────────────────────────────┤
-│ Surprise taxes and shipping costs    │ Dynamic shipping calculator in cart drawer; zero│
-│ revealed only at the final step.     │ surprise fees at step 3 of checkout.           │
+│ Surprise taxes and shipping costs    │ Show material shipping, tax, and payment terms  │
+│ revealed only at the final step.     │ as early as the context and jurisdiction allow.│
 ├──────────────────────────────────────┼─────────────────────────────────────────────────┤
-│ Monolithic 16-field single-page forms│ Linear multi-step accordion or streamlined      │
-│ causing visual intimidation.         │ single-column layout with 6–8 total fields.     │
+│ Monolithic forms causing visual      │ Use a linear multi-step or single-column layout │
+│ intimidation.                        │ when it reduces effort without hiding terms.    │
 └──────────────────────────────────────┴─────────────────────────────────────────────────┘
 ```
 
 ### Express Wallets & Zero-Friction Payment
-* **The Express Payment Banner:** Position Apple Pay, Google Pay, PayPal, and Shop Pay at the very top of Step 1. For returning shoppers, this collapses a 3-minute checkout process into a **4-second biometric scan**.
-* **Inline Form Validation:** Validate email, phone, and card formats in real time on field blur. Never make the customer click "Submit" only to scroll back to the top to see a red error banner.
+* **The Express Payment Banner:** Surface supported Apple Pay, Google Pay, PayPal, Shop Pay, or other wallets where they fit the market and order flow. They can shorten checkout for eligible returning shoppers; do not promise a fixed completion time or hide the standard payment path.
+* **Inline Form Validation:** Validate email, phone, and card formats at useful interaction points. Explain errors beside the field and preserve entered data so the customer does not have to hunt for a red banner after submission.
 
 ---
 
-## 6. Technical & AI Discoverability Invariants for E-Commerce
+## 6. Technical & AI Discoverability Patterns for E-Commerce
 
-To maximize search visibility, AI assistant recommendations, and Core Web Vitals, all e-commerce templates must satisfy these criteria:
+To improve search visibility, assistant comprehension, and Core Web Vitals, use the following patterns when they fit the stack and verify them on the real site:
 
-### 1. The Preloaded Hero Visual (LCP Invariant)
-The primary PDP image must be served in WebP or AVIF format with explicit dimensions and preloaded:
+### 1. The Preloaded Hero Visual (LCP Pattern)
+The primary PDP image can be served in an efficient format with explicit dimensions and a preload when it is the likely LCP candidate:
 ```html
 <link rel="preload" as="image" href="/cdn/products/boot-hero.webp" fetchpriority="high">
 <img 
@@ -215,7 +214,8 @@ The primary PDP image must be served in WebP or AVIF format with explicit dimens
 ```
 
 ### 2. Comprehensive JSON-LD Product Schema
-Every PDP must ship an authoritative `Product` schema graph so AI search engines (ChatGPT Search, Perplexity, Google AI Overviews) can cite pricing, availability, and review ratings:
+Every PDP should expose accurate `Product` structured data when the page contains a product. This can make facts easier for search and assistant systems to parse; it does not ensure a citation or recommendation:
+The product, prices, URLs, materials, ratings, and shipping values in the example are fictional placeholders. Replace them with current, authorized product truth before publishing.
 ```json
 {
   "@context": "https://schema.org",

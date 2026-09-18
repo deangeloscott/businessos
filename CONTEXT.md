@@ -63,6 +63,8 @@ The model/user decides whether the existing Learning is already sufficient, whet
 
 Do not fabricate Learning just to save an organization-authored SOP, and do not turn organization-specific process knowledge into an automatic product-wide rule. Canonical AURA changes belong to explicit product-development work.
 
+Recipe libraries are optional craft references surfaced from relevant Workflows; they are not a new Playbook/Workflow/Step tier, mandatory protocol, routing layer, or source of business truth.
+
 ## Optional work receipts
 
 A Run is an **optional bounded work receipt** for continuity/provenance. It is not required before reasoning, persistence, Asset creation, publication, or validation.

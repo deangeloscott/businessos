@@ -36,3 +36,6 @@ Run when an Opportunity or WorkRequest requires short-form video production and 
 6. [HYBRID] Specify platform aspect ratio, safe areas, duration, audio/music constraints, CTA, and render requirements.
 7. [INTEGRATION] Generate/render available media or preserve a complete production specification when that remains useful. Local deterministic media processing such as FFmpeg may handle clip/transcode/frame/audio/render mechanics while the model/harness remains responsible for creative judgment and QA.
 8. [HYBRID] Review final render for factual, visual, audio, brand, and platform integrity before Asset completion. Draw on platform/pre-publish QA operating knowledge when an additional integrated review is useful.
+
+## Optional craft references
+Use the [e-commerce video lookbook](../../../../../recipes/creative/ecommerce-video-lookbooks/INDEX.md) for adaptable motion, comparison, continuity, platform, sound, and measurement ideas, and the [image lookbooks](../../../../../recipes/creative/ecommerce-image-lookbooks/INDEX.md) when still anchors or scale references help. Choose only what serves the viewer's question; do not import fixed timings, platform statistics, or proof claims.

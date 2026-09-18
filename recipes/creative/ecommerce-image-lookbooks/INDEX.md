@@ -1,20 +1,22 @@
 # E-Commerce Image Lookbooks
-### Master Directory, Fast-Navigation Decision Matrix & The Universal Director's Rig Standard
-*Version 2.2 — Universal Natural Language Lookbook System*
+### Master Directory, Fast-Navigation Decision Matrix & Adaptable Director's Craft References
+*Version 2.3 — Evidence-aware visual craft system*
 
 ---
 
 ## 1. How This Library Works
 
-This library is a **drop-in, zero-overhead visual operating system** for digital commerce. It provides **90 pre-engineered photographic archetypes** organized across **6 physical product scales** (15 archetypes per scale), structured through **4 Universal Commerce Archetype Classes**, and styled by a universal **16-dialect brand styling engine**.
+This library is a set of **90 reusable visual archetypes** organized across **6 physical product scales** (15 archetypes per scale), **4 commerce jobs**, and **16 optional brand dialects**. It is a craft reference: the model or operator selects, combines, adapts, or replaces a pattern according to the actual outcome, platform, tool, source material, and evidence available.
 
-To achieve world-class, top 0.001% image outputs, image generation is not treated as unconstrained prose prompting. It is executed as a **physical camera rig and set build** governed by the **5-Block Director's Rig Protocol**.
-
-Instead of engineering prompts from scratch, an operator or AI model selects:
+For a strong result, select:
 1. **The Product Scale File** (`01` through `06`) matching the product's physical dimensions.
 2. **The Commerce Archetype Class** (*The Specimen*, *The Proof*, *The Habitat*, or *The Ritual*).
-3. **The Desired Archetype** (each engineered to dismantle a specific customer objection or fulfill a platform requirement).
+3. **The Desired Archetype** (each designed to address a customer question or fulfill a platform requirement).
 4. *(Optional)* **A Brand Dialect** from `DIALECTS.md` to establish lighting, mood, color grade, and material palette.
+
+Start from the communication job and the viewer's hesitation. A forceful problem-to-relief sequence, a generic ideal-versus-poor comparison, or a premium best-choice position can be excellent persuasion when the contrast is legible and the product facts behind any specific claim are supplied. A generic reference state is an illustration of an alternative experience; it is not a named competitor, test result, or established fact about the hero product. Keep those categories distinct in the brief and in the final asset.
+
+Before generation, provide the strongest available product references, dimensions, label/package files, formula or material facts, test conditions, and usage constraints. When a source fact is unknown, choose a composition that does not assert it, or mark the result as a concept. Inspect the rendered output against those inputs; prompting for “accurate” text or geometry does not make it accurate.
 
 ```
 ┌─────────────────────────┐     ┌─────────────────────────┐     ┌─────────────────────────┐
@@ -24,7 +26,7 @@ Instead of engineering prompts from scratch, an operator or AI model selects:
 └─────────────────────────┘     └─────────────────────────┘     └─────────────────────────┘
                                              │
                                              ▼
-                 [THE 5-BLOCK DIRECTOR'S RIG PROMPT PROTOCOL]
+                 [OPTIONAL 5-BLOCK DIRECTOR'S RIG SCAFFOLD]
                                              │
                                              ▼
                  [STUDIO-GRADE, BRAND-ALIGNED PRODUCT PHOTOGRAPH]
@@ -32,53 +34,49 @@ Instead of engineering prompts from scratch, an operator or AI model selects:
 
 ---
 
-## 2. The 5 Fundamental Laws of E-Commerce AI Photography
+## 2. Five Working Principles for E-Commerce AI Photography
 
-Generative vision models (diffusion and transformer-based pipelines) fail in commercial e-commerce for predictable physical and cognitive reasons. The following five laws are the foundational engineering rules governing all prompt generation in this library:
+Generative vision models fail in recurring ways, but behavior changes across providers, versions, inputs, and post-processing. Use the following principles as compact diagnosis and design prompts. They are conditional craft guidance, not universal model laws or a mandatory prompt syntax.
 
-### Law 1: The Token Primacy Law (The First 15 Words Rule)
-* **The Physics:** Generative vision models allocate over 50% of cross-attention weights to the initial 15 tokens. When a prompt begins with setting or atmosphere (*"A sun-drenched minimalist Scandinavian kitchen with travertine counters..."*), the model allocates its high-frequency diffusion steps to the room, shoving the product into the background as an afterthought.
-* **The Rule:** The **Hero Subject, its exact material, color, and physical bounding box MUST occupy the first 12–15 tokens** of every prompt. Environment is secondary; lighting is tertiary; props are last.
+### Principle 1: Lead with the subject when subject fidelity matters
+Name the product, source reference, material, finish, dimensions, and intended prominence early enough that the model understands the communication priority. This is a useful saliency heuristic; there is no reliable universal “first 15 tokens” threshold. Use a supplied image, vector label, mask, or post-render compositing when exact geometry or typography matters more than prose order.
 
-### Law 2: The "One Photo, One Claim" Law (Anti-Cognitive Overload)
-* **The Physics:** Demanding that a model depict multiple distinct states in a single image causes severe semantic cross-contamination and hallucinations.
-* **The Rule:** Every commercial image must communicate **exactly ONE unambiguous claim**. If an asset requires multi-state comparison, isolate it into a strict two-stage side-by-side or a clean sequential set.
+### Principle 2: Give each asset a dominant viewer job
+One clear claim or hesitation usually produces a more legible asset. A comparison, before/after, or staged sequence is still valid when its states are deliberately separated and the viewer can tell what is being compared. If the frame must carry multiple facts, use panels, labels, or a sequence rather than asking one ambiguous scene to do everything.
 
-### Law 3: The Luminance & Depth Separation Law (The 3-Stop Rule)
-* **The Physics:** In amateur AI imagery, the background is rendered with the same sharpness, contrast, and brightness as the product, creating visual clutter that destroys commercial hierarchy.
-* **The Rule:** The background/stage must be **2 to 3 stops darker than the product, thrown into soft optical bokeh (`f/2.8` to `f/1.8`), or desaturated by 30%–40%**. The product must be the brightest, highest-contrast, and sharpest object in the frame.
+### Principle 3: Build hierarchy with observable contrast
+Use focus, scale, luminance, color, depth, and negative space to keep the hero legible. “Two stops darker,” `f/2.8`, or a fixed occupancy percentage can be a starting point, not a universal requirement; adjust for white-background compliance, transparent goods, accessibility, the platform crop, and the brand dialect. Review the actual output at the intended display size.
 
-### Law 4: The Strict Directional Grammar Law (The Western Reading Flow)
-* **The Physics:** Western shoppers scan images from left to right. When comparison imagery places the competitor on the right, the eye rests on the competitor, destroying conversion polarity.
-* **The Rule:** In all comparative or before-and-after proof imagery:
-  * **LEFT (40%–45% frame width):** The Competitor, the Problem, the Raw State, or the Old Way.
-  * **RIGHT (55%–60% frame width — The Hero):** Our Product, the Solution, the Absorbed State, or the Superior Engineering.
+### Principle 4: Use comparison direction as a visual metaphor, not a law
+Left = problem/old/generic state and right = solution/hero state is a powerful, familiar grammar for pain-to-relief communication. Reverse it when the platform, culture, reading direction, narrative, or composition benefits. A generic poor-quality reference may be intentionally exaggerated to clarify the cost of the problem; do not attach a competitor's name, logo, or unverified attribute to it.
 
-### Law 5: The Mechanical Friction & Micro-Texture Law (Anti-Synthetic Rule)
-* **The Physics:** AI default outputs suffer from plastic waxy skin, ungrounded floating products, and uncanny-valley smoothness.
-* **The Rule:** Prompts must explicitly mandate **high-frequency micro-textures**: natural skin pores, fine fabric weave, micro-welded seams, authentic water-bead tension (lotus effect), and a **crisp dark contact occlusion shadow** at the base where the product meets the surface.
+### Principle 5: Ground the scene and inspect the failure modes
+Ask for believable contact, material texture, anatomy, fluid behavior, and edge continuity, then inspect the result for floating objects, warped type, extra limbs, impossible reflections, false measurements, and misleading performance. Prompts can guide these checks; they cannot replace them.
+
+### Persuasion modes the operator can choose
+The model may reason with the common white-hat / grey-hat / black-hat labels when selecting a persuasive approach. White-hat work is direct and evidence-led. Grey-hat work uses selective emphasis, strong contrast, urgency, and emotional pain framing while keeping the underlying statement supportable. Black-hat describes deceptive pressure such as fabricated scarcity, invented test results, impersonation, or dark-pattern concealment; treat it as a high-risk category to surface and evaluate, never as permission to turn an unknown into a fact. In every mode, the operator should understand which elements are generic illustration, hypothesis, supplied claim, or observed result.
 
 ---
 
-## 3. The 4 Universal Commerce Archetype Classes
+## 3. Four Commerce Archetype Jobs
 
-Every commercial image ever created serves one of four fundamental commercial functions. All 90 archetypes across Scales `01` through `06` (15 per scale) are organized under these four universal classes:
+The 90 archetypes across Scales `01` through `06` (15 per scale) are grouped into four common commerce jobs. A useful asset may combine jobs, use another structure, or omit a class when the viewer's question calls for it:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                   THE 4 UNIVERSAL COMMERCE ARCHETYPE CLASSES                │
+│                    FOUR COMMERCE ARCHETYPE JOBS                             │
 ├──────────────────────┬──────────────────────┬───────────────────────────────┤
 │ CLASS                │ COMMERCIAL ROLE      │ CORE COGNITIVE OBJECTIVE      │
 ├──────────────────────┼──────────────────────┼───────────────────────────────┤
-│ 1. THE SPECIMEN      │ Truth & Geometry     │ Pure compliance, scale, form  │
-│ 2. THE PROOF         │ Empirical Validation │ Dismantles the #1 hesitation  │
+│ 1. THE SPECIMEN      │ Truth & Geometry     │ Clear form, scale, and fit    │
+│ 2. THE PROOF         │ Objection Resolution │ Explains a material hesitation  │
 │ 3. THE HABITAT       │ Contextual Sanctuary │ Lifestyle aspiration & status │
-│ 4. THE RITUAL        │ Sensory Climax       │ Visceral dopamine & craving   │
+│ 4. THE RITUAL        │ Sensory Climax       │ Desire, texture & contact     │
 └──────────────────────┴──────────────────────┴───────────────────────────────┘
 ```
 
 ### Class 1: The Specimen (Truth & Geometry)
-* **Definition:** Pure, unadorned product truth. Zero props, zero distractions, pure white or neutral cyclorama, maximum geometrical fidelity.
+* **Definition:** A clear product reference for form, scale, fit, or included contents. A neutral cyclorama is useful when compliance or comparison is the job; context may be better when spatial understanding matters.
 * **Primary Funnel Role:** Amazon/Google Shopping main image compliance, Shopify primary gallery slot 1, technical spec sheets.
 * **Scale Archetype Examples:**
   * Scale 01: *The Compliant Hero Packshot* (Look 01), *Caustic Light & Glass* (Look 06), *Palm & Pocket Scale* (Look 07), *Regimen Bundle Trio* (Look 10), *Precision Micro-Tolerances* (Look 15)
@@ -88,8 +86,8 @@ Every commercial image ever created serves one of four fundamental commercial fu
   * Scale 05: *Ergonomic Headroom Clearance* (Look 03), *Spatial Door-Swing Footprint* (Look 06), *Utility & Drainage Access* (Look 07), *Dimensional Orthographic Blueprint* (Look 10), *Multi-Human Capacity Blueprint* (Look 12), *Freight Gateway Access* (Look 15)
   * Scale 06: *Studio Side-Profile Hero* (Look 01), *Trunk-Fold Compact Spatial Proof* (Look 04), *Dimensional Fit Blueprint* (Look 11), *Multi-Modal Transit Fold* (Look 15)
 
-### Class 2: The Proof (Empirical Validation & CVR)
-* **Definition:** The objection-crusher. Visual, empirical evidence that proves performance, durability, materials, sizing, or mechanism beyond any marketing claim.
+### Class 2: The Proof (Objection Resolution & Demonstration)
+* **Definition:** The objection-crusher. A visual explanation, generic comparison, or documented demonstration that makes a performance, durability, material, sizing, or mechanism question easier to decide. A generated illustration can dramatize the mechanism or pain-to-relief contrast; it becomes evidence of a specific claim only when the depicted conditions and result are established by supplied or observed sources.
 * **Primary Funnel Role:** Mobile PDP slots 2, 4, 6; paid social performance ads; landing page objection sections; return-rate reduction.
 * **Scale Archetype Examples:**
   * Scale 01: *Microscopic Actives & Raw Extraction* (Look 02), *Formulation Purity Split* (Look 09), *Temporal Shelf-Life Stability* (Look 11), *Multi-Tone Compatibility Matrix* (Look 12), *Dermal Absorption & Clear Finish* (Look 13)
@@ -100,7 +98,7 @@ Every commercial image ever created serves one of four fundamental commercial fu
   * Scale 06: *Cockpit & Display Interface Macro* (Look 05), *Night Commuter Safety Architecture* (Look 08), *All-Weather Water & Mud Torture* (Look 09), *10,000-Mile Commuter Battle Proof* (Look 10), *30% Incline Hill-Climb Torque Proof* (Look 12), *Monsoon Electronic Immersion* (Look 14)
 
 ### Class 3: The Habitat (Contextual Sanctuary)
-* **Definition:** The product residing in its natural, elevated native environment. The room or setting telegraphs brand equity, taste, and lifestyle, while the product commands undisputed hierarchy (occupying 65%–75% visual weight).
+* **Definition:** The product residing in its natural, elevated, or useful environment. The room or setting can telegraph brand equity, taste, and lifestyle while the product retains the hierarchy appropriate to the frame; no occupancy percentage is universal.
 * **Primary Funnel Role:** Homepage hero headers, brand campaign lookbooks, catalog editorial spreads, editorial press kits.
 * **Scale Archetype Examples:**
   * Scale 01: *Domestic Vanity Altar* (Look 04), *Olfactory & Botanical Landscape* (Look 14)
@@ -111,7 +109,7 @@ Every commercial image ever created serves one of four fundamental commercial fu
   * Scale 06: *Cargo Capacity & Utility Rigging* (Look 06), *Overland Wilderness Camp Setup* (Look 07)
 
 ### Class 4: The Ritual (Sensory Climax & Human Contact)
-* **Definition:** The precise moment of sensory or human contact. Captures the physical act of use: liquid pouring, cream spreading, lather foaming, tactile button turning, coffee dripping, foot striking gravel.
+* **Definition:** A moment of sensory or human contact. Capture the physical act of use—liquid pouring, cream spreading, lather foaming, tactile button turning, coffee dripping, foot striking gravel—when it answers the viewer's question or creates useful desire.
 * **Primary Funnel Role:** Conversion triggers, paid social thumb-stoppers, PDP carousel slots 3 and 5.
 * **Scale Archetype Examples:**
   * Scale 01: *Viscosity, Slump & Micro-Macro Texture Swatch* (Look 03), *Fingertip Touch & Application* (Look 05), *Direct-Flash Night-Out Editorial* (Look 08)
@@ -176,20 +174,20 @@ Every commercial image ever created serves one of four fundamental commercial fu
 | Customer Doubt / Friction Point | Universal Class | The Exact Archetype to Deploy |
 | :--- | :--- | :--- |
 | **"I can't touch it — is the texture cheap, sticky, or synthetic?"** | **The Proof / Ritual** | *Viscosity Swatch* (`01`, Look 03) • *Dermal Absorption* (`01`, Look 13) • *Textile Macro* (`03`, Look 03) |
-| **"Will this leak in my bag and ruin my laptop or clothes?"** | **The Proof** | *High-Stakes Inversion Test* (`02`, Look 13) |
+| **"Will this leak in my bag and ruin my laptop or clothes?"** | **The Proof** | *High-Stakes Inversion Test* (`02`, Look 13) — use a documented test for a factual seal claim, or a clearly illustrative contrast for concept work |
 | **"Will this actually fit my body, countertop, room, or elevator?"** | **The Specimen / Proof** | *Dual-Model Fit* (`03`, Look 12) • *Under-Cabinet Anchor* (`04`, Look 03) • *Seated Clearance* (`05`, Look 03) • *Transit Fold* (`06`, Look 15) |
 | **"Why does this cost $800–$10,000+? Is it built to last?"** | **The Proof** | *Engineering Teardown* (`04`, Look 12) • *10-Year Workhorse* (`04`, Look 11) • *Decadal Weathering* (`05`, Look 11) • *10,000-Mile Commuter* (`06`, Look 10) |
 | **"Will the motor die or short-circuit in rain or mud?"** | **The Proof** | *Monsoon Immersion Test* (`06`, Look 14) • *Water & Mud Torture* (`06`, Look 09) |
-| **"Will active skincare ingredients spoil before I finish the bottle?"** | **The Proof** | *Temporal Stability & Shelf-Life Proof* (`01`, Look 11) |
-| **"Will this leave an ashy white cast on my deep skin tone?"** | **The Proof** | *Multi-Tone Compatibility Matrix* (`01`, Look 12) |
-| **"Will this climb my steep hill without me sweating or stalling?"** | **The Proof** | *30% Incline Hill-Climb Torque Proof* (`06`, Look 12) |
+| **"Will active skincare ingredients spoil before I finish the bottle?"** | **The Proof** | *Temporal Stability & Shelf-Life Proof* (`01`, Look 11) — show the supplied stability result or use a neutral concept frame |
+| **"Will this leave an ashy white cast on my deep skin tone?"** | **The Proof** | *Multi-Tone Compatibility Matrix* (`01`, Look 12) — compare documented swatches or label the render as a concept |
+| **"Will this climb my steep hill without me sweating or stalling?"** | **The Proof** | *30% Incline Hill-Climb Torque Proof* (`06`, Look 12) — use the actual grade, rider, conditions, and test data |
 | **"How hard is this to clean, disassemble, or maintain?"** | **The Proof** | *Easy-Clean Disassembly* (`04`, Look 06) • *Utility & Drainage Access* (`05`, Look 07) |
 
 ---
 
-## 7. The Universal 5-Block Director's Rig Prompt Protocol
+## 7. Optional 5-Block Director's Rig Prompt Scaffold
 
-To eliminate AI hallucinations, prop hijacking, and synthetic artifacts, all future image generation in this library must assemble prompts using the **5-Block Director's Rig Syntax**:
+The five blocks are a compact way to specify a visual when they help the task. They are modular fields, not a required grammar: a native image tool, a human photographer, a compositing workflow, or another prompt structure may be clearer. Keep the blocks that improve the outcome and omit the rest.
 
 ```text
 BLOCK 1: [HERO SUBJECT & BOUNDING BOX]
@@ -202,20 +200,20 @@ BLOCK 5: [NEGATIVE CONSTRAINTS & EXCLUSIONS]
 ### The 5 Blocks Defined:
 
 * **BLOCK 1: [HERO SUBJECT & BOUNDING BOX]**
-  * *Purpose:* Enforces the Token Primacy Law.
-  * *Content:* Placed in the **first 12–15 tokens**. States the exact product type, volume/scale, materials, finishes, and label orientation. Mandates that the product occupies **70%–80% of the frame**.
+  * *Purpose:* States what the viewer should understand first.
+  * *Content:* Product type, source/reference identity, known dimensions, materials, finish, label orientation, and a compositionally appropriate prominence. Use a reference image or post-render label when exact geometry or typography matters.
 * **BLOCK 2: [OPTICAL & CAMERA RIG]**
   * *Purpose:* Enforces physical optical geometry instead of AI defaults.
   * *Content:* Exact lens focal length (50mm, 85mm prime, 100mm macro), camera elevation (eye-level, low-angle 15°, axle-height), f-stop (`f/2.8` for shallow subject separation, or `f/8` for edge-to-edge sharpness), and shutter speed for kinetic motion.
 * **BLOCK 3: [LIGHTING RIG & SPECULAR CONTROL]**
-  * *Purpose:* Enforces physical studio lighting, color temperature, and surface grounding.
-  * *Content:* Key and fill ratio (e.g., 3:1 commercial catalog or 8:1 dramatic chiaroscuro), light source (5500K high-CRI diffused daylight, 2800K warm tungsten, side softbox), and **mandatory crisp contact occlusion shadow** at the base.
+  * *Purpose:* Makes material and contact readable.
+  * *Content:* Key/fill relationship, light source, color temperature, reflections, and a believable contact shadow when the product touches a surface. Choose contrast for label legibility and the intended dialect; no shadow or ratio is mandatory in every scene.
 * **BLOCK 4: [SUBORDINATE STAGE & DEPTH SEPARATION]**
-  * *Purpose:* Enforces the 3-Stop Rule to prevent prop hijacking.
-  * *Content:* Surface texture (charred Shou Sugi Ban, travertine, seamless cyclorama). Specifies that any background elements or secondary props are **2–3 stops darker, heavily blurred (`f/2.8` bokeh), or cropped out of primary visual hierarchy**.
+  * *Purpose:* Puts the product in a meaningful setting without losing the hierarchy.
+  * *Content:* Surface texture, scene context, and the treatment of secondary props. Use blur, tonal separation, crop, or deliberate equal-weight comparison according to the communication job.
 * **BLOCK 5: [NEGATIVE CONSTRAINTS & EXCLUSIONS]**
-  * *Purpose:* Eliminates known AI failure modes and commercial conversion killers.
-  * *Content:* Explicit exclusion of clutter, multiple products, floating shadows, wax skin, uncanny valley, extra limbs, cartoon rendering, off-center placement, and distracting backgrounds.
+  * *Purpose:* Names the failure modes that would damage this particular asset.
+  * *Content:* Exclude only relevant errors such as warped labels, wrong components, extra limbs, impossible reflections, false dimensions, or distracting clutter. “Negative” text is a request for inspection, not a guarantee of absence.
 
 ---
 
@@ -223,8 +221,8 @@ BLOCK 5: [NEGATIVE CONSTRAINTS & EXCLUSIONS]
 
 #### Example 1: Scale 01 (Micro) — The Proof Class (Skincare Absorption)
 ```text
-[BLOCK 1: HERO]: A crisp, high-converting e-commerce skincare demonstration on a clean, seamless neutral white studio surface. The subject is a woman's natural forearm positioned horizontally across the lower half of the frame, occupying 70% of visual weight, with natural unretouched skin pores visible.
-[BLOCK 2: COMPARISON GRAMMAR]: A clean two-stage side-by-side demonstration directly on her skin. ON THE LEFT: A single, concentrated micro-droplet of intense indigo-blue face oil resting on the surface of the skin. ON THE RIGHT: The identical oil rubbed smoothly into the skin, showing it absorb instantly into a completely transparent, clear, dewy, glowing finish with zero blue or ashy discoloration.
+[BLOCK 1: HERO]: A crisp e-commerce skincare illustration or documented demonstration on a clean, seamless neutral white studio surface. The subject is a woman's natural forearm positioned horizontally across the lower half of the frame, occupying 70% of visual weight, with natural unretouched skin pores visible.
+[BLOCK 2: COMPARISON GRAMMAR]: A clean two-stage side-by-side demonstration directly on her skin. ON THE LEFT: A single, concentrated micro-droplet of [FORMULA COLOR / TEXTURE FROM SOURCE] resting on the surface of the skin. ON THE RIGHT: The identical formula rubbed smoothly into the skin, showing the supplied or observed finish. If the absorption result is not documented, treat the scene as a concept and avoid a performance caption.
 [BLOCK 3: OPTICS]: 100mm True Macro prime lens, f/8 tack-sharp focus on natural skin pores and micro-texture.
 [BLOCK 4: STAGE & LIGHT]: In the soft-focus background (f/2.8 blur, 2 stops darker), the 30ml amber glass dropper bottle rests out of focus. Clean 5200K high-CRI clinical daylight with subtle soft fill.
 [BLOCK 5: EXCLUSIONS]: Negative: multiple skin patches, makeup foundation swatches, floating blue blobs, brown oil drops, messy droppers, cluttered bathroom props, airbrushed plastic skin, four arms.
@@ -242,7 +240,7 @@ BLOCK 5: [NEGATIVE CONSTRAINTS & EXCLUSIONS]
 #### Example 3: Scale 04 (Appliances) — The Proof Class (Engineering Cutaway)
 ```text
 [BLOCK 1: HERO]: A side-by-side e-commerce engineering comparison photograph of two espresso machines on a clean, seamless neutral light-gray studio cyclorama with zero background clutter, occupying 85% of total frame width.
-[BLOCK 2: COMPARISON GRAMMAR]: ON THE LEFT (45% of width): An opened budget competitor machine cutaway showing thin, oxidized aluminum thermoblock and brittle white nylon plastic tubing, labeled 'COMPETITOR: PLASTIC & THIN ALUMINUM'. ON THE RIGHT (55% of width - THE HERO): Our premium commercial dual-boiler espresso machine with stainless steel side panel removed, showcasing heavy solid forged brass group head, massive dual copper boilers, and thick copper piping, labeled 'OUR MACHINE: SOLID BRASS & COPPER'.
+[BLOCK 2: COMPARISON GRAMMAR]: ON THE LEFT (45% of width): A generic budget-style reference machine cutaway, intentionally showing the weak construction the buyer wants to avoid. ON THE RIGHT (55% of width — THE HERO): [HERO PRODUCT] with the side panel removed, showing only the supplied, documented internals. Label the left side “GENERIC LOWER-COST REFERENCE” and the right side with the hero product's verified material claims; do not invent a competitor, component, or test result. The contrast may be deliberately stark to make the pain and relief immediately legible.
 [BLOCK 3: OPTICS]: 60mm prime lens, eye-level perspective, tack-sharp f/8 depth of field across both machines.
 [BLOCK 4: STAGE & LIGHT]: High-contrast commercial catalog lighting (5500K) with crisp contact floor shadows and zero reflections on back wall.
 [BLOCK 5: EXCLUSIONS]: Negative: kitchen background, countertops, blenders, messy wires, dark shadows, tilted horizon, artistic blur, café background.
@@ -261,7 +259,7 @@ BLOCK 5: [NEGATIVE CONSTRAINTS & EXCLUSIONS]
 
 ## 8. Complete File Directory
 
-* **[`INDEX.md`](INDEX.md)** *(This file)* — Universal selector, 5 laws, 4 classes, 5-block rig protocol, and decision matrices.
+* **[`INDEX.md`](INDEX.md)** *(This file)* — Universal selector, five working principles, four classes, optional five-block scaffold, and decision matrices.
 * **[`DIALECTS.md`](DIALECTS.md)** — 16 master brand aesthetic lenses (Sensorial Glow, Playful Utility, Quiet Luxury, Industrial Brutalism, Subversive Rebellion, Earthy Gorpcore, Architectural Sanctuary, 90s Heritage Nostalgia, Clinical Biotech, Cyber-Kinetic, High-Performance Direct-Response, California Wellness, Mediterranean Riviera, Old-Money Heritage, Rugged Western Americana, 35mm Analog Cinema).
 * **[`01-micro-intimate.md`](01-micro-intimate.md)** — 15 archetypes for jewelry, skincare, cosmetics, and supplements (< 6").
 * **[`02-handheld-tabletop.md`](02-handheld-tabletop.md)** — 15 archetypes for food, beverage, CPG, and EDC tech (6–18").
@@ -272,18 +270,18 @@ BLOCK 5: [NEGATIVE CONSTRAINTS & EXCLUSIONS]
 
 ---
 
-## 9. Foundational References, Theoretical Attribution & Source Directory
+## 9. Foundational References & Source Directory
 
-Every photographic law, visual grammar rule, cognitive framing stage, and archetype in this image lookbook library is grounded in rigorous empirical research across optical physics, studio lighting engineering, cognitive psychology, perceptual neuroscience, and commercial conversion testing. For operators, directors, and researchers seeking deeper study:
+These references inform selected craft decisions; they do not prove every recipe, guarantee a conversion result, or turn a generated image into evidence. Use primary product documentation, observed tests, and platform requirements for claims about a specific product. For operators, directors, and researchers seeking deeper study:
 
 ### I. Optical Physics & Studio Lighting Engineering
 * **Fil Hunter, Steven Biver, & Paul Fuqua:**
   * *Primary Contribution:* The science of light transport, specular reflection families, surface angles, and key-to-fill ratios for physical objects.
-  * *Key Frameworks Used:* The Law of Reflection; Direct vs. Diffuse vs. Polarized Reflections; Specular Highlights on Curved and Cylindrical Metals; Depth Carving with Subordinate Background Illumination (The 3-Stop Rule).
+  * *Key Frameworks Used:* Direct, diffuse, and polarized reflection; specular highlights on curved and cylindrical metals; depth and tonal separation as useful lighting tools.
   * *Seminal Work:* *Light: Science and Magic: An Introduction to Photographic Lighting* (Focal Press / Routledge, 1st–6th Eds.).
 * **Ansel Adams & Fred Archer:**
   * *Primary Contribution:* The Zone System of exposure and tonal separation.
-  * *Key Frameworks Used:* Tonal placement from Zone 0 (Maximum Black) through Zone V (18% Middle Gray) to Zone X (Pure Specular White); deliberate 2-to-3 stop luminance separation between foreground subject and background field.
+  * *Key Frameworks Used:* Tonal placement and deliberate luminance separation between a foreground subject and its background when the composition calls for it.
   * *Seminal Works:* *The Negative* (1948), *The Print* (1950), *The Camera* (1980).
 * **Harold M. Merklinger:**
   * *Primary Contribution:* Optical depth of field, circle of confusion, and focal plane geometry.
@@ -293,7 +291,7 @@ Every photographic law, visual grammar rule, cognitive framing stage, and archet
 ### II. Cognitive Psychology, Visual Saliency & Reading Grammar
 * **John Sweller:**
   * *Primary Contribution:* Cognitive Load Theory (CLT).
-  * *Key Frameworks Used:* Split-attention effect and cognitive overload in single-frame visual compositions; "One Photo, One Claim" Law (Law 2) to eliminate extraneous cognitive load and semantic cross-contamination.
+  * *Key Frameworks Used:* Split-attention effect and cognitive load in single-frame visual compositions; a clear dominant viewer job as an editorial heuristic.
   * *Seminal Work:* "Cognitive Load During Problem Solving: Effects on Learning" (*Cognitive Science*, 1988).
 * **Rolf Reber, Norbert Schwarz, & Piotr Winkielman:**
   * *Primary Contribution:* Processing Fluency Theory and aesthetic pleasure.
@@ -301,15 +299,15 @@ Every photographic law, visual grammar rule, cognitive framing stage, and archet
   * *Seminal Work:* "Processing Fluency and Aesthetic Pleasure: Is Beauty in the Perceiver's Processing Experience?" (*Personality and Social Psychology Review*, 2004).
 * **Hermann Ebbinghaus & Bennet B. Murdock Jr.:**
   * *Primary Contribution:* The Serial-Position Effect and Primacy Bias.
-  * *Key Frameworks Used:* The Token Primacy Law (Law 1) in visual and linguistic transformer conditioning; human cognitive anchoring on initial stimulus tokens.
+  * *Key Frameworks Used:* Human serial-position and primacy effects; a reminder that visual and prompt order can shape attention, without claiming a fixed model-token threshold.
   * *Seminal Works:* *Über das Gedächtnis* (Ebbinghaus, 1885); "The Serial Position Effect of Free Recall" (Murdock, *Journal of Experimental Psychology*, 1962).
 * **Edmund Arnold & Dirk Wendt:**
   * *Primary Contribution:* The Gutenberg Diagram and Z-Pattern Reading Flow.
-  * *Key Frameworks Used:* Western left-to-right, top-to-bottom scan patterns; The Strict Directional Grammar Law (Law 4: Left = Problem/Competitor, Right = Solution/Hero Product).
+  * *Key Frameworks Used:* Western left-to-right, top-to-bottom scan patterns and left-to-right problem-to-relief metaphors as optional composition choices.
   * *Seminal Works:* *Functional Graphic Design* (Arnold, 1958); "An Approach to the Gutenberg Diagram" (Wendt, 1979).
 * **Boyoun Chae & JoAndrea Hoegg:**
   * *Primary Contribution:* Spatial-temporal cognitive metaphors in consumer judgment.
-  * *Key Frameworks Used:* Confirmation that placing past/raw/inferior states on the left and future/improved/hero states on the right aligns with innate mental timelines and significantly increases product evaluation scores.
+  * *Key Frameworks Used:* Research on horizontal location and temporal metaphors in consumer judgment; use the cited left-to-right contrast as a hypothesis to test for the audience and platform rather than a guaranteed uplift.
   * *Seminal Work:* "The Future Looks 'Right': Effects of the Horizontal Location of Advertising Images on Product Evaluation" (*Journal of Consumer Research*, 2013).
 
 ### III. Haptic Psychology, Visceral Craving & Consumer Behavior
@@ -319,7 +317,7 @@ Every photographic law, visual grammar rule, cognitive framing stage, and archet
   * *Seminal Works:* "To Have and to Hold: An Exploration of the Haptic Effect in Consumer Behavior" (*Journal of Marketing*, 2003); "If I Touch It I Have to Have It: Individual Differences in Need for Touch and Purchase Intention" (*Journal of Business Research*, 2006).
 * **Joann Peck & Suzanne B. Shu:**
   * *Primary Contribution:* Psychological ownership induced through touch.
-  * *Key Frameworks Used:* Vicarious touch and in-hand grip imagery (Scale 01 Look 05, Scale 02 Look 05) trigger feelings of psychological ownership that elevate willingness-to-pay (WTP).
+  * *Key Frameworks Used:* Vicarious touch and in-hand grip imagery can support perceived ownership and willingness-to-pay in some contexts; test the audience response.
   * *Seminal Work:* "The Effect of Mere Touch on Perceived Ownership" (*Journal of Consumer Research*, 2009).
 * **Michael I. Norton, Daniel Mochon, & Dan Ariely:**
   * *Primary Contribution:* The IKEA Effect and labor-valuation heuristics.
@@ -329,7 +327,7 @@ Every photographic law, visual grammar rule, cognitive framing stage, and archet
 ### IV. Generative Diffusion Models & Physically Based Rendering
 * **Robin Rombach, Andreas Blattmann, Dominik Lorenz, Patrick Esser, & Björn Ommer:**
   * *Primary Contribution:* Latent Diffusion Models (LDMs).
-  * *Key Frameworks Used:* Cross-attention mechanism dynamics; why early tokens dictate high-frequency structural diffusion grids; token primacy engineering.
+  * *Key Frameworks Used:* Latent diffusion conditioning and cross-attention as background for model behavior; no universal token-count rule is asserted here.
   * *Seminal Work:* "High-Resolution Image Synthesis with Latent Diffusion Models" (CVPR, 2022).
 * **Matt Pharr, Wenzel Jakob, & Greg Humphreys:**
   * *Primary Contribution:* Physically Based Rendering (PBR) and light transport simulation.
@@ -337,7 +335,7 @@ Every photographic law, visual grammar rule, cognitive framing stage, and archet
   * *Seminal Work:* *Physically Based Rendering: From Theory to Implementation* (Morgan Kaufmann, 3rd/4th Eds.).
 * **Edward H. Adelson (MIT Perceptual Science Group):**
   * *Primary Contribution:* Material perception and visual surface appearance.
-  * *Key Frameworks Used:* Human visual distinction between specular glossiness, diffuse reflectance, sub-surface scattering, and translucent absorption; prompts specifying authentic micro-texture (Law 5).
+  * *Key Frameworks Used:* Human visual distinction between specular glossiness, diffuse reflectance, subsurface scattering, and translucent absorption; prompts and inspections for authentic material texture.
   * *Seminal Work:* "On the Seeing of Stuff: The Perception of Materials by Humans and Machines" (SPIE Proceedings, 2001).
 * **Masahiro Mori:**
   * *Primary Contribution:* The Uncanny Valley Hypothesis.
@@ -349,10 +347,6 @@ Every photographic law, visual grammar rule, cognitive framing stage, and archet
   * *Primary Contribution:* Large-scale empirical e-commerce usability and gallery benchmarking (78,000+ hours of user testing).
   * *Key Frameworks Used:* The 6-slot mobile PDP gallery sequence; mandatory scale/dimension verification images; rejection of artistic abstraction without clear product fidelity.
   * *Benchmark Reference:* *Product Page Usability: Photos & Image Gallery UX Guidelines* (Baymard Institute, Continuous Benchmarks).
-* **Spiegel Research Center (Northwestern University):**
-  * *Primary Contribution:* Empirical study of customer reviews, trust ratings, and conversion lift.
-  * *Key Frameworks Used:* The Spiegel Paradox (flawless 5.0 ratings decrease conversion; authentic 4.2–4.7 ratings maximize trust); two-sided proof imagery showing authentic break-in and minor wear.
-  * *Seminal Work:* *How Online Reviews Influence Sales* (Spiegel Research Center, 2017).
 * **Eugene Schwartz:**
   * *Primary Contribution:* Market Awareness Stages and prospect sophistication.
   * *Key Frameworks Used:* Schwartz's 5 Stages of Awareness mapped to the 4 Universal Commerce Classes (*Unaware* $\to$ Habitat/Ritual; *Solution/Product Aware* $\to$ Proof/Specimen).
@@ -369,7 +363,7 @@ Every photographic law, visual grammar rule, cognitive framing stage, and archet
   * *Seminal Resources:* *White Seamless: A Comprehensive Guide to Commercial Studio Lighting* (2010); *Photography Q&A* (New Riders, 2013).
 * **David Ogilvy (Ogilvy & Mather):**
   * *Primary Contribution:* The science of advertising layout, visual storytelling, and image psychology.
-  * *Key Frameworks Used:* Visual Hierarchy (Image $\to$ Caption $\to$ Headline); "Story Appeal" in commercial photography; demonstrating that product captions placed directly under images are read 20% more than headline copy and must carry the core proof claim.
+  * *Key Frameworks Used:* Visual hierarchy (image, caption, headline) and story appeal in commercial photography; use captions to clarify the supported message.
   * *Seminal Works:* *Confessions of an Advertising Man* (1963), *Ogilvy on Advertising* (1983).
 * **Nik Sharma (Sharma Brands):**
   * *Primary Contribution:* Direct-to-consumer (DTC) visual merchandising, landing page architecture, and e-commerce conversion design.
