@@ -38,4 +38,4 @@ Use when an ad angle needs clear visual/audio production requirements; media buy
 7. [HYBRID] Verify produced creative against angle, claims, and destination before activation when the media is available.
 
 ## Optional craft reference
-For a web destination or comparison-led ad, consult the [Web Design & Conversion Architecture index](../../../../../recipes/web-design/INDEX.md) for the shared persuasion technique spectrum and comparison truth modes. Keep the ad's visual contrast and pain → relief framing aligned with the evidence and the destination's real offer.
+For a web destination or comparison-led ad, consult the [Web Design & Conversion Architecture menu](../../../../../recipes/web-design/INDEX.md) and its optional [persuasion and offer notes](../../../../../recipes/web-design/notes/persuasion-and-offers.md) for the shared persuasion technique spectrum and comparison truth modes. Keep the ad's visual contrast and pain → relief framing aligned with the evidence and the destination's real offer.

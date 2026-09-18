@@ -38,4 +38,4 @@ Use after message match/persuasion context is sufficiently known and before or d
 7. [AI] Preserve the useful section architecture and content/creative requirements as an Asset. Use copy, Content, or journey methods directly as needed; persist a WorkRequest only for a real durable organizational handoff.
 
 ## Optional craft reference
-Use the [Web Design & Conversion Architecture index](../../../../../recipes/web-design/INDEX.md) when its section archetypes, first-screen positioning filter, continuation cues, or 7-block brief would clarify the requested page. Treat them as selectable craft references rather than a required page sequence.
+Use the [Web Design & Conversion Architecture menu](../../../../../recipes/web-design/INDEX.md) and its optional [marketing principles and section patterns](../../../../../recipes/web-design/notes/marketing-principles.md) when section archetypes, the first-screen positioning filter, continuation cues, or the 7-block brief would clarify the requested page. Treat them as selectable craft references rather than a required page sequence.

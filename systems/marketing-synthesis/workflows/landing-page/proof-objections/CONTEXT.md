@@ -38,4 +38,4 @@ Use when a landing page requires material proof and objection handling.
 7. [HYBRID] Preserve the useful proof/objection architecture and claim relationships in the relevant Asset, then use Content or final claim-validation methods directly as needed. Persist a WorkRequest only for a real durable organizational handoff.
 
 ## Optional craft reference
-The [Web Design & Conversion Architecture index](../../../../../recipes/web-design/INDEX.md) describes comparison truth modes and a persuasion technique spectrum that can help select a demonstration, comparison, or pain → mechanism → relief treatment. Use measured, illustrative, and aspirational material as distinct modes.
+The [Web Design & Conversion Architecture menu](../../../../../recipes/web-design/INDEX.md) and its optional [persuasion and offer notes](../../../../../recipes/web-design/notes/persuasion-and-offers.md) describe comparison truth modes and a persuasion technique spectrum that can help select a demonstration, comparison, or pain → mechanism → relief treatment. Use measured, illustrative, and aspirational material as distinct modes.

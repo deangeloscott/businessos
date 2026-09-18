@@ -36,4 +36,4 @@ Use when an image or graphic is the useful communication output and existing Ass
 6. [DETERMINISTIC] Save the useful versioned Asset plus source/prompt/design provenance where future work benefits.
 
 ## Optional craft references
-For commerce imagery, the [e-commerce image lookbooks](../../../../../recipes/creative/ecommerce-image-lookbooks/INDEX.md) and [brand dialects](../../../../../recipes/creative/ecommerce-image-lookbooks/DIALECTS.md) are bounded references for composition, scale, comparison, and tactile detail. They do not replace source verification, inspection, or the workflow's Asset/ProofRecord decisions.
+For commerce imagery, use the [e-commerce image menu](../../../../../recipes/creative/ecommerce-image-lookbooks/INDEX.md), its optional [creative principles](../../../../../recipes/creative/ecommerce-image-lookbooks/notes/creative-principles.md), and [brand dialects](../../../../../recipes/creative/ecommerce-image-lookbooks/DIALECTS.md) as bounded references for composition, scale, comparison, and tactile detail. They do not replace source verification, inspection, or the workflow's Asset/ProofRecord decisions.

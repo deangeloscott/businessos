@@ -40,7 +40,7 @@ Use when an advertorial is useful to remove a commercial persuasion gap or creat
 Use only the research, narrative depth, proof, and production treatment needed to deliver genuine informational value and support the commercial decision. Do not inflate editorial complexity to disguise the advertising purpose.
 
 ## Optional craft reference
-When an advertorial also needs a web conversion surface, consult the [Web Design & Conversion Architecture recipes](../../../../../recipes/web-design/INDEX.md) and the [direct-response funnel track](../../../../../recipes/web-design/04-multistep-sales-funnels.md) for message-match, pain → mechanism → relief, disclosure, and bridge patterns. Adapt the examples to verified claims and the actual publisher context.
+When an advertorial also needs a web conversion surface, consult the [Web Design & Conversion Architecture menu](../../../../../recipes/web-design/INDEX.md), its optional [persuasion and offer notes](../../../../../recipes/web-design/notes/persuasion-and-offers.md), and the [direct-response funnel track](../../../../../recipes/web-design/04-multistep-sales-funnels.md) for message-match, pain → mechanism → relief, disclosure, and bridge patterns. Adapt the examples to verified claims and the actual publisher context.
 
 ## Verification
 - Commercial sponsorship or intent is disclosed appropriately for the real context.

@@ -41,7 +41,7 @@ Use when a comparison/alternative asset is useful to resolve a material buyer de
 Compare only the alternatives and criteria that materially affect the buyer decision. Broaden to additional benchmarks when they improve understanding or expose an important tradeoff; do not create exhaustive comparison tables merely because more data is available.
 
 ## Optional craft reference
-For web comparison layouts and high-persuasion contrast, consult the [Web Design & Conversion Architecture recipes](../../../../../recipes/web-design/INDEX.md), especially its comparison truth modes and the [funnel/comparison track](../../../../../recipes/web-design/04-multistep-sales-funnels.md). Use the recipe's illustrative contrast only when the resulting asset is labeled clearly and does not imply measured competitor evidence.
+For web comparison layouts and high-persuasion contrast, consult the [Web Design & Conversion Architecture menu](../../../../../recipes/web-design/INDEX.md), its optional [persuasion and offer notes](../../../../../recipes/web-design/notes/persuasion-and-offers.md), and the [funnel/comparison track](../../../../../recipes/web-design/04-multistep-sales-funnels.md). Use the recipe's illustrative contrast only when the resulting asset is labeled clearly and does not imply measured competitor evidence.
 
 ## Verification
 - Material competitor claims are current, sourced, and scoped.
