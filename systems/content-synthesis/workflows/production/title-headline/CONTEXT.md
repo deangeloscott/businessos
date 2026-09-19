@@ -29,6 +29,8 @@ Improve qualified attention and expectation match without clickbait or generic l
 ## Run When
 Run when the format/platform uses a title, headline, subject-like label, or prominent first-frame text.
 
+For quick, adaptable openings, the optional [copy and messaging recipe shelf](../../../../../recipes/creative/copy-messaging/INDEX.md) includes outcome, tension, mechanism, question, and story-led starting points. Select, combine, or skip them based on the actual message, audience, placement, and evidence.
+
 ## Process
 1. [AI] Identify the strongest true value/tension/specificity from the core message and audience context.
 2. [AI] Generate materially different headline mechanisms: outcome, problem, demonstration, specificity, comparison, question, contrarian insight, or consequence as appropriate.

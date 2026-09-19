@@ -10,6 +10,7 @@ Refines the optional recipe layer so the web-design references improve judgment 
 - Added a shared comparison truth model and white-hat / grey-hat / black-hat persuasion vocabulary, preserving generic ideal-versus-poor contrast and pain → mechanism → relief while separating verified, illustrative, and aspirational work.
 - Corrected unsupported conversion lifts, guarantees, 0ms navigation and `/llms.txt` discovery claims, exponential Hick/field-cliff language, false net-profit math, and blanket lead-capture, email-domain, booking-window, payment, and scaling defaults.
 - Added concise recipe navigation/shared guidance and optional links from relevant Marketing Synthesis Workflows; recipes remain outside the Playbook → Workflow → Step hierarchy.
+- Added compact optional shelves for motion graphics, shared audio, information design/presentations, and copy/messaging; each offers borrowable starting points without adding a registry, prompt protocol, or execution requirement.
 
 ### Validation
 

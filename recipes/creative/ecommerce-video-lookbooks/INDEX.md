@@ -15,6 +15,8 @@ A compact menu of reusable motion starting points for product demonstrations, se
 | Match cuts, spatial continuity, and narrative beats | [Continuity and narrative](notes/continuity-and-narrative.md) |
 | Hooks, modular variants, and measurement | [Funnel measurement](notes/funnel-measurement.md) |
 | Sound-off comprehension and tactile Foley | [Sensory and audio](notes/sensory-audio.md) |
+| Motion graphics, titles, diagrams, and demo callouts | [Motion graphics starting points](../motion-graphics/INDEX.md) |
+| Cross-medium narration, music, Foley, or sonic identity | [Shared audio starting points](../audio/INDEX.md) |
 | Safe zones, render checks, and product-scale pairing | [Technical and scale notes](notes/technical-and-scales.md) |
 | Source grounding and full directory map | [References](notes/references.md) |
 

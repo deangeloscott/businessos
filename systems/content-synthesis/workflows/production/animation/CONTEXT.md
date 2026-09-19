@@ -33,3 +33,7 @@ Use when animation/motion is the useful communication output and existing Assets
 4. [INTEGRATION] Generate or render the animation with the active harness's available tools, or produce complete keyframe/timing specifications when that remains a useful deliverable.
 5. [HYBRID] Review timing, legibility, loop behavior where relevant, compression, accessibility, and brand quality.
 6. [DETERMINISTIC] Preserve the useful versioned Asset with production/source references. Use relevant QA operating knowledge when the artifact/destination warrants it; do not create an internal routing stage merely to complete the Workflow.
+
+## Optional craft references
+
+When a motion graphic is the useful form, the [motion graphics starting points](../../../../../recipes/creative/motion-graphics/INDEX.md) offer adaptable ideas for numbers, statements, state changes, demo callouts, mechanisms, and title/closing moments. Use the [shared audio starting points](../../../../../recipes/creative/audio/INDEX.md) when voice, music, sound design, or an audio-only variation would improve the communication. These are optional references; the model or user may use another motion plan or tool-native method.

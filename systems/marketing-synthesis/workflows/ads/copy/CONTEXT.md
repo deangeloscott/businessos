@@ -28,6 +28,8 @@ Generate clicks/views/actions from the right people without bait-and-switch or u
 ## Run When
 Run when an advertising campaign requires this persuasion or QA sub-process; media buying/targeting execution remains outside this OS.
 
+When a fast creative starting point is useful, the optional [copy and messaging recipe shelf](../../../../../recipes/creative/copy-messaging/INDEX.md) offers benefit, objection, outreach, story, and headline shapes. Adapt them to the actual offer, proof, placement, and policy constraints, or use another method.
+
 ## Process
 1. [AI] Resolve chosen angle, audience, Offer, channel/placement constraints, proof, and destination from the current organizational context or a real handoff when one exists.
 2. [AI] Write opening/primary text/headline/CTA as required, making the audience-relevant value/tension specific quickly.

@@ -34,3 +34,7 @@ Run when an Opportunity or WorkRequest requires podcast episode production and e
 5. [INTEGRATION] Record/generate/edit audio where capabilities exist or preserve a complete recording/edit specification when that remains useful.
 6. [HYBRID] Review audio quality, factual claims, pacing, repetition, ads/disclosures, and final metadata/show notes. Draw on pre-publish QA operating knowledge when an additional integrated review is useful.
 7. [DETERMINISTIC] Save the useful versioned episode Asset and transcript/source references.
+
+## Optional craft references
+
+The [shared audio starting points](../../../../../recipes/creative/audio/INDEX.md) can help choose a spoken-explanation, music, sonic-signature, tactile, or audio-only treatment when the episode needs a quick creative direction. Adapt or skip them according to the listener promise, format, evidence, and available production method.

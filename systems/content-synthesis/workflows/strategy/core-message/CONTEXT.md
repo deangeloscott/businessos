@@ -29,6 +29,8 @@ Prevent content from becoming a collection of facts without a clear takeaway.
 ## Run When
 Run when source material contains multiple possible ideas or the communication takeaway is not yet explicit.
 
+After the core message is clear, the optional [copy and messaging recipe shelf](../../../../../recipes/creative/copy-messaging/INDEX.md) can provide a quick announcement, benefit, objection, education, story, or opening angle. Use it only when it helps express the supported message; it does not choose the message or add evidence.
+
 ## Process
 1. [AI] Review the originating Insight/Opportunity and separate the essential conclusion from supporting evidence/background.
 2. [AI] State the audience-relevant core message in one plain sentence without headline theatrics.

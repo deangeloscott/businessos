@@ -36,3 +36,7 @@ Use when long-form video is the useful communication output and existing Assets 
 6. [HYBRID] Fact-check consequential claims and ensure source/proof materials are production-accessible. Evidence/proof planning knowledge may help when claims or demonstrations warrant it.
 7. [INTEGRATION] Generate/render with the active harness's available tools, or produce the useful production materials needed for another real actor. Include thumbnail/title concepts, captions, or chapters only when in scope.
 8. [HYBRID] Review the actual final Asset when one exists against audience value, technical quality, brand, factual integrity, and platform requirements. Pre-publish QA knowledge may help, but it is not a machine-required subworkflow.
+
+## Optional craft references
+
+Use the [motion graphics starting points](../../../../../recipes/creative/motion-graphics/INDEX.md) when a title, data moment, mechanism diagram, state change, or demo callout can replace exposition or clarify a section. Use the [shared audio starting points](../../../../../recipes/creative/audio/INDEX.md) when narration, music, tactile sound, sonic identity, or an audio-only derivative needs a quick starting idea. These references are optional and should be adapted to the actual narrative and production method.

@@ -25,6 +25,8 @@ Make complex evidence, processes, comparisons, or results easier to understand a
 ## Run When
 Use when an infographic is the useful communication output and existing Assets do not already satisfy the need. An Opportunity or real durable WorkRequest may provide context but is not required.
 
+When a quick visual starting point would help, the optional [information design and presentation recipe shelf](../../../../../recipes/creative/information-design/INDEX.md) offers comparison, process, data, map, and decision structures. It is a craft reference; choose it, adapt it, or skip it according to the actual message and evidence.
+
 ## Process
 1. [AI] Identify the single communication job, audience knowledge level, evidence/proof that must remain exact, and what the viewer should understand after scanning.
 2. [AI] Choose the appropriate visual logic: process, comparison, timeline, hierarchy, anatomy, before/after, data story, checklist, map, or other structure.

@@ -2,6 +2,8 @@
 
 > Optional craft notes. Use these when sound or a muted placement materially changes the idea.
 
+For broader audio ideas that also apply to podcasts, presentations, interfaces, and audio-only pieces, see the [shared audio starting points](../../audio/INDEX.md). This note stays focused on pairing sound with a commerce video's visible action.
+
 ## Give sound a useful role
 
 Sound-on and sound-off behavior varies by audience, placement, device, and account. If the video may begin muted, let the essential situation, action, contrast, and next step remain understandable visually. When audio is available, Foley or music can deepen the physical moment. Neither route is universally better.

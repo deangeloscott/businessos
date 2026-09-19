@@ -37,3 +37,7 @@ Run for podcast, video, animation, avatar, or audio-first content needing define
 5. [DETERMINISTIC] Specify loudness, music-under-dialogue, intro/outro, file/format, and accessibility requirements.
 6. [AI] Mark exact script moments requiring pronunciation notes, emphasis, sound cue, or no-music treatment.
 7. [DETERMINISTIC] Produce audio-direction instructions for human or generative production and final QA.
+
+## Optional craft references
+
+Use the [shared audio starting points](../../../../../recipes/creative/audio/INDEX.md) when a quick creative direction for narration, music, tactile sound, sonic identity, or audio-only communication would help. The recipes describe a role for sound; adapt them to the actual audience, source material, rights, accessibility needs, and production context.

@@ -26,6 +26,8 @@ Create or improve presentation / slideshow production so the source idea is comm
 ## Run When
 Run when an Opportunity or WorkRequest requires presentation / slideshow production and existing Assets do not already satisfy the communication need.
 
+When the deck needs a quick starting structure, the optional [information design and presentation recipe shelf](../../../../../recipes/creative/information-design/INDEX.md) offers decision, executive-brief, proposal, process, and data patterns. It does not replace audience, evidence, narrative, or presenter judgment.
+
 ## Process
 1. [AI] Define audience, setting, presenter/no-presenter mode, decision/learning objective, duration, and expected prior knowledge. Draw on current message, narrative, evidence/proof, outline, visual-direction, or related operating knowledge only when it improves the result.
 2. [AI] Build narrative arc and section sequence around audience questions/decisions rather than source-document headings.

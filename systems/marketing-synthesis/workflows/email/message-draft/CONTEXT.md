@@ -28,6 +28,8 @@ Move the reader one appropriate step using clear, relevant, evidence-backed comm
 ## Run When
 Use when a commercial email requires this specific drafting job. An existing sequence Asset or real durable WorkRequest may provide context but is not required.
 
+For a quick first direction, the optional [copy and messaging recipe shelf](../../../../../recipes/creative/copy-messaging/INDEX.md) includes announcement, helpful follow-up, objection, educational, and story-led shapes. Use the smallest useful reference and adapt it to the actual recipient context, evidence, consent, and offer.
+
 ## Process
 1. [HYBRID] Resolve message job, recipient state, relevant prior messages/actions, Offer, Customer evidence, proof, and CTA from the current context available.
 2. [AI] Write the email around one primary message/action; open with context/value rather than generic greetings/filler.

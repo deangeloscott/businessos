@@ -13,6 +13,8 @@
 - [Placement](platform-placement.md) — adapting opening, crop, sound, and density.
 - [Funnel measurement](funnel-measurement.md) — optional testing and outcome questions.
 - [Sensory and audio](sensory-audio.md) — muted routes and tactile sound.
+- [Motion graphics](../../motion-graphics/INDEX.md) — animated type, numbers, diagrams, demos, maps, and branded moments.
+- [Shared audio](../../audio/INDEX.md) — narration, music, tactile sound, sonic identity, and audio-first directions.
 - [Technical and scale notes](technical-and-scales.md) — destination checks and physical-scale cues.
 - [Image lookbooks](../../ecommerce-image-lookbooks/INDEX.md) — optional still-image references and scale menus.
 

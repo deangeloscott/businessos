@@ -33,3 +33,7 @@ Use when audio is the useful communication output and existing Assets do not alr
 4. [INTEGRATION] Generate/record/edit audio with the active harness's available tools.
 5. [HYBRID] Listen/review for mispronunciation, artifacts, pacing, factual accuracy, and brand tone.
 6. [DETERMINISTIC] Preserve the useful versioned Asset and transcript with source/production lineage where future work benefits.
+
+## Optional craft references
+
+When the audio needs a starting idea, open the [shared audio starting points](../../../../../recipes/creative/audio/INDEX.md) and borrow the smallest useful treatment. The recipes are cross-medium creative references, not a required prompt format or mixing specification.
