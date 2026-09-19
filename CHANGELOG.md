@@ -1,20 +1,22 @@
 # Changelog
 
-## Unreleased
+## 0.1.8 — Alpha
 
-Refines the optional recipe layer so the web-design references improve judgment without becoming a mandatory protocol or competing AURA hierarchy.
+Expands and refines AURA's optional creative recipe layer so people and capable AI can reach strong creative starting points quickly while keeping judgment, experimentation, and execution with the user/model/harness.
 
 ### What changed
 
-- Recast the web-design index, four tracks, and dialects as selectable craft references with conditional heuristics, measurable targets, and explicit adaptation points.
-- Added a shared comparison truth model and white-hat / grey-hat / black-hat persuasion vocabulary, preserving generic ideal-versus-poor contrast and pain → mechanism → relief while separating verified, illustrative, and aspirational work.
+- Recast the image, video, and web references as selectable, adaptable craft starting points with compact navigation and optional deeper notes; recipes remain outside the Playbook → Workflow → Step hierarchy.
+- Separated the 90 image concepts and four video concepts into independently readable entries while preserving the original creative ideas, useful executions, and product-scale awareness.
+- Added 32 optional recipes across four new shelves: motion graphics, shared audio, information design/presentations, and copy/messaging.
+- Added optional recipe pointers to relevant Content Synthesis and Marketing Synthesis Workflows without creating a registry, prompt protocol, routing layer, or execution requirement.
+- Preserved strong persuasive concepts such as generic quality contrast and pain → mechanism → relief while distinguishing verified product facts from illustrative or aspirational creative direction.
 - Corrected unsupported conversion lifts, guarantees, 0ms navigation and `/llms.txt` discovery claims, exponential Hick/field-cliff language, false net-profit math, and blanket lead-capture, email-domain, booking-window, payment, and scaling defaults.
-- Added concise recipe navigation/shared guidance and optional links from relevant Marketing Synthesis Workflows; recipes remain outside the Playbook → Workflow → Step hierarchy.
-- Added compact optional shelves for motion graphics, shared audio, information design/presentations, and copy/messaging; each offers borrowable starting points without adding a registry, prompt protocol, or execution requirement.
+- Refined all recipe families so users/models can borrow, combine, adapt, skip, or replace them freely; recipes make no percentile, conversion, or business-outcome guarantees.
 
 ### Validation
 
-Regenerated normal AURA navigation/checksums; workspace validation passed (466 Workflows, 0 errors/0 warnings); Workflow discovery/selection, nine component distributions, and the full 35-suite product-integrity gate passed. No new recipe registry, schema, runtime, or execution layer was introduced.
+Regenerated normal AURA navigation/checksums; workspace validation passed (466 Workflows, 0 errors/0 warnings); Workflow discovery/selection, nine component distributions, and the full 35-suite product-integrity gate passed. The release gate also validates the curated full ZIP from a fresh unzip and a separate organization workspace smoke test. No new recipe registry, schema, runtime, or execution layer was introduced.
 
 ## 0.1.7 — Alpha
 
