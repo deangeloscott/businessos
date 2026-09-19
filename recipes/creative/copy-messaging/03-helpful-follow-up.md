@@ -22,4 +22,4 @@ Replace the question, answer, comparison, and next step with supported informati
 
 ## Adapt
 
-For a post-download email, lead with the promised resource or one useful application. For a sales follow-up, make the next action easy to understand and easy to decline. Remove urgency, proof, or reassurance that the organization cannot substantiate.
+For a post-download email, lead with the promised resource or one useful application. For a sales follow-up, answer the direct question first when the person is ready to decide; when interest is earlier, offer a useful comparison, example, or check before asking for time. State a real deadline when one matters, and remove urgency, proof, or reassurance that the organization cannot substantiate.

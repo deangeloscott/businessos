@@ -19,10 +19,11 @@ For the same fictional insulated-bottle message, possible openings are:
 - **Outcome:** Keep your drink cold through the afternoon.
 - **Tension:** Tired of lukewarm drinks halfway through the day?
 - **Mechanism:** Double-wall insulation slows the exchange with the outside air.
+- **Direct offer:** Take the insulated bottle built for the route you actually take.
 - **Question:** How long should your drink stay cold on the route you take?
 
 These are angle examples, not tested winners or claims about a real product.
 
 ## Adapt
 
-Choose the angle that matches awareness, placement, and trust. Use customer language when it is supported and permitted; write original copy when it is not. Pair each headline with enough context to prevent a misleading impression, then let the model or user choose, combine, or discard the variants.
+Choose the angle that matches awareness, placement, and trust. Use a direct offer when the reader is ready to act, an outcome when the benefit needs to be understood quickly, a question or tension when the audience is exploring, and a mechanism when proof matters. Use customer language when it is supported and permitted; write original copy when it is not. Pair each headline with enough context to prevent a misleading impression, then let the model or user choose, combine, or discard the variants.

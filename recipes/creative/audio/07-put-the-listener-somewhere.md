@@ -4,7 +4,7 @@ Use room tone, environmental sound, and spatial contrast to make a scene, conver
 
 ## Borrow this treatment
 
-Choose the smallest surrounding world that helps the listener understand the moment: a quiet room, workshop, street, kitchen, venue, landscape, or device context. Establish it briefly, keep it coherent under the voice or action, and let a change in ambience mark a meaningful move. Silence can be the clearest place when the subject needs full attention.
+Choose the smallest surrounding world that helps the listener understand the moment: a quiet room, workshop, street, kitchen, venue, landscape, or device context. Establish it briefly, keep it coherent under the voice or action, and let a change in ambience mark a meaningful move. You can widen the sound when a scene opens up, bring it close and dry when attention narrows, or use silence as the clearest place when the subject needs full focus.
 
 ## Adapt it
 

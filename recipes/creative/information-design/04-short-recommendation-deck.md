@@ -25,4 +25,4 @@ The example demonstrates the narrative; the actual recommendation depends on the
 
 ## Adapt
 
-Replace the fictional decision with the actual one, use evidence the audience can inspect, and choose the smallest deck that lets them act. A product presentation can use the same arc to move from buyer question to recommendation; a strategy review can use it to surface assumptions and open decisions. If no decision is needed, use a simpler narrative or one-page graphic instead.
+Replace the fictional decision with the actual one, use evidence the audience can inspect, and choose the smallest deck that lets them act. For a live presentation, keep the slides spare and let the speaker carry nuance; for a leave-behind, add the labels, assumptions, and source context a reader will need without narration. A product presentation can use the same arc to move from buyer question to recommendation; a strategy review can use it to surface assumptions and open decisions. If no decision is needed, use a simpler narrative or one-page graphic instead.

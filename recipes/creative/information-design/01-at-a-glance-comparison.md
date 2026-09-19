@@ -4,7 +4,7 @@ Use this when someone needs to choose between options and the decision can be ma
 
 ## The idea
 
-Start with the actual decision question, then compare the options on the few dimensions that matter most to that decision. Keep the rows parallel, make tradeoffs visible, and let the recommendation follow from the stated criteria. A comparison can be between a product and a generic alternative, two service approaches, or two possible plans; it does not need to name a competitor.
+Start with the actual decision question, then compare the options on the few dimensions that matter most to that decision. Keep the rows parallel, make tradeoffs visible, and let the recommendation follow from the stated criteria. Decide whether the graphic's job is neutral orientation or a supported recommendation; the same comparison can serve either, but its emphasis should make that purpose clear. A comparison can be between a product and a generic alternative, two service approaches, or two possible plans; it does not need to name a competitor.
 
 ## Borrowable shape
 

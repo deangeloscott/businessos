@@ -4,7 +4,7 @@ Make an idea, offer, story, or instruction work when there is no dependable visu
 
 ## Borrow this treatment
 
-Open with enough context to orient the listener, state one problem or desired outcome, develop it with a concrete example or piece of evidence, and finish with a clear next step or satisfying close. Use voice as the spine and add music, room tone, or a small sound cue only when it improves understanding or feeling. Repeat a necessary name, number, or instruction naturally rather than assuming it was seen on screen.
+Open with the kind of entry the listener can use immediately: a direct promise, a recognizable situation, or a question they may already be asking. State one problem or desired outcome, develop it with a concrete example or piece of evidence, and finish with a clear next step or satisfying close. Use voice as the spine and add music, room tone, or a small sound cue only when it improves understanding or feeling. Repeat a necessary name, number, or instruction naturally rather than assuming it was seen on screen.
 
 ## Adapt it
 

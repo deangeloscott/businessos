@@ -20,4 +20,4 @@ I noticed your shop is preparing a seasonal display. We made a short checklist f
 
 ## Adapt
 
-Use current, permission-respecting channel practices and honor opt-out or contact rules. Lead with something useful enough to stand alone. If the message requires a strong assumption about the recipient, ask a question or omit the assumption. Measure success by useful conversations and fit, not by sending volume alone.
+Use current, permission-respecting channel practices and honor opt-out or contact rules. Lead with something useful enough to stand alone. A warm introduction can name the shared context, a cold message can lead with one concrete observation, and a high-value outreach can ask a precise question instead of requesting a meeting immediately. If the message requires a strong assumption about the recipient, ask a question or omit the assumption. Measure success by useful conversations and fit, not by sending volume alone.

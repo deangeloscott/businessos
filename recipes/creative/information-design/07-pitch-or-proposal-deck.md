@@ -20,4 +20,4 @@ The deck opens with the retailer's current inventory question, demonstrates the 
 
 ## Adapt
 
-For a sales proposal, make fit and commercial terms easy to compare. For an internal pitch, make the decision, owner, resource need, and downside visible. For a partnership, show the exchange and responsibilities on both sides. If the audience already knows the problem, shorten the context and spend more time on the decision criteria and next action.
+For a sales proposal, make fit and commercial terms easy to compare. For an internal pitch, make the decision, owner, resource need, and downside visible. For a partnership, show the exchange and responsibilities on both sides. In a live pitch, let one visual or claim carry each slide and use the conversation for detail; in a leave-behind, make scope, terms, sources, and assumptions understandable without a presenter. If the audience already knows the problem, shorten the context and spend more time on the decision criteria and next action.

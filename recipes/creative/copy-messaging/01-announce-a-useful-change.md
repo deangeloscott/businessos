@@ -20,4 +20,4 @@ If daytime schedules made the original session difficult, you can choose the lat
 
 ## Adapt
 
-For a launch, show the new capability in its natural use. For a policy change, explain the practical effect before the rationale. For an event, lead with the reason the audience would make time for it. Keep the announcement proportional to the change: a small improvement may need a short note, while a material change may need examples, migration help, or a clear owner for questions.
+For a launch, show the new capability in its natural use. For a policy change, explain the practical effect before the rationale. For an event, lead with the reason the audience would make time for it. Choose a direct notice when people must act, an invitation when the change creates an opportunity, or a release note when the audience mainly needs orientation. Keep the announcement proportional to the change: a small improvement may need a short note, while a material change may need examples, migration help, or a clear owner for questions.

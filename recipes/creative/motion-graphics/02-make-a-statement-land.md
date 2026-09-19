@@ -4,7 +4,7 @@ Give a headline, quote, promise, announcement, or call to action a visual beat t
 
 ## Borrow this treatment
 
-Start with the complete thought or its most important phrase. Bring words on in a way that follows the sentence's emphasis: a quiet setup, one change in scale or position, then a clean hold on the line that matters. Use line breaks, weight, contrast, or a single graphic mark to show hierarchy. A lower third, quote card, or end card can use the same idea when the text has a clear job.
+Start with the complete thought or its most important phrase. Let the form follow the idea: assemble separated words when the message is about bringing order, let one phrase interrupt or expand when the point is emphasis, and use a clean cut when the contrast should feel decisive. Finish with a readable hold on the line that matters. Use line breaks, weight, contrast, or a single graphic mark to show hierarchy. A lower third, quote card, or end card can use the same idea when the text has a clear job.
 
 ## Adapt it
 
@@ -12,7 +12,7 @@ Use the audience's own language when it is available, or write original copy tha
 
 ## Example
 
-For a product reveal, let a small line establish the problem, then expand the product's one meaningful difference into the visual center. For an interview clip, hold the speaker's complete quote and emphasize the phrase that carries the insight without changing its meaning.
+For a service that brings scattered work together, let **FILES**, **FEEDBACK**, and **NEXT STEPS** enter in separate areas, then pull them into one ordered view as **One place to move the work forward** resolves. For an interview clip, hold the speaker's complete quote and emphasize the phrase that carries the insight without changing its meaning.
 
 ## Try it when
 

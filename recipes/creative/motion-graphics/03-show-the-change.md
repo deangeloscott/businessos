@@ -8,7 +8,7 @@ Establish the starting state, perform one meaningful action, and let the resolve
 
 ## Adapt it
 
-Use a real before and after when the work represents an observed result. If the piece is a concept, product preview, or illustrative metaphor, make that status clear and do not let a polished transition imply an outcome that has not been established. The recipe can show a UI state change, a physical setup, a service journey, a layout improvement, or a product feature.
+Use a real before and after when the work represents an observed result. If the piece is a concept, product preview, or illustrative metaphor, make that status clear and do not let a polished transition imply an outcome that has not been established. A direct cut can make a decisive contrast feel immediate, a continuous transform can make causality easy to follow, and a crossfade can suit a reflective change; choose the treatment that explains the relationship. The recipe can show a UI state change, a physical setup, a service journey, a layout improvement, or a product feature.
 
 ## Example
 
