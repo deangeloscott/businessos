@@ -37,3 +37,8 @@ Run for video, animation, carousel-like motion, or presentation content needing 
 5. [HYBRID] Check continuity, cognitive load, legibility, pacing, rights/permissions, and whether visuals accidentally imply unsupported facts.
 6. [AI] Identify reusable assets and production dependencies; create WorkRequests only where a separate production capability is required.
 7. [DETERMINISTIC] Produce an ordered storyboard with timing and source/asset refs.
+
+## Optional craft references
+
+Use the [editorial explainer starting points](../../../../../recipes/creative/ecommerce-video-lookbooks/notes/editorial-explainers.md) when a system, cause, or consequence needs a concrete visual idea. Use the [editorial enhancement notes](../../../../../recipes/creative/ecommerce-video-lookbooks/notes/editorial-enhancement.md) when existing footage needs a purposeful graphic, cutaway, caption, sound cue, color treatment, or silence. The [compositing and matching notes](../../../../../recipes/creative/ecommerce-video-lookbooks/notes/compositing-and-matching.md) can help when a supplied or generated element must share a filmed shot. Skip them when the current plan is already clearer.
+When a person, avatar, character, voice, or environment recurs across scenes, the optional [creative identity and continuity note](../../../../../recipes/creative/ecommerce-video-lookbooks/notes/identity-and-continuity.md) can help mark what should remain recognizable and what may change.

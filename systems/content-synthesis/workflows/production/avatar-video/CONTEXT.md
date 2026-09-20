@@ -33,3 +33,7 @@ Use when synthetic/avatar presentation is actually permitted for the organizatio
 5. [INTEGRATION] Add approved B-roll, screenshots, captions, graphics, proof visuals, music, or demonstrations only where they improve the message and rights permit.
 6. [HYBRID] QA lip-sync/presentation quality, factual fidelity, disclosure, brand fit, uncanny/artifact risk, caption accuracy, and whether synthetic presentation harms trust for this context.
 7. [DETERMINISTIC] Preserve the final Asset and useful generation/source lineage, including synthetic-media disclosure state where policy requires it.
+
+## Optional craft references
+
+When an avatar or presenter must remain recognizable across videos, use the optional [creative identity and continuity note](../../../../../recipes/creative/ecommerce-video-lookbooks/notes/identity-and-continuity.md) to decide which visual, voice, performance, communication, or environment anchors matter and which changes are intentional. It does not replace the real authorization, disclosure, factual, or Asset-lineage requirements for the work.

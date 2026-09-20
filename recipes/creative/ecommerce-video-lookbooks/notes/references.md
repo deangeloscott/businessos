@@ -10,6 +10,10 @@
 - [Core motion](core-motion.md) — dominant action, continuity, pacing, contact, light, and depth.
 - [Director ingredients](director-rig.md) — optional shot-brief language.
 - [Continuity and narrative](continuity-and-narrative.md) — seams and multi-shot structure.
+- [Creative identity and continuity](identity-and-continuity.md) — reusable visual, voice, performance, communication, and environment anchors.
+- [Editorial enhancement](editorial-enhancement.md) — purposeful overlays, cuts, sound, silence, and identity cues for existing footage.
+- [Compositing and matching](compositing-and-matching.md) — optional realism cues and simpler alternatives for inserted elements.
+- [Editorial explainers](editorial-explainers.md) — two borrowable ways to reveal a hidden path or consequence.
 - [Placement](platform-placement.md) — adapting opening, crop, sound, and density.
 - [Funnel measurement](funnel-measurement.md) — optional testing and outcome questions.
 - [Sensory and audio](sensory-audio.md) — muted routes and tactile sound.

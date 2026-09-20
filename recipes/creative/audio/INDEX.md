@@ -15,6 +15,7 @@ If an audio plan already exists, use it. If the visual idea needs a sound direct
 | Make the message work without visuals | [An audio-only message](05-audio-only-message.md) |
 | Give a narrator, presenter, or brand voice a deliberate character | [Give the voice a point of view](06-give-the-voice-a-point-of-view.md) |
 | Establish a believable place, room, or surrounding world | [Put the listener somewhere](07-put-the-listener-somewhere.md) |
+| Keep a presenter, voice, character, or environment recognizable across media | [Creative identity and continuity](../ecommerce-video-lookbooks/notes/identity-and-continuity.md) |
 
 ## Fast use
 

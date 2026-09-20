@@ -11,8 +11,12 @@ A compact menu of reusable motion starting points for product demonstrations, se
 | Motion, anchors, physical continuity, and optical cues | [Core motion principles](notes/core-motion.md) |
 | Placement, audience intent, and platform adaptation | [Platform and placement notes](notes/platform-placement.md) |
 | A product demonstration, sensory ritual, habitat, or specimen structure | [Video commerce jobs](notes/video-jobs.md) |
+| A distinctive system or cause-and-consequence explainer | [Editorial explainer starting points](notes/editorial-explainers.md) |
 | Optional shot-brief ingredients | [Director's rig](notes/director-rig.md) |
 | Match cuts, spatial continuity, and narrative beats | [Continuity and narrative](notes/continuity-and-narrative.md) |
+| Create, adapt, improve, and reuse a person, avatar, voice, character, or environment | [Creative identity and continuity](notes/identity-and-continuity.md) |
+| Improve existing footage with purposeful graphics, cuts, sound, or silence | [Editorial enhancement](notes/editorial-enhancement.md) |
+| Make a supplied or generated element belong in filmed footage | [Compositing and matching](notes/compositing-and-matching.md) |
 | Hooks, modular variants, and measurement | [Funnel measurement](notes/funnel-measurement.md) |
 | Sound-off comprehension and tactile Foley | [Sensory and audio](notes/sensory-audio.md) |
 | Motion graphics, titles, diagrams, and demo callouts | [Motion graphics starting points](../motion-graphics/INDEX.md) |
