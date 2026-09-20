@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.1.9 — Alpha
+
+Adds optional creative identity and filmmaking references so people and capable AI can borrow more useful multimedia craft without giving recipes authority over judgment, tools, or execution.
+
+### What changed
+
+- Added [Creative Identity & Continuity](recipes/creative/ecommerce-video-lookbooks/notes/identity-and-continuity.md) for creating, adapting, improving, and reusing people, avatars, voices, characters, and environments. It separates recognizable anchors from intentional variation and points to the least complicated suitable production path.
+- Added optional [Editorial Enhancement](recipes/creative/ecommerce-video-lookbooks/notes/editorial-enhancement.md) guidance for improving existing footage through purposeful attention, emotion, humor, graphics, cuts, captions, sound, silence, color, pacing, and identity cues.
+- Added optional [Compositing & Matching](recipes/creative/ecommerce-video-lookbooks/notes/compositing-and-matching.md) guidance for perspective, scale, light, contact, occlusion, motion, image character, and simpler alternatives when supplied or generated elements meet filmed footage.
+- Added two [Editorial Explainer](recipes/creative/ecommerce-video-lookbooks/notes/editorial-explainers.md) starting points: following a hidden path and revealing a hidden cause, with optional motion-graphics, audio, and storyboard references.
+- Linked the new references from the recipe menus and relevant Content Synthesis Workflows. They remain optional craft knowledge outside the Playbook → Workflow → Step hierarchy; no new runtime, schema, provider integration, or mandatory production pipeline was added.
+
+### Validation
+
+All 35 AURA product-integrity suites passed; the qualification harness self-test passed all 4 suites; workspace validation passed with 466 Workflows and 0 errors/0 warnings; public distribution and all 9 named component-edition checks passed; the curated full ZIP passed fresh-unzip validation and the separate external-organization consumer smoke test.
+
 ## 0.1.8 — Alpha
 
 Expands and refines AURA's optional creative recipe layer so people and capable AI can reach strong creative starting points quickly while keeping judgment, experimentation, and execution with the user/model/harness.
