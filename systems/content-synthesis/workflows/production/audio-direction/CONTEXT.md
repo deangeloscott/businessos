@@ -40,6 +40,6 @@ Run for podcast, video, animation, avatar, or audio-first content needing define
 
 ## Optional craft references
 
-When a presenter or recurring voice needs continuity across assets, the optional [creative identity and continuity note](../../../../../recipes/creative/ecommerce-video-lookbooks/notes/identity-and-continuity.md) distinguishes voice identity from delivery, wording, and communication style. Use the smaller [voice point-of-view recipe](../../../../../recipes/creative/audio/06-give-the-voice-a-point-of-view.md) when only the delivery treatment needs a quick starting idea.
+When a presenter or recurring voice needs continuity across assets, the optional [creative identity and continuity note](../../../../../recipes/creative/video/notes/identity-and-continuity.md) distinguishes voice identity from delivery, wording, and communication style. Use the smaller [voice point-of-view recipe](../../../../../recipes/creative/audio/06-give-the-voice-a-point-of-view.md) when only the delivery treatment needs a quick starting idea.
 
 Use the [shared audio starting points](../../../../../recipes/creative/audio/INDEX.md) when a quick creative direction for narration, music, tactile sound, sonic identity, or audio-only communication would help. The recipes describe a role for sound; adapt them to the actual audience, source material, rights, accessibility needs, and production context.

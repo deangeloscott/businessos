@@ -4,9 +4,9 @@
 
 ## Directory
 
-- [Video menu](../INDEX.md) — smallest route into the library.
-- [Worked starting points](../assemblies/INDEX.md) — four concrete, adaptable motion ideas.
-- [Video jobs](video-jobs.md) — specimen, demonstration, ritual, and habitat starting points.
+- [Video concepts and craft menu](../INDEX.md) — smallest route into the library.
+- [Product-oriented starting points](../assemblies/INDEX.md) — four concrete, adaptable motion ideas.
+- [Product video jobs](video-jobs.md) — specimen, demonstration, ritual, and habitat starting points.
 - [Core motion](core-motion.md) — dominant action, continuity, pacing, contact, light, and depth.
 - [Director ingredients](director-rig.md) — optional shot-brief language.
 - [Continuity and narrative](continuity-and-narrative.md) — seams and multi-shot structure.

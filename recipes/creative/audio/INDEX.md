@@ -15,12 +15,12 @@ If an audio plan already exists, use it. If the visual idea needs a sound direct
 | Make the message work without visuals | [An audio-only message](05-audio-only-message.md) |
 | Give a narrator, presenter, or brand voice a deliberate character | [Give the voice a point of view](06-give-the-voice-a-point-of-view.md) |
 | Establish a believable place, room, or surrounding world | [Put the listener somewhere](07-put-the-listener-somewhere.md) |
-| Keep a presenter, voice, character, or environment recognizable across media | [Creative identity and continuity](../ecommerce-video-lookbooks/notes/identity-and-continuity.md) |
+| Keep a presenter, voice, character, or environment recognizable across media | [Creative identity and continuity](../video/notes/identity-and-continuity.md) |
 
 ## Fast use
 
 Choose the job before choosing the sound. A voice, music bed, sound effect, silence, or combination may be right; adding every layer rarely improves a simple message. Keep essential meaning available through the channels the placement requires, such as captions or a transcript when audio is not guaranteed. Use supplied facts and actual source material for spoken claims, numbers, and demonstrations. Clear rights and permissions for music, voices, recordings, and samples remain part of the real production context.
 
-For tactile product cues inside a commerce video, the [video sensory and audio note](../ecommerce-video-lookbooks/notes/sensory-audio.md) has quick visual-to-sound pairings. These shared recipes are broader and can also support a podcast, presentation, interface, or audio-only asset.
+For tactile product cues inside a commerce video, the [video sensory and audio note](../video/notes/sensory-audio.md) has quick visual-to-sound pairings. These shared recipes are broader and can also support a podcast, presentation, interface, or audio-only asset.
 
 When speech, music, or sound carries essential meaning, use AURA's [content accessibility workflow](../../../systems/content-synthesis/workflows/qa/accessibility/CONTEXT.md) for the relevant transcript, caption, and listening checks.

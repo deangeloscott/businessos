@@ -1,8 +1,8 @@
-# Video Starting-Point Overview
+# Product Video Starting-Point Overview
 
 > Optional navigation. Open a worked assembly when you want a concrete idea quickly; use another recipe, a different tool, or your own plan when it fits better.
 
-The four examples cover four useful actions:
+The four product-oriented examples cover four useful actions:
 
 1. [Texture in motion](../assemblies/1-micro-cosmetics-scale-01-dermal-absorption-and-viscous-squeeze.md) — dispense, contact, and spread a cosmetic or other tactile product.
 2. [Trust under tension](../assemblies/2-handheld-cpg-scale-02-high-stakes-180-inversion-demonstration.md) — stress a closure or containment benefit above a meaningful consequence.

@@ -1,6 +1,6 @@
-# Video Starting Points
+# Product Video Starting Points
 
-Four concrete video starting points. Open the one closest to the motion job, borrow its central action, and adapt or replace the shots, timing, evidence, and platform treatment.
+Four product-oriented video starting points. Open the one closest to the motion job, borrow its central action, and adapt or replace the shots, timing, evidence, and platform treatment.
 
 | # | Assembly |
 |---:|---|
@@ -9,4 +9,4 @@ Four concrete video starting points. Open the one closest to the motion job, bor
 | 03 | [Weather in motion — worked apparel execution](3-body-worn-apparel-scale-03-hydrostatic-deluge-demonstration-and-stride.md) |
 | 04 | [Effort relief in motion — worked mobility execution](4-mobility-and-transport-scale-06-hill-climb-torque-demonstration.md) |
 
-[Back to the video lookbook menu](../INDEX.md)
+[Back to Video Concepts & Craft](../INDEX.md)

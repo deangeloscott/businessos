@@ -36,4 +36,4 @@ Use when synthetic/avatar presentation is actually permitted for the organizatio
 
 ## Optional craft references
 
-When an avatar or presenter must remain recognizable across videos, use the optional [creative identity and continuity note](../../../../../recipes/creative/ecommerce-video-lookbooks/notes/identity-and-continuity.md) to decide which visual, voice, performance, communication, or environment anchors matter and which changes are intentional. It does not replace the real authorization, disclosure, factual, or Asset-lineage requirements for the work.
+When an avatar or presenter must remain recognizable across videos, use the optional [creative identity and continuity note](../../../../../recipes/creative/video/notes/identity-and-continuity.md) to decide which visual, voice, performance, communication, or environment anchors matter and which changes are intentional. It does not replace the real authorization, disclosure, factual, or Asset-lineage requirements for the work.

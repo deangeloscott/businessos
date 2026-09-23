@@ -22,7 +22,7 @@ Choose the idea that does a useful communication job, borrow the treatment, and 
 
 Describe the message and the asset you have. If you have no visual plan, open one recipe and ask the model to adapt it directly to the task. It can create the motion, write a tool-specific prompt, storyboard the idea, or combine it with another approach depending on what the user needs. A number can come from a real result, price, date, or comparison; use the supplied source rather than inventing a value. A conceptual illustration should be recognizable as illustrative when that distinction matters.
 
-Motion graphics work well with sound, but they do not require it. For music, narration, Foley, sonic identity, or audio-first pieces, see the [shared audio starting points](../audio/INDEX.md). For product demonstrations and physical continuity, the [e-commerce video menu](../ecommerce-video-lookbooks/INDEX.md) and its optional craft notes may be more useful.
+Motion graphics work well with sound, but they do not require it. For music, narration, Foley, sonic identity, or audio-first pieces, see the [shared audio starting points](../audio/INDEX.md). For product demonstrations and physical continuity, the [video concepts and craft menu](../video/INDEX.md) and its optional notes may be more useful.
 
 When the destination makes readability, captions, contrast, or motion safety material, use AURA's [content accessibility workflow](../../../systems/content-synthesis/workflows/qa/accessibility/CONTEXT.md) alongside the selected idea.
 

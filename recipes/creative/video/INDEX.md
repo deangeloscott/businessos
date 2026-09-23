@@ -1,16 +1,16 @@
-# E-Commerce Video Lookbooks
+# Video Concepts & Craft
 
-A compact menu of reusable motion starting points for product demonstrations, sensory loops, comparison ads, and product stories. Open the smallest reference that helps: a ready-made assembly, a focused craft note, or a paired image scale menu. The examples are adaptable starting points, not required scripts or guarantees.
+An optional shelf with two kinds of references: four product-oriented video assemblies under `assemblies/`, and broader craft notes under `notes/` for identity/continuity, editorial explainers and enhancement, compositing, placement, sound, and technical choices. Open the smallest reference that helps; examples are adaptable starting points, not required scripts or guarantees.
 
 ## Choose a starting point
 
 | Need | Open |
 |---|---|
-| A concrete video idea to adapt | [Four video starting points](assemblies/INDEX.md) |
+| A concrete product-oriented video idea to adapt | [Four product video starting points](assemblies/INDEX.md) |
 | A short guide to choosing among the four assemblies | [Assembly overview](notes/assembly-overview.md) |
 | Motion, anchors, physical continuity, and optical cues | [Core motion principles](notes/core-motion.md) |
 | Placement, audience intent, and platform adaptation | [Platform and placement notes](notes/platform-placement.md) |
-| A product demonstration, sensory ritual, habitat, or specimen structure | [Video commerce jobs](notes/video-jobs.md) |
+| A product demonstration, sensory ritual, habitat, or specimen structure | [Product video jobs](notes/video-jobs.md) |
 | A distinctive system or cause-and-consequence explainer | [Editorial explainer starting points](notes/editorial-explainers.md) |
 | Optional shot-brief ingredients | [Director's rig](notes/director-rig.md) |
 | Match cuts, spatial continuity, and narrative beats | [Continuity and narrative](notes/continuity-and-narrative.md) |
@@ -26,6 +26,6 @@ A compact menu of reusable motion starting points for product demonstrations, se
 
 ## Fast use
 
-Start with the product and viewer job, then open one assembly or note only if it helps. Supply source references and documented results when they matter. Use a single anchor, real footage, storyboard, 3D scene, or another tool-native control when it is more reliable, and inspect the finished sequence. Add a paired [image scale menu](../ecommerce-image-lookbooks/INDEX.md) when a product reference or start/end anchor helps.
+Start with the viewer job and available material. For a product concept, open one assembly; for a craft problem, open one note; use or combine another method when it is better. Supply source references and documented results when they matter. Use a single anchor, real footage, storyboard, 3D scene, or another tool-native control when it is more reliable, and inspect the finished sequence. Add a paired [image scale menu](../ecommerce-image-lookbooks/INDEX.md) when a product reference or start/end anchor helps.
 
-The video references are optional craft knowledge. Open an existing AURA workflow or QA reference when it adds useful context; this library supplies reusable motion direction while the model and user retain judgment about the work.
+These references are optional craft knowledge. Open an existing AURA workflow or QA reference when it adds useful context; this library supplies reusable motion direction while the model and user retain judgment about the work.
