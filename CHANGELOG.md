@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.1.10 — Alpha
+
+Broadens the optional creative video craft references and makes the collection easier to navigate without changing AURA's operating model.
+
+### What changed
+
+- Expanded the optional editorial-enhancement note with practical judgment for cutting recorded speech, preserving conversation attribution and reactions, keeping tutorial action-to-result continuity, making standalone excerpts self-contained, choosing A/B-roll and support layouts, timing and correcting captions, and treating audio problems specifically without presenting restoration as missing source evidence.
+- Renamed the video recipe collection from `ecommerce-video-lookbooks` to `creative/video`, clarified the four product-oriented assemblies versus the broader optional craft notes, and repaired incoming recipe, workflow, changelog, and package links and labels.
+- Kept the references borrowable and optional: no new recipe registry, schema, runtime, provider integration, mandatory pipeline, or execution guard was introduced.
+
+### Validation
+
+The release gate validates the source workspace, public distribution, product-integrity and qualification suites, curated full ZIP from a fresh unzip, and the separate external-organization consumer smoke test.
+
 ## 0.1.9 — Alpha
 
 Adds optional creative identity and filmmaking references so people and capable AI can borrow more useful multimedia craft without giving recipes authority over judgment, tools, or execution.
