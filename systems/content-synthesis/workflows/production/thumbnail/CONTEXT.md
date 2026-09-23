@@ -36,3 +36,7 @@ Run for platforms/formats where a thumbnail or cover materially affects selectio
 5. [AI] Specify composition, focal subject, minimal text if needed, visual hierarchy, and brand/platform constraints.
 6. [DETERMINISTIC] Define mobile/small-size legibility and variant-test plan where relevant.
 7. [INTEGRATION] Create or render the useful thumbnail/cover Asset with the active model/harness's available image/design capability, or preserve a production-ready visual specification when rendering is unavailable and the specification remains useful. Verify final title-thumbnail expectation match.
+
+## Optional craft reference
+
+Use the optional [thumbnail and cover concepts](../../../../../recipes/creative/thumbnail-cover-concepts.md) when a quick starting direction would help. Borrow one of its detail, visible-result, contrast, or unresolved-moment treatments, then adapt it to the actual title, content, audience, platform crop, and source material.

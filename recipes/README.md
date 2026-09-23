@@ -10,6 +10,8 @@ Open the smallest useful reference:
 
 - [Web design and conversion architecture](web-design/INDEX.md) — compact track menu for e-commerce, lead generation, brand sites, funnels, persuasion, UX, and technical web patterns.
 - [E-commerce image lookbooks](creative/ecommerce-image-lookbooks/INDEX.md) — compact scale menu for 90 standalone product-photography archetypes, with optional creative notes and brand dialects.
+- [Conceptual and editorial images](creative/conceptual-editorial-image.md) — optional starting points for metaphor, juxtaposition, mood, humor, character, and ambiguity.
+- [Thumbnail and cover concepts](creative/thumbnail-cover-concepts.md) — optional browse-scale directions that keep the title, image, and actual content promise aligned.
 - [Video concepts and craft](creative/video/INDEX.md) — four product-oriented motion assemblies plus optional notes for editorial, identity, compositing, placement, sound, and technical craft.
 - [Motion graphics](creative/motion-graphics/INDEX.md) — adaptable starting points for animated type, numbers, comparisons, diagrams, demos, maps, and branded moments.
 - [Shared audio](creative/audio/INDEX.md) — cross-medium starting points for narration, music, tactile sound, sonic identity, and audio-first communication.

@@ -8,6 +8,7 @@ A compact shelf of static graphics and short presentation structures. Use one wh
 |---|---|
 | Help someone compare options quickly | [At-a-glance comparison](01-at-a-glance-comparison.md) |
 | Explain a sequence, service, or system on one page | [Process on one page](02-process-on-one-page.md) |
+| Show how a component, layer, or mechanism works | [Annotated detail or mechanism](09-annotated-detail-and-mechanism.md) |
 | Make one verified figure meaningful | [One number that carries the message](03-one-number-story.md) |
 | Show a trend, comparison, or distribution honestly | [Trend or distribution graphic](08-trend-or-distribution.md) |
 | Make a system or dependency visible | [System or relationship map](05-system-relationship-map.md) |
