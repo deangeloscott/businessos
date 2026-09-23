@@ -48,7 +48,7 @@ def main():
         if wid in ids:raise SystemExit(f'Duplicate Workflow id: {wid}')
         ids.add(wid);title_match=re.search(r'^#\s+(.+)',body,re.M);title=title_match.group(1).strip() if title_match else wid;purpose=_section(body,'Purpose');run_when=_section(body,'Run When');durable_meta={k:v for k,v in meta.items() if k not in RETIRED_WORKFLOW_METADATA};rec={**durable_meta,'path':str(p.relative_to(ROOT)),'title':title,'purpose':purpose};rec['read_selectors']=[normalize_selector(x) for x in meta.get('reads',[])];rec['write_types']=[selector_type(x) for x in meta.get('writes',[])];rec['context_types']=meta.get('context',[]);workflows.append(rec);deps[wid]={'context':meta.get('context',[]),'reads':rec['read_selectors'],'writes':rec['write_types'],'evidence_inputs':meta.get('evidence_inputs',[])}
         if meta.get('type')=='workflow':
-            title_tokens=_tokens(title);purpose_tokens=_tokens(purpose);run_when_tokens=_tokens(run_when);id_tokens=_tokens(wid.replace('.',' ').replace('-',' '));candidate_rows.append({'workflow_id':wid,'owner_system':meta.get('owner_system'),'tokens':sorted(set(title_tokens+purpose_tokens+run_when_tokens+id_tokens)),'title_tokens':title_tokens,'purpose_tokens':purpose_tokens,'run_when_tokens':run_when_tokens})
+            title_tokens=_tokens(title);purpose_tokens=_tokens(purpose);run_when_tokens=_tokens(run_when);id_tokens=_tokens(wid.replace('.',' ').replace('-',' '));candidate_rows.append({'workflow_id':wid,'owner_system':meta.get('owner_system'),'title':title,'path':str(p.relative_to(ROOT)),'tokens':sorted(set(title_tokens+purpose_tokens+run_when_tokens+id_tokens)),'title_tokens':title_tokens,'purpose_tokens':purpose_tokens,'run_when_tokens':run_when_tokens})
     # The Workflow registry is a derived navigation view; authored Workflow files remain the source of truth.
     (gen/'workflow-registry.json').write_text(json.dumps({'version':os_version(),'workflows':workflows},indent=2)+'\n',encoding='utf-8');(gen/'system-registry.json').write_text(json.dumps({'systems':sorted(set(c.get('owner_system') for c in workflows if c.get('owner_system')))},indent=2)+'\n',encoding='utf-8');(gen/'context-dependency-index.json').write_text(json.dumps(deps,indent=2)+'\n',encoding='utf-8');(gen/'workflow-candidate-index.json').write_text(json.dumps(candidate_rows,indent=2)+'\n',encoding='utf-8')
     for obsolete in ('capability-usage-index.json','playbook-candidate-index.json','event-subscription-index.json','schedule-index.json','route-index.json'):
@@ -73,7 +73,7 @@ def main():
         if not owner_workflows:continue
         lines += [f'## {owner}','']
         for c in sorted(owner_workflows,key=lambda x:x['id']):
-            purpose=' '.join(c.get('purpose','').split());lines.append(f"- `{c['id']}` — {c.get('title',c['id'])}"+(f": {purpose}" if purpose else ''))
+            purpose=' '.join(c.get('purpose','').split());source=f" ([source]({c['path']}))" if c.get('path') else '';lines.append(f"- `{c['id']}` — {c.get('title',c['id'])}{source}"+(f": {purpose}" if purpose else ''))
         lines.append('')
     (ROOT/'WORKFLOW-INDEX.md').write_text('\n'.join(lines).rstrip()+'\n',encoding='utf-8');old=ROOT/'PLAYBOOK-INDEX.md'
     if old.exists():old.unlink()

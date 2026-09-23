@@ -21,7 +21,7 @@ context:
 # Full Content Script
 
 ## Purpose
-Write a complete spoken or presentation script from an approved brief/structure with natural language and production cues.
+Write a complete spoken or presentation script from an available brief/structure with natural language and production cues.
 
 ## Business Outcome
 Produce a record-ready script that communicates the intended message accurately and in the brand/platform voice.
@@ -30,7 +30,7 @@ Produce a record-ready script that communicates the intended message accurately 
 Run when video, podcast, presentation, webinar-support, avatar, or other spoken content requires full scripting.
 
 ## Process
-1. [AI] Draft from the approved outline, preserving the exact purpose of each beat and evidence limitations.
+1. [AI] Draft from the available outline or structure, preserving the purpose of each beat and evidence limitations. If no prior outline exists, derive a lightweight structure from the request and available evidence instead of inventing an approval gate.
 2. [AI] Write for speech rather than essay prose: natural syntax, clear transitions, appropriate sentence length, and explicit context where visuals cannot carry it.
 3. [AI] Integrate demonstrations, examples, proof, visual cues, pauses/emphasis, and transitions only where they support comprehension.
 4. [AI] Ensure the hook is paid off quickly and the core message remains recognizable throughout.

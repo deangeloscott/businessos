@@ -6,7 +6,8 @@ may list/filter them and provide bounded lexical candidates; the active model/us
 semantic applicability, conflicts, sequencing, and execution method.
 """
 from _common import *
-import json,re
+from _lexical import contains_phrase, document_frequency, tokens, weighted_overlap
+import json
 
 SCOPE_ORDER={'business':0,'team':1,'role':2,'operator':3}
 
@@ -53,15 +54,20 @@ def local_workflows(business_id,team_ref=None,role_ref=None,operator_ref=None):
 
 
 def local_workflow_candidates(task,business_id,team_ref=None,role_ref=None,operator_ref=None,top=6):
-    query=str(task or '').strip().lower()
+    query=str(task or '').strip()
     if not query:return []
-    words=set(re.findall(r'[a-z0-9]{2,}',query));rows=[]
-    for extension in local_workflows(business_id,team_ref,role_ref,operator_ref):
+    extensions=local_workflows(business_id,team_ref,role_ref,operator_ref);words=tokens(query);rows=[]
+    frequencies=document_frequency(extensions,('workflow_id','title','purpose','discovery_terms'))
+    paths={obj.get('id'):storage_ref(path) for obj,path in iter_instance_objects(business_id) if obj.get('object_type')=='ProcessExtension'}
+    for extension in extensions:
         workflow_id=str(extension.get('workflow_id') or '');title=str(extension.get('title') or '');purpose=str(extension.get('purpose') or '')
-        text=' '.join([workflow_id,title,purpose,*[str(term) for term in extension.get('discovery_terms') or []]]).lower();score=10000 if query==workflow_id.lower() else len(words & set(re.findall(r'[a-z0-9]{2,}',text)))*3
-        if title and title.lower() in query:score+=6
+        discovery=' '.join(str(term) for term in extension.get('discovery_terms') or [])
+        title_score,title_matches=weighted_overlap(words,title,frequencies,len(extensions));purpose_score,purpose_matches=weighted_overlap(words,purpose,frequencies,len(extensions));discovery_score,discovery_matches=weighted_overlap(words,discovery,frequencies,len(extensions));id_score,id_matches=weighted_overlap(words,workflow_id.replace('.',' ').replace('-',' '),frequencies,len(extensions))
+        matched=sorted(set(title_matches+purpose_matches+discovery_matches+id_matches));score=title_score*5+purpose_score*3+discovery_score*3+id_score*2
+        if workflow_id.casefold()==query.casefold():score=10000
+        if title and contains_phrase(query,title):score+=3
         if score<=0:continue
-        rows.append((score,{'score':score,'workflow_id':workflow_id,'status':'available','local_workflow':True,'process_extension_id':extension.get('id'),'selection_authority':False,'reason':'organization-local Workflow candidate only; the active model/user judges semantic applicability'}))
+        rows.append((score,{'score':round(score,6),'workflow_id':workflow_id,'title':title or workflow_id,'path':paths.get(extension.get('id')),'matched_terms':matched,'status':'available','local_workflow':True,'process_extension_id':extension.get('id'),'selection_authority':False,'reason':'Organization-local Workflow candidate only; lexical matches help discovery and the active model/user judges semantic applicability.'}))
     rows.sort(key=lambda item:(item[0],item[1]['workflow_id']),reverse=True)
     return [row for _,row in rows[:max(1,int(top))]]
 

@@ -21,7 +21,7 @@ context:
 # Bulletized Content Script
 
 ## Purpose
-Convert an approved structure/full script into concise speaking beats for a presenter who should sound unscripted.
+Convert an available structure/full script into concise speaking beats for a presenter who should sound unscripted.
 
 ## Business Outcome
 Preserve message, evidence, and sequence while giving the speaker flexibility in delivery.
@@ -30,7 +30,7 @@ Preserve message, evidence, and sequence while giving the speaker flexibility in
 Run when a presenter prefers prompts/bullets rather than verbatim scripting.
 
 ## Process
-1. [DETERMINISTIC] Resolve the approved full script or content outline and identify non-negotiable claims/evidence/CTA.
+1. [DETERMINISTIC] Resolve the available full script or content outline and identify non-negotiable claims/evidence/CTA. If neither exists, derive the minimum speaking structure from the request and available evidence rather than treating a prior artifact as a prerequisite.
 2. [AI] Reduce each beat to the minimum prompts needed to preserve sequence and intended point.
 3. [AI] Keep exact wording only for facts, legal/claim-sensitive language, quotes, key definitions, or critical transitions.
 4. [AI] Add brief cues for examples, demonstrations, visual changes, and audience interaction.

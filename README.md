@@ -100,6 +100,7 @@ ViralTrac is AURA's optional first-party companion for tracking, attribution, me
 - **`skills/viraltrac-aura/SKILL.md`** — included Agent Skill adapter
 - **`PLAYBOOKS.md`** — high-level business jobs
 - **`WORKFLOW-INDEX.md`** — detailed reusable procedures
+- **`recipes/README.md`** — optional creative starting points and craft references
 - **`OPERATOR-GUIDE.md`** — practical commands and advanced use
 - **`DEPLOYMENT.md`** — workspace, storage, upgrades, multi-device, and team details
 - **`CONTEXT.md`** — universal instructions for AI agents using AURA

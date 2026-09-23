@@ -7,7 +7,8 @@ Workflows are useful and may sequence, parallelize, adapt, combine, or replace t
 """
 from _common import ROOT,workflow_files,read_frontmatter
 from functools import lru_cache
-import argparse,json,re
+import argparse,json
+from _lexical import contains_phrase, document_frequency, tokens, weighted_overlap
 
 
 def _index():
@@ -26,31 +27,35 @@ def _installed_ids():
     return ids
 
 
-def _words(value):return set(re.findall(r'[a-z0-9]{2,}',str(value or '').lower()))
-def _score(words,q,wid,row):
-    if q==wid.lower():return 10000
-    id_words=_words(wid.replace('.',' ').replace('-',' '));title_tokens=set(row.get('title_tokens') or []);purpose_tokens=set(row.get('purpose_tokens') or []);run_when_tokens=set(row.get('run_when_tokens') or [])
-    score=(len(words & title_tokens)*5)+(len(words & purpose_tokens)*3)+(len(words & run_when_tokens)*5) if title_tokens or purpose_tokens or run_when_tokens else len(words & set(row.get('tokens') or []))*3
-    score+=len(words & id_words)*2
-    if any(token in q for token in id_words if len(token)>=5):score+=4
-    return score
+def _score(words,q,wid,row,frequencies,document_count):
+    title_score,title_matches=weighted_overlap(words,row.get('title',''),frequencies,document_count)
+    purpose_score,purpose_matches=weighted_overlap(words,row.get('purpose_tokens') or [],frequencies,document_count)
+    run_when_score,run_when_matches=weighted_overlap(words,row.get('run_when_tokens') or [],frequencies,document_count)
+    id_score,id_matches=weighted_overlap(words,wid.replace('.',' ').replace('-',' '),frequencies,document_count)
+    matched=sorted(set(title_matches+purpose_matches+run_when_matches+id_matches))
+    score=title_score*5+purpose_score*3+run_when_score*5+id_score*2
+    # ID cues are useful only when they occur as complete words, not substrings.
+    score+=4*sum(1 for token in set(id_matches) if contains_phrase(q,token))
+    if q.casefold()==wid.casefold():score=10000
+    return round(score,6),matched
 
 
 def find_candidates(task,top=6,owner_system=None):
-    q=str(task or '').strip().lower()
+    q=str(task or '').strip()
     if not q:return []
-    installed=_installed_ids();words=_words(q);scored=[]
-    for row in _index():
+    index=_index();installed=_installed_ids();words=tokens(q);scored=[]
+    frequencies=document_frequency(index,('workflow_id','title','purpose_tokens','run_when_tokens','tokens'))
+    for row in index:
         wid=str(row.get('workflow_id') or '')
         if not wid or wid not in installed:continue
         if owner_system and row.get('owner_system')!=owner_system:continue
-        score=_score(words,q,wid,row)
+        score,matched_terms=_score(words,q,wid,row,frequencies,len(index))
         if score<=0:continue
-        scored.append((score,wid,row))
+        scored.append((score,wid,row,matched_terms))
     scored.sort(key=lambda item:(item[0],item[1]),reverse=True)
     return [
-        {'score':score,'workflow_id':wid,'owner_system':row.get('owner_system'),'status':'available','selection_authority':False,'reason':'Workflow candidate only; authored title/purpose/When-to-use cues help discovery while the active model/user judges applicability and execution approach.'}
-        for score,wid,row in scored[:max(1,int(top))]
+        {'score':score,'workflow_id':wid,'title':row.get('title') or wid,'path':row.get('path'),'matched_terms':matched_terms,'owner_system':row.get('owner_system'),'status':'available','selection_authority':False,'reason':'Workflow candidate only; lexical title/purpose/When-to-use matches help discovery while the active model/user judges applicability and execution approach.'}
+        for score,wid,row,matched_terms in scored[:max(1,int(top))]
     ]
 
 

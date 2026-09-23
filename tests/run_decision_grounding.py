@@ -84,7 +84,7 @@ def main():
         require(not ({'confidence','urgency','strategic_leverage'} & set(schema['properties'])),'Opportunity regained generic numeric scoring fields')
 
         plan=build_plan(BID,INDEXING_WORKFLOW)
-        require('core/policies/decision-grounding.md' in plan['files'],'Opportunity-writing plan must load decision-grounding policy')
+        require(any(ref.get('path')=='core/policies/decision-grounding.md' for ref in plan.get('supporting_context_refs',[])),'Opportunity-writing plan must expose decision-grounding policy')
         policy=(ROOT/'core/policies/decision-grounding.md').read_text()
         require('reasoning_basis' in policy and 'Leading signals and measured outcomes' in policy and 'not a deterministic prose rules engine' in policy,'decision grounding policy missing model-owned grounding boundaries')
         require('Do **not** turn the Opportunity itself into the execution lifecycle after commitment' in policy,'Opportunity policy regained commitment/execution lifecycle semantics')

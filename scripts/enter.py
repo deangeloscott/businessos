@@ -10,7 +10,7 @@ tools, Skills, orchestration, and execution environment.
 from pathlib import Path
 import argparse,json,os
 
-from _common import workspace_root,resolve_business,object_index,storage_ref,load_registry
+from _common import PRODUCT_ROOT,workspace_root,resolve_business,object_index,storage_ref,load_registry
 from find_playbooks import find_candidates as find_playbook_candidates
 from find_workflows import find_candidates as find_workflow_candidates
 from operating_knowledge import get_playbook
@@ -20,6 +20,13 @@ from process_plan import build_process_plan
 
 METHOD_TYPES=['aura_playbook','aura_workflow','external_skill','model_created','ad_hoc']
 BASELINE_TYPES=['Business','Brand','ProductService','Offer','AudienceSegment','Market','Objective','DecisionRecord','Learning']
+
+
+def _recipe_menu():
+    """Expose the installed optional craft shelf without loading it into context."""
+    path=PRODUCT_ROOT/'recipes'/'README.md'
+    if not path.is_file():return None
+    return {'path':'recipes/README.md','role':'optional_navigation','rule':'Open only when a recipe would materially help; recipes are starting points, not a required method or source of business truth.'}
 
 
 def _baseline_context(business_id,limit_per_type=3):
@@ -65,7 +72,10 @@ def prepare_work(task,business_id=None,workspace=None,focus=None,operator_ref=No
     if not task:return {'format_version':'4.2','status':'needs_input','missing':['request']}
     if workspace:os.environ['BUSINESSOS_WORKSPACE']=str(Path(workspace).expanduser().resolve())
     resolved=resolve_business(business_id)
-    if resolved.get('status')!='resolved':return {'format_version':'4.2','status':'needs_input','workspace':str(workspace_root()),**{k:v for k,v in resolved.items() if k!='status'}}
+    if resolved.get('status')!='resolved':
+        menu=_recipe_menu();payload={'format_version':'4.2','status':'needs_input','workspace':str(workspace_root()),**{k:v for k,v in resolved.items() if k!='status'}}
+        if menu:payload['recipe_menu']=menu
+        return payload
     bid=resolved['business_id'];focus=focus or [];registry=load_registry().get('workflows',[])
     playbook=get_playbook(selected_playbook_id,registry) if selected_playbook_id else None
     if selected_playbook_id and not playbook:raise ValueError(f'Unknown or unavailable Playbook: {selected_playbook_id}')
@@ -75,16 +85,19 @@ def prepare_work(task,business_id=None,workspace=None,focus=None,operator_ref=No
     playbook_candidates=[] if playbook else find_playbook_candidates(task,3);workflow_candidates=[] if selected_workflow else _workflow_candidates(task,bid,owner,team_ref,role_ref,operator_ref)
     context,workflow_view=_workflow_context(bid,selected_workflow_id,focus,operator_ref,team_ref,role_ref,task_preferences,output_type,channel);baseline=_baseline_context(bid)
     if context and not context.get('error'):
-        object_context=context.get('object_context',[]);context_files=context.get('files',[])
-    else:object_context=[];context_files=['CONTEXT.md','docs/operating-knowledge.md']
+        object_context=context.get('object_context',[]);context_files=context.get('files',[]);supporting_context_refs=context.get('supporting_context_refs',[]);context_reading_rule=context.get('context_reading_rule')
+    else:
+        object_context=[];context_files=['CONTEXT.md','docs/operating-knowledge.md'];supporting_context_refs=[];context_reading_rule='Load only the small universal context that materially helps. Optional recipe navigation is separate from organizational context.'
+    recipe_menu=_recipe_menu()
     playbook_view=None
     if playbook:
         try:playbook_view=build_process_plan(playbook_id=playbook['id'])
         except ValueError as exc:playbook_view={'error':str(exc)}
     return {
         'format_version':'4.2','status':'ready','workspace':str(workspace_root()),'business_id':bid,'business_resolution':resolved.get('resolution'),'original_request':task,
-        'retrieval':{'baseline_context':baseline,'workflow_context':object_context,'context_files':context_files,'unresolved_selectors':(context or {}).get('unresolved_selectors',[]) if isinstance(context,dict) else [],'rule':'Load only what materially helps the request. Absence from retrieved AURA context means AURA has no selected durable record, not that the real-world fact does not exist.'},
+        'retrieval':{'baseline_context':baseline,'workflow_context':object_context,'context_files':context_files,'supporting_context_refs':supporting_context_refs,'context_reading_rule':context_reading_rule,'unresolved_selectors':(context or {}).get('unresolved_selectors',[]) if isinstance(context,dict) else [],'rule':'Load only what materially helps the request. Absence from retrieved AURA context means AURA has no selected durable record, not that the real-world fact does not exist.'},
         'operating_knowledge':{'selected_playbook':playbook,'playbook_candidates':playbook_candidates,'playbook_view':playbook_view,'selected_workflow':selected_workflow,'workflow_candidates':workflow_candidates,'workflow_view':workflow_view if selected_workflow_id else None,'rule':'Playbooks frame end-to-end business jobs; Workflows provide reusable procedures. The active model/user decides what applies, how to compose it, and whether another Skill or method is better.'},
+        'recipe_menu':recipe_menu,
         'method_options':METHOD_TYPES,'execution_rule':'Use the active model/harness normally. AURA does not define a tool/provider allowlist; use the best available tools, external Skills, resources, and orchestration that serve the requested outcome.','run':{'created':False,'rule':'Do not create a Run merely to begin reasoning. A bounded work receipt is optional when continuity/provenance materially benefits from one.'},
         'next':{'work':'Use the active model/harness normally with the retrieved organizational context.','select_playbook':f'python3 scripts/enter.py {json.dumps(task)} --business-id {bid} --selected-playbook <playbook-id>','select_workflow':f'python3 scripts/enter.py {json.dumps(task)} --business-id {bid} --selected-workflow <workflow-id>','persistence':'Persist only material organizational meaning through supported canonical helpers. A Run is optional and should not be required merely to remember durable truth.'},
         'persistence_test':'Would a capable future model working for this organization materially benefit from knowing this after the current session/runtime is gone?','rule':'AURA supplies organization memory and reusable operating knowledge; semantic intent and execution remain with the active intelligence/runtime.'

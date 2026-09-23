@@ -21,7 +21,7 @@ context:
 # Content Outline
 
 ## Purpose
-Translate the approved brief and narrative structure into an executable section-by-section production outline.
+Translate the available brief and narrative structure into an executable section-by-section production outline.
 
 ## Business Outcome
 Reduce drafting drift by making every section’s purpose, evidence, example, and transition explicit before writing.
@@ -30,7 +30,7 @@ Reduce drafting drift by making every section’s purpose, evidence, example, an
 Run before long-form or structurally complex content when a production outline is useful.
 
 ## Process
-1. [DETERMINISTIC] Load the approved brief, narrative structure, evidence plan, desired action, and platform constraints.
+1. [DETERMINISTIC] Load the available brief, narrative structure, evidence plan, desired action, and platform constraints. If one is missing, derive only the smallest working structure needed from the request and available evidence rather than treating approval as a prerequisite.
 2. [AI] Create ordered sections/beats with one clear job each and expected audience state after each.
 3. [AI] Attach required claims, evidence, examples, demonstrations, visuals/audio, and transitions to the relevant section.
 4. [AI] Allocate depth according to audience need and objective, not equal length across sections.

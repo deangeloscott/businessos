@@ -30,7 +30,7 @@ Use the medium to show and explain rather than placing decorative visuals over a
 Run for video, animation, carousel-like motion, or presentation content needing coordinated visual sequencing.
 
 ## Process
-1. [DETERMINISTIC] Load the approved script/outline, visual direction, platform constraints, proof assets, and production capabilities.
+1. [DETERMINISTIC] Load the available script/outline, visual direction, platform constraints, proof assets, and production capabilities. If the source is still being developed, derive a lightweight working sequence from the request rather than requiring a prior approval state.
 2. [AI] Divide the content into shots/scenes/frames aligned to message beats and audience attention changes.
 3. [AI] For each beat define what is seen, heard, read, demonstrated, and why the visual is necessary.
 4. [AI] Prefer real demonstrations, diagrams, examples, source/proof visuals, and meaningful motion over generic decorative B-roll.

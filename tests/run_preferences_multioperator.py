@@ -95,6 +95,8 @@ def main():
         )
         assert_eq(plan['operator_ref'],'operator_alice','context plan operator')
         assert_eq(plan['effective_preferences']['presentation']['speaker_notes'],'detailed','context plan current preference')
+        profile_paths=[item.get('path') for item in alice.get('applied_profiles',[]) if item.get('path')]
+        if profile_paths and not all(path in plan['files'] for path in profile_paths): raise AssertionError('applicable preference profiles must remain in primary context files')
         if 'core/policies/preferences-and-adaptation.md' in plan['files']: raise AssertionError('context plan reintroduced redundant universal preference policy')
         if run['preference_snapshot_ref'] in plan['files']: raise AssertionError('context plan should not depend on an optional Run snapshot')
 

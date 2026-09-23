@@ -65,6 +65,25 @@ def _add(files,rel):
     if rel and rel not in files and (ROOT/rel).exists():files.append(rel)
 
 
+def _context_ref(path,match,object_files,schema_files,authored_refs,preference_files):
+    """Describe why a file is present without turning the plan into an execution graph."""
+    if path in schema_files:
+        role='schema'
+    elif path in authored_refs:
+        role='authored_reference'
+    elif path in preference_files:
+        role='preference'
+    elif path.startswith('core/policies/'):
+        role='policy'
+    elif path in object_files:
+        role='organization_context'
+    elif path==match.get('path'):
+        role='selected_workflow'
+    else:
+        role='primary'
+    return {'path':path,'role':role}
+
+
 def build_plan(business_id,workflow_id,focus=None,operator_ref=None,team_ref=None,role_ref=None,task_preferences=None,output_type=None,channel=None):
     focus=focus or [];match=next((x for x in load_registry().get('workflows',[]) if x.get('id')==workflow_id),None)
     if not match or match.get('type')!='workflow':raise ValueError('Unknown AURA Workflow')
@@ -113,9 +132,7 @@ def build_plan(business_id,workflow_id,focus=None,operator_ref=None,team_ref=Non
     if owner in {'content-synthesis','marketing-synthesis'}:context_types.add('BusinessClaim')
     for typ in sorted(context_types):
         candidates=[(o,p) for o,p in idx.values() if o.get('object_type')==typ and o.get('status') not in {'archived','superseded'}];already=any(o.get('object_type')==typ for o,_ in selected.values())
-        if typ=='BusinessClaim' and not already:
-            for obj,path in candidates:selected[obj['id']]=(obj,path)
-        elif not already and len(candidates)==1:selected[candidates[0][0]['id']]=candidates[0]
+        if not already and len(candidates)==1:selected[candidates[0][0]['id']]=candidates[0]
         elif not already and len(candidates)>1:unresolved.append({'type':typ,'reason':'multiple candidates; resolve from request/focus rather than bulk-loading'})
         elif not already:unresolved.append({'type':typ,'reason':'not present in durable AURA context'})
     for sel in selectors:
@@ -126,7 +143,11 @@ def build_plan(business_id,workflow_id,focus=None,operator_ref=None,team_ref=Non
         elif len(candidates)>1:unresolved.append({**ns,'reason':'multiple candidates; resolve from request/focus rather than bulk-loading'})
         else:unresolved.append({**ns,'reason':'not present in durable AURA context'})
 
-    for applied in prefs.get('applied_profiles',[]):_add(files,applied.get('path'))
+    preference_files=[]
+    for applied in prefs.get('applied_profiles',[]):
+        path=applied.get('path')
+        if path:preference_files.append(path)
+        _add(files,path)
     if 'ProofRecord' in write_types or any(obj.get('object_type')=='ProofRecord' for obj,_ in selected.values()):_add(files,'core/policies/proof.md')
     for rel in match.get('references',[]):_add(files,rel)
     selected_items=[];object_files=[]
@@ -135,7 +156,15 @@ def build_plan(business_id,workflow_id,focus=None,operator_ref=None,team_ref=Non
         if rel not in object_files:object_files.append(rel)
     schema_registry=json.loads((ROOT/'generated/schema-registry.json').read_text());schema_paths={row.get('title'):row['path'] for row in schema_registry if row.get('title')};schema_files=[schema_paths[typ] for typ in sorted(write_types) if typ in schema_paths]
     for rel in schema_files+object_files:_add(files,rel)
-    return {'version':os_version(),'business_id':business_id,'workflow_id':workflow_id,'focus_refs':focus,'operator_ref':operator_ref,'team_ref':team_ref,'role_ref':role_ref,'effective_preferences':prefs.get('effective_preferences',{}),'preference_profiles':[x.get('id') for x in prefs.get('applied_profiles',[])],'preference_conflicts':prefs.get('conflicts',[]),'files':files,'object_context':selected_items,'object_refs':[item['object_ref'] for item in selected_items],'object_files':object_files,'schema_files':schema_files,'unresolved_selectors':unresolved,'evidence_inputs':match.get('evidence_inputs',[]),'material_inputs':_material_inputs(selected,idx,match.get('evidence_inputs',[])),'execution_rule':'The Workflow describes the outcome, procedure, evidence, and quality requirements. The active model/harness chooses the best available tools, external Skills, providers, orchestration, and implementation details.'}
+    authored_refs=[rel for rel in match.get('references',[]) if isinstance(rel,str)]
+    context_refs=[_context_ref(rel,match,object_files,schema_files,authored_refs,preference_files) for rel in files]
+    # Applicable preference profiles are real organizational/user context and stay in
+    # the primary set. Policies, schemas, and authored references are supplemental
+    # pointers so they can be opened when their constraint or persistence job arises.
+    supporting_roles={'policy','schema','authored_reference'}
+    primary_files=[ref['path'] for ref in context_refs if ref['role'] not in supporting_roles]
+    supporting_context_refs=[ref for ref in context_refs if ref['role'] in supporting_roles]
+    return {'version':os_version(),'business_id':business_id,'workflow_id':workflow_id,'focus_refs':focus,'operator_ref':operator_ref,'team_ref':team_ref,'role_ref':role_ref,'effective_preferences':prefs.get('effective_preferences',{}),'preference_profiles':[x.get('id') for x in prefs.get('applied_profiles',[])],'preference_conflicts':prefs.get('conflicts',[]),'files':primary_files,'supporting_context_refs':supporting_context_refs,'context_reading_rule':'Primary refs carry the selected workflow, applicable preferences, and durable organization context. Supporting policy, schema, and authored-reference pointers are exposed for targeted reading; their actual truth/constraints still apply when relevant, and schemas remain available when persisting. The active model/user decides what else materially helps.','object_context':selected_items,'object_refs':[item['object_ref'] for item in selected_items],'object_files':object_files,'schema_files':schema_files,'unresolved_selectors':unresolved,'evidence_inputs':match.get('evidence_inputs',[]),'material_inputs':_material_inputs(selected,idx,match.get('evidence_inputs',[])),'execution_rule':'The Workflow describes the outcome, procedure, evidence, and quality requirements. The active model/harness chooses the best available tools, external Skills, providers, orchestration, and implementation details.'}
 
 
 def main():

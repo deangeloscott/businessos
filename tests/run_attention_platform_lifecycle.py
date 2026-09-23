@@ -115,7 +115,7 @@ def main():
         req('retention_class' not in (S/'record_platform_change.py').read_text(),'platform-change creation regained retention-class plumbing')
 
         plan=build_plan(BID,'core.attention.manage')
-        req('core/policies/attention-lifecycle.md' in plan['files'],'attention SOP should load attention continuity policy')
+        req(any(ref.get('path')=='core/policies/attention-lifecycle.md' for ref in plan.get('supporting_context_refs',[])),'attention SOP should expose attention continuity policy')
         policy=(ROOT/'core/policies/attention-lifecycle.md').read_text()
         req('Attention is organizational memory' in policy and 'proof that a background task exists' in policy and 'not execution authority' in policy,'attention policy lost the runtime boundary')
         req('elapsed time is not semantic authority' in policy.lower(),'attention policy reintroduced age as semantic retention authority')

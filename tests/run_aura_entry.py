@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
 """Protect the simple harness-neutral AURA front door."""
 from pathlib import Path
-import json,os,subprocess,sys,tempfile
+import json,os,shutil,subprocess,sys,tempfile
 
 ROOT=Path(__file__).resolve().parents[1]
 S=ROOT/'scripts'
+sys.path.insert(0,str(S))
+from _common import object_index
+from context_plan import build_plan
+from remember import remember
 
 
 def req(condition,message):
@@ -18,6 +22,33 @@ def run(args,env,check=True):
 def enter(request,bid,workspace,env,*extra,check=True):
     result=run([S/'enter.py',request,'--business-id',bid,'--workspace',workspace,*extra],env,check=check)
     return result,json.loads(result.stdout)
+
+
+def remember_in_workspace(workspace,business_id,payload):
+    old=os.environ.get('BUSINESSOS_WORKSPACE')
+    os.environ['BUSINESSOS_WORKSPACE']=str(workspace)
+    try:return remember(business_id,payload)
+    finally:
+        if old is None:os.environ.pop('BUSINESSOS_WORKSPACE',None)
+        else:os.environ['BUSINESSOS_WORKSPACE']=old
+
+
+def object_index_in_workspace(workspace,business_id):
+    old=os.environ.get('BUSINESSOS_WORKSPACE')
+    os.environ['BUSINESSOS_WORKSPACE']=str(workspace)
+    try:return object_index(business_id)
+    finally:
+        if old is None:os.environ.pop('BUSINESSOS_WORKSPACE',None)
+        else:os.environ['BUSINESSOS_WORKSPACE']=old
+
+
+def build_plan_in_workspace(workspace,business_id,workflow_id,**kwargs):
+    old=os.environ.get('BUSINESSOS_WORKSPACE')
+    os.environ['BUSINESSOS_WORKSPACE']=str(workspace)
+    try:return build_plan(business_id,workflow_id,**kwargs)
+    finally:
+        if old is None:os.environ.pop('BUSINESSOS_WORKSPACE',None)
+        else:os.environ['BUSINESSOS_WORKSPACE']=old
 
 
 def main():
@@ -40,6 +71,9 @@ def main():
         req(all(row.get('selection_authority') is False for row in knowledge.get('workflow_candidates',[])),'Workflow candidates claimed semantic authority')
         context_files=payload.get('retrieval',{}).get('context_files',[])
         req('CONTEXT.md' in context_files and 'docs/operating-knowledge.md' in context_files,'unselected entry lost small universal operating context')
+        req(payload.get('recipe_menu',{}).get('path')=='recipes/README.md','entry should expose the installed optional recipe menu without loading it')
+        req('recipe_menu' not in knowledge,'recipe menu should have one entry-point location')
+        req('recipes/README.md' not in context_files,'optional recipe menu must remain outside primary context files')
         req('semantic intent and execution remain with the active intelligence/runtime' in payload.get('rule',''),'front door lost model/runtime ownership boundary')
         req('tool/provider allowlist' in payload.get('execution_rule',''),'front door lost tool/provider freedom boundary')
         req(not (ws/'runtime/runs'/bid).exists(),'entry created runtime Run state despite optional-Run architecture')
@@ -62,10 +96,39 @@ def main():
         req(selected.get('run',{}).get('created') is False,'explicit Workflow selection still must not auto-create a Run')
         loaded=selected.get('retrieval',{}).get('context_files',[])
         req('CONTEXT.md' in loaded and 'core/DEFAULTS.md' not in loaded and 'core/policies/agent-execution.md' not in loaded,'selected Workflow context reintroduced redundant universal instruction stack')
+        refs=selected.get('retrieval',{}).get('supporting_context_refs',[])
+        req(any(row.get('role')=='policy' for row in refs),'selected context should expose applicable policy refs separately from primary files')
+        req(any(row.get('role')=='schema' for row in refs),'selected context should expose persistence schemas separately from primary files')
+        req(all(set(row)=={'path','role'} for row in refs),'supporting context refs should stay compact and use one shared reading rule')
+        req(all(row.get('path')!='recipes/README.md' for row in refs),'recipe navigation must not become selected organizational context')
+        req(all(not path.startswith('core/policies/') for path in loaded),'policy refs should not be duplicated in primary context files')
+        req(all(not path.startswith('core/schemas/') for path in loaded),'schema refs should not be duplicated in primary context files')
+
+        # Multiple claims remain visible as an unresolved choice instead of being bulk-loaded;
+        # explicit focus still retrieves one, while a genuinely single claim remains automatic.
+        remember_in_workspace(ws,bid,{'objects':[
+            {'key':'first_claim','object_type':'BusinessClaim','content':{'statement':'The first candidate claim.','claim_kind':'candidate','status':'provisional','authority':'candidate_strategy'}},
+            {'key':'second_claim','object_type':'BusinessClaim','content':{'statement':'The second candidate claim.','claim_kind':'candidate','status':'provisional','authority':'candidate_strategy'}},
+        ]})
+        claim_ids=[oid for oid,(obj,_) in object_index_in_workspace(ws,bid).items() if obj.get('object_type')=='BusinessClaim']
+        req(len(claim_ids)==2,'temporary fixture should contain two BusinessClaims')
+        many=build_plan_in_workspace(ws,bid,'content.production.presentation')
+        req(not any(row.get('object_type')=='BusinessClaim' for row in many.get('object_context',[])),'multiple BusinessClaims must not be bulk-loaded as hidden prerequisites')
+        req(any(row.get('type')=='BusinessClaim' and 'multiple candidates' in row.get('reason','') for row in many.get('unresolved_selectors',[])),'multiple BusinessClaims should remain an explicit model/user choice')
+        focused=build_plan_in_workspace(ws,bid,'content.production.presentation',focus=[claim_ids[0]])
+        req([row.get('object_ref') for row in focused.get('object_context',[])].count(claim_ids[0])==1,'explicit claim focus should still retrieve the requested claim')
+
+        single='entry-regression-single';run([S/'init_business.py',single,'--name','Entry Regression Single'],env)
+        remember_in_workspace(ws,single,{'objects':[{'key':'only_claim','object_type':'BusinessClaim','content':{'statement':'The only candidate claim.','claim_kind':'candidate','status':'provisional','authority':'candidate_strategy'}}]})
+        only_plan=build_plan_in_workspace(ws,single,'content.production.presentation')
+        req(len([row for row in only_plan.get('object_context',[]) if row.get('object_type')=='BusinessClaim'])==1,'one BusinessClaim should remain a useful deterministic default')
+        req(not any(row.get('type')=='BusinessClaim' for row in only_plan.get('unresolved_selectors',[])),'single BusinessClaim should not become unresolved')
+        shutil.rmtree(ws/'instances'/single,ignore_errors=True)
 
         second='entry-regression-two';run([S/'init_business.py',second,'--name','Entry Regression Two'],env)
         unresolved=run([S/'enter.py','Analyze the business.','--workspace',ws],env,check=False);data=json.loads(unresolved.stdout)
         req(unresolved.returncode==2 and data.get('status')=='needs_input','ambiguous organization should request only the missing organization choice')
+        req(data.get('recipe_menu',{}).get('path')=='recipes/README.md','optional recipe navigation should remain available while organization choice is unresolved')
         req(sorted(data.get('available_business_ids',[]))==sorted([bid,second]),'business-resolution handoff should expose stable IDs')
         names={row['id']:row['name'] for row in data.get('available_businesses',[])};req(names=={bid:'Entry Regression',second:'Entry Regression Two'},f'business-resolution handoff should expose human-readable organization names: {names}')
 

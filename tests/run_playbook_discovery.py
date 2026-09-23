@@ -34,6 +34,7 @@ def main():
         for row in rows:
             req(row.get('id') in playbook_ids,f'Playbook search returned unknown Playbook: {row}')
             req(row.get('selection_authority') is False,f'Playbook search claimed semantic authority: {row}')
+            req(isinstance(row.get('matched_terms'),list),'Playbook discovery must expose lexical matches for model judgment')
 
     webinar=find_playbooks('Create a webinar.',5)
     req(any(row.get('entry_workflow')=='marketing.assets.webinar' for row in webinar),f'Webinar production Playbook was not discoverable: {webinar}')
@@ -44,6 +45,8 @@ def main():
         ('Compare competitor pricing.','competitor.analysis.pricing','competitor-intelligence'),
         ('Create a publish-ready article.','content.production.article','content-synthesis'),
         ('Check our landing page claims.','marketing.landing-page.qa','marketing-synthesis'),
+        ('Design a thumbnail cover.','content.production.thumbnail','content-synthesis'),
+        ('Create an infographic.','content.production.infographic','content-synthesis'),
     ]
     for text,expected,owner in workflow_cases:
         rows=find_workflows(text,6,owner)
@@ -52,6 +55,12 @@ def main():
         for row in rows:
             req(row.get('workflow_id') in registry,f'Workflow search returned unknown Workflow: {row}')
             req(row.get('selection_authority') is False,f'Workflow search claimed semantic authority: {row}')
+            req(row.get('path')==registry[row['workflow_id']].get('path'),f'Workflow candidate lost its authored source path: {row}')
+            req(isinstance(row.get('matched_terms'),list),'Workflow discovery must expose lexical matches for model judgment')
+
+    # Function/request scaffolding alone must not manufacture a candidate set.
+    req(find_playbooks('the and for with')==[],'stopword-only Playbook request should abstain')
+    req(find_workflows('the and for with')==[],'stopword-only Workflow request should abstain')
 
     exact='content.production.presentation';rows=find_workflows(exact,3,'content-synthesis')
     req(rows and rows[0].get('workflow_id')==exact,'exact Workflow ID should be the highest Workflow candidate')

@@ -137,7 +137,7 @@ def main():
         policy=(ROOT/'core/policies/local-evidence.md').read_text()
         require('does **not** require one particular inspector' in policy and 'optional helpers' in policy and 'does not require an Observation' in policy,'local evidence policy lost harness-neutral boundary')
         plan=build_plan(BID,'seo.bootstrap.asset-state-inventory')
-        require('core/policies/local-evidence.md' in plan['files'],'SEO evidence-aware Workflow plan should load local-evidence policy')
+        require(any(ref.get('path')=='core/policies/local-evidence.md' for ref in plan.get('supporting_context_refs',[])),'SEO evidence-aware Workflow plan should expose local-evidence policy')
         print('local evidence regressions passed: deterministic capture integrity without making AURA the only evidence path or sentence renderer')
     finally:
         for p in (BASE,SITE_A,SITE_B):
