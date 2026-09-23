@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.1.11 — Alpha
+
+Adds adaptable visual craft references and makes AURA's optional navigation and selective context retrieval clearer and lighter without changing AURA's operating model.
+
+### What changed
+
+- Added optional [conceptual and editorial image](recipes/creative/conceptual-editorial-image.md), [annotated detail and mechanism](recipes/creative/information-design/09-annotated-detail-and-mechanism.md), and [thumbnail and cover](recipes/creative/thumbnail-cover-concepts.md) references. They remain borrowable starting points for expressive, explanatory, and browse-scale visual work rather than required templates or production paths.
+- Improved Playbook/Workflow discovery with deterministic lexical normalization, document-frequency weighting, complete-word matching, explicit matched terms, authored source paths, and bounded results. Discovery remains navigation help; semantic applicability, method choice, and execution remain with the active model/user/harness.
+- Added one installed-aware optional recipe-menu pointer, separated primary organizational context from supporting policy/schema/authored-reference pointers, kept applicable preferences primary, and stopped bulk-loading multiple BusinessClaims when the model/user has not selected one.
+- Added source links to the generated Workflow Index and removed several local false prerequisites around draft/outline/script/derivative work and Insight-before-Opportunity ordering. Existing evidence, policy, persistence, and real-world constraints remain applicable when relevant.
+- Kept the changes deliberately narrow: no semantic router, confidence authority, recipe registry, mandatory recipe reading, runtime/provider integration, execution pipeline, or token/outcome guarantee was introduced. Lexical candidates can still be incomplete or noisy and are meant to be judged by capable intelligence.
+
+### Validation
+
+The release gate validates the source workspace, public distribution, all product-integrity and qualification suites, all named component editions, the curated full ZIP from a fresh unzip, and the separate external-organization consumer smoke test.
+
 ## 0.1.10 — Alpha
 
 Broadens the optional creative video craft references and makes the collection easier to navigate without changing AURA's operating model.
