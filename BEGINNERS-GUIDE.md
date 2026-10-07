@@ -165,6 +165,33 @@ AURA does not need to copy every binary or external file into canonical JSON.
 
 A real presentation, website, report, design, or other deliverable can remain in the durable location where it naturally belongs. AURA can preserve an `Asset` with the useful identity, location/reference, provenance, status, and relationships future work needs.
 
+## Did you know you can create a visual workspace?
+
+You can ask your AI to build a local visual workspace for your AURA information: a place to browse research, open saved work, review priorities, manage information, and explore useful Workflows without digging through folders or asking the AI for each item. It can be a simple overview or a more comprehensive workspace, with the layout and features you find useful.
+
+Use an AI tool that can access your AURA folder and organization workspace and has tools to build and run an interface. Describe what you want to see and do; the AI can handle the technical setup using what is available on your computer. A local interface can open in your browser or another suitable app without requiring cloud hosting or a particular AI provider.
+
+### Example requests
+
+Choose an example and change it to fit your work:
+
+- **Research:** “Read my AURA installation and build a local research workspace for my organization. Let me browse saved findings about competitors, customers, and our industry, follow links to supporting evidence, open reports, and find relevant research Workflows.”
+- **Creative work:** “Build a local creative workspace using my existing AURA information. Put brand guidance, audience insights, briefs, and saved creative assets in one place. Let me open the actual deliverables and find useful content and marketing Workflows.”
+- **Growth and priorities:** “Create a local workspace where I can review our goals, opportunities, experiments, results, and unresolved work saved in AURA. Help me see the evidence behind decisions and find Workflows for the next work I want to do.”
+- **A broader overview:** “Build a local workspace for my organization that brings together our business information, research, priorities, saved assets, Learning, and Workflows. Start with a simple overview and let me explore the details when I need them.”
+
+With any of these, add:
+
+> Use my existing AURA records and appropriate helpers for saving changes. Show what is actually saved, make it easy to refresh the view, and explain how I can open the workspace again. Keep the custom interface separate from AURA product files so I can keep it when I upgrade.
+
+### Connecting Workflows to your AI
+
+Workflows describe how to do useful work; your AI tool performs the work. You can ask:
+
+> Let me choose a Workflow and describe the outcome I want from this workspace. If my AI tool supports starting work from the interface, connect it using the tool's supported method. Otherwise, prepare a request I can copy into my AI tool, including the selected Workflow and relevant AURA context.
+
+The interface can bring your saved information together while your chosen AI tool supplies the capabilities to act on it. You can ask the AI to change the layout, add useful views, or simplify it as your needs change. If you only need a browsable overview, ask it to refresh AURA's existing human-readable knowledge pages instead of building an application.
+
 ## Keeping truth current
 
 AURA follows an important rule:
