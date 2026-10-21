@@ -44,7 +44,7 @@ def create_and_complete(method_type,task,method_ref=None,playbook_id=None,workfl
     state=load(rd/'run.json');receipt=state.get('continuity') or {}
     req(state.get('status')=='completed' and receipt.get('state')=='completed',f'{method_type} receipt state mismatch')
     req(receipt.get('purpose')=='organizational_work_receipt','receipt lost continuity purpose');req(receipt.get('method_type')==method_type,'receipt lost method type');req(receipt.get('method_ref')==state.get('method_ref'),'receipt lost method reference')
-    req(str(evidence.relative_to(ROOT)) in receipt.get('evidence_refs',[]),'receipt omitted evidence');req(str(result.relative_to(ROOT)) in receipt.get('result_refs',[]),'receipt omitted result');req(not (rd/'contract-execution.json').exists(),'completion recreated execution ledger')
+    req(evidence.relative_to(ROOT).as_posix() in receipt.get('evidence_refs',[]),'receipt omitted evidence');req(result.relative_to(ROOT).as_posix() in receipt.get('result_refs',[]),'receipt omitted result');req(not (rd/'contract-execution.json').exists(),'completion recreated execution ledger')
     return rid
 
 

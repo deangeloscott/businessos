@@ -95,6 +95,6 @@ def resolve_effective(workflow_id,business_id,team_ref=None,role_ref=None,operat
         return None,meta,'\n'.join(body),[local]
     canonical=_canonical_workflow(workflow_id)
     if not canonical:raise ValueError(f'Unknown Workflow id for {business_id}: {workflow_id}')
-    path,meta,_=canonical;extensions=[extension for extension in active_extensions(business_id,team_ref,role_ref,operator_ref) if not _is_local(extension) and extension.get('workflow_id')==workflow_id];effective_meta=_merge_metadata(meta,extensions);content=path.read_text()
+    path,meta,_=canonical;extensions=[extension for extension in active_extensions(business_id,team_ref,role_ref,operator_ref) if not _is_local(extension) and extension.get('workflow_id')==workflow_id];effective_meta=_merge_metadata(meta,extensions);content=path.read_text(encoding='utf-8')
     if extensions:content+='\n\n## Active Organization Workflow Extensions\n\nThese organization-scoped extensions add relevant operating knowledge to this AURA Workflow. They do not create runtime authority or prevent the active intelligence from choosing another valid method. If applicable extensions conflict semantically, the model/user resolves that conflict from actual organization context.\n\n'+'\n'.join(_extension_markdown(extension) for extension in extensions)
     return path,effective_meta,content,extensions

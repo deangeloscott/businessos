@@ -12,7 +12,7 @@ def _profile_id(value):
 
 
 def _profiles():
-    data=json.loads((PRODUCT_ROOT/'distribution/deployment-profiles.json').read_text())
+    data=json.loads((PRODUCT_ROOT/'distribution/deployment-profiles.json').read_text(encoding='utf-8'))
     return {x['id']:x for x in data.get('profiles',[])}
 
 
@@ -42,11 +42,11 @@ def configure(root_value,profile_value='simple',knowledge_enabled=True,write_lin
     if knowledge_enabled:(root/'knowledge').mkdir(parents=True,exist_ok=True)
     profile_path=root/'.businessos/workspace.json';prior={}
     if profile_path.exists():
-        try:prior=json.loads(profile_path.read_text())
+        try:prior=json.loads(profile_path.read_text(encoding='utf-8'))
         except Exception:
             if not force:raise ValueError(f'Existing workspace profile is invalid; use --force after inspection: {profile_path}')
     ts=now();data={'format_version':'1.0','profile':profile_id,'created_at':prior.get('created_at',ts),'updated_at':ts,'product_version':os_version(),'external_state':root!=PRODUCT_ROOT.resolve(),'knowledge_enabled':bool(knowledge_enabled),'knowledge_root':'knowledge','git_strategy':profile['git_strategy'],'collaboration':profile['collaboration'],'notes':['Canonical AURA organizational truth remains under instances/.','Human notes under knowledge/<business-id>/notes are noncanonical until deliberately incorporated with provenance.']}
-    schema=json.loads((PRODUCT_ROOT/'core/schemas/config/workspace-profile.schema.json').read_text())
+    schema=json.loads((PRODUCT_ROOT/'core/schemas/config/workspace-profile.schema.json').read_text(encoding='utf-8'))
     errs=list(Draft202012Validator(schema).iter_errors(data))
     if errs:raise ValueError('Invalid workspace profile: '+'; '.join(e.message for e in errs))
     profile_path.write_text(json.dumps(data,indent=2)+'\n')

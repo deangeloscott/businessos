@@ -33,7 +33,7 @@ def _profile_for(root,requested):
     profile_path=root/'.businessos/workspace.json'
     if profile_path.exists():
         try:
-            data=json.loads(profile_path.read_text())
+            data=json.loads(profile_path.read_text(encoding='utf-8'))
             if isinstance(data,dict) and data.get('profile'):return data['profile']
         except Exception:pass
     if root==workspace_root().resolve():return workspace_profile().get('profile','simple')

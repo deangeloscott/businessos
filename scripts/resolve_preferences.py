@@ -115,7 +115,7 @@ def _load_task_preferences(path):
     if not path:return None
     p=Path(path); p=p if p.is_absolute() else ROOT/p
     if not p.exists(): raise ValueError(f'Task preferences file not found: {path}')
-    data=json.loads(p.read_text())
+    data=json.loads(p.read_text(encoding='utf-8'))
     if not isinstance(data,dict): raise ValueError('Task preferences must be a JSON object')
     validate_preference_semantics(data, 'task_preferences')
     return data
@@ -125,7 +125,7 @@ def _run_context(business_id,run_id):
     if not run_id:return None,None
     rp=ROOT/'runtime/runs'/business_id/run_id/'run.json'
     if not rp.exists(): raise ValueError(f'Unknown Run: {run_id}')
-    run=json.loads(rp.read_text())
+    run=json.loads(rp.read_text(encoding='utf-8'))
     if run.get('business_id')!=business_id: raise ValueError('Run business_id mismatch')
     return run,rp
 
@@ -135,7 +135,7 @@ def resolve_for_run(business_id,run_id,task_preferences=None,output_type=None,ch
     snapref=run.get('preference_snapshot_ref');out=(ROOT/snapref) if snapref else (rp.parent/'artifacts'/'effective-preferences.json')
     if out.exists():
         if task_preferences is not None: raise ValueError('existing Run preference snapshot is immutable; task preferences must be supplied when creating the Run')
-        return json.loads(out.read_text()),out
+        return json.loads(out.read_text(encoding='utf-8')),out
     result=resolve_effective_preferences(
         business_id,
         operator_ref=run.get('operator_ref'),team_ref=run.get('team_ref'),role_ref=run.get('role_ref'),
@@ -175,7 +175,7 @@ def main():
             snapref=run.get('preference_snapshot_ref');out=(ROOT/snapref) if snapref else (rp.parent/'artifacts'/'effective-preferences.json')
             if out.exists():
                 if task is not None: raise ValueError('existing Run preference snapshot is immutable; task preferences must be supplied when creating the Run')
-                result=json.loads(out.read_text())
+                result=json.loads(out.read_text(encoding='utf-8'))
             else:
                 workflow=run.get('workflow_id');rw=load_registry_workflow(workflow);system=a.system or ((rw or {}).get('owner_system'))
                 result=resolve_effective_preferences(a.business_id,run.get('operator_ref'),run.get('team_ref'),run.get('role_ref'),system,workflow,run.get('preference_output_type'),run.get('preference_channel'),task)

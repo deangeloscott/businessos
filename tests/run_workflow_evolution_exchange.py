@@ -132,7 +132,7 @@ def main():
         entry,source_record,stored=import_package(B,zip_path)
         req(entry['workflow_id']=='custom.marketing.proof-first-landing','imported support lost Workflow identity')
         req('mode' not in entry and 'compatibility_status' not in entry,'Innovation Exchange reintroduced redundant mode or product-version compatibility state')
-        req(source_record.get('source_reference')==str(stored.relative_to(ROOT)),'imported SourceRecord does not point to stored package evidence')
+        req(source_record.get('source_reference')==stored.relative_to(ROOT).as_posix(),'imported SourceRecord does not point to stored package evidence')
         req(json.loads(innovation_entry_path(B,entry['id']).read_text()).get('object_type') is None,'Innovation Exchange support entry became canonical state')
         req(not any(obj.get('object_type')=='ProcessExtension' for obj,_ in iter_instance_objects(B)),'package import silently adopted foreign operating knowledge')
         req(not any(obj.get('object_type')=='Insight' for obj,_ in iter_instance_objects(B)),'package import manufactured semantic Insight')

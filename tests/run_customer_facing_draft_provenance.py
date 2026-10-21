@@ -37,7 +37,7 @@ def main():
         completed=run(S/'complete_run.py',BID,rid,'--result',asset_path,'--result',artifact_path,'--summary','Drafted customer-facing homepage copy with truthful method provenance.',check=False)
         req(completed.returncode==0,f'optional Workflow receipt should complete without execution hierarchy: {completed.stdout+completed.stderr}')
         receipt=json.loads((RUNS/rid/'run.json').read_text()).get('continuity') or {}
-        req(str(asset_path.relative_to(ROOT)) in receipt.get('result_refs',[]) and str(artifact_path.relative_to(ROOT)) in receipt.get('result_refs',[]),'completed receipt did not index material draft results')
+        req(asset_path.relative_to(ROOT).as_posix() in receipt.get('result_refs',[]) and artifact_path.relative_to(ROOT).as_posix() in receipt.get('result_refs',[]),'completed receipt did not index material draft results')
         req(not (RUNS/rid/'contract-execution.json').exists(),'optional receipt recreated retired execution ledger')
         final_asset=json.loads(asset_path.read_text());bos=(final_asset.get('extensions') or {}).get('businessos') or {}
         req(not any(k.startswith('run_') or k=='run_ref' for k in bos),'optional receipt mutated canonical Asset with Run backlinks')

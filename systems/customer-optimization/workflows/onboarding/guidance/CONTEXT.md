@@ -31,10 +31,13 @@ Reduce confusion/rework while giving customers only the information needed at th
 Run when milestone completion is limited by uncertainty, errors, or knowledge gaps.
 
 ## Process
-1. [AI] Identify the exact customer task/decision and common misunderstanding/error at the milestone using Customer/support evidence.
+1. [AI] Identify the exact customer task/decision using available Customer/support evidence or inspection of the current instructions and journey. Distinguish observed ambiguity from hypotheses about customer behavior; missing analytics/support access need not block improving demonstrably unclear instructions.
 2. [AI] Define the minimum explanation, example, checklist, demonstration, field guidance, or troubleshooting needed for successful completion.
 3. [AI] Decide whether inline guidance, email, video/demo, live support, knowledge article, or another format best fits the task/context.
 4. [HYBRID] Avoid using content to compensate for an unnecessarily complicated product/process; simplify the underlying experience first where possible.
 5. [AI] Use relevant Content operating knowledge directly to create or specify the needed guidance with audience state, task, success, errors, screenshots/demo needs, and accessibility/language requirements. Create a WorkRequest only when a real durable handoff to another actor must survive the current interaction.
 6. [DETERMINISTIC] Place guidance trigger/location in the onboarding sequence and track use/completion in the real delivery system where applicable.
 7. [AI] Evaluate whether guidance reduces errors/time/support and retire redundant material when evidence supports that decision.
+
+## Completion boundaries
+Usable guidance can be delivered before deployment or measurement. Report the artifact, whether it was placed in the actual delivery system, and whether customer effects were measured. Do not claim reduced errors from a draft alone; do not withhold a useful draft merely because those later stages are unavailable.

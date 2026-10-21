@@ -83,7 +83,7 @@ def _provenance_errors(objects,sources):
 def validate_business(business_id,require_context=False):
     errors=[];warnings=[];base=ROOT/'instances'/business_id
     if not base.exists() or not base.is_dir():return [f'Unknown business: {business_id}'],warnings,{}
-    try:inst=json.loads((base/'instance.json').read_text())
+    try:inst=json.loads((base/'instance.json').read_text(encoding='utf-8'))
     except Exception as e:return [f'invalid instance.json: {e}'],warnings,{}
     if inst.get('business_id')!=business_id:errors.append('instance.json business_id mismatch')
     unknown=set(inst.get('enabled_systems',[]))-(installed_modules()-{'core'})
@@ -91,12 +91,12 @@ def validate_business(business_id,require_context=False):
     schemas_by_title={}
     for sp in schemas():
         try:
-            sd=json.loads(sp.read_text());title=sd.get('title')
+            sd=json.loads(sp.read_text(encoding='utf-8'));title=sd.get('title')
             if title:schemas_by_title[title]=(sd,sp)
         except Exception:pass
     ids={};counts=collections.Counter();objects=[];sources={}
     for p in sorted(base.rglob('*.json')):
-        try:data=json.loads(p.read_text())
+        try:data=json.loads(p.read_text(encoding='utf-8'))
         except Exception as e:errors.append(f'{p.relative_to(ROOT)} invalid JSON: {e}');continue
         vals=data if isinstance(data,list) else [data]
         historical='history' in p.relative_to(base).parts

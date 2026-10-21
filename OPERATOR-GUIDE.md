@@ -57,6 +57,8 @@ AURA retrieves a small amount of relevant organization memory and may surface hi
 
 The model/user decides what actually applies. AURA does not semantically route the request.
 
+The response includes bounded literal `saved_work_candidates` with readable titles, status and artifact pointers. They are navigation suggestions, not verified conclusions; open the relevant records and artifacts. To retrieve known records, repeat `--focus <object-id>` as needed. Focus works without choosing a Workflow, including for archived/superseded records explicitly requested. Unknown IDs appear in `unresolved_focus` and return `needs_judgment` rather than silent success; available records are still returned. Literal lookup searches record descriptions and artifact pointers, not the contents of linked documents or synonyms. An empty candidate list is not proof that work does not exist: try a distinctive title term, inspect organization records directly, or use a known ID. Missing optional Workflow context does not itself block useful work. Retrieval errors are not evidence that the organization has no knowledge.
+
 ### Operating knowledge hierarchy
 
 **Playbook → Workflow → Step**
@@ -112,6 +114,33 @@ Before saving, ask:
 Do not persist something merely because a schema exists.
 
 When a real deliverable matters later, keep the actual artifact where it naturally belongs and remember the useful `Asset` identity/reference/provenance/status rather than automatically copying every binary or scratch file into AURA.
+
+For example, after creating `deliverables/onboarding-guide.md`, save this payload as a JSON file and pass it to `remember.py`. Replace the example's meaning and path with the actual result:
+
+```json
+{
+  "provenance": {"method": "ad_hoc"},
+  "objects": [{
+    "object_type": "Asset",
+    "content": {
+      "asset_type": "onboarding_guide",
+      "business_role": "Customer onboarding guide; clearer instructions based on document inspection",
+      "location_reference": "deliverables/onboarding-guide.md",
+      "version": "1",
+      "status": "draft_not_deployed",
+      "extensions": {"evidence_limits": "Customer impact is not measured; proposed changes need field use."}
+    }
+  }]
+}
+```
+
+Update that record using its returned ID, without creating another record for the same artifact:
+
+```json
+{"objects":[{"object_ref":"<returned-asset-id>","content":{"status":"reviewed_not_deployed"}}]}
+```
+
+Only use that status after actual review. Schemas in `core/schemas/` define each type's semantic fields; AURA supplies mechanical fields. The save receipt already includes aggregate integrity validation. Repeat it only after another material change or a specific concern; it does not assess factual accuracy, creative quality, deployment or business effect. Keep assumptions and revision conditions in the artifact and relevant existing semantic fields/extensions, not as invented observations.
 
 ## Correcting and forgetting state
 

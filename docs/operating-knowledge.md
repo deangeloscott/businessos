@@ -57,6 +57,8 @@ More work is not automatically better work. Less work is not automatically more 
 
 ## Execution freedom
 
+Apply the shared [useful-progress guidance](../CONTEXT.md#useful-progress-under-incomplete-information) when information or connections are incomplete. Workflow `reads` describe useful context, not a blanket prerequisite. Evidence needed to claim a measured outcome need not block drafting, inspection, recommendation, or an authorized experiment. Where a Workflow spans creation, implementation and later measurement, describe those milestones separately; a missing later milestone must not erase useful completed work or be reported as achieved.
+
 A Playbook or Workflow describes **what good work requires**, not every possible way to execute it.
 
 The active model/harness may:

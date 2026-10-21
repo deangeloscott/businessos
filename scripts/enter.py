@@ -8,9 +8,9 @@ execution. The active model/user chooses the method and the harness supplies its
 tools, Skills, orchestration, and execution environment.
 """
 from pathlib import Path
-import argparse,json,os
+import argparse,json,os,re
 
-from _common import PRODUCT_ROOT,workspace_root,resolve_business,object_index,storage_ref,load_registry
+from _common import PRODUCT_ROOT,workspace_root,resolve_business,object_index,storage_ref,load_registry,describe_object,resolve_focus
 from find_playbooks import find_candidates as find_playbook_candidates
 from find_workflows import find_candidates as find_workflow_candidates
 from operating_knowledge import get_playbook
@@ -37,8 +37,22 @@ def _baseline_context(business_id,limit_per_type=3):
         by_type[typ].append((obj,path))
     for typ in BASELINE_TYPES:
         candidates=sorted(by_type[typ],key=lambda x:(x[0].get('updated_at') or x[0].get('created_at') or '',x[0].get('id') or ''),reverse=True)
-        for obj,path in candidates[:limit_per_type]:rows.append({'object_ref':obj.get('id'),'object_type':typ,'path':storage_ref(path)})
+        for obj,path in candidates[:limit_per_type]:rows.append(describe_object(obj,path))
     return rows
+
+
+def _saved_work_candidates(task,index,limit=6):
+    """Bounded literal search, not semantic routing or automatic acceptance."""
+    stop={'the','and','for','with','from','this','that','our','use','find','please','what','have','into','work'}
+    terms=set(re.findall(r'\w{3,}',task.casefold()))-stop;ranked=[]
+    for obj,path in index.values():
+        row=describe_object(obj,path)
+        text=' '.join(str(obj.get(key) or '') for key in ('id','title','name','statement','summary','business_role','description','asset_type','location_reference')).casefold()
+        words=set(re.findall(r'\w{3,}',text));matched=sorted(terms & words)
+        if matched:
+            row['matched_terms']=matched
+            ranked.append((obj.get('status') in {'archived','superseded'},-len(matched),obj['id'],row))
+    return [item[-1] for item in sorted(ranked,key=lambda item:item[:3])[:limit]]
 
 
 def _workflow_candidates(task,business_id,owner_system=None,team_ref=None,role_ref=None,operator_ref=None,top=6):
@@ -63,8 +77,7 @@ def _selected_workflow(task,business_id,workflow_id,team_ref=None,role_ref=None,
 
 def _workflow_context(business_id,workflow_id,focus,operator_ref,team_ref,role_ref,task_preferences,output_type,channel):
     if not workflow_id:return None,None
-    try:return build_plan(business_id,workflow_id,focus=focus,operator_ref=operator_ref,team_ref=team_ref,role_ref=role_ref,task_preferences=task_preferences,output_type=output_type,channel=channel),build_process_plan(workflow_id=workflow_id)
-    except ValueError as exc:return {'error':str(exc)},None
+    return build_plan(business_id,workflow_id,focus=focus,operator_ref=operator_ref,team_ref=team_ref,role_ref=role_ref,task_preferences=task_preferences,output_type=output_type,channel=channel),build_process_plan(workflow_id=workflow_id)
 
 
 def prepare_work(task,business_id=None,workspace=None,focus=None,operator_ref=None,team_ref=None,role_ref=None,task_preferences=None,output_type=None,channel=None,selected_playbook_id=None,selected_workflow_id=None):
@@ -77,6 +90,8 @@ def prepare_work(task,business_id=None,workspace=None,focus=None,operator_ref=No
         if menu:payload['recipe_menu']=menu
         return payload
     bid=resolved['business_id'];focus=focus or [];registry=load_registry().get('workflows',[])
+    index=object_index(bid);focused,unresolved_focus=resolve_focus(index,focus)
+    focus_context=[describe_object(obj,path) for obj,path in focused.values()]
     playbook=get_playbook(selected_playbook_id,registry) if selected_playbook_id else None
     if selected_playbook_id and not playbook:raise ValueError(f'Unknown or unavailable Playbook: {selected_playbook_id}')
     owner=playbook.get('owner_system') if playbook else None
@@ -89,13 +104,15 @@ def prepare_work(task,business_id=None,workspace=None,focus=None,operator_ref=No
     else:
         object_context=[];context_files=['CONTEXT.md','docs/operating-knowledge.md'];supporting_context_refs=[];context_reading_rule='Load only the small universal context that materially helps. Optional recipe navigation is separate from organizational context.'
     recipe_menu=_recipe_menu()
+    for row in focus_context:
+        if row['path'] not in context_files:context_files.append(row['path'])
     playbook_view=None
     if playbook:
         try:playbook_view=build_process_plan(playbook_id=playbook['id'])
         except ValueError as exc:playbook_view={'error':str(exc)}
     return {
-        'format_version':'4.2','status':'ready','workspace':str(workspace_root()),'business_id':bid,'business_resolution':resolved.get('resolution'),'original_request':task,
-        'retrieval':{'baseline_context':baseline,'workflow_context':object_context,'context_files':context_files,'supporting_context_refs':supporting_context_refs,'context_reading_rule':context_reading_rule,'unresolved_selectors':(context or {}).get('unresolved_selectors',[]) if isinstance(context,dict) else [],'rule':'Load only what materially helps the request. Absence from retrieved AURA context means AURA has no selected durable record, not that the real-world fact does not exist.'},
+        'format_version':'4.2','status':'needs_judgment' if unresolved_focus else 'ready','workspace':str(workspace_root()),'business_id':bid,'business_resolution':resolved.get('resolution'),'original_request':task,
+        'retrieval':{'focus_context':focus_context,'unresolved_focus':unresolved_focus,'saved_work_candidates':_saved_work_candidates(task,index),'lookup_rule':'Candidates are literal matches, not accepted conclusions. Read relevant records and their artifacts; status, assumptions and evidence limits remain authoritative. Missing optional context does not block useful work. Resolve requested missing refs before relying on them.','baseline_context':baseline,'workflow_context':object_context,'context_files':context_files,'supporting_context_refs':supporting_context_refs,'context_reading_rule':context_reading_rule,'unresolved_selectors':(context or {}).get('unresolved_selectors',[]) if isinstance(context,dict) else [],'rule':'Load only what materially helps the request. Absence from retrieved AURA context means AURA has no selected durable record, not that the real-world fact does not exist.'},
         'operating_knowledge':{'selected_playbook':playbook,'playbook_candidates':playbook_candidates,'playbook_view':playbook_view,'selected_workflow':selected_workflow,'workflow_candidates':workflow_candidates,'workflow_view':workflow_view if selected_workflow_id else None,'rule':'Playbooks frame end-to-end business jobs; Workflows provide reusable procedures. The active model/user decides what applies, how to compose it, and whether another Skill or method is better.'},
         'recipe_menu':recipe_menu,
         'method_options':METHOD_TYPES,'execution_rule':'Use the active model/harness normally. AURA does not define a tool/provider allowlist; use the best available tools, external Skills, resources, and orchestration that serve the requested outcome.','run':{'created':False,'rule':'Do not create a Run merely to begin reasoning. A bounded work receipt is optional when continuity/provenance materially benefits from one.'},
@@ -105,7 +122,7 @@ def prepare_work(task,business_id=None,workspace=None,focus=None,operator_ref=No
 
 
 def main():
-    p=argparse.ArgumentParser(description='Resolve organization context and optional AURA Playbook/Workflow candidates without semantic routing or execution-control machinery.');p.add_argument('task');p.add_argument('--business-id');p.add_argument('--workspace');p.add_argument('--focus',action='append',default=[]);p.add_argument('--operator-ref');p.add_argument('--team-ref');p.add_argument('--role-ref');p.add_argument('--task-preferences');p.add_argument('--output-type');p.add_argument('--channel');p.add_argument('--selected-playbook');p.add_argument('--selected-workflow');a=p.parse_args()
+    p=argparse.ArgumentParser(description='Resolve organization context and optional AURA Playbook/Workflow candidates without semantic routing or execution-control machinery.');p.add_argument('task');p.add_argument('--business-id');p.add_argument('--workspace');p.add_argument('--focus',action='append',default=[],metavar='OBJECT_ID',help='Exact saved object ID; repeat for multiple records. Put search words in the positional task.');p.add_argument('--operator-ref');p.add_argument('--team-ref');p.add_argument('--role-ref');p.add_argument('--task-preferences');p.add_argument('--output-type');p.add_argument('--channel');p.add_argument('--selected-playbook');p.add_argument('--selected-workflow');p.add_argument('--json',action='store_true',help='JSON is already the default; accepted for consistency with setup and doctor.');a=p.parse_args()
     try:result=prepare_work(a.task,a.business_id,a.workspace,a.focus,a.operator_ref,a.team_ref,a.role_ref,a.task_preferences,a.output_type,a.channel,a.selected_playbook,a.selected_workflow)
     except (ValueError,json.JSONDecodeError) as exc:result={'format_version':'4.2','status':'needs_judgment','reason':str(exc)}
     print(json.dumps(result,indent=2,ensure_ascii=False));raise SystemExit(0 if result.get('status')=='ready' else 2)

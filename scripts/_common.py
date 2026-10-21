@@ -1,6 +1,10 @@
 from pathlib import Path
 import json, re, yaml, hashlib, datetime, os, sys, tempfile
 
+# AURA files and CLI text use UTF-8, including redirected Windows output.
+for _stream in (sys.stdout,sys.stderr):
+    if hasattr(_stream,'reconfigure'):_stream.reconfigure(encoding='utf-8')
+
 PRODUCT_ROOT=Path(__file__).resolve().parents[1]
 _WORKSPACE_ENV='BUSINESSOS_WORKSPACE'
 _WORKSPACE_CONFIG_ENV='BUSINESSOS_WORKSPACE_CONFIG'
@@ -25,7 +29,7 @@ def _read_workspace_link():
     p=workspace_config_path()
     if not p.exists(): return {}
     try:
-        data=json.loads(p.read_text())
+        data=json.loads(p.read_text(encoding='utf-8'))
     except Exception as e:
         raise ValueError(f'Invalid BusinessOS workspace config {p}: {e}')
     return data if isinstance(data,dict) else {}
@@ -99,7 +103,7 @@ def workspace_profile():
     root=workspace_root(); p=root/'.businessos/workspace.json'
     if p.exists():
         try:
-            d=json.loads(p.read_text())
+            d=json.loads(p.read_text(encoding='utf-8'))
             if isinstance(d,dict): return d
         except Exception: pass
     link={} if workspace_selection_source()=='environment' else _read_workspace_link()
@@ -124,14 +128,14 @@ def business_directory():
         bp=base/'context/business.json'
         if bp.exists():
             try:
-                value=json.loads(bp.read_text()).get('name')
+                value=json.loads(bp.read_text(encoding='utf-8')).get('name')
                 if isinstance(value,str) and value.strip():name=value.strip()
             except Exception:pass
         if not name:
             ip=base/'instance.json'
             if ip.exists():
                 try:
-                    value=json.loads(ip.read_text()).get('name')
+                    value=json.loads(ip.read_text(encoding='utf-8')).get('name')
                     if isinstance(value,str) and value.strip():name=value.strip()
                 except Exception:pass
         rows.append({'id':business_id,'name':name or business_id})
@@ -198,7 +202,7 @@ def schemas():
 def load_registry():
     p=PRODUCT_ROOT/'generated/workflow-registry.json'
     if not p.exists(): raise SystemExit('Run scripts/generate_registry.py first')
-    return json.loads(p.read_text())
+    return json.loads(p.read_text(encoding='utf-8'))
 def now(): return datetime.datetime.now(datetime.timezone.utc).isoformat()
 
 def slug(s): return re.sub(r'[^a-z0-9]+','-',s.lower()).strip('-')
@@ -206,11 +210,11 @@ def slug(s): return re.sub(r'[^a-z0-9]+','-',s.lower()).strip('-')
 
 def os_version():
     p=PRODUCT_ROOT/'VERSION'
-    return p.read_text().strip() if p.exists() else '0.0.0'
+    return p.read_text(encoding='utf-8').strip() if p.exists() else '0.0.0'
 def installation():
     p=PRODUCT_ROOT/'INSTALLATION.json'
     if p.exists():
-        return json.loads(p.read_text())
+        return json.loads(p.read_text(encoding='utf-8'))
     installed=['core']+[p.name for p in sorted((PRODUCT_ROOT/'systems').iterdir()) if p.is_dir()] if (PRODUCT_ROOT/'systems').exists() else ['core']
     return {'format_version':'1.0','source_version':os_version(),'edition':'unmanaged','display_name':'ViralTrac AURA','public_name':'ViralTrac AURA','name_expansion':'Agentic Understanding and Reinforcement Architecture','descriptor':'organization-owned memory and operating knowledge for capable AI','installed_modules':installed,'standalone_distribution':False}
 def installed_modules():
@@ -218,11 +222,11 @@ def installed_modules():
 def publisher_metadata():
     p=PRODUCT_ROOT/'PUBLISHER.json'
     if not p.exists(): return {}
-    return json.loads(p.read_text())
+    return json.loads(p.read_text(encoding='utf-8'))
 def module_catalog():
     p=PRODUCT_ROOT/'distribution/module-catalog.json'
     if not p.exists(): return {}
-    d=json.loads(p.read_text())
+    d=json.loads(p.read_text(encoding='utf-8'))
     return {m['id']:m for m in d.get('modules',[])}
 
 
@@ -240,7 +244,7 @@ def iter_instance_objects(business_id):
     if not base.exists(): return []
     out=[]
     for p in base.rglob('*.json'):
-        try: data=json.loads(p.read_text())
+        try: data=json.loads(p.read_text(encoding='utf-8'))
         except Exception: continue
         vals=data if isinstance(data,list) else [data]
         for obj in vals:
@@ -248,7 +252,7 @@ def iter_instance_objects(business_id):
                 out.append((obj,p))
     for p in base.rglob('*.jsonl'):
         try:
-            for line in p.read_text().splitlines():
+            for line in p.read_text(encoding='utf-8').splitlines():
                 if not line.strip(): continue
                 obj=json.loads(line)
                 if isinstance(obj,dict) and obj.get('id') and obj.get('object_type') and obj.get('business_id')==business_id: out.append((obj,p))
@@ -256,6 +260,21 @@ def iter_instance_objects(business_id):
     return out
 def object_index(business_id):
     return {obj['id']:(obj,p) for obj,p in iter_instance_objects(business_id)}
+
+def describe_object(obj,path):
+    """Small, readable lookup result; the original record remains authoritative."""
+    title=next((obj.get(key) for key in ('title','name','statement','summary','business_role','description','asset_type') if isinstance(obj.get(key),str) and obj[key].strip()),obj['id'])
+    result={'object_ref':obj['id'],'object_type':obj.get('object_type'),'path':storage_ref(path),'title':title[:240],'status':obj.get('status'),'updated_at':obj.get('updated_at')}
+    if obj.get('location_reference'):result['artifact_reference']=obj['location_reference']
+    return result
+
+def resolve_focus(index,focus):
+    selected={};unresolved=[]
+    for ref in dict.fromkeys(focus or []):
+        if ref in index:selected[ref]=index[ref]
+        else:unresolved.append({'object_ref':ref,'reason':'requested record not found in this organization'})
+    return selected,unresolved
+
 def object_matches(obj,selector):
     s=normalize_selector(selector)
     if obj.get('object_type')!=s.get('type'): return False

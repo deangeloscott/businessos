@@ -24,10 +24,10 @@ INSTANCE_PATHS={
 
 
 def schema_entry(title):
-    registry=json.loads((PRODUCT_ROOT/'generated/schema-registry.json').read_text())
+    registry=json.loads((PRODUCT_ROOT/'generated/schema-registry.json').read_text(encoding='utf-8'))
     row=next((item for item in registry if item.get('title')==title),None)
     if not row:raise ValueError(f'Unknown canonical schema title: {title}')
-    return row,json.loads((PRODUCT_ROOT/row['path']).read_text())
+    return row,json.loads((PRODUCT_ROOT/row['path']).read_text(encoding='utf-8'))
 
 
 def validate_canonical(title,obj):

@@ -11,7 +11,7 @@ from validate_business import validate_business
 
 
 def _workspace_validation():
-    completed=subprocess.run([sys.executable,str(PRODUCT_ROOT/'scripts/validate_workspace.py')],cwd=PRODUCT_ROOT,capture_output=True,text=True)
+    completed=subprocess.run([sys.executable,str(PRODUCT_ROOT/'scripts/validate_workspace.py')],cwd=PRODUCT_ROOT,capture_output=True,text=True,encoding="utf-8")
     return {'ok':completed.returncode==0,'returncode':completed.returncode,'summary':(completed.stdout or completed.stderr).strip().splitlines()[-1:]}
 
 

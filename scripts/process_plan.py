@@ -23,7 +23,7 @@ def process_maps():
     if cp.exists():paths.append(cp)
     paths+=sorted((ROOT/'systems').glob('*/process-map.json'))
     for p in paths:
-        data=json.loads(p.read_text());out[data['system']]={a['id']:a for a in data.get('activities',[])}
+        data=json.loads(p.read_text(encoding='utf-8'));out[data['system']]={a['id']:a for a in data.get('activities',[])}
     return out
 
 

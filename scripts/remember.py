@@ -147,7 +147,9 @@ def remember(business_id,payload):
         elif supplied_extensions or provenance:
             raise ValueError(f'{typ} does not support extensions/provenance payloads.')
         if 'observed_at' in properties and not obj.get('observed_at'):obj['observed_at']=ts
-        validate_canonical(typ,obj);row['object']=obj;objects.append(obj)
+        try:validate_canonical(typ,obj)
+        except ValueError as exc:raise ValueError(f'{row["key"]} ({typ}): {exc}. See the {typ} schema and OPERATOR-GUIDE.md memory examples.') from exc
+        row['object']=obj;objects.append(obj)
 
     paths=[];snapshots={}
     try:
@@ -170,7 +172,7 @@ def remember(business_id,payload):
     } for row in prepared]
     return {
         'format_version':'1.0','status':'persisted','business_id':bid,'objects':rows,'receipt':_receipt(rows),
-        'validation':{'status':'clean','warnings':warnings[:5],'canonical_object_counts':counts},
+        'validation':{'status':'clean','warnings':warnings[:5],'canonical_object_counts':counts,'scope':'Schema, reference/provenance integrity and organization isolation; not factual accuracy, artifact quality, deployment or measured effect.'},
         'semantic_boundary':'Only caller-authored organizational meaning was persisted; AURA supplied mechanical canonical wrapping, explicit field removal, storage, and integrity validation.',
     }
 

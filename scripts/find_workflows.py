@@ -14,7 +14,7 @@ from _lexical import contains_phrase, document_frequency, tokens, weighted_overl
 def _index():
     path=ROOT/'generated/workflow-candidate-index.json'
     if not path.exists():raise ValueError('Workflow candidate index is missing; run scripts/generate_registry.py')
-    return json.loads(path.read_text())
+    return json.loads(path.read_text(encoding='utf-8'))
 
 @lru_cache(maxsize=1)
 def _installed_ids():

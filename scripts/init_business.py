@@ -48,12 +48,12 @@ def init_business(business_id,name):
     if dest.exists(): raise FileExistsError('Business already exists')
     dest.parent.mkdir(parents=True,exist_ok=True)
     shutil.copytree(product_instance_template(),dest)
-    ts=now();data=json.loads((dest/'instance.json').read_text())
+    ts=now();data=json.loads((dest/'instance.json').read_text(encoding='utf-8'))
     data.update({'business_id':business_id,'name':name,'created_at':ts,'enabled_systems':sorted(installed_modules()-{'core'})})
     write_json_atomic(dest/'instance.json',data)
     rp=dest/'config/external-research-profile.json'
     if rp.exists():
-        rpd=json.loads(rp.read_text());rpd['business_id']=business_id;write_json_atomic(rp,rpd)
+        rpd=json.loads(rp.read_text(encoding='utf-8'));rpd['business_id']=business_id;write_json_atomic(rp,rpd)
     _ensure_canonical_dirs(dest)
     _persist_minimal_identity(business_id,name,ts)
     return dest

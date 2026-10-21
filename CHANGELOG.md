@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.1.12 — 2026-10-21
+
+- Correct three existing regression assertions to expect portable forward-slash references on Windows; native path input coverage remains intact.
+
+- Resolve explicit saved-record requests without selecting a Workflow; report unresolved IDs and retrieval errors instead of silent readiness. Entry also offers bounded literal saved-work candidates with readable titles, status and artifact pointers, and accepts the usual `--json` flag.
+- Use explicit UTF-8 on shared setup, retrieval and persistence paths and portable paths in generated navigation. Improve save examples, error context and the stated scope of validation.
+- Make useful progress under incomplete information the normal guidance: investigate decision-relevant unknowns, recommend with explicit assumptions, use available fallbacks, and separate delivery, implementation and later outcome measurement. Clarify representative onboarding, diagnosis and retention workflows without adding a mode, controller or required records.
+
 ## 0.1.11 — Alpha
 
 Adds adaptable visual craft references and makes AURA's optional navigation and selective context retrieval clearer and lighter without changing AURA's operating model.

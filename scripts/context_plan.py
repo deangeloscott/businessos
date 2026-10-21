@@ -114,9 +114,8 @@ def build_plan(business_id,workflow_id,focus=None,operator_ref=None,team_ref=Non
     if owner=='seo-aeo' and 'Observation' in combined:_add(files,'core/policies/local-evidence.md')
     if workflow_id.startswith(('core.opportunity.','core.diagnosis.','core.coordination.')):_add(files,'core/policies/resource-aware-execution.md')
 
-    idx=object_index(business_id);selectors=match.get('read_selectors',[]);selected={};queue=[]
-    for oid in focus:
-        if oid in idx:selected[oid]=idx[oid];queue.append(oid)
+    idx=object_index(business_id);selectors=match.get('read_selectors',[])
+    selected,unresolved=resolve_focus(idx,focus);queue=list(selected)
     seen=set(queue)
     for _ in range(2):
         nxt=[]
@@ -128,7 +127,6 @@ def build_plan(business_id,workflow_id,focus=None,operator_ref=None,team_ref=Non
                 if robj.get('object_type') in context_types or any(object_matches(robj,s) for s in selectors):selected[ref]=(robj,rpath);nxt.append(ref);seen.add(ref)
         queue=nxt
 
-    unresolved=[]
     if owner in {'content-synthesis','marketing-synthesis'}:context_types.add('BusinessClaim')
     for typ in sorted(context_types):
         candidates=[(o,p) for o,p in idx.values() if o.get('object_type')==typ and o.get('status') not in {'archived','superseded'}];already=any(o.get('object_type')==typ for o,_ in selected.values())
@@ -152,9 +150,9 @@ def build_plan(business_id,workflow_id,focus=None,operator_ref=None,team_ref=Non
     for rel in match.get('references',[]):_add(files,rel)
     selected_items=[];object_files=[]
     for oid in sorted(selected):
-        obj,path=selected[oid];rel=path.relative_to(ROOT).as_posix();selected_items.append({'object_ref':oid,'object_type':obj.get('object_type'),'path':rel})
+        obj,path=selected[oid];rel=path.relative_to(ROOT).as_posix();selected_items.append(describe_object(obj,path))
         if rel not in object_files:object_files.append(rel)
-    schema_registry=json.loads((ROOT/'generated/schema-registry.json').read_text());schema_paths={row.get('title'):row['path'] for row in schema_registry if row.get('title')};schema_files=[schema_paths[typ] for typ in sorted(write_types) if typ in schema_paths]
+    schema_registry=json.loads((ROOT/'generated/schema-registry.json').read_text(encoding='utf-8'));schema_paths={row.get('title'):row['path'] for row in schema_registry if row.get('title')};schema_files=[schema_paths[typ] for typ in sorted(write_types) if typ in schema_paths]
     for rel in schema_files+object_files:_add(files,rel)
     authored_refs=[rel for rel in match.get('references',[]) if isinstance(rel,str)]
     context_refs=[_context_ref(rel,match,object_files,schema_files,authored_refs,preference_files) for rel in files]

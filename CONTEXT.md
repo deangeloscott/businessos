@@ -22,6 +22,16 @@ For substantive organizational work:
 8. **Validate AURA-owned state.** Canonical state must be schema-valid, reference/provenance-aware, and isolated to the correct organization. Deterministic validation protects these mechanics; it does not replace model judgment.
 9. **Measure and learn when evidence supports it.** Preserve meaningful outcomes and reusable Learning only at the organization/domain scope justified by evidence.
 
+## Useful progress under incomplete information
+
+Missing information changes the confidence, scope, or form of the work; it does not automatically block the user's goal. Identify what the missing fact actually prevents. Use available records, public sources, inspection, calculations, prototypes, or a small authorized experiment when they can materially improve the decision. A missing connector is not proof that useful evidence is unavailable.
+
+Make the best supported recommendation and produce the useful artifact or action possible now. Use explicit assumptions and conditional recommendations when appropriate; prefer actions that remain sensible across plausible explanations. If a missing fact would reverse the decision or is necessary for a consequential action, ask a focused question or defer that action while completing independent useful work. Do not replace a requested measurement with invented data, or silently substitute a different deliverable. Instructions should work with resources available now: use an available fallback rather than making an unavailable form, connection or system a prerequisite.
+
+Investigation and doing the work can generate evidence. Gather more when it could change the next decision; stop when it is unlikely to help enough to justify the effort. Do not default to a research wish list, endless scenarios, or a blanket refusal. State material uncertainty briefly and explain what would change the recommendation.
+
+Report the actual milestone: what is usable now, what was implemented, and what remains unmeasured or dependent on access. Schedule outcome review after the relevant observation period; an earlier activity check cannot establish a later customer result. Persist assumptions as assumptions with their basis and revision conditions where useful; repetition or a successful save does not turn them into facts. This is ordinary judgment, not a separate mode, required checklist, or new record type.
+
 ## Persistence test
 
 Before saving anything, ask:

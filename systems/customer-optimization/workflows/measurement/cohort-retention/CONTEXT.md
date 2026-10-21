@@ -38,3 +38,5 @@ Run when retention/churn trends must be understood beyond a single aggregate rat
 5. [HYBRID] Treat associations as hypotheses until mechanism/evidence supports causal claims.
 6. [AI] Link Customer Insights/churn reasons to behavioral patterns where appropriate.
 7. [AI] Produce Journey Insights and prioritized diagnostic questions/interventions.
+
+If cohort observations are unavailable, actual retention analysis remains unperformed. Inspect available evidence, define a usable calculation/data specification, and offer decision-relevant scenarios or robust next actions when they serve the user's goal. Label scenario inputs as assumptions and explain what data would change the recommendation. Do not invent retention measurements or let their absence block independent useful work.
