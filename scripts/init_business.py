@@ -27,7 +27,10 @@ def _persist_minimal_identity(business_id,name,ts):
         'created_at':ts,'updated_at':ts,'lineage':[],'source_type':'organization_initialization_input',
         'source_reference':'organization name supplied at AURA initialization','origin':'initialization input',
         'retrieved_at':ts,'published_at':None,'content_hash':'sha256:'+hashlib.sha256(name.encode('utf-8')).hexdigest(),
-        'access_scope':'business-private','extensions':{'businessos':{'captured_name':name,'source_kind':'explicit_initialization_input'}},
+        'content_hash_target':'captured_text','access_class':'private','access_scope':'business-private',
+        'extensions':{'businessos':{'captured_name':name,'source_kind':'explicit_initialization_input'},
+                      'businessos_evidence':{'capture_status':'captured','capture_method':'text_excerpt',
+                                            'acquisition_method':'user_provided','captured_text':name}},
     }
     business={
         'id':f'biz_{business_id}','object_type':'Business','schema_version':'1.0.0','business_id':business_id,

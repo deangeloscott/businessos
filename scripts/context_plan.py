@@ -114,8 +114,8 @@ def build_plan(business_id,workflow_id,focus=None,operator_ref=None,team_ref=Non
     if owner=='seo-aeo' and 'Observation' in combined:_add(files,'core/policies/local-evidence.md')
     if workflow_id.startswith(('core.opportunity.','core.diagnosis.','core.coordination.')):_add(files,'core/policies/resource-aware-execution.md')
 
-    idx=object_index(business_id);selectors=match.get('read_selectors',[])
-    selected,unresolved=resolve_focus(idx,focus);queue=list(selected)
+    read_diagnostics=[];idx=object_index(business_id,read_diagnostics);selectors=match.get('read_selectors',[])
+    selected,unresolved=resolve_focus(idx,focus,read_diagnostics);queue=list(selected)
     seen=set(queue)
     for _ in range(2):
         nxt=[]
@@ -162,7 +162,7 @@ def build_plan(business_id,workflow_id,focus=None,operator_ref=None,team_ref=Non
     supporting_roles={'policy','schema','authored_reference'}
     primary_files=[ref['path'] for ref in context_refs if ref['role'] not in supporting_roles]
     supporting_context_refs=[ref for ref in context_refs if ref['role'] in supporting_roles]
-    return {'version':os_version(),'business_id':business_id,'workflow_id':workflow_id,'focus_refs':focus,'operator_ref':operator_ref,'team_ref':team_ref,'role_ref':role_ref,'effective_preferences':prefs.get('effective_preferences',{}),'preference_profiles':[x.get('id') for x in prefs.get('applied_profiles',[])],'preference_conflicts':prefs.get('conflicts',[]),'files':primary_files,'supporting_context_refs':supporting_context_refs,'context_reading_rule':'Primary refs carry the selected workflow, applicable preferences, and durable organization context. Supporting policy, schema, and authored-reference pointers are exposed for targeted reading; their actual truth/constraints still apply when relevant, and schemas remain available when persisting. The active model/user decides what else materially helps.','object_context':selected_items,'object_refs':[item['object_ref'] for item in selected_items],'object_files':object_files,'schema_files':schema_files,'unresolved_selectors':unresolved,'evidence_inputs':match.get('evidence_inputs',[]),'material_inputs':_material_inputs(selected,idx,match.get('evidence_inputs',[])),'execution_rule':'The Workflow describes the outcome, procedure, evidence, and quality requirements. The active model/harness chooses the best available tools, external Skills, providers, orchestration, and implementation details.'}
+    return {'read_diagnostics':read_diagnostics[:10],'read_diagnostic_count':len(read_diagnostics),'version':os_version(),'business_id':business_id,'workflow_id':workflow_id,'focus_refs':focus,'operator_ref':operator_ref,'team_ref':team_ref,'role_ref':role_ref,'effective_preferences':prefs.get('effective_preferences',{}),'preference_profiles':[x.get('id') for x in prefs.get('applied_profiles',[])],'preference_conflicts':prefs.get('conflicts',[]),'files':primary_files,'supporting_context_refs':supporting_context_refs,'context_reading_rule':'Primary refs carry the selected workflow, applicable preferences, and durable organization context. Supporting policy, schema, and authored-reference pointers are exposed for targeted reading; their actual truth/constraints still apply when relevant, and schemas remain available when persisting. The active model/user decides what else materially helps.','object_context':selected_items,'object_refs':[item['object_ref'] for item in selected_items],'object_files':object_files,'schema_files':schema_files,'unresolved_selectors':unresolved,'evidence_inputs':match.get('evidence_inputs',[]),'material_inputs':_material_inputs(selected,idx,match.get('evidence_inputs',[])),'execution_rule':'The Workflow describes the outcome, procedure, evidence, and quality requirements. The active model/harness chooses the best available tools, external Skills, providers, orchestration, and implementation details.'}
 
 
 def main():

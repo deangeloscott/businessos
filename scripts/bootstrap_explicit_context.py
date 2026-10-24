@@ -154,7 +154,9 @@ def _source_records(business_id,ts,token,members,source_reference=None):
           'created_at':ts,'updated_at':ts,'lineage':[],'source_type':'user_statement' if member['kind']=='inline_user_statement' else 'user_supplied_file',
           'source_reference':source_reference or member['reference'],'origin':'active user conversation' if member['kind']=='inline_user_statement' else 'user-provided local file',
           'retrieved_at':ts,'published_at':None,'content_hash':member['content_hash'],'access_scope':'business-private',
+          'content_hash_target':'captured_text','access_class':'private',
           'extensions':{'authority':'explicit_user','grounding_method':GROUNDING_METHOD,'grounding_version':GROUNDING_VERSION,'verbatim_user_statement':member['text'],
+                        'businessos_evidence':{'capture_status':'captured','capture_method':'text_excerpt','acquisition_method':'user_provided','captured_text':member['text']},
                         'source_members':[{'reference':member['reference'],'content_hash':member['content_hash'],'kind':member['kind']}]}
         }],baseid,member['text']
     records=[];member_ids=[]
@@ -165,7 +167,9 @@ def _source_records(business_id,ts,token,members,source_reference=None):
           'created_at':ts,'updated_at':ts,'lineage':[],'source_type':'user_statement' if member['kind']=='inline_user_statement' else 'user_supplied_file',
           'source_reference':member['reference'],'origin':'active user conversation' if member['kind']=='inline_user_statement' else 'user-provided local file',
           'retrieved_at':ts,'published_at':None,'content_hash':member['content_hash'],'access_scope':'business-private',
-          'extensions':{'authority':'explicit_user','grounding_method':GROUNDING_METHOD,'grounding_version':GROUNDING_VERSION,'verbatim_user_statement':member['text']}
+          'content_hash_target':'captured_text','access_class':'private',
+          'extensions':{'authority':'explicit_user','grounding_method':GROUNDING_METHOD,'grounding_version':GROUNDING_VERSION,'verbatim_user_statement':member['text'],
+                        'businessos_evidence':{'capture_status':'captured','capture_method':'text_excerpt','acquisition_method':'user_provided','captured_text':member['text']}}
         })
     combined='\n\n'.join(f'--- SOURCE: {member["reference"]} ---\n{member["text"]}' for member in members)
     records.append({
@@ -173,7 +177,9 @@ def _source_records(business_id,ts,token,members,source_reference=None):
       'created_at':ts,'updated_at':ts,'lineage':member_ids,'source_type':'user_supplied_source_bundle',
       'source_reference':source_reference or f'{len(members)} user-supplied onboarding sources','origin':'user-provided onboarding source bundle',
       'retrieved_at':ts,'published_at':None,'content_hash':hashlib.sha256(combined.encode()).hexdigest(),'access_scope':'business-private',
+      'content_hash_target':'captured_text','access_class':'private',
       'extensions':{'authority':'explicit_user','grounding_method':GROUNDING_METHOD,'grounding_version':GROUNDING_VERSION,'verbatim_user_statement':combined,
+                    'businessos_evidence':{'capture_status':'captured','capture_method':'text_excerpt','acquisition_method':'user_provided','captured_text':combined},
                     'source_members':[{'source_ref':rid,'reference':member['reference'],'content_hash':member['content_hash'],'kind':member['kind']} for rid,member in zip(member_ids,members)]}
     })
     return records,baseid,combined

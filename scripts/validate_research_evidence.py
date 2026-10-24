@@ -30,8 +30,14 @@ def _evidence_ext(src):
 
 
 def is_public_source(src):
-    """Use declared provenance, not a narrative-looking type, for public-web safeguards."""
-    return src.get('access_scope')=='public' or src.get('origin')=='public web'
+    """Classification affects locator safeguards, never declared digest integrity."""
+    classification=src.get('access_class')
+    if classification and classification!='unknown':return classification=='public'
+    scope=str(src.get('access_scope') or '').casefold().replace('-','_').replace(' ','_')
+    if scope in {'public','public_signed_out'} or src.get('origin')=='public web':return True
+    if scope in {'private','restricted','business_internal','internal'}:return False
+    # Unclassified web pointers receive locator safeguards, not invented provenance.
+    return str(src.get('source_reference') or '').lower().startswith(('http://','https://'))
 
 
 def _subject_refs(obj):
@@ -76,8 +82,48 @@ def public_source_locator_error(src):
     return None
 
 
+def source_integrity(src):
+    """Check declared bytes, not acquisition, authenticity or factual accuracy."""
+    errors=[];warnings=[];ev=_evidence_ext(src);digest=src.get('content_hash');target=src.get('content_hash_target');sid=src.get('id')
+    if not digest:
+        if target:errors.append(f'{sid} content_hash_target requires content_hash')
+        return errors,warnings
+    if not target:
+        # Legacy text-only bundles had a deterministic text contract. Mixed/binary
+        # records did not; leave their provenance untouched and expose ambiguity.
+        if isinstance(ev.get('captured_text'),str) and not ev.get('asset_refs') and ev.get('record_payload') is None:
+            target='captured_text'
+            warnings.append(f'{sid} legacy content_hash interpreted as UTF-8 captured_text; declare content_hash_target on revision')
+        else:
+            warnings.append(f'{sid} content_hash target is undeclared; digest integrity is unverified (existing specialized evidence checks still apply)')
+            return errors,warnings
+    data=None
+    if target=='captured_text':
+        text=ev.get('captured_text')
+        if not isinstance(text,str):errors.append(f'{sid} captured_text hash target requires captured_text')
+        else:data=text.encode('utf-8')
+    elif target=='record_payload':
+        if 'record_payload' not in ev:errors.append(f'{sid} record_payload hash target requires record_payload')
+        else:data=json.dumps(ev['record_payload'],sort_keys=True,ensure_ascii=False).encode('utf-8')
+    elif target=='file_bytes':
+        ref=src.get('content_hash_reference')
+        if not ref or '://' in ref:errors.append(f'{sid} file_bytes hash target requires a local content_hash_reference')
+        else:
+            try:data=resolve_storage_ref(ref).read_bytes()
+            except OSError as exc:errors.append(f'{sid} cannot read declared hash target {ref}: {exc}')
+    else:errors.append(f'{sid} unknown content_hash_target {target!r}')
+    # Explicit onboarding historically stores bare SHA-256 hex. Accept that
+    # representation as well as the prefixed form without changing old hashes.
+    if data is not None:
+        expected=hashlib.sha256(data).hexdigest()
+        if digest not in {expected,'sha256:'+expected}:
+            errors.append(f'{sid} content_hash does not match {target}')
+    return errors,warnings
+
+
 def evidence_errors(business_id):
-    idx=object_index(business_id); errors=[]; warnings=[]
+    diagnostics=[];idx=object_index(business_id,diagnostics);warnings=[]
+    errors=[f'{row["path"]} unreadable canonical record: {row["reason"]}' for row in diagnostics]
     sources={k:v[0] for k,v in idx.items() if v[0].get('object_type')=='SourceRecord'}
     observations={k:v[0] for k,v in idx.items() if v[0].get('object_type')=='Observation'}
     insights={k:v[0] for k,v in idx.items() if v[0].get('object_type')=='Insight'}
@@ -85,6 +131,10 @@ def evidence_errors(business_id):
     for src in sources.values():
         locator_error=public_source_locator_error(src)
         if locator_error:errors.append(locator_error)
+        integrity_errors,integrity_warnings=source_integrity(src)
+        errors.extend(integrity_errors);warnings.extend(integrity_warnings)
+        ok,mode=_capture_quality(src)
+        if not ok:warnings.append(f'{src["id"]} evidence={mode}; usable for discovery, not verified claim support')
 
     for oid,obs in observations.items():
         refs=obs.get('source_refs') or []
@@ -93,20 +143,14 @@ def evidence_errors(business_id):
             continue
         for ref in refs:
             src=sources.get(ref)
-            if not src: continue  # reference validator reports missing refs
+            if not src:
+                errors.append(f'{oid} cannot resolve SourceRecord {ref}')
+                continue
             mismatch=_subject_mismatch(obs,oid,src,ref)
             if mismatch: errors.append(mismatch)
-            public=is_public_source(src)
-            if not public: continue
             ok,mode=_capture_quality(src)
             if not ok:
-                errors.append(f'{oid} relies on public source {ref} without directly acquired/reproducible evidence (evidence={mode}); search/snippet discovery or model-written text is not sufficient support')
-            ev=_evidence_ext(src)
-            txt=ev.get('captured_text')
-            if txt and src.get('content_hash'):
-                expected='sha256:'+hashlib.sha256(txt.encode('utf-8')).hexdigest()
-                if src.get('content_hash')!=expected:
-                    errors.append(f'{ref} content_hash does not match captured_text')
+                errors.append(f'{oid} relies on source {ref} without directly acquired/reproducible evidence (evidence={mode}); search/snippet discovery or model-written text is not sufficient support')
 
     for iid,ins in insights.items():
         if ins.get('status') not in {'supported','active'}: continue
@@ -121,6 +165,10 @@ def evidence_errors(business_id):
                 supporting_obs.append(ref)
                 mismatch=_subject_mismatch(ins,iid,observations[ref],ref)
                 if mismatch: errors.append(mismatch)
+                for source_ref in observations[ref].get('source_refs') or []:
+                    if source_ref not in sources:continue
+                    ok,mode=_capture_quality(sources[source_ref])
+                    if not ok:errors.append(f'{iid} relies on Observation {ref} with insufficient source {source_ref} (evidence={mode})')
             elif ref in sources:
                 mismatch=_subject_mismatch(ins,iid,sources[ref],ref)
                 if mismatch: errors.append(mismatch)

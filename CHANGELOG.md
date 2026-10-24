@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.1.13 — 2026-10-24
+
+- Respect each canonical schema's timestamp fields in generic saves, including PlatformProfile's observation-time contract.
+- Validate declared source digests independently of reference route and descriptive access labels. Add optional explicit access classification and text/payload/file-byte hash targets, with warnings rather than guessed migrations for ambiguous historical evidence.
+- Roll back newly created research records and evidence snapshots when bundle validation fails; preserve existing records and caller-owned files.
+- Reuse shared weighted lexical discovery for saved work, including filenames and ordinary purposes; add bounded pagination and readable version/location metadata.
+- Preserve linked correction impacts as existing ChangeEvents, expose pending semantic review during entry, and report generated-view freshness from canonical content rather than counts.
+- Derive native knowledge sections from schema ownership; stage and verify UTF-8 views before Windows-safe replacement with rollback. Preserve human notes and authored history.
+- Report unreadable canonical files alongside usable retrieval results, without treating unrelated support files as canonical records.
+- Align human-note, initialization, explicit-onboarding and contribution-import sources with the shared evidence contract. Preserve exact captures, declare digest targets, accept historical bare SHA-256 hex, and allow unchanged native notes to gain missing capture metadata without changing identity.
+- Document evidence-aware workspace upgrades: retain original hashes/history, recapture changed files, repair only supported metadata, and refresh generated views without automatically promoting supplied statements to verified truth.
+
 ## v0.1.12 — 2026-10-21
 
 - Correct three existing regression assertions to expect portable forward-slash references on Windows; native path input coverage remains intact.

@@ -37,7 +37,8 @@ def references_in(value):
 def reference_errors(business_id):
     base=ROOT/'instances'/business_id
     if not base.exists():return ['Unknown business']
-    index=object_index(business_id);errors=[];pat=canonical_reference_pattern()
+    diagnostics=[];index=object_index(business_id,diagnostics);pat=canonical_reference_pattern()
+    errors=[f'{row["path"]} unreadable canonical record: {row["reason"]}' for row in diagnostics]
     for oid,(obj,path) in index.items():
         for ref in pat.findall(json.dumps(obj)):
             if ref!=oid and ref not in index:errors.append(f'{path.relative_to(ROOT)} unresolved ref {ref}')
@@ -46,10 +47,10 @@ def reference_errors(business_id):
 
 def inbound_references(business_id,target_ref):
     """Return canonical objects that currently reference target_ref."""
-    out=[];target=str(target_ref)
+    out=[];target=str(target_ref);pattern=canonical_reference_pattern()
     for obj,path in iter_instance_objects(business_id):
         if obj.get('id')==target:continue
-        if target in references_in(obj):out.append({'object_ref':obj.get('id'),'object_type':obj.get('object_type'),'path':storage_ref(path)})
+        if target in pattern.findall(json.dumps(obj)):out.append(describe_object(obj,path))
     return out
 
 

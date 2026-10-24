@@ -23,8 +23,9 @@ def import_package(business_id,package_path):
         'created_at':existing_source.get('created_at') or timestamp,'updated_at':timestamp,'lineage':[],
         'source_type':'aura_innovation_package','source_reference':source_reference,
         'origin':package.get('contributor',{}).get('display_name') or package.get('contributor',{}).get('pseudonym') or 'ViralTrac AURA Innovation Exchange',
-        'retrieved_at':timestamp,'published_at':package.get('created_at'),'content_hash':package.get('integrity',{}).get('content_hash'),'access_scope':'shared_contribution',
-        'extensions':{'businessos_evidence':{'capture_status':'captured','capture_method':'structured_record','acquisition_method':'user_provided','title':process.get('title'),'context':'Portable AURA InnovationPackage; reported outcomes are contribution claims, not independent proof.'},'innovation_fingerprint':fingerprint,'package_id':package['package_id'],'detail_level':package['detail_level']}
+        'retrieved_at':timestamp,'published_at':package.get('created_at'),'content_hash':'sha256:'+hashlib.sha256(stored.read_bytes()).hexdigest(),'access_scope':'shared_contribution',
+        'content_hash_target':'file_bytes','content_hash_reference':source_reference,
+        'extensions':{'businessos_evidence':{'capture_status':'captured','capture_method':'structured_record','acquisition_method':'user_provided','asset_refs':[source_reference],'title':process.get('title'),'context':'Portable AURA InnovationPackage; reported outcomes are contribution claims, not independent proof.'},'package_content_hash':package.get('integrity',{}).get('content_hash'),'innovation_fingerprint':fingerprint,'package_id':package['package_id'],'detail_level':package['detail_level']}
     }
     validate_schema('SourceRecord',source);_write_json(source_path,source)
 

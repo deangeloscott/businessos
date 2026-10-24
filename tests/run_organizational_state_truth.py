@@ -71,10 +71,16 @@ def asset_truth_regression(workspace,env):
 def provenance_regression(workspace,env):
     bid='provenance-truth';base=init_business(workspace,bid,env)
     supplied=write(workspace/'attachments/customer-input.txt','A customer supplied this bounded internal evidence.\n')
-    internal_bundle=write(workspace/'attachments/internal-bundle.json',{'sources':[{'source_reference':'attachments/customer-input.txt','acquisition_method':'unknown','captured_text':supplied.read_text()}],'observations':[{'statement':'The supplied file contains one bounded internal evidence statement.','source_indexes':[0]}]})
+    internal_bundle=write(workspace/'attachments/internal-bundle.json',{'sources':[{'source_reference':'attachments/customer-input.txt','acquisition_method':'unknown','captured_text':supplied.read_text()}]})
     internal_result=json.loads(run([S/'persist_research_bundle.py',bid,'--bundle-file',internal_bundle],env).stdout);source_row=next(x for x in internal_result['objects_written'] if x['object_type']=='SourceRecord');source=json.loads((workspace/source_row['path']).read_text())
     req(source.get('source_type')=='organization_supplied_file' and source.get('origin')=='organization supplied' and source.get('access_scope')=='business_internal',f'organization-supplied source was misclassified: {source}')
     req(source.get('extensions',{}).get('businessos_evidence',{}).get('provenance_resolution')=='exact_workspace_reference','exact external-workspace provenance was not recorded')
+    # Unknown acquisition remains usable as a discovery source, not supported truth.
+    unsupported_bundle=write(workspace/'attachments/unsupported-bundle.json',{'observations':[{'statement':'An unverified interpretation of the internal source.','source_refs':[source['id']]}]})
+    before={path.relative_to(base):path.read_bytes() for path in base.rglob('*') if path.is_file()}
+    unsupported=run([S/'persist_research_bundle.py',bid,'--bundle-file',unsupported_bundle],env,check=False)
+    req(unsupported.returncode!=0,'unknown-acquisition evidence silently supported an Observation')
+    req(before=={path.relative_to(base):path.read_bytes() for path in base.rglob('*') if path.is_file()},'rejected research bundle left partial canonical state')
     public_bundle=write(workspace/'attachments/public-bundle.json',{'sources':[{'source_type':'review_platform','source_reference':'https://www.yelp.com/biz/aura-public-regression','acquisition_method':'user_provided','captured_text':'A bounded public review excerpt.'}]})
     public=json.loads(run([S/'persist_research_bundle.py',bid,'--bundle-file',public_bundle],env).stdout);public_row=next(x for x in public['objects_written'] if x['object_type']=='SourceRecord');public_source=json.loads((workspace/public_row['path']).read_text())
     req(public_source.get('origin')=='public web' and public_source.get('access_scope')=='public','genuine public-web source lost public provenance')

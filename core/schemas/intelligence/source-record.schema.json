@@ -74,6 +74,19 @@
         "null"
       ]
     },
+    "content_hash_target": {
+      "enum": ["captured_text", "record_payload", "file_bytes"],
+      "description": "Hash representation: exact UTF-8 captured_text; record_payload serialized as JSON with sorted keys, ensure_ascii=false and default separators; or bytes at content_hash_reference. Omitted legacy targets are not assumed to describe binary evidence."
+    },
+    "content_hash_reference": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Local storage reference for file_bytes integrity checking; never fetched from the network by validation."
+    },
+    "access_class": {
+      "enum": ["public", "restricted", "private", "unknown"],
+      "description": "Mechanical access classification, separate from descriptive access_scope and origin. Optional for legacy records; no acquisition provenance is inferred."
+    },
     "access_scope": {
       "type": "string",
       "minLength": 1

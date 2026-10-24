@@ -23,12 +23,14 @@ def _require_subject_overlap(left,left_label,right,right_label):
     a=_subject_refs(left);b=_subject_refs(right)
     if a and b and not (a&b):raise ValueError(f'{left_label} subject_refs ({", ".join(sorted(a))}) do not overlap {right_label} subject_refs ({", ".join(sorted(b))}); do not attach evidence about one resolved subject to another')
 
-def _copy_snapshot(bid,source_id,snapshot_path):
+def _copy_snapshot(bid,source_id,snapshot_path,created_paths):
     src=resolve_storage_ref(snapshot_path)
     if not src.exists() or not src.is_file():raise ValueError(f'snapshot_path does not exist: {snapshot_path}')
     ext=src.suffix.lower() or '.bin';aid=_id('ast',f'{source_id}:{src.name}:{src.stat().st_size}')
     dest=ROOT/'instances'/bid/'assets'/'evidence'/f'{aid}{ext}';dest.parent.mkdir(parents=True,exist_ok=True)
-    if not dest.exists():shutil.copy2(src,dest)
+    if not dest.exists():
+        created_paths.append(dest)
+        shutil.copy2(src,dest)
     return aid,storage_ref(dest)
 
 def _workspace_evidence_path(raw):
@@ -62,7 +64,7 @@ def _method_extensions(workflow_id,method_type,method_ref):
     if method_type or method_ref:ext['businessos_method']={k:v for k,v in {'method_type':method_type,'method_ref':method_ref}.items() if v}
     return ext
 
-def _source(bid,item,workflow_id,method_type,method_ref,ts):
+def _source(bid,item,workflow_id,method_type,method_ref,ts,created_paths):
     ref=str(item.get('source_reference') or '').strip()
     if not ref:raise ValueError('each source requires source_reference')
     text=item.get('captured_text');payload=item.get('record_payload');snap=item.get('snapshot_path');pointer=item.get('evidence_pointer')
@@ -73,14 +75,17 @@ def _source(bid,item,workflow_id,method_type,method_ref,ts):
     ch='sha256:'+hashlib.sha256(content_basis.encode('utf-8')).hexdigest() if content_basis else None;sid=item.get('id') or _id('src',f'{ref}:{ch or pointer or "pointer"}')
     asset_refs=[];asset_objs=[]
     if snap:
-        aid,loc=_copy_snapshot(bid,sid,snap);asset_refs.append(aid);a=_base('Asset',aid,bid,ts);ext=_method_extensions(workflow_id,method_type,method_ref);ext['source_ref']=sid
+        aid,loc=_copy_snapshot(bid,sid,snap,created_paths);asset_refs.append(aid);a=_base('Asset',aid,bid,ts);ext=_method_extensions(workflow_id,method_type,method_ref);ext['source_ref']=sid
         a.update({'asset_type':'evidence_snapshot','business_role':'source evidence preservation','location_reference':loc,'version':'1','status':'active','extensions':ext});_validate('Asset',a);asset_objs.append(a)
     if text or payload is not None or asset_refs:status='captured';method='mixed' if sum(bool(x) for x in [text,payload is not None,asset_refs])>1 else ('text_excerpt' if text else ('api_record' if payload is not None else 'snapshot'))
     elif pointer:status='external_pointer';method='external_pointer'
     else:status='pointer_only';method='reference_only'
     ev={'capture_status':status,'capture_method':item.get('capture_method') or method,'acquisition_method':acquisition,'acquisition_reference':item.get('acquisition_reference'),'captured_text':text,'title':item.get('title'),'author_label':item.get('author_label'),'rating':item.get('rating'),'context':item.get('context'),'asset_refs':asset_refs,'evidence_pointer':pointer,'record_payload':payload,'capture_notes':item.get('capture_notes'),'provenance_resolution':provenance['resolution']};ev={k:v for k,v in ev.items() if v is not None and v!=[]}
     extensions={'businessos_evidence':ev,**_method_extensions(workflow_id,method_type,method_ref)}
-    s=_base('SourceRecord',sid,bid,ts);s.update({'source_type':provenance['source_type'],'source_reference':ref,'subject_refs':item.get('subject_refs',[]),'origin':provenance['origin'],'retrieved_at':item.get('retrieved_at') or ts,'published_at':item.get('published_at'),'content_hash':ch,'access_scope':provenance['access_scope'],'extensions':extensions});_validate('SourceRecord',s);return s,asset_objs
+    s=_base('SourceRecord',sid,bid,ts);s.update({'source_type':provenance['source_type'],'source_reference':ref,'subject_refs':item.get('subject_refs',[]),'origin':provenance['origin'],'retrieved_at':item.get('retrieved_at') or ts,'published_at':item.get('published_at'),'content_hash':ch,'access_scope':provenance['access_scope'],'extensions':extensions})
+    if ch:s['content_hash_target']='captured_text' if isinstance(text,str) and text else 'record_payload'
+    if item.get('access_class') is not None:s['access_class']=item['access_class']
+    _validate('SourceRecord',s);return s,asset_objs
 
 def _observation_confidence(item,extensions):
     value=item.get('extraction_confidence')
@@ -90,18 +95,29 @@ def _observation_confidence(item,extensions):
     bos=extensions.setdefault('businessos',{});bos['extraction_confidence_label']=label
     return None
 
-def _write(obj):
+def _write(obj,created_paths):
     p=canonical_path(obj['business_id'],obj)
     if p.exists():
-        old=json.loads(p.read_text())
+        old=json.loads(p.read_text(encoding='utf-8'))
         if old==obj:return p
-    return write_canonical(obj,p)
+    written=write_canonical(obj,p)
+    created_paths.append(written)
+    return written
 
 def _receipt(written):
     types=collections.Counter(obj.get('object_type') for obj,_ in written)
     return {'status':'saved','objects':len(written),'object_types':dict(sorted(types.items())),'validation':'passed'}
 
 def persist(bid,bundle):
+    created_paths=[]
+    try:return _persist(bid,bundle,created_paths)
+    except Exception:
+        for path in reversed(created_paths):
+            if path.exists():path.unlink()
+        raise
+
+
+def _persist(bid,bundle,created_paths):
     base=ROOT/'instances'/bid
     if not base.exists():raise ValueError(f'Unknown business: {bid}; initialize it before research persistence')
     workflow_id=str(bundle.get('workflow_id') or '').strip() or None;reg=load_registry();match=next((c for c in reg['workflows'] if c.get('id')==workflow_id),None) if workflow_id else None
@@ -114,7 +130,7 @@ def persist(bid,bundle):
 
     src_objs=[];asset_objs=[]
     for item in bundle.get('sources',[]):
-        s,assets=_source(bid,dict(item),workflow_id,method_type,method_ref,ts);src_objs.append(s);asset_objs.extend(assets)
+        s,assets=_source(bid,dict(item),workflow_id,method_type,method_ref,ts,created_paths);src_objs.append(s);asset_objs.extend(assets)
     src_ids=[s['id'] for s in src_objs]
 
     obs_objs=[]
@@ -174,7 +190,7 @@ def persist(bid,bundle):
     for source in src_objs:
         locator_error=public_source_locator_error(source)
         if locator_error:raise ValueError(locator_error)
-    for obj in all_objs:written.append((obj,_write(obj)))
+    for obj in all_objs:written.append((obj,_write(obj,created_paths)))
     errs,warns=evidence_errors(bid)
     if errs:raise ValueError('research evidence validation failed after write: '+'; '.join(errs))
     return written,warns
@@ -196,7 +212,7 @@ Observation `extraction_confidence` may be a 0..1 number. Qualitative `low`/`med
 
 Declare acquisition_method separately from capture_method. Discovery-only methods such as search_result, search_snippet, directory_preview, ai_summary, unvisited_url, or unknown may be saved, but cannot support an Observation even if captured_text is present. For any source whose provenance is not mechanically determined, specify source_type, origin, and access_scope; AURA will not guess public provenance. Preserve subject_refs when a source/observation/insight concerns a resolved material subject. AURA validates structural provenance; the capable model is responsible for whether the evidence substantively supports the natural-language interpretation.'''
     p=argparse.ArgumentParser(description='Persist bounded SourceRecords/evidence/Observations/Insights/Competitors from any truthful research method; AURA operating knowledge is optional.',formatter_class=argparse.RawDescriptionHelpFormatter,epilog=epilog);p.add_argument('business_id');p.add_argument('--bundle-file',required=True);a=p.parse_args()
-    try:bundle=json.loads(Path(a.bundle_file).read_text());written,warns=persist(a.business_id,bundle)
+    try:bundle=json.loads(Path(a.bundle_file).read_text(encoding='utf-8'));written,warns=persist(a.business_id,bundle)
     except (ValueError,FileExistsError,json.JSONDecodeError) as e:raise SystemExit(str(e)+'\nSupported path: run `python3 scripts/persist_research_bundle.py --help`; do not create a replacement canonical writer.')
     print(json.dumps({'business_id':a.business_id,'objects_written':[{'id':o['id'],'object_type':o['object_type'],'path':storage_ref(p)} for o,p in written],'receipt':_receipt(written),'warnings':warns,'next_validation':f'python3 scripts/validate_business.py {a.business_id} --require-context'},indent=2))
 

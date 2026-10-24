@@ -57,7 +57,9 @@ AURA retrieves a small amount of relevant organization memory and may surface hi
 
 The model/user decides what actually applies. AURA does not semantically route the request.
 
-The response includes bounded literal `saved_work_candidates` with readable titles, status and artifact pointers. They are navigation suggestions, not verified conclusions; open the relevant records and artifacts. To retrieve known records, repeat `--focus <object-id>` as needed. Focus works without choosing a Workflow, including for archived/superseded records explicitly requested. Unknown IDs appear in `unresolved_focus` and return `needs_judgment` rather than silent success; available records are still returned. Literal lookup searches record descriptions and artifact pointers, not the contents of linked documents or synonyms. An empty candidate list is not proof that work does not exist: try a distinctive title term, inspect organization records directly, or use a known ID. Missing optional Workflow context does not itself block useful work. Retrieval errors are not evidence that the organization has no knowledge.
+The response includes bounded lexical `saved_work_candidates` with readable titles/purposes, versions, status, artifact pointers and matched terms. Use an ordinary-language `business_role` when saving an Asset; no extra title is required. Lookup reuses AURA's token normalization and document-frequency weighting across descriptions and filenames, not linked document contents or semantic synonyms. Broaden with `--saved-work-limit 20` (maximum 100), page with `--saved-work-offset 20`, or change search terms. Candidates are navigation suggestions, not verified conclusions; recency does not establish authority.
+
+Repeat `--focus <object-id>` for known records, including archived/superseded history. Unknown IDs appear in `unresolved_focus`. Unreadable canonical files appear in `read_diagnostics` with a total count; either condition returns `needs_judgment` while readable context remains available. Missing matches, unreadable files and unresolved explicit references are different outcomes—not proof that the organization has no knowledge. Continue useful qualified work without relying on incomplete retrieval as evidence of absence.
 
 ### Operating knowledge hierarchy
 
@@ -105,7 +107,7 @@ For ordinary durable organizational meaning, use:
 python3 scripts/remember.py <business-id> --input <json-file>
 ```
 
-The model/user supplies the semantic meaning. AURA supplies IDs, timestamps, schema/reference checks, paths, organization isolation, atomic writes, and rollback where appropriate.
+The model/user supplies the semantic meaning. AURA supplies IDs, schema-supported timestamps, schema/reference checks, paths, organization isolation, atomic writes, and rollback where appropriate. Observation times remain distinct from creation/update times; schemas such as PlatformProfile are not given unsupported timestamp fields.
 
 Before saving, ask:
 
@@ -145,6 +147,12 @@ Only use that status after actual review. Schemas in `core/schemas/` define each
 ## Correcting and forgetting state
 
 When established truth changes, update the current object. When an obsolete top-level field should disappear, remove it explicitly rather than relying on omission.
+
+When an update changes semantic fields on an object with inbound references, `remember.py` saves an existing-type `ChangeEvent` in the same rollback boundary. It retains the changed before/after fields and marks referring records as possible review impacts—not confirmed dependencies. No AttentionItem is created. An optional per-object `correction_summary` explains a material correction and preserves a ChangeEvent even when no inbound reference exists. No-op/timestamp-only saves do not create correction events.
+
+`enter.py` exposes unresolved impacts under `correction_review`, independently of lexical matches. Open the ChangeEvent and relevant authored material. After actual review, update its `change_details` through `remember.py`, preserving each row and setting `review_status` to `reviewed` or `not_affected` with a `review_note`. A record update or generated-view refresh does not silently resolve semantic review. Relationships hidden only in prose may not be found.
+
+When revising an authored deliverable, preserve useful prior versions, update the current Asset's purpose, location, version and status together, and record the review outcome. Do not automatically supersede unrelated artifacts.
 
 When an entire unreferenced object should no longer exist:
 
@@ -217,6 +225,16 @@ python3 scripts/generate_knowledge_layer.py <business-id>
 This creates Markdown pages that are easier for people to read.
 
 These pages are views of AURA's main structured organization records. Human notes can also live in the knowledge area, but a note does not automatically become a trusted business fact. Bring important notes into AURA's evidence process deliberately when useful.
+
+Refresh builds and verifies a replacement before swapping directories. A failed build or recoverable rename failure leaves the previous usable view intact; human notes and canonical records are not replaced. On Windows there is a brief directory-rename gap, not a live-reader locking guarantee.
+
+Human-note registration preserves the exact UTF-8 text as a hashed capture, so later note edits do not change an earlier source. Re-registering unchanged notes also completes missing capture metadata from the older native writer, preserving the existing source ID. Onboarding and imported contribution sources preserve their actual captured text or file bytes too. This proves what was supplied/captured, not that its statements are independently true.
+
+When upgrading an existing workspace, retain a backup and validate a copy with the new product first. If older evidence is rejected, inspect its retained capture or acquisition receipt before correcting metadata through supported helpers. Do not bulk-relabel unknown acquisition as verified. If a referenced file has changed since its recorded hash, preserve the original SourceRecord and capture a new revision rather than replacing the old hash to hide the mismatch. Apply related record updates together with `remember.py` where validation requires a consistent batch. Update unreadable or outdated saved-artifact descriptions when their purpose/version is known, review reported impacts, and regenerate the knowledge layer. Older product versions may not understand the new optional evidence fields; use the upgraded product with the upgraded workspace.
+
+Normal save and entry responses include `knowledge_view`: freshness checks canonical content plus the renderer, shared presentation helper and schema registry—not object counts alone. `python3 scripts/generate_knowledge_layer.py <business-id> --freshness` checks without writing. Older views without these fingerprints are not certified current; regenerate once. Missing/damaged pages or unreadable canonical records also prevent a current result. “Current” means the generated representation matches its inputs—not that authored deliverables have been reviewed or that their claims are true.
+
+Native type sections derive from the schema registry's system ownership; optional domain values still organize generic domain-tagged records. Generated pages use the same saved-work titles as retrieval and expose artifact version/location and recorded correction-review status.
 
 ## Monitoring
 

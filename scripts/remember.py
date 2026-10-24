@@ -13,6 +13,8 @@ import argparse,json,re,secrets,collections
 from _common import *
 from canonical_store import canonical_path,schema_entry,validate_canonical,write_canonical
 from validate_business import validate_business
+from correction_impacts import correction_event
+from generate_knowledge_layer import knowledge_layer_freshness
 
 MECHANICAL_FIELDS={'id','object_type','schema_version','business_id','created_at','updated_at','lineage'}
 SPECIALIZED_TYPES={
@@ -86,6 +88,8 @@ def remember(business_id,payload):
         existing_ref=item.get('object_ref');typ=_item_type(item,index,number);content=item.get('content')
         if typ in SPECIALIZED_TYPES:raise ValueError(f'{typ} uses a specialized supported interface. {SPECIALIZED_TYPES[typ]}')
         if not isinstance(content,dict):raise ValueError(f'objects[{number-1}].content must contain caller-authored semantic fields.')
+        if 'correction_summary' in item and (not existing_ref or not isinstance(item['correction_summary'],str) or not item['correction_summary'].strip()):
+            raise ValueError('correction_summary requires an existing object_ref and a non-empty explanation.')
         forbidden=sorted(MECHANICAL_FIELDS & set(content))
         if forbidden:raise ValueError('Mechanical fields belong to AURA, not content: '+', '.join(forbidden))
         remove_fields=item.get('remove_fields',[])
@@ -130,17 +134,20 @@ def remember(business_id,payload):
         obj.update(content)
         obj.update({
             'id':row['id'],'object_type':typ,'schema_version':existing.get('schema_version','1.0.0'),
-            'business_id':bid,'created_at':existing.get('created_at',ts),'updated_at':ts,
+            'business_id':bid,
         })
+        if 'created_at' in properties:obj['created_at']=existing.get('created_at',ts)
+        if 'updated_at' in properties:obj['updated_at']=ts
         if 'lineage' in properties:
             prior_lineage=existing.get('lineage') if isinstance(existing.get('lineage'),list) else []
-            obj['lineage']=list(dict.fromkeys([*prior_lineage,*lineage]))
+            if not existing or 'lineage' in existing or lineage:
+                obj['lineage']=list(dict.fromkeys([*prior_lineage,*lineage]))
         elif lineage:
             raise ValueError(f'{typ} does not support lineage_refs; preserve provenance in a schema-supported field instead.')
         if 'extensions' in properties:
             if 'extensions' in remove_fields and not supplied_extensions and not provenance:
                 obj.pop('extensions',None)
-            else:
+            elif not existing or 'extensions' in existing or supplied_extensions or provenance:
                 obj['extensions']=_merge_extensions(old_extensions,supplied_extensions)
                 if provenance:
                     bos=obj['extensions'].setdefault('businessos',{});bos['memory_provenance']=dict(provenance)
@@ -151,13 +158,20 @@ def remember(business_id,payload):
         except ValueError as exc:raise ValueError(f'{row["key"]} ({typ}): {exc}. See the {typ} schema and OPERATOR-GUIDE.md memory examples.') from exc
         row['object']=obj;objects.append(obj)
 
-    paths=[];snapshots={}
+    paths=[];snapshots={};corrections=[]
     try:
         for row,obj in zip(prepared,objects):
             path=Path(row['path']) if row['path'] else canonical_path(bid,obj)
             if path.exists():snapshots[path]=path.read_bytes()
             written=write_canonical(obj,path,allow_update=bool(row['existing']))
             paths.append(written);row['path']=written
+        for row in prepared:
+            if not row['existing']:continue
+            event=correction_event(bid,row['existing'],row['object'],row['item'].get('correction_summary'),_new_id('ChangeEvent',bid,known_ids),ts)
+            if event:
+                validate_canonical('ChangeEvent',event)
+                path=write_canonical(event);paths.append(path)
+                corrections.append(describe_object(event,path))
         errors,warnings,counts=validate_business(bid)
         if errors:raise ValueError('Post-persistence validation failed: '+'; '.join(errors[:12]))
     except Exception:
@@ -172,6 +186,8 @@ def remember(business_id,payload):
     } for row in prepared]
     return {
         'format_version':'1.0','status':'persisted','business_id':bid,'objects':rows,'receipt':_receipt(rows),
+        'corrections':corrections,
+        'knowledge_view':knowledge_layer_freshness(bid),
         'validation':{'status':'clean','warnings':warnings[:5],'canonical_object_counts':counts,'scope':'Schema, reference/provenance integrity and organization isolation; not factual accuracy, artifact quality, deployment or measured effect.'},
         'semantic_boundary':'Only caller-authored organizational meaning was persisted; AURA supplied mechanical canonical wrapping, explicit field removal, storage, and integrity validation.',
     }

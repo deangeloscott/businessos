@@ -238,41 +238,72 @@ def selector_type(sel):
 def normalize_selector(sel):
     if isinstance(sel,dict): return sel
     return {'type':sel}
-def iter_instance_objects(business_id):
-    """Iterate canonical-style organization objects, excluding noncanonical support files."""
+def iter_instance_objects(business_id,diagnostics=None):
+    """Read usable canonical objects; report unreadable canonical locations."""
+    from canonical_store import INSTANCE_PATHS
     base=instance_dir(business_id)
-    if not base.exists(): return []
-    out=[]
-    for p in base.rglob('*.json'):
-        try: data=json.loads(p.read_text(encoding='utf-8'))
-        except Exception: continue
+    if not base.exists():return []
+    locations=set(INSTANCE_PATHS.values());out=[]
+    def report(path,reason,line=None):
+        row={'path':storage_ref(path),'reason':str(reason)}
+        if line is not None:row['line']=line
+        if diagnostics is not None:diagnostics.append(row)
+        else:print(f'WARNING unreadable canonical record: {row}',file=sys.stderr)
+    def consume(data,path,expected,line=None):
         vals=data if isinstance(data,list) else [data]
         for obj in vals:
-            if isinstance(obj,dict) and obj.get('id') and obj.get('object_type') and obj.get('business_id')==business_id:
-                out.append((obj,p))
-    for p in base.rglob('*.jsonl'):
-        try:
-            for line in p.read_text(encoding='utf-8').splitlines():
-                if not line.strip(): continue
-                obj=json.loads(line)
-                if isinstance(obj,dict) and obj.get('id') and obj.get('object_type') and obj.get('business_id')==business_id: out.append((obj,p))
-        except Exception: continue
+            if isinstance(obj,dict) and obj.get('id') and obj.get('object_type'):
+                if not expected and obj['object_type'] not in INSTANCE_PATHS:continue
+                if obj.get('business_id')==business_id:out.append((obj,path))
+                else:report(path,'canonical business_id does not match this organization',line)
+            elif expected:report(path,'expected canonical object with id, object_type and business_id',line)
+    for path in sorted(base.rglob('*')):
+        if path.suffix not in {'.json','.jsonl'} or not path.is_file():continue
+        rel=path.relative_to(base)
+        expected=rel.as_posix() in locations or rel.parent.as_posix() in locations
+        expected=expected or (len(rel.parts)==3 and rel.parts[0]=='history' and rel.parts[1] in INSTANCE_PATHS)
+        try:text=path.read_text(encoding='utf-8')
+        except (OSError,UnicodeError) as exc:
+            if expected:report(path,exc)
+            continue
+        if path.suffix=='.jsonl':
+            for number,line in enumerate(text.splitlines(),1):
+                if not line.strip():continue
+                try:consume(json.loads(line),path,expected,number)
+                except json.JSONDecodeError as exc:
+                    if expected:report(path,exc,number)
+        else:
+            try:consume(json.loads(text),path,expected)
+            except json.JSONDecodeError as exc:
+                if expected:report(path,exc)
     return out
-def object_index(business_id):
-    return {obj['id']:(obj,p) for obj,p in iter_instance_objects(business_id)}
+def object_index(business_id,diagnostics=None):
+    index={}
+    for obj,path in iter_instance_objects(business_id,diagnostics):
+        if obj['id'] in index:
+            row={'path':storage_ref(path),'reason':f'duplicate canonical id {obj["id"]}; resolve ambiguity before relying on it'}
+            if diagnostics is not None:diagnostics.append(row)
+            else:print(f'WARNING {row}',file=sys.stderr)
+        else:index[obj['id']]=(obj,path)
+    return index
+
+def object_title(obj):
+    return next((obj.get(key) for key in ('title','name','subject_name','statement','summary','business_role','purpose','description','conclusion','task','display_name','asset_type') if isinstance(obj.get(key),str) and obj[key].strip()),obj.get('id') or obj.get('object_type','Object'))
 
 def describe_object(obj,path):
     """Small, readable lookup result; the original record remains authoritative."""
-    title=next((obj.get(key) for key in ('title','name','statement','summary','business_role','description','asset_type') if isinstance(obj.get(key),str) and obj[key].strip()),obj['id'])
+    title=object_title(obj)
     result={'object_ref':obj['id'],'object_type':obj.get('object_type'),'path':storage_ref(path),'title':title[:240],'status':obj.get('status'),'updated_at':obj.get('updated_at')}
     if obj.get('location_reference'):result['artifact_reference']=obj['location_reference']
+    if obj.get('version'):result['version']=obj['version']
+    if obj.get('business_role'):result['purpose']=obj['business_role']
     return result
 
-def resolve_focus(index,focus):
+def resolve_focus(index,focus,diagnostics=None):
     selected={};unresolved=[]
     for ref in dict.fromkeys(focus or []):
         if ref in index:selected[ref]=index[ref]
-        else:unresolved.append({'object_ref':ref,'reason':'requested record not found in this organization'})
+        else:unresolved.append({'object_ref':ref,'reason':'requested record not resolved; unreadable canonical files may contain it' if diagnostics else 'requested record not found in this organization'})
     return selected,unresolved
 
 def object_matches(obj,selector):

@@ -49,6 +49,22 @@ When the evidence is about one or more resolved subjects, also use top-level `So
 
 A plain URL with `capture_status=pointer_only` may be saved for discovery/history, but it is not sufficient support for a material Observation/Insight that depends on the unseen content. The same is true when `captured_text` exists but `acquisition_method` is only `search_result`, `search_snippet`, `directory_preview`, `ai_summary`, `unvisited_url`, or `unknown`. Filling in a text field does not turn search discovery into inspected evidence.
 
+### Mechanical integrity and compatibility
+
+New records may declare `access_class` as `public`, `restricted`, `private`, or `unknown`. Keep `origin` and `access_scope` as descriptive provenance. Existing records are not relabeled: known legacy public labels (including `public_signed_out`) retain public locator safeguards; unclassified HTTP(S) pointers also receive these safeguards. Neither access labels nor the route through an Observation or Insight control digest validation.
+
+When declaring `content_hash`, specify `content_hash_target`:
+
+- `captured_text`: SHA-256 of the exact UTF-8 `extensions.businessos_evidence.captured_text`, without whitespace normalization.
+- `record_payload`: SHA-256 of UTF-8 JSON serialized with sorted keys, `ensure_ascii=False`, and Python's default JSON separators.
+- `file_bytes`: SHA-256 of the exact bytes at the local `content_hash_reference`. This can preserve a document/binary digest alongside a text excerpt without pretending the digest hashes that excerpt.
+
+Use the `sha256:<hex digest>` representation. The research bundle helper declares the text/payload target it actually hashes. Legacy text-only packets without an explicit target are checked using their former UTF-8 text convention and emit a migration warning. Ambiguous mixed/binary legacy targets are reported as unverified, not silently interpreted or rewritten; existing specialized snapshot validators still apply. Declare the actual target on a deliberate revision.
+
+Source-level validation checks declared integrity even for standalone sources. Structural validity, digest consistency, support sufficiency, and factual correctness are separate. A matching digest proves only agreement between the represented bytes and digest—not real acquisition, authenticity, claim relevance, or factual accuracy. Discovery-only sources and candidate Insights remain saveable for exploration and qualified advice; an unsupported claim must not be promoted to supported status.
+
+Standalone reference/evidence validators report unreadable canonical files as validation errors, not a clean result over the readable subset. Internal/private labels no longer exempt Observations from acquisition/capture checks. An older Observation with missing source evidence may therefore need explicit review and truthful provenance correction before aggregate validation passes. The original source remains usable as discovery material, and provisional interpretations belong in candidate Insights; do not invent acquisition history to pass validation. No historical records are automatically relabeled.
+
 Source provenance is deterministic, not a convenience default. An exact existing reference inside the active organization workspace, established `uploaded_document`/`first_party_export` acquisition, or a non-URL `user_provided` reference is organization-supplied/business-internal evidence unless the caller supplies a complete contrary provenance classification. A declared public narrative source type plus an HTTP(S) locator remains public web even when the public item was supplied by the user. When neither exact storage nor established metadata determines provenance, the caller must supply `source_type`, `origin`, and `access_scope`; persistence must not silently invent `webpage / public web / public`. Public-web acquisition safeguards apply from declared public origin/access, not merely because a source type sounds narrative.
 
 ## Acquisition method vs. capture method
@@ -59,7 +75,7 @@ These answer two different questions:
 
 For material public-source claims, BusinessOS requires a support-grade acquisition method. Search results and snippets are useful for finding sources, but remain discovery-only even if an agent copies their text into a bundle. BusinessOS records the agent/provider-declared acquisition method; in a portable harness it cannot independently prove every tool call, so this metadata is an integrity boundary rather than a cryptographic audit trail. When the host can provide stronger receipts or tool provenance, preserve them in `acquisition_reference` or the linked Asset/provider record.
 
-A support-grade acquisition method establishes only that the represented modality was inspected. The semantic claim must still fit the preserved evidence and any stated modality limitation.
+A support-grade acquisition method declares what was inspected; it does not independently prove that acquisition occurred. The semantic claim must still fit the preserved evidence and any stated modality limitation.
 
 ## Observation and Insight support
 - An Observation states what was directly observed and points to the SourceRecord(s) that preserve or durably identify the underlying evidence.
