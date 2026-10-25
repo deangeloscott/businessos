@@ -32,6 +32,8 @@ The packager resolves actual product-module dependencies, includes interface sch
 
 AURA does not maintain a parallel capability registry. Workflows describe the business outcome, evidence, constraints, and useful procedure in natural language. The active model/harness should use the best tools, providers, APIs, or specialist Skills actually available to it. A packaged edition does not choose or configure those execution resources, and missing host tooling does not activate an AURA fallback runtime.
 
+The optional [tools, models, and services guide](../docs/tools-and-services.md) ships as ordinary documentation in each edition. It offers starting points and connection guidance; unlisted tools and organization-owned preferences remain valid without code or registry changes.
+
 ## Portable-first rule
 
 Every generated edition remains usable as a self-contained filesystem AURA distribution. By default, logical `instances/` and optional `runtime/runs/` state can live with the product folder. Recipients may instead configure a separate organization-owned workspace with `scripts/configure_workspace.py`; populated state moves through `scripts/migrate_workspace.py`. The human knowledge layer remains optional and ordinary Markdown. Git, Obsidian, hosted infrastructure, provider registries, custom schedulers, and the ViralTrac product are not required merely to use AURA.

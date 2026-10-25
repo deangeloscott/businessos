@@ -30,6 +30,8 @@ Make the best supported recommendation and produce the useful artifact or action
 
 Investigation and doing the work can generate evidence. Gather more when it could change the next decision; stop when it is unlikely to help enough to justify the effort. Do not default to a research wish list, endless scenarios, or a blanket refusal. State material uncertainty briefly and explain what would change the recommendation.
 
+Discover capabilities by the outcome as well as tool names. A requested avatar, podcast, animation, or business workflow may be achievable by combining existing native tools. Consider a suitable composition before declaring the capability unavailable, while preserving the requested form and quality. When selection or connection help is useful, consult only the relevant part of [tools, models, and services](docs/tools-and-services.md); its examples are optional and user preferences or better unlisted methods remain valid. Use the first useful task to confirm access where possible, without a separate testing step.
+
 Report the actual milestone: what is usable now, what was implemented, and what remains unmeasured or dependent on access. Schedule outcome review after the relevant observation period; an earlier activity check cannot establish a later customer result. Persist assumptions as assumptions with their basis and revision conditions where useful; repetition or a successful save does not turn them into facts. This is ordinary judgment, not a separate mode, required checklist, or new record type.
 
 ## Persistence test

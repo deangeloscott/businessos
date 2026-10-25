@@ -41,7 +41,7 @@ When Skills are unavailable or another host-native mechanism is simpler, attach 
 
 The adapter should communicate only the small durable guidance below and give the model a way to reach AURA files/helpers.
 
-> ViralTrac AURA is available at `<AURA_ROOT>`. For substantive work for an AURA-managed organization, consult relevant AURA organizational memory and operating knowledge when it can materially improve the work. Use your normal tools, other Skills, and best judgment freely. After useful work, preserve the smallest durable organizational meaning that will materially help future work. Ignore AURA for unrelated work.
+> ViralTrac AURA is available at `<AURA_ROOT>`. For substantive work for an AURA-managed organization, consult relevant AURA organizational memory and operating knowledge when it can materially improve the work. Use your normal tools, other Skills, and best judgment freely. When a missing capability impedes the goal, consider native tool combinations and consult `<AURA_ROOT>/docs/tools-and-services.md` if useful. After useful work, preserve the smallest durable organizational meaning that will materially help future work. Ignore AURA for unrelated work.
 
 ## Normal flow
 

@@ -91,6 +91,8 @@ A model may use an AURA Playbook/Workflow, adapt it, combine it with another ins
 
 AURA does **not** maintain a universal capability catalog or tool allowlist. Workflows describe what should be accomplished in natural language. The active AI/harness decides which real tools, providers, Skills, APIs, subagents, renderers, and orchestration methods best serve the outcome.
 
+For optional selection and connection help, see [tools, models, and services](docs/tools-and-services.md). It includes current-information guidance and outcome-based combinations, not a runtime registry. Reuse existing access, honor organization preferences, and confirm connections through the actual work when possible. Unlisted providers need no AURA registration; save durable local choices through existing organization memory so product upgrades preserve them.
+
 ## Minimum sufficient guidance
 
 When authoring or improving a Workflow, specify a Step only when it materially improves repeatability, truth, evidence discipline, quality, scope, or a non-obvious piece of expertise.

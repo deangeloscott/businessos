@@ -30,7 +30,7 @@ Use when animation/motion is the useful communication output and existing Assets
 1. [AI] Define the exact communication objective, sequence, visual states, duration, and why motion improves understanding.
 2. [AI] Storyboard keyframes/scenes with narration or text, transitions, timing, and interaction between visual elements.
 3. [HYBRID] Validate data, claims, product states, and visual causality so motion does not imply unsupported relationships.
-4. [INTEGRATION] Generate or render the animation with the active harness's available tools, or produce complete keyframe/timing specifications when that remains a useful deliverable.
+4. [INTEGRATION] Generate or render the animation with suitable native tools or combinations of code, image assets, motion tools, and renderers. A dedicated animation generator is not required. Preserve the requested quality and editability; produce complete keyframe/timing specifications when rendering is genuinely unavailable or the specification itself is requested.
 5. [HYBRID] Review timing, legibility, loop behavior where relevant, compression, accessibility, and brand quality.
 6. [DETERMINISTIC] Preserve the useful versioned Asset with production/source references. Use relevant QA operating knowledge when the artifact/destination warrants it; do not create an internal routing stage merely to complete the Workflow.
 

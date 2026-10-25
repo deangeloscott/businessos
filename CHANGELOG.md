@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.1.14 — 2026-10-24
+
+- Added an optional tools, models, and services guide with official setup links for agents, intelligence, creative production, hosting, payments, customer work, outreach, and analytics, including Apollo and Instantly.
+- Added minimal bootstrap and connection guidance: reuse existing access and preferences, consider native capability combinations, and confirm access through the first useful task where possible.
+- Clarified that providers and tools remain user-owned choices, unlisted providers need no AURA registration, and the guide does not claim tested integrations.
+- Added concise guidance for optional future referrals; this release includes official links only and no referral links.
+- Updated the human, agent, Workflow, attachment, and distribution entry points to use the guide without adding runtime, provider, or registry machinery.
+
 ## v0.1.13 — 2026-10-24
 
 - Respect each canonical schema's timestamp fields in generic saves, including PlatformProfile's observation-time contract.

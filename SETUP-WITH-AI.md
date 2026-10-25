@@ -8,6 +8,8 @@ The goal is simple: connect AURA to a usable organization workspace, establish t
 
 Do not turn setup into a capability registry, dependency manager, questionnaire, host framework, or execution system.
 
+When the requested work needs a capability or account that is not available, consult the relevant part of the optional [tools, models, and services guide](docs/tools-and-services.md). Reuse existing access and preferences, consider native tools or useful combinations, and help connect the smallest suitable addition within the user's authorization. Let the first useful task confirm the connection when possible; do not add a separate test once it has done so. Missing access to one service should not stop independent work.
+
 ## Upgrading an existing installation
 
 For an upgrade, reuse the existing organization workspace before considering initialization.
