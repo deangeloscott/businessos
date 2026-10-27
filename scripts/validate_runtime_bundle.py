@@ -54,6 +54,25 @@ print(json.dumps({'python':sys.version.split()[0], 'tcl':tkinter.Tcl().eval('inf
                                                    env=env,text=True,encoding='utf-8'))
         if native['python'] != metadata['python_version']:
             raise ValueError('The bundled interpreter does not match its manifest.')
+        secret_storage = 'session-only fallback available'
+        if sys.platform == 'darwin' and os.environ.get('GITHUB_ACTIONS') == 'true':
+            # An isolated CI keychain proves the actual ctypes/native API with
+            # bundled Python, without touching a person's login keychain.
+            keychain = base / 'verification.keychain-db'
+            import secrets
+            password = secrets.token_urlsafe(24)
+            subprocess.run(['/usr/bin/security','create-keychain','-p',password,str(keychain)],check=True,capture_output=True)
+            try:
+                subprocess.run(['/usr/bin/security','unlock-keychain','-p',password,str(keychain)],check=True,capture_output=True)
+                check = ('import sys;sys.path.insert(0,sys.argv[1]);from _native_secrets import NativeSecrets;'
+                         's=NativeSecrets("aura.bundle.verification",sys.argv[2]);'
+                         'assert s.load()=={};s.save({"test":{"key":"temporary-fixture"}});'
+                         'assert s.load()["test"]["key"]=="temporary-fixture";s.save({});assert s.load()=={}')
+                subprocess.run([str(interpreter),'-I','-B','-c',check,str(root/'scripts'),str(keychain)],
+                               env=env,check=True,capture_output=True,text=True,timeout=40)
+                secret_storage = 'macOS Keychain native round-trip passed'
+            finally:
+                subprocess.run(['/usr/bin/security','delete-keychain',str(keychain)],check=True,capture_output=True)
         launcher = root/metadata['launcher']
         options = ['--no-open','--port','0','--workspace',str(base/'organization')]
         if os.name == 'nt':
@@ -109,6 +128,7 @@ print(json.dumps({'python':sys.version.split()[0], 'tcl':tkinter.Tcl().eval('inf
                 'relocated_path_with_spaces':True,'system_python_removed_from_path':True,
                 'isolated_libraries':True,'first_use_setup':'passed','local_interface':'passed',
                 'https_certificate_verification':'passed',
+                'native_secret_storage':secret_storage,
                 'ai_requests_sent':0}
 
 

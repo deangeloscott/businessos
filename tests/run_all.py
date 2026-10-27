@@ -31,6 +31,7 @@ TESTS=[
     'tests/run_memory_interface.py',
     'tests/run_setup_readiness.py',
     'tests/run_visual_workspace.py',
+    'tests/run_workspace_recovery.py',
     'tests/run_runtime_bundle.py',
     'tests/run_bootstrap_reference_ids.py',
     'tests/run_preferences_multioperator.py',

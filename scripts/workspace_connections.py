@@ -4,6 +4,8 @@ import ctypes
 import json
 import os
 import re
+from _native_secrets import NativeSecrets
+from _process_errors import redact
 
 
 PRESETS = [
@@ -17,6 +19,7 @@ PRESETS = [
     ('higgsfield', 'Higgsfield', 'HF_API_KEY', 'https://open.higgsfield.ai/api-keys'),
     ('elevenlabs', 'ElevenLabs', 'ELEVENLABS_API_KEY', 'https://elevenlabs.io/app/settings/api-keys'),
 ]
+WINDOWS = os.name == 'nt'
 MODEL_PROVIDERS = {'openai', 'anthropic', 'google', 'xai', 'openrouter'}
 
 
@@ -47,12 +50,22 @@ class Connections:
     def __init__(self, folder):
         self.path = Path(folder) / 'api-keys.bin'
         self.session = {}
+        self.native = NativeSecrets()
+        self.session_only = False
 
     @property
     def persistent(self):
-        return os.name == 'nt'
+        return WINDOWS or bool(self.native.backend)
+
+    @property
+    def storage_name(self):
+        return 'Windows encrypted storage' if WINDOWS else self.native.backend
 
     def stored(self):
+        if self.session_only:
+            return {}
+        if not WINDOWS:
+            return self.native.load()
         if not self.path.exists():
             return {}
         if not self.persistent:
@@ -68,6 +81,9 @@ class Connections:
     def write(self, rows):
         if not self.persistent:
             raise ValueError('Secure persistent storage is unavailable here. Choose this session only.')
+        if not WINDOWS:
+            self.native.save(rows)
+            return
         encrypted = protect(json.dumps(rows).encode())
         self.path.parent.mkdir(parents=True, exist_ok=True)
         temporary = self.path.with_suffix('.tmp')
@@ -78,7 +94,11 @@ class Connections:
         return {**self.stored(), **self.session}
 
     def rows(self):
-        saved = self.all()
+        storage_note = ''
+        try:
+            saved = self.all()
+        except ValueError as exc:
+            saved, storage_note = dict(self.session), str(exc)
         rows = [{'id': p, 'name': name, 'env': env, 'url': url} for p, name, env, url in PRESETS]
         for ident, record in saved.items():
             if ident not in {p[0] for p in PRESETS}:
@@ -87,7 +107,7 @@ class Connections:
             row['category'] = ('models' if row['id'] in MODEL_PROVIDERS else 'tools') if row['id'] in {p[0] for p in PRESETS} else saved.get(row['id'], {}).get('category', 'tools')
             row['status'] = ('This session' if row['id'] in self.session else 'Saved on this computer') if row['id'] in saved else ('Available in environment' if os.environ.get(row['env']) else 'Not added')
             row['saved'] = row['id'] in saved
-        return {'items': rows, 'persistent': self.persistent}
+        return {'items': rows, 'persistent': self.persistent, 'storage_name': self.storage_name, 'storage_note': storage_note}
 
     def save(self, ident, key, storage='session', name='', env='', category='tools'):
         preset = next((p for p in PRESETS if p[0] == ident), None)
@@ -103,7 +123,17 @@ class Connections:
             raise ValueError('Paste the complete API key without spaces or line breaks.')
         if storage not in {'session', 'computer'}:
             raise ValueError('Choose where to keep this key.')
-        rows = self.stored()
+        if storage == 'computer':
+            self.session_only = False
+        try:
+            rows = self.stored()
+        except ValueError:
+            if storage != 'session':
+                raise
+            # Explicit session choice remains usable if the OS keyring is locked.
+            # Leave unknown saved keys untouched.
+            self.session_only = True
+            rows = {}
         if category not in {'models', 'tools'}:
             raise ValueError('Choose a model provider or a tool service.')
         record = {'name': name, 'env': env, 'key': key, 'category': 'models' if ident in MODEL_PROVIDERS else category}
@@ -138,6 +168,11 @@ class Connections:
                 'A saved key does not prove balance, permissions, available models or successful generation.\n')
 
     def redact(self, text):
-        for value in self.environment().values():
+        text = redact(text)
+        try:
+            values = self.environment().values()
+        except ValueError:
+            values = [r['key'] for r in self.session.values()]
+        for value in values:
             text = text.replace(value, '[API key hidden]')
         return text

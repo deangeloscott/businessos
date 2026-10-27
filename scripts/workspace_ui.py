@@ -30,6 +30,9 @@ import workspace_codex
 import workspace_agents
 import workspace_locations
 import workspace_schedules
+import workspace_storage
+import workspace_guidance
+from configure_workspace import configure
 from workspace_execution import Execution, Stopped
 from workspace_connections import Connections
 
@@ -367,6 +370,59 @@ class Workspace:
             choice = next((a for a in installed_agents() if a['id'] == saved.get('kind') and a['argv']), None)
             if choice:
                 self.select_agent(choice, saved.get('workspace_write') is True)
+        if business_directory():
+            self.remember_workspace()
+
+    def recent_workspaces(self):
+        try:
+            data = json.loads((self.settings_file.parent / 'recent-workspaces.json').read_text(encoding='utf-8'))
+            return [r for r in data if isinstance(r, dict) and isinstance(r.get('path'), str) and isinstance(r.get('name'), str)][:12]
+        except (OSError, ValueError, TypeError):
+            return []
+
+    def remember_workspace(self):
+        root = str(workspace_root().resolve())
+        name = ', '.join(b['name'] for b in business_directory())[:160]
+        rows = [{'path':root, 'name':name}] + [r for r in self.recent_workspaces() if r['path'] != root]
+        path = self.settings_file.parent / 'recent-workspaces.json'
+        path.parent.mkdir(parents=True, exist_ok=True)
+        temporary = path.with_suffix('.tmp')
+        temporary.write_text(json.dumps(rows[:12]), encoding='utf-8')
+        temporary.replace(path)
+
+    def open_workspace(self, path):
+        info = workspace_storage.inspect(path)
+        target = Path(info['path'])
+        profile_file = target / '.businessos/workspace.json'
+        profile = json.loads(profile_file.read_text(encoding='utf-8')) if profile_file.exists() else {}
+        configure(target, profile.get('profile','power_user'), profile.get('knowledge_enabled',True), allow_state_switch=True)
+        os.environ['BUSINESSOS_WORKSPACE'] = str(target)
+        identity = hashlib.sha256(str(workspace_root()).encode()).hexdigest()[:20]
+        fresh = Workspace(self.configured_agent, self.static, self.settings_file.parent / (identity + '.json'))
+        try:
+            workspace_guidance.refresh(PRODUCT_ROOT, target)
+        except (OSError, ValueError):
+            info['connection_note'] = 'Your workspace is open. Ask your AI to check its existing AURA instructions before using a native chat.'
+        if not fresh.preferences['connection'] and self.connection_kind in NATIVE_AGENTS:
+            choice = next((a for a in installed_agents() if a['id'] == self.connection_kind and a['argv']), None)
+            if choice:
+                fresh.select_agent(choice, self.preferences['connection'].get('workspace_write', True))
+                connection = dict(self.preferences['connection'], attachment=None)
+                try:
+                    connection['attachment'] = (workspace_codex.attach(PRODUCT_ROOT, target) if self.connection_kind == 'codex'
+                                                else workspace_guidance.attach(self.connection_kind, PRODUCT_ROOT, target))
+                except (OSError, ValueError):
+                    info['connection_note'] = 'Your workspace is open. Check Adjust AI settings to finish its native app guidance.'
+                fresh.preferences['connection'] = connection
+                fresh.preferences['connected_apps'][self.connection_kind] = dict(connection)
+                fresh.preferences['model_picker'] = self.preferences['model_picker']
+                fresh.preferences['appearance'] = self.preferences['appearance']
+                if self.preferences['seen']:
+                    fresh.preferences['seen'] = [b['id'] for b in info['businesses']]
+                fresh.save_preferences()
+        fresh.token, fresh.lock = self.token, self.lock
+        self.__dict__.update(fresh.__dict__)
+        return info
 
     def save_preferences(self):
         self.settings_file.parent.mkdir(parents=True, exist_ok=True)
@@ -588,9 +644,26 @@ class Workspace:
             message['text'] = self.connections.redact(message['text'])
         return dict(result, chat=chat, job=job)
 
+    def save_chat_turn(self, chat, job, text, final=False):
+        """A recovery display, never supplied as native model context."""
+        path = self.settings_file.parent / 'chat-views' / (chat['id'] + '.json')
+        shown = json.loads(path.read_text(encoding='utf-8')) if path.exists() else []
+        shown = [r for r in shown if r.get('request_id') != job['id']]
+        shown.append({'role':'user', 'text':self.connections.redact(workspace_agents.display_text(text)),
+                      'at':job['created'], 'request_id':job['id']})
+        if final:
+            shown.append({'role':'assistant', 'text':job['reply'], 'at':job['updated'],
+                          'agent':self.agent['name'], 'model':chat['model'], 'effort':chat['effort'],
+                          'request_id':job['id'], 'error_detail':job.get('error_detail','')})
+        path.parent.mkdir(parents=True, exist_ok=True)
+        temporary = path.with_suffix('.tmp')
+        temporary.write_text(json.dumps(shown), encoding='utf-8')
+        temporary.replace(path)
+
     def connection(self, bid=None):
         choices = ([{'id': 'configured', 'name': self.configured_agent['name'], 'available': True}] if self.configured_agent else [])
-        choices += [{'id': a['id'], 'name': a['name'], 'available': bool(a['argv'])} for a in installed_agents()]
+        choices += [{'id': a['id'], 'name': a['name'], 'available': bool(a['argv']),
+                     'guide':workspace_guidance.GUIDES.get(a['id'], ('',''))} for a in installed_agents()]
         return {'connected': bool(self.agent), 'name': (self.agent or {}).get('name', 'Your existing chat'),
                 'choices': choices, 'selected': self.connection_kind,
                 'apps': [dict(self.preferences['connected_apps'][kind].get('check') or {}, id=kind,
@@ -705,6 +778,7 @@ class Workspace:
                     self.preferences['active_chats'][bid] = chat['id']
                 chat.update(status='working', model=saved_connection['model'], effort=saved_connection['effort'], updated=time.time())
                 job.update(chat_id=chat['id'], model=chat['model'], effort=chat['effort'])
+                self.save_chat_turn(chat, job, text)
                 self.save_preferences()
             if welcome:
                 job['welcome'] = True
@@ -774,7 +848,8 @@ class Workspace:
                         if execution.stopped.is_set():
                             job.update(status='stopped', progress='Stopped')
                         else:
-                            job.update(status='error', reply=self.connections.redact(str(exc)) or 'The installed agent could not start. Check its command and installation.')
+                            detail = self.connections.redact(str(exc))
+                            job.update(status='error', error_detail=detail, reply=setup_error(detail))
                 finally:
                     with self.lock:
                         if welcome and job['status'] == 'error':
@@ -785,13 +860,7 @@ class Workspace:
                         if chat:
                             chat.update(status=job['status'], updated=job['updated'])
                             try:
-                                if kind != 'codex':
-                                    path=self.settings_file.parent/'chat-views'/(chat['id']+'.json')
-                                    shown=json.loads(path.read_text(encoding='utf-8')) if path.exists() else []
-                                    shown += [{'role':'user','text':self.connections.redact(workspace_agents.display_text(text)), 'at':job['created']},
-                                              {'role':'assistant','text':job['reply'],'at':job['updated'],'agent':self.agent['name'],'model':chat['model'],'effort':chat['effort']}]
-                                    path.parent.mkdir(parents=True,exist_ok=True)
-                                    temporary=path.with_suffix('.tmp');temporary.write_text(json.dumps(shown),encoding='utf-8');temporary.replace(path)
+                                self.save_chat_turn(chat, job, text, final=True)
                                 self.save_preferences()
                             except OSError:
                                 job['preference_warning'] = 'Reply received, but its chat reference could not be saved. Use the native app before retrying.'
@@ -872,6 +941,8 @@ def handler_for(app):
                     self.send(200, app.agent_efforts(query.get('kind'), query.get('model')))
                 elif route == '/api/connections':
                     self.send(200, app.connections.rows())
+                elif route == '/api/workspaces':
+                    self.send(200, {'current':str(workspace_root()), 'recent':app.recent_workspaces()})
                 elif route == '/api/chats':
                     bid = selected(query.get('business'))
                     self.send(200, {'items': [c for c in app.preferences['chats'] if c['business_id'] == bid],
@@ -952,7 +1023,17 @@ def handler_for(app):
                         result = setup(organization=name)
                         if result['status'] != 'ready':
                             raise ValueError('Setup needs attention. Ask your agent to run AURA doctor.')
+                        app.remember_workspace()
                         self.send(200, result)
+                    elif route == '/api/workspaces/open':
+                        self.send(200, app.open_workspace(str(data.get('path',''))))
+                    elif route == '/api/workspaces/backup':
+                        self.send(200, workspace_storage.backup(workspace_root(), str(data.get('path',''))))
+                    elif route == '/api/workspaces/restore':
+                        self.send(200, workspace_storage.restore(str(data.get('archive','')), str(data.get('path',''))))
+                    elif route == '/api/connections/session-only':
+                        app.connections.session_only = True
+                        self.send(200, {'ok':True})
                     elif route == '/api/save':
                         bid = selected(data.get('business'))
                         kind = data.get('kind')
@@ -1000,6 +1081,8 @@ def handler_for(app):
                         if app.connection_kind == 'codex':
                             attachment = workspace_codex.attach(PRODUCT_ROOT, workspace_root())
                             attachment = workspace_codex.verify_attachment(app.agent['argv'], workspace_root(), attachment)
+                        elif app.connection_kind in NATIVE_AGENTS:
+                            attachment = workspace_guidance.attach(app.connection_kind, PRODUCT_ROOT, workspace_root())
                         app.preferences['connection'] = {'kind': 'handoff' if app.handoff else app.connection_kind,
                                                          'workspace_write': data.get('workspace_write', True) is True,
                                                          'model': model, 'effort': effort, 'attachment': attachment}

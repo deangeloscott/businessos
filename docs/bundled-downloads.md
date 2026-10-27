@@ -29,7 +29,7 @@ The platform-neutral ZIP remains available for existing AI/CLI environments that
 
 Business memory remains ordinary organization-owned files. Move or reuse those files on another supported computer; download that computer's runtime bundle and reconnect its AI app, credentials, and external folder links. The Python executables themselves are specific to an OS/processor.
 
-Keep organization data separate from product source when updating. If your data is in the old product folder, follow `SETUP-WITH-AI.md` to preserve/migrate it before replacing anything. Interface customizations belong in an organization-owned copy; see [visual workspace customization](visual-workspace.md).
+Keep organization data separate from product source when updating. Use Settings → Open existing workspace to select the saved workspace or old AURA folder. Keep the older download until the familiar businesses and saved work are visible. Settings → Back up or restore creates a verified ZIP and restores into a new/empty folder. If you want to move data out of an old product folder, `SETUP-WITH-AI.md` still provides the migration path. Interface customizations belong in an organization-owned copy; see [visual workspace customization](visual-workspace.md).
 
 ## Build and verify a bundle
 

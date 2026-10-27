@@ -99,7 +99,9 @@ function connectionChoice() {
   $('#refresh-models').hidden=!native;$('#refresh-models').disabled=state.catalogLoading||state.busy;
   $('#refresh-models').textContent=state.modelReload?'Reload page':state.modelError?'Try again':'Refresh';
   $('#model-app-name').textContent=choice?.name||'Your AI app';
-  $('#agent-help').textContent=!choice||!choice.available?'This app needs a compatible connection. Install it or give your app the setup instructions below.':'';
+  $('#agent-help').textContent=!choice||!choice.available?'Let’s finish connecting '+(choice?.name||'your AI app')+'.':'';
+  $('#connection-guide').hidden=!!choice?.available||!choice?.guide;
+  $('#connection-guide').innerHTML=choice?.guide?`<p>${esc(choice.guide[1])}</p><a class="text-button" href="${esc(choice.guide[0])}" target="_blank" rel="noopener noreferrer">Open ${esc(choice.name)} setup guide ↗</a><p class="small-note">When you’re signed in, click Check again below. If the app was just installed, reopen AURA so it can find the new command.</p>`:'';
   $('#model-help').textContent=state.catalogLoading?'Finding your models…':state.effortsLoading?'Reading effort levels…':state.modelError||(!models.length&&native?(state.catalog?.unavailable[0]?`${choice.name}: ${state.catalog.unavailable[0].reason} Try again or go Back to choose another app.`:'No models found. Add a key, or go Back to choose an AI app.'):'');
   $('#model-help').hidden=!$('#model-help').textContent;
   $('#model-help').classList.toggle('error',!!state.modelError);$('#model-help').setAttribute('role',state.modelError?'alert':'status');
@@ -402,7 +404,7 @@ async function render() {
   if(!state.business){state.view='home';$('#section-dialog').close();}
   const view=state.view==='home'?$('#view'):$('#section-content');
   if(!state.business) {
-    view.innerHTML=`<div class="setup-intro"><h1>What would you like to call your workspace?</h1><p class="muted">Your business name is a good place to start. You can change it later.</p><form id="setup-form" class="form-grid"><label>Workspace or business name<input name="name" required maxlength="160" autocomplete="organization"></label><button class="primary">Get started →</button></form></div>`;
+    view.innerHTML=`<div class="setup-intro"><h1>What would you like to call your workspace?</h1><p class="muted">Your business name is a good place to start. You can change it later.</p><form id="setup-form" class="form-grid"><label>Workspace or business name<input name="name" required maxlength="160" autocomplete="organization"></label><button class="primary">Get started →</button></form><button class="text-button" id="open-existing-start">Open an existing workspace →</button></div>`;
     return;
   }
   if(state.view==='home'||state.overviewAt!==state.data.refreshed) await overview();
@@ -519,12 +521,12 @@ async function showApiConnections(origin=state.apiReturn) {
   const saved=services.filter(r=>r.status!=='Not added');
   details(origin==='models'?'LLM connections':'API connections',`${origin==='models'?'<button class="text-button" id="back-to-models">← Back to models</button>':''}<p>${origin==='models'?'Add a provider key, then return to your models.':'Add services your AI can use for research, writing, images, video, or audio. Provider usage may be billed separately.'}</p>
     ${saved.length?`<div class="card">${saved.map(r=>`<div class="row"><span class="row-text"><span class="row-title">${esc(r.name)}</span><span class="row-meta">${esc(r.status)} · Not verified</span></span>${r.saved?`<button class="text-button" data-remove-api="${esc(r.id)}">Remove</button>`:''}</div>`).join('')}</div>`:''}
-    <form id="api-key-form" class="form-grid" autocomplete="off"><label>Service<select id="api-provider" name="provider" required><option value="">Choose a service</option>${services.filter(r=>!r.id.startsWith('custom-')).map(r=>`<option value="${esc(r.id)}">${esc(r.name)}</option>`).join('')}<option value="other">${origin==='models'?'Other LLM provider':'Other service'}</option></select></label><input type="hidden" name="category" value="${origin==='models'?'models':'tools'}">
+    ${result.storage_note?`<p class="small-note" role="status">${esc(result.storage_note)}</p><button type="button" id="session-keys-only" class="secondary">Continue without saved keys</button>`:''}<form id="api-key-form" class="form-grid" autocomplete="off"><label>Service<select id="api-provider" name="provider" required><option value="">Choose a service</option>${services.filter(r=>!r.id.startsWith('custom-')).map(r=>`<option value="${esc(r.id)}">${esc(r.name)}</option>`).join('')}<option value="other">${origin==='models'?'Other LLM provider':'Other service'}</option></select></label><input type="hidden" name="category" value="${origin==='models'?'models':'tools'}">
     <div id="custom-api-fields" class="form-grid" hidden><label>Service name<input name="name" maxlength="80"></label><label>API key variable<input name="env" placeholder="SERVICE_API_KEY" spellcheck="false" autocomplete="off"></label></div>
     <p id="api-provider-help" class="small-note"></p><label>API key<input id="api-secret" name="key" type="password" required maxlength="8192" autocomplete="new-password" spellcheck="false" autocapitalize="none" placeholder="Paste your API key"></label>
-    <label>Keep this key<select name="storage"><option value="computer" ${result.persistent?'':'disabled'}>${result.persistent?'On this computer · Windows encrypted storage':'On this computer · unavailable on this system'}</option><option value="session" ${result.persistent?'':'selected'}>This session only</option></select></label>
+    <label>Keep this key<select name="storage"><option value="computer" ${result.persistent?'':'disabled'}>${result.persistent?'On this computer · '+esc(result.storage_name):'On this computer · unavailable on this system'}</option><option value="session" ${!result.persistent||result.storage_note?'selected':''}>This session only</option></select></label>
     <button class="primary" type="submit">Save key</button></form>
-    <p id="api-save-status" role="status"></p><details><summary>How this works</summary><p>Keys stay out of your business files and chat prompts. The local server passes them to agent tools as environment variables. The agent still needs suitable tools and provider access. Saving a key does not make a generation request or verify an account.</p><p>Choosing a model remains separate. Codex is an AI app; OpenAI is its provider. OpenRouter is a provider gateway, while OpenCode is a separate AI app. Existing app sign-ins and provider routing remain under that app’s control.</p><p>${result.persistent?'Saved keys are encrypted for your Windows user. Other processes running as that user may access them.':'Persistent protected storage is not available here; session keys disappear when the local server closes.'} Removing a key here does not revoke it at the provider or remove keys set outside AURA.</p></details>`);
+    <p id="api-save-status" role="status"></p><details><summary>How this works</summary><p>Keys stay out of your business files and chat prompts. The local server passes them to agent tools as environment variables. The agent still needs suitable tools and provider access. Saving a key does not make a generation request or verify an account.</p><p>Choosing a model remains separate. Codex is an AI app; OpenAI is its provider. OpenRouter is a provider gateway, while OpenCode is a separate AI app. Existing app sign-ins and provider routing remain under that app’s control.</p><p>${result.persistent?'Keys are kept in '+esc(result.storage_name)+'. Your operating system controls access.':'Persistent protected storage is not available here; session keys disappear when the local server closes.'} Removing a key here does not revoke it at the provider or remove keys set outside AURA.</p></details>`);
 }
 function apiProviderHelp() {
   const id=$('#api-provider').value, item=apiConnections.find(r=>r.id===id);
@@ -559,6 +561,28 @@ async function fileDetails(path) {
   }
 }
 function prompt(text) { $('#detail').close(); $('#section-dialog').close(); state.view='home'; $('#request').value=text; $('#request').focus(); $('#request').scrollIntoView({block:'center',behavior:'auto'}); }
+
+async function openStoredWorkspace(path) {
+  const opened=await api('/api/workspaces/open',{path});
+  for(const dialog of document.querySelectorAll('dialog[open]'))dialog.close();
+  state.business='';state.chat=[];state.chatMeta=null;state.liveJob=null;state.hydrated=false;state.library=[];state.catalog=null;state.files=[];state.connectionChecks=null;state.setupPrompted=new Set();state.setupStep='welcome';
+  const url=new URL(location.href);url.searchParams.delete('business');history.replaceState(null,'',url);
+  $('#request').value='';await refresh();notice(opened.connection_note||'Your saved workspace is open.',!!opened.connection_note);
+}
+async function workspaceStorage(mode) {
+  $('#more-dialog').close();
+  const r=await api('/api/workspaces');
+  const input=(id,label,kind='folder')=>`<label>${label}<input id="${id}" name="${kind==='file'?'archive':'path'}" required placeholder="Paste a full folder${kind==='file'?' or file':''} location"></label><button type="button" class="secondary" data-storage-browse="${id}" data-kind="${kind}">Browse…</button>`;
+  const recent=r.recent.filter(w=>w.path!==r.current);
+  details(mode==='open'?'Open existing workspace':'Back up or restore',mode==='open'?`
+    <p>Choose your saved workspace or an older AURA folder. Your existing files stay in place.</p>
+    ${recent.length?`<div class="card">${recent.map(w=>`<button class="row" data-open-workspace="${esc(w.path)}"><span class="row-text"><span class="row-title">${esc(w.name)}</span><span class="row-meta storage-path">${esc(w.path)}</span></span><span>→</span></button>`).join('')}</div>`:''}
+    <form id="open-workspace-form" class="form-grid">${input('open-workspace-path','Workspace folder')}<button class="primary">Open workspace →</button></form>`:`
+    <p>Keep a verified copy of your saved business files. AI sign-ins and linked external folders are separate.</p>
+    <form id="backup-workspace-form" class="form-grid">${input('backup-workspace-path','Save backup in')}<button class="primary">Create backup</button></form>
+    <details class="restore-backup"><summary>Restore a backup</summary><p>Restore into a new or empty folder. Your current workspace stays in place.</p><form id="restore-workspace-form" class="form-grid">${input('restore-archive-path','AURA backup ZIP','file')}${input('restore-workspace-path','Restore into')}<button class="primary">Restore backup</button></form></details><div id="storage-result" role="status"></div>`);
+}
+
 function addWorkspace() {
   $('#more-dialog').close();
   details('Add a workspace',`<p>Keep another business or project’s context and files separate.</p><form id="setup-form" class="form-grid"><label>Workspace name<input name="name" required maxlength="160" autocomplete="organization"></label><button class="primary">Create workspace →</button></form>`);
@@ -572,6 +596,10 @@ async function changeWorkspace(id) {
   showMessages();notice('');await refresh();renderConnection();
 }
 function showMessages(latest=false) {
+  const failed=!state.busy&&(state.chatMeta?.status==='error'||(!state.chatMeta&&state.liveJob?.status==='error'));
+  $('#request-recovery').hidden=!failed;
+  const detail=failed?((state.liveJob?.chat_id===state.chatMeta?.id?state.liveJob?.error_detail:'')||[...state.chat].reverse().find(m=>m.role==='assistant')?.error_detail||''):'';
+  $('#request-error-details').hidden=!detail;$('#request-error-text').textContent=detail;
   const conversation=$('#conversation'), top=conversation.scrollTop, chat=state.chatMeta?.id||'';
   if(!state.busy&&state.liveJob&&((state.liveJob.business_id&&state.liveJob.business_id!==state.business)||(state.liveJob.chat_id&&state.liveJob.chat_id!==chat)))state.liveJob=null;
   const follow=latest||conversation.hidden||conversation.dataset.chat!==chat||conversation.scrollHeight-conversation.clientHeight-top<32;
@@ -623,7 +651,7 @@ document.addEventListener('click',event=>attempt(async()=>{
   if(button.dataset.schedule)await scheduleDetails(button.dataset.schedule);
   if(button.dataset.taskStatus){button.disabled=true;try{await api('/api/schedules/update',{id:state.editingTask.id,action:button.dataset.taskStatus});$('#detail').close();await refresh();notice('Schedule updated in '+state.editingTask.app+'.');}finally{button.disabled=false;}}
   if(button.id==='close-section') {state.view='home';$('#section-dialog').close();}
-  if(button.id==='new-chat'&&!state.busy) {await api('/api/chats/new',{business:state.business});state.chat=[];state.chatMeta=null;$('#request').value='';showMessages();taskStatus('');$('#request').focus();notice('New chat. Your saved business context is still available.');}
+  if(button.id==='new-chat'&&!state.busy) {await api('/api/chats/new',{business:state.business});state.chat=[];state.chatMeta=null;state.liveJob=null;$('#request').value='';showMessages();taskStatus('');$('#request').focus();notice('New chat. Your saved business context is still available.');}
   if(button.id==='chats') {
     const result=await api('/api/chats?business='+encodeURIComponent(state.business));
     details('Your chats',`<p>Conversations kept by your AI app for this business.</p><div class="card">${result.items.length?result.items.slice().reverse().map(c=>`<button class="row" data-chat="${esc(c.id)}" ${state.busy?'disabled':''}><span class="row-text"><span class="row-title">${esc(c.title)}</span><span class="row-meta">${esc(human(c.agent))} · ${esc(c.model)} · ${clockTime(c.updated)}${c.status==='working'?' · Check in your AI app':''}</span></span><span>→</span></button>`).join(''):empty('No saved native chats yet.','Supported native connections keep your conversations in your AI app.')}</div>${state.chatMeta?.native_id?`<button class="secondary" id="copy-native-chat">Copy command to open in ${esc(human(state.chatMeta.agent))}</button>`:''}`);
@@ -690,7 +718,15 @@ document.addEventListener('click',event=>attempt(async()=>{
   }
   if(button.dataset.action==='add-goal')details('Add a goal',`<form id="goal-form" class="form-grid"><label>What do you want to accomplish?<input name="name" required maxlength="2000" autofocus></label><button class="primary">Save goal</button></form>`);
   if(button.dataset.action==='edit-business') { const b=rows('Business')[0]; details('Workspace name',`<form id="business-form" class="form-grid"><label>Workspace name<input name="name" value="${esc(b.title)}" required maxlength="160"></label><button class="primary">Save name</button></form>`); }
+  if(button.id==='session-keys-only'){await api('/api/connections/session-only',{});await showApiConnections();}
   if(button.id==='add-business')addWorkspace();
+  if(['open-workspace','open-existing-start'].includes(button.id))await workspaceStorage('open');
+  if(button.id==='workspace-backups')await workspaceStorage('backup');
+  if(button.dataset.openWorkspace)await openStoredWorkspace(button.dataset.openWorkspace);
+  if(button.dataset.storageBrowse){const r=await api('/api/locations/browse',{kind:button.dataset.kind||'folder'});if(r.path)$('#'+button.dataset.storageBrowse).value=r.path;}
+  if(button.dataset.copyPath){await navigator.clipboard.writeText(button.dataset.copyPath);button.textContent='Copied';}
+  if(button.id==='retry-request'){const last=[...state.chat].reverse().find(m=>m.role==='user');if(last){$('#request').value=last.text;$('#request').focus();notice('Review what already finished, then send when you’re ready.');}}
+  if(button.id==='fix-request-connection'){openConnection(true);state.setupStep='connect';renderConnection();await checkConnections(false);}
   if(button.id==='check-apps'){const kind=$('#agent-choice').value;button.disabled=true;try{await refresh();state.catalog=null;$('#agent-choice').value=kind;connectionChoice();const choice=state.data.connection.choices.find(c=>c.id===kind);$('#app-check-status').textContent=choice?.available?choice.name+' found. Continue when you’re ready.':'We can’t find this app yet. Finish setup, or reopen AURA after installing it.';}finally{button.disabled=false;}}
   if(button.id==='copy-connection-setup') {
     const instruction=`Connect my AURA visual workspace to the AI app I am using. Read ${state.data.product}/docs/visual-workspace.md and use this app's supported connection. Reuse my existing sign-in and permissions, then reopen the visual workspace connected to it. Do not substitute a different AI app just because it is installed. If this app cannot accept requests from a local interface, explain that clearly. AURA workspace: ${state.data.workspace}. Business ID: ${state.business}.`;
@@ -703,7 +739,14 @@ document.addEventListener('input',event=>{ if(event.target.id==='quick-work-sear
 document.addEventListener('submit',event=>{
   event.preventDefault();
   attempt(async()=>{
-    const form=event.target, data=new FormData(form); const submit=form.querySelector('[type=submit],button');
+    const form=event.target, data=new FormData(form); const submit=form.querySelector('[type=submit]')||form.querySelector('button.primary')||form.querySelector('button');
+    if(form.id==='open-workspace-form'){submit.disabled=true;try{await openStoredWorkspace(data.get('path'));}finally{submit.disabled=false;}return;}
+    if(form.id==='backup-workspace-form'||form.id==='restore-workspace-form'){
+      submit.disabled=true;
+      try{const restoring=form.id==='restore-workspace-form', r=await api('/api/workspaces/'+(restoring?'restore':'backup'),Object.fromEntries(data));
+        $('#storage-result').innerHTML=`<p>${restoring?'Your files were restored and verified. Open the restored workspace to continue.':'Backup saved and verified.'}</p><p class="storage-path">${esc(r.path)}</p><button class="text-button" data-copy-path="${esc(r.path)}">Copy location</button>${restoring?`<button class="primary" data-open-workspace="${esc(r.path)}">Open restored workspace →</button>`:''}`;
+      }finally{submit.disabled=false;}return;
+    }
     if(form.id==='api-key-form'){
       submit.disabled=true;
       try{await api('/api/connections/save',Object.fromEntries(data));state.catalog=null;state.apiChanged=true;await showApiConnections();$('#api-save-status').textContent=state.apiReturn==='models'?'Key saved. Return to models.':'Key saved. Your next agent request can use it. Account access has not been verified.';}

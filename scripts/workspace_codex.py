@@ -7,6 +7,7 @@ import re
 import subprocess
 import threading
 import time
+from _process_errors import ErrorTail
 
 
 def base_command(command):
@@ -17,8 +18,9 @@ def rpc(command, calls, cwd, env=None):
     """Read host metadata without inference or changing its shared settings."""
     events = queue.Queue()
     with subprocess.Popen([*base_command(command), 'app-server'], cwd=cwd, env=env,
-                          stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
-                          text=True, encoding='utf-8', errors='replace') as process:
+                          stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                          text=True, encoding='utf-8', errors='replace', creationflags=subprocess.CREATE_NO_WINDOW if os.name=='nt' else 0) as process:
+        errors = ErrorTail(process, env)
         def read():
             for line in process.stdout:
                 try:
@@ -29,8 +31,7 @@ def rpc(command, calls, cwd, env=None):
         threading.Thread(target=read, daemon=True).start()
 
         def send(value):
-            process.stdin.write(json.dumps(value) + '\n')
-            process.stdin.flush()
+            errors.send(process, json.dumps(value) + '\n')
 
         def response(number):
             deadline = time.monotonic() + 30
@@ -40,12 +41,12 @@ def rpc(command, calls, cwd, env=None):
                 except queue.Empty:
                     break
                 if event is None:
-                    raise ValueError('Codex metadata connection closed. Open Codex to check its setup.')
+                    raise ValueError(errors.message('Codex metadata connection closed. Open Codex to check its setup.'))
                 if event.get('id') == number:
                     if 'error' in event:
                         raise ValueError(event['error'].get('message', 'Codex could not read its settings.'))
                     return event.get('result', {})
-            raise ValueError('Codex did not return its settings in time. Open Codex and try again.')
+            raise ValueError(errors.message('Codex did not return its settings in time. Open Codex and try again.'))
 
         try:
             send({'id': 0, 'method': 'initialize', 'params': {'clientInfo': {'name': 'aura_workspace', 'version': '1.0'}}})
@@ -57,7 +58,7 @@ def rpc(command, calls, cwd, env=None):
                 results.append(response(number))
             return results
         finally:
-            process.stdin.close()
+            ErrorTail.close_input(process)
             try:
                 process.wait(timeout=3)
             except subprocess.TimeoutExpired:
@@ -148,9 +149,10 @@ def run(command, cwd, prompt, native_id, model, effort, update, env=None, execut
     env = env or dict(os.environ, BUSINESSOS_WORKSPACE=str(cwd), PYTHONUTF8='1')
     final, usage, error, thread = '', {}, '', native_id
     with (execution.popen if execution else subprocess.Popen)(argv, cwd=cwd, env=env, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                          stderr=subprocess.DEVNULL, text=True, encoding='utf-8', errors='replace') as process:
-        process.stdin.write(prompt)
-        process.stdin.close()
+                          stderr=subprocess.PIPE, text=True, encoding='utf-8', errors='replace', creationflags=subprocess.CREATE_NO_WINDOW if os.name=='nt' else 0) as process:
+        errors = ErrorTail(process, env)
+        errors.send(process, prompt)
+        ErrorTail.close_input(process)
         for line in process.stdout:
             try:
                 event = json.loads(line)
@@ -178,7 +180,7 @@ def run(command, cwd, prompt, native_id, model, effort, update, env=None, execut
         code = process.wait()
     if execution:execution.check()
     if code or error:
-        raise ValueError(error or f'Codex exited with code {code}. Open Codex to check sign-in or permissions. The request was not resubmitted.')
+        raise ValueError(error or errors.message(f'Codex exited with code {code}. Open Codex to check sign-in or permissions. The request was not resubmitted.'))
     if not final.strip():
         raise ValueError('Codex ended without a reply. Open the saved native chat before retrying.')
     return {'reply': final, 'native_id': thread, 'usage': usage}

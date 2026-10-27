@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.1.17 — 2026-10-27
+
+- Added app-specific installation/sign-in guidance to the existing connection screen. Existing working connections continue normally; setup never installs a provider or sends an AI request silently.
+- Drain bounded native error output for all six adapters and redact credentials before display. Failed requests show a simple remedy, optional details, and Edit & retry without automatic resubmission.
+- Save each visible request before starting its native process; keep a local recovery display across restart, including Codex failures before a native conversation exists. Native history/context remains authoritative.
+- Added Open existing workspace, recent workspace locations, and Back up or restore in Settings. Opening an older installation follows its existing workspace pointer and checks readiness before switching. ZIP backups verify file hashes; restore stages and verifies bytes before copying into a new/empty folder. Originals stay in place.
+- Added macOS Keychain and available Linux Secret Service keyring support for optional saved API keys. Session-only storage stays available when protected storage is unavailable or locked. Keys remain outside business files and prompts.
+- Prepare scoped AURA instruction pointers for Claude Code, Pi, OMP, and Hermes while preserving existing instructions. Unknown attachment mechanisms retain explicit request guidance. Apple signing/notarization and unsupported scheduler APIs remain separate limitations.
+
 ## v0.1.16 — 2026-10-27
 
 - Added native bundled downloads for Windows x64/ARM64, macOS Intel/Apple Silicon, and Linux x64/ARM64, with private Python, required libraries, retained third-party notices, and an Open AURA launcher. The lightweight ZIP and direct native-app/CLI use remain available.

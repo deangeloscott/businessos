@@ -7,6 +7,7 @@ import time
 import os
 from pathlib import Path
 import re
+from _process_errors import ErrorTail
 
 
 def base_command(command):
@@ -30,8 +31,9 @@ class Metadata:
             args += ['--model', model]
         self.kind, self.number, self.events = kind, 0, queue.Queue()
         self.process = subprocess.Popen([*base_command(command), *args], cwd=cwd, env=env, stdin=subprocess.PIPE,
-                                        stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True,
-                                        encoding='utf-8', errors='replace')
+                                        stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+                                        encoding='utf-8', errors='replace', creationflags=subprocess.CREATE_NO_WINDOW if os.name=='nt' else 0)
+        self.errors = ErrorTail(self.process, env)
         def read():
             for line in self.process.stdout:
                 try:
@@ -47,8 +49,7 @@ class Metadata:
         value = {'id': ident, 'type': kind, **params} if self.kind != 'claude' else {'type': 'control_request', 'request_id': ident, 'request': {'subtype': kind, **params}}
         if self.kind == 'hermes':
             value = {'jsonrpc':'2.0', 'id':ident, 'method':kind, 'params':params}
-        self.process.stdin.write(json.dumps(value) + '\n')
-        self.process.stdin.flush()
+        self.errors.send(self.process, json.dumps(value) + '\n')
         deadline = time.monotonic() + 40
         while time.monotonic() < deadline:
             try:
@@ -64,10 +65,10 @@ class Metadata:
                 detail=response.get('error') or response.get('message') or 'This app version could not return that setting. Update it or use its own settings.'
                 raise ValueError(str(detail.get('message',detail) if isinstance(detail,dict) else detail))
             return response.get('result', {}) if self.kind == 'hermes' else response.get('response', {}) if self.kind == 'claude' else response.get('data', {})
-        raise ValueError('The AI app did not return its catalogue. Open it to check sign-in or update it, then refresh the choices.')
+        raise ValueError(self.errors.message('The AI app did not return its catalogue. Open it to check sign-in or update it, then refresh the choices.'))
 
     def close(self):
-        self.process.stdin.close()
+        ErrorTail.close_input(self.process)
         try:
             self.process.wait(timeout=3)
         except subprocess.TimeoutExpired:
@@ -82,7 +83,7 @@ class Metadata:
 def options(command, kind, cwd, env):
     if kind == 'antigravity':
         result = subprocess.run([*base_command(command), 'models'], cwd=cwd, env=env, stdout=subprocess.PIPE,
-                                stderr=subprocess.DEVNULL, text=True, encoding='utf-8', timeout=40)
+                                stderr=subprocess.PIPE, text=True, encoding='utf-8', timeout=40, creationflags=subprocess.CREATE_NO_WINDOW if os.name=='nt' else 0)
         rows = []
         for line in result.stdout.splitlines():
             if '\t' not in line:
@@ -91,7 +92,7 @@ def options(command, kind, cwd, env):
             provider = 'anthropic' if ident.startswith('claude-') else 'openai' if ident.startswith(('gpt-', 'o1', 'o3')) else 'google'
             rows.append({'id':ident, 'name':name.strip(), 'provider':provider, 'efforts':[], 'default_effort':''})
         if result.returncode or not rows:
-            raise ValueError('Antigravity did not return its models. Sign in through agy, then refresh the choices.')
+            raise ValueError(result.stderr.strip()[-4000:] or 'Antigravity did not return its models. Sign in through agy, then refresh the choices.')
         return {'models':rows, 'model':'', 'effort':'', 'sessions':True,
                 'note':'Models come from agy. Effort is included in some model names; separate supported tiers are not reported.'}
     if kind == 'hermes':
@@ -289,9 +290,10 @@ def run(command, kind, cwd, env, prompt, native_id, model, effort, update, execu
         if effort:argv += ['--effort',effort]
         prompt=json.dumps({'event':'user','message':{'content':prompt}})+'\n'
     final, ident, error='',native_id,''
-    with (execution.popen if execution else subprocess.Popen)(argv,cwd=cwd,env=env,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.DEVNULL,
+    with (execution.popen if execution else subprocess.Popen)(argv,cwd=cwd,env=env,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,
                           text=True,encoding='utf-8',errors='replace') as process:
-        process.stdin.write(prompt);process.stdin.close()
+        errors = ErrorTail(process, env)
+        errors.send(process, prompt);ErrorTail.close_input(process)
         for line in process.stdout:
             try:event=json.loads(line)
             except ValueError:continue
@@ -345,5 +347,5 @@ def run(command, kind, cwd, env, prompt, native_id, model, effort, update, execu
         code=process.wait()
     if execution:execution.check()
     if code or error or not ident or not final.strip():
-        raise ValueError(error or 'The AI app did not complete a saved reply. Open its native chat to check authentication or approvals; no automatic retry was made.')
+        raise ValueError(error or errors.message('The AI app did not complete a saved reply. Open its native chat to check authentication or approvals; no automatic retry was made.'))
     return {'reply':final,'native_id':ident,'usage':{}}
