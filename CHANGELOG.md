@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.1.16 — 2026-10-27
+
+- Added native bundled downloads for Windows x64/ARM64, macOS Intel/Apple Silicon, and Linux x64/ARM64, with private Python, required libraries, retained third-party notices, and an Open AURA launcher. The lightweight ZIP and direct native-app/CLI use remain available.
+- Pinned runtime archives and platform wheels by SHA-256. Native release builds verify relocated downloads with spaces in their paths, no system Python on PATH, Tcl resources, isolated libraries, and real first-use workspace setup before connecting an AI.
+- Added a read-only, manually triggered native build matrix; build tooling and runtime binaries stay outside portable business memory. Account sign-in, models, and optional tools remain user-owned choices.
+- Preserved existing AI-app interpreter precedence while making AURA’s private interpreter available as a fallback; helper requests still identify its exact path.
+
 ## v0.1.15 — 2026-10-27
 
 - Added an optional local visual workspace for business memory, saved files/media, separate categorized Workflows and recipes, and recurring work. Native AI apps and CLI use remain fully usable without it.

@@ -1,6 +1,6 @@
 # ViralTrac AURA
 
-**Alpha · v0.1.15**<br>
+**Alpha · v0.1.16**<br>
 **AURA = Agentic Understanding and Reinforcement Architecture.**
 
 ViralTrac AURA is portable, local-first **organization-owned memory and operating knowledge for capable AI**. It helps useful work compound across sessions, models, tools, and people by preserving durable organizational context, evidence, Learning, and reusable ways of working.
@@ -13,9 +13,11 @@ AURA is **not** the AI itself. It is also not a required cloud service, schedule
 
 ## Start in three steps
 
-1. **Download and unzip the latest official AURA release, or clone the repository.** Release ZIPs are curated, validated end-user packages; `main` is the current source and may be newer between releases. AI-guided setup generates missing indexes for source checkouts automatically. After editing Workflows, schemas, or process maps, regenerate them with `python3 scripts/generate_registry.py`.
-2. **Give your AI/agent access to the AURA folder.**
-3. **Open `START-HERE.md`, or tell the AI:** “Read `SETUP-WITH-AI.md` and set up ViralTrac AURA for me.”
+1. **Download and extract the bundled AURA release for your operating system and processor.** Python and required libraries are included.
+2. **Open the Open AURA launcher.** Follow the short setup to name your workspace and connect your AI. If needed, the guide links to AI app downloads and sign-in.
+3. **Tell your AI what you want to accomplish.** Your files stay editable and usable through the interface, native AI apps, or the CLI.
+
+See [bundled downloads](docs/bundled-downloads.md) for platform choices. If you already have Python and an AI environment, the smaller platform-neutral ZIP or source checkout remains available: give your agent access to the folder and ask **“Read SETUP-WITH-AI.md and set up ViralTrac AURA for me.”** Release archives are curated user packages; `main` may be newer between releases. AI-guided setup generates missing indexes for source checkouts automatically.
 
 The AI-guided setup can inspect the environment, reuse or configure an organization workspace, attach AURA through the host's simplest native mechanism, initialize the organization from the minimum truthful information needed, validate AURA-owned state, and recommend optional tools only when they would materially improve the user's likely work.
 

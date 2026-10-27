@@ -77,3 +77,7 @@ You do not need to select a Playbook, Workflow, model, provider, or tool first.
 The intended experience is:
 
 **ask for the business outcome → let capable intelligence use AURA when helpful → do the real work → remember what matters → improve over time**
+
+## Download with Python included
+
+Choose the bundled download for your operating system and processor from the official release. Extract the whole folder, then open **Open AURA.cmd** (Windows), **Open AURA.command** (macOS), or **Open AURA.sh** (Linux; choose Run as Program). This opens the local setup screen without installing Python. Connect an existing AI app, or follow the app download/sign-in guide. Your files remain usable directly in your AI app or CLI. See [bundled downloads](docs/bundled-downloads.md) for platform choices and updating.

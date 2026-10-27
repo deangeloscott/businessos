@@ -55,6 +55,7 @@ __pycache__/
 *.py[cod]
 .pytest_cache/
 .venv/
+/.aura-runtime/
 venv/
 .DS_Store
 Thumbs.db

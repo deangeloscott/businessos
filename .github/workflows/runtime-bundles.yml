@@ -1,0 +1,45 @@
+name: Build bundled downloads
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bundle:
+    name: ${{ matrix.target }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: windows-x64
+            runner: windows-2025
+          - target: windows-arm64
+            runner: windows-11-arm
+          - target: macos-x64
+            runner: macos-15-intel
+          - target: macos-arm64
+            runner: macos-15
+          - target: linux-x64
+            runner: ubuntu-24.04
+          - target: linux-arm64
+            runner: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - name: Build and verify the native download
+        run: python -u scripts/package_runtime.py --platform "${{ matrix.target }}" --output-dir "${{ runner.temp }}/bundles" --cache-dir "${{ runner.temp }}/runtime-cache"
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        with:
+          name: aura-${{ matrix.target }}
+          path: |
+            ${{ runner.temp }}/bundles/*.zip
+            ${{ runner.temp }}/bundles/*.tar.gz
+            ${{ runner.temp }}/bundles/*.sha256
+            ${{ runner.temp }}/bundles/bundle-report-*.json
+          if-no-files-found: error
+          retention-days: 7

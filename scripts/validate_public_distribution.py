@@ -48,6 +48,13 @@ def validate_public_distribution():
     for p in ROOT.rglob('*'):
         if not p.is_file():continue
         rel=p.relative_to(ROOT).as_posix()
+        # Bundled, checksum-pinned third-party runtimes retain their own test
+        # certificates and notices; they are not AURA-authored product source.
+        if rel.startswith('.aura-runtime/'):
+            if not (ROOT/'BUNDLED-RUNTIME.json').is_file():
+                errors.append('runtime files lack BUNDLED-RUNTIME.json provenance')
+                break
+            continue
         if any(x.lower() in rel.lower() for x in FORBIDDEN_PATH_PARTS):errors.append(f'forbidden internal path included: {rel}')
         if p.name.startswith('.env') or p.suffix.lower() in {'.pem','.key','.p12','.pfx'}:errors.append(f'sensitive credential/config file included: {rel}')
         if p.suffix.lower() not in TEXT_SUFFIXES and p.name!='VERSION':continue

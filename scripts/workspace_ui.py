@@ -556,7 +556,7 @@ class Workspace:
 
     def agent_environment(self):
         return dict(os.environ, BUSINESSOS_WORKSPACE=str(workspace_root()), PYTHONUTF8='1',
-                    PATH=str(Path(sys.executable).parent)+os.pathsep+os.environ.get('PATH',''), **self.connections.environment())
+                    PATH=os.pathsep.join(filter(None,[os.environ.get('PATH'),str(Path(sys.executable).parent)])), **self.connections.environment())
 
     def active_chat(self, bid):
         key = self.preferences['active_chats'].get(bid)
