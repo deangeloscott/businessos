@@ -44,7 +44,7 @@ async function refresh() {
     $('.composer').hidden=!state.business;
     $('#connection').disabled=!state.business;
     $('#chats').disabled=!state.business||state.busy;
-    const workspaceOptions='<option value="" disabled>Choose a workspace</option>'+state.data.businesses.map(b=>`<option value="${esc(b.id)}">${esc(b.name)}</option>`).join('')+'<option value="__add__">＋ Add a workspace</option>';
+    const workspaceOptions='<option value="" disabled>Choose a workspace</option>'+state.data.businesses.map(b=>`<option value="${esc(b.id)}">${esc(b.name)}</option>`).join('')+'<option value="__add__">＋ Add or open a workspace</option>';
     $('#business').innerHTML=workspaceOptions;$('#setup-workspace-select').innerHTML=workspaceOptions;
     $('#business').value=state.business;
     const business=rows('Business')[0];
@@ -569,27 +569,25 @@ async function openStoredWorkspace(path) {
   const url=new URL(location.href);url.searchParams.delete('business');history.replaceState(null,'',url);
   $('#request').value='';await refresh();notice(opened.connection_note||'Your saved workspace is open.',!!opened.connection_note);
 }
-async function workspaceStorage(mode) {
+async function workspaceStorage() {
   $('#more-dialog').close();
-  const r=await api('/api/workspaces');
   const input=(id,label,kind='folder')=>`<label>${label}<input id="${id}" name="${kind==='file'?'archive':'path'}" required placeholder="Paste a full folder${kind==='file'?' or file':''} location"></label><button type="button" class="secondary" data-storage-browse="${id}" data-kind="${kind}">Browse…</button>`;
-  const recent=r.recent.filter(w=>w.path!==r.current);
-  details(mode==='open'?'Open existing workspace':'Back up or restore',mode==='open'?`
-    <p>Choose your saved workspace or an older AURA folder. Your existing files stay in place.</p>
-    ${recent.length?`<div class="card">${recent.map(w=>`<button class="row" data-open-workspace="${esc(w.path)}"><span class="row-text"><span class="row-title">${esc(w.name)}</span><span class="row-meta storage-path">${esc(w.path)}</span></span><span>→</span></button>`).join('')}</div>`:''}
-    <form id="open-workspace-form" class="form-grid">${input('open-workspace-path','Workspace folder')}<button class="primary">Open workspace →</button></form>`:`
-    <p>Keep a verified copy of your saved business files. AI sign-ins and linked external folders are separate.</p>
+  details('Back up or restore',`<p>Keep a verified copy of your saved business files. AI sign-ins and linked external folders are separate.</p>
     <form id="backup-workspace-form" class="form-grid">${input('backup-workspace-path','Save backup in')}<button class="primary">Create backup</button></form>
     <details class="restore-backup"><summary>Restore a backup</summary><p>Restore into a new or empty folder. Your current workspace stays in place.</p><form id="restore-workspace-form" class="form-grid">${input('restore-archive-path','AURA backup ZIP','file')}${input('restore-workspace-path','Restore into')}<button class="primary">Restore backup</button></form></details><div id="storage-result" role="status"></div>`);
 }
 
-function addWorkspace() {
+async function addWorkspace() {
   $('#more-dialog').close();
-  details('Add a workspace',`<p>Keep another business or project’s context and files separate.</p><form id="setup-form" class="form-grid"><label>Workspace name<input name="name" required maxlength="160" autocomplete="organization"></label><button class="primary">Create workspace →</button></form>`);
+  const r=await api('/api/workspaces'), recent=r.recent.filter(w=>w.path!==r.current);
+  details('Add or open a workspace',`<section class="workspace-create"><h3>Create a new workspace</h3><p>Keep another business or project’s context and files separate.</p><form id="setup-form" class="form-grid"><label>Workspace name<input name="name" required maxlength="160" autocomplete="organization"></label><button class="primary">Create workspace →</button></form></section>
+    <section class="workspace-open"><h3>Open saved work</h3><p>Choose your saved workspace or an older AURA folder.</p>
+    ${recent.length?`<div class="card">${recent.map(w=>`<button class="row" data-open-workspace="${esc(w.path)}"><span class="row-text"><span class="row-title">${esc(w.name)}</span><span class="row-meta storage-path">${esc(w.path)}</span></span><span>→</span></button>`).join('')}</div>`:''}
+    <form id="open-workspace-form" class="form-grid"><label>Workspace folder<input id="open-workspace-path" name="path" required placeholder="Paste the folder location"></label><div class="workspace-open-actions"><button type="button" class="secondary" data-storage-browse="open-workspace-path">Browse…</button><button class="primary">Open workspace →</button></div></form></section>`);
 }
 async function changeWorkspace(id) {
   if(state.busy){$('#business').value=state.business;$('#setup-workspace-select').value=state.business;return;}
-  if(id==='__add__'){$('#business').value=state.business;$('#setup-workspace-select').value=state.business;addWorkspace();return;}
+  if(id==='__add__'){$('#business').value=state.business;$('#setup-workspace-select').value=state.business;await addWorkspace();return;}
   if(id===state.business)return;
   state.drafts??={};state.drafts[state.business]=$('#request').value;$('#request').value=state.drafts[id]||'';
   state.business=id;state.view='home';state.chat=[];state.chatMeta=null;state.hydrated=false;state.setupStep='welcome';state.welcome=null;state.connectionChecks=null;
@@ -719,9 +717,8 @@ document.addEventListener('click',event=>attempt(async()=>{
   if(button.dataset.action==='add-goal')details('Add a goal',`<form id="goal-form" class="form-grid"><label>What do you want to accomplish?<input name="name" required maxlength="2000" autofocus></label><button class="primary">Save goal</button></form>`);
   if(button.dataset.action==='edit-business') { const b=rows('Business')[0]; details('Workspace name',`<form id="business-form" class="form-grid"><label>Workspace name<input name="name" value="${esc(b.title)}" required maxlength="160"></label><button class="primary">Save name</button></form>`); }
   if(button.id==='session-keys-only'){await api('/api/connections/session-only',{});await showApiConnections();}
-  if(button.id==='add-business')addWorkspace();
-  if(['open-workspace','open-existing-start'].includes(button.id))await workspaceStorage('open');
-  if(button.id==='workspace-backups')await workspaceStorage('backup');
+  if(['workspace-manager','open-existing-start'].includes(button.id))await addWorkspace();
+  if(button.id==='workspace-backups')await workspaceStorage();
   if(button.dataset.openWorkspace)await openStoredWorkspace(button.dataset.openWorkspace);
   if(button.dataset.storageBrowse){const r=await api('/api/locations/browse',{kind:button.dataset.kind||'folder'});if(r.path)$('#'+button.dataset.storageBrowse).value=r.path;}
   if(button.dataset.copyPath){await navigator.clipboard.writeText(button.dataset.copyPath);button.textContent='Copied';}
