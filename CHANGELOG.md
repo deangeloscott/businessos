@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.1.15 — 2026-10-27
+
+- Added an optional local visual workspace for business memory, saved files/media, separate categorized Workflows and recipes, and recurring work. Native AI apps and CLI use remain fully usable without it.
+- Added a guided first-use setup with workspace naming/switching, AI app selection, model discovery, provider filters, favorites, remembered per-model efforts, a short tour, and a local welcome credited to DeAngelo Scott. The optional starter asks one question and waits; setup does not automatically send model requests.
+- Added native command connections for Codex, Claude Code, Pi, OMP, Hermes, and Google Antigravity, reusing host sign-in, permissions, model metadata, and saved conversation IDs. Native history is reread where exposed; Antigravity uses a labeled display copy while continuing its native conversation. Supported capabilities depend on the installed app/version.
+- Added Stop, Stop & send follow-ups, public reply streaming, elapsed time, and compact activity updates. Added plain-language reply guidance and the actual Python executable for helpers; hidden reasoning and raw tool arguments stay out of the activity view.
+- Added independent status checks for explicitly connected apps and actionable recovery messages for sign-in, billing, quota, model access, network, service, and file-access failures. Catalogue availability is distinguished from account entitlement.
+- Added optional API-key presets and custom services with session-only storage or Windows user-encrypted storage. Credentials and machine-specific connection preferences stay outside portable business memory and release downloads.
+- Added a unified view of readable local Codex/Hermes schedules, with supported native editing/pause/resume or an explicit handoff where direct controls are unavailable. Saved plans remain distinct from confirmed schedules; no AURA scheduler is installed.
+- Added explicit links to existing local files/folders, organization-scoped file previews, direct workspace-name/goal editing through existing persistence, saved chats, a notification inbox, and System/Light/Dark appearance.
+- Kept the interface customizable through an organization-owned copy, separate from product updates. No required cloud service, AURA account, database, frontend build, or background daemon was added.
+- Extended release verification to launch the visual workspace from a fresh ZIP with isolated preferences and an external organization workspace. Public-distribution credential checks now include HTML, CSS, and JavaScript assets.
+
 ## v0.1.14 — 2026-10-24
 
 - Added an optional tools, models, and services guide with official setup links for agents, intelligence, creative production, hosting, payments, customer work, outreach, and analytics, including Apollo and Instantly.

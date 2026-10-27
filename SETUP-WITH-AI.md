@@ -125,6 +125,18 @@ Do not build an AURA daemon, MCP server, provider router, tool registry, or host
 7. **Do not install unrelated software during ordinary AURA setup.** Optional tools should be considered only when they materially help the user's actual work, with normal host/user approval.
 8. **Finish with real work.** Once readiness is proven, move immediately to the organization's requested outcome.
 
+## Open the visual workspace
+
+For a person who has not expressed a preference for chat-only use, open AURA's lightweight local workspace after readiness succeeds, using the `visual_workspace.command` returned by setup. See [the visual workspace guide](docs/visual-workspace.md). Do not make the interface a prerequisite for doing useful work.
+
+It shows the selected organization's existing memory, files/media, Workflows, recipes, and monitoring intent. People can edit their business name and goals without learning the file structure. Other changes can be requested from the prominent AI entry point.
+
+Prefer opening the view already connected to the agent the person is currently using, through its supported command connection or host mechanism. Do not switch the person to a different app merely because it is installed. Connect the active agent only through its actual supported command or host mechanism. AURA attachment does not grant a browser page access to an arbitrary existing chat, account, model, tools, or scheduler. Reuse host authentication; do not collect sign-in tokens, build a universal account connector, or bypass host permissions. Users may explicitly add optional API keys through Settings, kept in machine-local protected/session storage and passed to agent tools without putting their values in prompts or business files. Codex, Claude Code, Pi, OMP, Hermes, and Antigravity CLI expose native model metadata when their installed version supports it. Users can keep a compact list with favorites and provider filters. Codex also prepares project-local Skill/instruction attachment and starts/resumes saved native conversations. Workspace edits use the host’s normal permissions, enabled by default when saving a connection; global model settings are retained. Supported native connections continue exact saved conversation IDs. Native history is reread where available; Antigravity uses a labeled local display copy while retaining the full native model context. Custom commands retain the limitations described in the guide. Copying a contextual request to an existing chat remains available and is labeled as a handoff.
+
+Keep interface layout changes with the organization workspace, outside product source. The standard interface is optional; files and normal agent use remain fully usable without it.
+
+The view offers a short first-use connection guide, a four-area tour with an ownership/customization reminder, and a local welcome with an optional one-question conversation starter. Connection checks read workspace files and supported host metadata without model inference; provider quota and model entitlement are confirmed through actual requests. Native Codex attachment is project-local, not host-global. System/Light/Dark appearance, connection selections and small native conversation references are machine-local preferences. Native chat transcripts remain in the host. The user can ask their AI to customize an organization-owned interface copy. When using a CLI or native AI app directly, complete the normal setup and host attachment here; do not require the browser guide or an interface process.
+
 ## Small initial context, progressively learned
 
 After setup, AURA may still know only the organization name. That is correct.

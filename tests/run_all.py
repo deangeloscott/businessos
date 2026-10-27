@@ -30,6 +30,7 @@ TESTS=[
     'tests/run_first_principles_interface.py',
     'tests/run_memory_interface.py',
     'tests/run_setup_readiness.py',
+    'tests/run_visual_workspace.py',
     'tests/run_bootstrap_reference_ids.py',
     'tests/run_preferences_multioperator.py',
     'tests/run_preference_task_constraint_separation.py',

@@ -94,6 +94,12 @@ def setup(workspace=None,profile=None,organization=None,business_id=None,knowled
         'format_version':'1.0','status':'needs_input' if not bid else 'prepared',
         'product_root':str(PRODUCT_ROOT),'workspace_root':str(workspace_root()),
         'business_id':bid,'changes':changes,
+        'visual_workspace':{
+            'optional':True,
+            'command':[sys.executable,str(PRODUCT_ROOT/'scripts/workspace_ui.py')]+(['--business-id',bid] if bid else []),
+            'guide':str(PRODUCT_ROOT/'docs/visual-workspace.md'),
+            'rule':'An optional local view of the same files. The installed agent owns authentication, execution and scheduling.'
+        },
         'attachment':{
             'skill_source':str(skill),
             'status':'available' if skill.exists() else 'missing',

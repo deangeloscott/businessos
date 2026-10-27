@@ -76,6 +76,34 @@ with tempfile.TemporaryDirectory(prefix='aura-release-artifact-') as td:
     run(product_root,'scripts/init_business.py','release-smoke','--name','Release Smoke Test',env=consumer)
     run(product_root,'scripts/validate_business.py','release-smoke',env=consumer)
 
+    # Prove the newly unzipped interface can serve this separate workspace,
+    # with fresh local preferences and no connected agent or model request.
+    interface_probe = '''import json, sys, threading
+from pathlib import Path
+from http.server import ThreadingHTTPServer
+from urllib.request import Request, urlopen
+sys.path.insert(0, str(Path.cwd()/'scripts'))
+from workspace_ui import Workspace, handler_for
+app=Workspace(settings_file=Path(sys.argv[1])/'view-preferences.json')
+server=ThreadingHTTPServer(('127.0.0.1',0),handler_for(app))
+worker=threading.Thread(target=server.serve_forever,daemon=True);worker.start()
+base='http://127.0.0.1:'+str(server.server_port)
+try:
+    with urlopen(base) as response: page=response.read().decode('utf-8')
+    assert '__AURA_TOKEN__' not in page and 'DeAngelo Scott' in page
+    for asset in ('app.js','style.css'):
+        with urlopen(base+'/'+asset) as response: assert response.status==200 and response.read()
+    with urlopen(Request(base+'/api/state?business=release-smoke',headers={'X-Aura-Token':app.token})) as response:
+        state=json.load(response)
+    assert state['business_id']=='release-smoke' and not state['connection']['connected']
+    assert not state['onboarding']['seen'] and not app.preferences['chats'] and app.job is None
+    assert Path(state['workspace']).resolve()==Path(sys.argv[1]).resolve()
+    print('fresh release visual workspace smoke test passed')
+finally:
+    server.shutdown();worker.join();server.server_close()
+'''
+    subprocess.run([sys.executable,'-c',interface_probe,str(workspace)],cwd=product_root,env=consumer,check=True)
+
 print(json.dumps(result,indent=2))
 print('fresh release artifact validation passed')
 print('consumer external-workspace smoke test passed')

@@ -54,6 +54,8 @@ For more technical control, use `OPERATOR-GUIDE.md`.
 
 ## Once AURA is set up
 
+Your agent can open the included [local visual workspace](docs/visual-workspace.md): a simple place to see your business memory, files, media, Workflows, and next steps. It uses the same saved information, and includes an AI request entry point. Ask: **“Open my AURA visual workspace.”** Chat-only use remains available.
+
 Talk to your AI normally.
 
 For example:

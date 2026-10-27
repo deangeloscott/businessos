@@ -27,7 +27,7 @@ FORBIDDEN_TEXT=[
     (re.compile(r'-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----'),'private key material'),
     (re.compile(r'\b(?:ghp_|github_pat_)[A-Za-z0-9_]{20,}\b'),'GitHub credential material')
 ]
-TEXT_SUFFIXES={'.md','.json','.py','.txt','.yaml','.yml','.toml','.ini','.cfg','.csv'}
+TEXT_SUFFIXES={'.md','.json','.py','.txt','.yaml','.yml','.toml','.ini','.cfg','.csv','.html','.css','.js'}
 
 
 def validate_public_distribution():
