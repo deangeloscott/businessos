@@ -12,32 +12,26 @@ import argparse, hashlib, json, os, shutil, tempfile
 NAMESPACES=('instances','runtime','knowledge','attachments')
 
 
-def _sha256(path):
+def _sha256(path, check=None):
     h=hashlib.sha256()
     with Path(path).open('rb') as f:
         for chunk in iter(lambda:f.read(1024*1024),b''):
+            if check:check()
             h.update(chunk)
     return h.hexdigest()
 
 
 def _source_files(source):
-    source=Path(source).resolve(); rows=[]
+    source=Path(source).resolve()
     for ns in NAMESPACES:
         base=source/ns
-        if not base.exists(): continue
-        if base.is_symlink(): raise ValueError(f'Refusing workspace migration through symlinked namespace: {base}')
+        if base.is_symlink():raise ValueError(f'Refusing workspace migration through symlinked namespace: {base}')
+        if not base.exists():continue
         for root,dirs,files in os.walk(base,followlinks=False):
-            rootp=Path(root)
-            bad_dirs=[d for d in dirs if (rootp/d).is_symlink()]
-            if bad_dirs: raise ValueError(f'Refusing workspace migration with symlinked directory: {rootp/bad_dirs[0]}')
-            for name in files:
-                p=rootp/name
-                if p.is_symlink(): raise ValueError(f'Refusing workspace migration with symlinked file: {p}')
-                rel=p.relative_to(source)
-                if len(rel.parts)>=2 and rel.parts[0]=='instances' and rel.parts[1]=='_template':
-                    continue
-                rows.append((rel,p,_sha256(p),p.stat().st_size))
-    return sorted(rows,key=lambda x:x[0].as_posix())
+            for name in dirs+files:
+                if (Path(root)/name).is_symlink():raise ValueError('Reconnect linked files explicitly before migration.')
+    from workspace_storage import backup_plan
+    return sorted(backup_plan(source,hashes=True)['rows'],key=lambda x:x[0].as_posix())
 
 
 def _preflight(target,rows):
@@ -55,15 +49,19 @@ def _preflight(target,rows):
     return identical,pending
 
 
-def _copy_verified(target,pending):
+def _copy_verified(target,pending,check=None):
     copied=[]
     for rel,src,digest,size in pending:
         dst=target/rel;dst.parent.mkdir(parents=True,exist_ok=True)
         fd,tmpname=tempfile.mkstemp(prefix=dst.name+'.migrating-',dir=str(dst.parent));os.close(fd)
         tmp=Path(tmpname)
         try:
-            shutil.copy2(src,tmp)
-            if _sha256(tmp)!=digest: raise ValueError(f'Hash mismatch while staging {rel}')
+            if check:
+                with src.open('rb') as reader,tmp.open('wb') as writer:
+                    while chunk:=reader.read(1024*1024):check();writer.write(chunk)
+                shutil.copystat(src,tmp)
+            else:shutil.copy2(src,tmp)
+            if _sha256(tmp,check)!=digest: raise ValueError(f'Hash mismatch while staging {rel}')
             os.replace(tmp,dst)
         finally:
             if tmp.exists(): tmp.unlink()
@@ -109,6 +107,8 @@ def migrate(target_value,profile_value=None,knowledge_enabled=None,activate=True
     configure(target,profile,knowledge_enabled,write_link=False,force=False,allow_state_switch=True)
     _verify_target(target,rows)
 
+    from workspace_storage import normalize_file_links
+    normalize_file_links(target,str(source))
     activated=False; activation_instruction=None
     if activate:
         env_root=os.environ.get('BUSINESSOS_WORKSPACE')

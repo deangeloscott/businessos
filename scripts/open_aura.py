@@ -22,6 +22,13 @@ def main():
         print('AURA’s required files are missing. Extract the complete bundled download and open AURA again.', file=sys.stderr)
         return 1
     sys.path.insert(0, str(root / 'scripts'))
+    if not any(a == '--workspace' or a.startswith('--workspace=') for a in sys.argv) and not os.environ.get('BUSINESSOS_WORKSPACE') and not os.environ.get('BUSINESSOS_WORKSPACE_CONFIG'):
+        import workspace_catalog
+        sys.argv += ['--workspace', str(workspace_catalog.launch_workspace(root))]
+    # Clicking the launcher again opens the running view instead of starting
+    # another copy. Explicit workspace_ui.py servers remain independent.
+    if '--reuse' not in sys.argv:
+        sys.argv.append('--reuse')
     runpy.run_path(str(root / 'scripts/workspace_ui.py'), run_name='__main__')
     return 0
 

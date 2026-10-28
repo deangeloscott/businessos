@@ -161,8 +161,10 @@ def build(target, output, cache):
                           'AI accounts, local models, and optional tools such as FFmpeg are not included.\n\n'
                           'macOS may require approving the downloaded launcher in Privacy & Security. '
                           'This release is not notarized; AURA does not disable OS protections.\n\n'
-                          'Your business files remain editable and usable in other apps. For upgrades, retain your '
-                          'organization workspace and point the new copy at it; do not overwrite your business data.\n\n---\n\n'
+                          'Your business files remain editable and usable in other apps. New UI workspaces use Documents/AURA Workspaces by default. '
+                          'A newer AURA download reuses your selected workspace. Add or open a workspace can find older saved work and preview it first. '
+                          'Back up or restore includes a file preview and an option to include linked files. '
+                          'Keep your existing business data when upgrading; application files and account sign-ins remain separate.\n\n---\n\n'
                           +readme.read_text(encoding='utf-8'),encoding='utf-8')
         if suffix == '.zip':
             shutil.make_archive(str(archive.with_suffix('')), 'zip', temporary, name)

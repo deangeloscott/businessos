@@ -17,7 +17,7 @@ def roots():
             Path(os.environ.get('HERMES_HOME', Path.home() / '.hermes')))
 
 
-def inventory(codex_home=None, hermes_home=None):
+def inventory(codex_home=None, hermes_home=None, workspaces=(), antigravity_home=None):
     defaults = roots()
     codex_home, hermes_home = Path(codex_home or defaults[0]), Path(hermes_home or defaults[1])
     items, notes = [], []
@@ -35,6 +35,7 @@ def inventory(codex_home=None, hermes_home=None):
                    effort=data.get('reasoning_effort', data.get('reasoningEffort', '')),
                    status=str(data.get('status', 'unknown')).lower(),
                    next_run=data.get('next_run_at', ''), editable=False,
+                   runtime='Requires the Codex desktop app',
                    workspace=data.get('cwds', []))
         except (OSError, ValueError, TypeError) as exc:
             notes.append(f'Codex: {exc}')
@@ -58,11 +59,67 @@ def inventory(codex_home=None, hermes_home=None):
                        model=job.get('model') or '', effort=job.get('reasoning_effort') or '',
                        provider=job.get('model_provider') or '',
                        status=job.get('state') or ('active' if job.get('enabled', True) else 'paused'),
-                       next_run=job.get('next_run_at') or '', workspace=job.get('workdir') or '', editable=True)
+                       next_run=job.get('next_run_at') or '', workspace=job.get('workdir') or '', editable=True,
+                       runtime='Requires the Hermes gateway')
         except (OSError, ValueError, KeyError, TypeError, AttributeError) as exc:
             notes.append(f'Hermes ({profile}): could not read schedules. {exc}')
+    # pi-schedule-prompt documents project-local storage. Read only workspaces
+    # the user opened; do not crawl the computer or rewrite a live scheduler.
+    seen = set()
+    for folder in list(workspaces)[:13]:
+        root = Path(folder).expanduser().resolve()
+        if root in seen:
+            continue
+        seen.add(root)
+        path = root / '.pi/schedule-prompts.json'
+        if not path.exists():
+            continue
+        try:
+            data = json.loads(path.read_text(encoding='utf-8'))
+            if data.get('version') != 1 or not isinstance(data.get('jobs'), list):
+                raise ValueError('Unsupported Pi schedule format')
+            for job in data['jobs'][:200]:
+                append('pi', str(root), job['id'], app='Pi', name=job.get('name') or 'Scheduled prompt',
+                       schedule=job.get('schedule', ''), model=job.get('model', ''), effort='', provider='',
+                       status='enabled' if job.get('enabled') else 'paused', next_run=job.get('nextRun', ''),
+                       editable=False, workspace=str(root), session=job.get('session', ''), source_path=str(path),
+                       runtime='Requires the original Pi session' if job.get('session') else 'Requires Pi open in this workspace')
+        except (OSError, ValueError, KeyError, TypeError, AttributeError):
+            notes.append('Pi: a saved schedule list could not be read. Check it in Pi.')
+    # Antigravity's documented persistent schedule sidecars, not conversation
+    # timers or a guess at its private desktop database.
+    home = Path(antigravity_home or Path.home() / '.gemini/config')
+    paths = sorted((home / 'sidecars').glob('*/sidecar.json'))
+    paths += sorted((home / 'plugins').glob('*/sidecars/*/sidecar.json'))
+    try:
+        config = json.loads((home / 'config.json').read_text(encoding='utf-8')) if (home / 'config.json').exists() else {}
+        enabled = config.get('sidecars', {})
+        if not isinstance(enabled, dict):
+            raise ValueError('Unsupported sidecar configuration')
+        for path in paths[:200]:
+            try:
+                data = json.loads(path.read_text(encoding='utf-8'))
+                if data.get('builtin') != 'schedule':
+                    continue
+                args = data.get('args', [])
+                if not isinstance(args, list) or not args or not all(isinstance(a, str) for a in args):
+                    raise ValueError('Unsupported sidecar schedule')
+                ident = path.parent.name
+                if path.is_relative_to(home / 'plugins'):
+                    ident = path.relative_to(home / 'plugins').parts[0] + '/' + ident
+                settings = enabled.get(ident, {})
+                append('antigravity', 'sidecars', ident, app='Google Antigravity',
+                       name=data.get('display_name') or data.get('description') or ident,
+                       schedule=args[0], model='', effort='', provider='',
+                       status='enabled' if settings.get('enabled') is True else 'paused', next_run='',
+                       editable=False, workspace='', source_path=str(path),
+                       runtime='Requires the Antigravity app')
+            except (OSError, ValueError, KeyError, TypeError, AttributeError):
+                notes.append('Google Antigravity: a schedule could not be read. Check it in the app.')
+    except (OSError, ValueError, TypeError, AttributeError):
+        notes.append('Google Antigravity: schedule settings could not be read. Check them in the app.')
     return {'items':items, 'notes':notes,
-            'support':'Local Codex automation files and Hermes schedules are shown together. Other apps may use an external or cloud scheduler; schedules not exposed by these connections must be managed in that app.'}
+            'support':'Shows local Codex and Hermes schedules, Pi schedule-prompt jobs in opened workspaces, and Google Antigravity schedule sidecars. Live-chat timers, Claude schedules and cloud-only jobs are not automatically listed. Enabled means configured; the owning app must still be running.'}
 
 
 def update(ident, data, hermes_command, env):

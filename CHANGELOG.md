@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.2.0 — 2026-10-28
+
+- Find existing AURA work in recent and common locations, preview older folders, and reuse the last workspace across product downloads. New visual workspaces default to Documents/AURA Workspaces, with a choice of another location.
+- Bring scattered workspaces and project folders together through a review, a verified copy, and an explicit choice to keep businesses separate or combine them. Preserve current business information, source records, conflicting versions, project structure, and file references without deleting originals.
+- Added optional cleanup through AURA Recovery, restore controls, and opt-in retention. Changed files, exclusions, unresolved dependencies, and an unavailable or altered result block unsafe removal. Recovery keeps originals until the user chooses otherwise by default.
+- Carry portable appearance, model favorites, linked locations, and workspace-owned custom views across copying and backups. Include permitted linked files when requested, repair relocated references, and leave native chats, account keys, and scheduler ownership with their apps.
+- Added optional Start AURA when I sign in, reuse of the running visual workspace, and guarded restart/quit controls. Added schedule discovery for supported Pi schedule-prompt jobs and Google Antigravity sidecars alongside Codex and Hermes inventories; direct edits remain limited by each host.
+- Improved natural-language labels, shared form spacing, expanded-section layout, checkbox/button spacing, sticky navigation, and workspace dropdown colors in light, dark, and system appearance.
+- Keep native-app and CLI use available through the same file-based guidance and organization helpers. Bundled downloads retain private Python and required libraries for all six OS/processor targets.
+
 ## v0.1.17 — 2026-10-27
 
 - Added app-specific installation/sign-in guidance to the existing connection screen. Existing working connections continue normally; setup never installs a provider or sends an AI request silently.

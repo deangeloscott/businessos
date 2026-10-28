@@ -9,6 +9,9 @@ from pathlib import Path
 import os,subprocess,sys
 ROOT=Path(__file__).resolve().parents[1]
 env=dict(os.environ);env['PYTHONDONTWRITEBYTECODE']='1';env['PYTHONUTF8']='1'
+# Legacy fixtures use repository-relative paths. Never follow a user's selected
+# workspace; individual external-workspace suites set their own isolated roots.
+env['BUSINESSOS_WORKSPACE']=str(ROOT)
 TESTS=[
     'tests/run_distribution.py',
     'tests/run_playbook_discovery.py',
@@ -32,6 +35,9 @@ TESTS=[
     'tests/run_setup_readiness.py',
     'tests/run_visual_workspace.py',
     'tests/run_workspace_recovery.py',
+    'tests/run_workspace_continuity.py',
+    'tests/run_workspace_organization.py',
+    'tests/run_workspace_startup_schedules.py',
     'tests/run_runtime_bundle.py',
     'tests/run_bootstrap_reference_ids.py',
     'tests/run_preferences_multioperator.py',
