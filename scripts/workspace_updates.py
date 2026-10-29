@@ -176,7 +176,7 @@ def fetch_json(url):
 class Updater:
     def __init__(self, product, store=None):
         self.product = Path(product).resolve()
-        self.store = Path(store) if store else state_dir() / 'updates'
+        self.store = (Path(store) if store else state_dir() / 'updates').resolve()
         self.path = self.store / 'settings.json'
         self.lock = threading.RLock()
         self.operation = None
@@ -433,7 +433,7 @@ def launch_target(product):
 def handoff(updater, workspace, business, port, extra):
     """Listener is closed first. Commit the launch pointer only after a healthy start."""
     import workspace_startup
-    target, previous = updater.prepared, updater.product
+    target, previous = Path(updater.prepared).resolve(), updater.product
     startup = workspace_startup.status()
     def launch(root):
         interpreter = bundled_python(root)

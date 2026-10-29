@@ -38,7 +38,7 @@ def product(root, ver):
     updates.write(root / 'BUNDLED-RUNTIME.json', {'platform': updates.native_platform(), 'aura_version': ver,
                   'interpreter': interpreter, 'update_protocol': 1, 'workspace_schema_sha256': updates.schema_hash(root)})
     updates.write_integrity(root)
-    return root
+    return root.resolve()
 
 
 def release(archive, ver='0.2.2'):
@@ -173,7 +173,7 @@ HTTPServer(('127.0.0.1',int(sys.argv[sys.argv.index('--port')+1])),Handler).serv
         with socket.socket() as sock:
             sock.bind(('127.0.0.1', 0)); return sock.getsockname()[1]
     hand = updates.Updater(current, base / 'handoff'); hand.store.mkdir()
-    hand.prepared = newer
+    hand.prepared = newer.parent / 'new app' / '..' / 'new app'
     with patch.object(updates, 'bundled_python', return_value=Path(sys.executable)), patch('workspace_startup.status', return_value={'enabled': False}), patch.object(updates.subprocess, 'Popen', side_effect=spawn):
         try:
             updates.handoff(hand, workspace, '', port(), [])
