@@ -131,7 +131,8 @@ print(json.dumps({'python':sys.version.split()[0], 'tcl':tkinter.Tcl().eval('inf
         updater_test = Path(__file__).resolve().parents[1] / 'tests/run_workspace_updates.py'
         if updater_test.is_file():
             proof = subprocess.run([str(interpreter), '-I', '-B', str(updater_test)], cwd=updater_test.parents[1],
-                                   env=env, capture_output=True, text=True, encoding='utf-8', timeout=120)
+                                   env=dict(env, AURA_TEST_PRODUCT=str(root)), capture_output=True,
+                                   text=True, encoding='utf-8', timeout=120)
             if proof.returncode:
                 raise ValueError('Native updater checks failed:\n' + (proof.stdout + proof.stderr)[-8000:])
         return {'platform':metadata['platform'],'aura_version':metadata['aura_version'],
