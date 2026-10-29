@@ -36,6 +36,7 @@ import workspace_startup
 import workspace_catalog
 import workspace_organization
 import workspace_usage
+import workspace_updates
 from configure_workspace import configure
 from workspace_execution import Execution, Stopped
 from workspace_connections import Connections
@@ -399,6 +400,7 @@ class Workspace:
         local = Path(os.environ.get('LOCALAPPDATA') or os.environ.get('XDG_STATE_HOME') or Path.home() / '.local' / 'state')
         identity = hashlib.sha256(str(workspace_root()).encode()).hexdigest()[:20]
         self.settings_file = Path(settings_file) if settings_file else local / 'ViralTrac' / 'Aura' / (identity + '.json')
+        self.updates = workspace_updates.Updater(PRODUCT_ROOT, self.settings_file.parent / 'updates')
         self.connections = Connections(self.settings_file.parent)
         try:
             self.preferences = json.loads(self.settings_file.read_text(encoding='utf-8'))
@@ -524,6 +526,7 @@ class Workspace:
                     info['connection_note']='Workspace opened with the standard view. Your custom view is still in its original folder.'
                     fresh.static=STATIC;del fresh.launch_extra[n-1:n+1]
         fresh.connections = self.connections
+        fresh.updates = self.updates
         if preserve_local:
             fresh.preferences = json.loads(json.dumps(self.preferences))
             for chat in fresh.preferences['chats']:
@@ -691,6 +694,11 @@ class Workspace:
         titles = {c['id']: c['title'] for c in self.preferences['chats'] if c['business_id'] == bid}
         return {'items': [{**n, 'title': n.get('title') or titles.get(n['chat_id'], '')} for n in items], 'unread': sum(not n['read'] for n in items),
                 'enabled': self.preferences.get('notifications') is True}
+
+    def update_idle(self):
+        return not (time.time() < getattr(self, 'update_editing_until', 0) or
+                    (self.job and self.job['status'] == 'working') or
+                    (self.organization_job and self.organization_job['status'] == 'working'))
 
     def record_notification(self, job, chat):
         # One receipt per finished request; no transcript or credential content.
@@ -1340,7 +1348,9 @@ def handler_for(app):
                     path = app.static / route[1:]
                     self.send(200, path.read_bytes(), 'text/javascript; charset=utf-8' if path.suffix == '.js' else 'text/css; charset=utf-8')
                 elif route == '/api/state':
-                    self.send(200, app.state(query.get('business')))
+                    current = app.state(query.get('business'))
+                    app.update_business = current.get('business_id') or ''
+                    self.send(200, current)
                 elif route == '/api/notifications':
                     bid = selected(query.get('business'))
                     with app.lock:
@@ -1383,6 +1393,13 @@ def handler_for(app):
                         *(row['path'] for row in app.recent_workspaces())]))
                 elif route == '/api/startup':
                     self.send(200, workspace_startup.status())
+                elif route == '/api/updates':
+                    if query.get('editing') == '1':
+                        app.update_editing_until = time.time() + 8
+                    update = app.updates.state()
+                    if update['can_install'] and workspace_root().resolve().is_relative_to(PRODUCT_ROOT.resolve()):
+                        update.update(can_install=False, manual_reason='Move your workspace outside the app folder before updating. Use Add or open a workspace.')
+                    self.send(200, update)
                 elif route == '/api/connection-check':
                     self.send(200, app.check_connections(selected(query.get('business'))))
                 elif route == '/api/files':
@@ -1444,13 +1461,19 @@ def handler_for(app):
                     self.send(200, {'path': workspace_locations.choose(data['kind'])})
                     return
                 with app.lock:
-                    if app.organization_job and app.organization_job['status']=='working' and route not in {'/api/organization/stop','/api/notifications','/api/usage/settings'}:
+                    if getattr(app, 'update_restart', False):
+                        raise ValueError('AURA is restarting. Your workspace will reopen in a moment.')
+                    if app.organization_job and app.organization_job['status']=='working' and route not in {'/api/organization/stop','/api/notifications','/api/usage/settings','/api/updates'}:
                         raise ValueError('Workspace organization is running. Wait or stop it before making changes.')
-                    if app.job and app.job['status'] == 'working' and route not in {'/api/preferences', '/api/notifications', '/api/chat/stop','/api/usage/settings'}:
+                    if app.job and app.job['status'] == 'working' and route not in {'/api/preferences', '/api/notifications', '/api/chat/stop','/api/usage/settings','/api/updates'}:
                         raise ValueError('Your agent is working. Wait for its reply before changing this workspace.')
                     if route in {'/api/preferences','/api/locations'}:
                         app.load_portable()
-                    if route == '/api/usage/settings':
+                    if route == '/api/updates':
+                        if data.get('action') in {'install', 'rollback'} and workspace_root().resolve().is_relative_to(PRODUCT_ROOT.resolve()):
+                            raise ValueError('Move your workspace outside the app folder before updating. Use Add or open a workspace.')
+                        self.send(200, app.updates.action(data.get('action'), data.get('policy')))
+                    elif route == '/api/usage/settings':
                         bid=selected(data.get('business'))
                         value=data.get('budget_usd')
                         blank=value is None or value==''
@@ -1815,6 +1838,7 @@ def main():
         print('AURA is already running: ' + url, flush=True)
         return
     server = None
+    update_stop = threading.Event()
     try:
         app = Workspace(agent, args.interface_dir)
         # Only locally opted-in retirement entries can expire. This runs on
@@ -1827,6 +1851,37 @@ def main():
         if args.business_id:
             selected(args.business_id)
         server = ThreadingHTTPServer(('127.0.0.1', args.port), handler_for(app))
+        def update_watch():
+            # Runs only with the visual interface. No separate updater service.
+            while not update_stop.wait(2):
+                try:
+                    updater = app.updates
+                    with updater.lock:
+                        running = updater.operation and updater.operation.is_alive()
+                    if not running:
+                        saved = workspace_updates.read(updater.path)
+                        if saved.get('policy', 'notify') != 'manual' and time.time() - saved.get('attempted_at', saved.get('checked_at', 0)) >= workspace_updates.DAY:
+                            updater.start(updater.check)
+                        elif (saved.get('policy') == 'auto' and updater.state()['notice'] and
+                              updater.state()['can_install'] and updater.status == 'idle' and not updater.prepared and
+                              not workspace_root().resolve().is_relative_to(PRODUCT_ROOT.resolve()) and
+                              saved.get('failed_version') != updater.state()['release']['version']):
+                            updater.start(updater.prepare)
+                    with app.lock:
+                        if updater.apply_when_idle and updater.prepared and app.update_idle():
+                            if workspace_root().resolve().is_relative_to(PRODUCT_ROOT.resolve()):
+                                updater.cancel_pending()
+                                updater.status, updater.message = 'error', 'Move your workspace outside the app folder before updating. Use Add or open a workspace.'
+                                continue
+                            updater.status, updater.message = 'restarting', 'Restarting AURA…'
+                            app.update_restart = True
+                            app.restart_business = getattr(app, 'update_business', args.business_id or '')
+                            update_stop.set()
+                            server.shutdown()
+                            return
+                except (OSError, ValueError, KeyError):
+                    pass
+        threading.Thread(target=update_watch, daemon=True).start()
         if instance:
             instance.publish(server.server_port, app.token)
         url = f'http://127.0.0.1:{server.server_port}/' + ('?business=' + quote(args.business_id) if args.business_id else '')
@@ -1837,11 +1892,14 @@ def main():
     except KeyboardInterrupt:
         pass
     finally:
+        update_stop.set()
         if server:
             server.server_close()
         if instance:
             instance.close()
-    if getattr(app, 'restart_requested', False):
+    if getattr(app, 'update_restart', False):
+        workspace_updates.handoff(app.updates, workspace_root(), app.restart_business, server.server_port, app.launch_extra)
+    elif getattr(app, 'restart_requested', False):
         # The old listener and launch lock are closed before the replacement
         # starts. Native AI apps/gateways and workspace files remain untouched.
         argv = [sys.executable, '-E', '-s', '-B', str(PRODUCT_ROOT / 'scripts/open_aura.py'),

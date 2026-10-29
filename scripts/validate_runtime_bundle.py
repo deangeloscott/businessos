@@ -34,6 +34,9 @@ def validate(archive):
             raise ValueError('The bundle must contain one product folder.')
         root = roots[0]
         metadata = json.loads((root/'BUNDLED-RUNTIME.json').read_text(encoding='utf-8'))
+        from workspace_updates import modified, schema_hash
+        assert metadata['update_protocol'] == 1 and metadata['workspace_schema_sha256'] == schema_hash(root)
+        assert not modified(root), 'The final bundled files must match their update integrity manifest'
         interpreter = root/metadata['interpreter']
         env = dict(os.environ)
         env.pop('SSL_CERT_FILE', None)
@@ -112,6 +115,8 @@ print(json.dumps({'python':sys.version.split()[0], 'tcl':tkinter.Tcl().eval('inf
                     with urlopen(request,timeout=90) as response:
                         return json.load(response)
                 initial = api('/api/state')
+                update = api('/api/updates', {'action':'policy', 'policy':'manual'})
+                assert update['current'] == metadata['aura_version'] and update['policy'] == 'manual'
                 assert not initial['businesses'] and not initial['connection']['connected']
                 setup = api('/api/setup',{'name':'Runtime bundle smoke café'})
                 state = api('/api/state?business='+setup['business_id'])
@@ -123,11 +128,19 @@ print(json.dumps({'python':sys.version.split()[0], 'tcl':tkinter.Tcl().eval('inf
             finally:
                 control.stop()
                 process.wait(timeout=10)
+        updater_test = Path(__file__).resolve().parents[1] / 'tests/run_workspace_updates.py'
+        if updater_test.is_file():
+            proof = subprocess.run([str(interpreter), '-I', '-B', str(updater_test)], cwd=updater_test.parents[1],
+                                   env=env, capture_output=True, text=True, encoding='utf-8', timeout=120)
+            if proof.returncode:
+                raise ValueError('Native updater checks failed:\n' + (proof.stdout + proof.stderr)[-8000:])
         return {'platform':metadata['platform'],'aura_version':metadata['aura_version'],
                 'python_version':native['python'],'tcl_version':native['tcl'],
                 'relocated_path_with_spaces':True,'system_python_removed_from_path':True,
                 'isolated_libraries':True,'first_use_setup':'passed','local_interface':'passed',
                 'https_certificate_verification':'passed',
+                'update_integrity_and_settings':'passed',
+                'native_updater_boundaries':'passed' if updater_test.is_file() else 'not included',
                 'native_secret_storage':secret_storage,
                 'ai_requests_sent':0}
 

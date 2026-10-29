@@ -166,6 +166,10 @@ def build(target, output, cache):
                           'Back up or restore includes a file preview and an option to include linked files. '
                           'Keep your existing business data when upgrading; application files and account sign-ins remain separate.\n\n---\n\n'
                           +readme.read_text(encoding='utf-8'),encoding='utf-8')
+        from workspace_updates import schema_hash, write_integrity
+        metadata.update(update_protocol=1, workspace_schema_sha256=schema_hash(root))
+        (root/'BUNDLED-RUNTIME.json').write_text(json.dumps(metadata,indent=2)+'\n',encoding='utf-8')
+        write_integrity(root)
         if suffix == '.zip':
             shutil.make_archive(str(archive.with_suffix('')), 'zip', temporary, name)
         else:

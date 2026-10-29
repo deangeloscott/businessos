@@ -59,7 +59,7 @@ async function refresh() {
     $('#connection').disabled=false;$('#model-settings').disabled=false;
     $('#connection').disabled=!state.business;
     $('#model-settings').textContent=connection.model_controls?(connection.model?`${connection.model} · ${human(connection.effort||'App default')}${connection.selected==='codex'?(connection.workspace_write?' · Can edit files':' · Read only'):''}`:'Choose model & effort'):(connection.connected?'AI app settings':'Choose AI & model');
-    $('#notification-bell').hidden=!state.business;
+    $('#notification-bell').hidden=!state.business&&!state.updates?.notice;
     $('#usage-open').hidden=!state.business;
     $('#composer-context').textContent=connection.connected?'Uses your saved business context.':connection.mode==='copy'?'Requests are copied to your existing AI chat.':'Connect your AI to send requests from here.';
     $('#new-chat').disabled=!state.business||state.busy;
@@ -75,7 +75,7 @@ async function refresh() {
     if(state.data.diagnostics.length) notice('Some saved records could not be read. Ask your agent to inspect them before relying on a complete overview.',true);
     else if(state.data.workspace_note)notice(state.data.workspace_note,true);
     await render();
-    if(state.business&&!state.hydrated) {state.hydrated=true;await hydrateConversation();}
+    if(state.business&&!state.hydrated) {state.hydrated=true;await hydrateConversation();try{const draft=sessionStorage.getItem('aura-draft:'+state.data.workspace+':'+state.business);if(draft&&!$('#request').value)$('#request').value=draft;}catch{}}
     chatControls();
     if(state.data.organization?.status==='working'&&!state.organizationPolling){state.organizationWorking=true;notice(state.data.organization.progress);attempt(pollOrganization);}
     if(state.business&&!state.data.onboarding.seen&&!state.setupPrompted.has(state.business)) {
@@ -271,15 +271,20 @@ function usageLabel(usage) {
   return ` · ${(usage.input_tokens+usage.output_tokens).toLocaleString()} tokens`;
 }
 function renderNotifications() {
-  const inbox=state.inbox||{items:[],unread:0}, count=inbox.unread;
-  const signature=JSON.stringify([inbox,state.busy,window.Notification?.permission]);
+  const inbox=state.inbox||{items:[],unread:0}, update=state.updates, count=inbox.unread+(update?.unread?1:0);
+  const signature=JSON.stringify([inbox,update?.notice,update?.unread,update?.release?.version,state.busy,window.Notification?.permission]);
   if(state.inboxSignature===signature)return; // Keep keyboard focus when polling finds no change.
   state.inboxSignature=signature;
   $('#notification-count').hidden=!count;$('#notification-count').textContent=count>99?'99+':count;
+  $('#notification-bell').hidden=!state.business&&!update?.notice;
   $('#notification-bell').setAttribute('aria-label',count?`Notifications, ${count} unread`:'Notifications');
   document.title=count?`(${count}) AURA`:'AURA';
   $('#notification-read-all').disabled=!count;
   $('#notification-list').innerHTML=inbox.items.length?[...inbox.items].reverse().map(n=>`<button class="notification-item ${n.read?'':'unread'}" data-notification="${esc(n.id)}" ${state.busy&&n.chat_id!==state.chatMeta?.id?'disabled':''}><span class="notification-dot" aria-hidden="true"></span><span><strong>${n.kind==='usage'?'Usage alert':n.status==='error'?'Needs your attention':n.kind==='organization'?'Workspace ready':'Reply ready'}</strong>${n.title?'<span class="notification-subject">'+esc(n.title)+'</span>':''}<small>${esc(n.agent)} · <time datetime="${new Date(n.at*1000).toISOString()}">${esc(new Date(n.at*1000).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}))}</time>${n.read?'':' · Unread'}</small></span><span aria-hidden="true">→</span></button>`).join(''):'<p class="notification-empty">You’re all caught up. New replies will appear here.</p>';
+  if(update?.notice){
+    if(!inbox.items.length)$('#notification-list').innerHTML='';
+    $('#notification-list').insertAdjacentHTML('afterbegin',`<button class="notification-item ${update.unread?'unread':''}" data-update-open><span class="notification-dot" aria-hidden="true"></span><span><strong>AURA update available</strong><small>Version ${esc(update.release.version)}</small></span><span aria-hidden="true">→</span></button>`);
+  }
   const supported=!!window.Notification, blocked=supported&&Notification.permission==='denied', enabled=inbox.enabled&&supported&&Notification.permission==='granted';
   $('#notification-system').textContent=enabled?'Mute system alerts':blocked?'System alerts blocked':supported?'Notify me when away':'In-app notifications only';
   $('#notification-system').disabled=!supported||blocked;
@@ -685,9 +690,77 @@ async function syncSchedules(force=false) {
     const notes=$('#schedule-read-notes');if(notes){notes.textContent=schedules.notes.join(' ');notes.hidden=!schedules.notes.length;}
   } finally {state.scheduleLoading=false;}
 }
-async function startupSettings() {
+function startupSection(startup) {
+  return `<section class="startup-section"><h3>Startup</h3><form id="startup-form"><label class="startup-choice"><input type="checkbox" name="enabled" ${startup.enabled?'checked':''} ${startup.supported?'':'disabled'}> Start AURA when I sign in</label><p class="small-note">${startup.supported?'Keeps AURA available in the background on this computer.':'Automatic startup is unavailable on this system.'}</p>${startup.product&&startup.product!==state.data.product?'<p class="small-note">Save to use this version at startup.</p>':startup.workspace&&startup.workspace!==state.data.workspace?'<p class="small-note">Save to use this workspace at startup.</p>':''}<div class="startup-actions"><button class="secondary" ${startup.supported?'':'disabled'}>Save startup</button><span id="startup-save-status" class="small-note" role="status"></span></div></form></section>`;
+}
+async function syncUpdates() {
+  if(state.closed||state.updateLoading)return;
+  state.updateLoading=true;
+  try {
+    const editing=!state.allowUpdateRestart&&($('#request').value.trim()||Date.now()-(state.lastEdit||0)<30000);
+    state.updates=await api('/api/updates'+(editing?'?editing=1':''));
+    $('#update-menu-status').textContent=state.updates.release?'Available':'→';
+    renderNotifications();
+    renderUpdates();
+    if(state.updates.status==='restarting')await reconnectUpdate();
+  } catch(error) {
+    if(error.status===403||state.updates?.pending||['downloading','verifying','ready','restarting'].includes(state.updates?.status))await reconnectUpdate();
+  } finally {state.updateLoading=false;}
+}
+function renderUpdates() {
+  if(!$('#update-panel')||!state.updates)return;
+  const data=state.updates, signature=JSON.stringify(data);
+  if(state.updateSignature===signature)return;
+  state.updateSignature=signature;
+  const release=data.release, busy=['checking','downloading','verifying','restarting'].includes(data.status);
+  $('#update-current').textContent='Installed · '+data.current;
+  $('#update-heading').textContent=release?'AURA '+release.version+' is available':data.checked_at?'You’re up to date':'AURA updates';
+  $('#update-message').textContent=data.message||(!data.checked_at?'Check for the latest version.':!release?'You have the latest published version.':'');
+  $('#update-message').classList.toggle('error',data.status==='error');
+  $('#update-policy').value=data.policy;
+  $('#update-policy').disabled=busy;
+  $('#update-check').disabled=busy;
+  $('#update-check').textContent=data.status==='checking'?'Checking…':'Check now';
+  $('#update-release').hidden=!release;
+  if(release){
+    const highlights=release.notes.split('\n').filter(l=>/^\s*[-*] /.test(l)).slice(0,5).map(l=>l.replace(/^\s*[-*] /,'').replaceAll('**',''));
+    $('#update-highlights').innerHTML=highlights.map(l=>'<li>'+esc(l)+'</li>').join('');
+    $('#update-notes').textContent=release.notes||'See the release page for details.';
+    $('#update-release-link').href=release.url;
+  }
+  $('#update-install').hidden=!data.can_install;
+  $('#update-install').disabled=busy||data.pending;
+  $('#update-install').textContent=data.pending?'Waiting until idle…':'Update now';
+  $('#update-manual').textContent=data.manual_reason;
+  $('#update-manual').hidden=!data.manual_reason;
+  $('#update-later').disabled=busy;
+  $('#update-skip').disabled=busy;
+  $('#update-rollback').hidden=!data.rollback;
+  $('#update-rollback').disabled=busy||data.pending;
+  $('#update-checked').textContent=data.checked_at?'Last checked · '+new Date(data.checked_at*1000).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'';
+}
+async function openUpdates() {
+  $('#more-dialog').close();$('#notification-dialog').close();
+  await syncUpdates();
   const startup=await api('/api/startup');
-  details('Startup',`<form id="startup-form" class="form-grid"><label class="startup-choice"><input type="checkbox" name="enabled" ${startup.enabled?'checked':''} ${startup.supported?'':'disabled'}> Start AURA when I sign in</label><p class="muted">Keeps the visual workspace available in the background. Open AURA anytime to see it.</p>${startup.product&&startup.product!==state.data.product?'<p class="small-note">Save to use this version of AURA at startup.</p>':startup.workspace&&startup.workspace!==state.data.workspace?'<p class="small-note">Save to use this workspace at startup.</p>':''}<button class="primary" ${startup.supported?'':'disabled'}>Save</button><p class="small-note">${startup.supported?'Applies to this computer. Your AI apps keep their own startup settings.':'Automatic startup is unavailable on this system.'}</p></form>`);
+  details('Startup & updates',startupSection(startup)+`<section class="updates-section"><h3>Updates</h3><div id="update-panel"><div class="update-top"><span id="update-current" class="small-note"></span><button class="text-button" id="update-check">Check now</button></div><h4 id="update-heading"></h4><p id="update-message" role="status"></p><section id="update-release" hidden><ul id="update-highlights"></ul><details class="update-notes"><summary>Release notes</summary><pre id="update-notes"></pre><a id="update-release-link" target="_blank" rel="noopener noreferrer">View release ↗</a></details><p id="update-manual" class="small-note" hidden></p><div class="update-actions"><button class="primary" id="update-install" hidden>Update now</button><button class="secondary" id="update-later">Later</button><button class="text-button" id="update-skip">Skip this version</button></div></section><label class="update-policy">Updates<select id="update-policy"><option value="notify">Notify me</option><option value="auto">Update automatically when idle</option><option value="manual">Manual only</option></select></label><p class="small-note">Your workspace, connections, and custom views stay yours.</p><div class="update-bottom"><small id="update-checked"></small><button class="text-button" id="update-rollback" hidden>Use previous version</button><a href="https://github.com/deangeloscott/businessos/releases" target="_blank" rel="noopener noreferrer">Downloads ↗</a></div></div></section>`);
+  state.updateSignature='';renderUpdates();
+  state.updates=await api('/api/updates',{action:'read'});renderNotifications();
+}
+async function reconnectUpdate() {
+  if(state.updateReconnecting)return;
+  state.updateReconnecting=true;
+  notice('AURA is restarting. Your workspace will reopen here.');
+  for(let i=0;i<180;i++) {
+    try {
+      const response=await fetch('/',{cache:'no-store'}),page=await response.text();
+      const next=page.match(/name="aura-token" content="([^"]+)"/);
+      if(response.ok&&next&&next[1]!==token){location.reload();return;}
+    } catch {}
+    await new Promise(resolve=>setTimeout(resolve,500));
+  }
+  state.updateReconnecting=false;
+  notice('AURA hasn’t reopened yet. Open it using your usual launcher, or check Updates again.',true);
 }
 async function closeAura(action) {
   if(state.busy){notice('Finish or stop your current request before closing AURA.',true);return;}
@@ -954,7 +1027,14 @@ document.addEventListener('click',event=>attempt(async()=>{
   const button=event.target.closest('button'); if(!button) return;
   if(button.id==='stop-request')await stopRequest();
   if(button.id==='restart-aura'||button.id==='quit-aura')await closeAura(button.id==='restart-aura'?'restart':'quit');
-  if(button.id==='startup-settings'){$('#more-dialog').close();await startupSettings();}
+  if(button.id==='startup-settings'||button.hasAttribute('data-update-open'))await openUpdates();
+  if(['update-check','update-install','update-later','update-skip','update-rollback'].includes(button.id)) {
+    button.disabled=true;
+    if(['update-install','update-rollback'].includes(button.id))state.allowUpdateRestart=true;
+    state.updates=await api('/api/updates',{action:({'update-check':'check','update-install':'install','update-later':'later','update-skip':'skip','update-rollback':'rollback'})[button.id]});
+    state.updateSignature='';renderUpdates();renderNotifications();
+    if(['update-later','update-skip'].includes(button.id))$('#detail').close();
+  }
   if(button.hasAttribute('data-add-location'))addLocation();
   if(button.dataset.reconnectLocation)reconnectLocation(button.dataset.reconnectLocation);
   if(button.dataset.reconnectAsset)reconnectLocation(button.dataset.reconnectAsset,true);
@@ -1017,7 +1097,7 @@ document.addEventListener('click',event=>attempt(async()=>{
   if(button.id==='setup-done') await dismissSetup();
   if(button.id==='customize-view'){$('#more-dialog').close();details('Customize this workspace',`<p>You own the files and control this workspace. Ask your AI to change the layout, add a view, or simplify something. Your business files remain usable in other apps.</p><button class="primary" data-prompt="Help me customize my AURA visual workspace. Ask what I want to change, then follow the visual workspace guide to adapt an organization-owned copy of the interface. Preserve my files, native chats, and connection controls.">Ask my AI to customize it →</button>`);}
   if(button.id==='notification-bell') {await syncNotifications();$('#notification-dialog').showModal();}
-  if(button.id==='notification-read-all') {state.inbox=await api('/api/notifications',{business:state.business,action:'read',all:true});renderNotifications();state.systemAlert?.close();}
+  if(button.id==='notification-read-all') {if(state.business)state.inbox=await api('/api/notifications',{business:state.business,action:'read',all:true});state.updates=await api('/api/updates',{action:'read'});renderNotifications();state.systemAlert?.close();}
   if(button.dataset.notification) {
     const item=state.inbox.items.find(n=>n.id===button.dataset.notification);if(!item)return;
     if(item.chat_id&&item.chat_id!==state.chatMeta?.id) {
@@ -1153,7 +1233,7 @@ document.addEventListener('submit',event=>{
       if(['goal-form','edit-goal-form','business-form'].includes(form.id)) { await api('/api/save',{business:state.business,kind:form.id==='business-form'?'business':'goal',name:data.get('name'),ref:form.dataset.ref}); $('#detail').close(); notice('Saved.'); await refresh(); }
       if(form.id==='startup-form') {
         await api('/api/startup',{enabled:data.has('enabled'),business:state.business});
-        $('#detail').close();notice(data.has('enabled')?'AURA will start quietly when you sign in.':'Automatic startup is off.');
+        $('#startup-save-status').textContent=data.has('enabled')?'Startup is on.':'Startup is off.';
       }
       if(form.id==='task-request-form') {
         const task=state.editingTask;
@@ -1185,6 +1265,7 @@ const notificationTimer=setInterval(()=>{if(!state.closed)syncNotifications(true
 const scheduleTimer=setInterval(()=>syncSchedules().catch(()=>{}),30000);
 $('#appearance').addEventListener('change',()=>attempt(async()=>{const value=$('#appearance').value;await api('/api/preferences',{appearance:value});state.data.appearance=value;applyAppearance(value);}));
 document.addEventListener('change',event=>{if(event.target.id==='backup-linked')attempt(backupSummary);});
+document.addEventListener('change',event=>{if(event.target.id==='update-policy')attempt(async()=>{state.updates=await api('/api/updates',{action:'policy',policy:event.target.value});state.updateSignature='';renderUpdates();renderNotifications();});});
 document.addEventListener('change',event=>{
   if(event.target.id==='organization-primary')organizationGroups(true);
   if(event.target.closest('#organization-sources'))organizationGroups();
@@ -1198,6 +1279,10 @@ for(const dialog of document.querySelectorAll('dialog')) {
   dialog.addEventListener('click',event=>{if(beganOutside&&event.target===dialog&&outside(event))dialog.close();beganOutside=false;});
 }
 attempt(refresh);
+attempt(syncUpdates);
+const updateTimer=setInterval(()=>{if(!state.closed)syncUpdates();},2000);
+document.addEventListener('input',()=>{state.lastEdit=Date.now();});
+window.addEventListener('beforeunload',()=>{try{if(state.business&&state.data?.workspace)sessionStorage.setItem('aura-draft:'+state.data.workspace+':'+state.business,$('#request').value);}catch{}});
 
 const usageAlertTimer=setInterval(()=>{if(!document.hidden)checkUsageAlerts();},300000);
 const usageCacheTimer=setInterval(tickUsageClocks,30000);

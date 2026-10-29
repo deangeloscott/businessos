@@ -39,7 +39,7 @@ def status():
         return {'supported':True, 'enabled':False}
 
 
-def configure(enabled, product, workspace, business='', extra=()):
+def configure(enabled, product, workspace, business='', extra=(), interpreter=None):
     target = registration()
     saved = state_dir() / 'startup.json'
     current = status()
@@ -51,7 +51,7 @@ def configure(enabled, product, workspace, business='', extra=()):
         saved.unlink(missing_ok=True)
         return status()
     product, workspace = Path(product).resolve(), Path(workspace).resolve()
-    interpreter = Path(sys.executable).resolve()
+    interpreter = Path(interpreter or sys.executable).resolve()
     if sys.platform == 'win32' and interpreter.with_name('pythonw.exe').is_file():
         interpreter = interpreter.with_name('pythonw.exe')
     argv = [str(interpreter), '-E', '-s', '-B', str(product / 'scripts/open_aura.py'),

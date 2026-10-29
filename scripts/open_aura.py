@@ -22,6 +22,14 @@ def main():
         print('AURA’s required files are missing. Extract the complete bundled download and open AURA again.', file=sys.stderr)
         return 1
     sys.path.insert(0, str(root / 'scripts'))
+    import workspace_updates
+    bypass = os.environ.pop('AURA_UPDATE_HANDOFF', '') == '1'
+    target = None if bypass else workspace_updates.launch_target(root)
+    if target:
+        import subprocess
+        argv = [str(workspace_updates.bundled_python(target)), '-E', '-s', '-B',
+                str(target / 'scripts/open_aura.py'), *sys.argv[1:]]
+        return subprocess.call(argv)
     if not any(a == '--workspace' or a.startswith('--workspace=') for a in sys.argv) and not os.environ.get('BUSINESSOS_WORKSPACE') and not os.environ.get('BUSINESSOS_WORKSPACE_CONFIG'):
         import workspace_catalog
         sys.argv += ['--workspace', str(workspace_catalog.launch_workspace(root))]
