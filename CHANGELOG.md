@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.2.1 — 2026-10-28
+
+- Added a compact Usage & spend panel with subscription quota windows, masked account history, API balances/allowances where available, and Chat/Today/Month token and cost totals. Distinguish recorded workspace activity from account-wide provider reporting and keep unknown values unavailable.
+- Reconcile confirmed provider identities across apps without double-counting shared accounts. Keep distinct accounts separate and offer reversible, user-confirmed account links when a native connection omits identity.
+- Show cache reuse and estimated context for the main chat plus up to four recent chats. Prefer observed retention; clearly label fallback OpenAI/Gemini cache windows as reference estimates with their assumptions. Add optional manual Keep warm attempts in the same native chat without automatic pings or model/account switching.
+- Add optional quiet quota/budget alerts through the existing notification bell. Keep receipts, masked account snapshots, alert preferences and cache estimates local to the machine, outside portable business memory and credentials.
+- Give subscription providers, APIs, cache/context and token costs consistent expanded and compact views. Show all three usage periods together, keep budget controls compact, and place Keep warm beside the chat details without disturbing metric alignment.
+- Preserve portable workspaces, native-app/CLI use, provider choice and customizable visual files. Availability of quotas, balances, pricing and retention metadata still depends on each native app/provider; estimates are not a complete billing ledger or a cache-retention guarantee.
+
 ## v0.2.0 — 2026-10-28
 
 - Find existing AURA work in recent and common locations, preview older folders, and reuse the last workspace across product downloads. New visual workspaces default to Documents/AURA Workspaces, with a choice of another location.

@@ -34,6 +34,7 @@ TESTS=[
     'tests/run_memory_interface.py',
     'tests/run_setup_readiness.py',
     'tests/run_visual_workspace.py',
+    'tests/run_workspace_usage.py',
     'tests/run_workspace_recovery.py',
     'tests/run_workspace_continuity.py',
     'tests/run_workspace_organization.py',

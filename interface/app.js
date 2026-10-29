@@ -60,6 +60,7 @@ async function refresh() {
     $('#connection').disabled=!state.business;
     $('#model-settings').textContent=connection.model_controls?(connection.model?`${connection.model} · ${human(connection.effort||'App default')}${connection.selected==='codex'?(connection.workspace_write?' · Can edit files':' · Read only'):''}`:'Choose model & effort'):(connection.connected?'AI app settings':'Choose AI & model');
     $('#notification-bell').hidden=!state.business;
+    $('#usage-open').hidden=!state.business;
     $('#composer-context').textContent=connection.connected?'Uses your saved business context.':connection.mode==='copy'?'Requests are copied to your existing AI chat.':'Connect your AI to send requests from here.';
     $('#new-chat').disabled=!state.business||state.busy;
     $('#send').innerHTML=connection.connected?'Send <span>↑</span>':connection.mode==='copy'?'Copy request <span>↗</span>':'Connect AI <span>→</span>';
@@ -81,6 +82,7 @@ async function refresh() {
       state.setupPrompted.add(state.business); openConnection();
     }
     await syncNotifications();
+    checkUsageAlerts();
   } finally { $('#refresh').disabled=false; }
 }
 
@@ -265,8 +267,8 @@ async function dismissSetup() {
 function taskStatus(text,elapsed='') {$('#chat-status').hidden=!text;if($('#task-status').textContent!==text)$('#task-status').textContent=text;$('#task-elapsed').textContent=elapsed?' · '+elapsed:'';}
 function usageLabel(usage) {
   if(!usage||!Number.isFinite(usage.input_tokens)||!Number.isFinite(usage.output_tokens))return '';
-  $('#task-status').title=`Reported session totals; ${Number(usage.cached_input_tokens||0).toLocaleString()} cached input tokens. These counts are not a price estimate.`;
-  return ` · Session: ${(usage.input_tokens+usage.output_tokens).toLocaleString()} tokens`;
+  $('#task-status').title=`Reported token usage. Cost and cache details are in Usage & spend.`;
+  return ` · ${(usage.input_tokens+usage.output_tokens).toLocaleString()} tokens`;
 }
 function renderNotifications() {
   const inbox=state.inbox||{items:[],unread:0}, count=inbox.unread;
@@ -277,7 +279,7 @@ function renderNotifications() {
   $('#notification-bell').setAttribute('aria-label',count?`Notifications, ${count} unread`:'Notifications');
   document.title=count?`(${count}) AURA`:'AURA';
   $('#notification-read-all').disabled=!count;
-  $('#notification-list').innerHTML=inbox.items.length?[...inbox.items].reverse().map(n=>`<button class="notification-item ${n.read?'':'unread'}" data-notification="${esc(n.id)}" ${state.busy&&n.chat_id!==state.chatMeta?.id?'disabled':''}><span class="notification-dot" aria-hidden="true"></span><span><strong>${n.status==='error'?'Needs your attention':n.kind==='organization'?'Workspace ready':'Reply ready'}</strong>${n.title?'<span class="notification-subject">'+esc(n.title)+'</span>':''}<small>${esc(n.agent)} · <time datetime="${new Date(n.at*1000).toISOString()}">${esc(new Date(n.at*1000).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}))}</time>${n.read?'':' · Unread'}</small></span><span aria-hidden="true">→</span></button>`).join(''):'<p class="notification-empty">You’re all caught up. New replies will appear here.</p>';
+  $('#notification-list').innerHTML=inbox.items.length?[...inbox.items].reverse().map(n=>`<button class="notification-item ${n.read?'':'unread'}" data-notification="${esc(n.id)}" ${state.busy&&n.chat_id!==state.chatMeta?.id?'disabled':''}><span class="notification-dot" aria-hidden="true"></span><span><strong>${n.kind==='usage'?'Usage alert':n.status==='error'?'Needs your attention':n.kind==='organization'?'Workspace ready':'Reply ready'}</strong>${n.title?'<span class="notification-subject">'+esc(n.title)+'</span>':''}<small>${esc(n.agent)} · <time datetime="${new Date(n.at*1000).toISOString()}">${esc(new Date(n.at*1000).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}))}</time>${n.read?'':' · Unread'}</small></span><span aria-hidden="true">→</span></button>`).join(''):'<p class="notification-empty">You’re all caught up. New replies will appear here.</p>';
   const supported=!!window.Notification, blocked=supported&&Notification.permission==='denied', enabled=inbox.enabled&&supported&&Notification.permission==='granted';
   $('#notification-system').textContent=enabled?'Mute system alerts':blocked?'System alerts blocked':supported?'Notify me when away':'In-app notifications only';
   $('#notification-system').disabled=!supported||blocked;
@@ -298,7 +300,7 @@ async function syncNotifications(deliver=false) {
       const batch=await api('/api/notifications',{business,action:'claim'});
       if(batch.claimed.length) {
         try {
-          const n=new Notification('AURA',{body:batch.claimed.length===1?(batch.claimed[0].status==='error'?'A request needs your attention.':batch.claimed[0].kind==='organization'?'Your organized workspace is ready.':'Your reply is ready.'):`${batch.claimed.length} updates are ready.`,tag:'aura-'+state.data.workspace+'-'+business,silent:true,renotify:false});
+          const n=new Notification('AURA',{body:batch.claimed.length===1?(batch.claimed[0].kind==='usage'?'A usage limit needs your attention.':batch.claimed[0].status==='error'?'A request needs your attention.':batch.claimed[0].kind==='organization'?'Your organized workspace is ready.':'Your reply is ready.'):`${batch.claimed.length} updates are ready.`,tag:'aura-'+state.data.workspace+'-'+business,silent:true,renotify:false});
           state.systemAlert?.close();state.systemAlert=n;
           n.onclick=()=>{window.focus();n.close();if(!$('#notification-dialog').open)$('#notification-dialog').showModal();};
         } catch { /* The inbox remains available when system delivery is unsupported. */ }
@@ -309,6 +311,7 @@ async function syncNotifications(deliver=false) {
 function replyAlert(result) {
   taskStatus(`${result.status==='stopped'?'Stopped. You can continue this chat.':result.status==='complete'?'Reply ready':'Needs your attention'} · ${clockTime(result.updated)}${usageLabel(result.usage)}`);
   syncNotifications(true).catch(()=>{});
+  checkUsageAlerts();
 }
 async function hydrateConversation() {
   const result=await api('/api/conversation?business='+encodeURIComponent(state.business));
@@ -320,6 +323,179 @@ async function hydrateConversation() {
   else if(result.chat?.status==='error')taskStatus('The previous request did not complete. Review this chat in your AI app before retrying.');
   else if(state.chat.length)taskStatus(`Latest reply · ${clockTime(state.chat.at(-1).at)}${usageLabel(result.usage)}`);
   else if(result.chat?.status==='working')taskStatus('This chat was left working. Open it in your AI app to check the outcome before sending again.');
+}
+
+const money = value => Number.isFinite(value)?new Intl.NumberFormat(undefined,{style:'currency',currency:'USD',maximumFractionDigits:value>0&&value<.01?4:2}).format(value):'Not reported';
+const usageCount = value => Number.isFinite(value)?Math.round(value).toLocaleString():'Not reported';
+const usagePair = (first,second) => Number.isFinite(first)||Number.isFinite(second)?`${usageCount(first)} / ${usageCount(second)}`:'Not reported';
+function usageAge(at) {
+  if(!at)return '';
+  const seconds=Math.max(0,Math.round(Date.now()/1000-at));
+  return seconds<60?'just now':seconds<3600?`${Math.floor(seconds/60)}m ago`:seconds<86400?`${Math.floor(seconds/3600)}h ago`:`${Math.floor(seconds/86400)}d ago`;
+}
+function usageQuery(period='chat'){const now=new Date(),monthStart=new Date(now.getFullYear(),now.getMonth(),1).getTime()/1000,dayStart=new Date(now.getFullYear(),now.getMonth(),now.getDate()).getTime()/1000;return `period=${period}&offset=${now.getTimezoneOffset()}&month_start=${monthStart}${period==='chat'?'':'&since='+(period==='month'?monthStart:dayStart)}`;}
+function usageReset(at) {
+  if(!at)return '';
+  const minutes=Math.ceil((at-Date.now()/1000)/60);
+  return minutes<=0?'Reset expected · refresh to confirm':`Reset expected in ${minutes<60?minutes+'m':minutes<1440?`${Math.floor(minutes/60)}h ${minutes%60}m`:`${Math.floor(minutes/1440)}d ${Math.floor(minutes%1440/60)}h`}`;
+}
+const usageShort = value => Number.isFinite(value)?new Intl.NumberFormat(undefined,{notation:'compact',maximumFractionDigits:1}).format(value):'—';
+function usageResetShort(at) {return usageReset(at).replace('Reset expected in ','Reset in ').replace('Reset expected · refresh to confirm','Reset due · confirm');}
+function usageResetInline(at){return usageResetShort(at).replace('Reset in ','↻ ').replace('Reset due · confirm','Due · confirm');}
+function usageAccountLinks(a,data) {
+  const targets=data.accounts.filter(t=>t.identified&&t.provider===a.provider&&t.mode===a.mode&&t.scope===a.scope&&t.id!==a.id);
+  const links=Object.entries(data.account_links||{}).filter(([,target])=>target===a.id);
+  const link=a.linkable&&!a.identified&&a.mode==='subscription'&&targets.length?`<label>Same account as<select id="usage-link-${esc(a.id)}"><option value="">Choose account</option>${targets.map(t=>`<option value="${esc(t.id)}">${esc(t.label)}${t.plan?' · '+esc(human(t.plan)):''}</option>`).join('')}</select></label><button class="text-button" data-usage-link="${esc(a.id)}">Link account</button>`:'';
+  const undo=links.map(([source])=>`<button class="text-button" data-usage-unlink="${esc(source)}">Unlink ${esc(data.link_sources?.find(s=>s.id===source)?.name||'connection')}</button>`).join('');
+  return link+undo;
+}
+function usageAccountDetails(a) {
+  const amounts=[['Key limit left',a.key_limit_remaining_usd],['Key spend · today UTC',a.spend_today_usd],['Key spend · all time',a.spend_total_usd],['Account spend · all time',a.account_spend_total_usd]].filter(([,v])=>Number.isFinite(v));
+  if(!amounts.length&&!a.note)return '';
+  return `<details class="usage-mini-details" data-usage-disclosure="details-${esc(a.id)}"><summary>Details</summary><div class="usage-extra">${amounts.map(([label,value])=>`<div class="usage-breakdown"><span>${label}</span><span>${money(value)}</span></div>`).join('')}${a.note?`<p class="small-note">${esc(a.note)}</p>`:''}</div></details>`;
+}
+async function loadUsageLinks() {
+  const business=state.business,workspace=state.data.workspace;
+  const data=await api(`/api/usage?business=${encodeURIComponent(business)}`);
+  if(state.business!==business||state.data.workspace!==workspace||!$('#usage-account-links'))return;
+  const rows=data.accounts.map(a=>({account:a,controls:usageAccountLinks(a,data)})).filter(r=>r.controls);
+  $('#usage-account-links').innerHTML=rows.length?rows.map(({account:a,controls})=>`<article class="usage-account"><div class="usage-account-heading"><strong>${esc(a.name)} · ${esc(a.label)}</strong></div><div class="usage-extra">${controls}</div></article>`).join(''):'<p class="usage-no-data">No account links to adjust.</p>';
+}
+async function openUsageLinks() {
+  $('#connect-dialog').close();
+  details('Account links','<button class="text-button" id="usage-links-back">← AI settings</button><p class="small-note">Group connections that use the same subscription account. Your sign-ins stay unchanged.</p><div id="usage-account-links">Reading accounts…</div>');
+  await loadUsageLinks();
+}
+function usageDisclosureKey(){return 'aura-usage:'+JSON.stringify([state.data.workspace,state.business]);}
+function usageDisclosures(){try{return JSON.parse(localStorage.getItem(usageDisclosureKey())||'{}');}catch{return {};}}
+function usageWindowName(a,w) {
+  const name=a.provider==='openai'?({'Session':'5h','Weekly':'7d','5 hours':'5h','7 days':'7d'}[w.name]||w.name):w.name;
+  return new Set((a.windows||[]).map(win=>win.bucket)).size>1?[w.bucket,name].filter(Boolean).join(' · '):name;
+}
+function usageAccounts(data) {
+  const subscriptions=data.accounts.filter(a=>a.mode==='subscription');
+  const apis=data.accounts.filter(a=>a.mode==='api');
+  const quota=(a,w)=>{
+    const expired=w.resets_at&&w.resets_at<=Date.now()/1000;
+    const label=usageWindowName(a,w);
+    return `<div class="usage-window" ${w.resets_at?`data-usage-reset="${Number(w.resets_at)}"`:''}><div><span>${esc(label)}</span><span class="usage-window-remaining">${expired?'Unconfirmed':Number.isFinite(w.used_percent)?`${Math.max(0,Math.round(100-w.used_percent))}% left`:w.status==='rejected'?'Limit reached':'Unavailable'}</span></div>${Number.isFinite(w.used_percent)&&!expired?`<meter class="quota-meter" min="0" max="100" low="10" high="20" optimum="100" value="${100-w.used_percent}" aria-label="${esc(a.name+' '+label+' remaining')}"></meter>`:''}<small class="usage-reset-time" title="${w.resets_at?esc(new Date(w.resets_at*1000).toLocaleString()):''}">${esc(usageResetShort(w.resets_at))}</small></div>`;
+  };
+  const meta=a=>`<div class="usage-account-meta"><span title="Apps reporting this account">${esc((a.via||[]).join(' · '))}</span>${a.checked_at?`<span data-usage-checked="${a.limits_at||a.checked_at}" data-usage-saved="${a.available===false}" title="${esc(new Date(a.checked_at*1000).toLocaleString())}">${a.available===false?'Saved':'Checked'} ${esc(usageAge(a.limits_at||a.checked_at))}</span>`:''}${Number.isFinite(a.lifetime_tokens)?`<span title="Lifetime tokens: ${usageCount(a.lifetime_tokens)}">${usageShort(a.lifetime_tokens)} lifetime tokens</span>`:''}${usageAccountDetails(a,data)}</div>`;
+  const card=a=>`<article class="usage-account"><div class="usage-account-heading"><strong>${esc(a.identified?a.label:(a.via||[]).join(', ')+' connection')}${data.accounts.filter(other=>other.name===a.name&&other.label===a.label).length>1&&a.identified?' · '+esc(a.id.slice(0,4)):''}</strong><small>${esc(a.plan?human(a.plan):'')}${a.available===false?' · Last known':''}</small></div>${a.windows?.length?`<div class="usage-quota-grid">${a.windows.map(w=>quota(a,w)).join('')}</div>`:'<p class="usage-no-data">Limits unavailable</p>'}${meta(a)}</article>`;
+  const apiCard=a=>{
+    const stats=[['Balance',a.balance_usd,'money'],['This month · UTC',a.spend_month_usd,'money'],['Credits left',a.credits_remaining,'number'],[(a.units_name||'Units')+' left',a.units_remaining,'number']].filter(([,v])=>Number.isFinite(v));
+    return `<article class="usage-account usage-api"><div class="usage-account-heading"><strong>${esc(a.name)}</strong><small>${esc(a.via?.includes('API connection')?a.label:'API')}${a.plan?' · '+esc(human(a.plan)):''}</small></div>${stats.length?`<div class="usage-api-stats">${stats.map(([label,value,type])=>`<span><small>${esc(label)}</small><strong>${type==='money'?money(value):new Intl.NumberFormat(undefined,{maximumFractionDigits:2}).format(value)}</strong></span>`).join('')}</div>`:'<p class="usage-no-data">Key added · usage unavailable</p>'}${a.windows?.length?`<div class="usage-quota-grid">${a.windows.map(w=>quota(a,w)).join('')}</div>`:''}${meta(a)}</article>`;
+  };
+  const apiCompact=a=>{
+    const stat=Number.isFinite(a.balance_usd)?money(a.balance_usd):Number.isFinite(a.spend_month_usd)?money(a.spend_month_usd)+' this month':Number.isFinite(a.credits_remaining)?usageShort(a.credits_remaining)+' credits':Number.isFinite(a.units_remaining)?usageShort(a.units_remaining)+' '+(a.units_name||'units'):'Usage unavailable';
+    return `<div class="usage-slim-row"><strong>${esc(a.name)}${a.via?.includes('API connection')?' · '+esc(a.label):''}</strong><span>${esc(stat)}</span></div>`;
+  };
+  const providers=[...new Set(subscriptions.map(a=>a.name))];
+  const compact=a=>`<div class="usage-compact-account"><strong class="usage-compact-name" title="${esc([a.label,a.plan?human(a.plan):'',a.available===false?'Last known':''].filter(Boolean).join(' · '))}">${esc(a.identified?a.label:(a.via||[]).join(', ')+' connection')}${a.available===false?'<small> · Saved</small>':''}</strong><div class="usage-compact-quotas">${a.windows?.length?a.windows.map(w=>`<span ${w.resets_at?`data-usage-reset="${Number(w.resets_at)}" data-usage-reset-compact="true"`:''}><span>${esc(usageWindowName(a,w))} <strong class="usage-window-remaining">${w.resets_at&&w.resets_at<=Date.now()/1000?'Unconfirmed':Number.isFinite(w.used_percent)?Math.max(0,Math.round(100-w.used_percent))+'% left':w.status==='rejected'?'Limit reached':'Unavailable'}</strong></span>${w.resets_at?` <small class="usage-reset-time" title="Reset time">${esc(usageResetInline(w.resets_at))}</small>`:''}</span>`).join(''):'<small>Limits unavailable</small>'}</div></div>`;
+  return `<section class="usage-category"><h3>Subscriptions</h3>${providers.length?providers.map(name=>{const accounts=subscriptions.filter(a=>a.name===name);return `<section class="usage-provider"><details data-usage-disclosure="provider-${esc(name)}" open><summary>${esc(name)}<small>${accounts.length} account${accounts.length===1?'':'s'}</small></summary>${accounts.map(card).join('')}</details><div class="usage-provider-compact">${accounts.map(compact).join('')}</div></section>`;}).join(''):'<p class="usage-no-data">No subscription usage available.</p>'}</section><section class="usage-category usage-collapsible"><details data-usage-disclosure="apis" open><summary>APIs</summary>${apis.length?apis.map(apiCard).join(''):'<p class="usage-no-data">No API usage available yet.</p>'}</details><div class="usage-closed">${apis.length?apis.map(apiCompact).join(''):'<p class="usage-no-data">No API connections reported.</p>'}</div></section>`;
+}
+function usageKeepWarm(view) {
+  if(!view.keep_warm)return '';
+  const cache=view.cache_window||view.usage?.cache||view.usage?.last?.cache;
+  return `<button class="text-button usage-keep-warm" data-keep-warm="${esc(view.info.id)}" data-cache-expires="${Number(cache?.expires_at)||0}" title="One manual attempt in this chat. Uses tokens; retention and savings aren’t guaranteed.">Keep warm</button>`;
+}
+function renderCacheWindows() {
+  document.querySelectorAll('[data-cache-clock]').forEach(target=>{
+    const expires=Number(target.dataset.cacheExpires),hit=Number(target.dataset.cacheHit),minutes=expires?Math.ceil((expires-Date.now()/1000)/60):null;
+    target.textContent=minutes===null?(hit?'Last reuse '+usageAge(hit):'Expiry not reported'):minutes<=0?'Est. window elapsed':`Est. ${target.dataset.cacheModeled==='true'?'~':''}${minutes<60?minutes+'m':Math.floor(minutes/60)+'h '+minutes%60+'m'} left`;
+    target.classList.toggle('cache-ending',minutes!==null&&minutes>0&&minutes<=5);
+
+  });
+  document.querySelectorAll('[data-keep-warm]').forEach(button=>{button.disabled=Number(button.dataset.cacheExpires)<=Date.now()/1000||state.busy||state.starting;});
+}
+function usageChatCard(view,primary=false) {
+  const info=view.info,u=view.usage||{},last=u.last||{},cache=view.cache_window||u.cache||last.cache,context=u.context,cached=last.cached_input_tokens;
+  const percent=Number.isFinite(cached)&&last.input_tokens?Math.min(100,Math.round(100*cached/last.input_tokens)):null;
+  const contextPercent=context?Math.round(100*context.tokens/context.window):null;
+  const hasUsage=Object.keys(last).length>0||context||cache||Number.isFinite(u.input_tokens);
+  const name=info.title||'Chat',position=primary&&view.position==='Recent'?'Latest':view.position;
+  return `<article role="row" class="usage-cache-chat ${primary?'primary-cache':''}"><div role="cell" class="usage-cache-name"><strong title="${esc(name)}">${esc(name)}</strong><small class="usage-chat-model" title="${esc([human(info.agent),info.model].filter(Boolean).join(' · '))}">${esc(human(info.agent))} · ${esc(position)}</small>${usageKeepWarm(view)}</div>${hasUsage?`<div role="cell" class="usage-cache-metric"><strong>${percent!==null?percent+'% reused':Number.isFinite(cached)?usageShort(cached)+' tokens reused':'Not reported'}</strong>${percent!==null?`<meter min="0" max="100" value="${percent}" aria-label="${esc(name)} cached input reused"></meter>`:''}<small data-cache-clock data-cache-expires="${Number(cache?.expires_at)||0}" data-cache-hit="${Number(u.cache_hit?.at)||0}" data-cache-modeled="${!!cache?.modeled}" title="${esc(cache?.basis||(cache?.expires_at?new Date(cache.expires_at*1000).toLocaleString():'Provider did not report cache expiry.'))}"></small></div><div role="cell" class="usage-cache-metric"><strong>${contextPercent!==null?contextPercent+'% used':'Not reported'}</strong>${context?`<meter min="0" max="100" value="${Math.min(100,contextPercent)}" aria-label="${esc(name)} context used"></meter><small>${usageShort(context.tokens)} / ${usageShort(context.window)} · Est.</small>`:''}</div>`:`<div role="cell" aria-colspan="2" class="usage-cache-empty">${esc(view.usage_note||'No usage report yet')}</div>`}</article>`;
+}
+function usageCacheTable(chats) {
+  return chats.length?`<div class="usage-cache-table" role="table" aria-label="Recent chat cache and context"><div class="usage-cache-head" role="row"><span role="columnheader">Chat</span><span role="columnheader">Cache</span><span role="columnheader">Context</span></div>${chats.slice(0,5).map((view,index)=>usageChatCard(view,index===0)).join('')}</div>`:'<p class="usage-no-data">Your chats will appear here when you start working.</p>';
+}
+function tickUsageClocks() {
+  if(document.hidden||state.closed)return;
+  renderCacheWindows();
+  document.querySelectorAll('[data-usage-checked]').forEach(node=>{node.textContent=(node.dataset.usageSaved==='true'?'Saved ':'Checked ')+usageAge(Number(node.dataset.usageChecked));});
+  document.querySelectorAll('[data-usage-reset]').forEach(row=>{
+    const at=Number(row.dataset.usageReset);row.querySelector('.usage-reset-time').textContent=row.dataset.usageResetCompact?usageResetInline(at):usageResetShort(at);
+    if(at<=Date.now()/1000){row.querySelector('.usage-window-remaining').textContent='Unconfirmed';const meter=row.querySelector('meter');if(meter)meter.hidden=true;}
+  });
+}
+function restoreUsageDisclosures(root=document) {
+  const saved=usageDisclosures();root.querySelectorAll('[data-usage-disclosure]').forEach(d=>{if(d.dataset.usageDisclosure in saved)d.open=saved[d.dataset.usageDisclosure];});
+}
+function usageCacheCompact(chats) {
+  return chats.length?chats.slice(0,5).map(v=>{
+    const u=v.usage||{},last=u.last||{},context=u.context,cached=last.cached_input_tokens;
+    const cache=Number.isFinite(cached)&&last.input_tokens?Math.min(100,Math.round(100*cached/last.input_tokens))+'% reused':'Cache —';
+    return `<div class="usage-slim-row"><strong title="${esc(v.info.title||'Chat')}">${esc(v.info.title||'Chat')}</strong><span class="usage-compact-actions"><span>${esc(v.usage_note||cache+' · '+(context?Math.round(100*context.tokens/context.window)+'% context':'Context —'))}</span>${usageKeepWarm(v)}</span></div>`;
+  }).join(''):'<p class="usage-no-data">No chats yet.</p>';
+}
+function usagePeriodTable(periods) {
+  const keys=['chat','today','month'],metrics=[['Tokens',t=>Number.isFinite(t.input_tokens)||Number.isFinite(t.output_tokens)?usageShort((t.input_tokens||0)+(t.output_tokens||0)):'—'],['Cost',t=>Number.isFinite(t.cost_usd)?(t.cost_kind==='est'?'Est. ':'')+money(t.cost_usd):'—'],['Input / output',t=>Number.isFinite(t.input_tokens)||Number.isFinite(t.output_tokens)?usageShort(t.input_tokens)+' / '+usageShort(t.output_tokens):'—'],['Cache read / write',t=>Number.isFinite(t.cached_input_tokens)||Number.isFinite(t.cache_write_tokens)?usageShort(t.cached_input_tokens)+' / '+usageShort(t.cache_write_tokens):'—']];
+  return `<table class="usage-period-table"><thead><tr><th></th><th>Chat</th><th>Today</th><th>Month</th></tr></thead><tbody>${metrics.map(([name,value])=>`<tr><th scope="row">${name}</th>${keys.map(k=>`<td>${esc(value(periods[k]?.totals||{}))}</td>`).join('')}</tr>`).join('')}</tbody></table><p class="usage-scope-note">Chat: native totals. Today/month: AURA activity. Est. token costs aren’t extra subscription charges.</p>`;
+}
+function usagePeriodCompact(periods) {
+  return ['chat','today','month'].map(k=>{
+    const t=periods[k]?.totals||{},tokens=Number.isFinite(t.input_tokens)||Number.isFinite(t.output_tokens)?usageShort((t.input_tokens||0)+(t.output_tokens||0)):'—';
+    return `<span><small>${{chat:'Chat',today:'Today',month:'Month'}[k]}</small><strong>${tokens}</strong>${Number.isFinite(t.cost_usd)?`<small>${t.cost_kind==='est'?'Est. ':''}${money(t.cost_usd)}</small>`:''}</span>`;
+  }).join('');
+}
+function usageBudgetSummary(settings) {return (settings.alerts?'Alerts on':'Alerts off')+' · '+(Number.isFinite(settings.budget_usd)?money(settings.budget_usd)+'/month':'No budget');}
+function renderUsage(data) {
+  if(!$('#usage-panel'))return;
+  const saved=usageDisclosures();
+  for(const d of $('#detail-content').querySelectorAll('[data-usage-disclosure]'))saved[d.dataset.usageDisclosure]=d.open;
+  const focused=document.activeElement?.closest('[data-usage-disclosure]')?.dataset.usageDisclosure;
+  $('#usage-accounts').innerHTML=usageAccounts(data);
+  $('#detail-content').querySelectorAll('[data-usage-disclosure]').forEach(d=>{d.open=saved[d.dataset.usageDisclosure]??d.hasAttribute('open');if(d.dataset.usageDisclosure===focused)d.querySelector('summary').focus({preventScroll:true});});
+  $('#usage-cache').innerHTML=usageCacheTable(data.chats||[]);
+  $('#usage-cache-compact').innerHTML=usageCacheCompact(data.chats||[]);
+  const periods=data.periods||{[data.period]:data};
+  $('#usage-panel').innerHTML=usagePeriodTable(periods);
+  $('#usage-token-compact').innerHTML=usagePeriodCompact(periods);
+  $('#usage-alert-summary').textContent=usageBudgetSummary(data.settings||{});
+  renderCacheWindows();
+}
+
+async function loadUsage(refresh=false) {
+  const business=state.business, period='today';
+  if(!business)return;
+  const button=$('#usage-refresh');if(button)button.disabled=true;
+  try {
+    const data=await api(`/api/usage?business=${encodeURIComponent(business)}&${usageQuery(period)}${refresh?'&refresh=1':''}`);
+    if(state.business!==business||data.workspace!==state.data.workspace||!$('#usage-panel'))return;
+    renderUsage(data);
+    if($('#usage-budget')&&!state.usageSettingsLoaded){$('#usage-budget').value=data.settings.budget_usd??'';$('#usage-alerts').checked=data.settings.alerts;state.usageSettingsLoaded=true;}
+  } catch(error){
+    if($('#usage-panel')&&state.business===business){
+      let message=$('#usage-refresh-error');
+      if(!message){message=document.createElement('p');message.id='usage-refresh-error';message.className='small-note';$('#usage-panel').append(message);}
+      message.textContent='Usage could not be refreshed. Try again.';
+    }
+  }
+  finally{if(button?.isConnected)button.disabled=false;}
+}
+async function openUsage() {
+  state.usageSettingsLoaded=false;
+  details('Usage & spend',`<div class="usage-toolbar"><span class="small-note">Your connected accounts</span><button class="text-button" id="usage-refresh">Refresh</button></div><div id="usage-accounts" aria-live="polite">Reading usage…</div><section class="usage-category usage-collapsible"><details data-usage-disclosure="cache" open><summary>Cache &amp; context</summary><div id="usage-cache"></div></details><div class="usage-closed" id="usage-cache-compact"></div></section><section class="usage-category usage-collapsible"><details data-usage-disclosure="tokens"><summary>Tokens &amp; cost</summary><div id="usage-panel" aria-live="polite"></div></details><div class="usage-closed usage-token-compact" id="usage-token-compact"></div></section><details class="usage-section usage-budget-section" data-usage-disclosure="budget"><summary>Alerts &amp; budget <small id="usage-alert-summary"></small></summary><form id="usage-settings-form" class="usage-budget-form"><label class="startup-choice"><input type="checkbox" id="usage-alerts"> Quiet limit alerts</label><label class="usage-budget-field">Monthly API budget · USD<input id="usage-budget" type="number" min="0.01" step="0.01" placeholder="Optional"></label><button class="secondary">Save</button><span id="usage-settings-status" role="status"></span><p class="usage-scope-note">API costs recorded in AURA; estimates may apply.</p></form></details>`);
+  restoreUsageDisclosures($('#detail-content'));
+  await loadUsage();
+  await loadUsage(true);
+}
+async function checkUsageAlerts() {
+  if(!state.business||!state.data?.usage_alerts||state.usageAlertLoading||state.closed)return;
+  state.usageAlertLoading=true;
+  try{await api(`/api/usage?business=${encodeURIComponent(state.business)}&${usageQuery()}&refresh=1`);await syncNotifications();}
+  catch { /* Optional usage reporting must not interrupt work. */ }
+  finally{state.usageAlertLoading=false;}
 }
 async function pollJob(job) {
   if(state.polling)return;state.polling=true;state.busy=true;
@@ -850,7 +1026,7 @@ document.addEventListener('click',event=>attempt(async()=>{
       if(result.history_note)notice(result.history_note);
     }
     state.inbox=await api('/api/notifications',{business:state.business,action:'read',id:item.id});renderNotifications();
-    $('#notification-dialog').close();state.systemAlert?.close();showMessages(true);
+    $('#notification-dialog').close();state.systemAlert?.close();if(item.kind==='usage'){await openUsage();return;}showMessages(true);
     if(item.chat_id&&!$('#conversation').hidden){$('#conversation').scrollIntoView({block:'nearest'});$('#conversation').focus();}
     else if(item.kind==='organization'){const r=await api('/api/organization');const p=r.history.find(p=>p.id===item.operation);if(p)showOrganizationReview(p);else await organizeWork();}
     else notice('Open your AI app to review this request.');
@@ -890,6 +1066,25 @@ document.addEventListener('click',event=>attempt(async()=>{
   }
   if(['workspace-manager','open-existing-start'].includes(button.id))await addWorkspace();
   if(button.id==='workspace-backups')await workspaceStorage();
+  if(button.id==='usage-open')await openUsage();
+  if(button.id==='usage-refresh')await loadUsage(true);
+  if(button.id==='usage-account-settings')await openUsageLinks();
+  if(button.id==='usage-links-back'){$('#detail').close();openConnection(true,'connect');}
+  if(button.dataset.keepWarm){
+    if(state.busy||state.starting)return;
+    button.disabled=true;state.starting=true;chatControls();
+    let job;
+    try{job=await api('/api/usage/keep-warm',{business:state.business,chat_id:button.dataset.keepWarm});}
+    catch(error){
+      let message=$('#usage-cache-action-status');
+      if(!message){message=document.createElement('p');message.id='usage-cache-action-status';message.className='small-note error';message.setAttribute('role','status');$('#usage-cache').append(message);}
+      message.textContent=error.message;button.disabled=false;return;
+    }
+    finally{state.starting=false;chatControls();}
+    $('#detail').close();notice('');await pollJob(job);await hydrateConversation();
+  }
+  if(button.dataset.usageLink){const target=$('#usage-link-'+button.dataset.usageLink).value;if(!target)throw new Error('Choose the matching account.');await api('/api/usage/link',{business:state.business,source:button.dataset.usageLink,target});await loadUsageLinks();}
+  if(button.dataset.usageUnlink){await api('/api/usage/link',{business:state.business,source:button.dataset.usageUnlink,target:''});await loadUsageLinks();}
   if(button.dataset.openWorkspace)await openStoredWorkspace(button.dataset.openWorkspace);
   if(button.dataset.storageBrowse){const r=await api('/api/locations/browse',{kind:button.dataset.kind||'folder'});if(r.path){$('#'+button.dataset.storageBrowse).value=r.path;if(button.dataset.storageBrowse==='new-workspace-parent')$('#new-workspace-location').textContent=r.path;}}
   if(button.dataset.copyPath){await navigator.clipboard.writeText(button.dataset.copyPath);button.textContent='Copied';}
@@ -937,6 +1132,7 @@ document.addEventListener('submit',event=>{
       finally{const field=$('#api-secret');if(field)field.value='';submit.disabled=false;}
       return;
     }
+    if(form.id==='usage-settings-form'){await api('/api/usage/settings',{business:state.business,alerts:$('#usage-alerts').checked,budget_usd:$('#usage-budget').value});$('#usage-settings-status').textContent='Saved';$('#usage-alert-summary').textContent=usageBudgetSummary({alerts:$('#usage-alerts').checked,budget_usd:$('#usage-budget').value?Number($('#usage-budget').value):null});state.data.usage_alerts=$('#usage-alerts').checked;checkUsageAlerts();return;}
     if(form.id==='connect-form') { $('#connect-agent').disabled=true; try { await pickerSave;const route=selectedRoute(),kind=route?.agent||$('#agent-choice').value;await api('/api/connect',{kind,model:route?.model||'',effort:$('#effort-choice').value,workspace_write:true});if(kind!==state.data.connection.selected&&state.business){await api('/api/chats/new',{business:state.business});state.chat=[];state.chatMeta=null;showMessages();} const tour=state.tour||!state.data.onboarding.seen;state.connectionChecks=null;state.welcome=null;await refresh();await checkConnections(false);if(tour){state.setupStep='tour';renderConnection();}else if(state.connectionChecks?.ready)$('#connect-dialog').close();else finishSetup();notice(''); } catch(error){state.modelError=simpleSetupError(error.message);} finally {connectionChoice();} return; }
     if(form.id==='chat-form') { await submitRequest($('#request').value); return; }
     if(submit)submit.disabled=true;
@@ -1002,3 +1198,11 @@ for(const dialog of document.querySelectorAll('dialog')) {
   dialog.addEventListener('click',event=>{if(beganOutside&&event.target===dialog&&outside(event))dialog.close();beganOutside=false;});
 }
 attempt(refresh);
+
+const usageAlertTimer=setInterval(()=>{if(!document.hidden)checkUsageAlerts();},300000);
+const usageCacheTimer=setInterval(tickUsageClocks,30000);
+
+document.addEventListener('toggle',event=>{
+  const d=event.target;if(!d.matches?.('[data-usage-disclosure]')||!d.isConnected)return;
+  try{const saved=usageDisclosures();saved[d.dataset.usageDisclosure]=d.open;localStorage.setItem(usageDisclosureKey(),JSON.stringify(saved));}catch{}
+},true);

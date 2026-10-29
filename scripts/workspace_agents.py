@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 import re
 from _process_errors import ErrorTail
+import workspace_usage
 
 
 def base_command(command):
@@ -210,7 +211,7 @@ def resume_command(kind, native_id):
 
 
 def history(command, kind, cwd, env, native_id):
-    model, effort = '', ''
+    model, effort, window = '', '', None
     if kind in {'pi','omp'}:
         host=Metadata(command,kind,cwd,env,native_id=native_id)
         try:
@@ -221,6 +222,7 @@ def history(command, kind, cwd, env, native_id):
             current=state.get('model') or {}
             model=(current.get('provider','')+'/'+current.get('id','')).strip('/')
             effort=state.get('thinkingLevel','')
+            window=current.get('contextWindow')
         finally:host.close()
     elif kind=='hermes':
         result=subprocess.run([*base_command(command),'sessions','export','--session-id',native_id,'--format','jsonl','--redact','-'],
@@ -252,7 +254,7 @@ def history(command, kind, cwd, env, native_id):
         if isinstance(at,(int,float)) and at>1e11:at/=1000
         if text:out.append({'role':message['role'],'text':text,'at':at,
                            'agent':{'pi':'Pi','omp':'OMP','claude':'Claude Code','hermes':'Hermes'}[kind]})
-    return {'messages':out,'model':model,'effort':effort,'usage':{},'native_id':native_id,
+    return {'messages':out,'model':model,'effort':effort,'usage':workspace_usage.messages_usage(messages,kind,window),'native_id':native_id,
             'resume':subprocess.list2cmdline(resume_command(kind,native_id))}
 
 
@@ -290,6 +292,18 @@ def run(command, kind, cwd, env, prompt, native_id, model, effort, update, execu
         if effort:argv += ['--effort',effort]
         prompt=json.dumps({'event':'user','message':{'content':prompt}})+'\n'
     final, ident, error='',native_id,''
+    request_started=time.time()
+    measures, seen_usage, session_cost = [], {}, None
+    def observe(message):
+        ident = workspace_usage.message_id(message)
+        raw=message.get('usage') or {}
+        row = workspace_usage.measure({**raw,'_provider':message.get('provider'),'_cache_started_at':request_started} if isinstance(raw,dict) else {}, kind, message.get('timestamp') or time.time())
+        if row:
+            if ident and ident in seen_usage:measures[seen_usage[ident]]={**measures[seen_usage[ident]],**row}
+            else:
+                if ident:seen_usage[ident]=len(measures)
+                measures.append(row)
+            update(usage={**workspace_usage.combine(measures),'last':row})
     with (execution.popen if execution else subprocess.Popen)(argv,cwd=cwd,env=env,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,
                           text=True,encoding='utf-8',errors='replace') as process:
         errors = ErrorTail(process, env)
@@ -307,10 +321,12 @@ def run(command, kind, cwd, env, prompt, native_id, model, effort, update, execu
             if event_type=='message_end':
                 message=event.get('message',{})
                 if message.get('role')=='assistant':
+                    observe(message)
                     if message.get('stopReason') in {'error','aborted'}:error=message.get('errorMessage') or 'The AI request did not complete.'
                     text=message_text(message.get('content',[]))
                     if text:final=text;update(reply=final,progress='Preparing a reply')
             elif event_type=='message_start' and event.get('message',{}).get('role')=='assistant':
+                request_started=time.time()
                 final=''
                 update(reply='',progress='Preparing a reply')
             elif event_type=='message_update':
@@ -325,6 +341,7 @@ def run(command, kind, cwd, env, prompt, native_id, model, effort, update, execu
                 detail=event.get('error',event.get('message','The AI request failed.'))
                 error=str(detail.get('message',detail) if isinstance(detail,dict) else detail)
             elif event_type=='assistant':
+                observe(event.get('message') or {})
                 content=(event.get('message') or {}).get('content',[])
                 text=message_text(content)
                 if text:final=text;update(reply=final,progress='Preparing a reply')
@@ -332,6 +349,12 @@ def run(command, kind, cwd, env, prompt, native_id, model, effort, update, execu
                     if block.get('type')=='tool_use':update(progress=tool_activity(block.get('name')))
             elif event_type=='result':
                 result=event.get('result') if isinstance(event.get('result'),dict) else event
+                if not measures and isinstance(result.get('usage'),dict):
+                    observe({'usage':result['usage'],'timestamp':time.time()})
+                session_cost=workspace_usage.number(result.get('total_cost_usd'))
+                if session_cost is not None:
+                    update(usage={**workspace_usage.combine(measures),'last':measures[-1] if measures else {},
+                                  'session_cost_usd':session_cost,'cost_kind':'est'})
                 result_id=result.get('conversation_id') or result.get('session_id') or ident
                 if native_id and result_id!=native_id:
                     error='The app returned a different chat ID. Check the native app before continuing.'
@@ -344,8 +367,12 @@ def run(command, kind, cwd, env, prompt, native_id, model, effort, update, execu
                 update(progress=tool_activity(event.get('toolName') or event.get('name') or event.get('tool')))
             elif event_type in {'tool_execution_end','tool_end','tool_result'}:
                 update(progress='Tool finished. Continuing the request')
+            elif event_type=='rate_limit_event' and kind=='claude':
+                update(quota_windows=workspace_usage.claude_limits(event.get('rate_limit_info')))
         code=process.wait()
     if execution:execution.check()
     if code or error or not ident or not final.strip():
         raise ValueError(error or errors.message('The AI app did not complete a saved reply. Open its native chat to check authentication or approvals; no automatic retry was made.'))
-    return {'reply':final,'native_id':ident,'usage':{}}
+    usage={**workspace_usage.combine(measures),'last':measures[-1]} if measures else {}
+    if session_cost is not None:usage.update(session_cost_usd=session_cost,cost_kind='est')
+    return {'reply':final,'native_id':ident,'usage':usage}

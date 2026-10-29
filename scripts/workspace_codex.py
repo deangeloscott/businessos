@@ -8,6 +8,7 @@ import subprocess
 import threading
 import time
 from _process_errors import ErrorTail
+import workspace_usage
 
 
 def base_command(command):
@@ -173,7 +174,8 @@ def run(command, cwd, prompt, native_id, model, effort, update, env=None, execut
                     if label:
                         update(progress=label)
             elif kind == 'turn.completed':
-                usage = event.get('usage', {})
+                usage = workspace_usage.measure(event.get('usage', {}), 'codex', time.time())
+                update(usage=usage)
             elif kind in {'turn.failed', 'error'}:
                 detail = event.get('error', event)
                 error = str(detail.get('message', detail) if isinstance(detail, dict) else detail)
@@ -192,7 +194,7 @@ def history(command, cwd, native_id):
     path = Path(thread.get('path') or '')
     if not path.is_file():
         raise ValueError('Codex has not made this conversation transcript available yet. Try Refresh or open it in Codex.')
-    messages, model, effort, usage = [], '', '', {}
+    messages, model, effort, usage, cache_hit = [], '', '', {}, None
     with path.open(encoding='utf-8') as stream:
         for line in stream:
             try:
@@ -201,7 +203,17 @@ def history(command, cwd, native_id):
                 continue
             payload = row.get('payload', {})
             if row.get('type') == 'event_msg' and payload.get('type') == 'token_count':
-                usage = (payload.get('info') or {}).get('total_token_usage') or usage
+                info = payload.get('info') or {}
+                if info.get('total_token_usage'):
+                    usage = workspace_usage.measure(info['total_token_usage'], 'codex', row.get('timestamp'))
+                    usage['last'] = workspace_usage.measure(info.get('last_token_usage'), 'codex', row.get('timestamp'))
+                    if usage['last'].get('cached_input_tokens',0)>0:
+                        cache_hit={'at':usage['last'].get('at'),'tokens':usage['last']['cached_input_tokens']}
+                    if cache_hit:usage['cache_hit']=cache_hit
+                    window = workspace_usage.number(info.get('model_context_window'))
+                    if window and usage['last']:
+                        usage['context'] = {'tokens':sum(usage['last'].get(k,0) for k in ('input_tokens','output_tokens')),
+                                            'window':window,'est':True}
             if row.get('type') == 'turn_context':
                 model, effort = payload.get('model', model), payload.get('effort', effort)
             if row.get('type') != 'response_item' or payload.get('type') != 'message':
