@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.2.3 — 2026-10-30
+
+- Added separate Workflows, Recipes, Skills, Tools, and Plugins in one searchable library. Include existing Playbooks as complete guides under Workflows; group shared skills and service actions while retaining their actual versions, requirements, and native app connections.
+- Discover capabilities through known local files, installed package metadata, and supported native catalogs. Distinguish installed, configured, reported, and locally found items; retain earlier results marked Needs refresh when a catalog check fails. Keep distinct non-English service names separate.
+- Save business-specific library favorites and recently chosen items with portable workspace preferences. Prepare a request uses readable titles and instruction locations, preserves unsent drafts, and never sends automatically or silently installs, changes apps, or tests a paid service.
+- Improve home and full-view search for business memory, saved files, and recurring tasks. Keep media-type filters, consistent Open labels, bounded collections, compact schedule rows, frequency labels, and pause visibility controls.
+- Create and adjust recurring tasks through an isolated operation so the main conversation and selected model remain intact. Read back native tasks before confirming saves; show native last-run information and Hermes saved results where available.
+- Protect the current workspace from late state, conversation, file, and library responses. Improve shared layout alignment and scrolling while preserving local-first files, direct native-app/CLI use, and the existing customizable interface.
+
+## v0.2.2 — 2026-10-29
+
+- Added quiet version notices, release notes, Update now, Later, and Skip this version through the existing local interface. Notify me is the default; automatic updates are optional and wait until idle.
+- Combine startup and update preferences in Settings → Startup & updates. Verified native bundles install separately, reopen the same workspace, preserve customizations, and retain the previous app for recovery.
+- Keep credentials, business data, custom views, and native AI apps separate from product updates. Source/customized installations and incompatible workspace changes use manual guidance.
+
 ## v0.2.1 — 2026-10-28
 
 - Added a compact Usage & spend panel with subscription quota windows, masked account history, API balances/allowances where available, and Chat/Today/Month token and cost totals. Distinguish recorded workspace activity from account-wide provider reporting and keep unknown values unavailable.

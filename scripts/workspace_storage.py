@@ -48,13 +48,19 @@ def save_view(root, preferences):
             locations[bid].append({k:item[k] for k in ('id','name','kind')})
             locations[bid][-1].update(path=path.relative_to(root).as_posix() if relative else str(path), relative=relative)
     workspace_catalog.write_json(root / VIEW_FILE, {'format':1, 'file_locations':locations,
-        'appearance':preferences.get('appearance','system'), 'model_picker':preferences.get('model_picker', {})})
+        'appearance':preferences.get('appearance','system'), 'model_picker':preferences.get('model_picker', {}),
+        'library':preferences.get('library',{})})
 
 
 def view_preferences(root):
     data = load_view(root)
     if not isinstance(data.get('model_picker', {}), dict) or data.get('appearance','system') not in {'system','light','dark'}:
         raise ValueError('Saved workspace preferences need attention.')
+    if not isinstance(data.get('library',{}),dict):
+        raise ValueError('Saved library choices need attention.')
+    for prefs in data.get('library',{}).values():
+        if not isinstance(prefs,dict) or any(not isinstance(prefs.get(k,[]),list) or any(not isinstance(v,str) or len(v)>500 for v in prefs.get(k,[])) for k in ('favorites','recent')):
+            raise ValueError('Saved library choices need attention.')
     locations = {}
     for bid, items in data.get('file_locations', {}).items():
         if not isinstance(items, list):

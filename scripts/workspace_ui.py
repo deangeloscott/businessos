@@ -36,6 +36,7 @@ import workspace_startup
 import workspace_catalog
 import workspace_organization
 import workspace_usage
+import workspace_library
 import workspace_updates
 from configure_workspace import configure
 from workspace_execution import Execution, Stopped
@@ -219,8 +220,14 @@ def library():
         title = next((s.lstrip('# ').strip() for s in path.read_text(encoding='utf-8').splitlines() if s.startswith('# ')), path.stem)
         out.append({'title': title, 'path': path.relative_to(PRODUCT_ROOT).as_posix(),
                     'kind': 'Recipe', 'area': path.parent.relative_to(PRODUCT_ROOT / 'recipes').as_posix()})
+    from operating_knowledge import installed_playbooks
+    for row in installed_playbooks():
+        out.append({'title':row['title'],'id':row['id'],'kind':'Workflow','subtype':'Playbook','area':row['owner_system'],
+                    'description':row['summary'],'guidance':'# '+row['title']+'\n\n'+row['summary']+'\n\nExample request: '+row['example']+
+                    ('\n\nStart with workflow '+row['entry_workflow']+' when useful.' if row.get('entry_workflow') else ''),
+                    'key':'workflow:playbook:'+row['id']})
     for row in out:
-        area, path = row['area'], row['path']
+        area, path = row['area'], row.get('path','')
         if row['kind'] == 'Workflow':
             category, group = {
                 'competitor-intelligence': ('Research', 'Competitors'),
@@ -249,7 +256,8 @@ def library():
             group = {'audio':'Audio', 'video':'Video', 'motion-graphics':'Motion graphics',
                      'information-design':'Information design', 'copy-messaging':'Copy & messaging'}.get(
                          area.split('/')[1] if '/' in area else '', 'Creative direction')
-        row.update(category=category, group=group)
+        row.update(category=category, group='Complete business guides' if row.get('subtype')=='Playbook' else group)
+        row.setdefault('key',row['kind'].lower()+':'+path)
     return out
 
 
@@ -387,6 +395,9 @@ class Workspace:
         self.schedule_job = None
         self.schedule_execution = None
         self.catalog = library()
+        self.library_native = {}
+        self.library_refresh_lock = threading.Lock()
+        self.library_checked = 0
         self.verified_business = None
         self.option_cache = {}
         self.usage_accounts = {}
@@ -421,6 +432,8 @@ class Workspace:
             self.preferences['active_chats'] = {}
         if not isinstance(self.preferences.get('model_picker'), dict):
             self.preferences['model_picker'] = {}
+        if not isinstance(self.preferences.get('library'), dict):
+            self.preferences['library'] = {}
         if not isinstance(self.preferences.get('file_locations'), dict):
             self.preferences['file_locations'] = {}
         if not isinstance(self.preferences.get('connected_apps'), dict):
@@ -457,7 +470,7 @@ class Workspace:
     def load_portable(self):
         try:
             portable = workspace_storage.view_preferences(workspace_root())
-            for key in ('file_locations','model_picker','appearance'):
+            for key in ('file_locations','model_picker','appearance','library'):
                 if key in portable:
                     self.preferences[key] = portable[key]
             self.portable_view_ok = True
@@ -1050,6 +1063,45 @@ class Workspace:
                 'scope': 'A saved native conversation.' if self.connection_kind in NATIVE_AGENTS else 'Independent command requests; native chat restoration is not available.',
                 'authentication': 'Owned by the installed agent. Availability is not proof of sign-in.'}
 
+    def library_items(self, discover=False):
+        root=workspace_root().resolve()
+        choices=[c for c in installed_agents() if c['argv']]
+        notes=[]
+        refresh_lock=self.library_refresh_lock
+        if discover and refresh_lock.acquire(blocking=False):
+            try:
+                if time.time()-self.library_checked>15:
+                    env=self.agent_environment()
+                    def read(choice):
+                        previous=self.library_native.get(choice['id'],([],''))[0]
+                        try:
+                            warnings=[]
+                            rows=workspace_library.native(choice,root,env,warnings)
+                            return choice['id'],workspace_library.retain_catalog(previous,rows,bool(warnings)),' '.join(warnings)
+                        except (OSError,ValueError,TypeError,KeyError,AttributeError,subprocess.SubprocessError):
+                            return choice['id'],workspace_library.retain_catalog(previous,[],True),choice['name']+': could not refresh its catalog. Open the app, then try again.'
+                    discovered={}
+                    with ThreadPoolExecutor(max_workers=4) as pool:
+                        for ident,rows,note in pool.map(read,choices):discovered[ident]=(rows,note)
+                    if workspace_root().resolve()==root and self.library_refresh_lock is refresh_lock:
+                        self.library_native=discovered
+                        self.library_checked=time.time()
+            finally:refresh_lock.release()
+        if workspace_root().resolve()!=root:return self.library_items()
+        rows,local_notes=workspace_library.local(root,list(workspace_library.APPS))
+        bundled=workspace_library.skill(PRODUCT_ROOT/'skills/viraltrac-aura/SKILL.md','','bundled:viraltrac-aura','Included with AURA')
+        if bundled:rows.append(bundled)
+        notes+=local_notes
+        for native_rows,note in self.library_native.values():
+            rows+=native_rows
+            if note:notes.append(note)
+        for connection in self.connections.rows()['items']:
+            if connection['status']!='Not added':
+                rows.append(workspace_library.entry('Tool',connection['name'],'A provider API connection. Its AI app checks access when used.',
+                    '', 'api:'+connection['id'],'Key available · Not verified',type='API connection',service=connection['name']))
+        return {'items':workspace_library.organize(self.catalog+workspace_library.merge(rows)),'notes':list(dict.fromkeys(notes)),
+                'checked':self.library_checked,'refreshing':self.library_refresh_lock.locked()}
+
     def state(self, bid=None):
         self.load_portable()
         directory = business_directory()
@@ -1070,6 +1122,7 @@ class Workspace:
                 'notifications': self.preferences.get('notifications') is True,
                 'usage_alerts': self.preferences.get('usage_settings',{}).get(bid,{}).get('alerts') is True,
                 'model_picker': self.preferences['model_picker'],
+                'library_preferences': self.preferences['library'].get(bid, {'favorites':[],'recent':[]}),
                 'preferred_app': self.preferences.get('preferred_app', ''),
                 'onboarding': {'seen': bid in self.preferences.get('seen', [])}}
 
@@ -1542,12 +1595,28 @@ def handler_for(app):
                 elif route == '/api/conversation':
                     self.send(200, app.conversation(selected(query.get('business'))))
                 elif route == '/api/library':
-                    self.send(200, app.catalog)
+                    result=app.library_items(query.get('discover')=='1')
+                    self.send(200, result if query.get('details')=='1' else result['items'])
+                elif route == '/api/library/item':
+                    item=workspace_library.find(app.library_items()['items'],query.get('key'))
+                    if not item:raise ValueError('This item is no longer available. Refresh the library.')
+                    variants=item.get('variants') or [item]
+                    preferred=max(variants,key=lambda v:max((-1 if s.get('status')=='Disabled' else 10*(s.get('app')==query.get('app'))+({'Reported by app':4,'Installed':3,'Configured':2,'Found locally':1}.get(s.get('status'),0)) for s in v.get('sources',[])),default=0))
+                    option=next((v for v in variants if v['key']==query.get('option')),preferred)
+                    if query.get('option') and not any(v['key']==query['option'] or query['option'] in v.get('aliases',[]) for v in variants):
+                        raise ValueError('That option is no longer available. Refresh the library and choose again.')
+                    if query.get('option'):option=next(v for v in variants if v['key']==query['option'] or query['option'] in v.get('aliases',[]))
+                    text=workspace_library.document(option) if item['kind']=='Skill' else option.get('guidance','')
+                    if item.get('path'):text=(PRODUCT_ROOT/item['path']).read_text(encoding='utf-8')[:100000]
+                    location=str((PRODUCT_ROOT/item['path']).resolve()) if item.get('path') else str(PRODUCT_ROOT/'scripts/operating_knowledge.py') if item.get('subtype')=='Playbook' else ''
+                    self.send(200, {'item':item,'option':option,'text':text,'location':location})
                 elif route == '/api/schedules':
                     self.send(200, workspace_schedules.inventory(workspaces=[workspace_root(),
                         *(row['path'] for row in app.recent_workspaces())]))
                 elif route == '/api/schedules/operation':
                     self.send(200, {'job':app.schedule_state(selected(query.get('business')))})
+                elif route == '/api/schedules/result':
+                    self.send(200, workspace_schedules.result(query.get('id',''),[workspace_root()]))
                 elif route == '/api/startup':
                     self.send(200, workspace_startup.status())
                 elif route == '/api/updates':
@@ -1564,7 +1633,7 @@ def handler_for(app):
                     self.send(200, files(bid, app.preferences['file_locations'].get(bid, [])))
                 elif route == '/api/document':
                     path = (PRODUCT_ROOT / query.get('path', '')).resolve()
-                    allowed = any(path == (PRODUCT_ROOT / entry['path']).resolve() for entry in app.catalog)
+                    allowed = any(entry.get('path') and path == (PRODUCT_ROOT / entry['path']).resolve() for entry in app.catalog)
                     if not allowed or path.suffix != '.md' or not path.is_file():
                         raise ValueError('Choose an installed Workflow or recipe.')
                     self.send(200, {'text': path.read_text(encoding='utf-8')[:100000]})
@@ -1907,6 +1976,17 @@ def handler_for(app):
                             app.save_preferences()
                         self.send(200, {**app.notifications(bid), 'claimed': claimed})
                     elif route == '/api/preferences':
+                        if 'library' in data:
+                            bid=selected(data.get('business'))
+                            prefs=data['library']
+                            if not isinstance(prefs,dict):raise ValueError('Choose items from the library.')
+                            clean={}
+                            for field,limit in [('favorites',500),('recent',24)]:
+                                values=prefs.get(field,[])
+                                if not isinstance(values,list) or len(values)>limit or any(not isinstance(v,str) or len(v)>500 or not re.fullmatch(r'(?:workflow|recipe|skill|tool|plugin):[^\r\n\x00]+',v) for v in values):
+                                    raise ValueError('Choose items from the library.')
+                                clean[field]=list(dict.fromkeys(values))
+                            app.preferences['library'][bid]=clean
                         if 'preferred_app' in data:
                             if data['preferred_app'] not in NATIVE_AGENTS | {'configured'}:
                                 raise ValueError('Choose a supported AI app.')
@@ -1942,7 +2022,7 @@ def handler_for(app):
                             seen = app.preferences.setdefault('seen', [])
                             if bid not in seen:
                                 seen.append(bid)
-                        app.save_preferences(portable='appearance' in data or 'model_picker' in data)
+                        app.save_preferences(portable=any(k in data for k in ('appearance','model_picker','library')))
                         self.send(200, {'ok': True})
                     elif route == '/api/chats/new':
                         bid = selected(data.get('business'))

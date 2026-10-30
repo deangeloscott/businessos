@@ -214,12 +214,36 @@ time.sleep(30)
             call(f'/api/file?business={bid}&path='+advert['path'], expect=400)
             assert (linked_folder / 'advert.txt').read_text(encoding='utf-8') == 'Original brand material.'
             catalog = call('/api/library')
-            assert all(r['category'] and r['group'] and r['kind'] in {'Workflow','Recipe'} for r in catalog)
+            assert all(r['category'] and r['group'] and r['key'] and r['kind'] in {'Workflow','Recipe','Skill','Tool','Plugin'} for r in catalog)
+            assert any(r.get('subtype')=='Playbook' for r in catalog)
             assert any(r['kind']=='Workflow' and r['category']=='Research' and r['group']=='Competitors' for r in catalog)
             assert any(r['kind']=='Recipe' and r['category']=='E-commerce' for r in catalog)
             assert any(r['kind'] == 'Workflow' for r in catalog) and any(r['kind'] == 'Recipe' for r in catalog)
             assert call('/api/document?path=' + catalog[0]['path'])['text']
+            assert Path(call('/api/library/item?key='+catalog[0]['key'])['location'])==ROOT/catalog[0]['path']
             call('/api/document?path=scripts/workspace_ui.py', expect=400)
+            skill=next(r for r in catalog if r['kind']=='Skill' and any(s['status']=='Included with AURA' for s in r['sources']))
+            assert call('/api/library/item?key='+skill['key'])['text']
+            call('/api/library/item?key='+skill['key']+'&option=not-an-installed-option',expect=400)
+            guide=next(r for r in catalog if r.get('subtype')=='Playbook')
+            assert guide['description'] in call('/api/library/item?key='+guide['key'])['text']
+            call('/api/library/item?key=../../secrets',expect=400)
+            cached_choice={'id':'codex','name':'Codex','argv':['fixture-only']}
+            cached_tool=__import__('workspace_library').entry('Tool','Retained tool','A previously reported capability.','codex','retained-tool','Reported by app',type='Tool')
+            app.library_native={'codex':([cached_tool],'')};app.library_checked=0
+            with patch('workspace_ui.installed_agents',return_value=[cached_choice]), patch('workspace_library.native',side_effect=ValueError('Fixture refresh failure')):
+                failed_catalog=app.library_items(discover=True)
+            kept=next(r for r in failed_catalog['items'] if r['title']=='Retained tool')
+            assert all(s.get('stale') for s in kept['sources']) and failed_catalog['notes']
+            app.library_checked=0
+            with patch('workspace_ui.installed_agents',return_value=[cached_choice]), patch('workspace_library.native',return_value=[]):
+                recovered_catalog=app.library_items(discover=True)
+            assert not any(r['title']=='Retained tool' for r in recovered_catalog['items'])
+            prefs={'favorites':[skill['key'],'plugin:portable-choice'],'recent':[catalog[0]['key']]}
+            call('/api/preferences',{'business':bid,'library':prefs})
+            assert app.state(bid)['library_preferences']==prefs
+            assert not app.state('other-business')['library_preferences']['favorites']
+            assert Workspace(settings_file=app.settings_file).state(bid)['library_preferences']==prefs
 
             # A real subprocess round trip. The test command is not an AI; this
             # verifies transport and scoping, never model/business capability.

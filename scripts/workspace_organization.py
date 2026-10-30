@@ -266,6 +266,10 @@ def plan(primary,sources,destination,business_map=None,store=None,progress=lambd
             except (OSError,ValueError):issues.append({'kind':'settings','message':'Saved view settings need attention; originals remain available.'})
         else:
             incoming=storage.view_preferences(source) if row['kind']=='workspace' else {}
+            for bid,prefs in incoming.get('library',{}).items():
+                kept=views.setdefault('library',{}).setdefault(groups.get(bid,bid),{})
+                for field,limit in [('favorites',500),('recent',24)]:
+                    kept[field]=list(dict.fromkeys([*kept.get(field,[]),*prefs.get(field,[])]))[:limit]
             for bid,items in incoming.get('file_locations',{}).items():
                 target_bid=groups.get(bid,bid);kept=views.setdefault('file_locations',{}).setdefault(target_bid,[])
                 for item in items:

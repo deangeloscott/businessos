@@ -53,10 +53,17 @@ def rpc(command, calls, cwd, env=None):
             send({'id': 0, 'method': 'initialize', 'params': {'clientInfo': {'name': 'aura_workspace', 'version': '1.0'}}})
             response(0)
             send({'method': 'initialized', 'params': {}})
-            results = []
-            for number, (method, params) in enumerate(calls, 1):
+            number=0
+            def call(method,params):
+                nonlocal number
+                number+=1
                 send({'id': number, 'method': method, 'params': params})
-                results.append(response(number))
+                return response(number)
+            # Adaptive discovery pages stay on the same native connection.
+            if callable(calls):return calls(call)
+            results = []
+            for method,params in calls:
+                results.append(call(method,params))
             return results
         finally:
             ErrorTail.close_input(process)

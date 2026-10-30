@@ -60,6 +60,8 @@ def inventory(codex_home=None, hermes_home=None, workspaces=(), antigravity_home
                        schedule=job.get('schedule_display') or raw, schedule_raw=raw,
                        model=job.get('model') or '', effort=job.get('reasoning_effort') or '',
                        provider=job.get('model_provider') or '',
+                       last_run=job.get('last_run_at') or '', last_status=job.get('last_status') or '',
+                       has_result=bool(result_path(home,job['id'])),
                        status=job.get('state') or ('active' if job.get('enabled', True) else 'paused'),
                        next_run=job.get('next_run_at') or '', workspace=job.get('workdir') or '', editable=True,
                        runtime='Requires the Hermes gateway')
@@ -124,6 +126,30 @@ def inventory(codex_home=None, hermes_home=None, workspaces=(), antigravity_home
         notes.append('Google Antigravity: schedule settings could not be read. Check them in the app.')
     return {'items':items, 'notes':notes,
             'support':'Shows local Codex and Hermes schedules, Pi schedule-prompt jobs in opened workspaces, and Google Antigravity schedule sidecars. Live-chat timers, Claude schedules and cloud-only jobs are not automatically listed. Enabled means configured; the owning app must still be running.'}
+
+
+def result_path(home, native_id):
+    # Only Hermes-owned output, never a path supplied by the browser or job.
+    ident=str(native_id)
+    if not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9._:-]{0,199}',ident):return None
+    root=Path(home)/'cron/output';folder=root/ident
+    if root.is_symlink() or folder.is_symlink() or not folder.is_dir():return None
+    try:
+        paths=[p for p in folder.glob('*.md') if re.fullmatch(r'\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.md',p.name)
+               and p.is_file() and not p.is_symlink() and p.resolve().is_relative_to(root.resolve())]
+        return max(paths,key=lambda p:p.name) if paths else None
+    except OSError:return None
+
+
+def result(ident, workspaces=()):
+    task=next((t for t in inventory(workspaces=workspaces)['items'] if t['id']==ident),None)
+    if not task or task['owner']!='hermes':raise ValueError('This app has not provided a saved result here.')
+    home=roots()[1]
+    if task['profile']!='default':home=home/'profiles'/task['profile']
+    path=result_path(home,task['native_id'])
+    if not path:raise ValueError('This result is no longer available. Check it in Hermes.')
+    if path.stat().st_size>2*1024*1024:raise ValueError('This result is too large to preview. Open it in Hermes.')
+    return {'text':path.read_text(encoding='utf-8',errors='replace'),'name':task['name'],'file':path.name}
 
 
 def invoke(argv, env, execution=None, cwd=None):
