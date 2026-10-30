@@ -39,6 +39,7 @@ import workspace_usage
 import workspace_library
 import workspace_updates
 import workspace_chats
+import workspace_sharing
 from configure_workspace import configure
 from workspace_execution import Execution, Stopped
 from workspace_connections import Connections
@@ -180,6 +181,9 @@ def files(bid, locations=None):
         if not base.exists() or not base.resolve().is_relative_to(base):
             continue
         for directory, dirs, names in os.walk(base, followlinks=False):
+            relative = Path(directory).relative_to(root).parts
+            if len(relative)==4 and relative[:3]==('attachments',bid,'shared'):
+                dirs[:] = [d for d in dirs if d not in {'packages','records'}]
             dirs[:] = [d for d in sorted(dirs) if not private_path(Path(d)) and
                        not (Path(directory) / d).is_symlink()]
             for name in sorted(names):
@@ -1565,7 +1569,7 @@ def handler_for(app):
                 raise ValueError('The workspace changed in another window. Refresh before making changes.')
 
         def do_GET(self):
-            if urlsplit(self.path).path in {'/api/state','/api/files','/api/file','/api/media','/api/conversation'}:
+            if urlsplit(self.path).path in {'/api/state','/api/files','/api/file','/api/media','/api/conversation','/api/sharing'}:
                 with app.lock:self.read_GET()
             else:self.read_GET()
 
@@ -1610,6 +1614,17 @@ def handler_for(app):
                     missing = [workspace_catalog.preview(r['path']) for r in app.recent_workspaces() if not Path(r['path']).is_dir()]
                     self.send(200, {'current':str(workspace_root()), 'recent':app.recent_workspaces(),
                         **discovered, 'items':discovered['items'] + missing, 'default_home':str(workspace_catalog.default_home())})
+                elif route == '/api/sharing':
+                    bid = selected(query.get('business'))
+                    result = workspace_sharing.public_inventory(workspace_root(), bid, app.preferences['file_locations'].get(bid, []))
+                    destinations = []
+                    for path in dict.fromkeys([str(workspace_root()), *(r['path'] for r in app.recent_workspaces())]):
+                        row = workspace_catalog.preview(path)
+                        for item in row['businesses']:
+                            if row['path'] != str(workspace_root()) or item['id'] != bid:
+                                destinations.append({'path':row['path'], 'business':item['id'], 'name':item['name']})
+                    self.send(200, {**result, **workspace_sharing.history(workspace_root(), bid), 'destinations':destinations,
+                                    'default_home':str(workspace_catalog.default_home()), 'workspace':str(workspace_root()), 'business':bid})
                 elif route == '/api/organization':
                     self.send(200,{'job':app.organization_job,'history':workspace_organization.history(app.settings_file.parent)})
                 elif route == '/api/recovery':
@@ -1730,7 +1745,57 @@ def handler_for(app):
                         raise ValueError('Your agent is working. Wait for its reply before changing this workspace.')
                     if route in {'/api/preferences','/api/locations'}:
                         app.load_portable()
-                    if route == '/api/updates':
+                    if route.startswith('/api/sharing/'):
+                        bid = selected(data.get('business'))
+                        action = route.rsplit('/', 1)[1]
+                        store = app.settings_file.parent
+                        if action in {'prepare', 'package'}:
+                            if action == 'prepare':
+                                result = workspace_sharing.prepare(workspace_root(), bid, data.get('keys'), data.get('name',''), data.get('note',''), store,
+                                                                   app.preferences['file_locations'].get(bid, []))
+                            else:
+                                result = workspace_sharing.import_package(data.get('path',''), store)
+                                try:
+                                    workspace_sharing.remember_package(workspace_root(), bid, data['path'])
+                                except (OSError, ValueError):
+                                    result['catalog_note'] = 'The package was read, but its recent location could not be remembered.'
+                            workspace_catalog.write_json(workspace_sharing._job(result['id'], store) / 'ui-scope.json', {'workspace':str(workspace_root()), 'business':bid})
+                        elif action == 'file-key':
+                            original = local_file(bid, str(data.get('ref','')), app.preferences['file_locations'].get(bid, []))
+                            inventory = workspace_sharing.inventory(workspace_root(), bid, app.preferences['file_locations'].get(bid, []))
+                            found = next((row for row in inventory['items'] if row.get('_path') == str(original)), None)
+                            if not found:
+                                raise ValueError('This file is not available for sharing. Choose its project folder or saved Asset.')
+                            result = {'key':found['key']}
+                        elif action == 'selection':
+                            result = workspace_sharing.save_selection(workspace_root(), bid, data.get('name',''), data.get('keys'), data.get('note',''), data.get('selection_id',''), app.preferences['file_locations'].get(bid, []))
+                        elif action == 'discover':
+                            result = workspace_sharing.discover_packages(workspace_root(), bid, app.preferences['file_locations'].get(bid, []), data.get('path') or None)
+                        elif action == 'destination':
+                            row = workspace_catalog.preview(data.get('path',''))
+                            if row['kind'] != 'workspace':
+                                raise ValueError('Choose a saved workspace, or select A new workspace to start one.')
+                            result = {'path':row['path'], 'businesses':row['businesses']}
+                        elif action == 'detail':
+                            result = workspace_sharing.imported_detail(workspace_root(), bid, data.get('receipt'))
+                        elif action == 'undo':
+                            result = workspace_sharing.undo(workspace_root(), bid, data.get('receipt'), data.get('apply') is True)
+                        else:
+                            scope = workspace_catalog.read_json(workspace_sharing._job(data.get('id'), store) / 'ui-scope.json', {})
+                            if scope != {'workspace':str(workspace_root()), 'business':bid}:
+                                raise ValueError('Prepare this sharing review in the currently selected workspace.')
+                            if action == 'review':
+                                result = workspace_sharing.review(data['id'], data.get('path',''), data.get('target_business',''), data.get('new_name',''), store)
+                                if result['destination'] == str(workspace_root()) and result['business'] == bid and (workspace_sharing._job(data['id'], store) / 'source.json').exists():
+                                    raise ValueError('Choose a different business or workspace to receive the copy.')
+                            elif action == 'apply':
+                                result = workspace_sharing.apply(data['id'], data.get('include_updates') is True, store)
+                            elif action == 'export':
+                                result = workspace_sharing.export_package(data['id'], data.get('path',''), store)
+                            else:
+                                raise ValueError('Choose a supported sharing action.')
+                        self.send(200, result)
+                    elif route == '/api/updates':
                         if data.get('action') in {'install', 'rollback'} and workspace_root().resolve().is_relative_to(PRODUCT_ROOT.resolve()):
                             raise ValueError('Move your workspace outside the app folder before updating. Use Add or open a workspace.')
                         self.send(200, app.updates.action(data.get('action'), data.get('policy')))
