@@ -32,6 +32,7 @@ def inventory(codex_home=None, hermes_home=None, workspaces=(), antigravity_home
             append('codex', 'default', data.get('id', path.parent.name),
                    app='Codex', name=data.get('name') or path.parent.name,
                    schedule=data.get('rrule', ''), model=data.get('model', ''),
+                   description=str(data.get('prompt') or ''),
                    effort=data.get('reasoning_effort', data.get('reasoningEffort', '')),
                    status=str(data.get('status', 'unknown')).lower(),
                    next_run=data.get('next_run_at', ''), editable=False,
@@ -55,6 +56,7 @@ def inventory(codex_home=None, hermes_home=None, workspaces=(), antigravity_home
                 raw = schedule.get('expr') or schedule.get('value') or (f"every {schedule['minutes']}m" if schedule.get('minutes') else '')
                 append('hermes', profile, job['id'], app='Hermes' + (f' · {profile}' if profile != 'default' else ''),
                        name=job.get('name') or 'Scheduled task',
+                       description=str(job.get('prompt') or ''),
                        schedule=job.get('schedule_display') or raw, schedule_raw=raw,
                        model=job.get('model') or '', effort=job.get('reasoning_effort') or '',
                        provider=job.get('model_provider') or '',
@@ -80,6 +82,7 @@ def inventory(codex_home=None, hermes_home=None, workspaces=(), antigravity_home
                 raise ValueError('Unsupported Pi schedule format')
             for job in data['jobs'][:200]:
                 append('pi', str(root), job['id'], app='Pi', name=job.get('name') or 'Scheduled prompt',
+                       description=str(job.get('prompt') or ''),
                        schedule=job.get('schedule', ''), model=job.get('model', ''), effort='', provider='',
                        status='enabled' if job.get('enabled') else 'paused', next_run=job.get('nextRun', ''),
                        editable=False, workspace=str(root), session=job.get('session', ''), source_path=str(path),
@@ -110,6 +113,7 @@ def inventory(codex_home=None, hermes_home=None, workspaces=(), antigravity_home
                 settings = enabled.get(ident, {})
                 append('antigravity', 'sidecars', ident, app='Google Antigravity',
                        name=data.get('display_name') or data.get('description') or ident,
+                       description=str(data.get('description') or ''),
                        schedule=args[0], model='', effort='', provider='',
                        status='enabled' if settings.get('enabled') is True else 'paused', next_run='',
                        editable=False, workspace='', source_path=str(path),
@@ -122,7 +126,53 @@ def inventory(codex_home=None, hermes_home=None, workspaces=(), antigravity_home
             'support':'Shows local Codex and Hermes schedules, Pi schedule-prompt jobs in opened workspaces, and Google Antigravity schedule sidecars. Live-chat timers, Claude schedules and cloud-only jobs are not automatically listed. Enabled means configured; the owning app must still be running.'}
 
 
-def update(ident, data, hermes_command, env):
+def invoke(argv, env, execution=None, cwd=None):
+    """Run a native scheduling command, never a shell-built command string."""
+    flags = {'creationflags':subprocess.CREATE_NO_WINDOW} if os.name == 'nt' else {}
+    if execution:
+        with execution.popen(argv, env=env, cwd=cwd, stdin=subprocess.DEVNULL,
+                             stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                             text=True, encoding='utf-8', errors='replace', **flags) as process:
+            try:
+                output, error = process.communicate(timeout=30)
+            except subprocess.TimeoutExpired:
+                execution.stop()
+                raise ValueError('The scheduler timed out. Check the task list before trying again.')
+            execution.check()
+            result = subprocess.CompletedProcess(argv, process.returncode, output, error)
+    else:
+        result = subprocess.run(argv, env=env, cwd=cwd, stdin=subprocess.DEVNULL, capture_output=True,
+                                text=True, encoding='utf-8', errors='replace', timeout=30, **flags)
+    if result.returncode:
+        raise ValueError((result.stderr or result.stdout).strip()[-1500:] or 'The scheduler could not save this change.')
+    return result.stdout
+
+
+def create(data, hermes_command, env, workspace, execution=None):
+    if not hermes_command:
+        raise ValueError('Hermes is not installed. Choose another app or connect Hermes first.')
+    before = inventory()['items']
+    if any(t['owner']=='hermes' and t['profile']=='default' and t['name']==data['name'] for t in before):
+        raise ValueError('A Hermes task already has this name. Open it to make changes or use a different name.')
+    argv = [*hermes_command, 'cron', 'create', data['schedule'], data['description'],
+            '--name', data['name'], '--workdir', str(workspace), '--deliver', 'local']
+    for field, flag in [('model','--model'), ('provider','--provider'), ('effort','--reasoning-effort')]:
+        if data.get(field):
+            argv += [flag, data[field]]
+    native_env = dict(env, HERMES_HOME=str(roots()[1]))
+    invoke(argv, native_env, execution, workspace)
+    old = {t['id'] for t in before}
+    found = [t for t in inventory()['items'] if t['id'] not in old and t['owner']=='hermes'
+             and t['profile']=='default' and t['name']==data['name']]
+    if len(found)!=1 or found[0].get('description')!=data['description']:
+        raise ValueError('The scheduler replied, but the new task could not be confirmed. Check Hermes before trying again.')
+    task=found[0]
+    if any(str(task.get(k) or '') != str(data[k]) for k in ('model','provider','effort') if k in data):
+        raise ValueError('The task was saved, but its model settings could not be confirmed. Check Hermes before trying again.')
+    return task
+
+
+def update(ident, data, hermes_command, env, execution=None):
     # Resolve the opaque ID again instead of accepting a client-supplied command,
     # profile path, or native task ID. Never move a job by rewriting its store.
     task = next((t for t in inventory()['items'] if t['id'] == ident), None)
@@ -138,11 +188,14 @@ def update(ident, data, hermes_command, env):
     argv = [*hermes_command, 'cron', action, task['native_id']]
     changes = []
     if action == 'edit':
-        for field, flag in [('name','--name'), ('schedule','--schedule'), ('model','--model'), ('provider','--provider'), ('effort','--reasoning-effort')]:
+        for field, flag in [('name','--name'), ('description','--prompt'), ('schedule','--schedule'), ('model','--model'), ('provider','--provider'), ('effort','--reasoning-effort')]:
             if field not in data:
                 continue
             value = str(data[field]).strip()
-            if len(value) > 500 or '\n' in value or '\r' in value or (field in {'name','schedule'} and not value):
+            if field == 'description':
+                if not value or len(value) > 20000 or '\x00' in value:
+                    raise ValueError('Enter task instructions of up to 20,000 characters.')
+            elif len(value) > 500 or '\n' in value or '\r' in value or (field in {'name','schedule'} and not value):
                 raise ValueError('Enter a short name and a valid schedule.')
             if field == 'effort' and value not in {'','none','minimal','low','medium','high','xhigh','max','ultra'}:
                 raise ValueError('Choose a supported effort level.')
@@ -153,11 +206,7 @@ def update(ident, data, hermes_command, env):
     native_env = dict(env)
     home = roots()[1]
     native_env['HERMES_HOME'] = str(home if task['profile'] == 'default' else home / 'profiles' / task['profile'])
-    flags = {'creationflags':subprocess.CREATE_NO_WINDOW} if os.name == 'nt' else {}
-    result = subprocess.run(argv, env=native_env, stdin=subprocess.DEVNULL, capture_output=True,
-                            text=True, encoding='utf-8', errors='replace', timeout=30, **flags)
-    if result.returncode:
-        raise ValueError((result.stderr or result.stdout).strip()[-1500:] or 'The scheduler could not save this change.')
+    invoke(argv, native_env, execution)
     refreshed = next((t for t in inventory()['items'] if t['id'] == ident), None)
     if not refreshed:
         raise ValueError('The scheduler replied, but the task could not be read back. Check Hermes before retrying.')

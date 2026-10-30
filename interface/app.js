@@ -33,14 +33,15 @@ function notice(text, error=false) {
 }
 async function attempt(fn) { try { await fn(); } catch(error) { notice(error.message,true); } }
 function empty(title, text, prompt) { return `<div class="empty"><strong>${esc(title)}</strong>${esc(text)}${prompt?`<div class="empty-cta"><button class="text-button" data-prompt="${esc(prompt)}">Ask your AI to help ↗</button></div>`:''}</div>`; }
-function recordRow(r) { return `<button class="row" data-record="${esc(r.ref)}"><span class="row-icon">${r.type==='Asset'?'▧':r.type==='Objective'?'↗':'◈'}</span><span class="row-text"><span class="row-title">${esc(r.title)}</span><span class="row-meta">${esc(({Objective:'Goal',SourceRecord:'Saved source',PreferenceProfile:'Preferences',Observation:'Finding',ProofRecord:'Evidence',MetricObservation:'Measurement'})[r.type]||human(r.type))}${r.data.status?' · '+esc(human(r.data.status)):''}${r.data.updated_at?' · '+stamp(r.data.updated_at):''}</span></span><span class="arrow">↗</span></button>`; }
+function recordRow(r) { return `<button class="row" data-record="${esc(r.ref)}"><span class="row-icon">${r.type==='Asset'?'▧':r.type==='Objective'?'↗':'◈'}</span><span class="row-text"><span class="row-title">${esc(r.title)}</span><span class="row-meta">${esc(({Business:'Business details',Asset:'Saved file',Objective:'Goal',SourceRecord:'Saved source',PreferenceProfile:'Preferences',Observation:'Finding',ProofRecord:'Evidence',MetricObservation:'Measurement'})[r.type]||human(r.type))}${r.data.status?' · '+esc(human(r.data.status)):''}${r.data.updated_at?' · '+stamp(r.data.updated_at):''}</span></span><span class="arrow">↗</span></button>`; }
 function heading(title, subtitle='') { return `<div class="section-head"><div><h2>${title}</h2>${subtitle?`<p>${subtitle}</p>`:''}</div></div>`; }
 
 async function refresh() {
   $('#refresh').disabled=true;
   try {
     state.data=await api('/api/state'+(state.business?'?business='+encodeURIComponent(state.business):''));
-    state.business=state.data.business_id || '';
+    state.business=state.data.business_id || '';state.scheduleJob=state.data.schedule_operation;
+    const scope=state.data.workspace+'|'+state.business;if(state.searchScope&&state.searchScope!==scope){state.memoryQuery='';state.fileQuery='';state.scheduleQuery='';state.scheduleFilter='all';state.scheduleDraft=null;state.showPaused=false;fileFilter='all';state.includeRecords=false;}state.searchScope=scope;
     $('.composer').hidden=!state.business;
     $('#connection').disabled=!state.business;
     $('#chats').disabled=!state.business||state.busy;
@@ -552,10 +553,6 @@ async function stopRequest() {
   try {await api('/api/chat/stop',{business:state.business,id:state.activeJob.id});}
   catch(error){state.stopping=false;state.nextRequest=null;chatControls();throw error;}
 }
-function goalSection(limit=4) {
-  const goals=rows('Objective');
-  return `<div class="section-head"><h2>Goals</h2><button class="text-button" data-action="add-goal">＋ Add</button></div><div class="card">${goals.length?goals.slice(0,limit).map(r=>`<button class="row" data-record="${esc(r.ref)}"><span class="row-text"><span class="row-title">${esc(r.title)}</span></span><span class="arrow">→</span></button>`).join(''):empty('What are you working toward?','Add a goal when you’re ready.')}</div>${goals.length>limit?'<button class="text-button" data-view="business">See all goals →</button>':''}`;
-}
 function usefulFile(f) {
   if(!f.asset&&(/\/imports\/[^/]+\/(instances|runtime|\.businessos)\//.test(f.path)||/\.source\.txt$/.test(f.path)))return false;
   return !!f.asset || !!f.location || f.path.startsWith('attachments/') || f.path.startsWith(`knowledge/${state.business}/notes/`) || rows('Asset').some(r=>r.data.location_reference===f.path);
@@ -563,32 +560,25 @@ function usefulFile(f) {
 async function overview() {
   const [fileData, libraryData, schedules]=await Promise.all([api('/api/files?business='+encodeURIComponent(state.business)),state.library.length?Promise.resolve(state.library):api('/api/library'),api('/api/schedules').catch(()=>({items:[],notes:['Schedules could not be read. Try refreshing.']}))]);
   state.files=fileData.items;state.fileLocations=fileData.locations||[]; state.library=libraryData;state.schedules=schedules;
-  const recent=state.files.filter(usefulFile).sort((a,b)=>b.modified-a.modified).slice(0,3);
-  const goals=rows('Objective');
-  const context=rows('Brand','Offer','AudienceSegment','Competitor','Insight','Learning','PreferenceProfile','SourceRecord').filter(r=>r.data.source_type!=='organization_initialization_input');
-  const watches=rows('SourceProfile').filter(r=>r.data.watch_status||r.data.next_check_at);
   const attention=rows('AttentionItem','WorkRequest','Incident').filter(r=>!['resolved','completed','archived','closed'].includes(r.data.status));
-  const defaults=[state.library.find(r=>r.kind==='Workflow'&&r.title==='Pricing Intelligence'),state.library.find(r=>r.kind==='Workflow'&&/Brand Profile/i.test(r.title)),state.library.find(r=>r.kind==='Recipe')].filter(Boolean);
   $('#view').innerHTML=`<div class="workspace-heading"><h2>Your workspace</h2><p>Keep the context. Find the work. Choose what to do next.</p></div><div class="workspace-grid">
-    <section class="workspace-card" aria-labelledby="business-card-title"><div class="card-heading"><h3 id="business-card-title">Business & memory</h3><button class="text-button" data-view="business">Open →</button></div><p class="card-description">Your goals, research, preferences, and decisions.</p><div class="mini-heading"><span>Goals</span><button class="text-button" data-action="add-goal">＋ Add</button></div>${goals.length?goals.slice(0,2).map(r=>`<button class="row compact" data-record="${esc(r.ref)}"><span class="row-text"><span class="row-title">${esc(r.title)}</span></span><span class="arrow">→</span></button>`).join(''):'<p class="muted">Add a goal to give your work a direction.</p>'}${context.length?`<div class="context-preview"><span class="muted">Saved context</span>${context.slice(0,1).map(recordRow).join('')}</div>`:'<button class="text-button card-link" data-prompt="Help me add the business context we need for our next task. Ask only what matters, use what is already saved, and remember my explicit facts and preferences in AURA.">Add business information →</button>'}</section>
-    <section class="workspace-card" aria-labelledby="files-card-title"><div class="card-heading"><h3 id="files-card-title">Saved files & media</h3><button class="text-button" data-view="files">Browse →</button></div><p class="card-description">Open the notes, images, and work you’ve kept.</p>${recent.length?recent.map(f=>`<button class="row file-preview-row" data-file="${esc(f.path)}"><span class="preview-icon" data-thumbnail="${esc(f.path)}">${f.media?'◈':'▤'}</span><span class="row-text"><span class="row-title">${esc(f.name)}</span><span class="row-meta">${size(f.bytes)} · ${stamp(f.modified*1000)}</span></span><span class="arrow">→</span></button>`).join(''):'<p class="empty">Your saved work will appear here.</p>'}<button class="text-button card-link" data-add-location>＋ Add files or folder</button></section>
-    <section class="workspace-card" aria-labelledby="methods-card-title"><div class="card-heading"><h3 id="methods-card-title">Workflows & recipes</h3><button class="text-button" data-view="work">Browse →</button></div><p class="card-description">Find a useful method, or let your AI choose.</p><label class="sr-only" for="quick-work-search">Find a workflow or recipe</label><input id="quick-work-search" class="search" type="search" placeholder="Try competitors, content, or a website…"><div class="library-choices"><button class="secondary" data-library-kind="Workflow"><strong>Workflows</strong><small>Steps for getting business work done</small></button><button class="secondary" data-library-kind="Recipe"><strong>Recipes</strong><small>Creative and production guidance</small></button></div><div id="quick-methods"></div></section>
-    <section class="workspace-card" aria-labelledby="tasks-card-title"><div class="card-heading"><h3 id="tasks-card-title">Recurring tasks</h3><button class="text-button" data-view="tools">Open →</button></div><p class="card-description">See scheduled work across your AI apps.</p><div id="schedule-preview">${schedules.items.length?schedules.items.slice(0,2).map(scheduleRow).join(''):watches.length?watches.slice(0,2).map(recordRow).join(''):'<div class="recurring-empty"><span class="schedule-icon">↻</span><p>No recurring tasks yet.</p></div>'}</div><button class="secondary" data-view="tools">＋ Create a recurring task</button><p class="small-note">${schedules.notes.length?'Some schedules could not be read. Open to check.':watches.length&&!schedules.items.length?'Saved plans are not active schedules.':'Each task stays with the app that runs it.'}</p></section>
+    <section class="workspace-card" aria-labelledby="business-card-title"><div class="card-heading"><h3 id="business-card-title">Business & memory</h3><button class="text-button" data-view="business">Open →</button></div><p class="card-description">Your goals, research, preferences, and decisions.</p><input id="quick-memory-search" class="search" type="search" aria-label="Search business and memory" placeholder="Find goals or saved information…" value="${esc(state.memoryQuery||'')}"><div id="quick-memory" class="preview-list" tabindex="0" aria-label="Business and memory results"></div></section>
+    <section class="workspace-card" aria-labelledby="files-card-title"><div class="card-heading"><h3 id="files-card-title">Saved files & media</h3><button class="text-button" data-view="files">Open →</button></div><p class="card-description">Open the notes, images, and work you’ve kept.</p><input id="quick-file-search" class="search" type="search" aria-label="Search saved files and media" placeholder="Find a file…" value="${esc(state.fileQuery||'')}">${fileTypeFilters('home')}<div id="quick-files" class="preview-list" tabindex="0" aria-label="Saved file results"></div><button class="text-button card-link" data-add-location>＋ Add files or folder</button></section>
+    <section class="workspace-card" aria-labelledby="methods-card-title"><div class="card-heading"><h3 id="methods-card-title">Workflows & recipes</h3><button class="text-button" data-view="work">Open →</button></div><p class="card-description">Find a useful method, or let your AI choose.</p><label class="sr-only" for="quick-work-search">Find a workflow or recipe</label><input id="quick-work-search" class="search" type="search" placeholder="Try competitors, content, or a website…"><div class="library-choices"><button class="secondary" data-library-kind="Workflow"><strong>Workflows</strong><small>Steps for getting business work done</small></button><button class="secondary" data-library-kind="Recipe"><strong>Recipes</strong><small>Creative and production guidance</small></button></div><div id="quick-methods"></div></section>
+    <section class="workspace-card" aria-labelledby="tasks-card-title"><div class="card-heading"><h3 id="tasks-card-title">Recurring tasks</h3><button class="text-button" data-view="tools">Open →</button></div><p class="card-description schedule-intro">See scheduled work across your AI apps. <button class="text-button" data-schedules-help>How it works</button></p><input id="quick-schedule-search" class="search" type="search" aria-label="Search recurring tasks" placeholder="Find a recurring task…" value="${esc(state.scheduleQuery||'')}">${scheduleFilters('home')}${scheduleOperationMarkup()}<div id="schedule-preview" class="preview-list" tabindex="0" aria-label="Recurring task results"></div><button class="secondary card-link" data-view="tools" data-add-recurring>＋ Add recurring task</button>${schedules.notes.length?'<p class="small-note">Some schedules could not be read. Open to check.</p>':''}</section>
   </div>${attention.length?heading('Needs your attention')+`<div class="card">${attention.slice(0,2).map(recordRow).join('')}</div>`:''}`;
   state.overviewAt=state.data.refreshed;
-  for(const file of recent.filter(f=>/\.(png|jpe?g|webp|gif|avif)$/i.test(f.path)&&f.bytes<=8*1048576)) {
-    try {const url=await mediaBlob(file.path);const holder=[...$('#view').querySelectorAll('[data-thumbnail]')].find(el=>el.dataset.thumbnail===file.path);if(holder){const img=document.createElement('img');img.alt='';img.src=url;holder.replaceChildren(img);}} catch { /* Original file remains available. */ }
-  }
+  renderMemory();renderQuickFiles();renderSchedules();
 }
 function methodRow(method) {return `<button class="row compact" data-method="${esc(method.path)}"><span class="row-text"><span class="row-title">${esc(method.title)}</span><span class="row-meta">${esc(method.kind)}</span></span><span class="arrow">→</span></button>`;}
 function quickMethods() {
   const q=($('#quick-work-search')?.value||'').trim().toLowerCase();
   if(!q){$('#quick-methods').innerHTML='';return;}
   const groups=['Workflow','Recipe'].map(kind=>({kind,items:state.library.filter(r=>r.kind===kind&&(r.title+' '+r.category+' '+r.group+' '+(r.id||'')).toLowerCase().includes(q))}));
-  $('#quick-methods').innerHTML=groups.filter(g=>g.items.length).map(g=>`<h4>${g.kind==='Workflow'?'Workflows':'Recipes'}</h4>${g.items.slice(0,3).map(methodRow).join('')}<button class="text-button card-link" data-library-kind="${g.kind}">Browse ${g.kind==='Workflow'?'workflows':'recipes'} →</button>`).join('')||'<p class="muted">No match. You can still describe the job to your AI.</p>';
+  $('#quick-methods').innerHTML=groups.filter(g=>g.items.length).map(g=>`<h4>${g.kind==='Workflow'?'Workflows':'Recipes'}</h4>${g.items.slice(0,3).map(methodRow).join('')}<button class="text-button card-link" data-library-kind="${g.kind}">Open ${g.kind==='Workflow'?'workflows':'recipes'} →</button>`).join('')||'<p class="muted">No match. You can still describe the job to your AI.</p>';
 }
 async function render() {
-  state.urls.forEach(URL.revokeObjectURL); state.urls=[];
+  state.urls.forEach(URL.revokeObjectURL); state.urls=[];state.mediaCache=new Map();state.fileObserver?.disconnect();
   if(!state.business){state.view='home';$('#section-dialog').close();}
   const view=state.view==='home'?$('#view'):$('#section-content');
   if(!state.business) {
@@ -605,11 +595,11 @@ async function render() {
   $('#section-title').textContent=({business:'Business & memory',files:'Saved files & media',work:'Workflows & recipes',tools:'Recurring tasks'})[state.view];
   if(!$('#section-dialog').open) $('#section-dialog').showModal();
   if(state.view==='business') {
-    view.innerHTML=`<div class="section-head business-title"><h3>${esc(rows('Business')[0]?.title)}</h3><button class="text-button" data-action="edit-business">Edit name</button></div>`+goalSection(Number.MAX_SAFE_INTEGER)+`<div class="section-head"><h2>About your business</h2><button class="text-button" data-prompt="Help me add useful business context to AURA. Ask only what matters for our current work and preserve my explicit facts and preferences. Do not invent facts.">＋ Add information</button></div><input class="search" id="record-search" type="search" aria-label="Search business information" placeholder="Find something you’ve saved…"><div id="memory-list" class="card"></div><details><summary>All saved information</summary><div class="card">${state.data.records.map(recordRow).join('')}</div></details>`;
+    view.innerHTML=`<div class="section-head business-title"><h3>${esc(rows('Business')[0]?.title)}</h3><button class="text-button" data-action="edit-business">Edit name</button></div><input class="search" id="record-search" type="search" aria-label="Search goals and saved information" placeholder="Find goals or saved information…" value="${esc(state.memoryQuery||'')}"><div id="full-memory"></div>`;
     renderMemory();
   } else if(state.view==='files') {
-    const result=await api('/api/files?business='+encodeURIComponent(state.business)); state.files=result.items;state.fileLocations=result.locations||[];state.missingAssets=result.missing_assets||[];fileFilter='work';fileLocation='';
-    view.innerHTML=`<div class="section-head"><p>Workspace files and the locations you’ve linked.</p><button class="secondary" data-add-location>＋ Add files or folder</button></div><div class="linked-locations">${state.fileLocations.map(l=>`<div class="linked-location"><button ${l.missing?'data-reconnect-location':'data-filelocation'}="${esc(l.id)}"><strong>${esc(l.name)}</strong><small>${l.missing?'Location missing · Reconnect':l.kind==='folder'?'Linked folder':'Linked file'}</small></button><button data-unlink-location="${esc(l.id)}" aria-label="Unlink ${esc(l.name)}">✕</button></div>`).join('')}</div>${state.missingAssets.length?`<details class="missing-files"><summary>${state.missingAssets.length} saved file${state.missingAssets.length===1?' has moved or is':'s have moved or are'} unavailable</summary>${state.missingAssets.map(f=>`<button class="row" data-reconnect-asset="${esc(f.ref)}">${esc(f.name)} · Reconnect →</button>`).join('')}</details>`:''}<input class="search" id="file-search" type="search" aria-label="Search saved files" placeholder="Find a file…"><div class="filters"><button class="active" data-filefilter="work">All saved</button><button data-filefilter="media">Images & media</button><button id="file-all-locations" class="text-button" hidden>All locations</button></div><div id="file-list" class="file-grid"></div><details><summary>Browse workspace records</summary><button class="secondary" data-filefilter="all">Show workspace records too</button></details>${result.limited?'<p class="muted">This view is limited to the first 1,000 workspace files and 1,000 linked files. Your AI can search the original folders for more.</p>':''}`;
+    const result=await api('/api/files?business='+encodeURIComponent(state.business)); state.files=result.items;state.fileLocations=result.locations||[];state.missingAssets=result.missing_assets||[];fileLocation='';
+    view.innerHTML=`<div class="section-head"><p>Workspace files and the locations you’ve linked.</p><button class="secondary" data-add-location>＋ Add files or folder</button></div><div class="linked-locations">${state.fileLocations.map(l=>`<div class="linked-location"><button ${l.missing?'data-reconnect-location':'data-filelocation'}="${esc(l.id)}"><strong>${esc(l.name)}</strong><small>${l.missing?'Location missing · Reconnect':l.kind==='folder'?'Linked folder':'Linked file'}</small></button><button data-unlink-location="${esc(l.id)}" aria-label="Unlink ${esc(l.name)}">✕</button></div>`).join('')}</div>${state.missingAssets.length?`<details class="missing-files"><summary>${state.missingAssets.length} saved file${state.missingAssets.length===1?' has moved or is':'s have moved or are'} unavailable</summary>${state.missingAssets.map(f=>`<button class="row" data-reconnect-asset="${esc(f.ref)}">${esc(f.name)} · Reconnect →</button>`).join('')}</details>`:''}<input class="search" id="file-search" type="search" aria-label="Search saved files" placeholder="Find a file…" value="${esc(state.fileQuery||'')}">${fileTypeFilters('full')}<button id="file-all-locations" class="text-button" hidden>All locations</button><div id="file-list" class="file-grid bounded-list" tabindex="0" aria-label="Saved files"></div><details><summary>Workspace records</summary><button class="secondary" id="include-workspace-records">${state.includeRecords?'Hide workspace records':'Show workspace records too'}</button></details>${result.limited?'<p class="muted">This view is limited to the first 1,000 workspace files and 1,000 linked files. Your AI can search the original folders for more.</p>':''}`;
     renderFiles();
   } else if(state.view==='work') {
     if(!state.library.length) state.library=await api('/api/library');
@@ -618,26 +608,58 @@ async function render() {
   } else if(state.view==='tools') {
     const watches=rows('SourceProfile').filter(r=>r.data.watch_status||r.data.next_check_at);
     const schedules=state.schedules||{items:[],notes:[]};
-    view.innerHTML=`<div class="section-head"><p>Schedules across your AI apps, regardless of your current chat.</p><button class="text-button" id="refresh-schedules">Refresh</button></div><div id="schedule-list" class="card">${schedules.items.length?schedules.items.map(scheduleRow).join(''):empty('No native schedules found.','Create a recurring task below. Your AI will confirm when it is active.')}</div><p id="schedule-read-notes" class="error" ${schedules.notes.length?'':'hidden'}>${schedules.notes.map(esc).join('<br>')}</p><details class="schedule-support"><summary>Connected schedulers</summary><p class="muted">${esc(schedules.support||'Schedule discovery is unavailable.')}</p></details><h3>Create a recurring task</h3><form class="form-grid" id="schedule-form"><label>What should happen?<input name="job" required maxlength="2000" placeholder="Check competitor pricing"></label><label>When?<input name="when" required maxlength="300" placeholder="Every Monday at 9am"></label><button class="primary">Send to AI →</button></form>`+(watches.length?heading('Saved monitoring plans','These are business plans, not proof of an active schedule.')+`<div class="card">${watches.map(recordRow).join('')}</div>`:'');
+    view.innerHTML=`${scheduleForm()}<div class="section-head"><p>Schedules across your AI apps. <button class="text-button" data-schedules-help>How it works</button></p><button class="text-button" id="refresh-schedules">Refresh</button></div>${scheduleOperationMarkup()}<input class="search" id="schedule-search" type="search" aria-label="Search all recurring tasks" placeholder="Find a recurring task…" value="${esc(state.scheduleQuery||'')}">${scheduleFilters('full')}<div id="schedule-list" class="bounded-list" tabindex="0" aria-label="Recurring tasks"></div><p id="schedule-read-notes" class="error" ${schedules.notes.length?'':'hidden'}>${schedules.notes.map(esc).join('<br>')}</p>`+(watches.length?heading('Saved monitoring plans','These are business plans, not proof of an active schedule.')+`<div class="card">${watches.map(recordRow).join('')}</div>`:'');
+    $('#schedule-add').addEventListener('toggle',()=>{state.scheduleAdding=$('#schedule-add').open;if(state.scheduleAdding&&!$('#schedule-add').dataset.loaded)loadScheduleModels();});
+    if(state.scheduleAdding)loadScheduleModels();
+    renderSchedules();
   }
 }
 
-let fileFilter='work', fileLocation='', workFilter='Workflow', workCategory='';
-function renderMemory() {
-  const q=($('#record-search')?.value||'').toLowerCase();
-  const list=state.data.records.filter(r=>!['Business','Objective'].includes(r.type)&&(q||r.data.source_type!=='organization_initialization_input')&&(r.title+' '+pretty(r.data)).toLowerCase().includes(q));
-  $('#memory-list').innerHTML=list.length?list.map(recordRow).join(''):empty('Nothing saved here yet.','Add information, or let your AI learn through your work.');
+let fileFilter='all', fileLocation='', workFilter='Workflow', workCategory='';
+function recordMatches(record,q) {return !q||(record.title+' '+pretty(record.data)).toLowerCase().includes(q);}
+const addContextPrompt='Help me add useful business context to AURA. Ask only what matters for our current work and preserve my explicit facts and preferences. Do not invent facts.';
+function memoryGroups(q) {
+  return {goals:rows('Objective').filter(r=>recordMatches(r,q)),context:state.data.records.filter(r=>r.type!=='Objective'&&(q||r.data.source_type!=='organization_initialization_input')&&recordMatches(r,q))};
 }
+function renderMemory() {
+  const q=(state.memoryQuery||'').trim().toLowerCase(),{goals,context}=memoryGroups(q);
+  for(const id of ['quick-memory-search','record-search'])if($('#'+id)&&$('#'+id).value!==(state.memoryQuery||''))$('#'+id).value=state.memoryQuery||'';
+  const group=(title,items,action,home)=>`<div class="mini-heading memory-heading"><${home?'span':'h3'}>${title}</${home?'span':'h3'}>${action}</div><div class="${home?'':'card bounded-list memory-results'}" ${home?'':'tabindex="0" aria-label="'+title+'"'}>${items.length?(home?items.slice(0,q?4:2):items).map(recordRow).join(''):`<p class="small-note">${q?'No matching '+title.toLowerCase()+'.':'Nothing saved here yet.'}</p>`}</div>`;
+  const goalAdd='<button class="text-button" data-action="add-goal">＋ Add</button>',contextAdd=`<button class="text-button" data-prompt="${esc(addContextPrompt)}">＋ Add</button>`;
+  const quick=$('#quick-memory');if(quick)quick.innerHTML=q&&!goals.length&&!context.length?'<p class="small-note">No matching goals or saved information.</p>':group('Goals',goals,goalAdd,true)+group('Saved context',context,contextAdd,true);
+  const full=$('#full-memory');if(full)full.innerHTML=q&&!goals.length&&!context.length?empty('No matches.','Try another name or phrase.'):group('Goals',goals,goalAdd,false)+group('Saved context',context,contextAdd,false);
+}
+const fileKinds=[['all','All'],['images','Images'],['videos','Videos'],['audio','Audio'],['documents','Documents'],['other','Other']];
+function fileKind(file) {
+  const ext=(file.name||file.path).split('.').pop().toLowerCase();
+  return /^(png|jpe?g|gif|webp|avif|svg|heic|bmp|tiff?|ico)$/.test(ext)?'images':/^(mp4|webm|mov|m4v|mkv|avi|mpe?g)$/.test(ext)?'videos':/^(mp3|wav|ogg|oga|m4a|aac|flac|opus|aiff|wma)$/.test(ext)?'audio':/^(pdf|docx?|xlsx?|pptx?|od[tsp]|txt|md|csv|json|ya?ml|html?|rtf|log|py|js|ts|css|xml)$/.test(ext)?'documents':'other';
+}
+function fileTypeFilters(scope) {return `<div class="filters compact-filters" aria-label="File types">${fileKinds.map(([kind,name])=>`<button type="button" data-filetype="${kind}" aria-pressed="${fileFilter===kind}" class="${fileFilter===kind?'active':''}">${name}</button>`).join('')}</div>`;}
+function matchingFiles(includeRecords=false) {
+  const q=(state.fileQuery||'').trim().toLowerCase();
+  return state.files.filter(f=>(includeRecords||usefulFile(f))&&(fileFilter==='all'||fileKind(f)===fileFilter)&&(f.path+' '+f.name+' '+(f.location_name||'')).toLowerCase().includes(q)).sort((a,b)=>b.modified-a.modified);
+}
+function renderQuickFiles() {
+  const target=$('#quick-files');if(!target)return;
+  for(const id of ['quick-file-search','file-search'])if($('#'+id)&&$('#'+id).value!==(state.fileQuery||''))$('#'+id).value=state.fileQuery||'';
+  document.querySelectorAll('[data-filetype]').forEach(b=>{b.classList.toggle('active',b.dataset.filetype===fileFilter);b.setAttribute('aria-pressed',String(b.dataset.filetype===fileFilter));});
+  const matches=matchingFiles(),shown=matches.slice(0,4);
+  target.innerHTML=shown.length?shown.map(f=>`<button class="row file-preview-row" data-file="${esc(f.path)}"><span class="preview-icon" data-thumbnail="${esc(f.path)}">${fileKind(f)==='images'?'◈':fileKind(f)==='videos'?'▷':fileKind(f)==='audio'?'♪':'▤'}</span><span class="row-text"><span class="row-title">${esc(f.name)}</span><span class="row-meta">${size(f.bytes)} · ${stamp(f.modified*1000)}</span></span><span class="arrow">→</span></button>`).join('')+(matches.length>shown.length?`<button class="text-button card-link" data-view="files">Open all ${matches.length} matches →</button>`:''):'<p class="small-note">No matching saved files.</p>';
+  for(const file of shown.filter(f=>fileKind(f)==='images'&&f.media&&f.bytes<=8*1048576))mediaBlob(file.path).then(url=>{const el=[...target.querySelectorAll('[data-thumbnail]')].find(e=>e.dataset.thumbnail===file.path);if(el?.isConnected){const img=document.createElement('img');img.alt='';img.src=url;el.replaceChildren(img);}}).catch(()=>{});
+}
+
 function mediaURL(path) { return '/api/media?business='+encodeURIComponent(state.business)+'&path='+encodeURIComponent(path); }
 async function mediaBlob(path) {
-  const response=await fetch(mediaURL(path),{headers:{'X-Aura-Token':token}});
-  if(!response.ok) throw new Error((await response.json()).error);
-  const url=URL.createObjectURL(await response.blob()); state.urls.push(url); return url;
+  const cache=state.mediaCache??=new Map(),key=state.business+'|'+path;
+  if(cache.has(key))return cache.get(key);
+  const promise=(async()=>{const response=await fetch(mediaURL(path),{headers:{'X-Aura-Token':token}});if(!response.ok)throw new Error((await response.json()).error);const url=URL.createObjectURL(await response.blob());state.urls.push(url);return url;})();
+  cache.set(key,promise);promise.catch(()=>cache.delete(key));return promise;
 }
+
 function renderFiles() {
-  const q=($('#file-search')?.value||'').toLowerCase();
-  const assets=new Set(rows('Asset').map(r=>r.data.location_reference));
-  const matches=state.files.filter(f=>(!fileLocation||f.location===fileLocation)&&(fileFilter==='all'||(fileFilter==='media'?f.media:usefulFile(f)))&&(f.path+' '+f.name+' '+(f.location_name||'')).toLowerCase().includes(q));
+  if(!$('#file-list'))return;
+  state.fileObserver?.disconnect();
+  const matches=matchingFiles(state.includeRecords).filter(f=>!fileLocation||f.location===fileLocation);
   $('#file-list').innerHTML=matches.length?matches.map(f=>`<button class="file-card" data-file="${esc(f.path)}"><span class="file-thumb">${f.media?'◈':'▤'}</span><div class="file-info"><strong>${esc(f.name)}</strong><small>${esc(f.location_name||'Workspace')} · ${size(f.bytes)}</small></div></button>`).join(''):empty('No matching files here yet.','Link a file or folder, or save work in this workspace.');
   let loaded=0;
   const observer=new IntersectionObserver(entries=>entries.forEach(async entry=>{
@@ -648,7 +670,7 @@ function renderFiles() {
     loaded++;
     try { const url=await mediaBlob(file.path); if(!entry.target.isConnected) return; const img=document.createElement('img'); img.alt=''; img.src=url; entry.target.querySelector('.file-thumb').replaceChildren(img); } catch { /* File location remains usable if a thumbnail is unavailable. */ }
   }));
-  $('#file-list').querySelectorAll('.file-card').forEach(e=>observer.observe(e));
+  state.fileObserver=observer;$('#file-list').querySelectorAll('.file-card').forEach(e=>observer.observe(e));
 }
 function renderWork() {
   $('#section-title').textContent=workFilter==='Recipe'?'Recipes':'Workflows';
@@ -675,18 +697,165 @@ function reconnectLocation(id, asset=false) {
   const kind=asset?'file':item.kind;
   details('Reconnect '+item.name,`<p>Choose its current location. Your saved reference is kept.</p><form id="reconnect-location-form" class="form-grid"><input type="hidden" name="${asset?'asset':'replace'}" value="${esc(id)}"><label>New location<input name="path" id="location-path" required value="${esc(item.path)}"></label><button type="button" class="secondary" data-browse-location="${kind}">Choose ${kind}…</button>${asset?'<button type="button" class="text-button" data-browse-location="folder">Choose folder…</button>':''}<button class="primary">Reconnect</button></form>`);
 }
-function scheduleRow(task) {
-  return `<button class="row" data-schedule="${esc(task.id)}"><span class="row-text"><span class="row-title">${esc(task.name)}</span><span class="row-meta">${esc(task.app)} · ${esc(task.model||'App default model')} · ${esc(task.status)}</span><span class="row-meta">${esc(task.schedule||'Schedule managed in app')}</span>${task.runtime?`<span class="row-meta">${esc(task.runtime)}</span>`:''}</span><span>→</span></button>`;
+const scheduleKinds=[['all','All'],['daily','Daily'],['weekly','Weekly'],['monthly','Monthly']];
+function scheduleInfo(task) {
+  const raw=String(task.schedule_raw||task.schedule||'').trim(),upper=raw.toUpperCase();
+  let kind='other',label='Custom',clock=Infinity,summary=raw||'Managed in app';
+  const freq=upper.match(/(?:^|[;:])FREQ=(DAILY|WEEKLY|MONTHLY|HOURLY|YEARLY)(?:;|$)/);
+  const time=(h,m)=>new Date(2000,0,1,h,m).toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'});
+  if(freq) {
+    kind=({DAILY:'daily',WEEKLY:'weekly',MONTHLY:'monthly'})[freq[1]]||'other';
+    label=({DAILY:'Daily',WEEKLY:'Weekly',MONTHLY:'Monthly',HOURLY:'Hourly',YEARLY:'Yearly'})[freq[1]];
+    const h=upper.match(/(?:^|;)BYHOUR=(\d{1,2})(?:;|$)/),m=upper.match(/(?:^|;)BYMINUTE=(\d{1,2})(?:;|$)/),interval=upper.match(/(?:^|;)INTERVAL=(\d+)(?:;|$)/);
+    if(interval&&Number(interval[1])>1)label='Every '+interval[1]+' '+({DAILY:'days',WEEKLY:'weeks',MONTHLY:'months',HOURLY:'hours',YEARLY:'years'})[freq[1]];
+    if(h&&Number(h[1])<24&&(!m||Number(m[1])<60)){clock=Number(h[1])*60+Number(m?.[1]||0);summary=time(Number(h[1]),Number(m?.[1]||0));}
+    else summary='Managed in app';
+    const days=upper.match(/(?:^|;)BYDAY=([A-Z,]+)(?:;|$)/),date=upper.match(/(?:^|;)BYMONTHDAY=([\d,]+)(?:;|$)/);
+    if(days)summary=days[1].split(',').map(d=>({MO:'Mon',TU:'Tue',WE:'Wed',TH:'Thu',FR:'Fri',SA:'Sat',SU:'Sun'})[d]||d).join(', ')+' · '+summary;
+    if(date)summary='Day '+date[1]+' · '+summary;
+  } else {
+    const fields=raw.split(/\s+/),cron=fields.length===6&&fields[0]==='0'?fields.slice(1):fields;
+    if(cron.length===5&&/^\d{1,2}$/.test(cron[0])&&/^\d{1,2}$/.test(cron[1])&&Number(cron[0])<60&&Number(cron[1])<24) {
+      clock=Number(cron[1])*60+Number(cron[0]);summary=time(Number(cron[1]),Number(cron[0]));
+      if(cron[2]==='*'&&cron[3]==='*'&&cron[4]==='*'){kind='daily';label='Daily';}
+      else if(cron[2]==='*'&&cron[3]==='*'&&cron[4]!=='*'){kind='weekly';label='Weekly';const names=cron[4].split(',').map(d=>['Sun','Mon','Tue','Wed','Thu','Fri','Sat','Sun'][Number(d)]||d);summary=(cron[4]==='1-5'?'Weekdays':names.join(', '))+' · '+summary;}
+      else if(cron[2]!=='*'&&cron[3]==='*'&&cron[4]==='*'){kind='monthly';label='Monthly';summary='Day '+cron[2]+' · '+summary;}
+      else summary=raw;
+    } else if(/^every \d+[mhd]$/i.test(raw)){const n=Number(raw.match(/\d+/)[0]),unit=raw.slice(-1).toLowerCase();label='Every '+n+' '+({m:'min',h:'hr',d:'days'})[unit];summary='Repeats';if(unit==='d')kind='daily';}
+    else if(/daily|every day/i.test(raw)){kind='daily';label='Daily';}
+    else if(/weekly|every week/i.test(raw)){kind='weekly';label='Weekly';}
+    else if(/monthly|every month/i.test(raw)){kind='monthly';label='Monthly';}
+  }
+  const value=task.next_run,number=typeof value==='number'||/^\d+(?:\.\d+)?$/.test(String(value||''))?Number(value):NaN;
+  const parsed=Number.isFinite(number)?(number<1e11?number*1000:number):Date.parse(value);
+  const next=Number.isFinite(parsed)&&parsed>Date.now()-60000?parsed:null;
+  const paused=/^(paused|disabled|stopped|cancelled|archived)$/i.test(task.status);
+  return {kind,label,clock,summary,next,paused};
+}
+async function scheduleOperation(payload) {
+  if(state.scheduleStarting)return;state.scheduleStarting=true;renderScheduleOperation();
+  try {
+    state.scheduleJob=await api('/api/schedules/action',{business:state.business,...payload});
+    state.dismissedScheduleJob=null;renderScheduleOperation();if(state.scheduleJob.status!=='working')await syncSchedules(true).catch(()=>{});
+  } catch(error){
+    state.scheduleJob={id:'local-'+Date.now(),status:'error',message:error.status===400?error.message:'Task setup couldn’t connect to AURA. Try again when the connection is back.'};state.dismissedScheduleJob=null;
+  } finally {state.scheduleStarting=false;renderScheduleOperation();}
+}
+async function createSchedule(chosen) {await scheduleOperation({...chosen,action:'create'});}
+function scheduleOperationMarkup(){return '<div data-schedule-operation class="schedule-operation" hidden role="status"></div>';}
+function renderScheduleOperation() {
+  const job=state.scheduleJob,working=state.scheduleStarting||job?.status==='working';
+  document.querySelectorAll('[data-schedule-operation]').forEach(box=>{
+    box.hidden=!job||job.id===state.dismissedScheduleJob;if(box.hidden)return;
+    const signature=JSON.stringify([job.id,job.status,job.message,job.task_id]);if(box.dataset.signature===signature)return;box.dataset.signature=signature;
+    box.innerHTML=`<div class="schedule-feedback"><span class="${job.status==='error'?'error':''}">${job.status==='complete'?'✓ ':''}${esc(job.message)}</span><span class="schedule-feedback-actions">${working?'<button type="button" class="text-button" data-stop-schedule>Stop</button>':`${job.task_id?`<button type="button" class="text-button" data-open-schedule="${esc(job.task_id)}">View task</button>`:''}<button type="button" class="text-button" data-dismiss-schedule aria-label="Dismiss task status">✕</button>`}</span></div>${job.status==='needs_input'?'<form class="schedule-answer"><input name="request" required maxlength="2000" aria-label="Answer the task setup question" placeholder="Your answer…"><button class="secondary">Continue →</button></form>':''}`;
+  });
+  for(const selector of ['#create-schedule','#task-edit-form .primary','#task-request-form .primary','#task-edit-form [data-task-status]']){const button=$(selector);if(button)button.disabled=working||(selector==='#create-schedule'&&(!$('#schedule-model')?.value||$('#schedule-model')?.disabled));}
+}
+async function syncScheduleOperation() {
+  if(!state.business||state.scheduleOperationLoading||state.closed)return;
+  state.scheduleOperationLoading=true;
+  try {
+    const previous=state.scheduleJob?.status;
+    state.scheduleJob=(await api('/api/schedules/operation?business='+encodeURIComponent(state.business))).job;
+    renderScheduleOperation();
+    if(previous==='working'&&state.scheduleJob?.status!=='working')await syncSchedules(true);
+  } finally {state.scheduleOperationLoading=false;}
+}
+function scheduleForm() {
+  const current=state.data.connection,apps=current.choices.filter(c=>c.available&&nativeApps.includes(c.id));
+  const draft=state.scheduleDraft??={name:'',description:'',when:'',app:apps.some(c=>c.id===current.selected)?current.selected:apps[0]?.id||'',model:current.model||'',effort:current.effort||''};
+  return `<details id="schedule-add" class="schedule-add" ${state.scheduleAdding?'open':''}><summary>＋ Add recurring task</summary><form class="form-grid" id="schedule-form"><div class="schedule-basics"><label>Task name<input name="name" required maxlength="200" value="${esc(draft.name)}" placeholder="Weekly competitor check"></label><label>When?<input name="when" required maxlength="300" value="${esc(draft.when)}" placeholder="Every Monday at 9am"></label></div><label>What should it do?<textarea name="description" required rows="2" maxlength="20000" placeholder="Check competitor pricing and summarize meaningful changes.">${esc(draft.description)}</textarea></label><div class="schedule-run-with"><label>AI app<select name="app" id="schedule-app" required>${apps.map(c=>`<option value="${esc(c.id)}" ${c.id===draft.app?'selected':''}>${esc(c.name)}</option>`).join('')||'<option value="">Connect an AI app first</option>'}</select></label><label>Model<select name="model" id="schedule-model" required disabled><option>Finding models…</option></select></label><label id="schedule-effort-label" hidden>Effort<select name="effort" id="schedule-effort"></select></label></div><p id="schedule-create-status" class="small-note" role="status"></p><div class="inline-actions"><button class="primary" id="create-schedule" disabled>Create task →</button><button type="button" class="text-button" id="schedule-retry-models" hidden>Try again</button></div></form></details>`;
+}
+async function loadScheduleModels(refresh=false) {
+  const app=$('#schedule-app')?.value;if(!app)return;
+  const select=$('#schedule-model'),draft=state.scheduleDraft;if(select.dataset.loading===app)return;select.dataset.loading=app;const request=state.scheduleModelRequest=(state.scheduleModelRequest||0)+1;
+  $('#create-schedule').disabled=true;$('#create-schedule').textContent='Create with '+(state.data.connection.choices.find(c=>c.id===app)?.name||human(app))+' →';select.disabled=true;select.innerHTML='<option value="">Finding models…</option>';$('#schedule-effort-label').hidden=true;$('#schedule-retry-models').hidden=true;$('#schedule-create-status').textContent='';
+  try {
+    const options=await api('/api/agent-options?kind='+encodeURIComponent(app)+(refresh?'&refresh=1':''));
+    if(request!==state.scheduleModelRequest||!select.isConnected)return;
+    state.scheduleModels=options.models;$('#schedule-add').dataset.loaded=app;
+    if(!options.models.length)throw Error('No models found. Check this app’s connection or choose another app.');
+    select.innerHTML=options.models.map(m=>`<option value="${esc(m.id)}">${esc(m.name)}</option>`).join('');
+    const preferred=draft.model||(app===state.data.connection.selected?state.data.connection.model:'');
+    select.value=options.models.some(m=>m.id===preferred)?preferred:options.models[0].id;draft.model=select.value;select.disabled=false;
+    await loadScheduleEfforts();
+  } catch(error) {
+    if(request!==state.scheduleModelRequest||!select.isConnected)return;
+    $('#schedule-create-status').textContent=simpleSetupError(error.message);$('#schedule-retry-models').hidden=false;$('#create-schedule').disabled=true;
+  } finally {if(request===state.scheduleModelRequest)delete select.dataset.loading;}
+}
+async function loadScheduleEfforts() {
+  const app=$('#schedule-app').value,model=$('#schedule-model').value,select=$('#schedule-effort'),draft=state.scheduleDraft;
+  const chosen=state.scheduleModels?.find(m=>m.id===model);if(!chosen)return;
+  $('#create-schedule').disabled=true;select.disabled=true;
+  try {
+    if(chosen.discover_efforts&&!chosen.efforts_loaded){Object.assign(chosen,await api('/api/agent-efforts?kind='+encodeURIComponent(app)+'&model='+encodeURIComponent(model)));chosen.efforts_loaded=true;}
+    if(!select.isConnected||app!==$('#schedule-app').value||model!==$('#schedule-model').value)return;
+    const efforts=chosen.efforts||[];
+    select.innerHTML=efforts.map(e=>`<option value="${esc(e)}">${esc(({xhigh:'Extra high',max:'Maximum'})[e]||human(e))}</option>`).join('')||'<option value="">App default</option>';
+    const preferred=draft.effort||(app===state.data.connection.selected&&model===state.data.connection.model?state.data.connection.effort:'');
+    select.value=efforts.includes(preferred)?preferred:chosen.default_effort||efforts[0]||'';draft.effort=select.value;
+    $('#schedule-effort-label').hidden=!efforts.length;select.disabled=false;
+    $('#schedule-create-status').textContent='';$('#create-schedule').textContent='Create with '+(state.data.connection.choices.find(c=>c.id===app)?.name||human(app))+' →';renderScheduleOperation();
+  } catch(error) {if(select.isConnected&&app===$('#schedule-app').value&&model===$('#schedule-model').value){$('#schedule-create-status').textContent=simpleSetupError(error.message);$('#schedule-retry-models').hidden=false;}}
+}
+function scheduleFilters(scope) {return `<div class="schedule-controls"><div class="filters compact-filters" aria-label="Recurring task frequency">${scheduleKinds.map(([kind,name])=>`<button type="button" data-schedulefilter="${kind}" aria-pressed="${(state.scheduleFilter||'all')===kind}" class="${(state.scheduleFilter||'all')===kind?'active':''}">${name}</button>`).join('')}</div><label class="show-paused"><input type="checkbox" data-show-paused ${state.showPaused?'checked':''}>Show paused</label></div>`;}
+function orderedSchedules(items,query='',filter='all') {
+  const q=query.trim().toLowerCase();
+  return items.map(task=>({task,info:scheduleInfo(task)})).filter(({task,info})=>(filter==='all'||info.kind===filter)&&(task.name+' '+task.app+' '+(task.model||'')+' '+(task.description||'')+' '+task.status+' '+info.label+' '+info.summary).toLowerCase().includes(q)).sort((a,b)=>{
+    const rank=i=>i.paused?2:i.next?0:1;
+    return rank(a.info)-rank(b.info)||(a.info.next??Infinity)-(b.info.next??Infinity)||a.info.clock-b.info.clock||a.task.name.localeCompare(b.task.name);
+  });
+}
+function scheduleRow(task,preview=false) {
+  const info=scheduleInfo(task),next=info.paused?'Paused':info.next?'Next · '+new Date(info.next).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'Next run not reported';
+  return `<button class="row schedule-row" ${preview?'data-example-task':'data-schedule'}="${esc(task.id)}"><span class="row-text"><span class="schedule-name"><span class="row-title">${esc(task.name)}</span><span class="schedule-timing"><span class="frequency-label">${esc(info.label)}</span><span>${esc(info.summary)}</span></span></span><span class="schedule-meta"><span>${esc(task.app)} · ${esc(task.model||'App default')}${task.effort?' · '+esc(human(task.effort)):''}${!info.paused?' · '+esc(human(task.status||'Status not reported')):''}</span><span class="schedule-next">${esc(next)}</span></span></span><span class="arrow">→</span></button>`;
+}
+function scheduleMarkup(items,query,filter,limit=Infinity,preview=false) {
+  const visible=items.filter(t=>(preview?state.exampleShowPaused:state.showPaused)||!scheduleInfo(t).paused),ordered=orderedSchedules(visible,query,filter);
+  if(!ordered.length)return '<p class="small-note">'+(items.length?(query||filter!=='all'||(preview?state.exampleShowPaused:state.showPaused)?'No matching recurring tasks.':'No active recurring tasks. '):'No recurring tasks found.')+'</p>';
+  const selected=ordered.slice(0,limit),sections=[];
+  const grouped=rows=>{const groups=new Map();for(const row of rows){const name=row.info.kind==='other'?row.info.label:scheduleKinds.find(([kind])=>kind===row.info.kind)[1];if(!groups.has(name))groups.set(name,[]);groups.get(name).push(row);}const rank=name=>({Daily:0,Weekly:1,Monthly:2})[name]??3;return [...groups].map(([name,rows])=>({name,rows})).sort((a,b)=>rank(a.name)-rank(b.name)||a.name.localeCompare(b.name));};
+  const groups=grouped(selected.filter(r=>!r.info.paused&&r.info.next));
+  for(const group of groups)sections.push(`<section class="schedule-group"><h4>${esc(group.name)}</h4>${group.rows.map(r=>scheduleRow(r.task,preview)).join('')}</section>`);
+  const unknown=selected.filter(r=>!r.info.paused&&!r.info.next),paused=selected.filter(r=>r.info.paused);
+  if(unknown.length)sections.push(`<section class="schedule-group"><h4>Next run not reported</h4>${grouped(unknown).map(g=>`<h5>${esc(g.name)}</h5>${g.rows.map(r=>scheduleRow(r.task,preview)).join('')}`).join('')}</section>`);
+  if(paused.length)sections.push(`<section class="schedule-group"><h4>Paused</h4>${paused.map(r=>scheduleRow(r.task,preview)).join('')}</section>`);
+  return sections.join('')+(ordered.length>limit?`<button class="text-button card-link" data-view="tools">Open all ${ordered.length} matches →</button>`:'');
+}
+function renderSchedules() {
+  const items=state.schedules?.items||[],q=state.scheduleQuery||'',filter=state.scheduleFilter||'all';
+  for(const id of ['quick-schedule-search','schedule-search'])if($('#'+id)&&$('#'+id).value!==q)$('#'+id).value=q;
+  document.querySelectorAll('[data-show-paused]').forEach(c=>c.checked=!!state.showPaused);
+  document.querySelectorAll('[data-schedulefilter]').forEach(b=>{b.classList.toggle('active',b.dataset.schedulefilter===filter);b.setAttribute('aria-pressed',String(b.dataset.schedulefilter===filter));});
+  if($('#schedule-preview'))$('#schedule-preview').innerHTML=scheduleMarkup(items,q,filter,3);
+  if($('#schedule-list'))$('#schedule-list').innerHTML=scheduleMarkup(items,q,filter);
+  renderScheduleOperation();
+}
+function scheduleHelp() {
+  details('How recurring tasks work',`<p>Your AI app runs each task. AURA shows the schedules it can read, grouped Daily, Weekly, then Monthly. Tasks within each group follow their next reported run time.</p><p>Open a task to read its instructions or adjust it. Supported changes save directly in its app. Other changes go to your AI to complete and confirm.</p><p>Some apps save a schedule without reporting its next run time. Those tasks appear below upcoming work. Show paused includes tasks you’ve paused.</p><p>AURA can list local Codex and Hermes tasks, Pi tasks in opened workspaces, and saved Google Antigravity schedules. Other tasks may only be visible in their own app.</p>${!(state.schedules?.items||[]).length?'<button class="secondary" data-schedule-example>Preview example →</button>':''}`);
+}
+function taskSummary(task) {
+  const info=scheduleInfo(task);
+  return `<div class="task-summary"><span>${esc(task.app)} · ${esc(task.model||'App default')}${task.effort?' · '+esc(human(task.effort)):''}</span><span>${esc(info.label)} · ${esc(info.summary)}</span><span>${info.paused?'Paused':esc(human(task.status||'Status not reported'))}${info.next?' · Next '+esc(new Date(info.next).toLocaleString()):''}</span></div><p class="task-description">${esc(task.description||'Task instructions aren’t reported by this app.')}</p>`;
+}
+function showScheduleExample(id) {
+  state.exampleFilter='all';
+  const nextDaily=hour=>{const date=new Date();date.setHours(hour,0,0,0);if(date<=new Date())date.setDate(date.getDate()+1);return date.toISOString();};
+  const week=new Date();week.setHours(9,0,0,0);week.setDate(week.getDate()+(1-week.getDay()+7)%7);if(week<=new Date())week.setDate(week.getDate()+7);
+  const month=new Date();month.setDate(1);month.setHours(9,0,0,0);if(month<=new Date())month.setMonth(month.getMonth()+1);
+  if(!id||!state.scheduleExamples)state.scheduleExamples=[['Daily overview','Codex','RRULE:FREQ=DAILY;BYHOUR=8;BYMINUTE=0',nextDaily(8),'Summarize today’s priorities from our saved goals and unfinished work.'],['Content check','Hermes','0 15 * * *',nextDaily(15),'Review scheduled content and flag anything that needs attention.'],['Weekly review','Pi','0 9 * * 1',week.toISOString(),'Review the past week’s progress and recommend the next priorities.'],['Monthly summary','Google Antigravity','0 9 1 * *',month.toISOString(),'Summarize the month’s results and open questions.'],['Competitor scan','Hermes','0 10 * * *',null,'Check saved competitors for meaningful pricing changes.'],['Paused research','Hermes','0 11 * * *',null,'Find useful customer research and save relevant findings.']].map(([name,app,schedule,next_run,description],i)=>({id:'example-'+i,name,app,model:i===0?'gpt-5.6-luna':'',schedule,next_run,description,status:i===5?'paused':'active'}));
+  const sample=state.scheduleExamples,task=sample.find(t=>t.id===id);
+  if(task){details(task.name,`<p class="sample-label">Example only · nothing is scheduled.</p>${taskSummary(task)}<p>Real tasks have change controls here for their timing, model, and status.</p><button class="secondary" data-schedule-example>Back to example</button>`);return;}
+  details('Recurring tasks example',`<p class="sample-label">Example only · nothing is scheduled. Open a task to see its details.</p><div class="schedule-controls"><div class="filters compact-filters">${scheduleKinds.map(([kind,name])=>`<button type="button" data-examplefilter="${kind}" class="${kind==='all'?'active':''}" aria-pressed="${kind==='all'}">${name}</button>`).join('')}</div><label class="show-paused"><input type="checkbox" data-example-paused ${state.exampleShowPaused?'checked':''}>Show paused</label></div><div id="schedule-example-list" class="bounded-list">${scheduleMarkup(sample,'','all',Infinity,true)}</div>`);
 }
 async function syncSchedules(force=false) {
   if(state.closed||(document.hidden&&!force)||!state.business||state.scheduleLoading)return;
   state.scheduleLoading=true;
   try {
     const schedules=await api('/api/schedules');state.schedules=schedules;
-    const list=$('#schedule-list');
-    if(list)list.innerHTML=schedules.items.length?schedules.items.map(scheduleRow).join(''):empty('No schedules found here.','Describe recurring work below. Your AI will confirm what it can set up.');
-    const preview=$('#schedule-preview');
-    if(preview)preview.innerHTML=schedules.items.length?schedules.items.slice(0,2).map(scheduleRow).join(''):rows('SourceProfile').filter(r=>r.data.watch_status||r.data.next_check_at).slice(0,2).map(recordRow).join('')||'<div class="recurring-empty"><span class="schedule-icon">↻</span><p>No recurring tasks yet.</p></div>';
+    renderSchedules();
     const notes=$('#schedule-read-notes');if(notes){notes.textContent=schedules.notes.join(' ');notes.hidden=!schedules.notes.length;}
   } finally {state.scheduleLoading=false;}
 }
@@ -794,8 +963,9 @@ function updateTaskTiming() {
 async function scheduleDetails(id) {
   const task=state.schedules.items.find(t=>t.id===id);if(!task)return;
   state.editingTask=task;
-  details(task.name,`<p class="muted">${esc(task.app)} · ${esc(task.status)}${task.runtime?' · '+esc(task.runtime):''}${task.next_run?' · Next: '+esc(task.next_run):''}</p><details class="task-options"><summary>Task settings</summary><form id="task-edit-form" class="form-grid"><label>AI app<select name="app">${state.data.connection.choices.filter(c=>c.available||c.id===task.owner).map(c=>`<option value="${esc(c.id)}" ${c.id===task.owner?'selected':''}>${esc(c.name)}</option>`).join('')}</select></label><label>Task name<input name="name" value="${esc(task.name)}" maxlength="200" required></label>${taskTiming(task)}<label>Model<select name="model" id="task-model"><option value="">App default</option>${task.model?`<option value="${esc(task.provider?task.provider+':'+task.model:task.model)}" selected>${esc(task.model)}</option>`:''}</select><small class="muted" id="task-model-note"></small></label><div class="inline-actions"><button class="primary">${task.editable?'Save changes':'Ask AI to adjust'}</button>${task.editable?`<button type="button" class="secondary" data-task-status="${task.status==='paused'?'resume':'pause'}">${task.status==='paused'?'Resume':'Pause'}</button>`:''}</div><p class="small-note" id="task-edit-note">${task.editable?'Changes are saved through the native scheduler.':'This app requires its native scheduling controls. Your AI will need to confirm any change there.'}</p></form></details>`);
-  $('#detail-content > p').insertAdjacentHTML('afterend',`<form id="task-request-form" class="form-grid"><label>What would you like to change?<input name="request" required maxlength="2000" placeholder="Move this to Monday mornings"></label><button class="primary">Ask AI →</button></form>`);
+  details(task.name,`${taskSummary(task)}${scheduleOperationMarkup()}${task.runtime?`<p class="small-note">${esc(task.runtime)}</p>`:''}<details class="task-options"><summary>Task settings</summary><form id="task-edit-form" class="form-grid"><label>AI app<select name="app">${state.data.connection.choices.filter(c=>c.available||c.id===task.owner).map(c=>`<option value="${esc(c.id)}" ${c.id===task.owner?'selected':''}>${esc(c.name)}</option>`).join('')}</select></label><label>Task name<input name="name" value="${esc(task.name)}" maxlength="200" required></label><label>Instructions<textarea name="description" rows="3" maxlength="20000" ${task.description?'':'placeholder="Describe what this task should do"'}>${esc(task.description||'')}</textarea></label>${taskTiming(task)}<label>Model<select name="model" id="task-model"><option value="">App default</option>${task.model?`<option value="${esc(task.provider?task.provider+':'+task.model:task.model)}" selected>${esc(task.model)}</option>`:''}</select><small class="muted" id="task-model-note"></small></label><div class="inline-actions"><button class="primary">${task.editable?'Save changes':'Ask AI to adjust'}</button>${task.editable?`<button type="button" class="secondary" data-task-status="${task.status==='paused'?'resume':'pause'}">${task.status==='paused'?'Resume':'Pause'}</button>`:''}</div><p class="small-note" id="task-edit-note">${task.editable?'Changes are saved through the native scheduler.':'This app requires its native scheduling controls. Your AI will need to confirm any change there.'}</p></form></details>`);
+  $('#detail-content .task-options').insertAdjacentHTML('beforebegin',`<form id="task-request-form" class="form-grid"><label>What would you like to change?<input name="request" required maxlength="2000" placeholder="Move this to Monday mornings"></label><button class="primary">Ask AI →</button></form>`);
+  renderScheduleOperation();
   const options=$('#detail-content .task-options');
   options.addEventListener('toggle',()=>{if(options.open&&!options.dataset.loaded){options.dataset.loaded='true';taskModels(task.owner).catch(()=>{});}});
 }
@@ -853,7 +1023,7 @@ async function fileDetails(path) {
   if(f.media) {
     try {
       const url=await mediaBlob(f.path);
-      const el=document.createElement(/\.(mp4|webm)$/i.test(f.path)?'video':/\.(mp3|wav|ogg)$/i.test(f.path)?'audio':'img');
+      const el=document.createElement(fileKind(f)==='videos'?'video':fileKind(f)==='audio'?'audio':'img');
       el.src=url; el.className='media-preview'; if(el.tagName==='IMG')el.alt=f.name; else el.controls=true;
       $('#file-preview').replaceChildren(el);
     } catch(e) { $('#file-preview').textContent=e.message; }
@@ -1048,8 +1218,17 @@ document.addEventListener('click',event=>attempt(async()=>{
   if(button.dataset.workcategory){workCategory=button.dataset.workcategory;if(state.view!=='work'){state.view='work';workFilter='Workflow';await render();}else renderWork();}
   if(button.id==='work-all-topics'){workCategory='';renderWork();}
   if(button.id==='refresh-schedules'){await syncSchedules(true);}
+  if(button.id==='schedule-retry-models')await loadScheduleModels(true);
   if(button.dataset.schedule)await scheduleDetails(button.dataset.schedule);
-  if(button.dataset.taskStatus){button.disabled=true;try{await api('/api/schedules/update',{id:state.editingTask.id,action:button.dataset.taskStatus});$('#detail').close();await refresh();notice('Schedule updated in '+state.editingTask.app+'.');}finally{button.disabled=false;}}
+  if(button.dataset.schedulefilter){state.scheduleFilter=button.dataset.schedulefilter;renderSchedules();}
+  if(button.hasAttribute('data-schedule-example'))showScheduleExample();
+  if(button.hasAttribute('data-schedules-help'))scheduleHelp();
+  if(button.dataset.exampleTask)showScheduleExample(button.dataset.exampleTask);
+  if(button.dataset.examplefilter){state.exampleFilter=button.dataset.examplefilter;button.parentElement.querySelectorAll('button').forEach(b=>{b.classList.toggle('active',b===button);b.setAttribute('aria-pressed',String(b===button));});$('#schedule-example-list').innerHTML=scheduleMarkup(state.scheduleExamples,'',button.dataset.examplefilter,Infinity,true);}
+  if(button.dataset.taskStatus)await scheduleOperation({id:state.editingTask.id,app:state.editingTask.owner,action:button.dataset.taskStatus});
+  if(button.hasAttribute('data-stop-schedule')){await api('/api/schedules/stop',{business:state.business,operation_id:state.scheduleJob.id});await syncScheduleOperation();}
+  if(button.hasAttribute('data-dismiss-schedule')){state.dismissedScheduleJob=state.scheduleJob.id;renderScheduleOperation();}
+  if(button.dataset.openSchedule){await syncSchedules(true);await scheduleDetails(button.dataset.openSchedule);}
   if(button.id==='close-section') {state.view='home';$('#section-dialog').close();}
   if(button.id==='new-chat'&&!state.busy) {await api('/api/chats/new',{business:state.business});state.chat=[];state.chatMeta=null;state.liveJob=null;$('#request').value='';showMessages();taskStatus('');$('#request').focus();notice('New chat. Your saved business context is still available.');}
   if(button.id==='chats') {
@@ -1059,11 +1238,12 @@ document.addEventListener('click',event=>attempt(async()=>{
   if(button.dataset.chat){const result=await api('/api/chats/open',{business:state.business,id:button.dataset.chat});state.chat=result.messages;state.chatMeta=result.chat;$('#detail').close();notice('');await refresh();showMessages();if(result.history_note)notice(result.history_note);taskStatus(result.history_note?'Saved display restored':'Chat restored from '+state.data.connection.name);}
   if(button.id==='copy-native-chat'){const c=state.chatMeta,commands={codex:'codex resume',pi:'pi --session',omp:'omp --resume',claude:'claude --resume',hermes:'hermes --resume',antigravity:'agy --conversation'};await navigator.clipboard.writeText(commands[c.agent]+' '+JSON.stringify(c.native_id));button.textContent='Copied';}
   if(button.dataset.close) $('#'+button.dataset.close).close();
-  if(button.dataset.view) { $('#more-dialog').close(); if(!state.data.diagnostics.length)notice(''); state.view=button.dataset.view; fileFilter='all'; workFilter='Workflow';workCategory=''; await render(); }
+  if(button.dataset.view) { if(button.dataset.view==='tools')state.scheduleAdding=button.hasAttribute('data-add-recurring');$('#more-dialog').close(); if(!state.data.diagnostics.length)notice(''); state.view=button.dataset.view; workFilter='Workflow';workCategory=''; await render(); }
   if(button.dataset.prompt) prompt(button.dataset.prompt);
   if(button.dataset.record) recordDetails(button.dataset.record);
   if(button.dataset.file) await fileDetails(button.dataset.file);
-  if(button.dataset.filefilter) { fileFilter=button.dataset.filefilter; $('#section-content').querySelectorAll('[data-filefilter]').forEach(b=>b.classList.toggle('active',b===button)); renderFiles(); }
+  if(button.dataset.filetype) {fileFilter=button.dataset.filetype;renderQuickFiles();renderFiles();}
+  if(button.id==='include-workspace-records'){state.includeRecords=!state.includeRecords;button.textContent=state.includeRecords?'Hide workspace records':'Show workspace records too';renderFiles();}
   if(button.dataset.workfilter) { workFilter=button.dataset.workfilter;workCategory=''; button.parentElement.querySelectorAll('button').forEach(b=>b.classList.toggle('active',b===button)); renderWork(); }
   if(button.dataset.method) {
     const method=state.library.find(m=>m.path===button.dataset.method); if(!method) return;
@@ -1178,7 +1358,7 @@ document.addEventListener('click',event=>attempt(async()=>{
   if(button.id==='refresh') {if(!state.busy)state.hydrated=false;await refresh();}
   if(button.id==='location') { await navigator.clipboard.writeText(state.data.workspace); $('#more-dialog').close(); notice('Folder location copied.'); }
 }));
-document.addEventListener('input',event=>{ if(event.target.id==='quick-work-search')quickMethods(); if(event.target.id==='record-search')renderMemory(); if(event.target.id==='file-search')renderFiles(); if(event.target.id==='work-search')renderWork();if(['task-time','task-every','task-custom'].includes(event.target.id))updateTaskTiming(); });
+document.addEventListener('input',event=>{ if(event.target.id==='quick-work-search')quickMethods(); if(['quick-memory-search','record-search'].includes(event.target.id)){state.memoryQuery=event.target.value;renderMemory();} if(['quick-file-search','file-search'].includes(event.target.id)){state.fileQuery=event.target.value;renderQuickFiles();renderFiles();} if(['quick-schedule-search','schedule-search'].includes(event.target.id)){state.scheduleQuery=event.target.value;renderSchedules();} if(event.target.id==='work-search')renderWork();if(['task-time','task-every','task-custom'].includes(event.target.id))updateTaskTiming(); });
 document.addEventListener('submit',event=>{
   event.preventDefault();
   attempt(async()=>{
@@ -1219,15 +1399,13 @@ document.addEventListener('submit',event=>{
     try {
       if(['location-form','reconnect-location-form'].includes(form.id)){await api(data.get('asset')?'/api/files/reconnect':'/api/locations',{business:state.business,path:data.get('path'),name:data.get('name'),replace:data.get('replace'),ref:data.get('asset')});$('#detail').close();state.view='files';await refresh();notice('Linked. Your AI can reference this location when it helps your work.');}
       if(form.id==='task-edit-form'){
-        const task=state.editingTask, app=data.get('app');
-        if(app===task.owner&&task.editable){
-          const changes={id:task.id,action:'edit'};
-          for(const key of ['name','schedule','model'])if(data.has(key)&&data.get(key)!==(key==='schedule'?(task.schedule_raw||task.schedule):key==='model'?(task.provider&&task.model?task.provider+':'+task.model:task.model):task[key]))changes[key]=data.get(key);
-          await api('/api/schedules/update',changes);$('#detail').close();await refresh();notice('Changes saved in '+task.app+'.');
-        }else{
-          const request=`${app===task.owner?'Adjust':'Move'} the existing scheduled task ${JSON.stringify(task.name)}, owned by ${task.app}, profile ${task.profile}, native task ID ${JSON.stringify(task.native_id)}. Requested AI app: ${app}. Name: ${JSON.stringify(data.get('name'))}. Schedule: ${JSON.stringify(data.get('schedule'))}. Model: ${JSON.stringify(data.get('model')||'app default')}. Use supported native scheduling controls. Do not edit undocumented scheduler storage or create duplicate schedules. If moving, confirm the replacement is active before pausing the old task; report both actual states. Preserve other task settings, timezone and delivery preferences. If you cannot manage either scheduler, explain the exact remaining action without claiming success.`;
-          prompt(request);await submitRequest(request);
+        const task=state.editingTask,app=data.get('app'),moving=app!==task.owner;
+        const changes={id:task.id,app,action:moving?'move':'edit'};
+        for(const key of ['name','description','schedule','model']){
+          const original=key==='schedule'?(task.schedule_raw||task.schedule):key==='model'?(task.provider&&task.model?task.provider+':'+task.model:task.model):task[key];
+          if(data.has(key)&&(moving||data.get(key)!==(original||'')))changes[key]=data.get(key);
         }
+        await scheduleOperation(changes);
       }
       if(form.id==='setup-form') { const result=await api('/api/setup',{name:data.get('name')});state.drafts??={};state.drafts[state.business]=$('#request').value;$('#request').value=state.drafts[result.business_id]||'';state.business=result.business_id; state.view='home'; state.chat=[];state.chatMeta=null;state.hydrated=false; state.setupStep='welcome';state.connectionChecks=null;state.welcome=null;showMessages();$('#detail').close(); notice('Ready. What would you like to do?'); await refresh(); }
       if(['goal-form','edit-goal-form','business-form'].includes(form.id)) { await api('/api/save',{business:state.business,kind:form.id==='business-form'?'business':'goal',name:data.get('name'),ref:form.dataset.ref}); $('#detail').close(); notice('Saved.'); await refresh(); }
@@ -1237,14 +1415,11 @@ document.addEventListener('submit',event=>{
       }
       if(form.id==='task-request-form') {
         const task=state.editingTask;
-        const request=`For “${task.name}” in ${task.app}: ${data.get('request')}`;
-        prompt(request);await submitRequest(request,task.id);
+        await scheduleOperation({id:task.id,app:task.owner,action:'request',request:data.get('request')});
       }
-      if(form.id==='schedule-form') {
-        const request=`Set up recurring work for our AURA business: ${data.get('job')}. Timing: ${data.get('when')}. Confirm timezone if needed. Check existing native tasks first to avoid duplicates. Use your actual supported scheduler or operating system; report the scheduler owner, native task ID, confirmation and next run. Save only useful business intent and a supported reference to the native task in AURA. If scheduling is unavailable, say so clearly. Do not claim that saving a plan creates a schedule.`;
-        prompt(request); await submitRequest(request);
-      }
-    } finally { if(submit)submit.disabled=false; }
+      if(form.classList.contains('schedule-answer'))await scheduleOperation({operation_id:state.scheduleJob.id,request:data.get('request')});
+      if(form.id==='schedule-form')await createSchedule(Object.fromEntries(data));
+    } finally { if(submit)submit.disabled=false;renderScheduleOperation(); }
   });
 });
 for(const id of ['business','setup-workspace-select'])$('#'+id).addEventListener('change',event=>attempt(()=>changeWorkspace(event.target.value)));
@@ -1257,12 +1432,24 @@ $('#model-list-view').addEventListener('change',()=>attempt(async()=>{modelPicke
 $('#provider-checkboxes').addEventListener('change',event=>attempt(async()=>{const id=event.target.dataset.modelProvider;if(!id)return;const picker=modelPicker();picker.providers=event.target.checked?[...new Set([...picker.providers,id])]:picker.providers.filter(v=>v!==id);renderModelChoices();await saveModelPicker();}));
 $('#favorite-search').addEventListener('input',()=>renderModelChoices());
 $('#favorite-search').addEventListener('keydown',event=>{if(event.key==='Enter')event.preventDefault();});
+document.addEventListener('change',event=>{
+  const field=event.target;
+  if(field.hasAttribute('data-show-paused')){state.showPaused=field.checked;renderSchedules();}
+  if(field.hasAttribute('data-example-paused')){state.exampleShowPaused=field.checked;$('#schedule-example-list').innerHTML=scheduleMarkup(state.scheduleExamples,'',state.exampleFilter||'all',Infinity,true);}
+  if(field.closest('#schedule-form'))attempt(async()=>{
+    state.scheduleDraft[field.name]=field.value;
+    if(field.id==='schedule-app'){state.scheduleModels=null;state.scheduleDraft.model='';state.scheduleDraft.effort='';await loadScheduleModels();}
+    if(field.id==='schedule-model')await loadScheduleEfforts();
+  });
+});
+document.addEventListener('input',event=>{if(event.target.closest('#schedule-form'))state.scheduleDraft[event.target.name]=event.target.value;});
 document.addEventListener('change',event=>{if(['task-cadence','task-day','task-time','task-every','task-unit','task-custom'].includes(event.target.id))updateTaskTiming();if(event.target.id==='api-provider')apiProviderHelp();if(event.target.name==='app'&&event.target.closest('#task-edit-form')){taskModels(event.target.value).catch(()=>{});const moved=event.target.value!==state.editingTask.owner;$('#task-edit-form button[type=submit],#task-edit-form .primary').textContent=moved?'Ask AI to move':state.editingTask.editable?'Save changes':'Ask AI to adjust';$('#task-edit-note').textContent=moved?'Your AI must confirm the new schedule before pausing the old one.':state.editingTask.editable?'Changes are saved through the native scheduler.':'This app requires its native scheduling controls.';}});
 $('#detail').addEventListener('close',()=>{const field=$('#api-secret');if(field)field.value='';const reload=state.apiReturn==='models'&&state.apiChanged;state.apiReturn='';state.apiChanged=false;if(reload)loadAgentOptions(true).catch(modelFailure);});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){state.systemAlert?.close();syncNotifications().catch(()=>{});}});
 window.addEventListener('focus',()=>{state.systemAlert?.close();syncNotifications().catch(()=>{});});
 const notificationTimer=setInterval(()=>{if(!state.closed)syncNotifications(true).catch(()=>{});},8000);
 const scheduleTimer=setInterval(()=>syncSchedules().catch(()=>{}),30000);
+const scheduleOperationTimer=setInterval(()=>{if(!document.hidden&&state.scheduleJob?.status==='working')syncScheduleOperation().catch(()=>{});},2000);
 $('#appearance').addEventListener('change',()=>attempt(async()=>{const value=$('#appearance').value;await api('/api/preferences',{appearance:value});state.data.appearance=value;applyAppearance(value);}));
 document.addEventListener('change',event=>{if(event.target.id==='backup-linked')attempt(backupSummary);});
 document.addEventListener('change',event=>{if(event.target.id==='update-policy')attempt(async()=>{state.updates=await api('/api/updates',{action:'policy',policy:event.target.value});state.updateSignature='';renderUpdates();renderNotifications();});});

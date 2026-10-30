@@ -44,7 +44,7 @@ from workspace_connections import Connections
 STATIC = PRODUCT_ROOT / 'interface'
 MAX_BODY = 96 * 1024
 HIDDEN = {'__pycache__', 'credentials', 'secrets', 'node_modules'}
-MEDIA = {'.png', '.jpg', '.jpeg', '.gif', '.webp', '.avif', '.mp4', '.webm', '.mp3', '.wav', '.ogg'}
+MEDIA = {'.png', '.jpg', '.jpeg', '.gif', '.webp', '.avif', '.mp4', '.webm', '.mov', '.m4v', '.mp3', '.wav', '.ogg', '.m4a', '.aac', '.flac', '.opus'}
 NATIVE_AGENTS = {'codex', 'claude', 'pi', 'omp', 'hermes', 'antigravity'}
 
 
@@ -384,6 +384,8 @@ class Workspace:
         self.lock = threading.RLock()
         self.job = None
         self.execution = None
+        self.schedule_job = None
+        self.schedule_execution = None
         self.catalog = library()
         self.verified_business = None
         self.option_cache = {}
@@ -397,9 +399,8 @@ class Workspace:
         self.notification_focus_until = 0
         # UI preferences are local to this computer and workspace, never
         # canonical business memory or a portable store of credentials/commands.
-        local = Path(os.environ.get('LOCALAPPDATA') or os.environ.get('XDG_STATE_HOME') or Path.home() / '.local' / 'state')
         identity = hashlib.sha256(str(workspace_root()).encode()).hexdigest()[:20]
-        self.settings_file = Path(settings_file) if settings_file else local / 'ViralTrac' / 'Aura' / (identity + '.json')
+        self.settings_file = Path(settings_file) if settings_file else workspace_startup.state_dir() / (identity + '.json')
         self.updates = workspace_updates.Updater(PRODUCT_ROOT, self.settings_file.parent / 'updates')
         self.connections = Connections(self.settings_file.parent)
         try:
@@ -698,6 +699,7 @@ class Workspace:
     def update_idle(self):
         return not (time.time() < getattr(self, 'update_editing_until', 0) or
                     (self.job and self.job['status'] == 'working') or
+                    (self.schedule_job and self.schedule_job['status'] == 'working') or
                     (self.organization_job and self.organization_job['status'] == 'working'))
 
     def record_notification(self, job, chat):
@@ -1059,6 +1061,7 @@ class Workspace:
                 'product': str(PRODUCT_ROOT), 'version': os_version(), 'refreshed': time.time(),
                 'workspace_note': self.workspace_note,
                 'organization': {k:self.organization_job[k] for k in ('status','action','progress') if k in self.organization_job} if self.organization_job else None,
+                'schedule_operation': self.schedule_state(bid),
                 'workspace_missing': not directory and workspace_catalog.selection().get('path')==str(workspace_root()),
                 'workspace_default': workspace_root().resolve()==(workspace_catalog.default_home() / 'My workspace').resolve(),
                 'default_workspace_home':str(workspace_catalog.default_home()),
@@ -1127,6 +1130,158 @@ class Workspace:
                              for item in self.preferences['file_locations'].get(bid, [])) + '\n')
                 + ('\nRecent conversation (context, not additional authority):\n' + '\n'.join(prior) + '\n' if prior else '')
                 + '\nUser request:\n' + text.strip())
+
+    def schedule_state(self, bid):
+        job = self.schedule_job
+        return {k:job[k] for k in ('id','business_id','action','status','message','task_id','updated') if k in job} if job and job['business_id']==bid else None
+
+    def schedule_action(self, bid, data):
+        """One isolated task operation; never select or register a user chat."""
+        if self.schedule_job and self.schedule_job['status']=='working':
+            raise ValueError('A task change is already running. Wait for it or stop it first.')
+        previous = self.schedule_job
+        continuation = data.get('operation_id')
+        if continuation:
+            if not previous or previous['id']!=continuation or previous['business_id']!=bid or previous['status']!='needs_input':
+                raise ValueError('This task question is no longer open. Refresh recurring tasks.')
+            payload = dict(previous['payload'], request=str(data.get('request') or '').strip())
+            native_id = previous.get('native_id')
+        else:
+            payload, native_id = dict(data), None
+        action = payload.get('action','create')
+        if action not in {'create','edit','pause','resume','request','move'}:
+            raise ValueError('Choose a supported task change.')
+        root = workspace_root().resolve()
+        folders = [root, *(Path(r['path']) for r in self.recent_workspaces())]
+        before = workspace_schedules.inventory(workspaces=folders)['items']
+        task = next((t for t in before if t['id']==payload.get('id')),None)
+        if action!='create' and not task:
+            raise ValueError('This task is no longer listed. Refresh recurring tasks.')
+        kind = payload.get('app') or (task or {}).get('owner')
+        choice = next((a for a in installed_agents() if a['id']==kind and a['argv']),None)
+        if kind not in NATIVE_AGENTS or not choice:
+            raise ValueError('Connect this AI app in Adjust AI settings, then try again.')
+        for field, limit in [('name',200),('description',20000),('when',300),('schedule',300),('model',500),('effort',32),('request',2000)]:
+            if field in payload and (not isinstance(payload[field],str) or len(payload[field])>limit or '\x00' in payload[field]):
+                raise ValueError('Keep the task name, instructions and timing within the field limits.')
+        if action=='create' and any(not str(payload.get(k) or '').strip() for k in ('name','description','when','model')):
+            raise ValueError('Add a task name, instructions, timing and model.')
+        if action=='request' and not payload.get('request','').strip():
+            raise ValueError('Describe what you would like to change.')
+        job = dict(id=secrets.token_urlsafe(12),business_id=bid,action=action,status='working',
+                   message='Creating task…' if action=='create' else 'Updating task…',
+                   created=time.time(),updated=time.time(),payload=payload)
+        self.schedule_job = job
+        execution = self.schedule_execution = Execution()
+        command, env = list(choice['argv']), self.agent_environment()
+        connection = dict(self.preferences.get('connected_apps',{}).get(kind) or {})
+        if kind=='codex':
+            command[-1:-1] = ['--sandbox','workspace-write' if connection.get('workspace_write',True) else 'read-only']
+        def work():
+            result = None
+            try:
+                values = {k:payload[k] for k in ('name','description','schedule','model','effort') if k in payload}
+                if kind=='hermes' and 'model' in values and not values['model']:
+                    values['provider']=''
+                if 'model' in values and values['model']:
+                    options = self.agent_options(kind)
+                    model = next((m for m in options['models'] if m['id']==values['model']),None)
+                    if not model:
+                        raise ValueError('Choose an available model in this task’s settings.')
+                    levels = self.agent_efforts(kind,values['model'])['efforts']
+                    if payload.get('effort') and payload['effort'] not in levels:
+                        raise ValueError('Choose a supported effort level in this task’s settings.')
+                    if kind=='hermes':
+                        parts=values['model'].split(':',2 if values['model'].startswith('custom:') else 1)
+                        if len(parts)!=2 and not (len(parts)==3 and parts[0]=='custom'):
+                            raise ValueError('Refresh Hermes models and choose a model with its provider.')
+                        values['provider'],values['model']=':'.join(parts[:-1]),parts[-1]
+                direct = kind=='hermes' and not continuation and (action in {'edit','pause','resume'} and task['owner']=='hermes')
+                raw = payload.get('when','').strip()
+                native_time = bool(re.fullmatch(r'[\d*/?,\-]+(?:\s+[\d*/?,\-]+){4,5}|every \d+[mhd]',raw,re.I))
+                if direct:
+                    confirmed = workspace_schedules.update(task['id'],dict(values,action=action),workspace_agents.base_command(command),env,execution)
+                elif kind=='hermes' and action=='create' and native_time and not continuation:
+                    confirmed = workspace_schedules.create(dict(values,schedule=raw),workspace_agents.base_command(command),env,root,execution)
+                else:
+                    model = payload.get('model') or connection.get('model')
+                    effort = payload.get('effort',connection.get('effort',''))
+                    if not model:
+                        raise ValueError('Choose an AI app and model in the task settings first.')
+                    options = self.agent_options(kind)
+                    if not any(m['id']==model for m in options['models']):
+                        raise ValueError('Choose an available model in this task’s settings.')
+                    # This is task management only. No active-chat state is used.
+                    instruction = ('Manage only the requested native recurring task; do not execute its business work, research, or change unrelated files. '
+                        'Use supported scheduling controls, never undocumented scheduler-file edits. Do not create duplicates. '
+                        'Preserve delivery, timezone and settings the user did not change. If moving a task, confirm the new task before pausing the original. '
+                        'Use the requested app and run model/effort; do not silently substitute another. '
+                        'Read back the saved task. Reply only with JSON: {"state":"saved","native_id":"the actual scheduler task ID"}, '
+                        'or {"state":"needs_input","message":"one short plain-language question"}, '
+                        'or {"state":"unavailable","message":"a short plain-language reason and next step"}. '
+                        'Do not include commands, paths, logs, hashes, or internal terminology in message. '
+                        f'Workspace: {root}. Business: {bid}. Requested change: {json.dumps(payload,ensure_ascii=False)}. '
+                        f'Original task: {json.dumps(task,ensure_ascii=False)}. '
+                        'A saved definition does not prove the scheduler is running.')
+                    def update(**changes):
+                        with self.lock:
+                            if changes.get('native_id'):job['native_id']=changes['native_id']
+                            if changes.get('usage'):job['usage']=changes['usage']
+                    result = (workspace_codex.run(command,root,instruction,native_id,model,effort,update,env,execution)
+                              if kind=='codex' else workspace_agents.run(command,kind,root,env,instruction,native_id,model,effort,update,execution))
+                    job['usage']=result.get('usage',{})
+                    job['native_id']=result.get('native_id')
+                    text = result['reply'].strip()
+                    text = re.sub(r'^```(?:json)?\s*|\s*```$','',text)
+                    try:answer=json.loads(text)
+                    except (ValueError,TypeError):answer={}
+                    if not isinstance(answer,dict):answer={}
+                    if answer.get('state') in {'needs_input','unavailable'}:
+                        message = self.connections.redact(str(answer.get('message') or ''))
+                        if not message or len(message)>400 or re.search(r'```|Traceback|[a-f0-9]{32,}|[A-Z]:\\|\b(?:sk-|api_key)',message,re.I):
+                            message='Check this app’s scheduling controls, or describe the change more clearly.'
+                        job.update(status='needs_input' if answer['state']=='needs_input' else 'error',message=message)
+                        return
+                    after = workspace_schedules.inventory(workspaces=folders)['items']
+                    matches = [t for t in after if t['owner']==kind and str(t['native_id'])==str(answer.get('native_id') or '')]
+                    if len(matches)!=1:
+                        raise ValueError('The saved task could not be confirmed. Check the task list in its app before trying again.')
+                    confirmed = matches[0]
+                    if action not in {'create','move'} and confirmed['id']!=task['id']:
+                        raise ValueError('The requested task status could not be confirmed. Check its app before trying again.')
+                    if action=='create' and any(confirmed['id']==t['id'] for t in before):
+                        raise ValueError('This task already existed. Open it to review or change it.')
+                    for key in ('name','description','model','provider','effort'):
+                        if key in values and str(confirmed.get(key) or '')!=str(values[key]):
+                            raise ValueError('The task was saved, but its requested settings could not be confirmed. Check its app before trying again.')
+                    if action in {'pause','resume'} and (confirmed.get('status')=='paused')!=(action=='pause'):
+                        raise ValueError('The requested task status could not be confirmed. Check its app before trying again.')
+                    if action=='request' and all(confirmed.get(k)==task.get(k) for k in ('name','description','schedule','model','provider','effort','status')):
+                        raise ValueError('The requested task change could not be confirmed. Check its app before trying again.')
+                    if action=='move':
+                        original=next((t for t in after if t['id']==task['id']),None)
+                        if not original or original.get('status')!='paused':
+                            raise ValueError('The new task was found, but the original is not confirmed paused. Check both tasks in their apps.')
+                execution.check()
+                job.update(status='complete',task_id=confirmed['id'],message={'create':'Task created.','pause':'Task paused.','resume':'Task resumed.','move':'Task moved.'}.get(action,'Task updated.'))
+            except Stopped:
+                job.update(status='stopped',message='Stopped. A change may already have been saved; check the task list before trying again.')
+            except (OSError,ValueError,subprocess.SubprocessError) as exc:
+                message=str(exc)
+                safe = ('Choose ','Add ','Describe ','Connect ','Hermes is not installed','A Hermes task already','The saved task could not','The task was saved','The requested task status','The requested task change','The new task was found','This task already','The scheduler replied','The scheduler timed out','Refresh Hermes')
+                job.update(status='error',message=message if message.startswith(safe) else
+                           (setup_error(message) if setup_error(message)!=SETUP_ERRORS['unknown'] else 'The task could not be saved. Check this app’s scheduling controls, then try again.'))
+            finally:
+                with self.lock:
+                    job['updated']=time.time()
+                    if result or job.get('usage'):
+                        receipt={'id':'schedule:'+job['id'],'model':payload.get('model') or connection.get('model',''),'agent':kind}
+                        job['new_native_chat']=not native_id
+                        workspace_usage.record(self.preferences,job,receipt,choice['name'])
+                        self.preferences.get('usage_chats',{}).pop(receipt['id'],None)
+                        self.save_preferences()
+        threading.Thread(target=work,daemon=True).start()
+        return self.schedule_state(bid)
 
     def start_chat(self, bid, text, history, welcome=False, schedule_id=None, organization_id=None, keep_warm_id=None):
         with self.lock:
@@ -1391,6 +1546,8 @@ def handler_for(app):
                 elif route == '/api/schedules':
                     self.send(200, workspace_schedules.inventory(workspaces=[workspace_root(),
                         *(row['path'] for row in app.recent_workspaces())]))
+                elif route == '/api/schedules/operation':
+                    self.send(200, {'job':app.schedule_state(selected(query.get('business')))})
                 elif route == '/api/startup':
                     self.send(200, workspace_startup.status())
                 elif route == '/api/updates':
@@ -1465,7 +1622,9 @@ def handler_for(app):
                         raise ValueError('AURA is restarting. Your workspace will reopen in a moment.')
                     if app.organization_job and app.organization_job['status']=='working' and route not in {'/api/organization/stop','/api/notifications','/api/usage/settings','/api/updates'}:
                         raise ValueError('Workspace organization is running. Wait or stop it before making changes.')
-                    if app.job and app.job['status'] == 'working' and route not in {'/api/preferences', '/api/notifications', '/api/chat/stop','/api/usage/settings','/api/updates'}:
+                    if app.schedule_job and app.schedule_job['status']=='working' and (route in {'/api/lifecycle','/api/workspaces/open','/api/workspaces/create','/api/workspaces/relocate','/api/workspaces/restore'} or route.startswith('/api/organization/')):
+                        raise ValueError('Wait for task setup or stop it before changing workspaces or restarting AURA.')
+                    if app.job and app.job['status'] == 'working' and route not in {'/api/preferences', '/api/notifications', '/api/chat/stop','/api/usage/settings','/api/updates','/api/schedules/action','/api/schedules/stop'}:
                         raise ValueError('Your agent is working. Wait for its reply before changing this workspace.')
                     if route in {'/api/preferences','/api/locations'}:
                         app.load_portable()
@@ -1523,6 +1682,7 @@ def handler_for(app):
                         business = selected(data['business']) if data['action'] == 'restart' and data.get('business') else ''
                         app.restart_business = business
                         app.restart_requested = data['action'] == 'restart'
+                        app.close_reason = data['action']
                         self.send(200, {'status':data['action']})
                         threading.Thread(target=self.server.shutdown, daemon=True).start()
                     elif route == '/api/setup':
@@ -1651,6 +1811,17 @@ def handler_for(app):
                         self.send(200, workspace_startup.configure(data['enabled'], PRODUCT_ROOT,
                             workspace_root(), selected(data.get('business')) if data.get('business') else '',
                             getattr(app, 'launch_extra', ())))
+                    elif route == '/api/schedules/action':
+                        self.send(202, app.schedule_action(selected(data.get('business')),data))
+                    elif route == '/api/schedules/stop':
+                        bid=selected(data.get('business'))
+                        job=app.schedule_job
+                        if not job or job['business_id']!=bid or job['id']!=data.get('operation_id'):
+                            raise ValueError('This task setup is no longer running in this workspace.')
+                        if job['status']=='working':
+                            app.schedule_execution.stop()
+                            job['message']='Stopping task setup…'
+                        self.send(200,{'job':app.schedule_state(bid)})
                     elif route == '/api/schedules/update':
                         choice = next((a for a in installed_agents() if a['id'] == 'hermes' and a['argv']), None)
                         command = workspace_agents.base_command(choice['argv']) if choice else None
@@ -1895,6 +2066,8 @@ def main():
         update_stop.set()
         if server:
             server.server_close()
+            print(time.strftime('%Y-%m-%d %H:%M:%S') + ' AURA stopped: ' +
+                  ('update' if getattr(app, 'update_restart', False) else getattr(app, 'close_reason', 'closed')), flush=True)
         if instance:
             instance.close()
     if getattr(app, 'update_restart', False):
@@ -1908,8 +2081,9 @@ def main():
         if app.restart_business:
             argv += ['--business-id', app.restart_business]
         flags = {'creationflags':subprocess.CREATE_NO_WINDOW} if os.name == 'nt' else {'start_new_session':True}
-        subprocess.Popen(argv, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
-                         stderr=subprocess.DEVNULL, **flags)
+        folder = workspace_startup.state_dir(); folder.mkdir(parents=True, exist_ok=True)
+        with (folder / 'interface.log').open('ab') as output:
+            subprocess.Popen(argv, stdin=subprocess.DEVNULL, stdout=output, stderr=output, **flags)
 
 
 if __name__ == '__main__':

@@ -12,8 +12,39 @@ from urllib.request import Request, urlopen
 
 
 def state_dir():
+    if os.environ.get('AURA_STATE_DIR'):
+        return Path(os.environ['AURA_STATE_DIR']).expanduser().resolve()
     return Path(os.environ.get('LOCALAPPDATA') or os.environ.get('XDG_STATE_HOME') or
                 Path.home() / '.local/state') / 'ViralTrac/Aura'
+
+
+def launch_background(argv, product):
+    """Explicit app launch, independent of an agent/terminal's process cleanup."""
+    argv = list(map(str, argv))
+    if os.name == 'nt':
+        # Creating another child (even Start-Process or breakaway) can retain
+        # an outer Windows job. The existing Windows process broker avoids it.
+        if Path(argv[0]).with_name('pythonw.exe').is_file():
+            argv[0] = str(Path(argv[0]).with_name('pythonw.exe'))
+        quoted = lambda value: "'" + str(value).replace("'", "''") + "'"
+        command = ("$e=[string[]](Get-ChildItem Env:|ForEach-Object{$_.Name+'='+$_.Value});"
+            "$s=New-CimInstance -ClassName Win32_ProcessStartup -ClientOnly -Property "
+            "@{ShowWindow=[uint16]0;CreateFlags=[uint32]1024;EnvironmentVariables=$e};"
+            "$r=Invoke-CimMethod -ClassName Win32_Process -MethodName Create -Arguments @{CommandLine=" +
+            quoted(subprocess.list2cmdline(argv)) + ";CurrentDirectory=" + quoted(Path(product).resolve()) +
+            ";ProcessStartupInformation=$s};if($r.ReturnValue -ne 0){throw 'AURA could not start in the background.'};$r.ProcessId")
+        encoded = base64.b64encode(command.encode('utf-16-le')).decode('ascii')
+        powershell = Path(os.environ['SystemRoot']) / 'System32/WindowsPowerShell/v1.0/powershell.exe'
+        result = subprocess.run([str(powershell), '-NoProfile', '-NonInteractive', '-EncodedCommand', encoded],
+                                capture_output=True, text=True, check=True, timeout=20,
+                                env=dict(os.environ, AURA_STATE_DIR=str(state_dir().resolve())),
+                                creationflags=subprocess.CREATE_NO_WINDOW)
+        return int(result.stdout.strip())
+    state_dir().mkdir(parents=True, exist_ok=True)
+    with (state_dir() / 'interface.log').open('ab') as output:
+        process = subprocess.Popen(argv, cwd=product, stdin=subprocess.DEVNULL,
+                                   stdout=output, stderr=output, start_new_session=True)
+    return process.pid
 
 
 def registration():
@@ -55,7 +86,7 @@ def configure(enabled, product, workspace, business='', extra=(), interpreter=No
     if sys.platform == 'win32' and interpreter.with_name('pythonw.exe').is_file():
         interpreter = interpreter.with_name('pythonw.exe')
     argv = [str(interpreter), '-E', '-s', '-B', str(product / 'scripts/open_aura.py'),
-            '--no-open', '--workspace', str(workspace), *extra]
+            '--no-open', '--workspace', str(workspace), '--local-state', str(state_dir().resolve()), *extra]
     if business:
         argv += ['--business-id', business]
     target.parent.mkdir(parents=True, exist_ok=True)
