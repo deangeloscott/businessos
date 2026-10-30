@@ -38,6 +38,7 @@ import workspace_organization
 import workspace_usage
 import workspace_library
 import workspace_updates
+import workspace_chats
 from configure_workspace import configure
 from workspace_execution import Execution, Stopped
 from workspace_connections import Connections
@@ -997,8 +998,10 @@ class Workspace:
             self.preferences['notification_items']=items[-50:]
             self.save_preferences()
 
-    def conversation(self, bid):
-        chat = self.active_chat(bid)
+    def conversation(self, bid, ident=None):
+        chat = self.active_chat(bid) if ident is None else next((c for c in self.preferences['chats'] if c['id']==ident and c['business_id']==bid),None)
+        if ident is not None and not chat:raise ValueError('This chat does not belong to the selected business.')
+        root=workspace_root().resolve()
         job = dict(self.job) if self.job and self.job['business_id'] == bid and (self.job.get('chat_id') == (chat or {}).get('id')) else None
         if not chat:
             return {'messages': [], 'chat': None, 'job': job}
@@ -1023,10 +1026,25 @@ class Workspace:
         if result.get('usage') and not (job and job['status']=='working'):
             workspace_usage.remember(self.preferences,chat['id'],result['usage'],'session')
         for message in result['messages']:
-            message['text'] = self.connections.redact(message['text'])
+            message['text'] = self.connections.redact(workspace_chats.clean(message['text']))
+        if root!=workspace_root().resolve():raise ValueError('The workspace changed. Open the chat list again.')
+        if not result.get('history_note') and not (job and job['status']=='working'):
+            with self.lock:
+                candidate=result.get('chat_brief')
+                if candidate:
+                    candidate={**candidate,'title':self.connections.redact(candidate['title']),'summary':self.connections.redact(candidate['summary'])}
+                    if 'through' in candidate:candidate['basis']=workspace_chats.fingerprint(result['messages'][:candidate['through']])
+                before=json.dumps(chat,sort_keys=True)
+                workspace_chats.update(chat,result['messages'],candidate,self.connections.redact(workspace_chats.short(result.get('summary'),360)),
+                                       self.connections.redact(workspace_chats.short(result.get('title'),80)),workspace_usage.timestamp(result.get('summary_updated')))
+                last=max((workspace_usage.timestamp(m.get('at')) or 0 for m in result['messages']),default=0)
+                if last>chat.get('updated',0):chat['updated']=last
+                if chat.get('summary_source')=='App' and (not chat.get('summary_updated') or last>chat['summary_updated']):chat['summary_stale']=True
+                if json.dumps(chat,sort_keys=True)!=before:self.save_preferences()
+        for key in ('chat_brief','summary','summary_updated','title'):result.pop(key,None)
         return dict(result, chat=chat, job=job)
 
-    def save_chat_turn(self, chat, job, text, final=False):
+    def save_chat_turn(self, chat, job, text, final=False, candidate=None):
         """A recovery display, never supplied as native model context."""
         path = self.settings_file.parent / 'chat-views' / (chat['id'] + '.json')
         shown = json.loads(path.read_text(encoding='utf-8')) if path.exists() else []
@@ -1037,6 +1055,9 @@ class Workspace:
             shown.append({'role':'assistant', 'text':job['reply'], 'at':job['updated'],
                           'agent':self.agent['name'], 'model':chat['model'], 'effort':chat['effort'],
                           'request_id':job['id'], 'error_detail':job.get('error_detail','')})
+            if job['status']=='complete' and not job.get('keep_warm'):
+                if candidate:candidate={**candidate,'title':self.connections.redact(candidate['title']),'summary':self.connections.redact(candidate['summary'])}
+                workspace_chats.update(chat,shown,candidate)
         path.parent.mkdir(parents=True, exist_ok=True)
         temporary = path.with_suffix('.tmp')
         temporary.write_text(json.dumps(shown), encoding='utf-8')
@@ -1392,6 +1413,9 @@ class Workspace:
                             'created': time.time(), 'native_id': None, 'workspace':str(workspace_root())}
                     self.preferences['chats'].append(chat)
                     self.preferences['active_chats'][bid] = chat['id']
+                if not welcome and keep_warm_id is None:
+                    chat.setdefault('brief_token',secrets.token_hex(8))
+                    prompt=prompt.replace('\nUser request:\n',workspace_chats.instructions(chat)+'\nUser request:\n',1)
                 chat.update(status='working', model=saved_connection['model'], effort=saved_connection['effort'], updated=time.time())
                 job['new_native_chat']=not chat.get('native_id')
                 job.update(chat_id=chat['id'], model=chat['model'], effort=chat['effort'])
@@ -1409,7 +1433,7 @@ class Workspace:
                     if values.get('native_id') and not job.get('native_id'):
                         values.setdefault('progress', 'Connected. Waiting for your AI')
                     if 'reply' in values:
-                        values['reply'] = self.connections.redact(values['reply'][-100000:])
+                        values['reply'] = self.connections.redact(workspace_chats.clean(values['reply'][-100000:],streaming=True))
                     if values.get('progress') and (not job['activity'] or job['activity'][-1]['text'] != values['progress']):
                         job['activity'] = [*job['activity'], {'text':values['progress'], 'at':time.time()}][-12:]
                     job.update(values, updated=time.time())
@@ -1424,11 +1448,13 @@ class Workspace:
                         except OSError:
                             job['preference_warning'] = 'Your AI is working, but this view could not save its chat reference. Use the native app before retrying.'
             def work():
+                candidate=None
                 try:
                     if native:
                         result = (workspace_codex.run(command, workspace_root(), prompt, chat.get('native_id'), chat['model'], chat['effort'], update, env, execution)
                                   if kind=='codex' else workspace_agents.run(command,kind,workspace_root(),env,prompt,chat.get('native_id'),chat['model'],chat['effort'],update,execution))
                         output, code = result['reply'], 0
+                        if not welcome and keep_warm_id is None:candidate=workspace_chats.brief(output)
                         job['usage'] = result['usage']
                     else:
                         with execution.popen(command, cwd=workspace_root(), env=env, stdin=subprocess.PIPE,
@@ -1439,7 +1465,7 @@ class Workspace:
                     with self.lock:
                         execution.check()
                         job['status'] = 'complete' if code == 0 else 'error'
-                        job['reply'] = self.connections.redact(output[-100000:]) if code == 0 else self.connections.redact(
+                        job['reply'] = self.connections.redact(workspace_chats.clean(output[-100000:])) if code == 0 else self.connections.redact(
                             (stderr or output)[-5000:].strip() or f'The agent exited with code {code}. Open your AI app to check the failure. Your request was not marked complete.')
                         if not job['reply']:
                             job['reply'] = 'The command finished without a text reply. Check the agent and refresh your workspace.'
@@ -1482,7 +1508,7 @@ class Workspace:
                         if chat:
                             chat.update(status=job['status'], updated=job['updated'])
                             try:
-                                self.save_chat_turn(chat, job, text, final=True)
+                                self.save_chat_turn(chat, job, text, final=True, candidate=candidate)
                                 self.save_preferences()
                             except OSError:
                                 job['preference_warning'] = 'Reply received, but its chat reference could not be saved. Use the native app before retrying.'
@@ -1590,8 +1616,15 @@ def handler_for(app):
                     self.send(200,{'items':workspace_organization.recovery(app.settings_file.parent)})
                 elif route == '/api/chats':
                     bid = selected(query.get('business'))
-                    self.send(200, {'items': [c for c in app.preferences['chats'] if c['business_id'] == bid],
+                    self.send(200, {'items': sorted(({k:v for k,v in c.items() if k!='brief_token'} for c in app.preferences['chats'] if c['business_id'] == bid),key=lambda c:c.get('updated',0),reverse=True),
                                     'active': app.preferences['active_chats'].get(bid)})
+                elif route == '/api/chats/detail':
+                    result=app.conversation(selected(query.get('business')),query.get('id',''))
+                    note='This chat has no saved app session. Showing its saved details.' if not result['chat'].get('native_id') else ''
+                    if result.get('history_note'):
+                        reason=setup_error(result['history_note'])
+                        note='This app could not refresh the chat. Its saved details are still available.' if reason==SETUP_ERRORS['unknown'] else reason
+                    self.send(200, {'chat':result['chat'],'history_note':note})
                 elif route == '/api/conversation':
                     self.send(200, app.conversation(selected(query.get('business'))))
                 elif route == '/api/library':
@@ -2030,6 +2063,15 @@ def handler_for(app):
                         app.job = None
                         app.save_preferences()
                         self.send(200, {'ok': True})
+                    elif route == '/api/chats/rename':
+                        bid=selected(data.get('business'))
+                        chat=next((c for c in app.preferences['chats'] if c['id']==data.get('id') and c['business_id']==bid),None)
+                        if not chat:raise ValueError('This chat does not belong to the selected business.')
+                        title=workspace_chats.short(data.get('title'),80)
+                        if not title:raise ValueError('Enter a chat title.')
+                        chat.update(title=app.connections.redact(title),title_edited=True)
+                        app.save_preferences()
+                        self.send(200,{'chat':chat})
                     elif route == '/api/chats/open':
                         bid = selected(data.get('business'))
                         chat = next((c for c in app.preferences['chats'] if c['id'] == data.get('id') and c['business_id'] == bid), None)

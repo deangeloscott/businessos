@@ -1208,6 +1208,19 @@ async function changeWorkspace(id) {
   state.business=id;state.view='home';state.chat=[];state.chatMeta=null;state.hydrated=false;state.setupStep='welcome';state.welcome=null;state.connectionChecks=null;
   showMessages();notice('');await refresh();renderConnection();
 }
+const chatDate=value=>value?new Date(value*1000).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'Date not reported';
+function chatDescription(chat){return chat.summary|| (chat.latest_request?'Latest request: '+chat.latest_request:'No description yet.');}
+async function showChats(){
+  const scope=JSON.stringify([state.data.workspace,state.business]),ticket=state.chatListTicket=(state.chatListTicket||0)+1;
+  const result=await api('/api/chats?business='+encodeURIComponent(state.business));
+  if(scope!==JSON.stringify([state.data.workspace,state.business])||ticket!==state.chatListTicket)return;
+  state.chatList=result.items;
+  details('Your chats',`<p>Conversations for this workspace, most recently active first.</p><div class="chat-list bounded-list">${result.items.length?result.items.map(c=>`<div class="chat-list-row"><button class="row" data-chat="${esc(c.id)}" ${state.busy?'disabled':''}><span class="row-text"><span class="row-title">${esc(c.title)}</span><span class="chat-description">${esc(chatDescription(c))}</span><span class="row-meta">${esc(appName(c.agent))} · ${esc(c.model)} · ${esc(chatDate(c.updated))} · ${esc(({working:'Working',error:'Needs attention',stopped:'Stopped',complete:'Reply ready'})[c.status]||'Saved')}${c.summary_stale?' · Description may need updating':''}</span></span><span>→</span></button><button class="text-button chat-edit" data-edit-chat="${esc(c.id)}" aria-label="Edit title and view details for ${esc(c.title)}">Details</button></div>`).join(''):empty('No saved native chats yet.','Supported native connections keep your conversations in your AI app.')}</div>${state.chatMeta?.native_id?`<button class="secondary" id="copy-native-chat">Copy command to open in ${esc(appName(state.chatMeta.agent))}</button>`:''}`);
+}
+function showChatDetails(id,note=''){
+  const chat=state.chatList.find(c=>c.id===id);if(!chat)return;
+  details('Chat details',`<form id="chat-title-form" class="form-grid"><input type="hidden" name="id" value="${esc(id)}"><label>Chat title<input name="title" required maxlength="80" value="${esc(chat.title)}"></label><button class="secondary">Save title</button></form><p class="chat-full-description">${esc(chatDescription(chat))}</p>${chat.summary?`<p class="small-note">${esc(chat.summary_source==='App'?'App summary':'AI description')} · ${esc(chatDate(chat.summary_updated))}${chat.summary_stale?' · May need updating':''}</p>`:'<p class="small-note">A description can update with your next substantive AI reply.</p>'}${note?`<p class="small-note">${esc(note)}</p>`:''}<div class="inline-actions chat-detail-actions"><button class="primary" data-chat="${esc(id)}" ${state.busy?'disabled':''}>Open chat →</button><button class="text-button" data-refresh-chat="${esc(id)}">Refresh from app</button></div><button class="text-button card-link" id="chat-list-back">← All chats</button>`);
+}
 function showMessages(latest=false) {
   const failed=!state.busy&&(state.chatMeta?.status==='error'||(!state.chatMeta&&state.liveJob?.status==='error'));
   $('#request-recovery').hidden=!failed;
@@ -1288,10 +1301,9 @@ document.addEventListener('click',event=>attempt(async()=>{
   if(button.dataset.openSchedule){await syncSchedules(true);await scheduleDetails(button.dataset.openSchedule);}
   if(button.id==='close-section') {state.view='home';$('#section-dialog').close();}
   if(button.id==='new-chat'&&!state.busy) {await api('/api/chats/new',{business:state.business});state.chat=[];state.chatMeta=null;state.liveJob=null;$('#request').value='';showMessages();taskStatus('');$('#request').focus();notice('New chat. Your saved business context is still available.');}
-  if(button.id==='chats') {
-    const result=await api('/api/chats?business='+encodeURIComponent(state.business));
-    details('Your chats',`<p>Conversations kept by your AI app for this business.</p><div class="card">${result.items.length?result.items.slice().reverse().map(c=>`<button class="row" data-chat="${esc(c.id)}" ${state.busy?'disabled':''}><span class="row-text"><span class="row-title">${esc(c.title)}</span><span class="row-meta">${esc(human(c.agent))} · ${esc(c.model)} · ${clockTime(c.updated)}${c.status==='working'?' · Check in your AI app':''}</span></span><span>→</span></button>`).join(''):empty('No saved native chats yet.','Supported native connections keep your conversations in your AI app.')}</div>${state.chatMeta?.native_id?`<button class="secondary" id="copy-native-chat">Copy command to open in ${esc(human(state.chatMeta.agent))}</button>`:''}`);
-  }
+  if(button.id==='chats'||button.id==='chat-list-back')await showChats();
+  if(button.dataset.editChat)showChatDetails(button.dataset.editChat);
+  if(button.dataset.refreshChat){const id=button.dataset.refreshChat,business=state.business,workspace=state.data.workspace;button.disabled=true;button.textContent='Refreshing…';try{const result=await api('/api/chats/detail?business='+encodeURIComponent(business)+'&id='+encodeURIComponent(id));if(state.business!==business||state.data.workspace!==workspace)return;const index=state.chatList.findIndex(c=>c.id===id);state.chatList[index]=result.chat;showChatDetails(id,result.history_note);}finally{if(button.isConnected){button.disabled=false;button.textContent='Refresh from app';}}}
   if(button.dataset.chat){const result=await api('/api/chats/open',{business:state.business,id:button.dataset.chat});state.chat=result.messages;state.chatMeta=result.chat;$('#detail').close();notice('');await refresh();showMessages();if(result.history_note)notice(result.history_note);taskStatus(result.history_note?'Saved display restored':'Chat restored from '+state.data.connection.name);}
   if(button.id==='copy-native-chat'){const c=state.chatMeta,commands={codex:'codex resume',pi:'pi --session',omp:'omp --resume',claude:'claude --resume',hermes:'hermes --resume',antigravity:'agy --conversation'};await navigator.clipboard.writeText(commands[c.agent]+' '+JSON.stringify(c.native_id));button.textContent='Copied';}
   if(button.dataset.close) $('#'+button.dataset.close).close();
@@ -1421,6 +1433,11 @@ document.addEventListener('submit',event=>{
   event.preventDefault();
   attempt(async()=>{
     const form=event.target, data=new FormData(form); const submit=form.querySelector('[type=submit]')||form.querySelector('button.primary')||form.querySelector('button');
+    if(form.id==='chat-title-form'){
+      const business=state.business,workspace=state.data.workspace;submit.disabled=true;
+      try{const result=await api('/api/chats/rename',{business,id:data.get('id'),title:data.get('title')});if(state.business!==business||state.data.workspace!==workspace)return;state.chatList[state.chatList.findIndex(c=>c.id===result.chat.id)]=result.chat;showChatDetails(result.chat.id,'Title saved.');}
+      finally{if(submit.isConnected)submit.disabled=false;}return;
+    }
     if(form.id==='organization-form'){
       const business_map=Object.fromEntries([...document.querySelectorAll('.organization-group')].map(input=>[input.dataset.source+'|'+input.dataset.business,input.value]));
       await api('/api/organization/plan',{primary:data.get('primary'),sources:data.getAll('source'),destination:data.get('destination'),business_map});organizationProgress();await pollOrganization();return;

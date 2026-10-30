@@ -9,6 +9,7 @@ from pathlib import Path
 import re
 from _process_errors import ErrorTail
 import workspace_usage
+import workspace_chats
 
 
 def base_command(command):
@@ -201,7 +202,7 @@ def display_text(value):
         value=value.split('\nUser request:\n',1)[1]
     if value.startswith('Welcome me to my AURA workspace'):
         value='Set up my AURA workspace and suggest a useful next step.'
-    return re.sub(r'(?m)^\s*AURA_SETUP[^\n]*','',value).strip()
+    return workspace_chats.clean(re.sub(r'(?m)^\s*AURA_SETUP[^\n]*','',value)).strip()
 
 
 def resume_command(kind, native_id):
@@ -212,6 +213,7 @@ def resume_command(kind, native_id):
 
 def history(command, kind, cwd, env, native_id):
     model, effort, window = '', '', None
+    native_title=native_summary='';summary_updated=None
     if kind in {'pi','omp'}:
         host=Metadata(command,kind,cwd,env,native_id=native_id)
         try:
@@ -223,6 +225,8 @@ def history(command, kind, cwd, env, native_id):
             model=(current.get('provider','')+'/'+current.get('id','')).strip('/')
             effort=state.get('thinkingLevel','')
             window=current.get('contextWindow')
+            native_title=state.get('sessionName','');native_summary=state.get('sessionSummary','')
+            summary_updated=state.get('summaryUpdatedAt')
         finally:host.close()
     elif kind=='hermes':
         result=subprocess.run([*base_command(command),'sessions','export','--session-id',native_id,'--format','jsonl','--redact','-'],
@@ -232,6 +236,7 @@ def history(command, kind, cwd, env, native_id):
         if result.returncode or not session:
             raise ValueError('Hermes did not return this saved chat. Open its native session before retrying.')
         messages=session.get('messages',[])
+        native_title=session.get('title','');native_summary=session.get('summary','');summary_updated=session.get('summary_updated_at')
     elif kind=='claude':
         root=Path(env.get('CLAUDE_CONFIG_DIR') or Path.home()/'.claude')/'projects'
         if not re.fullmatch(r'[a-zA-Z0-9_-]{1,100}',native_id):
@@ -242,19 +247,25 @@ def history(command, kind, cwd, env, native_id):
         messages=[]
         for line in matches[0].read_text(encoding='utf-8').splitlines():
             row=json.loads(line)
+            if row.get('type')=='summary' and isinstance(row.get('summary'),str):
+                native_summary=row['summary'];summary_updated=row.get('timestamp')
+            if row.get('type')=='custom-title':native_title=row.get('customTitle','')
             if row.get('type') in {'user','assistant'} and isinstance(row.get('message'),dict):
                 messages.append({**row['message'],'timestamp':row.get('timestamp')})
     else:
         raise ValueError('Showing the saved display. Antigravity keeps the full native chat; edits made in its app may not appear here.')
-    out=[]
+    out=[];brief=None
     for message in messages:
         if message.get('role') not in {'user','assistant'}:continue
+        candidate=workspace_chats.brief(message_text(message.get('content',''))) if message['role']=='assistant' else None
         text=display_text(message.get('content',''))
         at=message.get('timestamp') or message.get('created_at')
         if isinstance(at,(int,float)) and at>1e11:at/=1000
         if text:out.append({'role':message['role'],'text':text,'at':at,
                            'agent':{'pi':'Pi','omp':'OMP','claude':'Claude Code','hermes':'Hermes'}[kind]})
+        if candidate:brief=dict(candidate,through=len(out),at=workspace_usage.timestamp(at))
     return {'messages':out,'model':model,'effort':effort,'usage':workspace_usage.messages_usage(messages,kind,window),'native_id':native_id,
+            'chat_brief':brief,'title':native_title,'summary':native_summary,'summary_updated':summary_updated,
             'resume':subprocess.list2cmdline(resume_command(kind,native_id))}
 
 

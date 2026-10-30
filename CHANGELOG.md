@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Add stable, editable AURA chat titles and short evolving descriptions with current progress and next steps. Descriptions use native metadata or the existing AI reply, with no separate automatic summarization call.
+- Order chats by recent activity; show description freshness, saved status and app/model details. Refresh native history without changing the active conversation, and keep older descriptions visibly uncertain when later activity is not summarized.
+- Keep chat metadata in machine-local settings, separate from business memory. Preserve user-chosen titles and hide bounded description metadata from the AURA conversation display.
+
 ## v0.2.3 — 2026-10-30
 
 - Added separate Workflows, Recipes, Skills, Tools, and Plugins in one searchable library. Include existing Playbooks as complete guides under Workflows; group shared skills and service actions while retaining their actual versions, requirements, and native app connections.

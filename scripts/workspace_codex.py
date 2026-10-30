@@ -9,6 +9,7 @@ import threading
 import time
 from _process_errors import ErrorTail
 import workspace_usage
+import workspace_chats
 
 
 def base_command(command):
@@ -201,7 +202,7 @@ def history(command, cwd, native_id):
     path = Path(thread.get('path') or '')
     if not path.is_file():
         raise ValueError('Codex has not made this conversation transcript available yet. Try Refresh or open it in Codex.')
-    messages, model, effort, usage, cache_hit = [], '', '', {}, None
+    messages, model, effort, usage, cache_hit, brief = [], '', '', {}, None, None
     with path.open(encoding='utf-8') as stream:
         for line in stream:
             try:
@@ -238,8 +239,11 @@ def history(command, cwd, native_id):
                 text = text.split('\nUser request:\n', 1)[1]
                 if text.startswith('Welcome me to my AURA workspace'):
                     text = 'Set up my AURA workspace and suggest a useful next step.'
-            text = re.sub(r'(?m)^\s*AURA_SETUP[^\n]*', '', text).strip()
+            candidate=workspace_chats.brief(text) if role=='assistant' else None
+            text = workspace_chats.clean(re.sub(r'(?m)^\s*AURA_SETUP[^\n]*', '', text)).strip()
             if text:
                 messages.append({'role': role, 'text': text, 'at': row.get('timestamp'), 'agent': 'Codex', 'model': model, 'effort': effort})
+            if candidate:brief=dict(candidate,through=len(messages),at=workspace_usage.timestamp(row.get('timestamp')))
     return {'messages': messages, 'model': model, 'effort': effort, 'usage': usage, 'native_id': native_id,
+            'chat_brief':brief,'title':thread.get('name'),'summary':thread.get('summary'),'summary_updated':thread.get('summaryUpdatedAt'),
             'status': thread.get('status'), 'resume': f'codex resume {native_id}'}

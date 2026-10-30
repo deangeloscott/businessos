@@ -45,6 +45,27 @@ def main():
             assert setup_error(detail)==SETUP_ERRORS[category], (detail,setup_error(detail))
         assert all(setup_error(message)==message for message in SETUP_ERRORS.values()), 'normalized setup errors must survive rendering unchanged'
         import workspace_codex, workspace_agents
+        import workspace_chats
+        brief_line='AURA_CHAT_BRIEF_0123456789abcdef '+json.dumps({'title':'Offer and landing page','summary':'Offer defined; next, refine the landing page.'})
+        assert workspace_chats.clean('Useful reply.\n'+brief_line)=='Useful reply.'
+        assert workspace_chats.clean('Useful reply.\nAURA_CHAT_BRIEF_0123',streaming=True)=='Useful reply.'
+        assert workspace_chats.clean('Useful reply.\n  AURA_CHAT_BRIEF_0123')=='Useful reply.'
+        assert workspace_chats.brief(brief_line)['summary'].startswith('Offer defined')
+        assert workspace_chats.brief('AURA_CHAT_BRIEF_0123456789abcdef {broken') is None
+        brief_chat={'brief_token':'0123456789abcdef','title':'Original'}
+        brief_messages=[{'role':'user','text':'Define the offer'},{'role':'assistant','text':'Useful reply.'}]
+        workspace_chats.update(brief_chat,brief_messages,workspace_chats.brief(brief_line))
+        assert brief_chat['title']=='Offer and landing page' and not brief_chat['summary_stale']
+        prior_brief=dict(brief_chat)
+        changed=brief_messages+[{'role':'user','text':'Now change direction'},{'role':'assistant','text':'New plan.'}]
+        old_candidate=dict(workspace_chats.brief(brief_line),basis=workspace_chats.fingerprint(brief_messages),at=brief_chat['summary_updated'])
+        workspace_chats.update(brief_chat,changed,old_candidate)
+        assert brief_chat['summary_stale'] and brief_chat['summary_updated']==prior_brief['summary_updated']
+        brief_chat.update(title='My title',title_edited=True)
+        workspace_chats.update(brief_chat,changed,workspace_chats.brief(brief_line))
+        assert brief_chat['title']=='My title'
+        workspace_chats.update(brief_chat,changed,old_candidate,'A newer native description.','',time.time()+1)
+        assert brief_chat['summary']=='A newer native description.' and brief_chat['summary_source']=='App'
         import workspace_schedules
         from unittest.mock import patch
         # The combined schedule view is independent of the selected chat app.
@@ -420,6 +441,10 @@ else:
         paths = [re.search(label+r': ([^\\n]+)', text).group(1) for label in ('Skill file','Business file')]
         nonce = re.search(r'AURA_SETUP ([0-9a-f]{16})', text).group(1)
         reply += '\\nAURA_SETUP '+nonce+' '+' '.join(hashlib.sha256(Path(p).read_bytes()).hexdigest() for p in paths)
+    brief = re.search(r'AURA_CHAT_BRIEF_([0-9a-f]{16})',text)
+    if brief:
+        description = 'Offer defined; next, draft the landing page.' if count==1 else 'Landing-page draft ready; next, choose the headline.'
+        reply += '\\nAURA_CHAT_BRIEF_'+brief.group(1)+' '+json.dumps({'title':'Offer and landing page','summary':description})
     rows = [{'type':'turn_context','payload':{'model':'fixture-model','effort':'low'}},
             {'type':'response_item','payload':{'type':'message','role':'user','content':[{'type':'input_text','text':text.replace('\\n','\\r\\n')}]}},
             {'type':'response_item','payload':{'type':'message','role':'assistant','phase':'final_answer','content':[{'type':'output_text','text':reply}]}}]
@@ -453,6 +478,14 @@ else:
                     assert result['status'] == 'complete', result
                     assert result['native_id'] == 'native-one'
                     assert f'Native turn {index}' in result['reply']
+                    assert 'AURA_CHAT_BRIEF_' not in result['reply']
+                    saved_chat=call('/api/chats?business='+bid)['items'][0]
+                    assert saved_chat['summary']==('Offer defined; next, draft the landing page.' if index==1 else 'Landing-page draft ready; next, choose the headline.')
+                    if index==1:
+                        call('/api/chats/rename',{'business':'other-business','id':saved_chat['id'],'title':'Wrong business'},expect=400)
+                        call('/api/chats/rename',{'business':bid,'id':saved_chat['id'],'title':''},expect=400)
+                        call('/api/chats/rename',{'business':bid,'id':saved_chat['id'],'title':'My launch work'})
+                    else:assert saved_chat['title']=='My launch work', 'AI updates must preserve the chosen title'
                 assert 'resumed=True' in result['reply'] and result['usage']['output_tokens'] == 20
                 chats = call('/api/chats?business='+bid)['items']
                 assert len(chats) == 1 and not call('/api/chats?business=other-business')['items']
@@ -460,6 +493,7 @@ else:
                 conversation = call('/api/conversation?business='+bid)
                 assert len(conversation['messages']) == 4
                 assert conversation['messages'][0]['text'] == 'Continue with native history'
+                assert 'AURA_CHAT_BRIEF_' not in json.dumps(conversation['messages'])
                 restarted = Workspace(settings_file=app.settings_file)
                 assert len(restarted.conversation(bid)['messages']) == 4
                 assert 'Native turn 2' not in app.settings_file.read_text(), 'transcripts stay in the native harness'
@@ -467,6 +501,14 @@ else:
                 call('/api/chats/new', {'business':bid})
                 assert call('/api/conversation?business='+bid)['messages'] == []
                 assert fixture.with_suffix('.jsonl').read_bytes() == before, 'New chat must not submit or rerun work'
+                summary_read=call('/api/chats/detail?business='+bid+'&id='+chats[0]['id'])
+                assert summary_read['chat']['summary'].startswith('Landing-page draft ready')
+                assert app.active_chat(bid) is None and fixture.with_suffix('.jsonl').read_bytes()==before, 'Refreshing details must not switch chats or submit a prompt'
+                call('/api/chats/detail?business=other-business&id='+chats[0]['id'],expect=400)
+                alternate=dict(chats[0],id='later-chat',updated=chats[0]['updated']+1)
+                app.preferences['chats'].append(alternate)
+                assert call('/api/chats?business='+bid)['items'][0]['id']=='later-chat'
+                app.preferences['chats'].remove(alternate)
                 call('/api/chats/open', {'business':bid,'id':chats[0]['id']})
                 assert call('/api/state?business='+bid)['records'] == snapshot['records']
             finally:
@@ -523,6 +565,8 @@ else:
   paths=[re.search(label+r': ([^\\n]+)',text).group(1) for label in ('Skill file','Business file')]
   nonce=re.search(r'AURA_SETUP ([0-9a-f]{16})',text).group(1)
   reply+='\\nAURA_SETUP '+nonce+' '+' '.join(hashlib.sha256(Path(p).read_bytes()).hexdigest() for p in paths)
+ brief=re.search(r'AURA_CHAT_BRIEF_([0-9a-f]{16})',text)
+ if brief:reply+='\\nAURA_CHAT_BRIEF_'+brief.group(1)+' '+json.dumps({'title':'Selected settings','summary':'Reviewed the selected model settings; ready for the next request.'})
  messages=history()+[{'role':'user','content':text},{'role':'assistant','content':[{'type':'text','text':reply}]}]
  log.write_text(json.dumps(messages))
  if kind in ('pi','omp'):
@@ -561,6 +605,8 @@ else:
                     restored=Workspace(settings_file=app.settings_file).conversation(bid)
                     assert len(restored['messages'])==4, restored
                     assert restored['messages'][0]['text']=='Check selected settings, turn 1'
+                    assert restored['chat']['summary'].startswith('Reviewed the selected model settings')
+                    assert 'AURA_CHAT_BRIEF_' not in json.dumps(restored['messages'])
                     job=call('/api/chat',{'business':bid,'welcome':True},expect=202)
                     for _ in range(100):
                         result=call(f'/api/chat?business={bid}&id={job["id"]}')
