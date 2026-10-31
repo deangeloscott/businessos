@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## v0.2.5 — 2026-10-31
+
+- Make the standard interface a conversational workspace with a persistent sidebar, readable chat area, contextual file/memory panels and responsive navigation. Use restrained warm surfaces, clear typography and coordinated light/dark themes.
+- Run independent conversations concurrently through the existing native adapters. Pin each request to its workspace, business, connection, model, effort and Stop handle; retain background progress while navigating.
+- Preserve per-chat drafts and scroll position, restore live requests without resending, and require an explicit outcome check after an interrupted process. Keep restart, relocation and updates guarded during work.
+- Add workspace search, selected file references, optional personal greetings, appearance preferences, keyboard navigation and safe diagnostics. Keep custom views on the same local API and preserve standard-view recovery.
+
 ## v0.2.4 — 2026-10-31
 
 - Add local preparation for the Aura Innovation Exchange: selected reusable files and methods, portable public metadata, and attached community terms/source notices. Keep business records private and publication separate from local export.

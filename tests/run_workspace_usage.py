@@ -257,7 +257,7 @@ def main():
         warm_app.connection_kind='claude'
         warm_app.preferences.update(chats=[warm_chat],active_chats={bid:'c'},connection=connection,
                                     usage_chats={'c':{'cache':{**policy['cache'],'expires_at':time.time()+300}}})
-        with patch('workspace_agents.run',return_value={'reply':'OK','usage':{'last':{'input_tokens':100,'cached_input_tokens':80}}}) as run,patch.object(warm_app,'agent_environment',return_value={}):
+        with patch('workspace_agents.run',return_value={'reply':'OK','usage':{'last':{'input_tokens':100,'cached_input_tokens':80}}}) as run,patch.object(warm_app,'agent_environment',return_value={}),patch('workspace_ui.installed_agents',return_value=[{'id':'claude','name':'Claude Code','argv':['fixture-only']}]):
             try:warm_app.start_chat(bid,None,None,keep_warm_id='another');raise AssertionError('Wrong chat accepted')
             except ValueError:pass
             assert not run.called

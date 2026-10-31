@@ -1,5 +1,7 @@
 from pathlib import Path
 import json, re, yaml, hashlib, datetime, os, sys, tempfile
+from contextlib import contextmanager
+from contextvars import ContextVar
 
 # AURA files and CLI text use UTF-8, including redirected Windows output.
 for _stream in (sys.stdout,sys.stderr):
@@ -9,6 +11,15 @@ PRODUCT_ROOT=Path(__file__).resolve().parents[1]
 _WORKSPACE_ENV='BUSINESSOS_WORKSPACE'
 _WORKSPACE_CONFIG_ENV='BUSINESSOS_WORKSPACE_CONFIG'
 _STATE_NAMESPACES={'instances','runtime','knowledge','attachments'}
+_WORKSPACE_SCOPE=ContextVar('aura_workspace_scope',default=None)
+
+
+@contextmanager
+def workspace_scope(root):
+    """Pin helper resolution for one request without changing CLI selection."""
+    token=_WORKSPACE_SCOPE.set(str(Path(root).resolve()))
+    try:yield
+    finally:_WORKSPACE_SCOPE.reset(token)
 
 
 def workspace_config_path():
@@ -36,6 +47,8 @@ def _read_workspace_link():
 
 
 def _raw_workspace_root():
+    scoped=_WORKSPACE_SCOPE.get()
+    if scoped:return Path(scoped)
     raw=os.environ.get(_WORKSPACE_ENV) or _read_workspace_link().get('workspace_root')
     if not raw: return PRODUCT_ROOT
     p=Path(os.path.expanduser(os.path.expandvars(str(raw))))

@@ -46,7 +46,7 @@ async function refresh() {
     const scope=state.data.workspace+'|'+state.business;if(state.searchScope&&state.searchScope!==scope){state.memoryQuery='';state.fileQuery='';state.scheduleQuery='';state.scheduleFilter='all';state.scheduleDraft=null;state.showPaused=false;fileFilter='all';state.includeRecords=false;}state.searchScope=scope;
     $('.composer').hidden=!state.business;
     $('#connection').disabled=!state.business;
-    $('#chats').disabled=!state.business||state.busy;
+    $('#chats').disabled=!state.business;
     const workspaceOptions='<option value="" disabled>Choose a workspace</option>'+state.data.businesses.map(b=>`<option value="${esc(b.id)}">${esc(b.name)}</option>`).join('')+'<option value="__add__">＋ Add or open a workspace</option>';
     $('#business').innerHTML=workspaceOptions;$('#setup-workspace-select').innerHTML=workspaceOptions;
     $('#business').value=state.business;
@@ -54,7 +54,6 @@ async function refresh() {
     $('#business-name').textContent=business?.title || 'Your workspace';
     $('#setup-workspace-select').value=state.business;
     $('#business').hidden=false;$('#business-name').hidden=true;
-    if(state.business){const url=new URL(location.href);url.searchParams.set('business',state.business);history.replaceState(null,'',url);}
     $('#version').textContent='AURA '+state.data.version;
     $('#appearance').value=state.data.appearance;
     applyAppearance(state.data.appearance);
@@ -65,7 +64,7 @@ async function refresh() {
     $('#notification-bell').hidden=!state.business&&!state.updates?.notice;
     $('#usage-open').hidden=!state.business;
     $('#composer-context').textContent=connection.connected?'Uses your saved business context.':connection.mode==='copy'?'Requests are copied to your existing AI chat.':'Connect your AI to send requests from here.';
-    $('#new-chat').disabled=!state.business||state.busy;
+    $('#new-chat').disabled=!state.business;
     $('#send').innerHTML=connection.connected?'Send <span>↑</span>':connection.mode==='copy'?'Copy request <span>↗</span>':'Connect AI <span>→</span>';
     const previousChoice=$('#agent-choice').value;
     $('#agent-choice').innerHTML=connection.choices.length?connection.choices.map(c=>`<option value="${esc(c.id)}">${esc(c.name)}${c.available?'':' — needs setup'}</option>`).join(''):'<option value="">No supported app found</option>';
@@ -79,7 +78,7 @@ async function refresh() {
     else if(state.data.workspace_note)notice(state.data.workspace_note,true);
     await render();
     if(ticket!==state.refreshTicket)return;
-    if(state.business&&!state.hydrated) {state.hydrated=true;await hydrateConversation();try{const draft=sessionStorage.getItem('aura-draft:'+state.data.workspace+':'+state.business);if(draft&&!$('#request').value)$('#request').value=draft;}catch{}}
+    if(state.business&&!state.hydrated) {state.hydrated=true;await hydrateConversation();}
     if(ticket!==state.refreshTicket)return;
     chatControls();
     if(state.data.organization?.status==='working'&&!state.organizationPolling){state.organizationWorking=true;notice(state.data.organization.progress);attempt(pollOrganization);}
@@ -87,6 +86,7 @@ async function refresh() {
       state.setupPrompted.add(state.business); openConnection();
     }
     await syncNotifications();
+    await renderShell();
     checkUsageAlerts();
   } finally { if(ticket===state.refreshTicket)$('#refresh').disabled=false; }
 }
@@ -324,17 +324,18 @@ function replyAlert(result) {
   checkUsageAlerts();
 }
 async function hydrateConversation() {
-  const scope=JSON.stringify([state.data.workspace,state.business]);
+  const ticket=state.hydrateTicket=(state.hydrateTicket||0)+1,scope=chatScope();
   const result=await api('/api/conversation?business='+encodeURIComponent(state.business));
-  if(scope!==JSON.stringify([state.data.workspace,state.business]))return;
-  state.chat=result.messages; state.chatMeta=result.chat;state.liveJob=result.job;showMessages();
+  if(ticket!==state.hydrateTicket||scope!==chatScope())return;
+  state.chat=result.messages;state.chatMeta=result.chat;state.liveJob=result.job;state.busy=result.job?.status==='working';state.activeJob=state.busy?result.job:null;
+  state.needsCheck=result.chat?.status==='working'&&!state.busy;
   if(result.history_note)notice(result.history_note);
-  if(result.job?.status==='working') {state.busy=true;state.setupStep=result.job.welcome?'checking':state.setupStep;attempt(()=>pollJob(result.job));}
-  else if(result.job?.status==='error') {notice(result.job.reply,true);taskStatus(`Needs your attention · ${clockTime(result.job.updated)}`);}
-  else if(result.job?.status==='stopped'||result.chat?.status==='stopped')taskStatus('Stopped. You can continue this chat.');
-  else if(result.chat?.status==='error')taskStatus('The previous request did not complete. Review this chat in your AI app before retrying.');
-  else if(state.chat.length)taskStatus(`Latest reply · ${clockTime(state.chat.at(-1).at)}${usageLabel(result.usage)}`);
-  else if(result.chat?.status==='working')taskStatus('This chat was left working. Open it in your AI app to check the outcome before sending again.');
+  restoreChatDraft();showMessages();chatControls();
+  if(state.busy){state.setupStep=result.job.welcome?'checking':state.setupStep;attempt(()=>pollJob(result.job));}
+  else if(state.needsCheck)taskStatus('Check this chat in its AI app before continuing.');
+  else if(result.job?.status==='error'||result.chat?.status==='error')taskStatus('Needs your attention');
+  else if(result.chat?.status==='stopped')taskStatus('Stopped. You can continue this chat.');
+  else if(state.chat.length)taskStatus('Latest reply · '+clockTime(state.chat.at(-1).at));
 }
 
 const money = value => Number.isFinite(value)?new Intl.NumberFormat(undefined,{style:'currency',currency:'USD',maximumFractionDigits:value>0&&value<.01?4:2}).format(value):'Not reported';
@@ -510,49 +511,48 @@ async function checkUsageAlerts() {
   finally{state.usageAlertLoading=false;}
 }
 async function pollJob(job) {
-  if(state.polling)return;state.polling=true;state.busy=true;
-  state.activeJob=job;state.liveJob=job;chatControls();$('#business').disabled=true;$('#new-chat').disabled=true;
-  showMessages();
-  let finished=false;
+  if(state.polling===job.id)return;
+  const ticket=state.pollTicket=(state.pollTicket||0)+1,business=state.business,workspace=state.data.workspace,chatId=job.chat_id||state.chatMeta?.id;
+  const current=()=>ticket===state.pollTicket&&state.business===business&&state.data.workspace===workspace&&(!chatId||state.chatMeta?.id===chatId);
+  state.polling=job.id;state.busy=true;state.activeJob=job;state.liveJob=job;chatControls();showMessages();
   try {
-    for(;;) {
-      const result=await api('/api/chat?business='+encodeURIComponent(state.business)+'&id='+encodeURIComponent(job.id));
-      state.liveJob=result;
+    while(current()) {
+      const result=await api('/api/chat?business='+encodeURIComponent(business)+'&id='+encodeURIComponent(job.id));
+      if(!current())return;state.liveJob=result;
       if(result.status==='working') {
         state.stopping=!!result.stopping;
         const elapsed=Math.max(0,Math.floor(Date.now()/1000-result.created));
         taskStatus(result.progress||'Waiting for your AI app',elapsed<60?elapsed+'s':Math.floor(elapsed/60)+'m '+elapsed%60+'s');
         showMessages();chatControls();await new Promise(resolve=>setTimeout(resolve,1000));continue;
       }
-      finished=true;
-      if(job.welcome) {state.welcome=result;state.setupStep=result.status==='complete'?'ready':'failed';}
-      if(state.data.connection.native_sessions) {const conversation=await api('/api/conversation?business='+encodeURIComponent(state.business));state.chat=conversation.messages;state.chatMeta=conversation.chat;}
-      else if(result.reply)state.chat.push({role:'assistant',text:result.reply,at:new Date().toISOString(),agent:state.data.connection.name});
+      if(job.welcome){state.welcome=result;state.setupStep=result.status==='complete'?'ready':'failed';}
+      const conversation=await api('/api/conversation?business='+encodeURIComponent(business)+'&chat_id='+encodeURIComponent(chatId||''));
+      if(!current())return;
+      state.chat=conversation.messages;state.chatMeta=conversation.chat;state.busy=false;state.stopping=false;state.activeJob=null;state.polling=false;
       if(result.status==='error'&&!job.welcome)notice(result.reply,true);
       if(result.preference_warning)notice(result.preference_warning,true);
-      replyAlert(result);break;
+      replyAlert(result);showMessages();chatControls();await refresh();renderConnection();return;
     }
-  } catch(error) {if(job.welcome){state.setupStep='failed';state.welcome={reply:error.message};}taskStatus('Connection interrupted. Reopen this chat before sending again.');if(!job.welcome)notice(error.message,true);}
-  finally {
-    state.busy=false;state.polling=false;state.stopping=false;state.activeJob=null;state.settling=true;
-    $('#business').disabled=false;showMessages();
-    try {await refresh();renderConnection();} finally {state.settling=false;chatControls();}
-    const next=state.nextRequest;state.nextRequest=null;
-    const nextScheduleId=state.nextScheduleId;state.nextScheduleId=null;
-    const nextOrganizationId=state.nextOrganizationId;state.nextOrganizationId=null;
-    if(next){$('#request').value=next;if(finished)await submitRequest(next,nextScheduleId,nextOrganizationId);else notice('Your update has not been sent. Reconnect to check the previous request, then send it when you’re ready.',true);}
+  } catch(error) {
+    if(!current())return;
+    state.busy=false;state.connectionInterrupted=true;state.activeJob=null;state.polling=false;state.stopping=false;
+    taskStatus('Connection interrupted. Reconnect to check this chat; your request has not been resent.');
+    if(job.welcome){state.setupStep='failed';state.welcome={reply:error.message};}
+    else notice(error.message,true);
+    showMessages();chatControls();
   }
 }
+
 function chatControls() {
   const previousFolder=state.chatMeta?.workspace&&state.chatMeta.workspace!==state.data?.workspace;
-  $('#request').disabled=!state.business||state.stopping||previousFolder||state.organizationWorking;
-  $('#request').placeholder=previousFolder?'Choose New chat to work in this workspace…':state.busy?'Add a correction or change direction…':'Ask a question or describe what you need…';
-  $('#send').disabled=!state.business||state.stopping||state.starting||state.settling||previousFolder||state.organizationWorking;
-  $('#send').textContent=state.stopping?'Stopping…':state.busy?'Stop & send ↑':'Send ↑';
-  $('#stop-request').hidden=!state.busy;
-  $('#stop-request').disabled=state.stopping;
-  $('#stop-request').textContent=state.stopping?'Stopping…':'Stop';
+  $('#request').disabled=!state.business||state.navigating||state.stopping||previousFolder||state.organizationWorking;
+  $('#request').placeholder=previousFolder?'Start a new chat in this workspace…':state.busy?'Write your next message while this runs…':'Ask a question or describe what you need…';
+  $('#send').disabled=!state.business||state.navigating||state.stopping||state.starting||state.settling||previousFolder||state.organizationWorking||state.needsCheck||state.connectionInterrupted;
+  $('#send').textContent=state.stopping?'Stopping…':state.busy?'Stop ■':state.data?.connection.connected?'Send ↑':state.data?.connection.mode==='copy'?'Copy request ↗':'Connect AI →';
+  $('#stop-request').hidden=!state.busy;$('#stop-request').disabled=state.stopping;$('#stop-request').textContent=state.stopping?'Stopping…':'Stop';
+  $('#business').disabled=false;$('#new-chat').disabled=!state.business;$('#chats').disabled=!state.business;
 }
+
 async function stopRequest() {
   if(!state.activeJob||state.stopping)return;
   state.stopping=true;chatControls();
@@ -636,11 +636,11 @@ async function render() {
     }}
     return;
   }
-  if(state.view==='home'||state.overviewAt!==state.data.refreshed) await overview();
+  if(state.view==='work'&&!state.library.length)state.library=await api('/api/library');
   if(!current())return;
-  if(state.view==='home') { $('#section-dialog').close(); return; }
+  if(state.view==='home') { $('#section-dialog').close();$('#view').innerHTML='';return; }
   $('#section-title').textContent=({business:'Business & memory',files:'Saved files & media',work:'Workflows & recipes',tools:'Recurring tasks'})[state.view];
-  if(!$('#section-dialog').open) $('#section-dialog').showModal();
+  if(!$('#section-dialog').open) $('#section-dialog').show();
   if(state.view==='business') {
     view.innerHTML=`<div class="section-head business-title"><h3>${esc(rows('Business')[0]?.title)}</h3><button class="text-button" data-action="edit-business">Edit name</button></div><input class="search" id="record-search" type="search" aria-label="Search goals and saved information" placeholder="Find goals or saved information…" value="${esc(state.memoryQuery||'')}"><div id="full-memory"></div>`;
     renderMemory();
@@ -1034,7 +1034,7 @@ async function taskModels(app) {
   }catch{if(select.isConnected)$('#task-model-note').textContent='Couldn’t load other models. The current setting is unchanged.';}
   finally{if(select.isConnected&&$('#task-edit-form select[name=app]').value===app)select.disabled=false;}
 }
-function details(title, html) { $('#detail-title').textContent=title; $('#detail-content').innerHTML=html; $('#detail').querySelectorAll('.dialog-error').forEach(el=>el.remove()); if($('#notice').classList.contains('error'))notice(''); $('#detail').showModal(); }
+function details(title, html) { const d=$('#detail');state.fileDetailTicket=(state.fileDetailTicket||0)+1;shellReturnFocus=document.activeElement;d.dataset.mode='panel';d.dataset.expanded='false';d.dataset.opened=Date.now();$('#detail-title').textContent=title;$('#detail-content').innerHTML=html;d.querySelectorAll('.dialog-error').forEach(el=>el.remove());if($('#notice').classList.contains('error'))notice('');if(!d.open)d.show(); }
 let apiConnections=[];
 async function showApiConnections(origin=state.apiReturn) {
   state.apiReturn=origin;
@@ -1069,19 +1069,22 @@ function recordDetails(ref) {
   details(r.title,`<p>${r.type==='Objective'?'Goal':esc(human(r.type))}</p>${fields.map(([k,v])=>`<div class="field"><strong>${esc(human(k))}</strong><p>${esc(pretty(v))}</p></div>`).join('')}${r.type==='Objective'?`<form id="edit-goal-form" class="form-grid" data-ref="${esc(r.ref)}"><label>Update this goal<input name="name" value="${esc(r.title)}" required maxlength="2000"></label><button class="primary">Save goal</button></form>`:''}<p><button class="text-button" data-prompt="${esc(`Help me work with the saved AURA record ${r.ref}: ${r.title}. Read the actual record and ask only what is necessary.`)}">Work with your AI ↗</button></p><p><button class="text-button" data-share-record="${esc(r.ref)}">Share a copy →</button></p><details><summary>File details</summary><p>${esc(r.path)}</p><pre>${esc(JSON.stringify(r.data,null,2))}</pre></details>`);
 }
 async function fileDetails(path) {
+  let ticket;const scope=chatScope();
+  const current=()=>ticket===state.fileDetailTicket&&scope===chatScope()&&$('#detail').open&&$('#file-preview');
   const f=state.files.find(f=>f.path===path); if(!f) return;
   details(f.name,`<p><button class="text-button" data-share-file="${esc(path)}">Share a copy →</button></p><div id="file-preview"><p>Opening preview…</p></div><details><summary>File location</summary><p>${esc(f.local_path||state.data.workspace+'/'+f.path)} · ${size(f.bytes)}</p><button class="secondary" id="copy-file-location">Copy file location</button></details>`);
+  ticket=state.fileDetailTicket;
   $('#copy-file-location').addEventListener('click',()=>attempt(async()=>{await navigator.clipboard.writeText(f.local_path||state.data.workspace+'/'+f.path); $('#copy-file-location').textContent='Location copied';}));
   if(f.media) {
     try {
-      const url=await mediaBlob(f.path);
+      const url=await mediaBlob(f.path);if(!current())return;
       const el=document.createElement(fileKind(f)==='videos'?'video':fileKind(f)==='audio'?'audio':'img');
       el.src=url; el.className='media-preview'; if(el.tagName==='IMG')el.alt=f.name; else el.controls=true;
       $('#file-preview').replaceChildren(el);
-    } catch(e) { $('#file-preview').textContent=e.message; }
+    } catch(e) {if(current())$('#file-preview').textContent=e.message;}
   } else {
-    try { const r=await api('/api/file?business='+encodeURIComponent(state.business)+'&path='+encodeURIComponent(path)); $('#file-preview').innerHTML='<pre>'+esc(r.text)+'</pre>'; }
-    catch(e) { $('#file-preview').textContent=e.message; }
+    try { const r=await api('/api/file?business='+encodeURIComponent(state.business)+'&path='+encodeURIComponent(path));if(!current())return; $('#file-preview').innerHTML='<pre>'+esc(r.text)+'</pre>'; }
+    catch(e) {if(current())$('#file-preview').textContent=e.message;}
   }
 }
 function prompt(text) {
@@ -1092,12 +1095,15 @@ function prompt(text) {
 }
 
 async function openStoredWorkspace(path) {
-  const opened=await api('/api/workspaces/open',{path,replace:state.repairWorkspace||''});state.repairWorkspace='';
-  for(const dialog of document.querySelectorAll('dialog[open]'))dialog.close();
-  state.business='';state.chat=[];state.chatMeta=null;state.liveJob=null;state.hydrated=false;state.library=[];state.catalog=null;state.files=[];state.connectionChecks=null;state.setupPrompted=new Set();state.setupStep='welcome';
-  const url=new URL(location.href);url.searchParams.delete('business');history.replaceState(null,'',url);
-  $('#request').value='';await refresh();notice(opened.connection_note||'Your saved workspace is open.',!!opened.connection_note);
+  rememberChatDraft();detachChatView();state.navigating=true;chatControls();
+  try{
+    const opened=await api('/api/workspaces/open',{path,replace:state.repairWorkspace||''});state.repairWorkspace='';
+    for(const dialog of document.querySelectorAll('dialog[open]'))dialog.close();
+    state.business='';state.chat=[];state.chatMeta=null;state.liveJob=null;state.hydrated=false;state.library=[];state.catalog=null;state.files=[];state.connectionChecks=null;state.setupPrompted=new Set();state.setupStep='welcome';
+    $('#request').value='';await refresh();recordShellRoute();notice(opened.connection_note||'Your saved workspace is open.',!!opened.connection_note);
+  }finally{state.navigating=false;chatControls();}
 }
+
 async function backupSummary() {
   const plan=await api('/api/workspaces/backup-preview',{include_linked:$('#backup-linked')?.checked||false});
   $('#backup-summary').textContent=`${plan.files} files · ${size(plan.bytes)}. Saved business context, workspace files, and file links.`;
@@ -1487,12 +1493,12 @@ async function auraRecovery() {
 }
 
 async function changeWorkspace(id) {
-  if(state.busy){$('#business').value=state.business;$('#setup-workspace-select').value=state.business;return;}
-  if(id==='__add__'){$('#business').value=state.business;$('#setup-workspace-select').value=state.business;await addWorkspace();return;}
   if(id===state.business)return;
-  state.drafts??={};state.drafts[state.business]=$('#request').value;$('#request').value=state.drafts[id]||'';
+  if(id==='__add__'){$('#business').value=state.business;$('#setup-workspace-select').value=state.business;await addWorkspace();return;}
+  rememberChatDraft();detachChatView();
+  $('#request').value='';
   state.business=id;state.view='home';state.chat=[];state.chatMeta=null;state.hydrated=false;state.setupStep='welcome';state.welcome=null;state.connectionChecks=null;
-  showMessages();notice('');await refresh();renderConnection();
+  showMessages();notice('');await refresh();renderConnection();recordShellRoute();
 }
 const chatDate=value=>value?new Date(value*1000).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'Date not reported';
 function chatDescription(chat){return chat.summary|| (chat.latest_request?'Latest request: '+chat.latest_request:'No description yet.');}
@@ -1501,14 +1507,14 @@ async function showChats(){
   const result=await api('/api/chats?business='+encodeURIComponent(state.business));
   if(scope!==JSON.stringify([state.data.workspace,state.business])||ticket!==state.chatListTicket)return;
   state.chatList=result.items;
-  details('Your chats',`<p>Conversations for this workspace, most recently active first.</p><div class="chat-list bounded-list">${result.items.length?result.items.map(c=>`<div class="chat-list-row"><button class="row" data-chat="${esc(c.id)}" ${state.busy?'disabled':''}><span class="row-text"><span class="row-title">${esc(c.title)}</span><span class="chat-description">${esc(chatDescription(c))}</span><span class="row-meta">${esc(appName(c.agent))} · ${esc(c.model)} · ${esc(chatDate(c.updated))} · ${esc(({working:'Working',error:'Needs attention',stopped:'Stopped',complete:'Reply ready'})[c.status]||'Saved')}${c.summary_stale?' · Description may need updating':''}</span></span></button><button class="chat-options" data-edit-chat="${esc(c.id)}" aria-label="Chat details for ${esc(c.title)}" aria-haspopup="dialog" title="Chat details">⋯</button></div>`).join(''):empty('No saved native chats yet.','Supported native connections keep your conversations in your AI app.')}</div>`);
+  details('Your chats',`<p>Conversations for this workspace, most recently active first.</p><div class="chat-list bounded-list">${result.items.length?result.items.map(c=>`<div class="chat-list-row"><button class="row" data-chat="${esc(c.id)}" ><span class="row-text"><span class="row-title">${esc(c.title)}</span><span class="chat-description">${esc(chatDescription(c))}</span><span class="row-meta">${esc(appName(c.agent))} · ${esc(c.model)} · ${esc(chatDate(c.updated))} · ${esc(({working:'Working',error:'Needs attention',stopped:'Stopped',complete:'Reply ready'})[c.status]||'Saved')}${c.summary_stale?' · Description may need updating':''}</span></span></button><button class="chat-options" data-edit-chat="${esc(c.id)}" aria-label="Chat details for ${esc(c.title)}" aria-haspopup="dialog" title="Chat details">⋯</button></div>`).join(''):empty('No saved chats yet.','Start a new conversation. Native connections keep the original history in your AI app.')}</div>`);
 }
 function showChatDetails(id,note=''){
   const chat=state.chatList.find(c=>c.id===id);if(!chat)return;
   const description=chat.summary||chat.latest_request||'No description yet.';
   const label=chat.summary?'Where things stand':chat.latest_request?'Latest request':'About this chat';
   const status=({working:'Working',error:'Needs attention',stopped:'Stopped',complete:'Reply ready'})[chat.status]||'Saved';
-  details(chat.title,`<div class="chat-detail"><div class="chat-detail-toolbar"><button class="text-button" id="chat-list-back">← All chats</button><button class="text-button" id="chat-rename" aria-controls="chat-title-form">Rename</button></div><form id="chat-title-form" class="chat-title-editor" hidden><input type="hidden" name="id" value="${esc(id)}"><label for="chat-title-input">Chat title</label><div class="chat-title-controls"><input id="chat-title-input" name="title" required maxlength="80" value="${esc(chat.title)}"><button class="secondary">Save title</button><button type="button" class="text-button" data-cancel-rename="${esc(id)}">Cancel</button></div></form><div class="chat-detail-meta"><p>${esc(appName(chat.agent))}<span> · </span>${esc(chat.model||'App default')}</p><p>${esc(chatDate(chat.updated))}<span> · </span>${esc(status)}</p></div><section class="chat-description-section" aria-label="${esc(label)}"><h3>${esc(label)}</h3><p class="chat-full-description">${esc(description)}</p>${chat.summary?`<p class="chat-description-date">${esc(chat.summary_source==='App'?'App summary':'Description')} · ${esc(chatDate(chat.summary_updated))}${chat.summary_stale?' · May need updating':''}</p>`:'<p class="chat-description-date">Updates with your AI’s substantive replies.</p>'}</section>${note?`<p class="chat-detail-note" role="status">${esc(note)}</p>`:''}<div class="chat-detail-actions"><button class="secondary" data-refresh-chat="${esc(id)}">Refresh from app</button><button class="primary" data-chat="${esc(id)}" ${state.busy?'disabled':''}>Open chat →</button></div></div>`);
+  details(chat.title,`<div class="chat-detail"><div class="chat-detail-toolbar"><button class="text-button" id="chat-list-back">← All chats</button><button class="text-button" id="chat-rename" aria-controls="chat-title-form">Rename</button></div><form id="chat-title-form" class="chat-title-editor" hidden><input type="hidden" name="id" value="${esc(id)}"><label for="chat-title-input">Chat title</label><div class="chat-title-controls"><input id="chat-title-input" name="title" required maxlength="80" value="${esc(chat.title)}"><button class="secondary">Save title</button><button type="button" class="text-button" data-cancel-rename="${esc(id)}">Cancel</button></div></form><div class="chat-detail-meta"><p>${esc(appName(chat.agent))}<span> · </span>${esc(chat.model||'App default')}</p><p>${esc(chatDate(chat.updated))}<span> · </span>${esc(status)}</p></div><section class="chat-description-section" aria-label="${esc(label)}"><h3>${esc(label)}</h3><p class="chat-full-description">${esc(description)}</p>${chat.summary?`<p class="chat-description-date">${esc(chat.summary_source==='App'?'App summary':'Description')} · ${esc(chatDate(chat.summary_updated))}${chat.summary_stale?' · May need updating':''}</p>`:'<p class="chat-description-date">Updates with your AI’s substantive replies.</p>'}</section>${note?`<p class="chat-detail-note" role="status">${esc(note)}</p>`:''}<div class="chat-detail-actions"><button class="secondary" data-refresh-chat="${esc(id)}">Refresh from app</button><button class="primary" data-chat="${esc(id)}" >Open chat →</button></div></div>`);
 }
 function showMessages(latest=false) {
   const failed=!state.busy&&(state.chatMeta?.status==='error'||(!state.chatMeta&&state.liveJob?.status==='error'));
@@ -1517,9 +1523,9 @@ function showMessages(latest=false) {
   $('#request-error-details').hidden=!detail;$('#request-error-text').textContent=detail;
   const conversation=$('#conversation'), top=conversation.scrollTop, chat=state.chatMeta?.id||'';
   if(!state.busy&&state.liveJob&&((state.liveJob.business_id&&state.liveJob.business_id!==state.business)||(state.liveJob.chat_id&&state.liveJob.chat_id!==chat)))state.liveJob=null;
-  const follow=latest||conversation.hidden||conversation.dataset.chat!==chat||conversation.scrollHeight-conversation.clientHeight-top<32;
+  const follow=conversation.hidden||conversation.dataset.chat!==chat||conversation.scrollHeight-conversation.clientHeight-top<48;
   conversation.hidden=!state.chat.length&&!state.busy;conversation.dataset.chat=chat;
-  const markup=state.chat.map(r=>`<div class="message ${r.role}"><strong>${r.role==='user'?'YOU':esc(r.agent||state.data?.connection.name||'YOUR AGENT')}${r.at?` <time>${esc(clockTime(r.at))}</time>`:''}${r.role==='assistant'&&r.model?` · ${esc(r.model)}${r.effort?' · '+esc(human(r.effort)):''}`:''}</strong>${esc(r.text)}</div>`).join('')+(!state.busy&&!failed&&state.chat.at(-1)?.role==='assistant'?'<div class="message-actions"><button class="text-button" id="make-skill">Make a reusable skill ↗</button></div>':'');
+  const markup=state.chat.map(r=>`<div class="message ${r.role}"><strong>${r.role==='user'?'YOU':esc(r.agent||state.data?.connection.name||'YOUR AGENT')}${r.at?` <time>${esc(clockTime(r.at))}</time>`:''}${r.role==='assistant'&&r.model?` · ${esc(r.model)}${r.effort?' · '+esc(human(r.effort)):''}`:''}</strong>${r.role==='assistant'?chatMarkdown(r.text):esc(r.text)}</div>`).join('')+(!state.busy&&!failed&&state.chat.at(-1)?.role==='assistant'?'<div class="message-actions"><button class="text-button" id="make-skill">Make a reusable skill ↗</button></div>':'');
   if(state.messageMarkup!==markup){$('#messages').innerHTML=markup;state.messageMarkup=markup;}
   $('#working').hidden=!state.busy;
   $('#working-label').textContent=state.liveJob?.progress||'Starting your AI…';
@@ -1530,25 +1536,32 @@ function showMessages(latest=false) {
   const activitySignature=JSON.stringify(activity);
   if(state.activitySignature!==activitySignature){$('#activity-list').innerHTML=activity.map(a=>`<li><time>${esc(clockTime(a.at))}</time> ${esc(a.text)}</li>`).join('');state.activitySignature=activitySignature;}
   conversation.scrollTop=follow?conversation.scrollHeight:top;
+  document.body.classList.toggle('has-conversation',!!state.chat.length||state.busy);
+  $('#welcome-heading').hidden=!!state.chat.length||state.busy;
+  renderComposerFiles();
+  renderChatRecovery();
 }
 async function submitRequest(text, scheduleId=null, organizationId=state.pendingOrganizationId||null) {
-  if(state.starting||state.stopping||state.settling)return;
-  if(!text.trim()) { $('#request').focus(); return; }
-  if(state.busy){state.nextRequest=text;state.nextScheduleId=scheduleId;state.nextOrganizationId=organizationId;await stopRequest();return;}
-  if(!state.data.connection.connected && state.data.connection.mode!=='copy') { $('#request').value=text; openConnection(true); return; }
-  if(state.data.connection.model_controls&&!state.data.connection.model){openConnection(true);return;}
-  if(!state.data.connection.connected) {
-    const request=await api('/api/request',{business:state.business,text,history:state.chat,schedule_id:scheduleId,organization_id:organizationId});
-    details('Copy to your AI',`<p>Paste this into your existing AI chat to continue.</p><button class="primary" id="copy-handoff">Copy request</button><details><summary>See the request</summary><label class="sr-only" for="handoff-text">Request for your agent</label><textarea id="handoff-text" class="handoff" readonly></textarea></details>`);
-    $('#handoff-text').value=request.text;
-    $('#copy-handoff').addEventListener('click',()=>attempt(async()=>{await navigator.clipboard.writeText(request.text); $('#copy-handoff').textContent='Copied — paste into your agent';}));
-    return;
+  if(state.starting||state.stopping||state.settling||state.needsCheck||state.connectionInterrupted)return;
+  if(state.busy){await stopRequest();return;}
+  if(!text.trim()){$('#request').focus();return;}
+  const connection={kind:state.data.connection.selected,model:state.data.connection.model,effort:state.data.connection.effort||''};
+  if(!state.data.connection.connected&&state.data.connection.mode!=='copy'){$('#request').value=text;openConnection(true);return;}
+  if(state.data.connection.model_controls&&!connection.model){openConnection(true);return;}
+  if(!state.data.connection.connected){
+    const request=await api('/api/request',{business:state.business,text,history:state.chat,files:state.selectedFiles||[],schedule_id:scheduleId,organization_id:organizationId});
+    details('Copy to your AI',`<p>Paste this request into your AI app. Attach the selected files there if it cannot read local paths.</p><button class="primary" id="copy-handoff">Copy request</button><textarea id="handoff-text" class="handoff" readonly></textarea>`);$('#handoff-text').value=request.text;
+    $('#copy-handoff').onclick=()=>attempt(async()=>{await navigator.clipboard.writeText(request.text);$('#copy-handoff').textContent='Copied';});return;
   }
-  let job;state.starting=true;chatControls();
-  try {job=await api('/api/chat',{business:state.business,text,history:state.chat,schedule_id:scheduleId,organization_id:organizationId});state.pendingOrganizationId=null;}
-  finally {state.starting=false;chatControls();}
-  state.chat.push({role:'user',text,at:new Date().toISOString()}); $('#request').value='';notice('');showMessages(true);
-  await pollJob(job);
+  const focus=chatScope(),navigation=state.navigationTicket,chatId=state.chatMeta?.id||'',files=[...(state.selectedFiles||[])],submitTicket=state.submitTicket=(state.submitTicket||0)+1;state.starting=true;chatControls();
+  try {
+    const job=await api('/api/chat',{business:state.business,chat_id:chatId,connection,text,history:state.chat,files,schedule_id:scheduleId,organization_id:organizationId});
+    if(focus!==chatScope()||navigation!==state.navigationTicket)return;
+    state.pendingOrganizationId=null;state.selectedFiles=[];
+    state.chatMeta={...(state.chatMeta||{}),id:job.chat_id,business_id:state.business,workspace:state.data.workspace,agent:connection.kind,model:connection.model,effort:connection.effort,status:'working'};
+    state.chat.push({role:'user',text,at:new Date().toISOString(),files});$('#request').value='';rememberChatDraft();notice('');showMessages(true);recordShellRoute();renderShell();
+    state.starting=false;await pollJob(job);
+  } finally {if(submitTicket===state.submitTicket){state.starting=false;chatControls();}}
 }
 
 document.addEventListener('click',event=>attempt(async()=>{
@@ -1588,16 +1601,16 @@ document.addEventListener('click',event=>attempt(async()=>{
   if(button.hasAttribute('data-stop-schedule')){await api('/api/schedules/stop',{business:state.business,operation_id:state.scheduleJob.id});await syncScheduleOperation();}
   if(button.hasAttribute('data-dismiss-schedule')){state.dismissedScheduleJob=state.scheduleJob.id;renderScheduleOperation();}
   if(button.dataset.openSchedule){await syncSchedules(true);await scheduleDetails(button.dataset.openSchedule);}
-  if(button.id==='close-section') {state.view='home';$('#section-dialog').close();}
-  if(button.id==='new-chat'&&!state.busy) {await api('/api/chats/new',{business:state.business});state.chat=[];state.chatMeta=null;state.liveJob=null;$('#request').value='';showMessages();taskStatus('');$('#request').focus();notice('New chat. Your saved business context is still available.');}
+  if(button.id==='close-section') {state.view='home';$('#section-dialog').close();recordShellRoute();}
+  if(button.id==='new-chat')await newShellChat();
   if(button.id==='chats'||button.id==='chat-list-back')await showChats();
   if(button.dataset.editChat)showChatDetails(button.dataset.editChat);
   if(button.id==='chat-rename'){const form=$('#chat-title-form');form.hidden=false;button.hidden=true;$('#detail-content [data-refresh-chat]').disabled=true;$('#chat-title-input').focus();}
   if(button.dataset.cancelRename)showChatDetails(button.dataset.cancelRename);
   if(button.dataset.refreshChat){const id=button.dataset.refreshChat,business=state.business,workspace=state.data.workspace;button.disabled=true;button.textContent='Refreshing…';try{const result=await api('/api/chats/detail?business='+encodeURIComponent(business)+'&id='+encodeURIComponent(id));if(state.business!==business||state.data.workspace!==workspace)return;const index=state.chatList.findIndex(c=>c.id===id);state.chatList[index]=result.chat;showChatDetails(id,result.history_note);}finally{if(button.isConnected){button.disabled=false;button.textContent='Refresh from app';}}}
-  if(button.dataset.chat){const result=await api('/api/chats/open',{business:state.business,id:button.dataset.chat});state.chat=result.messages;state.chatMeta=result.chat;$('#detail').close();notice('');await refresh();showMessages();if(result.history_note)notice(result.history_note);taskStatus(result.history_note?'Saved display restored':'Chat restored from '+state.data.connection.name);}
+  if(button.dataset.chat)await openShellChat(button.dataset.chat);
   if(button.dataset.close) $('#'+button.dataset.close).close();
-  if(button.dataset.view) { if(button.dataset.view==='tools')state.scheduleAdding=button.hasAttribute('data-add-recurring');$('#more-dialog').close(); if(!state.data.diagnostics.length)notice(''); state.view=button.dataset.view; workFilter='all';workCategory=''; await render(); }
+  if(button.dataset.view) { if(button.dataset.view==='tools')state.scheduleAdding=button.hasAttribute('data-add-recurring');$('#more-dialog').close(); if(!state.data.diagnostics.length)notice(''); state.view=button.dataset.view; workFilter='all';workCategory=''; await render();recordShellRoute();await renderShell(); }
   if(button.dataset.prompt) prompt(button.dataset.prompt);
   if(button.dataset.record) recordDetails(button.dataset.record);
   if(button.dataset.file) await fileDetails(button.dataset.file);
@@ -1621,7 +1634,7 @@ document.addEventListener('click',event=>attempt(async()=>{
   if(button.dataset.favorite)await toggleFavorite(button.dataset.favorite);
   if(button.dataset.pickModel){$('#model-choice').value=button.dataset.pickModel;favoriteButton();renderFavoriteList();try{await selectModel();}catch(error){modelFailure(error);}}
   if(button.dataset.action==='connect'||['connection','review-setup','model-settings'].includes(button.id)) {state.tour=button.id==='review-setup';openConnection(true,state.tour?'welcome':button.id==='model-settings'?'models':'connect');}
-  if(button.id==='setup-start'||button.id==='models-back'){state.setupStep='connect';renderConnection();}
+  if(button.id==='setup-start'||button.id==='models-back'){if(button.id==='setup-start'){const p=await api('/api/profile',{display_name:$('#setup-display-name').value});state.data.profile=p;applyProfile(p);}state.setupStep='connect';renderConnection();}
   if(button.id==='connect-back'){state.setupStep='welcome';renderConnection();}
   if(button.id==='choose-agent'||button.id==='setup-back'){state.setupStep='models';renderConnection();await loadAgentOptions();}
   if(button.id==='welcome-request')finishSetup();
@@ -1788,8 +1801,8 @@ document.addEventListener('submit',event=>{
   });
 });
 for(const id of ['business','setup-workspace-select'])$('#'+id).addEventListener('change',event=>attempt(()=>changeWorkspace(event.target.value)));
-$('#request').addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing){event.preventDefault();$('#chat-form').requestSubmit();}});
-$('#section-dialog').addEventListener('close',()=>{state.view='home';});
+$('#request').addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing){event.preventDefault();if(state.busy){taskStatus('Your draft is saved. Wait for this reply or use Stop.');return;}$('#chat-form').requestSubmit();}});
+$('#section-dialog').addEventListener('close',()=>{if(!$('#section-dialog').open){state.view='home';recordShellRoute();renderShell();}});
 $('#agent-choice').addEventListener('change',()=>{$('#app-check-status').textContent='';connectionChoice();});
 $('#model-choice').addEventListener('change',()=>attempt(async()=>{favoriteButton();renderFavoriteList();try{await selectModel();}catch(error){modelFailure(error);}}));
 $('#effort-choice').addEventListener('change',()=>attempt(async()=>{const picker=modelPicker();picker.efforts??={};picker.efforts[selectedRoute().key]=$('#effort-choice').value;await saveModelPicker();}));
@@ -1835,7 +1848,7 @@ attempt(syncUpdates);
 const updateTimer=setInterval(()=>{if(!state.closed)syncUpdates();},2000);
 document.addEventListener('input',()=>{state.lastEdit=Date.now();});
 document.addEventListener('change',event=>{if(event.target.id==='library-view'){libraryView=event.target.value;workCategory='';renderWork();}});
-window.addEventListener('beforeunload',()=>{try{if(state.business&&state.data?.workspace)sessionStorage.setItem('aura-draft:'+state.data.workspace+':'+state.business,$('#request').value);}catch{}});
+window.addEventListener('beforeunload',rememberChatDraft);
 
 const usageAlertTimer=setInterval(()=>{if(!document.hidden)checkUsageAlerts();},300000);
 const usageCacheTimer=setInterval(tickUsageClocks,30000);
@@ -1846,3 +1859,198 @@ document.addEventListener('toggle',event=>{
 },true);
 
 document.addEventListener('change',event=>{if(event.target.id==='library-option')attempt(()=>openLibrary(state.libraryDetail.key,event.target.value));});
+
+
+// Standard shell: navigation changes the visible context, never the execution owner.
+let shellReturnFocus=null,shellRestoring=false,shellSearchTicket=0,shellSearchData=null;
+function chatScope(){return JSON.stringify([state.data?.workspace||'',state.business,state.chatMeta?.id||'']);}
+function draftKey(){return 'aura-chat-draft:v1:'+chatScope();}
+function rememberChatDraft(){
+  if(!state.data?.workspace||!state.business)return;
+  try{sessionStorage.setItem(draftKey(),JSON.stringify({text:$('#request').value,files:state.selectedFiles||[],scroll:$('#conversation').scrollTop}));}catch{}
+}
+function restoreChatDraft(){
+  let saved=null;try{saved=JSON.parse(sessionStorage.getItem(draftKey())||'null');}catch{}
+  $('#request').value=typeof saved?.text==='string'?saved.text:'';state.selectedFiles=Array.isArray(saved?.files)?saved.files.slice(0,12):[];
+  renderComposerFiles();
+  if(Number.isFinite(saved?.scroll))requestAnimationFrame(()=>{$('#conversation').scrollTop=saved.scroll;});
+}
+function detachChatView(){
+  state.navigationTicket=(state.navigationTicket||0)+1;
+  state.pollTicket=(state.pollTicket||0)+1;state.hydrateTicket=(state.hydrateTicket||0)+1;
+  state.polling=false;state.busy=false;state.stopping=false;state.starting=false;state.settling=false;state.activeJob=null;state.liveJob=null;state.needsCheck=false;state.connectionInterrupted=false;
+}
+async function openShellChat(id){
+  rememberChatDraft();detachChatView();const root=state.data.workspace,business=state.business,ticket=state.navigationTicket=(state.navigationTicket||0)+1;
+  state.navigating=true;chatControls();let result;try{result=await api('/api/chats/open',{business,id});}finally{if(ticket===state.navigationTicket){state.navigating=false;chatControls();}}if(ticket!==state.navigationTicket||root!==state.data.workspace||business!==state.business)return;
+  state.view='home';$('#section-dialog').close();$('#detail').close();state.chat=result.messages;state.chatMeta=result.chat;state.liveJob=result.job;state.busy=result.job?.status==='working';state.activeJob=state.busy?result.job:null;
+  state.needsCheck=result.chat?.status==='working'&&!state.busy;state.hydrated=true;restoreChatDraft();showMessages();await refresh();recordShellRoute();closeMobileSidebar();
+  if(result.history_note)notice(result.history_note);
+  if(result.job?.status==='working')attempt(()=>pollJob(result.job));
+  else taskStatus(state.needsCheck?'Check this chat in its AI app before continuing.':state.chat.length?'Conversation restored':'Ready when you are');
+  chatControls();
+}
+async function newShellChat(){
+  if(!state.business)return;rememberChatDraft();detachChatView();
+  const ticket=state.navigationTicket=(state.navigationTicket||0)+1,root=state.data.workspace,business=state.business;
+  state.navigating=true;state.view='home';$('#section-dialog').close();$('#detail').close();state.chat=[];state.chatMeta=null;state.selectedFiles=[];$('#request').value='';state.hydrated=true;
+  try{sessionStorage.removeItem(draftKey());}catch{}
+  showMessages();taskStatus('');notice('');chatControls();
+  try{await api('/api/chats/new',{business});if(ticket!==state.navigationTicket||root!==state.data.workspace||business!==state.business)return;await refresh();recordShellRoute();closeMobileSidebar();}
+  finally{if(ticket===state.navigationTicket){state.navigating=false;chatControls();$('#request').focus();}}
+}
+
+function applyProfile(profile){
+  state.profile={display_name:'',sidebar_collapsed:false,panel_width:480,text_size:15,accent:'forest',...profile};
+  const p=state.profile;document.body.classList.toggle('sidebar-collapsed',p.sidebar_collapsed);document.documentElement.dataset.accent=p.accent;
+  document.documentElement.style.setProperty('--panel-width',p.panel_width+'px');document.documentElement.style.setProperty('--ui-text-size',p.text_size+'px');
+  $('#profile-name').textContent=p.display_name||'Your workspace';$('.profile-avatar').textContent=(p.display_name||'You').trim().slice(0,1).toUpperCase();
+  $('#welcome-name').textContent=p.display_name?'Welcome, '+p.display_name+'.':'Welcome to AURA';
+  $('#sidebar-collapse').setAttribute('aria-label',p.sidebar_collapsed?'Expand sidebar':'Collapse sidebar');$('#sidebar-collapse').title=p.sidebar_collapsed?'Expand sidebar':'Collapse sidebar';
+  if(!$('#setup-display-name').value)$('#setup-display-name').value=p.display_name;
+}
+async function renderShell(){
+  if(!state.data||!$('#sidebar'))return;
+  applyProfile(state.data.profile||state.profile||{});$('#active-workspace-label').textContent=rows('Business')[0]?.title||'Choose a workspace';
+  $('#active-chat-label').textContent=state.chatMeta?.title||'';
+  for(const b of document.querySelectorAll('.sidebar-sections [data-view]'))b.setAttribute('aria-current',b.dataset.view===state.view?'page':'false');
+  const running=state.data.running_chats||[];$('#background-work').hidden=!running.length;$('#background-work').textContent=running.length+' '+(running.length===1?'chat working':'chats working');
+  if(!state.business){$('#sidebar-chat-list').innerHTML='<p class="sidebar-empty">Choose a workspace to see its chats.</p>';return;}
+  const root=state.data.workspace,business=state.business;
+  const list=await api('/api/chats?business='+encodeURIComponent(business));if(root!==state.data.workspace||business!==state.business)return;
+  state.chatList=list.items;state.runningChats=list.running||[];state.data.running_chats=state.runningChats;$('#background-work').hidden=!state.runningChats.length;$('#background-work').textContent=state.runningChats.length+' '+(state.runningChats.length===1?'chat working':'chats working');
+  const owned=new Set(state.runningChats.filter(j=>j.workspace===root).map(j=>j.chat_id));
+  const limit=state.chatLimit||20,signature=JSON.stringify([list.items.map(c=>[c.id,c.title,c.status,c.updated]),[...owned],state.chatMeta?.id,limit,state.inbox?.items?.map(n=>[n.chat_id,n.read])]);
+  if(signature===state.sidebarSignature)return;state.sidebarSignature=signature;
+  $('#sidebar-chat-list').innerHTML=list.items.length?list.items.slice(0,limit).map(c=>{
+    const working=owned.has(c.id),check=c.status==='working'&&!working,unread=state.inbox?.items?.some(n=>n.chat_id===c.id&&!n.read);
+    const status=working?'Working':check?'Check in app':c.status==='error'?'Needs attention':unread?'Reply ready':'';
+    return `<button type="button" class="sidebar-chat" data-chat="${esc(c.id)}" aria-current="${c.id===state.chatMeta?.id}" title="${esc(c.title+(status?' · '+status:''))}"><span class="chat-indicator ${working?'working':check||c.status==='error'?'attention':unread?'ready':''}" aria-label="${esc(status)}"></span><span class="chat-name">${esc(c.title||'New chat')}</span>${check?'<small>Check</small>':''}</button>`;
+  }).join(''):'<p class="sidebar-empty">Start a conversation. Your useful work stays with this workspace.</p>';
+  $('#sidebar-more-chats').hidden=list.items.length<=limit;
+}
+function closeMobileSidebar(){document.body.classList.remove('sidebar-mobile-open');$('#sidebar-scrim').hidden=true;}
+function openSidebar(){document.body.classList.add('sidebar-mobile-open');$('#sidebar-scrim').hidden=false;}
+function recordShellRoute(replace=false){
+  if(shellRestoring||!state.data)return;
+  const value={aura:true,workspace:state.data.workspace,business:state.business,chat:state.chatMeta?.id||'',view:state.view};
+  const url=new URL(location.href);if(value.business)url.searchParams.set('business',value.business);if(value.chat)url.searchParams.set('chat',value.chat);else url.searchParams.delete('chat');
+  if(value.view!=='home')url.searchParams.set('view',value.view);else url.searchParams.delete('view');
+  if(JSON.stringify(history.state)===JSON.stringify(value))return;
+  history[replace||!history.state?.aura?'replaceState':'pushState'](value,'',url);
+}
+window.addEventListener('popstate',event=>attempt(async()=>{
+  const r=event.state;if(!r?.aura)return;shellRestoring=true;
+  try{
+    if(r.workspace!==state.data.workspace)await openStoredWorkspace(r.workspace);
+    if(r.business!==state.business)await changeWorkspace(r.business);
+    if(r.chat&&r.chat!==state.chatMeta?.id)await openShellChat(r.chat);else if(!r.chat&&state.chatMeta)await newShellChat();
+    state.view=['business','files','work','tools'].includes(r.view)?r.view:'home';$('#detail').close();await render();await renderShell();
+  }finally{shellRestoring=false;}
+}));
+function renderComposerFiles(){
+  const refs=state.selectedFiles||[];$('#composer-files').hidden=!refs.length;
+  $('#composer-files').innerHTML=refs.map(ref=>`<span class="context-chip"><span title="${esc(ref)}">${esc(ref.split(/[\\/]/).at(-1))}</span><button type="button" data-remove-context="${esc(ref)}" aria-label="Remove ${esc(ref.split(/[\\/]/).at(-1))}">×</button></span>`).join('');
+}
+async function chooseContextFiles(){
+  const business=state.business,root=state.data.workspace;if(!business)return;
+  const data=await api('/api/files?business='+encodeURIComponent(business));if(business!==state.business||root!==state.data.workspace)return;state.files=data.items;
+  details('Use a workspace file',`<p class="shell-help">Choose files for this request. Your AI can read relevant material through its existing tools. A copy-to-app connection may need you to attach the files in that app.</p><input id="context-file-search" type="search" placeholder="Find a file…" aria-label="Find a workspace file"><div id="context-file-list"></div><p class="small-note">File references are added to this request. Selecting a file does not run it.</p>`);
+  const paint=()=>{const q=$('#context-file-search').value.toLowerCase();$('#context-file-list').innerHTML=data.items.filter(f=>(f.name+' '+f.path).toLowerCase().includes(q)).slice(0,60).map(f=>`<button class="search-result" data-add-context="${esc(f.path)}"><span>${esc(f.name)}</span><small>${(state.selectedFiles||[]).includes(f.path)?'Selected':size(f.bytes)}</small></button>`).join('')||empty('No matching files','Try a different name, or add a location from Files & media.');};
+  $('#context-file-search').oninput=paint;paint();$('#context-file-search').focus();
+}
+function renderChatRecovery(){
+  let host=$('#chat-reconnect');if(!host){host=document.createElement('div');host.id='chat-reconnect';host.className='shell-help';$('#request-recovery').after(host);}
+  host.hidden=!state.needsCheck&&!state.connectionInterrupted;
+  host.innerHTML=state.needsCheck?`<p>Aura cannot confirm the last request’s state after a restart. Check this conversation in ${esc(appName(state.chatMeta?.agent)||'your AI app')}, then continue here.</p><button class="secondary" id="chat-checked">I checked · Continue this chat</button>`:state.connectionInterrupted?'<p>The connection was interrupted. Your request has not been sent again.</p><button class="secondary" id="chat-reconnect-now">Reconnect to this chat</button>':'';
+}
+async function personalize(){
+  $('#more-dialog').close();const p=state.profile||{};
+  details('Personalize your view',`<p class="shell-help">These preferences stay on this computer. Your name is optional.</p><form id="profile-form" class="form-grid"><label>Your name<input name="display_name" maxlength="80" autocomplete="given-name" value="${esc(p.display_name||'')}" placeholder="What should we call you?"></label><label>Appearance<select name="appearance">${['system','light','dark'].map(v=>`<option value="${v}" ${state.data.appearance===v?'selected':''}>${human(v)}</option>`).join('')}</select></label><label>Accent<select name="accent">${[['forest','Forest'],['ocean','Ocean'],['clay','Clay']].map(([v,n])=>`<option value="${v}" ${p.accent===v?'selected':''}>${n}</option>`).join('')}</select></label><label>Text size<select name="text_size">${[14,15,16,18].map(n=>`<option value="${n}" ${p.text_size===n?'selected':''}>${n===15?'Standard':n+' px'}</option>`).join('')}</select></label><label>Side panel width<input name="panel_width" type="range" min="360" max="900" step="20" value="${p.panel_width||480}"></label><div class="inline-actions"><button class="primary">Save preferences</button><button type="button" class="text-button" id="reset-appearance">Reset appearance</button></div></form>`);
+}
+async function shellHelp(){
+  $('#more-dialog').close();const data=await api('/api/diagnostics');
+  details('Help & diagnostics',`<p class="shell-help">Aura keeps your workspace files local. Your selected AI app owns its native conversations and account access.</p><p class="shell-help">For a connection problem, open AI settings and check the app. After an interrupted request, reopen that conversation before retrying.</p><button type="button" class="secondary" id="copy-diagnostics">Copy diagnostic summary</button><p class="small-note">Includes versions, connection type and model. Conversation text, workspace names, paths and credentials are excluded.</p><pre id="diagnostic-summary" class="diagnostic-summary"></pre><p><button class="text-button" id="restore-standard-view">Use standard interface</button></p>`);
+  $('#diagnostic-summary').textContent=JSON.stringify(data,null,2);
+  $('#copy-diagnostics').onclick=()=>attempt(async()=>{await navigator.clipboard.writeText(JSON.stringify(data,null,2));$('#copy-diagnostics').textContent='Summary copied';});
+}
+async function openShellSearch(){
+  if(!state.business)return;shellSearchData=null;const root=state.data.workspace,business=state.business,ticket=++shellSearchTicket;
+  if(!$('#search-dialog').open)$('#search-dialog').showModal();$('#shell-search').value='';$('#shell-search').focus();$('#shell-search-results').innerHTML='';$('#shell-search-status').textContent='Finding your workspace items…';
+  try{
+    const [chats,files,library]=await Promise.all([api('/api/chats?business='+encodeURIComponent(business)),api('/api/files?business='+encodeURIComponent(business)),api('/api/library')]);
+    if(ticket!==shellSearchTicket||root!==state.data.workspace||business!==state.business)return;
+    shellSearchData={chats:chats.items,files:files.items,library,records:state.data.records};state.files=files.items;paintShellSearch();
+  }catch(e){$('#shell-search-status').textContent=e.message;}
+}
+function paintShellSearch(){
+  if(!shellSearchData)return;const q=$('#shell-search').value.trim().toLowerCase(),source=shellSearchData;
+  const groups=[['Chats',source.chats.map(c=>({title:c.title,match:c.title+' '+chatDescription(c),attr:'data-chat',id:c.id}))],['Files',source.files.map(f=>({title:f.name,match:f.name+' '+f.path,attr:'data-search-file',id:f.path}))],['Memory',source.records.map(r=>({title:r.title,match:r.title+' '+JSON.stringify(r.data),attr:'data-search-record',id:r.ref}))],['Library',source.library.map(i=>({title:i.title||i.name||i.id,match:JSON.stringify(i),attr:'data-search-library',id:i.key||i.id}))]];
+  $('#shell-search-results').innerHTML=groups.map(([name,items])=>{const found=items.filter(i=>String(i.match).toLowerCase().includes(q));return found.length?`<h3 class="search-group">${name} · ${found.length}</h3>${found.slice(0,q?10:3).map(i=>`<button class="search-result" ${i.attr}="${esc(i.id)}"><span>${esc(i.title)}</span><small>${name==='Chats'?'Open':'View'}</small></button>`).join('')}${found.length>(q?10:3)?`<button class="text-button" data-search-section="${({Chats:'chats',Files:'files',Memory:'business',Library:'work'})[name]}">See all matching ${name.toLowerCase()}</button>`:''}`:'';}).join('')||empty('No matches','Try another word.');
+  $('#shell-search-status').textContent='Searches chat descriptions, saved information, library metadata and file names/locations.';
+}
+// A deliberately small Markdown renderer: all content is escaped before markup.
+function chatMarkdown(value){
+  const code=[];let text=String(value||'').replace(/```([^\n`]*)\n([\s\S]*?)```/g,(_,lang,body)=>{const i=code.push(`<pre><code>${esc(body.replace(/\n$/,''))}</code></pre>`)-1;return '\n\nAURACODEBLOCK'+i+'\n\n';});
+  function inline(input){let s=esc(input);s=s.replace(/`([^`]+)`/g,'<code>$1</code>').replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>').replace(/\*([^*\n]+)\*/g,'<em>$1</em>');return s.replace(/\[([^\]]+)\]\(([^\s)]+)\)/g,(_,label,url)=>{if(/^https?:\/\//i.test(url))return `<a href="${url}" target="_blank" rel="noopener noreferrer">${label}</a>`;if(/^(javascript|data|vbscript):/i.test(url))return label;return `<button class="text-button" data-reply-file="${url}">${label}</button>`;});}
+  return text.split(/\n\s*\n/).map(block=>{if(/^AURACODEBLOCK\d+$/.test(block.trim()))return code[Number(block.trim().replace('AURACODEBLOCK',''))]||'';const lines=block.split('\n');if(lines.every(l=>/^[-*] /.test(l)))return '<ul>'+lines.map(l=>'<li>'+inline(l.slice(2))+'</li>').join('')+'</ul>';if(lines.every(l=>/^\d+\. /.test(l)))return '<ol>'+lines.map(l=>'<li>'+inline(l.replace(/^\d+\. /,''))+'</li>').join('')+'</ol>';return lines.map(l=>{const h=l.match(/^(#{1,4}) (.*)/);return h?`<h${Math.min(3,h[1].length+1)}>${inline(h[2])}</h${Math.min(3,h[1].length+1)}>`:inline(l);}).join('<br>');}).map(b=>/^<(pre|ul|ol|h[23])/.test(b)?b:'<p>'+b+'</p>').join('');
+}
+document.addEventListener('click',event=>{
+  const b=event.target.closest('button');if(!b)return;
+  if(b.closest('#sidebar')){if($('#detail').open)$('#detail').close();if(b.dataset.chat)$('#search-dialog').close();}
+  if(b.dataset.view&&b.closest('#sidebar')){event.stopImmediatePropagation();attempt(async()=>{state.view=b.dataset.view;await render();recordShellRoute();await renderShell();closeMobileSidebar();});}
+},true);
+document.addEventListener('click',event=>attempt(async()=>{
+  const b=event.target.closest('button');if(!b)return;
+  if(b.id==='sidebar-collapse'){const p=await api('/api/profile',{sidebar_collapsed:!state.profile?.sidebar_collapsed});state.data.profile=p;applyProfile(p);}
+  if(b.id==='sidebar-open')openSidebar();if(b.id==='sidebar-scrim')closeMobileSidebar();
+  if(b.id==='profile-open'||b.id==='personalize-menu')await personalize();if(b.id==='help-about')await shellHelp();
+  if(b.id==='search-open')await openShellSearch();
+  if(b.id==='sidebar-more-chats'){state.chatLimit=(state.chatLimit||20)+30;await renderShell();}
+  if(b.dataset.shellAction==='sharing'){await openSharing();closeMobileSidebar();}
+  if(b.id==='background-work'){
+    details('Working conversations',`<p class="shell-help">Switching conversations keeps these requests running. Open a conversation to see its progress or stop that request.</p>${(state.data.running_chats||[]).map(j=>`<button class="search-result" data-working-chat="${esc(j.chat_id)}" data-working-workspace="${esc(j.workspace)}" data-working-business="${esc(j.business_id)}"><span>${esc(j.agent)} · ${esc(j.model||'App default')}</span><small>${esc(j.progress||'Working')}</small></button>`).join('')}`);
+  }
+  if(b.dataset.workingChat){if(b.dataset.workingWorkspace!==state.data.workspace)await openStoredWorkspace(b.dataset.workingWorkspace);if(b.dataset.workingBusiness!==state.business)await changeWorkspace(b.dataset.workingBusiness);await openShellChat(b.dataset.workingChat);}
+  if(b.id==='attach-file')await chooseContextFiles();
+  if(b.dataset.addContext){state.selectedFiles=[...new Set([...(state.selectedFiles||[]),b.dataset.addContext])];if(state.selectedFiles.length>12)state.selectedFiles.pop();renderComposerFiles();rememberChatDraft();$('#detail').close();$('#request').focus();}
+  if(b.dataset.removeContext){state.selectedFiles=state.selectedFiles.filter(p=>p!==b.dataset.removeContext);renderComposerFiles();rememberChatDraft();}
+  if(b.id==='detail-expand'){$('#detail').dataset.expanded=$('#detail').dataset.expanded!=='true'?'true':'false';b.setAttribute('aria-label',$('#detail').dataset.expanded==='true'?'Reduce panel':'Expand panel');}
+  if(b.id==='reset-appearance'){const p=await api('/api/profile',{reset:true});await api('/api/preferences',{appearance:'system'});state.data.profile=p;state.data.appearance='system';applyProfile(p);applyAppearance('system');await personalize();}
+  if(b.id==='chat-checked'){await api('/api/chats/recover',{business:state.business,id:state.chatMeta.id});state.needsCheck=false;await hydrateConversation();}
+  if(b.id==='chat-reconnect-now'){state.connectionInterrupted=false;await hydrateConversation();}
+  if(b.id==='restore-standard-view'){await api('/api/interface/reset',{});location.reload();}
+  if(b.dataset.searchFile||b.dataset.replyFile){$('#search-dialog').close();let ref=b.dataset.searchFile||b.dataset.replyFile;if(b.dataset.replyFile){try{ref=decodeURIComponent(ref);}catch{}}const result=await api('/api/files?business='+encodeURIComponent(state.business));state.files=result.items;const normalize=p=>{let value=String(p||'').replaceAll('\\','/').replace(/^file:\/\/\/?/i,'').replace(/#L\d+(?:-L?\d+)?$/,'');return /^[a-z]:\//i.test(value)?value.toLowerCase():value;};const f=state.files.find(f=>[f.path,f.local_path,state.data.workspace+'/'+f.path].some(p=>normalize(p)===normalize(ref)));if(f)await fileDetails(f.path);else notice('This file is not in the selected workspace or linked locations. Open Files & media to locate it.',true);}
+  if(b.dataset.searchRecord){$('#search-dialog').close();recordDetails(b.dataset.searchRecord);}
+  if(b.dataset.searchLibrary){$('#search-dialog').close();await openLibrary(b.dataset.searchLibrary);}
+  if(b.dataset.searchSection){const q=$('#shell-search').value;$('#search-dialog').close();if(b.dataset.searchSection==='chats')await showChats();else{state.view=b.dataset.searchSection;await render();const f=$(({files:'#file-search',business:'#record-search',work:'#work-search'})[state.view]);if(f){f.value=q;f.dispatchEvent(new Event('input',{bubbles:true}));}recordShellRoute();}}
+}));
+document.addEventListener('submit',event=>{
+  if(event.target.id!=='profile-form')return;event.preventDefault();attempt(async()=>{const data=Object.fromEntries(new FormData(event.target));const p=await api('/api/profile',{display_name:data.display_name,accent:data.accent,text_size:Number(data.text_size),panel_width:Number(data.panel_width)});await api('/api/preferences',{appearance:data.appearance});state.data.profile=p;state.data.appearance=data.appearance;applyProfile(p);applyAppearance(data.appearance);$('#detail').close();});
+});
+$('#shell-search').addEventListener('input',paintShellSearch);
+$('#search-dialog').addEventListener('click',event=>{if(event.target.closest('[data-chat]'))$('#search-dialog').close();});
+$('#request').addEventListener('input',rememberChatDraft);
+
+$('#conversation').addEventListener('scroll',()=>{clearTimeout(state.draftScrollTimer);state.draftScrollTimer=setTimeout(rememberChatDraft,150);});
+$('#detail').addEventListener('close',()=>{if(shellReturnFocus?.isConnected)shellReturnFocus.focus({preventScroll:true});});
+document.addEventListener('keydown',event=>{
+  if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='k'){event.preventDefault();attempt(openShellSearch);}
+  if(event.altKey&&!event.ctrlKey&&!event.metaKey&&event.key.toLowerCase()==='n'){event.preventDefault();attempt(newShellChat);}
+  if(event.key==='Escape'){
+    if(document.querySelector('dialog:modal'))return;
+    if(document.body.classList.contains('sidebar-mobile-open')){event.preventDefault();closeMobileSidebar();return;}
+    const open=[...document.querySelectorAll('dialog[open]')].filter(d=>!d.matches(':modal')).sort((a,b)=>Number(b.dataset.opened||0)-Number(a.dataset.opened||0));if(open[0]){event.preventDefault();if(open[0].id==='section-dialog')state.view='home';open[0].close();recordShellRoute();}
+  }
+  if(event.key==='ArrowDown'&&event.target.id==='shell-search'){event.preventDefault();$('#shell-search-results button')?.focus();}
+});
+const shellTimer=setInterval(()=>{if(!state.closed&&!document.hidden&&state.data)attempt(async()=>{const root=state.data.workspace,business=state.business;await renderShell();});},4000);
+const originalFileDetails=fileDetails;fileDetails=async function(path){const pending=originalFileDetails(path);$('#detail').dataset.mode='context';await pending;};
+const originalRecordDetails=recordDetails;recordDetails=function(ref){originalRecordDetails(ref);$('#detail').dataset.mode='context';};
+// Keep initialization compatible with native/custom clients; navigation is ordinary history.
+async function restoreInitialRoute(){
+  if(!state.data||$('#refresh').disabled||(state.business&&!state.hydrated)){setTimeout(restoreInitialRoute,100);return;}
+  const params=new URLSearchParams(location.search),chat=params.get('chat'),view=params.get('view');
+  try{if(chat&&chat!==state.chatMeta?.id)await openShellChat(chat);if(['business','files','work','tools'].includes(view)){state.view=view;await render();await renderShell();}}finally{recordShellRoute(true);}
+}
+attempt(restoreInitialRoute);

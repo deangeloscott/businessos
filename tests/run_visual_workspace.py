@@ -487,7 +487,7 @@ else:
                         call('/api/chats/rename',{'business':bid,'id':saved_chat['id'],'title':'My launch work'})
                     else:assert saved_chat['title']=='My launch work', 'AI updates must preserve the chosen title'
                 assert 'resumed=True' in result['reply'] and result['usage']['output_tokens'] == 20
-                chats = call('/api/chats?business='+bid)['items']
+                chats = [c for c in call('/api/chats?business='+bid)['items'] if c['agent']=='codex']
                 assert len(chats) == 1 and not call('/api/chats?business=other-business')['items']
                 call('/api/chats/open', {'business':'other-business','id':chats[0]['id']}, expect=400)
                 conversation = call('/api/conversation?business='+bid)
