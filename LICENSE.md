@@ -1,4 +1,4 @@
-# ViralTrac AURA Source-Available License v1.0
+# ViralTrac AURA Source-Available License v1.1
 
 Copyright © 2026 Umegro, LLC. All rights reserved except as expressly granted below.
 
@@ -42,6 +42,10 @@ A public repository host's built-in viewing and forking functionality may operat
 ## 4. Client and service-provider copies
 
 A permitted service provider may maintain separate customized AURA copies for multiple clients and may deliver those copies to the applicable clients. Such delivery is permitted only for the client's internal business use and as part of the provider's services. The provider may not use this permission to create a general-purpose resale, marketplace, white-label, sublicensing, or competing distribution business for the AURA Materials themselves.
+
+### Community-sharing exception
+
+Notwithstanding Section 3's general redistribution restriction, you may intentionally share reusable workflow instructions, templates, configurations, starter-workspace materials, and modifications of Aura's visual assets under the **Aura Community Sharing Terms v1.0** in `COMMUNITY-TERMS.md`. This permission applies to the selected contribution and relevant Aura-derived portions, including free adaptations shared through ordinary files or community catalogs. It does not authorize redistributing the complete Aura runtime/application as a standalone or substitutive product. Preserve the applicable license, contribution terms, and publisher/source notices. Standalone resale, paid access to the shared contributions themselves, and misleading rebranding remain restricted as described in those terms. Paid professional services remain permitted. Independently created materials remain their rights holders' property; their inclusion under the community terms is voluntary.
 
 ## 5. Modifications and ownership
 

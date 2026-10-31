@@ -2,6 +2,47 @@
 
 AURA can preserve strong organization-specific operating improvements without editing canonical AURA product source. Users may also explicitly package/share those improvements with others. Both capabilities are optional.
 
+## The community exchange
+
+The official home is [viraltrac.com/aura/community](https://viraltrac.com/aura/community/).
+Browse methods, designs and project starters without an account. See the purpose,
+requirements and actual file list; download an independent ZIP and make it yours.
+In Aura, **Sharing → Import a package** discovers downloaded packages, lets you
+choose items, then reviews the destination and changes through the existing sharing
+engine. Imports preserve local adaptations and never activate code or establish
+someone else's results as your business facts. A custom design remains an optional
+folder you explicitly inspect and choose; ordinary UI/API/CLI functions stay shared.
+
+To contribute, select reusable files/folders or methods and choose **Create a package
+→ Prepare for community sharing**. Aura projects methods to readable instructions,
+leaves canonical business records out, removes source paths/business IDs from
+generated metadata, and attaches the community terms/license/publisher notices.
+Selected file contents and instructions can still identify people: inspect everything,
+including screenshots, before sharing. This is deliberate selection, not automatic
+anonymization. Exporting stays local; uploading is a separate explicit step.
+
+Use a free ViralTrac account to submit the ZIP. Verify your email, choose a public name
+or pseudonym and accept the [community terms](COMMUNITY-TERMS.md). The website checks
+the package and shows its file list. Submissions stay private until a publication
+moderator reviews them. **My contributions** shows status/review notes, supports new
+fixed revisions, and unpublishes individual revisions. A new revision never replaces
+someone's local changes automatically. Other published revisions remain separately
+available; existing copies cannot be recalled.
+
+Suggestions go privately to the author and moderators; reports go to moderators.
+Share an improvement as your own contribution and retain its original contribution
+ID in **Based on a contribution**. Keep credit and mark material changes. You retain
+ownership of your work. Free sharing/adaptation and business use are allowed; paid
+implementation services are allowed; access/resale fees for the contribution itself
+require separate permission. Private changes can stay private. The Aura runtime's
+source-available restrictions remain, with its explicit community-sharing exception.
+
+Public uploads support ZIPs up to 10 MB / 500 entries / 32 MB expanded and optional
+PNG screenshots up to 2 MB / 4096×4096. Image metadata is removed. Code is downloadable
+source material, never a live hosted preview. Use ordinary private sharing for business
+records, credentials stay outside both flows, and retain backup/export independently
+of the website. The exchange is optional; Aura keeps operating without it.
+
 ## Local Workflow evolution
 
 Reusable `Learning` is ordinary organization-owned memory. A `ProcessExtension` is reusable organization-owned operating knowledge that either augments an installed AURA Workflow or defines an organization-local Workflow.

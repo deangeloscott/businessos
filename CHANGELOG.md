@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## v0.2.4 — 2026-10-31
+
+- Add local preparation for the Aura Innovation Exchange: selected reusable files and methods, portable public metadata, and attached community terms/source notices. Keep business records private and publication separate from local export.
+- Open the hosted community catalog from Sharing and the library. Discover/import both existing package families, choose a subset with required supporting materials, and use the existing review, local-copy, conflict and undo behavior.
+- Clarify community rights: free sharing/adaptation and business use with credit; paid services remain allowed; contribution access/resale fees require separate permission. Preserve Aura's source-available runtime restrictions.
+
 - Add stable, editable AURA chat titles and short evolving descriptions with current progress and next steps. Descriptions use native metadata or the existing AI reply, with no separate automatic summarization call.
 - Order chats by recent activity; show description freshness, saved status and app/model details. Refresh native history without changing the active conversation, and keep older descriptions visibly uncertain when later activity is not summarized.
 - Keep chat metadata in machine-local settings, separate from business memory. Preserve user-chosen titles and hide bounded description metadata from the AURA conversation display.

@@ -9,7 +9,7 @@ EXPECTED_EXPANSION='Agentic Understanding and Reinforcement Architecture'
 EXPECTED_DESCRIPTOR='organization-owned memory and operating knowledge for capable AI'
 EXPECTED_MATURITY='alpha'
 REQUIRED=[
-    'VERSION','LICENSE.md','TRADEMARKS.md','SECURITY.md','PUBLIC-DISTRIBUTION.md','PUBLISHER.json','BRANDING.md','DEPLOYMENT.md',
+    'VERSION','LICENSE.md','COMMUNITY-TERMS.md','TRADEMARKS.md','SECURITY.md','PUBLIC-DISTRIBUTION.md','PUBLISHER.json','BRANDING.md','DEPLOYMENT.md',
     'distribution/deployment-profiles.json','core/policies/workspace-and-human-knowledge.md','core/schemas/config/workspace-profile.schema.json','core/schemas/config/publisher-metadata.schema.json',
     'scripts/configure_workspace.py','scripts/migrate_workspace.py','scripts/workspace_status.py','scripts/generate_knowledge_layer.py','scripts/register_human_note.py'
 ]

@@ -40,6 +40,7 @@ import workspace_library
 import workspace_updates
 import workspace_chats
 import workspace_sharing
+import workspace_exchange
 from configure_workspace import configure
 from workspace_execution import Execution, Stopped
 from workspace_connections import Connections
@@ -1749,12 +1750,15 @@ def handler_for(app):
                         bid = selected(data.get('business'))
                         action = route.rsplit('/', 1)[1]
                         store = app.settings_file.parent
-                        if action in {'prepare', 'package'}:
-                            if action == 'prepare':
+                        if action in {'prepare', 'prepare-public', 'package'}:
+                            if action == 'prepare-public':
+                                result = workspace_exchange.prepare(workspace_root(),bid,data.get('keys'),data.get('name',''),data.get('note',''),
+                                    data.get('kind','starter'),data.get('description',''),data.get('author',''),data.get('based_on',''),store,app.preferences['file_locations'].get(bid,[]))
+                            elif action == 'prepare':
                                 result = workspace_sharing.prepare(workspace_root(), bid, data.get('keys'), data.get('name',''), data.get('note',''), store,
                                                                    app.preferences['file_locations'].get(bid, []))
                             else:
-                                result = workspace_sharing.import_package(data.get('path',''), store)
+                                result = workspace_exchange.import_package(data.get('path',''), store)
                                 try:
                                     workspace_sharing.remember_package(workspace_root(), bid, data['path'])
                                 except (OSError, ValueError):
@@ -1784,7 +1788,10 @@ def handler_for(app):
                             scope = workspace_catalog.read_json(workspace_sharing._job(data.get('id'), store) / 'ui-scope.json', {})
                             if scope != {'workspace':str(workspace_root()), 'business':bid}:
                                 raise ValueError('Prepare this sharing review in the currently selected workspace.')
-                            if action == 'review':
+                            if action == 'select':
+                                result=workspace_sharing.select_package(data['id'],data.get('keys'),store)
+                                workspace_catalog.write_json(workspace_sharing._job(result['id'],store)/'ui-scope.json',scope)
+                            elif action == 'review':
                                 result = workspace_sharing.review(data['id'], data.get('path',''), data.get('target_business',''), data.get('new_name',''), store)
                                 if result['destination'] == str(workspace_root()) and result['business'] == bid and (workspace_sharing._job(data['id'], store) / 'source.json').exists():
                                     raise ValueError('Choose a different business or workspace to receive the copy.')

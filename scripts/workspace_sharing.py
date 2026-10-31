@@ -353,6 +353,15 @@ def discover_packages(root, bid, locations=None, folder=None):
             if path in seen or storage.private_file(path):continue
             seen.add(path)
             with zipfile.ZipFile(path) as archive:
+                if 'innovation-package.json' in archive.namelist() and 'AURA-SHARE.json' not in archive.namelist():
+                    from workspace_exchange import archive_manifest
+                    from innovation_common import validate_package
+                    archive_manifest(archive)
+                    if archive.getinfo('innovation-package.json').file_size>2*1024**2:continue
+                    contribution=json.loads(archive.read('innovation-package.json'))
+                    validate_package(contribution,require_export_approval=True)
+                    found.append({'path':str(path),'name':contribution['process']['title'],'origin':contribution['contributor'].get('display_name') or contribution['contributor'].get('pseudonym') or 'Community contributor','created':contribution['created_at'],'items':1,'bytes':path.stat().st_size})
+                    continue
                 manifest = _archive_manifest(archive)
                 found.append({'path':str(path), 'name':manifest['name'], 'origin':manifest['origin']['name'],
                               'created':manifest['created'], 'items':len(manifest['items']), 'bytes':path.stat().st_size})
@@ -603,6 +612,9 @@ def export_package(ident, destination, store=None):
         loaded = import_package(temporary, store)
         shutil.rmtree(_job(loaded['id'], store))
         check_source(ident, store)
+        source_info=read(_job(ident,store)/'source.json',{})
+        if source_info.get('community') and Path(temporary).stat().st_size>10*1024**2:
+            raise ValueError('This public package exceeds 10 MB compressed. Select fewer files before exporting.')
         # Publish the already verified file atomically; a competing name is never replaced.
         if os.name == 'nt':
             # Windows rename refuses an occupied name and also works on USB/exFAT.
@@ -682,6 +694,31 @@ def import_package(archive_path, store=None):
 
 def _index_path(root, bid):
     return metadata(root, bid) / 'index.json'
+
+
+def select_package(ident, keys, store=None):
+    """Prepare an independent subset, preserving required supporting records."""
+    manifest,payload=load_package(ident,store)
+    by_key={row['key']:row for row in manifest['items']}
+    if not isinstance(keys,list) or not keys or any(key not in by_key for key in keys):
+        raise ValueError('Select available package items before continuing.')
+    wanted=set(keys);pending=list(keys)
+    while pending:
+        for dependency in by_key[pending.pop()].get('dependencies',[]):
+            if dependency not in wanted:wanted.add(dependency);pending.append(dependency)
+    new_id=uuid.uuid4().hex;job=_job(new_id,store);target=job/'payload';target.mkdir(parents=True)
+    try:
+        selected=[]
+        for row in manifest['items']:
+            if row['key'] not in wanted:continue
+            relative=safe(row['path']);dest=target/relative;dest.parent.mkdir(parents=True,exist_ok=True)
+            shutil.copyfile(payload/relative,dest);selected.append({**row,'supporting':row['key'] not in keys})
+        updated={**manifest,'items':selected}
+        updated['revision']=digest({k:updated[k] for k in ('name','origin','note','items','notes')})
+        write_json_atomic(target/'AURA-SHARE.json',updated)
+        return package_summary(new_id,updated)
+    except Exception:
+        shutil.rmtree(job);raise
 
 
 def review(ident, destination, bid='', new_name='', store=None):
@@ -995,6 +1032,7 @@ def main():
     p = sub.add_parser('save-selection'); p.add_argument('workspace'); p.add_argument('business'); p.add_argument('--select', action='append', required=True); p.add_argument('--name', required=True); p.add_argument('--note', default=''); p.add_argument('--id', default='', help='Update this saved selection, preserving its identity')
     p = sub.add_parser('export'); p.add_argument('id'); p.add_argument('output')
     p = sub.add_parser('import'); p.add_argument('archive')
+    p = sub.add_parser('select'); p.add_argument('id'); p.add_argument('--select', action='append', required=True)
     p = sub.add_parser('review'); p.add_argument('id'); p.add_argument('destination'); p.add_argument('--business', default=''); p.add_argument('--new-name', default='')
     p = sub.add_parser('apply'); p.add_argument('id'); p.add_argument('--include-updates', action='store_true')
     p = sub.add_parser('detail'); p.add_argument('workspace'); p.add_argument('business'); p.add_argument('receipt')
@@ -1007,7 +1045,10 @@ def main():
         elif args.action == 'save-selection': result = save_selection(args.workspace, args.business, args.name, args.select, args.note, args.id)
         elif args.action == 'prepare': result = prepare(args.workspace, args.business, args.select, args.name, args.note, args.store)
         elif args.action == 'export': result = export_package(args.id, args.output, args.store)
-        elif args.action == 'import': result = import_package(args.archive, args.store)
+        elif args.action == 'import':
+            from workspace_exchange import import_package as import_exchange_package
+            result = import_exchange_package(args.archive, args.store)
+        elif args.action == 'select': result = select_package(args.id, args.select, args.store)
         elif args.action == 'review': result = review(args.id, args.destination, args.business, args.new_name, args.store)
         elif args.action == 'apply': result = apply(args.id, args.include_updates, args.store)
         elif args.action == 'detail': result = imported_detail(args.workspace, args.business, args.receipt)

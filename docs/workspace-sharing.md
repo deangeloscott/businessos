@@ -29,6 +29,12 @@ locations. AURA's internal `.sharing` folder is expected and does not need atten
 
 ## Find and inspect a package
 
+For reusable public methods/designs/starters, **Explore community setups** opens the
+[Innovation Exchange](https://viraltrac.com/aura/community/). **Create a package →
+Prepare for community sharing** prepares a clean public-format selection locally;
+it never uploads automatically. See [the exchange guide](../INNOVATION-EXCHANGE.md)
+for contribution review, source notices, rights and publication.
+
 **Import a package** lists sharing ZIPs found in recent package locations, this
 business's files, its linked folders, and Downloads. Exports and successfully opened
 packages remember their location; the archive is not duplicated. Discovery is bounded,
@@ -41,6 +47,12 @@ before asking for a destination. Back returns to the package list and preserves 
 search. Changing the destination from the final review retains the form's values.
 Missing recent files can be selected again at their new location. Ordinary ZIPs,
 workspace backups, and unreadable packages are not offered as sharing packages.
+
+Use the checkboxes in that preview to choose what to bring across. Required supporting
+items and source notices follow the selected content. Clearing every item disables
+the destination action. Both existing selected-share ZIPs and exported workflow
+InnovationPackages are supported by discovery and import; workflow packages become
+readable, attributed source/method files, not active canonical business knowledge.
 
 A **saved selection** is an editable list of source items, not an archive. A ZIP is
 a fixed snapshot: edit the saved selection and export a new ZIP to share changes.
@@ -136,6 +148,8 @@ python scripts/workspace_sharing.py prepare /path/to/source business-id --select
 python scripts/workspace_sharing.py save-selection /path/to/source business-id --select record:OBJECT_ID --name "Location starter"
 python scripts/workspace_sharing.py export REVIEW_ID /path/to/Location-starter.zip
 python scripts/workspace_sharing.py import /path/to/Location-starter.zip
+python scripts/workspace_exchange.py prepare /path/to/source business-id --select file:KEY_FROM_LIST --name "Reusable starter" --kind starter --description "A useful blank starting point" --author "Public pseudonym"
+python scripts/workspace_sharing.py select REVIEW_ID --select file:ITEM_FROM_PACKAGE
 python scripts/workspace_sharing.py review REVIEW_ID /path/to/recipient --business recipient-id
 python scripts/workspace_sharing.py review REVIEW_ID /path/to/new-location --new-name "New location"
 python scripts/workspace_sharing.py apply REVIEW_ID
@@ -157,12 +171,17 @@ workspace structure is not a multi-user access-control system.
 
 Custom views can use the existing token-protected local JSON API. `GET /api/sharing?business=ID`
 returns selectable items, saved selections, known destinations, and recent imports.
-`POST /api/sharing/{prepare,selection,package,discover,destination,review,apply,export,detail,undo,file-key}`
+`POST /api/sharing/{prepare,prepare-public,selection,package,select,discover,destination,review,apply,export,detail,undo,file-key}`
 uses the same helpers. Every mutation includes `business`, the launch token, and the
 current `X-Aura-Workspace` header. Prepare/package reviews are scoped to that business
 and workspace. `prepare` takes `keys`, `name`, `note`; `selection` takes the same fields
 and an optional `selection_id` to update the existing selection. Omitting the ID creates
 a new selection. `discover` accepts an optional folder `path`; `package` takes the ZIP `path`;
+`prepare-public` adds `kind` (`starter|workflow|layout`), optional `description`, `author`
+and `based_on` to ordinary preparation fields and uses `workspace_exchange.prepare`.
+`select` takes an imported package `id` and nonempty `keys`, returning a separate
+verified subset review with required supporting items. CLI import uses the same
+`workspace_exchange.import_package` adapter for both package families.
 `review` takes `id`, destination `path`, `target_business` or `new_name`; `apply` takes
 `id` and optional `include_updates`; `export` takes `id` and output `path`;
 `detail`/`undo` take `receipt`, with `apply: true` for confirmed undo. `destination`

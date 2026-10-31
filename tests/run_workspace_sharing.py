@@ -262,6 +262,30 @@ def main():
         # Locks survive as harmless files; the OS releases ownership, including on crashes.
         with share.destination_lock(target):
             pass
+        # Public preparation projects reusable material, not the business identity
+        # or the path of an excluded private file. It uses the same import engine.
+        import workspace_exchange as exchange
+        public = exchange.prepare(source,bid,selection,'Public starter',kind='starter',author='Example contributor',store=store)
+        exported = share.export_package(public['id'],base/'Community.zip',store)
+        with zipfile.ZipFile(exported['path']) as z:
+            raw=b'\n'.join(z.read(n) for n in z.namelist())
+            assert bid.encode() not in raw and str(source).encode() not in raw and b'DO_NOT_SHARE' not in raw
+            m=json.loads(z.read('AURA-SHARE.json'))
+            assert m['origin']['business_id']=='community'
+            assert 'files/aura-notices/COMMUNITY-TERMS.md' in z.namelist()
+        incoming=exchange.import_package(exported['path'],store)
+        chosen=next(i for i in incoming['items'] if i['path'].endswith('welcome.txt'))
+        subset=share.select_package(incoming['id'],[chosen['key']],store)
+        assert len(subset['items'])==4 and all(n in {i['key'] for i in subset['items']} for n in chosen['dependencies'])
+        share.review(subset['id'],target,local,store=store)
+        applied=share.apply(subset['id'],store=store)
+        assert applied['added']==4 and identity.read_bytes()==identity_before
+        assert share.undo(target,local,applied['receipt'],True)['status']=='undone'
+        identity_key=next(i['key'] for i in share.public_inventory(source,bid)['items'] if i['kind']=='record' and i.get('type')=='Business')
+        try:exchange.prepare(source,bid,[identity_key],'Invalid',store=store);raise AssertionError('Business identity was made public')
+        except ValueError:pass
+        try:exchange.import_package(base/'Unreadable.zip',store);raise AssertionError('Invalid exchange ZIP was accepted')
+        except ValueError:pass
     print('workspace sharing journeys passed')
 
 
