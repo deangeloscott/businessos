@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Refine the conversational UI with text-only Aura branding, reversible sidebar controls, aligned tool pages, consistent close/back controls, and full-page sharing and updates. Keep sharing actions and a copyable workspace location in a stable footer.
+- Consolidate profile, personal pictures, appearance and custom-layout guidance under Settings. Place notifications beside the profile, keep Usage & spend at the bottom right, and distinguish saved-data reload from native chat refresh.
+- Restore saved chat displays immediately and refresh native history only when requested. Cache successful native refreshes and hide Windows metadata/cleanup subprocesses.
+- Add per-chat model and effort selection without changing other chats or global defaults. Keep the owning app fixed, protect pending choices, and require a new Hermes session where its CLI cannot change startup options. Treat stopped Hermes gateway outcomes as needing a check before continuing.
+
 ## v0.2.5 — 2026-10-31
 
 - Make the standard interface a conversational workspace with a persistent sidebar, readable chat area, contextual file/memory panels and responsive navigation. Use restrained warm surfaces, clear typography and coordinated light/dark themes.

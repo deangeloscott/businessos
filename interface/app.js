@@ -24,7 +24,7 @@ async function api(path, data) {
 function notice(text, error=false) {
   $('#notice').textContent=text; $('#notice').classList.toggle('error',error); $('#notice').hidden=!text;
   if(!error) document.querySelectorAll('.dialog-error').forEach(message=>message.remove());
-  const dialog=document.querySelector('dialog[open]');
+  const dialog=document.querySelector('dialog:modal')||document.querySelector('#detail[open]')||document.querySelector('dialog[open]');
   if(error && dialog) {
     let message=dialog.querySelector('.dialog-error');
     if(!message) { message=document.createElement('p'); message.className='dialog-error'; message.setAttribute('role','alert'); dialog.append(message); }
@@ -528,9 +528,9 @@ async function pollJob(job) {
       if(job.welcome){state.welcome=result;state.setupStep=result.status==='complete'?'ready':'failed';}
       const conversation=await api('/api/conversation?business='+encodeURIComponent(business)+'&chat_id='+encodeURIComponent(chatId||''));
       if(!current())return;
-      state.chat=conversation.messages;state.chatMeta=conversation.chat;state.busy=false;state.stopping=false;state.activeJob=null;state.polling=false;
+      state.chat=conversation.messages;state.chatMeta=conversation.chat;state.needsCheck=conversation.chat?.status==='working';state.busy=false;state.stopping=false;state.activeJob=null;state.polling=false;
       if(result.status==='error'&&!job.welcome)notice(result.reply,true);
-      if(result.preference_warning)notice(result.preference_warning,true);
+      if(result.preference_warning)notice(result.preference_warning,true);if(result.stop_note)notice(result.stop_note);
       replyAlert(result);showMessages();chatControls();await refresh();renderConnection();return;
     }
   } catch(error) {
@@ -550,7 +550,7 @@ function chatControls() {
   $('#send').disabled=!state.business||state.navigating||state.stopping||state.starting||state.settling||previousFolder||state.organizationWorking||state.needsCheck||state.connectionInterrupted;
   $('#send').textContent=state.stopping?'Stopping…':state.busy?'Stop ■':state.data?.connection.connected?'Send ↑':state.data?.connection.mode==='copy'?'Copy request ↗':'Connect AI →';
   $('#stop-request').hidden=!state.busy;$('#stop-request').disabled=state.stopping;$('#stop-request').textContent=state.stopping?'Stopping…':'Stop';
-  $('#business').disabled=false;$('#new-chat').disabled=!state.business;$('#chats').disabled=!state.business;
+  $('#business').disabled=false;$('#new-chat').disabled=!state.business;$('#chats').disabled=!state.business;renderComposerConnection();
 }
 
 async function stopRequest() {
@@ -636,17 +636,21 @@ async function render() {
     }}
     return;
   }
+  if(state.view==='sharing'){if(sharing?.scope===sharingScope())renderSharing();else await openSharing();return;}
+  if(state.view==='updates'){await openUpdates();return;}
   if(state.view==='work'&&!state.library.length)state.library=await api('/api/library');
   if(!current())return;
   if(state.view==='home') { $('#section-dialog').close();$('#view').innerHTML='';return; }
+  $('#detail').close();
+  $('#section-description').textContent=({business:'Your goals, useful facts, preferences, and decisions.',files:'Find the work you have saved and the locations you have linked.',work:'Reusable guidance and tools your AI can use.',tools:'Schedules managed by your connected AI apps.'})[state.view]||'';
   $('#section-title').textContent=({business:'Business & memory',files:'Saved files & media',work:'Workflows & recipes',tools:'Recurring tasks'})[state.view];
   if(!$('#section-dialog').open) $('#section-dialog').show();
   if(state.view==='business') {
-    view.innerHTML=`<div class="section-head business-title"><h3>${esc(rows('Business')[0]?.title)}</h3><button class="text-button" data-action="edit-business">Edit name</button></div><input class="search" id="record-search" type="search" aria-label="Search goals and saved information" placeholder="Find goals or saved information…" value="${esc(state.memoryQuery||'')}"><div id="full-memory"></div>`;
+    view.innerHTML=`<div class="section-head business-title"><span>Business · <strong>${esc(rows('Business')[0]?.title)}</strong></span><button class="text-button" data-action="edit-business">Edit name</button></div><input class="search" id="record-search" type="search" aria-label="Search goals and saved information" placeholder="Find goals or saved information…" value="${esc(state.memoryQuery||'')}"><div id="full-memory"></div>`;
     renderMemory();
   } else if(state.view==='files') {
     const result=await api('/api/files?business='+encodeURIComponent(state.business));if(!current())return; state.files=result.items;state.fileLocations=result.locations||[];state.missingAssets=result.missing_assets||[];fileLocation='';
-    view.innerHTML=`<div class="section-head"><p>Workspace files and the locations you’ve linked.</p><button class="secondary" data-add-location>＋ Add files or folder</button></div><div class="linked-locations">${state.fileLocations.map(l=>`<div class="linked-location"><button ${l.missing?'data-reconnect-location':'data-filelocation'}="${esc(l.id)}"><strong>${esc(l.name)}</strong><small>${l.missing?'Location missing · Reconnect':l.kind==='folder'?'Linked folder':'Linked file'}</small></button><button data-unlink-location="${esc(l.id)}" aria-label="Unlink ${esc(l.name)}">✕</button></div>`).join('')}</div>${state.missingAssets.length?`<details class="missing-files"><summary>${state.missingAssets.length} saved file${state.missingAssets.length===1?' has moved or is':'s have moved or are'} unavailable</summary>${state.missingAssets.map(f=>`<button class="row" data-reconnect-asset="${esc(f.ref)}">${esc(f.name)} · Reconnect →</button>`).join('')}</details>`:''}<input class="search" id="file-search" type="search" aria-label="Search saved files" placeholder="Find a file…" value="${esc(state.fileQuery||'')}">${fileTypeFilters('full')}<button id="file-all-locations" class="text-button" hidden>All locations</button><div id="file-list" class="file-grid bounded-list" tabindex="0" aria-label="Saved files"></div><details><summary>Workspace records</summary><button class="secondary" id="include-workspace-records">${state.includeRecords?'Hide workspace records':'Show workspace records too'}</button></details>${result.limited?'<p class="muted">This view is limited to the first 1,000 workspace files and 1,000 linked files. Your AI can search the original folders for more.</p>':''}`;
+    view.innerHTML=`<div class="section-head file-actions"><span>All saved work</span><button class="secondary" data-add-location>＋ Add files or folder</button></div><div class="linked-locations">${state.fileLocations.map(l=>`<div class="linked-location"><button ${l.missing?'data-reconnect-location':'data-filelocation'}="${esc(l.id)}"><strong>${esc(l.name)}</strong><small>${l.missing?'Location missing · Reconnect':l.kind==='folder'?'Linked folder':'Linked file'}</small></button><button data-unlink-location="${esc(l.id)}" aria-label="Unlink ${esc(l.name)}">✕</button></div>`).join('')}</div>${state.missingAssets.length?`<details class="missing-files"><summary>${state.missingAssets.length} saved file${state.missingAssets.length===1?' has moved or is':'s have moved or are'} unavailable</summary>${state.missingAssets.map(f=>`<button class="row" data-reconnect-asset="${esc(f.ref)}">${esc(f.name)} · Reconnect →</button>`).join('')}</details>`:''}<input class="search" id="file-search" type="search" aria-label="Search saved files" placeholder="Find a file…" value="${esc(state.fileQuery||'')}">${fileTypeFilters('full')}<button id="file-all-locations" class="text-button" hidden>All locations</button><div id="file-list" class="file-grid bounded-list" tabindex="0" aria-label="Saved files"></div><details><summary>Workspace records</summary><button class="secondary" id="include-workspace-records">${state.includeRecords?'Hide workspace records':'Show workspace records too'}</button></details>${result.limited?'<p class="muted">This view is limited to the first 1,000 workspace files and 1,000 linked files. Your AI can search the original folders for more.</p>':''}`;
     renderFiles();
   } else if(state.view==='work') {
     if(!state.library.length){const library=await api('/api/library');if(!current())return;state.library=library;}
@@ -674,7 +678,11 @@ function memoryGroups(q) {
 function renderMemory() {
   const q=(state.memoryQuery||'').trim().toLowerCase(),{goals,context}=memoryGroups(q);
   for(const id of ['quick-memory-search','record-search'])if($('#'+id)&&$('#'+id).value!==(state.memoryQuery||''))$('#'+id).value=state.memoryQuery||'';
-  const group=(title,items,action,home)=>`<div class="mini-heading memory-heading"><${home?'span':'h3'}>${title}</${home?'span':'h3'}>${action}</div><div class="${home?'':'card bounded-list memory-results'}" ${home?'':'tabindex="0" aria-label="'+title+'"'}>${items.length?(home?items.slice(0,q?4:2):items).map(recordRow).join(''):`<p class="small-note">${q?'No matching '+title.toLowerCase()+'.':'Nothing saved here yet.'}</p>`}</div>`;
+  const group=(title,items,action,home)=>{
+    const heading=`<div class="mini-heading memory-heading"><${home?'span':'h3'}>${title}</${home?'span':'h3'}>${action}</div>`;
+    const list=`<div class="${home?'':'card memory-results'}" ${home?'':'aria-label="'+title+'"'}>${items.length?(home?items.slice(0,q?4:2):items).map(recordRow).join(''):`<p class="small-note">${q?'No matching '+title.toLowerCase()+'.':'Nothing saved here yet.'}</p>`}</div>`;
+    return home?heading+list:`<section class="memory-group">${heading}<p class="memory-description">${title==='Goals'?'Your priorities and what you want to achieve.':'Useful facts, preferences, decisions, and reference material.'}</p>${list}</section>`;
+  };
   const goalAdd='<button class="text-button" data-action="add-goal">＋ Add</button>',contextAdd=`<button class="text-button" data-prompt="${esc(addContextPrompt)}">＋ Add</button>`;
   const quick=$('#quick-memory');if(quick)quick.innerHTML=q&&!goals.length&&!context.length?'<p class="small-note">No matching goals or saved information.</p>':group('Goals',goals,goalAdd,true)+group('Saved context',context,contextAdd,true);
   const full=$('#full-memory');if(full)full.innerHTML=q&&!goals.length&&!context.length?empty('No matches.','Try another name or phrase.'):group('Goals',goals,goalAdd,false)+group('Saved context',context,contextAdd,false);
@@ -723,6 +731,8 @@ function renderFiles() {
   state.fileObserver=observer;$('#file-list').querySelectorAll('.file-card').forEach(e=>observer.observe(e));
 }
 function renderWork() {
+  $('#detail').close();
+  $('#section-description').textContent=({business:'Your goals, useful facts, preferences, and decisions.',files:'Find the work you have saved and the locations you have linked.',work:'Reusable guidance and tools your AI can use.',tools:'Schedules managed by your connected AI apps.'})[state.view]||'';
   $('#section-title').textContent=libraryKinds[workFilter]||'Workflows, recipes & more';
   if($('#library-connections'))$('#library-connections').hidden=!['all','Tool'].includes(workFilter);
   document.querySelectorAll('[data-workfilter]').forEach(b=>{b.setAttribute('aria-pressed',String(b.dataset.workfilter===workFilter));b.classList.toggle('active',b.dataset.workfilter===workFilter);});
@@ -960,11 +970,12 @@ function renderUpdates() {
   $('#update-checked').textContent=data.checked_at?'Last checked · '+new Date(data.checked_at*1000).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'';
 }
 async function openUpdates() {
+  state.view='updates';$('#section-dialog').close();recordShellRoute();renderShell();
   $('#more-dialog').close();$('#notification-dialog').close();
   await syncUpdates();
   const startup=await api('/api/startup');
   details('Startup & updates',startupSection(startup)+`<section class="updates-section"><h3>Updates</h3><div id="update-panel"><div class="update-top"><span id="update-current" class="small-note"></span><button class="text-button" id="update-check">Check now</button></div><h4 id="update-heading"></h4><p id="update-message" role="status"></p><section id="update-release" hidden><ul id="update-highlights"></ul><details class="update-notes"><summary>Release notes</summary><pre id="update-notes"></pre><a id="update-release-link" target="_blank" rel="noopener noreferrer">View release ↗</a></details><p id="update-manual" class="small-note" hidden></p><div class="update-actions"><button class="primary" id="update-install" hidden>Update now</button><button class="secondary" id="update-later">Later</button><button class="text-button" id="update-skip">Skip this version</button></div></section><label class="update-policy">Updates<select id="update-policy"><option value="notify">Notify me</option><option value="auto">Update automatically when idle</option><option value="manual">Manual only</option></select></label><p class="small-note">Your workspace, connections, and custom views stay yours.</p><div class="update-bottom"><small id="update-checked"></small><button class="text-button" id="update-rollback" hidden>Use previous version</button><a href="https://github.com/deangeloscott/businessos/releases" target="_blank" rel="noopener noreferrer">Downloads ↗</a></div></div></section>`);
-  state.updateSignature='';renderUpdates();
+  $('#detail').dataset.mode='page';$('#close-detail-page').hidden=false;$('#detail [data-close=detail]').hidden=true;state.updateSignature='';renderUpdates();
   state.updates=await api('/api/updates',{action:'read'});renderNotifications();
 }
 async function reconnectUpdate() {
@@ -1034,7 +1045,15 @@ async function taskModels(app) {
   }catch{if(select.isConnected)$('#task-model-note').textContent='Couldn’t load other models. The current setting is unchanged.';}
   finally{if(select.isConnected&&$('#task-edit-form select[name=app]').value===app)select.disabled=false;}
 }
-function details(title, html) { const d=$('#detail');state.fileDetailTicket=(state.fileDetailTicket||0)+1;shellReturnFocus=document.activeElement;d.dataset.mode='panel';d.dataset.expanded='false';d.dataset.opened=Date.now();$('#detail-title').textContent=title;$('#detail-content').innerHTML=html;d.querySelectorAll('.dialog-error').forEach(el=>el.remove());if($('#notice').classList.contains('error'))notice('');if(!d.open)d.show(); }
+function details(title,html,mode='panel'){
+  const d=$('#detail');state.fileDetailTicket=(state.fileDetailTicket||0)+1;shellReturnFocus=document.activeElement;
+  const page=mode==='page'||(state.view==='sharing'&&mode!=='context');
+  d.dataset.mode=page?'page':mode;d.dataset.opened=Date.now();$('#detail-title').textContent=title;$('#detail-content').innerHTML=html;
+  $('#close-detail-page').hidden=!page;d.querySelector('[data-close="detail"]').hidden=page;
+  $('#detail-footer').hidden=!page||state.view!=='sharing';$('#detail-footer').innerHTML=page&&state.view==='sharing'?workspaceLocation():'';
+  const actions=$('#detail-content .share-selection-bar');if(page&&actions)$('#detail-footer').prepend(actions);
+  d.querySelectorAll('.dialog-error').forEach(el=>el.remove());if($('#notice').classList.contains('error'))notice('');if(!d.open)d.show();
+}
 let apiConnections=[];
 async function showApiConnections(origin=state.apiReturn) {
   state.apiReturn=origin;
@@ -1121,6 +1140,7 @@ async function shareApi(action,data={}) {
   return result;
 }
 async function openSharing(key='') {
+  state.view='sharing';$('#section-dialog').close();recordShellRoute();renderShell();
   $('#more-dialog').close();
   const scope=sharingScope(),business=state.business;
   if(!business){notice('Open a business before sharing.',true);return;}
@@ -1134,7 +1154,6 @@ async function openSharing(key='') {
   if(key)sharing.selectedOnly=true;
   renderSharing();
 }
-function sharingLocation(){return `<details class="share-location"><summary>Current workspace</summary><p class="storage-path">${esc(sharing.workspace)}</p><button type="button" class="text-button" id="location">Copy folder location</button><span class="small-note" id="share-location-status" role="status"></span></details>`;}
 function sharingTabs() {
   return `<div class="filters share-tabs" aria-label="Sharing sections">${[['share','Share selected items'],['import','Import a package'],['history','Import history']].map(([key,label])=>`<button type="button" data-share-tab="${key}" class="${sharing.tab===key?'active':''}" aria-pressed="${sharing.tab===key}">${label}</button>`).join('')}</div>`;
 }
@@ -1147,7 +1166,7 @@ function renderSharing() {
     details('Share or import',sharingTabs()+`<p>Find an AURA sharing ZIP and review its contents before choosing a destination.</p><div class="inline-actions share-picker-tools"><button type="button" class="secondary" id="share-choose-package">Choose file…</button><button type="button" class="text-button" id="share-discover-folder">Find in folder…</button><button type="button" class="text-button" id="share-discover-refresh">Refresh list</button></div><section class="share-discovery"><h3>Available packages</h3><label class="sr-only" for="share-package-search">Search packages</label><input id="share-package-search" type="search" placeholder="Search package names, sources or locations…" value="${esc(sharing.packageQuery||'')}"><p class="small-note" id="share-discovery-status" role="status"></p><div id="share-discovered"></div></section><details class="share-manual"><summary>Enter a package location</summary><form id="share-import-form" class="form-grid"><label>Sharing ZIP<input id="share-archive" name="path" required placeholder="Paste the full ZIP file location" value="${esc(sharing.archivePath||'')}"></label><button class="primary">Read package →</button></form></details><p class="small-note">For a complete workspace backup, use <button class="text-button" id="workspace-backups">Back up or restore</button>.</p>`);
     if(sharing.discovered)renderDiscoveredPackages();else attempt(()=>loadSharingPackages());return;
   }
-  details('Share or import',sharingTabs()+sharingLocation()+`<p>Send useful information and files to another workspace. Originals stay here.</p><p><a class="text-link" href="https://viraltrac.com/aura/community/" target="_blank" rel="noopener noreferrer">Explore community ↗</a></p>${sharing.selections.length?`<label class="share-saved-label">Saved selections<select id="share-saved"><option value="">Start a new selection</option>${sharing.selections.map(r=>`<option value="${esc(r.id)}" ${sharing.selectionId===r.id?'selected':''}>${esc(r.name)}</option>`).join('')}</select></label>${sharing.selectionId?'<div class="inline-actions share-saved-actions"><button type="button" class="secondary" id="share-edit-selection">Edit saved selection</button><button type="button" class="text-button" id="share-new-selection">New selection</button></div>':''}${sharing.selectionMessage?`<p class="small-note" role="status">${esc(sharing.selectionMessage)}</p>`:''}`:''}<label class="sr-only" for="share-search">Find items to share</label><input id="share-search" class="search" type="search" placeholder="Search saved information, files, or folders…" maxlength="240" value="${esc(sharing.query)}"><div class="share-list-controls"><div class="filters compact-filters" aria-label="Sharing categories">${[['all','All'],['record','Business information'],['files','Files & folders']].map(([key,label])=>`<button type="button" data-share-filter="${key}" class="${sharing.filter===key?'active':''}" aria-pressed="${sharing.filter===key}">${label}</button>`).join('')}</div><button type="button" class="text-button share-selected-toggle" id="share-selected-only" aria-pressed="${sharing.selectedOnly}">Selected only <span id="share-selected-total">${sharing.selected.size}</span></button></div><label id="share-file-type-label" class="share-type-label" ${sharing.filter==='files'?'':'hidden'}>File type<select id="share-file-type">${[['all','All files & folders'],['folders','Project folders'],...fileKinds.filter(([k])=>k!=='all')].map(([k,n])=>`<option value="${k}" ${sharing.fileType===k?'selected':''}>${n}</option>`).join('')}</select></label><p id="share-search-note" class="small-note" role="status">Searches names, saved information and locations; not file contents.</p><div id="share-items" class="share-items" aria-label="Items to share"></div>${sharing.notes.length?`<details class="share-options"><summary>Unavailable locations</summary><ul>${sharing.notes.map(n=>`<li>${esc(n)}</li>`).join('')}</ul></details>`:''}${sharing.excluded?.length?`<details class="share-options"><summary>Excluded from sharing</summary><p>Project folders can be shared. Private settings, caches, credentials and folder links stay out.</p><ul>${sharing.excluded.map(n=>`<li>${esc(n)}</li>`).join('')}</ul></details>`:''}<div class="share-selection-bar"><span id="share-count" role="status"></span><button type="button" class="text-button" id="share-clear">Clear selection</button><button type="button" class="secondary" id="share-package">Create package</button><button type="button" class="primary" id="share-continue">Continue →</button></div>`);
+  details('Share or import',sharingTabs()+`<p>Send useful information and files to another workspace. Originals stay here.</p><a class="community-entry" href="https://viraltrac.com/aura/community/" target="_blank" rel="noopener noreferrer"><span><strong>Innovation Exchange</strong><small>Explore community setups and share useful work.</small></span><span aria-hidden="true">↗</span></a>${sharing.selections.length?`<label class="share-saved-label">Saved selections<select id="share-saved"><option value="">Start a new selection</option>${sharing.selections.map(r=>`<option value="${esc(r.id)}" ${sharing.selectionId===r.id?'selected':''}>${esc(r.name)}</option>`).join('')}</select></label>${sharing.selectionId?'<div class="inline-actions share-saved-actions"><button type="button" class="secondary" id="share-edit-selection">Edit saved selection</button><button type="button" class="text-button" id="share-new-selection">New selection</button></div>':''}${sharing.selectionMessage?`<p class="small-note" role="status">${esc(sharing.selectionMessage)}</p>`:''}`:''}<label class="sr-only" for="share-search">Find items to share</label><input id="share-search" class="search" type="search" placeholder="Search saved information, files, or folders…" maxlength="240" value="${esc(sharing.query)}"><div class="share-list-controls"><div class="filters compact-filters" aria-label="Sharing categories">${[['all','All'],['record','Business information'],['files','Files & folders']].map(([key,label])=>`<button type="button" data-share-filter="${key}" class="${sharing.filter===key?'active':''}" aria-pressed="${sharing.filter===key}">${label}</button>`).join('')}</div><button type="button" class="text-button share-selected-toggle" id="share-selected-only" aria-pressed="${sharing.selectedOnly}">Selected only <span id="share-selected-total">${sharing.selected.size}</span></button></div><label id="share-file-type-label" class="share-type-label" ${sharing.filter==='files'?'':'hidden'}>File type<select id="share-file-type">${[['all','All files & folders'],['folders','Project folders'],...fileKinds.filter(([k])=>k!=='all')].map(([k,n])=>`<option value="${k}" ${sharing.fileType===k?'selected':''}>${n}</option>`).join('')}</select></label><p id="share-search-note" class="small-note" role="status">Searches names, saved information and locations; not file contents.</p><div id="share-items" class="share-items" aria-label="Items to share"></div>${sharing.notes.length?`<details class="share-options"><summary>Unavailable locations</summary><ul>${sharing.notes.map(n=>`<li>${esc(n)}</li>`).join('')}</ul></details>`:''}${sharing.excluded?.length?`<details class="share-options"><summary>Excluded from sharing</summary><p>Project folders can be shared. Private settings, caches, credentials and folder links stay out.</p><ul>${sharing.excluded.map(n=>`<li>${esc(n)}</li>`).join('')}</ul></details>`:''}<div class="share-selection-bar"><span id="share-count" role="status"></span><button type="button" class="text-button" id="share-clear">Clear selection</button><button type="button" class="secondary" id="share-package">Create package</button><button type="button" class="primary" id="share-continue">Continue →</button></div>`);
   renderShareItems();
 }
 function resetSharingSelection(){
@@ -1545,9 +1564,9 @@ async function submitRequest(text, scheduleId=null, organizationId=state.pending
   if(state.starting||state.stopping||state.settling||state.needsCheck||state.connectionInterrupted)return;
   if(state.busy){await stopRequest();return;}
   if(!text.trim()){$('#request').focus();return;}
-  const connection={kind:state.data.connection.selected,model:state.data.connection.model,effort:state.data.connection.effort||''};
+  const connection=composerConnection();
   if(!state.data.connection.connected&&state.data.connection.mode!=='copy'){$('#request').value=text;openConnection(true);return;}
-  if(state.data.connection.model_controls&&!connection.model){openConnection(true);return;}
+  if(nativeApps.includes(connection.kind)&&!connection.model){openConnection(true);return;}
   if(!state.data.connection.connected){
     const request=await api('/api/request',{business:state.business,text,history:state.chat,files:state.selectedFiles||[],schedule_id:scheduleId,organization_id:organizationId});
     details('Copy to your AI',`<p>Paste this request into your AI app. Attach the selected files there if it cannot read local paths.</p><button class="primary" id="copy-handoff">Copy request</button><textarea id="handoff-text" class="handoff" readonly></textarea>`);$('#handoff-text').value=request.text;
@@ -1601,7 +1620,7 @@ document.addEventListener('click',event=>attempt(async()=>{
   if(button.hasAttribute('data-stop-schedule')){await api('/api/schedules/stop',{business:state.business,operation_id:state.scheduleJob.id});await syncScheduleOperation();}
   if(button.hasAttribute('data-dismiss-schedule')){state.dismissedScheduleJob=state.scheduleJob.id;renderScheduleOperation();}
   if(button.dataset.openSchedule){await syncSchedules(true);await scheduleDetails(button.dataset.openSchedule);}
-  if(button.id==='close-section') {state.view='home';$('#section-dialog').close();recordShellRoute();}
+  if(button.id==='close-section') {state.view='home';$('#section-dialog').close();recordShellRoute();renderShell();}
   if(button.id==='new-chat')await newShellChat();
   if(button.id==='chats'||button.id==='chat-list-back')await showChats();
   if(button.dataset.editChat)showChatDetails(button.dataset.editChat);
@@ -1633,7 +1652,7 @@ document.addEventListener('click',event=>attempt(async()=>{
   if(button.id==='favorite-model')await toggleFavorite($('#model-choice').value);
   if(button.dataset.favorite)await toggleFavorite(button.dataset.favorite);
   if(button.dataset.pickModel){$('#model-choice').value=button.dataset.pickModel;favoriteButton();renderFavoriteList();try{await selectModel();}catch(error){modelFailure(error);}}
-  if(button.dataset.action==='connect'||['connection','review-setup','model-settings'].includes(button.id)) {state.tour=button.id==='review-setup';openConnection(true,state.tour?'welcome':button.id==='model-settings'?'models':'connect');}
+  if(button.dataset.action==='connect'||['connection','review-setup'].includes(button.id)) {state.tour=button.id==='review-setup';openConnection(true,state.tour?'welcome':button.id==='model-settings'?'models':'connect');}
   if(button.id==='setup-start'||button.id==='models-back'){if(button.id==='setup-start'){const p=await api('/api/profile',{display_name:$('#setup-display-name').value});state.data.profile=p;applyProfile(p);}state.setupStep='connect';renderConnection();}
   if(button.id==='connect-back'){state.setupStep='welcome';renderConnection();}
   if(button.id==='choose-agent'||button.id==='setup-back'){state.setupStep='models';renderConnection();await loadAgentOptions();}
@@ -1648,7 +1667,6 @@ document.addEventListener('click',event=>attempt(async()=>{
     $('#request').value=request;await submitRequest(request);
   }
   if(button.id==='setup-done') await dismissSetup();
-  if(button.id==='customize-view'){$('#more-dialog').close();details('Customize this workspace',`<p>You own the files and control this workspace. Ask your AI to change the layout, add a view, or simplify something. Your business files remain usable in other apps.</p><button class="primary" data-prompt="Help me customize my AURA visual workspace. Ask what I want to change, then follow the visual workspace guide to adapt an organization-owned copy of the interface. Preserve my files, native chats, and connection controls.">Ask my AI to customize it →</button>`);}
   if(button.id==='notification-bell') {await syncNotifications();$('#notification-dialog').showModal();}
   if(button.id==='notification-read-all') {if(state.business)state.inbox=await api('/api/notifications',{business:state.business,action:'read',all:true});state.updates=await api('/api/updates',{action:'read'});renderNotifications();state.systemAlert?.close();}
   if(button.dataset.notification) {
@@ -1728,7 +1746,7 @@ document.addEventListener('click',event=>attempt(async()=>{
     const instruction=`Connect my AURA visual workspace to the AI app I am using. Read ${state.data.product}/docs/visual-workspace.md and use this app's supported connection. Reuse my existing sign-in and permissions, then reopen the visual workspace connected to it. Do not substitute a different AI app just because it is installed. If this app cannot accept requests from a local interface, explain that clearly. AURA workspace: ${state.data.workspace}. Business ID: ${state.business}.`;
     await navigator.clipboard.writeText(instruction); $('#setup-copy-status').textContent='Copied. Paste this into your AI app to finish linking it.';
   }
-  if(button.id==='refresh') {if(!state.busy)state.hydrated=false;await refresh();}
+  if(button.id==='refresh') {await refresh();button.textContent='Saved data reloaded';setTimeout(()=>{if(button.isConnected)button.textContent='Reload saved workspace data';},2000);}
   if(button.id==='location') { await navigator.clipboard.writeText(state.data.workspace); if($('#share-location-status'))$('#share-location-status').textContent='Copied';else notice('Folder location copied.'); }
 }));
 document.addEventListener('input',event=>{ if(event.target.id==='quick-work-search')quickMethods(); if(['quick-memory-search','record-search'].includes(event.target.id)){state.memoryQuery=event.target.value;renderMemory();} if(['quick-file-search','file-search'].includes(event.target.id)){state.fileQuery=event.target.value;renderQuickFiles();renderFiles();} if(['quick-schedule-search','schedule-search'].includes(event.target.id)){state.scheduleQuery=event.target.value;renderSchedules();} if(event.target.id==='work-search')renderWork();if(['task-time','task-every','task-custom'].includes(event.target.id))updateTaskTiming(); });
@@ -1802,7 +1820,7 @@ document.addEventListener('submit',event=>{
 });
 for(const id of ['business','setup-workspace-select'])$('#'+id).addEventListener('change',event=>attempt(()=>changeWorkspace(event.target.value)));
 $('#request').addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing){event.preventDefault();if(state.busy){taskStatus('Your draft is saved. Wait for this reply or use Stop.');return;}$('#chat-form').requestSubmit();}});
-$('#section-dialog').addEventListener('close',()=>{if(!$('#section-dialog').open){state.view='home';recordShellRoute();renderShell();}});
+
 $('#agent-choice').addEventListener('change',()=>{$('#app-check-status').textContent='';connectionChoice();});
 $('#model-choice').addEventListener('change',()=>attempt(async()=>{favoriteButton();renderFavoriteList();try{await selectModel();}catch(error){modelFailure(error);}}));
 $('#effort-choice').addEventListener('change',()=>attempt(async()=>{const picker=modelPicker();picker.efforts??={};picker.efforts[selectedRoute().key]=$('#effort-choice').value;await saveModelPicker();}));
@@ -1867,12 +1885,12 @@ function chatScope(){return JSON.stringify([state.data?.workspace||'',state.busi
 function draftKey(){return 'aura-chat-draft:v1:'+chatScope();}
 function rememberChatDraft(){
   if(!state.data?.workspace||!state.business)return;
-  try{sessionStorage.setItem(draftKey(),JSON.stringify({text:$('#request').value,files:state.selectedFiles||[],scroll:$('#conversation').scrollTop}));}catch{}
+  try{sessionStorage.setItem(draftKey(),JSON.stringify({text:$('#request').value,files:state.selectedFiles||[],scroll:$('#conversation').scrollTop,connection:state.newChatConnection||null}));}catch{}
 }
 function restoreChatDraft(){
   let saved=null;try{saved=JSON.parse(sessionStorage.getItem(draftKey())||'null');}catch{}
   $('#request').value=typeof saved?.text==='string'?saved.text:'';state.selectedFiles=Array.isArray(saved?.files)?saved.files.slice(0,12):[];
-  renderComposerFiles();
+  state.newChatConnection=state.chatMeta?null:saved?.connection||null;renderComposerFiles();renderComposerConnection();
   if(Number.isFinite(saved?.scroll))requestAnimationFrame(()=>{$('#conversation').scrollTop=saved.scroll;});
 }
 function detachChatView(){
@@ -1893,7 +1911,7 @@ async function openShellChat(id){
 async function newShellChat(){
   if(!state.business)return;rememberChatDraft();detachChatView();
   const ticket=state.navigationTicket=(state.navigationTicket||0)+1,root=state.data.workspace,business=state.business;
-  state.navigating=true;state.view='home';$('#section-dialog').close();$('#detail').close();state.chat=[];state.chatMeta=null;state.selectedFiles=[];$('#request').value='';state.hydrated=true;
+  state.navigating=true;state.view='home';$('#section-dialog').close();$('#detail').close();state.chat=[];state.chatMeta=null;state.newChatConnection=null;state.selectedFiles=[];$('#request').value='';state.hydrated=true;
   try{sessionStorage.removeItem(draftKey());}catch{}
   showMessages();taskStatus('');notice('');chatControls();
   try{await api('/api/chats/new',{business});if(ticket!==state.navigationTicket||root!==state.data.workspace||business!==state.business)return;await refresh();recordShellRoute();closeMobileSidebar();}
@@ -1904,15 +1922,17 @@ function applyProfile(profile){
   state.profile={display_name:'',sidebar_collapsed:false,panel_width:480,text_size:15,accent:'forest',...profile};
   const p=state.profile;document.body.classList.toggle('sidebar-collapsed',p.sidebar_collapsed);document.documentElement.dataset.accent=p.accent;
   document.documentElement.style.setProperty('--panel-width',p.panel_width+'px');document.documentElement.style.setProperty('--ui-text-size',p.text_size+'px');
-  $('#profile-name').textContent=p.display_name||'Your workspace';$('.profile-avatar').textContent=(p.display_name||'You').trim().slice(0,1).toUpperCase();
-  $('#welcome-name').textContent=p.display_name?'Welcome, '+p.display_name+'.':'Welcome to AURA';
-  $('#sidebar-collapse').setAttribute('aria-label',p.sidebar_collapsed?'Expand sidebar':'Collapse sidebar');$('#sidebar-collapse').title=p.sidebar_collapsed?'Expand sidebar':'Collapse sidebar';
+  $('#profile-name').textContent=p.display_name||'Your profile';$('.profile-avatar').innerHTML=avatarMarkup(p);
+  $('#welcome-name').textContent=p.display_name?'Welcome, '+p.display_name+'.':'Welcome to Aura';
+  const collapseLabel=matchMedia('(max-width:760px)').matches?'Close navigation':p.sidebar_collapsed?'Expand sidebar':'Collapse sidebar';$('#sidebar-collapse').setAttribute('aria-label',collapseLabel);$('#sidebar-collapse').title=collapseLabel;
+  $('#sidebar-collapse').setAttribute('aria-expanded',String(!p.sidebar_collapsed));
   if(!$('#setup-display-name').value)$('#setup-display-name').value=p.display_name;
 }
 async function renderShell(){
   if(!state.data||!$('#sidebar'))return;
-  applyProfile(state.data.profile||state.profile||{});$('#active-workspace-label').textContent=rows('Business')[0]?.title||'Choose a workspace';
+  applyProfile(state.data.profile||state.profile||{});renderComposerConnection();$('#active-workspace-label').textContent=rows('Business')[0]?.title||'Choose a workspace';
   $('#active-chat-label').textContent=state.chatMeta?.title||'';
+  $('#sidebar [data-shell-action=sharing]').setAttribute('aria-current',state.view==='sharing'?'page':'false');
   for(const b of document.querySelectorAll('.sidebar-sections [data-view]'))b.setAttribute('aria-current',b.dataset.view===state.view?'page':'false');
   const running=state.data.running_chats||[];$('#background-work').hidden=!running.length;$('#background-work').textContent=running.length+' '+(running.length===1?'chat working':'chats working');
   if(!state.business){$('#sidebar-chat-list').innerHTML='<p class="sidebar-empty">Choose a workspace to see its chats.</p>';return;}
@@ -1929,8 +1949,8 @@ async function renderShell(){
   }).join(''):'<p class="sidebar-empty">Start a conversation. Your useful work stays with this workspace.</p>';
   $('#sidebar-more-chats').hidden=list.items.length<=limit;
 }
-function closeMobileSidebar(){document.body.classList.remove('sidebar-mobile-open');$('#sidebar-scrim').hidden=true;}
-function openSidebar(){document.body.classList.add('sidebar-mobile-open');$('#sidebar-scrim').hidden=false;}
+function closeMobileSidebar(){document.body.classList.remove('sidebar-mobile-open');$('#sidebar-scrim').hidden=true;$('#sidebar-open').setAttribute('aria-expanded','false');}
+function openSidebar(){document.body.classList.add('sidebar-mobile-open');$('#sidebar-scrim').hidden=false;$('#sidebar-open').setAttribute('aria-expanded','true');}
 function recordShellRoute(replace=false){
   if(shellRestoring||!state.data)return;
   const value={aura:true,workspace:state.data.workspace,business:state.business,chat:state.chatMeta?.id||'',view:state.view};
@@ -1945,7 +1965,7 @@ window.addEventListener('popstate',event=>attempt(async()=>{
     if(r.workspace!==state.data.workspace)await openStoredWorkspace(r.workspace);
     if(r.business!==state.business)await changeWorkspace(r.business);
     if(r.chat&&r.chat!==state.chatMeta?.id)await openShellChat(r.chat);else if(!r.chat&&state.chatMeta)await newShellChat();
-    state.view=['business','files','work','tools'].includes(r.view)?r.view:'home';$('#detail').close();await render();await renderShell();
+    state.view=['business','files','work','tools','sharing','updates'].includes(r.view)?r.view:'home';$('#detail').close();await render();await renderShell();
   }finally{shellRestoring=false;}
 }));
 function renderComposerFiles(){
@@ -1964,16 +1984,23 @@ function renderChatRecovery(){
   host.hidden=!state.needsCheck&&!state.connectionInterrupted;
   host.innerHTML=state.needsCheck?`<p>Aura cannot confirm the last request’s state after a restart. Check this conversation in ${esc(appName(state.chatMeta?.agent)||'your AI app')}, then continue here.</p><button class="secondary" id="chat-checked">I checked · Continue this chat</button>`:state.connectionInterrupted?'<p>The connection was interrupted. Your request has not been sent again.</p><button class="secondary" id="chat-reconnect-now">Reconnect to this chat</button>':'';
 }
+function avatarMarkup(p=state.profile||{}){return p.avatar?`<img src="${esc(p.avatar)}" alt="">`:esc((p.display_name||'You').trim().slice(0,1).toUpperCase());}
+function leavePage(){if($('#detail').dataset.mode==='page'){$('#detail').close();state.view='home';recordShellRoute();renderShell();}}
+async function accountProfile(){
+  $('#more-dialog').close();leavePage();const p=state.profile||{};
+  details('Your profile',`<p class="shell-help">Your name and picture stay on this computer.</p><form id="account-form" class="form-grid"><div class="profile-picture-row"><span class="profile-picture">${avatarMarkup(p)}</span><div><label class="secondary picture-upload">Choose picture<input id="profile-picture-input" type="file" accept="image/png,image/jpeg,image/webp" hidden></label><button type="button" class="text-button" id="remove-profile-picture" ${p.avatar?'':'hidden'}>Remove picture</button></div></div><label>Your name<input name="display_name" maxlength="80" autocomplete="given-name" value="${esc(p.display_name||'')}" placeholder="Your name"></label><div><button class="primary">Save profile</button></div></form>`);
+}
 async function personalize(){
-  $('#more-dialog').close();const p=state.profile||{};
-  details('Personalize your view',`<p class="shell-help">These preferences stay on this computer. Your name is optional.</p><form id="profile-form" class="form-grid"><label>Your name<input name="display_name" maxlength="80" autocomplete="given-name" value="${esc(p.display_name||'')}" placeholder="What should we call you?"></label><label>Appearance<select name="appearance">${['system','light','dark'].map(v=>`<option value="${v}" ${state.data.appearance===v?'selected':''}>${human(v)}</option>`).join('')}</select></label><label>Accent<select name="accent">${[['forest','Forest'],['ocean','Ocean'],['clay','Clay']].map(([v,n])=>`<option value="${v}" ${p.accent===v?'selected':''}>${n}</option>`).join('')}</select></label><label>Text size<select name="text_size">${[14,15,16,18].map(n=>`<option value="${n}" ${p.text_size===n?'selected':''}>${n===15?'Standard':n+' px'}</option>`).join('')}</select></label><label>Side panel width<input name="panel_width" type="range" min="360" max="900" step="20" value="${p.panel_width||480}"></label><div class="inline-actions"><button class="primary">Save preferences</button><button type="button" class="text-button" id="reset-appearance">Reset appearance</button></div></form>`);
+  $('#more-dialog').close();leavePage();const p=state.profile||{};
+  details('Personalization',`<p class="shell-help">Choose how Aura looks and feels on this computer.</p><form id="profile-form" class="form-grid"><div class="settings-grid"><label>Appearance<select name="appearance">${['system','light','dark'].map(v=>`<option value="${v}" ${state.data.appearance===v?'selected':''}>${human(v)}</option>`).join('')}</select></label><label>Accent<select name="accent">${[['forest','Forest'],['ocean','Ocean'],['clay','Clay']].map(([v,n])=>`<option value="${v}" ${p.accent===v?'selected':''}>${n}</option>`).join('')}</select></label><label>Text size<select name="text_size">${[14,15,16,18].map(n=>`<option value="${n}" ${p.text_size===n?'selected':''}>${n===15?'Standard':n+' px'}</option>`).join('')}</select></label><label>Side panel width<input name="panel_width" type="range" min="360" max="900" step="20" value="${p.panel_width||480}"></label></div><div class="inline-actions"><button class="primary">Save preferences</button><button type="button" class="text-button" id="reset-appearance">Reset appearance</button></div></form><section class="customize-section"><h3>Make the workspace your own</h3><p>Ask your AI to adapt a personal copy of the layout, add a view, or simplify what you see.</p><button class="secondary" data-prompt="Help me customize my AURA visual workspace. Ask what I want to change, then follow the visual workspace guide to adapt an organization-owned copy of the interface. Preserve my files, native chats, and connection controls.">Ask my AI to customize it</button><div id="custom-view-recovery"></div></section>`);
+  const diagnostics=await api('/api/diagnostics');if(diagnostics.interface==='custom'&&$('#custom-view-recovery'))$('#custom-view-recovery').innerHTML='<p class="small-note">You are using a custom layout. Your custom files will be kept if you return to the default.</p><button class="text-button" id="restore-standard-view">Return to default layout</button>';
 }
 async function shellHelp(){
-  $('#more-dialog').close();const data=await api('/api/diagnostics');
-  details('Help & diagnostics',`<p class="shell-help">Aura keeps your workspace files local. Your selected AI app owns its native conversations and account access.</p><p class="shell-help">For a connection problem, open AI settings and check the app. After an interrupted request, reopen that conversation before retrying.</p><button type="button" class="secondary" id="copy-diagnostics">Copy diagnostic summary</button><p class="small-note">Includes versions, connection type and model. Conversation text, workspace names, paths and credentials are excluded.</p><pre id="diagnostic-summary" class="diagnostic-summary"></pre><p><button class="text-button" id="restore-standard-view">Use standard interface</button></p>`);
-  $('#diagnostic-summary').textContent=JSON.stringify(data,null,2);
-  $('#copy-diagnostics').onclick=()=>attempt(async()=>{await navigator.clipboard.writeText(JSON.stringify(data,null,2));$('#copy-diagnostics').textContent='Summary copied';});
+  $('#more-dialog').close();leavePage();
+  details('Help',`<div class="help-section"><h3>AI connection</h3><p>Use AI connections in Settings to connect an app. Each conversation stays with the app that created it.</p><button class="secondary" id="help-connections">Open AI connections</button></div><div class="help-section"><h3>Saved work</h3><p>Your workspace files stay on this computer. Cloud AI requests use the app and provider you choose.</p></div><details class="support-details"><summary>Troubleshooting &amp; diagnostics</summary><p class="small-note">Copy a technical summary for support. It excludes conversations, credentials, workspace names and paths.</p><button class="secondary" id="copy-diagnostics">Copy diagnostic summary</button><pre id="diagnostic-summary" class="diagnostic-summary" hidden></pre></details>`);
+  $('#copy-diagnostics').onclick=()=>attempt(async()=>{const data=await api('/api/diagnostics');await navigator.clipboard.writeText(JSON.stringify(data,null,2));$('#copy-diagnostics').textContent='Summary copied';});
 }
+
 async function openShellSearch(){
   if(!state.business)return;shellSearchData=null;const root=state.data.workspace,business=state.business,ticket=++shellSearchTicket;
   if(!$('#search-dialog').open)$('#search-dialog').showModal();$('#shell-search').value='';$('#shell-search').focus();$('#shell-search-results').innerHTML='';$('#shell-search-status').textContent='Finding your workspace items…';
@@ -1997,14 +2024,14 @@ function chatMarkdown(value){
 }
 document.addEventListener('click',event=>{
   const b=event.target.closest('button');if(!b)return;
-  if(b.closest('#sidebar')){if($('#detail').open)$('#detail').close();if(b.dataset.chat)$('#search-dialog').close();}
+  if(b.closest('#sidebar')){if($('#detail').open&&(b.dataset.view||b.dataset.chat||b.dataset.shellAction))$('#detail').close();if(b.dataset.chat)$('#search-dialog').close();}
   if(b.dataset.view&&b.closest('#sidebar')){event.stopImmediatePropagation();attempt(async()=>{state.view=b.dataset.view;await render();recordShellRoute();await renderShell();closeMobileSidebar();});}
 },true);
 document.addEventListener('click',event=>attempt(async()=>{
   const b=event.target.closest('button');if(!b)return;
-  if(b.id==='sidebar-collapse'){const p=await api('/api/profile',{sidebar_collapsed:!state.profile?.sidebar_collapsed});state.data.profile=p;applyProfile(p);}
+  if(b.id==='sidebar-collapse'){if(matchMedia('(max-width:760px)').matches){closeMobileSidebar();return;}const p=await api('/api/profile',{sidebar_collapsed:!state.profile?.sidebar_collapsed});state.data.profile=p;applyProfile(p);}
   if(b.id==='sidebar-open')openSidebar();if(b.id==='sidebar-scrim')closeMobileSidebar();
-  if(b.id==='profile-open'||b.id==='personalize-menu')await personalize();if(b.id==='help-about')await shellHelp();
+  if(b.id==='profile-open')$('#more-dialog').showModal();if(b.id==='personalize-menu')await personalize();if(b.id==='account-settings')await accountProfile();if(b.id==='help-about')await shellHelp();
   if(b.id==='search-open')await openShellSearch();
   if(b.id==='sidebar-more-chats'){state.chatLimit=(state.chatLimit||20)+30;await renderShell();}
   if(b.dataset.shellAction==='sharing'){await openSharing();closeMobileSidebar();}
@@ -2015,7 +2042,6 @@ document.addEventListener('click',event=>attempt(async()=>{
   if(b.id==='attach-file')await chooseContextFiles();
   if(b.dataset.addContext){state.selectedFiles=[...new Set([...(state.selectedFiles||[]),b.dataset.addContext])];if(state.selectedFiles.length>12)state.selectedFiles.pop();renderComposerFiles();rememberChatDraft();$('#detail').close();$('#request').focus();}
   if(b.dataset.removeContext){state.selectedFiles=state.selectedFiles.filter(p=>p!==b.dataset.removeContext);renderComposerFiles();rememberChatDraft();}
-  if(b.id==='detail-expand'){$('#detail').dataset.expanded=$('#detail').dataset.expanded!=='true'?'true':'false';b.setAttribute('aria-label',$('#detail').dataset.expanded==='true'?'Reduce panel':'Expand panel');}
   if(b.id==='reset-appearance'){const p=await api('/api/profile',{reset:true});await api('/api/preferences',{appearance:'system'});state.data.profile=p;state.data.appearance='system';applyProfile(p);applyAppearance('system');await personalize();}
   if(b.id==='chat-checked'){await api('/api/chats/recover',{business:state.business,id:state.chatMeta.id});state.needsCheck=false;await hydrateConversation();}
   if(b.id==='chat-reconnect-now'){state.connectionInterrupted=false;await hydrateConversation();}
@@ -2026,21 +2052,21 @@ document.addEventListener('click',event=>attempt(async()=>{
   if(b.dataset.searchSection){const q=$('#shell-search').value;$('#search-dialog').close();if(b.dataset.searchSection==='chats')await showChats();else{state.view=b.dataset.searchSection;await render();const f=$(({files:'#file-search',business:'#record-search',work:'#work-search'})[state.view]);if(f){f.value=q;f.dispatchEvent(new Event('input',{bubbles:true}));}recordShellRoute();}}
 }));
 document.addEventListener('submit',event=>{
-  if(event.target.id!=='profile-form')return;event.preventDefault();attempt(async()=>{const data=Object.fromEntries(new FormData(event.target));const p=await api('/api/profile',{display_name:data.display_name,accent:data.accent,text_size:Number(data.text_size),panel_width:Number(data.panel_width)});await api('/api/preferences',{appearance:data.appearance});state.data.profile=p;state.data.appearance=data.appearance;applyProfile(p);applyAppearance(data.appearance);$('#detail').close();});
+  if(event.target.id!=='profile-form')return;event.preventDefault();attempt(async()=>{const data=Object.fromEntries(new FormData(event.target));const p=await api('/api/profile',{accent:data.accent,text_size:Number(data.text_size),panel_width:Number(data.panel_width)});await api('/api/preferences',{appearance:data.appearance});state.data.profile=p;state.data.appearance=data.appearance;applyProfile(p);applyAppearance(data.appearance);$('#detail').close();});
 });
 $('#shell-search').addEventListener('input',paintShellSearch);
 $('#search-dialog').addEventListener('click',event=>{if(event.target.closest('[data-chat]'))$('#search-dialog').close();});
 $('#request').addEventListener('input',rememberChatDraft);
 
 $('#conversation').addEventListener('scroll',()=>{clearTimeout(state.draftScrollTimer);state.draftScrollTimer=setTimeout(rememberChatDraft,150);});
-$('#detail').addEventListener('close',()=>{if(shellReturnFocus?.isConnected)shellReturnFocus.focus({preventScroll:true});});
+$('#detail').addEventListener('close',()=>{if(shellReturnFocus?.isConnected&&!document.querySelector('dialog:modal')&&!$('#detail').open)shellReturnFocus.focus({preventScroll:true});});
 document.addEventListener('keydown',event=>{
   if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='k'){event.preventDefault();attempt(openShellSearch);}
   if(event.altKey&&!event.ctrlKey&&!event.metaKey&&event.key.toLowerCase()==='n'){event.preventDefault();attempt(newShellChat);}
   if(event.key==='Escape'){
     if(document.querySelector('dialog:modal'))return;
     if(document.body.classList.contains('sidebar-mobile-open')){event.preventDefault();closeMobileSidebar();return;}
-    const open=[...document.querySelectorAll('dialog[open]')].filter(d=>!d.matches(':modal')).sort((a,b)=>Number(b.dataset.opened||0)-Number(a.dataset.opened||0));if(open[0]){event.preventDefault();if(open[0].id==='section-dialog')state.view='home';open[0].close();recordShellRoute();}
+    const open=[...document.querySelectorAll('dialog[open]')].filter(d=>!d.matches(':modal')).sort((a,b)=>Number(b.dataset.opened||0)-Number(a.dataset.opened||0));if(open[0]){event.preventDefault();if(open[0].id==='section-dialog'||open[0].dataset.mode==='page')state.view='home';open[0].close();recordShellRoute();renderShell();}
   }
   if(event.key==='ArrowDown'&&event.target.id==='shell-search'){event.preventDefault();$('#shell-search-results button')?.focus();}
 });
@@ -2051,6 +2077,105 @@ const originalRecordDetails=recordDetails;recordDetails=function(ref){originalRe
 async function restoreInitialRoute(){
   if(!state.data||$('#refresh').disabled||(state.business&&!state.hydrated)){setTimeout(restoreInitialRoute,100);return;}
   const params=new URLSearchParams(location.search),chat=params.get('chat'),view=params.get('view');
-  try{if(chat&&chat!==state.chatMeta?.id)await openShellChat(chat);if(['business','files','work','tools'].includes(view)){state.view=view;await render();await renderShell();}}finally{recordShellRoute(true);}
+  try{if(chat&&chat!==state.chatMeta?.id)await openShellChat(chat);if(['business','files','work','tools','sharing','updates'].includes(view)){state.view=view;await render();await renderShell();}}finally{recordShellRoute(true);}
 }
 attempt(restoreInitialRoute);
+
+// Chat-specific choices never rewrite another chat or the saved app defaults.
+function composerConnection(){
+  const c=state.chatMeta;
+  return c?{kind:c.agent,model:c.model||'',effort:c.effort||''}:state.newChatConnection||{kind:state.data?.connection.selected||'',model:state.data?.connection.model||'',effort:state.data?.connection.effort||''};
+}
+function renderComposerConnection(){
+  if(!state.data)return;const c=composerConnection(),native=nativeApps.includes(c.kind);
+  $('#model-settings').textContent=native?(c.model||'Choose model')+(c.effort?' · '+human(c.effort):''):(state.data.connection.connected?appName(c.kind)||state.data.connection.name:'Choose AI');
+  $('#model-settings').title=state.chatMeta?'Model for this chat · '+appName(c.kind):'AI app and model for the new chat';
+  $('#chat-refresh').hidden=!state.chatMeta||state.view!=='home';$('#chat-refresh').disabled=state.busy||state.navigating||state.refreshingChat;
+}
+function workspaceLocation(){
+  const path=sharing?.workspace||state.data.workspace;
+  return `<div class="workspace-location"><span>Current workspace</span><button type="button" data-copy-workspace="${esc(path)}" title="Copy ${esc(path)}"><span>${esc(path)}</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M8 8h12v13H8zM16 8V3H3v13h5"/></svg></button><small id="workspace-copy-status" role="status"></small></div>`;
+}
+function returnToChat(){state.view='home';$('#detail').close();$('#section-dialog').close();recordShellRoute();renderShell();$('#request').focus();}
+async function refreshChat(){
+  if(!state.chatMeta||state.busy)return;const scope=chatScope();state.refreshingChat=true;renderComposerConnection();
+  try{const r=await api('/api/conversation?business='+encodeURIComponent(state.business)+'&chat_id='+encodeURIComponent(state.chatMeta.id)+'&refresh=1');if(scope!==chatScope())return;state.chat=r.messages;state.chatMeta=r.chat;state.liveJob=r.job;showMessages();notice(r.history_note||'');taskStatus(r.history_note?'Saved display shown':'Latest messages refreshed');}
+  finally{state.refreshingChat=false;renderComposerConnection();}
+}
+async function saveProfilePicture(file){
+  if(!file)return;if(!['image/png','image/jpeg','image/webp'].includes(file.type)||file.size>10*1024*1024)throw new Error('Choose a PNG, JPEG or WebP picture under 10 MB.');
+  const bitmap=await createImageBitmap(file);const canvas=document.createElement('canvas');canvas.width=canvas.height=256;
+  const scale=Math.max(256/bitmap.width,256/bitmap.height);canvas.getContext('2d').drawImage(bitmap,(256-bitmap.width*scale)/2,(256-bitmap.height*scale)/2,bitmap.width*scale,bitmap.height*scale);bitmap.close();
+  const profile=await api('/api/profile',{avatar:canvas.toDataURL('image/webp',.85)});state.data.profile=profile;applyProfile(profile);
+  if($('.profile-picture'))$('.profile-picture').innerHTML=avatarMarkup(profile);if($('#remove-profile-picture'))$('#remove-profile-picture').hidden=false;
+}
+let chatModelTicket=0;
+async function openChatModels(){
+  const scope=chatScope(),ticket=++chatModelTicket,c=composerConnection();
+  $('#chat-model-dialog').showModal();$('#chat-model-title').textContent=state.chatMeta?'Model for this chat':'AI for the new chat';
+  if(state.busy){$('#chat-model-content').innerHTML='<p>Wait for this reply or stop the request before changing its model.</p>';return;}
+  if(state.chatMeta?.agent==='hermes'&&state.chatMeta.native_id){$('#chat-model-content').innerHTML='<p>This Hermes conversation keeps its original model and effort. Start a new chat to choose another.</p><button class="secondary" id="model-new-chat">New chat</button>';return;}
+  state.chatModelDraft={...c,scope,ticket};state.chatModelLimit=60;
+  const choices=state.data.connection.choices.filter(a=>a.available&&(state.data.connection.apps?.some(x=>x.id===a.id)||a.id===c.kind));
+  $('#chat-model-content').innerHTML=`${state.chatMeta?`<p class="chat-model-owner">${esc(appName(c.kind))}<small>This conversation stays in its original AI app.</small></p>`:`<label class="model-app-field">AI app<select id="chat-model-app">${choices.map(a=>`<option value="${esc(a.id)}" ${a.id===c.kind?'selected':''}>${esc(a.name)}</option>`).join('')}</select></label>`}<div id="chat-model-options"><p role="status">Loading this app’s models…</p></div>`;
+  if(!state.chatMeta&&choices.length&&!choices.some(a=>a.id===c.kind))state.chatModelDraft.kind=choices[0].id;
+  await loadChatModelOptions();
+}
+async function loadChatModelOptions(){
+  const draft=state.chatModelDraft,kind=draft.kind,ticket=draft.ticket;
+  if(!nativeApps.includes(kind)){$('#chat-model-options').innerHTML='<p class="shell-help">This connection uses its own model settings.</p>'+(state.chatMeta?'<button class="secondary" data-close="chat-model-dialog">Done</button>':'<button class="primary" id="save-chat-model">Use for this chat</button>');return;}
+  try{
+    const options=await api('/api/agent-options?kind='+encodeURIComponent(kind));
+    if(ticket!==chatModelTicket||draft!==state.chatModelDraft||!$('#chat-model-dialog').open||draft.scope!==chatScope())return;
+    state.chatModelOptions=options;if(!draft.model)draft.model=options.models.some(m=>m.id===options.model)?options.model:options.models[0]?.id||'';
+    $('#chat-model-options').innerHTML=`<label class="sr-only" for="chat-model-search">Find a model</label><input id="chat-model-search" type="search" placeholder="Find a model…"><div id="chat-model-list" role="list" aria-label="Available models"></div><button class="text-button" id="chat-model-more" hidden>Show more models</button><div id="chat-model-effort"></div><p class="small-note">Applies to the next message in this chat. Models can have different capabilities and context limits.</p><div class="inline-actions"><button class="primary" id="save-chat-model">Use for this chat</button><button class="text-button" data-close="chat-model-dialog">Cancel</button></div>`;
+    paintChatModels();if(options.models.some(m=>m.id===draft.model))await loadChatModelEfforts();else{$('#chat-model-effort').innerHTML='<p class="small-note">The current model is not available in this app’s list. Choose a model for your next message.</p>';$('#save-chat-model').disabled=true;}
+  }catch(e){if($('#chat-model-options'))$('#chat-model-options').innerHTML=`<p class="error">${esc(e.message)}</p><button class="secondary" id="chat-model-retry">Try again</button>`;}
+}
+function paintChatModels(){
+  const draft=state.chatModelDraft,q=($('#chat-model-search')?.value||'').trim().toLowerCase(),models=state.chatModelOptions.models.filter(m=>(m.name+' '+m.id).toLowerCase().includes(q));
+  $('#chat-model-list').innerHTML=models.slice(0,state.chatModelLimit||60).map(m=>`<button type="button" class="chat-model-row" data-chat-model="${esc(m.id)}" aria-pressed="${m.id===draft.model}"><span><strong>${esc(m.name||m.id)}</strong>${m.name!==m.id?`<small>${esc(m.id)}</small>`:''}</span><span aria-hidden="true">${m.id===draft.model?'✓':''}</span></button>`).join('')||'<p class="small-note">No matching models.</p>';
+  $('#chat-model-more').hidden=models.length<=(state.chatModelLimit||60);
+}
+async function loadChatModelEfforts(){
+  const draft=state.chatModelDraft,model=draft.model;$('#save-chat-model').disabled=true;
+  try{const r=await api('/api/agent-efforts?kind='+encodeURIComponent(draft.kind)+'&model='+encodeURIComponent(model));if(draft!==state.chatModelDraft||model!==draft.model||!$('#chat-model-effort'))return;
+    const efforts=r.efforts||[];draft.effort=efforts.includes(draft.effort)?draft.effort:r.default_effort||efforts[0]||'';
+    $('#chat-model-effort').innerHTML=efforts.length?`<label>Effort<select id="chat-effort-choice">${efforts.map(e=>`<option ${e===draft.effort?'selected':''} value="${esc(e)}">${esc(human(e))}</option>`).join('')}</select></label>`:'';$('#save-chat-model').disabled=!model;
+  }catch(e){notice(e.message,true);}
+}
+async function saveChatModel(){
+  const draft=state.chatModelDraft;if(draft.scope!==chatScope())throw new Error('The chat changed. Reopen its model settings.');
+  const choice={kind:draft.kind,model:draft.model,effort:$('#chat-effort-choice')?.value||draft.effort||''};
+  if(state.chatMeta){const r=await api('/api/chats/model',{business:state.business,id:state.chatMeta.id,...choice});if(draft.scope!==chatScope())return;state.chatMeta=r.chat;}
+  else{state.newChatConnection=choice;rememberChatDraft();}
+  renderComposerConnection();$('#chat-model-dialog').close();
+}
+document.addEventListener('click',event=>attempt(async()=>{
+  const b=event.target.closest('button');if(!b)return;
+  if(b.id==='model-settings')await openChatModels();if(b.id==='save-chat-model')await saveChatModel();
+  if(b.id==='model-new-chat'){$('#chat-model-dialog').close();await newShellChat();await openChatModels();}
+  if(b.id==='model-manage-connections'||b.id==='help-connections'){$('#chat-model-dialog').close();$('#detail').close();openConnection(true,'connect');}
+  if(b.dataset.chatModel){state.chatModelDraft.model=b.dataset.chatModel;paintChatModels();await loadChatModelEfforts();}
+  if(b.id==='chat-model-more'){state.chatModelLimit+=60;paintChatModels();}if(b.id==='chat-model-retry')await loadChatModelOptions();
+  if(b.id==='close-detail-page')returnToChat();
+  if(b.id==='chat-refresh')await refreshChat();
+  if(b.id==='page-refresh'){b.disabled=true;try{if(state.view==='tools')await syncSchedules(true);if(state.view==='work')state.library=[];await refresh();}finally{b.disabled=false;}}
+  if(b.dataset.copyWorkspace){await navigator.clipboard.writeText(b.dataset.copyWorkspace);$('#workspace-copy-status').textContent='Copied';}
+  if(b.id==='remove-profile-picture'){const p=await api('/api/profile',{avatar:''});state.data.profile=p;applyProfile(p);$('.profile-picture').innerHTML=avatarMarkup(p);b.hidden=true;}
+}));
+document.addEventListener('input',event=>{if(event.target.id==='chat-model-search'){state.chatModelLimit=60;paintChatModels();}});
+document.addEventListener('change',event=>{
+  if(event.target.id==='profile-picture-input')attempt(()=>saveProfilePicture(event.target.files[0]));
+  if(event.target.id==='chat-model-app')attempt(async()=>{state.chatModelDraft.kind=event.target.value;state.chatModelDraft.model='';state.chatModelDraft.effort='';$('#chat-model-options').innerHTML='<p>Loading models…</p>';await loadChatModelOptions();});
+});
+document.addEventListener('submit',event=>{if(event.target.id==='account-form'){event.preventDefault();attempt(async()=>{const p=await api('/api/profile',{display_name:new FormData(event.target).get('display_name')});state.data.profile=p;applyProfile(p);$('#detail').close();});}});
+// Dismiss floating surfaces only after a complete outside click, never a drag.
+let outsideSurface=null;
+document.addEventListener('pointerdown',event=>{
+  outsideSurface=null;const dialogs=[...document.querySelectorAll('dialog[open]')].filter(d=>d.matches(':modal')||d.id==='detail'&&d.dataset.mode!=='page').sort((a,b)=>(a.matches(':modal')?-1:0)-(b.matches(':modal')?-1:0)||Number(b.dataset.opened||0)-Number(a.dataset.opened||0));
+  const top=dialogs[0];if(!top)return;const r=top.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)outsideSurface=top;
+},true);
+document.addEventListener('pointerup',event=>{const d=outsideSurface;outsideSurface=null;if(!d?.open)return;const r=d.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)d.close();},true);
+
+matchMedia('(max-width:760px)').addEventListener('change',()=>{closeMobileSidebar();if(state.profile)applyProfile(state.profile);});

@@ -9,6 +9,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlsplit, parse_qs, quote
 import argparse
 import copy
+import base64
 import hashlib
 import json
 import mimetypes
@@ -731,11 +732,21 @@ class Workspace:
         path=self.settings_file.parent/'ui-profile.json'
         try:value=json.loads(path.read_text(encoding='utf-8'))
         except (OSError,ValueError):value={}
-        defaults={'display_name':'','sidebar_collapsed':False,'panel_width':480,'text_size':15,'accent':'forest'}
+        defaults={'display_name':'','sidebar_collapsed':False,'panel_width':480,'text_size':15,'accent':'forest','avatar':''}
         value={**defaults,**{k:v for k,v in value.items() if k in defaults}} if isinstance(value,dict) else defaults
         if changes is not None:
-            if changes.get('reset'):value={**defaults,'display_name':value.get('display_name','')}
+            if changes.get('reset'):value={**defaults,'display_name':value.get('display_name',''),'avatar':value.get('avatar','')}
             else:
+                if 'avatar' in changes:
+                    avatar=changes['avatar']
+                    if not isinstance(avatar,str) or len(avatar)>220000:raise ValueError('Choose a smaller profile picture.')
+                    if avatar:
+                        match=re.fullmatch(r'data:image/(png|jpeg|webp);base64,([A-Za-z0-9+/=]+)',avatar)
+                        if not match:raise ValueError('Choose a PNG, JPEG or WebP picture.')
+                        raw=base64.b64decode(match[2],validate=True)
+                        valid=(raw.startswith(b'\x89PNG\r\n\x1a\n') if match[1]=='png' else raw.startswith(b'\xff\xd8\xff') if match[1]=='jpeg' else raw.startswith(b'RIFF') and raw[8:12]==b'WEBP')
+                        if not valid:raise ValueError('This profile picture could not be read.')
+                    value['avatar']=avatar
                 if 'display_name' in changes:
                     name=changes['display_name']
                     if not isinstance(name,str) or len(name)>80:raise ValueError('Use a display name of up to 80 characters.')
@@ -1070,7 +1081,7 @@ class Workspace:
             self.preferences['notification_items']=items[-50:]
             self.save_preferences()
 
-    def conversation(self, bid, ident=None):
+    def conversation(self, bid, ident=None, refresh=False):
         chat = self.active_chat(bid) if ident is None else next((c for c in self.preferences['chats'] if c['id']==ident and c['business_id']==bid),None)
         if ident is not None and not chat:raise ValueError('This chat does not belong to the selected business.')
         root=workspace_root().resolve()
@@ -1078,7 +1089,8 @@ class Workspace:
         job=dict(owned) if owned else None
         if not chat:
             return {'messages': [], 'chat': None, 'job': job}
-        if not chat.get('native_id') or (job and job['status']=='working'):
+        display=self.settings_file.parent/'chat-views'/(chat['id']+'.json')
+        if not chat.get('native_id') or (job and job['status']=='working') or (not refresh and display.is_file()):
             path = self.settings_file.parent/'chat-views'/(chat['id']+'.json')
             shown = json.loads(path.read_text(encoding='utf-8')) if path.is_file() else []
             return {'messages': shown, 'chat': chat, 'job': job}
@@ -1114,6 +1126,8 @@ class Workspace:
                 if last>chat.get('updated',0):chat['updated']=last
                 if chat.get('summary_source')=='App' and (not chat.get('summary_updated') or last>chat['summary_updated']):chat['summary_stale']=True
                 if json.dumps(chat,sort_keys=True)!=before:self.save_preferences()
+                from _common import write_json_atomic
+                write_json_atomic(display,result['messages'])
         for key in ('chat_brief','summary','summary_updated','title'):result.pop(key,None)
         return dict(result, chat=chat, job=job)
 
@@ -1516,7 +1530,6 @@ class Workspace:
             if native and not welcome and keep_warm_id is None:
                 chat.setdefault('brief_token',secrets.token_hex(8))
                 prompt=prompt.replace('\nUser request:\n',workspace_chats.instructions(chat)+'\nUser request:\n',1)
-            chat.pop('model_choice_pending',None)
             chat.update(status='working', model=saved_connection.get('model') or self.agent.get('model',''), effort=saved_connection.get('effort',''), connection=dict(saved_connection), updated=time.time())
             job['new_native_chat']=native and not chat.get('native_id')
             job.update(chat_id=chat['id'], model=chat['model'], effort=chat['effort'])
@@ -1618,7 +1631,10 @@ class Workspace:
                         workspace_usage.record(self.preferences,job,chat,self.agent['name'])
                         self.record_notification(job, chat)
                         if chat:
-                            chat.update(status=job['status'], updated=job['updated'])
+                            if job['status']=='complete':chat.pop('model_choice_pending',None)
+                            uncertain=kind=='hermes' and job['status']=='stopped'
+                            if uncertain:job['stop_note']='The local Hermes connection stopped. Hermes may still be working in its gateway; check its outcome before continuing.'
+                            chat.update(status='working' if uncertain else job['status'], updated=job['updated'])
                             try:
                                 self.save_chat_turn(chat, job, text, final=True, candidate=candidate)
                                 self.save_preferences()
@@ -1657,7 +1673,7 @@ def handler_for(app):
             self.send_header('Cache-Control', 'no-store')
             self.send_header('X-Content-Type-Options', 'nosniff')
             self.send_header('Referrer-Policy', 'no-referrer')
-            self.send_header('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' blob:; media-src 'self' blob:; connect-src 'self'; object-src 'none'; frame-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'")
+            self.send_header('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' blob: data:; media-src 'self' blob:; connect-src 'self'; object-src 'none'; frame-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'")
             for key, value in (headers or {}).items():
                 self.send_header(key, value)
             self.end_headers()
@@ -1746,14 +1762,14 @@ def handler_for(app):
                     self.send(200, {'items': sorted(({k:v for k,v in c.items() if k!='brief_token'} for c in app.preferences['chats'] if c['business_id'] == bid),key=lambda c:c.get('updated',0),reverse=True),
                                     'active': app.preferences['active_chats'].get(bid), 'running': [{k:j.get(k) for k in ('id','chat_id','workspace','business_id','status','agent','model')} for j in app.running_jobs()]})
                 elif route == '/api/chats/detail':
-                    result=app.conversation(selected(query.get('business')),query.get('id',''))
+                    result=app.conversation(selected(query.get('business')),query.get('id',''),refresh=True)
                     note='This chat has no saved app session. Showing its saved details.' if not result['chat'].get('native_id') else ''
                     if result.get('history_note'):
                         reason=setup_error(result['history_note'])
                         note='This app could not refresh the chat. Its saved details are still available.' if reason==SETUP_ERRORS['unknown'] else reason
                     self.send(200, {'chat':result['chat'],'history_note':note})
                 elif route == '/api/conversation':
-                    self.send(200, app.conversation(selected(query.get('business')),query.get('chat_id')))
+                    self.send(200, app.conversation(selected(query.get('business')),query.get('chat_id'),query.get('refresh')=='1'))
                 elif route == '/api/library':
                     result=app.library_items(query.get('discover')=='1')
                     self.send(200, result if query.get('details')=='1' else result['items'])
@@ -1851,7 +1867,7 @@ def handler_for(app):
                         raise ValueError('Workspace organization is running. Wait or stop it before making changes.')
                     if app.schedule_job and app.schedule_job['status']=='working' and (route in {'/api/lifecycle','/api/workspaces/open','/api/workspaces/create','/api/workspaces/relocate','/api/workspaces/restore'} or route.startswith('/api/organization/')):
                         raise ValueError('Wait for task setup or stop it before changing workspaces or restarting AURA.')
-                    if app.running_jobs(None if route in {'/api/lifecycle','/api/workspaces/relocate','/api/workspaces/restore'} else workspace_root()) and route not in {'/api/preferences','/api/profile','/api/interface/reset','/api/chats/recover','/api/notifications','/api/chat','/api/chat/stop','/api/chats/new','/api/chats/open','/api/chats/rename','/api/connect','/api/workspaces/open','/api/usage/settings','/api/updates','/api/schedules/action','/api/schedules/stop'}:
+                    if app.running_jobs(None if route in {'/api/lifecycle','/api/workspaces/relocate','/api/workspaces/restore'} else workspace_root()) and route not in {'/api/preferences','/api/profile','/api/interface/reset','/api/chats/recover','/api/notifications','/api/chat','/api/chat/stop','/api/chats/new','/api/chats/open','/api/chats/rename','/api/chats/model','/api/connect','/api/workspaces/open','/api/usage/settings','/api/updates','/api/schedules/action','/api/schedules/stop'}:
                         raise ValueError('Your agent is working. Wait for its reply before changing this workspace.')
                     if route in {'/api/preferences','/api/locations'}:
                         app.load_portable()
@@ -2077,10 +2093,6 @@ def handler_for(app):
                                                          'model': model, 'effort': effort, 'attachment': attachment}
                         if app.connection_kind in NATIVE_AGENTS | {'configured'} and not app.handoff:
                             app.preferences['connected_apps'][app.connection_kind] = dict(app.preferences['connection'])
-                        for current_bid,current_id in [(data.get('business') or getattr(app,'update_business',''),app.preferences['active_chats'].get(data.get('business') or getattr(app,'update_business','')))]:
-                            current_chat=next((c for c in app.preferences['chats'] if c['id']==current_id and c['business_id']==current_bid),None)
-                            if current_chat and current_chat['agent']==app.connection_kind and not any(j.get('chat_id')==current_id for j in app.running_jobs(workspace_root())):
-                                current_chat.update(model=model,effort=effort,connection=dict(app.preferences['connection']),model_choice_pending=True)
                         app.save_preferences()
                         self.send(200, app.connection())
                     elif route == '/api/connections/save':
@@ -2270,15 +2282,30 @@ def handler_for(app):
                         chat.update(title=app.connections.redact(title),title_edited=True)
                         app.save_preferences()
                         self.send(200,{'chat':chat})
+                    elif route == '/api/chats/model':
+                        bid=selected(data.get('business'))
+                        chat=next((c for c in app.preferences['chats'] if c['id']==data.get('id') and c['business_id']==bid),None)
+                        if not chat:raise ValueError('Choose a chat in this workspace.')
+                        if data.get('kind',chat['agent'])!=chat['agent']:raise ValueError('An existing chat stays in its original AI app. Start a new chat to use another app.')
+                        if any(j.get('chat_id')==chat['id'] for j in app.running_jobs(workspace_root())) or chat.get('status')=='working':raise ValueError('Wait for this request to finish before changing its model.')
+                        if chat['agent'] not in NATIVE_AGENTS:raise ValueError('This connection uses its own model settings.')
+                        if chat['agent']=='hermes' and chat.get('native_id'):raise ValueError('Start a new Hermes chat to choose another model or effort.')
+                        options=app.agent_options(chat['agent'])
+                        model=next((m for m in options['models'] if m['id']==data.get('model')),None)
+                        if not model:raise ValueError('Choose an available model for this AI app.')
+                        effort=data.get('effort','')
+                        efforts=app.agent_efforts(chat['agent'],model['id']).get('efforts',model.get('efforts',[]))
+                        if effort and effort not in efforts:raise ValueError('Choose a supported effort for this model.')
+                        if chat['agent']=='codex' and not effort:raise ValueError('Choose an effort for this Codex model.')
+                        chat.update(model=model['id'],effort=effort,connection={**chat.get('connection',{}),'kind':chat['agent'],'model':model['id'],'effort':effort},model_choice_pending=True)
+                        app.save_preferences();self.send(200,{'chat':chat})
                     elif route == '/api/chats/open':
                         bid = selected(data.get('business'))
                         chat = next((c for c in app.preferences['chats'] if c['id'] == data.get('id') and c['business_id'] == bid), None)
                         if not chat:
                             raise ValueError('This chat does not belong to the selected business.')
                         choice = ({'id':'configured',**app.configured_agent} if chat['agent']=='configured' and app.configured_agent else next((a for a in installed_agents() if a['id'] == chat['agent'] and a['argv']), None))
-                        if not choice:
-                            raise ValueError('Install or reconnect the AI app that owns this chat before opening it.')
-                        app.select_agent(choice, app.preferences.get('connection', {}).get('workspace_write') is True)
+                        if choice:app.select_agent(choice, app.preferences.get('connection', {}).get('workspace_write') is True)
                         app.preferences['connection'].update(chat.get('connection',{}))
                         app.preferences['connection'].update(kind=chat['agent'], model=chat['model'], effort=chat['effort'])
                         if chat['agent'] != 'codex':

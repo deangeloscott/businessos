@@ -76,7 +76,7 @@ class Metadata:
         except subprocess.TimeoutExpired:
             # Only this metadata subprocess and its launcher children; no prompt was sent.
             if __import__('os').name == 'nt':
-                subprocess.run(['taskkill', '/PID', str(self.process.pid), '/T', '/F'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                subprocess.run(['taskkill', '/PID', str(self.process.pid), '/T', '/F'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, creationflags=subprocess.CREATE_NO_WINDOW)
             else:
                 self.process.terminate()
             self.process.wait(timeout=5)
@@ -230,7 +230,7 @@ def history(command, kind, cwd, env, native_id):
         finally:host.close()
     elif kind=='hermes':
         result=subprocess.run([*base_command(command),'sessions','export','--session-id',native_id,'--format','jsonl','--redact','-'],
-                              cwd=cwd,env=env,stdout=subprocess.PIPE,stderr=subprocess.DEVNULL,text=True,encoding='utf-8',timeout=40)
+                              cwd=cwd,env=env,stdout=subprocess.PIPE,stderr=subprocess.DEVNULL,text=True,encoding='utf-8',timeout=40,creationflags=subprocess.CREATE_NO_WINDOW if os.name=='nt' else 0)
         sessions=[json.loads(line) for line in result.stdout.splitlines() if line.strip().startswith('{')]
         session=next((s for s in sessions if s.get('id',s.get('session_id'))==native_id),None)
         if result.returncode or not session:
@@ -316,7 +316,7 @@ def run(command, kind, cwd, env, prompt, native_id, model, effort, update, execu
                 measures.append(row)
             update(usage={**workspace_usage.combine(measures),'last':row})
     with (execution.popen if execution else subprocess.Popen)(argv,cwd=cwd,env=env,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,
-                          text=True,encoding='utf-8',errors='replace') as process:
+                          text=True,encoding='utf-8',errors='replace',creationflags=subprocess.CREATE_NO_WINDOW if os.name=='nt' else 0) as process:
         errors = ErrorTail(process, env)
         errors.send(process, prompt);ErrorTail.close_input(process)
         for line in process.stdout:

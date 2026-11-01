@@ -1,6 +1,10 @@
 """Independent real processes, exact Stop ownership, and cross-workspace recovery."""
 from pathlib import Path
-import json, os, sys, tempfile, time
+import json, os, sys, tempfile, time, threading
+from http.server import ThreadingHTTPServer
+from urllib.request import Request,urlopen
+from urllib.error import HTTPError
+from unittest.mock import patch
 
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'scripts'))
@@ -84,6 +88,56 @@ print('## Reply '+name+'\\n\\nWorkspace: '+str(root))
             result=restored.conversation(bid,third['chat_id']);assert result['job'] is None and result['chat']['status']=='working'
             try:restored.start_chat(bid,'TURN RETRY',[],chat_id=third['chat_id']);raise AssertionError('An uncertain request retried automatically')
             except ValueError:pass
+            # Browsing uses the saved display; model changes stay in one idle chat.
+            import workspace_ui as ui
+            native={'id':'native-model-check','business_id':bid,'agent':'codex','native_id':'native-same','workspace':str(b),'title':'Model check','model':'first-model','effort':'low','status':'complete','created':time.time(),'updated':time.time()}
+            app.preferences['chats'].append(native);app.preferences['active_chats'][bid]=native['id']
+            app.option_cache['codex']={'models':[{'id':'first-model','efforts':['low'],'default_effort':'low'},{'id':'next-model','efforts':['high'],'default_effort':'high'}]}
+            app.save_chat_turn(native,{'id':'saved','created':time.time(),'updated':time.time(),'reply':'Saved native display','status':'complete'},'Read this saved chat',final=True)
+            defaults=dict(app.preferences['connection'])
+            server=ThreadingHTTPServer(('127.0.0.1',0),ui.handler_for(app));worker=threading.Thread(target=server.serve_forever,daemon=True);worker.start()
+            def call(path,data=None,expected=200):
+                request=Request('http://127.0.0.1:'+str(server.server_port)+path,data=json.dumps(data).encode() if data is not None else None,headers={'X-Aura-Token':app.token,'X-Aura-Workspace':str(b),'Content-Type':'application/json'})
+                try:
+                    with urlopen(request) as response:assert response.status==expected;return json.load(response)
+                except HTTPError as exc:
+                    assert exc.code==expected,(exc.code,exc.read());return {}
+            try:
+                with patch('workspace_ui.installed_agents',return_value=[{'id':'codex','name':'Codex fixture','argv':['fixture','exec','-']}]),patch('workspace_codex.history',side_effect=AssertionError('Browsing must not launch native metadata')):
+                    opened=call('/api/chats/open',{'business':bid,'id':native['id']})
+                    assert opened['messages'][-1]['text']=='Saved native display'
+                    defaults=dict(app.preferences['connection'])
+                    updated=call('/api/chats/model',{'business':bid,'id':native['id'],'kind':'codex','model':'next-model','effort':'high'})
+                    assert updated['chat']['model']=='next-model' and updated['chat']['native_id']=='native-same'
+                    assert updated['chat']['model_choice_pending'] and app.preferences['connection']==defaults
+                    call('/api/chats/model',{'business':bid,'id':native['id'],'kind':'claude','model':'next-model','effort':'high'},400)
+                    call('/api/chats/model',{'business':bid,'id':native['id'],'model':'next-model','effort':'invented'},400)
+                    call('/api/chats/model',{'business':'wrong-business','id':native['id'],'model':'next-model','effort':'high'},400)
+                    native['status']='working'
+                    call('/api/chats/model',{'business':bid,'id':native['id'],'model':'next-model','effort':'high'},400)
+                    native.update(status='complete',agent='hermes')
+                    call('/api/chats/model',{'business':bid,'id':native['id'],'model':'next-model','effort':'high'},400)
+                    native['agent']='codex'
+                with patch('workspace_ui.installed_agents',return_value=[{'id':'codex','name':'Codex fixture','argv':['fixture','exec','-']}]),patch('workspace_codex.history',return_value={'messages':[{'role':'assistant','text':'Native refreshed display'}],'model':'first-model','effort':'low'}) as history:
+                    fresh=call('/api/conversation?business='+bid+'&chat_id='+native['id']+'&refresh=1')
+                    assert history.call_count==1 and fresh['messages'][0]['text']=='Native refreshed display'
+                    assert fresh['chat']['model']=='next-model','Native metadata must not overwrite a pending next-turn model'
+                    cached=call('/api/conversation?business='+bid+'&chat_id='+native['id'])
+                    assert history.call_count==1 and cached['messages'][0]['text']=='Native refreshed display'
+                # Stopping a Hermes transport does not claim its gateway stopped.
+                from workspace_execution import Stopped
+                hermes=dict(native,id='hermes-stop-check',agent='hermes',status='complete',model='first-model',effort='low')
+                app.preferences['chats'].append(hermes);app.preferences['connected_apps']['hermes']={'kind':'hermes','model':'first-model','effort':'low'}
+                with patch('workspace_ui.installed_agents',return_value=[{'id':'hermes','name':'Hermes fixture','argv':['fixture','chat','--print']}]),patch('workspace_agents.run',side_effect=Stopped()):
+                    stopped=app.start_chat(bid,'A request with uncertain gateway outcome',[],chat_id=hermes['id'])
+                    until(lambda:app.jobs[stopped['id']]['status']=='stopped')
+                    with app.lock:pass
+                    assert hermes['status']=='working' and app.jobs[stopped['id']]['stop_note']
+                    call('/api/chats/recover',{'business':bid,'id':hermes['id']})
+                    assert hermes['status']=='stopped'
+                call('/api/profile',{'avatar':'data:image/svg+xml;base64,PHN2Zz48L3N2Zz4='},400)
+                with urlopen('http://127.0.0.1:'+str(server.server_port)) as response:assert 'img-src' in response.headers['Content-Security-Policy'] and 'data:' in response.headers['Content-Security-Policy']
+            finally:server.shutdown();server.server_close();worker.join()
             for root,data in identities.items():assert (root/'instances'/bid/'context/business.json').read_bytes()==data
             with workspace_scope(a):assert Path(workspace_root())==a
             assert Path(workspace_root())==b
@@ -91,7 +145,7 @@ print('## Reply '+name+'\\n\\nWorkspace: '+str(root))
             for execution in app.executions.values():execution.stop()
             until(lambda:not app.running_jobs())
             os.environ.clear();os.environ.update(prior)
-    print('Conversation isolation passed: parallel processes, individual Stop, immutable routing, A/B/A navigation, recovery, profile and safe diagnostics.')
+    print('Conversation isolation passed: parallel processes, individual Stop, immutable routing, A/B/A navigation, recovery, cached browsing, per-chat models, profile and safe diagnostics.')
 
 
 if __name__=='__main__':main()
