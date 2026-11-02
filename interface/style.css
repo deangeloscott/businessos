@@ -271,3 +271,5 @@ footer .footer-actions{flex:none;align-items:center}footer #usage-open{font-size
 .profile-fields{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:center;gap:24px}.profile-fields>*{min-width:0}.profile-fields .profile-picture-row{padding:0;min-width:0}.profile-fields .picture-upload{white-space:nowrap}
 #support-form .support-details{margin-top:0}
 @media(max-width:560px){.profile-fields{gap:16px}.profile-fields .profile-picture-row{flex-direction:column;align-items:flex-start;gap:12px}.profile-fields .profile-picture{width:56px;height:56px}.profile-fields .picture-upload{padding:8px;font-size:11px}}
+
+.sidebar-chat-actions{display:flex;align-items:center;gap:12px}#native-chat-recent{margin:18px 0}#native-chat-preview{overflow-wrap:anywhere}#native-chat-preview h3{margin-top:24px}#native-chat-preview details{max-height:300px;overflow:auto;margin:14px 0}#native-chat-preview .primary{margin-top:14px}#native-chat-lookup{display:grid;gap:12px}

@@ -148,6 +148,33 @@ print('## Reply '+name+'\\n\\nWorkspace: '+str(root))
                 with patch('workspace_ui.installed_agents',return_value=[{'id':'codex','name':'Codex fixture','argv':['fixture','exec','-']}]),patch('workspace_codex.history',return_value={'messages':[{'role':'assistant','text':'Fresh display'}],'usage':{'input_tokens':100}}):
                     call('/api/conversation?business='+bid+'&chat_id='+native['id']+'&refresh=1')
                     assert json.loads(app.settings_file.read_text(encoding='utf-8'))['usage_chats'][native['id']]['input_tokens']==100,'Native usage was not persisted'
+                # Native discovery/import is explicit, bounded and uses the same saved session.
+                native_store=base/'native-sessions';native_store.mkdir()
+                rows=[]
+                for i in range(7):
+                    path=native_store/('native-recent-'+str(i)+'.jsonl')
+                    path.write_text(json.dumps({'type':'session_meta','payload':{'id':'native-recent-'+str(i),'cwd':str(b)}})+'\n',encoding='utf-8')
+                    rows.append({'id':'native-recent-'+str(i),'preview':'Native idea '+str(i),'cwd':str(b),'path':str(path),'updatedAt':time.time()})
+                def native_catalog(command,calls,cwd,env):return calls(lambda method,params:{'data':rows,'nextCursor':None})
+                def native_history(command,cwd,ident):
+                    path=native_store/(ident+'.jsonl');return {'native_id':ident,'title':'Native idea','summary':'A native summary','model':'next-model','effort':'high','source_file':str(path),'native_workspace':str(b),'messages':[{'role':'assistant','text':'Changed outside' if path.stat().st_size>150 else 'Original native reply'}],'usage':{'input_tokens':50}}
+                with patch('workspace_ui.installed_agents',return_value=[{'id':'codex','name':'Codex fixture','argv':['fixture','exec','-']}]),patch('workspace_native_chats.storage',return_value=native_store),patch('workspace_codex.rpc',side_effect=native_catalog),patch('workspace_codex.history',side_effect=native_history) as history:
+                    found=call('/api/chats/native?business='+bid+'&kind=codex');assert len(found['items'])==5
+                    active_before=dict(app.preferences['active_chats']);count_before=len(app.preferences['chats'])
+                    preview=call('/api/chats/native?business='+bid+'&kind=codex&id=native-recent-0')
+                    assert preview['title']=='Native idea' and len(app.preferences['chats'])==count_before and app.preferences['active_chats']==active_before
+                    call('/api/chats/import',{'business':bid,'kind':'codex','id':'native-recent-0'},400)
+                    added=call('/api/chats/import',{'business':bid,'kind':'codex','id':'native-recent-0','confirmed':True})
+                    assert call('/api/chats/import',{'business':bid,'kind':'codex','id':'native-recent-0','confirmed':True})==added
+                    assert app.preferences['active_chats']==active_before and len(app.preferences['chats'])==count_before+1
+                    assert not any(r['native_id']=='native-recent-0' for r in call('/api/chats/native?business='+bid+'&kind=codex')['items'])
+                    calls_before=history.call_count
+                    assert not call('/api/chats/changes?business='+bid+'&id='+added['id'])['changed'] and history.call_count==calls_before
+                    path=native_store/'native-recent-0.jsonl';path.write_text(path.read_text()+' '*250,encoding='utf-8')
+                    change=call('/api/chats/changes?business='+bid+'&id='+added['id'])
+                    assert change['changed'] and change['conversation']['messages'][0]['text']=='Changed outside'
+                    assert not call('/api/chats/changes?business='+bid+'&id='+added['id'])['changed']
+                    call('/api/chats/native?business='+bid+'&kind=codex&id=../private',expected=400)
                 # Preparing personalization is metadata-only and reuses one scoped chat.
                 app.preferences['connected_apps']['configured']={'kind':'configured','model':'','effort':''}
                 connection={'kind':'configured','model':'','effort':''}

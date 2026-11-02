@@ -246,4 +246,4 @@ def history(command, cwd, native_id):
             if candidate:brief=dict(candidate,through=len(messages),at=workspace_usage.timestamp(row.get('timestamp')))
     return {'messages': messages, 'model': model, 'effort': effort, 'usage': usage, 'native_id': native_id,
             'chat_brief':brief,'title':thread.get('name'),'summary':thread.get('summary'),'summary_updated':thread.get('summaryUpdatedAt'),
-            'status': thread.get('status'), 'resume': f'codex resume {native_id}'}
+            'status': thread.get('status'), 'source_file':str(path),'native_workspace':thread.get('cwd',''),'resume': f'codex resume {native_id}'}

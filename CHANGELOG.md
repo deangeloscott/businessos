@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Submit selected feedback through the Aura website using the existing ViralTrac account. Review public feature text and keep diagnostics/attachments private; no email, download or separate account service.
+- Add a compact existing-native-chat picker beside Recent chats, with up to five unregistered sessions, exact-ID lookup, source/destination preview and duplicate-safe registration. Preserve native session ownership and project routing.
+- Check idle chats for cheap local transcript changes when returning or foregrounding the tab. Refresh only when changed, retain drafts/scroll, and keep manual refresh for remote or unsupported stores.
+
 - Simplify Settings and report preparation: one technical-details choice, attachments below the description, a Submit action, workspace reload beside the version, quick setup first, and profile/name fields side by side. Remove the Help entry and redundant explanatory copy.
 
 - Reuse formatted conversation history during live progress, and reuse unchanged saved records through metadata revision checks. Keep explicit reloads and completed-work inventory refreshes able to pick up external edits.

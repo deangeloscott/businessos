@@ -12,7 +12,7 @@ from pathlib import Path
 
 _draft_lock=threading.Lock()
 
-ROUTES=set("state files file media library library/item chats chats/open chats/detail chat chat/stop conversation notifications updates usage usage/settings profile diagnostics support/environment support/test".split())
+ROUTES=set("state files file media library library/item chats chats/open chats/detail chat chat/stop conversation notifications updates usage usage/settings profile diagnostics support/environment support/test support/prepare chats/native chats/import chats/changes".split())
 
 class Performance:
     def __init__(self):
@@ -66,7 +66,7 @@ def machine(root):
     return result
 
 
-def prepare(data,environment,folder):
+def prepare(data,environment,folder,persist=True):
     kind=data.get('kind')
     if not isinstance(kind,str) or kind not in {'troubleshooting','feature'}:raise ValueError('Choose troubleshooting or a feature request.')
     title=data.get('title');description=data.get('description')
@@ -86,6 +86,9 @@ def prepare(data,environment,folder):
     report={'format':'aura-support-v1','kind':kind,'title':title.strip(),'description':description.strip(),
             'created_at':time.time(),'delivery':'test_only_not_sent','environment':environment if data.get('include_environment') is True else None,
             'browser_performance':browser_metrics(data.get('browser_performance',{})) if data.get('include_environment') is True else {},'attachments':attachments}
+    if not persist:
+        report.pop('delivery',None)
+        return {'report':report}
     with _draft_lock:
         folder=Path(folder);folder.mkdir(parents=True,exist_ok=True)
         import secrets

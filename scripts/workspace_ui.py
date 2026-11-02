@@ -40,6 +40,7 @@ import workspace_organization
 import workspace_usage
 import workspace_library
 import workspace_updates
+import workspace_native_chats
 import workspace_chats
 import workspace_sharing
 import workspace_exchange
@@ -1133,6 +1134,63 @@ class Workspace:
             self.preferences['chats'].append(chat);self.save_preferences()
             return {'id':chat['id']}
 
+    def native_chats(self,bid,kind,ident=None,add=False):
+        with self.lock:
+            owner=copy.copy(self);root=Path(owner.workspace_path)
+            choice=next((a for a in installed_agents() if a['id']==kind and a['argv']),None)
+            if not choice:raise ValueError('Choose an installed native AI app.')
+            existing=next((c for c in self.preferences['chats'] if c.get('agent')==kind and c.get('native_id')==ident),None) if ident else None
+            if existing and add:
+                if existing['business_id']!=bid:raise ValueError('This native chat is already added to another business in this workspace.')
+                return {'id':existing['id']}
+            excluded={c.get('native_id') for c in self.preferences['chats'] if c.get('agent')==kind}
+        with workspace_scope(root):
+            env=owner.agent_environment()
+            if not ident:
+                result=workspace_native_chats.recent(choice['argv'],kind,root,env,excluded)
+                for item in result['items']:
+                    for key in ('title','description'):item[key]=owner.connections.redact(item.get(key,''))
+                return {**result,'workspace':str(root)}
+            result=workspace_native_chats.lookup(choice['argv'],kind,root,env,ident)
+            for m in result['messages']:m['text']=owner.connections.redact(workspace_chats.clean(m['text']))
+            if not add:return {'native_id':ident,'kind':kind,'title':owner.connections.redact(result['title']),'description':owner.connections.redact(result['description']),'native_workspace':result['native_workspace'],'messages':result['messages'][-6:],'workspace':str(root)}
+            with self.lock:
+                if self.workspace_path!=str(root):raise ValueError('The workspace changed. Open Add existing chat again.')
+                duplicate=next((c for c in self.preferences['chats'] if c.get('agent')==kind and c.get('native_id')==ident),None)
+                if duplicate:
+                    if duplicate['business_id']!=bid:raise ValueError('This chat is already associated with another business.')
+                    return {'id':duplicate['id']}
+                known=self.preferences['connected_apps'].get(kind,{})
+                model=result.get('model') or known.get('model','');effort=result.get('effort') or known.get('effort','')
+                connection={**known,'kind':kind,'model':model,'effort':effort}
+                chat={'id':secrets.token_urlsafe(12),'business_id':bid,'workspace':str(root),'native_workspace':result['native_workspace'],'agent':kind,'native_id':ident,'title':owner.connections.redact(result['title']),'summary':owner.connections.redact(result['description']),'summary_source':'App' if result.get('summary') else 'Latest reply','model':model,'effort':effort,'connection':connection,'created':time.time(),'updated':time.time(),'status':'complete','source_file':result.get('source_file','')}
+                chat['source_marker']=workspace_native_chats.marker(chat['source_file'])
+                self.preferences['chats'].append(chat);self.preferences['connected_apps'].setdefault(kind,connection)
+                workspace_usage.remember(self.preferences,chat['id'],result.get('usage',{}),'session')
+                from _common import write_json_atomic
+                write_json_atomic(self.settings_file.parent/'chat-views'/(chat['id']+'.json'),result['messages'])
+                self.save_preferences();return {'id':chat['id']}
+
+    def conversation_changes(self,bid,ident):
+        with self.lock:
+            owner=copy.copy(self);original=next((c for c in self.preferences['chats'] if c['id']==ident and c['business_id']==bid),None)
+            if not original:raise ValueError('Choose a chat in this workspace.')
+            chat=dict(original);revision=self.chat_revision(chat)
+            if any(j.get('chat_id')==ident for j in self.running_jobs()):return {'changed':False,'supported':False,'workspace':owner.workspace_path}
+        # Even the first source-file lookup stays outside the shared UI lock.
+        with workspace_scope(owner.workspace_path):
+            path=chat.get('source_file') or workspace_native_chats.source_hint(chat['agent'],owner.agent_environment(),chat.get('native_id'))
+            old=chat.get('source_marker');stamp=workspace_native_chats.marker(path)
+            display=owner.settings_file.parent/'chat-views'/(chat['id']+'.json')
+            same=bool(stamp and not old and display.exists() and stamp[0][1]<=display.stat().st_mtime_ns)
+            with self.lock:
+                if self.chat_revision(original)!=revision:return {'changed':False,'supported':bool(stamp),'workspace':owner.workspace_path}
+                if path:original['source_file']=path
+                if same:original['source_marker']=stamp
+            if not stamp or same or stamp==old:return {'changed':False,'supported':bool(stamp),'workspace':owner.workspace_path}
+            result=owner.conversation(bid,ident,True)
+        return {'changed':not result.get('history_note'),'conversation':result,'workspace':owner.workspace_path}
+
     @staticmethod
     def chat_revision(chat):
         return tuple(chat.get(k) for k in ('updated','native_id','model','effort','status','model_choice_pending','title','title_edited'))
@@ -1160,9 +1218,11 @@ class Workspace:
             result={'messages':shown,'chat':chat,'job':job}
             if not shown and chat.get('native_id') and not path.is_file():result['history_note']='Use Refresh chat to read this conversation from its AI app.'
             return result
+        observed_marker=workspace_native_chats.marker(chat.get('source_file'))
         try:
             choice = next(a for a in installed_agents() if a['id'] == chat['agent'] and a['argv'])
-            chat_root = Path(chat.get('workspace') or workspace_root())
+            chat_root = Path(chat.get('native_workspace') or chat.get('workspace') or workspace_root())
+            if not chat_root.is_dir():chat_root=workspace_root()
             result = (workspace_codex.history(choice['argv'], chat_root, chat['native_id']) if chat['agent']=='codex' else
                       workspace_agents.history(choice['argv'],chat['agent'],chat_root,self.agent_environment(),chat['native_id']))
         except (ValueError, OSError, StopIteration, subprocess.SubprocessError) as exc:
@@ -1183,6 +1243,8 @@ class Workspace:
             if not result.get('history_note') and not (job and job['status']=='working'):
                 before=json.dumps(original,sort_keys=True)
                 original.update(chat);chat=original
+                if result.get('source_file'):chat['source_file']=result['source_file']
+                chat['source_marker']=observed_marker or workspace_native_chats.marker(chat.get('source_file'))
                 usage_changed=False
                 if result.get('usage'):
                     prior=workspace_usage.remember(self.preferences,chat['id'],result['usage'],'session')
@@ -1671,7 +1733,7 @@ class Workspace:
             command = list(self.agent['argv'])
             kind = self.connection_kind
             env = self.agent_environment()
-            root=workspace_root().resolve();model=job['model'];effort=job['effort'];native_id=chat.get('native_id')
+            root=workspace_root().resolve();native_root=Path(chat.get('native_workspace') or root);native_root=native_root if native_root.is_dir() else root;model=job['model'];effort=job['effort'];native_id=chat.get('native_id')
             def update(**values):
                 with self.lock:
                     if values.get('native_id') and not job.get('native_id'):
@@ -1695,7 +1757,7 @@ class Workspace:
                 candidate=None
                 try:
                     if native:
-                        result = (workspace_codex.run(command, root, prompt, native_id, model, effort, update, env, execution)
+                        result = (workspace_codex.run(command, native_root, prompt, native_id, model, effort, update, env, execution)
                                   if kind=='codex' else workspace_agents.run(command,kind,root,env,prompt,native_id,model,effort,update,execution))
                         output, code = result['reply'], 0
                         if not welcome and keep_warm_id is None:candidate=workspace_chats.brief(output)
@@ -1888,6 +1950,10 @@ def handler_for(app):
                     bid = selected(query.get('business'))
                     self.send(200, {'workspace':str(workspace_root()),'items': sorted(({k:v for k,v in c.items() if k!='brief_token'} for c in app.preferences['chats'] if c['business_id'] == bid),key=lambda c:c.get('updated',0),reverse=True),
                                     'active': app.preferences['active_chats'].get(bid), 'running': [{k:j.get(k) for k in ('id','chat_id','workspace','business_id','status','agent','model')} for j in app.running_jobs()]})
+                elif route == '/api/chats/native':
+                    self.send(200,app.native_chats(selected(query.get('business')),query.get('kind'),query.get('id')))
+                elif route == '/api/chats/changes':
+                    self.send(200,app.conversation_changes(selected(query.get('business')),query.get('id')))
                 elif route == '/api/chats/detail':
                     result=app.conversation(selected(query.get('business')),query.get('id',''),refresh=True)
                     note='This chat has no saved app session. Showing its saved details.' if not result['chat'].get('native_id') else ''
@@ -1977,16 +2043,20 @@ def handler_for(app):
                 if self.headers.get_content_type() != 'application/json':
                     raise ValueError('Send JSON from the local view.')
                 length = int(self.headers.get('Content-Length', '0'))
-                if length <= 0 or length > (6*1024*1024 if urlsplit(self.path).path=='/api/support/test' else MAX_BODY):
+                if length <= 0 or length > (6*1024*1024 if urlsplit(self.path).path in {'/api/support/test','/api/support/prepare'} else MAX_BODY):
                     raise ValueError('Request is empty or too large.')
                 data = json.loads(self.rfile.read(length))
                 if not isinstance(data, dict):
                     raise ValueError('Expected an object.')
                 route = urlsplit(self.path).path
-                if route == '/api/support/test':
+                if route == '/api/chats/import':
+                    if data.get('confirmed') is not True:raise ValueError('Review the native chat and destination before adding it.')
+                    self.send(200,app.native_chats(selected(data.get('business')),data.get('kind'),data.get('id'),True))
+                    return
+                if route in {'/api/support/test','/api/support/prepare'}:
                     with app.lock:owner=copy.copy(app)
                     environment=owner.support_environment(data.get('include_names') is True) if data.get('include_environment') is True else None
-                    self.send(200,workspace_support.prepare(data,environment,owner.settings_file.parent/'support-drafts'))
+                    self.send(200,workspace_support.prepare(data,environment,owner.settings_file.parent/'support-drafts',persist=route=='/api/support/test'))
                     return
                 if route == '/api/locations/browse':
                     if data.get('kind') not in {'folder', 'file'}:

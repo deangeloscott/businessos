@@ -212,6 +212,7 @@ def resume_command(kind, native_id):
 
 
 def history(command, kind, cwd, env, native_id):
+    source_file='';native_workspace=''
     model, effort, window = '', '', None
     native_title=native_summary='';summary_updated=None
     if kind in {'pi','omp'}:
@@ -221,6 +222,7 @@ def history(command, kind, cwd, env, native_id):
             if state.get('sessionId')!=native_id:
                 raise ValueError('The AI app did not reopen the exact saved chat. No request was sent.')
             messages=host.call('get_messages').get('messages',[])
+            source_file=state.get('sessionFile') or '';native_workspace=state.get('cwd') or ''
             current=state.get('model') or {}
             model=(current.get('provider','')+'/'+current.get('id','')).strip('/')
             effort=state.get('thinkingLevel','')
@@ -235,7 +237,7 @@ def history(command, kind, cwd, env, native_id):
         session=next((s for s in sessions if s.get('id',s.get('session_id'))==native_id),None)
         if result.returncode or not session:
             raise ValueError('Hermes did not return this saved chat. Open its native session before retrying.')
-        messages=session.get('messages',[])
+        messages=session.get('messages',[]);native_workspace=session.get('cwd') or '';model=session.get('model') or '';effort=session.get('reasoning') or ''
         native_title=session.get('title','');native_summary=session.get('summary','');summary_updated=session.get('summary_updated_at')
     elif kind=='claude':
         root=Path(env.get('CLAUDE_CONFIG_DIR') or Path.home()/'.claude')/'projects'
@@ -244,7 +246,7 @@ def history(command, kind, cwd, env, native_id):
         matches=list(root.glob('*/'+native_id+'.jsonl'))
         if len(matches)!=1:
             raise ValueError('Claude Code has not exposed this native transcript locally.')
-        messages=[]
+        source_file=str(matches[0]);messages=[]
         for line in matches[0].read_text(encoding='utf-8').splitlines():
             row=json.loads(line)
             if row.get('type')=='summary' and isinstance(row.get('summary'),str):
@@ -266,7 +268,7 @@ def history(command, kind, cwd, env, native_id):
         if candidate:brief=dict(candidate,through=len(out),at=workspace_usage.timestamp(at))
     return {'messages':out,'model':model,'effort':effort,'usage':workspace_usage.messages_usage(messages,kind,window),'native_id':native_id,
             'chat_brief':brief,'title':native_title,'summary':native_summary,'summary_updated':summary_updated,
-            'resume':subprocess.list2cmdline(resume_command(kind,native_id))}
+            'source_file':source_file,'native_workspace':native_workspace,'resume':subprocess.list2cmdline(resume_command(kind,native_id))}
 
 
 def tool_activity(name):
