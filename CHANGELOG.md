@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Simplify file actions with one external-editor selector, general Download copy beside Save, reviewed imports, separate sharing, and a single clickable location row. Export pending edits without changing workspace files.
+
 - Use a consistent Edit action and show original-file availability in the save picker, including an explicit read-only option for protected sources.
 
 - Add one local file panel for text/Markdown and CSV/TSV editing, image crop/rotate/resize, PDF viewing/search and streamed media. Share conflict-aware file saves, tracked versions and copies between API and CLI; preserve managed originals and navigation drafts.

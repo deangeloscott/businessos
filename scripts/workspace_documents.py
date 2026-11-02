@@ -54,7 +54,7 @@ def inspect(path, writable=False, asset=None):
         try:text=raw.decode('utf-8-sig')
         except UnicodeError:return result
         if '\x00' in text:return result
-        result.update(kind='table' if suffix in {'.csv','.tsv'} else 'text',editable=True,text=text)
+        result.update(kind='table' if suffix in {'.csv','.tsv'} else 'text',editable=True,text=text,bom=raw.startswith(b'\xef\xbb\xbf'))
         if result['kind']=='table':
             delimiter='\t' if suffix=='.tsv' else ','
             try:

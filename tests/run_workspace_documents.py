@@ -28,7 +28,7 @@ def main():
             source=folder/'Guide.md';original=b'\xef\xbb\xbf# First\r\n\r\nNotes.\r\n';source.write_bytes(original)
             app=Workspace(settings_file=base/'ui.json')
             ref=source.relative_to(root).as_posix()
-            info=app.document_info('alpha',ref);assert info['kind']=='text' and info['writable']
+            info=app.document_info('alpha',ref);assert info['kind']=='text' and info['writable'] and info['bom']
             saved=app.document_save('alpha',ref,{'expected_revision':info['revision'],'content':'# Changed\nNotes.\n'})
             assert source.read_bytes()==b'\xef\xbb\xbf# Changed\r\nNotes.\r\n'
             rev=docs.revision(source);before=source.read_bytes()

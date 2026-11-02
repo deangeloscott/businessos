@@ -38,13 +38,62 @@ export async function openFile(ctx){
 }
 async function render(view){
   if(!live(view))return;destroyWidgets(view);const info=view.info;
-  view.host.innerHTML=`<div class="file-toolbar"><div class="filters file-modes"><button type="button" data-file-mode="preview" class="${view.editing?'':'active'}" aria-pressed="${!view.editing}">Preview</button>${info.editable?`<button type="button" data-file-mode="edit" class="${view.editing?'active':''}" aria-pressed="${view.editing}">Edit</button>`:''}</div><div class="file-toolbar-actions"><button type="button" class="text-button" data-file-action="expand">${$('#detail').hasAttribute('data-file-wide')?'Reduce':'Expand'}</button><button type="button" class="secondary" data-file-action="open">Open in…</button></div></div><div id="file-tools"></div><div id="file-canvas" class="file-canvas" tabindex="-1"></div><div id="file-savebar" class="file-savebar" ${view.editing||view.dirty?'':'hidden'}><label>Save to<select id="file-save-mode">${info.writable?'<option value="save">Original file</option>':'<option value="save" disabled>Original file (read-only)</option>'}<option value="version">New version</option><option value="copy">Copy</option></select></label><label id="file-name-field">File name<input id="file-save-name" maxlength="120" value="${esc(view.name)}"></label><div class="file-save-actions"><button type="button" id="file-save" class="primary" ${view.dirty?'':'disabled'}>Save</button><button type="button" class="text-button" data-file-action="revert">Revert edits</button></div></div><p id="file-status" class="file-status" role="status">${view.imported?'Edited file ready to import.':view.dirty?'Unsaved changes':''}</p><div id="file-conflict" class="file-conflict" hidden><button type="button" class="secondary" data-file-action="reload">Reload file</button><button type="button" class="secondary" data-file-action="conflict-copy">Save edits as a copy</button></div>${info.related?.length>1?`<details class="file-related"><summary>Versions &amp; copies · ${info.related.length}</summary>${info.related.map(r=>`<button type="button" class="row compact" data-file-related="${esc(r.ref)}"><span>${esc(r.name)}</span><small>v${esc(r.version)}</small></button>`).join('')}</details>`:''}<div id="file-open-panel" class="file-open-panel" hidden></div>`;
+  const editing=view.editing||view.dirty;
+  view.host.innerHTML=`
+    <div class="file-toolbar">
+      <div class="filters file-modes">
+        <button type="button" data-file-mode="preview" class="${view.editing?'':'active'}" aria-pressed="${!view.editing}">Preview</button>
+        ${info.editable&&!view.imported?`<button type="button" data-file-mode="edit" class="${view.editing?'active':''}" aria-pressed="${view.editing}">Edit</button>`:''}
+      </div>
+      <div class="file-toolbar-actions">
+        <button type="button" class="text-button" data-file-action="expand">${$('#detail').hasAttribute('data-file-wide')?'Reduce':'Expand'}</button>
+        <button type="button" class="secondary" data-file-action="open" aria-controls="file-open-panel" aria-expanded="false">Open in…</button>
+      </div>
+    </div>
+    <div id="file-open-panel" class="file-open-panel" hidden></div>
+    <div id="file-tools"></div>
+    <div id="file-canvas" class="file-canvas" tabindex="-1"></div>
+    <div id="file-savebar" class="file-savebar" ${editing?'':'hidden'}>
+      <label>Save to<select id="file-save-mode">
+        ${info.writable&&!view.imported?'<option value="save">Original file</option>':`<option value="save" disabled>Original file (${view.imported?'keep original':'read-only'})</option>`}
+        <option value="version">New version</option><option value="copy">Workspace copy</option>
+      </select></label>
+      <label id="file-name-field">File name<input id="file-save-name" maxlength="120" value="${esc(view.name)}"></label>
+    </div>
+    <div class="file-save-actions">
+      <button type="button" id="file-save" class="primary" ${editing?'':'hidden'} ${view.dirty?'':'disabled'}>Save</button>
+      <button type="button" id="file-download" class="secondary">Download copy</button>
+      <button type="button" class="text-button" data-file-action="revert" ${editing?'':'hidden'}>${view.imported?'Cancel import':'Revert edits'}</button>
+    </div>
+    <p id="file-status" class="file-status" role="status">${view.imported?'Edited file ready to save.':view.dirty?'Unsaved changes':''}</p>
+    <div id="file-conflict" class="file-conflict" hidden>
+      <button type="button" class="secondary" data-file-action="reload">Reload file</button>
+      <button type="button" class="secondary" data-file-action="conflict-copy">Save edits as a copy</button>
+    </div>
+    <div class="file-secondary-actions">
+      ${info.revision?'<button type="button" class="text-button" id="file-import-choose">Import edited version…</button><input id="file-import-edited" type="file" hidden>':''}
+      ${!view.ctx.ref.startsWith('library/')?'<button type="button" class="text-button" id="file-share-copy" title="Share a copy with another workspace">Share…</button>':''}
+    </div>
+    ${info.related?.length>1?`<details class="file-related"><summary>Versions &amp; copies · ${info.related.length}</summary>${info.related.map(r=>`<button type="button" class="row compact" data-file-related="${esc(r.ref)}"><span>${esc(r.name)}</span><small>v${esc(r.version)}</small></button>`).join('')}</details>`:''}
+    <button type="button" id="file-copy-location" class="file-location" title="${esc(info.location||view.ctx.ref)}" aria-label="Copy file location">
+      <span class="file-location-caption">Location</span><span class="file-location-path">${esc(info.location||view.ctx.ref)}</span>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V4a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h4"/></svg>
+    </button>`;
   const mode=view.host.querySelector('#file-save-mode');mode.value=view.mode;
   if(!mode.value||mode.selectedOptions[0]?.disabled){mode.value='copy';view.mode='copy';}
   view.host.querySelector('#file-name-field').hidden=view.mode==='save';
   mode.onchange=()=>{view.mode=mode.value;view.name=nextName(view);view.host.querySelector('#file-save-name').value=view.name;view.host.querySelector('#file-name-field').hidden=view.mode==='save';snapshot(view);};
   view.host.querySelector('#file-save-name').oninput=e=>{view.name=e.target.value;snapshot(view);};
   view.host.querySelector('#file-save').onclick=()=>save(view);
+  view.host.querySelector('#file-download').onclick=()=>download(view);
+  view.host.querySelector('#file-copy-location').onclick=async()=>{try{await navigator.clipboard.writeText(info.location||view.ctx.ref);status(view,'File location copied.');}catch(e){status(view,e.message,true);}};
+  view.host.querySelector('#file-share-copy')?.addEventListener('click',()=>view.ctx.share?.(view.ctx.ref));
+  const importer=view.host.querySelector('#file-import-edited');
+  if(importer){
+    importer.accept=info.name.includes('.')?'.'+info.name.split('.').at(-1):'';
+    view.host.querySelector('#file-import-choose').onclick=()=>importer.click();
+    importer.onchange=()=>prepareImport(view,importer.files[0]);
+  }
   view.host.onclick=event=>{const button=event.target.closest('button');if(!button)return;const action=button.dataset.fileAction;
     if(button.dataset.fileMode){snapshot(view);view.editing=button.dataset.fileMode==='edit';render(view).catch(e=>status(view,e.message,true));}
     if(button.dataset.fileRelated)openFile({...view.ctx,ref:button.dataset.fileRelated});
@@ -54,7 +103,8 @@ async function render(view){
     if(action==='conflict-copy'){view.mode='copy';view.name=nextName(view);save(view);}
   };
   const area=view.host.querySelector('#file-canvas');
-  if(view.editing&&info.kind==='text'){
+  if(view.imported){area.innerHTML=`<div class="file-pending-import"><strong>${esc(view.imported.name)}</strong><p>Save as a new version or copy to keep the original.</p></div>`;}
+  else if(view.editing&&info.kind==='text'){
     const {EditorView,basicSetup,markdown}=await import('/vendor/text-editor.js');if(!mounted(view,area))return;
     const extensions=[basicSetup,EditorView.lineWrapping,EditorView.cspNonce.of(view.ctx.token),EditorView.updateListener.of(update=>{if(update.docChanged)changed(view);})];
     if(/\.m(?:d|arkdown)$/i.test(info.name))extensions.push(markdown());
@@ -67,7 +117,7 @@ async function render(view){
   else if(info.kind==='pdf')await previewPdf(view,area);
   else if(info.kind==='media'){
     const audio=/\.(mp3|wav|ogg|m4a|aac|flac|opus)$/i.test(info.name),element=document.createElement(audio?'audio':'video');element.controls=true;element.preload='metadata';element.src=media(view);element.className='media-preview';area.replaceChildren(element);
-  }else area.innerHTML=`<div class="empty"><strong>${info.kind==='office'?'Open this document in an editor':'No inline preview'}</strong><p>${info.kind==='office'?'Use LibreOffice or Google’s document editors for this file.':''}</p><button type="button" class="secondary" data-file-action="open">Open in…</button></div>`;
+  }else area.innerHTML=`<div class="empty"><strong>${info.kind==='office'?'Open this document in an editor':'No inline preview'}</strong><p>${info.kind==='office'?'Choose an editor with Open in above.':''}</p></div>`;
 }
 async function editTable(view,area){
   css('/vendor/data-grid.css');const {Tabulator}=await import('/vendor/data-grid.js');if(!mounted(view,area))return;
@@ -127,28 +177,77 @@ async function renderPdf(view){
 }
 function clearDraft(view){drafts.delete(key(view));imports.delete(key(view));view.imported=null;try{sessionStorage.removeItem(key(view));}catch{}view.dirty=false;}
 function toBase64(file){return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result).split(',')[1]);reader.onerror=()=>reject(Error('This file could not be read.'));reader.readAsDataURL(file);});}
+async function editedPayload(view,imported=view.imported){
+  if(imported){if(imported.size>32*1048576)throw Error('Choose an edited file smaller than 32 MB.');return {encoding:'base64',content:await toBase64(imported)};}
+  if(view.info.kind==='image'){const canvas=await imageCanvas(view),mime=/\.png$/i.test(view.info.name)?'image/png':/\.webp$/i.test(view.info.name)?'image/webp':'image/jpeg';return {encoding:'base64',content:canvas.toDataURL(mime,.95).split(',')[1]};}
+  if(view.info.kind==='table')return {rows:view.edit.rows||[]};
+  return {content:view.edit.text||''};
+}
+async function download(view){
+  if(!live(view))return;const button=view.host.querySelector('#file-download');button.disabled=true;
+  try{
+    document.activeElement?.blur();snapshot(view);let href=media(view,true),name=view.info.name,temporary=false;
+    if(view.dirty){
+      const payload=await editedPayload(view);if(!live(view))return;
+      let content;
+      if(payload.encoding==='base64')content=Uint8Array.from(atob(payload.content),c=>c.charCodeAt(0));
+      else{
+        const original=view.info.text||'',newline=original.includes('\r\n')&&!original.replaceAll('\r\n','').includes('\n')?'\r\n':'\n',delimiter=view.info.delimiter||',';
+        let text=payload.rows?payload.rows.map(row=>row.map(cell=>/["\r\n]/.test(cell)||cell.includes(delimiter)?'"'+cell.replaceAll('"','""')+'"':cell).join(delimiter)).join(newline)+(payload.rows.length?newline:''):payload.content;
+        if(!payload.rows&&newline==='\r\n')text=text.replaceAll('\r\n','\n').replaceAll('\n',newline);
+        content=(view.info.bom?'\uFEFF':'')+text;
+      }
+      href=URL.createObjectURL(new Blob([content],{type:'application/octet-stream'}));temporary=true;name=view.mode==='save'?name:view.name||name;
+    }
+    const link=document.createElement('a');link.href=href;link.download=name;document.body.append(link);link.click();link.remove();
+    if(temporary)setTimeout(()=>URL.revokeObjectURL(href),10000);
+  }catch(e){status(view,e.message,true);}finally{if(button.isConnected)button.disabled=false;}
+}
 async function save(view,imported=null){
   if(!live(view)||view.saving)return;view.saving=true;document.activeElement?.blur();snapshot(view);const button=view.host.querySelector('#file-save');button.disabled=true;status(view,'Saving…');
   if(imported){view.imported=imported;view.dirty=true;imports.set(key(view),imported);}
   imported=imported||view.imported;
   try{
     let data={business:view.ctx.business,workspace:view.ctx.workspace,path:view.ctx.ref,option:view.ctx.option||'',expected_revision:view.info.revision,mode:view.mode,...(view.mode!=='save'?{name:view.name}:{})};
-    if(imported){if(view.mode==='version')delete data.name;if(imported.size>32*1048576)throw Error('Choose an edited file smaller than 32 MB.');data={...data,encoding:'base64',content:await toBase64(imported)};}
-    else if(view.info.kind==='image'){const canvas=await imageCanvas(view),mime=/\.png$/i.test(view.info.name)?'image/png':/\.webp$/i.test(view.info.name)?'image/webp':'image/jpeg';data={...data,encoding:'base64',content:canvas.toDataURL(mime,.95).split(',')[1]};}
-    else if(view.info.kind==='table')data.rows=view.edit.rows||[];
-    else data.content=view.edit.text||'';
+    data={...data,...await editedPayload(view,imported)};
     if(!live(view))return;
     const saved=await api(view,'/api/documents/save',data);if(!live(view))return;
     clearDraft(view);await view.ctx.saved?.(saved).catch(()=>{});if(!live(view))return;await openFile({...view.ctx,ref:'asset/'+saved.asset,option:''});if(current)status(current,saved.mode==='save'?'Saved.':saved.mode==='version'?'New version saved.':'Copy saved.');
   }catch(e){status(view,e.message,true);if(e.status===409){view.host.querySelector('#file-conflict').hidden=false;}if(button.isConnected)button.disabled=false;}finally{view.saving=false;}
 }
+async function prepareImport(view,file){
+  if(!file||!live(view)||view.saving)return;
+  const ext=view.info.name.split('.').at(-1).toLowerCase();
+  if(!file.name.toLowerCase().endsWith('.'+ext)){status(view,'Choose the edited file in its original format.',true);return;}
+  if(file.size>32*1048576){status(view,'Choose an edited file smaller than 32 MB.',true);return;}
+  if(view.dirty&&!confirm('Replace these unsaved edits with the imported file?'))return;
+  clearDraft(view);view.imported=file;imports.set(key(view),file);view.dirty=true;view.editing=false;view.mode='version';view.name=nextName(view);
+  try{await render(view);}catch(e){status(view,e.message,true);}
+}
 function openPanel(view){
-  const panel=view.host.querySelector('#file-open-panel');panel.hidden=!panel.hidden;if(panel.hidden)return;
-  panel.innerHTML=`<h3>Open in</h3><div class="file-open-choices"><button type="button" class="secondary" id="file-open-default">Default app</button>${view.info.libreoffice_installed?'<button type="button" class="secondary" id="file-open-libreoffice">LibreOffice</button>':'<a href="https://www.libreoffice.org/download/" target="_blank" rel="noopener noreferrer">Get LibreOffice ↗</a>'}<button type="button" class="text-button" id="file-open-check">Check again</button><button type="button" class="secondary" id="file-open-google">Google Docs, Sheets &amp; Slides</button></div><div id="file-google-help" hidden><p>Download a copy, upload it to Google Drive, then open it with the matching editor. To keep the result here, download the edited file and import it below.</p><a class="secondary" href="${esc(media(view,true))}" download="${esc(view.info.name)}">Download a copy</a> <a href="https://drive.google.com/drive/u/0/my-drive" target="_blank" rel="noopener noreferrer">Open Google Drive ↗</a></div><div class="file-import"><label class="secondary picture-upload">Import edited version<input id="file-import-edited" type="file" accept="${esc(view.info.name.includes('.')?'.'+view.info.name.split('.').at(-1):'')}" hidden></label><small>Creates a new tracked version here.</small></div><a class="text-link" href="${esc(media(view,true))}" download="${esc(view.info.name)}">Download file</a>${!view.ctx.ref.startsWith('library/')?'<button type="button" class="text-button" id="file-share-copy">Share a copy</button>':''}<details class="file-location"><summary>File location</summary><p>${esc(view.info.location||view.ctx.ref)}</p><button type="button" class="secondary" id="file-copy-location">Copy file location</button></details>`;
-  panel.querySelector('#file-share-copy')?.addEventListener('click',()=>view.ctx.share?.(view.ctx.ref));panel.querySelector('#file-copy-location').onclick=async()=>{try{await navigator.clipboard.writeText(view.info.location||view.ctx.ref);status(view,'File location copied.');}catch(e){status(view,e.message,true);}};
-  const open=async application=>{try{await api(view,'/api/documents/open',{business:view.ctx.business,workspace:view.ctx.workspace,path:view.ctx.ref,option:view.ctx.option||'',application});status(view,'Opening in '+(application==='libreoffice'?'LibreOffice':'your default app')+'…');}catch(e){status(view,e.message,true);}};
-  panel.querySelector('#file-open-default').onclick=()=>open('default');panel.querySelector('#file-open-libreoffice')?.addEventListener('click',()=>open('libreoffice'));panel.querySelector('#file-open-google').onclick=()=>{panel.querySelector('#file-google-help').hidden=false;};panel.querySelector('#file-open-check').onclick=async()=>{try{const info=await api(view,'/api/documents?'+new URLSearchParams({business:view.ctx.business,workspace:view.ctx.workspace,path:view.ctx.ref,option:view.ctx.option||''}));if(!live(view))return;view.info.libreoffice_installed=info.libreoffice_installed;panel.hidden=true;openPanel(view);}catch(e){status(view,e.message,true);}};
-  panel.querySelector('#file-import-edited').onchange=e=>{const file=e.target.files[0];if(!file)return;const ext=view.info.name.split('.').at(-1).toLowerCase();if(!file.name.toLowerCase().endsWith('.'+ext)){status(view,'Choose the edited file in its original format.',true);return;}if(view.dirty&&!confirm('Import the edited file instead of these unsaved edits?'))return;view.mode='version';view.name=nextName(view);save(view,file);};
+  const panel=view.host.querySelector('#file-open-panel');panel.hidden=!panel.hidden;
+  view.host.querySelector('[data-file-action=open]').setAttribute('aria-expanded',String(!panel.hidden));
+  if(panel.hidden)return;
+  panel.innerHTML=`<div class="file-open-row"><label>Open in<select id="file-open-app"><option value="default">Default app</option><option value="google">Google Office</option><option value="libreoffice">LibreOffice</option></select></label><button type="button" class="secondary" id="file-open-go">Open</button></div><div id="file-open-help"></div>`;
+  const select=panel.querySelector('#file-open-app'),go=panel.querySelector('#file-open-go'),help=panel.querySelector('#file-open-help');select.value=view.application||'default';
+  const update=()=>{
+    view.application=select.value;const missing=select.value==='libreoffice'&&!view.info.libreoffice_installed;go.hidden=missing;
+    help.innerHTML=missing?'<p>Install LibreOffice, then check again.</p><div class="file-install-actions"><a class="secondary" href="https://www.libreoffice.org/download/" target="_blank" rel="noopener noreferrer">Get LibreOffice ↗</a><button type="button" class="text-button" id="file-open-check">Check again</button></div>':select.value==='google'?'<p>Opens Google Drive. Use Download copy below, upload it there, then bring your edits back with Import edited version.</p>':'';
+    help.querySelector('#file-open-check')?.addEventListener('click',async event=>{
+      const button=event.currentTarget;button.disabled=true;button.textContent='Checking…';
+      try{const fresh=await api(view,'/api/documents?'+new URLSearchParams({business:view.ctx.business,workspace:view.ctx.workspace,path:view.ctx.ref,option:view.ctx.option||''}));if(!live(view))return;view.info.libreoffice_installed=fresh.libreoffice_installed;update();status(view,fresh.libreoffice_installed?'LibreOffice is ready.':'LibreOffice was not found yet.');}
+      catch(e){status(view,e.message,true);if(button.isConnected){button.disabled=false;button.textContent='Check again';}}
+    });
+  };
+  select.onchange=update;update();
+  go.onclick=async()=>{
+    if(select.value==='google'){window.open('https://drive.google.com/drive/u/0/my-drive','_blank','noopener,noreferrer');return;}
+    if(view.dirty){status(view,'Save your edits or download a copy before opening the file in another app.');return;}
+    go.disabled=true;
+    try{await api(view,'/api/documents/open',{business:view.ctx.business,workspace:view.ctx.workspace,path:view.ctx.ref,option:view.ctx.option||'',application:select.value});status(view,'Opening in '+(select.value==='libreoffice'?'LibreOffice':'your default app')+'…');}
+    catch(e){if(select.value==='libreoffice'&&e.message.includes('Install LibreOffice')){view.info.libreoffice_installed=false;update();}status(view,e.message,true);}finally{go.disabled=false;}
+  };
+  select.focus();
 }
 window.auraFiles={detach,hasUnsaved:()=>[...drafts.values()].some(d=>d.dirty)};
 $('#detail').addEventListener('close',()=>{if(!$('#detail').open)detach();});
