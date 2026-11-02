@@ -973,7 +973,7 @@ async function syncUpdates(force=false) {
   state.updateLoading=true;
   try {
     state.updates=await api('/api/updates'+(editing?'?editing=1':''));
-    $('#update-menu-status').textContent=state.updates.release?'Available':'→';
+    $('#update-menu-status').textContent=state.updates.release?'Available':'';
     renderNotifications();
     renderUpdates();
     if(state.updates.status==='restarting')await reconnectUpdate();
@@ -1799,7 +1799,7 @@ document.addEventListener('click',event=>attempt(async()=>{
     const instruction=`Connect my AURA visual workspace to the AI app I am using. Read ${state.data.product}/docs/visual-workspace.md and use this app's supported connection. Reuse my existing sign-in and permissions, then reopen the visual workspace connected to it. Do not substitute a different AI app just because it is installed. If this app cannot accept requests from a local interface, explain that clearly. AURA workspace: ${state.data.workspace}. Business ID: ${state.business}.`;
     await navigator.clipboard.writeText(instruction); $('#setup-copy-status').textContent='Copied. Paste this into your AI app to finish linking it.';
   }
-  if(button.id==='refresh') {await refresh();button.textContent='Saved data reloaded';setTimeout(()=>{if(button.isConnected)button.textContent='Reload saved workspace data';},2000);}
+  if(button.id==='refresh') {await refresh();button.textContent='Reloaded';setTimeout(()=>{if(button.isConnected)button.textContent='Reload Workspace';},2000);}
   if(button.id==='location') { await navigator.clipboard.writeText(state.data.workspace); if($('#share-location-status'))$('#share-location-status').textContent='Copied';else notice('Folder location copied.'); }
 }));
 document.addEventListener('input',event=>{ if(event.target.id==='quick-work-search')quickMethods(); if(['quick-memory-search','record-search'].includes(event.target.id)){state.memoryQuery=event.target.value;renderMemory();} if(['quick-file-search','file-search'].includes(event.target.id)){state.fileQuery=event.target.value;state.fileLimit=100;renderQuickFiles();renderFiles();} if(['quick-schedule-search','schedule-search'].includes(event.target.id)){state.scheduleQuery=event.target.value;renderSchedules();} if(event.target.id==='work-search')renderWork();if(['task-time','task-every','task-custom'].includes(event.target.id))updateTaskTiming(); });
@@ -2049,7 +2049,7 @@ function avatarMarkup(p=state.profile||{}){return p.avatar?`<img src="${esc(p.av
 function leavePage(){if($('#detail').dataset.mode==='page'){$('#detail').close();state.view='home';recordShellRoute();renderShell();}}
 async function accountProfile(){
   $('#more-dialog').close();leavePage();const p=state.profile||{};
-  details('Your profile',`<p class="shell-help">Your name and picture stay on this computer.</p><form id="account-form" class="form-grid"><div class="profile-picture-row"><span class="profile-picture">${avatarMarkup(p)}</span><div><label class="secondary picture-upload">Choose picture<input id="profile-picture-input" type="file" accept="image/png,image/jpeg,image/webp" hidden></label><button type="button" class="text-button" id="remove-profile-picture" ${p.avatar?'':'hidden'}>Remove picture</button></div></div><label>Your name<input name="display_name" maxlength="80" autocomplete="given-name" value="${esc(p.display_name||'')}" placeholder="Your name"></label><div><button class="primary">Save profile</button></div></form>`);
+  details('Your profile',`<p class="shell-help">Your name and picture stay on this computer.</p><form id="account-form" class="form-grid"><div class="profile-fields"><div class="profile-picture-row"><span class="profile-picture">${avatarMarkup(p)}</span><div><label class="secondary picture-upload">Choose picture<input id="profile-picture-input" type="file" accept="image/png,image/jpeg,image/webp" hidden></label><button type="button" class="text-button" id="remove-profile-picture" ${p.avatar?'':'hidden'}>Remove picture</button></div></div><label>Your name<input name="display_name" maxlength="80" autocomplete="given-name" value="${esc(p.display_name||'')}" placeholder="Your name"></label></div><div><button class="primary">Save profile</button></div></form>`);
 }
 async function personalize(){
   $('#more-dialog').close();leavePage();const p=state.profile||{};
@@ -2065,32 +2065,26 @@ function browserPerformance(){
 }
 async function supportReport(){
   $('#more-dialog').close();leavePage();
-  details('Report a problem or suggest a feature',`<p class="shell-help">Prepare a report for the Aura maintainer. Email delivery is being tested and is not connected yet.</p><form id="support-form" class="form-grid"><div class="settings-grid"><label>Request type<select name="kind"><option value="troubleshooting">Troubleshooting</option><option value="feature">Feature request</option></select></label><label>Title<input name="title" maxlength="160" required placeholder="A short summary"></label></div><label id="support-description-label">What happened? What did you expect?<textarea name="description" rows="5" maxlength="12000" required></textarea></label><label class="startup-choice"><input type="checkbox" name="include_environment" checked> Include technical details</label><p class="small-note">Aura version, computer specifications, AI app and connection status, library counts and recent performance. Excludes credentials, account identities, chat contents, business records and folder paths.</p><label class="startup-choice"><input type="checkbox" name="include_names"> Include skill, tool and plugin names</label><p class="small-note">Optional: these names may identify private projects. Their contents and locations are excluded.</p><details class="support-details"><summary>Review technical details</summary><pre id="support-preview" class="diagnostic-summary">Reading local details…</pre></details><label>Attachments · optional<input type="file" id="support-attachments" multiple accept="image/png,image/jpeg,image/webp,text/plain"></label><p class="small-note">Up to four images or text files, 1 MB each. Only files you choose are attached; check them for private information.</p><div id="support-attachment-list" class="small-note"></div><div class="inline-actions"><button class="primary" type="submit">Send test report</button><span id="support-status" role="status"></span></div><p class="small-note">Test reports stay on this computer. Nothing is emailed. The latest ten are retained.</p></form>`);
+  details('Feature Request or Troubleshooting',`<form id="support-form" class="form-grid"><div class="settings-grid"><label>Request type<select name="kind"><option value="troubleshooting">Troubleshooting</option><option value="feature">Feature Request</option></select></label><label>Title<input name="title" maxlength="160" required placeholder="A short summary"></label></div><label id="support-description-label">What happened? What did you expect?<textarea name="description" rows="5" maxlength="12000" required></textarea></label><label>Attachments · optional<input type="file" id="support-attachments" multiple accept="image/png,image/jpeg,image/webp,text/plain"></label><p class="small-note">Up to four images or text files, 1 MB each.</p><div id="support-attachment-list" class="small-note"></div><label class="startup-choice"><input type="checkbox" name="include_environment" checked> Include technical details</label><details class="support-details"><summary>Review technical details</summary><pre id="support-preview" class="diagnostic-summary">Reading local details…</pre></details><div class="inline-actions"><button class="primary" type="submit">Submit</button><span id="support-status" role="status"></span></div></form>`);
   let ticket=0;
-  const preview=async()=>{const mine=++ticket,form=$('#support-form');if(!form)return;const include=form.elements.include_environment.checked,names=form.elements.include_names.checked;form.elements.include_names.disabled=!include;
+  const preview=async()=>{const mine=++ticket,form=$('#support-form');if(!form)return;const include=form.elements.include_environment.checked;
     if(!include){$('#support-preview').textContent='Technical details excluded.';return;}
     $('#support-preview').textContent='Reading local details…';
-    try{const data=await api('/api/support/environment'+(names?'?names=1':''));if(mine===ticket&&$('#support-preview'))$('#support-preview').textContent=JSON.stringify({...data,browser_performance:browserPerformance()},null,2);}catch(e){if(mine===ticket&&$('#support-preview'))$('#support-preview').textContent='Technical details could not be read. You can send a test report without them.';}
+    try{const data=await api('/api/support/environment?names=1');if(mine===ticket&&$('#support-preview'))$('#support-preview').textContent=JSON.stringify({...data,browser_performance:browserPerformance()},null,2);}catch(e){if(mine===ticket&&$('#support-preview'))$('#support-preview').textContent='Technical details could not be read. You can submit without them.';}
   };
   $('#support-form').elements.kind.onchange=e=>{$('#support-description-label').firstChild.textContent=e.target.value==='feature'?'What would you like to do, and how would it help?':'What happened? What did you expect?';};
-  $('#support-form').elements.include_environment.onchange=preview;$('#support-form').elements.include_names.onchange=preview;
+  $('#support-form').elements.include_environment.onchange=preview;
   $('#support-attachments').onchange=e=>{$('#support-attachment-list').textContent=[...e.target.files].map(f=>f.name+' · '+size(f.size)).join(', ');};
   await preview();
 }
 async function sendSupport(form){
-  const button=form.querySelector('[type=submit]'),status=$('#support-status');button.disabled=true;status.textContent='Preparing test report…';
+  const button=form.querySelector('[type=submit]'),status=$('#support-status');button.disabled=true;status.textContent='Preparing report…';
   try{const attachments=[];for(const file of $('#support-attachments').files){if(attachments.length>=4||file.size>1048576)throw Error('Choose up to four files, 1 MB each.');if(!['image/png','image/jpeg','image/webp','text/plain'].includes(file.type))throw Error('Choose PNG, JPEG, WebP or plain text files.');const raw=new Uint8Array(await file.arrayBuffer());let binary='';for(let i=0;i<raw.length;i+=32768)binary+=String.fromCharCode(...raw.subarray(i,i+32768));attachments.push({name:file.name,type:file.type,data:btoa(binary)});}
     const include=form.elements.include_environment.checked;
-    const result=await api('/api/support/test',{kind:form.elements.kind.value,title:form.elements.title.value,description:form.elements.description.value,include_environment:include,include_names:include&&form.elements.include_names.checked,browser_performance:include?browserPerformance():{},attachments});
+    const result=await api('/api/support/test',{kind:form.elements.kind.value,title:form.elements.title.value,description:form.elements.description.value,include_environment:include,include_names:include,browser_performance:include?browserPerformance():{},attachments});
     status.textContent=result.message;
   }catch(error){status.textContent=error.message;}finally{if(button.isConnected)button.disabled=false;}
 }
-async function shellHelp(){
-  $('#more-dialog').close();leavePage();
-  details('Help',`<div class="help-section"><h3>AI connection</h3><p>Use AI connections in Settings to connect an app. Each conversation stays with the app that created it.</p><button class="secondary" id="help-connections">Open AI connections</button></div><div class="help-section"><h3>Saved work</h3><p>Your workspace files stay on this computer. Cloud AI requests use the app and provider you choose.</p></div><details class="support-details"><summary>Troubleshooting &amp; diagnostics</summary><p class="small-note">Copy a technical summary for support. It excludes conversations, credentials, workspace names and paths.</p><button class="secondary" id="copy-diagnostics">Copy diagnostic summary</button><pre id="diagnostic-summary" class="diagnostic-summary" hidden></pre></details>`);
-  $('#copy-diagnostics').onclick=()=>attempt(async()=>{const data=await api('/api/diagnostics');await navigator.clipboard.writeText(JSON.stringify(data,null,2));$('#copy-diagnostics').textContent='Summary copied';});
-}
-
 async function openShellSearch(){
   if(!state.business)return;shellSearchData=null;const root=state.data.workspace,business=state.business,ticket=++shellSearchTicket;
   if(!$('#search-dialog').open)$('#search-dialog').showModal();$('#shell-search').value='';$('#shell-search').focus();$('#shell-search-results').innerHTML='';$('#shell-search-status').textContent='Finding your workspace items…';
@@ -2121,7 +2115,7 @@ document.addEventListener('click',event=>attempt(async()=>{
   const b=event.target.closest('button');if(!b)return;
   if(b.id==='sidebar-collapse'){if(matchMedia('(max-width:760px)').matches){closeMobileSidebar();return;}const p=await api('/api/profile',{sidebar_collapsed:!state.profile?.sidebar_collapsed});state.data.profile=p;applyProfile(p);}
   if(b.id==='sidebar-open')openSidebar();if(b.id==='sidebar-scrim')closeMobileSidebar();
-  if(b.id==='profile-open')$('#more-dialog').showModal();if(b.id==='personalize-menu')await personalize();if(b.id==='account-settings')await accountProfile();if(b.id==='help-about')await shellHelp();if(b.id==='support-report')await supportReport();
+  if(b.id==='profile-open')$('#more-dialog').showModal();if(b.id==='personalize-menu')await personalize();if(b.id==='account-settings')await accountProfile();if(b.id==='support-report')await supportReport();
   if(b.id==='search-open')await openShellSearch();
   if(b.id==='sidebar-more-chats'){state.chatLimit=(state.chatLimit||20)+30;await renderShell();}
   if(b.dataset.shellAction==='sharing'){await openSharing();closeMobileSidebar();}
@@ -2221,7 +2215,7 @@ async function loadChatModelOptions(refresh=false){
     if(!models.length)throw new Error(catalog.unavailable[0]?.reason||'No models are available. Open '+appName(kind)+' to check its connection, then try again.');
     state.data.model_picker??={};state.data.model_picker.all=structuredClone(catalog.picker);
     state.chatModelOptions=options;if(!draft.model)draft.model=options.models.some(m=>m.id===options.model)?options.model:options.models[0]?.id||'';
-    $('#chat-model-options').innerHTML=`<label class="sr-only" for="chat-model-search">Find a model</label><input id="chat-model-search" type="search" placeholder="Search all models…"><p id="chat-model-list-label" class="small-note" role="status"></p><div id="chat-model-list" role="list" aria-label="Available models"></div><button class="text-button" id="chat-model-more" hidden>Show more models</button><p id="chat-model-selection" class="chat-model-selection"></p><div id="chat-model-effort"></div><p class="small-note">Applies to the next message in this chat. Models can have different capabilities and context limits.</p><div class="inline-actions"><button class="primary" id="save-chat-model">Use for this chat</button><button class="text-button" data-close="chat-model-dialog">Cancel</button></div>`;
+    $('#chat-model-options').innerHTML=`<label class="sr-only" for="chat-model-search">Find a model</label><input id="chat-model-search" type="search" placeholder="Search all models…"><p id="chat-model-list-label" class="small-note" role="status"></p><div id="chat-model-list" role="list" aria-label="Available models"></div><button class="text-button" id="chat-model-more" hidden>Show more models</button><p id="chat-model-selection" class="chat-model-selection"></p><div id="chat-model-effort"></div><div class="inline-actions"><button class="primary" id="save-chat-model">Use for this chat</button><button class="text-button" data-close="chat-model-dialog">Cancel</button></div>`;
     paintChatModels();if(options.models.some(m=>m.id===draft.model))await loadChatModelEfforts();else{$('#chat-model-effort').innerHTML='<p class="small-note">The current model is not available in this app’s list. Choose a model for your next message.</p>';$('#save-chat-model').disabled=true;}
   }catch(e){if(ticket!==chatModelTicket||draft!==state.chatModelDraft||!$('#chat-model-dialog').open||draft.scope!==chatScope())return;if($('#chat-model-options'))$('#chat-model-options').innerHTML=`<p class="error">${esc(e.message)}</p><button class="secondary" id="chat-model-retry">Try again</button>`;}
 }
@@ -2253,7 +2247,7 @@ document.addEventListener('click',event=>attempt(async()=>{
   const b=event.target.closest('button');if(!b)return;
   if(b.id==='model-settings')await openChatModels();if(b.id==='save-chat-model')await saveChatModel();
   if(b.id==='model-new-chat'){$('#chat-model-dialog').close();await newShellChat();await openChatModels();}
-  if(b.id==='model-manage-connections'||b.id==='help-connections'){$('#chat-model-dialog').close();$('#detail').close();openConnection(true,'connect');}
+  if(b.id==='model-manage-connections'){$('#chat-model-dialog').close();$('#detail').close();openConnection(true,'connect');}
   if(b.dataset.chatModel){state.chatModelDraft.model=b.dataset.chatModel;paintChatModels();await loadChatModelEfforts();}
   if(b.id==='chat-model-more'){state.chatModelLimit+=60;paintChatModels();}if(b.id==='chat-model-retry'){$('#chat-model-options').innerHTML='<p role="status">Loading this app’s models…</p>';await loadChatModelOptions(true);}
   if(b.id==='close-detail-page')returnToChat();

@@ -2,9 +2,11 @@
 
 ## Unreleased
 
+- Simplify Settings and report preparation: one technical-details choice, attachments below the description, a Submit action, workspace reload beside the version, quick setup first, and profile/name fields side by side. Remove the Help entry and redundant explanatory copy.
+
 - Reuse formatted conversation history during live progress, and reuse unchanged saved records through metadata revision checks. Keep explicit reloads and completed-work inventory refreshes able to pick up external edits.
 - Reuse recent file/library discovery, read file inventories outside the chat-control lock, and remove the fixed discovery cutoffs. Render saved files progressively with Load more; search covers the full discovered metadata. Offer bounded file API pages for custom clients.
-- Add bounded local request/render performance summaries and an on-demand Settings report form for troubleshooting or feature requests. Include reviewed computer/app/connection details, optional capability names and explicitly selected attachments. Test Send prepares a local report only; no email, issue submission or download flow is enabled.
+- Add bounded local request/render performance summaries and an on-demand Settings report form for troubleshooting or feature requests. Include reviewed computer/app/connection details, optional capability names and explicitly selected attachments. Submit currently prepares a local report only; no email, issue submission or download flow is enabled.
 
 - Keep Usage & spend on the selected chat while marking every running chat. Show reported in-flight totals without recording provisional receipts; preserve unknown values and label partial totals.
 - Protect usage/history refreshes from workspace changes and newer chat activity. Read native chat history outside the UI lock, retain fast cached browsing, persist refreshed usage, and reuse one Codex account connection per refresh.
