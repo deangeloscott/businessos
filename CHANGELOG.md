@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Show shared model favorites first in the compact chat picker. Search the owning app’s full model list, star/unstar from results, and share those choices with the existing AI settings picker.
+- Keep personalization requests in one reusable, business/workspace-scoped chat. Opening prepares a draft without submitting AI work or changing an ordinary chat’s draft.
+- Align chat status and Usage & spend, keep Aura beside the workspace name with the sidebar collapsed, and give all modal surfaces the same subtle darkened/blurred backdrop. Keep tool pages and contextual panes nonmodal.
+
 - Refine the conversational UI with text-only Aura branding, reversible sidebar controls, aligned tool pages, consistent close/back controls, and full-page sharing and updates. Keep sharing actions and a copyable workspace location in a stable footer.
 - Consolidate profile, personal pictures, appearance and custom-layout guidance under Settings. Place notifications beside the profile, keep Usage & spend at the bottom right, and distinguish saved-data reload from native chat refresh.
 - Restore saved chat displays immediately and refresh native history only when requested. Cache successful native refreshes and hide Windows metadata/cleanup subprocesses.

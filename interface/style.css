@@ -243,3 +243,22 @@ body:has(#detail[open][data-mode=context]) .shell-main{margin-right:var(--contex
 @media(max-width:760px){body.sidebar-collapsed #sidebar-collapse svg{transform:none}}
 
 @media(max-width:760px){.dialog-top>.quiet{width:44px;height:44px;min-width:44px;min-height:44px;padding:13px}.page-back{min-height:40px}#detail-footer .share-selection-bar button,.form-grid button.primary{min-height:40px}}
+
+/* Shared favorites and a single chat footer baseline. */
+.chat-model-result{display:flex;align-items:center;min-width:0;border-radius:7px}
+.chat-model-result:has([data-chat-model][aria-pressed=true]){background:var(--hover)}
+.chat-model-result .chat-model-row{flex:1;width:auto;min-width:0;background:transparent}
+.chat-model-star{width:36px;height:38px;flex:none;border-radius:7px;font-size:20px;color:var(--muted);line-height:1}
+.chat-model-star[aria-pressed=true]{color:var(--accent)}.chat-model-star:hover{background:var(--sidebar)}
+#chat-model-list-label{font-size:11px;margin:12px 0 5px}.chat-model-empty{padding:10px 0;line-height:1.7}
+.chat-model-selection{font-size:12px;line-height:1.6;color:var(--ink);margin:0 0 14px;overflow-wrap:anywhere}
+.chat-stage>footer{display:flex;width:100%;max-width:var(--chat-width);align-self:center;align-items:center;gap:16px;margin:8px auto 0;min-height:28px;flex:none}
+footer #chat-status{flex:1;min-width:0;display:flex;align-items:center;gap:12px;margin:0;padding:0;font-size:10px}
+footer #chat-status>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+footer .footer-actions{flex:none;align-items:center}footer #usage-open{font-size:10px!important}
+.sidebar-heading{justify-content:flex-end}#shell-brand{font-size:14px;font-weight:650;letter-spacing:-.025em;white-space:nowrap;color:var(--ink)}
+.brand-separator{color:var(--muted);font-size:11px}.chat-heading{flex:1;min-width:0}#active-workspace-label{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+:root[data-theme] dialog::backdrop{background:rgb(13 22 17 / 22%);backdrop-filter:blur(3px)}
+:root[data-theme=dark] dialog::backdrop{background:rgb(0 0 0 / 34%);backdrop-filter:blur(3px)}
+@media(max-width:760px){.chat-heading{gap:8px}#shell-brand{font-size:13px}footer #chat-status{font-size:9px}footer #usage-open{font-size:9px!important}.chat-model-star{width:42px;min-height:42px}.chat-stage>footer{gap:10px}}
+@media(prefers-reduced-transparency:reduce){:root[data-theme] dialog::backdrop{backdrop-filter:none}}

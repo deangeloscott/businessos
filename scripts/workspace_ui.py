@@ -1081,6 +1081,31 @@ class Workspace:
             self.preferences['notification_items']=items[-50:]
             self.save_preferences()
 
+    def personalization_chat(self,bid,connection=None):
+        """One local conversation reference per business; opening never submits work."""
+        root=str(workspace_root().resolve())
+        with self.lock:
+            existing=next((c for c in self.preferences['chats'] if c.get('purpose')=='personalization' and c['business_id']==bid and c.get('workspace')==root),None)
+            if existing:return {'id':existing['id']}
+            desired=self.preferences.get('connection',{}) if connection is None else connection
+            if not isinstance(desired,dict):raise ValueError('Choose an AI connection.')
+            kind=desired.get('kind')
+            if not isinstance(kind,str) or kind not in NATIVE_AGENTS|{'configured'}:raise ValueError('Connect your AI before opening a personalization chat.')
+            known=self.preferences['connected_apps'].get(kind)
+            if not known and kind!=self.connection_kind:raise ValueError('Connect this AI app before opening a personalization chat.')
+            if kind=='configured':available=bool(self.configured_agent)
+            else:available=any(a['id']==kind and a['argv'] for a in installed_agents())
+            if not available:raise ValueError('Reconnect this AI app before opening a personalization chat.')
+            effective={**(known or self.preferences['connection']),**{k:desired[k] for k in ('kind','model','effort') if k in desired}}
+            if any(not isinstance(effective.get(k,''),str) or len(effective.get(k,''))>300 for k in ('model','effort')):raise ValueError('Choose a valid model and effort.')
+            if kind in NATIVE_AGENTS and not effective.get('model'):raise ValueError('Choose a model before opening a personalization chat.')
+            if kind=='codex' and not effective.get('effort'):raise ValueError('Choose an effort before opening a personalization chat.')
+            chat={'id':secrets.token_urlsafe(12),'business_id':bid,'workspace':root,'purpose':'personalization',
+                  'title':'Personalize Aura','title_edited':True,'created':time.time(),'updated':time.time(),
+                  'status':'ready','agent':kind,'native_id':None,'model':effective.get('model',''),'effort':effective.get('effort',''),'connection':effective}
+            self.preferences['chats'].append(chat);self.save_preferences()
+            return {'id':chat['id']}
+
     def conversation(self, bid, ident=None, refresh=False):
         chat = self.active_chat(bid) if ident is None else next((c for c in self.preferences['chats'] if c['id']==ident and c['business_id']==bid),None)
         if ident is not None and not chat:raise ValueError('This chat does not belong to the selected business.')
@@ -1867,7 +1892,7 @@ def handler_for(app):
                         raise ValueError('Workspace organization is running. Wait or stop it before making changes.')
                     if app.schedule_job and app.schedule_job['status']=='working' and (route in {'/api/lifecycle','/api/workspaces/open','/api/workspaces/create','/api/workspaces/relocate','/api/workspaces/restore'} or route.startswith('/api/organization/')):
                         raise ValueError('Wait for task setup or stop it before changing workspaces or restarting AURA.')
-                    if app.running_jobs(None if route in {'/api/lifecycle','/api/workspaces/relocate','/api/workspaces/restore'} else workspace_root()) and route not in {'/api/preferences','/api/profile','/api/interface/reset','/api/chats/recover','/api/notifications','/api/chat','/api/chat/stop','/api/chats/new','/api/chats/open','/api/chats/rename','/api/chats/model','/api/connect','/api/workspaces/open','/api/usage/settings','/api/updates','/api/schedules/action','/api/schedules/stop'}:
+                    if app.running_jobs(None if route in {'/api/lifecycle','/api/workspaces/relocate','/api/workspaces/restore'} else workspace_root()) and route not in {'/api/preferences','/api/profile','/api/interface/reset','/api/chats/recover','/api/notifications','/api/chat','/api/chat/stop','/api/chats/new','/api/chats/open','/api/chats/rename','/api/chats/model','/api/chats/personalization','/api/connect','/api/workspaces/open','/api/usage/settings','/api/updates','/api/schedules/action','/api/schedules/stop'}:
                         raise ValueError('Your agent is working. Wait for its reply before changing this workspace.')
                     if route in {'/api/preferences','/api/locations'}:
                         app.load_portable()
@@ -2268,6 +2293,8 @@ def handler_for(app):
                                 seen.append(bid)
                         app.save_preferences(portable=any(k in data for k in ('appearance','model_picker','library')))
                         self.send(200, {'ok': True})
+                    elif route == '/api/chats/personalization':
+                        self.send(200,app.personalization_chat(selected(data.get('business')),data.get('connection')))
                     elif route == '/api/chats/new':
                         bid = selected(data.get('business'))
                         app.preferences['active_chats'][bid] = None

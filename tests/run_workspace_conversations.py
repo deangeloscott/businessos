@@ -124,6 +124,31 @@ print('## Reply '+name+'\\n\\nWorkspace: '+str(root))
                     assert fresh['chat']['model']=='next-model','Native metadata must not overwrite a pending next-turn model'
                     cached=call('/api/conversation?business='+bid+'&chat_id='+native['id'])
                     assert history.call_count==1 and cached['messages'][0]['text']=='Native refreshed display'
+                # Preparing personalization is metadata-only and reuses one scoped chat.
+                app.preferences['connected_apps']['configured']={'kind':'configured','model':'','effort':''}
+                connection={'kind':'configured','model':'','effort':''}
+                active_before=dict(app.preferences['active_chats']);jobs_before=set(app.jobs)
+                custom=call('/api/chats/personalization',{'business':bid,'connection':connection})
+                again=call('/api/chats/personalization',{'business':bid,'connection':connection})
+                assert custom==again and set(app.jobs)==jobs_before
+                assert app.preferences['active_chats']==active_before,'Preparing must not redirect an existing chat'
+                target=next(c for c in app.preferences['chats'] if c['id']==custom['id'])
+                assert target['purpose']=='personalization' and target['title_edited'] and target['native_id'] is None
+                assert target['workspace']==str(b) and target['business_id']==bid
+                assert call('/api/chats/open',{'business':bid,'id':custom['id']})['messages']==[]
+                restarted=Workspace(agent=app.configured_agent,settings_file=app.settings_file)
+                assert restarted.personalization_chat(bid,connection)==custom
+                fourth=call('/api/chat',{'business':bid,'chat_id':'','text':'TURN FOURTH','history':[],'connection':connection},202)
+                until(lambda:(b/'started_FOURTH').exists())
+                assert call('/api/chats/personalization',{'business':bid,'connection':connection})==custom
+                assert app.preferences['active_chats'][bid]==fourth['chat_id'] and app.jobs[fourth['id']]['status']=='working'
+                (b/'release_FOURTH').touch();until(lambda:app.jobs[fourth['id']]['status']!='working')
+                with app.lock:pass
+                call('/api/chats/personalization',{'business':'wrong-business','connection':connection},400)
+                app.open_workspace(a)
+                other=app.personalization_chat(bid,connection)
+                assert other['id']!=custom['id'],'Separate workspace folders keep separate personalization histories'
+                app.open_workspace(b)
                 # Stopping a Hermes transport does not claim its gateway stopped.
                 from workspace_execution import Stopped
                 hermes=dict(native,id='hermes-stop-check',agent='hermes',status='complete',model='first-model',effort='low')

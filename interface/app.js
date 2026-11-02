@@ -171,7 +171,12 @@ function renderFavoriteList(){
 }
 let pickerSave=Promise.resolve();
 async function saveModelPicker(){const payload={kind:'all',...structuredClone(modelPicker())};pickerSave=pickerSave.catch(()=>{}).then(()=>api('/api/preferences',{model_picker:payload}));await pickerSave;}
-async function toggleFavorite(id){const picker=modelPicker();picker.favorites=picker.favorites.includes(id)?picker.favorites.filter(v=>v!==id):[...picker.favorites,id];renderModelChoices();await saveModelPicker();}
+async function toggleFavorite(id){
+  const picker=modelPicker(),focus=document.activeElement?.dataset.favorite;
+  picker.favorites=picker.favorites.includes(id)?picker.favorites.filter(v=>v!==id):[...picker.favorites,id];renderModelChoices();
+  if($('#chat-model-dialog').open&&$('#chat-model-list')){paintChatModels();if(focus)($('#chat-model-list [data-favorite="'+CSS.escape(focus)+'"]')||$('#chat-model-search')).focus({preventScroll:true});}
+  await saveModelPicker();
+}
 async function selectModel(){
   state.modelError='';const model=chosenModel();if(!model){$('#effort-choice').innerHTML='<option value="">App default</option>';$('#effort-choice').disabled=true;connectionChoice();return;}
   await effortOptions();
@@ -974,7 +979,7 @@ async function openUpdates() {
   $('#more-dialog').close();$('#notification-dialog').close();
   await syncUpdates();
   const startup=await api('/api/startup');
-  details('Startup & updates',startupSection(startup)+`<section class="updates-section"><h3>Updates</h3><div id="update-panel"><div class="update-top"><span id="update-current" class="small-note"></span><button class="text-button" id="update-check">Check now</button></div><h4 id="update-heading"></h4><p id="update-message" role="status"></p><section id="update-release" hidden><ul id="update-highlights"></ul><details class="update-notes"><summary>Release notes</summary><pre id="update-notes"></pre><a id="update-release-link" target="_blank" rel="noopener noreferrer">View release ↗</a></details><p id="update-manual" class="small-note" hidden></p><div class="update-actions"><button class="primary" id="update-install" hidden>Update now</button><button class="secondary" id="update-later">Later</button><button class="text-button" id="update-skip">Skip this version</button></div></section><label class="update-policy">Updates<select id="update-policy"><option value="notify">Notify me</option><option value="auto">Update automatically when idle</option><option value="manual">Manual only</option></select></label><p class="small-note">Your workspace, connections, and custom views stay yours.</p><div class="update-bottom"><small id="update-checked"></small><button class="text-button" id="update-rollback" hidden>Use previous version</button><a href="https://github.com/deangeloscott/businessos/releases" target="_blank" rel="noopener noreferrer">Downloads ↗</a></div></div></section>`);
+  details('Startup & updates',startupSection(startup)+`<section class="updates-section"><h3>Updates</h3><div id="update-panel"><div class="update-top"><span id="update-current" class="small-note"></span><button class="text-button" id="update-check">Check now</button></div><h4 id="update-heading"></h4><p id="update-message" role="status"></p><section id="update-release" hidden><ul id="update-highlights"></ul><details class="update-notes"><summary>Release notes</summary><pre id="update-notes"></pre><a id="update-release-link" target="_blank" rel="noopener noreferrer">View release ↗</a></details><p id="update-manual" class="small-note" hidden></p><div class="update-actions"><button class="primary" id="update-install" hidden>Update now</button><button class="secondary" id="update-later">Later</button><button class="text-button" id="update-skip">Skip this version</button></div></section><label class="update-policy">Updates<select id="update-policy"><option value="notify">Notify me</option><option value="auto">Update automatically when idle</option><option value="manual">Manual only</option></select></label><p class="small-note">Your workspace, connections, and custom views stay yours.</p><div class="update-bottom"><small id="update-checked"></small><button class="text-button" id="update-rollback" hidden>Use previous version</button><a href="https://github.com/deangeloscott/businessos/releases" target="_blank" rel="noopener noreferrer">Downloads ↗</a></div></div></section>`,'page');
   $('#detail').dataset.mode='page';$('#close-detail-page').hidden=false;$('#detail [data-close=detail]').hidden=true;state.updateSignature='';renderUpdates();
   state.updates=await api('/api/updates',{action:'read'});renderNotifications();
 }
@@ -1047,12 +1052,13 @@ async function taskModels(app) {
 }
 function details(title,html,mode='panel'){
   const d=$('#detail');state.fileDetailTicket=(state.fileDetailTicket||0)+1;shellReturnFocus=document.activeElement;
-  const page=mode==='page'||(state.view==='sharing'&&mode!=='context');
+  const page=mode==='page'||(state.view==='sharing'&&mode!=='context'),modal=!page&&mode!=='context';
+  if(d.open&&d.matches(':modal')!==modal)d.close();
   d.dataset.mode=page?'page':mode;d.dataset.opened=Date.now();$('#detail-title').textContent=title;$('#detail-content').innerHTML=html;
   $('#close-detail-page').hidden=!page;d.querySelector('[data-close="detail"]').hidden=page;
   $('#detail-footer').hidden=!page||state.view!=='sharing';$('#detail-footer').innerHTML=page&&state.view==='sharing'?workspaceLocation():'';
   const actions=$('#detail-content .share-selection-bar');if(page&&actions)$('#detail-footer').prepend(actions);
-  d.querySelectorAll('.dialog-error').forEach(el=>el.remove());if($('#notice').classList.contains('error'))notice('');if(!d.open)d.show();
+  d.querySelectorAll('.dialog-error').forEach(el=>el.remove());if($('#notice').classList.contains('error'))notice('');if(!d.open){if(modal)d.showModal();else d.show();}
 }
 let apiConnections=[];
 async function showApiConnections(origin=state.apiReturn) {
@@ -1080,18 +1086,18 @@ function recordDetails(ref) {
   if(r.type==='SourceRecord') {
     const text=r.data.extensions?.businessos_evidence?.captured_text;
     const shared=r.data.extensions?.aura_sharing;
-    details(r.title,`${shared?`<p class="small-note">Shared by ${esc(shared.origin.name)} · Copied ${stamp(shared.copied_at)}. Source material; local business facts stay separate.</p><p><button class="text-button" data-file="${esc(r.data.source_reference)}">Open shared material →</button></p>`:''}${text?'<pre>'+esc(text)+'</pre>':'<p>'+esc(r.data.source_reference||'Saved source')+'</p>'}<button class="text-button" data-prompt="${esc(`Use the saved AURA source ${r.ref} to help with our current work. Read the actual source and distinguish its claims from established facts.`)}">Prepare a request →</button><p><button class="text-button" data-share-record="${esc(r.ref)}">Share a copy →</button></p><details><summary>File details</summary><p>${esc(r.path)}</p><pre>${esc(JSON.stringify(r.data,null,2))}</pre></details>`);
+    details(r.title,`${shared?`<p class="small-note">Shared by ${esc(shared.origin.name)} · Copied ${stamp(shared.copied_at)}. Source material; local business facts stay separate.</p><p><button class="text-button" data-file="${esc(r.data.source_reference)}">Open shared material →</button></p>`:''}${text?'<pre>'+esc(text)+'</pre>':'<p>'+esc(r.data.source_reference||'Saved source')+'</p>'}<button class="text-button" data-prompt="${esc(`Use the saved AURA source ${r.ref} to help with our current work. Read the actual source and distinguish its claims from established facts.`)}">Prepare a request →</button><p><button class="text-button" data-share-record="${esc(r.ref)}">Share a copy →</button></p><details><summary>File details</summary><p>${esc(r.path)}</p><pre>${esc(JSON.stringify(r.data,null,2))}</pre></details>`,'context');
     return;
   }
   const mechanical=new Set(['id','object_type','schema_version','business_id','lineage','created_at','updated_at','extensions']);
   const fields=Object.entries(r.data).filter(([k,v])=>!mechanical.has(k)&&!['name','title'].includes(k)&&v!==null&&!(Array.isArray(v)&&!v.length));
-  details(r.title,`<p>${r.type==='Objective'?'Goal':esc(human(r.type))}</p>${fields.map(([k,v])=>`<div class="field"><strong>${esc(human(k))}</strong><p>${esc(pretty(v))}</p></div>`).join('')}${r.type==='Objective'?`<form id="edit-goal-form" class="form-grid" data-ref="${esc(r.ref)}"><label>Update this goal<input name="name" value="${esc(r.title)}" required maxlength="2000"></label><button class="primary">Save goal</button></form>`:''}<p><button class="text-button" data-prompt="${esc(`Help me work with the saved AURA record ${r.ref}: ${r.title}. Read the actual record and ask only what is necessary.`)}">Work with your AI ↗</button></p><p><button class="text-button" data-share-record="${esc(r.ref)}">Share a copy →</button></p><details><summary>File details</summary><p>${esc(r.path)}</p><pre>${esc(JSON.stringify(r.data,null,2))}</pre></details>`);
+  details(r.title,`<p>${r.type==='Objective'?'Goal':esc(human(r.type))}</p>${fields.map(([k,v])=>`<div class="field"><strong>${esc(human(k))}</strong><p>${esc(pretty(v))}</p></div>`).join('')}${r.type==='Objective'?`<form id="edit-goal-form" class="form-grid" data-ref="${esc(r.ref)}"><label>Update this goal<input name="name" value="${esc(r.title)}" required maxlength="2000"></label><button class="primary">Save goal</button></form>`:''}<p><button class="text-button" data-prompt="${esc(`Help me work with the saved AURA record ${r.ref}: ${r.title}. Read the actual record and ask only what is necessary.`)}">Work with your AI ↗</button></p><p><button class="text-button" data-share-record="${esc(r.ref)}">Share a copy →</button></p><details><summary>File details</summary><p>${esc(r.path)}</p><pre>${esc(JSON.stringify(r.data,null,2))}</pre></details>`,'context');
 }
 async function fileDetails(path) {
   let ticket;const scope=chatScope();
   const current=()=>ticket===state.fileDetailTicket&&scope===chatScope()&&$('#detail').open&&$('#file-preview');
   const f=state.files.find(f=>f.path===path); if(!f) return;
-  details(f.name,`<p><button class="text-button" data-share-file="${esc(path)}">Share a copy →</button></p><div id="file-preview"><p>Opening preview…</p></div><details><summary>File location</summary><p>${esc(f.local_path||state.data.workspace+'/'+f.path)} · ${size(f.bytes)}</p><button class="secondary" id="copy-file-location">Copy file location</button></details>`);
+  details(f.name,`<p><button class="text-button" data-share-file="${esc(path)}">Share a copy →</button></p><div id="file-preview"><p>Opening preview…</p></div><details><summary>File location</summary><p>${esc(f.local_path||state.data.workspace+'/'+f.path)} · ${size(f.bytes)}</p><button class="secondary" id="copy-file-location">Copy file location</button></details>`,'context');
   ticket=state.fileDetailTicket;
   $('#copy-file-location').addEventListener('click',()=>attempt(async()=>{await navigator.clipboard.writeText(f.local_path||state.data.workspace+'/'+f.path); $('#copy-file-location').textContent='Location copied';}));
   if(f.media) {
@@ -1992,7 +1998,7 @@ async function accountProfile(){
 }
 async function personalize(){
   $('#more-dialog').close();leavePage();const p=state.profile||{};
-  details('Personalization',`<p class="shell-help">Choose how Aura looks and feels on this computer.</p><form id="profile-form" class="form-grid"><div class="settings-grid"><label>Appearance<select name="appearance">${['system','light','dark'].map(v=>`<option value="${v}" ${state.data.appearance===v?'selected':''}>${human(v)}</option>`).join('')}</select></label><label>Accent<select name="accent">${[['forest','Forest'],['ocean','Ocean'],['clay','Clay']].map(([v,n])=>`<option value="${v}" ${p.accent===v?'selected':''}>${n}</option>`).join('')}</select></label><label>Text size<select name="text_size">${[14,15,16,18].map(n=>`<option value="${n}" ${p.text_size===n?'selected':''}>${n===15?'Standard':n+' px'}</option>`).join('')}</select></label><label>Side panel width<input name="panel_width" type="range" min="360" max="900" step="20" value="${p.panel_width||480}"></label></div><div class="inline-actions"><button class="primary">Save preferences</button><button type="button" class="text-button" id="reset-appearance">Reset appearance</button></div></form><section class="customize-section"><h3>Make the workspace your own</h3><p>Ask your AI to adapt a personal copy of the layout, add a view, or simplify what you see.</p><button class="secondary" data-prompt="Help me customize my AURA visual workspace. Ask what I want to change, then follow the visual workspace guide to adapt an organization-owned copy of the interface. Preserve my files, native chats, and connection controls.">Ask my AI to customize it</button><div id="custom-view-recovery"></div></section>`);
+  details('Personalization',`<p class="shell-help">Choose how Aura looks and feels on this computer.</p><form id="profile-form" class="form-grid"><div class="settings-grid"><label>Appearance<select name="appearance">${['system','light','dark'].map(v=>`<option value="${v}" ${state.data.appearance===v?'selected':''}>${human(v)}</option>`).join('')}</select></label><label>Accent<select name="accent">${[['forest','Forest'],['ocean','Ocean'],['clay','Clay']].map(([v,n])=>`<option value="${v}" ${p.accent===v?'selected':''}>${n}</option>`).join('')}</select></label><label>Text size<select name="text_size">${[14,15,16,18].map(n=>`<option value="${n}" ${p.text_size===n?'selected':''}>${n===15?'Standard':n+' px'}</option>`).join('')}</select></label><label>Side panel width<input name="panel_width" type="range" min="360" max="900" step="20" value="${p.panel_width||480}"></label></div><div class="inline-actions"><button class="primary">Save preferences</button><button type="button" class="text-button" id="reset-appearance">Reset appearance</button></div></form><section class="customize-section"><h3>Make the workspace your own</h3><p>Use a dedicated personalization chat to adapt your layout, add a view, or simplify what you see.</p><button class="secondary" id="personalization-chat">Ask my AI to customize it</button><div id="custom-view-recovery"></div></section>`);
   const diagnostics=await api('/api/diagnostics');if(diagnostics.interface==='custom'&&$('#custom-view-recovery'))$('#custom-view-recovery').innerHTML='<p class="small-note">You are using a custom layout. Your custom files will be kept if you return to the default.</p><button class="text-button" id="restore-standard-view">Return to default layout</button>';
 }
 async function shellHelp(){
@@ -2064,15 +2070,13 @@ document.addEventListener('keydown',event=>{
   if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='k'){event.preventDefault();attempt(openShellSearch);}
   if(event.altKey&&!event.ctrlKey&&!event.metaKey&&event.key.toLowerCase()==='n'){event.preventDefault();attempt(newShellChat);}
   if(event.key==='Escape'){
-    if(document.querySelector('dialog:modal'))return;
+    if(document.querySelector('dialog:modal')){event.preventDefault();const top=document.activeElement?.closest('dialog:modal')||[...document.querySelectorAll('dialog:modal')].at(-1);top.close();return;}
     if(document.body.classList.contains('sidebar-mobile-open')){event.preventDefault();closeMobileSidebar();return;}
     const open=[...document.querySelectorAll('dialog[open]')].filter(d=>!d.matches(':modal')).sort((a,b)=>Number(b.dataset.opened||0)-Number(a.dataset.opened||0));if(open[0]){event.preventDefault();if(open[0].id==='section-dialog'||open[0].dataset.mode==='page')state.view='home';open[0].close();recordShellRoute();renderShell();}
   }
   if(event.key==='ArrowDown'&&event.target.id==='shell-search'){event.preventDefault();$('#shell-search-results button')?.focus();}
 });
 const shellTimer=setInterval(()=>{if(!state.closed&&!document.hidden&&state.data)attempt(async()=>{const root=state.data.workspace,business=state.business;await renderShell();});},4000);
-const originalFileDetails=fileDetails;fileDetails=async function(path){const pending=originalFileDetails(path);$('#detail').dataset.mode='context';await pending;};
-const originalRecordDetails=recordDetails;recordDetails=function(ref){originalRecordDetails(ref);$('#detail').dataset.mode='context';};
 // Keep initialization compatible with native/custom clients; navigation is ordinary history.
 async function restoreInitialRoute(){
   if(!state.data||$('#refresh').disabled||(state.business&&!state.hydrated)){setTimeout(restoreInitialRoute,100);return;}
@@ -2121,22 +2125,32 @@ async function openChatModels(){
   if(!state.chatMeta&&choices.length&&!choices.some(a=>a.id===c.kind))state.chatModelDraft.kind=choices[0].id;
   await loadChatModelOptions();
 }
-async function loadChatModelOptions(){
+async function loadChatModelOptions(refresh=false){
   const draft=state.chatModelDraft,kind=draft.kind,ticket=draft.ticket;
   if(!nativeApps.includes(kind)){$('#chat-model-options').innerHTML='<p class="shell-help">This connection uses its own model settings.</p>'+(state.chatMeta?'<button class="secondary" data-close="chat-model-dialog">Done</button>':'<button class="primary" id="save-chat-model">Use for this chat</button>');return;}
   try{
-    const options=await api('/api/agent-options?kind='+encodeURIComponent(kind));
+    await pickerSave.catch(()=>{});
+    const catalog=await api('/api/model-catalog?kind='+encodeURIComponent(kind)+(refresh?'&refresh=1':''));
+    const models=catalog.models.flatMap(m=>m.routes.filter(r=>r.agent===kind).map(r=>({id:r.model,name:m.name,provider:m.provider,favorite_id:m.id,efforts:r.efforts,default_effort:r.default_effort,current:r.current})));
+    const options={models,model:models.find(m=>m.current)?.id||''};
     if(ticket!==chatModelTicket||draft!==state.chatModelDraft||!$('#chat-model-dialog').open||draft.scope!==chatScope())return;
+    if(!models.length)throw new Error(catalog.unavailable[0]?.reason||'No models are available. Open '+appName(kind)+' to check its connection, then try again.');
+    state.data.model_picker??={};state.data.model_picker.all=structuredClone(catalog.picker);
     state.chatModelOptions=options;if(!draft.model)draft.model=options.models.some(m=>m.id===options.model)?options.model:options.models[0]?.id||'';
-    $('#chat-model-options').innerHTML=`<label class="sr-only" for="chat-model-search">Find a model</label><input id="chat-model-search" type="search" placeholder="Find a model…"><div id="chat-model-list" role="list" aria-label="Available models"></div><button class="text-button" id="chat-model-more" hidden>Show more models</button><div id="chat-model-effort"></div><p class="small-note">Applies to the next message in this chat. Models can have different capabilities and context limits.</p><div class="inline-actions"><button class="primary" id="save-chat-model">Use for this chat</button><button class="text-button" data-close="chat-model-dialog">Cancel</button></div>`;
+    $('#chat-model-options').innerHTML=`<label class="sr-only" for="chat-model-search">Find a model</label><input id="chat-model-search" type="search" placeholder="Search all models…"><p id="chat-model-list-label" class="small-note" role="status"></p><div id="chat-model-list" role="list" aria-label="Available models"></div><button class="text-button" id="chat-model-more" hidden>Show more models</button><p id="chat-model-selection" class="chat-model-selection"></p><div id="chat-model-effort"></div><p class="small-note">Applies to the next message in this chat. Models can have different capabilities and context limits.</p><div class="inline-actions"><button class="primary" id="save-chat-model">Use for this chat</button><button class="text-button" data-close="chat-model-dialog">Cancel</button></div>`;
     paintChatModels();if(options.models.some(m=>m.id===draft.model))await loadChatModelEfforts();else{$('#chat-model-effort').innerHTML='<p class="small-note">The current model is not available in this app’s list. Choose a model for your next message.</p>';$('#save-chat-model').disabled=true;}
-  }catch(e){if($('#chat-model-options'))$('#chat-model-options').innerHTML=`<p class="error">${esc(e.message)}</p><button class="secondary" id="chat-model-retry">Try again</button>`;}
+  }catch(e){if(ticket!==chatModelTicket||draft!==state.chatModelDraft||!$('#chat-model-dialog').open||draft.scope!==chatScope())return;if($('#chat-model-options'))$('#chat-model-options').innerHTML=`<p class="error">${esc(e.message)}</p><button class="secondary" id="chat-model-retry">Try again</button>`;}
 }
 function paintChatModels(){
-  const draft=state.chatModelDraft,q=($('#chat-model-search')?.value||'').trim().toLowerCase(),models=state.chatModelOptions.models.filter(m=>(m.name+' '+m.id).toLowerCase().includes(q));
-  $('#chat-model-list').innerHTML=models.slice(0,state.chatModelLimit||60).map(m=>`<button type="button" class="chat-model-row" data-chat-model="${esc(m.id)}" aria-pressed="${m.id===draft.model}"><span><strong>${esc(m.name||m.id)}</strong>${m.name!==m.id?`<small>${esc(m.id)}</small>`:''}</span><span aria-hidden="true">${m.id===draft.model?'✓':''}</span></button>`).join('')||'<p class="small-note">No matching models.</p>';
+  const draft=state.chatModelDraft,q=($('#chat-model-search')?.value||'').trim().toLowerCase(),terms=q.split(/\s+/).filter(Boolean),favorites=new Set(modelPicker().favorites);
+  const models=state.chatModelOptions.models.filter(m=>q?terms.every(term=>(m.name+' '+m.id+' '+m.provider).toLowerCase().includes(term)):favorites.has(m.favorite_id));
+  $('#chat-model-list-label').textContent=q?`${models.length} matching model${models.length===1?'':'s'} · All models`:`Favorites · ${models.length} available in ${appName(draft.kind)}`;
+  $('#chat-model-list').innerHTML=models.slice(0,state.chatModelLimit||60).map(m=>{const favorite=favorites.has(m.favorite_id);return `<div class="chat-model-result"><button type="button" class="chat-model-row" data-chat-model="${esc(m.id)}" aria-pressed="${m.id===draft.model}"><span><strong>${esc(m.name||m.id)}</strong>${m.name!==m.id?`<small>${esc(m.id)}</small>`:''}</span><span aria-hidden="true">${m.id===draft.model?'✓':''}</span></button><button type="button" class="chat-model-star" data-favorite="${esc(m.favorite_id)}" aria-label="${favorite?'Unfavorite':'Favorite'} ${esc(m.name||m.id)}" aria-pressed="${favorite}">${favorite?'★':'☆'}</button></div>`;}).join('')||`<p class="small-note chat-model-empty">${q?'No matching models. Try another name.':'Search all models and star the ones you use. Favorites are shared with AI settings and your other chats.'}</p>`;
   $('#chat-model-more').hidden=models.length<=(state.chatModelLimit||60);
+  const chosen=state.chatModelOptions.models.find(m=>m.id===draft.model);
+  $('#chat-model-selection').textContent=draft.model?'Selected · '+(chosen?.name||draft.model):'';
 }
+
 async function loadChatModelEfforts(){
   const draft=state.chatModelDraft,model=draft.model;$('#save-chat-model').disabled=true;
   try{const r=await api('/api/agent-efforts?kind='+encodeURIComponent(draft.kind)+'&model='+encodeURIComponent(model));if(draft!==state.chatModelDraft||model!==draft.model||!$('#chat-model-effort'))return;
@@ -2157,7 +2171,7 @@ document.addEventListener('click',event=>attempt(async()=>{
   if(b.id==='model-new-chat'){$('#chat-model-dialog').close();await newShellChat();await openChatModels();}
   if(b.id==='model-manage-connections'||b.id==='help-connections'){$('#chat-model-dialog').close();$('#detail').close();openConnection(true,'connect');}
   if(b.dataset.chatModel){state.chatModelDraft.model=b.dataset.chatModel;paintChatModels();await loadChatModelEfforts();}
-  if(b.id==='chat-model-more'){state.chatModelLimit+=60;paintChatModels();}if(b.id==='chat-model-retry')await loadChatModelOptions();
+  if(b.id==='chat-model-more'){state.chatModelLimit+=60;paintChatModels();}if(b.id==='chat-model-retry'){$('#chat-model-options').innerHTML='<p role="status">Loading this app’s models…</p>';await loadChatModelOptions(true);}
   if(b.id==='close-detail-page')returnToChat();
   if(b.id==='chat-refresh')await refreshChat();
   if(b.id==='page-refresh'){b.disabled=true;try{if(state.view==='tools')await syncSchedules(true);if(state.view==='work')state.library=[];await refresh();}finally{b.disabled=false;}}
@@ -2179,3 +2193,15 @@ document.addEventListener('pointerdown',event=>{
 document.addEventListener('pointerup',event=>{const d=outsideSurface;outsideSurface=null;if(!d?.open)return;const r=d.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)d.close();},true);
 
 matchMedia('(max-width:760px)').addEventListener('change',()=>{closeMobileSidebar();if(state.profile)applyProfile(state.profile);});
+
+async function openPersonalizationChat(){
+  if(!state.data.connection.connected){$('#detail').close();openConnection(true,'connect');notice('Connect your AI to keep a separate personalization chat.');return;}
+  const root=state.data.workspace,business=state.business;
+  const result=await api('/api/chats/personalization',{business,connection:composerConnection()});
+  if(root!==state.data.workspace||business!==state.business)return;
+  await openShellChat(result.id);
+  if(root!==state.data.workspace||business!==state.business||state.chatMeta?.id!==result.id)return;
+  if(!state.chat.length&&!$('#request').value.trim())prompt('Help me customize my AURA visual workspace. Ask what I want to change, then follow the visual workspace guide to adapt an organization-owned copy of the interface. Preserve my files, native chats, and connection controls.');
+  rememberChatDraft();$('#request').focus();
+}
+document.addEventListener('click',event=>{if(event.target.closest('#personalization-chat'))attempt(openPersonalizationChat);});
