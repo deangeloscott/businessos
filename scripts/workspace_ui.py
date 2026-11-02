@@ -1275,6 +1275,8 @@ class Workspace:
             shown.append({'role':'assistant', 'text':job['reply'], 'at':job['updated'],
                           'agent':job.get('agent',self.agent['name']), 'model':job.get('model',chat['model']), 'effort':job.get('effort',chat['effort']),
                           'request_id':job['id'], 'error_detail':job.get('error_detail','')})
+            if job['status']=='complete' and chat.get('source_file'):
+                chat['source_marker']=workspace_native_chats.marker(chat['source_file'])
             if job['status']=='complete' and not job.get('keep_warm'):
                 if candidate:candidate={**candidate,'title':self.connections.redact(candidate['title']),'summary':self.connections.redact(candidate['summary'])}
                 workspace_chats.update(chat,shown,candidate)

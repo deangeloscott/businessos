@@ -174,6 +174,15 @@ print('## Reply '+name+'\\n\\nWorkspace: '+str(root))
                     change=call('/api/chats/changes?business='+bid+'&id='+added['id'])
                     assert change['changed'] and change['conversation']['messages'][0]['text']=='Changed outside'
                     assert not call('/api/chats/changes?business='+bid+'&id='+added['id'])['changed']
+                    def own_turn(*args):
+                        path.write_text(path.read_text()+' '*50,encoding='utf-8')
+                        return {'native_id':'native-recent-0','reply':'Owned reply','usage':{}}
+                    with patch('workspace_codex.run',side_effect=own_turn):
+                        owned=app.start_chat(bid,'Continue this imported session',[],chat_id=added['id'])
+                        until(lambda:app.jobs[owned['id']]['status']=='complete')
+                        with app.lock:pass
+                    calls_before=history.call_count
+                    assert not call('/api/chats/changes?business='+bid+'&id='+added['id'])['changed'] and history.call_count==calls_before,'Aura-owned completion caused a redundant native refresh'
                     call('/api/chats/native?business='+bid+'&kind=codex&id=../private',expected=400)
                 # Preparing personalization is metadata-only and reuses one scoped chat.
                 app.preferences['connected_apps']['configured']={'kind':'configured','model':'','effort':''}
