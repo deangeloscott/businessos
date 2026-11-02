@@ -567,9 +567,12 @@ class Workspace:
         fresh.updates = self.updates
         if preserve_local:
             fresh.preferences = json.loads(json.dumps(self.preferences))
+            businesses={b['id'] for b in info['businesses']}
             for chat in fresh.preferences['chats']:
-                chat.setdefault('workspace',str(previous_root))
-            fresh.preferences['active_chats'] = {}
+                if chat['business_id'] in businesses and Path(chat.get('workspace') or previous_root).resolve()==previous_root:
+                    fresh.reconnect_chat_location(chat,previous_root,target)
+                self.copy_chat_display(chat['id'],fresh)
+            fresh.preferences['active_chats']={bid:ident for bid,ident in fresh.preferences['active_chats'].items() if bid in businesses}
             fresh.load_portable()
             fresh.agent, fresh.connection_kind, fresh.handoff = self.agent, self.connection_kind, self.handoff
             if fresh.connection_kind in NATIVE_AGENTS:
@@ -615,6 +618,8 @@ class Workspace:
         refs=[str(workspace_root()),str(self.static)]
         for chat in self.preferences['chats']:
             if chat.get('workspace'):refs.append(chat['workspace'])
+            if chat.get('native_workspace'):refs.append(chat['native_workspace'])
+            if chat.get('source_file'):refs.append(chat['source_file'])
         for items in self.preferences['file_locations'].values():refs.extend(item['path'] for item in items)
         return refs
 
@@ -934,6 +939,53 @@ class Workspace:
         key = self.preferences['active_chats'].get(bid)
         return next((c for c in self.preferences['chats'] if c['id'] == key and c['business_id'] == bid), None)
 
+    def chat_display_path(self, ident):
+        # A verified relocation preserves chat IDs; the original and new copy
+        # must not overwrite each other's recovery displays afterwards.
+        folder=hashlib.sha256(self.workspace_path.encode()).hexdigest()[:20]
+        path=self.settings_file.parent/'chat-views'/folder/(ident+'.json')
+        legacy=self.settings_file.parent/'chat-views'/(ident+'.json')
+        if not path.exists() and legacy.is_file():
+            from _common import write_json_atomic
+            write_json_atomic(path,json.loads(legacy.read_text(encoding='utf-8')))
+        return path
+
+    def copy_chat_display(self, ident, destination):
+        path=self.chat_display_path(ident)
+        if path.is_file():
+            from _common import write_json_atomic
+            write_json_atomic(destination.chat_display_path(ident),json.loads(path.read_text(encoding='utf-8')))
+
+    @staticmethod
+    def reconnect_chat_location(chat, source, target):
+        source,target=Path(source).resolve(),Path(target).resolve()
+        if source==target:return
+        origins=chat.setdefault('workspace_origins',[])
+        if str(source) not in origins:origins.append(str(source))
+        native=chat.get('native_workspace')
+        native_target=target
+        follows_workspace=not native
+        if native and Path(native).resolve().is_relative_to(source):
+            native_target=target/Path(native).resolve().relative_to(source)
+            follows_workspace=native_target.is_dir()
+        chat['workspace']=str(target)
+        if follows_workspace:
+            chat['native_workspace']=str(native_target)
+            if chat.get('native_id') and chat.get('agent')=='pi':
+                chat.setdefault('relocate_session',{'native_id':chat['native_id'],'source_workspace':str(source)})
+
+    def reconnect_chat(self,bid,ident):
+        """Explicit repair for local chat settings copied by older Aura versions."""
+        with self.lock:
+            chat=next((c for c in self.preferences['chats'] if c['id']==ident and c['business_id']==bid),None)
+            if not chat:raise ValueError('Choose a chat in this workspace.')
+            if any(j.get('chat_id')==ident for j in self.running_jobs()):raise ValueError('Wait for this chat to finish before reconnecting it.')
+            source=Path(chat.get('workspace') or self.workspace_path).resolve()
+            if source!=Path(self.workspace_path).resolve():
+                self.reconnect_chat_location(chat,source,self.workspace_path)
+                self.save_preferences()
+            return {'chat':{k:v for k,v in chat.items() if k!='brief_token'}}
+
     def archive_chat(self, bid, ident, archived=True):
         """Hide a saved chat from recents without changing its history or usage."""
         if not isinstance(archived,bool):raise ValueError('Choose whether to archive this chat.')
@@ -1024,8 +1076,10 @@ class Workspace:
                         choice=choices.get(chat['agent'])
                         if not choice:continue
                         try:
-                            native=(workspace_codex.history(choice['argv'],root,chat['native_id']) if chat['agent']=='codex' else
-                                    workspace_agents.history(choice['argv'],chat['agent'],root,env,chat['native_id']))
+                            native_root=Path(chat.get('native_workspace') or root)
+                            if not native_root.is_dir():native_root=root
+                            native=(workspace_codex.history(choice['argv'],native_root,chat['native_id']) if chat['agent']=='codex' else
+                                    workspace_agents.history(choice['argv'],chat['agent'],native_root,env,chat['native_id']))
                             if native.get('usage'):observed[chat['id']]=native['usage']
                         except (ValueError,OSError,subprocess.SubprocessError):pass
                     with self.lock:
@@ -1181,7 +1235,7 @@ class Workspace:
                 self.preferences['chats'].append(chat);self.preferences['connected_apps'].setdefault(kind,connection)
                 workspace_usage.remember(self.preferences,chat['id'],result.get('usage',{}),'session')
                 from _common import write_json_atomic
-                write_json_atomic(self.settings_file.parent/'chat-views'/(chat['id']+'.json'),result['messages'])
+                write_json_atomic(self.chat_display_path(chat['id']),result['messages'])
                 self.save_preferences();return {'id':chat['id']}
 
     def conversation_changes(self,bid,ident):
@@ -1194,7 +1248,7 @@ class Workspace:
         with workspace_scope(owner.workspace_path):
             path=chat.get('source_file') or workspace_native_chats.source_hint(chat['agent'],owner.agent_environment(),chat.get('native_id'))
             old=chat.get('source_marker');stamp=workspace_native_chats.marker(path)
-            display=owner.settings_file.parent/'chat-views'/(chat['id']+'.json')
+            display=owner.chat_display_path(chat['id'])
             same=bool(stamp and not old and display.exists() and stamp[0][1]<=display.stat().st_mtime_ns)
             with self.lock:
                 if self.chat_revision(original)!=revision:return {'changed':False,'supported':bool(stamp),'workspace':owner.workspace_path}
@@ -1206,7 +1260,7 @@ class Workspace:
 
     @staticmethod
     def chat_revision(chat):
-        return tuple(chat.get(k) for k in ('updated','native_id','model','effort','status','model_choice_pending','title','title_edited','archived'))
+        return tuple(chat.get(k) for k in ('updated','native_id','model','effort','status','model_choice_pending','title','title_edited','archived','workspace','native_workspace'))
 
     def conversation(self, bid, ident=None, refresh=False):
         with self.lock:
@@ -1224,9 +1278,9 @@ class Workspace:
         job=dict(owned) if owned else None
         if not chat:
             return {'messages': [], 'chat': None, 'job': job}
-        display=self.settings_file.parent/'chat-views'/(chat['id']+'.json')
+        display=self.chat_display_path(chat['id'])
         if not refresh or not chat.get('native_id') or (job and job['status']=='working'):
-            path = self.settings_file.parent/'chat-views'/(chat['id']+'.json')
+            path = self.chat_display_path(chat['id'])
             shown = json.loads(path.read_text(encoding='utf-8')) if path.is_file() else []
             result={'messages':shown,'chat':chat,'job':job}
             if not shown and chat.get('native_id') and not path.is_file():result['history_note']='Use Refresh chat to read this conversation from its AI app.'
@@ -1241,7 +1295,7 @@ class Workspace:
         except (ValueError, OSError, StopIteration, subprocess.SubprocessError) as exc:
             if job and job['status'] == 'working':
                 return {'messages': [], 'chat': chat, 'job': job}
-            path = self.settings_file.parent/'chat-views'/(chat['id']+'.json')
+            path = self.chat_display_path(chat['id'])
             if not path.is_file():
                 raise ValueError(str(exc) or 'Reconnect the app that owns this chat.') from None
             result = {'messages':json.loads(path.read_text(encoding='utf-8')), 'usage':{}, 'history_note':str(exc)}
@@ -1279,7 +1333,7 @@ class Workspace:
 
     def save_chat_turn(self, chat, job, text, final=False, candidate=None):
         """A recovery display, never supplied as native model context."""
-        path = self.settings_file.parent / 'chat-views' / (chat['id'] + '.json')
+        path = self.chat_display_path(chat['id'])
         shown = json.loads(path.read_text(encoding='utf-8')) if path.exists() else []
         shown = [r for r in shown if r.get('request_id') != job['id']]
         shown.append({'role':'user', 'text':self.connections.redact(workspace_agents.display_text(text)),
@@ -1772,8 +1826,18 @@ class Workspace:
                 candidate=None
                 try:
                     if native:
-                        result = (workspace_codex.run(command, native_root, prompt, native_id, model, effort, update, env, execution)
-                                  if kind=='codex' else workspace_agents.run(command,kind,root,env,prompt,native_id,model,effort,update,execution))
+                        resumed_id=native_id
+                        if chat.get('relocate_session'):
+                            update(progress='Reconnecting your saved conversation')
+                            continued=workspace_agents.relocate_pi(command,native_root,env,native_id,execution,source_file=chat.get('source_file',''))
+                            with self.lock:
+                                execution.check()
+                                chat.setdefault('native_previous_ids',[]).append(native_id)
+                                chat.update(continued);chat.pop('relocate_session',None)
+                                self.save_preferences()
+                            resumed_id=continued['native_id']
+                        result = (workspace_codex.run(command, native_root, prompt, resumed_id, model, effort, update, env, execution)
+                                  if kind=='codex' else workspace_agents.run(command,kind,native_root,env,prompt,resumed_id,model,effort,update,execution))
                         output, code = result['reply'], 0
                         if not welcome and keep_warm_id is None:candidate=workspace_chats.brief(output)
                         job['usage'] = result['usage']
@@ -2087,7 +2151,7 @@ def handler_for(app):
                         raise ValueError('Workspace organization is running. Wait or stop it before making changes.')
                     if app.schedule_job and app.schedule_job['status']=='working' and (route in {'/api/lifecycle','/api/workspaces/open','/api/workspaces/create','/api/workspaces/relocate','/api/workspaces/restore'} or route.startswith('/api/organization/')):
                         raise ValueError('Wait for task setup or stop it before changing workspaces or restarting AURA.')
-                    if app.running_jobs(None if route in {'/api/lifecycle','/api/workspaces/relocate','/api/workspaces/restore'} else workspace_root()) and route not in {'/api/preferences','/api/profile','/api/interface/reset','/api/chats/recover','/api/chats/archive','/api/notifications','/api/chat','/api/chat/stop','/api/chats/new','/api/chats/open','/api/chats/rename','/api/chats/model','/api/chats/personalization','/api/connect','/api/workspaces/open','/api/usage/settings','/api/updates','/api/schedules/action','/api/schedules/stop'}:
+                    if app.running_jobs(None if route in {'/api/lifecycle','/api/workspaces/relocate','/api/workspaces/restore'} else workspace_root()) and route not in {'/api/preferences','/api/profile','/api/interface/reset','/api/chats/recover','/api/chats/archive','/api/chats/reconnect','/api/notifications','/api/chat','/api/chat/stop','/api/chats/new','/api/chats/open','/api/chats/rename','/api/chats/model','/api/chats/personalization','/api/connect','/api/workspaces/open','/api/usage/settings','/api/updates','/api/schedules/action','/api/schedules/stop'}:
                         raise ValueError('Your agent is working. Wait for its reply before changing this workspace.')
                     if route in {'/api/preferences','/api/locations'}:
                         app.load_portable()
@@ -2238,7 +2302,7 @@ def handler_for(app):
                             env=env,check=True,capture_output=True,timeout=90,**flags)
                         self.send(200,app.open_workspace(str(target)))
                     elif route == '/api/workspaces/open':
-                        opened = app.open_workspace(str(data.get('path','')))
+                        opened = app.open_workspace(str(data.get('path','')),preserve_local=bool(data.get('replace') and Path(data['replace']).resolve()==Path(app.workspace_path).resolve()))
                         if data.get('replace'):
                             recent = [r for r in app.recent_workspaces() if r['path']!=data['replace']]
                             workspace_catalog.write_json(app.settings_file.parent / 'recent-workspaces.json',recent)
@@ -2504,6 +2568,8 @@ def handler_for(app):
                         chat.update(title=app.connections.redact(title),title_edited=True)
                         app.save_preferences()
                         self.send(200,{'chat':chat})
+                    elif route == '/api/chats/reconnect':
+                        self.send(200,app.reconnect_chat(selected(data.get('business')),data.get('id')))
                     elif route == '/api/chats/archive':
                         self.send(200,app.archive_chat(selected(data.get('business')),data.get('id'),data.get('archived',True)))
                     elif route == '/api/chats/model':

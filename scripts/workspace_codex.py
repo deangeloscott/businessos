@@ -147,7 +147,7 @@ def verify_attachment(command, cwd, attachment):
 
 
 def run(command, cwd, prompt, native_id, model, effort, update, env=None, execution=None):
-    argv = [*base_command(command), 'exec']
+    argv = [*base_command(command), '-C', str(cwd), 'exec']
     if '--sandbox' in command:
         index = command.index('--sandbox')
         argv += command[index:index+2]
@@ -169,8 +169,11 @@ def run(command, cwd, prompt, native_id, model, effort, update, env=None, execut
                 continue
             kind = event.get('type')
             if kind == 'thread.started':
-                thread = event['thread_id']
-                update(native_id=thread)
+                if native_id and event['thread_id']!=native_id:
+                    error='Codex returned a different chat ID. Check the native app before continuing.'
+                else:
+                    thread = event['thread_id']
+                    update(native_id=thread)
             elif kind in {'item.started', 'item.updated', 'item.completed'}:
                 item = event.get('item', {})
                 if item.get('type') == 'agent_message':

@@ -9,6 +9,7 @@ import shutil
 import sys
 import tempfile
 import threading
+import time
 import zipfile
 from unittest.mock import patch
 
@@ -84,12 +85,48 @@ def main():
             target=catalog.default_home() / bid
             original_asset=(source / 'instances' / bid / 'assets').glob('*.json')
             original_asset={p:p.read_bytes() for p in original_asset}
-            app.preferences['chats']=[{'id':'old-chat','business_id':bid,'agent':'pi','native_id':'saved-native-chat'}]
+            app.preferences['chats']=[{'id':'old-chat','business_id':bid,'agent':'pi','native_id':'saved-native-chat'},
+                {'id':'external-chat','business_id':bid,'agent':'codex','native_id':'external-native','workspace':str(source),'native_workspace':str(ads)}]
             app.preferences['active_chats']={bid:'old-chat'}
+            legacy_display=app.settings_file.parent/'chat-views/old-chat.json'
+            catalog.write_json(legacy_display,[{'role':'user','text':'Keep our original conversation.'}])
+            original_preferences=json.loads(json.dumps(app.preferences))
             moved=api('/api/workspaces/relocate',{'path':str(target)})
             assert moved['verified'] and moved['source_retained'] and app.state(bid)['workspace']==str(target)
             assert json.loads((target / '.businessos/workspace.json').read_text())['profile']=='organization'
-            assert app.preferences['chats'][0]['workspace']==str(source) and not app.preferences['active_chats']
+            chat=app.preferences['chats'][0]
+            assert chat['workspace']==str(target) and chat['native_workspace']==str(target)
+            assert chat['native_id']=='saved-native-chat' and chat['relocate_session']['source_workspace']==str(source)
+            assert chat['workspace_origins']==[str(source)] and app.preferences['active_chats'][bid]=='old-chat'
+            assert app.preferences['chats'][1]['native_workspace']==str(ads),'An imported native project was redirected'
+            assert app.conversation(bid,'old-chat')['messages'][0]['text']=='Keep our original conversation.'
+            catalog.write_json(app.chat_display_path('old-chat'),[{'role':'assistant','text':'Work continued in the destination.'}])
+            app.open_workspace(source)
+            assert app.conversation(bid,'old-chat')['messages'][0]['text']=='Keep our original conversation.','Destination changed the original display'
+            assert app.preferences['chats']==original_preferences['chats'],'Relocation changed original chat ownership'
+            app.open_workspace(target)
+            assert app.conversation(bid,'old-chat')['messages'][0]['text']=='Work continued in the destination.'
+            # The same Aura chat continues in the new project. Pi owns its
+            # native history fork; no model is used to migrate it.
+            chat=app.preferences['chats'][0]
+            chat.update(model='fixture-model',effort='',title='Original conversation',status='complete')
+            app.preferences['connected_apps']['pi']={'kind':'pi','model':'fixture-model','effort':''}
+            observed=[]
+            def continued(command,cwd,env,ident,execution,**kwargs):
+                assert Path(cwd)==target and ident=='saved-native-chat'
+                return {'native_id':'continued-native-chat','source_file':'','native_workspace':str(target)}
+            def run(command,kind,cwd,env,prompt,ident,*args):
+                observed.append((kind,Path(cwd),ident));assert str(target) in prompt
+                return {'reply':'Continued with our original history.','native_id':ident,'usage':{}}
+            with patch('workspace_ui.installed_agents',return_value=[{'id':'pi','name':'Pi fixture','argv':['fixture','--print']}]),patch('workspace_agents.relocate_pi',side_effect=continued),patch('workspace_agents.run',side_effect=run):
+                job=app.start_chat(bid,'Continue our work.',[],chat_id='old-chat')
+                deadline=time.monotonic()+10
+                while app.jobs[job['id']]['status']=='working' and time.monotonic()<deadline:time.sleep(.02)
+                with app.lock:pass
+                assert app.jobs[job['id']]['status']=='complete',app.jobs[job['id']]
+            assert observed==[('pi',target,'continued-native-chat')]
+            assert chat['id']=='old-chat' and chat['native_previous_ids']==['saved-native-chat'] and 'relocate_session' not in chat
+            assert original_preferences['chats'][0]['native_id']=='saved-native-chat'
             assert all(p.read_bytes()==value for p,value in original_asset.items()), 'Copy rewrote the original memory'
             assert (target / 'reports/research.txt').read_bytes()==report.read_bytes()
             assert (target / 'deliverables/site/index.html').read_bytes()==legacy.read_bytes()
@@ -135,6 +172,18 @@ def main():
             digest=hashlib.sha256(view.read_bytes()).hexdigest()
             app.save_preferences()
             assert hashlib.sha256(view.read_bytes()).hexdigest()==digest and app.state(bid)['appearance']=='light'
+            # Explicit Find folder repairs a renamed selected workspace;
+            # ordinary opens of independent copies still do not adopt its chats.
+            app.open_workspace(target)
+            renamed=base/'Renamed workspace'
+            assert target.resolve().is_relative_to(base.resolve()) and renamed.resolve().is_relative_to(base.resolve())
+            target.rename(renamed)
+            api('/api/workspaces/open',{'path':str(renamed),'replace':str(target)})
+            continued=next(c for c in app.preferences['chats'] if c['id']=='old-chat')
+            assert continued['workspace']==str(renamed) and continued['native_workspace']==str(renamed)
+            assert continued['native_id']=='continued-native-chat' and str(target) in continued['workspace_origins']
+            assert app.active_chat(bid)['id']=='old-chat'
+            assert any('Continued with our original history.' in m['text'] for m in app.conversation(bid,'old-chat')['messages'])
         finally:
             server.shutdown();server.server_close();worker.join()
         missing=base / 'Disconnected drive/Workspace'

@@ -23,16 +23,20 @@ def base_command(command):
 
 
 class Metadata:
-    def __init__(self, command, kind, cwd, env, model='', native_id=''):
+    def __init__(self, command, kind, cwd, env, model='', native_id='', fork_from='', execution=None):
         args = ['--mode', 'rpc', '--no-session'] if kind in {'pi', 'omp'} else ['-p', '--input-format', 'stream-json', '--output-format', 'stream-json', '--verbose', '--no-session-persistence']
         if kind == 'hermes':
             args = ['acp']
         if native_id:
             args = ['--mode', 'rpc', '--session' if kind == 'pi' else '--resume', native_id]
+        if fork_from:
+            if kind!='pi':raise ValueError('This app does not expose this session relocation operation.')
+            args = ['--mode','rpc','--fork',fork_from]
         if model:
             args += ['--model', model]
+        if kind=='omp':args+=['--cwd',str(cwd)]
         self.kind, self.number, self.events = kind, 0, queue.Queue()
-        self.process = subprocess.Popen([*base_command(command), *args], cwd=cwd, env=env, stdin=subprocess.PIPE,
+        self.process = (execution.popen if execution else subprocess.Popen)([*base_command(command), *args], cwd=cwd, env=env, stdin=subprocess.PIPE,
                                         stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
                                         encoding='utf-8', errors='replace', creationflags=subprocess.CREATE_NO_WINDOW if os.name=='nt' else 0)
         self.errors = ErrorTail(self.process, env)
@@ -284,18 +288,41 @@ def tool_activity(name):
     return 'Using a connected tool'
 
 
+def relocate_pi(command, cwd, env, native_id, execution=None, source_file=''):
+    """Ask Pi to preserve history in a session owned by the new project; no prompt."""
+    reference=native_id
+    if source_file and Path(source_file).is_file():
+        with Path(source_file).open(encoding='utf-8') as source:header=json.loads(source.readline())
+        if header.get('type')!='session' or header.get('id')!=native_id:
+            raise ValueError('The saved Pi session does not match this chat. No AI request was sent.')
+        reference=source_file
+    host=Metadata(command,'pi',cwd,env,fork_from=reference,execution=execution)
+    try:
+        state=host.call('get_state')
+        ident=state.get('sessionId');path=Path(state.get('sessionFile') or '')
+        if not ident or ident==native_id or not path.is_file():
+            raise ValueError('Pi could not confirm a continued session in the new workspace. No AI request was sent.')
+        with path.open(encoding='utf-8') as source:
+            header=json.loads(source.readline())
+        if header.get('id')!=ident or Path(header.get('cwd','')).resolve()!=Path(cwd).resolve():
+            raise ValueError('Pi did not use the new workspace folder. No AI request was sent.')
+        return {'native_id':ident,'source_file':str(path),'native_workspace':str(Path(cwd).resolve())}
+    finally:host.close()
+
+
 def run(command, kind, cwd, env, prompt, native_id, model, effort, update, execution=None):
     argv=base_command(command)
     if kind in {'pi','omp'}:
         argv += ['--print','--mode','json']
         if native_id:argv += ['--session' if kind=='pi' else '--resume',native_id]
+        if kind=='omp':argv+=['--cwd',str(cwd)]
         argv=execution_command(argv,kind,model,effort)
     elif kind=='claude':
         argv += ['-p','--output-format','stream-json','--verbose']
         if native_id:argv += ['--resume',native_id]
         argv=execution_command(argv,kind,model,effort)
     elif kind=='hermes':
-        argv += ['chat','--query-file','-','--format','stream-json']
+        argv += ['chat','--query-file','-','--format','stream-json','--no-restore-cwd','--in',str(cwd)]
         if native_id:argv += ['--resume',native_id]
         argv += ['--model',model]
         if effort:argv += ['--reasoning',effort]

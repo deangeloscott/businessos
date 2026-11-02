@@ -110,8 +110,14 @@ print('## Reply '+name+'\\n\\nWorkspace: '+str(root))
                 with patch('workspace_ui.installed_agents',return_value=[{'id':'codex','name':'Codex fixture','argv':['fixture','exec','-']}]),patch('workspace_codex.history',side_effect=AssertionError('Browsing must not launch native metadata')):
                     opened=call('/api/chats/open',{'business':bid,'id':native['id']})
                     assert opened['messages'][-1]['text']=='Saved native display'
+                    native['workspace']=str(a)
+                    call('/api/chats/reconnect',{'business':'wrong-business','id':native['id']},400)
+                    repaired=call('/api/chats/reconnect',{'business':bid,'id':native['id']})
+                    assert repaired['chat']['workspace']==str(b) and repaired['chat']['native_workspace']==str(b)
+                    assert repaired['chat']['native_id']=='native-same' and repaired['chat']['workspace_origins']==[str(a)]
+                    assert app.conversation(bid,native['id'])['messages'][-1]['text']=='Saved native display'
                     # Archive is reversible local organization, not history or usage deletion.
-                    display=app.settings_file.parent/'chat-views'/(native['id']+'.json')
+                    display=app.chat_display_path(native['id'])
                     before=display.read_bytes();usage=json.dumps(app.preferences.get('usage_chats',{}),sort_keys=True)
                     call('/api/chats/archive',{'business':'wrong-business','id':native['id']},400)
                     call('/api/chats/archive',{'business':bid,'id':native['id'],'archived':'false'},400)

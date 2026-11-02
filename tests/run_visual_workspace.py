@@ -124,6 +124,13 @@ path.write_text(json.dumps(data))
             except ValueError as exc:
                 assert setup_error(str(exc))==SETUP_ERRORS['limit']
         # Stop both streaming transports, including a child holding stdout open.
+        mismatched='import json,sys;sys.stdin.read();print(json.dumps({"type":"thread.started","thread_id":"wrong-chat"}));print(json.dumps({"type":"item.completed","item":{"type":"agent_message","text":"A reply"}}))'
+        changed=[]
+        try:
+            workspace_codex.run([sys.executable,'-c',mismatched,'exec'],base,'request','original-chat','model','low',lambda **values:changed.append(values),dict(os.environ))
+            raise AssertionError('A resumed Codex chat silently changed identity')
+        except ValueError as exc:assert 'different chat ID' in str(exc)
+        assert not any(v.get('native_id')=='wrong-chat' for v in changed)
         # Public text/tools are surfaced; private thinking events never are.
         from workspace_execution import Execution, Stopped
         for kind in ('pi', 'codex'):

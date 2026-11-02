@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Reconnect active chats, history and browser drafts automatically after a verified workspace relocation or explicit missing-folder repair. Preserve independent workspaces and external native projects; offer in-place reconnection for older copied chat settings.
+- Scope recovery displays by workspace so retained originals and relocated copies cannot overwrite each other. Continue Pi history through its native project fork when needed, honor native project folders for execution/usage, override Hermes/OMP's saved-folder restoration, and reject unexpected Codex resume IDs.
+
 - Simplify chat details into a single metadata line, group Archive beside Open chat, and remove redundant helper text. Show the full saved latest request when no summary exists, retaining compact list previews without native or model requests.
 
 - Keep message drafts editable when a saved chat belongs to an older workspace folder; explain blocked sending and carry the draft into a new chat here. Preserve prepared skill drafts across reloads and remove misleading wait cursors on disabled controls.

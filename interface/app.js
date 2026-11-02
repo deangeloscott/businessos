@@ -580,11 +580,12 @@ async function pollJob(job) {
   }
 }
 
+function sameWorkspace(a,b){const key=value=>{const path=String(value||'').replaceAll('\\','/').replace(/\/+$/,'');return /^(?:[a-z]:|\/\/)/i.test(path)?path.toLowerCase():path;};return key(a)===key(b);}
 function chatControls() {
-  const previousFolder=state.chatMeta?.workspace&&state.chatMeta.workspace!==state.data?.workspace;
+  const previousFolder=state.chatMeta?.workspace&&!sameWorkspace(state.chatMeta.workspace,state.data?.workspace);
   $('#request').disabled=!state.business||state.navigating;
   $('#request').placeholder=state.busy?'Write your next message while this runs…':'Ask a question or describe what you need…';
-  const blocked=previousFolder?'This conversation belongs to the previous workspace folder. Start a new chat here to send this draft.':state.needsCheck?'Check the previous request in its AI app before continuing.':state.connectionInterrupted?'Reconnect to this chat before sending.':state.organizationWorking?'Wait for workspace organization to finish before sending.':'';
+  const blocked=previousFolder?'Reconnect this saved conversation to the current workspace before sending.':state.needsCheck?'Check the previous request in its AI app before continuing.':state.connectionInterrupted?'Reconnect to this chat before sending.':state.organizationWorking?'Wait for workspace organization to finish before sending.':'';
   $('#send').disabled=!state.business||!state.hydrated||state.navigating||state.stopping||state.starting||state.settling||!!blocked;
   $('#send').title=blocked;
   $('#send').textContent=state.navigating?'Loading chat…':state.stopping?'Stopping…':state.starting?'Starting…':state.settling?'Finishing…':state.busy?'Stop ■':state.data?.connection.connected?'Send ↑':state.data?.connection.mode==='copy'?'Copy request ↗':'Connect AI →';
@@ -1540,7 +1541,7 @@ async function pollOrganization() {
     for(;;){const r=await api('/api/organization'),job=r.job;if(!job)break;
       if($('#organization-progress'))$('#organization-progress').textContent=job.progress;
       if(job.status==='working'){await new Promise(resolve=>setTimeout(resolve,1000));continue;}
-      if(job.result){state.organizationReview=job.result;if(job.action==='apply'){state.business='';state.chat=[];state.chatMeta=null;state.hydrated=false;state.catalog=null;state.library=[];await refresh();}showOrganizationReview(job.result);}
+      if(job.result){state.organizationReview=job.result;if(job.action==='apply'){rememberChatDraft();state.business='';state.chat=[];state.chatMeta=null;state.hydrated=false;state.catalog=null;state.library=[];await refresh();}showOrganizationReview(job.result);}
       if(job.action==='expire')notice(job.error||job.notices?.[0]||'Recovery checked.',!!job.error||!!job.notices?.length);
       if(job.warning)notice(job.warning,true);
       if(job.status==='error'){if(!job.result)details('Organization needs attention',`<p>Your original folders remain unchanged.</p><p>${esc(job.error)}</p><button class="secondary" id="organize-work">Back to folders</button>`);notice(job.error,true);}break;
@@ -1629,7 +1630,7 @@ function showMessages(latest=false) {
 }
 async function submitRequest(text, scheduleId=null, organizationId=state.pendingOrganizationId||null) {
   if(!state.business||!state.hydrated||state.navigating||state.organizationWorking||state.starting||state.stopping||state.settling||state.needsCheck||state.connectionInterrupted)return;
-  if(state.chatMeta?.workspace&&state.chatMeta.workspace!==state.data?.workspace){chatControls();$('#chat-location-note')?.scrollIntoView({block:'nearest'});return;}
+  if(state.chatMeta?.workspace&&!sameWorkspace(state.chatMeta.workspace,state.data?.workspace)){chatControls();$('#chat-location-note')?.scrollIntoView({block:'nearest'});return;}
   if(state.busy){await stopRequest();return;}
   if(!text.trim()){$('#request').focus();return;}
   const connection=composerConnection();
@@ -1842,6 +1843,7 @@ document.addEventListener('submit',event=>{
         await refresh();notice('Your new workspace is ready.');return;
       }
       if(form.id==='relocate-workspace-form') {
+        rememberChatDraft();
         await api('/api/workspaces/relocate',{path:data.get('path')});
         for(const dialog of document.querySelectorAll('dialog[open]'))dialog.close();
         state.business='';state.hydrated=false;state.chat=[];state.chatMeta=null;state.catalog=null;state.library=[];
@@ -1961,7 +1963,14 @@ function rememberChatDraft(){
   try{sessionStorage.setItem(draftKey(),JSON.stringify({text:$('#request').value,files:state.selectedFiles||[],scroll:$('#conversation').scrollTop,connection:state.newChatConnection||null}));}catch{}
 }
 function restoreChatDraft(){
-  let saved=null;try{saved=JSON.parse(sessionStorage.getItem(draftKey())||'null');}catch{}
+  let saved=null;try{
+    let raw=sessionStorage.getItem(draftKey());
+    if(raw===null)for(const root of [...(state.chatMeta?.workspace_origins||[])].reverse()){
+      raw=sessionStorage.getItem('aura-chat-draft:v1:'+JSON.stringify([root,state.business,state.chatMeta.id]));
+      if(raw!==null){sessionStorage.setItem(draftKey(),raw);break;}
+    }
+    saved=JSON.parse(raw||'null');
+  }catch{}
   $('#request').value=typeof saved?.text==='string'?saved.text:'';state.selectedFiles=Array.isArray(saved?.files)?saved.files.slice(0,12):[];
   state.newChatConnection=state.chatMeta?null:saved?.connection||null;renderComposerFiles();renderComposerConnection();
   if(Number.isFinite(saved?.scroll))requestAnimationFrame(()=>{$('#conversation').scrollTop=saved.scroll;});
@@ -2156,7 +2165,7 @@ document.addEventListener('click',event=>attempt(async()=>{
   if(b.id==='sidebar-collapse'){if(matchMedia('(max-width:760px)').matches){closeMobileSidebar();return;}const p=await api('/api/profile',{sidebar_collapsed:!state.profile?.sidebar_collapsed});state.data.profile=p;applyProfile(p);}
   if(b.id==='sidebar-open')openSidebar();if(b.id==='sidebar-scrim')closeMobileSidebar();
   if(b.id==='add-native-chat')await addNativeChat();if(b.id==='profile-open')$('#more-dialog').showModal();if(b.id==='personalize-menu')await personalize();if(b.id==='account-settings')await accountProfile();if(b.id==='support-report')await supportReport();
-  if(b.id==='new-chat-with-draft')await newShellChat({text:$('#request').value,files:[...(state.selectedFiles||[])],connection:composerConnection()});
+  if(b.id==='reconnect-chat-workspace'){const scope=chatScope();b.disabled=true;try{const r=await api('/api/chats/reconnect',{business:state.business,id:state.chatMeta.id});if(scope!==chatScope())return;state.chatMeta=r.chat;rememberChatDraft();chatControls();await renderShell();}finally{if(b.isConnected)b.disabled=false;}}
   if(b.id==='search-open')await openShellSearch();
   if(b.id==='sidebar-more-chats'){state.chatLimit=(state.chatLimit||20)+30;await renderShell();}
   if(b.dataset.shellAction==='sharing'){await openSharing();closeMobileSidebar();}
