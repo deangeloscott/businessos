@@ -63,6 +63,10 @@ print('## Reply '+name+'\\n\\nWorkspace: '+str(root))
             app.stop_chat(bid,first['id'])
             until(lambda:app.jobs[first['id']]['status']=='stopped')
             assert app.jobs[second['id']]['status']=='working' and app.jobs[third['id']]['status']=='working'
+            try:app.archive_chat(bid,second['chat_id']);raise AssertionError('A working chat was archived')
+            except ValueError:pass
+            app.archive_chat(bid,first['chat_id'])  # Other conversations can remain working.
+            app.archive_chat(bid,first['chat_id'],False)
             (a/'release_SECOND').touch();(b/'release_THIRD').touch()
             until(lambda:not app.running_jobs())
             with app.lock:pass  # Completion includes its saved display, not only the process exit.
@@ -106,6 +110,22 @@ print('## Reply '+name+'\\n\\nWorkspace: '+str(root))
                 with patch('workspace_ui.installed_agents',return_value=[{'id':'codex','name':'Codex fixture','argv':['fixture','exec','-']}]),patch('workspace_codex.history',side_effect=AssertionError('Browsing must not launch native metadata')):
                     opened=call('/api/chats/open',{'business':bid,'id':native['id']})
                     assert opened['messages'][-1]['text']=='Saved native display'
+                    # Archive is reversible local organization, not history or usage deletion.
+                    display=app.settings_file.parent/'chat-views'/(native['id']+'.json')
+                    before=display.read_bytes();usage=json.dumps(app.preferences.get('usage_chats',{}),sort_keys=True)
+                    call('/api/chats/archive',{'business':'wrong-business','id':native['id']},400)
+                    call('/api/chats/archive',{'business':bid,'id':native['id'],'archived':'false'},400)
+                    archived=call('/api/chats/archive',{'business':bid,'id':native['id']})
+                    assert archived['chat']['archived'] and 'brief_token' not in archived['chat']
+                    assert app.active_chat(bid) is None
+                    listed=call('/api/chats?business='+bid)
+                    assert any(c['id']==native['id'] and c['archived'] for c in listed['items'])
+                    saved=json.loads(app.settings_file.read_text(encoding='utf-8'))
+                    assert next(c for c in saved['chats'] if c['id']==native['id'])['archived']
+                    assert display.read_bytes()==before and json.dumps(app.preferences.get('usage_chats',{}),sort_keys=True)==usage
+                    call('/api/chats/archive',{'business':bid,'id':native['id'],'archived':False})
+                    assert not native['archived']
+                    app.preferences['active_chats'][bid]=native['id']
                     defaults=dict(app.preferences['connection'])
                     updated=call('/api/chats/model',{'business':bid,'id':native['id'],'kind':'codex','model':'next-model','effort':'high'})
                     assert updated['chat']['model']=='next-model' and updated['chat']['native_id']=='native-same'

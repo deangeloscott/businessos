@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Keep message drafts editable when a saved chat belongs to an older workspace folder; explain blocked sending and carry the draft into a new chat here. Preserve prepared skill drafts across reloads and remove misleading wait cursors on disabled controls.
+- Add reversible chat archiving through sidebar chat options, with Recent and Archived lists. Preserve native history, saved displays, drafts and usage; working requests cannot be archived.
+
 - Move workspace selection into the sidebar header beside its collapse control. Make Add existing easier to find and keep recent-chat actions visible while scrolling.
 
 - Submit selected feedback through the Aura website using the existing ViralTrac account. Review public feature text and keep diagnostics/attachments private; no email, download or separate account service.

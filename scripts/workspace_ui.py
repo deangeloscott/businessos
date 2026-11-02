@@ -934,6 +934,19 @@ class Workspace:
         key = self.preferences['active_chats'].get(bid)
         return next((c for c in self.preferences['chats'] if c['id'] == key and c['business_id'] == bid), None)
 
+    def archive_chat(self, bid, ident, archived=True):
+        """Hide a saved chat from recents without changing its history or usage."""
+        if not isinstance(archived,bool):raise ValueError('Choose whether to archive this chat.')
+        with self.lock:
+            chat=next((c for c in self.preferences['chats'] if c['id']==ident and c['business_id']==bid),None)
+            if not chat:raise ValueError('This chat does not belong to the selected business.')
+            if archived and (chat.get('status')=='working' or any(j.get('chat_id')==ident for j in self.running_jobs(workspace_root()))):
+                raise ValueError('Finish or stop this request before archiving the chat.')
+            chat['archived']=archived
+            if archived and self.preferences['active_chats'].get(bid)==ident:self.preferences['active_chats'][bid]=None
+            self.save_preferences()
+            return {'chat':{k:v for k,v in chat.items() if k!='brief_token'}}
+
     def usage(self, bid, period='chat', refresh=False, offset=0, since=None, month_start=None):
         # Slow native/account reads keep their original workspace even through A/B/A.
         with self.lock:owner=copy.copy(self)
@@ -1193,7 +1206,7 @@ class Workspace:
 
     @staticmethod
     def chat_revision(chat):
-        return tuple(chat.get(k) for k in ('updated','native_id','model','effort','status','model_choice_pending','title','title_edited'))
+        return tuple(chat.get(k) for k in ('updated','native_id','model','effort','status','model_choice_pending','title','title_edited','archived'))
 
     def conversation(self, bid, ident=None, refresh=False):
         with self.lock:
@@ -1716,7 +1729,7 @@ class Workspace:
             if native and not welcome and keep_warm_id is None:
                 chat.setdefault('brief_token',secrets.token_hex(8))
                 prompt=prompt.replace('\nUser request:\n',workspace_chats.instructions(chat)+'\nUser request:\n',1)
-            chat.update(status='working', model=saved_connection.get('model') or self.agent.get('model',''), effort=saved_connection.get('effort',''), connection=dict(saved_connection), updated=time.time())
+            chat.update(status='working', archived=False, model=saved_connection.get('model') or self.agent.get('model',''), effort=saved_connection.get('effort',''), connection=dict(saved_connection), updated=time.time())
             job['new_native_chat']=native and not chat.get('native_id')
             job.update(chat_id=chat['id'], model=chat['model'], effort=chat['effort'])
             self.save_chat_turn(chat, job, text)
@@ -2074,7 +2087,7 @@ def handler_for(app):
                         raise ValueError('Workspace organization is running. Wait or stop it before making changes.')
                     if app.schedule_job and app.schedule_job['status']=='working' and (route in {'/api/lifecycle','/api/workspaces/open','/api/workspaces/create','/api/workspaces/relocate','/api/workspaces/restore'} or route.startswith('/api/organization/')):
                         raise ValueError('Wait for task setup or stop it before changing workspaces or restarting AURA.')
-                    if app.running_jobs(None if route in {'/api/lifecycle','/api/workspaces/relocate','/api/workspaces/restore'} else workspace_root()) and route not in {'/api/preferences','/api/profile','/api/interface/reset','/api/chats/recover','/api/notifications','/api/chat','/api/chat/stop','/api/chats/new','/api/chats/open','/api/chats/rename','/api/chats/model','/api/chats/personalization','/api/connect','/api/workspaces/open','/api/usage/settings','/api/updates','/api/schedules/action','/api/schedules/stop'}:
+                    if app.running_jobs(None if route in {'/api/lifecycle','/api/workspaces/relocate','/api/workspaces/restore'} else workspace_root()) and route not in {'/api/preferences','/api/profile','/api/interface/reset','/api/chats/recover','/api/chats/archive','/api/notifications','/api/chat','/api/chat/stop','/api/chats/new','/api/chats/open','/api/chats/rename','/api/chats/model','/api/chats/personalization','/api/connect','/api/workspaces/open','/api/usage/settings','/api/updates','/api/schedules/action','/api/schedules/stop'}:
                         raise ValueError('Your agent is working. Wait for its reply before changing this workspace.')
                     if route in {'/api/preferences','/api/locations'}:
                         app.load_portable()
@@ -2491,6 +2504,8 @@ def handler_for(app):
                         chat.update(title=app.connections.redact(title),title_edited=True)
                         app.save_preferences()
                         self.send(200,{'chat':chat})
+                    elif route == '/api/chats/archive':
+                        self.send(200,app.archive_chat(selected(data.get('business')),data.get('id'),data.get('archived',True)))
                     elif route == '/api/chats/model':
                         bid=selected(data.get('business'))
                         chat=next((c for c in app.preferences['chats'] if c['id']==data.get('id') and c['business_id']==bid),None)

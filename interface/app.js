@@ -92,7 +92,7 @@ async function refresh(light=false) {
     else if(previousChoice&&connection.choices.some(c=>c.id===previousChoice)) $('#agent-choice').value=previousChoice;
     else $('#agent-choice').value=connection.choices.find(c=>c.available)?.id||connection.choices[0]?.id||'';
     connectionChoice();
-    $('#request').disabled=!state.business || !state.hydrated;
+    $('#request').disabled=!state.business || state.navigating;
     $('#send').disabled=!state.business || !state.hydrated || state.stopping;
     if(state.data.diagnostics.length) notice('Some saved records could not be read. Ask your agent to inspect them before relying on a complete overview.',true);
     else if(state.data.workspace_note)notice(state.data.workspace_note,true);
@@ -582,10 +582,13 @@ async function pollJob(job) {
 
 function chatControls() {
   const previousFolder=state.chatMeta?.workspace&&state.chatMeta.workspace!==state.data?.workspace;
-  $('#request').disabled=!state.business||state.navigating||state.stopping||previousFolder||state.organizationWorking;
-  $('#request').placeholder=previousFolder?'Start a new chat in this workspace…':state.busy?'Write your next message while this runs…':'Ask a question or describe what you need…';
-  $('#send').disabled=!state.business||state.navigating||state.stopping||state.starting||state.settling||previousFolder||state.organizationWorking||state.needsCheck||state.connectionInterrupted;
-  $('#send').textContent=state.stopping?'Stopping…':state.busy?'Stop ■':state.data?.connection.connected?'Send ↑':state.data?.connection.mode==='copy'?'Copy request ↗':'Connect AI →';
+  $('#request').disabled=!state.business||state.navigating;
+  $('#request').placeholder=state.busy?'Write your next message while this runs…':'Ask a question or describe what you need…';
+  const blocked=previousFolder?'This conversation belongs to the previous workspace folder. Start a new chat here to send this draft.':state.needsCheck?'Check the previous request in its AI app before continuing.':state.connectionInterrupted?'Reconnect to this chat before sending.':state.organizationWorking?'Wait for workspace organization to finish before sending.':'';
+  $('#send').disabled=!state.business||!state.hydrated||state.navigating||state.stopping||state.starting||state.settling||!!blocked;
+  $('#send').title=blocked;
+  $('#send').textContent=state.navigating?'Loading chat…':state.stopping?'Stopping…':state.starting?'Starting…':state.settling?'Finishing…':state.busy?'Stop ■':state.data?.connection.connected?'Send ↑':state.data?.connection.mode==='copy'?'Copy request ↗':'Connect AI →';
+  const location=$('#chat-location-note');if(location)location.hidden=!previousFolder;
   $('#stop-request').hidden=!state.busy;$('#stop-request').disabled=state.stopping;$('#stop-request').textContent=state.stopping?'Stopping…':'Stop';
   $('#business').disabled=false;$('#new-chat').disabled=!state.business;$('#chats').disabled=!state.business;renderComposerConnection();
 }
@@ -1156,6 +1159,7 @@ function prompt(text) {
   const request=$('#request'),draft=request.value.trimEnd();
   request.value=draft?(draft.endsWith(text)?draft:draft+'\n\n'+text):text;
   state.lastEdit=Date.now();request.focus();request.scrollIntoView({block:'center',behavior:'auto'});
+  rememberChatDraft();
 }
 
 async function openStoredWorkspace(path) {
@@ -1566,19 +1570,20 @@ async function changeWorkspace(id) {
 }
 const chatDate=value=>value?new Date(value*1000).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'Date not reported';
 function chatDescription(chat){return chat.summary|| (chat.latest_request?'Latest request: '+chat.latest_request:'No description yet.');}
-async function showChats(){
+async function showChats(archived=false){
   const scope=JSON.stringify([state.data.workspace,state.business]),ticket=state.chatListTicket=(state.chatListTicket||0)+1;
   const result=await api('/api/chats?business='+encodeURIComponent(state.business));
   if(scope!==JSON.stringify([state.data.workspace,state.business])||ticket!==state.chatListTicket)return;
-  state.chatList=result.items;
-  details('Your chats',`<p>Conversations for this workspace, most recently active first.</p><div class="chat-list bounded-list">${result.items.length?result.items.map(c=>`<div class="chat-list-row"><button class="row" data-chat="${esc(c.id)}" ><span class="row-text"><span class="row-title">${esc(c.title)}</span><span class="chat-description">${esc(chatDescription(c))}</span><span class="row-meta">${esc(appName(c.agent))} · ${esc(c.model)} · ${esc(chatDate(c.updated))} · ${esc(({working:'Working',error:'Needs attention',stopped:'Stopped',complete:'Reply ready'})[c.status]||'Saved')}${c.summary_stale?' · Description may need updating':''}</span></span></button><button class="chat-options" data-edit-chat="${esc(c.id)}" aria-label="Chat details for ${esc(c.title)}" aria-haspopup="dialog" title="Chat details">⋯</button></div>`).join(''):empty('No saved chats yet.','Start a new conversation. Native connections keep the original history in your AI app.')}</div>`);
+  state.chatList=result.items;state.chatArchiveView=archived;
+  const shown=result.items.filter(c=>!!c.archived===archived);
+  details('Your chats',`<p>Conversations for this workspace, most recently active first.</p><div class="filters"><button data-chat-archive-view="false" class="${archived?'':'active'}" aria-pressed="${!archived}">Recent</button><button data-chat-archive-view="true" class="${archived?'active':''}" aria-pressed="${archived}">Archived</button></div><div class="chat-list bounded-list">${shown.length?shown.map(c=>`<div class="chat-list-row"><button class="row" data-chat="${esc(c.id)}" ><span class="row-text"><span class="row-title">${esc(c.title)}</span><span class="chat-description">${esc(chatDescription(c))}</span><span class="row-meta">${esc(appName(c.agent))} · ${esc(c.model)} · ${esc(chatDate(c.updated))} · ${esc(({working:'Working',error:'Needs attention',stopped:'Stopped',complete:'Reply ready'})[c.status]||'Saved')}${c.summary_stale?' · Description may need updating':''}</span></span></button><button class="chat-options" data-edit-chat="${esc(c.id)}" aria-label="Chat details for ${esc(c.title)}" aria-haspopup="dialog" title="Chat details">⋯</button></div>`).join(''):empty(archived?'No archived chats.':'No saved chats yet.',archived?'Archived conversations stay available here.':'Start a new conversation. Native connections keep the original history in your AI app.')}</div>`);
 }
 function showChatDetails(id,note=''){
   const chat=state.chatList.find(c=>c.id===id);if(!chat)return;
   const description=chat.summary||chat.latest_request||'No description yet.';
   const label=chat.summary?'Where things stand':chat.latest_request?'Latest request':'About this chat';
   const status=({working:'Working',error:'Needs attention',stopped:'Stopped',complete:'Reply ready'})[chat.status]||'Saved';
-  details(chat.title,`<div class="chat-detail"><div class="chat-detail-toolbar"><button class="text-button" id="chat-list-back">← All chats</button><button class="text-button" id="chat-rename" aria-controls="chat-title-form">Rename</button></div><form id="chat-title-form" class="chat-title-editor" hidden><input type="hidden" name="id" value="${esc(id)}"><label for="chat-title-input">Chat title</label><div class="chat-title-controls"><input id="chat-title-input" name="title" required maxlength="80" value="${esc(chat.title)}"><button class="secondary">Save title</button><button type="button" class="text-button" data-cancel-rename="${esc(id)}">Cancel</button></div></form><div class="chat-detail-meta"><p>${esc(appName(chat.agent))}<span> · </span>${esc(chat.model||'App default')}</p><p>${esc(chatDate(chat.updated))}<span> · </span>${esc(status)}</p></div><section class="chat-description-section" aria-label="${esc(label)}"><h3>${esc(label)}</h3><p class="chat-full-description">${esc(description)}</p>${chat.summary?`<p class="chat-description-date">${esc(chat.summary_source==='App'?'App summary':'Description')} · ${esc(chatDate(chat.summary_updated))}${chat.summary_stale?' · May need updating':''}</p>`:'<p class="chat-description-date">Updates with your AI’s substantive replies.</p>'}</section>${note?`<p class="chat-detail-note" role="status">${esc(note)}</p>`:''}<div class="chat-detail-actions"><button class="secondary" data-refresh-chat="${esc(id)}">Refresh from app</button><button class="primary" data-chat="${esc(id)}" >Open chat →</button></div></div>`);
+  details(chat.title,`<div class="chat-detail"><div class="chat-detail-toolbar"><button class="text-button" id="chat-list-back">← All chats</button><button class="text-button" id="chat-rename" aria-controls="chat-title-form">Rename</button></div><form id="chat-title-form" class="chat-title-editor" hidden><input type="hidden" name="id" value="${esc(id)}"><label for="chat-title-input">Chat title</label><div class="chat-title-controls"><input id="chat-title-input" name="title" required maxlength="80" value="${esc(chat.title)}"><button class="secondary">Save title</button><button type="button" class="text-button" data-cancel-rename="${esc(id)}">Cancel</button></div></form><div class="chat-detail-meta"><p>${esc(appName(chat.agent))}<span> · </span>${esc(chat.model||'App default')}</p><p>${esc(chatDate(chat.updated))}<span> · </span>${esc(status)}</p></div><section class="chat-description-section" aria-label="${esc(label)}"><h3>${esc(label)}</h3><p class="chat-full-description">${esc(description)}</p>${chat.summary?`<p class="chat-description-date">${esc(chat.summary_source==='App'?'App summary':'Description')} · ${esc(chatDate(chat.summary_updated))}${chat.summary_stale?' · May need updating':''}</p>`:'<p class="chat-description-date">Updates with your AI’s substantive replies.</p>'}</section>${note?`<p class="chat-detail-note" role="status">${esc(note)}</p>`:''}<div class="chat-archive-action"><button class="text-button" data-archive-chat="${esc(id)}" data-archived="${!chat.archived}" ${!chat.archived&&chat.status==='working'?'disabled':''}>${chat.archived?'Restore to recent chats':'Archive chat'}</button><p class="small-note">${chat.archived?'Archived. History and usage are preserved.':'Archiving hides this chat from Recent chats and keeps its history and usage.'}</p></div><div class="chat-detail-actions"><button class="secondary" data-refresh-chat="${esc(id)}">Refresh from app</button><button class="primary" data-chat="${esc(id)}" >Open chat →</button></div></div>`);
 }
 function showMessages(latest=false) {
   const failed=!state.busy&&(state.chatMeta?.status==='error'||(!state.chatMeta&&state.liveJob?.status==='error'));
@@ -1613,7 +1618,8 @@ function showMessages(latest=false) {
   renderChatRecovery();
 }
 async function submitRequest(text, scheduleId=null, organizationId=state.pendingOrganizationId||null) {
-  if(state.starting||state.stopping||state.settling||state.needsCheck||state.connectionInterrupted)return;
+  if(!state.business||!state.hydrated||state.navigating||state.organizationWorking||state.starting||state.stopping||state.settling||state.needsCheck||state.connectionInterrupted)return;
+  if(state.chatMeta?.workspace&&state.chatMeta.workspace!==state.data?.workspace){chatControls();$('#chat-location-note')?.scrollIntoView({block:'nearest'});return;}
   if(state.busy){await stopRequest();return;}
   if(!text.trim()){$('#request').focus();return;}
   const connection=composerConnection();
@@ -1675,7 +1681,9 @@ document.addEventListener('click',event=>attempt(async()=>{
   if(button.dataset.openSchedule){await syncSchedules(true);await scheduleDetails(button.dataset.openSchedule);}
   if(button.id==='close-section') {state.view='home';$('#section-dialog').close();recordShellRoute();renderShell();}
   if(button.id==='new-chat')await newShellChat();
-  if(button.id==='chats'||button.id==='chat-list-back')await showChats();
+  if(button.id==='chats'||button.id==='chat-list-back')await showChats(button.id==='chat-list-back'&&!!state.chatArchiveView);
+  if(button.hasAttribute('data-chat-archive-view'))await showChats(button.dataset.chatArchiveView==='true');
+  if(button.dataset.archiveChat){const business=state.business,root=state.data.workspace,id=button.dataset.archiveChat,archived=button.dataset.archived==='true';button.disabled=true;try{await api('/api/chats/archive',{business,id,archived});if(business!==state.business||root!==state.data.workspace)return;if(archived&&state.chatMeta?.id===id)await newShellChat();await renderShell();await showChats(archived);notice(archived?'Chat archived. Find it under All → Archived.':'Chat restored to Recent chats.');}finally{if(button.isConnected)button.disabled=false;}}
   if(button.dataset.editChat)showChatDetails(button.dataset.editChat);
   if(button.id==='chat-rename'){const form=$('#chat-title-form');form.hidden=false;button.hidden=true;$('#detail-content [data-refresh-chat]').disabled=true;$('#chat-title-input').focus();}
   if(button.dataset.cancelRename)showChatDetails(button.dataset.cancelRename);
@@ -1964,13 +1972,13 @@ async function openShellChat(id){
   else taskStatus(state.needsCheck?'Check this chat in its AI app before continuing.':state.chat.length?'Conversation restored':'Ready when you are');
   chatControls();
 }
-async function newShellChat(){
+async function newShellChat(draft=null){
   if(!state.business)return;rememberChatDraft();detachChatView();
   const ticket=state.navigationTicket=(state.navigationTicket||0)+1,root=state.data.workspace,business=state.business;
   state.navigating=true;state.view='home';$('#section-dialog').close();$('#detail').close();state.chat=[];state.chatMeta=null;state.newChatConnection=null;state.selectedFiles=[];$('#request').value='';state.hydrated=true;
   try{sessionStorage.removeItem(draftKey());}catch{}
   showMessages();taskStatus('');notice('');chatControls();
-  try{await api('/api/chats/new',{business});if(ticket!==state.navigationTicket||root!==state.data.workspace||business!==state.business)return;await refresh();recordShellRoute();closeMobileSidebar();}
+  try{await api('/api/chats/new',{business});if(ticket!==state.navigationTicket||root!==state.data.workspace||business!==state.business)return;await refresh();if(ticket!==state.navigationTicket||root!==state.data.workspace||business!==state.business)return;if(draft){$('#request').value=draft.text;state.selectedFiles=draft.files;state.newChatConnection=draft.connection;rememberChatDraft();renderComposerFiles();renderComposerConnection();}recordShellRoute();closeMobileSidebar();}
   finally{if(ticket===state.navigationTicket){state.navigating=false;chatControls();$('#request').focus();}}
 }
 
@@ -2000,14 +2008,15 @@ async function renderShell(force=true){
   const list=await api('/api/chats?business='+encodeURIComponent(business));if(root!==state.data.workspace||business!==state.business||(list.workspace&&list.workspace!==root))return;
   state.chatList=list.items;state.runningChats=list.running||[];state.data.running_chats=state.runningChats;$('#background-work').hidden=!state.runningChats.length;$('#background-work').textContent=state.runningChats.length+' '+(state.runningChats.length===1?'chat working':'chats working');
   const owned=new Set(state.runningChats.filter(j=>j.workspace===root).map(j=>j.chat_id));
-  const limit=state.chatLimit||20,signature=JSON.stringify([list.items.map(c=>[c.id,c.title,c.status,c.updated]),[...owned],state.chatMeta?.id,limit,state.inbox?.items?.map(n=>[n.chat_id,n.read])]);
+  const recent=list.items.filter(c=>!c.archived);
+  const limit=state.chatLimit||20,signature=JSON.stringify([recent.map(c=>[c.id,c.title,c.status,c.updated]),[...owned],state.chatMeta?.id,limit,state.inbox?.items?.map(n=>[n.chat_id,n.read])]);
   if(signature===state.sidebarSignature)return;state.sidebarSignature=signature;
-  $('#sidebar-chat-list').innerHTML=list.items.length?list.items.slice(0,limit).map(c=>{
+  $('#sidebar-chat-list').innerHTML=recent.length?recent.slice(0,limit).map(c=>{
     const working=owned.has(c.id),check=c.status==='working'&&!working,unread=state.inbox?.items?.some(n=>n.chat_id===c.id&&!n.read);
     const status=working?'Working':check?'Check in app':c.status==='error'?'Needs attention':unread?'Reply ready':'';
-    return `<button type="button" class="sidebar-chat" data-chat="${esc(c.id)}" aria-current="${c.id===state.chatMeta?.id}" title="${esc(c.title+(status?' · '+status:''))}"><span class="chat-indicator ${working?'working':check||c.status==='error'?'attention':unread?'ready':''}" aria-label="${esc(status)}"></span><span class="chat-name">${esc(c.title||'New chat')}</span>${check?'<small>Check</small>':''}</button>`;
+    return `<div class="sidebar-chat-row"><button type="button" class="sidebar-chat" data-chat="${esc(c.id)}" aria-current="${c.id===state.chatMeta?.id}" title="${esc(c.title+(status?' · '+status:''))}"><span class="chat-indicator ${working?'working':check||c.status==='error'?'attention':unread?'ready':''}" aria-label="${esc(status)}"></span><span class="chat-name">${esc(c.title||'New chat')}</span>${check?'<small>Check</small>':''}</button><button type="button" class="chat-options" data-edit-chat="${esc(c.id)}" aria-label="Chat options for ${esc(c.title)}" title="Chat options">⋯</button></div>`;
   }).join(''):'<p class="sidebar-empty">Start a conversation. Your useful work stays with this workspace.</p>';
-  $('#sidebar-more-chats').hidden=list.items.length<=limit;
+  $('#sidebar-more-chats').hidden=recent.length<=limit;
   }finally{state.shellLoading=false;if(state.shellDirty){state.shellDirty=false;attempt(()=>renderShell());}}
 }
 function closeMobileSidebar(){document.body.classList.remove('sidebar-mobile-open');$('#sidebar-scrim').hidden=true;$('#sidebar-open').setAttribute('aria-expanded','false');}
@@ -2137,6 +2146,7 @@ document.addEventListener('click',event=>attempt(async()=>{
   if(b.id==='sidebar-collapse'){if(matchMedia('(max-width:760px)').matches){closeMobileSidebar();return;}const p=await api('/api/profile',{sidebar_collapsed:!state.profile?.sidebar_collapsed});state.data.profile=p;applyProfile(p);}
   if(b.id==='sidebar-open')openSidebar();if(b.id==='sidebar-scrim')closeMobileSidebar();
   if(b.id==='add-native-chat')await addNativeChat();if(b.id==='profile-open')$('#more-dialog').showModal();if(b.id==='personalize-menu')await personalize();if(b.id==='account-settings')await accountProfile();if(b.id==='support-report')await supportReport();
+  if(b.id==='new-chat-with-draft')await newShellChat({text:$('#request').value,files:[...(state.selectedFiles||[])],connection:composerConnection()});
   if(b.id==='search-open')await openShellSearch();
   if(b.id==='sidebar-more-chats'){state.chatLimit=(state.chatLimit||20)+30;await renderShell();}
   if(b.dataset.shellAction==='sharing'){await openSharing();closeMobileSidebar();}
