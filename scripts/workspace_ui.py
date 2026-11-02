@@ -45,6 +45,7 @@ import workspace_chats
 import workspace_sharing
 import workspace_exchange
 import workspace_support
+import workspace_documents
 from configure_workspace import configure
 from workspace_execution import Execution, Stopped
 from workspace_connections import Connections, PRESETS
@@ -116,6 +117,8 @@ def local_file(bid, ref, locations=None):
         path = asset_path(bid,asset['data'].get('location_reference'))
         if not path or not path.is_file():
             raise ValueError('This saved file is missing. Reconnect it in Saved files & media.')
+        original=Path(asset['data']['location_reference']).expanduser()
+        workspace_sharing.unlinked(original if original.is_absolute() else workspace_root()/original)
         return path
     if ref.startswith('linked/'):
         return workspace_locations.resolve(ref, locations or [], private_path)
@@ -123,7 +126,7 @@ def local_file(bid, ref, locations=None):
     relative = Path(ref)
     if relative.is_absolute() or private_path(relative):
         raise ValueError('This file is outside the selected business view.')
-    path = (root / relative).resolve()
+    path = workspace_sharing.unlinked(root / relative)
     if not path.is_relative_to(root):
         raise ValueError('This file is outside the workspace.')
     for other in business_directory():
@@ -392,6 +395,7 @@ def setup_error(message):
 class Workspace:
     def __init__(self, agent=None, interface=None, settings_file=None):
         self.token = secrets.token_urlsafe(32)
+        self.media_token = secrets.token_urlsafe(32)
         self.agent = agent
         self.configured_agent = agent
         self.connection_kind = 'configured' if agent else ''
@@ -603,6 +607,7 @@ class Workspace:
                     fresh.preferences['seen'] = [b['id'] for b in info['businesses']]
                 fresh.save_preferences()
         fresh.token, fresh.lock = self.token, self.lock
+        fresh.media_token = self.media_token
         fresh.organization_job = self.organization_job
         self.__dict__.update(fresh.__dict__)
         self.save_preferences(portable=True)
@@ -1429,6 +1434,55 @@ class Workspace:
                 value.update(items=items[offset:offset+limit],total=len(items),offset=offset,next_offset=offset+limit if offset+limit<len(items) else None)
             return value
 
+    def document_source(self,bid,ref,option='',include_asset=True):
+        if not isinstance(ref,str) or not ref or len(ref)>2000 or not isinstance(option,str):raise ValueError('Choose an available file.')
+        managed=False
+        if ref.startswith('library/'):
+            item=workspace_library.find(self.library_items()['items'],ref[8:])
+            if not item or item['kind'] not in {'Skill','Workflow','Recipe'}:raise ValueError('Choose a document in your library.')
+            variants=item.get('variants') or [item]
+            chosen=next((v for v in variants if v['key']==option),None) if option else variants[0]
+            if not chosen:raise ValueError('Choose an available library version.')
+            if item.get('path'):
+                path=(PRODUCT_ROOT/item['path']).resolve()
+                if not path.is_relative_to(PRODUCT_ROOT):raise ValueError('This library file is unavailable.')
+            else:
+                workspace_library.document(chosen)
+                paths=[s['path'] for s in chosen.get('sources',[]) if s.get('path')]
+                if not paths:raise ValueError('This app has not provided a local skill file.')
+                path=Path(paths[0])
+            managed=True
+        else:path=local_file(bid,ref,self.preferences['file_locations'].get(bid,[]))
+        path=workspace_sharing.unlinked(path)
+        root=Path(self.workspace_path)
+        writable=any(path.is_relative_to(root/area/bid) for area in ('attachments','knowledge')) and not private_path(path.relative_to(root))
+        if path.is_relative_to(PRODUCT_ROOT) and not root.is_relative_to(PRODUCT_ROOT):writable=False
+        asset=next((r['data'] for r in records(bid)[0] if r['type']=='Asset' and asset_path(bid,r['data'].get('location_reference'))==path),None) if include_asset else None
+        return path,writable,asset,managed and not writable
+
+    def document_info(self,bid,ref,option=''):
+        path,writable,asset,managed=self.document_source(bid,ref,option)
+        result=workspace_documents.inspect(path,writable,asset)
+        result.update(ref=ref,option=option,managed=managed,workspace=self.workspace_path,location=str(path))
+        assets={r['ref']:r['data'] for r in records(bid)[0] if r['type']=='Asset'}
+        family={asset['id']} if asset else set()
+        neighbors={key:set() for key in assets}
+        for key,value in assets.items():
+            for parent in value.get('lineage',[]):
+                if parent in assets:neighbors[key].add(parent);neighbors[parent].add(key)
+        pending=list(family)
+        while pending:
+            for key in neighbors.get(pending.pop(),set())-family:family.add(key);pending.append(key)
+        result['related']=[{'ref':'asset/'+key,'name':Path(assets[key].get('location_reference') or '').name,'version':assets[key].get('version','1')} for key in sorted(family) if key in assets][:50]
+        result['libreoffice_installed']=bool(workspace_documents.libreoffice())
+        return result
+
+    def document_save(self,bid,ref,data):
+        path,writable,asset,managed=self.document_source(bid,ref,data.get('option',''))
+        result=workspace_documents.save(path,bid,data,writable,asset,track_source=not managed)
+        self.read_cache.clear()
+        return {**result,'workspace':self.workspace_path}
+
     def record_snapshot(self,bid):
         base=workspace_root()/'instances'/bid
         signature=[]
@@ -1938,11 +1992,48 @@ def handler_for(app):
             self.send_header('Cache-Control', 'no-store')
             self.send_header('X-Content-Type-Options', 'nosniff')
             self.send_header('Referrer-Policy', 'no-referrer')
-            self.send_header('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' blob: data:; media-src 'self' blob:; connect-src 'self'; object-src 'none'; frame-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'")
+            self.send_header('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self' 'nonce-"+app.token+"'; style-src-attr 'unsafe-inline'; worker-src 'self' blob:; font-src 'self' blob: data:; img-src 'self' blob: data:; media-src 'self' blob:; connect-src 'self'; object-src 'none'; frame-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'")
             for key, value in (headers or {}).items():
                 self.send_header(key, value)
             self.end_headers()
             self.wfile.write(body)
+
+        def stream_file(self,path,download=False):
+            # Resolve permission under the short UI lock, stream bytes outside
+            # it. Native media controls can seek without buffering the file.
+            started=time.monotonic()
+            with Path(path).open('rb') as source:
+                info=os.fstat(source.fileno());length=info.st_size;start=0;end=length-1;partial=False
+                etag=f'"{info.st_mtime_ns:x}-{length:x}"'
+                requested=self.headers.get('Range','')
+                if requested and self.headers.get('If-Range',etag)==etag:
+                    match=re.fullmatch(r'bytes=(\d*)-(\d*)',requested)
+                    if not match or not any(match.groups()):
+                        self.send(416,{'error':'This byte range is unavailable.'},headers={'Content-Range':f'bytes */{length}'});return
+                    first,last=match.groups()
+                    if first:start=int(first);end=min(int(last) if last else end,end)
+                    else:start=max(0,length-int(last))
+                    if not length or start>=length or start>end:
+                        self.send(416,{'error':'This byte range is unavailable.'},headers={'Content-Range':f'bytes */{length}'});return
+                    partial=True
+                mime=(mimetypes.guess_type(path.name)[0] or 'application/octet-stream') if path.suffix.lower() in MEDIA|{'.pdf'} else 'application/octet-stream'
+                self.send_response(206 if partial else 200)
+                for key,value in {'Content-Type':mime,'Content-Length':str(max(0,end-start+1)),'Accept-Ranges':'bytes','ETag':etag,'Cache-Control':'private, no-cache','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer','Content-Disposition':('attachment' if download or mime=='application/octet-stream' else 'inline')+"; filename*=UTF-8''"+quote(path.name)}.items():self.send_header(key,value)
+                if partial:self.send_header('Content-Range',f'bytes {start}-{end}/{length}')
+                self.end_headers()
+                if self.command!='HEAD':
+                    source.seek(start);remaining=max(0,end-start+1)
+                    try:
+                        while remaining:
+                            block=source.read(min(256*1024,remaining))
+                            if not block:break
+                            self.wfile.write(block);remaining-=len(block)
+                    except (BrokenPipeError,ConnectionResetError,ConnectionAbortedError):pass
+            app.performance.record(self.command,'/api/media',206 if partial else 200,1000*(time.monotonic()-started),max(0,end-start+1))
+
+        def do_HEAD(self):
+            if urlsplit(self.path).path=='/api/media':self.do_GET()
+            else:self.send_response(405);self.end_headers()
 
         def guard(self):
             expected = f'127.0.0.1:{self.server.server_port}'
@@ -1951,7 +2042,14 @@ def handler_for(app):
             origin = self.headers.get('Origin')
             if origin and origin != 'http://' + expected:
                 raise PermissionError('Requests must come from the local AURA view.')
-            if self.path.startswith('/api/') and not secrets.compare_digest(self.headers.get('X-Aura-Token', ''), app.token):
+            media_authorized=False
+            if urlsplit(self.path).path=='/api/media':
+                from http.cookies import SimpleCookie,CookieError
+                try:
+                    cookies=SimpleCookie(self.headers.get('Cookie',''));cookie=cookies.get('aura_media_'+str(self.server.server_port))
+                    media_authorized=bool(cookie and secrets.compare_digest(cookie.value,app.media_token))
+                except CookieError:pass
+            if self.path.startswith('/api/') and not media_authorized and not secrets.compare_digest(self.headers.get('X-Aura-Token', ''), app.token):
                 raise PermissionError('Refresh the AURA page to reconnect.')
             expected_workspace=self.headers.get('X-Aura-Workspace')
             if self.command=='POST' and expected_workspace and expected_workspace!=str(workspace_root()):
@@ -1959,7 +2057,7 @@ def handler_for(app):
 
         def do_GET(self):
             self.request_started=time.monotonic()
-            if urlsplit(self.path).path in {'/api/state','/api/file','/api/media','/api/sharing','/api/chat','/api/chats','/api/notifications'}:
+            if urlsplit(self.path).path in {'/api/state','/api/file','/api/sharing','/api/chat','/api/chats','/api/notifications'}:
                 with app.lock:self.read_GET()
             else:self.read_GET()
 
@@ -1971,10 +2069,22 @@ def handler_for(app):
                 route = parsed.path
                 if route == '/':
                     page = (app.static / 'index.html').read_text(encoding='utf-8').replace('__AURA_TOKEN__', app.token)
-                    self.send(200, page.encode(), 'text/html; charset=utf-8')
+                    self.send(200, page.encode(), 'text/html; charset=utf-8',{'Set-Cookie':f'aura_media_{self.server.server_port}={app.media_token}; HttpOnly; SameSite=Strict; Path=/api/media'})
                 elif route in {'/app.js', '/style.css'}:
                     path = app.static / route[1:]
                     self.send(200, path.read_bytes(), 'text/javascript; charset=utf-8' if path.suffix == '.js' else 'text/css; charset=utf-8')
+                elif route in {'/file-editor.js','/file-editor.css'} or route.startswith('/vendor/'):
+                    relative=Path(route.lstrip('/'))
+                    path=(STATIC/relative).resolve()
+                    base=(STATIC/'vendor').resolve() if route.startswith('/vendor/') else STATIC.resolve()
+                    if not path.is_relative_to(base) or private_path(path.relative_to(base)) or not path.is_file():raise ValueError('This interface component is unavailable.')
+                    self.send(200,path.read_bytes(),mimetypes.guess_type(path.name)[0] or 'application/octet-stream')
+                elif route == '/api/components':
+                    self.send(200,workspace_catalog.read_json(PRODUCT_ROOT/'distribution/ui-components.json',{'components':[]}))
+                elif route == '/api/documents':
+                    with app.lock:owner=copy.copy(app)
+                    if query.get('workspace') and query['workspace']!=owner.workspace_path:raise ValueError('The workspace changed. Reopen this file.')
+                    with workspace_scope(owner.workspace_path):self.send(200,owner.document_info(selected(query.get('business')),query.get('path',''),query.get('option','')))
                 elif route == '/api/state':
                     current = app.state(query.get('business'),query.get('revision'))
                     app.update_business = current.get('business_id') or ''
@@ -2096,13 +2206,10 @@ def handler_for(app):
                         raise ValueError('This file has no text preview. Use its location to open the original.')
                     self.send(200, {'text': text})
                 elif route == '/api/media':
-                    bid = selected(query.get('business'))
-                    path = local_file(bid, query.get('path', ''), app.preferences['file_locations'].get(bid, []))
-                    if path.stat().st_size > 64 * 1024 * 1024:
-                        raise ValueError('Open this large file from its original workspace location.')
-                    mime = mimetypes.guess_type(path.name)[0] if path.suffix.lower() in MEDIA else 'application/octet-stream'
-                    self.send(200, path.read_bytes(), mime or 'application/octet-stream',
-                              {'Content-Disposition': "attachment; filename*=UTF-8''" + quote(path.name)})
+                    with app.lock:
+                        if query.get('workspace') and query['workspace']!=app.workspace_path:raise ValueError('The workspace changed. Reopen this file.')
+                        bid=selected(query.get('business'));path=app.document_source(bid,query.get('path',''),query.get('option',''),include_asset=False)[0]
+                    self.stream_file(path,query.get('download')=='1')
                 elif route == '/api/chat':
                     bid = selected(query.get('business'))
                     with app.lock:
@@ -2122,12 +2229,27 @@ def handler_for(app):
                 if self.headers.get_content_type() != 'application/json':
                     raise ValueError('Send JSON from the local view.')
                 length = int(self.headers.get('Content-Length', '0'))
-                if length <= 0 or length > (6*1024*1024 if urlsplit(self.path).path in {'/api/support/test','/api/support/prepare'} else MAX_BODY):
+                if length <= 0 or length > (6*1024*1024 if urlsplit(self.path).path in {'/api/support/test','/api/support/prepare'} else 45*1024*1024 if urlsplit(self.path).path=='/api/documents/save' else MAX_BODY):
                     raise ValueError('Request is empty or too large.')
                 data = json.loads(self.rfile.read(length))
                 if not isinstance(data, dict):
                     raise ValueError('Expected an object.')
                 route = urlsplit(self.path).path
+                if route in {'/api/documents/save','/api/documents/open'}:
+                    with app.lock:
+                        expected=data.get('workspace') or self.headers.get('X-Aura-Workspace')
+                        if expected!=app.workspace_path:raise ValueError('The workspace changed. Reopen this file before saving.')
+                        if app.organization_job and app.organization_job['status']=='working':raise ValueError('Wait for workspace organization before changing files.')
+                        owner=copy.copy(app)
+                    with workspace_scope(owner.workspace_path):
+                        bid=selected(data.get('business'))
+                        if route.endswith('/save'):
+                            try:result=owner.document_save(bid,data.get('path',''),data)
+                            except workspace_documents.Conflict as error:self.send(409,{'error':str(error)});return
+                        else:
+                            path=owner.document_source(bid,data.get('path',''),data.get('option',''))[0]
+                            result=workspace_documents.open_in(path,data.get('application'))
+                    self.send(200,result);return
                 if route == '/api/chats/import':
                     if data.get('confirmed') is not True:raise ValueError('Review the native chat and destination before adding it.')
                     self.send(200,app.native_chats(selected(data.get('business')),data.get('kind'),data.get('id'),True))

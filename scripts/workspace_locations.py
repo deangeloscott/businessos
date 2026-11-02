@@ -35,7 +35,10 @@ def resolve(ref, locations, private):
     if source.resolve() != source:
         raise ValueError('This linked location has changed. Remove it and link the new location.')
     root = source if item['kind'] == 'folder' else source.parent
-    path = (root / relative).resolve()
+    from workspace_sharing import unlinked
+    path = unlinked(root / relative)
+    if private(path.relative_to(root)):
+        raise ValueError('This file is private.')
     if not path.is_relative_to(root.resolve()) or (item['kind'] == 'file' and path != source.resolve()):
         raise ValueError('This file is outside your linked location.')
     if not path.is_file():

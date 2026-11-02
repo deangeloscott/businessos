@@ -65,3 +65,6 @@ Thumbs.db
 # Deterministic release/build artifacts (regenerate with scripts/generate_registry.py)
 /generated/
 /docs/build/
+
+# Maintainer-only build dependencies; browser components ship prebuilt.
+/tools/file-ui/node_modules/

@@ -1,0 +1,3 @@
+# Preserve upstream bytes: the component manifest records their exact hashes.
+interface/vendor/** -text -whitespace linguist-vendored
+distribution/ui-components.json text eol=lf

@@ -341,6 +341,8 @@ def local(workspace, apps, home=None):
     for command,title,description in [('ffmpeg','FFmpeg','Process video and audio.'),('ffprobe','FFprobe','Inspect video and audio files.'),
                                       ('git','Git','Work with versioned files and repositories.'),('python','Python','Run Python scripts.'),('node','Node.js','Run JavaScript tools.')]:
         if shutil.which(command):rows.append(entry('Tool',title,description,'','local:'+command,'Installed',type='Local tool'))
+    from workspace_documents import libreoffice
+    if libreoffice():rows.append(entry('Tool','LibreOffice','Edit documents, spreadsheets and presentations.','','local:libreoffice','Installed',type='Local tool'))
     extra,plugin_notes=plugins(workspace,home,bases,apps)
     rows+=extra;notes+=plugin_notes
     return rows,notes

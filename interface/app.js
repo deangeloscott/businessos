@@ -654,7 +654,7 @@ async function openLibrary(key,option=''){
   const root=state.library.find(r=>r.key===item.key||r.members?.some(m=>m.key===item.key))||item;
   const variants=item.variants||[],q=($('#work-search')?.value||'').trim().toLowerCase(),actions=item.members||[],matching=actions.filter(m=>libraryMatches(m,q)),orderedActions=q&&matching.length?[...matching,...actions.filter(m=>!matching.includes(m))]:actions;
   const displayTitle=item.kind==='Tool'&&!item.members?.length&&item.sources?.some(s=>s.type==='Tool')?human(item.title.split('.').at(-1)):item.title;
-  details(displayTitle,`<p class="small-note">${esc(item.subtype==='Playbook'?'Complete business guide':item.kind)}${item.apps?.length>1?' · Shared across '+item.apps.length+' apps':''}</p>${variants.length>1?`<label class="library-option">Version or connection<select id="library-option">${variants.map((v,i)=>`<option value="${esc(v.key)}" ${v.key===chosen.key?'selected':''}>${esc(librarySourceLabels(v.sources||[]).join(', ')||'Option '+(i+1))}</option>`).join('')}</select></label>`:''}${purpose?`<p>${esc(purpose)}</p>`:''}${sourceLabels.length?`<p class="small-note">${[...new Set(sourceLabels)].map(esc).join('<br>')}</p>`:''}${chosen.requirements?`<p><strong>Needs</strong> ${esc(chosen.requirements)}</p>`:''}<div class="inline-actions"><button class="primary" data-library-use="${esc(root.key)}" data-prompt="${esc(request)}">Prepare a request ↗</button><button class="text-button" data-library-favorite="${esc(root.key)}" aria-label="Toggle favorite">${libraryMarked(root)?'★':'☆'}</button></div>${actions.length?`<details ${q&&matching.length&&!item.title.toLowerCase().includes(q)?'open':''}><summary>Actions (${actions.length})</summary><div class="library-actions bounded-list">${orderedActions.map(m=>`<button class="row compact" data-method="${esc(m.key)}"><span class="row-text"><span class="row-title">${esc(human(m.title.split('.').at(-1)))}</span><span class="row-meta">${esc(m.description||'Reported action')}</span></span><span>→</span></button>`).join('')}</div></details>`:''}${item.related?.length?`<details><summary>Skills & connections (${item.related.length})</summary>${item.related.map(k=>state.library.find(r=>r.key===k)).filter(Boolean).map(m=>`<button class="row compact" data-method="${esc(m.key)}">${esc(m.title)} →</button>`).join('')}</details>`:''}${body?`<details><summary>Read the full guidance</summary><pre>${esc(body)}</pre></details>`:''}${locations.length?`<details><summary>File location${locations.length>1?'s':''}</summary><div class="library-sources">${locations.map(p=>`<p>${esc(p)}</p>`).join('')}</div></details>`:''}`);
+  details(displayTitle,`<p class="small-note">${esc(item.subtype==='Playbook'?'Complete business guide':item.kind)}${item.apps?.length>1?' · Shared across '+item.apps.length+' apps':''}</p>${variants.length>1?`<label class="library-option">Version or connection<select id="library-option">${variants.map((v,i)=>`<option value="${esc(v.key)}" ${v.key===chosen.key?'selected':''}>${esc(librarySourceLabels(v.sources||[]).join(', ')||'Option '+(i+1))}</option>`).join('')}</select></label>`:''}${purpose?`<p>${esc(purpose)}</p>`:''}${sourceLabels.length?`<p class="small-note">${[...new Set(sourceLabels)].map(esc).join('<br>')}</p>`:''}${chosen.requirements?`<p><strong>Needs</strong> ${esc(chosen.requirements)}</p>`:''}<div class="inline-actions"><button class="primary" data-library-use="${esc(root.key)}" data-prompt="${esc(request)}">Prepare a request ↗</button><button class="text-button" data-library-favorite="${esc(root.key)}" aria-label="Toggle favorite">${libraryMarked(root)?'★':'☆'}</button></div>${actions.length?`<details ${q&&matching.length&&!item.title.toLowerCase().includes(q)?'open':''}><summary>Actions (${actions.length})</summary><div class="library-actions bounded-list">${orderedActions.map(m=>`<button class="row compact" data-method="${esc(m.key)}"><span class="row-text"><span class="row-title">${esc(human(m.title.split('.').at(-1)))}</span><span class="row-meta">${esc(m.description||'Reported action')}</span></span><span>→</span></button>`).join('')}</div></details>`:''}${item.related?.length?`<details><summary>Skills & connections (${item.related.length})</summary>${item.related.map(k=>state.library.find(r=>r.key===k)).filter(Boolean).map(m=>`<button class="row compact" data-method="${esc(m.key)}">${esc(m.title)} →</button>`).join('')}</details>`:''}${(doc.location?.endsWith('.md')||item.kind==='Skill'&&locations.length)?`<p><button type="button" class="secondary" data-library-document="${esc(root.key)}" data-option="${esc(chosen.key)}">Open file</button></p>`:''}${body?`<details><summary>Read the full guidance</summary><pre>${esc(body)}</pre></details>`:''}${locations.length?`<details><summary>File location${locations.length>1?'s':''}</summary><div class="library-sources">${locations.map(p=>`<p>${esc(p)}</p>`).join('')}</div></details>`:''}`);
 }
 function quickMethods() {
   const q=($('#quick-work-search')?.value||'').trim().toLowerCase();
@@ -747,7 +747,7 @@ function renderQuickFiles() {
   for(const file of shown.filter(f=>fileKind(f)==='images'&&f.media&&f.bytes<=8*1048576))mediaBlob(file.path).then(url=>{const el=[...target.querySelectorAll('[data-thumbnail]')].find(e=>e.dataset.thumbnail===file.path);if(el?.isConnected){const img=document.createElement('img');img.alt='';img.src=url;el.replaceChildren(img);}}).catch(()=>{});
 }
 
-function mediaURL(path) { return '/api/media?business='+encodeURIComponent(state.business)+'&path='+encodeURIComponent(path); }
+function mediaURL(path) { return '/api/media?business='+encodeURIComponent(state.business)+'&workspace='+encodeURIComponent(state.data.workspace)+'&path='+encodeURIComponent(path); }
 async function mediaBlob(path) {
   const cache=state.mediaCache??=new Map(),key=state.business+'|'+path;
   if(cache.has(key))return cache.get(key);
@@ -1094,6 +1094,7 @@ async function taskModels(app) {
   finally{if(select.isConnected&&$('#task-edit-form select[name=app]').value===app)select.disabled=false;}
 }
 function details(title,html,mode='panel'){
+  window.auraFiles?.detach();
   const d=$('#detail');state.fileDetailTicket=(state.fileDetailTicket||0)+1;shellReturnFocus=document.activeElement;
   const page=mode==='page'||(state.view==='sharing'&&mode!=='context'),modal=!page&&mode!=='context';
   if(d.open&&d.matches(':modal')!==modal)d.close();
@@ -1136,25 +1137,21 @@ function recordDetails(ref) {
   const fields=Object.entries(r.data).filter(([k,v])=>!mechanical.has(k)&&!['name','title'].includes(k)&&v!==null&&!(Array.isArray(v)&&!v.length));
   details(r.title,`<p>${r.type==='Objective'?'Goal':esc(human(r.type))}</p>${fields.map(([k,v])=>`<div class="field"><strong>${esc(human(k))}</strong><p>${esc(pretty(v))}</p></div>`).join('')}${r.type==='Objective'?`<form id="edit-goal-form" class="form-grid" data-ref="${esc(r.ref)}"><label>Update this goal<input name="name" value="${esc(r.title)}" required maxlength="2000"></label><button class="primary">Save goal</button></form>`:''}<p><button class="text-button" data-prompt="${esc(`Help me work with the saved AURA record ${r.ref}: ${r.title}. Read the actual record and ask only what is necessary.`)}">Work with your AI ↗</button></p><p><button class="text-button" data-share-record="${esc(r.ref)}">Share a copy →</button></p><details><summary>File details</summary><p>${esc(r.path)}</p><pre>${esc(JSON.stringify(r.data,null,2))}</pre></details>`,'context');
 }
-async function fileDetails(path) {
-  let ticket;const scope=chatScope();
-  const current=()=>ticket===state.fileDetailTicket&&scope===chatScope()&&$('#detail').open&&$('#file-preview');
-  const f=state.files.find(f=>f.path===path); if(!f) return;
-  details(f.name,`<p><button class="text-button" data-share-file="${esc(path)}">Share a copy →</button></p><div id="file-preview"><p>Opening preview…</p></div><details><summary>File location</summary><p>${esc(f.local_path||state.data.workspace+'/'+f.path)} · ${size(f.bytes)}</p><button class="secondary" id="copy-file-location">Copy file location</button></details>`,'context');
-  ticket=state.fileDetailTicket;
-  $('#copy-file-location').addEventListener('click',()=>attempt(async()=>{await navigator.clipboard.writeText(f.local_path||state.data.workspace+'/'+f.path); $('#copy-file-location').textContent='Location copied';}));
-  if(f.media) {
-    try {
-      const url=await mediaBlob(f.path);if(!current())return;
-      const el=document.createElement(fileKind(f)==='videos'?'video':fileKind(f)==='audio'?'audio':'img');
-      el.src=url; el.className='media-preview'; if(el.tagName==='IMG')el.alt=f.name; else el.controls=true;
-      $('#file-preview').replaceChildren(el);
-    } catch(e) {if(current())$('#file-preview').textContent=e.message;}
-  } else {
-    try { const r=await api('/api/file?business='+encodeURIComponent(state.business)+'&path='+encodeURIComponent(path));if(!current())return; $('#file-preview').innerHTML='<pre>'+esc(r.text)+'</pre>'; }
-    catch(e) {if(current())$('#file-preview').textContent=e.message;}
-  }
+async function openFileWorkspace(ref,option='') {
+  const business=state.business,workspace=state.data.workspace;
+  const module=await import('/file-editor.js');
+  if(business!==state.business||workspace!==state.data.workspace)return;
+  await module.openFile({ref,option,business,workspace,token,api,details,markdown:chatMarkdown,share:ref=>openSharing(ref.startsWith('asset/')?'record:'+ref.slice(6):'file:'+ref),current:()=>state.business===business&&state.data.workspace===workspace,
+    saved:async()=>{invalidateReads();const [files,data]=await Promise.all([api('/api/files?business='+encodeURIComponent(business)),api('/api/state?business='+encodeURIComponent(business))]);if(state.business!==business||state.data.workspace!==workspace)return;state.files=files.items;state.data.records=data.records;state.data.records_revision=data.records_revision;if($('#file-list'))renderFiles();if($('#quick-files'))renderQuickFiles();}
+  });
 }
+async function fileDetails(path) {await openFileWorkspace(path);}
+async function showComponents(){
+  if(!document.querySelector('link[href="/file-editor.css"]')){const link=document.createElement('link');link.rel='stylesheet';link.href='/file-editor.css';document.head.append(link);}
+  $('#more-dialog').close();const data=await api('/api/components');
+  details('What makes up Aura',`<p class="shell-help">Included components run locally. Connected AI apps, models and optional tools remain separate.</p><div class="component-list"><article><strong>Aura</strong><p>Local browser interface, Python file and workspace operations, and organization-owned memory.</p><small>Python · PyYAML · jsonschema · <a href="https://github.com/deangeloscott/businessos/blob/main/docs/components.md" target="_blank" rel="noopener noreferrer">Architecture and component guide ↗</a></small></article>${data.components.map(c=>`<article><strong>${esc(c.name)} · ${esc(c.version)}</strong><p>${esc(c.purpose)}</p><small>${esc(c.license)} · Included with Aura · <a href="${esc(c.source)}" target="_blank" rel="noopener noreferrer">Source ↗</a></small></article>`).join('')}<article><strong>Optional tools and connections</strong><p>AI apps and models, LibreOffice, FFmpeg, and Google’s editors are not bundled or required.</p><a href="https://github.com/deangeloscott/businessos/blob/main/docs/tools-and-services.md" target="_blank" rel="noopener noreferrer">Tools and setup guidance ↗</a></article></div><details><summary>Third-party notices</summary><a href="/vendor/THIRD-PARTY-NOTICES.md" target="_blank" rel="noopener noreferrer">Read included license notices</a></details>`);
+}
+
 function prompt(text) {
   $('#detail').close(); $('#section-dialog').close(); state.view='home';
   const request=$('#request'),draft=request.value.trimEnd();
@@ -1705,6 +1702,8 @@ document.addEventListener('click',event=>attempt(async()=>{
   if(button.dataset.prompt) prompt(button.dataset.prompt);
   if(button.dataset.record) recordDetails(button.dataset.record);
   if(button.dataset.file) await fileDetails(button.dataset.file);
+  if(button.dataset.libraryDocument)await openFileWorkspace('library/'+button.dataset.libraryDocument,button.dataset.option||'');
+  if(button.id==='version')await showComponents();
   if(button.dataset.filetype) {state.fileLimit=100;fileFilter=button.dataset.filetype;renderQuickFiles();renderFiles();}
   if(button.id==='include-workspace-records'){state.includeRecords=!state.includeRecords;button.textContent=state.includeRecords?'Hide workspace records':'Show workspace records too';renderFiles();}
   if(button.dataset.workfilter) { workFilter=button.dataset.workfilter;workCategory=''; button.parentElement.querySelectorAll('button').forEach(b=>b.classList.toggle('active',b===button)); renderWork(); }

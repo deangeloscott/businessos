@@ -309,3 +309,24 @@ Reference sources: [OpenAI cache lifetime](https://developers.openai.com/api/doc
 **Settings → Share or import** copies selected business information, files or project folders to an existing workspace, a new workspace, or a portable ZIP. Record and file details also offer **Share a copy**. Saved selections, attributed source material, explicit updates, conflict comparisons and guarded undo use the same local helper and API available to custom views and CLI users. See [Sharing between workspaces](workspace-sharing.md) for the user flow, portability boundaries and interface contract. The standard layout remains optional.
 
 Open dialogs contain scrolling so their background page stays still. Inner lists hand off to the containing dialog; home lists hand off to the page. Dialog headings remain accessible while scrolling. Sharing uses one dialog scroll surface, with grouped choices and persistent action controls. Copy folder location lives under Share or import → Current workspace.
+
+
+## Preview and edit files
+
+Open a file from Files & media, a chat file link, or a supported Library document to use the same file panel. Preview stays read-only until you choose Edit. Expand gives the file the center area; Reduce returns to the side panel.
+
+- Text, Markdown and skill documents: UTF-8 text editing, undo, find, and Markdown preview. Limit: 2 MB.
+- CSV/TSV: edit cells, add rows/columns, remove selected rows, and sort. All rows, including headers, remain data. The grid is a table editor, without spreadsheet formula evaluation. Limit: 100,000 cells and 500 columns; larger supported text files use text editing. Preview shows up to 200 rows.
+- PNG, JPEG and WebP: crop, rotate and resize. Save as a new version is the image default. Other browser-supported images remain previews.
+- PDFs: local page viewing, zoom and text search; no PDF editing. Audio/video use browser controls and byte-range streaming, so seeking does not buffer the entire file. Supported codecs depend on the browser.
+- Office documents, spreadsheets and presentations: Open in the default app or optional LibreOffice. Google uses an explicit manual upload/download handoff. Import edited version keeps the original and creates a tracked local version in the same format.
+
+Save updates the current editable file; New version and Copy create separate files and Assets with lineage. Saves and imported versions are limited to 32 MB. A file changed by another editor cannot be silently overwritten: reload it or save your edits as a copy. Text drafts survive navigation and reload in this browser tab's session storage where available. Unsaved drafts are not canonical business records or a backup.
+
+Only selected-business attachments and knowledge files can be overwritten. Linked locations, canonical record files and managed Library sources are read-only here; Edit a copy saves an owned workspace file without changing the installed source. A copied skill is an editable document, not automatically a newly installed skill. File access rejects private, cross-business and linked-path escapes.
+
+The file itself is authoritative. Assets preserve deliberate identities and version relationships, not every keystroke. Edits made in a native application to the same local file appear on reopening or returning to an idle panel. Explicit imported versions are needed for downloaded copies from Google. No separate cloud sync is implied.
+
+Custom interfaces can call GET `/api/documents` and POST `/api/documents/save` using the selected business, workspace, file path, mode and expected revision. The CLI `scripts/workspace_documents.py show|save --workspace ... --business-id ... --path ... --input save-request.json --json` uses the same core. The local media endpoint uses a separate read-only, HttpOnly cookie for browser playback; API mutations still require the application token and workspace guard.
+
+See [what makes up Aura](components.md) for bundled components, optional tools, licenses and maintenance.

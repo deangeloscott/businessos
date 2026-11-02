@@ -106,6 +106,7 @@ ViralTrac is AURA's optional first-party companion for tracking, attribution, me
 - **`OPERATOR-GUIDE.md`** — practical commands and advanced use
 - **`DEPLOYMENT.md`** — workspace, storage, upgrades, multi-device, and team details
 - **`CONTEXT.md`** — universal instructions for AI agents using AURA
+- **`docs/components.md`** — included components, optional tools, licenses and maintenance
 - **`CHANGELOG.md`** — alpha changes and version history
 - **`LICENSE.md`** — source-available license
 

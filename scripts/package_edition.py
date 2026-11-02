@@ -24,7 +24,7 @@ def dependency_manifest(modules):
     return {'format_version':'1.0','modules':out}
 def _copy_clean(dest):
     def ignore(path,names):
-        ignored={'__pycache__','.git','.DS_Store','.businessos'}&set(names);rel=Path(path).resolve().relative_to(ROOT.resolve()) if Path(path).resolve()!=ROOT.resolve() else Path('.')
+        ignored={'__pycache__','.git','.DS_Store','.businessos','node_modules'}&set(names);rel=Path(path).resolve().relative_to(ROOT.resolve()) if Path(path).resolve()!=ROOT.resolve() else Path('.')
         if rel==Path('.'):ignored|={'generated','dist','.github','.aura-runtime','.businessos','runtime','knowledge','attachments','qualification'}&set(names)
         if rel==Path('instances'):ignored|={n for n in names if n!='_template'}
         if rel==Path('tests'):ignored|=set(names)
