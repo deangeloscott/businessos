@@ -43,7 +43,7 @@ def resolve(ref, locations, private):
     return path
 
 
-def entries(locations, private, media):
+def entries(locations, private, media, limit=1000):
     out, statuses, limited = [], [], False
     for item in locations:
         source = Path(item['path'])
@@ -61,7 +61,7 @@ def entries(locations, private, media):
                     yield (Path(directory) / name).relative_to(source).as_posix()
         for relative in candidates():
             count += 1
-            if count > 2000 or len(out) >= 1000:
+            if limit is not None and (count > max(2000,limit*2) or len(out) >= limit):
                 limited = True
                 break
             ref = 'linked/' + item['id'] + '/' + relative

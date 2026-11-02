@@ -15,11 +15,29 @@ const stamp = value => value ? new Date(value).toLocaleDateString(undefined,{mon
 const size = bytes => bytes < 1024 ? `${bytes} B` : bytes < 1048576 ? `${(bytes/1024).toFixed(0)} KB` : `${(bytes/1048576).toFixed(1)} MB`;
 const clockTime = value => value ? new Date(typeof value==='number'?value*1000:value).toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'}) : '';
 
+const clientPerformance={requests:0,errors:0,total_ms:0,max_ms:0,message_formats:0,message_format_ms:0,long_tasks:0,long_task_ms:0,max_long_task_ms:0};
+if(window.PerformanceObserver&&PerformanceObserver.supportedEntryTypes?.includes('longtask')){
+  const observer=new PerformanceObserver(list=>{for(const entry of list.getEntries()){clientPerformance.long_tasks++;clientPerformance.long_task_ms+=entry.duration;clientPerformance.max_long_task_ms=Math.max(clientPerformance.max_long_task_ms,entry.duration);}});observer.observe({type:'longtask',buffered:false});
+}
+const readResponses=new Map();
+function invalidateReads(){readResponses.clear();state.freshReads=new Set(['/api/files','/api/library']);}
+async function cachedApi(path){
+  const key=JSON.stringify([state.data?.workspace,state.business,path]),now=performance.now(),prior=readResponses.get(key);
+  if(prior&&now-prior.at<5000)return prior.promise;
+  const route=path.split('?')[0],force=state.freshReads?.delete(route);
+  const url=force?path+(path.includes('?')?'&':'?')+'refresh=1':path;
+  const promise=api(url);const entry={at:now,promise};readResponses.set(key,entry);
+  promise.catch(()=>{if(readResponses.get(key)===entry)readResponses.delete(key);});return promise;
+}
 async function api(path, data) {
-  const response = await fetch(path,{method:data ? 'POST':'GET',headers:{'X-Aura-Token':token,...(data&&state.data?.workspace?{'X-Aura-Workspace':state.data.workspace}:{}),...(data?{'Content-Type':'application/json'}:{})},...(data?{body:JSON.stringify(data)}:{})});
-  const body = await response.json();
-  if(!response.ok) {const error=new Error(body.error || 'Something could not be completed. Refresh and try again.');error.status=response.status;throw error;}
-  return body;
+  const started=performance.now();let failed=false;
+  try{
+    const response=await fetch(path,{method:data?'POST':'GET',headers:{'X-Aura-Token':token,...(data&&state.data?.workspace?{'X-Aura-Workspace':state.data.workspace}:{}),...(data?{'Content-Type':'application/json'}:{})},...(data?{body:JSON.stringify(data)}:{})});
+    const body=await response.json();
+    if(!response.ok){const error=new Error(body.error||'Something could not be completed. Refresh and try again.');error.status=response.status;throw error;}
+    if(data&&!path.startsWith('/api/support/'))invalidateReads();return body;
+  }catch(error){failed=true;throw error;}
+  finally{const elapsed=performance.now()-started;clientPerformance.requests++;clientPerformance.errors+=Number(failed);clientPerformance.total_ms+=elapsed;clientPerformance.max_ms=Math.max(clientPerformance.max_ms,elapsed);}
 }
 function notice(text, error=false) {
   $('#notice').textContent=text; $('#notice').classList.toggle('error',error); $('#notice').hidden=!text;
@@ -36,11 +54,13 @@ function empty(title, text, prompt) { return `<div class="empty"><strong>${esc(t
 function recordRow(r) { return `<button class="row" data-record="${esc(r.ref)}"><span class="row-icon">${r.type==='Asset'?'▧':r.type==='Objective'?'↗':'◈'}</span><span class="row-text"><span class="row-title">${esc(r.title)}</span><span class="row-meta">${esc(({Business:'Business details',Asset:'Saved file',Objective:'Goal',SourceRecord:'Saved source',PreferenceProfile:'Preferences',Observation:'Finding',ProofRecord:'Evidence',MetricObservation:'Measurement'})[r.type]||human(r.type))}${r.data.status?' · '+esc(human(r.data.status)):''}${r.data.updated_at?' · '+stamp(r.data.updated_at):''}</span></span><span class="arrow">↗</span></button>`; }
 function heading(title, subtitle='') { return `<div class="section-head"><div><h2>${title}</h2>${subtitle?`<p>${subtitle}</p>`:''}</div></div>`; }
 
-async function refresh() {
+async function refresh(light=false) {
+  if(!light)invalidateReads();
   const ticket=state.refreshTicket=(state.refreshTicket||0)+1;
   $('#refresh').disabled=true;
   try {
-    const data=await api('/api/state'+(state.business?'?business='+encodeURIComponent(state.business):''));
+    const data=await api('/api/state'+(state.business?'?business='+encodeURIComponent(state.business):'')+(light&&state.business&&state.data?.records_revision?'&revision='+encodeURIComponent(state.data.records_revision):''));
+    if(data.records_unchanged&&state.data?.workspace===data.workspace&&state.business===data.business_id)data.records=state.data.records;
     if(ticket!==state.refreshTicket)return;state.data=data;
     state.business=state.data.business_id || '';state.scheduleJob=state.data.schedule_operation;
     const scope=state.data.workspace+'|'+state.business;if(state.searchScope&&state.searchScope!==scope){state.memoryQuery='';state.fileQuery='';state.scheduleQuery='';state.scheduleFilter='all';state.scheduleDraft=null;state.showPaused=false;fileFilter='all';state.includeRecords=false;}state.searchScope=scope;
@@ -548,7 +568,7 @@ async function pollJob(job) {
       state.chat=conversation.messages;state.chatMeta=conversation.chat;state.needsCheck=conversation.chat?.status==='working';state.busy=false;state.stopping=false;state.activeJob=null;state.polling=false;
       if(result.status==='error'&&!job.welcome)notice(result.reply,true);
       if(result.preference_warning)notice(result.preference_warning,true);if(result.stop_note)notice(result.stop_note);
-      replyAlert(result);showMessages();chatControls();await refresh();renderConnection();return;
+      replyAlert(result);showMessages();chatControls();invalidateReads();await refresh(true);renderConnection();return;
     }
   } catch(error) {
     if(!current())return;
@@ -582,7 +602,7 @@ function usefulFile(f) {
 }
 async function overview() {
   const scope=JSON.stringify([state.data.workspace,state.business]);
-  const [fileData, libraryData, schedules]=await Promise.all([api('/api/files?business='+encodeURIComponent(state.business)),state.library.length?Promise.resolve(state.library):api('/api/library'),api('/api/schedules').catch(()=>({items:[],notes:['Schedules could not be read. Try refreshing.']}))]);
+  const [fileData, libraryData, schedules]=await Promise.all([cachedApi('/api/files?business='+encodeURIComponent(state.business)),state.library.length?Promise.resolve(state.library):cachedApi('/api/library'),api('/api/schedules').catch(()=>({items:[],notes:['Schedules could not be read. Try refreshing.']}))]);
   if(scope!==JSON.stringify([state.data.workspace,state.business]))return;
   state.files=fileData.items;state.fileLocations=fileData.locations||[]; state.library=libraryData;state.schedules=schedules;
   const attention=rows('AttentionItem','WorkRequest','Incident').filter(r=>!['resolved','completed','archived','closed'].includes(r.data.status));
@@ -655,7 +675,7 @@ async function render() {
   }
   if(state.view==='sharing'){if(sharing?.scope===sharingScope())renderSharing();else await openSharing();return;}
   if(state.view==='updates'){await openUpdates();return;}
-  if(state.view==='work'&&!state.library.length)state.library=await api('/api/library');
+  if(state.view==='work')state.library=await cachedApi('/api/library');
   if(!current())return;
   if(state.view==='home') { $('#section-dialog').close();$('#view').innerHTML='';return; }
   $('#detail').close();
@@ -666,11 +686,11 @@ async function render() {
     view.innerHTML=`<div class="section-head business-title"><span>Business · <strong>${esc(rows('Business')[0]?.title)}</strong></span><button class="text-button" data-action="edit-business">Edit name</button></div><input class="search" id="record-search" type="search" aria-label="Search goals and saved information" placeholder="Find goals or saved information…" value="${esc(state.memoryQuery||'')}"><div id="full-memory"></div>`;
     renderMemory();
   } else if(state.view==='files') {
-    const result=await api('/api/files?business='+encodeURIComponent(state.business));if(!current())return; state.files=result.items;state.fileLocations=result.locations||[];state.missingAssets=result.missing_assets||[];fileLocation='';
-    view.innerHTML=`<div class="section-head file-actions"><span>All saved work</span><button class="secondary" data-add-location>＋ Add files or folder</button></div><div class="linked-locations">${state.fileLocations.map(l=>`<div class="linked-location"><button ${l.missing?'data-reconnect-location':'data-filelocation'}="${esc(l.id)}"><strong>${esc(l.name)}</strong><small>${l.missing?'Location missing · Reconnect':l.kind==='folder'?'Linked folder':'Linked file'}</small></button><button data-unlink-location="${esc(l.id)}" aria-label="Unlink ${esc(l.name)}">✕</button></div>`).join('')}</div>${state.missingAssets.length?`<details class="missing-files"><summary>${state.missingAssets.length} saved file${state.missingAssets.length===1?' has moved or is':'s have moved or are'} unavailable</summary>${state.missingAssets.map(f=>`<button class="row" data-reconnect-asset="${esc(f.ref)}">${esc(f.name)} · Reconnect →</button>`).join('')}</details>`:''}<input class="search" id="file-search" type="search" aria-label="Search saved files" placeholder="Find a file…" value="${esc(state.fileQuery||'')}">${fileTypeFilters('full')}<button id="file-all-locations" class="text-button" hidden>All locations</button><div id="file-list" class="file-grid bounded-list" tabindex="0" aria-label="Saved files"></div><details><summary>Workspace records</summary><button class="secondary" id="include-workspace-records">${state.includeRecords?'Hide workspace records':'Show workspace records too'}</button></details>${result.limited?'<p class="muted">This view is limited to the first 1,000 workspace files and 1,000 linked files. Your AI can search the original folders for more.</p>':''}`;
+    const result=await cachedApi('/api/files?business='+encodeURIComponent(state.business));if(!current())return; state.files=result.items;state.fileLocations=result.locations||[];state.missingAssets=result.missing_assets||[];fileLocation='';
+    view.innerHTML=`<div class="section-head file-actions"><span>All saved work</span><button class="secondary" data-add-location>＋ Add files or folder</button></div><div class="linked-locations">${state.fileLocations.map(l=>`<div class="linked-location"><button ${l.missing?'data-reconnect-location':'data-filelocation'}="${esc(l.id)}"><strong>${esc(l.name)}</strong><small>${l.missing?'Location missing · Reconnect':l.kind==='folder'?'Linked folder':'Linked file'}</small></button><button data-unlink-location="${esc(l.id)}" aria-label="Unlink ${esc(l.name)}">✕</button></div>`).join('')}</div>${state.missingAssets.length?`<details class="missing-files"><summary>${state.missingAssets.length} saved file${state.missingAssets.length===1?' has moved or is':'s have moved or are'} unavailable</summary>${state.missingAssets.map(f=>`<button class="row" data-reconnect-asset="${esc(f.ref)}">${esc(f.name)} · Reconnect →</button>`).join('')}</details>`:''}<input class="search" id="file-search" type="search" aria-label="Search saved files" placeholder="Find a file…" value="${esc(state.fileQuery||'')}">${fileTypeFilters('full')}<button id="file-all-locations" class="text-button" hidden>All locations</button><div id="file-list" class="file-grid bounded-list" tabindex="0" aria-label="Saved files"></div><details><summary>Workspace records</summary><button class="secondary" id="include-workspace-records">${state.includeRecords?'Hide workspace records':'Show workspace records too'}</button></details><p class="small-note">Search covers all discovered file names and locations. File contents stay unloaded until opened.</p>`;
     renderFiles();
   } else if(state.view==='work') {
-    if(!state.library.length){const library=await api('/api/library');if(!current())return;state.library=library;}
+    if(!state.library.length){const library=await cachedApi('/api/library');if(!current())return;state.library=library;}
     view.innerHTML=`<input class="search" id="work-search" type="search" aria-label="Search workflows, recipes, skills, tools and plugins" placeholder="Find guidance, a skill, or a tool…"><div class="filters"><button data-workfilter="all">All</button>${Object.entries(libraryKinds).map(([kind,label])=>`<button data-workfilter="${kind}">${label}</button>`).join('')}</div><div class="library-toolbar"><label>Show <select id="library-view"><option value="all" ${libraryView==='all'?'selected':''}>All items</option><option value="favorites" ${libraryView==='favorites'?'selected':''}>Favorites</option><option value="recent" ${libraryView==='recent'?'selected':''}>Recently chosen</option></select></label><span><button class="text-button" data-library-help>How it works</button><button class="text-button" id="library-refresh">Refresh</button></span></div><p id="library-note" class="small-note"></p><div class="section-head"><h3 id="work-category-title">Browse by topic</h3><button id="work-all-topics" class="text-button" hidden>All topics</button></div><div id="work-categories" class="topic-grid"></div><div id="work-list"></div>`;
     renderWork();
     $('#section-content .library-toolbar>span').insertAdjacentHTML('afterbegin','<button class="text-button" id="library-connections">Add connection</button>');
@@ -735,7 +755,9 @@ function renderFiles() {
   if(!$('#file-list'))return;
   state.fileObserver?.disconnect();
   const matches=matchingFiles(state.includeRecords).filter(f=>!fileLocation||f.location===fileLocation);
-  $('#file-list').innerHTML=matches.length?matches.map(f=>`<button class="file-card" data-file="${esc(f.path)}"><span class="file-thumb">${f.media?'◈':'▤'}</span><div class="file-info"><strong>${esc(f.name)}</strong><small>${esc(f.location_name||'Workspace')} · ${size(f.bytes)}</small></div></button>`).join(''):empty('No matching files here yet.','Link a file or folder, or save work in this workspace.');
+  $('#file-list').innerHTML=matches.length?matches.slice(0,state.fileLimit||100).map(f=>`<button class="file-card" data-file="${esc(f.path)}"><span class="file-thumb">${f.media?'◈':'▤'}</span><div class="file-info"><strong>${esc(f.name)}</strong><small>${esc(f.location_name||'Workspace')} · ${size(f.bytes)}</small></div></button>`).join(''):empty('No matching files here yet.','Link a file or folder, or save work in this workspace.');
+  $('#file-more')?.remove();
+  if(matches.length>(state.fileLimit||100))$('#file-list').insertAdjacentHTML('afterend',`<button type="button" class="secondary" id="file-more">Load more · showing ${Math.min(state.fileLimit||100,matches.length)} of ${matches.length}</button>`);
   let loaded=0;
   const observer=new IntersectionObserver(entries=>entries.forEach(async entry=>{
     if(!entry.isIntersecting) return;
@@ -1401,7 +1423,7 @@ document.addEventListener('click',event=>attempt(async()=>{
   if(b.id==='share-home')await openSharing();
   if(b.dataset.shareOpen){state.suppressSetup=true;try{await openStoredWorkspace(b.dataset.shareOpen);if(state.business!==b.dataset.business){state.business=b.dataset.business;state.hydrated=false;await refresh();}state.setupPrompted.add(state.business);await openSharing();sharing.tab='history';renderSharing();if(b.dataset.receipt)await showSharedImport(b.dataset.receipt);}finally{state.suppressSetup=false;}}
   if(b.dataset.shareDetail)await showSharedImport(b.dataset.shareDetail);
-  if(b.dataset.sharedPreview){const path=b.dataset.sharedPreview;await refresh();if(!state.files.some(f=>f.path===path)){const data=await api('/api/files?business='+encodeURIComponent(state.business));state.files=data.items;}if(!state.files.some(f=>f.path===path))state.files.push({path,name:path.split('/').at(-1),bytes:Number(b.dataset.bytes)||0,media:/\.(png|jpe?g|gif|webp|avif|mp4|webm|mov|m4v|mp3|wav|ogg|m4a|aac|flac|opus)$/i.test(path)});await fileDetails(path);$('#detail-content').insertAdjacentHTML('afterbegin',`<button class="text-button" id="share-history-back">← Import history</button>`);}
+  if(b.dataset.sharedPreview){const path=b.dataset.sharedPreview;await refresh();if(!state.files.some(f=>f.path===path)){const data=await cachedApi('/api/files?business='+encodeURIComponent(state.business));state.files=data.items;}if(!state.files.some(f=>f.path===path))state.files.push({path,name:path.split('/').at(-1),bytes:Number(b.dataset.bytes)||0,media:/\.(png|jpe?g|gif|webp|avif|mp4|webm|mov|m4v|mp3|wav|ogg|m4a|aac|flac|opus)$/i.test(path)});await fileDetails(path);$('#detail-content').insertAdjacentHTML('afterbegin',`<button class="text-button" id="share-history-back">← Import history</button>`);}
   if(b.dataset.shareUndo)await shareUndo(b.dataset.shareUndo);
   if(b.hasAttribute('data-share-result-undo'))await shareUndo(sharing.result.receipt,sharing.result.destination,sharing.result.business);
   if(b.dataset.shareConfirmUndo){b.disabled=true;try{const r=await shareApi('undo',{receipt:b.dataset.shareConfirmUndo,apply:true});notice(r.message);await openSharing();sharing.tab='history';renderSharing();}finally{if(b.isConnected)b.disabled=false;}}
@@ -1567,7 +1589,14 @@ function showMessages(latest=false) {
   if(!state.busy&&state.liveJob&&((state.liveJob.business_id&&state.liveJob.business_id!==state.business)||(state.liveJob.chat_id&&state.liveJob.chat_id!==chat)))state.liveJob=null;
   const follow=conversation.hidden||conversation.dataset.chat!==chat||conversation.scrollHeight-conversation.clientHeight-top<48;
   conversation.hidden=!state.chat.length&&!state.busy;conversation.dataset.chat=chat;
-  const markup=state.chat.map(r=>`<div class="message ${r.role}"><strong>${r.role==='user'?'YOU':esc(r.agent||state.data?.connection.name||'YOUR AGENT')}${r.at?` <time>${esc(clockTime(r.at))}</time>`:''}${r.role==='assistant'&&r.model?` · ${esc(r.model)}${r.effort?' · '+esc(human(r.effort)):''}`:''}</strong>${r.role==='assistant'?chatMarkdown(r.text):esc(r.text)}</div>`).join('')+(!state.busy&&!failed&&state.chat.at(-1)?.role==='assistant'?'<div class="message-actions"><button class="text-button" id="make-skill">Make a reusable skill ↗</button></div>':'');
+  const suffix=!state.busy&&!failed&&state.chat.at(-1)?.role==='assistant'?'<div class="message-actions"><button class="text-button" id="make-skill">Make a reusable skill ↗</button></div>':'';
+  const formatKey=JSON.stringify([chat,state.chat.length,state.data?.connection.name]);
+  if(state.formattedSource!==state.chat||state.formattedKey!==formatKey){
+    const started=performance.now();
+    state.formattedHistory=state.chat.map(r=>`<div class="message ${r.role}"><strong>${r.role==='user'?'YOU':esc(r.agent||state.data?.connection.name||'YOUR AGENT')}${r.at?` <time>${esc(clockTime(r.at))}</time>`:''}${r.role==='assistant'&&r.model?` · ${esc(r.model)}${r.effort?' · '+esc(human(r.effort)):''}`:''}</strong>${r.role==='assistant'?chatMarkdown(r.text):esc(r.text)}</div>`).join('');
+    state.formattedSource=state.chat;state.formattedKey=formatKey;clientPerformance.message_formats++;clientPerformance.message_format_ms+=performance.now()-started;
+  }
+  const markup=state.formattedHistory+suffix;
   if(state.messageMarkup!==markup){$('#messages').innerHTML=markup;state.messageMarkup=markup;}
   $('#working').hidden=!state.busy;
   $('#working-label').textContent=state.liveJob?.progress||'Starting your AI…';
@@ -1625,7 +1654,8 @@ document.addEventListener('click',event=>attempt(async()=>{
   if(button.hasAttribute('data-find-workspace')){state.repairWorkspace=button.dataset.findWorkspace;const chosen=await api('/api/locations/browse',{kind:'folder'});if(chosen.path)await previewWorkspace(chosen.path);}
   if(button.dataset.browseLocation){button.disabled=true;try{const result=await api('/api/locations/browse',{kind:button.dataset.browseLocation});if(result.path&&$('#location-path'))$('#location-path').value=result.path;}finally{button.disabled=false;}}
   if(button.dataset.unlinkLocation){await api('/api/locations',{business:state.business,remove:button.dataset.unlinkLocation});await refresh();notice('Location unlinked. The original files are unchanged.');}
-  if(button.dataset.filelocation){fileLocation=button.dataset.filelocation;$('#file-all-locations').hidden=false;document.querySelectorAll('[data-filelocation]').forEach(b=>b.classList.toggle('active',b===button));renderFiles();}
+  if(button.id==='file-more'){state.fileLimit=(state.fileLimit||100)+100;renderFiles();}
+  if(button.dataset.filelocation){state.fileLimit=100;fileLocation=button.dataset.filelocation;$('#file-all-locations').hidden=false;document.querySelectorAll('[data-filelocation]').forEach(b=>b.classList.toggle('active',b===button));renderFiles();}
   if(button.id==='file-all-locations'){fileLocation='';button.hidden=true;document.querySelectorAll('[data-filelocation]').forEach(b=>b.classList.remove('active'));renderFiles();}
   if(button.dataset.libraryKind){const query=$('#quick-work-search')?.value||'';workFilter=button.dataset.libraryKind;libraryView='all';workCategory='';state.view='work';await render();$('#work-search').value=query;renderWork();}
   if(button.dataset.workcategory){workCategory=button.dataset.workcategory;if(state.view!=='work'){state.view='work';workFilter='Workflow';await render();}else renderWork();}
@@ -1656,7 +1686,7 @@ document.addEventListener('click',event=>attempt(async()=>{
   if(button.dataset.prompt) prompt(button.dataset.prompt);
   if(button.dataset.record) recordDetails(button.dataset.record);
   if(button.dataset.file) await fileDetails(button.dataset.file);
-  if(button.dataset.filetype) {fileFilter=button.dataset.filetype;renderQuickFiles();renderFiles();}
+  if(button.dataset.filetype) {state.fileLimit=100;fileFilter=button.dataset.filetype;renderQuickFiles();renderFiles();}
   if(button.id==='include-workspace-records'){state.includeRecords=!state.includeRecords;button.textContent=state.includeRecords?'Hide workspace records':'Show workspace records too';renderFiles();}
   if(button.dataset.workfilter) { workFilter=button.dataset.workfilter;workCategory=''; button.parentElement.querySelectorAll('button').forEach(b=>b.classList.toggle('active',b===button)); renderWork(); }
   if(button.id==='library-refresh')await refreshLibrary();
@@ -1772,7 +1802,7 @@ document.addEventListener('click',event=>attempt(async()=>{
   if(button.id==='refresh') {await refresh();button.textContent='Saved data reloaded';setTimeout(()=>{if(button.isConnected)button.textContent='Reload saved workspace data';},2000);}
   if(button.id==='location') { await navigator.clipboard.writeText(state.data.workspace); if($('#share-location-status'))$('#share-location-status').textContent='Copied';else notice('Folder location copied.'); }
 }));
-document.addEventListener('input',event=>{ if(event.target.id==='quick-work-search')quickMethods(); if(['quick-memory-search','record-search'].includes(event.target.id)){state.memoryQuery=event.target.value;renderMemory();} if(['quick-file-search','file-search'].includes(event.target.id)){state.fileQuery=event.target.value;renderQuickFiles();renderFiles();} if(['quick-schedule-search','schedule-search'].includes(event.target.id)){state.scheduleQuery=event.target.value;renderSchedules();} if(event.target.id==='work-search')renderWork();if(['task-time','task-every','task-custom'].includes(event.target.id))updateTaskTiming(); });
+document.addEventListener('input',event=>{ if(event.target.id==='quick-work-search')quickMethods(); if(['quick-memory-search','record-search'].includes(event.target.id)){state.memoryQuery=event.target.value;renderMemory();} if(['quick-file-search','file-search'].includes(event.target.id)){state.fileQuery=event.target.value;state.fileLimit=100;renderQuickFiles();renderFiles();} if(['quick-schedule-search','schedule-search'].includes(event.target.id)){state.scheduleQuery=event.target.value;renderSchedules();} if(event.target.id==='work-search')renderWork();if(['task-time','task-every','task-custom'].includes(event.target.id))updateTaskTiming(); });
 document.addEventListener('submit',event=>{
   event.preventDefault();
   attempt(async()=>{
@@ -1811,6 +1841,7 @@ document.addEventListener('submit',event=>{
       finally{const field=$('#api-secret');if(field)field.value='';submit.disabled=false;}
       return;
     }
+    if(form.id==='support-form'){await sendSupport(form);return;}
     if(form.id==='usage-settings-form'){await api('/api/usage/settings',{business:state.business,alerts:$('#usage-alerts').checked,budget_usd:$('#usage-budget').value});$('#usage-settings-status').textContent='Saved';$('#usage-alert-summary').textContent=usageBudgetSummary({alerts:$('#usage-alerts').checked,budget_usd:$('#usage-budget').value?Number($('#usage-budget').value):null});state.data.usage_alerts=$('#usage-alerts').checked;checkUsageAlerts();return;}
     if(form.id==='connect-form') { $('#connect-agent').disabled=true; try { await pickerSave;const route=selectedRoute(),kind=route?.agent||$('#agent-choice').value;await api('/api/connect',{kind,model:route?.model||'',effort:$('#effort-choice').value,workspace_write:true});if(kind!==state.data.connection.selected&&state.business){await api('/api/chats/new',{business:state.business});state.chat=[];state.chatMeta=null;showMessages();} const tour=state.tour||!state.data.onboarding.seen;state.connectionChecks=null;state.welcome=null;await refresh();await checkConnections(false);if(tour){state.setupStep='tour';renderConnection();}else if(state.connectionChecks?.ready)$('#connect-dialog').close();else finishSetup();notice(''); } catch(error){state.modelError=simpleSetupError(error.message);} finally {connectionChoice();} return; }
     if(form.id==='chat-form') { await submitRequest($('#request').value); return; }
@@ -1863,7 +1894,7 @@ document.addEventListener('change',event=>{
 });
 document.addEventListener('input',event=>{if(event.target.closest('#schedule-form'))state.scheduleDraft[event.target.name]=event.target.value;});
 document.addEventListener('change',event=>{if(['task-cadence','task-day','task-time','task-every','task-unit','task-custom'].includes(event.target.id))updateTaskTiming();if(event.target.id==='api-provider')apiProviderHelp();if(event.target.name==='app'&&event.target.closest('#task-edit-form')){taskModels(event.target.value).catch(()=>{});const moved=event.target.value!==state.editingTask.owner;$('#task-edit-form button[type=submit],#task-edit-form .primary').textContent=moved?'Ask AI to move':state.editingTask.editable?'Save changes':'Ask AI to adjust';$('#task-edit-note').textContent=moved?'Your AI must confirm the new schedule before pausing the old one.':state.editingTask.editable?'Changes are saved through the native scheduler.':'This app requires its native scheduling controls.';}});
-$('#detail').addEventListener('close',()=>{state.libraryDetailTicket=(state.libraryDetailTicket||0)+1;const field=$('#api-secret');if(field)field.value='';const changed=state.apiChanged,reload=state.apiReturn==='models'&&changed;state.apiReturn='';state.apiChanged=false;if(reload)loadAgentOptions(true).catch(modelFailure);if(changed)attempt(async()=>{state.library=await api('/api/library');quickMethods();if(state.view==='work')renderWork();});});
+$('#detail').addEventListener('close',()=>{state.libraryDetailTicket=(state.libraryDetailTicket||0)+1;const field=$('#api-secret');if(field)field.value='';const changed=state.apiChanged,reload=state.apiReturn==='models'&&changed;state.apiReturn='';state.apiChanged=false;if(reload)loadAgentOptions(true).catch(modelFailure);if(changed)attempt(async()=>{state.library=await cachedApi('/api/library');quickMethods();if(state.view==='work')renderWork();});});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){state.systemAlert?.close();syncNotifications().catch(()=>{});syncUpdates(true);attempt(()=>renderShell());}});
 window.addEventListener('focus',()=>{state.systemAlert?.close();syncNotifications().catch(()=>{});if(Date.now()-(state.updatePolledAt||0)>1000)syncUpdates(true);attempt(()=>renderShell(false));});
 const notificationTimer=setInterval(()=>{if(!state.closed)syncNotifications(true).catch(()=>{});},8000);
@@ -2003,10 +2034,11 @@ function renderComposerFiles(){
 }
 async function chooseContextFiles(){
   const business=state.business,root=state.data.workspace;if(!business)return;
-  const data=await api('/api/files?business='+encodeURIComponent(business));if(business!==state.business||root!==state.data.workspace)return;state.files=data.items;
+  const data=await cachedApi('/api/files?business='+encodeURIComponent(business));if(business!==state.business||root!==state.data.workspace)return;state.files=data.items;
   details('Use a workspace file',`<p class="shell-help">Choose files for this request. Your AI can read relevant material through its existing tools. A copy-to-app connection may need you to attach the files in that app.</p><input id="context-file-search" type="search" placeholder="Find a file…" aria-label="Find a workspace file"><div id="context-file-list"></div><p class="small-note">File references are added to this request. Selecting a file does not run it.</p>`);
-  const paint=()=>{const q=$('#context-file-search').value.toLowerCase();$('#context-file-list').innerHTML=data.items.filter(f=>(f.name+' '+f.path).toLowerCase().includes(q)).slice(0,60).map(f=>`<button class="search-result" data-add-context="${esc(f.path)}"><span>${esc(f.name)}</span><small>${(state.selectedFiles||[]).includes(f.path)?'Selected':size(f.bytes)}</small></button>`).join('')||empty('No matching files','Try a different name, or add a location from Files & media.');};
-  $('#context-file-search').oninput=paint;paint();$('#context-file-search').focus();
+  let limit=60;
+  const paint=()=>{const q=$('#context-file-search').value.toLowerCase(),matches=data.items.filter(f=>(f.name+' '+f.path).toLowerCase().includes(q));$('#context-file-list').innerHTML=matches.slice(0,limit).map(f=>`<button class="search-result" data-add-context="${esc(f.path)}"><span>${esc(f.name)}</span><small>${(state.selectedFiles||[]).includes(f.path)?'Selected':size(f.bytes)}</small></button>`).join('')||empty('No matching files','Try a different name, or add a location from Files & media.');if(matches.length>limit){$('#context-file-list').insertAdjacentHTML('beforeend','<button class="secondary" id="context-more">Load more files</button>');$('#context-more').onclick=()=>{limit+=60;paint();};}};
+  $('#context-file-search').oninput=()=>{limit=60;paint();};paint();$('#context-file-search').focus();
 }
 function renderChatRecovery(){
   let host=$('#chat-reconnect');if(!host){host=document.createElement('div');host.id='chat-reconnect';host.className='shell-help';$('#request-recovery').after(host);}
@@ -2024,6 +2056,35 @@ async function personalize(){
   details('Personalization',`<p class="shell-help">Choose how Aura looks and feels on this computer.</p><form id="profile-form" class="form-grid"><div class="settings-grid"><label>Appearance<select name="appearance">${['system','light','dark'].map(v=>`<option value="${v}" ${state.data.appearance===v?'selected':''}>${human(v)}</option>`).join('')}</select></label><label>Accent<select name="accent">${[['forest','Forest'],['ocean','Ocean'],['clay','Clay']].map(([v,n])=>`<option value="${v}" ${p.accent===v?'selected':''}>${n}</option>`).join('')}</select></label><label>Text size<select name="text_size">${[14,15,16,18].map(n=>`<option value="${n}" ${p.text_size===n?'selected':''}>${n===15?'Standard':n+' px'}</option>`).join('')}</select></label><label>Side panel width<input name="panel_width" type="range" min="360" max="900" step="20" value="${p.panel_width||480}"></label></div><div class="inline-actions"><button class="primary">Save preferences</button><button type="button" class="text-button" id="reset-appearance">Reset appearance</button></div></form><section class="customize-section"><h3>Make the workspace your own</h3><p>Use a dedicated personalization chat to adapt your layout, add a view, or simplify what you see.</p><button class="secondary" id="personalization-chat">Ask my AI to customize it</button><div id="custom-view-recovery"></div></section>`);
   const diagnostics=await api('/api/diagnostics');if(diagnostics.interface==='custom'&&$('#custom-view-recovery'))$('#custom-view-recovery').innerHTML='<p class="small-note">You are using a custom layout. Your custom files will be kept if you return to the default.</p><button class="text-button" id="restore-standard-view">Return to default layout</button>';
 }
+function browserPerformance(){
+  const ua=navigator.userAgent;
+  return {...clientPerformance,viewport_width:innerWidth,viewport_height:innerHeight,device_pixel_ratio:devicePixelRatio,
+    browser:/Edg\//.test(ua)?'Edge':/Chrome\//.test(ua)?'Chrome':/Firefox\//.test(ua)?'Firefox':/Safari\//.test(ua)?'Safari':'Other',
+    platform:/Windows/.test(ua)?'Windows':/Android/.test(ua)?'Android':/iPhone|iPad/.test(ua)?'iOS':/Macintosh/.test(ua)?'macOS':/Linux/.test(ua)?'Linux':'Other',
+    ...(performance.memory?{browser_heap_mib:performance.memory.usedJSHeapSize/1048576}:{})};
+}
+async function supportReport(){
+  $('#more-dialog').close();leavePage();
+  details('Report a problem or suggest a feature',`<p class="shell-help">Prepare a report for the Aura maintainer. Email delivery is being tested and is not connected yet.</p><form id="support-form" class="form-grid"><div class="settings-grid"><label>Request type<select name="kind"><option value="troubleshooting">Troubleshooting</option><option value="feature">Feature request</option></select></label><label>Title<input name="title" maxlength="160" required placeholder="A short summary"></label></div><label id="support-description-label">What happened? What did you expect?<textarea name="description" rows="5" maxlength="12000" required></textarea></label><label class="startup-choice"><input type="checkbox" name="include_environment" checked> Include technical details</label><p class="small-note">Aura version, computer specifications, AI app and connection status, library counts and recent performance. Excludes credentials, account identities, chat contents, business records and folder paths.</p><label class="startup-choice"><input type="checkbox" name="include_names"> Include skill, tool and plugin names</label><p class="small-note">Optional: these names may identify private projects. Their contents and locations are excluded.</p><details class="support-details"><summary>Review technical details</summary><pre id="support-preview" class="diagnostic-summary">Reading local details…</pre></details><label>Attachments · optional<input type="file" id="support-attachments" multiple accept="image/png,image/jpeg,image/webp,text/plain"></label><p class="small-note">Up to four images or text files, 1 MB each. Only files you choose are attached; check them for private information.</p><div id="support-attachment-list" class="small-note"></div><div class="inline-actions"><button class="primary" type="submit">Send test report</button><span id="support-status" role="status"></span></div><p class="small-note">Test reports stay on this computer. Nothing is emailed. The latest ten are retained.</p></form>`);
+  let ticket=0;
+  const preview=async()=>{const mine=++ticket,form=$('#support-form');if(!form)return;const include=form.elements.include_environment.checked,names=form.elements.include_names.checked;form.elements.include_names.disabled=!include;
+    if(!include){$('#support-preview').textContent='Technical details excluded.';return;}
+    $('#support-preview').textContent='Reading local details…';
+    try{const data=await api('/api/support/environment'+(names?'?names=1':''));if(mine===ticket&&$('#support-preview'))$('#support-preview').textContent=JSON.stringify({...data,browser_performance:browserPerformance()},null,2);}catch(e){if(mine===ticket&&$('#support-preview'))$('#support-preview').textContent='Technical details could not be read. You can send a test report without them.';}
+  };
+  $('#support-form').elements.kind.onchange=e=>{$('#support-description-label').firstChild.textContent=e.target.value==='feature'?'What would you like to do, and how would it help?':'What happened? What did you expect?';};
+  $('#support-form').elements.include_environment.onchange=preview;$('#support-form').elements.include_names.onchange=preview;
+  $('#support-attachments').onchange=e=>{$('#support-attachment-list').textContent=[...e.target.files].map(f=>f.name+' · '+size(f.size)).join(', ');};
+  await preview();
+}
+async function sendSupport(form){
+  const button=form.querySelector('[type=submit]'),status=$('#support-status');button.disabled=true;status.textContent='Preparing test report…';
+  try{const attachments=[];for(const file of $('#support-attachments').files){if(attachments.length>=4||file.size>1048576)throw Error('Choose up to four files, 1 MB each.');if(!['image/png','image/jpeg','image/webp','text/plain'].includes(file.type))throw Error('Choose PNG, JPEG, WebP or plain text files.');const raw=new Uint8Array(await file.arrayBuffer());let binary='';for(let i=0;i<raw.length;i+=32768)binary+=String.fromCharCode(...raw.subarray(i,i+32768));attachments.push({name:file.name,type:file.type,data:btoa(binary)});}
+    const include=form.elements.include_environment.checked;
+    const result=await api('/api/support/test',{kind:form.elements.kind.value,title:form.elements.title.value,description:form.elements.description.value,include_environment:include,include_names:include&&form.elements.include_names.checked,browser_performance:include?browserPerformance():{},attachments});
+    status.textContent=result.message;
+  }catch(error){status.textContent=error.message;}finally{if(button.isConnected)button.disabled=false;}
+}
 async function shellHelp(){
   $('#more-dialog').close();leavePage();
   details('Help',`<div class="help-section"><h3>AI connection</h3><p>Use AI connections in Settings to connect an app. Each conversation stays with the app that created it.</p><button class="secondary" id="help-connections">Open AI connections</button></div><div class="help-section"><h3>Saved work</h3><p>Your workspace files stay on this computer. Cloud AI requests use the app and provider you choose.</p></div><details class="support-details"><summary>Troubleshooting &amp; diagnostics</summary><p class="small-note">Copy a technical summary for support. It excludes conversations, credentials, workspace names and paths.</p><button class="secondary" id="copy-diagnostics">Copy diagnostic summary</button><pre id="diagnostic-summary" class="diagnostic-summary" hidden></pre></details>`);
@@ -2034,7 +2095,7 @@ async function openShellSearch(){
   if(!state.business)return;shellSearchData=null;const root=state.data.workspace,business=state.business,ticket=++shellSearchTicket;
   if(!$('#search-dialog').open)$('#search-dialog').showModal();$('#shell-search').value='';$('#shell-search').focus();$('#shell-search-results').innerHTML='';$('#shell-search-status').textContent='Finding your workspace items…';
   try{
-    const [chats,files,library]=await Promise.all([api('/api/chats?business='+encodeURIComponent(business)),api('/api/files?business='+encodeURIComponent(business)),api('/api/library')]);
+    const [chats,files,library]=await Promise.all([api('/api/chats?business='+encodeURIComponent(business)),cachedApi('/api/files?business='+encodeURIComponent(business)),cachedApi('/api/library')]);
     if(ticket!==shellSearchTicket||root!==state.data.workspace||business!==state.business)return;
     shellSearchData={chats:chats.items,files:files.items,library,records:state.data.records};state.files=files.items;paintShellSearch();
   }catch(e){$('#shell-search-status').textContent=e.message;}
@@ -2060,7 +2121,7 @@ document.addEventListener('click',event=>attempt(async()=>{
   const b=event.target.closest('button');if(!b)return;
   if(b.id==='sidebar-collapse'){if(matchMedia('(max-width:760px)').matches){closeMobileSidebar();return;}const p=await api('/api/profile',{sidebar_collapsed:!state.profile?.sidebar_collapsed});state.data.profile=p;applyProfile(p);}
   if(b.id==='sidebar-open')openSidebar();if(b.id==='sidebar-scrim')closeMobileSidebar();
-  if(b.id==='profile-open')$('#more-dialog').showModal();if(b.id==='personalize-menu')await personalize();if(b.id==='account-settings')await accountProfile();if(b.id==='help-about')await shellHelp();
+  if(b.id==='profile-open')$('#more-dialog').showModal();if(b.id==='personalize-menu')await personalize();if(b.id==='account-settings')await accountProfile();if(b.id==='help-about')await shellHelp();if(b.id==='support-report')await supportReport();
   if(b.id==='search-open')await openShellSearch();
   if(b.id==='sidebar-more-chats'){state.chatLimit=(state.chatLimit||20)+30;await renderShell();}
   if(b.dataset.shellAction==='sharing'){await openSharing();closeMobileSidebar();}
@@ -2075,7 +2136,7 @@ document.addEventListener('click',event=>attempt(async()=>{
   if(b.id==='chat-checked'){await api('/api/chats/recover',{business:state.business,id:state.chatMeta.id});state.needsCheck=false;await hydrateConversation();}
   if(b.id==='chat-reconnect-now'){state.connectionInterrupted=false;await hydrateConversation();}
   if(b.id==='restore-standard-view'){await api('/api/interface/reset',{});location.reload();}
-  if(b.dataset.searchFile||b.dataset.replyFile){$('#search-dialog').close();let ref=b.dataset.searchFile||b.dataset.replyFile;if(b.dataset.replyFile){try{ref=decodeURIComponent(ref);}catch{}}const result=await api('/api/files?business='+encodeURIComponent(state.business));state.files=result.items;const normalize=p=>{let value=String(p||'').replaceAll('\\','/').replace(/^file:\/\/\/?/i,'').replace(/#L\d+(?:-L?\d+)?$/,'');return /^[a-z]:\//i.test(value)?value.toLowerCase():value;};const f=state.files.find(f=>[f.path,f.local_path,state.data.workspace+'/'+f.path].some(p=>normalize(p)===normalize(ref)));if(f)await fileDetails(f.path);else notice('This file is not in the selected workspace or linked locations. Open Files & media to locate it.',true);}
+  if(b.dataset.searchFile||b.dataset.replyFile){$('#search-dialog').close();let ref=b.dataset.searchFile||b.dataset.replyFile;if(b.dataset.replyFile){try{ref=decodeURIComponent(ref);}catch{}}const result=await cachedApi('/api/files?business='+encodeURIComponent(state.business));state.files=result.items;const normalize=p=>{let value=String(p||'').replaceAll('\\','/').replace(/^file:\/\/\/?/i,'').replace(/#L\d+(?:-L?\d+)?$/,'');return /^[a-z]:\//i.test(value)?value.toLowerCase():value;};const f=state.files.find(f=>[f.path,f.local_path,state.data.workspace+'/'+f.path].some(p=>normalize(p)===normalize(ref)));if(f)await fileDetails(f.path);else notice('This file is not in the selected workspace or linked locations. Open Files & media to locate it.',true);}
   if(b.dataset.searchRecord){$('#search-dialog').close();recordDetails(b.dataset.searchRecord);}
   if(b.dataset.searchLibrary){$('#search-dialog').close();await openLibrary(b.dataset.searchLibrary);}
   if(b.dataset.searchSection){const q=$('#shell-search').value;$('#search-dialog').close();if(b.dataset.searchSection==='chats')await showChats();else{state.view=b.dataset.searchSection;await render();const f=$(({files:'#file-search',business:'#record-search',work:'#work-search'})[state.view]);if(f){f.value=q;f.dispatchEvent(new Event('input',{bubbles:true}));}recordShellRoute();}}

@@ -200,6 +200,46 @@ time.sleep(30)
             assert any(r['title'] == 'Renamed example' for r in snapshot['records'])
             assert any(r['ref'] == ref and r['data']['name'] == 'Create and inspect a useful page' for r in snapshot['records'])
             assert not any(r['ref'] == ref for r in call('/api/state?business=other-business')['records'])
+            # Unchanged refreshes reuse records, while external edits still invalidate them.
+            revision=snapshot['records_revision']
+            unchanged=call('/api/state?business='+bid+'&revision='+revision)
+            assert unchanged['records_unchanged'] and unchanged['records'] is None
+            business_file=workspace_root()/'instances'/bid/'context/business.json'
+            saved=business_file.read_bytes();external=json.loads(saved);external['name']='External application edit'
+            business_file.write_text(json.dumps(external),encoding='utf-8')
+            changed=call('/api/state?business='+bid+'&revision='+revision)
+            assert not changed['records_unchanged'] and changed['records_revision']!=revision
+            assert any(r['title']=='External application edit' for r in changed['records'])
+            business_file.write_bytes(saved)
+            # Automatic support fields are allowlisted. Only explicitly chosen attachments carry content.
+            with patch('workspace_support.machine',return_value={'os':'Fixture','logical_cpus':8}),patch.object(app,'library_items',return_value={'items':[{'kind':'Skill','title':'Private fixture skill','version':'1.2.3'}]}),patch.object(app.connections,'rows',return_value={'items':[{'id':'custom-PRIVATE_ENV_NAME','name':'A private tool','status':'This session','key':'SECRET_FIXTURE','env':'PRIVATE_ENV_NAME','url':'private-host'}]}):
+                environment=call('/api/support/environment')
+                assert environment['library_counts']['Skill']==1 and 'library_names' not in environment
+                assert str(base) not in json.dumps(environment) and 'External application edit' not in json.dumps(environment)
+                assert all(v not in json.dumps(environment) for v in ('PRIVATE_ENV_NAME','SECRET_FIXTURE','private-host','A private tool'))
+                named=call('/api/support/environment?names=1')
+                assert named['library_names'][0]['title']=='Private fixture skill'
+                result=call('/api/support/test',{'kind':'troubleshooting','title':'Fixture report','description':'Steps supplied by the user','include_environment':True,'browser_performance':{'requests':3,'secret':'do not retain','url':'private-url'}})
+                assert result['sent'] is False and result['status']=='test_prepared'
+                report=json.loads((app.settings_file.parent/'support-drafts'/(result['id']+'.json')).read_text(encoding='utf-8'))
+                assert report['browser_performance']=={'requests':3} and report['environment'] and not report['attachments']
+                assert 'private-url' not in json.dumps(report) and 'do not retain' not in json.dumps(report)
+                call('/api/support/test',{'kind':'feature','title':'A feature','description':'Why it helps','include_environment':False})
+                call('/api/support/test',{'kind':'feature','title':'','description':'Missing title'},expect=400)
+                call('/api/support/test',{'kind':'feature','title':'Unsafe attachment','description':'Example','attachments':[{'name':'../secret.txt','type':'text/plain','data':'eA=='}]},expect=400)
+            assert len(app.performance.recent)<=128 and app.performance.snapshot()['operations']
+            from workspace_support import Performance,browser_metrics
+            metrics=Performance()
+            for _ in range(200):metrics.record('GET','/api/private-user-path',200,1.5,120)
+            assert len(metrics.recent)==128 and 'private-user-path' not in json.dumps(metrics.snapshot())
+            assert browser_metrics({'browser':['invalid'],'url':'secret'})=={}
+            from concurrent.futures import ThreadPoolExecutor
+            with ThreadPoolExecutor(max_workers=4) as pool:
+                list(pool.map(lambda i:call('/api/support/test',{'kind':'feature','title':'Retention fixture '+str(i),'description':'Synthetic test only.','include_environment':False,'browser_performance':{'requests':99}}),range(11)))
+            drafts=list((app.settings_file.parent/'support-drafts').glob('*.json'))
+            assert len(drafts)==10 and all(not json.loads(p.read_text(encoding='utf-8'))['browser_performance'] for p in drafts)
+
+
             call('/api/save', {'business': 'other-business', 'kind': 'goal', 'ref': ref, 'name': 'Overwrite'}, expect=400)
 
             note = workspace_root() / 'attachments' / bid / 'hello.txt'
@@ -218,7 +258,17 @@ time.sleep(30)
             (linked_folder / 'advert.txt').write_text('Original brand material.', encoding='utf-8')
             (linked_folder / '.env').write_text('PRIVATE_FIXTURE', encoding='utf-8')
             call('/api/locations', {'business':bid, 'path':str(linked_folder), 'name':'Brand ads'})
+            # Discovery/search must include entries beyond the former 1,000-file cutoff.
+            for i in range(1100):(linked_folder/('bulk-%04d.txt'%i)).write_text('Fixture',encoding='utf-8')
             linked = call('/api/files?business=' + bid)
+            assert len(linked['items'])>1100 and not linked['limited']
+            found=call('/api/files?business='+bid+'&limit=20&q=bulk-1099')
+            assert found['total']==1 and found['items'][0]['name']=='bulk-1099.txt'
+            page=call('/api/files?business='+bid+'&limit=20&offset=20')
+            assert len(page['items'])==20 and page['next_offset']==40
+            late=linked_folder/'external-late.txt';late.write_text('Native app saved this.',encoding='utf-8')
+            assert any(f['name']=='external-late.txt' for f in call('/api/files?business='+bid+'&refresh=1')['items'])
+
             advert = next(f for f in linked['items'] if f['name'] == 'advert.txt')
             assert advert['local_path'] == str(linked_folder / 'advert.txt') and advert['location_name'] == 'Brand ads'
             assert not any(f['name'] == '.env' for f in linked['items'])

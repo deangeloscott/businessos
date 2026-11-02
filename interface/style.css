@@ -262,3 +262,6 @@ footer .footer-actions{flex:none;align-items:center}footer #usage-open{font-size
 :root[data-theme=dark] dialog::backdrop{background:rgb(0 0 0 / 34%);backdrop-filter:blur(3px)}
 @media(max-width:760px){.chat-heading{gap:8px}#shell-brand{font-size:13px}footer #chat-status{font-size:9px}footer #usage-open{font-size:9px!important}.chat-model-star{width:42px;min-height:42px}.chat-stage>footer{gap:10px}}
 @media(prefers-reduced-transparency:reduce){:root[data-theme] dialog::backdrop{backdrop-filter:none}}
+
+/* Local support preparation shares the settings form and modal behavior. */
+#support-form textarea{resize:vertical;min-height:120px}#support-form .small-note{margin:-6px 0 2px;line-height:1.6}#support-form .diagnostic-summary{max-height:260px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere}#support-status{max-width:32rem;font-size:12px;line-height:1.6}#file-more{margin:12px 0;align-self:flex-start}

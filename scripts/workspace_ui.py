@@ -43,9 +43,10 @@ import workspace_updates
 import workspace_chats
 import workspace_sharing
 import workspace_exchange
+import workspace_support
 from configure_workspace import configure
 from workspace_execution import Execution, Stopped
-from workspace_connections import Connections
+from workspace_connections import Connections, PRESETS
 
 STATIC = PRODUCT_ROOT / 'interface'
 MAX_BODY = 96 * 1024
@@ -155,7 +156,7 @@ def asset_path(bid, value):
     return path
 
 
-def files(bid, locations=None):
+def files(bid, locations=None, limit=None):
     root = workspace_root().resolve()
     out, seen, seen_paths, missing = [], set(), set(), []
     rows, _ = records(bid)
@@ -168,7 +169,7 @@ def files(bid, locations=None):
             continue
         if path.is_dir():
             virtual = {'id':row['ref'],'path':str(path),'name':row['title'],'kind':'folder'}
-            found = workspace_locations.entries([virtual],private_path,MEDIA)
+            found = workspace_locations.entries([virtual],private_path,MEDIA,limit)
             for item in found['items']:
                 item['path'] = item['path'].replace('linked/','asset-dir/',1)
                 item['asset'] = True
@@ -191,7 +192,7 @@ def files(bid, locations=None):
                        not (Path(directory) / d).is_symlink()]
             for name in sorted(names):
                 candidates.append((Path(directory) / name).relative_to(root).as_posix())
-            if len(candidates) >= 1200:
+            if limit is not None and len(candidates) >= limit+200:
                 break
     for ref in candidates:
         if not isinstance(ref, str) or ref in seen:
@@ -207,11 +208,11 @@ def files(bid, locations=None):
         seen.add(ref)
         out.append({'path': ref, 'name': path.name, 'bytes': path.stat().st_size,
                     'modified': path.stat().st_mtime, 'media': path.suffix.lower() in MEDIA, 'asset':ref in asset_refs})
-        if len(out) >= 1000:
+        if limit is not None and len(out) >= limit:
             break
-    linked = workspace_locations.entries(locations or [], private_path, MEDIA)
+    linked = workspace_locations.entries(locations or [], private_path, MEDIA,limit)
     return {'items': out + [f for f in linked['items'] if os.path.normcase(f['local_path']) not in seen_paths], 'locations': linked['locations'], 'missing_assets':missing,
-            'limited': len(out) >= 1000 or linked['limited']}
+            'limited': (limit is not None and len(out) >= limit) or linked['limited']}
 
 
 def library():
@@ -411,6 +412,9 @@ class Workspace:
         self.library_refresh_lock = threading.Lock()
         self.library_checked = 0
         self.verified_business = None
+        self.read_cache = {}
+        self.inventory_lock = threading.Lock()
+        self.performance = workspace_support.Performance()
         self.option_cache = {}
         self.usage_accounts = {}
         self.usage_refresh = {'reporting':[], 'checked':0}
@@ -544,6 +548,7 @@ class Workspace:
         else:
             fresh = Workspace(self.configured_agent, self.static, self.settings_file.parent / (identity + '.json'))
         fresh.jobs, fresh.executions, fresh.workspace_views = self.jobs, self.executions, self.workspace_views
+        fresh.performance=self.performance
         fresh.workspace_path = str(target.resolve())
         fresh.launch_extra = list(getattr(self, 'launch_extra', []))
         if '--interface-dir' in fresh.launch_extra:
@@ -1276,13 +1281,64 @@ class Workspace:
         return {'items':workspace_library.organize(self.catalog+workspace_library.merge(rows)),'notes':list(dict.fromkeys(notes)),
                 'checked':self.library_checked,'refreshing':self.library_refresh_lock.locked()}
 
-    def state(self, bid=None):
+    def cached_read(self,key,read,seconds=5,force=False):
+        now=time.monotonic();prior=self.read_cache.get(key)
+        if not force and prior and now-prior[0]<seconds:return prior[1]
+        value=read();self.read_cache[key]=(time.monotonic(),value)
+        return value
+
+    def file_inventory(self,bid,query):
+        with self.lock:owner=copy.copy(self);locations=copy.deepcopy(self.preferences['file_locations'].get(bid,[]))
+        with workspace_scope(owner.workspace_path),owner.inventory_lock:
+            value=owner.cached_read(('files',bid,json.dumps(locations,sort_keys=True)),lambda:files(bid,locations),force=query.get('refresh')=='1')
+            value={**value,'workspace':owner.workspace_path}
+            if 'limit' in query:
+                limit=max(1,min(500,int(query['limit'])));offset=max(0,int(query.get('offset',0)));text=query.get('q','').casefold()
+                items=[r for r in value['items'] if text in (r['name']+' '+r['path']+' '+r.get('location_name','')).casefold()]
+                value.update(items=items[offset:offset+limit],total=len(items),offset=offset,next_offset=offset+limit if offset+limit<len(items) else None)
+            return value
+
+    def record_snapshot(self,bid):
+        base=workspace_root()/'instances'/bid
+        signature=[]
+        for directory,dirs,names in os.walk(base,followlinks=False):
+            dirs[:]=sorted(d for d in dirs if d!='history' and not (Path(directory)/d).is_symlink())
+            for name in sorted(names):
+                path=Path(directory)/name
+                if path.suffix not in {'.json','.jsonl'}:continue
+                try:
+                    stat=path.lstat();signature.append((path.relative_to(base).as_posix(),stat.st_mtime_ns,stat.st_ctime_ns,stat.st_size))
+                except OSError:signature.append((path.relative_to(base).as_posix(),'unavailable'))
+        revision=hashlib.sha256(json.dumps(signature).encode()).hexdigest()
+        key=('records',bid);prior=self.read_cache.get(key)
+        if not prior or prior[0]!=revision:self.read_cache[key]=(revision,records(bid))
+        return revision,self.read_cache[key][1]
+
+    def support_environment(self,names=False):
+        with self.lock:
+            owner=copy.copy(self)
+            apps=[{'app':a['id'],'installed':bool(a.get('argv')),'connected':a['id'] in self.preferences['connected_apps']} for a in installed_agents()]
+            services=[{'service':r['id'] if r['id'] in {p[0] for p in PRESETS} else 'custom connection','status':r['status'],**({'name':self.connections.redact(r['name'])[:160]} if names else {})} for r in self.connections.rows()['items']]
+            running=len(self.running_jobs());chats=len(self.preferences['chats'])
+            versions={kind:str(value['version']) for kind,value in self.option_cache.items() if kind in NATIVE_AGENTS and isinstance(value,dict) and re.fullmatch(r'[0-9][0-9A-Za-z.+-]{0,60}',str(value.get('version','')))}
+        with workspace_scope(owner.workspace_path):
+            catalog=owner.cached_read(('support-library',),lambda:owner.library_items()['items'],seconds=30)
+            kinds={kind:sum(r.get('kind')==kind for r in catalog) for kind in ('Workflow','Recipe','Skill','Tool','Plugin')}
+            result={'aura':{'version':os_version(),'selected_app':owner.connection_kind or 'not selected','configured_command_available':bool(owner.configured_agent),'interface':'standard' if owner.static==STATIC else 'custom','chats':chats,'working_requests':running},
+                    'computer':owner.cached_read(('support-machine',),lambda:workspace_support.machine(owner.workspace_path),seconds=30),'apps':apps,'reported_app_versions':versions,'connections':services,
+                    'library_counts':kinds,'performance':self.performance.snapshot(),'notes':['Only Aura-related applications and discovered capabilities are included. Unreported versions and hardware fields remain unavailable.'],
+                    'excluded':['credentials','account identities','environment variables','chat contents','business records','workspace names and paths','raw logs']}
+            if names:result['library_names']=[{'kind':r.get('kind'),'title':owner.connections.redact(str(r.get('title','')))[:160],**({'version':str(r['version'])} if re.fullmatch(r'[0-9][0-9A-Za-z.+-]{0,60}',str(r.get('version',''))) else {})} for r in catalog]
+            return result
+
+    def state(self, bid=None, revision=None):
         self.load_portable()
         directory = business_directory()
         if not bid and len(directory) == 1:
             bid = directory[0]['id']
-        rows, diagnostics = records(selected(bid)) if bid else ([], [])
-        return {'businesses': directory, 'business_id': bid, 'records': rows,
+        current_revision,(rows,diagnostics)=self.record_snapshot(selected(bid)) if bid else ('',([],[]))
+        return {'businesses': directory, 'business_id': bid, 'records': None if revision==current_revision else rows,
+                'records_revision':current_revision,'records_unchanged':revision==current_revision,
                 'diagnostics': diagnostics, 'workspace': str(workspace_root()),
                 'product': str(PRODUCT_ROOT), 'version': os_version(), 'refreshed': time.time(),
                 'workspace_note': self.workspace_note,
@@ -1733,6 +1789,8 @@ def handler_for(app):
 
         def send(self, status, data, content_type='application/json; charset=utf-8', headers=None):
             body = json.dumps(data, ensure_ascii=False).encode() if content_type.startswith('application/json') else data
+            if urlsplit(self.path).path.startswith('/api/'):
+                app.performance.record(self.command,urlsplit(self.path).path,status,1000*(time.monotonic()-getattr(self,'request_started',time.monotonic())),len(body))
             self.send_response(status)
             self.send_header('Content-Type', content_type)
             self.send_header('Content-Length', str(len(body)))
@@ -1759,7 +1817,8 @@ def handler_for(app):
                 raise ValueError('The workspace changed in another window. Refresh before making changes.')
 
         def do_GET(self):
-            if urlsplit(self.path).path in {'/api/state','/api/files','/api/file','/api/media','/api/sharing','/api/chat','/api/chats','/api/notifications'}:
+            self.request_started=time.monotonic()
+            if urlsplit(self.path).path in {'/api/state','/api/file','/api/media','/api/sharing','/api/chat','/api/chats','/api/notifications'}:
                 with app.lock:self.read_GET()
             else:self.read_GET()
 
@@ -1776,11 +1835,13 @@ def handler_for(app):
                     path = app.static / route[1:]
                     self.send(200, path.read_bytes(), 'text/javascript; charset=utf-8' if path.suffix == '.js' else 'text/css; charset=utf-8')
                 elif route == '/api/state':
-                    current = app.state(query.get('business'))
+                    current = app.state(query.get('business'),query.get('revision'))
                     app.update_business = current.get('business_id') or ''
                     self.send(200, current)
                 elif route == '/api/profile':
                     self.send(200,app.profile())
+                elif route == '/api/support/environment':
+                    self.send(200,app.support_environment(query.get('names')=='1'))
                 elif route == '/api/diagnostics':
                     self.send(200,app.diagnostics())
                 elif route == '/api/notifications':
@@ -1837,7 +1898,7 @@ def handler_for(app):
                 elif route == '/api/conversation':
                     self.send(200, app.conversation(selected(query.get('business')),query.get('chat_id'),query.get('refresh')=='1'))
                 elif route == '/api/library':
-                    result=app.library_items(query.get('discover')=='1')
+                    result=app.cached_read(('library',),lambda:app.library_items(query.get('discover')=='1'),force=query.get('discover')=='1' or query.get('refresh')=='1')
                     self.send(200, result if query.get('details')=='1' else result['items'])
                 elif route == '/api/library/item':
                     item=workspace_library.find(app.library_items()['items'],query.get('key'))
@@ -1872,7 +1933,7 @@ def handler_for(app):
                     self.send(200, app.check_connections(selected(query.get('business'))))
                 elif route == '/api/files':
                     bid = selected(query.get('business'))
-                    self.send(200, files(bid, app.preferences['file_locations'].get(bid, [])))
+                    self.send(200,app.file_inventory(bid,query))
                 elif route == '/api/document':
                     path = (PRODUCT_ROOT / query.get('path', '')).resolve()
                     allowed = any(entry.get('path') and path == (PRODUCT_ROOT / entry['path']).resolve() for entry in app.catalog)
@@ -1910,23 +1971,31 @@ def handler_for(app):
                 self.send(400, {'error': app.connections.redact(str(exc))})
 
         def do_POST(self):
+            self.request_started=time.monotonic()
             try:
                 self.guard()
                 if self.headers.get_content_type() != 'application/json':
                     raise ValueError('Send JSON from the local view.')
                 length = int(self.headers.get('Content-Length', '0'))
-                if length <= 0 or length > MAX_BODY:
+                if length <= 0 or length > (6*1024*1024 if urlsplit(self.path).path=='/api/support/test' else MAX_BODY):
                     raise ValueError('Request is empty or too large.')
                 data = json.loads(self.rfile.read(length))
                 if not isinstance(data, dict):
                     raise ValueError('Expected an object.')
                 route = urlsplit(self.path).path
+                if route == '/api/support/test':
+                    with app.lock:owner=copy.copy(app)
+                    environment=owner.support_environment(data.get('include_names') is True) if data.get('include_environment') is True else None
+                    self.send(200,workspace_support.prepare(data,environment,owner.settings_file.parent/'support-drafts'))
+                    return
                 if route == '/api/locations/browse':
                     if data.get('kind') not in {'folder', 'file'}:
                         raise ValueError('Choose a file or folder.')
                     self.send(200, {'path': workspace_locations.choose(data['kind'])})
                     return
                 with app.lock:
+                    for key in list(app.read_cache):
+                        if key[0] not in {'records','support-machine'}:app.read_cache.pop(key,None)
                     if getattr(app, 'update_restart', False):
                         raise ValueError('AURA is restarting. Your workspace will reopen in a moment.')
                     if app.organization_job and app.organization_job['status']=='working' and route not in {'/api/organization/stop','/api/notifications','/api/usage/settings','/api/updates'}:
