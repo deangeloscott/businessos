@@ -304,11 +304,12 @@ function renderNotifications() {
 async function syncNotifications(deliver=false) {
   if(state.closed)return;
   if(!state.business||state.notificationLoading)return;
-  state.notificationLoading=true;const business=state.business;
+  if(document.hidden&&!(deliver&&state.inbox?.enabled&&window.Notification?.permission==='granted'))return;
+  state.notificationLoading=true;const business=state.business,workspace=state.data?.workspace;
   try {
     const foreground=!document.hidden&&document.hasFocus();
     const inbox=await api('/api/notifications?business='+encodeURIComponent(business)+(foreground?'&foreground=1':''));
-    if(state.business!==business)return;
+    if(state.business!==business||state.data?.workspace!==workspace||(inbox.workspace&&inbox.workspace!==workspace))return;
     if(state.inbox?.unread!==undefined&&inbox.unread>state.inbox.unread)$('#notification-announcement').textContent=`${inbox.unread} unread notification${inbox.unread===1?'':'s'}.`;
     state.inbox=inbox;renderNotifications();
     if(deliver&&!foreground&&inbox.enabled&&window.Notification?.permission==='granted') {
@@ -456,14 +457,18 @@ function usageCacheCompact(chats) {
     return `<div class="usage-slim-row"><strong title="${esc(v.info.title||'Chat')}">${esc(v.info.title||'Chat')}</strong><span class="usage-compact-actions"><span>${esc(v.usage_note||cache+' · '+(context?Math.round(100*context.tokens/context.window)+'% context':'Context —'))}</span>${usageKeepWarm(v)}</span></div>`;
   }).join(''):'<p class="usage-no-data">No chats yet.</p>';
 }
+function usagePartial(report,metric){
+  const t=report?.totals||{};
+  return metric==='Cost'?report?.period!=='chat'&&report?.missing_costs>0&&Number.isFinite(t.cost_usd):metric==='Tokens'&&report?.missing_token_reports>0&&(Number.isFinite(t.input_tokens)||Number.isFinite(t.output_tokens));
+}
 function usagePeriodTable(periods) {
   const keys=['chat','today','month'],metrics=[['Tokens',t=>Number.isFinite(t.input_tokens)||Number.isFinite(t.output_tokens)?usageShort((t.input_tokens||0)+(t.output_tokens||0)):'—'],['Cost',t=>Number.isFinite(t.cost_usd)?(t.cost_kind==='est'?'Est. ':'')+money(t.cost_usd):'—'],['Input / output',t=>Number.isFinite(t.input_tokens)||Number.isFinite(t.output_tokens)?usageShort(t.input_tokens)+' / '+usageShort(t.output_tokens):'—'],['Cache read / write',t=>Number.isFinite(t.cached_input_tokens)||Number.isFinite(t.cache_write_tokens)?usageShort(t.cached_input_tokens)+' / '+usageShort(t.cache_write_tokens):'—']];
-  return `<table class="usage-period-table"><thead><tr><th></th><th>Chat</th><th>Today</th><th>Month</th></tr></thead><tbody>${metrics.map(([name,value])=>`<tr><th scope="row">${name}</th>${keys.map(k=>`<td>${esc(value(periods[k]?.totals||{}))}</td>`).join('')}</tr>`).join('')}</tbody></table><p class="usage-scope-note">Chat: native totals. Today/month: AURA activity. Est. token costs aren’t extra subscription charges.</p>`;
+  return `<table class="usage-period-table"><thead><tr><th></th><th>Chat</th><th>Today</th><th>Month</th></tr></thead><tbody>${metrics.map(([name,value])=>`<tr><th scope="row">${name}</th>${keys.map(k=>`<td>${esc((usagePartial(periods[k],name)?'Partial ':'')+value(periods[k]?.totals||{}))}</td>`).join('')}</tr>`).join('')}</tbody></table><p class="usage-scope-note">Chat: reported totals${periods.chat?.in_progress?' including the current request':''}. Today/month: finished AURA requests. Missing reports stay unknown; partial totals include only reported values. Est. costs aren’t extra subscription charges.</p>`;
 }
 function usagePeriodCompact(periods) {
   return ['chat','today','month'].map(k=>{
     const t=periods[k]?.totals||{},tokens=Number.isFinite(t.input_tokens)||Number.isFinite(t.output_tokens)?usageShort((t.input_tokens||0)+(t.output_tokens||0)):'—';
-    return `<span><small>${{chat:'Chat',today:'Today',month:'Month'}[k]}</small><strong>${tokens}</strong>${Number.isFinite(t.cost_usd)?`<small>${t.cost_kind==='est'?'Est. ':''}${money(t.cost_usd)}</small>`:''}</span>`;
+    return `<span><small>${{chat:'Chat',today:'Today',month:'Month'}[k]}</small><strong>${usagePartial(periods[k],'Tokens')?'Partial ':''}${tokens}</strong>${Number.isFinite(t.cost_usd)?`<small>${usagePartial(periods[k],'Cost')?'Partial ':''}${t.cost_kind==='est'?'Est. ':''}${money(t.cost_usd)}</small>`:''}</span>`;
   }).join('');
 }
 function usageBudgetSummary(settings) {return (settings.alerts?'Alerts on':'Alerts off')+' · '+(Number.isFinite(settings.budget_usd)?money(settings.budget_usd)+'/month':'No budget');}
@@ -476,7 +481,9 @@ function renderUsage(data) {
   $('#detail-content').querySelectorAll('[data-usage-disclosure]').forEach(d=>{d.open=saved[d.dataset.usageDisclosure]??d.hasAttribute('open');if(d.dataset.usageDisclosure===focused)d.querySelector('summary').focus({preventScroll:true});});
   $('#usage-cache').innerHTML=usageCacheTable(data.chats||[]);
   $('#usage-cache-compact').innerHTML=usageCacheCompact(data.chats||[]);
-  const periods=data.periods||{[data.period]:data};
+  if(data.hidden_running_count)$('#usage-cache').insertAdjacentHTML('beforeend',`<p class="small-note">${data.hidden_running_count} more chats are working. This view shows up to five; all requests are tracked.</p>`);
+  const periods=data.periods||{[data.period]:data};state.usageHadRunning=Boolean(data.running_count);
+  if($('#usage-live-status'))$('#usage-live-status').textContent=data.refreshing?'Refreshing account reports…':periods.chat?.in_progress?'Current request · reported usage':'';
   $('#usage-panel').innerHTML=usagePeriodTable(periods);
   $('#usage-token-compact').innerHTML=usagePeriodCompact(periods);
   $('#usage-alert-summary').textContent=usageBudgetSummary(data.settings||{});
@@ -484,26 +491,28 @@ function renderUsage(data) {
 }
 
 async function loadUsage(refresh=false) {
-  const business=state.business, period='today';
-  if(!business)return;
-  const button=$('#usage-refresh');if(button)button.disabled=true;
+  const business=state.business,period='today',workspace=state.data?.workspace,chat=state.chatMeta?.id,panel=state.usagePanelTicket;
+  if(!business||(!refresh&&state.usageCachedLoading))return;
+  if(!refresh)state.usageCachedLoading=true;
+  const button=$('#usage-refresh');if(button&&refresh)button.disabled=true;
   try {
     const data=await api(`/api/usage?business=${encodeURIComponent(business)}&${usageQuery(period)}${refresh?'&refresh=1':''}`);
-    if(state.business!==business||data.workspace!==state.data.workspace||!$('#usage-panel'))return;
+    if(state.business!==business||workspace!==state.data.workspace||chat!==state.chatMeta?.id||panel!==state.usagePanelTicket||data.workspace!==workspace||!$('#usage-panel')||(data.generated_at&&data.generated_at<(state.usageGeneratedAt||0)))return;
+    state.usageGeneratedAt=data.generated_at||0;state.usageRefreshing=data.refreshing;
     renderUsage(data);
     if($('#usage-budget')&&!state.usageSettingsLoaded){$('#usage-budget').value=data.settings.budget_usd??'';$('#usage-alerts').checked=data.settings.alerts;state.usageSettingsLoaded=true;}
   } catch(error){
-    if($('#usage-panel')&&state.business===business){
+    if($('#usage-panel')&&state.business===business&&workspace===state.data.workspace&&chat===state.chatMeta?.id&&panel===state.usagePanelTicket){
       let message=$('#usage-refresh-error');
       if(!message){message=document.createElement('p');message.id='usage-refresh-error';message.className='small-note';$('#usage-panel').append(message);}
       message.textContent='Usage could not be refreshed. Try again.';
     }
   }
-  finally{if(button?.isConnected)button.disabled=false;}
+  finally{if(!refresh)state.usageCachedLoading=false;if(refresh&&button?.isConnected)button.disabled=false;}
 }
 async function openUsage() {
-  state.usageSettingsLoaded=false;
-  details('Usage & spend',`<div class="usage-toolbar"><span class="small-note">Your connected accounts</span><button class="text-button" id="usage-refresh">Refresh</button></div><div id="usage-accounts" aria-live="polite">Reading usage…</div><section class="usage-category usage-collapsible"><details data-usage-disclosure="cache" open><summary>Cache &amp; context</summary><div id="usage-cache"></div></details><div class="usage-closed" id="usage-cache-compact"></div></section><section class="usage-category usage-collapsible"><details data-usage-disclosure="tokens"><summary>Tokens &amp; cost</summary><div id="usage-panel" aria-live="polite"></div></details><div class="usage-closed usage-token-compact" id="usage-token-compact"></div></section><details class="usage-section usage-budget-section" data-usage-disclosure="budget"><summary>Alerts &amp; budget <small id="usage-alert-summary"></small></summary><form id="usage-settings-form" class="usage-budget-form"><label class="startup-choice"><input type="checkbox" id="usage-alerts"> Quiet limit alerts</label><label class="usage-budget-field">Monthly API budget · USD<input id="usage-budget" type="number" min="0.01" step="0.01" placeholder="Optional"></label><button class="secondary">Save</button><span id="usage-settings-status" role="status"></span><p class="usage-scope-note">API costs recorded in AURA; estimates may apply.</p></form></details>`);
+  state.usagePanelTicket=(state.usagePanelTicket||0)+1;state.usageGeneratedAt=0;state.usageRefreshing=false;state.usageSettingsLoaded=false;
+  details('Usage & spend',`<div class="usage-toolbar"><span class="small-note">Your connected accounts</span><span id="usage-live-status" class="small-note" role="status"></span><button class="text-button" id="usage-refresh">Refresh</button></div><div id="usage-accounts" aria-live="polite">Reading usage…</div><section class="usage-category usage-collapsible"><details data-usage-disclosure="cache" open><summary>Cache &amp; context</summary><div id="usage-cache"></div></details><div class="usage-closed" id="usage-cache-compact"></div></section><section class="usage-category usage-collapsible"><details data-usage-disclosure="tokens"><summary>Tokens &amp; cost</summary><div id="usage-panel" aria-live="polite"></div></details><div class="usage-closed usage-token-compact" id="usage-token-compact"></div></section><details class="usage-section usage-budget-section" data-usage-disclosure="budget"><summary>Alerts &amp; budget <small id="usage-alert-summary"></small></summary><form id="usage-settings-form" class="usage-budget-form"><label class="startup-choice"><input type="checkbox" id="usage-alerts"> Quiet limit alerts</label><label class="usage-budget-field">Monthly API budget · USD<input id="usage-budget" type="number" min="0.01" step="0.01" placeholder="Optional"></label><button class="secondary">Save</button><span id="usage-settings-status" role="status"></span><p class="usage-scope-note">API costs recorded in AURA; estimates may apply.</p></form></details>`);
   restoreUsageDisclosures($('#detail-content'));
   await loadUsage();
   await loadUsage(true);
@@ -514,6 +523,9 @@ async function checkUsageAlerts() {
   try{await api(`/api/usage?business=${encodeURIComponent(state.business)}&${usageQuery()}&refresh=1`);await syncNotifications();}
   catch { /* Optional usage reporting must not interrupt work. */ }
   finally{state.usageAlertLoading=false;}
+}
+function chatPollDelay(){
+  return new Promise(resolve=>{const finish=()=>{clearTimeout(timer);document.removeEventListener('visibilitychange',wake);resolve();};const wake=()=>{if(!document.hidden)finish();};const timer=setTimeout(finish,document.hidden?4000:1000);document.addEventListener('visibilitychange',wake);});
 }
 async function pollJob(job) {
   if(state.polling===job.id)return;
@@ -528,7 +540,7 @@ async function pollJob(job) {
         state.stopping=!!result.stopping;
         const elapsed=Math.max(0,Math.floor(Date.now()/1000-result.created));
         taskStatus(result.progress||'Waiting for your AI app',elapsed<60?elapsed+'s':Math.floor(elapsed/60)+'m '+elapsed%60+'s');
-        showMessages();chatControls();await new Promise(resolve=>setTimeout(resolve,1000));continue;
+        showMessages();chatControls();await chatPollDelay();continue;
       }
       if(job.welcome){state.welcome=result;state.setupStep=result.status==='complete'?'ready':'failed';}
       const conversation=await api('/api/conversation?business='+encodeURIComponent(business)+'&chat_id='+encodeURIComponent(chatId||''));
@@ -670,7 +682,7 @@ async function render() {
     view.innerHTML=`${scheduleForm()}<div class="section-head"><p>Schedules across your AI apps. <button class="text-button" data-schedules-help>How it works</button></p><button class="text-button" id="refresh-schedules">Refresh</button></div>${scheduleOperationMarkup()}<input class="search" id="schedule-search" type="search" aria-label="Search all recurring tasks" placeholder="Find a recurring task…" value="${esc(state.scheduleQuery||'')}">${scheduleFilters('full')}<div id="schedule-list" class="bounded-list" tabindex="0" aria-label="Recurring tasks"></div><p id="schedule-read-notes" class="error" ${schedules.notes.length?'':'hidden'}>${schedules.notes.map(esc).join('<br>')}</p>`+(watches.length?heading('Saved monitoring plans','These are business plans, not proof of an active schedule.')+`<div class="card">${watches.map(recordRow).join('')}</div>`:'');
     $('#schedule-add').addEventListener('toggle',()=>{state.scheduleAdding=$('#schedule-add').open;if(state.scheduleAdding&&!$('#schedule-add').dataset.loaded)loadScheduleModels();});
     if(state.scheduleAdding)loadScheduleModels();
-    renderSchedules();
+    renderSchedules();attempt(()=>syncSchedules());
   }
 }
 
@@ -917,22 +929,27 @@ function showScheduleExample(id) {
   details('Recurring tasks example',`<p class="sample-label">Example only · nothing is scheduled. Open a task to see its details.</p><div class="schedule-controls"><div class="filters compact-filters">${scheduleKinds.map(([kind,name])=>`<button type="button" data-examplefilter="${kind}" class="${kind==='all'?'active':''}" aria-pressed="${kind==='all'}">${name}</button>`).join('')}</div><label class="show-paused"><input type="checkbox" data-example-paused ${state.exampleShowPaused?'checked':''}>Show paused</label></div><div id="schedule-example-list" class="bounded-list">${scheduleMarkup(sample,'','all',Infinity,true)}</div>`);
 }
 async function syncSchedules(force=false) {
-  if(state.closed||(document.hidden&&!force)||!state.business||state.scheduleLoading)return;
-  state.scheduleLoading=true;
+  if(state.closed||(document.hidden&&!force)||!state.business||state.scheduleLoading||(!force&&state.view!=='tools'))return;
+  state.scheduleLoading=true;const root=state.data.workspace;
   try {
-    const schedules=await api('/api/schedules');state.schedules=schedules;
-    renderSchedules();
+    const schedules=await api('/api/schedules');
+    if(root!==state.data.workspace)return;state.schedules=schedules;renderSchedules();
     const notes=$('#schedule-read-notes');if(notes){notes.textContent=schedules.notes.join(' ');notes.hidden=!schedules.notes.length;}
   } finally {state.scheduleLoading=false;}
 }
 function startupSection(startup) {
   return `<section class="startup-section"><h3>Startup</h3><form id="startup-form"><label class="startup-choice"><input type="checkbox" name="enabled" ${startup.enabled?'checked':''} ${startup.supported?'':'disabled'}> Start AURA when I sign in</label><p class="small-note">${startup.supported?'Keeps AURA available in the background on this computer.':'Automatic startup is unavailable on this system.'}</p>${startup.product&&startup.product!==state.data.product?'<p class="small-note">Save to use this version at startup.</p>':startup.workspace&&startup.workspace!==state.data.workspace?'<p class="small-note">Save to use this workspace at startup.</p>':''}<div class="startup-actions"><button class="secondary" ${startup.supported?'':'disabled'}>Save startup</button><span id="startup-save-status" class="small-note" role="status"></span></div></form></section>`;
 }
-async function syncUpdates() {
+async function syncUpdates(force=false) {
   if(state.closed||state.updateLoading)return;
+  const editing=!state.allowUpdateRestart&&($('#request').value.trim()||Date.now()-(state.lastEdit||0)<30000);
+  const active=state.updates?.pending||['checking','downloading','verifying','ready','restarting'].includes(state.updates?.status);
+  if(!force&&document.hidden&&!editing&&!active)return;
+  const interval=active?2000:editing?4000:15000;
+  if(!force&&Date.now()-(state.updatePolledAt||0)<interval)return;
+  state.updatePolledAt=Date.now();
   state.updateLoading=true;
   try {
-    const editing=!state.allowUpdateRestart&&($('#request').value.trim()||Date.now()-(state.lastEdit||0)<30000);
     state.updates=await api('/api/updates'+(editing?'?editing=1':''));
     $('#update-menu-status').textContent=state.updates.release?'Available':'→';
     renderNotifications();
@@ -977,7 +994,7 @@ function renderUpdates() {
 async function openUpdates() {
   state.view='updates';$('#section-dialog').close();recordShellRoute();renderShell();
   $('#more-dialog').close();$('#notification-dialog').close();
-  await syncUpdates();
+  await syncUpdates(true);
   const startup=await api('/api/startup');
   details('Startup & updates',startupSection(startup)+`<section class="updates-section"><h3>Updates</h3><div id="update-panel"><div class="update-top"><span id="update-current" class="small-note"></span><button class="text-button" id="update-check">Check now</button></div><h4 id="update-heading"></h4><p id="update-message" role="status"></p><section id="update-release" hidden><ul id="update-highlights"></ul><details class="update-notes"><summary>Release notes</summary><pre id="update-notes"></pre><a id="update-release-link" target="_blank" rel="noopener noreferrer">View release ↗</a></details><p id="update-manual" class="small-note" hidden></p><div class="update-actions"><button class="primary" id="update-install" hidden>Update now</button><button class="secondary" id="update-later">Later</button><button class="text-button" id="update-skip">Skip this version</button></div></section><label class="update-policy">Updates<select id="update-policy"><option value="notify">Notify me</option><option value="auto">Update automatically when idle</option><option value="manual">Manual only</option></select></label><p class="small-note">Your workspace, connections, and custom views stay yours.</p><div class="update-bottom"><small id="update-checked"></small><button class="text-button" id="update-rollback" hidden>Use previous version</button><a href="https://github.com/deangeloscott/businessos/releases" target="_blank" rel="noopener noreferrer">Downloads ↗</a></div></div></section>`,'page');
   $('#detail').dataset.mode='page';$('#close-detail-page').hidden=false;$('#detail [data-close=detail]').hidden=true;state.updateSignature='';renderUpdates();
@@ -1847,8 +1864,8 @@ document.addEventListener('change',event=>{
 document.addEventListener('input',event=>{if(event.target.closest('#schedule-form'))state.scheduleDraft[event.target.name]=event.target.value;});
 document.addEventListener('change',event=>{if(['task-cadence','task-day','task-time','task-every','task-unit','task-custom'].includes(event.target.id))updateTaskTiming();if(event.target.id==='api-provider')apiProviderHelp();if(event.target.name==='app'&&event.target.closest('#task-edit-form')){taskModels(event.target.value).catch(()=>{});const moved=event.target.value!==state.editingTask.owner;$('#task-edit-form button[type=submit],#task-edit-form .primary').textContent=moved?'Ask AI to move':state.editingTask.editable?'Save changes':'Ask AI to adjust';$('#task-edit-note').textContent=moved?'Your AI must confirm the new schedule before pausing the old one.':state.editingTask.editable?'Changes are saved through the native scheduler.':'This app requires its native scheduling controls.';}});
 $('#detail').addEventListener('close',()=>{state.libraryDetailTicket=(state.libraryDetailTicket||0)+1;const field=$('#api-secret');if(field)field.value='';const changed=state.apiChanged,reload=state.apiReturn==='models'&&changed;state.apiReturn='';state.apiChanged=false;if(reload)loadAgentOptions(true).catch(modelFailure);if(changed)attempt(async()=>{state.library=await api('/api/library');quickMethods();if(state.view==='work')renderWork();});});
-document.addEventListener('visibilitychange',()=>{if(!document.hidden){state.systemAlert?.close();syncNotifications().catch(()=>{});}});
-window.addEventListener('focus',()=>{state.systemAlert?.close();syncNotifications().catch(()=>{});});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){state.systemAlert?.close();syncNotifications().catch(()=>{});syncUpdates(true);attempt(()=>renderShell());}});
+window.addEventListener('focus',()=>{state.systemAlert?.close();syncNotifications().catch(()=>{});if(Date.now()-(state.updatePolledAt||0)>1000)syncUpdates(true);attempt(()=>renderShell(false));});
 const notificationTimer=setInterval(()=>{if(!state.closed)syncNotifications(true).catch(()=>{});},8000);
 const scheduleTimer=setInterval(()=>syncSchedules().catch(()=>{}),30000);
 const scheduleOperationTimer=setInterval(()=>{if(!document.hidden&&state.scheduleJob?.status==='working')syncScheduleOperation().catch(()=>{});},2000);
@@ -1876,6 +1893,7 @@ window.addEventListener('beforeunload',rememberChatDraft);
 
 const usageAlertTimer=setInterval(()=>{if(!document.hidden)checkUsageAlerts();},300000);
 const usageCacheTimer=setInterval(tickUsageClocks,30000);
+const usageViewTimer=setInterval(()=>{if(!document.hidden&&$('#usage-panel')&&(state.usageRefreshing||state.busy||state.runningChats?.length||state.usageHadRunning))loadUsage().catch(()=>{});},4000);
 
 document.addEventListener('toggle',event=>{
   const d=event.target;if(!d.matches?.('[data-usage-disclosure]')||!d.isConnected)return;
@@ -1934,8 +1952,12 @@ function applyProfile(profile){
   $('#sidebar-collapse').setAttribute('aria-expanded',String(!p.sidebar_collapsed));
   if(!$('#setup-display-name').value)$('#setup-display-name').value=p.display_name;
 }
-async function renderShell(){
+async function renderShell(force=true){
   if(!state.data||!$('#sidebar'))return;
+  if(!force&&Date.now()-(state.shellPolledAt||0)<(state.busy||state.runningChats?.length?4000:15000))return;
+  if(state.shellLoading){if(force)state.shellDirty=true;return;}
+  state.shellLoading=true;state.shellPolledAt=Date.now();
+  try{
   applyProfile(state.data.profile||state.profile||{});renderComposerConnection();$('#active-workspace-label').textContent=rows('Business')[0]?.title||'Choose a workspace';
   $('#active-chat-label').textContent=state.chatMeta?.title||'';
   $('#sidebar [data-shell-action=sharing]').setAttribute('aria-current',state.view==='sharing'?'page':'false');
@@ -1943,7 +1965,7 @@ async function renderShell(){
   const running=state.data.running_chats||[];$('#background-work').hidden=!running.length;$('#background-work').textContent=running.length+' '+(running.length===1?'chat working':'chats working');
   if(!state.business){$('#sidebar-chat-list').innerHTML='<p class="sidebar-empty">Choose a workspace to see its chats.</p>';return;}
   const root=state.data.workspace,business=state.business;
-  const list=await api('/api/chats?business='+encodeURIComponent(business));if(root!==state.data.workspace||business!==state.business)return;
+  const list=await api('/api/chats?business='+encodeURIComponent(business));if(root!==state.data.workspace||business!==state.business||(list.workspace&&list.workspace!==root))return;
   state.chatList=list.items;state.runningChats=list.running||[];state.data.running_chats=state.runningChats;$('#background-work').hidden=!state.runningChats.length;$('#background-work').textContent=state.runningChats.length+' '+(state.runningChats.length===1?'chat working':'chats working');
   const owned=new Set(state.runningChats.filter(j=>j.workspace===root).map(j=>j.chat_id));
   const limit=state.chatLimit||20,signature=JSON.stringify([list.items.map(c=>[c.id,c.title,c.status,c.updated]),[...owned],state.chatMeta?.id,limit,state.inbox?.items?.map(n=>[n.chat_id,n.read])]);
@@ -1954,6 +1976,7 @@ async function renderShell(){
     return `<button type="button" class="sidebar-chat" data-chat="${esc(c.id)}" aria-current="${c.id===state.chatMeta?.id}" title="${esc(c.title+(status?' · '+status:''))}"><span class="chat-indicator ${working?'working':check||c.status==='error'?'attention':unread?'ready':''}" aria-label="${esc(status)}"></span><span class="chat-name">${esc(c.title||'New chat')}</span>${check?'<small>Check</small>':''}</button>`;
   }).join(''):'<p class="sidebar-empty">Start a conversation. Your useful work stays with this workspace.</p>';
   $('#sidebar-more-chats').hidden=list.items.length<=limit;
+  }finally{state.shellLoading=false;if(state.shellDirty){state.shellDirty=false;attempt(()=>renderShell());}}
 }
 function closeMobileSidebar(){document.body.classList.remove('sidebar-mobile-open');$('#sidebar-scrim').hidden=true;$('#sidebar-open').setAttribute('aria-expanded','false');}
 function openSidebar(){document.body.classList.add('sidebar-mobile-open');$('#sidebar-scrim').hidden=false;$('#sidebar-open').setAttribute('aria-expanded','true');}
@@ -2076,7 +2099,7 @@ document.addEventListener('keydown',event=>{
   }
   if(event.key==='ArrowDown'&&event.target.id==='shell-search'){event.preventDefault();$('#shell-search-results button')?.focus();}
 });
-const shellTimer=setInterval(()=>{if(!state.closed&&!document.hidden&&state.data)attempt(async()=>{const root=state.data.workspace,business=state.business;await renderShell();});},4000);
+const shellTimer=setInterval(()=>{if(!state.closed&&!document.hidden&&state.data)attempt(async()=>{await renderShell(false);});},4000);
 // Keep initialization compatible with native/custom clients; navigation is ordinary history.
 async function restoreInitialRoute(){
   if(!state.data||$('#refresh').disabled||(state.business&&!state.hydrated)){setTimeout(restoreInitialRoute,100);return;}

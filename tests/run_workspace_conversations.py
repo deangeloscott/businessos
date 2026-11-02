@@ -124,6 +124,30 @@ print('## Reply '+name+'\\n\\nWorkspace: '+str(root))
                     assert fresh['chat']['model']=='next-model','Native metadata must not overwrite a pending next-turn model'
                     cached=call('/api/conversation?business='+bid+'&chat_id='+native['id'])
                     assert history.call_count==1 and cached['messages'][0]['text']=='Native refreshed display'
+                # Slow native history must not lock the UI or replace a newer choice.
+                entered=threading.Event();release=threading.Event();results=[];errors=[]
+                def slow_conversation(*args):
+                    entered.set();assert release.wait(10)
+                    return {'messages':[{'role':'assistant','text':'Stale native display'}],'model':'first-model','usage':{'input_tokens':1}}
+                def refresh_conversation():
+                    try:results.append(call('/api/conversation?business='+bid+'&chat_id='+native['id']+'&refresh=1'))
+                    except Exception as exc:errors.append(exc)
+                with patch('workspace_ui.installed_agents',return_value=[{'id':'codex','name':'Codex fixture','argv':['fixture','exec','-']}]),patch('workspace_codex.history',side_effect=slow_conversation):
+                    reader=threading.Thread(target=refresh_conversation);reader.start()
+                    try:
+                        assert entered.wait(10)
+                        start=time.monotonic()
+                        call('/api/chats/model',{'business':bid,'id':native['id'],'model':'first-model','effort':'low'})
+                        assert time.monotonic()-start<1,'Native history held the UI lock'
+                        release.set();reader.join(10)
+                        assert not reader.is_alive() and not errors,errors
+                        assert results[0]['chat']['model']=='first-model'
+                        assert results[0]['messages'][0]['text']=='Native refreshed display','Stale history replaced the saved display'
+                        assert not app.preferences.get('usage_chats',{}).get(native['id']),'Stale usage was committed'
+                    finally:release.set();reader.join(15)
+                with patch('workspace_ui.installed_agents',return_value=[{'id':'codex','name':'Codex fixture','argv':['fixture','exec','-']}]),patch('workspace_codex.history',return_value={'messages':[{'role':'assistant','text':'Fresh display'}],'usage':{'input_tokens':100}}):
+                    call('/api/conversation?business='+bid+'&chat_id='+native['id']+'&refresh=1')
+                    assert json.loads(app.settings_file.read_text(encoding='utf-8'))['usage_chats'][native['id']]['input_tokens']==100,'Native usage was not persisted'
                 # Preparing personalization is metadata-only and reuses one scoped chat.
                 app.preferences['connected_apps']['configured']={'kind':'configured','model':'','effort':''}
                 connection={'kind':'configured','model':'','effort':''}
@@ -149,6 +173,43 @@ print('## Reply '+name+'\\n\\nWorkspace: '+str(root))
                 other=app.personalization_chat(bid,connection)
                 assert other['id']!=custom['id'],'Separate workspace folders keep separate personalization histories'
                 app.open_workspace(b)
+                # Slow usage refresh survives A/B/A and cannot replace a newer turn.
+                from _common import workspace_root as scoped_root
+                entered=threading.Event();inspect=threading.Event();checked=threading.Event();release=threading.Event();usage_results=[];usage_errors=[];account_calls=[]
+                native.update(status='complete',updated=time.time(),model='next-model',effort='high')
+                app.preferences['active_chats'][bid]=native['id']
+                app.preferences['connected_apps']['codex']={'kind':'codex','model':'next-model','effort':'high'}
+                app.preferences['usage_chats'][native['id']]={'input_tokens':100,'output_tokens':10}
+                app.usage_refresh['checked']=0
+                def metadata(command,calls,cwd,env):
+                    assert Path(cwd)==b;account_calls.append(True)
+                    return calls(lambda method,params:{'account':None})
+                def slow_history(*args):
+                    entered.set();assert inspect.wait(10)
+                    assert Path(scoped_root())==b and Path(args[1])==b
+                    checked.set();assert release.wait(15)
+                    return {'usage':{'input_tokens':1,'output_tokens':1}}
+                def refresh_usage():
+                    try:usage_results.append(app.usage(bid,refresh=True))
+                    except Exception as exc:usage_errors.append(exc)
+                with patch('workspace_ui.installed_agents',return_value=[{'id':'codex','name':'Codex fixture','argv':['fixture','exec','-']}]),patch('workspace_codex.rpc',side_effect=metadata),patch('workspace_codex.history',side_effect=slow_history),patch('workspace_codex.run',return_value={'reply':'Newer reply','usage':{'input_tokens':900,'output_tokens':60}}):
+                    reader=threading.Thread(target=refresh_usage);reader.start()
+                    try:
+                        assert entered.wait(10)
+                        start=time.monotonic();cached=app.usage(bid,refresh=True)
+                        assert time.monotonic()-start<1 and cached['refreshing'] and len(account_calls)==1,'Cached usage blocked or started a duplicate native refresh'
+                        app.open_workspace(a);inspect.set();assert checked.wait(10)
+                        app.open_workspace(b)
+                        newer=app.start_chat(bid,'A newer native turn',[],chat_id=native['id'])
+                        until(lambda:app.jobs[newer['id']]['status']=='complete')
+                        with app.lock:pass
+                        release.set();reader.join(15)
+                        assert not reader.is_alive() and not usage_errors,usage_errors
+                        assert usage_results[0]['workspace']==str(b) and usage_results[0]['chat']['input_tokens']==1000
+                        assert app.preferences['usage_chats'][native['id']]['input_tokens']==1000,'Late history replaced newer usage'
+                        assert native['id'] not in app.workspace_views[str(a)]['preferences'].get('usage_chats',{})
+                        app.usage(bid,refresh=True);assert len(account_calls)==1,'Cooldown was lost through A/B/A'
+                    finally:inspect.set();release.set();reader.join(20)
                 # Stopping a Hermes transport does not claim its gateway stopped.
                 from workspace_execution import Stopped
                 hermes=dict(native,id='hermes-stop-check',agent='hermes',status='complete',model='first-model',effort='low')

@@ -166,7 +166,7 @@ def record(preferences, job, chat, agent):
     remember(preferences, chat['id'], usage)
     row = {k:usage[k] for k in (*FIELDS, 'cost_usd', 'cost_kind', 'billing') if k in usage}
     rows.append(dict(row, id=job['id'], chat_id=chat['id'], business_id=job['business_id'],
-                     at=job['updated'], agent=agent, model=chat.get('model', '')))
+                     at=job['updated'], agent=agent, model=job.get('model',chat.get('model', ''))))
     if len(rows) > 10000:
         preferences['usage_receipts'] = rows[-10000:]
         preferences['usage_history_limited'] = True
@@ -198,6 +198,8 @@ def summary(preferences, business, chat_id, period='chat', now=None, offset=0, s
                        'missing_costs':sum('cost_usd' not in r for r in items)})
     return {'period':period, 'totals':totals, 'requests':len(rows), 'missing_costs':len(rows)-len(costs),
             'groups':groups, 'chat':chat, 'budget_costs':combine([r for r in rows if r.get('billing')=='api' or r.get('cost_kind')=='reported']),
+            'missing_token_reports':sum(number(r.get('input_tokens')) is None or number(r.get('output_tokens')) is None
+                                        for r in ([chat] if period=='chat' and chat.get('session') else rows)),
             'limited':bool(preferences.get('usage_history_limited'))}
 
 
@@ -206,11 +208,12 @@ def chat_views(preferences, business, running_id=None):
     snapshots = preferences.get('usage_chats', {})
     active = preferences.get('active_chats', {}).get(business)
     chats = [c for c in preferences.get('chats', []) if c.get('business_id') == business]
-    chats.sort(key=lambda c: (c['id'] == running_id, c['id'] == active,
+    running={running_id} if isinstance(running_id,str) else set(running_id or ())
+    chats.sort(key=lambda c: (c['id'] == active, c['id'] in running,
                              timestamp(c.get('updated')) or timestamp(c.get('created')) or 0), reverse=True)
     return [dict(info={k:c[k] for k in ('id','title','agent','model','effort','status','updated') if k in c},
                  usage=snapshots.get(c['id'], {}),
-                 position='Running' if c['id'] == running_id else 'Selected' if c['id'] == active else 'Recent')
+                 position='Running' if c['id'] in running else 'Selected' if c['id'] == active else 'Recent')
             for c in chats[:MAX_CACHE_CHATS]]
 
 

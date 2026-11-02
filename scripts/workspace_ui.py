@@ -413,8 +413,7 @@ class Workspace:
         self.verified_business = None
         self.option_cache = {}
         self.usage_accounts = {}
-        self.usage_reporting = []
-        self.usage_checked = 0
+        self.usage_refresh = {'reporting':[], 'checked':0}
         self.usage_refresh_lock = threading.Lock()
         self.organization_job = None
         self.workspace_note = ''
@@ -930,99 +929,116 @@ class Workspace:
         return next((c for c in self.preferences['chats'] if c['id'] == key and c['business_id'] == bid), None)
 
     def usage(self, bid, period='chat', refresh=False, offset=0, since=None, month_start=None):
+        # Slow native/account reads keep their original workspace even through A/B/A.
+        with self.lock:owner=copy.copy(self)
+        with workspace_scope(owner.workspace_path):
+            return owner._usage(bid,period,refresh,offset,since,month_start)
+
+    def _usage(self, bid, period='chat', refresh=False, offset=0, since=None, month_start=None):
         if period not in {'chat','today','month'}:
             raise ValueError('Choose This chat, Today, or This month.')
         root=workspace_root()
         refresh_lock=self.usage_refresh_lock
-        if refresh and time.time()-self.usage_checked >= 30 and refresh_lock.acquire(blocking=False):
+        if refresh and refresh_lock.acquire(blocking=False):
             try:
-                choices = {a['id']:a for a in installed_agents() if a['argv']}
-                if self.connection_kind in choices and self.agent and self.agent.get('argv'):
-                    choices[self.connection_kind]={**choices[self.connection_kind],'argv':list(self.agent['argv'])}
-                connected = dict(self.preferences['connected_apps'])
-                accounts = {}
-                reporting=[]
-                try:env = self.agent_environment()
-                except ValueError:
-                    env=dict(os.environ)
-                    reporting.append({'name':'API connections','note':'Saved API keys couldn’t be read. Check API connections.'})
-                if 'codex' in connected and 'codex' in choices:
-                    try:
-                        command = choices['codex']['argv']
-                        native = workspace_codex.rpc(command,[('account/read',{'refreshToken':False})],root,env)[0]
-                        account=workspace_usage.codex_account(native)
-                        if account:
-                            limits,activity={},{}
-                            try:limits=workspace_codex.rpc(command,[('account/rateLimits/read',{})],root,env)[0]
-                            except (ValueError,OSError,subprocess.SubprocessError):pass
-                            try:activity=workspace_codex.rpc(command,[('account/usage/read',{})],root,env)[0]
-                            except (ValueError,OSError,subprocess.SubprocessError):pass
-                            accounts['codex']=[workspace_usage.codex_account(native,limits,activity)]
-                        else:accounts['codex']=[]
-                        reporting.append({'name':'Codex','note':'Account limits and activity' if account else 'No subscription account reported'})
-                    except (ValueError,OSError,subprocess.SubprocessError):
-                        reporting.append({'name':'Codex','note':'Couldn’t refresh. Check Codex.'})
-                for kind in ('omp','hermes','claude'):
-                    if kind not in connected or kind not in choices:continue
-                    try:
-                        accounts[kind]=workspace_usage.native_accounts(choices[kind]['argv'],kind,root,env)
-                        reporting.append({'name':choices[kind]['name'],'note':'Native account limits' if accounts[kind] else 'Limits not exposed by this app version'})
-                    except (ValueError,OSError,subprocess.SubprocessError):
-                        reporting.append({'name':choices[kind]['name'],'note':'Couldn’t refresh. Check the app.'})
-                for kind in connected:
-                    if kind in {'codex','omp','hermes','claude'}:continue
-                    reporting.append({'name':next((a['name'] for a in installed_agents() if a['id']==kind),kind),
-                        'note':'Reply usage when reported; account limits not exposed'})
-                key=env.get('OPENROUTER_API_KEY')
-                if key:
-                    try:accounts['openrouter']=[workspace_usage.openrouter_limits(key)]
-                    except (ValueError,OSError,KeyError):
-                        reporting.append({'name':'OpenRouter','note':'Couldn’t refresh. Check the API connection.'})
-                else:accounts.pop('openrouter',None)
-                for service in self.connections.rows()['items']:
-                    if service['id']=='openrouter':continue
-                    api_key=env.get(service['env'])
-                    if api_key:
-                        row=workspace_usage.service_account(service['id'],service['name'],api_key)
-                        accounts['key-'+service['id']]=[row]
-                # Read bounded native history without opening/selecting chats or sending prompts.
-                with self.lock:
-                    running_ids={j.get('chat_id') for j in self.running_jobs(root)}
-                    ids=[v['info']['id'] for v in workspace_usage.chat_views(self.preferences,bid,next(iter(running_ids),None))]
-                    recent=[dict(c) for c in self.preferences['chats'] if c['id'] in ids and c.get('native_id') and
-                            c.get('status')!='working' and Path(c.get('workspace') or root).resolve()==root.resolve()]
-                observed={}
-                for chat in recent:
-                    choice=choices.get(chat['agent'])
-                    if not choice:continue
-                    try:
-                        native=(workspace_codex.history(choice['argv'],root,chat['native_id']) if chat['agent']=='codex' else
-                                workspace_agents.history(choice['argv'],chat['agent'],root,env,chat['native_id']))
-                        if native.get('usage'):observed[chat['id']]=native['usage']
-                    except (ValueError,OSError,subprocess.SubprocessError):pass
-                with self.lock:
-                    if workspace_root()!=root:
-                        raise ValueError('The workspace changed. Refresh usage.')
-                    # A Claude event arriving during refresh remains the newer observation.
-                    for kind in set(accounts)|{k for k in self.usage_accounts if k!='claude-events'}:
-                        if kind in accounts:self.usage_accounts[kind]=accounts[kind]
-                        else:self.usage_accounts.pop(kind,None)
-                    self.usage_reporting=reporting
-                    self.usage_checked=time.time()
-                    for ident,usage in observed.items():
-                        workspace_usage.remember(self.preferences,ident,usage,'session')
-                    if observed:self.save_preferences()
+                if time.time()-self.usage_refresh['checked'] >= 30:
+                    choices = {a['id']:a for a in installed_agents() if a['argv']}
+                    if self.connection_kind in choices and self.agent and self.agent.get('argv'):
+                        choices[self.connection_kind]={**choices[self.connection_kind],'argv':list(self.agent['argv'])}
+                    connected = dict(self.preferences['connected_apps'])
+                    accounts = {}
+                    reporting=[]
+                    try:env = self.agent_environment()
+                    except ValueError:
+                        env=dict(os.environ)
+                        reporting.append({'name':'API connections','note':'Saved API keys couldn’t be read. Check API connections.'})
+                    if 'codex' in connected and 'codex' in choices:
+                        try:
+                            command = choices['codex']['argv']
+                            def read_account(call):
+                                native=call('account/read',{'refreshToken':False})
+                                account=workspace_usage.codex_account(native)
+                                if not account:return None
+                                limits,activity={},{}
+                                try:limits=call('account/rateLimits/read',{})
+                                except (ValueError,OSError,subprocess.SubprocessError):pass
+                                try:activity=call('account/usage/read',{})
+                                except (ValueError,OSError,subprocess.SubprocessError):pass
+                                return workspace_usage.codex_account(native,limits,activity)
+                            account=workspace_codex.rpc(command,read_account,root,env)
+                            accounts['codex']=[account] if account else []
+                            reporting.append({'name':'Codex','note':'Account limits and activity' if account else 'No subscription account reported'})
+                        except (ValueError,OSError,subprocess.SubprocessError):
+                            reporting.append({'name':'Codex','note':'Couldn’t refresh. Check Codex.'})
+                    for kind in ('omp','hermes','claude'):
+                        if kind not in connected or kind not in choices:continue
+                        try:
+                            accounts[kind]=workspace_usage.native_accounts(choices[kind]['argv'],kind,root,env)
+                            reporting.append({'name':choices[kind]['name'],'note':'Native account limits' if accounts[kind] else 'Limits not exposed by this app version'})
+                        except (ValueError,OSError,subprocess.SubprocessError):
+                            reporting.append({'name':choices[kind]['name'],'note':'Couldn’t refresh. Check the app.'})
+                    for kind in connected:
+                        if kind in {'codex','omp','hermes','claude'}:continue
+                        reporting.append({'name':next((a['name'] for a in installed_agents() if a['id']==kind),kind),
+                            'note':'Reply usage when reported; account limits not exposed'})
+                    key=env.get('OPENROUTER_API_KEY')
+                    if key:
+                        try:accounts['openrouter']=[workspace_usage.openrouter_limits(key)]
+                        except (ValueError,OSError,KeyError):
+                            reporting.append({'name':'OpenRouter','note':'Couldn’t refresh. Check the API connection.'})
+                    else:accounts.pop('openrouter',None)
+                    for service in self.connections.rows()['items']:
+                        if service['id']=='openrouter':continue
+                        api_key=env.get(service['env'])
+                        if api_key:
+                            row=workspace_usage.service_account(service['id'],service['name'],api_key)
+                            accounts['key-'+service['id']]=[row]
+                    # Read bounded native history without opening/selecting chats or sending prompts.
+                    with self.lock:
+                        running_ids={j.get('chat_id') for j in self.running_jobs(root)}
+                        ids=[v['info']['id'] for v in workspace_usage.chat_views(self.preferences,bid,running_ids)]
+                        recent=[dict(c) for c in self.preferences['chats'] if c['id'] in ids and c.get('native_id') and
+                                c.get('status')!='working' and Path(c.get('workspace') or root).resolve()==root.resolve()]
+                    stamps={c['id']:(c.get('updated'),c.get('native_id'),c.get('model'),c.get('effort')) for c in recent}
+                    observed={}
+                    for chat in recent:
+                        choice=choices.get(chat['agent'])
+                        if not choice:continue
+                        try:
+                            native=(workspace_codex.history(choice['argv'],root,chat['native_id']) if chat['agent']=='codex' else
+                                    workspace_agents.history(choice['argv'],chat['agent'],root,env,chat['native_id']))
+                            if native.get('usage'):observed[chat['id']]=native['usage']
+                        except (ValueError,OSError,subprocess.SubprocessError):pass
+                    with self.lock:
+                        if workspace_root()!=root:
+                            raise ValueError('The workspace changed. Refresh usage.')
+                        # A Claude event arriving during refresh remains the newer observation.
+                        for kind in set(accounts)|{k for k in self.usage_accounts if k!='claude-events'}:
+                            if kind in accounts:self.usage_accounts[kind]=accounts[kind]
+                            else:self.usage_accounts.pop(kind,None)
+                        self.usage_refresh['reporting']=reporting
+                        self.usage_refresh['checked']=time.time()
+                        changed=False
+                        for ident,usage in observed.items():
+                            current=next((c for c in self.preferences['chats'] if c['id']==ident),None)
+                            if not current or current.get('status')=='working' or (current.get('updated'),current.get('native_id'),current.get('model'),current.get('effort'))!=stamps[ident]:continue
+                            workspace_usage.remember(self.preferences,ident,usage,'session');changed=True
+                        if changed:self.save_preferences()
             finally:refresh_lock.release()
         with self.lock:
             if workspace_root()!=root:
                 raise ValueError('The workspace changed. Refresh usage.')
             running_ids={j.get('chat_id') for j in self.running_jobs(root)}
-            views=workspace_usage.chat_views(self.preferences,bid,next(iter(running_ids),None))
+            # Blend reported in-flight usage into a temporary display, never receipts.
+            shown={**self.preferences,'usage_chats':dict(self.preferences.get('usage_chats',{}))}
+            live=set()
+            for job in self.running_jobs(root):
+                if job['business_id']==bid and job.get('usage'):
+                    workspace_usage.remember(shown,job['chat_id'],job['usage']);live.add(job['chat_id'])
+            views=workspace_usage.chat_views(shown,bid,running_ids)
             primary=views[0] if views else {}
             chat=self.active_chat(bid)
             for view in views:
-                if view['info']['id'] in running_ids and self.chat_job(bid,view['info']['id']).get('usage'):
-                    view['usage']=self.chat_job(bid,view['info']['id'])['usage']
                 if not view['usage']:
                     source=next(c for c in self.preferences['chats'] if c['id']==view['info']['id'])
                     old_folder=Path(source.get('workspace') or root).resolve()!=root.resolve()
@@ -1030,11 +1046,17 @@ class Workspace:
                 view['keep_warm']=bool(not any(j.get('chat_id')==view['info']['id'] for j in self.running_jobs(root)) and chat and
                     view['info']['id']==chat['id'] and workspace_usage.can_keep_warm(chat,view['usage'],self.preferences.get('connection',{}),self.connection_kind))
                 view['cache_window']=workspace_usage.cache_window(view['info'],view['usage'])
-            result=workspace_usage.summary(self.preferences,bid,primary.get('info',{}).get('id',''),period,offset=int(offset),since=since)
+            result=workspace_usage.summary(shown,bid,primary.get('info',{}).get('id',''),period,offset=int(offset),since=since)
             primary_id=primary.get('info',{}).get('id','')
-            result['periods']={p:workspace_usage.summary(self.preferences,bid,primary_id,p,offset=int(offset),
+            result['periods']={p:workspace_usage.summary(shown,bid,primary_id,p,offset=int(offset),
                 since=since if p==period and period!='chat' else month_start if p=='month' else None)
                 for p in ('chat','today','month')}
+            result['running_count']=len([j for j in self.running_jobs(root) if j['business_id']==bid])
+            result['hidden_running_count']=max(0,len(running_ids & {c['id'] for c in self.preferences['chats'] if c['business_id']==bid})-sum(v['info']['id'] in running_ids for v in views))
+            result['periods']['chat']['in_progress']=primary_id in live
+            result['refreshing']=refresh_lock.locked()
+            result['refreshed_at']=self.usage_refresh['checked']
+            result['generated_at']=time.time()
             result['workspace']=str(root)
             result['chat_info']=primary.get('info',{})
             result['chats']=views
@@ -1045,8 +1067,8 @@ class Workspace:
             result['link_sources']=[{'id':r['id'],'name':', '.join(r.get('via',[]))} for r in native_rows if r.get('linkable')]
             if json.dumps(self.preferences.get('usage_account_history',{}),sort_keys=True)!=prior:
                 try:self.save_preferences()
-                except OSError:self.usage_reporting=[*self.usage_reporting,{'name':'Account history','note':'Couldn’t save the latest account report.'}]
-            result['reporting']=self.usage_reporting
+                except OSError:self.usage_refresh['reporting']=[*self.usage_refresh['reporting'],{'name':'Account history','note':'Couldn’t save the latest account report.'}]
+            result['reporting']=self.usage_refresh['reporting']
             result['settings']=self.preferences.get('usage_settings',{}).get(bid,{'alerts':False,'budget_usd':None})
             self.usage_alerts(bid,result,offset,month_start)
             return result
@@ -1106,19 +1128,33 @@ class Workspace:
             self.preferences['chats'].append(chat);self.save_preferences()
             return {'id':chat['id']}
 
+    @staticmethod
+    def chat_revision(chat):
+        return tuple(chat.get(k) for k in ('updated','native_id','model','effort','status','model_choice_pending','title','title_edited'))
+
     def conversation(self, bid, ident=None, refresh=False):
-        chat = self.active_chat(bid) if ident is None else next((c for c in self.preferences['chats'] if c['id']==ident and c['business_id']==bid),None)
-        if ident is not None and not chat:raise ValueError('This chat does not belong to the selected business.')
+        with self.lock:
+            original=self.active_chat(bid) if ident is None else next((c for c in self.preferences['chats'] if c['id']==ident and c['business_id']==bid),None)
+            if ident is not None and not original:raise ValueError('This chat does not belong to the selected business.')
+            owner=copy.copy(self);chat=dict(original) if original else None
+            revision=self.chat_revision(chat) if chat else None
+            if not refresh:
+                with workspace_scope(owner.workspace_path):return owner._conversation(bid,chat,False,original,revision)
+        with workspace_scope(owner.workspace_path):return owner._conversation(bid,chat,True,original,revision)
+
+    def _conversation(self,bid,chat,refresh,original,revision):
         root=workspace_root().resolve()
         owned=self.chat_job(bid,(chat or {}).get('id'))
         job=dict(owned) if owned else None
         if not chat:
             return {'messages': [], 'chat': None, 'job': job}
         display=self.settings_file.parent/'chat-views'/(chat['id']+'.json')
-        if not chat.get('native_id') or (job and job['status']=='working') or (not refresh and display.is_file()):
+        if not refresh or not chat.get('native_id') or (job and job['status']=='working'):
             path = self.settings_file.parent/'chat-views'/(chat['id']+'.json')
             shown = json.loads(path.read_text(encoding='utf-8')) if path.is_file() else []
-            return {'messages': shown, 'chat': chat, 'job': job}
+            result={'messages':shown,'chat':chat,'job':job}
+            if not shown and chat.get('native_id') and not path.is_file():result['history_note']='Use Refresh chat to read this conversation from its AI app.'
+            return result
         try:
             choice = next(a for a in installed_agents() if a['id'] == chat['agent'] and a['argv'])
             chat_root = Path(chat.get('workspace') or workspace_root())
@@ -1133,28 +1169,33 @@ class Workspace:
             result = {'messages':json.loads(path.read_text(encoding='utf-8')), 'usage':{}, 'history_note':str(exc)}
         # Native metadata is authoritative if the chat was also used in Codex.
         if not (job and job['status']=='working') and not chat.get('model_choice_pending'):chat.update({k: result[k] for k in ('model', 'effort') if result.get(k)})
-        if result.get('usage') and not (job and job['status']=='working'):
-            workspace_usage.remember(self.preferences,chat['id'],result['usage'],'session')
         for message in result['messages']:
             message['text'] = self.connections.redact(workspace_chats.clean(message['text']))
         if root!=workspace_root().resolve():raise ValueError('The workspace changed. Open the chat list again.')
-        if not result.get('history_note') and not (job and job['status']=='working'):
-            with self.lock:
+        with self.lock:
+            if self.chat_revision(original)!=revision or any(j.get('chat_id')==chat['id'] for j in self.running_jobs(root)):
+                return self.conversation(bid,chat['id'])
+            if not result.get('history_note') and not (job and job['status']=='working'):
+                before=json.dumps(original,sort_keys=True)
+                original.update(chat);chat=original
+                usage_changed=False
+                if result.get('usage'):
+                    prior=workspace_usage.remember(self.preferences,chat['id'],result['usage'],'session')
+                    usage_changed=prior!=self.preferences['usage_chats'][chat['id']]
                 candidate=result.get('chat_brief')
                 if candidate:
                     candidate={**candidate,'title':self.connections.redact(candidate['title']),'summary':self.connections.redact(candidate['summary'])}
                     if 'through' in candidate:candidate['basis']=workspace_chats.fingerprint(result['messages'][:candidate['through']])
-                before=json.dumps(chat,sort_keys=True)
                 workspace_chats.update(chat,result['messages'],candidate,self.connections.redact(workspace_chats.short(result.get('summary'),360)),
                                        self.connections.redact(workspace_chats.short(result.get('title'),80)),workspace_usage.timestamp(result.get('summary_updated')))
                 last=max((workspace_usage.timestamp(m.get('at')) or 0 for m in result['messages']),default=0)
                 if last>chat.get('updated',0):chat['updated']=last
                 if chat.get('summary_source')=='App' and (not chat.get('summary_updated') or last>chat['summary_updated']):chat['summary_stale']=True
-                if json.dumps(chat,sort_keys=True)!=before:self.save_preferences()
+                if usage_changed or json.dumps(chat,sort_keys=True)!=before:self.save_preferences()
                 from _common import write_json_atomic
                 write_json_atomic(display,result['messages'])
-        for key in ('chat_brief','summary','summary_updated','title'):result.pop(key,None)
-        return dict(result, chat=chat, job=job)
+            for key in ('chat_brief','summary','summary_updated','title'):result.pop(key,None)
+            return dict(result, chat=dict(chat), job=job)
 
     def save_chat_turn(self, chat, job, text, final=False, candidate=None):
         """A recovery display, never supplied as native model context."""
@@ -1718,7 +1759,7 @@ def handler_for(app):
                 raise ValueError('The workspace changed in another window. Refresh before making changes.')
 
         def do_GET(self):
-            if urlsplit(self.path).path in {'/api/state','/api/files','/api/file','/api/media','/api/conversation','/api/sharing','/api/chat','/api/chats','/api/chats/detail'}:
+            if urlsplit(self.path).path in {'/api/state','/api/files','/api/file','/api/media','/api/sharing','/api/chat','/api/chats','/api/notifications'}:
                 with app.lock:self.read_GET()
             else:self.read_GET()
 
@@ -1747,7 +1788,7 @@ def handler_for(app):
                     with app.lock:
                         if query.get('foreground') == '1':
                             app.notification_focus_until = time.time() + 12
-                        self.send(200, app.notifications(bid))
+                        self.send(200, {**app.notifications(bid),'workspace':str(workspace_root())})
                 elif route == '/api/agent-options':
                     self.send(200, app.agent_options(query.get('kind'), query.get('refresh') == '1'))
                 elif route == '/api/model-catalog':
@@ -1784,7 +1825,7 @@ def handler_for(app):
                     self.send(200,{'items':workspace_organization.recovery(app.settings_file.parent)})
                 elif route == '/api/chats':
                     bid = selected(query.get('business'))
-                    self.send(200, {'items': sorted(({k:v for k,v in c.items() if k!='brief_token'} for c in app.preferences['chats'] if c['business_id'] == bid),key=lambda c:c.get('updated',0),reverse=True),
+                    self.send(200, {'workspace':str(workspace_root()),'items': sorted(({k:v for k,v in c.items() if k!='brief_token'} for c in app.preferences['chats'] if c['business_id'] == bid),key=lambda c:c.get('updated',0),reverse=True),
                                     'active': app.preferences['active_chats'].get(bid), 'running': [{k:j.get(k) for k in ('id','chat_id','workspace','business_id','status','agent','model')} for j in app.running_jobs()]})
                 elif route == '/api/chats/detail':
                     result=app.conversation(selected(query.get('business')),query.get('id',''),refresh=True)

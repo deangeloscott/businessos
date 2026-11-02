@@ -158,11 +158,13 @@ def business_directory():
 def resolve_business(explicit=None):
     """Resolve exactly one active business without guessing across workspace instances."""
     explicit=explicit or os.environ.get('BUSINESSOS_BUSINESS_ID')
-    ids=business_ids();directory=business_directory()
+    ids=business_ids()
+    if explicit and explicit in ids:return {'status':'resolved','business_id':explicit,'resolution':'explicit'}
     if explicit:
-        if explicit in ids:return {'status':'resolved','business_id':explicit,'resolution':'explicit'}
+        directory=business_directory()
         return {'status':'needs_input','missing':['active_business'],'reason':f'Unknown business: {explicit}','available_business_ids':ids,'available_businesses':directory}
     if len(ids)==1:return {'status':'resolved','business_id':ids[0],'resolution':'single_workspace_business'}
+    directory=business_directory()
     if not ids:return {'status':'needs_input','missing':['active_business'],'reason':'No initialized business exists in the active organization workspace.','available_business_ids':[],'available_businesses':[]}
     return {'status':'needs_input','missing':['active_business'],'reason':'Multiple businesses exist in the active organization workspace; the active business is ambiguous.','available_business_ids':ids,'available_businesses':directory}
 

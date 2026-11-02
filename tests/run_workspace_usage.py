@@ -22,13 +22,13 @@ def main():
         {'id':'older','business_id':'a','updated':1}, {'id':'newer','business_id':'a','updated':2},
         {'id':'private','business_id':'b','updated':999}], 'usage_chats':{'newer':{'input_tokens':5}}}
     assert usage.chat_views(views_prefs,'a')[0]['info']['id']=='older'
-    assert usage.chat_views(views_prefs,'a','newer')[0]['position']=='Running'
+    assert [v['position'] for v in usage.chat_views(views_prefs,'a',{'newer'})]==['Selected','Running']
     views_prefs['active_chats'].clear()
     assert [v['info']['id'] for v in usage.chat_views(views_prefs,'a')]==['newer','older']
     assert views_prefs['active_chats']=={}
     many={'active_chats':{'a':'c0'},'chats':[{'id':f'c{i}','business_id':'a','updated':i} for i in range(12)]}
     bounded=usage.chat_views(many,'a','c1')
-    assert len(bounded)==5 and [v['info']['id'] for v in bounded]==['c1','c0','c11','c10','c9']
+    assert len(bounded)==5 and [v['info']['id'] for v in bounded]==['c0','c1','c11','c10','c9']
     assert many['active_chats']['a']=='c0'
     policy={'cache':{'expires_at':1300,'refresh_seconds':300,'source':'Observed cache write'}}
     chat={'id':'c','native_id':'native-c','agent':'claude','model':'claude-example','effort':'low','status':'complete'}
@@ -98,6 +98,9 @@ def main():
     # Native history can update a chat total without reassigning past spend to today.
     usage.remember(prefs,'chat',{'input_tokens':1000,'last':{'cached_input_tokens':500}},'session')
     assert usage.summary(prefs,'a','chat','chat')['totals']['input_tokens']==1000
+    assert usage.summary(prefs,'a','chat','chat')['missing_token_reports']==1
+    usage.remember(prefs,'chat',{'input_tokens':1000,'output_tokens':0},'session')
+    assert usage.summary(prefs,'a','chat','chat')['missing_token_reports']==0,'Reported zero output is known, not missing'
     assert usage.summary(prefs,'a','chat','today')['totals']['input_tokens']==110
     session={}
     cj={'id':'c','model':'claude'}
@@ -215,14 +218,16 @@ def main():
                                   {'id':'foreign','business_id':'another','agent':'codex','native_id':'foreign-native','status':'complete'}]
         calls=[]
         def rpc(command,requests,cwd,env):
+            if callable(requests):return requests(lambda method,params:rpc(command,[(method,params)],cwd,env)[0])
             calls.extend(m for m,p in requests)
             if requests[0][0]=='account/read':return [{'account':{'type':'chatgpt','email':'user@example.com','planType':'pro'},'workspaceRouting':{'chatgptAccountId':'native-account'}}]
             if requests[0][0]=='account/usage/read':return [{'summary':{'lifetimeTokens':999},'dailyUsageBuckets':[{'startDate':'2026-10-27','tokens':123}]}]
             return [{'rateLimits':{'primary':{'usedPercent':95,'windowDurationMins':300,'resetsAt':time.time()+3600}}}]
-        with patch('workspace_ui.installed_agents',return_value=[{'id':'codex','name':'Codex','argv':['codex','exec']}]),patch('workspace_codex.rpc',rpc),patch.object(app,'agent_environment',return_value={}),patch('workspace_codex.history',return_value={'usage':{'input_tokens':42,'last':{'input_tokens':42}}}) as native_history:
+        with patch('workspace_ui.installed_agents',return_value=[{'id':'codex','name':'Codex','argv':['codex','exec']}]),patch('workspace_codex.rpc',side_effect=rpc) as native_rpc,patch.object(app,'agent_environment',return_value={}),patch('workspace_codex.history',return_value={'usage':{'input_tokens':42,'last':{'input_tokens':42}}}) as native_history:
             result=app.usage(bid,refresh=True)
             assert set(result['periods'])=={'chat','today','month'}
             assert calls==['account/read','account/rateLimits/read','account/usage/read']
+            assert native_rpc.call_count==1,'Account metadata should share one native process'
             assert result['accounts'][0]['windows'][0]['used_percent']==95
             assert 'user@example.com' not in json.dumps(result)
             assert result['chat_info']['id']=='known' and result['chat']['input_tokens']==42
@@ -248,6 +253,30 @@ def main():
             app.save_preferences(portable=True)
             portable=Path(os.environ['BUSINESSOS_WORKSPACE'])/'.businessos/view.json'
             assert not any(k.startswith('usage_') for k in json.loads(portable.read_text()))
+        # All simultaneous chats keep their status; selected totals include live reports
+        # without persisting or double-counting any unfinished request.
+        active={'id':'selected','business_id':bid,'agent':'codex','model':'example','status':'working','updated':10}
+        other={**active,'id':'other','updated':20}
+        app.preferences['chats']=[active,other];app.preferences['active_chats']={bid:'selected'}
+        app.preferences['usage_chats']={'selected':{'input_tokens':100,'output_tokens':20},'other':{'input_tokens':200,'output_tokens':10}}
+        app.preferences['usage_receipts']=[]
+        app.jobs={name:{'id':name,'chat_id':name,'business_id':bid,'workspace':app.workspace_path,'status':'working','usage':{'input_tokens':50,'output_tokens':5}} for name in ('selected','other')}
+        shown=app.usage(bid)
+        assert shown['chat_info']['id']=='selected' and shown['chat']['input_tokens']==150
+        assert shown['running_count']==2 and all(v['position']=='Running' for v in shown['chats'])
+        assert shown['periods']['chat']['in_progress'] and shown['periods']['today']['requests']==0
+        assert app.preferences['usage_chats']['selected']['input_tokens']==100,'Live display modified the saved baseline'
+        assert app.usage(bid)['chat']['input_tokens']==150,'Repeated reads counted live usage twice'
+        app.jobs={}
+        usage.record(app.preferences,{'id':'selected','business_id':bid,'usage':{'input_tokens':50,'output_tokens':5},'updated':time.time(),'model':'pinned-model'},active,'Codex')
+        assert app.preferences['usage_chats']['selected']['input_tokens']==150
+        assert app.preferences['usage_receipts'][0]['model']=='pinned-model'
+        # A bounded cache display does not lose accounting for additional running chats.
+        for i in range(7):
+            ident='extra-'+str(i);app.preferences['chats'].append({**other,'id':ident,'updated':30+i})
+            app.jobs[ident]={'id':ident,'chat_id':ident,'business_id':bid,'workspace':app.workspace_path,'status':'working','usage':{}}
+        many=app.usage(bid);assert len(many['chats'])==5 and many['running_count']==7 and many['hidden_running_count']==3
+        app.jobs={}
         app.preferences['chats']=[]
         app.preferences['usage_chats']={}
         warm_app=Workspace(settings_file=Path(td)/'warm-prefs.json')

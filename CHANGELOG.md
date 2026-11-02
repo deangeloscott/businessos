@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Keep Usage & spend on the selected chat while marking every running chat. Show reported in-flight totals without recording provisional receipts; preserve unknown values and label partial totals.
+- Protect usage/history refreshes from workspace changes and newer chat activity. Read native chat history outside the UI lock, retain fast cached browsing, persist refreshed usage, and reuse one Codex account connection per refresh.
+- Reduce idle/background polling, coalesce sidebar and usage reads, refresh live usage only while visible, and wake selected-chat polling when returning to the tab. Retain active-work progress, notifications and update edit guards through the existing local API.
+
 - Show shared model favorites first in the compact chat picker. Search the owning app’s full model list, star/unstar from results, and share those choices with the existing AI settings picker.
 - Keep personalization requests in one reusable, business/workspace-scoped chat. Opening prepares a draft without submitting AI work or changing an ordinary chat’s draft.
 - Align chat status and Usage & spend, keep Aura beside the workspace name with the sidebar collapsed, and give all modal surfaces the same subtle darkened/blurred backdrop. Keep tool pages and contextual panes nonmodal.
