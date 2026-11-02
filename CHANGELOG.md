@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Use a consistent Edit action and show original-file availability in the save picker, including an explicit read-only option for protected sources.
+
 - Add one local file panel for text/Markdown and CSV/TSV editing, image crop/rotate/resize, PDF viewing/search and streamed media. Share conflict-aware file saves, tracked versions and copies between API and CLI; preserve managed originals and navigation drafts.
 - Offer default-app/optional LibreOffice opening and a clear manual Google editing handoff with imported versions. Document bundled components and licenses through Settings and the component manifest. Bundle browser widgets locally and load only the editor in use; exclude development dependencies from distributions.
 

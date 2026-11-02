@@ -323,7 +323,7 @@ Open a file from Files & media, a chat file link, or a supported Library documen
 
 Save updates the current editable file; New version and Copy create separate files and Assets with lineage. Saves and imported versions are limited to 32 MB. A file changed by another editor cannot be silently overwritten: reload it or save your edits as a copy. Text drafts survive navigation and reload in this browser tab's session storage where available. Unsaved drafts are not canonical business records or a backup.
 
-Only selected-business attachments and knowledge files can be overwritten. Linked locations, canonical record files and managed Library sources are read-only here; Edit a copy saves an owned workspace file without changing the installed source. A copied skill is an editable document, not automatically a newly installed skill. File access rejects private, cross-business and linked-path escapes.
+Only selected-business attachments and knowledge files can be overwritten. Linked locations, canonical record files and managed Library sources are read-only here. The Edit button is consistent; Save to shows Original file (read-only) when overwriting is unavailable. Choose Copy or New version to save an owned workspace file without changing the source. A copied skill is an editable document, not automatically a newly installed skill. File access rejects private, cross-business and linked-path escapes.
 
 The file itself is authoritative. Assets preserve deliberate identities and version relationships, not every keystroke. Edits made in a native application to the same local file appear on reopening or returning to an idle panel. Explicit imported versions are needed for downloaded copies from Google. No separate cloud sync is implied.
 
