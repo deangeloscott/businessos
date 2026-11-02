@@ -66,7 +66,7 @@ async function refresh(light=false) {
     const scope=state.data.workspace+'|'+state.business;if(state.searchScope&&state.searchScope!==scope){state.memoryQuery='';state.fileQuery='';state.scheduleQuery='';state.scheduleFilter='all';state.scheduleDraft=null;state.showPaused=false;fileFilter='all';state.includeRecords=false;}state.searchScope=scope;
     $('.composer').hidden=!state.business;
     $('#connection').disabled=!state.business;
-    $('#chats').disabled=!state.business;
+    $('#chats').disabled=!state.business;$('#add-native-chat').disabled=!state.business;
     const workspaceOptions='<option value="" disabled>Choose a workspace</option>'+state.data.businesses.map(b=>`<option value="${esc(b.id)}">${esc(b.name)}</option>`).join('')+'<option value="__add__">＋ Add or open a workspace</option>';
     $('#business').innerHTML=workspaceOptions;$('#setup-workspace-select').innerHTML=workspaceOptions;
     $('#business').value=state.business;
@@ -2092,6 +2092,7 @@ async function sendSupport(form){
   }catch(error){popup.close();status.textContent=error.message;}finally{if(button.isConnected)button.disabled=false;}
 }
 async function addNativeChat(){
+  if(!state.business)return;
   const scope=JSON.stringify([state.data.workspace,state.business]);
   details('Add existing chat',`<p class="shell-help">Continue a conversation from its original AI app in this workspace.</p><label>AI app<select id="native-chat-kind">${nativeApps.filter(k=>k!=='antigravity').map(k=>`<option value="${k}" ${k===(state.chatMeta?.agent||state.data.connection.selected)?'selected':''}>${esc(appName(k))}</option>`).join('')}</select></label><div id="native-chat-recent" aria-live="polite"></div><form id="native-chat-lookup"><label>Session ID<input name="id" required maxlength="160" placeholder="Find an older conversation by its exact ID"></label><button class="secondary">Find chat</button></form><div id="native-chat-preview"></div><p id="native-chat-status" role="status"></p>`);
   let ticket=0,preview=null;

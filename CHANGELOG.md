@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Move workspace selection into the sidebar header beside its collapse control. Make Add existing easier to find and keep recent-chat actions visible while scrolling.
+
 - Submit selected feedback through the Aura website using the existing ViralTrac account. Review public feature text and keep diagnostics/attachments private; no email, download or separate account service.
 - Add a compact existing-native-chat picker beside Recent chats, with up to five unregistered sessions, exact-ID lookup, source/destination preview and duplicate-safe registration. Preserve native session ownership and project routing.
 - Check idle chats for cheap local transcript changes when returning or foregrounding the tab. Refresh only when changed, retain drafts/scroll, and keep manual refresh for remote or unsupported stores.
