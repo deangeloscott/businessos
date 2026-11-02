@@ -121,6 +121,32 @@ def main():
                 assert source.read_text()=='HTTP save'
                 request('/vendor/../app.js',auth,expect=400)
                 _,body=request('/api/components',auth);assert len(json.loads(body)['components'])==4
+                # Every file entry point resolves the same selected item and source.
+                asset_ref='asset/'+saved['asset']+'/'+source.name
+                _,body=request('/api/sharing?'+urlencode({'business':'alpha','workspace':str(root),'file':asset_ref}),auth)
+                shared=json.loads(body);assert shared['selected_key']=='record:'+saved['asset'] and shared['workspace']==str(root)
+                _,body=request('/api/sharing/file-key',auth,{'business':'alpha','ref':asset_ref})
+                assert json.loads(body)['key']==shared['selected_key']
+                request('/api/sharing?'+urlencode({'business':'alpha','workspace':str(base/'other'),'file':asset_ref}),auth,expect=400)
+                for filename,payload in [('Picture.png',b'\x89PNG\r\n\x1a\nproof'),('Notes.md',b'# Notes')]:
+                    file=folder/filename;file.write_bytes(payload)
+                    _,body=request('/api/sharing?'+urlencode({'business':'alpha','workspace':str(root),'file':file.relative_to(root).as_posix()}),auth)
+                    selected=json.loads(body);assert selected['selected_key']=='file:'+file.relative_to(root).as_posix()
+                    assert any(row['key']==selected['selected_key'] for row in selected['items'])
+                # Selecting a connected child shares only that file, without scanning
+                # or including its whole parent folder. Saved selections still work.
+                _,body=request('/api/sharing?'+urlencode({'business':'alpha','file':'linked/linked-proof/Notes.txt'}),auth)
+                selected=json.loads(body);key=selected['selected_key'];assert key.startswith('file:external/')
+                import workspace_sharing as share
+                selection=share.save_selection(root,'alpha','Linked note',[key],locations=app.preferences['file_locations']['alpha'])
+                assert any(row['key']==key for row in share.public_inventory(root,'alpha',app.preferences['file_locations']['alpha'])['items'])
+                prepared=share.prepare(root,'alpha',selection['keys'],'Just the note',store=base/'share-proof',locations=app.preferences['file_locations']['alpha'])
+                assert len(prepared['items'])==1 and prepared['items'][0]['kind']=='file'
+                archive=share.export_package(prepared['id'],base/'Linked note.zip',store=base/'share-proof')
+                imported=share.import_package(archive['path'],store=base/'share-proof');assert len(imported['items'])==1
+                private=linked/'.env';private.write_text('private')
+                request('/api/sharing?'+urlencode({'business':'alpha','file':'linked/linked-proof/.env'}),auth,expect=400)
+
             finally:server.shutdown();server.server_close();thread.join()
     manifest=json.loads((ROOT/'distribution/ui-components.json').read_text())
     for item in manifest['assets']:

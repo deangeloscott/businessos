@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Preserve the current file and source workspace when opening sharing from Assets, file lists, or linked folders; retain preselection during refresh and reuse saved linked-file selections. Put Share or import beside Preview/Edit, move the copyable path beneath the title, and use Cancel for discarding edits across file types.
+
 - Simplify file actions with one external-editor selector, general Download copy beside Save, reviewed imports, separate sharing, and a single clickable location row. Export pending edits without changing workspace files.
 
 - Use a consistent Edit action and show original-file availability in the save picker, including an explicit read-only option for protected sources.

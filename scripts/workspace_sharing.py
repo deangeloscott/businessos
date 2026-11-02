@@ -175,14 +175,14 @@ def walk(path, notes, excluded=None):
     return out
 
 
-def inventory(root, bid, locations=None):
+def inventory(root, bid, locations=None, keys=(), paths=()):
     root = unlinked(root)
     objs = objects(root, bid)
-    items, notes, excluded, seen = [], [], [], set()
-    for oid, (obj, _) in objs.items():
+    items, notes, excluded, seen, accepted, linked_roots = [], [], [], set(), set(), []
+    for oid, (obj, record_path) in objs.items():
         items.append({'key':'record:' + oid, 'kind':'record', 'title':title(obj), 'description':description(obj), 'type':obj['object_type'],
-                      '_location_reference':obj.get('location_reference')})
-    def add(path, label=None, explicit=False, support_only=False):
+                      '_location_reference':obj.get('location_reference'), '_record_path':str(record_path)})
+    def add(path, label=None, explicit=False, support_only=False, selection_key=None):
         path = Path(path).absolute()
         if path in seen:
             return
@@ -202,11 +202,12 @@ def inventory(root, bid, locations=None):
                 notes.append('Missing: ' + (label or path.name))
                 return
             rel = path.relative_to(root).as_posix() if path.is_relative_to(root) else 'external/' + digest(str(path))[:16] + '/' + path.name
-            key = ('folder:' if path.is_dir() else 'file:') + rel
+            key = selection_key or ('folder:' if path.is_dir() else 'file:') + rel
             items.append({'key':key, 'kind':'folder' if path.is_dir() else 'file', 'title':label or path.name,
                           'location':rel, '_path':str(path), 'bytes':path.stat().st_size if path.is_file() else None,
                           '_support_only':support_only,
                           'external':not path.is_relative_to(root)})
+            accepted.add(path)
         except (OSError, ValueError):
             notes.append('Unavailable or linked location: ' + (label or path.name))
     for base in (root / 'attachments' / bid, root / 'knowledge' / bid / 'notes'):
@@ -230,13 +231,46 @@ def inventory(root, bid, locations=None):
                 path = Path(ref) if Path(ref).is_absolute() else root / ref
                 if path.exists():
                     add(path, title(obj), True, obj['object_type']=='SourceRecord')
+                    try:
+                        linked=unlinked(path)
+                        if linked.is_dir() and linked in accepted:linked_roots.append(linked)
+                    except (OSError,ValueError):pass
     for row in locations if locations is not None else storage.view_preferences(root).get('file_locations', {}).get(bid, []):
         add(row['path'], row.get('name'), True)
+        try:
+            linked=unlinked(row['path'])
+            if linked.is_dir() and linked in accepted:linked_roots.append(linked)
+        except (OSError,ValueError):pass
+    # Resolve just the requested children of connected folders. Do not scan an
+    # entire linked drive or silently select its parent folder instead.
+    for key in keys:
+        if not isinstance(key,str) or not key.startswith('file:external/'):continue
+        parts=key[5:].split('/',2)
+        if len(parts)!=3:continue
+        for linked in linked_roots:
+            if digest(str(linked))[:16]==parts[1]:
+                candidate=unlinked(linked/safe(parts[2]))
+                if not candidate.is_relative_to(linked):raise ValueError('This file is outside its linked folder.')
+                add(candidate,selection_key=key)
+                break
+    for requested in paths:
+        requested=unlinked(requested)
+        if requested in seen:continue
+        if any(requested.is_relative_to(root/area/bid) for area in ('attachments','knowledge')):
+            add(requested)
+        else:
+            for linked in sorted(set(linked_roots),key=lambda p:len(p.parts),reverse=True):
+                if requested.is_relative_to(linked) and requested!=linked:
+                    relative=requested.relative_to(linked).as_posix()
+                    add(requested,selection_key='file:external/'+digest(str(linked))[:16]+'/'+relative)
+                    break
     return {'items':items, 'notes':sorted(set(notes))[:100], 'excluded':sorted(set(excluded))[:100]}
 
 
-def public_inventory(root, bid, locations=None):
-    inv = inventory(root, bid, locations)
+def public_inventory(root, bid, locations=None, selected_path=None):
+    selections=history(root,bid)['selections']
+    saved_keys=[key for selection in selections if isinstance(selection,dict) for key in selection.get('keys',[]) if isinstance(key,str)]
+    inv = inventory(root, bid, locations, keys=saved_keys, paths=[selected_path] if selected_path else ())
     public = []
     by_path = {row['_path']:row for row in inv['items'] if row.get('_path') and not row.get('_support_only')}
     for row in inv['items']:
@@ -252,8 +286,17 @@ def public_inventory(root, bid, locations=None):
                     visible.update(related_key=related['key'], file_kind=related['kind'], file_name=path.name,
                                    location=related['location'], bytes=related['bytes'], external=related['external'])
         public.append(visible)
-    return {'items':public, 'notes':inv['notes'], 'excluded':inv['excluded'],
-            'selections':history(root, bid)['selections']}
+    result={'items':public, 'notes':inv['notes'], 'excluded':inv['excluded'],
+            'selections':selections}
+    if selected_path:
+        selected_path=str(unlinked(selected_path))
+        found=next((row for row in inv['items'] if row.get('_record_path')==selected_path),None)
+        if not found:
+            found=next((row for row in inv['items'] if row.get('_path')==selected_path and not row.get('_support_only')),None)
+            if found:found=next((row for row in public if row.get('related_key')==found['key']),found)
+        if not found:raise ValueError('This file is not available for sharing. Save a workspace copy first.')
+        result['selected_key']=found['key']
+    return result
 
 
 def metadata(root, bid):
@@ -278,7 +321,7 @@ def save_selection(root, bid, name, keys, note='', selection_id='', locations=No
     name = str(name).strip()
     if not name or len(name) > 160 or not isinstance(keys, list) or not keys or len(keys) > MAX_FILES:
         raise ValueError('Name a non-empty selection of up to 10,000 items.')
-    available = {r['key'] for r in inventory(root, bid, locations)['items']}
+    available = {r['key'] for r in inventory(root, bid, locations, keys=keys)['items']}
     if any(key not in available for key in keys):
         raise ValueError('Some selected items are no longer available. Refresh the selection.')
     with destination_lock(root):
@@ -424,7 +467,9 @@ def prepare(root, bid, keys, name='', note='', store=None, locations=None):
 def _prepare(root, bid, keys, name, note, store, locations, ident):
     root = unlinked(root)
     org = business(root, bid)
-    inv = inventory(root, bid, locations)
+    if not isinstance(keys,list) or not keys or len(keys)>MAX_FILES or any(not isinstance(key,str) for key in keys):
+        raise ValueError('Choose available information, files, or folders to share.')
+    inv = inventory(root, bid, locations, keys=keys)
     available = {r['key']:r for r in inv['items']}
     if not isinstance(keys, list) or not keys or len(keys) > MAX_FILES or any(k not in available for k in keys):
         raise ValueError('Choose available information, files, or folders to share.')

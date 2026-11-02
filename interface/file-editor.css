@@ -12,13 +12,13 @@
 .file-open-row button,.file-install-actions button{font-size:12px}
 .file-open-panel p{margin:12px 0 0}
 .file-install-actions{display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin-top:12px}
-.file-secondary-actions{display:flex;align-items:center;flex-wrap:wrap;gap:8px 20px;padding:14px 0;border-top:1px solid var(--line)}
-.file-secondary-actions:empty{display:none}
-.file-secondary-actions button{font-size:12px;padding:4px 0}
 .file-pending-import{padding:28px 20px;text-align:center;overflow-wrap:anywhere}
 .file-pending-import strong{font-size:14px}.file-pending-import p{font-size:12px;margin:10px 0 0}
-.file-location{display:grid;grid-template-columns:minmax(0,1fr) 16px;gap:5px 12px;align-items:center;width:100%;margin:12px 0 0;padding:10px 12px;text-align:left;border:1px solid var(--line);border-radius:8px;background:var(--paper);color:var(--muted)}
-.file-location:hover{background:var(--hover);color:var(--ink)}
-.file-location-caption{grid-column:1/-1;font-size:10px}
-.file-location-path{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;font:11px/1.5 ui-monospace,monospace}
-@media(max-width:760px){.file-open-row button,.file-install-actions button,.file-save-actions button,.file-secondary-actions button{min-height:40px}.file-secondary-actions{gap:6px 18px}}
+#detail:has(#file-workspace)>.dialog-top{padding-bottom:7px}
+.file-location{display:flex;align-items:center;gap:8px;max-width:100%;min-width:0;margin:0 0 19px;padding:3px 0;text-align:left;border:0;border-radius:3px;background:transparent;color:var(--muted)}
+.file-location:hover{color:var(--ink)}.file-location:hover .file-location-path{text-decoration:underline}
+.file-location svg{flex:none;width:13px;height:13px}
+.file-location-path{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;font:10px/1.5 ui-monospace,monospace}
+.file-transfer-panel{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:0 0 18px;padding:12px;border:1px solid var(--line);border-radius:8px;background:var(--paper)}
+.file-transfer-panel button{font-size:12px}.file-transfer-panel p{flex-basis:100%;font-size:12px;margin:0;color:var(--muted)}
+@media(max-width:760px){.file-open-row button,.file-install-actions button,.file-save-actions button,.file-transfer-panel button{min-height:40px}.file-modes{flex-wrap:wrap}}

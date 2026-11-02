@@ -2122,7 +2122,10 @@ def handler_for(app):
                         **discovered, 'items':discovered['items'] + missing, 'default_home':str(workspace_catalog.default_home())})
                 elif route == '/api/sharing':
                     bid = selected(query.get('business'))
-                    result = workspace_sharing.public_inventory(workspace_root(), bid, app.preferences['file_locations'].get(bid, []))
+                    if query.get('workspace') and query['workspace']!=app.workspace_path:raise ValueError('The workspace changed. Reopen sharing from the file.')
+                    locations=app.preferences['file_locations'].get(bid, [])
+                    selected_path=local_file(bid,query['file'],locations) if query.get('file') else None
+                    result = workspace_sharing.public_inventory(workspace_root(), bid, locations, selected_path=selected_path)
                     destinations = []
                     for path in dict.fromkeys([str(workspace_root()), *(r['path'] for r in app.recent_workspaces())]):
                         row = workspace_catalog.preview(path)
@@ -2297,11 +2300,8 @@ def handler_for(app):
                             workspace_catalog.write_json(workspace_sharing._job(result['id'], store) / 'ui-scope.json', {'workspace':str(workspace_root()), 'business':bid})
                         elif action == 'file-key':
                             original = local_file(bid, str(data.get('ref','')), app.preferences['file_locations'].get(bid, []))
-                            inventory = workspace_sharing.inventory(workspace_root(), bid, app.preferences['file_locations'].get(bid, []))
-                            found = next((row for row in inventory['items'] if row.get('_path') == str(original)), None)
-                            if not found:
-                                raise ValueError('This file is not available for sharing. Choose its project folder or saved Asset.')
-                            result = {'key':found['key']}
+                            inventory = workspace_sharing.public_inventory(workspace_root(),bid,app.preferences['file_locations'].get(bid, []),selected_path=original)
+                            result = {'key':inventory['selected_key']}
                         elif action == 'selection':
                             result = workspace_sharing.save_selection(workspace_root(), bid, data.get('name',''), data.get('keys'), data.get('note',''), data.get('selection_id',''), app.preferences['file_locations'].get(bid, []))
                         elif action == 'discover':

@@ -677,7 +677,7 @@ async function render() {
     }}
     return;
   }
-  if(state.view==='sharing'){if(sharing?.scope===sharingScope())renderSharing();else await openSharing();return;}
+  if(state.view==='sharing'){if(sharingOpening?.scope===sharingScope())await sharingOpening.promise;else if(sharing?.scope===sharingScope())renderSharing();else await openSharing();return;}
   if(state.view==='updates'){await openUpdates();return;}
   if(state.view==='work')state.library=await cachedApi('/api/library');
   if(!current())return;
@@ -1130,18 +1130,18 @@ function recordDetails(ref) {
   if(r.type==='SourceRecord') {
     const text=r.data.extensions?.businessos_evidence?.captured_text;
     const shared=r.data.extensions?.aura_sharing;
-    details(r.title,`${shared?`<p class="small-note">Shared by ${esc(shared.origin.name)} · Copied ${stamp(shared.copied_at)}. Source material; local business facts stay separate.</p><p><button class="text-button" data-file="${esc(r.data.source_reference)}">Open shared material →</button></p>`:''}${text?'<pre>'+esc(text)+'</pre>':'<p>'+esc(r.data.source_reference||'Saved source')+'</p>'}<button class="text-button" data-prompt="${esc(`Use the saved AURA source ${r.ref} to help with our current work. Read the actual source and distinguish its claims from established facts.`)}">Prepare a request →</button><p><button class="text-button" data-share-record="${esc(r.ref)}">Share a copy →</button></p><details><summary>File details</summary><p>${esc(r.path)}</p><pre>${esc(JSON.stringify(r.data,null,2))}</pre></details>`,'context');
+    details(r.title,`${shared?`<p class="small-note">Shared by ${esc(shared.origin.name)} · Copied ${stamp(shared.copied_at)}. Source material; local business facts stay separate.</p><p><button class="text-button" data-file="${esc(r.data.source_reference)}">Open shared material →</button></p>`:''}${text?'<pre>'+esc(text)+'</pre>':'<p>'+esc(r.data.source_reference||'Saved source')+'</p>'}<button class="text-button" data-prompt="${esc(`Use the saved AURA source ${r.ref} to help with our current work. Read the actual source and distinguish its claims from established facts.`)}">Prepare a request →</button><p><button class="text-button" data-share-record="${esc(r.ref)}" data-share-scope="${esc(sharingScope())}">Share a copy →</button></p><details><summary>File details</summary><p>${esc(r.path)}</p><pre>${esc(JSON.stringify(r.data,null,2))}</pre></details>`,'context');
     return;
   }
   const mechanical=new Set(['id','object_type','schema_version','business_id','lineage','created_at','updated_at','extensions']);
   const fields=Object.entries(r.data).filter(([k,v])=>!mechanical.has(k)&&!['name','title'].includes(k)&&v!==null&&!(Array.isArray(v)&&!v.length));
-  details(r.title,`<p>${r.type==='Objective'?'Goal':esc(human(r.type))}</p>${fields.map(([k,v])=>`<div class="field"><strong>${esc(human(k))}</strong><p>${esc(pretty(v))}</p></div>`).join('')}${r.type==='Objective'?`<form id="edit-goal-form" class="form-grid" data-ref="${esc(r.ref)}"><label>Update this goal<input name="name" value="${esc(r.title)}" required maxlength="2000"></label><button class="primary">Save goal</button></form>`:''}<p><button class="text-button" data-prompt="${esc(`Help me work with the saved AURA record ${r.ref}: ${r.title}. Read the actual record and ask only what is necessary.`)}">Work with your AI ↗</button></p><p><button class="text-button" data-share-record="${esc(r.ref)}">Share a copy →</button></p><details><summary>File details</summary><p>${esc(r.path)}</p><pre>${esc(JSON.stringify(r.data,null,2))}</pre></details>`,'context');
+  details(r.title,`<p>${r.type==='Objective'?'Goal':esc(human(r.type))}</p>${fields.map(([k,v])=>`<div class="field"><strong>${esc(human(k))}</strong><p>${esc(pretty(v))}</p></div>`).join('')}${r.type==='Objective'?`<form id="edit-goal-form" class="form-grid" data-ref="${esc(r.ref)}"><label>Update this goal<input name="name" value="${esc(r.title)}" required maxlength="2000"></label><button class="primary">Save goal</button></form>`:''}<p><button class="text-button" data-prompt="${esc(`Help me work with the saved AURA record ${r.ref}: ${r.title}. Read the actual record and ask only what is necessary.`)}">Work with your AI ↗</button></p><p><button class="text-button" data-share-record="${esc(r.ref)}" data-share-scope="${esc(sharingScope())}">Share a copy →</button></p><details><summary>File details</summary><p>${esc(r.path)}</p><pre>${esc(JSON.stringify(r.data,null,2))}</pre></details>`,'context');
 }
 async function openFileWorkspace(ref,option='') {
   const business=state.business,workspace=state.data.workspace;
   const module=await import('/file-editor.js');
   if(business!==state.business||workspace!==state.data.workspace)return;
-  await module.openFile({ref,option,business,workspace,token,api,details,markdown:chatMarkdown,share:ref=>openSharing(ref.startsWith('asset/')?'record:'+ref.slice(6):'file:'+ref),current:()=>state.business===business&&state.data.workspace===workspace,
+  await module.openFile({ref,option,business,workspace,token,api,details,markdown:chatMarkdown,share:ref=>attempt(async()=>{if(state.business!==business||state.data.workspace!==workspace)throw new Error('The workspace changed. Reopen the file before sharing.');await openSharing('file:'+ref);}),current:()=>state.business===business&&state.data.workspace===workspace,
     saved:async()=>{invalidateReads();const [files,data]=await Promise.all([api('/api/files?business='+encodeURIComponent(business)),api('/api/state?business='+encodeURIComponent(business))]);if(state.business!==business||state.data.workspace!==workspace)return;state.files=files.items;state.data.records=data.records;state.data.records_revision=data.records_revision;if($('#file-list'))renderFiles();if($('#quick-files'))renderQuickFiles();}
   });
 }
@@ -1176,7 +1176,7 @@ async function backupSummary() {
   $('#backup-link-summary').innerHTML=plan.links.length?`<details><summary>${plan.links.length} linked file locations</summary><ul>${plan.links.map(l=>`<li>${esc(l.name)} · ${l.missing?'Unavailable':l.included?'Files included':'Reference only'}</li>`).join('')}</ul></details>`:'';
   if(plan.excluded.length)$('#backup-link-summary').insertAdjacentHTML('beforeend',`<details><summary>${plan.excluded.length} private, cache, or application items excluded</summary><ul>${plan.excluded.slice(0,12).map(p=>`<li>${esc(p)}</li>`).join('')}</ul></details>`);
 }
-let sharing=null;
+let sharing=null,sharingOpening=null;
 const shareType=type=>({Business:'Business details',SourceRecord:'Saved source',Asset:'Saved file',Objective:'Goal',Observation:'Finding',PreferenceProfile:'Preferences',MetricObservation:'Measurement',ProofRecord:'Evidence'})[type]||human(type);
 const sharingScope=()=>JSON.stringify([state.data?.workspace,state.business]);
 async function shareApi(action,data={}) {
@@ -1187,19 +1187,25 @@ async function shareApi(action,data={}) {
   return result;
 }
 async function openSharing(key='') {
-  state.view='sharing';$('#section-dialog').close();recordShellRoute();renderShell();
-  $('#more-dialog').close();
   const scope=sharingScope(),business=state.business;
   if(!business){notice('Open a business before sharing.',true);return;}
-  details('Share or import', '<p role="status">Finding saved information and files…</p>');
-  const data=await api('/api/sharing?business='+encodeURIComponent(business));
-  if(scope!==sharingScope())return;
-  sharing={scope,business,...data,selected:new Set(),tab:'share',query:'',filter:'all',fileType:'all',selectedOnly:false,stage:'select',selectionId:'',name:'',note:'',groupOpen:{},queryGroupOpen:{},groupLimits:{},recordByKey:new Map((state.data.records||[]).map(r=>['record:'+r.ref,r]))};
-  if(key.startsWith('file:')) {
-    const resolved=await shareApi('file-key',{ref:key.slice(5)});sharing.selected.add(resolved.key);
-  } else if(data.items.some(r=>r.key===key))sharing.selected.add(key);
-  if(key)sharing.selectedOnly=true;
-  renderSharing();
+  // Refreshes may render while a file's selection is being resolved. Reuse that
+  // opening request instead of replacing its explicit selection with an empty one.
+  if(!key&&sharingOpening?.scope===scope)return sharingOpening.promise;
+  const opening={scope};sharingOpening=opening;
+  opening.promise=(async()=>{
+    state.view='sharing';$('#section-dialog').close();recordShellRoute();renderShell();$('#more-dialog').close();
+    details('Share or import', '<p role="status">Finding saved information and files…</p>');
+    const query=new URLSearchParams({business,workspace:state.data.workspace,...(key.startsWith('file:')?{file:key.slice(5)}:{})});
+    const data=await api('/api/sharing?'+query);
+    if(scope!==sharingScope()||sharingOpening!==opening||state.view!=='sharing')return;
+    if(data.workspace!==state.data.workspace||data.business!==business)throw new Error('The workspace changed. Reopen sharing from the file.');
+    const selected=data.selected_key||(data.items.some(r=>r.key===key)?key:'');
+    if(key&&!data.items.some(row=>row.key===selected))throw new Error('This item is no longer available for sharing. Reopen it and try again.');
+    sharing={scope,business,...data,selected:new Set(selected?[selected]:[]),tab:'share',query:'',filter:'all',fileType:'all',selectedOnly:!!selected,stage:'select',selectionId:'',name:'',note:'',groupOpen:{},queryGroupOpen:{},groupLimits:{},recordByKey:new Map((state.data.records||[]).map(r=>['record:'+r.ref,r]))};
+    renderSharing();
+  })();
+  try{return await opening.promise;}finally{if(sharingOpening===opening)sharingOpening=null;}
 }
 function sharingTabs() {
   return `<div class="filters share-tabs" aria-label="Sharing sections">${[['share','Share selected items'],['import','Import a package'],['history','Import history']].map(([key,label])=>`<button type="button" data-share-tab="${key}" class="${sharing.tab===key?'active':''}" aria-pressed="${sharing.tab===key}">${label}</button>`).join('')}</div>`;
@@ -1213,7 +1219,7 @@ function renderSharing() {
     details('Share or import',sharingTabs()+`<p>Find an AURA sharing ZIP and review its contents before choosing a destination.</p><div class="inline-actions share-picker-tools"><button type="button" class="secondary" id="share-choose-package">Choose file…</button><button type="button" class="text-button" id="share-discover-folder">Find in folder…</button><button type="button" class="text-button" id="share-discover-refresh">Refresh list</button></div><section class="share-discovery"><h3>Available packages</h3><label class="sr-only" for="share-package-search">Search packages</label><input id="share-package-search" type="search" placeholder="Search package names, sources or locations…" value="${esc(sharing.packageQuery||'')}"><p class="small-note" id="share-discovery-status" role="status"></p><div id="share-discovered"></div></section><details class="share-manual"><summary>Enter a package location</summary><form id="share-import-form" class="form-grid"><label>Sharing ZIP<input id="share-archive" name="path" required placeholder="Paste the full ZIP file location" value="${esc(sharing.archivePath||'')}"></label><button class="primary">Read package →</button></form></details><p class="small-note">For a complete workspace backup, use <button class="text-button" id="workspace-backups">Back up or restore</button>.</p>`);
     if(sharing.discovered)renderDiscoveredPackages();else attempt(()=>loadSharingPackages());return;
   }
-  details('Share or import',sharingTabs()+`<p>Send useful information and files to another workspace. Originals stay here.</p><a class="community-entry" href="https://viraltrac.com/aura/community/" target="_blank" rel="noopener noreferrer"><span><strong>Innovation Exchange</strong><small>Explore community setups and share useful work.</small></span><span aria-hidden="true">↗</span></a>${sharing.selections.length?`<label class="share-saved-label">Saved selections<select id="share-saved"><option value="">Start a new selection</option>${sharing.selections.map(r=>`<option value="${esc(r.id)}" ${sharing.selectionId===r.id?'selected':''}>${esc(r.name)}</option>`).join('')}</select></label>${sharing.selectionId?'<div class="inline-actions share-saved-actions"><button type="button" class="secondary" id="share-edit-selection">Edit saved selection</button><button type="button" class="text-button" id="share-new-selection">New selection</button></div>':''}${sharing.selectionMessage?`<p class="small-note" role="status">${esc(sharing.selectionMessage)}</p>`:''}`:''}<label class="sr-only" for="share-search">Find items to share</label><input id="share-search" class="search" type="search" placeholder="Search saved information, files, or folders…" maxlength="240" value="${esc(sharing.query)}"><div class="share-list-controls"><div class="filters compact-filters" aria-label="Sharing categories">${[['all','All'],['record','Business information'],['files','Files & folders']].map(([key,label])=>`<button type="button" data-share-filter="${key}" class="${sharing.filter===key?'active':''}" aria-pressed="${sharing.filter===key}">${label}</button>`).join('')}</div><button type="button" class="text-button share-selected-toggle" id="share-selected-only" aria-pressed="${sharing.selectedOnly}">Selected only <span id="share-selected-total">${sharing.selected.size}</span></button></div><label id="share-file-type-label" class="share-type-label" ${sharing.filter==='files'?'':'hidden'}>File type<select id="share-file-type">${[['all','All files & folders'],['folders','Project folders'],...fileKinds.filter(([k])=>k!=='all')].map(([k,n])=>`<option value="${k}" ${sharing.fileType===k?'selected':''}>${n}</option>`).join('')}</select></label><p id="share-search-note" class="small-note" role="status">Searches names, saved information and locations; not file contents.</p><div id="share-items" class="share-items" aria-label="Items to share"></div>${sharing.notes.length?`<details class="share-options"><summary>Unavailable locations</summary><ul>${sharing.notes.map(n=>`<li>${esc(n)}</li>`).join('')}</ul></details>`:''}${sharing.excluded?.length?`<details class="share-options"><summary>Excluded from sharing</summary><p>Project folders can be shared. Private settings, caches, credentials and folder links stay out.</p><ul>${sharing.excluded.map(n=>`<li>${esc(n)}</li>`).join('')}</ul></details>`:''}<div class="share-selection-bar"><span id="share-count" role="status"></span><button type="button" class="text-button" id="share-clear">Clear selection</button><button type="button" class="secondary" id="share-package">Create package</button><button type="button" class="primary" id="share-continue">Continue →</button></div>`);
+  details('Share or import',sharingTabs()+`<p>Sharing from <strong>${esc(rows('Business')[0]?.title||sharing.business)}</strong>. Choose another workspace or export a package; originals stay here.</p><a class="community-entry" href="https://viraltrac.com/aura/community/" target="_blank" rel="noopener noreferrer"><span><strong>Innovation Exchange</strong><small>Explore community setups and share useful work.</small></span><span aria-hidden="true">↗</span></a>${sharing.selections.length?`<label class="share-saved-label">Saved selections<select id="share-saved"><option value="">Start a new selection</option>${sharing.selections.map(r=>`<option value="${esc(r.id)}" ${sharing.selectionId===r.id?'selected':''}>${esc(r.name)}</option>`).join('')}</select></label>${sharing.selectionId?'<div class="inline-actions share-saved-actions"><button type="button" class="secondary" id="share-edit-selection">Edit saved selection</button><button type="button" class="text-button" id="share-new-selection">New selection</button></div>':''}${sharing.selectionMessage?`<p class="small-note" role="status">${esc(sharing.selectionMessage)}</p>`:''}`:''}<label class="sr-only" for="share-search">Find items to share</label><input id="share-search" class="search" type="search" placeholder="Search saved information, files, or folders…" maxlength="240" value="${esc(sharing.query)}"><div class="share-list-controls"><div class="filters compact-filters" aria-label="Sharing categories">${[['all','All'],['record','Business information'],['files','Files & folders']].map(([key,label])=>`<button type="button" data-share-filter="${key}" class="${sharing.filter===key?'active':''}" aria-pressed="${sharing.filter===key}">${label}</button>`).join('')}</div><button type="button" class="text-button share-selected-toggle" id="share-selected-only" aria-pressed="${sharing.selectedOnly}">Selected only <span id="share-selected-total">${sharing.selected.size}</span></button></div><label id="share-file-type-label" class="share-type-label" ${sharing.filter==='files'?'':'hidden'}>File type<select id="share-file-type">${[['all','All files & folders'],['folders','Project folders'],...fileKinds.filter(([k])=>k!=='all')].map(([k,n])=>`<option value="${k}" ${sharing.fileType===k?'selected':''}>${n}</option>`).join('')}</select></label><p id="share-search-note" class="small-note" role="status">Searches names, saved information and locations; not file contents.</p><div id="share-items" class="share-items" aria-label="Items to share"></div>${sharing.notes.length?`<details class="share-options"><summary>Unavailable locations</summary><ul>${sharing.notes.map(n=>`<li>${esc(n)}</li>`).join('')}</ul></details>`:''}${sharing.excluded?.length?`<details class="share-options"><summary>Excluded from sharing</summary><p>Project folders can be shared. Private settings, caches, credentials and folder links stay out.</p><ul>${sharing.excluded.map(n=>`<li>${esc(n)}</li>`).join('')}</ul></details>`:''}<div class="share-selection-bar"><span id="share-count" role="status"></span><button type="button" class="text-button" id="share-clear">Clear selection</button><button type="button" class="secondary" id="share-package">Create package</button><button type="button" class="primary" id="share-continue">Continue →</button></div>`);
   renderShareItems();
 }
 function resetSharingSelection(){
@@ -1400,6 +1406,7 @@ document.addEventListener('change',event=>attempt(async()=>{
 }));
 document.addEventListener('click',event=>attempt(async()=>{
   const b=event.target.closest('button');if(!b)return;
+  if(b.dataset.shareScope&&b.dataset.shareScope!==sharingScope())throw new Error('The workspace changed. Reopen the item before sharing.');
   if(b.id==='workspace-sharing'||b.dataset.shareRecord||b.dataset.shareFile)await openSharing(b.dataset.shareRecord?'record:'+b.dataset.shareRecord:b.dataset.shareFile?'file:'+b.dataset.shareFile:'');
   if(b.dataset.shareTab){sharing.tab=b.dataset.shareTab;renderSharing();}
   if(b.dataset.shareFilter){if(b.dataset.shareFilter==='all'){sharing.selectedOnly=false;$('#share-selected-only').setAttribute('aria-pressed','false');}sharing.filter=b.dataset.shareFilter;sharing.groupLimits={};$('#share-file-type-label').hidden=sharing.filter!=='files';document.querySelectorAll('[data-share-filter]').forEach(el=>{el.classList.toggle('active',el===b);el.setAttribute('aria-pressed',String(el===b));});renderShareItems();}
@@ -2224,8 +2231,8 @@ function renderComposerConnection(){
   $('#chat-refresh').hidden=!state.chatMeta||state.view!=='home';$('#chat-refresh').disabled=state.busy||state.navigating||state.refreshingChat;
 }
 function workspaceLocation(){
-  const path=sharing?.workspace||state.data.workspace;
-  return `<div class="workspace-location"><span>Current workspace</span><button type="button" data-copy-workspace="${esc(path)}" title="Copy ${esc(path)}"><span>${esc(path)}</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M8 8h12v13H8zM16 8V3H3v13h5"/></svg></button><small id="workspace-copy-status" role="status"></small></div>`;
+  const path=sharing?.scope===sharingScope()?sharing.workspace:state.data.workspace, label=state.view==='sharing'&&sharing?.tab==='share'?'Source workspace':'Current workspace';
+  return `<div class="workspace-location"><span>${label}</span><button type="button" data-copy-workspace="${esc(path)}" title="Copy ${esc(path)}"><span>${esc(path)}</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M8 8h12v13H8zM16 8V3H3v13h5"/></svg></button><small id="workspace-copy-status" role="status"></small></div>`;
 }
 function returnToChat(){state.view='home';$('#detail').close();$('#section-dialog').close();recordShellRoute();renderShell();$('#request').focus();}
 async function refreshChat(){

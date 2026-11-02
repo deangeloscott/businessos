@@ -40,15 +40,25 @@ async function render(view){
   if(!live(view))return;destroyWidgets(view);const info=view.info;
   const editing=view.editing||view.dirty;
   view.host.innerHTML=`
+    <button type="button" id="file-copy-location" class="file-location" title="${esc(info.location||view.ctx.ref)}" aria-label="Copy file location">
+      <span class="file-location-path">${esc(info.location||view.ctx.ref)}</span>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V4a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h4"/></svg>
+    </button>
     <div class="file-toolbar">
       <div class="filters file-modes">
         <button type="button" data-file-mode="preview" class="${view.editing?'':'active'}" aria-pressed="${!view.editing}">Preview</button>
         ${info.editable&&!view.imported?`<button type="button" data-file-mode="edit" class="${view.editing?'active':''}" aria-pressed="${view.editing}">Edit</button>`:''}
+        <button type="button" data-file-action="transfer" aria-controls="file-transfer-panel" aria-expanded="false">${view.ctx.ref.startsWith('library/')?'Import':'Share or import'}</button>
       </div>
       <div class="file-toolbar-actions">
         <button type="button" class="text-button" data-file-action="expand">${$('#detail').hasAttribute('data-file-wide')?'Reduce':'Expand'}</button>
         <button type="button" class="secondary" data-file-action="open" aria-controls="file-open-panel" aria-expanded="false">Open in…</button>
       </div>
+    </div>
+    <div id="file-transfer-panel" class="file-transfer-panel" hidden>
+      ${!view.ctx.ref.startsWith('library/')?'<button type="button" class="secondary" id="file-share-copy">Share this file</button>':''}
+      ${info.revision?'<button type="button" class="secondary" id="file-import-choose">Import edited version…</button><input id="file-import-edited" type="file" hidden>':''}
+      ${view.dirty&&!view.ctx.ref.startsWith('library/')?'<p>Save your changes before sharing this file.</p>':''}
     </div>
     <div id="file-open-panel" class="file-open-panel" hidden></div>
     <div id="file-tools"></div>
@@ -63,22 +73,15 @@ async function render(view){
     <div class="file-save-actions">
       <button type="button" id="file-save" class="primary" ${editing?'':'hidden'} ${view.dirty?'':'disabled'}>Save</button>
       <button type="button" id="file-download" class="secondary">Download copy</button>
-      <button type="button" class="text-button" data-file-action="revert" ${editing?'':'hidden'}>${view.imported?'Cancel import':'Revert edits'}</button>
+      <button type="button" class="text-button" data-file-action="revert" ${editing?'':'hidden'}>Cancel</button>
     </div>
     <p id="file-status" class="file-status" role="status">${view.imported?'Edited file ready to save.':view.dirty?'Unsaved changes':''}</p>
     <div id="file-conflict" class="file-conflict" hidden>
       <button type="button" class="secondary" data-file-action="reload">Reload file</button>
       <button type="button" class="secondary" data-file-action="conflict-copy">Save edits as a copy</button>
     </div>
-    <div class="file-secondary-actions">
-      ${info.revision?'<button type="button" class="text-button" id="file-import-choose">Import edited version…</button><input id="file-import-edited" type="file" hidden>':''}
-      ${!view.ctx.ref.startsWith('library/')?'<button type="button" class="text-button" id="file-share-copy" title="Share a copy with another workspace">Share…</button>':''}
-    </div>
     ${info.related?.length>1?`<details class="file-related"><summary>Versions &amp; copies · ${info.related.length}</summary>${info.related.map(r=>`<button type="button" class="row compact" data-file-related="${esc(r.ref)}"><span>${esc(r.name)}</span><small>v${esc(r.version)}</small></button>`).join('')}</details>`:''}
-    <button type="button" id="file-copy-location" class="file-location" title="${esc(info.location||view.ctx.ref)}" aria-label="Copy file location">
-      <span class="file-location-caption">Location</span><span class="file-location-path">${esc(info.location||view.ctx.ref)}</span>
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V4a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h4"/></svg>
-    </button>`;
+`;
   const mode=view.host.querySelector('#file-save-mode');mode.value=view.mode;
   if(!mode.value||mode.selectedOptions[0]?.disabled){mode.value='copy';view.mode='copy';}
   view.host.querySelector('#file-name-field').hidden=view.mode==='save';
@@ -87,7 +90,7 @@ async function render(view){
   view.host.querySelector('#file-save').onclick=()=>save(view);
   view.host.querySelector('#file-download').onclick=()=>download(view);
   view.host.querySelector('#file-copy-location').onclick=async()=>{try{await navigator.clipboard.writeText(info.location||view.ctx.ref);status(view,'File location copied.');}catch(e){status(view,e.message,true);}};
-  view.host.querySelector('#file-share-copy')?.addEventListener('click',()=>view.ctx.share?.(view.ctx.ref));
+  view.host.querySelector('#file-share-copy')?.addEventListener('click',()=>{if(!live(view))return;if(view.dirty){status(view,'Save your changes before sharing this file.');return;}view.ctx.share?.(view.ctx.ref);});
   const importer=view.host.querySelector('#file-import-edited');
   if(importer){
     importer.accept=info.name.includes('.')?'.'+info.name.split('.').at(-1):'';
@@ -99,6 +102,9 @@ async function render(view){
     if(button.dataset.fileRelated)openFile({...view.ctx,ref:button.dataset.fileRelated});
     if(action==='expand'){$('#detail').toggleAttribute('data-file-wide');button.textContent=$('#detail').hasAttribute('data-file-wide')?'Reduce':'Expand';if(info.kind==='pdf')renderPdf(view);view.table?.redraw(true);}
     if(action==='open')openPanel(view);
+    if(action==='transfer'){
+      const panel=view.host.querySelector('#file-transfer-panel');panel.hidden=!panel.hidden;button.classList.toggle('active',!panel.hidden);button.setAttribute('aria-expanded',String(!panel.hidden));
+    }
     if(action==='revert'||action==='reload'){if(view.dirty&&!confirm('Discard these unsaved edits and reload the file?'))return;clearDraft(view);openFile(view.ctx);}
     if(action==='conflict-copy'){view.mode='copy';view.name=nextName(view);save(view);}
   };
@@ -232,7 +238,7 @@ function openPanel(view){
   const select=panel.querySelector('#file-open-app'),go=panel.querySelector('#file-open-go'),help=panel.querySelector('#file-open-help');select.value=view.application||'default';
   const update=()=>{
     view.application=select.value;const missing=select.value==='libreoffice'&&!view.info.libreoffice_installed;go.hidden=missing;
-    help.innerHTML=missing?'<p>Install LibreOffice, then check again.</p><div class="file-install-actions"><a class="secondary" href="https://www.libreoffice.org/download/" target="_blank" rel="noopener noreferrer">Get LibreOffice ↗</a><button type="button" class="text-button" id="file-open-check">Check again</button></div>':select.value==='google'?'<p>Opens Google Drive. Use Download copy below, upload it there, then bring your edits back with Import edited version.</p>':'';
+    help.innerHTML=missing?'<p>Install LibreOffice, then check again.</p><div class="file-install-actions"><a class="secondary" href="https://www.libreoffice.org/download/" target="_blank" rel="noopener noreferrer">Get LibreOffice ↗</a><button type="button" class="text-button" id="file-open-check">Check again</button></div>':select.value==='google'?'<p>Opens Google Drive. Download a copy, upload it there, then use Share or import to bring your edited version back.</p>':'';
     help.querySelector('#file-open-check')?.addEventListener('click',async event=>{
       const button=event.currentTarget;button.disabled=true;button.textContent='Checking…';
       try{const fresh=await api(view,'/api/documents?'+new URLSearchParams({business:view.ctx.business,workspace:view.ctx.workspace,path:view.ctx.ref,option:view.ctx.option||''}));if(!live(view))return;view.info.libreoffice_installed=fresh.libreoffice_installed;update();status(view,fresh.libreoffice_installed?'LibreOffice is ready.':'LibreOffice was not found yet.');}
