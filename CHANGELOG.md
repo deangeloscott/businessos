@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Simplify chat details into a single metadata line, group Archive beside Open chat, and remove redundant helper text. Show the full saved latest request when no summary exists, retaining compact list previews without native or model requests.
+
 - Keep message drafts editable when a saved chat belongs to an older workspace folder; explain blocked sending and carry the draft into a new chat here. Preserve prepared skill drafts across reloads and remove misleading wait cursors on disabled controls.
 - Add reversible chat archiving through sidebar chat options, with Recent and Archived lists. Preserve native history, saved displays, drafts and usage; working requests cannot be archived.
 
