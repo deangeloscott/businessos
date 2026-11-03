@@ -9,7 +9,7 @@ window.auraCompose=(()=>{
   const compact=r=>({kind:r.kind,id:r.id,label:r.label,...(r.variant?{variant:r.variant}:{}),...(r.request_id?{request_id:r.request_id}:{})});
   const identity=r=>JSON.stringify([r.kind,r.id,r.variant||'',r.request_id||'']);
   const kinds={file:'File',record:'Saved context',goal:'Goal',library:'Library',assistant:'Assistant',result:'Saved result'};
-  const shortcuts=[{id:'new',label:'New chat',description:'Keep this draft and open a new chat'},{id:'attach',label:'Attach context',description:'Files, saved work and operating knowledge'},{id:'assistant',label:'Choose assistant',description:'Start a chat with a named assistant'},{id:'goal',label:'Choose goal',description:'Connect this chat to a goal'}];
+  const shortcuts=[{id:'new',label:'New chat',description:'Keep this draft and open a new chat'},{id:'attach',label:'Attach context',description:'Files, saved work and operating knowledge'},{id:'assistant',label:'Choose assistant',description:'Start a chat with a named assistant'},{id:'goal',label:'Chat goal',description:'Set what this chat is working toward'}];
 
   async function lookup(q='',kind='',assistant=''){
     const key=scope(),id=JSON.stringify([key,q.toLowerCase(),kind,assistant]),prior=cache.get(id);
@@ -62,13 +62,12 @@ window.auraCompose=(()=>{
     if(id==='new')return newShellChat({text:$('#request').value,files:state.selectedFiles||[],references:refs(),goal_id:goal(),connection:composerConnection()});
     if(id==='attach')return choose();
     if(id==='assistant')return chooseAssistant();
-    if(id==='goal')return choose('goal','',true);
+    if(id==='goal')return chatGoal();
   }
   async function choose(kind='',assistant='',linkGoal=false){
     closeMenu();const key=chatScope();details(linkGoal?'Choose goal':assistant?'Choose an assistant’s saved result':'Add context','<p role="status">Finding context…</p>');
     const ticket=state.fileDetailTicket,host=$('#detail-content');
-    host.innerHTML=`<label>Find context<input id="compose-find" class="search" type="search" placeholder="Search by name…"></label>${!assistant?`<label>Type<select id="compose-kind"><option value="">All context</option>${Object.entries(kinds).map(([k,v])=>`<option value="${k}" ${k===kind?'selected':''}>${v}</option>`).join('')}</select></label>`:''}<div id="compose-found" role="status">Finding context…</div>`;
-    if(linkGoal)$('#compose-kind').disabled=true;
+    host.innerHTML=`<label>${linkGoal?'Find a saved goal':'Find context'}<input id="compose-find" class="search" type="search" placeholder="Search by name…"></label>${!assistant&&!linkGoal?`<label>Type<select id="compose-kind"><option value="">All context</option>${Object.entries(kinds).map(([k,v])=>`<option value="${k}" ${k===kind?'selected':''}>${v}</option>`).join('')}</select></label>`:''}<div id="compose-found" role="status">Finding context…</div>`;
     let request=0;
     const paint=async()=>{
       const local=++request,data=await lookup($('#compose-find').value,assistant?'result':linkGoal?'goal':$('#compose-kind').value,assistant);
@@ -90,7 +89,8 @@ window.auraCompose=(()=>{
     details('Choose assistant',data.items.map(p=>`<button type="button" class="row" data-compose-assistant="${esc(p.id)}"><strong>${esc(p.name)}</strong></button>`).join('')||empty('Create an assistant from Assistants first.'));
   }
   function actions(row,index){
-    return `<div class="message-actions"><button type="button" class="text-button" data-message-copy="${index}">Copy</button>${row.role==='user'?`<button type="button" class="text-button" data-message-reuse="${index}">Reuse prompt</button><button type="button" class="text-button" data-message-new="${index}">Use in new chat</button>`:''}${row.references?.length?`<button type="button" class="text-button" data-message-context="${index}">Context used (${row.references.length})</button>`:''}</div>`;
+    if(row.role!=='user')return '';
+    return `<div class="message-actions"><button type="button" class="icon-button" data-message-copy="${index}" aria-label="Copy prompt" title="Copy prompt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M8 8h12v13H8zM16 8V3H3v13h5"/></svg></button>${row.references?.length?`<button type="button" class="text-button" data-message-context="${index}">Context (${row.references.length})</button>`:''}</div>`;
   }
   async function reuse(index,inNew=false){
     const row=state.chat[index],key=chatScope(),request=++viewTicket,ticket=state.fileDetailTicket;if(!row||row.role!=='user'||!state.chatMeta)return;
@@ -124,7 +124,7 @@ window.auraCompose=(()=>{
     const host=$('#detail-content');host.onclick=event=>{const b=event.target.closest('[data-receipt-item]');if(b)attempt(()=>inspect(row.references[Number(b.dataset.receiptItem)]));};
   }
   async function setGoal(id){
-    if(state.starting){notice('Wait for this request to start, then change its goal.',true);return;}
+    if(state.starting)throw new Error('Wait for this request to start, then change its goal.');
     const key=chatScope();
     if(state.chatMeta){state.goalSetting=true;try{await api('/api/goals',{business:state.business,action:'link_chat',chat_id:state.chatMeta.id,goal_id:id});if(key!==chatScope())return;state.chatMeta.goal_id=id||'';delete state.chatMeta.continuation;}finally{state.goalSetting=false;}}
     else state.draftGoalId=id||'';
@@ -142,16 +142,24 @@ window.auraCompose=(()=>{
       if(tasks.notes?.length)$('#goal-tasks').insertAdjacentHTML('beforeend',`<p class="small-note">${tasks.notes.map(esc).join(' ')}</p>`);
     }catch(error){if(same(key,ticket,host))$('#goal-tasks').textContent=error.message;}
   }
-  async function editGoal(id=''){
+  async function chatGoal(){
+    if(goal())return openGoal(goal());
+    return editGoal('',true);
+  }
+  async function editGoal(id='',forChat=false){
+    const chatKey=chatScope();
+    let savedId=id;
     const key=scope(),request=++viewTicket;details(id?'Edit goal':'Add a goal','<p role="status">Reading goal…</p>');const loading=state.fileDetailTicket,loadingHost=$('#detail-content');
     const data=id?await api('/api/goals?'+query({id})):null;if(request!==viewTicket||!same(key,loading,loadingHost))return;const g=data?.goal||{};
     const simple=g.target===undefined||typeof g.target==='string'||typeof g.target==='number';
-    details(id?'Edit goal':'Add a goal',`<form id="compose-goal-form" class="form-grid"><label>What do you want to accomplish?<input name="name" required maxlength="2000" value="${esc(g.name||'')}"></label>${simple?`<label>Desired outcome or target <span class="muted">Optional</span><textarea name="target" maxlength="5000" rows="2">${esc(g.target??'')}</textarea></label>`:`<p>${esc(pretty(g.target))}</p>`}<label>Timeframe <span class="muted">Optional</span><input name="horizon" maxlength="300" value="${esc(g.horizon||'')}" placeholder="For example, this quarter"></label><label>Status<select name="status">${['active','paused','completed'].map(v=>`<option value="${v}" ${(g.status||'active')===v?'selected':''}>${human(v)}</option>`).join('')}</select></label><button class="primary">Save goal</button><p id="goal-save-status" role="status"></p></form>`);
+    details(forChat?'Goal for this chat':id?'Edit goal':'Add a goal',`<form id="compose-goal-form" class="form-grid"><label>What do you want to accomplish?<input name="name" required maxlength="2000" value="${esc(g.name||'')}"></label>${simple?`<label>What does done look like? <span class="muted">Optional</span><textarea name="target" maxlength="5000" rows="3">${esc(g.target??'')}</textarea></label>`:`<p>${esc(pretty(g.target))}</p>`}${id?`<label>Status<select name="status">${['active','paused','completed'].map(v=>`<option value="${v}" ${(g.status||'active')===v?'selected':''}>${human(v)}</option>`).join('')}</select></label>`:''}<div class="inline-actions"><button class="primary">${forChat?'Add to this chat':'Save goal'}</button>${forChat?'<button type="button" class="text-button" id="choose-saved-goal">Use a saved goal</button>':''}</div><p id="goal-save-status" role="status"></p></form>`);
     const ticket=state.fileDetailTicket,host=$('#detail-content');
     $('#compose-goal-form').onsubmit=event=>{event.preventDefault();const form=event.currentTarget;attempt(async()=>{
+      if(!same(key,ticket,host)||forChat&&chatKey!==chatScope())return;
       const values=Object.fromEntries(new FormData(form));if(g.target!==undefined&&values.target===String(g.target))delete values.target;
+      if(!savedId)values.status='active';
       const button=form.querySelector('button');button.disabled=true;
-      try{const saved=await api('/api/goals',{business:state.business,action:'save',...(id?{id}:{}),...values});if(!same(key,ticket,host))return;cache.clear();await refresh();if(same(key,ticket,host))await openGoal(saved.goal.id);}catch(error){if(same(key,ticket,host))$('#goal-save-status').textContent=error.message;}finally{if(button.isConnected)button.disabled=false;}
+      try{const saved=await api('/api/goals',{business:state.business,action:'save',...(savedId?{id:savedId}:{}),...values});savedId=saved.goal.id;if(!same(key,ticket,host)||forChat&&chatKey!==chatScope())return;cache.clear();if(forChat)await setGoal(savedId);await refresh();paintComposer();if(same(key,ticket,host)){if(forChat){$('#detail').close();$('#request').focus();notice('Goal added to this chat.');}else await openGoal(savedId);}}catch(error){if(same(key,ticket,host))$('#goal-save-status').textContent=error.message;}finally{if(button.isConnected)button.disabled=false;}
     });};
   }
   async function linkAsset(id){
@@ -195,13 +203,14 @@ window.auraCompose=(()=>{
     if(b.dataset.messageNew!==undefined)attempt(()=>reuse(Number(b.dataset.messageNew),true));
     if(b.dataset.messageContext!==undefined)receipt(Number(b.dataset.messageContext));
     if(b.hasAttribute('data-compose-clear-goal'))attempt(()=>setGoal(''));
-    if(b.id==='choose-goal')attempt(()=>choose('goal','',true));
+    if(b.id==='choose-goal')attempt(chatGoal);
+    if(b.id==='choose-saved-goal')attempt(()=>choose('goal','',true));
     if(b.dataset.composeGoal)attempt(()=>openGoal(b.dataset.composeGoal));
     if(b.dataset.goalEdit)attempt(()=>editGoal(b.dataset.goalEdit));
     if(b.dataset.goalAsset)attempt(()=>linkAsset(b.dataset.goalAsset));
     if(b.dataset.goalUnlinkAsset)attempt(async()=>{const key=scope();await api('/api/goals',{business:state.business,action:'link_asset',goal_id:'',asset_id:b.dataset.goalUnlinkAsset});if(key===scope())await openGoal(b.dataset.goalId);});
     if(b.id==='chat-continuation')attempt(continuation);
-    if(b.hasAttribute('data-compose-new-goal'))attempt(()=>editGoal());
+    if(b.hasAttribute('data-compose-new-goal'))attempt(()=>editGoal('',true));
     if(b.dataset.goalWork)attempt(async()=>{const id=b.dataset.goalWork;await newShellChat({text:'Help me make the next useful step toward this goal. Check existing work first and explain what remains.',files:[],references:[],goal_id:id,connection:composerConnection()});});
     if(b.dataset.goalTask){state.scheduleDraft={name:'',description:'',when:'',goal_id:b.dataset.goalTask};state.scheduleAdding=true;state.view='tools';attempt(async()=>{await render();recordShellRoute();});}
     if(b.dataset.composeAssistant)attempt(()=>window.auraWork.startAssistant(b.dataset.composeAssistant,{text:$('#request').value,files:state.selectedFiles||[],references:refs(),goal_id:goal(),connection:composerConnection()}));

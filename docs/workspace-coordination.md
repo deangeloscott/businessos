@@ -7,9 +7,9 @@ requirement, database or third-party dependency.
 
 ## Find related work without loading every conversation
 
-**Other work** above the chat lists the most recently observed work in the selected
+The shared activity API and CLI list the most recently observed work in the selected
 business and workspace, across Aura-connected AI apps. Search titles, assistant
-names and existing descriptions; open a chat for its result. The list keeps one
+names and existing descriptions; use the chat ID to retrieve its result. The list keeps one
 entry per chat and shows when it was observed. A persisted working status without
 a running request in this Aura server is labeled **Last observed working**.
 **Needs input** requires a pending request in the matching live job; after a
@@ -194,14 +194,20 @@ python scripts/workspace_recovery.py prepare --workspace <folder> --business-id 
 
 ## Reuse messages and select context
 
-**Copy** copies a message's original text, including Markdown. **Reuse prompt**
-puts an earlier user message and its selected references in the composer.
-**Use in new chat** opens an unsent draft with the original connection and goal.
-An existing draft is preserved; adding to it requires a deliberate choice. A
-message originally sent under a different goal offers a new chat with that goal
-or reuse under the current chat's goal. Reuse never submits model work.
+The copy icon on each user prompt copies its original text, including Markdown.
+The composer **+** menu contains **Add files or context**, **Goal**, and
+**Make a reusable skill**. Skill creation prepares a request for review without
+sending it. Permissions sit beside the plus; the model picker sits beside Send.
+Creating a chat goal asks for the outcome and links it to this chat. New goals
+start active. **Use a saved goal** provides a separate search for existing goals.
+Recurring work continues to use the native recurring-task setup.
 
-Type **@** or use **Add context** to find workspace files, saved business context,
+**Refresh chat** reads saved history from the owning app without sending a model
+prompt. It shows progress and a completion or failure message. Draft editing and
+scrolling remain available, and a late read cannot replace a newer turn. Slow or
+unavailable native apps leave the saved conversation usable.
+
+Type **@** or use **Add files or context** to find workspace files, saved business context,
 goals, library skills/workflows/playbooks and saved public results. Select a
 specific library version when several exist. A named assistant opens its saved
 results; mentioning it does not dispatch work or create agent messaging.

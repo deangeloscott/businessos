@@ -88,5 +88,6 @@ vm.runInContext(appSource.slice(pickerStart,pickerEnd),context);
   let release;context.api=()=>new Promise(resolve=>{release=resolve;});
   const pending=work.renderAssistants(host);context.state.data.workspace='B';release(profiles);await pending;
   assert.equal(host.innerHTML,'<p role="status">Loading assistants…</p>');
+  context.state.chatMeta=null;context.state.liveJob=null;work.renderDelegation();assert.equal(node('#delegated-work').hidden,true,'A new chat without a job must render without freezing navigation');
   console.log('Work views passed: history navigation, shared model/effort picker, stale-request isolation, active-agent visibility, and honest read errors.');
 })().catch(error=>{console.error(error);process.exitCode=1;});

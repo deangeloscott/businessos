@@ -1,6 +1,6 @@
 /* Exercise the shipped composer module without another browser/build dependency. */
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict'),crypto=require('node:crypto');
-const nodes=new Map(),events={},calls=[],pending=[],newChats=[];let copied='',slowResolve=null,slowGoal=null,reusedGoal='';
+const nodes=new Map(),events={},calls=[],pending=[],newChats=[];let copied='',slowResolve=null,slowGoal=null,reusedGoal='',failGoalLink=false;
 function node(id){
  if(!nodes.has(id))nodes.set(id,{innerHTML:'',textContent:'',hidden:id==='#composer-menu',isConnected:true,value:'',dataset:{},selectionStart:0,attributes:{},listeners:{},
   addEventListener(name,fn){(this.listeners[name]??=[]).push(fn);},querySelectorAll(){return [];},querySelector(s){return node(id+' '+s);},
@@ -12,6 +12,7 @@ const state={business:'studio',data:{workspace:'A',connection:{selected:'configu
 const fixture={kind:'file',id:'attachments/studio/research.txt',label:'Research',description:'Workspace file'};
 state.pendingComposerDraft={references:[fixture],goal_id:'obj_goal'};
 const context={window:{},state,URLSearchParams,TextEncoder,Uint8Array,crypto:crypto.webcrypto,setTimeout,clearTimeout,
+ FormData:class{constructor(){return [['name','Finish the offer brief'],['target','A useful brief']][Symbol.iterator]();}},cache:{clear(){}},refresh:async()=>{},
  document:{querySelector:()=>null,addEventListener:(name,fn)=>(events[name]??=[]).push(fn)},$:node,
  esc:v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),
  pretty:v=>typeof v==='string'?v:JSON.stringify(v),human:v=>v,empty:v=>`<p>${v}</p>`,notice(){},
@@ -26,6 +27,8 @@ const context={window:{},state,URLSearchParams,TextEncoder,Uint8Array,crypto:cry
   if(path==='/api/context/message')return {text:state.chat[data.index].text,files:[],references:[fixture],goal_id:reusedGoal,connection:{kind:'configured'}};
   if(path.startsWith('/api/goals?'))return new Promise(resolve=>{slowGoal=resolve;});
   if(path==='/api/schedules')return {items:[{id:'task',name:'Review',description:'basis'}],notes:[]};
+  if(path==='/api/goals'&&data.action==='save')return {goal:{id:data.id||'obj_created'}};
+  if(path==='/api/goals'&&data.action==='link_chat'&&failGoalLink)throw new Error('Link unavailable');
   return {};
  },
 };
@@ -45,7 +48,7 @@ function input(text){const el=node('#request');el.value=text;el.selectionStart=t
  await flush();await Promise.all(pending);assert.equal(prevented,true);assert.equal(newChats.length,1,'Selecting the shortcut calls the existing action once');
  input('@slow');await delay();assert.ok(slowResolve);ui.closeMenu();slowResolve({items:[fixture]});await flush();assert.equal(node('#composer-menu').hidden,true,'A late lookup must not reopen a dismissed picker');
  state.chatMeta={id:'chat',agent:'configured'};state.chat=[{role:'user',text:'Original **prompt**\nKeep this formatting.'}];
- assert.match(ui.actions(state.chat[0],0),/Reuse prompt/);assert.doesNotMatch(ui.actions({role:'assistant'},1),/Reuse prompt/);
+ assert.match(ui.actions(state.chat[0],0),/aria-label="Copy prompt"/);assert.doesNotMatch(ui.actions(state.chat[0],0),/Reuse prompt|Use in new chat|>Copy</);assert.equal(ui.actions({role:'assistant'},1),'');
  click({messageCopy:'0'});await Promise.all(pending);assert.equal(copied,state.chat[0].text);
  node('#request').value='Keep my draft';await ui.reuse(0);assert.equal(node('#request').value,'Keep my draft');
  node('#reuse-add').onclick();assert.match(node('#request').value,/Keep my draft\n\nOriginal/);
@@ -63,5 +66,29 @@ function input(text){const el=node('#request');el.value=text;el.selectionStart=t
  assert.equal(state.schedules.items[0].id,'task','Goal task links must populate the existing task-detail inventory');
  state.chatMeta={id:'chat',goal_id:'obj_goal'};node('#request').value='Draft remains';ui.prepareContinuation();assert.equal(node('#request').value,'Draft remains');
  node('#add-continuation-draft').onclick();assert.match(node('#request').value,/without repeating completed external actions/);
+ state.chatMeta={id:'chat'};click({},'choose-goal');await flush();await Promise.all(pending);
+ assert.match(node('#detail-content').innerHTML,/Goal|accomplish/);assert.doesNotMatch(node('#detail-content').innerHTML,/name="horizon"|name="status"|compose-kind/);
+ const form=node('#compose-goal-form'),submit=()=>form.onsubmit({preventDefault(){},currentTarget:form});
+ failGoalLink=true;submit();await flush();await Promise.all(pending);assert.equal(state.chatMeta.goal_id,undefined);
+ failGoalLink=false;submit();await flush();await Promise.all(pending);
+ assert.equal(state.chatMeta.goal_id,'obj_created','Creating a chat goal must link it to that chat');
+ const saves=calls.filter(c=>c.path==='/api/goals'&&c.data.action==='save');assert.equal(saves.at(-2).data.status,'active');assert.equal(saves.at(-1).data.id,'obj_created','Retrying a failed link must not create duplicate goals');
+ assert.equal(calls.some(c=>c.path==='/api/chat'),false,'Creating a goal must not submit a model request');
+ // Exercise refresh completion, failure and navigation against the shipped functions.
+ const appSource=fs.readFileSync(require('node:path').join(require('node:path').dirname(process.argv[2]),'app.js'),'utf8');
+ let finishRead,failRead,refreshMessage='',refreshScope='chat';
+ const refreshState={chatMeta:{id:'chat'},chat:[{role:'user',text:'Saved'}],busy:false},refreshNodes={};
+ const refreshContext={state:refreshState,AbortSignal,encodeURIComponent,window:{auraContinuity:{acceptRecovery(){}}},
+  $:s=>refreshNodes[s]??={value:'Keep this draft',disabled:false},chatScope:()=>refreshScope,
+  api:()=>new Promise((resolve,reject)=>{finishRead=resolve;failRead=reject;}),
+  renderComposerConnection(){},taskStatus(){},notice:text=>{refreshMessage=text;},showMessages(){},chatControls(){},attempt(){},pollJob(){}};
+ vm.createContext(refreshContext);vm.runInContext(appSource.slice(appSource.indexOf('async function refreshChat(){'),appSource.indexOf('async function saveProfilePicture')),refreshContext);
+ let reading=refreshContext.refreshChat();assert.equal(refreshState.refreshingChat,true);assert.equal(refreshContext.$('#request').disabled,false);
+ finishRead({messages:[{text:'Latest'}],chat:{id:'chat'},job:null});await reading;
+ assert.equal(refreshState.refreshingChat,false);assert.equal(refreshState.chat[0].text,'Latest');assert.equal(refreshMessage,'Chat is up to date.');assert.equal(refreshContext.$('#request').value,'Keep this draft');
+ reading=refreshContext.refreshChat();failRead(new Error('Native app unavailable'));await reading;
+ assert.equal(refreshState.refreshingChat,false);assert.match(refreshMessage,/unavailable/);
+ reading=refreshContext.refreshChat();refreshScope='another-chat';finishRead({messages:[{text:'Wrong chat'}],chat:{id:'chat'}});await reading;assert.equal(refreshState.chat[0].text,'Latest');
+ refreshScope='chat';reading=refreshContext.refreshChat();refreshState.chat=[{text:'A newer turn'}];finishRead({messages:[{text:'Older read'}],chat:{id:'chat'}});await reading;assert.equal(refreshState.chat[0].text,'A newer turn');
  console.log('Composer UI passed: context chips, email handling, explicit shortcuts, stale lookups, draft-safe reuse and manual continuation.');
 })().catch(error=>{console.error(error);process.exitCode=1;});

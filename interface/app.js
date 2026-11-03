@@ -29,10 +29,10 @@ async function cachedApi(path){
   const promise=api(url);const entry={at:now,promise};readResponses.set(key,entry);
   promise.catch(()=>{if(readResponses.get(key)===entry)readResponses.delete(key);});return promise;
 }
-async function api(path, data) {
+async function api(path, data, options={}) {
   const started=performance.now();let failed=false;
   try{
-    const response=await fetch(path,{method:data?'POST':'GET',headers:{'X-Aura-Token':token,...(data&&state.data?.workspace?{'X-Aura-Workspace':state.data.workspace}:{}),...(data?{'Content-Type':'application/json'}:{})},...(data?{body:JSON.stringify(data)}:{})});
+    const response=await fetch(path,{method:data?'POST':'GET',headers:{'X-Aura-Token':token,...(data&&state.data?.workspace?{'X-Aura-Workspace':state.data.workspace}:{}),...(data?{'Content-Type':'application/json'}:{})},...(data?{body:JSON.stringify(data)}:{}),...options});
     const body=await response.json();
     if(!response.ok){const error=new Error(body.error||'Something could not be completed. Refresh and try again.');error.status=response.status;throw error;}
     if(data&&!path.startsWith('/api/support/'))invalidateReads();return body;
@@ -1413,6 +1413,10 @@ document.addEventListener('change',event=>attempt(async()=>{
 }));
 document.addEventListener('click',event=>attempt(async()=>{
   const b=event.target.closest('button');if(!b)return;
+  if(b.id==='composer-tools'){
+    const menu=$('#chat-tools-menu');menu.hidden=!menu.hidden;b.setAttribute('aria-expanded',String(!menu.hidden));
+    if(!menu.hidden)menu.querySelector('button').focus();
+  }
   if(b.dataset.shareScope&&b.dataset.shareScope!==sharingScope())throw new Error('The workspace changed. Reopen the item before sharing.');
   if(b.id==='workspace-sharing'||b.dataset.shareRecord||b.dataset.shareFile)await openSharing(b.dataset.shareRecord?'record:'+b.dataset.shareRecord:b.dataset.shareFile?'file:'+b.dataset.shareFile:'');
   if(b.dataset.shareTab){sharing.tab=b.dataset.shareTab;renderSharing();}
@@ -1445,6 +1449,19 @@ document.addEventListener('click',event=>attempt(async()=>{
   if(b.dataset.shareConfirmUndo){b.disabled=true;try{const r=await shareApi('undo',{receipt:b.dataset.shareConfirmUndo,apply:true});notice(r.message);await openSharing();sharing.tab='history';renderSharing();}finally{if(b.isConnected)b.disabled=false;}}
   if(b.id==='share-history-back'){await openSharing();sharing.tab='history';renderSharing();}
 }));
+
+document.addEventListener('click',event=>{
+  if(event.target.closest('#composer-tools'))return;
+  $('#chat-tools-menu').hidden=true;$('#composer-tools').setAttribute('aria-expanded','false');
+});
+document.addEventListener('keydown',event=>{
+  const menu=$('#chat-tools-menu');if(menu.hidden||!event.target.closest('#chat-tools-menu,#composer-tools'))return;
+  if(event.key==='Escape'){event.preventDefault();menu.hidden=true;$('#composer-tools').setAttribute('aria-expanded','false');$('#composer-tools').focus();}
+  if(['ArrowDown','ArrowUp','Home','End'].includes(event.key)){
+    event.preventDefault();const items=[...menu.querySelectorAll('button')],i=items.indexOf(document.activeElement);
+    items[event.key==='Home'?0:event.key==='End'?items.length-1:(i+(event.key==='ArrowDown'?1:-1)+items.length)%items.length].focus();
+  }
+});
 document.addEventListener('submit',event=>{
   const form=event.target;if(!['share-import-form','share-destination-form','share-package-form'].includes(form.id))return;
   event.preventDefault();event.stopImmediatePropagation();
@@ -1597,7 +1614,7 @@ async function showChatDetails(id,note=''){
   const fullRequest=state.chatMeta?.id===id?request(state.chat):'';
   const label=chat.summary?'Where things stand':fullRequest?'Latest request':chat.latest_request?'Latest request (preview)':'About this chat';
   const status=({working:'Working',error:'Needs attention',stopped:'Stopped',complete:'Reply ready'})[chat.status]||'Saved';
-  details(chat.title,`<div class="chat-detail"><div class="chat-detail-toolbar"><button class="text-button" id="chat-list-back">← All chats</button><button class="text-button" id="chat-rename" aria-controls="chat-title-form">Rename</button></div><form id="chat-title-form" class="chat-title-editor" hidden><input type="hidden" name="id" value="${esc(id)}"><label for="chat-title-input">Chat title</label><div class="chat-title-controls"><input id="chat-title-input" name="title" required maxlength="80" value="${esc(chat.title)}"><button class="secondary">Save title</button><button type="button" class="text-button" data-cancel-rename="${esc(id)}">Cancel</button></div></form><div class="chat-detail-meta"><p>${esc(appName(chat.agent))} · ${esc(chat.model||'App default')} · ${esc(chatDate(chat.updated))} · ${esc(status)}</p></div><section class="chat-description-section" aria-label="${esc(label)}"><h3>${esc(label)}</h3><p class="chat-full-description">${esc(chat.summary||fullRequest||description)}</p>${chat.summary?`<p class="chat-description-date">${esc(chat.summary_source==='App'?'App summary':'Description')} · ${esc(chatDate(chat.summary_updated))}${chat.summary_stale?' · May need updating':''}</p>`:''}</section>${note?`<p class="chat-detail-note" role="status">${esc(note)}</p>`:''}<div class="chat-detail-actions"><button class="secondary" data-refresh-chat="${esc(id)}">Refresh from app</button><div class="chat-detail-primary-actions"><button class="text-button" data-archive-chat="${esc(id)}" data-archived="${!chat.archived}" ${!chat.archived&&chat.status==='working'?'disabled':''}>${chat.archived?'Restore to recent chats':'Archive chat'}</button><button class="primary" data-chat="${esc(id)}">Open chat →</button></div></div></div>`);
+  details('Chat details',`<div class="chat-detail"><div class="chat-detail-toolbar"><button class="text-button" id="chat-list-back">← All chats</button><button class="text-button" data-archive-chat="${esc(id)}" data-archived="${!chat.archived}" ${!chat.archived&&chat.status==='working'?'disabled':''}>${chat.archived?'Restore to recent chats':'Archive chat'}</button></div><div class="chat-detail-title"><h3>${esc(chat.title)}</h3><button class="icon-button" id="chat-rename" aria-label="Rename chat" title="Rename chat" aria-controls="chat-title-form"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M15 4l5 5M4 15L16 3l5 5L9 20l-6 1z"/></svg></button></div><form id="chat-title-form" class="chat-title-editor" hidden><input type="hidden" name="id" value="${esc(id)}"><label for="chat-title-input">Chat title</label><div class="chat-title-controls"><input id="chat-title-input" name="title" required maxlength="80" value="${esc(chat.title)}"><button class="secondary">Save title</button><button type="button" class="text-button" data-cancel-rename="${esc(id)}">Cancel</button></div></form><div class="chat-detail-meta"><p>${esc(appName(chat.agent))} · ${esc(chat.model||'App default')} · ${esc(chatDate(chat.updated))} · ${esc(status)}</p></div><section class="chat-description-section" aria-label="${esc(label)}"><h3>${esc(label)}</h3><p class="chat-full-description">${esc(chat.summary||fullRequest||description)}</p>${chat.summary?`<p class="chat-description-date">${esc(chat.summary_source==='App'?'App summary':'Description')} · ${esc(chatDate(chat.summary_updated))}${chat.summary_stale?' · May need updating':''}</p>`:''}</section>${note?`<p class="chat-detail-note" role="status">${esc(note)}</p>`:''}<div class="chat-detail-actions"><button class="secondary" data-refresh-chat="${esc(id)}">Refresh from app</button><div class="chat-detail-primary-actions"><button class="primary" data-chat="${esc(id)}">Open chat →</button></div></div></div>`);
   const assistantHost=document.createElement('section');assistantHost.className='task-assignment';$('.chat-description-section').before(assistantHost);window.auraWork?.assignChat(chat,assistantHost);
   if(chat.summary||fullRequest)return;
   const paragraph=$('.chat-full-description'),heading=$('.chat-description-section h3'),scope=JSON.stringify([state.data.workspace,state.business]);
@@ -1617,14 +1634,13 @@ function showMessages(latest=false) {
   if(!state.busy&&state.liveJob&&((state.liveJob.business_id&&state.liveJob.business_id!==state.business)||(state.liveJob.chat_id&&state.liveJob.chat_id!==chat)))state.liveJob=null;
   const follow=conversation.hidden||conversation.dataset.chat!==chat||conversation.scrollHeight-conversation.clientHeight-top<48;
   conversation.hidden=!state.chat.length&&!state.busy;conversation.dataset.chat=chat;
-  const suffix=!state.busy&&!failed&&state.chat.at(-1)?.role==='assistant'?'<div class="message-actions"><button class="text-button" id="make-skill">Make a reusable skill ↗</button></div>':'';
   const formatKey=JSON.stringify([chat,state.chat.length,state.data?.connection.name]);
   if(state.formattedSource!==state.chat||state.formattedKey!==formatKey){
     const started=performance.now();
     state.formattedHistory=state.chat.map((r,index)=>`<div class="message ${r.role}"><strong>${r.role==='user'?'YOU':esc(r.agent||state.data?.connection.name||'YOUR AGENT')}${r.at?` <time>${esc(clockTime(r.at))}</time>`:''}${r.role==='assistant'&&r.model?` · ${esc(r.model)}${r.effort?' · '+esc(human(r.effort)):''}`:''}</strong>${r.role==='assistant'?chatMarkdown(r.text):esc(r.text)}${window.auraCompose?.actions(r,index)||''}</div>`).join('');
     state.formattedSource=state.chat;state.formattedKey=formatKey;clientPerformance.message_formats++;clientPerformance.message_format_ms+=performance.now()-started;
   }
-  const markup=state.formattedHistory+suffix;
+  const markup=state.formattedHistory;
   if(state.messageMarkup!==markup){$('#messages').innerHTML=markup;state.messageMarkup=markup;}
   $('#working').hidden=!state.busy;
   $('#working-label').textContent=state.liveJob?.progress||'Starting your AI…';
@@ -1715,7 +1731,16 @@ document.addEventListener('click',event=>attempt(async()=>{
   if(button.dataset.editChat)await showChatDetails(button.dataset.editChat);
   if(button.id==='chat-rename'){const form=$('#chat-title-form');form.hidden=false;button.hidden=true;$('#detail-content [data-refresh-chat]').disabled=true;$('#chat-title-input').focus();}
   if(button.dataset.cancelRename)await showChatDetails(button.dataset.cancelRename);
-  if(button.dataset.refreshChat){const id=button.dataset.refreshChat,business=state.business,workspace=state.data.workspace;button.disabled=true;button.textContent='Refreshing…';try{const result=await api('/api/chats/detail?business='+encodeURIComponent(business)+'&id='+encodeURIComponent(id));if(state.business!==business||state.data.workspace!==workspace)return;const index=state.chatList.findIndex(c=>c.id===id);state.chatList[index]=result.chat;await showChatDetails(id,result.history_note);}finally{if(button.isConnected){button.disabled=false;button.textContent='Refresh from app';}}}
+  if(button.dataset.refreshChat){
+    const id=button.dataset.refreshChat,business=state.business,workspace=state.data.workspace,ticket=state.fileDetailTicket,messages=state.chat;
+    button.disabled=true;button.textContent='Refreshing…';button.setAttribute('aria-busy','true');
+    try{const result=await readChatHistory(id);if(state.business!==business||state.data.workspace!==workspace||ticket!==state.fileDetailTicket)return;
+      const index=state.chatList.findIndex(c=>c.id===id);if(index>=0)state.chatList[index]=result.chat;
+      if(state.chatMeta?.id===id&&state.chat===messages&&!state.busy&&!state.starting){state.chat=result.messages;state.chatMeta=result.chat;state.liveJob=result.job;state.busy=result.job?.status==='working';state.activeJob=state.busy?result.job:null;window.auraContinuity?.acceptRecovery(result);showMessages();chatControls();if(state.busy)attempt(()=>pollJob(result.job));}
+      await showChatDetails(id,result.history_note?'Couldn’t refresh from your AI app. Showing saved messages.':'Chat is up to date.');
+    }catch(error){if(ticket===state.fileDetailTicket)notice(error.message,true);}
+    finally{if(button.isConnected){button.disabled=false;button.textContent='Refresh from app';button.setAttribute('aria-busy','false');}}
+  }
   if(button.dataset.chat)await openShellChat(button.dataset.chat);
   if(button.dataset.close) $('#'+button.dataset.close).close();
   if(button.dataset.view) { if(button.dataset.view==='tools')state.scheduleAdding=button.hasAttribute('data-add-recurring');$('#more-dialog').close(); if(!state.data.diagnostics.length)notice(''); state.view=button.dataset.view; workFilter='all';workCategory=''; await render();recordShellRoute();await renderShell(); }
@@ -2251,6 +2276,8 @@ function renderComposerConnection(){
   window.auraWork?.composer();
   $('#model-settings').title=state.chatMeta?'Model for this chat · '+appName(c.kind):'AI app and model for the new chat';
   $('#chat-refresh').hidden=!state.chatMeta||state.view!=='home';$('#chat-refresh').disabled=state.busy||state.navigating||state.refreshingChat;
+  $('#chat-refresh').textContent=state.refreshingChat?'Refreshing…':'Refresh chat';
+  $('#chat-refresh').setAttribute('aria-busy',String(!!state.refreshingChat));
 }
 function workspaceLocation(){
   const path=sharing?.scope===sharingScope()?sharing.workspace:state.data.workspace, label=state.view==='sharing'&&sharing?.tab==='share'?'Source workspace':'Current workspace';
@@ -2258,9 +2285,24 @@ function workspaceLocation(){
 }
 function returnToChat(){state.view='home';$('#detail').close();$('#section-dialog').close();recordShellRoute();renderShell();$('#request').focus();}
 async function refreshChat(){
-  if(!state.chatMeta||state.busy)return;const scope=chatScope();state.refreshingChat=true;renderComposerConnection();
-  try{const r=await api('/api/conversation?business='+encodeURIComponent(state.business)+'&chat_id='+encodeURIComponent(state.chatMeta.id)+'&refresh=1');if(scope!==chatScope())return;state.chat=r.messages;state.chatMeta=r.chat;state.liveJob=r.job;showMessages();notice(r.history_note||'');taskStatus(r.history_note?'Saved display shown':'Latest messages refreshed');}
+  if(!state.chatMeta||state.busy||state.refreshingChat)return;
+  const scope=chatScope(),id=state.chatMeta.id,messages=state.chat;state.refreshingChat=true;renderComposerConnection();
+  taskStatus('Checking your AI app…');
+  try{
+    const r=await readChatHistory(id);if(scope!==chatScope()||state.busy||state.starting)return;
+    if(messages!==state.chat){taskStatus('Chat changed while refreshing');return;}
+    state.chat=r.messages;state.chatMeta=r.chat;state.liveJob=r.job;
+    state.busy=r.job?.status==='working';state.activeJob=state.busy?r.job:null;
+    window.auraContinuity?.acceptRecovery(r);showMessages();chatControls();
+    if(state.busy)attempt(()=>pollJob(r.job));
+    notice(r.history_note?'Couldn’t refresh from your AI app. Your saved messages are still available.':'Chat is up to date.',!!r.history_note);
+    taskStatus(r.history_note?'Refresh unavailable':'Chat refreshed');
+  }catch(error){if(scope===chatScope()){taskStatus('Refresh unavailable');notice(error.message,true);}}
   finally{state.refreshingChat=false;renderComposerConnection();}
+}
+async function readChatHistory(id){
+  try{return await api('/api/conversation?business='+encodeURIComponent(state.business)+'&chat_id='+encodeURIComponent(id)+'&refresh=1',null,{signal:AbortSignal.timeout(55000)});}
+  catch(error){if(['TimeoutError','AbortError'].includes(error.name))throw new Error('Your AI app is taking too long. Your saved chat is still available; try refreshing again.');throw error;}
 }
 async function saveProfilePicture(file){
   if(!file)return;if(!['image/png','image/jpeg','image/webp'].includes(file.type)||file.size>10*1024*1024)throw new Error('Choose a PNG, JPEG or WebP picture under 10 MB.');

@@ -49,14 +49,14 @@ class Metadata:
             self.events.put(None)
         threading.Thread(target=read, daemon=True).start()
 
-    def call(self, kind, **params):
+    def call(self, kind, timeout=40, **params):
         self.number += 1
         ident = str(self.number)
         value = {'id': ident, 'type': kind, **params} if self.kind != 'claude' else {'type': 'control_request', 'request_id': ident, 'request': {'subtype': kind, **params}}
         if self.kind == 'hermes':
             value = {'jsonrpc':'2.0', 'id':ident, 'method':kind, 'params':params}
         self.errors.send(self.process, json.dumps(value) + '\n')
-        deadline = time.monotonic() + 40
+        deadline = time.monotonic() + timeout
         while time.monotonic() < deadline:
             try:
                 event = self.events.get(timeout=max(.01, deadline-time.monotonic()))
@@ -224,10 +224,10 @@ def history(command, kind, cwd, env, native_id):
     if kind in {'pi','omp'}:
         host=Metadata(command,kind,cwd,env,native_id=native_id)
         try:
-            state=host.call('get_state')
+            state=host.call('get_state',timeout=15)
             if state.get('sessionId')!=native_id:
                 raise ValueError('The AI app did not reopen the exact saved chat. No request was sent.')
-            messages=host.call('get_messages').get('messages',[])
+            messages=host.call('get_messages',timeout=15).get('messages',[])
             source_file=state.get('sessionFile') or '';native_workspace=state.get('cwd') or ''
             current=state.get('model') or {}
             model=(current.get('provider','')+'/'+current.get('id','')).strip('/')

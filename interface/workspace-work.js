@@ -81,7 +81,7 @@ window.auraWork = (() => {
   }
   function renderDelegation(){
     const host=$('#delegated-work');if(!host)return;
-    const rows=(state.liveJob?.chat_id===state.chatMeta?.id?state.liveJob.subagents:state.chatMeta?.subagents)||[];
+    const rows=(state.liveJob&&state.liveJob.chat_id===state.chatMeta?.id?state.liveJob.subagents:state.chatMeta?.subagents)||[];
     const indexed=new Map(rows.map(c=>[c.id,c])),active=new Set(rows.filter(c=>['working','pending'].includes(c.status)).map(c=>c.id)),pending=[...active];
     while(pending.length){const parent=indexed.get(pending.pop())?.parent_id;if(indexed.has(parent)&&!active.has(parent)){active.add(parent);pending.push(parent);}}
     const children=[...rows.filter(c=>active.has(c.id)),...rows.filter(c=>!active.has(c.id)).reverse()];
