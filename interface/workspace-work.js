@@ -61,13 +61,29 @@ window.auraWork = (() => {
   async function assignTask(task,host){
     const data=await load();if(!data||!host.isConnected)return;
     const owner=taskOwner(task.id);
-    host.innerHTML=`<label>Assistant<select id="task-assistant"><option value="">Unassigned</option>${data.items.map(p=>`<option value="${esc(p.id)}" ${p.id===owner?.id?'selected':''}>${esc(p.name)}</option>`).join('')}</select></label><p class="small-note">Groups this task and its results. The task keeps its saved instructions.</p><p id="task-assistant-status" role="status"></p>`;
+    host.hidden=!data.items.length&&!owner;if(host.hidden){host.innerHTML='';return;}
+    host.innerHTML=`<label>Saved assistant<select id="task-assistant"><option value="">No assistant</option>${data.items.map(p=>`<option value="${esc(p.id)}" ${p.id===owner?.id?'selected':''}>${esc(p.name)}</option>`).join('')}</select></label><p class="small-note">Groups this task and its results. The task keeps its saved instructions.</p><p id="task-assistant-status" role="status"></p>`;
     $('#task-assistant').onchange=()=>attempt(async()=>{const choice=$('#task-assistant'),key=currentScope();choice.disabled=true;try{const result=await api('/api/assistants',{business:state.business,action:'assign_task',task_id:task.id,id:choice.value});if(key!==currentScope()||!choice.isConnected)return;cache=result;scope=key;$('#task-assistant-status').textContent='Assignment saved.';}finally{if(choice.isConnected)choice.disabled=false;}});
   }
   async function assignChat(chat,host){
     const data=await load();if(!data||!host.isConnected)return;
-    host.innerHTML=`<label>Assistant<select id="chat-assistant" ${chat.status==='working'?'disabled':''}><option value="">Unassigned</option>${data.items.map(p=>`<option value="${esc(p.id)}" ${p.id===chat.assistant_id?'selected':''}>${esc(p.name)}</option>`).join('')}</select></label><p id="chat-assistant-status" role="status"></p>`;
-    $('#chat-assistant').onchange=()=>attempt(async()=>{const choice=$('#chat-assistant'),key=currentScope();choice.disabled=true;try{const result=await api('/api/assistants',{business:state.business,action:'assign_chat',chat_id:chat.id,id:choice.value});if(key!==currentScope()||!choice.isConnected)return;cache=result;scope=key;const p=profile(choice.value);chat.assistant_id=p?.id||'';chat.assistant_name=p?.name||'';if(state.chatMeta?.id===chat.id)Object.assign(state.chatMeta,{assistant_id:chat.assistant_id,assistant_name:chat.assistant_name});composer();$('#chat-assistant-status').textContent='Assignment saved.';}finally{if(choice.isConnected)choice.disabled=false;}});
+    const assigned=data.items.find(p=>p.id===chat.assistant_id),name=assigned?.name||chat.assistant_name,
+      running=(data.running||[]).includes(chat.id);
+    host.hidden=(!data.items.length&&!name)||(running&&!name);if(host.hidden){host.innerHTML='';return;}
+    if(running||!data.items.length){host.innerHTML=`<p class="chat-assistant-profile"><span>Saved assistant</span><strong>${esc(name)}</strong></p>`;return;}
+    host.innerHTML=`<details class="chat-assistant-picker"><summary>${name?'Saved assistant: '+esc(name):'Assign an assistant'}</summary><label>Saved assistant<select id="chat-assistant"><option value="">No assistant</option>${data.items.map(p=>`<option value="${esc(p.id)}" ${p.id===chat.assistant_id?'selected':''}>${esc(p.name)}</option>`).join('')}</select></label></details><p id="chat-assistant-status" class="small-note" role="status"></p>`;
+    $('#chat-assistant').onchange=()=>attempt(async()=>{
+      const choice=$('#chat-assistant'),key=currentScope(),previous=chat.assistant_id||'';choice.disabled=true;
+      try{
+        const result=await api('/api/assistants',{business:state.business,action:'assign_chat',chat_id:chat.id,id:choice.value});
+        if(key!==currentScope()||!choice.isConnected)return;cache=result;scope=key;const p=profile(choice.value);
+        chat.assistant_id=p?.id||'';chat.assistant_name=p?.name||'';
+        if(state.chatMeta?.id===chat.id)Object.assign(state.chatMeta,{assistant_id:chat.assistant_id,assistant_name:chat.assistant_name});
+        composer();const picker=host.querySelector('details');picker.querySelector('summary').textContent=p?'Saved assistant: '+p.name:'Assign an assistant';picker.open=false;
+        $('#chat-assistant-status').textContent=p?'Assistant assigned.':'Assistant removed from this chat.';
+      }catch(error){if(key===currentScope()&&choice.isConnected){choice.value=previous;$('#chat-assistant-status').textContent=error.message;}}
+      finally{if(choice.isConnected)choice.disabled=false;}
+    });
   }
   async function history(task,host){
     const key=currentScope();host.textContent='Loading results…';
