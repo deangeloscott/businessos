@@ -12,6 +12,11 @@ business and workspace, across Aura-connected AI apps. Search titles, assistant
 names and existing descriptions; open a chat for its result. The list keeps one
 entry per chat and shows when it was observed. A persisted working status without
 a running request in this Aura server is labeled **Last observed working**.
+**Needs input** requires a pending request in the matching live job; after a
+restart, an old receipt can say **Previously needed input** instead. The CLI
+exposes `last_needs_input` as an observation, without claiming that an old request
+is still answerable. Direct result lookup searches all retained references,
+independently of the activity list's display limit.
 Native-only sessions may not appear. Status observations are not exclusive file
 locks or canonical business truth.
 
@@ -90,12 +95,20 @@ fresh review. Missing ordinary files can be recreated from a retained version.
 Business-record restores use the existing memory persistence and integrity
 validation; identity changes, deleted records and specialized record semantics
 may require the normal business editor instead.
+Restoring a business record replaces its saved semantic extension fields as well
+as ordinary content, while preserving identity and normal integrity validation.
+If the file restores successfully but its subsequent history update fails, the
+UI and shared API/CLI report success with a warning; they do not invite a repeat
+restore under the original revision.
 
 Inline saves preserve the prior file bytes. Canonical JSON replacements preserve
 the prior business record. Native work takes bounded before/after observations
 of workspace-owned `attachments/<business>`, `knowledge/<business>` and
 `instances/<business>` files. Observations compare timestamps/sizes before
 reading unchanged files, do not make model calls, and do not run continuously.
+Small, bounded observation markers remain independent of retained versions, so
+expiring a snapshot does not make an unchanged file appear new. Changed snapshots
+are committed in bounded batches with one index update/retention pass per batch.
 Welcome/cache-warming requests do not trigger file scans. A native-only edit is
 observed at the next work boundary, not at every keystroke; unobserved intermediate
 versions cannot be recovered.

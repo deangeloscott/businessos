@@ -17,6 +17,8 @@ MAX_FILE=32*1024*1024
 MAX_BYTES=256*1024*1024
 MAX_VERSIONS=20
 MAX_ENTRIES=500
+MAX_OBSERVATIONS=4000
+BATCH_BYTES=4*1024*1024
 _lock=threading.RLock()
 EXCLUDED={'credentials','secrets','node_modules','__pycache__','history','runtime','private','venv','dist','build'}
 SENSITIVE={'.key','.pem','.pfx','.p12','.db','.sqlite','.sqlite3'}
@@ -67,7 +69,7 @@ def _write(path,data):
     finally:Path(tmp).unlink(missing_ok=True)
 
 
-def capture(path,bid,reason='Saved',content=None):
+def _prepare(path,bid,reason,content=None):
     path,relative=managed(path,bid)
     observed=None
     if content is None:
@@ -75,30 +77,44 @@ def capture(path,bid,reason='Saved',content=None):
         if before.st_size>MAX_FILE:return {'skipped':'File exceeds 32 MB'}
         with path.open('rb') as f:content=f.read(MAX_FILE+1)
         after=path.stat()
-        if (before.st_mtime_ns,before.st_size)!=(after.st_mtime_ns,after.st_size):return {'skipped':'File is changing'}
+        if (before.st_mtime_ns,before.st_ctime_ns,before.st_size)!=(after.st_mtime_ns,after.st_ctime_ns,after.st_size):return {'skipped':'File is changing'}
         observed=after.st_mtime_ns
     if len(content)>MAX_FILE:return {'skipped':'File exceeds 32 MB'}
     digest=hashlib.sha256(content).hexdigest()
+    row={'id':__import__('secrets').token_urlsafe(18),'path':relative,'hash':digest,'bytes':len(content),'at':time.time(),'reason':reason[:160]}
+    if observed is not None:row['mtime_ns']=observed
+    return row,content
+
+
+def _commit(bid,prepared):
+    """Publish a bounded batch with one index update and retention pass."""
     with locked(bid) as base:
-        rows=_read(base)
-        previous=next((r for r in reversed(rows) if r['path']==relative),None)
-        if previous and previous['hash']==digest:
-            if observed is not None and previous.get('mtime_ns')!=observed:
-                previous['mtime_ns']=observed;_write(base/'index.json',json.dumps(rows).encode())
-            return previous
-        row={'id':__import__('secrets').token_urlsafe(18),'path':relative,'hash':digest,'bytes':len(content),'at':time.time(),'reason':reason[:160]}
-        if observed is not None:row['mtime_ns']=observed
-        blob=base/(digest+'.bin')
-        if not blob.exists():_write(blob,content)
-        rows.append(row);kept=[];counts={};total=0;hashes=set()
+        rows=_read(base);changed=False;results=[];contents={}
+        latest={r['path']:r for r in rows}
+        for row,content in prepared:
+            previous=latest.get(row['path'])
+            if previous and previous['hash']==row['hash']:
+                if 'mtime_ns' in row and previous.get('mtime_ns')!=row['mtime_ns']:
+                    previous['mtime_ns']=row['mtime_ns'];changed=True
+                results.append(previous);continue
+            rows.append(row);latest[row['path']]=row;results.append(row);contents[row['hash']]=content;changed=True
+        if not changed:return results
+        kept=[];counts={};total=0;hashes=set()
         for item in reversed(rows):
             size=0 if item['hash'] in hashes else item['bytes']
             if counts.get(item['path'],0)>=MAX_VERSIONS or len(kept)>=MAX_ENTRIES or total+size>MAX_BYTES:continue
             kept.append(item);counts[item['path']]=counts.get(item['path'],0)+1;total+=size;hashes.add(item['hash'])
+        for digest,content in contents.items():
+            if digest in hashes and not (base/(digest+'.bin')).exists():_write(base/(digest+'.bin'),content)
         _write(base/'index.json',json.dumps(list(reversed(kept))).encode())
         for old in base.glob('*.bin'):
             if old.stem not in hashes:old.unlink(missing_ok=True)
-        return row
+        return results
+
+
+def capture(path,bid,reason='Saved',content=None):
+    prepared=_prepare(path,bid,reason,content)
+    return prepared if isinstance(prepared,dict) else _commit(bid,[prepared])[0]
 
 
 def inventory(bid,path=None):
@@ -126,8 +142,14 @@ def version(bid,ident):
 def observe(bid,reason='Observed native work'):
     """Bounded at work boundaries, never a background full-disk scan."""
     root=workspace_root().resolve();count=total=0;notes=[]
-    latest={}
-    for row in inventory(bid)['items']:latest.setdefault(row['path'],row)
+    with locked(bid) as base:
+        try:observed=json.loads((base/'observed.json').read_text(encoding='utf-8'))
+        except FileNotFoundError:observed={}
+    updates={};batch=[];batch_bytes=0;batch_updates={};limited=False
+    def flush():
+        nonlocal batch,batch_bytes,batch_updates
+        if batch:_commit(bid,batch)
+        updates.update(batch_updates);batch=[];batch_bytes=0;batch_updates={}
     for namespace in ('instances','knowledge','attachments'):
         folder=root/namespace/bid
         for directory,dirs,names in os.walk(folder,followlinks=False):
@@ -135,16 +157,44 @@ def observe(bid,reason='Observed native work'):
             dirs[:]=[d for d in dirs if not d.startswith('.') and d.lower() not in EXCLUDED and not (parent/d).is_symlink() and not (hasattr(parent/d,'is_junction') and (parent/d).is_junction())]
             for name in names:
                 path=parent/name
-                if count>=2000 or total>=64*1024*1024:return {'checked':count,'notes':notes+['Observation limit reached; inline saves are still versioned.']}
+                if count>=2000 or total>=64*1024*1024:limited=True;break
                 try:
                     _,relative=managed(path,bid);info=path.stat();size=info.st_size
-                    if size>MAX_FILE:continue
-                    count+=1
-                    previous=latest.get(relative)
-                    if previous and previous.get('mtime_ns')==info.st_mtime_ns and previous['bytes']==size:continue
-                    total+=size;capture(path,bid,reason)
                 except ValueError:continue
                 except OSError as exc:notes.append(f'{name}: {exc.strerror or "Could not read history"}')
+                else:
+                    if size>MAX_FILE:continue
+                    count+=1;stamp=[info.st_mtime_ns,info.st_ctime_ns,size]
+                    previous=observed.get(relative)
+                    if previous and previous['stamp']==stamp:continue
+                    if total+size>64*1024*1024:limited=True;break
+                    total+=size
+                    try:prepared=_prepare(path,bid,reason)
+                    except (OSError,ValueError) as exc:
+                        notes.append(f'{name}: {exc}');continue
+                    if isinstance(prepared,dict):
+                        notes.append(f'{name}: {prepared["skipped"]}');continue
+                    row,content=prepared
+                    # A stable preparation must still match the metadata we observed.
+                    if row.get('mtime_ns')!=stamp[0] or row['bytes']!=size:
+                        notes.append(f'{name}: File is changing');continue
+                    marker={'stamp':stamp,'hash':row['hash'],'at':time.time()}
+                    if previous and previous.get('hash')==row['hash']:
+                        updates[relative]=marker;continue
+                    if batch and batch_bytes+len(content)>BATCH_BYTES:flush()
+                    batch.append(prepared);batch_bytes+=len(content);batch_updates[relative]=marker
+            if limited:break
+        if limited:break
+    flush()
+    if updates:
+        with locked(bid) as base:
+            try:current=json.loads((base/'observed.json').read_text(encoding='utf-8'))
+            except FileNotFoundError:current={}
+            for path,value in updates.items():
+                if value['at']>=current.get(path,{}).get('at',0):current[path]=value
+            current=dict(sorted(current.items(),key=lambda item:item[1]['at'],reverse=True)[:MAX_OBSERVATIONS])
+            _write(base/'observed.json',json.dumps(current).encode())
+    if limited:notes.append('Observation limit reached; inline saves are still versioned.')
     return {'checked':count,'notes':notes[:8]}
 
 
@@ -167,18 +217,27 @@ def restore(bid,ident,expected):
                 raise ValueError('Restore this business record through its business editor so its references can be reviewed.')
             content_fields={k:v for k,v in saved.items() if k not in MECHANICAL_FIELDS}
             result=remember(bid,{'objects':[{'object_ref':saved['id'],'content':content_fields,
+                **({'replace_extensions':True} if 'extensions' in content_fields else {}),
                 'remove_fields':[k for k in current if k not in MECHANICAL_FIELDS and k not in saved]}]})
             return {'path':row['path'],'revision':revision(path),'restored':True,'validation':result['validation']}
-        if path.is_file():capture(path,bid,'Before restore')
+        if path.is_file():
+            retained=capture(path,bid,'Before restore')
+            if retained.get('skipped'):raise Conflict('This file changed while preserving its current contents. Reopen its history before restoring.')
         mode=stat.S_IMODE(path.stat().st_mode) if path.exists() else 0o644
         if not mode & stat.S_IWUSR:raise ValueError('This file is read only. Restore it through its owning application.')
         fd,tmp=tempfile.mkstemp(prefix='.aura-restore-',dir=path.parent)
         try:
             with os.fdopen(fd,'wb') as f:f.write(content);f.flush();os.fsync(f.fileno())
+            if (revision(path) if path.is_file() else 'missing')!=expected:raise Conflict('This file changed. Reopen its history before restoring.')
             os.chmod(tmp,mode);os.replace(tmp,path)
         finally:Path(tmp).unlink(missing_ok=True)
-        capture(path,bid,'Restored version')
-    return {'path':row['path'],'revision':revision(path),'restored':True}
+        warning=''
+        try:
+            retained=capture(path,bid,'Restored version')
+            if retained.get('skipped'):warning='Restored successfully, but the file changed before its restored version could be added to local history.'
+        except (OSError,ValueError):warning='Restored successfully, but the restored version could not be added to local history.'
+        restored_revision=revision(path)
+    return {'path':row['path'],'revision':restored_revision,'restored':True,**({'warning':warning} if warning else {})}
 
 
 def main():

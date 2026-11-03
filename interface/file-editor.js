@@ -278,8 +278,8 @@ async function fileHistory(view,button){
         if(view.dirty){status(view,'Save or cancel your unsaved edits before restoring a version.',true);return;}
         const restore=review.querySelector('button');restore.disabled=true;
         try{
-          await api(view,'/api/history/restore',{business:view.ctx.business,id:selected.id,expected_revision:selected.current_revision});if(!live(view))return;
-          await openFile(view.ctx);if(current)status(current,'Earlier version restored.');
+          const result=await api(view,'/api/history/restore',{business:view.ctx.business,id:selected.id,expected_revision:selected.current_revision});if(!live(view))return;
+          await openFile(view.ctx);if(current)status(current,result.warning||'Earlier version restored.');
         }catch(error){if(live(view)&&restore.isConnected){review.querySelector('#file-history-status').textContent=error.message;restore.disabled=false;}}
       };
     }catch(error){status(view,error.message,true);}finally{if(chosen.isConnected)chosen.disabled=false;}

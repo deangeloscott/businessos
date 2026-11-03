@@ -28,10 +28,22 @@ def record(bid,job,chat):
         write_json_atomic(target,active[-100:]+done)
 
 
-def inventory(bid,query='',exclude_chat='',limit=20):
+def _rows(bid):
     target=store(bid).parent/'activity'/f'{bid}.json'
-    try:rows=json.loads(target.read_text(encoding='utf-8'))
-    except FileNotFoundError:rows=[]
+    try:return json.loads(target.read_text(encoding='utf-8'))
+    except FileNotFoundError:return []
+
+
+def inventory(bid,query='',exclude_chat='',limit=20,live_jobs=()):
+    live={job['id']:job for job in live_jobs if job.get('business_id')==bid and job.get('workspace')==str(workspace_root().resolve()) and job.get('status')=='working'}
+    rows=[]
+    for row in _rows(bid):
+        active=live.get(row['id'],{})
+        pending=any(r.get('status')=='pending' for r in active.get('requests',[]))
+        values={**row,'last_needs_input':bool(row.get('needs_input')),'needs_input':pending}
+        if row.get('needs_input') and not pending:
+            values['progress']=active.get('progress') or 'Previously needed input. Check the native chat for its outcome.'
+        rows.append(values)
     query=str(query).casefold();limit=max(1,min(100,int(limit)))
     rows=[r for r in rows if r.get('chat_id')!=exclude_chat and (not query or query in ' '.join(str(r.get(k,'')) for k in ('title','summary','assistant','agent','status','progress')).casefold())]
     rows.sort(key=lambda r:r.get('observed_at',0),reverse=True)
@@ -42,10 +54,10 @@ def inventory(bid,query='',exclude_chat='',limit=20):
 
 def result(bid,chat_id,limit=6000):
     """Explicit retrieval of one saved public reply, not an automatic context feed."""
-    rows=inventory(bid,limit=100)['items'];row=next((r for r in rows if r.get('chat_id')==chat_id),None)
-    if not row:raise ValueError('No observed work matches this chat in this workspace and business.')
     if not isinstance(chat_id,str) or not chat_id or any(c not in 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_' for c in chat_id):
         raise ValueError('Choose a valid chat reference.')
+    row=next((r for r in _rows(bid) if r.get('chat_id')==chat_id),None)
+    if not row:raise ValueError('No observed work matches this chat in this workspace and business.')
     folder=hashlib.sha256(str(workspace_root().resolve()).encode()).hexdigest()[:20]
     path=state_dir()/'chat-views'/folder/(chat_id+'.json')
     try:messages=json.loads(path.read_text(encoding='utf-8'))

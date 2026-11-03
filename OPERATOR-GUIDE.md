@@ -150,6 +150,13 @@ Only use that status after actual review. Schemas in `core/schemas/` define each
 
 When established truth changes, update the current object. When an obsolete top-level field should disappear, remove it explicitly rather than relying on omission.
 
+Extension updates normally merge with existing extension fields. For a deliberate
+complete replacement, an update item can set `"replace_extensions": true` beside
+`object_ref` and supply the entire `content.extensions` object. Local version
+restoration uses this explicit replacement so newer custom metadata is not left
+behind. Identity, timestamps, schema validation and reference checks still use
+the normal persistence path.
+
 When an update changes semantic fields on an object with inbound references, `remember.py` saves an existing-type `ChangeEvent` in the same rollback boundary. It retains the changed before/after fields and marks referring records as possible review impacts—not confirmed dependencies. No AttentionItem is created. An optional per-object `correction_summary` explains a material correction and preserves a ChangeEvent even when no inbound reference exists. No-op/timestamp-only saves do not create correction events.
 
 `enter.py` exposes unresolved impacts under `correction_review`, independently of lexical matches. Open the ChangeEvent and relevant authored material. After actual review, update its `change_details` through `remember.py`, preserving each row and setting `review_status` to `reviewed` or `not_affected` with a `review_note`. A record update or generated-view refresh does not silently resolve semantic review. Relationships hidden only in prose may not be found.

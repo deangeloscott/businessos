@@ -88,6 +88,8 @@ def remember(business_id,payload):
         existing_ref=item.get('object_ref');typ=_item_type(item,index,number);content=item.get('content')
         if typ in SPECIALIZED_TYPES:raise ValueError(f'{typ} uses a specialized supported interface. {SPECIALIZED_TYPES[typ]}')
         if not isinstance(content,dict):raise ValueError(f'objects[{number-1}].content must contain caller-authored semantic fields.')
+        if 'replace_extensions' in item and (not isinstance(item['replace_extensions'],bool) or not existing_ref or 'extensions' not in content):
+            raise ValueError('replace_extensions requires an existing object and an explicit extensions object.')
         if 'correction_summary' in item and (not existing_ref or not isinstance(item['correction_summary'],str) or not item['correction_summary'].strip()):
             raise ValueError('correction_summary requires an existing object_ref and a non-empty explanation.')
         forbidden=sorted(MECHANICAL_FIELDS & set(content))
@@ -128,7 +130,7 @@ def remember(business_id,payload):
         _,schema=schema_entry(typ);properties=schema.get('properties') or {}
         obj=dict(existing)
         for field in remove_fields:obj.pop(field,None)
-        old_extensions=obj.get('extensions') if isinstance(obj.get('extensions'),dict) else {}
+        old_extensions=obj.get('extensions') if isinstance(obj.get('extensions'),dict) and not item.get('replace_extensions') else {}
         supplied_extensions=content.pop('extensions',{})
         if not isinstance(supplied_extensions,dict):raise ValueError(f'{row["key"]} content.extensions must be an object when supplied.')
         obj.update(content)

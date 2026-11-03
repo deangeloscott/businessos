@@ -107,9 +107,61 @@ def main():
         remember(bid,{'objects':[{'object_ref':original['id'],'content':{'name':'Changed studio'}}]})
         prior=next(r for r in history.inventory(bid,business)['items'] if json.loads((history.store(bid)/(r['hash']+'.bin')).read_bytes()).get('name')==original['name'])
         history.restore(bid,prior['id'],documents.revision(business));assert json.loads(business.read_text())['name']==original['name']
+        # Restoring semantic extensions replaces the saved object, while ordinary
+        # memory updates continue to merge independent custom fields.
+        remember(bid,{'objects':[{'object_ref':original['id'],'content':{'extensions':{'custom_saved':{'value':'before'},'businessos':{'custom_saved':'before'}}}}]})
+        saved_record=json.loads(business.read_text());saved_version=history.capture(business,bid)
+        remember(bid,{'objects':[{'object_ref':original['id'],'content':{'extensions':{'custom_later':'after','businessos':{'custom_later':'after'}}}}]})
+        assert 'custom_saved' in json.loads(business.read_text())['extensions']
+        history.restore(bid,saved_version['id'],documents.revision(business))
+        assert json.loads(business.read_text())['extensions']==saved_record['extensions']
+        try:remember(bid,{'objects':[{'object_ref':original['id'],'content':{'name':'Invalid'},'replace_extensions':True}]});raise AssertionError('Ambiguous extension replacement accepted')
+        except ValueError:pass
+        # A storage failure after the file commits is a successful restore with
+        # a warning. A failure to retain its current bytes must prevent the write.
+        failure_file=file.parent/'restore-failure.txt';failure_file.write_text('saved');saved=history.capture(failure_file,bid);failure_file.write_text('current')
+        real_capture=history.capture
+        for failing_reason in ('Before restore','Restored version'):
+            def fail_capture(*args,**kwargs):
+                if len(args)>2 and args[2]==failing_reason:raise OSError('simulated recovery-storage failure')
+                return real_capture(*args,**kwargs)
+            with patch.object(history,'capture',side_effect=fail_capture):
+                if failing_reason=='Before restore':
+                    try:history.restore(bid,saved['id'],documents.revision(failure_file));raise AssertionError('Restored without preserving current bytes')
+                    except OSError:assert failure_file.read_text()=='current'
+                else:
+                    restored=history.restore(bid,saved['id'],documents.revision(failure_file))
+                    assert restored['restored'] and restored['warning'] and failure_file.read_text()=='saved'
+                    assert restored['revision']==documents.revision(failure_file)
+        with workspace_scope(base/'scale'),patch.object(history,'MAX_ENTRIES',5):
+            folder=base/'scale'/'attachments'/bid/'work';folder.mkdir(parents=True)
+            for i in range(40):(folder/f'item-{i}.txt').write_text(f'unchanged {i}')
+            with patch.object(history,'_write',wraps=history._write) as writes:
+                history.observe(bid)
+                assert sum(call.args[0].name=='index.json' for call in writes.call_args_list)==1
+            assert len(history.inventory(bid)['items'])==5
+            with patch.object(history,'_write',wraps=history._write) as writes,patch.object(history,'_prepare',wraps=history._prepare) as reads:
+                history.observe(bid);assert writes.call_count==0 and reads.call_count==0,'Unchanged files must not churn after versions expire'
+                changed=folder/'item-0.txt';changed.write_text('new content')
+                history.observe(bid);assert reads.call_count==1
+                assert history.inventory(bid,changed)['items'][0]['hash']==__import__('hashlib').sha256(b'new content').hexdigest()
         activity.record(bid,{'id':'j','chat_id':'c','agent':'Pi','status':'working','updated':time.time()},{'title':'Research','agent':'pi'})
         assert activity.inventory(bid)['total']==1 and activity.inventory(bid,exclude_chat='c')['total']==0
         with workspace_scope(base/'other'):assert activity.inventory(bid)['total']==0
+        pending_job={'id':'j','chat_id':'c','agent':'Pi','business_id':bid,'workspace':str(root),'status':'working','requests':[{'status':'pending'}]}
+        activity.record(bid,pending_job,{'title':'Research','agent':'pi'})
+        stale=activity.inventory(bid)['items'][0]
+        assert stale['last_needs_input'] and not stale['needs_input']
+        assert stale['progress']=='Previously needed input. Check the native chat for its outcome.'
+        assert activity.inventory(bid,live_jobs=[pending_job])['items'][0]['needs_input']
+        assert not activity.inventory(bid,live_jobs=[{**pending_job,'id':'different-turn'}])['items'][0]['needs_input']
+        # A known result can fall outside the list's display limit while its
+        # reference is still retained. Direct retrieval must not apply that limit.
+        for i in range(101):activity.record(bid,{'id':f'old-{i}','chat_id':f'old-{i}','agent':'Pi','status':'working' if i<2 else 'complete'},{'title':f'Work {i}','agent':'pi'})
+        folder=__import__('hashlib').sha256(str(root.resolve()).encode()).hexdigest()[:20]
+        display=base/'state'/'chat-views'/folder/'c.json';write_json_atomic(display,[{'role':'assistant','request_id':'j','text':'Retained result'}])
+        assert not any(r['chat_id']=='c' for r in activity.inventory(bid,limit=100)['items'])
+        assert activity.result(bid,'c')['text']=='Retained result'
         assert permissions.arguments('claude','dontAsk')==['--permission-mode','dontAsk']
         try:permissions.arguments('pi','full');raise AssertionError('Invented Pi permission mode')
         except ValueError:pass
@@ -198,7 +250,7 @@ def main():
             before=call('/api/history?business='+bid)
             assert before['items'] and '/api/chat/answer' not in json.dumps(before)
         finally:server.shutdown();server.server_close()
-        check=subprocess.run([sys.executable,str(ROOT/'scripts/workspace_activity.py'),'--business-id',bid,'--json'],capture_output=True,text=True,check=True)
+        check=subprocess.run([sys.executable,str(ROOT/'scripts/workspace_activity.py'),'--business-id',bid,'--search','Research','--json'],capture_output=True,text=True,check=True)
         assert any(r['chat_id']=='c' for r in json.loads(check.stdout)['items'])
         import shutil
         if shutil.which('node'):

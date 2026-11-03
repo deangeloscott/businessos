@@ -2216,7 +2216,7 @@ def handler_for(app):
                 elif route == '/api/activity/result':
                     self.send(200,workspace_activity.result(selected(query.get('business')),query.get('chat_id'),query.get('max_chars',6000)))
                 elif route == '/api/activity':
-                    bid=selected(query.get('business'));result=workspace_activity.inventory(bid,query.get('search',''),query.get('exclude_chat',''),query.get('limit',20))
+                    bid=selected(query.get('business'));result=workspace_activity.inventory(bid,query.get('search',''),query.get('exclude_chat',''),query.get('limit',20),app.running_jobs(workspace_root()))
                     result['running_chats']=[j['chat_id'] for j in app.running_jobs(workspace_root()) if j['business_id']==bid]
                     self.send(200,result)
                 elif route == '/api/history/version':

@@ -1,7 +1,7 @@
 /* Real view functions with a small DOM fixture; no browser or frontend dependency. */
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
 const nodes=new Map(),listeners={},calls=[];let pending=[];
-function node(id){if(!nodes.has(id))nodes.set(id,{innerHTML:'',textContent:'',hidden:false,isConnected:true,value:'native',dataset:{},querySelectorAll:()=>[],querySelector:s=>node(id+' '+s),contains:()=>false,addEventListener(){},close(){this.open=false;}});return nodes.get(id);}
+function node(id){if(!nodes.has(id))nodes.set(id,{innerHTML:'',textContent:'',hidden:false,isConnected:true,value:'native',dataset:{},querySelectorAll:()=>[],querySelector:s=>node(id+' '+s),contains:()=>false,addEventListener(){},scrollIntoView(){},close(){this.open=false;}});return nodes.get(id);}
 const state={data:{workspace:'A',connection:{selected:'codex',choices:[{id:'codex',name:'Codex',available:true}]}},business:'studio',chatMeta:{id:'chat',agent:'codex'},fileDetailTicket:0};
 const context={window:{},document:{activeElement:null,addEventListener:(name,fn)=>(listeners[name]??=[]).push(fn)},state,$:node,
   esc:v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),
@@ -29,5 +29,20 @@ const permission={choices:[{id:'native',name:'Use harness settings',native:'No o
   assert.equal(calls.at(-1).data.mode,'full');assert.equal(calls.at(-1).data.kind,'codex');assert.equal(calls.at(-1).data.chat_id,undefined,'Editing defaults must not mutate an individual chat');calls.at(-1).resolve({saved:true});await Promise.all(pending);pending=[];
   click('other-work');await flush();const old=calls.at(-1);state.business='other';old.resolve({items:[],running_chats:[]});await Promise.all(pending);
   assert.match(node('#detail-content').innerHTML,/Reading workspace activity/,'Results from another business must not be rendered');
+  pending=[];state.business='studio';node('#work-activity-search').value='';click('other-work');await flush();
+  const observed={chat_id:'chat',title:'Question',status:'working',needs_input:true,agent:'Pi',observed_at:1};
+  calls.at(-1).resolve({items:[observed],running_chats:[]});await Promise.all(pending);pending=[];
+  assert.match(node('#work-activity-list').innerHTML,/Previously needed input/);
+  click('other-work');await flush();calls.at(-1).resolve({items:[observed],running_chats:['chat']});await Promise.all(pending);pending=[];
+  assert.match(node('#work-activity-list').innerHTML,/Needs input/);
+  node('#history-search').value='';click('workspace-history');await flush();calls.at(-1).resolve({items:[{id:'version',path:'attachments/studio/notes.txt',at:1,bytes:8,reason:'Saved'}]});await Promise.all(pending);pending=[];
+  const reviewButton=node('review-version');reviewButton.dataset.historyReview='version';
+  node('#history-list').onclick({target:{closest:selector=>selector==='[data-history-review]'?reviewButton:null}});await flush();
+  calls.at(-1).resolve({id:'version',path:'attachments/studio/notes.txt',at:1,bytes:8,text:'Earlier',current_revision:'reviewed'});await Promise.all(pending);pending=[];
+  node('#history-restore').onclick();await flush();
+  assert.equal(calls.at(-1).data.expected_revision,'reviewed');
+  calls.at(-1).resolve({restored:true,warning:'Restored successfully, but local history could not be updated.'});await Promise.all(pending);
+  assert.match(node('#history-restore-status').textContent,/Restored successfully, but local history/);
+  assert.equal(node('#history-restore').disabled,true,'Successful restore with a warning must not invite duplicate submission');
   console.log('Continuity views passed: escaped native requests, stable inputs, scope isolation, stale-panel protection, and explicit native defaults.');
 })().catch(error=>{console.error(error);process.exitCode=1;});
