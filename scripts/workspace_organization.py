@@ -266,6 +266,15 @@ def plan(primary,sources,destination,business_map=None,store=None,progress=lambd
             except (OSError,ValueError):issues.append({'kind':'settings','message':'Saved view settings need attention; originals remain available.'})
         else:
             incoming=storage.view_preferences(source) if row['kind']=='workspace' else {}
+            for bid,profiles in incoming.get('assistants',{}).items():
+                kept=views.setdefault('assistants',{}).setdefault(groups.get(bid,bid),[])
+                for profile in profiles:
+                    existing=next((p for p in kept if p['id']==profile['id']),None)
+                    if existing and {k:v for k,v in existing.items() if k!='updated'}=={k:v for k,v in profile.items() if k!='updated'}:continue
+                    if existing:
+                        profile={**profile,'id':hashlib.sha256((skey+profile['id']).encode()).hexdigest()[:24],
+                                 'name':(profile['name']+' ('+source.name+')')[:80]}
+                    kept.append(profile)
             for bid,prefs in incoming.get('library',{}).items():
                 kept=views.setdefault('library',{}).setdefault(groups.get(bid,bid),{})
                 for field,limit in [('favorites',500),('recent',24)]:

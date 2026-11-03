@@ -1,0 +1,220 @@
+"""Exercise saved assistants, native results, and parent/child transcript isolation."""
+from pathlib import Path
+from http.server import ThreadingHTTPServer
+from urllib.request import Request, urlopen
+from urllib.error import HTTPError
+from unittest.mock import patch
+import json
+import os
+import sqlite3
+import shutil
+import subprocess
+import sys
+import tempfile
+import threading
+import time
+
+ROOT=Path(__file__).resolve().parents[1]
+sys.path.insert(0,str(ROOT/'scripts'))
+
+
+def wait(check):
+    end=time.monotonic()+10
+    while time.monotonic()<end:
+        if check():return
+        time.sleep(.02)
+    raise AssertionError('Timed out waiting for isolated work')
+
+
+def main():
+    import workspace_assistants as assistants
+    import workspace_schedules as schedules
+    import workspace_storage as storage
+    import workspace_codex as codex
+    import workspace_agents as agents
+    from workspace_delegation import Tracker
+    from workspace_ui import Workspace,handler_for
+    from setup import setup
+    with tempfile.TemporaryDirectory(prefix='aura-assistants-') as temporary, patch.dict(os.environ):
+        base=Path(temporary);root=base/'workspace'
+        os.environ.update(BUSINESSOS_WORKSPACE=str(root),BUSINESSOS_WORKSPACE_CONFIG=str(base/'pointer.json'),
+                          LOCALAPPDATA=str(base/'local'),CODEX_HOME=str(base/'codex'),HERMES_HOME=str(base/'hermes'))
+        bid=setup(organization='Assistant studio')['business_id']
+        program="import sys;from pathlib import Path;Path('received.txt').write_text(sys.stdin.read(),encoding='utf-8');print('Finished the requested work.')"
+        app=Workspace(agent={'name':'Local fixture','argv':[sys.executable,'-c',program]},settings_file=base/'prefs.json')
+        app.preferences['connection']={'kind':'configured','model':'original-model','effort':''}
+        server=ThreadingHTTPServer(('127.0.0.1',0),handler_for(app));threading.Thread(target=server.serve_forever,daemon=True).start()
+        def call(path,data=None,status=200):
+            request=Request(f'http://127.0.0.1:{server.server_port}'+path,
+                data=json.dumps(data).encode() if data is not None else None,
+                headers={'X-Aura-Token':app.token,'X-Aura-Workspace':str(root),'Content-Type':'application/json'})
+            try:
+                with urlopen(request) as response:
+                    assert response.status==status
+                    return json.load(response)
+            except HTTPError as exc:
+                assert exc.code==status,(exc.code,exc.read())
+                return {}
+        try:
+            saved=call('/api/assistants',{'business':bid,'name':'Jeff','instructions':'Research carefully.','model':'assistant-model'})['items'][0]
+            assert storage.view_preferences(root)['assistants'][bid][0]['id']==saved['id']
+            call('/api/assistants',{'business':bid,'name':[]},400)
+            call('/api/assistants',{'business':'another-business','name':'Wrong'},400)
+            started=call('/api/chat',{'business':bid,'chat_id':'','text':'Find the next step.','assistant_id':saved['id']},202)
+            wait(lambda:app.jobs[started['id']]['status']!='working')
+            with app.lock:pass
+            job=app.jobs[started['id']];assert job['status']=='complete' and job['model']=='assistant-model',job
+            text=(root/'received.txt').read_text(encoding='utf-8')
+            assert 'Research carefully.' in text and 'Jeff' in text and str(root) in text
+            chat=next(c for c in app.preferences['chats'] if c['id']==started['chat_id'])
+            assert chat['assistant_id']==saved['id'] and app.preferences['connection']['model']=='original-model'
+            chat['subagents']=[{'id':'earlier-child','name':'Research','status':'complete','result':'Useful evidence'}]
+            call('/api/assistants',{'business':bid,'id':saved['id'],'name':'Janice','instructions':'Check the evidence.'})
+            next_turn=call('/api/chat',{'business':bid,'chat_id':chat['id'],'text':'Continue.'},202)
+            wait(lambda:app.jobs[next_turn['id']]['status']!='working')
+            with app.lock:pass
+            assert 'Check the evidence.' in (root/'received.txt').read_text(encoding='utf-8')
+            assert app.conversation(bid,chat['id'])['chat']['subagents'][0]['id']=='earlier-child'
+            # Native output stays where the scheduler put it; selection is constrained to its own history.
+            jobs=base/'hermes/cron/jobs.json';jobs.parent.mkdir(parents=True)
+            jobs.write_text(json.dumps({'jobs':[{'id':'weekly','name':'Weekly review','prompt':'Review work','schedule':{'expr':'0 9 * * 1'},'workdir':str(root)}]}))
+            outputs=base/'hermes/cron/output/weekly';outputs.mkdir(parents=True)
+            for day in ('01','02'):(outputs/f'2026-11-{day}_09-00-00.md').write_text('Report '+day)
+            task=next(t for t in schedules.inventory(workspaces=[root])['items'] if t['owner']=='hermes')
+            call('/api/assistants',{'business':bid,'action':'assign_task','id':saved['id'],'task_id':task['id']})
+            history=call('/api/schedules/history?id='+task['id'])
+            assert len(history['items'])==2 and history['items'][0]['id'].startswith('2026-11-02')
+            older=call('/api/schedules/result?id='+task['id']+'&run_id=2026-11-01_09-00-00.md')
+            assert older['text']=='Report 01'
+            call('/api/schedules/result?id='+task['id']+'&run_id=../private.md',status=400)
+            before=jobs.read_bytes()
+            call('/api/assistants',{'business':bid,'action':'remove','id':saved['id']})
+            assert not call('/api/assistants?business='+bid)['items'] and jobs.read_bytes()==before
+            assert call('/api/conversation?business='+bid+'&chat_id='+chat['id'])['messages']
+            assert outputs.joinpath('2026-11-02_09-00-00.md').exists()
+            # The same JSON helpers are available without the UI.
+            command=[sys.executable,str(ROOT/'scripts/workspace_schedules.py'),'result','--id',task['id'],'--workspace',str(root)]
+            result=subprocess.run(command,capture_output=True,text=True,encoding='utf-8',check=True)
+            assert json.loads(result.stdout)['text']=='Report 02'
+            result=subprocess.run([sys.executable,str(ROOT/'scripts/workspace_assistants.py'),'save','--business',bid,'--input','-'],
+                input=json.dumps({'name':'CLI assistant','instructions':'Keep it simple.'}),capture_output=True,text=True,encoding='utf-8',check=True)
+            cli_profile=json.loads(result.stdout)
+            assert call('/api/assistants?business='+bid)['items'][0]['id']==cli_profile['id']
+            created=[]
+            def native_create(data,command,env,workspace,execution):
+                created.append(data)
+                native=json.loads(jobs.read_text())
+                native['jobs'].append({'id':'assistant-task','name':data['name'],'prompt':data['description'],
+                                       'schedule':{'expr':data['schedule']},'workdir':str(workspace)})
+                jobs.write_text(json.dumps(native))
+                return next(t for t in schedules.inventory(workspaces=[root])['items'] if t['native_id']=='assistant-task')
+            with patch('workspace_ui.installed_agents',return_value=[{'id':'hermes','name':'Hermes fixture','argv':['fixture','chat']}]), \
+                 patch.object(app,'agent_options',return_value={'models':[{'id':'test:model'}]}), \
+                 patch.object(app,'agent_efforts',return_value={'efforts':[]}), patch.object(schedules,'create',side_effect=native_create):
+                app.schedule_action(bid,{'action':'create','app':'hermes','name':'Assistant review','description':'Summarize relevant work.',
+                                         'when':'every 1h','model':'test:model','assistant_id':cli_profile['id']})
+                wait(lambda:app.schedule_job['status']!='working')
+                assert app.schedule_job['status']=='complete',app.schedule_job
+            assert 'Keep it simple.' in created[0]['description'] and bid in created[0]['description']
+            assert app.schedule_job['task_id'] in assistants.find(storage.view_preferences(root),bid,cli_profile['id'])['task_ids']
+            # Portable profiles survive a view round trip; another workspace cannot see them.
+            portable=storage.view_preferences(root);assert portable['assistants'][bid][0]['name']=='CLI assistant'
+            other=base/'other';storage.save_view(other,{})
+            assert not storage.view_preferences(other).get('assistants')
+        finally:server.shutdown();server.server_close()
+        # Read native Codex run metadata without touching a real desktop database.
+        dbpath=base/'codex/sqlite/codex.db';dbpath.parent.mkdir(parents=True)
+        with sqlite3.connect(dbpath) as db:
+            db.execute('CREATE TABLE automations (id,name,prompt,status,next_run_at,last_run_at,cwds,rrule,model,reasoning_effort,updated_at)')
+            db.execute('INSERT INTO automations VALUES (?,?,?,?,?,?,?,?,?,?,?)',('daily','Daily review','Review','ACTIVE',0,0,json.dumps([str(root)]),'FREQ=DAILY','model','low',1))
+            db.execute('CREATE TABLE automation_runs (thread_id,automation_id,status,thread_title,inbox_title,inbox_summary,created_at,archived_assistant_message)')
+            db.execute('INSERT INTO automation_runs VALUES (?,?,?,?,?,?,?,?)',('native-run','daily','completed','Daily result','','Summary',123,'Full saved result'))
+        db.close()
+        task=next(t for t in schedules.inventory(workspaces=[root])['items'] if t['owner']=='codex')
+        assert schedules.result(task['id'],[root])['text']=='Full saved result'
+        assert schedules.history(task['id'],[root])['items'][0]['native_id']=='native-run'
+        with sqlite3.connect(dbpath) as db:db.execute('DROP TABLE automation_runs')
+        db.close()
+        try:schedules.history(task['id'],[root]);raise AssertionError('Unreadable result metadata looked empty')
+        except ValueError as exc:assert 'Could not read' in str(exc)
+        with sqlite3.connect(dbpath) as db:db.execute('ALTER TABLE automations RENAME COLUMN name TO unsupported_name')
+        db.close()
+        unavailable=schedules.inventory(workspaces=[root])
+        assert any('Could not read' in note for note in unavailable['notes'])
+        with patch.object(Path,'stat',side_effect=PermissionError('denied')):
+            try:schedules.result_path(base/'hermes','weekly',strict=True);raise AssertionError('Unreadable reports looked empty')
+            except ValueError as exc:assert 'Could not read' in str(exc)
+        # Real subprocess streams: child replies/session IDs cannot overwrite the parent.
+        def stream(events):return 'import json,sys;sys.stdin.read();events='+repr(events)+'\nfor event in events:print(json.dumps(event),flush=True)'
+        updates=[]
+        events=[{'type':'thread.started','thread_id':'parent'},
+                {'type':'item.completed','item':{'type':'collab_tool_call','tool':'spawn_agent','sender_thread_id':'parent','receiver_thread_ids':['child'],'prompt':'Research','agents_states':{'child':{'status':'running'}}}},
+                {'type':'item.completed','item':{'type':'collab_tool_call','tool':'wait','receiver_thread_ids':['child'],'agents_states':{'child':{'status':'completed','message':'Evidence collected'}}}},
+                {'type':'item.completed','item':{'type':'agent_message','text':'Parent reply'}}]
+        out=codex.run([sys.executable,'-c',stream(events),'exec'],root,'Request',None,'main','low',lambda **v:updates.append(v),dict(os.environ),child_model='worker')
+        assert out['native_id']=='parent' and out['reply']=='Parent reply'
+        children=[v['subagents'] for v in updates if 'subagents' in v][-1]
+        assert children[0]['status']=='complete' and children[0]['result']=='Evidence collected'
+        updates=[]
+        events=[{'type':'system','session_id':'parent'},
+                {'type':'assistant','message':{'content':[{'type':'tool_use','id':'task-1','name':'Agent','input':{'description':'Research','prompt':'Find evidence','model':'worker'}}]}},
+                {'type':'assistant','session_id':'child-session','parent_tool_use_id':'task-1','message':{'content':[{'type':'text','text':'Child-only reply'}]}},
+                {'type':'user','message':{'content':[{'type':'tool_result','tool_use_id':'task-1','content':'Evidence found'}]}},
+                {'type':'result','session_id':'parent','result':'Parent reply'}]
+        out=agents.run([sys.executable,'-c',stream(events),'--print'],'claude',root,dict(os.environ),'Request',None,'main','',lambda **v:updates.append(v))
+        assert out['native_id']=='parent' and out['reply']=='Parent reply'
+        assert not any(v.get('native_id')=='child-session' or v.get('reply')=='Child-only reply' for v in updates)
+        assert [v['subagents'] for v in updates if 'subagents' in v][-1][0]['status']=='complete'
+        updates=[]
+        events=[{'type':'system','session_id':'hermes-parent'},
+                {'type':'tool_use','name':'delegate_task','tool_call_id':'delegate-1','input':{'tasks':[{'goal':'Find evidence'}]}},
+                {'type':'tool_result','name':'delegate_task','tool_call_id':'delegate-1','output':json.dumps({'results':[{'task_index':0,'status':'completed','summary':'Evidence found','model':'worker'}]})},
+                {'type':'result','session_id':'hermes-parent','status':'SUCCESS','response':'Parent reply'}]
+        out=agents.run([sys.executable,'-c',stream(events),'chat'],'hermes',root,dict(os.environ),'Request',None,'main','',lambda **v:updates.append(v))
+        assert out['reply']=='Parent reply' and out['native_id']=='hermes-parent'
+        child=[v['subagents'] for v in updates if 'subagents' in v][-1][1]
+        assert child['model']=='worker' and child['task']=='Find evidence' and child['result']=='Evidence found' and child['status']=='complete'
+        tracker=Tracker(None)
+        tracker.observe('claude',{'type':'assistant','message':{'content':[{'type':'tool_use','id':'background','name':'Agent','input':{'run_in_background':True}}]}})
+        tracker.observe('claude',{'type':'system','subtype':'task_started','task_id':'native-task','tool_use_id':'background'})
+        tracker.observe('claude',{'type':'user','message':{'content':[{'type':'tool_result','tool_use_id':'background','content':'Started in background'}]}})
+        assert tracker.items['background']['status']=='working'
+        tracker.observe('claude',{'type':'system','subtype':'task_notification','task_id':'native-task','status':'completed','summary':'Done'})
+        assert len(tracker.items)==1 and tracker.items['background']['status']=='complete'
+        # Extension progress remains working until the native tool reports completion.
+        tracker=Tracker(None)
+        tracker.observe('pi',{'type':'tool_execution_start','toolName':'subagent','toolCallId':'tool','args':{'task':'Research'}})
+        detail={'details':{'results':[{'agent':'Scout','task':'Find evidence','model':'worker','exitCode':-1,'messages':[]}]}}
+        tracker.observe('pi',{'type':'tool_execution_update','toolCallId':'tool','partialResult':detail})
+        assert tracker.items['tool:0']['status']=='working'
+        detail['details']['results'][0].update(exitCode=0,messages=[{'role':'assistant','content':[{'type':'text','text':'Found evidence'}]}])
+        tracker.observe('pi',{'type':'tool_execution_end','toolCallId':'tool','result':detail})
+        assert tracker.items['tool:0']['status']=='complete' and tracker.items['tool:0']['result']=='Found evidence'
+        tracker.observe('pi',{'type':'tool_execution_update','result':{'details':{'results':123}}})
+        # Historical Codex events restore actual native names/models and outcomes.
+        transcript=base/'native.jsonl'
+        rows=[{'type':'event_msg','timestamp':'2026-11-01T12:00:00Z','payload':{'type':'collab_agent_spawn_end','new_thread_id':'child','new_agent_nickname':'Scout','model':'worker','status':'running','prompt':'Research'}},
+              {'type':'event_msg','timestamp':'2026-11-01T12:01:00Z','payload':{'type':'collab_waiting_end','statuses':{'child':{'completed':'Done'}}}}]
+        transcript.write_text('\n'.join(json.dumps(r) for r in rows),encoding='utf-8')
+        with patch.object(codex,'rpc',return_value=[{'thread':{'path':str(transcript)}}]):
+            restored=codex.history(['fixture'],root,'parent')['subagents'][0]
+            assert restored['name']=='Scout' and restored['model']=='worker' and restored['status']=='complete'
+            assert restored['updated']-restored['started']==60
+        # Bounds apply to finished history, never to currently active workers.
+        tracker=Tracker(None)
+        for index in range(70):tracker.put('done-'+str(index),status='complete',result='Done')
+        assert len(tracker.items)==50 and 'done-69' in tracker.items and 'done-0' not in tracker.items
+        for index in range(55):tracker.put('active-'+str(index),status='working')
+        assert all('active-'+str(index) in tracker.items for index in range(55)) and len(tracker.items)==105
+        tracker.put('active-0',status='complete')
+        assert len(tracker.items)==104 and 'active-54' in tracker.items
+        updates=[];tracker=Tracker(lambda **values:updates.append(values))
+        tracker.observe('hermes',{'type':'tool_use','name':'delegate_task','tool_call_id':'batch',
+                                 'input':{'tasks':[{'goal':'Task '+str(i)} for i in range(55)]}})
+        assert len(updates)==1 and len(updates[0]['subagents'])==56,'One native frame caused repeated full snapshots'
+    node=shutil.which('node')
+    if node:subprocess.run([node,str(ROOT/'tests/workspace_work_ui.cjs'),str(ROOT/'interface/workspace-work.js')],check=True)
+    print('Assistants and native work passed: portable profiles, shared CLI/API, retained histories, native results, and parent/child isolation.')
+
+
+if __name__=='__main__':main()

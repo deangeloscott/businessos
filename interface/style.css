@@ -285,3 +285,26 @@ footer .footer-actions{flex:none;align-items:center}footer #usage-open{font-size
 @media(max-width:760px){.sidebar-chat-row .chat-options{min-width:34px;min-height:40px}.composer-note button{min-height:40px}}
 
 .chat-detail-primary-actions{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:14px;margin-left:auto}.chat-detail-primary-actions button{font-size:12px}.chat-detail-meta p{line-height:1.8}
+:is(.assistant-card,.child-agent-body,.task-result-body){min-width:0;overflow-wrap:anywhere}
+.assistant-list{display:grid;gap:16px}
+.assistant-card p,.assistant-instructions{white-space:pre-wrap}
+.assistant-card h3{margin:0}
+.assistant-toolbar{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:20px}
+.assistant-preferences{padding-top:16px}
+#assistant-pick-model,#assistant-pick-child{max-width:100%;white-space:normal;overflow-wrap:anywhere;text-align:left}
+.task-results-section,.task-assignment{margin:22px 0}
+.task-results .row{width:100%;text-align:left}
+.task-result-body pre{white-space:pre-wrap;overflow-wrap:anywhere}
+#delegated-work{margin:20px 0}
+#delegated-work h3{font-size:14px;display:flex;flex-wrap:wrap;gap:10px}
+.child-agent{border:1px solid var(--line);border-radius:10px;margin:8px 0;min-width:0}
+.child-agent summary{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px;cursor:pointer;list-style:revert}
+.child-agent summary>span:first-child{min-width:0;overflow-wrap:anywhere}
+.child-agent summary::before{content:'›';flex:0 0 auto}
+.child-agent[open]>summary::before{transform:rotate(90deg)}
+.child-agent-body{padding:0 14px 12px}
+.child-agent-nested{margin-left:16px}
+.child-status{font-size:12px;color:var(--muted);flex-shrink:0}
+.child-status.working::before{content:'●';margin-right:6px;color:var(--accent)}
+#assistant-context{max-width:160px;overflow-wrap:anywhere}
+@media(max-width:600px){.assistant-toolbar>button{flex:1 1 auto}.child-agent summary{flex-wrap:wrap;justify-content:flex-start}.child-agent-nested{margin-left:8px}}

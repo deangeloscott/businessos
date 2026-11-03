@@ -35,6 +35,7 @@ TESTS=[
     'tests/run_setup_readiness.py',
     'tests/run_visual_workspace.py',
     'tests/run_workspace_conversations.py',
+    'tests/run_workspace_assistants.py',
     'tests/run_workspace_library.py',
     'tests/run_workspace_documents.py',
     'tests/run_workspace_usage.py',

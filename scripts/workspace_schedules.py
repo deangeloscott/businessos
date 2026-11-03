@@ -5,6 +5,8 @@ import os
 import re
 from pathlib import Path
 import subprocess
+import sqlite3
+from contextlib import closing
 
 try:
     import tomllib
@@ -17,6 +19,25 @@ def roots():
             Path(os.environ.get('HERMES_HOME', Path.home() / '.hermes')))
 
 
+def codex_rows(home, table, native_id=None):
+    """Read known local desktop metadata only. Never migrate or write native databases."""
+    path = Path(home) / 'sqlite/codex.db'
+    if not path.is_file():
+        return []
+    columns = {'automations':'id,name,prompt,status,next_run_at,last_run_at,cwds,rrule,model,reasoning_effort',
+               'automation_runs':'thread_id,status,thread_title,inbox_title,inbox_summary,created_at,archived_assistant_message'}[table]
+    try:
+        with closing(sqlite3.connect(path.resolve().as_uri() + '?mode=ro', uri=True, timeout=.5)) as db:
+            db.row_factory = sqlite3.Row
+            query = f'SELECT {columns} FROM {table}'
+            if table == 'automation_runs':
+                query += ' WHERE automation_id=? ORDER BY created_at DESC LIMIT 20'
+                return [dict(r) for r in db.execute(query, (str(native_id),))]
+            return [dict(r) for r in db.execute(query + ' ORDER BY updated_at DESC LIMIT 200')]
+    except (sqlite3.Error, OSError):
+        raise ValueError('Could not read Codex’s local task database. Check Codex or try again.') from None
+
+
 def inventory(codex_home=None, hermes_home=None, workspaces=(), antigravity_home=None):
     defaults = roots()
     codex_home, hermes_home = Path(codex_home or defaults[0]), Path(hermes_home or defaults[1])
@@ -24,11 +45,26 @@ def inventory(codex_home=None, hermes_home=None, workspaces=(), antigravity_home
     def append(owner, profile, native_id, **values):
         key = hashlib.sha256(f'{owner}:{profile}:{native_id}'.encode()).hexdigest()[:24]
         items.append({'id':key, 'owner':owner, 'profile':profile, 'native_id':str(native_id), **values})
+    try:
+        native_tasks=codex_rows(codex_home,'automations')
+    except ValueError as exc:
+        notes.append(str(exc));native_tasks=[]
+    for data in native_tasks:
+        try:
+            append('codex', 'default', data['id'], app='Codex', name=data['name'],
+                   description=data['prompt'], schedule=data['rrule'], model=data['model'] or '',
+                   effort=data['reasoning_effort'] or '', status=data['status'].lower(),
+                   next_run=data['next_run_at'] or '', last_run=data['last_run_at'] or '',
+                   workspace=json.loads(data['cwds']), editable=False, runtime='Requires the Codex desktop app')
+        except (ValueError, TypeError, AttributeError):
+            notes.append('Codex: a local task could not be read. Check it in Codex.')
     for path in sorted((codex_home / 'automations').glob('*/automation.toml'))[:200]:
         try:
             if not tomllib:
                 raise ValueError('Reading Codex schedules needs Python 3.11 or newer.')
             data = tomllib.loads(path.read_text(encoding='utf-8'))
+            if any(t['owner']=='codex' and t['native_id']==str(data.get('id', path.parent.name)) for t in items):
+                continue
             append('codex', 'default', data.get('id', path.parent.name),
                    app='Codex', name=data.get('name') or path.parent.name,
                    schedule=data.get('rrule', ''), model=data.get('model', ''),
@@ -128,26 +164,73 @@ def inventory(codex_home=None, hermes_home=None, workspaces=(), antigravity_home
             'support':'Shows local Codex and Hermes schedules, Pi schedule-prompt jobs in opened workspaces, and Google Antigravity schedule sidecars. Live-chat timers, Claude schedules and cloud-only jobs are not automatically listed. Enabled means configured; the owning app must still be running.'}
 
 
-def result_path(home, native_id):
+def result_path(home, native_id, strict=False):
     # Only Hermes-owned output, never a path supplied by the browser or job.
     ident=str(native_id)
     if not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9._:-]{0,199}',ident):return None
     root=Path(home)/'cron/output';folder=root/ident
-    if root.is_symlink() or folder.is_symlink() or not folder.is_dir():return None
     try:
+        folder.stat()
+        if root.is_symlink() or folder.is_symlink() or not folder.is_dir():return None
         paths=[p for p in folder.glob('*.md') if re.fullmatch(r'\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.md',p.name)
                and p.is_file() and not p.is_symlink() and p.resolve().is_relative_to(root.resolve())]
         return max(paths,key=lambda p:p.name) if paths else None
-    except OSError:return None
+    except FileNotFoundError:return None
+    except OSError:
+        if strict:raise ValueError('Could not read this task’s saved results. Check Hermes or try again.') from None
+        return None
 
 
-def result(ident, workspaces=()):
-    task=next((t for t in inventory(workspaces=workspaces)['items'] if t['id']==ident),None)
+def history(ident, workspaces=()):
+    snapshot=inventory(workspaces=workspaces)
+    task=next((t for t in snapshot['items'] if t['id']==ident),None)
+    if not task:
+        if snapshot['notes']:raise ValueError('This task could not be read. '+ ' '.join(snapshot['notes']))
+        raise ValueError('This task is no longer available. Refresh recurring tasks.')
+    runs=[]
+    note='Results are kept by '+task['app']+'. This app has not exposed a result here.'
+    if task['owner']=='hermes':
+        home=roots()[1]
+        if task['profile']!='default':home=home/'profiles'/task['profile']
+        latest=result_path(home,task['native_id'],strict=True)
+        if latest:
+            paths=sorted(latest.parent.glob('*.md'),key=lambda p:p.name,reverse=True)
+            for path in paths:
+                if (not re.fullmatch(r'\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.md',path.name)
+                    or path.is_symlink() or not path.is_file()):continue
+                runs.append({'id':path.name,'name':path.stem.replace('_',' '),'status':'Saved result'})
+                if len(runs)==20:break
+    elif task['owner']=='codex':
+        for row in codex_rows(roots()[0],'automation_runs',task['native_id']):
+            runs.append({'id':row['thread_id'],'native_id':row['thread_id'], 'name':row['inbox_title'] or row['thread_title'] or task['name'],
+                         'at':row['created_at'], 'status':row['status'], 'summary':row['inbox_summary'] or ''})
+    elif task['owner']=='pi' and task.get('session'):
+        runs=[{'id':task['session'],'native_id':task['session'],'name':'Task conversation','status':'Native session'}]
+        note='Pi keeps this task’s runs in its original conversation.'
+    return {'task':task,'items':runs,'note':note if not runs or task['owner']=='pi' else '', 'limit':20}
+
+
+def result(ident, workspaces=(), run_id=None):
+    found=history(ident,workspaces)
+    task=found['task']
+    run=next((r for r in found['items'] if r['id']==run_id),None) if run_id else next(iter(found['items']),None)
+    if not run:raise ValueError('This saved result is no longer available. Refresh the task.')
+    if task['owner']=='codex':
+        row=next((r for r in codex_rows(roots()[0],'automation_runs',task['native_id']) if r['thread_id']==run['id']),None)
+        if not row:raise ValueError('This result is no longer available in Codex.')
+        text=row['archived_assistant_message'] or row['inbox_summary'] or ''
+        return {'text':text[:100000], 'name':task['name'], 'file':run['name'], 'native_id':run['id'], 'owner':'codex',
+                'note':'Open the conversation for its full history and files.'}
+    if task['owner']=='pi':
+        return {'text':'', 'name':task['name'], 'file':run['name'], 'native_id':run['id'], 'owner':'pi', 'note':found['note']}
     if not task or task['owner']!='hermes':raise ValueError('This app has not provided a saved result here.')
     home=roots()[1]
     if task['profile']!='default':home=home/'profiles'/task['profile']
     path=result_path(home,task['native_id'])
+    if path:path=path.parent/run['id']
     if not path:raise ValueError('This result is no longer available. Check it in Hermes.')
+    if path.is_symlink() or not path.is_file() or not path.resolve().is_relative_to((home/'cron/output').resolve()):
+        raise ValueError('This result is no longer available. Check it in Hermes.')
     if path.stat().st_size>2*1024*1024:raise ValueError('This result is too large to preview. Open it in Hermes.')
     return {'text':path.read_text(encoding='utf-8',errors='replace'),'name':task['name'],'file':path.name}
 
@@ -242,3 +325,24 @@ def update(ident, data, hermes_command, env, execution=None):
         if field != 'schedule' and refreshed[field] != str(data[field]).strip():
             raise ValueError('The requested change could not be confirmed. Refresh or check Hermes.')
     return refreshed
+
+
+def main():
+    import argparse
+    from _common import workspace_root, workspace_scope
+    parser=argparse.ArgumentParser(description='Read native recurring tasks and their saved results.')
+    parser.add_argument('action',choices=['list','history','result'])
+    parser.add_argument('--id')
+    parser.add_argument('--run-id')
+    parser.add_argument('--workspace')
+    args=parser.parse_args()
+    if args.action!='list' and not args.id:parser.error('--id is required for a task result or history')
+    with workspace_scope(Path(args.workspace).resolve() if args.workspace else workspace_root()):
+        workspaces=[workspace_root()]
+        response=(inventory(workspaces=workspaces) if args.action=='list' else
+                  history(args.id,workspaces) if args.action=='history' else result(args.id,workspaces,args.run_id))
+    print(json.dumps(response,ensure_ascii=False))
+
+
+if __name__=='__main__':
+    main()

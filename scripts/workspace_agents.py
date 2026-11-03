@@ -216,6 +216,8 @@ def resume_command(kind, native_id):
 
 
 def history(command, kind, cwd, env, native_id):
+    from workspace_delegation import Tracker
+    delegation=Tracker(None)
     source_file='';native_workspace=''
     model, effort, window = '', '', None
     native_title=native_summary='';summary_updated=None
@@ -253,6 +255,7 @@ def history(command, kind, cwd, env, native_id):
         source_file=str(matches[0]);messages=[]
         for line in matches[0].read_text(encoding='utf-8').splitlines():
             row=json.loads(line)
+            if delegation.observe('claude',row,workspace_usage.timestamp(row.get('timestamp'))):continue
             if row.get('type')=='summary' and isinstance(row.get('summary'),str):
                 native_summary=row['summary'];summary_updated=row.get('timestamp')
             if row.get('type')=='custom-title':native_title=row.get('customTitle','')
@@ -262,6 +265,10 @@ def history(command, kind, cwd, env, native_id):
         raise ValueError('Showing the saved display. Antigravity keeps the full native chat; edits made in its app may not appear here.')
     out=[];brief=None
     for message in messages:
+        if kind in {'pi','omp'} and message.get('role')=='toolResult' and message.get('toolName') in {'task','subagent'}:
+            ident=message.get('toolCallId')
+            delegation.put(ident,name='Delegated work')
+            delegation.observe(kind,{'type':'tool_execution_end','toolCallId':ident,'result':message,'isError':message.get('isError')},workspace_usage.timestamp(message.get('timestamp')))
         if message.get('role') not in {'user','assistant'}:continue
         candidate=workspace_chats.brief(message_text(message.get('content',''))) if message['role']=='assistant' else None
         text=display_text(message.get('content',''))
@@ -270,7 +277,8 @@ def history(command, kind, cwd, env, native_id):
         if text:out.append({'role':message['role'],'text':text,'at':at,
                            'agent':{'pi':'Pi','omp':'OMP','claude':'Claude Code','hermes':'Hermes'}[kind]})
         if candidate:brief=dict(candidate,through=len(out),at=workspace_usage.timestamp(at))
-    return {'messages':out,'model':model,'effort':effort,'usage':workspace_usage.messages_usage(messages,kind,window),'native_id':native_id,
+    return {**({'subagents':list(delegation.items.values())} if delegation.items else {}),
+            'messages':out,'model':model,'effort':effort,'usage':workspace_usage.messages_usage(messages,kind,window),'native_id':native_id,
             'chat_brief':brief,'title':native_title,'summary':native_summary,'summary_updated':summary_updated,
             'source_file':source_file,'native_workspace':native_workspace,'resume':subprocess.list2cmdline(resume_command(kind,native_id))}
 
@@ -311,6 +319,8 @@ def relocate_pi(command, cwd, env, native_id, execution=None, source_file=''):
 
 
 def run(command, kind, cwd, env, prompt, native_id, model, effort, update, execution=None):
+    from workspace_delegation import Tracker
+    delegation = Tracker(update)
     argv=base_command(command)
     if kind in {'pi','omp'}:
         argv += ['--print','--mode','json']
@@ -351,6 +361,8 @@ def run(command, kind, cwd, env, prompt, native_id, model, effort, update, execu
         for line in process.stdout:
             try:event=json.loads(line)
             except ValueError:continue
+            if not isinstance(event, dict):continue
+            if delegation.observe(kind, event):continue
             event_type=event.get('type',event.get('event'))
             new_id=event.get('session_id') or (event.get('id') if event_type=='session' else None) or event.get('conversation_id')
             if new_id:

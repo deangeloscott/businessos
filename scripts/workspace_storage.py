@@ -49,11 +49,13 @@ def save_view(root, preferences):
             locations[bid][-1].update(path=path.relative_to(root).as_posix() if relative else str(path), relative=relative)
     workspace_catalog.write_json(root / VIEW_FILE, {'format':1, 'file_locations':locations,
         'appearance':preferences.get('appearance','system'), 'model_picker':preferences.get('model_picker', {}),
-        'library':preferences.get('library',{})})
+        'library':preferences.get('library',{}), 'assistants':preferences.get('assistants',{})})
 
 
 def view_preferences(root):
     data = load_view(root)
+    from workspace_assistants import validate
+    validate(data.get('assistants', {}))
     if not isinstance(data.get('model_picker', {}), dict) or data.get('appearance','system') not in {'system','light','dark'}:
         raise ValueError('Saved workspace preferences need attention.')
     if not isinstance(data.get('library',{}),dict):

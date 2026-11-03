@@ -146,7 +146,9 @@ def verify_attachment(command, cwd, attachment):
     return dict(attachment, discovered=found)
 
 
-def run(command, cwd, prompt, native_id, model, effort, update, env=None, execution=None):
+def run(command, cwd, prompt, native_id, model, effort, update, env=None, execution=None, child_model=''):
+    from workspace_delegation import Tracker
+    delegation = Tracker(update)
     argv = [*base_command(command), '-C', str(cwd), 'exec']
     if '--sandbox' in command:
         index = command.index('--sandbox')
@@ -154,6 +156,8 @@ def run(command, cwd, prompt, native_id, model, effort, update, env=None, execut
     if native_id:
         argv += ['resume']
     argv += ['--json', '--model', model, '-c', 'model_reasoning_effort=' + json.dumps(effort), '--skip-git-repo-check']
+    if child_model:
+        argv += ['-c', 'agents.default_subagent_model=' + json.dumps(child_model)]
     argv += [native_id, '-'] if native_id else ['-']
     env = env or dict(os.environ, BUSINESSOS_WORKSPACE=str(cwd), PYTHONUTF8='1')
     final, usage, error, thread = '', {}, '', native_id
@@ -168,6 +172,7 @@ def run(command, cwd, prompt, native_id, model, effort, update, env=None, execut
             except ValueError:
                 continue
             kind = event.get('type')
+            if delegation.observe('codex', event):continue
             if kind == 'thread.started':
                 if native_id and event['thread_id']!=native_id:
                     error='Codex returned a different chat ID. Check the native app before continuing.'
@@ -200,6 +205,8 @@ def run(command, cwd, prompt, native_id, model, effort, update, env=None, execut
 
 
 def history(command, cwd, native_id):
+    from workspace_delegation import Tracker
+    delegation=Tracker(None)
     result = rpc(command, [('thread/read', {'threadId': native_id, 'includeTurns': False})], cwd)[0]
     thread = result['thread']
     path = Path(thread.get('path') or '')
@@ -213,6 +220,7 @@ def history(command, cwd, native_id):
             except ValueError:
                 continue
             payload = row.get('payload', {})
+            if row.get('type')=='event_msg':delegation.observe('codex',payload,workspace_usage.timestamp(row.get('timestamp')))
             if row.get('type') == 'event_msg' and payload.get('type') == 'token_count':
                 info = payload.get('info') or {}
                 if info.get('total_token_usage'):
@@ -247,6 +255,7 @@ def history(command, cwd, native_id):
             if text:
                 messages.append({'role': role, 'text': text, 'at': row.get('timestamp'), 'agent': 'Codex', 'model': model, 'effort': effort})
             if candidate:brief=dict(candidate,through=len(messages),at=workspace_usage.timestamp(row.get('timestamp')))
-    return {'messages': messages, 'model': model, 'effort': effort, 'usage': usage, 'native_id': native_id,
+    return {**({'subagents':list(delegation.items.values())} if delegation.items else {}),
+            'messages': messages, 'model': model, 'effort': effort, 'usage': usage, 'native_id': native_id,
             'chat_brief':brief,'title':thread.get('name'),'summary':thread.get('summary'),'summary_updated':thread.get('summaryUpdatedAt'),
             'status': thread.get('status'), 'source_file':str(path),'native_workspace':thread.get('cwd',''),'resume': f'codex resume {native_id}'}

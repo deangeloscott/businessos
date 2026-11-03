@@ -27,7 +27,8 @@ def main():
         (other/'projects/site/index.html').write_text('<h1>Alternative</h1><img src="logo.png">')
         os.environ['BUSINESSOS_WORKSPACE']=str(other)
         import workspace_storage as storage
-        storage.save_view(other,{'library':{bid:{'favorites':['tool:example'],'recent':['tool:example']}}})
+        storage.save_view(other,{'library':{bid:{'favorites':['tool:example'],'recent':['tool:example']}},
+                                 'assistants':{bid:[{'id':'jeff','name':'Jeff','instructions':'Research','task_ids':[]}]}})
         remember(bid,{'objects':[{'object_type':'Objective','content':{'name':'A useful distinct goal'}}]})
         original={p:p.read_bytes() for p in source.rglob('*') if p.is_file()}
         review=org.plan(source,[other],target,store=store)
@@ -40,6 +41,7 @@ def main():
         result=org.apply(review['id'],store)
         assert result['status']=='complete'
         assert storage.view_preferences(target)['library'][bid]['favorites']==['tool:example']
+        assert storage.view_preferences(target)['assistants'][bid][0]['name']=='Jeff'
         assert (target/'projects/site/index.html').read_bytes()==(source/'projects/site/index.html').read_bytes()
         imported=list((target/'attachments'/bid/'imports').glob('*/projects/site/index.html'))
         assert len(imported)==1 and (imported[0].parent/'logo.png').read_bytes()==(site/'logo.png').read_bytes()

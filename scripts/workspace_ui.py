@@ -32,6 +32,8 @@ import workspace_codex
 import workspace_agents
 import workspace_locations
 import workspace_schedules
+import workspace_assistants
+import workspace_delegation
 import workspace_storage
 import workspace_guidance
 import workspace_startup
@@ -490,7 +492,7 @@ class Workspace:
     def load_portable(self):
         try:
             portable = workspace_storage.view_preferences(workspace_root())
-            for key in ('file_locations','model_picker','appearance','library'):
+            for key in ('file_locations','model_picker','appearance','library','assistants'):
                 if key in portable:
                     self.preferences[key] = portable[key]
             self.portable_view_ok = True
@@ -1315,6 +1317,8 @@ class Workspace:
             if not result.get('history_note') and not (job and job['status']=='working'):
                 before=json.dumps(original,sort_keys=True)
                 original.update(chat);chat=original
+                if result.get('subagents'):
+                    chat['subagents']=[{k:self.connections.redact(v) if isinstance(v,str) else v for k,v in child.items()} for child in result.pop('subagents')]
                 if result.get('source_file'):chat['source_file']=result['source_file']
                 chat['source_marker']=observed_marker or workspace_native_chats.marker(chat.get('source_file'))
                 usage_changed=False
@@ -1363,6 +1367,7 @@ class Workspace:
                      'guide':workspace_guidance.GUIDES.get(a['id'], ('',''))} for a in installed_agents()]
         return {'connected': bool(self.agent), 'name': (self.agent or {}).get('name', 'Your existing chat'),
                 'choices': choices, 'selected': self.connection_kind,
+                'presets':{kind:{k:value.get(k,'') for k in ('model','effort')} for kind,value in self.preferences['connected_apps'].items()},
                 'apps': [dict(self.preferences['connected_apps'][kind].get('check') or {}, id=kind,
                               name=next((c['name'] for c in choices if c['id']==kind),kind))
                          for kind in self.preferences['connected_apps']],
@@ -1543,6 +1548,41 @@ class Workspace:
                 'profile': self.profile(),
                 'onboarding': {'seen': bid in self.preferences.get('seen', [])}}
 
+    def assistants(self, bid, data=None):
+        self.load_portable()
+        if data:
+            if not self.portable_view_ok:raise ValueError('Saved workspace settings need attention before editing assistants.')
+            action=data.get('action','save')
+            if action=='remove':
+                workspace_assistants.remove(self.preferences,bid,data.get('id'))
+            elif action=='assign_task':
+                ident=data.get('task_id')
+                task=next((t for t in workspace_schedules.inventory(workspaces=[workspace_root()])['items'] if t['id']==ident),None)
+                if not task:raise ValueError('Refresh recurring tasks before assigning this task.')
+                target=data.get('id')
+                if target:workspace_assistants.find(self.preferences,bid,target)
+                for profile in workspace_assistants.profiles(self.preferences,bid):
+                    profile['task_ids']=[t for t in profile.get('task_ids',[]) if t!=ident]
+                    if profile['id']==target:profile['task_ids'].append(ident)
+            elif action=='assign_chat':
+                chat=next((c for c in self.preferences['chats'] if c['id']==data.get('chat_id') and c['business_id']==bid),None)
+                if not chat:raise ValueError('Choose a chat in this workspace.')
+                if any(j.get('chat_id')==chat['id'] for j in self.running_jobs(workspace_root())):
+                    raise ValueError('Wait for this chat to finish before changing its assistant.')
+                profile=workspace_assistants.find(self.preferences,bid,data['id']) if data.get('id') else None
+                chat.update(assistant_id=profile['id'] if profile else '',assistant_name=profile['name'] if profile else '')
+            elif action=='save':
+                saved=workspace_assistants.save(self.preferences,bid,data)
+                for chat in self.preferences['chats']:
+                    if chat['business_id']==bid and chat.get('assistant_id')==saved['id']:chat['assistant_name']=saved['name']
+            else:raise ValueError('Choose a supported assistant action.')
+            self.save_preferences(portable=True)
+        return {'items':workspace_assistants.profiles(self.preferences,bid),
+                'chats':sorted(({k:v for k,v in c.items() if k in {'id','title','assistant_id','agent','status','updated','archived'}} for c in self.preferences['chats'] if c['business_id']==bid and c.get('assistant_id')),
+                               key=lambda c:c.get('updated',0),reverse=True),
+                'running':[j['chat_id'] for j in self.running_jobs(workspace_root()) if j['business_id']==bid],
+                'workspace':str(workspace_root())}
+
     def request_text(self, bid, text, history=None, schedule_id=None, organization_id=None):
         if not isinstance(text, str) or not text.strip() or len(text) > 16000:
             raise ValueError('Enter a request of up to 16,000 characters.')
@@ -1581,6 +1621,8 @@ class Workspace:
                 f"AURA Skill guidance for this task: read {PRODUCT_ROOT / 'skills/viraltrac-aura/SKILL.md'}. "
                 "This supplies guidance here; it does not establish a global Skill installation in your app.\n"
                 "Do the user's actual work with your normal tools, permissions and supported capabilities. "
+                "When delegating, give each child the selected business/workspace, relevant goal, constraints and source references. "
+                "Have children return clarification questions to their parent; the parent asks the user when needed. Preserve native approvals. "
                 "Do not alter AURA product source. Preserve useful business meaning, not this chat transcript. "
                 "Reply in everyday language, focusing on what the user can use or do next. "
                 "Keep record types, internal IDs, validation receipts, and explanations of which records you did not create out of normal replies. "
@@ -1636,6 +1678,15 @@ class Workspace:
                 raise ValueError('Keep the task name, instructions and timing within the field limits.')
         if action=='create' and any(not str(payload.get(k) or '').strip() for k in ('name','description','when','model')):
             raise ValueError('Add a task name, instructions, timing and model.')
+        assistant=None
+        if action=='create' and payload.get('assistant_id'):
+            self.load_portable()
+            assistant=dict(workspace_assistants.find(self.preferences,bid,payload['assistant_id']))
+            payload['description']=(f"Assistant: {assistant['name']}\n"+assistant.get('instructions','')+
+                                    (f"\nPreferred subagent model: {assistant['child_model']}" if assistant.get('child_model') else '')+
+                                    '\n\nTask:\n'+payload['description']+
+                                    f'\n\nWork for Aura business {bid} in workspace {root}. Include saved file links in your result when you produce files.')
+            if len(payload['description'])>20000:raise ValueError('Shorten the assistant or task instructions before scheduling.')
         if action=='request' and not payload.get('request','').strip():
             raise ValueError('Describe what you would like to change.')
         job = dict(id=secrets.token_urlsafe(12),business_id=bid,action=action,status='working',
@@ -1733,7 +1784,18 @@ class Workspace:
                         if not original or original.get('status')!='paused':
                             raise ValueError('The new task was found, but the original is not confirmed paused. Check both tasks in their apps.')
                 execution.check()
-                job.update(status='complete',task_id=confirmed['id'],message={'create':'Task created.','pause':'Task paused.','resume':'Task resumed.','move':'Task moved.'}.get(action,'Task updated.'))
+                job.update(task_id=confirmed['id'],message={'create':'Task created.','pause':'Task paused.','resume':'Task resumed.','move':'Task moved.'}.get(action,'Task updated.'))
+                if assistant:
+                    with self.lock:
+                        self.load_portable()
+                        try:
+                            current=workspace_assistants.find(self.preferences,bid,assistant['id'])
+                            if confirmed['id'] not in current.setdefault('task_ids',[]):current['task_ids'].append(confirmed['id'])
+                            self.save_preferences(portable=True)
+                        except (ValueError,OSError):
+                            job['message']='Task created. Open it to check its assistant assignment.'
+                execution.check()
+                job['status']='complete'
             except Stopped:
                 job.update(status='stopped',message='Stopped. A change may already have been saved; check the task list before trying again.')
             except (OSError,ValueError,subprocess.SubprocessError) as exc:
@@ -1753,7 +1815,7 @@ class Workspace:
         threading.Thread(target=work,daemon=True).start()
         return self.schedule_state(bid)
 
-    def start_chat(self, bid, text, history, welcome=False, schedule_id=None, organization_id=None, keep_warm_id=None, chat_id=None, files=None, connection=None):
+    def start_chat(self, bid, text, history, welcome=False, schedule_id=None, organization_id=None, keep_warm_id=None, chat_id=None, files=None, connection=None, assistant_id=None):
         with self.lock:
             owner=copy.copy(self)
             owner.agent=dict(self.agent) if self.agent else None
@@ -1762,6 +1824,19 @@ class Workspace:
             resolved_chat_id=chat_id
             if chat_id is None and existing and existing['agent']!=self.connection_kind:
                 existing=None;resolved_chat_id=''
+            assistant_id = existing.get('assistant_id') if existing else assistant_id
+            owner._assistant = None
+            if assistant_id:
+                owner.load_portable()
+                try:
+                    owner._assistant = dict(workspace_assistants.find(owner.preferences,bid,assistant_id))
+                except ValueError:
+                    if not existing:raise
+                if not existing and owner._assistant:
+                    profile=owner._assistant
+                    profile_app=profile.get('app') or self.connection_kind
+                    known=self.preferences['connection'] if profile_app==self.connection_kind else self.preferences['connected_apps'].get(profile_app,{})
+                    connection={**known,'kind':profile_app,**{k:profile[k] for k in ('model','effort') if profile.get(k)},**(connection or {})}
             desired=dict(existing.get('connection') or {},kind=existing['agent'],model=existing.get('model',''),effort=existing.get('effort','')) if existing else connection
             if desired:
                 if not isinstance(desired,dict):raise ValueError('Choose an AI connection.')
@@ -1825,6 +1900,9 @@ class Workspace:
                         "If you cannot read the files or calculate the hashes, explain the problem; do not invent them.")
             if not isinstance(text,str) or not text.strip():raise ValueError('Write a request before sending.')
             prompt = text if keep_warm_id is not None else self.request_text(bid, text+self.file_context(bid,files), None if native else history, schedule_id, organization_id)
+            assistant=getattr(self,'_assistant',None)
+            if assistant and not welcome and keep_warm_id is None:
+                prompt=prompt.replace('\nUser request:\n',workspace_assistants.guidance(assistant)+'\nUser request:\n',1)
             job = {'id': secrets.token_urlsafe(12), 'business_id': bid, 'status': 'working', 'reply': '', 'activity': [],
                    'created': time.time(), 'updated': time.time(), 'progress': 'Starting your AI'}
             if keep_warm_id is not None:job['keep_warm']=True
@@ -1834,11 +1912,13 @@ class Workspace:
                         'created': time.time(), 'native_id': None, 'workspace':str(workspace_root())}
                 self.preferences['chats'].append(chat)
                 self.preferences['active_chats'][bid] = chat['id']
+                if assistant:chat.update(assistant_id=assistant['id'],assistant_name=assistant['name'])
             if native and not welcome and keep_warm_id is None:
                 chat.setdefault('brief_token',secrets.token_hex(8))
                 prompt=prompt.replace('\nUser request:\n',workspace_chats.instructions(chat)+'\nUser request:\n',1)
             chat.update(status='working', archived=False, model=saved_connection.get('model') or self.agent.get('model',''), effort=saved_connection.get('effort',''), connection=dict(saved_connection), updated=time.time())
             job['new_native_chat']=native and not chat.get('native_id')
+            job['subagents']=copy.deepcopy(workspace_delegation.retain(chat.get('subagents',[])))
             job.update(chat_id=chat['id'], model=chat['model'], effort=chat['effort'])
             self.save_chat_turn(chat, job, text)
             self.save_preferences()
@@ -1859,6 +1939,12 @@ class Workspace:
             root=workspace_root().resolve();native_root=Path(chat.get('native_workspace') or root);native_root=native_root if native_root.is_dir() else root;model=job['model'];effort=job['effort'];native_id=chat.get('native_id')
             def update(**values):
                 with self.lock:
+                    if 'subagents' in values:
+                        observed={row['id']:{k:self.connections.redact(v) if isinstance(v,str) else v for k,v in row.items()}
+                                  for row in values['subagents']}
+                        merged={row['id']:dict(row) for row in job.get('subagents',[])}
+                        for ident,row in observed.items():merged[ident]={**merged.get(ident,{}),**row}
+                        values['subagents']=workspace_delegation.retain(merged.values())
                     if values.get('native_id') and not job.get('native_id'):
                         values.setdefault('progress', 'Connected. Waiting for your AI')
                     if 'reply' in values:
@@ -1890,7 +1976,8 @@ class Workspace:
                                 chat.update(continued);chat.pop('relocate_session',None)
                                 self.save_preferences()
                             resumed_id=continued['native_id']
-                        result = (workspace_codex.run(command, native_root, prompt, resumed_id, model, effort, update, env, execution)
+                        result = (workspace_codex.run(command, native_root, prompt, resumed_id, model, effort, update, env, execution,
+                                                     **({'child_model':assistant['child_model']} if assistant and assistant.get('child_model') else {}))
                                   if kind=='codex' else workspace_agents.run(command,kind,native_root,env,prompt,resumed_id,model,effort,update,execution))
                         output, code = result['reply'], 0
                         if not welcome and keep_warm_id is None:candidate=workspace_chats.brief(output)
@@ -1945,6 +2032,11 @@ class Workspace:
                             job['reply'] = setup_error(job['reply'])
                             job['setup_error'] = True
                         job['updated'] = time.time()
+                        for child in job.get('subagents',[]):
+                            if child.get('status') in {'working','pending'}:
+                                child['status']='stopped' if job['status']=='stopped' and kind!='hermes' else 'unconfirmed'
+                        job['subagents']=workspace_delegation.retain(job.get('subagents',[]))
+                        if chat:chat['subagents']=job['subagents']
                         workspace_usage.record(self.preferences,job,chat,self.agent['name'])
                         self.record_notification(job, chat)
                         if chat:
@@ -2073,7 +2165,7 @@ def handler_for(app):
                 elif route in {'/app.js', '/style.css'}:
                     path = app.static / route[1:]
                     self.send(200, path.read_bytes(), 'text/javascript; charset=utf-8' if path.suffix == '.js' else 'text/css; charset=utf-8')
-                elif route in {'/file-editor.js','/file-editor.css'} or route.startswith('/vendor/'):
+                elif route in {'/file-editor.js','/file-editor.css','/workspace-work.js'} or route.startswith('/vendor/'):
                     relative=Path(route.lstrip('/'))
                     path=(STATIC/relative).resolve()
                     base=(STATIC/'vendor').resolve() if route.startswith('/vendor/') else STATIC.resolve()
@@ -2138,9 +2230,11 @@ def handler_for(app):
                     self.send(200,{'job':app.organization_job,'history':workspace_organization.history(app.settings_file.parent)})
                 elif route == '/api/recovery':
                     self.send(200,{'items':workspace_organization.recovery(app.settings_file.parent)})
+                elif route == '/api/assistants':
+                    with app.lock:self.send(200,app.assistants(selected(query.get('business'))))
                 elif route == '/api/chats':
                     bid = selected(query.get('business'))
-                    self.send(200, {'workspace':str(workspace_root()),'items': sorted(({k:v for k,v in c.items() if k!='brief_token'} for c in app.preferences['chats'] if c['business_id'] == bid),key=lambda c:c.get('updated',0),reverse=True),
+                    self.send(200, {'workspace':str(workspace_root()),'items': sorted(({k:v for k,v in c.items() if k not in {'brief_token','subagents'}} for c in app.preferences['chats'] if c['business_id'] == bid),key=lambda c:c.get('updated',0),reverse=True),
                                     'active': app.preferences['active_chats'].get(bid), 'running': [{k:j.get(k) for k in ('id','chat_id','workspace','business_id','status','agent','model')} for j in app.running_jobs()]})
                 elif route == '/api/chats/native':
                     self.send(200,app.native_chats(selected(query.get('business')),query.get('kind'),query.get('id')))
@@ -2177,7 +2271,11 @@ def handler_for(app):
                 elif route == '/api/schedules/operation':
                     self.send(200, {'job':app.schedule_state(selected(query.get('business')))})
                 elif route == '/api/schedules/result':
-                    self.send(200, workspace_schedules.result(query.get('id',''),[workspace_root()]))
+                    result=workspace_schedules.result(query.get('id',''),[workspace_root(),*(row['path'] for row in app.recent_workspaces())],query.get('run_id'))
+                    self.send(200,{k:app.connections.redact(v) if isinstance(v,str) else v for k,v in result.items()})
+                elif route == '/api/schedules/history':
+                    result=workspace_schedules.history(query.get('id',''),[workspace_root(),*(row['path'] for row in app.recent_workspaces())])
+                    self.send(200,json.loads(app.connections.redact(json.dumps(result))))
                 elif route == '/api/startup':
                     self.send(200, workspace_startup.status())
                 elif route == '/api/updates':
@@ -2276,7 +2374,7 @@ def handler_for(app):
                         raise ValueError('Workspace organization is running. Wait or stop it before making changes.')
                     if app.schedule_job and app.schedule_job['status']=='working' and (route in {'/api/lifecycle','/api/workspaces/open','/api/workspaces/create','/api/workspaces/relocate','/api/workspaces/restore'} or route.startswith('/api/organization/')):
                         raise ValueError('Wait for task setup or stop it before changing workspaces or restarting AURA.')
-                    if app.running_jobs(None if route in {'/api/lifecycle','/api/workspaces/relocate','/api/workspaces/restore'} else workspace_root()) and route not in {'/api/preferences','/api/profile','/api/interface/reset','/api/chats/recover','/api/chats/archive','/api/chats/reconnect','/api/notifications','/api/chat','/api/chat/stop','/api/chats/new','/api/chats/open','/api/chats/rename','/api/chats/model','/api/chats/personalization','/api/connect','/api/workspaces/open','/api/usage/settings','/api/updates','/api/schedules/action','/api/schedules/stop'}:
+                    if app.running_jobs(None if route in {'/api/lifecycle','/api/workspaces/relocate','/api/workspaces/restore'} else workspace_root()) and route not in {'/api/assistants','/api/preferences','/api/profile','/api/interface/reset','/api/chats/recover','/api/chats/archive','/api/chats/reconnect','/api/notifications','/api/chat','/api/chat/stop','/api/chats/new','/api/chats/open','/api/chats/rename','/api/chats/model','/api/chats/personalization','/api/connect','/api/workspaces/open','/api/usage/settings','/api/updates','/api/schedules/action','/api/schedules/stop'}:
                         raise ValueError('Your agent is working. Wait for its reply before changing this workspace.')
                     if route in {'/api/preferences','/api/locations'}:
                         app.load_portable()
@@ -2674,6 +2772,8 @@ def handler_for(app):
                                 seen.append(bid)
                         app.save_preferences(portable=any(k in data for k in ('appearance','model_picker','library')))
                         self.send(200, {'ok': True})
+                    elif route == '/api/assistants':
+                        self.send(200,app.assistants(selected(data.get('business')),data))
                     elif route == '/api/chats/personalization':
                         self.send(200,app.personalization_chat(selected(data.get('business')),data.get('connection')))
                     elif route == '/api/chats/new':
@@ -2732,7 +2832,7 @@ def handler_for(app):
                         self.send(200, app.stop_chat(selected(data.get('business')), data.get('id')))
                     elif route == '/api/chat':
                         bid = selected(data.get('business'))
-                        self.send(202, app.start_chat(bid, data.get('text'), data.get('history'), data.get('welcome') is True, data.get('schedule_id'),data.get('organization_id'),chat_id=data.get('chat_id'),files=data.get('files'),connection=data.get('connection')))
+                        self.send(202, app.start_chat(bid, data.get('text'), data.get('history'), data.get('welcome') is True, data.get('schedule_id'),data.get('organization_id'),chat_id=data.get('chat_id'),files=data.get('files'),connection=data.get('connection'),assistant_id=data.get('assistant_id')))
                     else:
                         self.send(404, {'error': 'Not found.'})
             except PermissionError as exc:
