@@ -23,11 +23,13 @@ window.auraWork = (() => {
     $('#assistant-search').oninput=renderList;renderList();
   }
   async function overview(id){
-    const data=await load(),p=profile(id);if(!data)return;if(!p){notice('This assistant was removed. Its chats, tasks, and results are still available.');return;}
-    const key=currentScope(),schedules=await api('/api/schedules');if(key!==currentScope())return;
+    const key=currentScope(),view=state.view;details('Assistant','<p role="status">Loading assistant…</p>');
+    const ticket=state.fileDetailTicket,current=()=>key===currentScope()&&view===state.view&&ticket===state.fileDetailTicket&&$('#detail').open;
+    const data=await load(),p=profile(id);if(!data||!current())return;if(!p){notice('This assistant was removed. Its chats, tasks, and results are still available.');return;}
+    const schedules=await api('/api/schedules');if(!current())return;
     const tasks=schedules.items.filter(t=>(p.task_ids||[]).includes(t.id));state.schedules=schedules;
     const missing=(p.task_ids||[]).length-tasks.length;
-    details(p.name,`<div class="assistant-toolbar"><button type="button" class="primary" data-assistant-chat="${esc(id)}">New chat with ${esc(p.name)}</button><button type="button" class="secondary" data-assistant-edit="${esc(id)}">Edit assistant</button></div><p class="assistant-instructions">${esc(p.instructions||'No saved instructions.')}</p><p class="small-note">${esc(p.app?appName(p.app):'Current AI connection')}${p.model?' · '+esc(p.model):''}${p.child_model?' · Subagents: '+esc(p.child_model):''}</p><section><h3>Recurring tasks</h3>${tasks.map(t=>scheduleRow(t)).join('')||empty((p.task_ids||[]).length?'Linked tasks are not currently available.':'No recurring tasks assigned.')}<button type="button" class="text-button" data-assistant-task="${esc(id)}">Add recurring task</button><button type="button" class="text-button" data-view="tools">All recurring tasks</button>${missing?'<p class="small-note">Some linked tasks are unavailable. Refresh them in their owning app.</p>':''}${schedules.notes?.length?`<p class="error" role="status">${schedules.notes.map(esc).join(' ')}</p>`:''}</section><section><h3>Chats & results</h3><input type="search" id="assistant-chat-search" class="search" aria-label="Search this assistant’s chat titles" placeholder="Find a chat by title…"><div id="assistant-chat-list"></div></section>`);
+    details(p.name,`<div class="assistant-toolbar"><button type="button" class="primary" data-assistant-chat="${esc(id)}">New chat with ${esc(p.name)}</button><button type="button" class="secondary" data-assistant-edit="${esc(id)}">Edit assistant</button></div><p class="assistant-instructions">${esc(p.instructions||'No saved instructions.')}</p><p class="small-note">${esc(p.app?appName(p.app):'Current AI connection')}${p.model?' · '+esc(p.model):''}${p.child_model?' · Subagents: '+esc(p.child_model):''}</p><section><h3>Recurring tasks</h3>${tasks.map(t=>scheduleRow(t)).join('')||empty((p.task_ids||[]).length?'Linked tasks are not currently available.':'No recurring tasks assigned.')}<div class="inline-actions assistant-task-actions"><button type="button" class="secondary" data-assistant-existing-task="${esc(id)}">Assign existing task</button><button type="button" class="text-button" data-assistant-task="${esc(id)}">Create recurring task</button><button type="button" class="text-button" data-view="tools">All recurring tasks</button></div>${missing?'<p class="small-note">Some linked tasks are unavailable. Refresh them in their owning app.</p>':''}${schedules.notes?.length?`<p class="error" role="status">${schedules.notes.map(esc).join(' ')}</p>`:''}</section><section><h3>Conversations</h3><input type="search" id="assistant-chat-search" class="search" aria-label="Search this assistant’s chat titles" placeholder="Find a chat by title…"><div id="assistant-chat-list"></div></section>`);
     const chats=data.chats.filter(c=>c.assistant_id===id),host=$('#assistant-chat-list'),search=$('#assistant-chat-search');let limit=20;
     const renderChats=()=>{
       if(key!==currentScope()||!host.isConnected)return;
@@ -58,32 +60,46 @@ window.auraWork = (() => {
     $('#assistant-reset-model').onclick=()=>{model.value=effort.value='';paint();};$('#assistant-reset-child').onclick=()=>{child.value='';paint();};
     app.onchange=()=>{const next=app.value||state.data.connection.selected;if(next!==kind){model.value=effort.value=child.value='';kind=next;}paint();};paint();
   }
+  async function chooseTask(id){
+    const key=currentScope();details('Assign a recurring task','<p role="status">Finding recurring tasks…</p>');
+    const ticket=state.fileDetailTicket,host=$('#detail-content');
+    const current=()=>key===currentScope()&&ticket===state.fileDetailTicket&&host.isConnected&&$('#detail').open;
+    try{
+      const [data,schedules]=await Promise.all([load(),api('/api/schedules?scope=workspace')]);if(!current()||!data)return;
+      const p=profile(id);if(!p)throw new Error('This assistant is no longer available.');
+      state.schedules=schedules;
+      host.innerHTML=`<p>Assign to <strong>${esc(p.name)}</strong>. Tasks keep their current schedule and instructions.</p><input id="assistant-task-search" class="search" type="search" aria-label="Find an existing recurring task" placeholder="Find a recurring task…"><div id="assistant-task-choices"></div><p id="assistant-task-status" role="status"></p><div class="inline-actions assistant-task-actions"><button type="button" class="text-button" data-assistant-open="${esc(id)}">Back to assistant</button><button type="button" class="secondary" data-assistant-task="${esc(id)}">Create recurring task</button></div>${schedules.notes?.length?`<p class="small-note">${schedules.notes.map(esc).join(' ')}</p>`:''}`;
+      const available=schedules.items.filter(t=>!(p.task_ids||[]).includes(t.id));let limit=20,saving=false;
+      const paint=()=>{
+        if(!current())return;const q=$('#assistant-task-search').value.trim().toLowerCase();
+        const matches=available.filter(t=>[t.name,t.description,appName(t.owner),taskOwner(t.id)?.name].join(' ').toLowerCase().includes(q));
+        $('#assistant-task-choices').innerHTML=matches.slice(0,limit).map(t=>{
+          const owner=taskOwner(t.id);
+          return `<article class="assistant-task-choice"><div><strong>${esc(t.name)}</strong><p class="row-meta">${esc(appName(t.owner))}${owner?' · Assigned to '+esc(owner.name):''}</p></div><button type="button" class="secondary" data-assign-existing-task="${esc(t.id)}">${owner?'Move here':'Assign'}</button></article>`;
+        }).join('')||empty(q?'No matching recurring tasks.':available.length?'No matching recurring tasks.':schedules.items.length?'All available tasks are already assigned to this assistant.':'No recurring tasks found.');
+        if(matches.length>limit)$('#assistant-task-choices').insertAdjacentHTML('beforeend','<button type="button" class="text-button" data-more-existing-tasks>Show more tasks</button>');
+      };
+      $('#assistant-task-search').oninput=()=>{limit=20;paint();};
+      $('#assistant-task-choices').onclick=event=>attempt(async()=>{
+        const button=event.target.closest('button');if(!button||!current()||saving)return;
+        if(button.hasAttribute('data-more-existing-tasks')){limit+=20;paint();return;}
+        const task=available.find(t=>t.id===button.dataset.assignExistingTask);if(!task)return;
+        saving=true;button.disabled=true;$('#assistant-task-status').textContent='Assigning task…';
+        try{
+          const result=await api('/api/assistants',{business:state.business,action:'assign_task',task_id:task.id,id});
+          if(!current())return;cache=result;scope=key;await overview(id);
+        }catch(error){if(current())$('#assistant-task-status').textContent=error.message;}
+        finally{saving=false;if(button.isConnected)button.disabled=false;}
+      });paint();
+    }catch(error){if(current()){host.innerHTML=`<p class="error" role="status">${esc(error.message)}</p><button type="button" class="secondary" id="assistant-task-retry">Try again</button>`;$('#assistant-task-retry').onclick=()=>attempt(()=>chooseTask(id));}}
+  }
   async function assignTask(task,host){
     const data=await load();if(!data||!host.isConnected)return;
     const owner=taskOwner(task.id);
     host.hidden=!data.items.length&&!owner;if(host.hidden){host.innerHTML='';return;}
     host.innerHTML=`<label>Saved assistant<select id="task-assistant"><option value="">No assistant</option>${data.items.map(p=>`<option value="${esc(p.id)}" ${p.id===owner?.id?'selected':''}>${esc(p.name)}</option>`).join('')}</select></label><p class="small-note">Groups this task and its results. The task keeps its saved instructions.</p><p id="task-assistant-status" role="status"></p>`;
-    $('#task-assistant').onchange=()=>attempt(async()=>{const choice=$('#task-assistant'),key=currentScope();choice.disabled=true;try{const result=await api('/api/assistants',{business:state.business,action:'assign_task',task_id:task.id,id:choice.value});if(key!==currentScope()||!choice.isConnected)return;cache=result;scope=key;$('#task-assistant-status').textContent='Assignment saved.';}finally{if(choice.isConnected)choice.disabled=false;}});
-  }
-  async function assignChat(chat,host){
-    const data=await load();if(!data||!host.isConnected)return;
-    const assigned=data.items.find(p=>p.id===chat.assistant_id),name=assigned?.name||chat.assistant_name,
-      running=(data.running||[]).includes(chat.id);
-    host.hidden=(!data.items.length&&!name)||(running&&!name);if(host.hidden){host.innerHTML='';return;}
-    if(running||!data.items.length){host.innerHTML=`<p class="chat-assistant-profile"><span>Saved assistant</span><strong>${esc(name)}</strong></p>`;return;}
-    host.innerHTML=`<details class="chat-assistant-picker"><summary>${name?'Saved assistant: '+esc(name):'Assign an assistant'}</summary><label>Saved assistant<select id="chat-assistant"><option value="">No assistant</option>${data.items.map(p=>`<option value="${esc(p.id)}" ${p.id===chat.assistant_id?'selected':''}>${esc(p.name)}</option>`).join('')}</select></label></details><p id="chat-assistant-status" class="small-note" role="status"></p>`;
-    $('#chat-assistant').onchange=()=>attempt(async()=>{
-      const choice=$('#chat-assistant'),key=currentScope(),previous=chat.assistant_id||'';choice.disabled=true;
-      try{
-        const result=await api('/api/assistants',{business:state.business,action:'assign_chat',chat_id:chat.id,id:choice.value});
-        if(key!==currentScope()||!choice.isConnected)return;cache=result;scope=key;const p=profile(choice.value);
-        chat.assistant_id=p?.id||'';chat.assistant_name=p?.name||'';
-        if(state.chatMeta?.id===chat.id)Object.assign(state.chatMeta,{assistant_id:chat.assistant_id,assistant_name:chat.assistant_name});
-        composer();const picker=host.querySelector('details');picker.querySelector('summary').textContent=p?'Saved assistant: '+p.name:'Assign an assistant';picker.open=false;
-        $('#chat-assistant-status').textContent=p?'Assistant assigned.':'Assistant removed from this chat.';
-      }catch(error){if(key===currentScope()&&choice.isConnected){choice.value=previous;$('#chat-assistant-status').textContent=error.message;}}
-      finally{if(choice.isConnected)choice.disabled=false;}
-    });
+    let saved=owner?.id||'';
+    $('#task-assistant').onchange=()=>attempt(async()=>{const choice=$('#task-assistant'),key=currentScope();choice.disabled=true;try{const result=await api('/api/assistants',{business:state.business,action:'assign_task',task_id:task.id,id:choice.value});if(key!==currentScope()||!choice.isConnected)return;cache=result;scope=key;saved=choice.value;$('#task-assistant-status').textContent='Assignment saved.';}catch(error){if(key===currentScope()&&choice.isConnected){choice.value=saved;$('#task-assistant-status').textContent=error.message;}}finally{if(choice.isConnected)choice.disabled=false;}});
   }
   async function history(task,host){
     const key=currentScope();host.textContent='Loading results…';
@@ -126,6 +142,7 @@ window.auraWork = (() => {
     if(b.dataset.assistantOpen)attempt(()=>overview(b.dataset.assistantOpen));
     if(b.dataset.assistantEdit)attempt(()=>edit(b.dataset.assistantEdit));
     if(b.hasAttribute('data-assistant-cancel'))$('#detail').close();
+    if(b.dataset.assistantExistingTask)attempt(()=>chooseTask(b.dataset.assistantExistingTask));
     if(b.dataset.assistantTask)attempt(async()=>{const p=profile(b.dataset.assistantTask);if(!p)return;state.scheduleDraft={name:'',description:'',when:'',assistant_id:p.id,app:p.app||state.data.connection.selected,model:p.model||'',effort:p.effort||''};state.scheduleAdding=true;state.view='tools';await render();recordShellRoute();await renderShell();});
     if(b.dataset.assistantChat)attempt(()=>startAssistant(b.dataset.assistantChat));
     if(b.dataset.assistantRemove){const id=b.dataset.assistantRemove;details('Remove assistant?',`<p>Chats, recurring tasks, files, and results will stay available.</p><button type="button" class="secondary" data-assistant-edit="${esc(id)}">Keep assistant</button> <button type="button" class="primary" data-confirm-assistant-remove="${esc(id)}">Remove assistant</button>`);}
@@ -135,9 +152,12 @@ window.auraWork = (() => {
     if(b.dataset.resultNative)attempt(()=>addNativeChat(b.dataset.resultOwner,b.dataset.resultNative));
   });
   document.addEventListener('change',event=>{if(event.target.id==='schedule-assistant'){const p=profile(event.target.value);if(!p)return;state.scheduleDraft.assistant_id=p.id;if(p.app){$('#schedule-app').value=p.app;state.scheduleDraft.app=p.app;}state.scheduleDraft.model=p.model||'';state.scheduleDraft.effort=p.effort||'';loadScheduleModels();}});
+  document.addEventListener('DOMContentLoaded',()=>{
+    if(state.view==='assistants'&&state.data&&!$('#section-content').textContent.trim())attempt(()=>renderAssistants($('#section-content')));
+  });
   document.addEventListener('submit',event=>{
     if(event.target.id!=='assistant-form')return;event.preventDefault();const form=event.target,key=currentScope();
     attempt(async()=>{const button=form.querySelector('.primary');button.disabled=true;try{const data=Object.fromEntries(new FormData(form));const result=await api('/api/assistants',{business:state.business,...data});if(key!==currentScope())return;cache=result;scope=key;const p=data.id?profile(data.id):cache.items.at(-1);if(state.view==='assistants')await renderAssistants($('#section-content'));if(p)await overview(p.id);}catch(error){if(form.isConnected)$('#assistant-save-status').textContent=error.message;}finally{if(button.isConnected)button.disabled=false;}});
   });
-  return {load,startAssistant,renderAssistants,overview,assignTask,assignChat,history,openResult,renderDelegation,composer};
+  return {load,startAssistant,renderAssistants,overview,assignTask,chooseTask,history,openResult,renderDelegation,composer};
 })();

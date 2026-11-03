@@ -81,7 +81,17 @@ def main():
             outputs=base/'hermes/cron/output/weekly';outputs.mkdir(parents=True)
             for day in ('01','02'):(outputs/f'2026-11-{day}_09-00-00.md').write_text('Report '+day)
             task=next(t for t in schedules.inventory(workspaces=[root])['items'] if t['owner']=='hermes')
+            with patch.object(app,'recent_workspaces',return_value=[{'path':str(base/'another-workspace')}]), patch('workspace_ui.workspace_schedules.inventory',return_value={'items':[],'notes':[]}) as inventory:
+                call('/api/schedules?scope=workspace')
+                assert inventory.call_args.kwargs['workspaces']==[root],'Assistant assignment must only offer tasks eligible in the selected workspace'
             call('/api/assistants',{'business':bid,'action':'assign_task','id':saved['id'],'task_id':task['id']})
+            native_task_before=jobs.read_bytes()
+            other=call('/api/assistants',{'business':bid,'name':'Research helper','instructions':'Review sources.'})['items'][-1]
+            moved=call('/api/assistants',{'business':bid,'action':'assign_task','id':other['id'],'task_id':task['id']})
+            assert [p['id'] for p in moved['items'] if task['id'] in p['task_ids']]==[other['id']]
+            assert jobs.read_bytes()==native_task_before,'Moving responsibility must preserve the native task'
+            call('/api/assistants',{'business':bid,'action':'assign_task','id':saved['id'],'task_id':task['id']})
+            call('/api/assistants',{'business':bid,'action':'remove','id':other['id']})
             history=call('/api/schedules/history?id='+task['id'])
             assert len(history['items'])==2 and history['items'][0]['id'].startswith('2026-11-02')
             older=call('/api/schedules/result?id='+task['id']+'&run_id=2026-11-01_09-00-00.md')

@@ -1,7 +1,7 @@
 /* DOM-independent view checks; no browser, network, or frontend dependency. */
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
 const nodes=new Map(),listeners={};
-function node(id){if(!nodes.has(id))nodes.set(id,{innerHTML:'',textContent:'',hidden:false,isConnected:true,value:'',dataset:{},querySelectorAll:()=>[],querySelector:selector=>node(id+' '+selector),showModal(){this.open=true;},close(){this.open=false;}});return nodes.get(id);}
+function node(id){if(!nodes.has(id))nodes.set(id,{innerHTML:'',textContent:'',hidden:false,isConnected:true,value:'',dataset:{},querySelectorAll:()=>[],querySelector:selector=>node(id+' '+selector),insertAdjacentHTML(where,text){this.innerHTML+=text;},showModal(){this.open=true;},close(){this.open=false;}});return nodes.get(id);}
 const profiles={items:[{id:'jeff',name:'<Jeff>',instructions:'Find useful evidence.',task_ids:['weekly']}],chats:[],workspace:'A'};
 const tasks={items:[{id:'weekly',name:'Weekly review',owner:'hermes'}],notes:[]};
 const history={items:[{id:'report.md',name:'Weekly findings',status:'Saved result'}],limit:20,note:''};
@@ -11,8 +11,8 @@ const context={window:{},document:{addEventListener:(name,callback)=>(listeners[
   $:node,esc:value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),
   empty:text=>`<p>${text}</p>`,appName:name=>name,chatDate:at=>String(at),chatMarkdown:text=>`<p>${text}</p>`,
   scheduleRow:t=>`<button data-schedule="${t.id}">${t.name}</button>`,
-  details:(title,html)=>{opened={title,html};node('#detail').open=true;},notice:()=>{},nativeApps:['codex','pi','hermes'],
-  api:async path=>path.startsWith('/api/assistants')?profiles:path==='/api/schedules'?tasks:path.startsWith('/api/schedules/history')?history:{name:'Weekly review',file:'Report',text:'Useful findings',owner:'codex',native_id:'native-run'},
+  details:(title,html)=>{opened={title,html};context.state.fileDetailTicket=(context.state.fileDetailTicket||0)+1;node('#detail-content').innerHTML=html;node('#detail').open=true;},notice:()=>{},nativeApps:['codex','pi','hermes'],
+  api:async path=>path.startsWith('/api/assistants')?profiles:path.split('?')[0]==='/api/schedules'?tasks:path.startsWith('/api/schedules/history')?history:{name:'Weekly review',file:'Report',text:'Useful findings',owner:'codex',native_id:'native-run'},
   attempt:fn=>Promise.resolve().then(fn),addNativeChat:async(kind,id)=>{nativePreview={kind,id};},
 };
 vm.createContext(context);vm.runInContext(fs.readFileSync(process.argv[2],'utf8'),context);
@@ -29,16 +29,24 @@ vm.runInContext(appSource.slice(pickerStart,pickerEnd),context);
   assert(node('#assistant-list').innerHTML.includes('&lt;Jeff&gt;'));
   assert(!node('#assistant-list').innerHTML.includes('<Jeff>'));
   const savedProfiles=profiles.items;profiles.items=[];
-  await work.assignChat({id:'parent'},host);assert.equal(host.hidden,true);assert.equal(host.innerHTML,'','No profiles means no empty chat selector');
-  await work.assignTask({id:'weekly'},host);assert.equal(host.hidden,true,'Tasks must not show a selector without choices either');
+  await work.assignTask({id:'weekly'},host);assert.equal(host.hidden,true,'Tasks must not show a selector without choices');
   profiles.items=savedProfiles;profiles.running=[];
-  const assignedChat={id:'parent',status:'working'};
-  await work.assignChat(assignedChat,host);assert.equal(host.hidden,false);assert.match(host.innerHTML,/Assign an assistant/);assert.doesNotMatch(host.innerHTML,/disabled/,'An old saved Working status must not disable assignment');
-  node('#chat-assistant').value='jeff';await node('#chat-assistant').onchange();assert.equal(assignedChat.assistant_id,'jeff');assert.equal(context.state.chatMeta.assistant_name,'<Jeff>');
-  const assignmentApi=context.api;context.api=async(path,data)=>{if(data?.action==='assign_chat')throw new Error('Could not save assignment');return profiles;};
-  node('#chat-assistant').value='';await node('#chat-assistant').onchange();assert.equal(node('#chat-assistant').value,'jeff');assert.equal(assignedChat.assistant_id,'jeff','Failed assignment must preserve the saved assistant');context.api=assignmentApi;
-  profiles.running=['parent'];await work.assignChat(assignedChat,host);assert.match(host.innerHTML,/&lt;Jeff&gt;/);assert.doesNotMatch(host.innerHTML,/<select/,'Running chats show the assigned name without an unavailable control');
-  profiles.running=[];context.state.chatMeta={id:'parent'};
+  assert.equal(work.assignChat,undefined,'Whole-chat reassignment must not be exposed in the interface');
+  const assignmentApi=context.api;let assignedRequest;
+  tasks.items.push({id:'other',name:'Pricing review',owner:'hermes'});
+  profiles.items.push({id:'janice',name:'Janice',task_ids:['other']});
+  context.api=async(path,data)=>{if(data?.action==='assign_task'){assignedRequest=data;throw new Error('Could not save assignment');}return assignmentApi(path);};
+  await work.chooseTask('jeff');assert.match(node('#assistant-task-choices').innerHTML,/Pricing review/);assert.match(node('#assistant-task-choices').innerHTML,/Assigned to Janice/);assert.match(node('#assistant-task-choices').innerHTML,/Move here/);
+  assert.doesNotMatch(node('#assistant-task-choices').innerHTML,/data-assign-existing-task="weekly"/,'Tasks already assigned here are not offered again');
+  const pickEvent={target:{closest:()=>({dataset:{assignExistingTask:'other'},hasAttribute:()=>false,isConnected:true})}};
+  await node('#assistant-task-choices').onclick(pickEvent);assert.equal(node('#assistant-task-status').textContent,'Could not save assignment');assert.equal(profiles.items[1].task_ids[0],'other');
+  context.api=async(path,data)=>{if(data?.action==='assign_task'){assignedRequest=data;profiles.items[1].task_ids=[];profiles.items[0].task_ids.push('other');return profiles;}return assignmentApi(path);};
+  await node('#assistant-task-choices').onclick(pickEvent);assert.equal(assignedRequest.task_id,'other');assert.equal(assignedRequest.id,'jeff');assert.match(opened.html,/data-schedule="other"/,'Assigned tasks appear on the assistant page');
+  context.api=assignmentApi;tasks.items.pop();profiles.items.pop();profiles.items[0].task_ids=['weekly'];
+  await work.chooseTask('jeff');assert.match(node('#assistant-task-choices').innerHTML,/already assigned/);
+  let releaseTasks;context.api=path=>path.split('?')[0]==='/api/schedules'?new Promise(resolve=>{releaseTasks=resolve;}):assignmentApi(path);
+  const oldPicker=work.chooseTask('jeff');await new Promise(resolve=>setImmediate(resolve));context.details('A newer panel','Keep this panel');releaseTasks(tasks);await oldPicker;assert.equal(node('#detail-content').innerHTML,'Keep this panel','A late task read must not replace a newer panel');context.api=assignmentApi;
+  assert.doesNotMatch(appSource,/auraWork\?\.assignChat/,'Chat details must not offer reassignment');
   await work.overview('jeff');assert(opened.html.includes('data-schedule="weekly"'));
   assert(opened.html.includes('New chat with &lt;Jeff&gt;'));
   profiles.chats=Array.from({length:25},(_,i)=>({id:'chat-'+i,title:'Work '+i,assistant_id:'jeff',agent:'codex',updated:i}));
