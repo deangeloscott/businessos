@@ -143,6 +143,11 @@ def save(path,bid,data,writable=False,asset=None,track_source=True):
     with destination_lock(path) if writable else nullcontext(),destination_lock(target) if target!=path else nullcontext():
         if mode!='copy' and revision(path)!=data['expected_revision']:raise Conflict('This file changed outside the editor. Reload it, or save your edits as a separate copy.')
         if mode!='save' and target.exists():raise ValueError('That file already exists. Choose another name.')
+        import workspace_history
+        if mode=='save':
+            try:workspace_history.managed(path,bid)
+            except ValueError:pass
+            else:workspace_history.capture(path,bid,'Before edit',original)
         fd,tmp=tempfile.mkstemp(prefix='.aura-edit-',suffix='.tmp',dir=target.parent)
         try:
             with os.fdopen(fd,'wb') as stream:stream.write(payload);stream.flush();os.fsync(stream.fileno())

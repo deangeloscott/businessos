@@ -14,6 +14,10 @@ class Execution:
         self.stopped = threading.Event()
         self.lock = threading.Lock()
         self.process = None
+        self.interactive = False
+        self.permission = 'native'
+        from workspace_interactions import Requests
+        self.requests = Requests()
 
     def check(self):
         if self.stopped.is_set():
@@ -34,6 +38,7 @@ class Execution:
             process = self.process
             self.stopped.set()
             if process is None or process.poll() is not None:
+                self.requests.close()
                 return
             if os.name == 'nt':
                 result = subprocess.run(['taskkill', '/PID', str(process.pid), '/T', '/F'],
@@ -46,3 +51,4 @@ class Execution:
                     os.killpg(process.pid, signal.SIGKILL)
                 except ProcessLookupError:
                     pass
+            self.requests.close()

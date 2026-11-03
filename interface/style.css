@@ -308,3 +308,21 @@ footer .footer-actions{flex:none;align-items:center}footer #usage-open{font-size
 .child-status.working::before{content:'●';margin-right:6px;color:var(--accent)}
 #assistant-context{max-width:160px;overflow-wrap:anywhere}
 @media(max-width:600px){.assistant-toolbar>button{flex:1 1 auto}.child-agent summary{flex-wrap:wrap;justify-content:flex-start}.child-agent-nested{margin-left:8px}}
+/* Live native requests and local recovery use the existing theme and type scale. */
+.native-request{border:1px solid var(--line);border-radius:12px;padding:16px;margin:16px 0;background:var(--surface)}
+.native-request h3,.work-activity-row h3{margin:0;font-size:1rem}
+.native-request fieldset{border:0;padding:0;margin:16px 0;min-width:0}
+.native-request legend{font-weight:600;margin-bottom:10px;white-space:pre-wrap}
+.native-option{display:flex;align-items:flex-start;gap:10px;padding:8px 0;cursor:pointer}
+.native-option input{width:auto;flex:none;margin-top:4px}
+.native-option small{display:block;font-size:.85em;color:var(--muted);margin-top:3px}
+.native-free{display:grid;gap:6px;margin-top:8px}
+.native-free textarea,.native-free input{width:100%;box-sizing:border-box}
+.native-request pre,.history-review pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:320px;overflow:auto;font-size:.85rem}
+.native-request.answered,.native-request.expired{opacity:.8}
+.work-activity-row,.history-file{padding:14px 0;border-bottom:1px solid var(--line);overflow-wrap:anywhere}
+.history-file summary{cursor:pointer;padding:6px 0}
+.history-file .section-head{padding:10px 0;gap:12px}
+.history-file small{display:block}
+.history-review{border:1px solid var(--line);border-radius:10px;padding:16px;margin-top:20px;overflow-wrap:anywhere}
+@media(max-width:600px){.native-request{padding:12px}.native-request .section-head,.history-file .section-head{align-items:flex-start;flex-wrap:wrap}}

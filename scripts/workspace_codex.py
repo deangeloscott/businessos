@@ -147,6 +147,9 @@ def verify_attachment(command, cwd, attachment):
 
 
 def run(command, cwd, prompt, native_id, model, effort, update, env=None, execution=None, child_model=''):
+    if execution and execution.interactive:
+        from workspace_native_io import codex_run
+        return codex_run(command,cwd,prompt,native_id,model,effort,update,env,execution,child_model)
     from workspace_delegation import Tracker
     delegation = Tracker(update)
     argv = [*base_command(command), '-C', str(cwd), 'exec']

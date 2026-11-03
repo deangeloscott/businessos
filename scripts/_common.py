@@ -176,6 +176,13 @@ def write_json_atomic(path,data):
         fd,tmp=tempfile.mkstemp(prefix=f'.{p.name}.',suffix='.tmp',dir=str(p.parent))
         with os.fdopen(fd,'w',encoding='utf-8') as handle:
             json.dump(data,handle,indent=2,ensure_ascii=False);handle.write('\n');handle.flush();os.fsync(handle.fileno())
+        root=workspace_root().resolve()
+        relative=p.absolute().relative_to(root) if p.absolute().is_relative_to(root) else None
+        if relative and len(relative.parts)>2 and relative.parts[0]=='instances' and p.is_file():
+            import workspace_history
+            try:workspace_history.managed(p,relative.parts[1])
+            except ValueError:pass
+            else:workspace_history.capture(p,relative.parts[1],'Before business record change')
         os.replace(tmp,p);tmp=None
     finally:
         if tmp:

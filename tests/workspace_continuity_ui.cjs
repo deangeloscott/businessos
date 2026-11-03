@@ -1,0 +1,33 @@
+/* Real view functions with a small DOM fixture; no browser or frontend dependency. */
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const nodes=new Map(),listeners={},calls=[];let pending=[];
+function node(id){if(!nodes.has(id))nodes.set(id,{innerHTML:'',textContent:'',hidden:false,isConnected:true,value:'native',dataset:{},querySelectorAll:()=>[],querySelector:s=>node(id+' '+s),contains:()=>false,addEventListener(){},close(){this.open=false;}});return nodes.get(id);}
+const state={data:{workspace:'A',connection:{selected:'codex',choices:[{id:'codex',name:'Codex',available:true}]}},business:'studio',chatMeta:{id:'chat',agent:'codex'},fileDetailTicket:0};
+const context={window:{},document:{activeElement:null,addEventListener:(name,fn)=>(listeners[name]??=[]).push(fn)},state,$:node,
+  esc:v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),
+  human:v=>v,chatDate:v=>String(v),empty:v=>`<p>${v}</p>`,URLSearchParams,composerConnection:()=>({kind:'codex'}),
+  details:(title,html)=>{state.fileDetailTicket++;node('#detail').open=true;node('#detail-content').innerHTML=html;},
+  attempt:fn=>{const p=Promise.resolve().then(fn);pending.push(p);return p;},
+  api:(path,data)=>new Promise((resolve,reject)=>calls.push({path,data,resolve,reject})),
+};
+vm.createContext(context);vm.runInContext(fs.readFileSync(process.argv[2],'utf8'),context);
+const flush=()=>new Promise(resolve=>setImmediate(resolve));
+function click(id){for(const fn of listeners.click||[])fn({target:{closest:()=>({id})}});}
+const permission={choices:[{id:'native',name:'Use harness settings',native:'No override'},{id:'full',name:'Full access',native:'danger-full-access · never'}],mode:'native',default:'native',interactive:true};
+(async()=>{
+  state.liveJob={id:'job',chat_id:'chat',workspace:'A',requests:[{id:'request',status:'pending',title:'<Approval>',detail:'echo <unsafe>',questions:[{id:'q',text:'Choose?',multiple:true,text:true,options:[{label:'A',value:'A'}]}]}]};
+  const host=node('#native-requests');context.window.auraContinuity.renderRequests();
+  assert.match(host.innerHTML,/&lt;Approval&gt;/);assert.match(host.innerHTML,/type="checkbox"/);assert.match(host.innerHTML,/Submit answer/);
+  host.innerHTML='keep focused editor';context.window.auraContinuity.renderRequests();assert.equal(host.innerHTML,'keep focused editor','Unchanged polling must not replace question inputs');
+  state.data.workspace='B';context.window.auraContinuity.renderRequests();assert.equal(host.hidden,true,'A different workspace must not display actionable requests');state.data.workspace='A';
+  click('chat-permissions');await flush();assert.match(calls.at(-1).path,/chat_id=chat/);
+  context.details('Different page','Keep this page');calls.at(-1).resolve(permission);await Promise.all(pending);pending=[];
+  assert.equal(node('#detail-content').innerHTML,'Keep this page','An older permission read must not overwrite another panel');
+  click('harness-permissions');await flush();calls.at(-1).resolve(permission);await Promise.all(pending);pending=[];
+  assert.match(node('#detail-content').innerHTML,/Default for new requests/);assert.match(node('#permissions-native').textContent,/No override/);
+  node('#permissions-mode').value='full';node('#permissions-mode').onchange();assert.match(node('#permissions-native').textContent,/danger-full-access/);const form=node('#permissions-form');form.onsubmit({preventDefault(){},currentTarget:form});await flush();
+  assert.equal(calls.at(-1).data.mode,'full');assert.equal(calls.at(-1).data.kind,'codex');assert.equal(calls.at(-1).data.chat_id,undefined,'Editing defaults must not mutate an individual chat');calls.at(-1).resolve({saved:true});await Promise.all(pending);pending=[];
+  click('other-work');await flush();const old=calls.at(-1);state.business='other';old.resolve({items:[],running_chats:[]});await Promise.all(pending);
+  assert.match(node('#detail-content').innerHTML,/Reading workspace activity/,'Results from another business must not be rendered');
+  console.log('Continuity views passed: escaped native requests, stable inputs, scope isolation, stale-panel protection, and explicit native defaults.');
+})().catch(error=>{console.error(error);process.exitCode=1;});

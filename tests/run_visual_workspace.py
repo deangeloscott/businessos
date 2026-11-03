@@ -481,19 +481,10 @@ print("AURA_SETUP", nonce, *hashes)
 from pathlib import Path
 log = Path(__file__).with_suffix('.jsonl')
 def emit(value): print(json.dumps(value), flush=True)
-if 'app-server' in sys.argv:
-    for line in sys.stdin:
-        req = json.loads(line)
-        if 'id' not in req: continue
-        method = req['method']
-        result = {}
-        if method == 'thread/read': result = {'thread': {'id': 'native-one', 'path': str(log), 'status': {'type':'idle'}}}
-        if method == 'skills/list': result = {'data':[{'skills':[{'name':'viraltrac-aura','enabled':True,'path':str(Path.cwd()/'.agents/skills/viraltrac-aura/SKILL.md')}]}]}
-        emit({'id':req['id'],'result':result})
-else:
-    text = sys.stdin.read()
+resumed=False
+def respond(text):
     count = len(log.read_text().splitlines())//3 + 1 if log.exists() else 1
-    reply = 'Native turn %d; resumed=%s' % (count, 'resume' in sys.argv)
+    reply = 'Native turn %d; resumed=%s' % (count, resumed)
     if 'Welcome me to my AURA workspace' in text:
         paths = [re.search(label+r': ([^\\n]+)', text).group(1) for label in ('Skill file','Business file')]
         nonce = re.search(r'AURA_SETUP ([0-9a-f]{16})', text).group(1)
@@ -507,6 +498,24 @@ else:
             {'type':'response_item','payload':{'type':'message','role':'assistant','phase':'final_answer','content':[{'type':'output_text','text':reply}]}}]
     with log.open('a', encoding='utf-8') as stream:
         for row in rows: stream.write(json.dumps(row)+'\\n')
+    return reply
+if 'app-server' in sys.argv:
+    for line in sys.stdin:
+        req=json.loads(line)
+        if 'id' not in req:continue
+        method=req['method'];result={}
+        if method=='thread/read':result={'thread':{'id':'native-one','path':str(log),'status':{'type':'idle'}}}
+        elif method=='skills/list':result={'data':[{'skills':[{'name':'viraltrac-aura','enabled':True,'path':str(Path.cwd()/'.agents/skills/viraltrac-aura/SKILL.md')}]}]}
+        elif method in ('thread/start','thread/resume'):
+            resumed=method=='thread/resume';result={'thread':{'id':'native-one'}}
+        emit({'id':req['id'],'result':result})
+        if method=='turn/start':
+            reply=respond(req['params']['input'][0]['text'])
+            emit({'method':'item/completed','params':{'threadId':'native-one','item':{'id':'reply','type':'agentMessage','phase':'final_answer','text':reply}}})
+            emit({'method':'thread/tokenUsage/updated','params':{'threadId':'native-one','tokenUsage':{'last':{'inputTokens':100,'outputTokens':20}}}})
+            emit({'method':'turn/completed','params':{'threadId':'native-one','turn':{'id':'turn','status':'completed'}}})
+else:
+    resumed='resume' in sys.argv;reply=respond(sys.stdin.read())
     emit({'type':'thread.started','thread_id':'native-one'})
     emit({'type':'item.completed','item':{'type':'agent_message','text':reply}})
     emit({'type':'turn.completed','usage':{'input_tokens':100,'output_tokens':20}})
@@ -594,14 +603,36 @@ kind=sys.argv[1]; ident='native-'+kind
 log=Path(__file__).with_suffix('.'+kind+'.json')
 def emit(v): print(json.dumps(v),flush=True)
 def history():return json.loads(log.read_text()) if log.exists() else []
+def respond(text):
+ if kind=='antigravity':text=json.loads(text)['message']['content']
+ payload={'key_available':os.environ.get('FAL_KEY')=='aura-fixture-key-never-use-with-a-provider','argv':sys.argv[2:]}
+ reply=json.dumps(payload)
+ if 'Welcome me to my AURA workspace' in text:
+  paths=[re.search(label+r': ([^\\n]+)',text).group(1) for label in ('Skill file','Business file')]
+  nonce=re.search(r'AURA_SETUP ([0-9a-f]{16})',text).group(1)
+  reply+='\\nAURA_SETUP '+nonce+' '+' '.join(hashlib.sha256(Path(p).read_bytes()).hexdigest() for p in paths)
+ brief=re.search(r'AURA_CHAT_BRIEF_([0-9a-f]{16})',text)
+ if brief:reply+='\\nAURA_CHAT_BRIEF_'+brief.group(1)+' '+json.dumps({'title':'Selected settings','summary':'Reviewed the selected model settings; ready for the next request.'})
+ messages=history()+[{'role':'user','content':text},{'role':'assistant','content':[{'type':'text','text':reply}]}]
+ log.write_text(json.dumps(messages))
+ return reply
+live=('rpc' in sys.argv and '--no-session' not in sys.argv) or '--permission-prompt-tool' in sys.argv
 if 'models' in sys.argv:
  print('gemini-fixture\\tGemini fixture')
 elif 'sessions' in sys.argv:
  emit({'id':ident,'messages':history()})
-elif 'rpc' in sys.argv or 'acp' in sys.argv or '--no-session-persistence' in sys.argv:
+elif live or 'rpc' in sys.argv or 'acp' in sys.argv or '--no-session-persistence' in sys.argv:
  for line in sys.stdin:
   req=json.loads(line)
-  with Path(__file__).with_suffix('.requests').open('a') as f:f.write(json.dumps(req)+'\\n')
+  if not live:
+   with Path(__file__).with_suffix('.requests').open('a') as f:f.write(json.dumps(req)+'\\n')
+  if live and req.get('type') in ('prompt','user'):
+   text=req.get('message') if req['type']=='prompt' else req['message']['content']
+   reply=respond(text)
+   if kind in ('pi','omp'):
+    emit({'type':'message_end','message':{'role':'assistant','content':[{'type':'text','text':reply}]}});emit({'type':'agent_settled'})
+   else:emit({'type':'result','session_id':ident,'result':reply})
+   continue
   if 'method' in req:
    data={} if req['method']=='initialize' else {'models':{'currentModelId':'fixture:model','availableModels':[{'modelId':'fixture:model','name':'Fixture'}]}}
    emit({'jsonrpc':'2.0','id':req['id'],'result':data});continue
@@ -615,17 +646,8 @@ elif 'rpc' in sys.argv or 'acp' in sys.argv or '--no-session-persistence' in sys
   emit({'id':req['id'],'type':'response','success':True,'data':data})
 else:
  text=sys.stdin.read()
- if kind=='antigravity':text=json.loads(text)['message']['content']
- payload={'key_available':os.environ.get('FAL_KEY')=='aura-fixture-key-never-use-with-a-provider','argv':sys.argv[2:]}
- reply=json.dumps(payload)
- if 'Welcome me to my AURA workspace' in text:
-  paths=[re.search(label+r': ([^\\n]+)',text).group(1) for label in ('Skill file','Business file')]
-  nonce=re.search(r'AURA_SETUP ([0-9a-f]{16})',text).group(1)
-  reply+='\\nAURA_SETUP '+nonce+' '+' '.join(hashlib.sha256(Path(p).read_bytes()).hexdigest() for p in paths)
- brief=re.search(r'AURA_CHAT_BRIEF_([0-9a-f]{16})',text)
- if brief:reply+='\\nAURA_CHAT_BRIEF_'+brief.group(1)+' '+json.dumps({'title':'Selected settings','summary':'Reviewed the selected model settings; ready for the next request.'})
- messages=history()+[{'role':'user','content':text},{'role':'assistant','content':[{'type':'text','text':reply}]}]
- log.write_text(json.dumps(messages))
+ reply=respond(text)
+ messages=history()
  if kind in ('pi','omp'):
   emit({'type':'session','id':ident});emit({'type':'message_end','message':messages[-1]})
  elif kind=='antigravity':

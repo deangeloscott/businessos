@@ -25,7 +25,9 @@ def validate(data):
         if not isinstance(business, str) or not isinstance(items, list) or len(items) > 200:
             raise ValueError('Saved assistants need attention.')
         seen = set()
+        forbidden={'permission_mode','harness_permissions','approval_grants','pending_requests','credentials','requests'}
         for item in items:
+            if isinstance(item,dict) and forbidden.intersection(item):raise ValueError('Assistant packages cannot carry permission grants, sign-ins, or live requests.')
             if not isinstance(item, dict):
                 raise ValueError('Saved assistants need attention.')
             for field, limit in [('id', 100), ('name', 80), ('instructions', 20000),

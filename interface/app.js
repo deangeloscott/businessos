@@ -1629,6 +1629,8 @@ function showMessages(latest=false) {
   $('#live-reply').hidden=!state.busy||!state.liveJob?.reply;
   $('#live-reply-text').textContent=state.busy?state.liveJob?.reply||'':'';
   window.auraWork?.renderDelegation();
+  window.auraContinuity?.renderRequests();
+  const continuityNote=$('#continuity-note');if(continuityNote){const job=state.liveJob;const notes=job?.chat_id===chat?[job.history_warning,job.activity_warning,...(job.history_observation?.notes||[])].filter(Boolean):[];continuityNote.textContent=notes.join(' ');continuityNote.hidden=!notes.length;}
   const activity=state.liveJob?.activity||[];
   $('#request-activity').hidden=!activity.length;
   const activitySignature=JSON.stringify(activity);

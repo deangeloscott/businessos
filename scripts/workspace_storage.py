@@ -77,7 +77,7 @@ def view_preferences(root):
                     raise ValueError('A saved folder link is outside its workspace.')
                 path = Path(root) / path
             locations[bid].append({**item,'path':str(path)})
-    return {**data, 'file_locations':locations}
+    return {**{k:data[k] for k in ('format','appearance','model_picker','library','assistants') if k in data}, 'file_locations':locations}
 
 
 def workspace_files(source, hashes=True):

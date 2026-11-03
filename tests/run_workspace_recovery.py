@@ -94,7 +94,8 @@ def main():
                 assert '401 invalid API key' in str(exc) and env['EXAMPLE_API_KEY'] not in str(exc), str(exc)
         app = Workspace(settings_file=base / 'preferences.json')
         app.connection_kind = 'codex'
-        app.agent = {'name':'Codex', 'argv':[sys.executable,'-c',program,'exec','-']}
+        # A bidirectional host receives initialize as a JSONL record, not EOF.
+        app.agent = {'name':'Codex', 'argv':[sys.executable,'-c',program.replace('sys.stdin.read()','sys.stdin.readline()'),'exec','-']}
         app.preferences['connection'] = {'kind':'codex','model':'example','effort':'low'}
         with patch.dict(os.environ, EXAMPLE_API_KEY=env['EXAMPLE_API_KEY']):
             app.start_chat(bid, 'Keep my useful request after restart', [])

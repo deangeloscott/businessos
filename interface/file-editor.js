@@ -51,7 +51,7 @@ async function render(view){
         <button type="button" data-file-action="transfer" aria-controls="file-transfer-panel" aria-expanded="false">${view.ctx.ref.startsWith('library/')?'Import':'Share or import'}</button>
       </div>
       <div class="file-toolbar-actions">
-        <button type="button" class="text-button" data-file-action="expand">${$('#detail').hasAttribute('data-file-wide')?'Reduce':'Expand'}</button>
+        ${info.history_available?'<button type="button" class="text-button" data-file-action="history" aria-controls="file-history-panel" aria-expanded="false">History</button>':''}<button type="button" class="text-button" data-file-action="expand">${$('#detail').hasAttribute('data-file-wide')?'Reduce':'Expand'}</button>
         <button type="button" class="secondary" data-file-action="open" aria-controls="file-open-panel" aria-expanded="false">Open in…</button>
       </div>
     </div>
@@ -61,7 +61,7 @@ async function render(view){
       ${view.dirty&&!view.ctx.ref.startsWith('library/')?'<p>Save your changes before sharing this file.</p>':''}
     </div>
     <div id="file-open-panel" class="file-open-panel" hidden></div>
-    <div id="file-tools"></div>
+    <section id="file-history-panel" hidden></section><div id="file-tools"></div>
     <div id="file-canvas" class="file-canvas" tabindex="-1"></div>
     <div id="file-savebar" class="file-savebar" ${editing?'':'hidden'}>
       <label>Save to<select id="file-save-mode">
@@ -102,6 +102,7 @@ async function render(view){
     if(button.dataset.fileRelated)openFile({...view.ctx,ref:button.dataset.fileRelated});
     if(action==='expand'){$('#detail').toggleAttribute('data-file-wide');button.textContent=$('#detail').hasAttribute('data-file-wide')?'Reduce':'Expand';if(info.kind==='pdf')renderPdf(view);view.table?.redraw(true);}
     if(action==='open')openPanel(view);
+    if(action==='history')fileHistory(view,button).catch(e=>status(view,e.message,true));
     if(action==='transfer'){
       const panel=view.host.querySelector('#file-transfer-panel');panel.hidden=!panel.hidden;button.classList.toggle('active',!panel.hidden);button.setAttribute('aria-expanded',String(!panel.hidden));
     }
@@ -260,3 +261,27 @@ $('#detail').addEventListener('close',()=>{if(!$('#detail').open)detach();});
 document.addEventListener('keydown',event=>{if(current&&live(current)&&(event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='s'){event.preventDefault();if(current.dirty)save(current);}});
 window.addEventListener('beforeunload',event=>{if(imports.size||[...drafts.values()].some(d=>d.memoryOnly)||(current?.memoryOnly&&current.dirty)){event.preventDefault();event.returnValue='';}});
 window.addEventListener('focus',async()=>{const view=current;if(!view||!live(view)||view.dirty)return;try{const fresh=await api(view,'/api/documents?'+new URLSearchParams({business:view.ctx.business,workspace:view.ctx.workspace,path:view.ctx.ref,option:view.ctx.option||''}));if(live(view)&&fresh.workspace===view.ctx.workspace&&fresh.revision!==view.info.revision){await openFile(view.ctx);if(current)status(current,'Updated from the file.');}}catch{/* The current preview remains available. */}});
+
+async function fileHistory(view,button){
+  const panel=view.host.querySelector('#file-history-panel');panel.hidden=!panel.hidden;button.setAttribute('aria-expanded',String(!panel.hidden));if(panel.hidden)return;
+  panel.innerHTML='<p role="status">Reading file history…</p>';
+  const query=new URLSearchParams({business:view.ctx.business,path:view.ctx.ref,option:view.ctx.option||''});
+  const data=await api(view,'/api/history?'+query);if(!live(view)||!panel.isConnected)return;
+  panel.innerHTML='<h3>Earlier versions</h3>'+ (data.items.length?data.items.map(row=>`<div class="section-head"><span>${esc(new Date(row.at*1000).toLocaleString())}<small class="small-note">${esc(row.reason)}</small></span><button type="button" class="text-button" data-file-history-id="${esc(row.id)}">Review</button></div>`).join(''):'<p>Earlier versions appear here when you save changes.</p>')+'<div id="file-history-review"></div>';
+  panel.onclick=async event=>{
+    const chosen=event.target.closest('[data-file-history-id]');if(!chosen||!live(view))return;chosen.disabled=true;const ticket=view.historyTicket=(view.historyTicket||0)+1;panel.querySelector('#file-history-review').textContent='Reading saved version…';
+    try{
+      const selected=await api(view,'/api/history/version?'+new URLSearchParams({business:view.ctx.business,id:chosen.dataset.fileHistoryId}));if(!live(view)||!panel.isConnected||ticket!==view.historyTicket)return;
+      const review=panel.querySelector('#file-history-review');review.innerHTML=`<div class="history-review"><h3>Saved ${esc(new Date(selected.at*1000).toLocaleString())}</h3>${selected.text?`<details open><summary>Saved content</summary><pre>${esc(selected.text)}</pre></details>`:`<p>${Math.ceil(selected.bytes/1024)} KB · File preview unavailable.</p>`}<p>Restore this version? Its current contents will be kept in history.</p><button type="button" class="primary" id="file-history-restore">Restore this version</button><p role="status" id="file-history-status"></p></div>`;
+      review.querySelector('button').onclick=async()=>{
+        if(!live(view)||ticket!==view.historyTicket)return;
+        if(view.dirty){status(view,'Save or cancel your unsaved edits before restoring a version.',true);return;}
+        const restore=review.querySelector('button');restore.disabled=true;
+        try{
+          await api(view,'/api/history/restore',{business:view.ctx.business,id:selected.id,expected_revision:selected.current_revision});if(!live(view))return;
+          await openFile(view.ctx);if(current)status(current,'Earlier version restored.');
+        }catch(error){if(live(view)&&restore.isConnected){review.querySelector('#file-history-status').textContent=error.message;restore.disabled=false;}}
+      };
+    }catch(error){status(view,error.message,true);}finally{if(chosen.isConnected)chosen.disabled=false;}
+  };
+}

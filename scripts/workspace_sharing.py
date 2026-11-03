@@ -29,7 +29,8 @@ from workspace_startup import state_dir
 
 FORMAT = 'aura-selected-share-1'
 MAX_FILES, MAX_BYTES = 10000, 2 * 1024 ** 3
-SECRET_FIELDS = {'password', 'api_key', 'apikey', 'access_token', 'refresh_token', 'private_key', 'credentials', 'secrets'}
+SECRET_FIELDS = {'password', 'api_key', 'apikey', 'access_token', 'refresh_token', 'private_key', 'credentials', 'secrets',
+                 'permission_mode','harness_permissions','approval_grants','pending_requests'}
 
 
 def now():

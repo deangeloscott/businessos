@@ -48,6 +48,9 @@ import workspace_sharing
 import workspace_exchange
 import workspace_support
 import workspace_documents
+import workspace_activity
+import workspace_history
+import workspace_permissions
 from configure_workspace import configure
 from workspace_execution import Execution, Stopped
 from workspace_connections import Connections, PRESETS
@@ -450,6 +453,8 @@ class Workspace:
             self.preferences['chats'] = []
         if not isinstance(self.preferences.get('notification_items'), list):
             self.preferences['notification_items'] = []
+        # A restarted client cannot answer requests owned by an old native process.
+        self.preferences['notification_items']=[n for n in self.preferences['notification_items'] if n.get('kind')!='input']
         if not isinstance(self.preferences.get('active_chats'), dict):
             self.preferences['active_chats'] = {}
         if not isinstance(self.preferences.get('model_picker'), dict):
@@ -1480,6 +1485,8 @@ class Workspace:
             for key in neighbors.get(pending.pop(),set())-family:family.add(key);pending.append(key)
         result['related']=[{'ref':'asset/'+key,'name':Path(assets[key].get('location_reference') or '').name,'version':assets[key].get('version','1')} for key in sorted(family) if key in assets][:50]
         result['libreoffice_installed']=bool(workspace_documents.libreoffice())
+        try:workspace_history.managed(path,bid);result['history_available']=True
+        except ValueError:result['history_available']=False
         return result
 
     def document_save(self,bid,ref,data):
@@ -1932,6 +1939,9 @@ class Workspace:
                 self.jobs.pop(old['id'],None);self.executions.pop(old['id'],None)
             self.jobs[job['id']]=job
             execution = self.execution = Execution()
+            execution.interactive = native
+            execution.permission = workspace_permissions.validate(self.connection_kind,chat.get('permission_mode') or self.preferences.get('harness_permissions',{}).get(self.connection_kind,'native'))
+            job['permissions']=workspace_permissions.describe(self.connection_kind,execution.permission)
             self.executions[job['id']]=execution
             command = list(self.agent['argv'])
             kind = self.connection_kind
@@ -1949,9 +1959,23 @@ class Workspace:
                         values.setdefault('progress', 'Connected. Waiting for your AI')
                     if 'reply' in values:
                         values['reply'] = self.connections.redact(workspace_chats.clean(values['reply'][-100000:],streaming=True))
+                    if 'requests' in values:
+                        if any(r['status']=='pending' for r in values['requests']):values['progress']='Needs your input'
+                        elif job.get('progress')=='Needs your input' and not execution.stopped.is_set():values['progress']='Continuing your request'
                     if values.get('progress') and (not job['activity'] or job['activity'][-1]['text'] != values['progress']):
                         job['activity'] = [*job['activity'], {'text':values['progress'], 'at':time.time()}][-12:]
                     job.update(values, updated=time.time())
+                    if 'requests' in values:
+                        values['requests']=json.loads(self.connections.redact(json.dumps(values['requests'])))
+                        job['requests']=values['requests']
+                        for request in values['requests']:
+                            ident='input-'+request['id']
+                            item=next((n for n in self.preferences['notification_items'] if n['id']==ident),None)
+                            if request['status']=='pending' and not item:
+                                self.preferences['notification_items'].append({'id':ident,'business_id':bid,'chat_id':chat['id'],
+                                    'title':request['title'],'kind':'input','agent':self.agent['name'],'status':'needs_input',
+                                    'at':time.time(),'read':False,'delivered':False})
+                            elif item and request['status']!='pending':item.update(read=True,delivered=True)
                     if values.get('quota_windows'):
                         row=workspace_usage.account('anthropic',via=self.agent['name'])
                         row.update(windows=values['quota_windows'],checked_at=time.time())
@@ -1962,9 +1986,18 @@ class Workspace:
                             self.save_preferences()
                         except OSError:
                             job['preference_warning'] = 'Your AI is working, but this view could not save its chat reference. Use the native app before retrying.'
+                    if time.time()-job.get('_activity_at',0)>2 or 'requests' in values:
+                        try:workspace_activity.record(bid,job,chat);job['_activity_at']=time.time()
+                        except (OSError,ValueError):job['activity_warning']='Work status could not be saved locally.'
+            execution.requests.changed=lambda rows:update(requests=rows)
             def work():
-                candidate=None
+                candidate=None;terminal='error'
                 try:
+                    try:
+                        if not welcome and keep_warm_id is None:job['history_observation']=workspace_history.observe(bid,'Before native work')
+                    except (OSError,ValueError):job['history_warning']='Local history could not be updated for this request.'
+                    try:workspace_activity.record(bid,job,chat)
+                    except (OSError,ValueError):job['activity_warning']='Work status could not be saved locally.'
                     if native:
                         resumed_id=native_id
                         if chat.get('relocate_session'):
@@ -1990,7 +2023,7 @@ class Workspace:
                         code = process.returncode
                     with self.lock:
                         execution.check()
-                        job['status'] = 'complete' if code == 0 else 'error'
+                        terminal = 'complete' if code == 0 else 'error'
                         job['reply'] = self.connections.redact(workspace_chats.clean(output[-100000:])) if code == 0 else self.connections.redact(
                             (stderr or output)[-5000:].strip() or f'The agent exited with code {code}. Open your AI app to check the failure. Your request was not marked complete.')
                         if not job['reply']:
@@ -2014,20 +2047,25 @@ class Workspace:
                                 except OSError:
                                     job['preference_warning'] = 'Connected, but setup preferences could not be saved on this computer.'
                             elif code == 0:
-                                job['status'] = 'error'
+                                terminal = 'error'
                                 job['reply'] = SETUP_ERRORS['proof']
                 except Stopped:
                     with self.lock:
-                        job.update(status='stopped', progress='Stopped', reply=job.get('reply') or '')
-                except (OSError, ValueError, subprocess.SubprocessError) as exc:
+                        terminal='stopped';job.update(progress='Stopped', reply=job.get('reply') or '')
+                except Exception as exc:
                     with self.lock:
                         if execution.stopped.is_set():
-                            job.update(status='stopped', progress='Stopped')
+                            terminal='stopped';job.update(progress='Stopped')
                         else:
                             detail = self.connections.redact(str(exc))
-                            job.update(status='error', error_detail=detail, reply=setup_error(detail))
+                            terminal='error';job.update(error_detail=detail, error_type=type(exc).__name__, reply=setup_error(detail))
                 finally:
+                    execution.requests.close()
+                    try:
+                        if not welcome and keep_warm_id is None:job['history_observation']=workspace_history.observe(bid,'Observed after native work')
+                    except (OSError,ValueError):job['history_warning']='Local history could not be updated for this request.'
                     with self.lock:
+                        job['status']=terminal
                         if welcome and job['status'] == 'error':
                             job['reply'] = setup_error(job['reply'])
                             job['setup_error'] = True
@@ -2054,6 +2092,8 @@ class Workspace:
                                 self.save_preferences()
                             except OSError:
                                 job['preference_warning'] = 'Reply received, but its notification could not be saved.'
+                        try:workspace_activity.record(bid,job,chat)
+                        except (OSError,ValueError):job['activity_warning']='Work status could not be saved locally.'
             def scoped_work():
                 with workspace_scope(root):work()
             threading.Thread(target=scoped_work, daemon=True).start()
@@ -2149,7 +2189,7 @@ def handler_for(app):
 
         def do_GET(self):
             self.request_started=time.monotonic()
-            if urlsplit(self.path).path in {'/api/state','/api/file','/api/sharing','/api/chat','/api/chats','/api/notifications'}:
+            if urlsplit(self.path).path in {'/api/activity','/api/activity/result','/api/history','/api/history/version','/api/permissions','/api/state','/api/file','/api/sharing','/api/chat','/api/chats','/api/notifications'}:
                 with app.lock:self.read_GET()
             else:self.read_GET()
 
@@ -2165,7 +2205,7 @@ def handler_for(app):
                 elif route in {'/app.js', '/style.css'}:
                     path = app.static / route[1:]
                     self.send(200, path.read_bytes(), 'text/javascript; charset=utf-8' if path.suffix == '.js' else 'text/css; charset=utf-8')
-                elif route in {'/file-editor.js','/file-editor.css','/workspace-work.js'} or route.startswith('/vendor/'):
+                elif route in {'/file-editor.js','/file-editor.css','/workspace-work.js','/workspace-continuity.js'} or route.startswith('/vendor/'):
                     relative=Path(route.lstrip('/'))
                     path=(STATIC/relative).resolve()
                     base=(STATIC/'vendor').resolve() if route.startswith('/vendor/') else STATIC.resolve()
@@ -2173,6 +2213,26 @@ def handler_for(app):
                     self.send(200,path.read_bytes(),mimetypes.guess_type(path.name)[0] or 'application/octet-stream')
                 elif route == '/api/components':
                     self.send(200,workspace_catalog.read_json(PRODUCT_ROOT/'distribution/ui-components.json',{'components':[]}))
+                elif route == '/api/activity/result':
+                    self.send(200,workspace_activity.result(selected(query.get('business')),query.get('chat_id'),query.get('max_chars',6000)))
+                elif route == '/api/activity':
+                    bid=selected(query.get('business'));result=workspace_activity.inventory(bid,query.get('search',''),query.get('exclude_chat',''),query.get('limit',20))
+                    result['running_chats']=[j['chat_id'] for j in app.running_jobs(workspace_root()) if j['business_id']==bid]
+                    self.send(200,result)
+                elif route == '/api/history/version':
+                    self.send(200,workspace_history.version(selected(query.get('business')),query.get('id')))
+                elif route == '/api/history':
+                    bid=selected(query.get('business'))
+                    path=app.document_source(bid,query.get('path',''),query.get('option',''))[0] if query.get('path') else None
+                    self.send(200,workspace_history.inventory(bid,path))
+                elif route == '/api/permissions':
+                    bid=selected(query.get('business'));kind=query.get('kind') or app.connection_kind
+                    chat=next((c for c in app.preferences['chats'] if c['id']==query.get('chat_id') and c['business_id']==bid),None)
+                    if query.get('chat_id') and not chat:raise ValueError('Choose a chat in this business.')
+                    if chat:kind=chat['agent']
+                    default=app.preferences.get('harness_permissions',{}).get(kind,'native')
+                    job=app.chat_job(bid,chat['id']) if chat else None
+                    self.send(200,{**workspace_permissions.describe(kind,chat.get('permission_mode',default) if chat else default),'default':default,'override':chat.get('permission_mode','') if chat else '', 'last_effective':(job or {}).get('permission_effective')})
                 elif route == '/api/documents':
                     with app.lock:owner=copy.copy(app)
                     if query.get('workspace') and query['workspace']!=owner.workspace_path:raise ValueError('The workspace changed. Reopen this file.')
@@ -2351,6 +2411,20 @@ def handler_for(app):
                             path=owner.document_source(bid,data.get('path',''),data.get('option',''))[0]
                             result=workspace_documents.open_in(path,data.get('application'))
                     self.send(200,result);return
+                if route == '/api/chat/answer':
+                    with app.lock:
+                        bid=selected(data.get('business'));job=app.find_job(data.get('job_id'),bid)
+                        if job['status']!='working' or job.get('chat_id')!=data.get('chat_id'):raise ValueError('This native request is no longer waiting in this chat.')
+                        execution=app.executions.get(job['id'])
+                    if not execution:raise ValueError('This request expired when Aura restarted. Check the native chat.')
+                    self.send(200,execution.requests.answer(data.get('id'),data.get('answers')));return
+                if route == '/api/history/restore':
+                    with app.lock:
+                        bid=selected(data.get('business'))
+                        if app.running_jobs(workspace_root()):raise ValueError('Wait for active work before restoring a file.')
+                        if app.organization_job and app.organization_job['status']=='working':raise ValueError('Wait for workspace organization before restoring.')
+                        result=workspace_history.restore(bid,data.get('id'),data.get('expected_revision'));app.read_cache.clear()
+                    self.send(200,result);return
                 if route == '/api/chats/import':
                     if data.get('confirmed') is not True:raise ValueError('Review the native chat and destination before adding it.')
                     self.send(200,app.native_chats(selected(data.get('business')),data.get('kind'),data.get('id'),True))
@@ -2374,7 +2448,7 @@ def handler_for(app):
                         raise ValueError('Workspace organization is running. Wait or stop it before making changes.')
                     if app.schedule_job and app.schedule_job['status']=='working' and (route in {'/api/lifecycle','/api/workspaces/open','/api/workspaces/create','/api/workspaces/relocate','/api/workspaces/restore'} or route.startswith('/api/organization/')):
                         raise ValueError('Wait for task setup or stop it before changing workspaces or restarting AURA.')
-                    if app.running_jobs(None if route in {'/api/lifecycle','/api/workspaces/relocate','/api/workspaces/restore'} else workspace_root()) and route not in {'/api/assistants','/api/preferences','/api/profile','/api/interface/reset','/api/chats/recover','/api/chats/archive','/api/chats/reconnect','/api/notifications','/api/chat','/api/chat/stop','/api/chats/new','/api/chats/open','/api/chats/rename','/api/chats/model','/api/chats/personalization','/api/connect','/api/workspaces/open','/api/usage/settings','/api/updates','/api/schedules/action','/api/schedules/stop'}:
+                    if app.running_jobs(None if route in {'/api/lifecycle','/api/workspaces/relocate','/api/workspaces/restore'} else workspace_root()) and route not in {'/api/chat/answer','/api/permissions','/api/assistants','/api/preferences','/api/profile','/api/interface/reset','/api/chats/recover','/api/chats/archive','/api/chats/reconnect','/api/notifications','/api/chat','/api/chat/stop','/api/chats/new','/api/chats/open','/api/chats/rename','/api/chats/model','/api/chats/personalization','/api/connect','/api/workspaces/open','/api/usage/settings','/api/updates','/api/schedules/action','/api/schedules/stop'}:
                         raise ValueError('Your agent is working. Wait for its reply before changing this workspace.')
                     if route in {'/api/preferences','/api/locations'}:
                         app.load_portable()
@@ -2772,6 +2846,18 @@ def handler_for(app):
                                 seen.append(bid)
                         app.save_preferences(portable=any(k in data for k in ('appearance','model_picker','library')))
                         self.send(200, {'ok': True})
+                    elif route == '/api/permissions':
+                        bid=selected(data.get('business'));kind=data.get('kind') or app.connection_kind
+                        chat=next((c for c in app.preferences['chats'] if c['id']==data.get('chat_id') and c['business_id']==bid),None)
+                        if data.get('chat_id') and not chat:raise ValueError('Choose a chat in this business.')
+                        if chat:kind=chat['agent']
+                        mode=data.get('mode')
+                        if chat and mode=='inherit':chat.pop('permission_mode',None)
+                        else:
+                            workspace_permissions.validate(kind,mode)
+                            if chat:chat['permission_mode']=mode
+                            else:app.preferences.setdefault('harness_permissions',{})[kind]=mode
+                        app.save_preferences();self.send(200,{'saved':True,'applies':'Next request; running native requests keep their permissions.'})
                     elif route == '/api/assistants':
                         self.send(200,app.assistants(selected(data.get('business')),data))
                     elif route == '/api/chats/personalization':

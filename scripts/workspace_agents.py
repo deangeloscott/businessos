@@ -322,13 +322,15 @@ def run(command, kind, cwd, env, prompt, native_id, model, effort, update, execu
     from workspace_delegation import Tracker
     delegation = Tracker(update)
     argv=base_command(command)
+    interactive=bool(execution and execution.interactive and kind in {'pi','omp','claude'})
     if kind in {'pi','omp'}:
-        argv += ['--print','--mode','json']
+        argv += ['--mode','rpc'] if interactive else ['--print','--mode','json']
         if native_id:argv += ['--session' if kind=='pi' else '--resume',native_id]
         if kind=='omp':argv+=['--cwd',str(cwd)]
         argv=execution_command(argv,kind,model,effort)
     elif kind=='claude':
         argv += ['-p','--output-format','stream-json','--verbose']
+        if interactive:argv += ['--input-format','stream-json','--permission-prompt-tool','stdio']
         if native_id:argv += ['--resume',native_id]
         argv=execution_command(argv,kind,model,effort)
     elif kind=='hermes':
@@ -341,6 +343,9 @@ def run(command, kind, cwd, env, prompt, native_id, model, effort, update, execu
         if native_id:argv += ['--conversation',native_id]
         if effort:argv += ['--effort',effort]
         prompt=json.dumps({'event':'user','message':{'content':prompt}})+'\n'
+    if execution:
+        from workspace_permissions import arguments
+        argv += arguments(kind,execution.permission)
     final, ident, error='',native_id,''
     request_started=time.time()
     measures, seen_usage, session_cost = [], {}, None
@@ -357,8 +362,12 @@ def run(command, kind, cwd, env, prompt, native_id, model, effort, update, execu
     with (execution.popen if execution else subprocess.Popen)(argv,cwd=cwd,env=env,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,
                           text=True,encoding='utf-8',errors='replace',creationflags=subprocess.CREATE_NO_WINDOW if os.name=='nt' else 0) as process:
         errors = ErrorTail(process, env)
-        errors.send(process, prompt);ErrorTail.close_input(process)
-        for line in process.stdout:
+        if interactive:
+            from workspace_native_io import agent_lines
+            lines=agent_lines(process,kind,prompt,native_id,execution,errors)
+        else:
+            errors.send(process, prompt);ErrorTail.close_input(process);lines=process.stdout
+        for line in lines:
             try:event=json.loads(line)
             except ValueError:continue
             if not isinstance(event, dict):continue
