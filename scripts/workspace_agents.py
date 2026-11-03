@@ -271,10 +271,12 @@ def history(command, kind, cwd, env, native_id):
             delegation.observe(kind,{'type':'tool_execution_end','toolCallId':ident,'result':message,'isError':message.get('isError')},workspace_usage.timestamp(message.get('timestamp')))
         if message.get('role') not in {'user','assistant'}:continue
         candidate=workspace_chats.brief(message_text(message.get('content',''))) if message['role']=='assistant' else None
+        from workspace_context import message_ref
+        aura_ref=message_ref(message_text(message.get('content',''))) if message['role']=='user' else ''
         text=display_text(message.get('content',''))
         at=message.get('timestamp') or message.get('created_at')
         if isinstance(at,(int,float)) and at>1e11:at/=1000
-        if text:out.append({'role':message['role'],'text':text,'at':at,
+        if text:out.append({'role':message['role'],'text':text,'at':at,**({'request_id':aura_ref} if aura_ref else {}),
                            'agent':{'pi':'Pi','omp':'OMP','claude':'Claude Code','hermes':'Hermes'}[kind]})
         if candidate:brief=dict(candidate,through=len(out),at=workspace_usage.timestamp(at))
     return {**({'subagents':list(delegation.items.values())} if delegation.items else {}),
@@ -387,6 +389,7 @@ def run(command, kind, cwd, env, prompt, native_id, model, effort, update, execu
                     text=message_text(message.get('content',[]))
                     if text:final=text;update(reply=final,progress='Preparing a reply')
             elif event_type=='message_start' and event.get('message',{}).get('role')=='assistant':
+                error=''
                 request_started=time.time()
                 final=''
                 update(reply='',progress='Preparing a reply')

@@ -141,14 +141,121 @@ workspace checks. Custom interfaces should call these operations rather than
 implement native grants or file writes themselves. Imported assistant/workspace
 packages cannot carry sign-ins, permission overrides, grants or live requests.
 
+## Reuse messages and select context
+
+**Copy** copies a message's original text, including Markdown. **Reuse prompt**
+puts an earlier user message and its selected references in the composer.
+**Use in new chat** opens an unsent draft with the original connection and goal.
+An existing draft is preserved; adding to it requires a deliberate choice. A
+message originally sent under a different goal offers a new chat with that goal
+or reuse under the current chat's goal. Reuse never submits model work.
+
+Type **@** or use **Add context** to find workspace files, saved business context,
+goals, library skills/workflows/playbooks and saved public results. Select a
+specific library version when several exist. A named assistant opens its saved
+results; mentioning it does not dispatch work or create agent messaging.
+Selected references appear as removable chips. Saved results pin a particular
+reply, so another turn in the source chat does not silently replace it.
+Files and business context resolve their current contents when the request is
+sent. A message's **Context used** receipt records the selected identities and
+revisions; it does not claim that a native app actually read every reference or
+freeze a copy of each file. Native history refresh preserves matching receipts.
+
+The picker searches source labels and existing descriptions, without model
+calls. It is not a semantic search service. It limits suggestions and sends only
+explicit references: at most 12 selected items plus the chat's primary goal,
+with a 24,000-character context-guidance ceiling. Other conversations are never
+loaded wholesale. Source instructions remain source material, not authorization.
+
+Type **/** to choose **/new**, **/attach**, **/assistant** or **/goal**. These call
+the existing new-chat, context, assistant and goal operations. Arrow keys and
+Enter select a visible option; Escape dismisses it. Unknown slash text and email
+addresses stay ordinary text. The composer remains a plain editable textarea.
+
+For example, reuse an earlier research prompt, select a new product brief with
+@, review the chips and edit the draft before sending. Or choose Jeff's one
+saved result for a writing chat without starting another Jeff session.
+
+```bash
+python scripts/workspace_context.py find --workspace <folder> --business-id <id> --search research --json
+python scripts/workspace_context.py resolve --workspace <folder> --business-id <id> --input <references.json> --goal <objective-id> --json
+python scripts/workspace_context.py message --workspace <folder> --business-id <id> --chat <chat-id> --index 0 --json
+```
+
+Reference input is an array such as
+`[{"kind":"file","id":"attachments/<business>/work/brief.md"}]`.
+The UI uses `/api/context`, `/api/context/resolve` and `/api/context/message`.
+Message reuse verifies the selected text's digest to reject a stale message
+index. Custom interfaces use these same shared resolution operations.
+
+## Goals and interrupted work
+
+Aura uses its existing **Objective** records for goals: name, optional outcome
+and timeframe, and Active/Paused/Completed status. A chat has one primary goal.
+Its goal view groups linked chats and their existing next-step descriptions,
+saved Assets and native recurring tasks. Long chat lists are searchable and
+initially show 20. Finishing a reply does not complete a goal or invent a progress
+percentage. Mark completion when the actual outcome is achieved.
+
+**Work on this goal** creates an unsent draft. **Prepare continuation** checks
+what already succeeded before resuming remaining work, without blindly resending
+the original assignment or repeating external actions. Useful files, decisions
+and concise next steps use Aura's normal durable memory helpers; full transcripts
+and private reasoning are not saved as goal memory. An Asset may link to a goal
+through `extensions.businessos.goal_ref`.
+
+Goal-linked recurring tasks still belong to their native scheduler. Aura adds a
+small goal preflight instruction, then confirms the native task changed before
+recording its link. The instruction checks the goal's saved status and original
+assignment fingerprint before business work; a paused, completed or materially
+changed goal needs review. The task's own model must follow that instruction;
+Aura does not intercept independently launched native schedules. Changing or
+removing a goal uses the same existing native-task operation, preserving timing,
+model and permissions.
+
+**Continuation** defaults to manual. Pi/OMP goal chats may explicitly allow
+already-enabled native retries until an expiry within seven days. Aura does not
+turn on retries in shared native settings. It uses the native retry event and
+abort control, rechecks the goal, permissions and selected context before the
+reported retry, and allows only one waiting assignment when funding identity is
+unknown. Stop, completion, a new goal assignment or a goal change clears the
+authorization. Native retry success clears an earlier transient error.
+
+This is bounded native retry handling, not scheduled quota-reset recovery. The
+native app may end a request rather than wait for a reset. Aura and its native
+connection must remain running; restarting either does not restart work. Other
+connections use the saved chat and manual continuation. A durable goal survives
+these interruptions, without a second scheduler, repeated model polling,
+automatic model/account switching or a promise to finish unattended.
+
+```bash
+python scripts/workspace_goals.py list --workspace <folder> --business-id <id> --json
+python scripts/workspace_goals.py show --workspace <folder> --business-id <id> --id <objective-id> --json
+python scripts/workspace_goals.py save --workspace <folder> --business-id <id> --input <goal-change.json> --json
+python scripts/workspace_goals.py check --workspace <folder> --business-id <id> --id <objective-id> --basis <fingerprint> --json
+python scripts/workspace_goals.py link-chat --workspace <folder> --business-id <id> --chat <chat-id> --id <objective-id> --json
+python scripts/workspace_goals.py link-asset --workspace <folder> --business-id <id> --asset <asset-id> --id <objective-id> --json
+```
+
+Goal changes use the existing canonical memory persistence/schema checks.
+Omit `--id` on a link command to remove that association. The `continuation`
+command accepts `--chat`, `--mode manual|native` and a Unix-seconds `--until`
+expiry, with the same native support and goal checks as the UI.
+Chat links and continuation choices go through the running local Aura API
+(`--url http://127.0.0.1:<port>`, default 4187), so CLI changes cannot overwrite
+live chat settings from a second process. Canonical goal and Asset operations
+also work with Aura closed.
+`/api/goals` exposes the same goal reads/writes plus chat/task/Asset associations
+and machine-local continuation choices. It does not create a universal native
+goal-control protocol or replace a harness's own goals.
+
 ## Deferred topics
 
 Voice input and reusing platform-only features; cloud access/off-device backups;
 OSC 7501; DeepSeek Harness integration and plugin framework changes; automatic
-model routing; external messaging; creative-production walkthroughs; mentions
-for named assistants/files/workflows/playbooks; slash commands; copying prompts,
-editing with preserved native branches, native feedback destinations; and linking
-Aura's existing business goals to native goal controls remain follow-up topics.
+model routing; external messaging; creative-production walkthroughs; editing with
+preserved native branches; native feedback destinations; durable quota-reset
+wakeups; and mapping Aura's goals to native goal-control protocols remain follow-up topics.
 Their inclusion here does not represent an implementation or native capability.
 
 ## Native protocol references

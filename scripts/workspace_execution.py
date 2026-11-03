@@ -16,6 +16,8 @@ class Execution:
         self.process = None
         self.interactive = False
         self.permission = 'native'
+        self.retry_check_at = None
+        self.retry_check = None
         from workspace_interactions import Requests
         self.requests = Requests()
 

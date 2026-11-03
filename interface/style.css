@@ -326,3 +326,17 @@ footer .footer-actions{flex:none;align-items:center}footer #usage-open{font-size
 .history-file small{display:block}
 .history-review{border:1px solid var(--line);border-radius:10px;padding:16px;margin-top:20px;overflow-wrap:anywhere}
 @media(max-width:600px){.native-request{padding:12px}.native-request .section-head,.history-file .section-head{align-items:flex-start;flex-wrap:wrap}}
+/* Composer references and shortcuts use the same plain controls as attachment selection. */
+#composer-contexts{display:flex;flex-wrap:wrap;gap:7px;margin:8px 0}
+#composer-contexts[hidden],.composer-menu[hidden]{display:none}
+#composer-contexts .context-chip{max-width:100%;min-width:0}
+#composer-contexts .context-chip>button:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;font-size:12px}
+.composer-menu{border:1px solid var(--line);border-radius:10px;background:var(--surface);max-height:310px;overflow-y:auto;margin:8px 0;padding:5px}
+.composer-menu>button{display:grid;gap:3px;width:100%;text-align:left;border-radius:6px;padding:9px 11px;overflow-wrap:anywhere}
+.composer-menu>button small{color:var(--muted);font-size:11px}
+.composer-menu>button.selected{background:color-mix(in srgb,var(--accent) 10%,transparent)}
+.message-actions{display:flex;flex-wrap:wrap;gap:6px 14px}
+.message-actions .text-button{font-size:12px}
+.context-preview{white-space:pre-wrap;overflow-wrap:anywhere;max-height:60vh;overflow:auto;font-size:13px}
+.goal-outcome{white-space:pre-wrap;overflow-wrap:anywhere}
+@media(max-width:600px){.composer-bottom{flex-wrap:wrap}.composer-menu{max-height:230px}.message-actions button{min-height:36px}}

@@ -30,9 +30,13 @@ def channel(process,execution,errors):
     def read_events():
         while True:
             execution.check();execution.requests.expire()
+            if execution.retry_check_at is not None and time.time()>=execution.retry_check_at:
+                execution.retry_check_at=None
+                if execution.retry_check:execution.retry_check()
             if not getattr(execution,'protocol_ready',False) and time.monotonic()-started>45:
                 raise ValueError('The native app did not initialize. No AI request was resubmitted.')
-            try:event=events.get(timeout=.25)
+            wait=.25 if execution.retry_check_at is None else min(.25,max(.001,execution.retry_check_at-time.time()))
+            try:event=events.get(timeout=wait)
             except queue.Empty:continue
             if event is None:return
             yield event
@@ -165,12 +169,35 @@ def codex_run(command,cwd,prompt,native_id,model,effort,update,env,execution,chi
 def agent_lines(process,kind,prompt,native_id,execution,errors):
     """Yield ordinary native events to the existing reply/usage/delegation parser."""
     send,events,close=channel(process,execution,errors);finished=False
+    def retry_check():
+        reason=execution.continuation_guard()
+        if reason:
+            send({'id':'aura-abort-retry','type':'abort_retry'})
+            execution.continuation_changed({'continuation_note':reason,'progress':'Continuation needs review'})
+    execution.retry_check=retry_check
     if kind=='claude':
         send({'type':'control_request','request_id':'aura-init','request':{'subtype':'initialize','hooks':None}})
     else:send({'id':'aura-state','type':'get_state'})
     try:
         for event in events:
             typ=event.get('type')
+            if kind in {'pi','omp'} and getattr(execution,'continuation',None) is not None:
+                if typ=='auto_retry_start':
+                    delay=event.get('delayMs');until=execution.continuation.get('until')
+                    reason=execution.continuation_guard()
+                    if not reason and (not isinstance(delay,(float,int)) or delay<0):reason='The native app did not report a retry time. Continue manually.'
+                    if not reason and until and time.time()+delay/1000>=until:reason='The native retry would occur after this assignment’s continuation expiry.'
+                    if not reason:reason=execution.claim_continuation()
+                    if reason:
+                        send({'id':'aura-abort-retry','type':'abort_retry'})
+                        execution.continuation_changed({'continuation_note':reason,'progress':'Waiting for manual continuation'})
+                    else:
+                        retry_at=time.time()+delay/1000
+                        execution.retry_check_at=max(time.time(),retry_at-.05)
+                        execution.continuation_changed({'retry_at':retry_at,'progress':'Waiting for the native app to retry','continuation_note':'Native retry scheduled. Availability is not guaranteed.'})
+                elif typ=='auto_retry_end':
+                    execution.retry_check_at=None;execution.release_continuation()
+                    execution.continuation_changed({'retry_at':None,'progress':'Continuing the assignment' if event.get('success') else 'Native retries ended'})
             if kind=='claude':
                 if typ=='control_response' and event.get('response',{}).get('request_id')=='aura-init':
                     if event['response'].get('subtype')=='error':raise ValueError(event['response'].get('error','Claude initialization failed.'))
@@ -240,6 +267,7 @@ def agent_lines(process,kind,prompt,native_id,execution,errors):
                         finished=True;break
         if not finished:raise ValueError(errors.message('The native connection closed before completing. Open its saved chat before retrying.'))
     finally:
+        execution.retry_check_at=None
         close();execution.requests.close();errors.close_input(process)
         try:process.wait(timeout=3)
         except subprocess.TimeoutExpired:process.terminate();process.wait(timeout=5)

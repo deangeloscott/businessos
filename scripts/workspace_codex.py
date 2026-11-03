@@ -249,6 +249,8 @@ def history(command, cwd, native_id):
             if role == 'user' and (text.lstrip().startswith('<environment_context>') or
                                    (text.startswith('# AGENTS.md instructions for ') and '<environment_context>' in text)):
                 continue
+            from workspace_context import message_ref
+            aura_ref=message_ref(text) if role=='user' else ''
             if role == 'user' and '\nUser request:\n' in text:
                 text = text.split('\nUser request:\n', 1)[1]
                 if text.startswith('Welcome me to my AURA workspace'):
@@ -256,7 +258,7 @@ def history(command, cwd, native_id):
             candidate=workspace_chats.brief(text) if role=='assistant' else None
             text = workspace_chats.clean(re.sub(r'(?m)^\s*AURA_SETUP[^\n]*', '', text)).strip()
             if text:
-                messages.append({'role': role, 'text': text, 'at': row.get('timestamp'), 'agent': 'Codex', 'model': model, 'effort': effort})
+                messages.append({'role': role, 'text': text, 'at': row.get('timestamp'),**({'request_id':aura_ref} if aura_ref else {}), 'agent': 'Codex', 'model': model, 'effort': effort})
             if candidate:brief=dict(candidate,through=len(messages),at=workspace_usage.timestamp(row.get('timestamp')))
     return {**({'subagents':list(delegation.items.values())} if delegation.items else {}),
             'messages': messages, 'model': model, 'effort': effort, 'usage': usage, 'native_id': native_id,
