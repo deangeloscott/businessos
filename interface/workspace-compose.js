@@ -23,7 +23,6 @@ window.auraCompose=(()=>{
     host.hidden=!items.length&&!goalId;
     const markup=(goalId?`<span class="context-chip goal-chip"><button type="button" data-compose-goal="${esc(goalId)}" title="Open goal">Goal: ${esc(name)}</button><button type="button" data-compose-clear-goal aria-label="Remove goal from this chat">×</button></span>`:'')+items.map((r,i)=>`<span class="context-chip"><button type="button" data-compose-inspect="${i}" title="Review selected context">${esc(r.label||r.id)}</button><button type="button" data-compose-remove="${i}" aria-label="Remove ${esc(r.label||r.id)}">×</button></span>`).join('');
     if(host.innerHTML!==markup)host.innerHTML=markup;
-    const continuation=$('#chat-continuation');if(continuation)continuation.hidden=!goalId||!state.chatMeta;
     const button=$('#choose-goal');if(button)button.textContent=goalId?'Change goal':'Goal';
   }
   function add(item){
@@ -115,8 +114,9 @@ window.auraCompose=(()=>{
     if(item.kind==='file')return openFileWorkspace(item.id);
     if(item.kind==='record')return recordDetails(item.id);
     if(item.kind==='goal')return openGoal(item.id);
+    if(item.kind==='library')return openLibrary(item.id,item.variant||'');
     const key=chatScope(),data=await api('/api/context/resolve',{business:state.business,references:[compact(item)]});if(key!==chatScope())return;
-    details(item.label||'Selected context',`<pre class="context-preview">${esc(data.text)}</pre>`,'context');
+    const preview=data.previews?.[0];details(item.label||'Saved result',preview?`<div class="saved-result-preview">${chatMarkdown(preview.text)}</div>`:`<pre class="context-preview">${esc(data.text)}</pre>`,'context');
   }
   function receipt(index){
     const row=state.chat[index];if(!row)return;
@@ -133,7 +133,7 @@ window.auraCompose=(()=>{
   async function openGoal(id){
     const key=scope(),request=++viewTicket;details('Goal','<p role="status">Reading goal…</p>','context');
     const loading=state.fileDetailTicket,host=$('#detail-content'),data=await api('/api/goals?'+query({id}));if(request!==viewTicket||!same(key,loading,host))return;
-    const g=data.goal;details(g.name,`<div class="inline-actions"><button type="button" class="primary" data-goal-work="${esc(id)}">Work on this goal</button><button type="button" class="secondary" data-goal-edit="${esc(id)}">Edit goal</button></div><p class="row-meta">${esc(human(g.status||'active'))}${g.horizon?' · '+esc(g.horizon):''}</p>${g.target!==undefined?`<p class="goal-outcome">${esc(pretty(g.target))}</p>`:''}<h3>Chats & next steps</h3><label class="goal-chat-search" ${data.chats.length<=20?'hidden':''}>Find linked work<input id="goal-chat-find" type="search" class="search" placeholder="Search chats and next steps…"></label><div id="goal-chats"></div><button type="button" class="text-button" id="goal-chats-more" hidden>Show more chats</button><h3>Saved results</h3>${data.assets.map(a=>`<button type="button" class="row" data-file="asset/${esc(a.id)}">${esc(a.name)}</button><button type="button" class="text-button" data-goal-unlink-asset="${esc(a.id)}" data-goal-id="${esc(id)}">Unlink</button>`).join('')||empty('No saved results linked yet.')}<button type="button" class="text-button" data-goal-asset="${esc(id)}">Link a saved file</button><h3>Recurring tasks</h3><div id="goal-tasks">Reading linked tasks…</div><button type="button" class="text-button" data-goal-task="${esc(id)}">Add recurring task</button>`,'context');
+    const g=data.goal;details(g.name,`<div class="inline-actions"><button type="button" class="primary" data-goal-work="${esc(id)}">Work on this goal</button><button type="button" class="secondary" data-goal-edit="${esc(id)}">Edit goal</button>${state.chatMeta&&goal()===id?'<button type="button" class="text-button" id="chat-continuation">Chat continuation</button>':''}</div><p class="row-meta">${esc(human(g.status||'active'))}${g.horizon?' · '+esc(g.horizon):''}</p>${g.target!==undefined?`<p class="goal-outcome">${esc(pretty(g.target))}</p>`:''}<h3>Chats & next steps</h3><label class="goal-chat-search" ${data.chats.length<=20?'hidden':''}>Find linked work<input id="goal-chat-find" type="search" class="search" placeholder="Search chats and next steps…"></label><div id="goal-chats"></div><button type="button" class="text-button" id="goal-chats-more" hidden>Show more chats</button><h3>Saved results</h3>${data.assets.map(a=>`<button type="button" class="row" data-file="asset/${esc(a.id)}">${esc(a.name)}</button><button type="button" class="text-button" data-goal-unlink-asset="${esc(a.id)}" data-goal-id="${esc(id)}">Unlink</button>`).join('')||empty('No saved results linked yet.')}<button type="button" class="text-button" data-goal-asset="${esc(id)}">Link a saved file</button><h3>Recurring tasks</h3><div id="goal-tasks">Reading linked tasks…</div><button type="button" class="text-button" data-goal-task="${esc(id)}">Add recurring task</button>`,'context');
     const ticket=state.fileDetailTicket;let limit=20;
     const paintChats=()=>{const q=$('#goal-chat-find').value.trim().toLocaleLowerCase(),rows=data.chats.filter(c=>(c.title+' '+(c.summary||'')).toLocaleLowerCase().includes(q));$('#goal-chats').innerHTML=rows.slice(0,limit).map(c=>`<button type="button" class="row" data-chat="${esc(c.id)}"><span><strong>${esc(c.title)}</strong><small class="row-meta">${esc(data.running_chats.includes(c.id)?'Working':c.work_state==='waiting_for_usage'?'Paused after usage limit':c.status==='working'?'Last observed working':human(c.status||'Saved'))}${c.summary?' · '+esc(c.summary):''}</small></span></button>`).join('')||empty(q?'No matching linked chats.':'No chats linked yet.');$('#goal-chats-more').hidden=rows.length<=limit;};
     $('#goal-chat-find').oninput=()=>{limit=20;paintChats();};$('#goal-chats-more').onclick=()=>{limit+=20;paintChats();};paintChats();
@@ -216,5 +216,6 @@ window.auraCompose=(()=>{
   },true);
   document.addEventListener('click',event=>{if(!event.target.closest('#chat-form'))closeMenu();});
   if('pendingComposerDraft' in state)restore(state.pendingComposerDraft);
+  if(state.hydrated)queueMicrotask(()=>{state.formattedSource=null;showMessages();});
   return {render:paintComposer,actions,draft,restore,choose,openGoal,editGoal,closeMenu,assignTask,prepareContinuation,reuse};
 })();

@@ -53,6 +53,7 @@ import workspace_history
 import workspace_permissions
 import workspace_context
 import workspace_goals
+import workspace_recovery
 from configure_workspace import configure
 from workspace_execution import Execution, Stopped
 from workspace_connections import Connections, PRESETS
@@ -411,6 +412,7 @@ class Workspace:
         if not all((self.static / name).is_file() for name in ('index.html', 'app.js', 'style.css')):
             raise ValueError('The interface folder needs index.html, app.js, and style.css.')
         self.lock = threading.RLock()
+        self.recovery_lock = threading.Lock()
         self.job = None
         self.execution = None
         self.jobs = {}
@@ -1275,7 +1277,7 @@ class Workspace:
 
     @staticmethod
     def chat_revision(chat):
-        return tuple(chat.get(k) for k in ('updated','native_id','model','effort','status','model_choice_pending','title','title_edited','archived','workspace','native_workspace'))
+        return tuple(chat.get(k) for k in ('updated','native_id','model','effort','status','model_choice_pending','title','title_edited','archived','workspace','native_workspace'))+(workspace_recovery.revision(chat),)
 
     def conversation(self, bid, ident=None, refresh=False):
         with self.lock:
@@ -1298,6 +1300,7 @@ class Workspace:
             path = self.chat_display_path(chat['id'])
             shown = json.loads(path.read_text(encoding='utf-8')) if path.is_file() else []
             result={'messages':shown,'chat':chat,'job':job}
+            result['recovery']=workspace_recovery.describe(chat,job,workspace_recovery.saved_observation(shown))
             if not shown and chat.get('native_id') and not path.is_file():result['history_note']='Use Refresh chat to read this conversation from its AI app.'
             return result
         observed_marker=workspace_native_chats.marker(chat.get('source_file'))
@@ -1347,7 +1350,7 @@ class Workspace:
                 from _common import write_json_atomic
                 write_json_atomic(display,result['messages'])
             for key in ('chat_brief','summary','summary_updated','title'):result.pop(key,None)
-            return dict(result, chat=dict(chat), job=job)
+            return dict(result, chat=dict(chat), job=job,recovery=workspace_recovery.describe(chat,job,result.get('native_observation')))
 
     def save_chat_turn(self, chat, job, text, final=False, candidate=None):
         """A recovery display, never supplied as native model context."""
@@ -1360,6 +1363,7 @@ class Workspace:
             shown.append({'role':'assistant', 'text':job['reply'], 'at':job['updated'],
                           'agent':job.get('agent',self.agent['name']), 'model':job.get('model',chat['model']), 'effort':job.get('effort',chat['effort']),
                           'request_id':job['id'], 'error_detail':job.get('error_detail','')})
+            shown[-1]['status']=job['status']
             if job['status']=='complete' and chat.get('source_file'):
                 chat['source_marker']=workspace_native_chats.marker(chat['source_file'])
             if job['status']=='complete' and not job.get('keep_warm'):
@@ -1907,6 +1911,7 @@ class Workspace:
             chat = self.active_chat(bid) if chat_id is None else next((c for c in self.preferences['chats'] if c['id']==chat_id and c['business_id']==bid),None)
             if chat_id and not chat:raise ValueError('This chat does not belong to this workspace.')
             if chat and any(j.get('chat_id')==chat['id'] for j in self.running_jobs(workspace_root())):raise ValueError('This chat is still working. Use another chat, or stop this request first.')
+            if chat and workspace_recovery.process_state(chat.get('recovery') or {})=='running':raise ValueError('This request is still running in its AI app. Check its latest reply before continuing.')
             if chat and chat['agent'] != self.connection_kind:
                 raise ValueError('Open this chat in its original AI connection, or start a new chat.')
             if chat and Path(chat.get('workspace') or workspace_root()).resolve()!=workspace_root().resolve():
@@ -1976,6 +1981,7 @@ class Workspace:
             job['new_native_chat']=native and not chat.get('native_id')
             job['subagents']=copy.deepcopy(workspace_delegation.retain(chat.get('subagents',[])))
             job.update(chat_id=chat['id'], model=chat['model'], effort=chat['effort'])
+            workspace_recovery.begin(chat,job)
             self.save_chat_turn(chat, job, text)
             self.save_preferences()
             if welcome:
@@ -1988,6 +1994,12 @@ class Workspace:
                 self.jobs.pop(old['id'],None);self.executions.pop(old['id'],None)
             self.jobs[job['id']]=job
             execution = self.execution = Execution()
+            def started(process):
+                with self.lock:
+                    workspace_recovery.attach(chat,job,process)
+                    try:self.save_preferences()
+                    except OSError:job['recovery_warning']='Work is running, but its recovery reference could not be saved.'
+            execution.on_started=started
             execution.interactive = native
             execution.permission = workspace_permissions.validate(self.connection_kind,chat.get('permission_mode') or self.preferences.get('harness_permissions',{}).get(self.connection_kind,'native'))
             job['permissions']=workspace_permissions.describe(self.connection_kind,execution.permission)
@@ -2045,6 +2057,11 @@ class Workspace:
                         merged={row['id']:dict(row) for row in job.get('subagents',[])}
                         for ident,row in observed.items():merged[ident]={**merged.get(ident,{}),**row}
                         values['subagents']=workspace_delegation.retain(merged.values())
+                        pending_children=any(c.get('status') in {'pending','working','unconfirmed'} for c in values['subagents'])
+                        if chat.get('recovery',{}).get('background_work',False)!=pending_children:
+                            chat['recovery']['background_work']=pending_children
+                            try:self.save_preferences()
+                            except OSError:job['recovery_warning']='Work is running, but its recovery reference could not be saved.'
                     if values.get('native_id') and not job.get('native_id'):
                         values.setdefault('progress', 'Connected. Waiting for your AI')
                     if 'reply' in values:
@@ -2174,6 +2191,7 @@ class Workspace:
                             if uncertain:job['stop_note']='The local Hermes connection stopped. Hermes may still be working in its gateway; check its outcome before continuing.'
                             if job['status'] in {'complete','stopped'}:chat.pop('continuation',None)
                             chat.update(status='working' if uncertain else job['status'], updated=job['updated'])
+                            workspace_recovery.finish(chat,job)
                             if job.get('goal_id'):
                                 chat['work_state']='waiting_for_usage' if job['status']=='error' and setup_error(job.get('error_detail') or job['reply'])==SETUP_ERRORS['limit'] else 'needs_input' if job['status']=='error' else job['status']
                             try:
@@ -2411,6 +2429,9 @@ def handler_for(app):
                     self.send(200, {'chat':result['chat'],'history_note':note})
                 elif route == '/api/conversation':
                     self.send(200, app.conversation(selected(query.get('business')),query.get('chat_id'),query.get('refresh')=='1'))
+                elif route == '/api/chats/recovery':
+                    with app.lock:owner=copy.copy(app);bid=selected(query.get('business'))
+                    with workspace_scope(owner.workspace_path):self.send(200,workspace_recovery.check(owner,bid,query.get('id')))
                 elif route == '/api/library':
                     result=app.cached_read(('library',),lambda:app.library_items(query.get('discover')=='1'),force=query.get('discover')=='1' or query.get('refresh')=='1')
                     self.send(200, result if query.get('details')=='1' else result['items'])
@@ -2517,6 +2538,16 @@ def handler_for(app):
                     if not isinstance(data.get('digest'),str):raise ValueError('Reopen this message before reusing it.')
                     with app.lock:self.send(200,workspace_context.reusable(app,selected(data.get('business')),data.get('chat_id'),data.get('index'),data['digest']))
                     return
+                if route == '/api/chats/recovery':
+                    with app.lock:owner=copy.copy(app);bid=selected(data.get('business'))
+                    with workspace_scope(owner.workspace_path):
+                        action=data.get('action','check')
+                        if action=='check':result=workspace_recovery.check(owner,bid,data.get('id'))
+                        elif action=='prepare':
+                            if not isinstance(data.get('revision'),str) or len(data['revision'])!=64:raise ValueError('Check this chat’s latest work before continuing.')
+                            result=workspace_recovery.prepare(owner,bid,data.get('id'),data['revision'],data.get('reviewed') is True)
+                        else:raise ValueError('Choose Check or Continue chat.')
+                    self.send(200,result);return
                 if route == '/api/context/resolve':
                     with app.lock:self.send(200,workspace_context.resolve(app,selected(data.get('business')),data.get('references'),data.get('goal_id')))
                     return
@@ -2902,10 +2933,15 @@ def handler_for(app):
                     elif route == '/api/profile':
                         self.send(200,app.profile(data))
                     elif route == '/api/chats/recover':
-                        bid=selected(data.get('business'));chat=next((c for c in app.preferences['chats'] if c['id']==data.get('id') and c['business_id']==bid),None)
+                        bid=selected(data.get('business'))
+                        # Legacy clients explicitly confirm that they checked the
+                        # native chat. Still protect any surviving exact process.
+                        chat=next((c for c in app.preferences['chats'] if c['id']==data.get('id') and c['business_id']==bid),None)
                         if not chat:raise ValueError('Choose a chat in this workspace.')
-                        if any(j.get('chat_id')==chat['id'] for j in app.running_jobs(workspace_root())):raise ValueError('This request is still running here. Stop it before continuing.')
-                        chat['status']='stopped';app.save_preferences();self.send(200,{'ok':True})
+                        if any(j.get('chat_id')==chat['id'] for j in app.running_jobs(workspace_root())) or workspace_recovery.process_state(chat.get('recovery') or {})=='running':raise ValueError('This request is still running. Check it before continuing.')
+                        chat['status']='stopped';chat.pop('continuation',None)
+                        if chat.get('recovery'):chat['recovery']['status']='reviewed'
+                        app.save_preferences();self.send(200,{'ok':True})
                     elif route == '/api/preferences':
                         if 'library' in data:
                             bid=selected(data.get('business'))

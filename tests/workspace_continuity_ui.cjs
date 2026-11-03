@@ -1,7 +1,7 @@
 /* Real view functions with a small DOM fixture; no browser or frontend dependency. */
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
 const nodes=new Map(),listeners={},calls=[];let pending=[];
-function node(id){if(!nodes.has(id))nodes.set(id,{innerHTML:'',textContent:'',hidden:false,isConnected:true,value:'native',dataset:{},querySelectorAll:()=>[],querySelector:s=>node(id+' '+s),contains:()=>false,addEventListener(){},scrollIntoView(){},close(){this.open=false;}});return nodes.get(id);}
+function node(id){if(!nodes.has(id))nodes.set(id,{innerHTML:'',textContent:'',hidden:false,isConnected:true,value:'native',dataset:{},querySelectorAll:()=>[],querySelector:s=>node(id+' '+s),contains:()=>false,addEventListener(){},scrollIntoView(){},setAttribute(){},focus(){},close(){this.open=false;}});return nodes.get(id);}
 const state={data:{workspace:'A',connection:{selected:'codex',choices:[{id:'codex',name:'Codex',available:true}]}},business:'studio',chatMeta:{id:'chat',agent:'codex'},fileDetailTicket:0};
 const context={window:{},document:{activeElement:null,addEventListener:(name,fn)=>(listeners[name]??=[]).push(fn)},state,$:node,
   esc:v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),
@@ -9,6 +9,8 @@ const context={window:{},document:{activeElement:null,addEventListener:(name,fn)
   details:(title,html)=>{state.fileDetailTicket++;node('#detail').open=true;node('#detail-content').innerHTML=html;},
   attempt:fn=>{const p=Promise.resolve().then(fn);pending.push(p);return p;},
   api:(path,data)=>new Promise((resolve,reject)=>calls.push({path,data,resolve,reject})),
+  chatScope:()=>JSON.stringify([state.data.workspace,state.business,state.chatMeta?.id||'']),
+  rememberChatDraft(){},showMessages(){},chatControls(){},renderShell(){},taskStatus(){},pollJob(){},
 };
 vm.createContext(context);vm.runInContext(fs.readFileSync(process.argv[2],'utf8'),context);
 const flush=()=>new Promise(resolve=>setImmediate(resolve));
@@ -44,5 +46,12 @@ const permission={choices:[{id:'native',name:'Use harness settings',native:'No o
   calls.at(-1).resolve({restored:true,warning:'Restored successfully, but local history could not be updated.'});await Promise.all(pending);
   assert.match(node('#history-restore-status').textContent,/Restored successfully, but local history/);
   assert.equal(node('#history-restore').disabled,true,'Successful restore with a warning must not invite duplicate submission');
+  pending=[];state.needsCheck=true;state.busy=false;state.recovery={state:'interrupted',can_continue:true,message:'Review recent work.',revision:'same'};
+  context.window.auraContinuity.renderRecovery();assert.match(node('#chat-reconnect').innerHTML,/Continue chat/);assert.doesNotMatch(node('#chat-reconnect').innerHTML,/Traceback|PID|request_id/);
+  node('#request').value='Keep my current draft';click('recovery-continue');await flush();
+  assert.equal(calls.at(-1).data.action,'prepare');calls.at(-1).resolve({workspace:'A',messages:[],chat:{id:'chat',agent:'codex',status:'stopped'},recovery:{state:'stopped'},draft:'Continue remaining work.'});await Promise.all(pending);
+  assert.equal(node('#request').value,'Keep my current draft','Recovery must not replace an unsent draft');assert.equal(calls.some(c=>c.path==='/api/chat'),false,'Recovery must never submit a prompt');
+  pending=[];state.needsCheck=true;click('recovery-check');await flush();const slow=calls.at(-1);state.business='another';slow.resolve({workspace:'A',messages:[{text:'Wrong business'}],chat:{id:'chat'},recovery:{state:'complete'}});await Promise.all(pending);
+  assert.equal(state.chat.length,0,'Late recovery must not replace another workspace or business');
   console.log('Continuity views passed: escaped native requests, stable inputs, scope isolation, stale-panel protection, and explicit native defaults.');
 })().catch(error=>{console.error(error);process.exitCode=1;});

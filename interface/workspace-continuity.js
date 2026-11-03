@@ -6,6 +6,58 @@ window.auraContinuity=(()=>{
   const scope=()=>JSON.stringify([state.data?.workspace,state.business]);
   const params=extra=>new URLSearchParams({business:state.business,...extra});
   const current=(key,ticket,host)=>key===scope()&&ticket===viewTicket&&viewDetailTicket===state.fileDetailTicket&&host?.isConnected&&$('#detail').open;
+  let recoveryTicket=0,recoveryPending='',recoveryLast='',recoveryAt=0,recoveryError='',recoveryMarkup='';
+
+  function acceptRecovery(result){
+    state.recovery=result.recovery||null;
+    state.needsCheck=!state.busy&&(result.chat?.status==='working'||state.recovery&&['running_elsewhere','interrupted','uncertain'].includes(state.recovery.state));
+  }
+  function renderRecovery(){
+    let host=$('#chat-reconnect');if(!host){host=document.createElement('div');host.id='chat-reconnect';host.className='chat-recovery';host.setAttribute('role','status');$('#request-recovery').after(host);}
+    if(host.className!=='chat-recovery')host.className='chat-recovery';
+    host.setAttribute('role','status');
+    const key=chatScope(),r=state.recovery,pending=recoveryPending===key;
+    const show=!state.busy&&(state.needsCheck||state.connectionInterrupted||pending);
+    host.hidden=!show;if(!show){host.innerHTML='';recoveryMarkup='';return;}
+    const message=pending?'Checking the latest work…':recoveryError||r?.message||'The connection ended. Check the latest work before continuing.';
+    const action=!pending&&r?.can_continue?`<button type="button" class="secondary" id="recovery-continue">${r.state==='uncertain'?'I’ve reviewed · Continue':'Continue chat'}</button>`:'';
+    const html=`<p>${esc(message)}</p><div class="inline-actions">${action}<button type="button" class="text-button" id="recovery-check" ${pending?'disabled':''}>${pending?'Checking…':state.connectionInterrupted?'Reconnect':'Check again'}</button></div>`;
+    if(html!==recoveryMarkup){const focus=host.contains(document.activeElement)?document.activeElement.id:'';host.innerHTML=html;recoveryMarkup=html;if(focus)$('#'+focus)?.focus({preventScroll:true});}
+    $('#request-recovery').hidden=true;
+  }
+  async function checkRecovery(force=false){
+    if(state.busy||state.navigating||!state.chatMeta||document.hidden)return;
+    const key=chatScope();if(recoveryPending===key||!force&&recoveryLast===key&&Date.now()-recoveryAt<10000)return;
+    if(!force&&!state.needsCheck&&!state.connectionInterrupted&&!['working','error'].includes(state.chatMeta.status))return;
+    const ticket=++recoveryTicket;recoveryPending=key;recoveryError='';renderRecovery();
+    try{
+      const result=await api('/api/chats/recovery?'+params({id:state.chatMeta.id}));
+      if(key!==chatScope()||ticket!==recoveryTicket||state.busy||result.workspace!==state.data.workspace)return;
+      const view=$('#conversation'),top=view.scrollTop,follow=view.scrollHeight-view.clientHeight-top<48;
+      state.chat=result.messages;state.chatMeta=result.chat;state.liveJob=result.job;state.busy=result.job?.status==='working';state.activeJob=state.busy?result.job:null;
+      state.connectionInterrupted=false;acceptRecovery(result);recoveryLast=key;recoveryAt=Date.now();
+      showMessages(follow);if(!follow)view.scrollTop=top;chatControls();renderShell();
+      if(state.busy)attempt(()=>pollJob(result.job));else if(result.recovery.state==='complete')taskStatus('Recovered reply');else if(state.needsCheck)taskStatus('');
+    }catch{if(key===chatScope()&&ticket===recoveryTicket)recoveryError='The latest work couldn’t be checked. Reopen Aura or your AI app, then try again.';}
+    finally{if(ticket===recoveryTicket){recoveryPending='';renderRecovery();}}
+  }
+  async function continueRecovery(){
+    const key=chatScope(),r=state.recovery;if(!r?.can_continue||recoveryPending===key)return;
+    const ticket=++recoveryTicket;recoveryPending=key;recoveryError='';renderRecovery();
+    try{
+      const result=await api('/api/chats/recovery',{business:state.business,id:state.chatMeta.id,action:'prepare',revision:r.revision,reviewed:r.state==='uncertain'});
+      if(key!==chatScope()||ticket!==recoveryTicket||state.busy||result.workspace!==state.data.workspace)return;
+      state.chat=result.messages;state.chatMeta=result.chat;state.connectionInterrupted=false;acceptRecovery(result);
+      if(!$('#request').value.trim()){
+        $('#request').value=result.draft;
+        if(result.context&&!(state.selectedFiles?.length||state.contextReferences?.length)){
+          state.selectedFiles=result.context.files||[];state.contextReferences=result.context.references||[];renderComposerFiles();
+        }
+      }
+      rememberChatDraft();showMessages();chatControls();renderShell();taskStatus('Ready to continue');$('#request').focus();
+    }catch(error){if(key===chatScope()&&ticket===recoveryTicket)recoveryError=error.status===400?'This chat changed. Check its latest work before continuing.':'Aura couldn’t reconnect. Try again when it’s available.';}
+    finally{if(ticket===recoveryTicket){recoveryPending='';renderRecovery();}}
+  }
 
   function renderRequests(){
     const host=$('#native-requests');if(!host)return;
@@ -114,6 +166,9 @@ window.auraContinuity=(()=>{
     if(id==='harness-permissions')attempt(()=>permissions(false));
     if(id==='other-work')attempt(activity);
     if(id==='workspace-history')attempt(history);
+    if(id==='recovery-check')attempt(()=>checkRecovery(true));
+    if(id==='recovery-continue')attempt(continueRecovery);
   });
-  return {renderRequests,history};
+  if(state.hydrated)queueMicrotask(()=>{acceptRecovery({chat:state.chatMeta,recovery:state.recovery});renderRecovery();attempt(()=>checkRecovery());});
+  return {renderRequests,history,renderRecovery,acceptRecovery,checkRecovery};
 })();

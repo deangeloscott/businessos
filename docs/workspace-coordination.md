@@ -141,6 +141,57 @@ workspace checks. Custom interfaces should call these operations rather than
 implement native grants or file writes themselves. Imported assistant/workspace
 packages cannot carry sign-ins, permission overrides, grants or live requests.
 
+## Reconnect interrupted work
+
+Aura checks the selected unfinished chat when it opens or when you return to it.
+The usual experience stays unchanged. When attention is needed, a small message
+appears below the composer with **Check again** and, when appropriate,
+**Continue chat**. An uncertain gateway outcome asks you to review recent work
+before continuing. Neither action submits an assignment automatically.
+
+Local work receipts retain the existing request reference and the exact native
+process incarnation. A surviving process blocks a second request to that chat,
+even after Aura restarts. Aura does not adopt or kill an unowned process. Check
+again reads its saved display; once that process ends, supported native history
+readers can retrieve the latest result. If the native app does not expose live
+progress to this new connection, Aura does not pretend to stream it.
+
+A saved final reply for the matching request, or an explicit matching native
+final outcome, can recover a completed chat. An earlier reply, an intermediate
+tool response, or an absent process alone does not prove completion. A process
+check that cannot establish identity remains uncertain. Separate gateways can
+outlive their local connection, so their unfinished outcome requires review.
+
+Continue prepares a short request to inspect existing work and finish only what
+remains. An existing draft is kept. You review and send deliberately. The API
+restores the original assignment and selected references for review if the first
+connection ended before its native session could be saved; it cannot resume a
+native session whose identity is unknown. The API
+checks the latest recovery revision and process state again; a second tab cannot
+use an old recovery decision to bypass live work. Deliberate Stop stays stopped,
+and previous approvals are never replayed. Existing supported native retries
+remain owned by their harness; these checks do not add crash-restart loops,
+quota-reset wakeups, task replay, another scheduler, or a background model.
+
+Checks happen at interaction boundaries, share a small short-lived metadata
+cache, and keep slow native reads outside the UI lock. They use the portable
+product's existing helpers and OS process information, with no workstation-tools,
+tmux, cloud account, extra database, or third-party dependency. If Aura's optional
+start-at-login setting is enabled, the same checks apply on reopening the chat;
+this does not itself restart an interrupted assignment. Native recurring tasks
+continue to refresh through their existing task/result inventory.
+
+Custom clients use GET `/api/chats/recovery?business=<id>&id=<chat-id>` or POST
+to that endpoint with `action: "check"`. POST `action: "prepare"` includes the
+returned `revision` and, for an uncertain result, `reviewed: true`. It returns an
+unsent draft and the current conversation. The same operations are available
+through the running local Aura instance:
+
+```bash
+python scripts/workspace_recovery.py check --workspace <folder> --business-id <id> --chat <chat-id> --url http://127.0.0.1:4187 --json
+python scripts/workspace_recovery.py prepare --workspace <folder> --business-id <id> --chat <chat-id> --revision <reviewed-revision> --reviewed --json
+```
+
 ## Reuse messages and select context
 
 **Copy** copies a message's original text, including Markdown. **Reuse prompt**
@@ -227,6 +278,9 @@ connection must remain running; restarting either does not restart work. Other
 connections use the saved chat and manual continuation. A durable goal survives
 these interruptions, without a second scheduler, repeated model polling,
 automatic model/account switching or a promise to finish unattended.
+Continuation settings are available from the linked goal's view under **Chat
+continuation**. The standard composer keeps the everyday model, permission,
+context and goal controls together without a separate continuation setting.
 
 ```bash
 python scripts/workspace_goals.py list --workspace <folder> --business-id <id> --json

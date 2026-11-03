@@ -18,6 +18,7 @@ class Execution:
         self.permission = 'native'
         self.retry_check_at = None
         self.retry_check = None
+        self.on_started = None
         from workspace_interactions import Requests
         self.requests = Requests()
 
@@ -33,7 +34,9 @@ class Execution:
             else:
                 kwargs['start_new_session'] = True
             self.process = subprocess.Popen(*args, **kwargs)
-            return self.process
+            process=self.process
+        if self.on_started:self.on_started(process)
+        return process
 
     def stop(self):
         with self.lock:

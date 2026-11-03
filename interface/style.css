@@ -336,7 +336,12 @@ footer .footer-actions{flex:none;align-items:center}footer #usage-open{font-size
 .composer-menu>button small{color:var(--muted);font-size:11px}
 .composer-menu>button.selected{background:color-mix(in srgb,var(--accent) 10%,transparent)}
 .message-actions{display:flex;flex-wrap:wrap;gap:6px 14px}
+.chat-stage>.chat-recovery{order:2;width:100%;max-width:var(--chat-width);margin:10px auto;padding:13px 16px;border:1px solid var(--line);border-radius:10px;background:var(--surface);box-sizing:border-box;font-size:13px;line-height:1.6}
+.chat-recovery[hidden]{display:none}.chat-recovery p{margin:0 0 7px}.chat-recovery .inline-actions{flex-wrap:wrap;gap:8px 14px}.chat-recovery button{font-size:12px}
+.composer-bottom{flex-wrap:wrap}.saved-result-preview{overflow-wrap:anywhere;line-height:1.75}.saved-result-preview pre{white-space:pre-wrap;overflow-wrap:anywhere}
+@media(max-width:760px){.chat-recovery button{min-height:40px}}
 .message-actions .text-button{font-size:12px}
+.message .message-actions{margin:8px 0 0;gap:6px 14px}
 .context-preview{white-space:pre-wrap;overflow-wrap:anywhere;max-height:60vh;overflow:auto;font-size:13px}
 .goal-outcome{white-space:pre-wrap;overflow-wrap:anywhere}
 @media(max-width:600px){.composer-bottom{flex-wrap:wrap}.composer-menu{max-height:230px}.message-actions button{min-height:36px}}

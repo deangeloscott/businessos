@@ -130,7 +130,7 @@ def guard(bid,goal_id,basis,policy):
     return ''
 
 
-def live_change(url,bid,payload):
+def live_change(url,bid,payload,route='/api/goals'):
     """Runtime chat choices go through their existing owner, never competing settings writes."""
     from urllib.parse import urlparse
     from urllib.request import Request,urlopen
@@ -145,7 +145,7 @@ def live_change(url,bid,payload):
     headers={'X-Aura-Token':token[1],'X-Aura-Workspace':str(workspace_root()),'Content-Type':'application/json'}
     with urlopen(Request(base+'/api/state',headers=headers),timeout=15) as response:state=json.load(response)
     if Path(state['product']).resolve()!=PRODUCT_ROOT.resolve():raise ValueError('Choose the Aura instance running this product copy.')
-    with urlopen(Request(base+'/api/goals',headers=headers,data=json.dumps({'business':bid,**payload}).encode()),timeout=15) as response:return json.load(response)
+    with urlopen(Request(base+route,headers=headers,data=json.dumps({'business':bid,**payload}).encode()),timeout=15) as response:return json.load(response)
 
 
 def main():

@@ -264,6 +264,8 @@ def history(command, kind, cwd, env, native_id):
     else:
         raise ValueError('Showing the saved display. Antigravity keeps the full native chat; edits made in its app may not appear here.')
     out=[];brief=None
+    from workspace_recovery import native_observation
+    observation=native_observation(messages,kind)
     for message in messages:
         if kind in {'pi','omp'} and message.get('role')=='toolResult' and message.get('toolName') in {'task','subagent'}:
             ident=message.get('toolCallId')
@@ -280,7 +282,7 @@ def history(command, kind, cwd, env, native_id):
                            'agent':{'pi':'Pi','omp':'OMP','claude':'Claude Code','hermes':'Hermes'}[kind]})
         if candidate:brief=dict(candidate,through=len(out),at=workspace_usage.timestamp(at))
     return {**({'subagents':list(delegation.items.values())} if delegation.items else {}),
-            'messages':out,'model':model,'effort':effort,'usage':workspace_usage.messages_usage(messages,kind,window),'native_id':native_id,
+            'messages':out,'model':model,'effort':effort,'usage':workspace_usage.messages_usage(messages,kind,window),'native_id':native_id,'native_observation':observation,
             'chat_brief':brief,'title':native_title,'summary':native_summary,'summary_updated':summary_updated,
             'source_file':source_file,'native_workspace':native_workspace,'resume':subprocess.list2cmdline(resume_command(kind,native_id))}
 

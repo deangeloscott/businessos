@@ -354,9 +354,10 @@ async function hydrateConversation() {
   const result=await api('/api/conversation?business='+encodeURIComponent(state.business));
   if(ticket!==state.hydrateTicket||scope!==chatScope())return;
   state.chat=result.messages;state.chatMeta=result.chat;state.liveJob=result.job;state.busy=result.job?.status==='working';state.activeJob=state.busy?result.job:null;
-  state.needsCheck=result.chat?.status==='working'&&!state.busy;
+  state.needsCheck=result.chat?.status==='working'&&!state.busy;state.recovery=result.recovery||null;window.auraContinuity?.acceptRecovery(result);
   if(result.history_note)notice(result.history_note);
   restoreChatDraft();showMessages();chatControls();
+  if(!state.busy)attempt(()=>window.auraContinuity?.checkRecovery());
   if(state.busy){state.setupStep=result.job.welcome?'checking':state.setupStep;attempt(()=>pollJob(result.job));}
   else if(state.needsCheck)taskStatus('Check this chat in its AI app before continuing.');
   else if(result.job?.status==='error'||result.chat?.status==='error')taskStatus('Needs your attention');
@@ -565,7 +566,7 @@ async function pollJob(job) {
       if(job.welcome){state.welcome=result;state.setupStep=result.status==='complete'?'ready':'failed';}
       const conversation=await api('/api/conversation?business='+encodeURIComponent(business)+'&chat_id='+encodeURIComponent(chatId||''));
       if(!current())return;
-      state.chat=conversation.messages;state.chatMeta=conversation.chat;state.needsCheck=conversation.chat?.status==='working';state.busy=false;state.stopping=false;state.activeJob=null;state.polling=false;
+      state.chat=conversation.messages;state.chatMeta=conversation.chat;state.needsCheck=conversation.chat?.status==='working';state.busy=false;state.recovery=conversation.recovery||null;window.auraContinuity?.acceptRecovery(conversation);state.stopping=false;state.activeJob=null;state.polling=false;
       if(result.status==='error'&&!job.welcome)notice(result.reply,true);
       if(result.preference_warning)notice(result.preference_warning,true);if(result.stop_note)notice(result.stop_note);
       replyAlert(result);showMessages();chatControls();invalidateReads();await refresh(true);renderConnection();return;
@@ -575,7 +576,7 @@ async function pollJob(job) {
     state.busy=false;state.connectionInterrupted=true;state.activeJob=null;state.polling=false;state.stopping=false;
     taskStatus('Connection interrupted. Reconnect to check this chat; your request has not been resent.');
     if(job.welcome){state.setupStep='failed';state.welcome={reply:error.message};}
-    else notice(error.message,true);
+    else notice('The connection was interrupted. Your draft and saved work are still here.',true);
     showMessages();chatControls();
   }
 }
@@ -585,7 +586,7 @@ function chatControls() {
   const previousFolder=state.chatMeta?.workspace&&!sameWorkspace(state.chatMeta.workspace,state.data?.workspace);
   $('#request').disabled=!state.business||state.navigating;
   $('#request').placeholder=state.busy?'Write your next message while this runs…':'Ask a question or describe what you need…';
-  const blocked=previousFolder?'Reconnect this saved conversation to the current workspace before sending.':state.needsCheck?'Check the previous request in its AI app before continuing.':state.connectionInterrupted?'Reconnect to this chat before sending.':state.organizationWorking?'Wait for workspace organization to finish before sending.':'';
+  const blocked=previousFolder?'Reconnect this saved conversation to the current workspace before sending.':state.needsCheck?'Check the latest work before sending.':state.connectionInterrupted?'Reconnect to this chat before sending.':state.organizationWorking?'Wait for workspace organization to finish before sending.':'';
   $('#send').disabled=!state.business||!state.hydrated||state.navigating||state.stopping||state.starting||state.settling||!!blocked;
   $('#send').title=blocked;
   $('#send').textContent=state.navigating?'Loading chat…':state.stopping?'Stopping…':state.starting?'Starting…':state.settling?'Finishing…':state.busy?'Stop ■':state.data?.connection.connected?'Send ↑':state.data?.connection.mode==='copy'?'Copy request ↗':'Connect AI →';
@@ -620,7 +621,7 @@ async function overview() {
   renderMemory();renderQuickFiles();renderSchedules();quickMethods();
 }
 const libraryKinds={Workflow:'Workflows',Recipe:'Recipes',Skill:'Skills',Tool:'Tools',Plugin:'Plugins'};
-function appName(id){return ({codex:'Codex',claude:'Claude Code',pi:'Pi',omp:'OMP',hermes:'Hermes',antigravity:'Google Antigravity'})[id]||id;}
+function appName(id){return ({configured:state.data?.connection.name||'Connected AI',codex:'Codex',claude:'Claude Code',pi:'Pi',omp:'OMP',hermes:'Hermes',antigravity:'Google Antigravity'})[id]||id;}
 function libraryPrefs(){return {favorites:[],recent:[],...state.data.library_preferences};}
 function libraryMarked(item,list='favorites'){return [item.key,...(item.aliases||[])].some(k=>(libraryPrefs()[list]||[]).includes(k));}
 let librarySave=Promise.resolve();
@@ -1609,7 +1610,7 @@ async function showChatDetails(id,note=''){
 }
 function showMessages(latest=false) {
   const failed=!state.busy&&(state.chatMeta?.status==='error'||(!state.chatMeta&&state.liveJob?.status==='error'));
-  $('#request-recovery').hidden=!failed;$('#retry-request').textContent=state.chatMeta?.goal_id?'Prepare continuation':'Edit & retry';
+  $('#request-recovery').hidden=!failed||state.needsCheck;$('#retry-request').textContent=state.chatMeta?.goal_id?'Prepare continuation':'Edit & retry';
   const detail=failed?((state.liveJob?.chat_id===state.chatMeta?.id?state.liveJob?.error_detail:'')||[...state.chat].reverse().find(m=>m.role==='assistant')?.error_detail||''):'';
   $('#request-error-details').hidden=!detail;$('#request-error-text').textContent=detail;
   const conversation=$('#conversation'), top=conversation.scrollTop, chat=state.chatMeta?.id||'';
@@ -1998,13 +1999,13 @@ function restoreChatDraft(){
 function detachChatView(){
   state.navigationTicket=(state.navigationTicket||0)+1;
   state.pollTicket=(state.pollTicket||0)+1;state.hydrateTicket=(state.hydrateTicket||0)+1;
-  state.polling=false;state.busy=false;state.stopping=false;state.starting=false;state.settling=false;state.activeJob=null;state.liveJob=null;state.needsCheck=false;state.connectionInterrupted=false;
+  state.polling=false;state.busy=false;state.stopping=false;state.starting=false;state.settling=false;state.activeJob=null;state.liveJob=null;state.needsCheck=false;state.connectionInterrupted=false;state.recovery=null;
 }
 async function openShellChat(id){
   rememberChatDraft();detachChatView();const root=state.data.workspace,business=state.business,ticket=state.navigationTicket=(state.navigationTicket||0)+1;
   state.navigating=true;chatControls();let result;try{result=await api('/api/chats/open',{business,id});}finally{if(ticket===state.navigationTicket){state.navigating=false;chatControls();}}if(ticket!==state.navigationTicket||root!==state.data.workspace||business!==state.business)return;
   state.view='home';$('#section-dialog').close();$('#detail').close();state.chat=result.messages;state.chatMeta=result.chat;state.liveJob=result.job;state.busy=result.job?.status==='working';state.activeJob=state.busy?result.job:null;
-  state.needsCheck=result.chat?.status==='working'&&!state.busy;state.hydrated=true;restoreChatDraft();showMessages();await refresh();recordShellRoute();closeMobileSidebar();
+  state.needsCheck=result.chat?.status==='working'&&!state.busy;state.recovery=result.recovery||null;window.auraContinuity?.acceptRecovery(result);state.hydrated=true;restoreChatDraft();showMessages();await refresh();recordShellRoute();closeMobileSidebar();
   if(result.history_note)notice(result.history_note);
   if(!result.job||result.job.status!=='working')checkNativeChanges();
   if(result.job?.status==='working')attempt(()=>pollJob(result.job));
@@ -2053,7 +2054,7 @@ async function renderShell(force=true){
   if(signature===state.sidebarSignature)return;state.sidebarSignature=signature;
   $('#sidebar-chat-list').innerHTML=recent.length?recent.slice(0,limit).map(c=>{
     const working=owned.has(c.id),check=c.status==='working'&&!working,unread=state.inbox?.items?.some(n=>n.chat_id===c.id&&!n.read);
-    const status=working?'Working':check?'Check in app':c.status==='error'?'Needs attention':unread?'Reply ready':'';
+    const status=working?'Working':check?'Review work':c.status==='error'?'Needs attention':unread?'Reply ready':'';
     return `<div class="sidebar-chat-row"><button type="button" class="sidebar-chat" data-chat="${esc(c.id)}" aria-current="${c.id===state.chatMeta?.id}" title="${esc(c.title+(status?' · '+status:''))}"><span class="chat-indicator ${working?'working':check||c.status==='error'?'attention':unread?'ready':''}" aria-label="${esc(status)}"></span><span class="chat-name">${esc(c.title||'New chat')}</span>${check?'<small>Check</small>':''}</button><button type="button" class="chat-options" data-edit-chat="${esc(c.id)}" aria-label="Chat options for ${esc(c.title)}" title="Chat options">⋯</button></div>`;
   }).join(''):'<p class="sidebar-empty">Start a conversation. Your useful work stays with this workspace.</p>';
   $('#sidebar-more-chats').hidden=recent.length<=limit;
@@ -2092,6 +2093,7 @@ async function chooseContextFiles(){
   $('#context-file-search').oninput=()=>{limit=60;paint();};paint();$('#context-file-search').focus();
 }
 function renderChatRecovery(){
+  if(window.auraContinuity)return window.auraContinuity.renderRecovery();
   let host=$('#chat-reconnect');if(!host){host=document.createElement('div');host.id='chat-reconnect';host.className='shell-help';$('#request-recovery').after(host);}
   host.hidden=!state.needsCheck&&!state.connectionInterrupted;
   host.innerHTML=state.needsCheck?`<p>Aura cannot confirm the last request’s state after a restart. Check this conversation in ${esc(appName(state.chatMeta?.agent)||'your AI app')}, then continue here.</p><button class="secondary" id="chat-checked">I checked · Continue this chat</button>`:state.connectionInterrupted?'<p>The connection was interrupted. Your request has not been sent again.</p><button class="secondary" id="chat-reconnect-now">Reconnect to this chat</button>':'';
@@ -2153,9 +2155,11 @@ async function addNativeChat(initialKind='',initialId=''){
   $('#native-chat-kind').onchange=load;$('#native-chat-recent').onclick=e=>{const b=e.target.closest('[data-native-id]');if(b)lookup(b.dataset.nativeId);};$('#native-chat-lookup').onsubmit=e=>{e.preventDefault();lookup(e.target.elements.id.value.trim());};if(initialId)await lookup(initialId);else await load();
 }
 async function checkNativeChanges(){
-  if(state.busy||state.navigating||!state.chatMeta?.native_id||document.hidden)return;
+  if(state.busy||state.navigating||!state.chatMeta||document.hidden)return;
+  if(state.needsCheck||state.connectionInterrupted||['working','error'].includes(state.chatMeta.status)){await window.auraContinuity?.checkRecovery();return;}
+  if(!state.chatMeta.native_id)return;
   const scope=chatScope(),id=state.chatMeta.id;if(state.checkingNative===scope)return;state.checkingNative=scope;
-  try{const r=await api('/api/chats/changes?business='+encodeURIComponent(state.business)+'&id='+encodeURIComponent(id));if(scope!==chatScope()||state.busy||!r.changed||r.workspace!==state.data.workspace)return;const top=$('#conversation').scrollTop;state.chat=r.conversation.messages;state.chatMeta=r.conversation.chat;showMessages();$('#conversation').scrollTop=top;renderShell();}catch{/* Manual refresh remains available when a host cannot report local changes. */}finally{if(state.checkingNative===scope)state.checkingNative=false;}
+  try{const r=await api('/api/chats/changes?business='+encodeURIComponent(state.business)+'&id='+encodeURIComponent(id));if(scope!==chatScope()||state.busy||!r.changed||r.workspace!==state.data.workspace)return;const top=$('#conversation').scrollTop;state.chat=r.conversation.messages;state.chatMeta=r.conversation.chat;window.auraContinuity?.acceptRecovery(r.conversation);showMessages();$('#conversation').scrollTop=top;renderShell();}catch{/* Manual refresh remains available when a host cannot report local changes. */}finally{if(state.checkingNative===scope)state.checkingNative=false;}
 }
 async function openShellSearch(){
   if(!state.business)return;shellSearchData=null;const root=state.data.workspace,business=state.business,ticket=++shellSearchTicket;
@@ -2201,7 +2205,7 @@ document.addEventListener('click',event=>attempt(async()=>{
   if(b.dataset.removeContext){state.selectedFiles=state.selectedFiles.filter(p=>p!==b.dataset.removeContext);renderComposerFiles();rememberChatDraft();}
   if(b.id==='reset-appearance'){const p=await api('/api/profile',{reset:true});await api('/api/preferences',{appearance:'system'});state.data.profile=p;state.data.appearance='system';applyProfile(p);applyAppearance('system');await personalize();}
   if(b.id==='chat-checked'){await api('/api/chats/recover',{business:state.business,id:state.chatMeta.id});state.needsCheck=false;await hydrateConversation();}
-  if(b.id==='chat-reconnect-now'){state.connectionInterrupted=false;await hydrateConversation();}
+  if(b.id==='chat-reconnect-now'){if(window.auraContinuity)await window.auraContinuity.checkRecovery(true);else{state.connectionInterrupted=false;await hydrateConversation();}}
   if(b.id==='restore-standard-view'){await api('/api/interface/reset',{});location.reload();}
   if(b.dataset.searchFile||b.dataset.replyFile){$('#search-dialog').close();let ref=b.dataset.searchFile||b.dataset.replyFile;if(b.dataset.replyFile){try{ref=decodeURIComponent(ref);}catch{}}const result=await cachedApi('/api/files?business='+encodeURIComponent(state.business));state.files=result.items;const normalize=p=>{let value=String(p||'').replaceAll('\\','/').replace(/^file:\/\/\/?/i,'').replace(/#L\d+(?:-L?\d+)?$/,'');return /^[a-z]:\//i.test(value)?value.toLowerCase():value;};const f=state.files.find(f=>[f.path,f.local_path,state.data.workspace+'/'+f.path].some(p=>normalize(p)===normalize(ref)));if(f)await fileDetails(f.path);else notice('This file is not in the selected workspace or linked locations. Open Files & media to locate it.',true);}
   if(b.dataset.searchRecord){$('#search-dialog').close();recordDetails(b.dataset.searchRecord);}

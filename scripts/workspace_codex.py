@@ -216,6 +216,7 @@ def history(command, cwd, native_id):
     if not path.is_file():
         raise ValueError('Codex has not made this conversation transcript available yet. Try Refresh or open it in Codex.')
     messages, model, effort, usage, cache_hit, brief = [], '', '', {}, None, None
+    observation={'request_id':'','state':'unknown'}
     with path.open(encoding='utf-8') as stream:
         for line in stream:
             try:
@@ -223,6 +224,9 @@ def history(command, cwd, native_id):
             except ValueError:
                 continue
             payload = row.get('payload', {})
+            if row.get('type')=='event_msg' and observation['request_id']:
+                if payload.get('type')=='task_complete':observation['state']='complete'
+                elif payload.get('type') in {'turn_aborted','task_started'}:observation['state']='unfinished'
             if row.get('type')=='event_msg':delegation.observe('codex',payload,workspace_usage.timestamp(row.get('timestamp')))
             if row.get('type') == 'event_msg' and payload.get('type') == 'token_count':
                 info = payload.get('info') or {}
@@ -251,6 +255,8 @@ def history(command, cwd, native_id):
                 continue
             from workspace_context import message_ref
             aura_ref=message_ref(text) if role=='user' else ''
+            if role=='user':observation={'request_id':aura_ref,'state':'unfinished'}
+            elif role=='assistant' and observation['request_id'] and payload.get('phase')=='final_answer':observation['state']='complete'
             if role == 'user' and '\nUser request:\n' in text:
                 text = text.split('\nUser request:\n', 1)[1]
                 if text.startswith('Welcome me to my AURA workspace'):
@@ -261,6 +267,6 @@ def history(command, cwd, native_id):
                 messages.append({'role': role, 'text': text, 'at': row.get('timestamp'),**({'request_id':aura_ref} if aura_ref else {}), 'agent': 'Codex', 'model': model, 'effort': effort})
             if candidate:brief=dict(candidate,through=len(messages),at=workspace_usage.timestamp(row.get('timestamp')))
     return {**({'subagents':list(delegation.items.values())} if delegation.items else {}),
-            'messages': messages, 'model': model, 'effort': effort, 'usage': usage, 'native_id': native_id,
+            'messages': messages, 'model': model, 'effort': effort, 'usage': usage, 'native_id': native_id,'native_observation':observation,
             'chat_brief':brief,'title':thread.get('name'),'summary':thread.get('summary'),'summary_updated':thread.get('summaryUpdatedAt'),
             'status': thread.get('status'), 'source_file':str(path),'native_workspace':thread.get('cwd',''),'resume': f'codex resume {native_id}'}
