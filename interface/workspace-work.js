@@ -11,7 +11,7 @@ window.auraWork = (() => {
   async function renderAssistants(host){
     host.innerHTML='<p role="status">Loading assistants…</p>';
     const data=await load();if(!data||!host.isConnected||state.view!=='assistants')return;
-    host.innerHTML=`<div class="section-head"><p>Reusable instructions, chats, and recurring tasks.</p><button type="button" class="primary" data-assistant-new>Create assistant</button></div><input type="search" class="search" id="assistant-search" aria-label="Find an assistant" placeholder="Find an assistant…"><div id="assistant-list" class="assistant-list"></div>`;
+    host.innerHTML=`<div class="assistant-search-toolbar"><input type="search" class="search" id="assistant-search" aria-label="Find an assistant" placeholder="Find an assistant…"><button type="button" class="primary" data-assistant-new>Create assistant</button></div><div id="assistant-list" class="assistant-list"></div>`;
     const renderList=()=>{
       const query=$('#assistant-search').value.trim().toLowerCase();
       const items=data.items.filter(p=>(p.name+' '+(p.instructions||'')).toLowerCase().includes(query));

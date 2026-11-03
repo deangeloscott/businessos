@@ -1454,6 +1454,10 @@ document.addEventListener('click',event=>{
   if(event.target.closest('#composer-tools'))return;
   $('#chat-tools-menu').hidden=true;$('#composer-tools').setAttribute('aria-expanded','false');
 });
+document.addEventListener('focusin',event=>{
+  if(event.target.closest('#chat-tools-menu,#composer-tools'))return;
+  $('#chat-tools-menu').hidden=true;$('#composer-tools').setAttribute('aria-expanded','false');
+});
 document.addEventListener('keydown',event=>{
   const menu=$('#chat-tools-menu');if(menu.hidden||!event.target.closest('#chat-tools-menu,#composer-tools'))return;
   if(event.key==='Escape'){event.preventDefault();menu.hidden=true;$('#composer-tools').setAttribute('aria-expanded','false');$('#composer-tools').focus();}
