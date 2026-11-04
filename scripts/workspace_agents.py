@@ -343,7 +343,7 @@ def run(command, kind, cwd, env, prompt, native_id, model, effort, update, execu
         argv += ['--model',model]
         if effort:argv += ['--reasoning',effort]
     else:
-        argv += ['--input-format','stream-json','--output-format','stream-json','--model',model]
+        argv += ['--print','--input-format','stream-json','--output-format','stream-json','--model',model]
         if native_id:argv += ['--conversation',native_id]
         if effort:argv += ['--effort',effort]
         prompt=json.dumps({'event':'user','message':{'content':prompt}})+'\n'
@@ -439,6 +439,10 @@ def run(command, kind, cwd, env, prompt, native_id, model, effort, update, execu
     if execution:execution.check()
     if code or error or not ident or not final.strip():
         raise ValueError(error or errors.message('The AI app did not complete a saved reply. Open its native chat to check authentication or approvals; no automatic retry was made.'))
+    if kind=='antigravity':
+        diagnostic=errors.message('')
+        if re.search(r'(?is)(?:permission|approval|confirmation|tool).{0,160}(?:denied|declined|requires? approval)|(?:denied|declined).{0,160}(?:permission|approval|tool)',diagnostic):
+            update(permission_warning='Antigravity blocked an action that needs approval. Review Chat permissions before continuing.',permission_detail=diagnostic)
     usage={**workspace_usage.combine(measures),'last':measures[-1]} if measures else {}
     if session_cost is not None:usage.update(session_cost_usd=session_cost,cost_kind='est')
     return {'reply':final,'native_id':ident,'usage':usage}

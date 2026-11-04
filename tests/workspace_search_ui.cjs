@@ -5,17 +5,20 @@ const node=id=>{if(!nodes.has(id))nodes.set(id,{value:'',innerHTML:'',textConten
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const records=[{title:'Customer guide',type:'Asset',ref:'Asset/guide',data:{topic:'retention'}}];
 const context={state:{business:'studio',data:{workspace:'A',records}},shellSearchData:null,shellSearchTicket:0,$:node,
-  closeAnchoredSurface(){},esc,empty:(title,detail)=>esc(title+' '+detail),appName:id=>id,shareType:type=>type,
+  goalInfo:value=>value?.extensions?.businessos?.goal||{},closeAnchoredSurface(){},esc,empty:(title,detail)=>esc(title+' '+detail),appName:id=>id,shareType:type=>type,
   usefulFile:file=>!file.path.startsWith('instances/'),chatDescription:chat=>chat.description||''};
 vm.createContext(context);
 vm.runInContext(source.slice(source.indexOf("let shellSearchFilter='all'"),source.indexOf('// A deliberately small Markdown renderer')),context);
-const chats={items:[{id:'chat',title:'Customer guide',description:'Retention plan'}]};
-const files={items:[{name:'Customer guide.md',path:'attachments/guide.md'},{name:'Asset.json',path:'instances/studio/assets/Asset.json'}]};
+const chats={items:[{id:'chat',title:'Customer guide',description:'Retention plan',updated:100},{id:'old',title:'Hidden archived chat',archived:true,updated:900}]};
+const files={items:[{name:'Customer guide.md',path:'attachments/guide.md',modified:300},{name:'Asset.json',path:'instances/studio/assets/Asset.json'}]};
 const library=Array.from({length:78},(_,i)=>({title:'Guide '+String(i).padStart(2,'0'),key:'guide-'+i,kind:'Workflow',description:'retention'}));
 library.push({title:'<script>guide</script>',key:'unsafe',kind:'Skill'});
 context.api=async()=>chats;context.cachedApi=async path=>path.startsWith('/api/files')?files:library;
 (async()=>{
+  records.push({title:'Hidden deleted goal',type:'Objective',ref:'obj_deleted',data:{extensions:{businessos:{goal:{deleted_at:500}}}}});
   await context.openShellSearch();
+  assert(!node('#shell-search-results').innerHTML.includes('Hidden'));
+  assert(node('#shell-search-results').innerHTML.indexOf('data-search-file=')<node('#shell-search-results').innerHTML.indexOf('data-chat='),'Empty search uses dates across types');
   assert.match(node('#shell-search-status').textContent,/50 of 82 results/);
   assert.doesNotMatch(node('#shell-search-results').innerHTML,/Asset.json|See all matching/);
   node('#shell-search').value='Customer guide';context.paintShellSearch();

@@ -51,6 +51,7 @@ import workspace_documents
 import workspace_activity
 import workspace_history
 import workspace_permissions
+import workspace_archive
 import workspace_context
 import workspace_goals
 import workspace_recovery
@@ -934,7 +935,7 @@ class Workspace:
                                           'key':choice['id']+'/'+model['id'],
                                           'current':model['id']==options.get('model'),
                                           'efforts':model.get('efforts',[]), 'default_effort':model.get('default_effort',''),
-                                          'discover_efforts':model.get('discover_efforts',False)})
+                                          'discover_efforts':model.get('discover_efforts',False) and not model.get('efforts_loaded',False)})
         models = sorted(grouped.values(), key=lambda m:(m['provider'],m['access'],m['name'].casefold()))
         saved = self.preferences['model_picker']
         picker = saved.get('all')
@@ -1014,6 +1015,8 @@ class Workspace:
             if archived and (chat.get('status')=='working' or any(j.get('chat_id')==ident for j in self.running_jobs(workspace_root()))):
                 raise ValueError('Finish or stop this request before archiving the chat.')
             chat['archived']=archived
+            if archived:chat['archived_at']=time.time()
+            else:chat.pop('archived_at',None)
             if archived and self.preferences['active_chats'].get(bid)==ident:self.preferences['active_chats'][bid]=None
             self.save_preferences()
             return {'chat':{k:v for k,v in chat.items() if k!='brief_token'}}
@@ -1566,6 +1569,8 @@ class Workspace:
                 'notifications': self.preferences.get('notifications') is True,
                 'usage_alerts': self.preferences.get('usage_settings',{}).get(bid,{}).get('alerts') is True,
                 'model_picker': self.preferences['model_picker'],
+                'harness_permissions': self.preferences.get('harness_permissions',{}),
+                'full_access_modes': list(workspace_permissions.FULL_ACCESS_MODES),
                 'library_preferences': self.preferences['library'].get(bid, {'favorites':[],'recent':[]}),
                 'preferred_app': self.preferences.get('preferred_app', ''),
                 'running_chats':[{k:j.get(k) for k in ('id','chat_id','business_id','workspace','status','progress','agent','model')} for j in self.running_jobs()],
@@ -1868,7 +1873,7 @@ class Workspace:
         threading.Thread(target=work,daemon=True).start()
         return self.schedule_state(bid)
 
-    def start_chat(self, bid, text, history, welcome=False, schedule_id=None, organization_id=None, keep_warm_id=None, chat_id=None, files=None, connection=None, assistant_id=None,references=None,goal_id=None):
+    def start_chat(self, bid, text, history, welcome=False, schedule_id=None, organization_id=None, keep_warm_id=None, chat_id=None, files=None, connection=None, assistant_id=None,references=None,goal_id=None,permission_mode=None):
         with self.lock:
             owner=copy.copy(self)
             owner.agent=dict(self.agent) if self.agent else None
@@ -1904,6 +1909,8 @@ class Workspace:
                 if any(not isinstance(effective.get(k,''),str) or len(effective.get(k,''))>300 for k in ('model','effort')):raise ValueError('Choose a valid model and effort.')
                 owner.select_agent(choice,effective.get('workspace_write') is True)
                 owner._effective_connection=effective
+            if permission_mode is not None and existing:raise ValueError('Use this chat’s permission settings before sending.')
+            owner._request_permission_mode=workspace_permissions.validate(owner.connection_kind,permission_mode) if permission_mode is not None else None
             result=owner._start_chat(bid,text,history,welcome,schedule_id,organization_id,keep_warm_id,resolved_chat_id,files)
             self.job=owner.job;self.execution=owner.execution
             return result
@@ -1978,6 +1985,7 @@ class Workspace:
                 chat = {'id': secrets.token_urlsafe(12), 'business_id': bid, 'agent': self.connection_kind,
                         'title': 'Welcome to AURA' if welcome else text.strip()[:70],
                         'created': time.time(), 'native_id': None, 'workspace':str(workspace_root())}
+                if getattr(self,'_request_permission_mode',None) is not None:chat['permission_mode']=self._request_permission_mode
                 self.preferences['chats'].append(chat)
                 self.preferences['active_chats'][bid] = chat['id']
                 if assistant:chat.update(assistant_id=assistant['id'],assistant_name=assistant['name'])
@@ -2327,7 +2335,7 @@ def handler_for(app):
 
         def do_GET(self):
             self.request_started=time.monotonic()
-            if urlsplit(self.path).path in {'/api/context','/api/goals','/api/activity','/api/activity/result','/api/history','/api/history/version','/api/permissions','/api/state','/api/file','/api/sharing','/api/chat','/api/chats','/api/notifications'}:
+            if urlsplit(self.path).path in {'/api/context','/api/goals','/api/activity','/api/activity/result','/api/history','/api/history/version','/api/archive','/api/permissions','/api/state','/api/file','/api/sharing','/api/chat','/api/chats','/api/notifications'}:
                 with app.lock:self.read_GET()
             else:self.read_GET()
 
@@ -2367,6 +2375,8 @@ def handler_for(app):
                     bid=selected(query.get('business'))
                     path=app.document_source(bid,query.get('path',''),query.get('option',''))[0] if query.get('path') else None
                     self.send(200,workspace_history.inventory(bid,path))
+                elif route == '/api/archive':
+                    self.send(200,workspace_archive.inventory(app,selected(query.get('business'))))
                 elif route == '/api/permissions':
                     bid=selected(query.get('business'));kind=query.get('kind') or app.connection_kind
                     chat=next((c for c in app.preferences['chats'] if c['id']==query.get('chat_id') and c['business_id']==bid),None)
@@ -3087,7 +3097,7 @@ def handler_for(app):
                         self.send(200, app.stop_chat(selected(data.get('business')), data.get('id')))
                     elif route == '/api/chat':
                         bid = selected(data.get('business'))
-                        self.send(202, app.start_chat(bid, data.get('text'), data.get('history'), data.get('welcome') is True, data.get('schedule_id'),data.get('organization_id'),chat_id=data.get('chat_id'),files=data.get('files'),connection=data.get('connection'),assistant_id=data.get('assistant_id'),references=data.get('references'),goal_id=data.get('goal_id')))
+                        self.send(202, app.start_chat(bid, data.get('text'), data.get('history'), data.get('welcome') is True, data.get('schedule_id'),data.get('organization_id'),chat_id=data.get('chat_id'),files=data.get('files'),connection=data.get('connection'),assistant_id=data.get('assistant_id'),references=data.get('references'),goal_id=data.get('goal_id'),permission_mode=data.get('permission_mode')))
                     else:
                         self.send(404, {'error': 'Not found.'})
             except PermissionError as exc:

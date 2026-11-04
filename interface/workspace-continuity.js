@@ -115,16 +115,30 @@ window.auraContinuity=(()=>{
     const data=await api('/api/permissions?'+params({kind,...(chat?{chat_id:chat}:{})}));
     if(!current(key,ticket,host))return;
     const connected=state.data.connection.choices.filter(a=>a.available);
-    if(forChat&&data.choices.length===1){
-      host.innerHTML=`<p>${esc(appName(kind)||'Your AI app')} uses its own permission settings${kind==='pi'?', including any installed approval extensions':''}.</p><button type="button" class="secondary" data-close="detail">Done</button>`;
-      return;
+    const appField=!forChat?`<label>AI app<select id="permissions-app">${connected.map(a=>`<option value="${esc(a.id)}" ${a.id===kind?'selected':''}>${esc(a.name)}</option>`).join('')}</select></label>`:'';
+    const bindApp=()=>$('#permissions-app')?.addEventListener('change',event=>permissions(false,event.target.value));
+    if(data.choices.length===1){
+      host.innerHTML=`${appField}<p>${esc(data.note||'This connection uses its own permission settings. It does not expose a permission mode that Aura can change.')}</p><button type="button" class="secondary" data-close="detail">Done</button>`;bindApp();return;
     }
-    host.innerHTML=`<form id="permissions-form" class="form-grid">${!forChat?`<label>AI app<select id="permissions-app">${connected.map(a=>`<option value="${esc(a.id)}" ${a.id===kind?'selected':''}>${esc(a.name)}</option>`).join('')}</select></label>`:''}<label>${chat?'This chat':'Default for new requests'}<select id="permissions-mode">${chat?`<option value="inherit" ${!data.override?'selected':''}>Use Aura default (${esc(data.choices.find(c=>c.id===data.default)?.name||data.default)})</option>`:''}${data.choices.map(c=>`<option value="${esc(c.id)}" ${(chat?data.override:data.mode)===c.id?'selected':''}>${esc(c.name)}</option>`).join('')}</select></label><p id="permissions-native" class="small-note"></p><div class="inline-actions"><button class="primary">Save permissions</button><span id="permissions-status" role="status"></span></div></form>`;
-    const select=$('#permissions-mode'),paint=()=>{$('#permissions-native').textContent='Next request · '+(data.choices.find(c=>c.id===select.value)?.native||data.choices.find(c=>c.id===data.default)?.native);};paint();select.onchange=paint;
-    $('#permissions-app')?.addEventListener('change',event=>permissions(false,event.target.value));
+    const override=chat?data.override:forChat&&state.newChatPermission?.kind===kind?state.newChatPermission.mode:'';
+    host.innerHTML=`<form id="permissions-form" class="form-grid">${appField}<label>${forChat?(chat?'This chat':'This new chat'):'Default for this AI app'}<select id="permissions-mode">${forChat?`<option value="inherit" ${!override?'selected':''}>Use default (${esc(data.choices.find(c=>c.id===data.default)?.name||'AI app settings')})</option>`:''}${data.choices.map(c=>`<option value="${esc(c.id)}" ${(forChat?override:data.mode)===c.id?'selected':''}>${esc(c.name)}</option>`).join('')}</select></label><p id="permissions-native" class="small-note"></p><p class="small-note">${esc(data.note||'Applies to the next request in Aura. Running requests keep their current permissions.')}</p><div class="inline-actions"><button class="primary">Save permissions</button><span id="permissions-status" role="status"></span></div></form>`;
+    const select=$('#permissions-mode'),paint=()=>{
+      const choice=data.choices.find(c=>c.id===(select.value==='inherit'?data.default:select.value));
+      $('#permissions-native').textContent=choice?.description||'Use the permission settings configured in your AI app.';
+      select.classList.toggle('permission-unrestricted',!!choice?.unrestricted);$('#permissions-native').classList.toggle('permission-warning',!!choice?.unrestricted);
+    };paint();select.onchange=paint;bindApp();
     $('#permissions-form').onsubmit=event=>{event.preventDefault();const form=event.currentTarget;attempt(async()=>{
       if(!current(key,ticket,host))return;const button=form.querySelector('button');button.disabled=true;
-      try{await api('/api/permissions',{business:state.business,kind,mode:select.value,...(chat?{chat_id:chat}:{})});if(current(key,ticket,host))$('#permissions-status').textContent='Saved for the next request.';}finally{if(button.isConnected)button.disabled=false;}
+      try{
+        if(forChat&&!chat){state.newChatPermission=select.value==='inherit'?null:{kind,mode:select.value};rememberChatDraft();}
+        else{
+          await api('/api/permissions',{business:state.business,kind,mode:select.value,...(chat?{chat_id:chat}:{})});
+          if(!current(key,ticket,host))return;
+          if(chat){if(select.value==='inherit')delete state.chatMeta.permission_mode;else state.chatMeta.permission_mode=select.value;}
+          else{state.data.harness_permissions??={};state.data.harness_permissions[kind]=select.value;}
+        }
+        if(current(key,ticket,host)){$('#permissions-status').textContent=chat?'Saved for the next request.':forChat?'Saved for this new chat.':'Default saved. Inheriting chats use it on their next request.';renderComposerPermissions();}
+      }finally{if(button.isConnected)button.disabled=false;}
     });};
   }
 

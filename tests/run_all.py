@@ -45,6 +45,7 @@ TESTS=[
     'tests/run_workspace_usage.py',
     'tests/run_workspace_updates.py',
     'tests/run_workspace_recovery.py',
+    'tests/run_workspace_archive.py',
     'tests/run_workspace_continuity.py',
     'tests/run_workspace_sharing.py',
     'tests/run_workspace_organization.py',

@@ -1,7 +1,7 @@
 /* DOM-independent view checks; no browser, network, or frontend dependency. */
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
 const nodes=new Map(),listeners={};
-function node(id){if(!nodes.has(id))nodes.set(id,{innerHTML:'',textContent:'',hidden:false,isConnected:true,value:'',dataset:{},querySelectorAll:()=>[],querySelector:selector=>node(id+' '+selector),insertAdjacentHTML(where,text){this.innerHTML+=text;},showModal(){this.open=true;},close(){this.open=false;}});return nodes.get(id);}
+function node(id){if(!nodes.has(id))nodes.set(id,{innerHTML:'',textContent:'',hidden:false,isConnected:true,value:'',dataset:{},classes:{},classList:{toggle(name,on){this[name]=on;}},setAttribute(name,value){this[name]=value;},querySelectorAll:()=>[],querySelector:selector=>node(id+' '+selector),insertAdjacentHTML(where,text){this.innerHTML+=text;},showModal(){this.open=true;},close(){this.open=false;}});return nodes.get(id);}
 const profiles={items:[{id:'jeff',name:'<Jeff>',instructions:'Find useful evidence.',task_ids:['weekly']}],chats:[],workspace:'A'};
 const tasks={items:[{id:'weekly',name:'Weekly review',owner:'hermes'}],notes:[]};
 const history={items:[{id:'report.md',name:'Weekly findings',status:'Saved result'}],limit:20,note:''};
@@ -19,10 +19,17 @@ vm.createContext(context);vm.runInContext(fs.readFileSync(process.argv[2],'utf8'
 // Exercise the existing shared picker directly, without starting the app shell.
 const appSource=fs.readFileSync(require('node:path').join(require('node:path').dirname(process.argv[2]),'app.js'),'utf8');
 const pickerStart=appSource.indexOf('let chatModelTicket=0;'),pickerEnd=appSource.indexOf("\ndocument.addEventListener('click',event=>attempt",pickerStart);
-Object.assign(context,{openAnchoredSurface:dialog=>{dialog.showModal();return true;},pickerSave:Promise.resolve(),structuredClone,human:s=>s[0].toUpperCase()+s.slice(1),
+Object.assign(context,{cachedApi:(...args)=>context.api(...args),openAnchoredSurface:dialog=>{dialog.showModal();return true;},pickerSave:Promise.resolve(),structuredClone,human:s=>s[0].toUpperCase()+s.slice(1),
   modelPicker:()=>({favorites:['catalog-model']}),chatScope:()=>JSON.stringify([context.state.data.workspace,context.state.business,context.state.chatMeta?.id]),
   composerConnection:()=>({kind:'codex',model:'',effort:''})});
 vm.runInContext(appSource.slice(pickerStart,pickerEnd),context);
+vm.runInContext(appSource.slice(appSource.indexOf('function renderComposerPermissions(){'),appSource.indexOf('function renderComposerConnection(){')),context);
+const originalPermissionChat=context.state.chatMeta;
+context.state.data.full_access_modes=['full','bypassPermissions','yolo'];context.state.data.harness_permissions={codex:'full'};
+context.renderComposerPermissions();assert.equal(node('#chat-permissions').classList['permission-unrestricted'],true,'An inherited explicit full-access default must stand out');
+context.state.chatMeta={id:'scoped',permission_mode:'read-only'};context.renderComposerPermissions();assert.equal(node('#chat-permissions').classList['permission-unrestricted'],false);
+context.state.data.harness_permissions={};context.state.chatMeta=originalPermissionChat;context.renderComposerPermissions();assert.equal(node('#chat-permissions').classList['permission-unrestricted'],false,'Unknown native settings must not be claimed to be full access');
+
 (async()=>{
   const work=context.window.auraWork,host=node('host');
   await work.renderAssistants(host);
@@ -95,7 +102,7 @@ vm.runInContext(appSource.slice(pickerStart,pickerEnd),context);
   // App A -> B -> A, resolving the newest A first: stale catalogs cannot win.
   context.state.chatMeta=null;context.state.data.connection.choices=[{id:'codex',name:'Codex',available:true},{id:'hermes',name:'Hermes',available:true}];
   context.state.data.connection.apps=[{id:'codex'},{id:'hermes'}];
-  const catalogs=[],catalog=(kind,label=kind)=>({picker:{favorites:[]},unavailable:[],models:[{id:'catalog-model',name:label+' model',provider:'test',routes:[{agent:kind,model:kind+'-model',current:true}]}]});
+  const catalogs=[],catalog=(kind,label=kind)=>({picker:{favorites:[]},unavailable:[],models:[{id:'catalog-model',name:label+' model',provider:'test',routes:[{agent:kind,model:kind+'-model',current:true,efforts:['low','high'],default_effort:'low'}]}]});
   context.api=async path=>path.startsWith('/api/model-catalog')?new Promise(resolve=>catalogs.push(resolve)):path.startsWith('/api/agent-efforts')?{efforts:['low','high'],default_effort:'low'}:originalApi(path);
   const first=context.openChatModels();await new Promise(resolve=>setImmediate(resolve));
   context.state.chatModelDraft.kind='hermes';const middle=context.loadChatModelOptions();await new Promise(resolve=>setImmediate(resolve));
@@ -104,13 +111,13 @@ vm.runInContext(appSource.slice(pickerStart,pickerEnd),context);
   catalogs[1](catalog('hermes'));await middle;catalogs[0](catalog('codex','old-codex'));await first;
   assert.equal(context.state.chatModelOptions.models[0].name,'new-codex model');
   // Assistant choices use that same picker; they never modify the current chat.
-  context.api=async path=>path.startsWith('/api/model-catalog')?catalog('codex'):path.startsWith('/api/agent-efforts')?{efforts:['low','high'],default_effort:'low'}:originalApi(path);
+  let effortQueries=0;context.api=async path=>{if(path.startsWith('/api/agent-efforts')){effortQueries++;return {efforts:['low','high'],default_effort:'low'};}return path.startsWith('/api/model-catalog')?catalog('codex'):originalApi(path);};
   const create={dataset:{},hasAttribute:name=>name==='data-assistant-new'};
   for(const callback of listeners.click)callback({target:{closest:()=>create}});
   await new Promise(resolve=>setImmediate(resolve));
   await node('#assistant-pick-model').onclick();node('#chat-effort-choice').value='high';await context.saveChatModel();
   assert.equal(node('#assistant-model').value,'codex-model');assert.equal(node('#assistant-effort').value,'high');
-  assert.equal(node('#assistant-app').value,'codex');assert.equal(context.state.newChatConnection,undefined);
+  assert.equal(node('#assistant-app').value,'codex');assert.equal(context.state.newChatConnection,undefined);assert.equal(effortQueries,0,'Reported catalog efforts must not start another native metadata request');
   await node('#assistant-pick-child').onclick();await context.saveChatModel();
   assert.equal(node('#assistant-child-model').value,'codex-model');
   assert.equal(node('#assistant-model').value,'codex-model');assert.equal(node('#assistant-effort').value,'high');

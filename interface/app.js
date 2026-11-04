@@ -392,6 +392,7 @@ async function hydrateConversation() {
   else if(result.job?.status==='error'||result.chat?.status==='error')taskStatus('Needs your attention');
   else if(result.chat?.status==='stopped')taskStatus('Stopped. You can continue this chat.');
   else if(state.chat.length)taskStatus('Latest reply · '+clockTime(state.chat.at(-1).at));
+  else taskStatus('');
 }
 
 const money = value => Number.isFinite(value)?new Intl.NumberFormat(undefined,{style:'currency',currency:'USD',maximumFractionDigits:value>0&&value<.01?4:2}).format(value):'Not reported';
@@ -597,7 +598,7 @@ async function pollJob(job) {
       if(!current())return;
       state.chat=conversation.messages;state.chatMeta=conversation.chat;state.needsCheck=conversation.chat?.status==='working';state.busy=false;state.recovery=conversation.recovery||null;window.auraContinuity?.acceptRecovery(conversation);state.stopping=false;state.activeJob=null;state.polling=false;
       if(result.status==='error'&&!job.welcome)notice(result.reply,true);
-      if(result.preference_warning)notice(result.preference_warning,true);if(result.stop_note)notice(result.stop_note);
+      if(result.preference_warning)notice(result.preference_warning,true);if(result.permission_warning)notice(result.permission_warning,true);if(result.stop_note)notice(result.stop_note);
       replyAlert(result);showMessages();chatControls();invalidateReads();await refresh(true);renderConnection();return;
     }
   } catch(error) {
@@ -1668,7 +1669,7 @@ function showOrganizationReview(p) {
 }
 async function organizationCleanup() {
   const result=await api('/api/organization/cleanup-preview',{id:state.organizationReview.id});
-  details('Optional cleanup',`<p>Your organized workspace is ready. Choose which eligible originals to move to AURA Recovery, where you can restore them later.</p><div class="card">${result.items.map((item,i)=>`<div class="organization-cleanup-item"><strong>${esc(item.name)}</strong><p class="storage-path">${esc(item.path)}</p>${item.eligible?`<p class="small-note">Recovery location: ${esc(item.recovery)}</p><label>Keep in recovery<select id="retention-${i}"><option value="0">Until I remove it</option><option value="7">7 days, then remove automatically</option><option value="30">30 days, then remove automatically</option><option value="90">90 days, then remove automatically</option></select></label><button class="secondary" data-retire-source="${esc(item.path)}" data-retention="retention-${i}">Move original to recovery</button>`:`<p>${item.reasons.map(esc).join('<br>')}</p>${item.retired?'<button class="text-button" id="aura-recovery">Open recovery →</button>':`<button class="text-button" data-organization-help="${esc(item.path)}">Help me resolve this →</button>`}`}</div>`).join('')}</div><button class="text-button" id="aura-recovery">Open AURA Recovery →</button>`);
+  details('Optional cleanup',`<p>Your organized workspace is ready. Choose which eligible originals to move to AURA Recovery, where you can restore them later.</p><div class="card">${result.items.map((item,i)=>`<div class="organization-cleanup-item"><strong>${esc(item.name)}</strong><p class="storage-path">${esc(item.path)}</p>${item.eligible?`<p class="small-note">Recovery location: ${esc(item.recovery)}</p><label>Keep in recovery<select id="retention-${i}"><option value="0">Until I remove it</option><option value="7">7 days, then delete permanently</option><option value="30">30 days, then delete permanently</option><option value="90">90 days, then delete permanently</option></select></label><button class="secondary" data-retire-source="${esc(item.path)}" data-retention="retention-${i}">Move original to recovery</button>`:`<p>${item.reasons.map(esc).join('<br>')}</p>${item.retired?'<button class="text-button" id="aura-recovery">Open recovery →</button>':`<button class="text-button" data-organization-help="${esc(item.path)}">Help me resolve this →</button>`}`}</div>`).join('')}</div><button class="text-button" id="aura-recovery">Open AURA Recovery →</button>`);
 }
 async function auraRecovery() {
   const r=await api('/api/recovery');
@@ -1718,7 +1719,7 @@ function showMessages(latest=false) {
   const conversation=$('#conversation'), top=conversation.scrollTop, chat=state.chatMeta?.id||'';
   if(!state.busy&&state.liveJob&&((state.liveJob.business_id&&state.liveJob.business_id!==state.business)||(state.liveJob.chat_id&&state.liveJob.chat_id!==chat)))state.liveJob=null;
   const follow=conversation.hidden||conversation.dataset.chat!==chat||conversation.scrollHeight-conversation.clientHeight-top<48;
-  conversation.hidden=!state.chat.length&&!state.busy;conversation.dataset.chat=chat;
+  conversation.hidden=!state.chatMeta&&!state.chat.length&&!state.busy;conversation.dataset.chat=chat;
   const formatKey=JSON.stringify([chat,state.chat.length,state.data?.connection.name]);
   if(state.formattedSource!==state.chat||state.formattedKey!==formatKey){
     const started=performance.now();
@@ -1739,8 +1740,8 @@ function showMessages(latest=false) {
   const activitySignature=JSON.stringify(activity);
   if(state.activitySignature!==activitySignature){$('#activity-list').innerHTML=activity.map(a=>`<li><time>${esc(clockTime(a.at))}</time> ${esc(a.text)}</li>`).join('');state.activitySignature=activitySignature;}
   conversation.scrollTop=follow?conversation.scrollHeight:top;
-  document.body.classList.toggle('has-conversation',!!state.chat.length||state.busy);
-  $('#welcome-heading').hidden=!!state.chat.length||state.busy;
+  document.body.classList.toggle('has-conversation',!!state.chatMeta||!!state.chat.length||state.busy);
+  $('#welcome-heading').hidden=!!state.chatMeta||!!state.chat.length||state.busy;
   renderComposerFiles();
   renderChatRecovery();
 }
@@ -1757,14 +1758,14 @@ async function submitRequest(text, scheduleId=null, organizationId=state.pending
     details('Copy to your AI',`<p>Paste this request into your AI app. Attach the selected files there if it cannot read local paths.</p><button class="primary" id="copy-handoff">Copy request</button><textarea id="handoff-text" class="handoff" readonly></textarea>`);$('#handoff-text').value=request.text;
     $('#copy-handoff').onclick=()=>attempt(async()=>{await navigator.clipboard.writeText(request.text);$('#copy-handoff').textContent='Copied';});return;
   }
-  const sentReferences=[...(state.contextReferences||[])],sentGoal=state.chatMeta?.goal_id||state.draftGoalId||'';
+  const sentReferences=[...(state.contextReferences||[])],sentGoal=state.chatMeta?.goal_id||state.draftGoalId||'',sentPermission=!state.chatMeta&&state.newChatPermission?.kind===connection.kind?{...state.newChatPermission}:null;
   const focus=chatScope(),navigation=state.navigationTicket,chatId=state.chatMeta?.id||'',files=[...(state.selectedFiles||[])],submitTicket=state.submitTicket=(state.submitTicket||0)+1;state.starting=true;chatControls();
   try {
-    const job=await api('/api/chat',{business:state.business,chat_id:chatId,connection,text,history:state.chat,files,references:sentReferences,goal_id:sentGoal,schedule_id:scheduleId,organization_id:organizationId,assistant_id:state.newAssistantId||null});
+    const job=await api('/api/chat',{business:state.business,chat_id:chatId,connection,text,history:state.chat,files,references:sentReferences,goal_id:sentGoal,schedule_id:scheduleId,organization_id:organizationId,assistant_id:state.newAssistantId||null,...(sentPermission?{permission_mode:sentPermission.mode}:{})});
     if(focus!==chatScope()||navigation!==state.navigationTicket)return;
     state.pendingOrganizationId=null;if(JSON.stringify(state.selectedFiles||[])===JSON.stringify(files))state.selectedFiles=[];if(JSON.stringify(state.contextReferences||[])===JSON.stringify(sentReferences))state.contextReferences=[];
     const currentGoal=state.chatMeta?state.chatMeta.goal_id:state.draftGoalId;
-    state.chatMeta={...(state.chatMeta||{}),goal_id:currentGoal===sentGoal?sentGoal:currentGoal||'',id:job.chat_id,business_id:state.business,workspace:state.data.workspace,agent:connection.kind,model:connection.model,effort:connection.effort,status:'working',assistant_id:state.chatMeta?.assistant_id||state.newAssistantId,assistant_name:state.chatMeta?.assistant_name||state.newAssistantName};
+    state.chatMeta={...(state.chatMeta||{}),...(sentPermission?{permission_mode:sentPermission.mode}:{}),goal_id:currentGoal===sentGoal?sentGoal:currentGoal||'',id:job.chat_id,business_id:state.business,workspace:state.data.workspace,agent:connection.kind,model:connection.model,effort:connection.effort,status:'working',assistant_id:state.chatMeta?.assistant_id||state.newAssistantId,assistant_name:state.chatMeta?.assistant_name||state.newAssistantName};
     state.chat.push({role:'user',text,at:new Date().toISOString(),files,references:job.references||sentReferences,goal_id:sentGoal,request_id:job.id});if($('#request').value===text)$('#request').value='';rememberChatDraft();notice('');showMessages(true);recordShellRoute();renderShell();
     state.starting=false;await pollJob(job);
   } finally {if(submitTicket===state.submitTicket){state.starting=false;chatControls();}}
@@ -2087,7 +2088,7 @@ function chatScope(){return JSON.stringify([state.data?.workspace||'',state.busi
 function draftKey(){return 'aura-chat-draft:v1:'+chatScope();}
 function rememberChatDraft(){
   if(!state.data?.workspace||!state.business)return;
-  try{sessionStorage.setItem(draftKey(),JSON.stringify({text:$('#request').value,files:state.selectedFiles||[],scroll:$('#conversation').scrollTop,assistant_id:state.newAssistantId||'',assistant_name:state.newAssistantName||'',connection:state.newChatConnection||null,...(window.auraCompose?.draft()||{})}));}catch{}
+  try{sessionStorage.setItem(draftKey(),JSON.stringify({text:$('#request').value,files:state.selectedFiles||[],scroll:$('#conversation').scrollTop,assistant_id:state.newAssistantId||'',assistant_name:state.newAssistantName||'',connection:state.newChatConnection||null,permission:state.newChatPermission||null,...(window.auraCompose?.draft()||{})}));}catch{}
 }
 function restoreChatDraft(){
   let saved=null;try{
@@ -2100,7 +2101,7 @@ function restoreChatDraft(){
   }catch{}
   $('#request').value=typeof saved?.text==='string'?saved.text:'';state.selectedFiles=Array.isArray(saved?.files)?saved.files.slice(0,12):[];
   state.newAssistantId=state.chatMeta?null:saved?.assistant_id||null;state.newAssistantName=state.chatMeta?null:saved?.assistant_name||'';
-  state.newChatConnection=state.chatMeta?null:saved?.connection||null;state.pendingComposerDraft=saved;window.auraCompose?.restore(saved);renderComposerFiles();renderComposerConnection();
+  state.newChatPermission=state.chatMeta?null:saved?.permission||null;state.newChatConnection=state.chatMeta?null:saved?.connection||null;state.pendingComposerDraft=saved;window.auraCompose?.restore(saved);renderComposerFiles();renderComposerConnection();
   if(Number.isFinite(saved?.scroll))requestAnimationFrame(()=>{$('#conversation').scrollTop=saved.scroll;});
 }
 function detachChatView(){
@@ -2113,20 +2114,20 @@ async function openShellChat(id){
   state.navigating=true;chatControls();let result;try{result=await api('/api/chats/open',{business,id});}finally{if(ticket===state.navigationTicket){state.navigating=false;chatControls();}}if(ticket!==state.navigationTicket||root!==state.data.workspace||business!==state.business)return;
   state.view='home';$('#section-dialog').close();$('#detail').close();state.chat=result.messages;state.chatMeta=result.chat;state.liveJob=result.job;state.busy=result.job?.status==='working';state.activeJob=state.busy?result.job:null;
   state.needsCheck=result.chat?.status==='working'&&!state.busy;state.recovery=result.recovery||null;window.auraContinuity?.acceptRecovery(result);state.hydrated=true;restoreChatDraft();showMessages();await refresh();recordShellRoute();closeMobileSidebar();
-  if(result.history_note)notice(result.history_note);
+  notice(result.history_note||'');
   if(!result.job||result.job.status!=='working')checkNativeChanges();
   if(result.job?.status==='working')attempt(()=>pollJob(result.job));
-  else taskStatus(state.needsCheck?'Check this chat in its AI app before continuing.':state.chat.length?'Conversation restored':'Ready when you are');
+  else taskStatus(state.needsCheck?'Check this chat in its AI app before continuing.':result.history_note?'':state.chat.length?'Conversation restored':'Ready when you are');
   chatControls();
 }
 async function newShellChat(draft=null){
   if(!state.business)return;rememberChatDraft();detachChatView();
   state.pendingComposerDraft=draft;
   const ticket=state.navigationTicket=(state.navigationTicket||0)+1,root=state.data.workspace,business=state.business;
-  state.navigating=true;state.view='home';$('#section-dialog').close();$('#detail').close();state.chat=[];state.chatMeta=null;state.newAssistantId=null;state.newAssistantName='';state.newChatConnection=null;state.selectedFiles=[];state.contextReferences=[];state.draftGoalId='';$('#request').value='';state.hydrated=true;
+  state.navigating=true;state.view='home';$('#section-dialog').close();$('#detail').close();state.chat=[];state.chatMeta=null;state.newAssistantId=null;state.newAssistantName='';state.newChatConnection=null;state.newChatPermission=null;state.selectedFiles=[];state.contextReferences=[];state.draftGoalId='';$('#request').value='';state.hydrated=true;
   try{sessionStorage.removeItem(draftKey());}catch{}
   showMessages();taskStatus('');notice('');chatControls();
-  try{await api('/api/chats/new',{business});if(ticket!==state.navigationTicket||root!==state.data.workspace||business!==state.business)return;await refresh();if(ticket!==state.navigationTicket||root!==state.data.workspace||business!==state.business)return;if(draft){$('#request').value=draft.text;state.selectedFiles=draft.files;state.newChatConnection=draft.connection;window.auraCompose?.restore(draft);rememberChatDraft();renderComposerFiles();renderComposerConnection();}recordShellRoute();closeMobileSidebar();}
+  try{await api('/api/chats/new',{business});if(ticket!==state.navigationTicket||root!==state.data.workspace||business!==state.business)return;await refresh();if(ticket!==state.navigationTicket||root!==state.data.workspace||business!==state.business)return;if(draft){$('#request').value=draft.text;state.selectedFiles=draft.files;state.newChatConnection=draft.connection;state.newChatPermission=draft.permission||null;window.auraCompose?.restore(draft);rememberChatDraft();renderComposerFiles();renderComposerConnection();}recordShellRoute();closeMobileSidebar();}
   finally{if(ticket===state.navigationTicket){state.navigating=false;chatControls();$('#request').focus();}}
 }
 
@@ -2281,24 +2282,63 @@ async function openShellSearch(){
   shellSearchData={chats:chats.items,files:files.items,library,records:state.data.records,unavailable:results.flatMap((r,i)=>r.status==='rejected'?[['Chats','Files','Library'][i]]:[])};
   if(results[1].status==='fulfilled')state.files=files.items;shellSearchData.items=indexShellSearch(shellSearchData);paintShellSearch();
 }
+function searchTimestamp(value){
+  const stamp=typeof value==='number'?value:Date.parse(value||'')/1000;
+  return Number.isFinite(stamp)?(stamp>1e12?stamp/1000:stamp):0;
+}
+function searchHidden(value){return !!value?.deleted_at||!!value?.trashed||!!goalInfo(value).deleted_at||['archived','deleted','trashed'].includes(value?.status);}
+function searchDate(at){
+  const date=new Date(at*1000),now=new Date();
+  return date.toDateString()===now.toDateString()?date.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}):date.toLocaleDateString([],{month:'short',day:'numeric',...(date.getFullYear()!==now.getFullYear()?{year:'numeric'}:{})});
+}
+async function showArchivedItems(filter='all',query=''){
+  const scope=JSON.stringify([state.data.workspace,state.business]),ticket=state.archiveTicket=(state.archiveTicket||0)+1,dialog=$('#archive-dialog'),host=$('#archive-content');
+  if(!dialog.open)dialog.showModal();host.innerHTML='<p role="status">Reading archived and deleted items…</p>';
+  const data=await api('/api/archive?business='+encodeURIComponent(state.business));
+  if(!dialog.open||ticket!==state.archiveTicket||scope!==JSON.stringify([state.data.workspace,state.business]))return;
+  const labels={all:'All',chat:'Archived chats',goal:'Deleted goals',recovery:'Recovery copies'};let limit=50;
+  host.innerHTML=`<label class="sr-only" for="archive-find">Find an archived or deleted item</label><input id="archive-find" class="search" type="search" placeholder="Find an item…"><div class="filters" id="archive-filters"></div><p id="archive-count" class="small-note" role="status"></p><div id="archive-list"></div><button type="button" id="archive-more" class="text-button" hidden>Show more items</button><p class="small-note archive-retention">Archived chats and deleted goals have no automatic expiry. Recovery copies follow their chosen retention; automatic removal is permanent.</p>${data.items.some(i=>i.kind==='recovery')?'<button type="button" class="text-button" id="archive-manage-recovery">Manage recovery copies</button>':''}${data.notes.map(n=>`<p class="small-note">${esc(n)}</p>`).join('')}`;
+  $('#archive-find').value=query;
+  const paint=()=>{
+    const q=$('#archive-find').value.trim().toLowerCase(),items=data.items.filter(i=>(filter==='all'||i.kind===filter)&&i.title.toLowerCase().includes(q));
+    $('#archive-filters').innerHTML=Object.entries(labels).map(([kind,label])=>`<button type="button" data-archive-filter="${kind}" aria-pressed="${kind===filter}" class="${kind===filter?'active':''}">${label}</button>`).join('');
+    $('#archive-count').textContent=items.length+' item'+(items.length===1?'':'s');
+    $('#archive-list').innerHTML=items.slice(0,limit).map(i=>`<article class="row archive-row"><span class="row-text"><strong class="row-title">${esc(i.title)}</strong><small class="row-meta">${labels[i.kind]}${i.at?' · '+esc(searchDate(i.at)):''}${i.kind==='recovery'?' · '+(i.expires?'Removal after '+esc(searchDate(i.expires)):'No automatic expiry'):''}</small></span><button type="button" class="secondary" data-archive-restore="${esc(i.id)}" data-archive-kind="${i.kind}">${i.action}</button></article>`).join('')||empty('No matching items.');
+    $('#archive-more').hidden=items.length<=limit;
+  };
+  $('#archive-find').oninput=()=>{limit=50;paint();};
+  host.onclick=event=>attempt(async()=>{
+    const b=event.target.closest('button');if(!b)return;
+    if(b.dataset.archiveFilter){filter=b.dataset.archiveFilter;limit=50;paint();$(`[data-archive-filter="${filter}"]`).focus();}
+    if(b.id==='archive-more'){limit+=50;paint();}
+    if(b.id==='archive-manage-recovery'){dialog.close();await auraRecovery();}
+    if(b.dataset.archiveRestore){
+      const id=b.dataset.archiveRestore,kind=b.dataset.archiveKind;b.disabled=true;
+      try{await api(kind==='chat'?'/api/chats/archive':kind==='goal'?'/api/goals':'/api/recovery/update',{business:state.business,id,...(kind==='chat'?{archived:false}:{action:'restore'})});
+        if(scope!==JSON.stringify([state.data.workspace,state.business]))return;
+        await refresh();if(dialog.open){await showArchivedItems(filter,$('#archive-find').value);$('#archive-find').focus();}
+      }finally{if(b.isConnected)b.disabled=false;}
+    }
+  });paint();
+}
 function indexShellSearch(source){
   const items=[
-    ...source.chats.map(c=>({type:'chats',label:'Chat',title:c.title,description:chatDescription(c),match:c.title+' '+chatDescription(c),attr:'data-chat',id:c.id})),
-    ...source.files.filter(usefulFile).map(f=>({type:'files',label:'File',title:f.name,description:f.location_name||(!f.path.startsWith('asset/')?f.path:''),match:f.name+' '+f.path,attr:'data-search-file',id:f.path})),
-    ...source.records.map(r=>({type:'records',label:'Memory',title:r.title,description:shareType(r.type||r.ref.split('/')[0]),match:r.title+' '+JSON.stringify(r.data),attr:'data-search-record',id:r.ref})),
-    ...source.library.map(i=>({type:'library',label:'Library',title:i.title||i.name||i.id,description:[i.subtype||i.kind,(i.apps||[]).map(appName).join(', ')].filter(Boolean).join(' · '),match:JSON.stringify(i),attr:'data-search-library',id:i.key||i.id}))
+    ...source.chats.filter(c=>!c.archived&&!c.deleted_at&&!['deleted','trashed'].includes(c.status)).map(c=>({at:c.updated||c.created,type:'chats',label:'Chat',title:c.title,description:(c.summary||c.latest_request||c.description)?chatDescription(c):'',match:c.title+' '+((c.summary||c.latest_request||c.description)?chatDescription(c):''),attr:'data-chat',id:c.id})),
+    ...source.files.filter(usefulFile).map(f=>({at:f.modified,type:'files',label:'File',title:f.name,description:f.location_name||(!f.path.startsWith('asset/')?f.path:''),match:f.name+' '+f.path,attr:'data-search-file',id:f.path})),
+    ...source.records.filter(r=>!searchHidden(r.data)).map(r=>({at:r.data.updated_at||r.data.created_at,type:'records',label:'Memory',title:r.title,description:shareType(r.type||r.ref.split('/')[0]),match:r.title+' '+JSON.stringify(r.data),attr:'data-search-record',id:r.ref})),
+    ...source.library.map(i=>({at:i.updated_at,type:'library',label:'Library',title:i.title||i.name||i.id,description:[i.subtype||i.kind,(i.apps||[]).map(appName).join(', ')].filter(Boolean).join(' · '),match:JSON.stringify(i),attr:'data-search-library',id:i.key||i.id}))
   ];
-  return items.map(i=>({...i,match:String(i.match).toLowerCase(),titleLower:String(i.title).toLowerCase()}));
+  return items.map(i=>({...i,at:searchTimestamp(i.at),match:String(i.match).toLowerCase(),titleLower:String(i.title).toLowerCase()})).sort((a,b)=>b.at-a.at||a.titleLower.localeCompare(b.titleLower));
 }
 function paintShellSearch(){
   if(!shellSearchData)return;
   const q=$('#shell-search').value.trim().toLowerCase(),terms=q.split(/\s+/).filter(Boolean),source=shellSearchData,items=source.items;
   const matches=items.filter(i=>terms.every(term=>i.match.includes(term)));
   const rank=i=>{const title=i.titleLower;return q&&title===q?0:q&&title.startsWith(q)?1:q&&terms.every(t=>title.includes(t))?2:3;};
-  if(q)matches.sort((a,b)=>rank(a)-rank(b)||a.titleLower.localeCompare(b.titleLower));
+  if(q)matches.sort((a,b)=>rank(a)-rank(b)||b.at-a.at||a.titleLower.localeCompare(b.titleLower));
   const filtered=matches.filter(i=>shellSearchFilter==='all'||i.type===shellSearchFilter);
   $('#shell-search-filters').innerHTML=Object.entries(shellSearchTypes).map(([type,label])=>`<button type="button" data-search-filter="${type}" aria-pressed="${type===shellSearchFilter}">${label}<span>${type==='all'?matches.length:matches.filter(i=>i.type===type).length}</span></button>`).join('');
-  $('#shell-search-results').innerHTML=filtered.slice(0,shellSearchLimit).map(i=>`<li><button class="search-result" ${i.attr}="${esc(i.id)}"><span class="search-result-copy"><strong>${esc(i.title)}</strong>${i.description?`<small>${esc(i.description)}</small>`:''}</span><span class="search-result-type">${i.label}</span></button></li>`).join('')||`<li>${empty(q?'No matching '+(shellSearchFilter==='all'?'items':shellSearchTypes[shellSearchFilter].toLowerCase())+'.':'No '+(shellSearchFilter==='all'?'items':shellSearchTypes[shellSearchFilter].toLowerCase())+' here yet.',q?'Try another word or choose a different filter.':'')}</li>`;
+  $('#shell-search-results').innerHTML=filtered.slice(0,shellSearchLimit).map(i=>`<li><button class="search-result" ${i.attr}="${esc(i.id)}"><span class="search-result-copy"><strong>${esc(i.title)}</strong>${i.description?`<small>${esc(i.description)}</small>`:''}</span><span class="search-result-meta"><span class="search-result-type">${i.label}</span>${i.at?`<time datetime="${new Date(i.at*1000).toISOString()}" title="${esc(new Date(i.at*1000).toLocaleString())}">${esc(searchDate(i.at))}</time>`:''}</span></button></li>`).join('')||`<li>${empty(q?'No matching '+(shellSearchFilter==='all'?'items':shellSearchTypes[shellSearchFilter].toLowerCase())+'.':'No '+(shellSearchFilter==='all'?'items':shellSearchTypes[shellSearchFilter].toLowerCase())+' here yet.',q?'Try another word or choose a different filter.':'')}</li>`;
   const shown=Math.min(filtered.length,shellSearchLimit);
   $('#shell-search-more').hidden=shown===filtered.length;$('#shell-search-more').textContent='Show more results';
   $('#shell-search-status').textContent=`${shown<filtered.length?shown+' of ':''}${filtered.length} result${filtered.length===1?'':'s'}${source.unavailable.length?' · Couldn’t search '+source.unavailable.join(', ')+'. Close and reopen search to try again.':''}`;
@@ -2338,6 +2378,7 @@ document.addEventListener('click',event=>attempt(async()=>{
   if(b.dataset.searchRecord){$('#search-dialog').close();recordDetails(b.dataset.searchRecord);}
   if(b.dataset.searchLibrary){$('#search-dialog').close();await openLibrary(b.dataset.searchLibrary);}
   if(b.dataset.searchFilter){shellSearchFilter=b.dataset.searchFilter;shellSearchLimit=50;paintShellSearch();$(`[data-search-filter="${shellSearchFilter}"]`).focus();}
+  if(b.id==='shell-search-archive'){$('#search-dialog').close();await showArchivedItems();}
   if(b.id==='shell-search-more'){const position=[...document.querySelectorAll('#shell-search-results .search-result')].length;shellSearchLimit+=50;paintShellSearch();[...document.querySelectorAll('#shell-search-results .search-result')][position]?.focus();}
 }));
 document.addEventListener('submit',event=>{
@@ -2375,10 +2416,17 @@ function composerConnection(){
   const c=state.chatMeta;
   return c?{kind:c.agent,model:c.model||'',effort:c.effort||''}:state.newChatConnection||{kind:state.data?.connection.selected||'',model:state.data?.connection.model||'',effort:state.data?.connection.effort||''};
 }
+function renderComposerPermissions(){
+  if(!state.data)return;const kind=composerConnection().kind,override=state.chatMeta?.permission_mode||(!state.chatMeta&&state.newChatPermission?.kind===kind?state.newChatPermission.mode:''),mode=override||state.data.harness_permissions?.[kind]||'native';
+  const unrestricted=(state.data.full_access_modes||[]).includes(mode),button=$('#chat-permissions');
+  button.classList.toggle('permission-unrestricted',unrestricted);button.title=unrestricted?'Full access · Approval prompts are bypassed':mode==='native'?'Permissions · Use AI app settings':'Permissions · '+human(mode);
+  button.setAttribute('aria-label',unrestricted?'Chat permissions · Full access':'Chat permissions');
+}
 function renderComposerConnection(){
   if(!state.data)return;const c=composerConnection(),native=nativeApps.includes(c.kind);
   $('#model-settings').textContent=native?(c.model||'Choose model')+(c.effort?' · '+human(c.effort):''):(state.data.connection.connected?appName(c.kind)||state.data.connection.name:'Choose AI');
   window.auraWork?.composer();
+  renderComposerPermissions();
   $('#model-settings').title=state.chatMeta?'Model for this chat · '+appName(c.kind):'AI app and model for the new chat';
   $('#chat-refresh').hidden=!state.chatMeta||state.view!=='home';$('#chat-refresh').disabled=state.busy||state.navigating||state.refreshingChat;
   $('#chat-refresh').textContent=state.refreshingChat?'Refreshing…':'Refresh chat';
@@ -2401,8 +2449,8 @@ async function refreshChat(){
     window.auraContinuity?.acceptRecovery(r);showMessages();chatControls();
     if(state.busy)attempt(()=>pollJob(r.job));
     notice(r.history_note?'Couldn’t refresh from your AI app. Your saved messages are still available.':'Chat is up to date.',!!r.history_note);
-    taskStatus(r.history_note?'Refresh unavailable':'Chat refreshed');
-  }catch(error){if(scope===chatScope()){taskStatus('Refresh unavailable');notice(humanError(error),true);}}
+    if(!state.busy)taskStatus('');
+  }catch(error){if(scope===chatScope()){taskStatus('');notice(humanError(error),true);}}
   finally{state.refreshingChat=false;renderComposerConnection();}
 }
 async function readChatHistory(id){
@@ -2436,14 +2484,14 @@ async function loadChatModelOptions(refresh=false){
   if(!nativeApps.includes(kind)){$('#chat-model-options').innerHTML='<p class="shell-help">This connection uses its own model settings.</p>'+(state.chatMeta&&!draft.target?'<button class="secondary" data-close="chat-model-dialog">Done</button>':`<button class="primary" id="save-chat-model">${draft.target?'Use for assistant':'Use for this chat'}</button>`);return;}
   try{
     await pickerSave.catch(()=>{});
-    const catalog=await api('/api/model-catalog?kind='+encodeURIComponent(kind)+(refresh?'&refresh=1':''));
-    const models=catalog.models.flatMap(m=>m.routes.filter(r=>r.agent===kind).map(r=>({id:r.model,name:m.name,provider:m.provider,favorite_id:m.id,efforts:r.efforts,default_effort:r.default_effort,current:r.current})));
+    const catalog=await (refresh?api('/api/model-catalog?kind='+encodeURIComponent(kind)+'&refresh=1'):cachedApi('/api/model-catalog?kind='+encodeURIComponent(kind)));
+    const models=catalog.models.flatMap(m=>m.routes.filter(r=>r.agent===kind).map(r=>({id:r.model,name:m.name,provider:m.provider,favorite_id:m.id,efforts:r.efforts,default_effort:r.default_effort,discover_efforts:r.discover_efforts,current:r.current})));
     const options={models,model:models.find(m=>m.current)?.id||''};
     if(request!==state.chatModelRequest||kind!==draft.kind||ticket!==chatModelTicket||draft!==state.chatModelDraft||!$('#chat-model-dialog').open||draft.scope!==chatScope()||(draft.target?.current&&!draft.target.current()))return;
     if(!models.length)throw new Error(catalog.unavailable[0]?.reason||'No models are available. Open '+appName(kind)+' to check its connection, then try again.');
     state.data.model_picker??={};state.data.model_picker.all=structuredClone(catalog.picker);
     state.chatModelOptions=options;if(!draft.model)draft.model=options.models.some(m=>m.id===options.model)?options.model:options.models[0]?.id||'';
-    $('#chat-model-options').innerHTML=`<label class="sr-only" for="chat-model-search">Find a model</label><input id="chat-model-search" type="search" placeholder="Search all models…"><p id="chat-model-list-label" class="small-note" role="status"></p><div id="chat-model-list" role="list" aria-label="Available models"></div><button class="text-button" id="chat-model-more" hidden>Show more models</button><p id="chat-model-selection" class="chat-model-selection"></p><div id="chat-model-effort"></div><div class="inline-actions"><button class="primary" id="save-chat-model">${draft.target?'Use for assistant':'Use for this chat'}</button><button class="text-button" data-close="chat-model-dialog">Cancel</button></div>`;
+    $('#chat-model-options').innerHTML=`<label class="sr-only" for="chat-model-search">Find a model</label><input id="chat-model-search" type="search" placeholder="Search all models…"><p id="chat-model-list-label" class="small-note" role="status"></p><div id="chat-model-list" role="list" aria-label="Available models"></div><button class="text-button" id="chat-model-more" hidden>Show more models</button><p id="chat-model-selection" class="chat-model-selection"></p><div class="chat-model-bottom"><div id="chat-model-effort"></div><div class="inline-actions"><button class="text-button" data-close="chat-model-dialog">Cancel</button><button class="primary" id="save-chat-model">${draft.target?'Use for assistant':'Use for this chat'}</button></div></div>`;
     paintChatModels();if(options.models.some(m=>m.id===draft.model))await loadChatModelEfforts();else{$('#chat-model-effort').innerHTML='<p class="small-note">The current model is not available in this app’s list. Choose a model for your next message.</p>';$('#save-chat-model').disabled=true;}
   }catch(e){if(request!==state.chatModelRequest||kind!==draft.kind||ticket!==chatModelTicket||draft!==state.chatModelDraft||!$('#chat-model-dialog').open||draft.scope!==chatScope()||(draft.target?.current&&!draft.target.current()))return;if($('#chat-model-options'))$('#chat-model-options').innerHTML=`<p class="error">${esc(humanError(e))}</p><button class="secondary" id="chat-model-retry">Try again</button>`;}
 }
@@ -2460,7 +2508,8 @@ function paintChatModels(){
 async function loadChatModelEfforts(){
   const draft=state.chatModelDraft,model=draft.model,kind=draft.kind,request=state.chatEffortRequest=(state.chatEffortRequest||0)+1;$('#save-chat-model').disabled=true;
   if(draft.target?.modelOnly){$('#chat-model-effort').innerHTML='';draft.effort='';$('#save-chat-model').disabled=!model;return;}
-  try{const r=await api('/api/agent-efforts?kind='+encodeURIComponent(draft.kind)+'&model='+encodeURIComponent(model));if(request!==state.chatEffortRequest||draft!==state.chatModelDraft||kind!==draft.kind||model!==draft.model||draft.scope!==chatScope()||!$('#chat-model-dialog').open||!$('#chat-model-effort'))return;
+  try{const known=state.chatModelOptions.models.find(m=>m.id===model);const r=known&&!known.discover_efforts?known:await api('/api/agent-efforts?kind='+encodeURIComponent(draft.kind)+'&model='+encodeURIComponent(model));if(request!==state.chatEffortRequest||draft!==state.chatModelDraft||kind!==draft.kind||model!==draft.model||draft.scope!==chatScope()||!$('#chat-model-dialog').open||!$('#chat-model-effort'))return;
+    if(known)Object.assign(known,{efforts:r.efforts||[],default_effort:r.default_effort||'',discover_efforts:false});
     const efforts=r.efforts||[];draft.effort=efforts.includes(draft.effort)?draft.effort:r.default_effort||efforts[0]||'';
     $('#chat-model-effort').innerHTML=efforts.length?`<label>Effort<select id="chat-effort-choice">${efforts.map(e=>`<option ${e===draft.effort?'selected':''} value="${esc(e)}">${esc(human(e))}</option>`).join('')}</select></label>`:'';$('#save-chat-model').disabled=!model;
   }catch(e){if(request===state.chatEffortRequest&&draft===state.chatModelDraft&&kind===draft.kind&&model===draft.model&&draft.scope===chatScope())notice(humanError(e),true);}
