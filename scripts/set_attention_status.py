@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Update the current semantic state of one durable AttentionItem."""
+from _common import organization_transaction
 from _common import *
 import argparse,json
 
@@ -12,6 +13,7 @@ def find_item(business_id,attention_id):
     return None,None
 
 
+@organization_transaction
 def set_status(business_id,attention_id,status,resolution_refs=None,note=None,at=None):
     if status not in STATUSES:raise ValueError(f'Unknown AttentionItem status: {status}')
     obj,path=find_item(business_id,attention_id)
@@ -29,7 +31,7 @@ def set_status(business_id,attention_id,status,resolution_refs=None,note=None,at
         if note:
             bos=obj.setdefault('extensions',{}).setdefault('businessos',{})
             bos['resolution_note']=note
-    path.write_text(json.dumps(obj,indent=2)+'\n')
+    path.write_text(json.dumps(obj,indent=2)+'\n', encoding='utf-8')
     return {'attention_id':obj['id'],'from':old,'to':status,'path':str(path.relative_to(ROOT))}
 
 

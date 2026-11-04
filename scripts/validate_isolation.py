@@ -1,14 +1,18 @@
 #!/usr/bin/env python3
 from _common import *
 
-def isolation_errors():
-    errors=[];index={}
+def isolation_errors(business_id=None):
+    errors=[];index={};owners={}
     for inst in (ROOT/'instances').iterdir():
         if not inst.is_dir() or inst.name.startswith('_'):continue
-        for obj,p in iter_instance_objects(inst.name):index[obj['id']]=(inst.name,obj,p)
-    for oid,(bid,obj,p) in index.items():
+        for obj,p in iter_instance_objects(inst.name):
+            index[(inst.name,obj['id'])]=(inst.name,obj,p)
+            owners.setdefault(obj['id'],set()).add(inst.name)
+    for (bid,oid),(_,obj,p) in index.items():
+        if business_id is not None and bid!=business_id:continue
         for ref in refs_in_object(obj):
-            if ref in index and index[ref][0]!=bid:errors.append(f'{p}: cross-business ref {ref} -> {index[ref][0]}')
+            if (bid,ref) not in index and ref in owners:
+                errors.append(f'{p}: cross-business ref {ref} -> {", ".join(sorted(owners[ref]))}')
     return errors,index
 
 def main():

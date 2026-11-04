@@ -6,6 +6,7 @@ the exact source and authority, validates structure/references/isolation, and re
 literal support for explicit BusinessClaim records because those may authorize outward
 claims. General business context is not re-interpreted by a deterministic tokenizer.
 """
+from _common import organization_transaction
 from _common import *
 from jsonschema import Draft202012Validator
 import argparse,json,sys,hashlib
@@ -42,7 +43,7 @@ EXAMPLE_FACTS={
 def _validate(obj):
     typ=obj.get('object_type');sp=SCHEMA_PATHS.get(typ)
     if not sp:raise ValueError(f'Unsupported bootstrap object type: {typ}')
-    schema=json.loads((ROOT/sp).read_text())
+    schema=json.loads((ROOT/sp).read_text(encoding='utf-8'))
     errs=sorted(Draft202012Validator(schema).iter_errors(obj),key=lambda e:list(e.path))
     if errs:raise ValueError('; '.join(f'{list(e.path)} {e.message}' for e in errs))
 
@@ -113,7 +114,7 @@ def _load_brand_profile_files(paths):
     for raw in paths or []:
         path=Path(raw);path=path if path.is_absolute() else ROOT/path
         if not path.exists() or not path.is_file():raise ValueError(f'Could not read --brand-profile-file {raw!r}: file not found')
-        try:spec=json.loads(path.read_text())
+        try:spec=json.loads(path.read_text(encoding='utf-8'))
         except Exception as exc:raise ValueError(f'Could not parse --brand-profile-file {raw!r}: {exc}')
         if isinstance(spec,dict) and isinstance(spec.get('brand'),dict):spec=spec['brand']
         if not isinstance(spec,dict):raise ValueError(f'Brand profile manifest {raw!r} must be a JSON object or contain a brand object')
@@ -191,7 +192,7 @@ def _load_facts(facts_json=None,facts_file=None,facts_stdin=False):
     if not sources:
         out={k:[] for k in ['industries','business_models','markets','services','objectives','lead_sources','approved_claims','claim_constraints']};out['brand']=None;return out
     if facts_file:
-        try:raw=json.loads(Path(facts_file).read_text())
+        try:raw=json.loads(Path(facts_file).read_text(encoding='utf-8'))
         except Exception as exc:raise ValueError(f'Could not read --facts-file {facts_file!r}: {exc}')
     elif facts_stdin:
         try:raw=json.load(sys.stdin)
@@ -212,7 +213,7 @@ def _literal_claim_quote(statement,source_text,label):
 def build_objects(business_id,industries=None,business_models=None,markets=None,services=None,objectives=None,lead_sources=None,approved_claims=None,claim_constraints=None,brand=None,source_reference=None,source_text=None,source_members=None):
     base=ROOT/'instances'/business_id
     if not base.exists():raise ValueError(f'Unknown business: {business_id}; initialize it first with: python3 scripts/init_business.py {business_id} --name "Business Name"')
-    inst=json.loads((base/'instance.json').read_text());name=inst.get('name') or business_id
+    inst=json.loads((base/'instance.json').read_text(encoding='utf-8'));name=inst.get('name') or business_id
     industries=[str(x).strip() for x in (industries or []) if str(x).strip()];business_models=[str(x).strip() for x in (business_models or []) if str(x).strip()]
     markets=[str(x).strip() for x in (markets or []) if str(x).strip()]
     services=[part.strip() for x in (services or []) if x for part in str(x).split(',') if part.strip()]
@@ -297,12 +298,13 @@ def _merge_existing_business(existing,incoming):
     _validate(out);return out
 
 
+@organization_transaction
 def persist_explicit_context(business_id,**kwargs):
     objs=build_objects(business_id,**kwargs);base=ROOT/'instances'/business_id;paths=[_path(base,obj) for obj in objs];blocked=[]
     for i,(obj,path) in enumerate(zip(objs,paths)):
         if not path.exists():continue
         if obj.get('object_type')=='Business':
-            objs[i]=_merge_existing_business(json.loads(path.read_text()),obj);continue
+            objs[i]=_merge_existing_business(json.loads(path.read_text(encoding='utf-8')),obj);continue
         blocked.append(path.relative_to(ROOT).as_posix())
     if blocked:raise FileExistsError('Refusing to overwrite existing canonical context object(s): '+', '.join(blocked)+'. Update current context through its supported update path instead of silently replacing it.')
     for obj,path in zip(objs,paths):write_json_atomic(path,obj)
@@ -359,7 +361,7 @@ Repeat --source-file for multi-source onboarding; AURA preserves each member ref
         canonical_source=next((obj['id'] for obj in reversed(objs) if obj.get('object_type')=='SourceRecord' and (obj.get('extensions') or {}).get('captured_fact_categories') is not None),None)
         for raw in a.preference_profile_file:
             path=Path(raw);path=path if path.is_absolute() else ROOT/path
-            try:spec=json.loads(path.read_text())
+            try:spec=json.loads(path.read_text(encoding='utf-8'))
             except Exception as exc:raise SystemExit(f'Could not read --preference-profile-file {raw!r}: {exc}')
             if not isinstance(spec,dict) or not isinstance(spec.get('preferences'),dict):raise SystemExit(f'Preference profile manifest {raw!r} must be a JSON object with a preferences object')
             applies=spec.get('applies_to') or {}

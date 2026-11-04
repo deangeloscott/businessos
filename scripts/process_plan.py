@@ -63,7 +63,7 @@ def main():
     try:data=build_process_plan(a.system,a.activity,a.workflow,a.playbook)
     except ValueError as e:raise SystemExit(str(e))
     text=json.dumps(data,indent=2)+'\n'
-    if a.output:Path(a.output).write_text(text)
+    if a.output:Path(a.output).write_text(text, encoding='utf-8')
     else:print(text,end='')
 
 if __name__=='__main__':main()

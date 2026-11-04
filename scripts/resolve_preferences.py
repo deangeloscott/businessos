@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from _common import organization_transaction
 from _common import *
 import argparse, copy, fnmatch, json, os
 from preference_semantics import validate_preference_semantics
@@ -53,20 +54,20 @@ def _assign_path(root,path,value):
     cur[parts[-1]]=copy.deepcopy(value)
 
 
-def _load_profiles(business_id):
+def _load_profiles(business_id,index=None):
     out=[]
-    for obj,path in iter_instance_objects(business_id):
+    for obj,path in (index.values() if index is not None else iter_instance_objects(business_id)):
         if obj.get('object_type')=='PreferenceProfile' and obj.get('status')=='active':
             validate_preference_semantics(obj.get('preferences') or {}, f'{path.relative_to(ROOT)}.preferences')
             out.append((obj,path))
     return out
 
 
-def resolve_effective_preferences(business_id,operator_ref=None,team_ref=None,role_ref=None,system=None,workflow=None,output_type=None,channel=None,task_preferences=None,fail_on_conflict=True):
+def resolve_effective_preferences(business_id,operator_ref=None,team_ref=None,role_ref=None,system=None,workflow=None,output_type=None,channel=None,task_preferences=None,fail_on_conflict=True,index=None):
     if not (ROOT/'instances'/business_id).exists():
         raise ValueError('Unknown business')
     candidates=[]
-    for profile,path in _load_profiles(business_id):
+    for profile,path in _load_profiles(business_id,index):
         if not _subject_matches(profile,business_id,team_ref,role_ref,operator_ref): continue
         if not _profile_applies(profile,system,workflow,output_type,channel): continue
         candidates.append((profile,path))
@@ -94,6 +95,11 @@ def resolve_effective_preferences(business_id,operator_ref=None,team_ref=None,ro
             _assign_path(effective,leaf,value)
             sources[leaf]={'source_type':'task_preference','scope':'task'}
             meta[leaf]={'rank':4,'priority':0,'profile_id':None,'value':copy.deepcopy(value)}
+    # Only disagreement at the effective precedence is unresolved. A later, more
+    # specific profile or an explicit task choice settles a lower-level conflict.
+    conflicts=[c for c in conflicts if
+        (meta[c['path']]['rank'],meta[c['path']]['priority']) ==
+        (SCOPE_RANK[c['precedence']['scope']],c['precedence']['priority'])]
     result={
         'format_version':'1.0',
         'business_id':business_id,
@@ -130,6 +136,7 @@ def _run_context(business_id,run_id):
     return run,rp
 
 
+@organization_transaction
 def resolve_for_run(business_id,run_id,task_preferences=None,output_type=None,channel=None):
     run,rp=_run_context(business_id,run_id)
     snapref=run.get('preference_snapshot_ref');out=(ROOT/snapref) if snapref else (rp.parent/'artifacts'/'effective-preferences.json')
@@ -144,9 +151,9 @@ def resolve_for_run(business_id,run_id,task_preferences=None,output_type=None,ch
         task_preferences=task_preferences,
     )
     out.parent.mkdir(parents=True,exist_ok=True)
-    out.write_text(json.dumps(result,indent=2)+'\n')
+    out.write_text(json.dumps(result,indent=2)+'\n', encoding='utf-8')
     run['preference_snapshot_ref']=out.relative_to(ROOT).as_posix();run['updated_at']=now()
-    rp.write_text(json.dumps(run,indent=2)+'\n')
+    rp.write_text(json.dumps(run,indent=2)+'\n', encoding='utf-8')
     return result,out
 
 
@@ -179,8 +186,8 @@ def main():
             else:
                 workflow=run.get('workflow_id');rw=load_registry_workflow(workflow);system=a.system or ((rw or {}).get('owner_system'))
                 result=resolve_effective_preferences(a.business_id,run.get('operator_ref'),run.get('team_ref'),run.get('role_ref'),system,workflow,run.get('preference_output_type'),run.get('preference_channel'),task)
-                out.parent.mkdir(parents=True,exist_ok=True);out.write_text(json.dumps(result,indent=2)+'\n')
-                run['preference_snapshot_ref']=out.relative_to(ROOT).as_posix();run['updated_at']=now();rp.write_text(json.dumps(run,indent=2)+'\n')
+                out.parent.mkdir(parents=True,exist_ok=True);out.write_text(json.dumps(result,indent=2)+'\n', encoding='utf-8')
+                run['preference_snapshot_ref']=out.relative_to(ROOT).as_posix();run['updated_at']=now();rp.write_text(json.dumps(run,indent=2)+'\n', encoding='utf-8')
         else:
             operator=a.operator_ref or os.environ.get('BUSINESSOS_OPERATOR_REF')
             team=a.team_ref or os.environ.get('BUSINESSOS_TEAM_REF');role=a.role_ref or os.environ.get('BUSINESSOS_ROLE_REF')
@@ -188,7 +195,7 @@ def main():
             out=None
         text=json.dumps(result,indent=2)+'\n'
         if a.output:
-            op=Path(a.output);op=op if op.is_absolute() else ROOT/op;op.parent.mkdir(parents=True,exist_ok=True);op.write_text(text);print(op)
+            op=Path(a.output);op=op if op.is_absolute() else ROOT/op;op.parent.mkdir(parents=True,exist_ok=True);op.write_text(text, encoding='utf-8');print(op)
         else: print(text,end='')
         if out: print(f'preference_snapshot_ref={out.relative_to(ROOT).as_posix()}')
     except (ValueError,json.JSONDecodeError) as e: raise SystemExit(str(e))

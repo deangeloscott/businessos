@@ -4,7 +4,7 @@ from pathlib import Path
 import argparse,json,re
 
 def browse(index_path,query=None,detail_level=None):
-    idx=json.loads(Path(index_path).read_text());validate_schema('InnovationExchangeIndex',idx);q=(query or '').lower().strip();words=set(re.findall(r'[a-z0-9]{2,}',q));rows=[]
+    idx=json.loads(Path(index_path).read_text(encoding='utf-8'));validate_schema('InnovationExchangeIndex',idx);q=(query or '').lower().strip();words=set(re.findall(r'[a-z0-9]{2,}',q));rows=[]
     for e in idx['entries']:
         if detail_level and e['detail_level']!=detail_level:continue
         hay=' '.join([e['title'],e['purpose'],e['workflow_id']]).lower();score=sum(1 for w in words if w in hay) if words else 0

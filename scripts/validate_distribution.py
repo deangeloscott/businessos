@@ -23,7 +23,7 @@ def _validate_distribution_product_local():
             if dep not in installed:errors.append(f'{mid} missing required module {dep}')
     unexpected=[p.name for p in (ROOT/'instances').iterdir() if p.is_dir() and p.name!='_template'] if (ROOT/'instances').exists() else []
     if inst.get('standalone_distribution') and unexpected:errors.append(f'distribution includes business instances: {unexpected}')
-    tpl=json.loads((ROOT/'instances/_template/instance.json').read_text());expected_enabled=sorted(installed-{'core'})
+    tpl=json.loads((ROOT/'instances/_template/instance.json').read_text(encoding='utf-8'));expected_enabled=sorted(installed-{'core'})
     if sorted(tpl.get('enabled_systems',[]))!=expected_enabled:errors.append('instance template enabled_systems does not match installed modules')
 
     generate_registry();validate_workspace();validate_public_distribution();reg={c['id']:c for c in load_registry()['workflows']}
@@ -34,7 +34,7 @@ def _validate_distribution_product_local():
     if (ROOT/'core/process-map.json').exists():map_paths.append(ROOT/'core/process-map.json')
     map_paths+=sorted((ROOT/'systems').glob('*/process-map.json'))
     for mp in map_paths:
-        d=json.loads(mp.read_text())
+        d=json.loads(mp.read_text(encoding='utf-8'))
         for a in d.get('activities',[]):
             try:build_process_plan(d['system'],a['id'])
             except Exception as e:errors.append(f"Workflow knowledge {d['system']}/{a['id']}: {e}")
@@ -70,7 +70,7 @@ def _validate_distribution_product_local():
             if 'CONTEXT.md' not in plan.get('files',[]):errors.append('context plan lost universal AURA agent context')
             for redundant in ('core/DEFAULTS.md','core/policies/agent-execution.md','core/policies/business-isolation.md','core/policies/preferences-and-adaptation.md'):
                 if redundant in plan.get('files',[]):errors.append(f'context plan front-loaded redundant universal instruction: {redundant}')
-            root_context=(ROOT/'CONTEXT.md').read_text()
+            root_context=(ROOT/'CONTEXT.md').read_text(encoding='utf-8')
             for phrase in [
                 'AURA operating areas are bodies of operating knowledge, not limits on what the host may do.',
                 'The model/user decides semantic applicability.',

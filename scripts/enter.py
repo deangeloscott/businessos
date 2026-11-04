@@ -21,6 +21,7 @@ from _lexical import tokens,document_frequency,weighted_overlap
 from correction_impacts import pending_corrections
 from generate_knowledge_layer import knowledge_layer_freshness
 from workspace_goals import discoverable
+from resolve_preferences import resolve_effective_preferences,_load_task_preferences
 
 METHOD_TYPES=['aura_playbook','aura_workflow','external_skill','model_created','ad_hoc']
 BASELINE_TYPES=['Business','Brand','ProductService','Offer','AudienceSegment','Market','Objective','DecisionRecord','Learning']
@@ -61,9 +62,9 @@ def _saved_work_candidates(task,index,limit=6,offset=0):
     return [item[-1] for item in sorted(ranked,key=lambda item:item[:3])[offset:offset+limit]]
 
 
-def _workflow_candidates(task,business_id,owner_system=None,team_ref=None,role_ref=None,operator_ref=None,top=6):
+def _workflow_candidates(task,business_id,owner_system=None,team_ref=None,role_ref=None,operator_ref=None,top=6,index=None):
     rows=[];seen=set()
-    for local in local_workflow_candidates(task,business_id,team_ref,role_ref,operator_ref,top):
+    for local in local_workflow_candidates(task,business_id,team_ref,role_ref,operator_ref,top,index):
         wid=local.get('workflow_id')
         if not wid:continue
         if owner_system and local.get('owner_system')!=owner_system:continue
@@ -104,8 +105,12 @@ def prepare_work(task,business_id=None,workspace=None,focus=None,operator_ref=No
     owner=playbook.get('owner_system') if playbook else None
     selected_workflow=_selected_workflow(task,bid,selected_workflow_id,team_ref,role_ref,operator_ref) if selected_workflow_id else None
     if selected_workflow and owner and selected_workflow.get('owner_system')!=owner:selected_workflow={**selected_workflow,'cross_area':True}
-    playbook_candidates=[] if playbook else find_playbook_candidates(task,3);workflow_candidates=[] if selected_workflow else _workflow_candidates(task,bid,owner,team_ref,role_ref,operator_ref)
+    playbook_candidates=[] if playbook else find_playbook_candidates(task,3);workflow_candidates=[] if selected_workflow else _workflow_candidates(task,bid,owner,team_ref,role_ref,operator_ref,index=index)
     context,workflow_view=_workflow_context(bid,selected_workflow_id,focus,operator_ref,team_ref,role_ref,task_preferences,output_type,channel);baseline=_baseline_context(bid,index=index)
+    preference_values=_load_task_preferences(task_preferences) if isinstance(task_preferences,(str,Path)) else task_preferences
+    preference_system=(selected_workflow or {}).get('owner_system') or owner
+    preferences=resolve_effective_preferences(bid,operator_ref,team_ref,role_ref,preference_system,selected_workflow_id,
+        output_type,channel,preference_values,fail_on_conflict=False,index=index)
     if context and not context.get('error'):
         object_context=context.get('object_context',[]);context_files=context.get('files',[]);supporting_context_refs=context.get('supporting_context_refs',[]);context_reading_rule=context.get('context_reading_rule')
     else:
@@ -119,13 +124,14 @@ def prepare_work(task,business_id=None,workspace=None,focus=None,operator_ref=No
         except ValueError as exc:playbook_view={'error':str(exc)}
     candidates=_saved_work_candidates(task,index,saved_work_limit+1,saved_work_offset)
     return {
-        'format_version':'4.2','status':'needs_judgment' if unresolved_focus or read_diagnostics else 'ready','workspace':str(workspace_root()),'business_id':bid,'business_resolution':resolved.get('resolution'),'original_request':task,
+        'format_version':'4.2','status':'needs_judgment' if unresolved_focus or read_diagnostics or preferences['conflicts'] else 'ready','workspace':str(workspace_root()),'business_id':bid,'business_resolution':resolved.get('resolution'),'original_request':task,
         'retrieval':{
             'focus_context':focus_context,'unresolved_focus':unresolved_focus,'saved_work_candidates':candidates[:saved_work_limit],
             'saved_work_search':{'limit':saved_work_limit,'offset':saved_work_offset,'next_offset':saved_work_offset+saved_work_limit if len(candidates)>saved_work_limit else None,'broaden':'Use --saved-work-limit (up to 100), --saved-work-offset, or different title/purpose/filename terms. Linked document contents are not indexed.'},
             'read_diagnostics':read_diagnostics[:10],'read_diagnostic_count':len(read_diagnostics),
             'correction_review':pending_corrections(index,saved_work_limit),
-            'knowledge_view':knowledge_layer_freshness(bid),
+            'preferences':preferences,
+            'knowledge_view':knowledge_layer_freshness(bid,index,read_diagnostics),
             'lookup_rule':'Candidates are lexical matches, not accepted conclusions. Read records and artifacts; status, assumptions and evidence limits matter. Recency is not authority. Missing optional context does not block useful work. Resolve missing refs/read failures before relying on completeness.',
             'baseline_context':baseline,'workflow_context':object_context,'context_files':context_files,'supporting_context_refs':supporting_context_refs,'context_reading_rule':context_reading_rule,
             'unresolved_selectors':(context or {}).get('unresolved_selectors',[]) if isinstance(context,dict) else [],

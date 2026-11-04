@@ -86,7 +86,7 @@ window.auraContinuity=(()=>{
           drafts.delete(form.dataset.nativeRequest);
           if(key!==requestScope||!form.isConnected)return;
           status.textContent='Answer sent.';form.querySelectorAll('input,textarea,button').forEach(el=>{el.disabled=true;});
-        }catch(error){if(form.isConnected){status.textContent=error.message;button.disabled=false;}}
+        }catch(error){if(form.isConnected){status.textContent=humanError(error);button.disabled=false;}}
       });};
     });
     if(focus){
@@ -114,7 +114,7 @@ window.auraContinuity=(()=>{
     if(!current(key,ticket,host))return;
     const connected=state.data.connection.choices.filter(a=>a.available);
     if(forChat&&data.choices.length===1){
-      host.innerHTML=`<p>${esc(appName(kind))} uses its own permission settings${kind==='pi'?', including any installed approval extensions':''}.</p><button type="button" class="secondary" data-close="detail">Done</button>`;
+      host.innerHTML=`<p>${esc(appName(kind)||'Your AI app')} uses its own permission settings${kind==='pi'?', including any installed approval extensions':''}.</p><button type="button" class="secondary" data-close="detail">Done</button>`;
       return;
     }
     host.innerHTML=`<form id="permissions-form" class="form-grid">${!forChat?`<label>AI app<select id="permissions-app">${connected.map(a=>`<option value="${esc(a.id)}" ${a.id===kind?'selected':''}>${esc(a.name)}</option>`).join('')}</select></label>`:''}<label>${chat?'This chat':'Default for new requests'}<select id="permissions-mode">${chat?`<option value="inherit" ${!data.override?'selected':''}>Use Aura default (${esc(data.choices.find(c=>c.id===data.default)?.name||data.default)})</option>`:''}${data.choices.map(c=>`<option value="${esc(c.id)}" ${(chat?data.override:data.mode)===c.id?'selected':''}>${esc(c.name)}</option>`).join('')}</select></label><p id="permissions-native" class="small-note"></p><div class="inline-actions"><button class="primary">Save permissions</button><span id="permissions-status" role="status"></span></div></form>`;
@@ -158,7 +158,7 @@ window.auraContinuity=(()=>{
         $('#history-restore').onclick=()=>attempt(async()=>{
           if(!current(key,ticket,host)||reviewId!==selection)return;const restore=$('#history-restore');restore.disabled=true;
           try{const result=await api('/api/history/restore',{business:state.business,id:selected.id,expected_revision:selected.current_revision});if(current(key,ticket,host)){$('#history-restore-status').textContent=(result.warning||'Restored.')+' Reopen the file to see it.';}}
-          catch(error){if(current(key,ticket,host)){$('#history-restore-status').textContent=error.message;restore.disabled=false;}}
+          catch(error){if(current(key,ticket,host)){$('#history-restore-status').textContent=humanError(error);restore.disabled=false;}}
         });review.scrollIntoView({block:'nearest',behavior:'smooth'});
       }finally{if(button.isConnected)button.disabled=false;}
     });paint();

@@ -430,6 +430,7 @@ class Workspace:
         self.read_cache = {}
         self.inventory_lock = threading.Lock()
         self.performance = workspace_support.Performance()
+        self.errors = workspace_support.ErrorDetails()
         self.option_cache = {}
         self.usage_accounts = {}
         self.usage_refresh = {'reporting':[], 'checked':0}
@@ -566,6 +567,7 @@ class Workspace:
             fresh = Workspace(self.configured_agent, self.static, self.settings_file.parent / (identity + '.json'))
         fresh.jobs, fresh.executions, fresh.workspace_views = self.jobs, self.executions, self.workspace_views
         fresh.performance=self.performance
+        fresh.errors=self.errors
         fresh.workspace_path = str(target.resolve())
         fresh.launch_extra = list(getattr(self, 'launch_extra', []))
         if '--interface-dir' in fresh.launch_extra:
@@ -1520,20 +1522,27 @@ class Workspace:
         return revision,self.read_cache[key][1]
 
     def support_environment(self,names=False):
+        notes=['Only Aura-related applications and discovered capabilities are included. Unreported versions and hardware fields remain unavailable. Recent error messages may describe the affected item; review these details before submitting.']
+        def optional(read,label,default):
+            try:return read()
+            except Exception as exc:
+                self.errors.record(exc,'support/details',self.connections.redact)
+                notes.append(label+' could not be read. Other technical details are still available.')
+                return default
         with self.lock:
             owner=copy.copy(self)
-            apps=[{'app':a['id'],'installed':bool(a.get('argv')),'connected':a['id'] in self.preferences['connected_apps']} for a in installed_agents()]
-            services=[{'service':r['id'] if r['id'] in {p[0] for p in PRESETS} else 'custom connection','status':r['status'],**({'name':self.connections.redact(r['name'])[:160]} if names else {})} for r in self.connections.rows()['items']]
+            apps=optional(lambda:[{'app':a['id'],'installed':bool(a.get('argv')),'connected':a['id'] in self.preferences['connected_apps']} for a in installed_agents()],'AI app details',[])
+            services=optional(lambda:[{'service':r['id'] if r['id'] in {p[0] for p in PRESETS} else 'custom connection','status':r['status'],**({'name':self.connections.redact(r['name'])[:160]} if names else {})} for r in self.connections.rows()['items']],'Connection details',[])
             running=len(self.running_jobs());chats=len(self.preferences['chats'])
             versions={kind:str(value['version']) for kind,value in self.option_cache.items() if kind in NATIVE_AGENTS and isinstance(value,dict) and re.fullmatch(r'[0-9][0-9A-Za-z.+-]{0,60}',str(value.get('version','')))}
         with workspace_scope(owner.workspace_path):
-            catalog=owner.cached_read(('support-library',),lambda:owner.library_items()['items'],seconds=30)
-            kinds={kind:sum(r.get('kind')==kind for r in catalog) for kind in ('Workflow','Recipe','Skill','Tool','Plugin')}
+            catalog=optional(lambda:owner.cached_read(('support-library',),lambda:owner.library_items()['items'],seconds=30),'Library details',None)
+            kinds={kind:sum(r.get('kind')==kind for r in catalog) if catalog is not None else None for kind in ('Workflow','Recipe','Skill','Tool','Plugin')}
             result={'aura':{'version':os_version(),'selected_app':owner.connection_kind or 'not selected','configured_command_available':bool(owner.configured_agent),'interface':'standard' if owner.static==STATIC else 'custom','chats':chats,'working_requests':running},
-                    'computer':owner.cached_read(('support-machine',),lambda:workspace_support.machine(owner.workspace_path),seconds=30),'apps':apps,'reported_app_versions':versions,'connections':services,
-                    'library_counts':kinds,'performance':self.performance.snapshot(),'notes':['Only Aura-related applications and discovered capabilities are included. Unreported versions and hardware fields remain unavailable.'],
+                    'computer':optional(lambda:owner.cached_read(('support-machine',),lambda:workspace_support.machine(owner.workspace_path),seconds=30),'Computer details',{}),'apps':apps,'reported_app_versions':versions,'connections':services,
+                    'library_counts':kinds,'performance':self.performance.snapshot(),'recent_errors':self.errors.snapshot(),'notes':notes,
                     'excluded':['credentials','account identities','environment variables','chat contents','business records','workspace names and paths','raw logs']}
-            if names:result['library_names']=[{'kind':r.get('kind'),'title':owner.connections.redact(str(r.get('title','')))[:160],**({'version':str(r['version'])} if re.fullmatch(r'[0-9][0-9A-Za-z.+-]{0,60}',str(r.get('version',''))) else {})} for r in catalog]
+            if names and catalog is not None:result['library_names']=[{'kind':r.get('kind'),'title':owner.connections.redact(str(r.get('title','')))[:160],**({'version':str(r['version'])} if re.fullmatch(r'[0-9][0-9A-Za-z.+-]{0,60}',str(r.get('version',''))) else {})} for r in catalog]
             return result
 
     def state(self, bid=None, revision=None):
@@ -2252,6 +2261,13 @@ def handler_for(app):
             self.end_headers()
             self.wfile.write(body)
 
+        def failure(self,error,status=400):
+            from _process_errors import redact
+            route=urlsplit(self.path).path
+            operation=route if route.removeprefix('/api/') in workspace_support.ROUTES else '/api/other'
+            ident=app.errors.record(error,operation,app.connections.redact)
+            self.send(status,{'error':app.connections.redact(redact(workspace_support.human_error(error))),'error_id':ident})
+
         def stream_file(self,path,download=False):
             # Resolve permission under the short UI lock, stream bytes outside
             # it. Native media controls can seek without buffering the file.
@@ -2508,9 +2524,9 @@ def handler_for(app):
                 else:
                     self.send(404, {'error': 'Not found.'})
             except PermissionError as exc:
-                self.send(403, {'error': str(exc)})
-            except (ValueError, OSError, KeyError, subprocess.SubprocessError) as exc:
-                self.send(400, {'error': app.connections.redact(str(exc))})
+                self.failure(exc,403)
+            except Exception as exc:
+                self.failure(exc,400 if isinstance(exc,(ValueError,OSError,KeyError)) else 500)
 
         def do_POST(self):
             self.request_started=time.monotonic()
@@ -3075,9 +3091,9 @@ def handler_for(app):
                     else:
                         self.send(404, {'error': 'Not found.'})
             except PermissionError as exc:
-                self.send(403, {'error': str(exc)})
-            except (ValueError, OSError, KeyError, StopIteration, subprocess.SubprocessError) as exc:
-                self.send(400, {'error': app.connections.redact(str(exc)) or 'The selected record was not found.'})
+                self.failure(exc,403)
+            except Exception as exc:
+                self.failure(exc,400 if isinstance(exc,(ValueError,OSError,KeyError,StopIteration)) else 500)
     return Handler
 
 
@@ -3174,7 +3190,7 @@ def main():
     elif getattr(app, 'restart_requested', False):
         # The old listener and launch lock are closed before the replacement
         # starts. Native AI apps/gateways and workspace files remain untouched.
-        argv = [sys.executable, '-E', '-s', '-B', str(PRODUCT_ROOT / 'scripts/open_aura.py'),
+        argv = [sys.executable, '-X', 'utf8', '-E', '-s', '-B', str(PRODUCT_ROOT / 'scripts/open_aura.py'),
                 '--workspace', str(workspace_root()), '--port', str(server.server_port), '--no-open',
                 *app.launch_extra]
         if app.restart_business:

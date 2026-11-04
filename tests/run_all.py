@@ -32,6 +32,7 @@ TESTS=[
     'tests/run_aura_entry.py',
     'tests/run_first_principles_interface.py',
     'tests/run_memory_interface.py',
+    'tests/run_audit_repairs.py',
     'tests/run_setup_readiness.py',
     'tests/run_visual_workspace.py',
     'tests/run_workspace_conversations.py',

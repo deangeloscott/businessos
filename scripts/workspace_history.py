@@ -10,7 +10,7 @@ import tempfile
 import threading
 import time
 
-from _common import workspace_root, workspace_scope
+from _common import workspace_root, workspace_scope,organization_transaction
 from workspace_startup import state_dir
 
 MAX_FILE=32*1024*1024
@@ -198,6 +198,7 @@ def observe(bid,reason='Observed native work'):
     return {'checked':count,'notes':notes[:8]}
 
 
+@organization_transaction
 def restore(bid,ident,expected):
     from workspace_documents import revision,Conflict
     from workspace_sharing import destination_lock

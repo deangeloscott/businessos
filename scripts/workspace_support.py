@@ -1,4 +1,4 @@
-"""Bounded, local performance counters and explicit support preparation. No delivery."""
+"""Bounded local diagnostics and explicit support preparation. No delivery."""
 import ctypes
 import json
 import os
@@ -7,10 +7,56 @@ import shutil
 import sys
 import threading
 import time
+import re
+import traceback
 from collections import deque
 from pathlib import Path
 
 _draft_lock=threading.Lock()
+
+UNEXPECTED_ERROR='AURA couldn’t complete this action. Try again. If it keeps happening, report it from Settings.'
+
+
+def human_error(error):
+    """Keep actionable validation messages; translate implementation failures."""
+    if isinstance(error,FileNotFoundError):return 'The selected file or folder is no longer available. Check its location and try again.'
+    if isinstance(error,PermissionError) and error.errno is not None:return 'AURA couldn’t access this item. Check the file or folder permissions and try again.'
+    if isinstance(error,FileExistsError):return 'An item already exists at that location. Choose another name or location.'
+    if isinstance(error,UnicodeError):return 'AURA couldn’t read this text file. Ask your AI to check its text encoding; keep the original file.'
+    if isinstance(error,json.JSONDecodeError):return 'AURA couldn’t read some saved information. Keep the original and ask your AI to check the file.'
+    if isinstance(error,OSError) and not isinstance(error,PermissionError):
+        if error.errno==28:return 'There isn’t enough free disk space to save this change. Free some space and try again.'
+        return 'AURA couldn’t read or save this item. Check that its folder is available and try again.'
+    message=str(error).strip()
+    if re.search(r'(?:unresolved ref|cross-business ref|canonical state still refers)',message,re.I):
+        return 'Some saved information has a missing or conflicting link. Ask your AI to check those links before trying again.'
+    if re.search(r'(?:post-(?:persistence|removal) validation failed|schema|is not of type|is a required property)',message,re.I):
+        return 'Some saved information needs correction before this change can be saved. Ask your AI to check the affected record.'
+    technical=re.search(r'(?:Traceback|\b(?:TypeError|AttributeError|KeyError|SyntaxError)\b|innerHTML|undefined|\bnull\b|[{}<>]|\b(?:ENOENT|EACCES)\b|\bat .+?:\d+:\d+)',message)
+    if isinstance(error,(ValueError,PermissionError)) and message and len(message)<=350 and not technical:return message
+    return UNEXPECTED_ERROR
+
+
+class ErrorDetails:
+    """Small in-memory error tail, included only in reviewed technical reports."""
+    def __init__(self):self.lock=threading.Lock();self.rows=deque(maxlen=24)
+
+    def record(self,error,operation,redactor=lambda value:value):
+        import secrets
+        from _process_errors import redact
+        message=redactor(redact(str(error)))
+        # Full local paths and URL query strings are not needed to identify code failures.
+        message=re.sub(r'(?:[A-Za-z]:[\\/]|/(?:Users|home)/)[^\s\"\'<>]+','[local path]',message)
+        message=re.sub(r'(https?://[^\s?]+)\?[^\s]+',r'\1?[details hidden]',message)
+        row={'id':secrets.token_hex(6),'at':time.time(),'operation':operation,
+             'type':type(error).__name__,'message':message[:2000],
+             'frames':[{'file':Path(f.filename).name,'line':f.lineno,'function':f.name}
+                       for f in traceback.extract_tb(error.__traceback__)[-8:]]}
+        with self.lock:self.rows.append(row)
+        return row['id']
+
+    def snapshot(self):
+        with self.lock:return list(self.rows)
 
 ROUTES=set("state files file media library library/item chats chats/open chats/detail chat chat/stop conversation notifications updates usage usage/settings profile diagnostics support/environment support/test support/prepare chats/native chats/import chats/changes".split())
 
@@ -50,7 +96,7 @@ def machine(root):
             get=ctypes.windll.psapi.GetProcessMemoryInfo;get.argtypes=[ctypes.c_void_p,ctypes.c_void_p,ctypes.c_ulong]
             if get(handle(),ctypes.byref(usage),usage.size):result['aura_memory_mib']=round(usage.working/2**20,1)
         elif sys.platform.startswith('linux'):
-            values={line.split(':')[0]:int(line.split()[1])*1024 for line in Path('/proc/meminfo').read_text().splitlines() if line.startswith(('MemTotal:','MemAvailable:'))}
+            values={line.split(':')[0]:int(line.split()[1])*1024 for line in Path('/proc/meminfo').read_text(encoding='utf-8').splitlines() if line.startswith(('MemTotal:','MemAvailable:'))}
             result.update(ram_gib=round(values['MemTotal']/2**30,1),available_ram_gib=round(values['MemAvailable']/2**30,1))
         disk=shutil.disk_usage(root);result['workspace_disk_free_gib']=round(disk.free/2**30,1)
     except (OSError,ValueError,AttributeError):pass
@@ -86,6 +132,8 @@ def prepare(data,environment,folder,persist=True):
     report={'format':'aura-support-v1','kind':kind,'title':title.strip(),'description':description.strip(),
             'created_at':time.time(),'delivery':'test_only_not_sent','environment':environment if data.get('include_environment') is True else None,
             'browser_performance':browser_metrics(data.get('browser_performance',{})) if data.get('include_environment') is True else {},'attachments':attachments}
+    if data.get('include_environment') is True and environment is not None:
+        report['environment']={**environment,'browser_errors':browser_errors(data.get('browser_errors'))}
     if not persist:
         report.pop('delivery',None)
         return {'report':report}
@@ -115,4 +163,18 @@ def browser_metrics(raw):
     for name in ('browser','platform'):
         value=raw.get(name)
         if isinstance(value,str) and value in {'Chrome','Edge','Firefox','Safari','Other','Windows','macOS','Linux','Android','iOS'}:result[name]=value
+    return result
+
+
+def browser_errors(raw):
+    """Explicitly reviewed browser diagnostics, never arbitrary files or event payloads."""
+    from _process_errors import redact
+    if not isinstance(raw,list):return []
+    result=[]
+    for row in raw[-12:]:
+        if not isinstance(row,dict):continue
+        clean={key:redact(str(row.get(key,'')))[:limit] for key,limit in
+               (('type',80),('message',1000),('stack',2000))}
+        clean['at']=row.get('at') if isinstance(row.get('at'),(int,float)) else None
+        result.append(clean)
     return result

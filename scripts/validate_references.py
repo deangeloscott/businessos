@@ -3,8 +3,10 @@
 from _common import *
 from canonical_store import INSTANCE_PATHS
 import argparse,json,re
+from functools import lru_cache
 
 
+@lru_cache(maxsize=1)
 def canonical_reference_pattern():
     """Build the reference grammar from canonical organization-object ID schemas.
 
@@ -15,7 +17,7 @@ def canonical_reference_pattern():
     """
     schema_by_title={}
     for path in schemas():
-        try:data=json.loads(path.read_text())
+        try:data=json.loads(path.read_text(encoding='utf-8'))
         except Exception:continue
         title=data.get('title')
         if title in INSTANCE_PATHS:schema_by_title[title]=data
@@ -31,26 +33,47 @@ def canonical_reference_pattern():
 
 
 def references_in(value):
-    return set(canonical_reference_pattern().findall(json.dumps(value)))
+    """Read declared relationships, including nested extension reference fields.
+
+    A source_reference/location_reference is a locator, not a canonical relationship.
+    Prefix-shaped words in descriptions, captured text, or paths carry no authority.
+    """
+    pattern=canonical_reference_pattern();out=set()
+    def collect(item):
+        if isinstance(item,str):
+            if pattern.fullmatch(item):out.add(item)
+        elif isinstance(item,list):
+            for child in item:collect(child)
+        elif isinstance(item,dict):
+            visit(item)
+    def visit(item):
+        if isinstance(item,dict):
+            for key,child in item.items():
+                if key in {'lineage','ref','reference_assets'} or key.endswith(('_ref','_refs')):collect(child)
+                elif isinstance(child,(dict,list)):visit(child)
+        elif isinstance(item,list):
+            for child in item:visit(child)
+    visit(value)
+    return out
 
 
 def reference_errors(business_id):
     base=ROOT/'instances'/business_id
     if not base.exists():return ['Unknown business']
-    diagnostics=[];index=object_index(business_id,diagnostics);pat=canonical_reference_pattern()
+    diagnostics=[];index=object_index(business_id,diagnostics)
     errors=[f'{row["path"]} unreadable canonical record: {row["reason"]}' for row in diagnostics]
     for oid,(obj,path) in index.items():
-        for ref in pat.findall(json.dumps(obj)):
+        for ref in references_in(obj):
             if ref!=oid and ref not in index:errors.append(f'{path.relative_to(ROOT)} unresolved ref {ref}')
     return errors
 
 
 def inbound_references(business_id,target_ref):
     """Return canonical objects that currently reference target_ref."""
-    out=[];target=str(target_ref);pattern=canonical_reference_pattern()
+    out=[];target=str(target_ref)
     for obj,path in iter_instance_objects(business_id):
         if obj.get('id')==target:continue
-        if target in pattern.findall(json.dumps(obj)):out.append(describe_object(obj,path))
+        if target in references_in(obj):out.append(describe_object(obj,path))
     return out
 
 

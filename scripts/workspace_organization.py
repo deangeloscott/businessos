@@ -165,7 +165,8 @@ def plan(primary,sources,destination,business_map=None,store=None,progress=lambd
             meta=Path('organization')/ident/'sources'/skey/'workspace-profile.json'
             out[meta.as_posix()]={'source':str(profile),'sha256':_sha256(profile),'bytes':profile.stat().st_size}
         selected_names={r[0].as_posix() for r in rows}
-        excluded=sorted((set(excluded)| (set(files)-selected_names))- {'.businessos/workspace.json'})
+        excluded=sorted(name for name in (set(excluded)|(set(files)-selected_names))-{'.businessos/workspace.json'}
+                        if not storage.transient_file(name))
         import_root=Path('attachments')/first_bid/'imports'/skey
         def imported(rel):
             parts=rel.parts;owner=parts[1] if len(parts)>1 and parts[0] in {'instances','knowledge','attachments'} else parts[2] if len(parts)>2 and parts[:2]==('runtime','runs') else None

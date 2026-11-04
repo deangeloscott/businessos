@@ -14,7 +14,7 @@ import argparse,json,re
 def business_name(business_id):
     p=ROOT/'instances'/business_id/'context/business.json'
     if p.exists():
-        try:return json.loads(p.read_text()).get('name') or business_id
+        try:return json.loads(p.read_text(encoding='utf-8')).get('name') or business_id
         except Exception:pass
     return business_id
 

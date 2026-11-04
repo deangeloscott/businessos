@@ -6,7 +6,7 @@ import argparse,json,os,shutil,subprocess,sys,hashlib,zipfile
 def editions():
     p=ROOT/'distribution/editions.json'
     if not p.exists():return {}
-    return {e['id']:e for e in json.loads(p.read_text()).get('editions',[])}
+    return {e['id']:e for e in json.loads(p.read_text(encoding='utf-8')).get('editions',[])}
 def resolve_modules(requested):
     cat=module_catalog();unknown=[m for m in requested if m not in cat]
     if unknown:raise ValueError('Unknown module(s): '+', '.join(unknown))
@@ -48,11 +48,11 @@ def _prune_modules(dest,modules):
 def _copy_interface_schemas(dest):
     present_titles={}
     for sp in dest.rglob('*.schema.json'):
-        try:present_titles[json.loads(sp.read_text()).get('title')]=sp
+        try:present_titles[json.loads(sp.read_text(encoding='utf-8')).get('title')]=sp
         except Exception:pass
     source_by_title={}
     for sp in ROOT.rglob('*.schema.json'):
-        try:source_by_title[json.loads(sp.read_text()).get('title')]=sp
+        try:source_by_title[json.loads(sp.read_text(encoding='utf-8')).get('title')]=sp
         except Exception:pass
     needed=set()
     for wp in dest.rglob('CONTEXT.md'):
@@ -64,29 +64,29 @@ def _copy_interface_schemas(dest):
         if typ in present_titles or typ not in source_by_title:continue
         src=source_by_title[typ];parts=src.relative_to(ROOT).parts;owner=parts[1] if len(parts)>2 and parts[0]=='systems' else 'external';out=dest/'core/interfaces'/owner/src.name;out.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(src,out)
 def _write_instance_template(dest,modules):
-    p=dest/'instances/_template/instance.json';d=json.loads(p.read_text());d['enabled_systems']=sorted(modules-{'core'});p.write_text(json.dumps(d,indent=2)+'\n')
+    p=dest/'instances/_template/instance.json';d=json.loads(p.read_text(encoding='utf-8'));d['enabled_systems']=sorted(modules-{'core'});p.write_text(json.dumps(d,indent=2)+'\n', encoding='utf-8')
 def _write_navigation(dest,edition_id,display_name,modules):
     cat=module_catalog();version=os_version();domains=sorted(modules-{'core'});expansion='Agentic Understanding and Reinforcement Architecture';descriptor='organization-owned memory and operating knowledge for capable AI';names=', '.join(cat[m]['display_name'] for m in domains) if domains else 'Core only'
     inst={'format_version':'1.0','source_version':version,'maturity':'alpha','edition':edition_id,'display_name':display_name,'public_name':display_name,'name_expansion':expansion,'descriptor':descriptor,'installed_modules':['core']+domains,'standalone_distribution':edition_id!='full','portable_first':True,'default_environment':'local','configurable_workspace_root':True,'human_knowledge_layer':True,'workspace_profiles':'distribution/deployment-profiles.json','brand':'ViralTrac','startup_message':'START-HERE.md'}
-    (dest/'INSTALLATION.json').write_text(json.dumps(inst,indent=2)+'\n');(dest/'distribution/ACTIVE-DEPENDENCIES.json').write_text(json.dumps(dependency_manifest(modules),indent=2)+'\n')
-    readme=f'''# {display_name}\n\n**Alpha · v{version}**  \n**AURA = {expansion}.**\n\n{display_name} gives capable AI durable organization-owned memory and reusable operating knowledge so useful work can build on what the organization already knows.\n\n> Alpha means the architecture is usable and integrity-tested while real-work quality, Playbooks, Workflows, retrieval, Learning, and usability are still being improved before 1.0.\n\nIncluded operating areas: **{names}**. AURA Core is always included.\n\n## Start in three steps\n\n1. Download and unzip this AURA edition.\n2. Give an AI tool access to the folder.\n3. Open `START-HERE.md` or tell the AI: **“Read `SETUP-WITH-AI.md` and set up ViralTrac AURA for me.”**\n\nThe AI-guided setup can inspect the environment, configure/reuse an organization workspace, attach AURA through the host's simplest native mechanism, initialize the organization from the minimum truthful information needed, validate AURA-owned state, and recommend optional tools only when they would materially improve the user's likely work.\n\nYou do not need to choose a Playbook, Workflow, schema, provider, or operating mode first. See `START-HERE.md` for the simplest entry, `BEGINNERS-GUIDE.md` for the full human guide, and `PLAYBOOKS.md` for the included business jobs and reusable Workflows.\n\nAURA is local-first, organization-owned, and model/provider/harness neutral. The active harness owns tools, models, credentials, orchestration, scheduling, and other execution mechanics; AURA owns durable organizational memory, reusable operating knowledge, and the integrity of what it persists.\n\n- `START-HERE.md` — simplest human entry point\n- `SETUP-WITH-AI.md` — adaptive setup instructions for a capable AI/agent\n- `BEGINNERS-GUIDE.md` — full human guide, including first use, attachment, memory, upgrades, optional tools, and troubleshooting\n- `PLAYBOOKS.md` — high-level business Playbooks and their reusable Workflows\n- `WORKFLOW-INDEX.md` — detailed Workflow index\n- `OPERATOR-GUIDE.md` — practical commands and advanced use\n- `DEPLOYMENT.md` — storage, multi-device, and team details\n- `CONTEXT.md` — AI/agent operating context\n- `skills/viraltrac-aura/SKILL.md` — portable AURA attachment Skill\n- `LICENSE.md` — source-available license\n\nThis distribution is **source-available, not open source**. See `LICENSE.md`.\n''';(dest/'README.md').write_text(readme)
+    (dest/'INSTALLATION.json').write_text(json.dumps(inst,indent=2)+'\n', encoding='utf-8');(dest/'distribution/ACTIVE-DEPENDENCIES.json').write_text(json.dumps(dependency_manifest(modules),indent=2)+'\n', encoding='utf-8')
+    readme=f'''# {display_name}\n\n**Alpha · v{version}**  \n**AURA = {expansion}.**\n\n{display_name} gives capable AI durable organization-owned memory and reusable operating knowledge so useful work can build on what the organization already knows.\n\n> Alpha means the architecture is usable and integrity-tested while real-work quality, Playbooks, Workflows, retrieval, Learning, and usability are still being improved before 1.0.\n\nIncluded operating areas: **{names}**. AURA Core is always included.\n\n## Start in three steps\n\n1. Download and unzip this AURA edition.\n2. Give an AI tool access to the folder.\n3. Open `START-HERE.md` or tell the AI: **“Read `SETUP-WITH-AI.md` and set up ViralTrac AURA for me.”**\n\nThe AI-guided setup can inspect the environment, configure/reuse an organization workspace, attach AURA through the host's simplest native mechanism, initialize the organization from the minimum truthful information needed, validate AURA-owned state, and recommend optional tools only when they would materially improve the user's likely work.\n\nYou do not need to choose a Playbook, Workflow, schema, provider, or operating mode first. See `START-HERE.md` for the simplest entry, `BEGINNERS-GUIDE.md` for the full human guide, and `PLAYBOOKS.md` for the included business jobs and reusable Workflows.\n\nAURA is local-first, organization-owned, and model/provider/harness neutral. The active harness owns tools, models, credentials, orchestration, scheduling, and other execution mechanics; AURA owns durable organizational memory, reusable operating knowledge, and the integrity of what it persists.\n\n- `START-HERE.md` — simplest human entry point\n- `SETUP-WITH-AI.md` — adaptive setup instructions for a capable AI/agent\n- `BEGINNERS-GUIDE.md` — full human guide, including first use, attachment, memory, upgrades, optional tools, and troubleshooting\n- `PLAYBOOKS.md` — high-level business Playbooks and their reusable Workflows\n- `WORKFLOW-INDEX.md` — detailed Workflow index\n- `OPERATOR-GUIDE.md` — practical commands and advanced use\n- `DEPLOYMENT.md` — storage, multi-device, and team details\n- `CONTEXT.md` — AI/agent operating context\n- `skills/viraltrac-aura/SKILL.md` — portable AURA attachment Skill\n- `LICENSE.md` — source-available license\n\nThis distribution is **source-available, not open source**. See `LICENSE.md`.\n''';(dest/'README.md').write_text(readme, encoding='utf-8')
     lines=['# Task Navigator','',f'Installed edition: **{display_name}**.','',
            'Tell the AI the outcome you want in ordinary language. This is a browse view of common Workflows, not an execution graph.','']
     for mid in domains:
         mp=dest/'systems'/mid/'process-map.json';lines += [f"## {cat[mid]['display_name']}",'',cat[mid]['description'],'','| Workflow | Result | Workflow ID |','|---|---|---|']
         if mp.exists():
-            d=json.loads(mp.read_text())
+            d=json.loads(mp.read_text(encoding='utf-8'))
             for a in d.get('activities',[]):lines.append(f"| {a['id'].replace('-',' ').title()} | {a.get('result','')} | `{a['entry_workflow']}` |")
         lines.append('')
     lines += ['## Core','','Core supplies organization-owned context, evidence/provenance, decisions, optional continuity, measurement, Learning, reusable operating knowledge, and workspace integrity. It does not define a provider/tool vocabulary or execution runtime.','']
     cp=dest/'core/process-map.json'
     if cp.exists():
-        lines += ['| Workflow | Result | Workflow ID |','|---|---|---|'];d=json.loads(cp.read_text())
+        lines += ['| Workflow | Result | Workflow ID |','|---|---|---|'];d=json.loads(cp.read_text(encoding='utf-8'))
         for a in d.get('activities',[]):lines.append(f"| {a['id'].replace('-',' ').title()} | {a.get('result','')} | `{a['entry_workflow']}` |")
         lines.append('')
-    (dest/'TASK-NAVIGATOR.md').write_text('\n'.join(lines))
+    (dest/'TASK-NAVIGATOR.md').write_text('\n'.join(lines), encoding='utf-8')
 def _write_distribution_test(dest):
-    (dest/'tests/run_distribution.py').write_text('#!/usr/bin/env python3\nfrom pathlib import Path\nimport sys\nROOT=Path(__file__).resolve().parents[1]\nsys.path.insert(0,str(ROOT/"scripts"))\nfrom validate_distribution import validate_distribution\nvalidate_distribution()\n')
+    (dest/'tests/run_distribution.py').write_text('#!/usr/bin/env python3\nfrom pathlib import Path\nimport sys\nROOT=Path(__file__).resolve().parents[1]\nsys.path.insert(0,str(ROOT/"scripts"))\nfrom validate_distribution import validate_distribution\nvalidate_distribution()\n', encoding='utf-8')
 def _run(dest,rel):
     env=dict(os.environ);env['PYTHONDONTWRITEBYTECODE']='1';subprocess.run([sys.executable,str(dest/rel)],cwd=dest,env=env,check=True)
 def build_distribution(edition_id=None,requested_modules=None,output_dir=None,keep_folder=True):
@@ -103,14 +103,21 @@ def build_distribution(edition_id=None,requested_modules=None,output_dir=None,ke
     outbase=(Path(output_dir) if output_dir else ROOT.parent/'distributions').resolve();outbase.mkdir(parents=True,exist_ok=True);pkgname=f"{slug(display)}-v{os_version()}";dest=outbase/pkgname
     if dest.exists():shutil.rmtree(dest)
     _copy_clean(dest);_prune_modules(dest,modules);_copy_interface_schemas(dest);_write_navigation(dest,eid,display,modules);_write_instance_template(dest,modules);_write_distribution_test(dest)
-    (dest/'VERSION').write_text(os_version()+'\n');_run(dest,'scripts/generate_registry.py');_run(dest,'scripts/validate_workspace.py');_run(dest,'tests/run_distribution.py');_run(dest,'scripts/generate_registry.py');_run(dest,'scripts/validate_workspace.py')
+    (dest/'VERSION').write_text(os_version()+'\n', encoding='utf-8');_run(dest,'scripts/generate_registry.py');_run(dest,'scripts/validate_workspace.py');_run(dest,'tests/run_distribution.py');_run(dest,'scripts/generate_registry.py');_run(dest,'scripts/validate_workspace.py')
+    # The distribution smoke test creates process locks/staging in this fresh
+    # build tree. They are local coordination state, not part of the download.
+    local=dest/'.businessos'
+    if local.exists():
+        if not local.resolve().is_relative_to(dest.resolve()) or path_link(local):
+            raise ValueError('Build metadata points outside the package. Nothing was removed.')
+        shutil.rmtree(local)
     zpath=outbase/(pkgname+'.zip')
     if zpath.exists():zpath.unlink()
     shutil.make_archive(str(zpath.with_suffix('')),'zip',outbase,pkgname)
     with zipfile.ZipFile(zpath) as zf:
         bad=zf.testzip()
         if bad:raise RuntimeError(f'ZIP integrity failed at {bad}')
-    digest=hashlib.sha256(zpath.read_bytes()).hexdigest();sha=zpath.with_suffix('.zip.sha256');sha.write_text(f'{digest}  {zpath.name}\n')
+    digest=hashlib.sha256(zpath.read_bytes()).hexdigest();sha=zpath.with_suffix('.zip.sha256');sha.write_text(f'{digest}  {zpath.name}\n', encoding='utf-8')
     if not keep_folder:shutil.rmtree(dest)
     return {'edition':eid,'display_name':display,'modules':sorted(modules),'folder':str(dest),'zip':str(zpath),'sha256_file':str(sha),'sha256':digest}
 def main():

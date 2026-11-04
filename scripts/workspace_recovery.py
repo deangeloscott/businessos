@@ -41,9 +41,9 @@ def process_mark(pid):
             finally:kernel.CloseHandle(handle)
         stat=Path('/proc')/str(pid)/'stat'
         if Path('/proc').is_dir():
-            raw=stat.read_text();fields=raw[raw.rfind(')')+2:].split()
+            raw=stat.read_text(encoding='utf-8');fields=raw[raw.rfind(')')+2:].split()
             if fields[0]=='Z':return False
-            return Path('/proc/sys/kernel/random/boot_id').read_text().strip()+':'+fields[19]
+            return Path('/proc/sys/kernel/random/boot_id').read_text(encoding='utf-8').strip()+':'+fields[19]
         result=subprocess.run(['ps','-p',str(pid),'-o','lstart='],capture_output=True,text=True,timeout=2)
         return result.stdout.strip() or (False if result.returncode==1 else None)
     except (FileNotFoundError,ProcessLookupError):return False

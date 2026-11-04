@@ -9,7 +9,7 @@ import sys
 import tempfile
 import zipfile
 
-from _common import PRODUCT_ROOT, workspace_root
+from _common import PRODUCT_ROOT, workspace_root,path_link as linked
 from migrate_workspace import NAMESPACES, _source_files, _sha256
 import workspace_catalog
 
@@ -17,6 +17,19 @@ VIEW_FILE = '.businessos/view.json'
 PRIVATE = {'.git', '.businessos', '.aura-runtime', '.venv', 'venv', 'node_modules', '__pycache__',
            'credentials', 'secrets', '.ssh', '.aws', '.azure', '.codex', '.claude', '.pi', '.hermes', '.gemini'}
 OUTPUT_DIRS = {'deliverables', 'outputs', 'exports', 'projects', 'work'}
+
+
+def transient_file(path):
+    """OS lock bytes are derived coordination state, never retained user work."""
+    parts=Path(path).parts
+    return len(parts)==3 and parts[:2]==('.businessos','locks') and parts[-1].endswith('.lock')
+
+
+def checked_metadata(root):
+    path=Path(root)/VIEW_FILE
+    if linked(path) or linked(path.parent):
+        raise ValueError('Workspace settings are linked outside this folder. Reconnect the original folder before exporting.')
+    return path
 
 
 def private_file(path):
@@ -29,9 +42,7 @@ def private_file(path):
 
 
 def load_view(root):
-    if (Path(root) / VIEW_FILE).is_symlink():
-        raise ValueError('Workspace links point outside this folder. Keep the original and reconnect them explicitly.')
-    data = workspace_catalog.read_json(Path(root) / VIEW_FILE, {})
+    data = workspace_catalog.read_json(checked_metadata(root), {})
     if not isinstance(data, dict) or not isinstance(data.get('file_locations', {}), dict):
         raise ValueError('Saved workspace links need attention. The original settings were kept.')
     return data
@@ -47,7 +58,7 @@ def save_view(root, preferences):
             relative = path.is_absolute() and path.is_relative_to(root)
             locations[bid].append({k:item[k] for k in ('id','name','kind')})
             locations[bid][-1].update(path=path.relative_to(root).as_posix() if relative else str(path), relative=relative)
-    workspace_catalog.write_json(root / VIEW_FILE, {'format':1, 'file_locations':locations,
+    workspace_catalog.write_json(checked_metadata(root), {'format':1, 'file_locations':locations,
         'appearance':preferences.get('appearance','system'), 'model_picker':preferences.get('model_picker', {}),
         'library':preferences.get('library',{}), 'assistants':preferences.get('assistants',{})})
 
@@ -92,8 +103,8 @@ def workspace_files(source, hashes=True):
         for name in sorted(dirs):
             child = base / name
             rel = child.relative_to(source)
-            if child.is_symlink() or (name == '.businessos'):
-                if child.is_symlink():excluded.append(rel.as_posix())
+            if linked(child) or (name == '.businessos'):
+                if linked(child):excluded.append(rel.as_posix())
                 continue
             if private_file(rel) or (rel.parts[:2] in {('instances','_template'),('runtime','tmp')}) or (rel.parts[0]=='runtime' and name=='logs'):
                 excluded.append(rel.as_posix());continue
@@ -104,11 +115,11 @@ def workspace_files(source, hashes=True):
         dirs[:] = kept
         for name in sorted(names):
             path = base / name; rel = path.relative_to(source)
-            if name == 'AURA-BACKUP.json' or path.is_symlink() or private_file(rel) or (embedded and base == source):
+            if name == 'AURA-BACKUP.json' or linked(path) or private_file(rel) or (embedded and base == source):
                 excluded.append(rel.as_posix());continue
             rows.append((rel,path,_sha256(path) if hashes else '',path.stat().st_size))
-    metadata = source / VIEW_FILE
-    if metadata.is_file() and not metadata.is_symlink():
+    metadata = checked_metadata(source)
+    if metadata.is_file():
         rows.append((Path(VIEW_FILE),metadata,_sha256(metadata) if hashes else '',metadata.stat().st_size))
     return sorted(rows, key=lambda r:r[0].as_posix()), excluded
 

@@ -17,19 +17,9 @@ def _dt(value):
     except ValueError:return None
 
 
-def _read(path,default):
-    try:return json.loads(path.read_text())
-    except (FileNotFoundError,json.JSONDecodeError):return default
-
-
-def _profiles(business_id):
-    root=instance_dir(business_id)/'intelligence'/'source-profiles'
-    rows=[]
-    if not root.exists():return rows
-    for path in sorted(root.glob('*.json')):
-        obj=_read(path,{})
-        if obj.get('object_type')=='SourceProfile' and obj.get('business_id')==business_id:rows.append((obj,path))
-    return rows
+def _profiles(business_id,diagnostics):
+    return [(obj,path) for obj,path in iter_instance_objects(business_id,diagnostics)
+            if obj.get('object_type')=='SourceProfile']
 
 
 def _cadence_label(c):
@@ -48,8 +38,11 @@ def summarize(business_id,at=None):
     if not instance_dir(business_id).exists():raise ValueError(f'Unknown business: {business_id}')
     current=_dt(at) if at else datetime.now(timezone.utc)
     if current is None:raise ValueError('--at must be an ISO date-time')
-    groups={}
-    for obj,path in _profiles(business_id):
+    groups={};diagnostics=[]
+    for obj,path in _profiles(business_id,diagnostics):
+        dates=[obj.get('next_check_at'),*[s.get('next_check_at') for s in obj.get('monitoring_signal_cadences') or []]]
+        if any(value is not None and _dt(value) is None for value in dates):
+            diagnostics.append({'path':storage_ref(path),'reason':'A monitoring date is invalid. Set a valid date and time before relying on this due list.'})
         if obj.get('watch_status') not in VISIBLE_WATCH_STATUSES:continue
         key=obj.get('subject_key') or obj.get('id')
         g=groups.setdefault(key,{'subject_key':obj.get('subject_key'),'subject_name':obj.get('subject_name') or obj.get('display_name') or key,'profiles':[]})
@@ -73,7 +66,7 @@ def summarize(business_id,at=None):
         due_items=[x for x in due_points if x['at']<=current]
         rows.append({'subject_key':g.get('subject_key'),'subject_name':g.get('subject_name'),'source_profile_count':len(g['profiles']),'watch_statuses':sorted(set(watch_statuses)),'cadences':cadences,'signal_cadences':sorted(signals,key=lambda x:(str(x.get('signal') or '').lower(),str(x.get('profile_id') or ''))),'notification_modes':sorted(set(notification_modes or [DEFAULT_NOTIFICATION])),'next_check_at':earliest['value'] if earliest else None,'next_check_kind':earliest['kind'] if earliest else None,'next_check_signal':earliest['signal'] if earliest else None,'due':bool(due_items),'due_items':[{'at':x['value'],'kind':x['kind'],'signal':x['signal'],'profile_id':x['profile_id'],'notification_mode':x['notification_mode']} for x in sorted(due_items,key=lambda x:x['at'])],'profile_refs':[storage_ref(path) for _,path in g['profiles']]})
     due=[r for r in rows if r['due']]
-    return {'business_id':business_id,'checked_at':current.isoformat().replace('+00:00','Z'),'tracked_subject_count':len(rows),'due_count':len(due),'due_subjects':[{'subject_key':r['subject_key'],'subject_name':r['subject_name'],'next_check_at':r['next_check_at']} for r in due],'subjects':rows,'default_notification_mode':DEFAULT_NOTIFICATION,'rule':'This is organization-owned monitoring intent and semantic due state only. Scheduling/execution truth belongs to the current runtime/harness and is not inferred by AURA.'}
+    return {'business_id':business_id,'status':'needs_attention' if diagnostics else 'ready','complete':not diagnostics,'read_diagnostics':diagnostics,'checked_at':current.isoformat().replace('+00:00','Z'),'tracked_subject_count':len(rows),'due_count':len(due),'due_subjects':[{'subject_key':r['subject_key'],'subject_name':r['subject_name'],'next_check_at':r['next_check_at']} for r in due],'subjects':rows,'default_notification_mode':DEFAULT_NOTIFICATION,'rule':'Counts cover readable monitoring intent only; check complete and read_diagnostics before treating zero as nothing due. Scheduling/execution truth belongs to the current runtime/harness and is not inferred by AURA.'}
 
 
 def main():

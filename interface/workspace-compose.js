@@ -165,7 +165,7 @@ window.auraCompose=(()=>{
     const key=scope(),request=++viewTicket;beginGoalPage('goal',id,'Goal',()=>openGoal(id));
     const loading=state.fileDetailTicket,host=$('#detail-content');let data;
     try{data=await api('/api/goals?'+query({id}));}catch(error){
-      if(request===viewTicket&&same(key,loading,host))goalDetails('Goal unavailable',`<p>${esc(error.message)}</p><div class="inline-actions"><button type="button" class="secondary" data-compose-goal="${esc(id)}">Try again</button>${goal()===id?'<button type="button" class="text-button" data-compose-clear-goal>Remove from this chat</button>':''}<button type="button" class="text-button" data-goal-manager>All goals</button></div>`);return;
+      if(request===viewTicket&&same(key,loading,host))goalDetails('Goal unavailable',`<p>${esc(humanError(error))}</p><div class="inline-actions"><button type="button" class="secondary" data-compose-goal="${esc(id)}">Try again</button>${goal()===id?'<button type="button" class="text-button" data-compose-clear-goal>Remove from this chat</button>':''}<button type="button" class="text-button" data-goal-manager>All goals</button></div>`);return;
     }
     if(request!==viewTicket||!same(key,loading,host))return;
     const g=data.goal,info=goalInfo(g),local=data.scope==='chat'||info.scope==='chat',status=g.status||'active';
@@ -184,7 +184,7 @@ window.auraCompose=(()=>{
     try{const tasks=await api('/api/schedules');if(!same(key,ticket,host))return;state.schedules=tasks;
       $('#goal-tasks').innerHTML=tasks.items.filter(t=>data.task_links[t.id]===id).map(t=>`<button type="button" class="row" data-goal-open-task="${esc(t.id)}">${esc(t.name)}${t.description?.includes(data.goal_basis)?'':'<small class="row-meta">Review goal instructions</small>'}</button>`).join('')||empty('No recurring tasks linked yet.');
       if(tasks.notes?.length)$('#goal-tasks').insertAdjacentHTML('beforeend',`<p class="small-note">${tasks.notes.map(esc).join(' ')}</p>`);
-    }catch(error){if(same(key,ticket,host))$('#goal-tasks').textContent=error.message;}
+    }catch(error){if(same(key,ticket,host))$('#goal-tasks').textContent=humanError(error);}
   }
   async function chatGoal(){
     if(goal())return openGoal(goal());
@@ -213,7 +213,7 @@ window.auraCompose=(()=>{
         const saved=await api('/api/goals',{business:state.business,action:'save',...(savedId?{id:savedId,basis:data?.goal_basis}:{}),...values});savedId=saved.goal.id;
         if(!same(key,ticket,host)||forChat&&chatKey!==chatScope())return;cache.clear();if(forChat)await setGoal(savedId);await refresh(false,true);paintComposer();
         if(same(key,ticket,host)){if(forChat){$('#detail').close();$('#request').focus();notice('Goal added to this chat.');}else{if(goalTrail.at(-1)?.kind==='goal'&&goalTrail.at(-1)?.id===savedId)goalTrail.pop();returningGoal=true;await openGoal(savedId);}}
-      }catch(error){if(same(key,ticket,host))$('#goal-save-status').textContent=error.message;}finally{if(button.isConnected)button.disabled=false;}
+      }catch(error){if(same(key,ticket,host))$('#goal-save-status').textContent=humanError(error);}finally{if(button.isConnected)button.disabled=false;}
     });};
   }
   async function changeGoal(id,changes){

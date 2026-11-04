@@ -101,7 +101,7 @@ def build(target, output, cache):
     if output.is_relative_to(ROOT) or cache.is_relative_to(ROOT):
         raise ValueError('Keep bundle outputs and runtime caches outside the product source folder.')
     output.mkdir(parents=True, exist_ok=True)
-    version = (ROOT/'VERSION').read_text().strip()
+    version = (ROOT/'VERSION').read_text(encoding='utf-8').strip()
     name = 'viraltrac-aura-v'+version+'-'+target
     suffix = '.zip' if target.startswith('windows') else '.tar.gz'
     archive = output/(name+suffix)

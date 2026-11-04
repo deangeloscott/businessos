@@ -18,7 +18,7 @@ import tempfile
 import uuid
 import zipfile
 
-from _common import PRODUCT_ROOT, write_json_atomic
+from _common import PRODUCT_ROOT, write_json_atomic,path_link
 from canonical_store import INSTANCE_PATHS, validate_canonical
 from migrate_workspace import _sha256
 from workspace_organization import _refs
@@ -85,7 +85,7 @@ def unlinked(path):
     """Reject links/junctions before resolving, including linked parent folders."""
     path = Path(path).absolute()
     for parent in (path, *path.parents):
-        if parent.is_symlink() or getattr(parent, 'is_junction', lambda: False)():
+        if path_link(parent):
             raise ValueError('A selected location is a folder link. Choose its original location explicitly.')
     return path.resolve()
 

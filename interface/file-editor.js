@@ -1,3 +1,4 @@
+const readableError=error=>typeof window.humanError==='function'?window.humanError(error):'This file could not be opened. Try again or use another editor.';
 // File widgets are optional views over the shared document API, never file owners.
 const $=s=>document.querySelector(s),esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const drafts=new Map(),imports=new Map();let current=null;
@@ -34,7 +35,7 @@ export async function openFile(ctx){
     view.info=info;view.imported=imports.get(key(view));view.edit={text:info.text,rows:info.rows?.map(r=>[...r])};view.mode=info.writable?(info.kind==='image'?'version':'save'):'copy';view.name=nextName(view);
     const saved=readDraft(view);if(saved){view.edit={...view.edit,...saved};view.dirty=true;view.mode=saved.mode||view.mode;view.name=saved.name||view.name;view.info.revision=saved.revision;view.editing=info.editable;}
     if(view.imported){view.dirty=true;view.mode='version';}$('#detail-title').textContent=info.name;await render(view);
-  }catch(error){if(live(view))view.host.innerHTML=`<p class="error">${esc(error.message)}</p>`;}
+  }catch(error){if(live(view))view.host.innerHTML=`<p class="error">${esc(readableError(error))}</p>`;}
 }
 async function render(view){
   if(!live(view))return;destroyWidgets(view);const info=view.info;
@@ -89,7 +90,7 @@ async function render(view){
   view.host.querySelector('#file-save-name').oninput=e=>{view.name=e.target.value;snapshot(view);};
   view.host.querySelector('#file-save').onclick=()=>save(view);
   view.host.querySelector('#file-download').onclick=()=>download(view);
-  view.host.querySelector('#file-copy-location').onclick=async()=>{try{await navigator.clipboard.writeText(info.location||view.ctx.ref);status(view,'File location copied.');}catch(e){status(view,e.message,true);}};
+  view.host.querySelector('#file-copy-location').onclick=async()=>{try{await navigator.clipboard.writeText(info.location||view.ctx.ref);status(view,'File location copied.');}catch(e){status(view,readableError(e),true);}};
   view.host.querySelector('#file-share-copy')?.addEventListener('click',()=>{if(!live(view))return;if(view.dirty){status(view,'Save your changes before sharing this file.');return;}view.ctx.share?.(view.ctx.ref);});
   const importer=view.host.querySelector('#file-import-edited');
   if(importer){
@@ -98,11 +99,11 @@ async function render(view){
     importer.onchange=()=>prepareImport(view,importer.files[0]);
   }
   view.host.onclick=event=>{const button=event.target.closest('button');if(!button)return;const action=button.dataset.fileAction;
-    if(button.dataset.fileMode){snapshot(view);view.editing=button.dataset.fileMode==='edit';render(view).catch(e=>status(view,e.message,true));}
+    if(button.dataset.fileMode){snapshot(view);view.editing=button.dataset.fileMode==='edit';render(view).catch(e=>status(view,readableError(e),true));}
     if(button.dataset.fileRelated)openFile({...view.ctx,ref:button.dataset.fileRelated});
     if(action==='expand'){$('#detail').toggleAttribute('data-file-wide');button.textContent=$('#detail').hasAttribute('data-file-wide')?'Reduce':'Expand';if(info.kind==='pdf')renderPdf(view);view.table?.redraw(true);}
     if(action==='open')openPanel(view);
-    if(action==='history')fileHistory(view,button).catch(e=>status(view,e.message,true));
+    if(action==='history')fileHistory(view,button).catch(e=>status(view,readableError(e),true));
     if(action==='transfer'){
       const panel=view.host.querySelector('#file-transfer-panel');panel.hidden=!panel.hidden;button.classList.toggle('active',!panel.hidden);button.setAttribute('aria-expanded',String(!panel.hidden));
     }
@@ -175,12 +176,12 @@ async function previewPdf(view,area){
   if(!live(view))return;view.page=view.page||1;view.zoom=view.zoom||1;view.host.querySelector('#file-pdf-count').textContent='of '+view.pdf.numPages;view.host.querySelector('#file-pdf-page').max=view.pdf.numPages;
   const turn=delta=>{view.page=Math.max(1,Math.min(view.pdf.numPages,view.page+delta));renderPdf(view);};view.host.querySelector('#file-pdf-prev').onclick=()=>turn(-1);view.host.querySelector('#file-pdf-next').onclick=()=>turn(1);view.host.querySelector('#file-pdf-page').onchange=e=>{view.page=Math.max(1,Math.min(view.pdf.numPages,Number(e.target.value)||1));renderPdf(view);};
   view.host.querySelector('#file-pdf-zoom-in').onclick=()=>{view.zoom=Math.min(3,view.zoom+.25);renderPdf(view);};view.host.querySelector('#file-pdf-zoom-out').onclick=()=>{view.zoom=Math.max(.5,view.zoom-.25);renderPdf(view);};
-  view.host.querySelector('#file-pdf-search').onclick=async()=>{const ticket=view.searchTicket=(view.searchTicket||0)+1;try{const query=view.host.querySelector('#file-pdf-find').value.trim().toLocaleLowerCase();if(!query)return;status(view,'Searching…');for(let offset=1;offset<=view.pdf.numPages&&live(view)&&ticket===view.searchTicket;offset++){const index=(view.page-1+offset)%view.pdf.numPages+1,text=await(await view.pdf.getPage(index)).getTextContent();if(text.items.map(i=>i.str).join(' ').toLocaleLowerCase().includes(query)){view.page=index;await renderPdf(view);status(view,'Found on page '+index);return;}}if(ticket===view.searchTicket)status(view,'No matching text found.');}catch(e){if(live(view))status(view,e.message,true);}};
+  view.host.querySelector('#file-pdf-search').onclick=async()=>{const ticket=view.searchTicket=(view.searchTicket||0)+1;try{const query=view.host.querySelector('#file-pdf-find').value.trim().toLocaleLowerCase();if(!query)return;status(view,'Searching…');for(let offset=1;offset<=view.pdf.numPages&&live(view)&&ticket===view.searchTicket;offset++){const index=(view.page-1+offset)%view.pdf.numPages+1,text=await(await view.pdf.getPage(index)).getTextContent();if(text.items.map(i=>i.str).join(' ').toLocaleLowerCase().includes(query)){view.page=index;await renderPdf(view);status(view,'Found on page '+index);return;}}if(ticket===view.searchTicket)status(view,'No matching text found.');}catch(e){if(live(view))status(view,readableError(e),true);}};
   await renderPdf(view);
 }
 async function renderPdf(view){
   if(!live(view)||!view.pdf)return;view.pdfTask?.cancel();const ticket=view.pdfTicket=(view.pdfTicket||0)+1;
-  try{const page=await view.pdf.getPage(view.page);if(!live(view)||ticket!==view.pdfTicket)return;const area=view.host.querySelector('#file-canvas'),base=page.getViewport({scale:1}),width=Math.max(200,area.clientWidth-18),viewport=page.getViewport({scale:width/base.width*view.zoom});const canvas=document.createElement('canvas'),ratio=Math.min(devicePixelRatio||1,2,Math.sqrt(16000000/(viewport.width*viewport.height)));canvas.width=Math.floor(viewport.width*ratio);canvas.height=Math.floor(viewport.height*ratio);canvas.style.width=viewport.width+'px';canvas.style.height=viewport.height+'px';canvas.setAttribute('aria-label','PDF page '+view.page);area.replaceChildren(canvas);view.host.querySelector('#file-pdf-page').value=view.page;view.host.querySelector('#file-pdf-prev').disabled=view.page===1;view.host.querySelector('#file-pdf-next').disabled=view.page===view.pdf.numPages;view.pdfTask=page.render({canvasContext:canvas.getContext('2d'),viewport,transform:[ratio,0,0,ratio,0,0]});await view.pdfTask.promise;view.pdfTask=null;}catch(e){if(e.name!=='RenderingCancelledException')status(view,e.message,true);}
+  try{const page=await view.pdf.getPage(view.page);if(!live(view)||ticket!==view.pdfTicket)return;const area=view.host.querySelector('#file-canvas'),base=page.getViewport({scale:1}),width=Math.max(200,area.clientWidth-18),viewport=page.getViewport({scale:width/base.width*view.zoom});const canvas=document.createElement('canvas'),ratio=Math.min(devicePixelRatio||1,2,Math.sqrt(16000000/(viewport.width*viewport.height)));canvas.width=Math.floor(viewport.width*ratio);canvas.height=Math.floor(viewport.height*ratio);canvas.style.width=viewport.width+'px';canvas.style.height=viewport.height+'px';canvas.setAttribute('aria-label','PDF page '+view.page);area.replaceChildren(canvas);view.host.querySelector('#file-pdf-page').value=view.page;view.host.querySelector('#file-pdf-prev').disabled=view.page===1;view.host.querySelector('#file-pdf-next').disabled=view.page===view.pdf.numPages;view.pdfTask=page.render({canvasContext:canvas.getContext('2d'),viewport,transform:[ratio,0,0,ratio,0,0]});await view.pdfTask.promise;view.pdfTask=null;}catch(e){if(e.name!=='RenderingCancelledException')status(view,readableError(e),true);}
 }
 function clearDraft(view){drafts.delete(key(view));imports.delete(key(view));view.imported=null;try{sessionStorage.removeItem(key(view));}catch{}view.dirty=false;}
 function toBase64(file){return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result).split(',')[1]);reader.onerror=()=>reject(Error('This file could not be read.'));reader.readAsDataURL(file);});}
@@ -208,7 +209,7 @@ async function download(view){
     }
     const link=document.createElement('a');link.href=href;link.download=name;document.body.append(link);link.click();link.remove();
     if(temporary)setTimeout(()=>URL.revokeObjectURL(href),10000);
-  }catch(e){status(view,e.message,true);}finally{if(button.isConnected)button.disabled=false;}
+  }catch(e){status(view,readableError(e),true);}finally{if(button.isConnected)button.disabled=false;}
 }
 async function save(view,imported=null){
   if(!live(view)||view.saving)return;view.saving=true;document.activeElement?.blur();snapshot(view);const button=view.host.querySelector('#file-save');button.disabled=true;status(view,'Saving…');
@@ -220,7 +221,7 @@ async function save(view,imported=null){
     if(!live(view))return;
     const saved=await api(view,'/api/documents/save',data);if(!live(view))return;
     clearDraft(view);await view.ctx.saved?.(saved).catch(()=>{});if(!live(view))return;await openFile({...view.ctx,ref:'asset/'+saved.asset,option:''});if(current)status(current,saved.mode==='save'?'Saved.':saved.mode==='version'?'New version saved.':'Copy saved.');
-  }catch(e){status(view,e.message,true);if(e.status===409){view.host.querySelector('#file-conflict').hidden=false;}if(button.isConnected)button.disabled=false;}finally{view.saving=false;}
+  }catch(e){status(view,readableError(e),true);if(e.status===409){view.host.querySelector('#file-conflict').hidden=false;}if(button.isConnected)button.disabled=false;}finally{view.saving=false;}
 }
 async function prepareImport(view,file){
   if(!file||!live(view)||view.saving)return;
@@ -229,7 +230,7 @@ async function prepareImport(view,file){
   if(file.size>32*1048576){status(view,'Choose an edited file smaller than 32 MB.',true);return;}
   if(view.dirty&&!confirm('Replace these unsaved edits with the imported file?'))return;
   clearDraft(view);view.imported=file;imports.set(key(view),file);view.dirty=true;view.editing=false;view.mode='version';view.name=nextName(view);
-  try{await render(view);}catch(e){status(view,e.message,true);}
+  try{await render(view);}catch(e){status(view,readableError(e),true);}
 }
 function openPanel(view){
   const panel=view.host.querySelector('#file-open-panel');panel.hidden=!panel.hidden;
@@ -243,7 +244,7 @@ function openPanel(view){
     help.querySelector('#file-open-check')?.addEventListener('click',async event=>{
       const button=event.currentTarget;button.disabled=true;button.textContent='Checking…';
       try{const fresh=await api(view,'/api/documents?'+new URLSearchParams({business:view.ctx.business,workspace:view.ctx.workspace,path:view.ctx.ref,option:view.ctx.option||''}));if(!live(view))return;view.info.libreoffice_installed=fresh.libreoffice_installed;update();status(view,fresh.libreoffice_installed?'LibreOffice is ready.':'LibreOffice was not found yet.');}
-      catch(e){status(view,e.message,true);if(button.isConnected){button.disabled=false;button.textContent='Check again';}}
+      catch(e){status(view,readableError(e),true);if(button.isConnected){button.disabled=false;button.textContent='Check again';}}
     });
   };
   select.onchange=update;update();
@@ -252,7 +253,7 @@ function openPanel(view){
     if(view.dirty){status(view,'Save your edits or download a copy before opening the file in another app.');return;}
     go.disabled=true;
     try{await api(view,'/api/documents/open',{business:view.ctx.business,workspace:view.ctx.workspace,path:view.ctx.ref,option:view.ctx.option||'',application:select.value});status(view,'Opening in '+(select.value==='libreoffice'?'LibreOffice':'your default app')+'…');}
-    catch(e){if(select.value==='libreoffice'&&e.message.includes('Install LibreOffice')){view.info.libreoffice_installed=false;update();}status(view,e.message,true);}finally{go.disabled=false;}
+    catch(e){if(select.value==='libreoffice'&&readableError(e).includes('Install LibreOffice')){view.info.libreoffice_installed=false;update();}status(view,readableError(e),true);}finally{go.disabled=false;}
   };
   select.focus();
 }
@@ -280,8 +281,8 @@ async function fileHistory(view,button){
         try{
           const result=await api(view,'/api/history/restore',{business:view.ctx.business,id:selected.id,expected_revision:selected.current_revision});if(!live(view))return;
           await openFile(view.ctx);if(current)status(current,result.warning||'Earlier version restored.');
-        }catch(error){if(live(view)&&restore.isConnected){review.querySelector('#file-history-status').textContent=error.message;restore.disabled=false;}}
+        }catch(error){if(live(view)&&restore.isConnected){review.querySelector('#file-history-status').textContent=readableError(error);restore.disabled=false;}}
       };
-    }catch(error){status(view,error.message,true);}finally{if(chosen.isConnected)chosen.disabled=false;}
+    }catch(error){status(view,readableError(error),true);}finally{if(chosen.isConnected)chosen.disabled=false;}
   };
 }

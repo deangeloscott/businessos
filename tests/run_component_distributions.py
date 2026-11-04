@@ -19,6 +19,7 @@ def main():
         for eid in targets:
             pkg=build_distribution(eid,output_dir=relative_tmp,keep_folder=True);pdir=Path(pkg['folder']);expected=resolve_modules(eds[eid]['modules']);inst=json.loads((pdir/'INSTALLATION.json').read_text());actual={'core'}|{p.name for p in (pdir/'systems').iterdir() if p.is_dir()}
             req(inst.get('standalone_distribution') is True,f'{eid} was not marked standalone');req(set(inst.get('installed_modules',[]))==expected,f'{eid} INSTALLATION modules mismatch: {inst.get("installed_modules")} vs {sorted(expected)}');req(actual==expected,f'{eid} filesystem modules mismatch: {sorted(actual)} vs {sorted(expected)}');req((pdir/'VERSION').read_text().strip()==os_version(),f'{eid} did not inherit current AURA version');req(Path(pkg['zip']).is_absolute(),f'{eid} relative output path was not resolved safely: {pkg["zip"]}')
+            req(not (pdir/'.businessos').exists(),f'{eid} packaged smoke-test coordination state')
             context=(pdir/'CONTEXT.md').read_text()
             for phrase in [
                 'AURA provides **durable organization-owned memory and reusable operating knowledge** to a capable model/harness.',

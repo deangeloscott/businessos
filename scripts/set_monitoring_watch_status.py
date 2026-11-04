@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Set semantic monitoring watch status without deleting accumulated intelligence."""
+from _common import organization_transaction
 from _common import *
 from jsonschema import Draft202012Validator
 import argparse,json,os
@@ -7,18 +8,19 @@ import argparse,json,os
 STATUSES={'seed','candidate','active','paused','deprioritized','blocked','unavailable'}
 
 
-def _schema():return json.loads((ROOT/'core/schemas/intelligence/source-profile.schema.json').read_text())
+def _schema():return json.loads((ROOT/'core/schemas/intelligence/source-profile.schema.json').read_text(encoding='utf-8'))
 
 def _profiles(business_id):
     root=instance_dir(business_id)/'intelligence'/'source-profiles';out=[]
     if not root.exists():return out
     for path in sorted(root.glob('*.json')):
-        try:obj=json.loads(path.read_text())
+        try:obj=json.loads(path.read_text(encoding='utf-8'))
         except Exception:continue
         if obj.get('object_type')=='SourceProfile' and obj.get('business_id')==business_id:out.append((obj,path))
     return out
 
 
+@organization_transaction
 def set_status(business_id,status,subject_key=None,source_profile_id=None):
     if not instance_dir(business_id).exists():raise ValueError(f'Unknown business: {business_id}')
     if status not in STATUSES:raise ValueError(f'Unknown watch status: {status}')
@@ -33,7 +35,7 @@ def set_status(business_id,status,subject_key=None,source_profile_id=None):
         before=obj.get('watch_status');obj['watch_status']=status;obj['updated_at']=timestamp
         errors=sorted(validator.iter_errors(obj),key=lambda error:list(error.path))
         if errors:raise ValueError('SourceProfile invalid: '+'; '.join(f'{list(error.path)} {error.message}' for error in errors))
-        temporary=path.with_suffix('.tmp');temporary.write_text(json.dumps(obj,indent=2,ensure_ascii=False)+'\n');os.replace(temporary,path)
+        temporary=path.with_suffix('.tmp');temporary.write_text(json.dumps(obj,indent=2,ensure_ascii=False)+'\n', encoding='utf-8');os.replace(temporary,path)
         updated.append({'id':obj['id'],'before':before,'after':status,'ref':storage_ref(path)})
     return updated
 

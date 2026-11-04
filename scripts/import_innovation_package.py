@@ -6,7 +6,7 @@ import argparse,json,hashlib,os
 
 
 def _write_json(path,obj):
-    path.parent.mkdir(parents=True,exist_ok=True);temporary=path.with_suffix(path.suffix+'.tmp');temporary.write_text(json.dumps(obj,indent=2)+'\n');os.replace(temporary,path)
+    path.parent.mkdir(parents=True,exist_ok=True);temporary=path.with_suffix(path.suffix+'.tmp');temporary.write_text(json.dumps(obj,indent=2)+'\n', encoding='utf-8');os.replace(temporary,path)
 def _counts(summary):
     summary=summary or {};return {key:int(summary.get(key,0) or 0) for key in ['replication_count','supported_count','contradicted_count','neutral_count']}
 
@@ -17,7 +17,7 @@ def import_package(business_id,package_path):
     package=load_package(package_path);validate_package(package,require_export_approval=True);process=package['process'];fingerprint=package['innovation_fingerprint'];timestamp=now()
 
     package_dir=innovation_package_dir(business_id);package_dir.mkdir(parents=True,exist_ok=True);stored=package_dir/f"{package['package_id']}.json";_write_json(stored,package)
-    source_id='src_iex_'+hashlib.sha256(f"{business_id}|{package['package_id']}".encode()).hexdigest()[:18];source_path=base/'intelligence'/'sources'/f'{source_id}.json';existing_source=json.loads(source_path.read_text()) if source_path.exists() else {};source_reference=storage_ref(stored)
+    source_id='src_iex_'+hashlib.sha256(f"{business_id}|{package['package_id']}".encode()).hexdigest()[:18];source_path=base/'intelligence'/'sources'/f'{source_id}.json';existing_source=json.loads(source_path.read_text(encoding='utf-8')) if source_path.exists() else {};source_reference=storage_ref(stored)
     source={
         'id':source_id,'object_type':'SourceRecord','schema_version':'1.0.0','business_id':business_id,
         'created_at':existing_source.get('created_at') or timestamp,'updated_at':timestamp,'lineage':[],
@@ -29,7 +29,7 @@ def import_package(business_id,package_path):
     }
     validate_schema('SourceRecord',source);_write_json(source_path,source)
 
-    entry_id='iex_'+hashlib.sha256(f"{business_id}|{fingerprint}".encode()).hexdigest()[:20];entry_path=innovation_entry_path(business_id,entry_id);old=json.loads(entry_path.read_text()) if entry_path.exists() else None;package_ids=list(old.get('package_ids',[])) if old else [];source_refs=list(old.get('source_record_refs',[])) if old else [];new_package=package['package_id'] not in package_ids
+    entry_id='iex_'+hashlib.sha256(f"{business_id}|{fingerprint}".encode()).hexdigest()[:20];entry_path=innovation_entry_path(business_id,entry_id);old=json.loads(entry_path.read_text(encoding='utf-8')) if entry_path.exists() else None;package_ids=list(old.get('package_ids',[])) if old else [];source_refs=list(old.get('source_record_refs',[])) if old else [];new_package=package['package_id'] not in package_ids
     if new_package:package_ids.append(package['package_id'])
     if source_id not in source_refs:source_refs.append(source_id)
     reported=dict(old.get('reported_evidence',{})) if old else {'contribution_count':0,'reported_replication_count':0,'reported_supported_count':0,'reported_contradicted_count':0,'reported_neutral_count':0}

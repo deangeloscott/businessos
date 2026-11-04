@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from _common import organization_transaction
 from _common import *
 import argparse,json,hashlib
 
@@ -13,6 +14,7 @@ def records(bid,key):
     return [(o,p) for o,p in iter_instance_objects(bid) if o.get('object_type')=='PlatformChange' and o.get('semantic_key')==key]
 
 
+@organization_transaction
 def record(bid,platform,topic,state_summary,authority='unknown',materiality='unknown',change_summary=None,effective_at=None,source_refs=None,evidence_refs=None,affected_workflow_refs=None,affected_object_refs=None,verified_at=None,reverify_current=False):
     verified_at=verified_at or now();source_refs=source_refs or [];evidence_refs=evidence_refs or [];affected_workflow_refs=affected_workflow_refs or [];affected_object_refs=affected_object_refs or []
     if authority=='unknown': raise ValueError('verified PlatformChange requires a non-unknown authority classification')
@@ -34,7 +36,7 @@ def record(bid,platform,topic,state_summary,authority='unknown',materiality='unk
         hist.append({'verified_at':verified_at,'classification':'reverified_no_material_change','observed_state_summary':norm(state_summary),'observed_state_fingerprint':fp,'source_refs':sorted(set(source_refs)),'evidence_refs':sorted(set(evidence_refs)),'note':change_summary})
         if obj.get('authority')=='unknown' and authority!='unknown':obj['authority']=authority
         if obj.get('materiality')=='unknown' and materiality!='unknown':obj['materiality']=materiality
-        p.write_text(json.dumps(obj,indent=2)+'\n');return obj,p,'reverified'
+        p.write_text(json.dumps(obj,indent=2)+'\n', encoding='utf-8');return obj,p,'reverified'
 
     if current and current[0][0].get('state_fingerprint')==fp:
         obj,p=current[0];obj['updated_at']=verified_at;obj['last_verified_at']=verified_at;obj['verification_count']=int(obj.get('verification_count',0))+1
@@ -44,7 +46,7 @@ def record(bid,platform,topic,state_summary,authority='unknown',materiality='unk
         if effective_at:obj['effective_at']=effective_at
         if obj.get('authority')=='unknown' and authority!='unknown':obj['authority']=authority
         if obj.get('materiality')=='unknown' and materiality!='unknown':obj['materiality']=materiality
-        p.write_text(json.dumps(obj,indent=2)+'\n');return obj,p,'refreshed'
+        p.write_text(json.dumps(obj,indent=2)+'\n', encoding='utf-8');return obj,p,'refreshed'
 
     prior=current[0] if current else None
     new_id=pid(bid,key,fp);p=ROOT/'instances'/bid/'intelligence'/'platform-changes'/f'{new_id}.json';p.parent.mkdir(parents=True,exist_ok=True)
@@ -60,8 +62,8 @@ def record(bid,platform,topic,state_summary,authority='unknown',materiality='unk
         'supersedes':prior[0]['id'] if prior else None,'superseded_by':None,'extensions':{}
     }
     if prior:
-        old,op=prior;old['status']='superseded';old['superseded_by']=new_id;old['updated_at']=verified_at;op.write_text(json.dumps(old,indent=2)+'\n')
-    p.write_text(json.dumps(obj,indent=2)+'\n');return obj,p,'changed' if prior else 'created'
+        old,op=prior;old['status']='superseded';old['superseded_by']=new_id;old['updated_at']=verified_at;op.write_text(json.dumps(old,indent=2)+'\n', encoding='utf-8')
+    p.write_text(json.dumps(obj,indent=2)+'\n', encoding='utf-8');return obj,p,'changed' if prior else 'created'
 
 
 def main():

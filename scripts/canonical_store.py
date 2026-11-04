@@ -1,8 +1,27 @@
 #!/usr/bin/env python3
 """Shared schema/path/write mechanics for canonical organization objects."""
 from _common import *
-from jsonschema import Draft202012Validator
+from jsonschema import Draft202012Validator,FormatChecker
 import json
+
+# jsonschema's optional RFC3339 dependency is absent in some bundled runtimes.
+# Use the standard library so validation is the same on every installation.
+DATE_FORMATS=FormatChecker(formats=[])
+
+
+@DATE_FORMATS.checks('date-time',raises=ValueError)
+def _date_time(value):
+    if not isinstance(value,str):return True
+    if not re.fullmatch(r'\d{4}-\d{2}-\d{2}[Tt]\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:[Zz]|[+-]\d{2}:\d{2})',value):return False
+    return datetime.datetime.fromisoformat(value.upper().replace('Z','+00:00')).tzinfo is not None
+
+
+@DATE_FORMATS.checks('date',raises=ValueError)
+def _date(value):
+    if not isinstance(value,str):return True
+    if not re.fullmatch(r'\d{4}-\d{2}-\d{2}',value):return False
+    datetime.date.fromisoformat(value)
+    return True
 
 INSTANCE_PATHS={
     'Business':'context/business.json','Brand':'context/brand','ProductService':'context/products','Offer':'context/offers',
@@ -32,7 +51,7 @@ def schema_entry(title):
 
 def validate_canonical(title,obj):
     _,schema=schema_entry(title)
-    errors=sorted(Draft202012Validator(schema).iter_errors(obj),key=lambda e:list(e.path))
+    errors=sorted(Draft202012Validator(schema,format_checker=DATE_FORMATS).iter_errors(obj),key=lambda e:list(e.path))
     if errors:raise ValueError(f'{title} invalid: '+'; '.join(f'{list(e.path)} {e.message}' for e in errors))
 
 
@@ -45,6 +64,11 @@ def canonical_path(business_id,obj):
 
 
 def write_canonical(obj,path=None,allow_update=False):
+    with business_transaction(obj.get('business_id')):
+        return _write_canonical(obj,path,allow_update)
+
+
+def _write_canonical(obj,path=None,allow_update=False):
     business_id=obj.get('business_id');path=Path(path) if path else canonical_path(business_id,obj)
     if path.exists() and not allow_update:
         try:rel=storage_ref(path)

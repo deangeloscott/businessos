@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """Register a human knowledge note as noncanonical source material with provenance."""
+from _common import organization_transaction
 from _common import *
 from canonical_store import validate_canonical, write_canonical
 import argparse,hashlib,json,os
 
 
+@organization_transaction
 def register_note(business_id,note_ref):
     base=instance_dir(business_id)
     if not base.exists(): raise ValueError(f'Unknown business: {business_id}')

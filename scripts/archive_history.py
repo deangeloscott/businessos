@@ -6,6 +6,7 @@ made the semantic decision that an eligible object should leave the normal activ
 It does not infer usefulness from age, schedule housekeeping, or decide what knowledge is
 safe to forget.
 """
+from _common import organization_transaction
 from _common import *
 from canonical_store import validate_canonical
 import argparse,json,os
@@ -16,6 +17,7 @@ ELIGIBLE_STATUS={
 }
 
 
+@organization_transaction
 def _archive_one(business_id,object_ref,reason,archived_at):
     index=object_index(business_id);item=index.get(object_ref)
     if not item:raise ValueError(f'Unknown active organization object: {object_ref}')
@@ -32,7 +34,7 @@ def _archive_one(business_id,object_ref,reason,archived_at):
 
     history=instance_dir(business_id)/'history'/object_type;history.mkdir(parents=True,exist_ok=True);out=history/path.name
     if out.exists():raise FileExistsError(f'Refusing to overwrite existing historical object: {storage_ref(out)}')
-    tmp=out.with_suffix(out.suffix+'.tmp');tmp.write_text(json.dumps(data,indent=2)+'\n');os.replace(tmp,out);path.unlink()
+    tmp=out.with_suffix(out.suffix+'.tmp');tmp.write_text(json.dumps(data,indent=2)+'\n', encoding='utf-8');os.replace(tmp,out);path.unlink()
     return data,path,out
 
 

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from _common import organization_transaction
 from _common import *
 from jsonschema import Draft202012Validator
 import argparse,json
@@ -8,18 +9,19 @@ from preference_semantics import validate_preference_semantics
 def _load_preferences(path):
     p=Path(path);p=p if p.is_absolute() else ROOT/p
     if not p.exists(): raise ValueError(f'Preferences file not found: {path}')
-    d=json.loads(p.read_text())
+    d=json.loads(p.read_text(encoding='utf-8'))
     if not isinstance(d,dict): raise ValueError('Preferences file must contain one JSON object')
     validate_preference_semantics(d)
     return d
 
 
 def _validate(obj):
-    schema=json.loads((ROOT/'core/schemas/context/preference-profile.schema.json').read_text())
+    schema=json.loads((ROOT/'core/schemas/context/preference-profile.schema.json').read_text(encoding='utf-8'))
     errs=sorted(Draft202012Validator(schema).iter_errors(obj),key=lambda e:list(e.path))
     if errs: raise ValueError('; '.join((('/'.join(map(str,e.path)) or '<root>')+': '+e.message) for e in errs[:10]))
 
 
+@organization_transaction
 def upsert(business_id,name,scope,subject_ref,preferences,profile_id=None,priority=0,source_kind='explicit_user',source_refs=None,systems=None,workflows=None,output_types=None,channels=None,notes=None):
     base=ROOT/'instances'/business_id
     if not base.exists(): raise ValueError('Unknown business')
@@ -34,7 +36,7 @@ def upsert(business_id,name,scope,subject_ref,preferences,profile_id=None,priori
     d=base/'context/preferences';d.mkdir(parents=True,exist_ok=True);path=d/(profile_id+'.json')
     ts=now();created=ts;lineage=[]
     if path.exists():
-        old=json.loads(path.read_text());created=old.get('created_at') or ts;lineage=list(old.get('lineage') or [])
+        old=json.loads(path.read_text(encoding='utf-8'));created=old.get('created_at') or ts;lineage=list(old.get('lineage') or [])
     applies={}
     for key,val in [('systems',systems),('workflows',workflows),('output_types',output_types),('channels',channels)]:
         if val: applies[key]=sorted(set(val))
@@ -44,7 +46,7 @@ def upsert(business_id,name,scope,subject_ref,preferences,profile_id=None,priori
         'status':'active','priority':int(priority),'source_kind':source_kind,'source_refs':sorted(set(source_refs or [])),
         'applies_to':applies,'preferences':preferences,'notes':notes,'extensions':{}
     }
-    _validate(obj);path.write_text(json.dumps(obj,indent=2)+'\n');return path,obj
+    _validate(obj);path.write_text(json.dumps(obj,indent=2)+'\n', encoding='utf-8');return path,obj
 
 
 def main():

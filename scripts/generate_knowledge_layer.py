@@ -236,7 +236,7 @@ def generate(business_id):
         shutil.rmtree(stage,ignore_errors=True)
         raise
 
-def knowledge_layer_freshness(business_id):
+def knowledge_layer_freshness(business_id,index=None,diagnostics=None):
     """Read-only freshness report for enter/remember; never mutates the workspace.
     Returns {'business_id','generated','current','generated_at','object_count','fingerprint',
     'current_fingerprint','unreadable':[{'path','reason'}],'reason'} where reason is one of
@@ -245,8 +245,8 @@ def knowledge_layer_freshness(business_id):
     report={'business_id':business_id,'generated':False,'current':False,'generated_at':None,'object_count':None,'fingerprint':None,'current_fingerprint':None,'unreadable':[],'reason':'missing'}
     base=instance_dir(business_id)
     if not base.exists():report['reason']='unknown-business';return report
-    diagnostics=[]
-    objects=list(iter_instance_objects(business_id,diagnostics=diagnostics))
+    diagnostics=list(diagnostics or [])
+    objects=list(index.values()) if index is not None else list(iter_instance_objects(business_id,diagnostics=diagnostics))
     digest,unreadable=_canonical_fingerprint(objects,diagnostics,base)
     report['unreadable']=[{'path':d.get('path'),'reason':d.get('reason')} for d in unreadable]
     report['current_fingerprint']=digest

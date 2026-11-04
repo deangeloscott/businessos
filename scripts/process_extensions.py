@@ -23,11 +23,11 @@ def _scope_applies(extension,team_ref=None,role_ref=None,operator_ref=None):
 
 def _is_local(extension):return str(extension.get('workflow_id') or '').startswith('custom.')
 
-def all_extensions(business_id):return [obj for obj,_ in iter_instance_objects(business_id) if obj.get('object_type')=='ProcessExtension']
+def all_extensions(business_id,index=None):return [obj for obj,_ in (index.values() if index is not None else iter_instance_objects(business_id)) if obj.get('object_type')=='ProcessExtension']
 
-def active_extensions(business_id,team_ref=None,role_ref=None,operator_ref=None):
+def active_extensions(business_id,team_ref=None,role_ref=None,operator_ref=None,index=None):
     out=[]
-    for extension in all_extensions(business_id):
+    for extension in all_extensions(business_id,index):
         if extension.get('status')!='active' or not _scope_applies(extension,team_ref,role_ref,operator_ref):continue
         out.append(extension)
     return sorted(out,key=lambda extension:(SCOPE_ORDER.get(extension.get('scope'),99),extension.get('id','')))
@@ -49,16 +49,16 @@ def _canonical_workflow(workflow_id):
     return matches[0]
 
 
-def local_workflows(business_id,team_ref=None,role_ref=None,operator_ref=None):
-    return [extension for extension in active_extensions(business_id,team_ref,role_ref,operator_ref) if _is_local(extension)]
+def local_workflows(business_id,team_ref=None,role_ref=None,operator_ref=None,index=None):
+    return [extension for extension in active_extensions(business_id,team_ref,role_ref,operator_ref,index) if _is_local(extension)]
 
 
-def local_workflow_candidates(task,business_id,team_ref=None,role_ref=None,operator_ref=None,top=6):
+def local_workflow_candidates(task,business_id,team_ref=None,role_ref=None,operator_ref=None,top=6,index=None):
     query=str(task or '').strip()
     if not query:return []
-    extensions=local_workflows(business_id,team_ref,role_ref,operator_ref);words=tokens(query);rows=[]
+    extensions=local_workflows(business_id,team_ref,role_ref,operator_ref,index);words=tokens(query);rows=[]
     frequencies=document_frequency(extensions,('workflow_id','title','purpose','discovery_terms'))
-    paths={obj.get('id'):storage_ref(path) for obj,path in iter_instance_objects(business_id) if obj.get('object_type')=='ProcessExtension'}
+    paths={obj.get('id'):storage_ref(path) for obj,path in (index.values() if index is not None else iter_instance_objects(business_id)) if obj.get('object_type')=='ProcessExtension'}
     for extension in extensions:
         workflow_id=str(extension.get('workflow_id') or '');title=str(extension.get('title') or '');purpose=str(extension.get('purpose') or '')
         discovery=' '.join(str(term) for term in extension.get('discovery_terms') or [])

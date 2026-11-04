@@ -34,7 +34,7 @@ def local_evidence_errors(business_id):
             errors.append(f'{sid} deterministic local-site evidence is missing manifest_path');continue
         mp=ROOT/raw_path
         if not mp.exists():errors.append(f'{sid} local-site evidence manifest is missing: {raw_path!r}');continue
-        try:manifest=json.loads(mp.read_text())
+        try:manifest=json.loads(mp.read_text(encoding='utf-8'))
         except Exception as exc:errors.append(f'{sid} local-site evidence manifest is invalid JSON: {exc}');continue
         manifest_root=manifest.get('source_root','')
         if not manifest_root:

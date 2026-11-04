@@ -8,7 +8,7 @@ import argparse,json,hashlib
 def _sharing_config(business_id):
     path=ROOT/'instances'/business_id/'config'/'innovation-sharing.json'
     if path.exists():
-        try:return json.loads(path.read_text())
+        try:return json.loads(path.read_text(encoding='utf-8'))
         except Exception:pass
     return {'format_version':'1.0','default_detail_level':'workflow_only','default_identity_level':'anonymous','exchange_discovery_enabled':False,'exchange_sources':[],'notes':None}
 def _evidence_counts(summary):
@@ -47,11 +47,11 @@ def prepare_package(business_id,extension_id,detail=None,identity=None,evidence_
     }
     fingerprint=innovation_fingerprint(process);timestamp=now();package_id='ipkg_'+hashlib.sha256(f'{fingerprint}|{business_id}|{timestamp}'.encode()).hexdigest()[:20]
     package={'format_version':'1.3','package_id':package_id,'created_at':timestamp,'innovation_fingerprint':fingerprint,'detail_level':detail,'identity_level':identity,'contributor':{'display_name':display_name,'pseudonym':pseudonym},'process':process,'evidence_summary':evidence_summary,'case_study':case_study,'privacy':{'raw_private_state_included':False,'secrets_included':False,'source_business_identity_included':identity=='named','user_approved_export':False,'approved_at':None},'integrity':{'algorithm':'sha256','content_hash':None}}
-    validate_package(package);path=Path(output) if output else ROOT/'runtime'/'innovation'/business_id/f'{package_id}.draft.json';path.parent.mkdir(parents=True,exist_ok=True);path.write_text(json.dumps(package,indent=2)+'\n');return package,path
+    validate_package(package);path=Path(output) if output else ROOT/'runtime'/'innovation'/business_id/f'{package_id}.draft.json';path.parent.mkdir(parents=True,exist_ok=True);path.write_text(json.dumps(package,indent=2)+'\n', encoding='utf-8');return package,path
 
 def main():
     parser=argparse.ArgumentParser(description='Prepare a local InnovationPackage draft for an explicit Workflow-sharing task. This does not authorize or submit disclosure.');parser.add_argument('business_id');parser.add_argument('extension_id');parser.add_argument('--detail',choices=['workflow_only','anonymized_evidence','full_case_study']);parser.add_argument('--identity',choices=['anonymous','pseudonymous','named']);parser.add_argument('--display-name');parser.add_argument('--pseudonym');parser.add_argument('--evidence-summary-file');parser.add_argument('--case-study-file');parser.add_argument('--output');args=parser.parse_args()
-    try:evidence=json.loads(Path(args.evidence_summary_file).read_text()) if args.evidence_summary_file else None;case=json.loads(Path(args.case_study_file).read_text()) if args.case_study_file else None;package,path=prepare_package(args.business_id,args.extension_id,args.detail,args.identity,evidence,case,args.display_name,args.pseudonym,args.output)
+    try:evidence=json.loads(Path(args.evidence_summary_file).read_text(encoding='utf-8')) if args.evidence_summary_file else None;case=json.loads(Path(args.case_study_file).read_text(encoding='utf-8')) if args.case_study_file else None;package,path=prepare_package(args.business_id,args.extension_id,args.detail,args.identity,evidence,case,args.display_name,args.pseudonym,args.output)
     except (ValueError,json.JSONDecodeError) as exc:raise SystemExit(str(exc))
     print(json.dumps({'package_id':package['package_id'],'draft_path':str(path),'approved_for_export':False},indent=2))
 

@@ -13,6 +13,7 @@ from validate_business import validate_business
 from validate_references import inbound_references
 
 
+@organization_transaction
 def forget(business_id,object_ref):
     resolved=resolve_business(business_id)
     if resolved.get('status')!='resolved':raise ValueError(resolved.get('reason') or 'Organization could not be resolved')
@@ -24,7 +25,7 @@ def forget(business_id,object_ref):
     if inbound:
         refs=', '.join(f"{row['object_ref']} ({row['object_type']})" for row in inbound[:12])
         raise ValueError(f'Refusing to forget {object_ref}; canonical state still refers to it from: {refs}. Resolve/update those dependent meanings first.')
-    path=Path(path);stored=json.loads(path.read_text())
+    path=Path(path);stored=json.loads(path.read_text(encoding='utf-8'))
     if not isinstance(stored,dict) or stored.get('id')!=object_ref:
         raise ValueError(f'{object_ref} is not stored as one independently removable canonical object')
     snapshot=path.read_bytes();path.unlink()

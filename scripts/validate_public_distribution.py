@@ -38,7 +38,7 @@ def validate_public_distribution():
         if (ROOT/rel).exists():errors.append(f'noncore AURA self-update machinery must not ship: {rel}')
     if (ROOT/'core/schemas/runtime/publisher-metadata.schema.json').exists():errors.append('publisher metadata must not be modeled as runtime state')
 
-    version=(ROOT/'VERSION').read_text().strip() if (ROOT/'VERSION').exists() else ''
+    version=(ROOT/'VERSION').read_text(encoding='utf-8').strip() if (ROOT/'VERSION').exists() else ''
     if not re.fullmatch(r'\d+\.\d+\.\d+',version):errors.append(f'VERSION must be simple X.Y.Z semantic version, got {version!r}')
     elif int(version.split('.',1)[0])!=0:errors.append('alpha AURA releases must remain pre-1.0 until the maturity claim changes')
 
@@ -58,7 +58,7 @@ def validate_public_distribution():
         if any(x.lower() in rel.lower() for x in FORBIDDEN_PATH_PARTS):errors.append(f'forbidden internal path included: {rel}')
         if p.name.startswith('.env') or p.suffix.lower() in {'.pem','.key','.p12','.pfx'}:errors.append(f'sensitive credential/config file included: {rel}')
         if p.suffix.lower() not in TEXT_SUFFIXES and p.name!='VERSION':continue
-        try:text=p.read_text(errors='strict')
+        try:text=p.read_text(errors='strict', encoding='utf-8')
         except (UnicodeDecodeError,OSError):continue
         if rel not in LEGACY_BRAND_ALLOW:
             for legacy in LEGACY_PUBLIC_NAMES:
@@ -75,9 +75,9 @@ def validate_public_distribution():
     pub=ROOT/'PUBLISHER.json'
     publisher_schema=ROOT/'core/schemas/config/publisher-metadata.schema.json'
     if pub.exists():
-        d=json.loads(pub.read_text());publisher=d.get('publisher') or {}
+        d=json.loads(pub.read_text(encoding='utf-8'));publisher=d.get('publisher') or {}
         if publisher_schema.exists():
-            schema=json.loads(publisher_schema.read_text())
+            schema=json.loads(publisher_schema.read_text(encoding='utf-8'))
             schema_errors=sorted(Draft202012Validator(schema).iter_errors(d),key=lambda e:list(e.path))
             for err in schema_errors:errors.append('PUBLISHER.json schema error: '+err.message)
         if not publisher.get('canonical_project_url'):errors.append('canonical public project URL missing')
@@ -90,7 +90,7 @@ def validate_public_distribution():
 
     meta=ROOT/'INSTALLATION.json'
     if meta.exists():
-        d=json.loads(meta.read_text());edition=d.get('edition');display=str(d.get('display_name',''));public=str(d.get('public_name',''))
+        d=json.loads(meta.read_text(encoding='utf-8'));edition=d.get('edition');display=str(d.get('display_name',''));public=str(d.get('public_name',''))
         if d.get('source_version')!=version:errors.append('INSTALLATION.json source_version must match VERSION')
         if d.get('maturity')!=EXPECTED_MATURITY:errors.append('INSTALLATION.json maturity must explicitly be alpha')
         if edition=='full':
@@ -106,7 +106,7 @@ def validate_public_distribution():
 
     editions=ROOT/'distribution/editions.json'
     if editions.exists():
-        ed=json.loads(editions.read_text()).get('editions',[]);full=next((x for x in ed if x.get('id')=='full'),None)
+        ed=json.loads(editions.read_text(encoding='utf-8')).get('editions',[]);full=next((x for x in ed if x.get('id')=='full'),None)
         if not full or full.get('display_name')!=EXPECTED_NAME:errors.append('full edition must be named ViralTrac AURA')
         for item in ed:
             if not str(item.get('display_name','')).startswith(EXPECTED_NAME):errors.append(f"edition {item.get('id')} is outside the ViralTrac AURA naming family")

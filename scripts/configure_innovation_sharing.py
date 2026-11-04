@@ -9,7 +9,7 @@ def configure(business_id,detail='workflow_only',identity='anonymous',discovery=
     if not base.exists():raise ValueError(f'Unknown business: {business_id}')
     obj={'format_version':'1.0','default_detail_level':detail,'default_identity_level':identity,'exchange_discovery_enabled':bool(discovery),'exchange_sources':list(dict.fromkeys(sources or [])),'notes':notes}
     validate_schema('InnovationSharingConfig',obj)
-    path=base/'config'/'innovation-sharing.json';path.parent.mkdir(parents=True,exist_ok=True);tmp=path.with_suffix('.tmp');tmp.write_text(json.dumps(obj,indent=2)+'\n');os.replace(tmp,path);return obj,path
+    path=base/'config'/'innovation-sharing.json';path.parent.mkdir(parents=True,exist_ok=True);tmp=path.with_suffix('.tmp');tmp.write_text(json.dumps(obj,indent=2)+'\n', encoding='utf-8');os.replace(tmp,path);return obj,path
 
 
 def main():

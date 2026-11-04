@@ -34,7 +34,7 @@ def main():
     try:path,meta=resolve_workflow(a.workflow_id)
     except ValueError as exc:raise SystemExit(str(exc))
     rel=str(path.relative_to(ROOT))
-    if a.show:print(path.read_text(),end='')
+    if a.show:print(path.read_text(encoding='utf-8'),end='')
     elif a.json:print(json.dumps(_result(a.workflow_id,meta,rel),indent=2))
     else:print(rel)
 

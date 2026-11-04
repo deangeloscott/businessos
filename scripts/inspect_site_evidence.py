@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from _common import organization_transaction
 from _common import ROOT, now, workspace_root
 from html.parser import HTMLParser
 from pathlib import Path
@@ -137,7 +138,7 @@ def build_manifest(source_root, business_id=None, captured_at=None, source_locat
         files.append({'path':rel,'sha256':'sha256:'+digest,'size_bytes':len(data)})
     snapshot='sha256:'+_sha(''.join(snapshot_parts).encode('utf-8'))
 
-    robots_text=(root/'robots.txt').read_text(errors='replace') if (root/'robots.txt').exists() else ''
+    robots_text=(root/'robots.txt').read_text(errors='replace', encoding='utf-8') if (root/'robots.txt').exists() else ''
     rules=_robots_rules(robots_text)
     for ua,val in rules: all_facts.append(_fact('robots.disallow','robots.txt',user_agent=ua,value=val))
 
@@ -145,7 +146,7 @@ def build_manifest(source_root, business_id=None, captured_at=None, source_locat
     sm=root/'sitemap.xml'
     if sm.exists():
         try:
-            tree=ET.fromstring(sm.read_text(errors='replace'))
+            tree=ET.fromstring(sm.read_text(errors='replace', encoding='utf-8'))
             for el in tree.iter():
                 if el.tag.split('}')[-1]=='loc' and el.text and el.text.strip(): sitemap_urls.append(el.text.strip())
         except Exception:
@@ -154,7 +155,7 @@ def build_manifest(source_root, business_id=None, captured_at=None, source_locat
     base=_site_base(sitemap_urls,root)
 
     for p in sorted(root.rglob('*.html')):
-        rel=p.relative_to(root).as_posix(); text=p.read_text(errors='replace'); parser=PageParser(); parser.feed(text)
+        rel=p.relative_to(root).as_posix(); text=p.read_text(errors='replace', encoding='utf-8'); parser=PageParser(); parser.feed(text)
         title=' '.join(''.join(parser.title_parts).split())
         h1=' '.join(''.join(parser.h1_parts).split())
         all_facts.append(_fact('html.title',rel,value=title))
@@ -195,6 +196,7 @@ def _safe_rel(path):
     try: return p.relative_to(workspace_root().resolve()).as_posix()
     except ValueError: raise ValueError('site root must be inside the BusinessOS workspace so evidence can be reproduced portably')
 
+@organization_transaction
 def persist_inspection(business_id,source_root):
     base=ROOT/'instances'/business_id
     if not base.exists(): raise ValueError(f'unknown business: {business_id}')
@@ -211,12 +213,12 @@ def persist_inspection(business_id,source_root):
     # Same source locator + same content snapshot is idempotent. Never overwrite a
     # capture merely because a different locator has identical bytes.
     if manifest_path.exists():
-        existing=json.loads(manifest_path.read_text())
+        existing=json.loads(manifest_path.read_text(encoding='utf-8'))
         if existing.get('source_identity')!=manifest['source_identity'] or existing.get('snapshot_hash')!=manifest['snapshot_hash'] or existing.get('source_root')!=source_rel:
             raise ValueError(f'local evidence identity collision at {manifest_path.relative_to(ROOT)}')
         manifest=existing
     else:
-        manifest_path.write_text(json.dumps(manifest,indent=2,ensure_ascii=False)+'\n')
+        manifest_path.write_text(json.dumps(manifest,indent=2,ensure_ascii=False)+'\n', encoding='utf-8')
 
     ts=manifest['captured_at']; rel_manifest=manifest_path.relative_to(ROOT).as_posix()
     source={
@@ -229,13 +231,13 @@ def persist_inspection(business_id,source_root):
         }
     }
     if sp.exists():
-        existing_source=json.loads(sp.read_text())
+        existing_source=json.loads(sp.read_text(encoding='utf-8'))
         ex=existing_source.get('extensions',{}).get('businessos_local_evidence',{})
         if existing_source.get('source_reference')!=source_rel or existing_source.get('content_hash')!=manifest['snapshot_hash'] or ex.get('source_identity')!=manifest['source_identity']:
             raise ValueError(f'local evidence SourceRecord identity collision: {sid}')
         source=existing_source
     else:
-        sp.write_text(json.dumps(source,indent=2)+'\n')
+        sp.write_text(json.dumps(source,indent=2)+'\n', encoding='utf-8')
     return source,manifest,manifest_path
 
 def main():

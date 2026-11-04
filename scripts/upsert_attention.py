@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Create or refresh one deduplicated durable AttentionItem."""
+from _common import organization_transaction
 from _common import *
 import argparse,json,hashlib
 
@@ -17,6 +18,7 @@ def _find(business_id,key):
     return None,None
 
 
+@organization_transaction
 def upsert(business_id,key,attention_type,severity,title,reason,recommended_action=None,source_refs=None,evidence_refs=None,lineage=None,next_review_at=None,seen_at=None):
     seen_at=seen_at or now();source_refs=source_refs or [];evidence_refs=evidence_refs or [];lineage=lineage or []
     obj,path=_find(business_id,key);created=False;reopened=False
@@ -34,7 +36,7 @@ def upsert(business_id,key,attention_type,severity,title,reason,recommended_acti
         obj['source_refs']=_merge(obj.get('source_refs'),source_refs);obj['evidence_refs']=_merge(obj.get('evidence_refs'),evidence_refs);obj['lineage']=_merge(obj.get('lineage'),lineage)
         if next_review_at is not None:obj['next_review_at']=next_review_at
     old_path=path;path=_path(business_id,obj['id']) if path is None or '/history/' in path.as_posix() else path
-    path.parent.mkdir(parents=True,exist_ok=True);path.write_text(json.dumps(obj,indent=2)+'\n')
+    path.parent.mkdir(parents=True,exist_ok=True);path.write_text(json.dumps(obj,indent=2)+'\n', encoding='utf-8')
     if old_path is not None and old_path.resolve()!=path.resolve() and old_path.exists():old_path.unlink()
     return obj,path,created,reopened
 

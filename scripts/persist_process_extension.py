@@ -6,6 +6,7 @@ evidence-backed Learning worth preserving for future work. It is retrieval conte
 not semantic authority, a permission boundary, an execution plan, or a product-version
 contract.
 """
+from _common import organization_transaction
 from pathlib import Path
 import argparse,hashlib,json,re
 from _common import *
@@ -49,6 +50,7 @@ def _validate_workflow_id(workflow_id):
     return workflow_id
 
 
+@organization_transaction
 def persist_extension(business_id,spec):
     resolved=resolve_business(business_id)
     if resolved.get('status')!='resolved':raise ValueError(resolved.get('reason') or 'Organization could not be resolved')
@@ -65,7 +67,7 @@ def persist_extension(business_id,spec):
     if not title or not purpose or not instructions:raise ValueError('title, purpose, and at least one instruction are required')
 
     seed='|'.join([bid,workflow_id,scope,scope_ref or '']);oid='pex_'+hashlib.sha256(seed.encode()).hexdigest()[:20]
-    path=ROOT/'instances'/bid/'learning'/'process-extensions'/f'{oid}.json';existing=json.loads(path.read_text()) if path.exists() else {};timestamp=now()
+    path=ROOT/'instances'/bid/'learning'/'process-extensions'/f'{oid}.json';existing=json.loads(path.read_text(encoding='utf-8')) if path.exists() else {};timestamp=now()
     obj={
         'id':oid,'object_type':'ProcessExtension','schema_version':'1.0.0','business_id':bid,
         'created_at':existing.get('created_at') or timestamp,'updated_at':timestamp,

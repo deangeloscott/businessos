@@ -6,7 +6,7 @@ const profiles={items:[{id:'jeff',name:'<Jeff>',instructions:'Find useful eviden
 const tasks={items:[{id:'weekly',name:'Weekly review',owner:'hermes'}],notes:[]};
 const history={items:[{id:'report.md',name:'Weekly findings',status:'Saved result'}],limit:20,note:''};
 let opened=null,nativePreview=null;
-const context={window:{},document:{addEventListener:(name,callback)=>(listeners[name]??=[]).push(callback)},
+const context={humanError:error=>error?.message||String(error),window:{},document:{addEventListener:(name,callback)=>(listeners[name]??=[]).push(callback)},
   state:{data:{workspace:'A',connection:{choices:[],selected:'codex'}},business:'studio',view:'assistants',chatMeta:{id:'parent'}},
   $:node,esc:value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),
   empty:text=>`<p>${text}</p>`,appName:name=>name,chatDate:at=>String(at),chatMarkdown:text=>`<p>${text}</p>`,
@@ -28,6 +28,20 @@ vm.runInContext(appSource.slice(pickerStart,pickerEnd),context);
   await work.renderAssistants(host);
   assert(node('#assistant-list').innerHTML.includes('&lt;Jeff&gt;'));
   assert(!node('#assistant-list').innerHTML.includes('<Jeff>'));
+  // HTML named controls can shadow form.id. A real submission must still save.
+  const formApi=context.api;let submitted=0;
+  context.FormData=class {constructor(form){return Object.entries(form.data);}};
+  context.api=async(path,data)=>{
+    if(path==='/api/assistants'&&data){submitted++;profiles.items.push({id:'saved-form',name:data.name,instructions:data.instructions,task_ids:[]});return profiles;}
+    return formApi(path);
+  };
+  const form={id:{tagName:'INPUT',name:'id'},matches:selector=>selector==='form#assistant-form',
+    data:{id:'',name:'Saved from form',instructions:'Useful instructions'},querySelector:()=>({disabled:false,isConnected:false}),isConnected:true};
+  for(const handler of listeners.submit||[])handler({target:form,preventDefault(){}});
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(submitted,1,'A named id control prevented assistant submission');
+  assert.match(opened.html,/Useful instructions/);
+  context.api=formApi;profiles.items.pop();
   const savedProfiles=profiles.items;profiles.items=[];
   await work.assignTask({id:'weekly'},host);assert.equal(host.hidden,true,'Tasks must not show a selector without choices');
   profiles.items=savedProfiles;profiles.running=[];

@@ -11,7 +11,7 @@ def export_package(draft_path,output,approved=False):
         with zipfile.ZipFile(out,'w',compression=zipfile.ZIP_DEFLATED) as archive:
             archive.writestr('innovation-package.json',json.dumps(package,indent=2)+'\n')
             archive.writestr('README.txt','ViralTrac AURA InnovationPackage. Validate before import; contribution evidence is not automatic proof of effectiveness.\n')
-    else:out.write_text(json.dumps(package,indent=2)+'\n')
+    else:out.write_text(json.dumps(package,indent=2)+'\n', encoding='utf-8')
     return package,out
 
 

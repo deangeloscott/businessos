@@ -24,9 +24,9 @@ def _method_type(run):return run.get('method_type') or 'ad_hoc'
 def _run_files_errors(business_id,workflows):
     errors=[];root=runtime_root()/'runs'/business_id
     if not root.exists():return errors
-    schema=json.loads((PRODUCT_ROOT/'core/schemas/runtime/run.schema.json').read_text());registry=load_registry().get('workflows',[])
+    schema=json.loads((PRODUCT_ROOT/'core/schemas/runtime/run.schema.json').read_text(encoding='utf-8'));registry=load_registry().get('workflows',[])
     for path in sorted(root.glob('*/run.json')):
-        try:run=json.loads(path.read_text())
+        try:run=json.loads(path.read_text(encoding='utf-8'))
         except Exception as exc:errors.append(f'{storage_ref(path)} invalid Run JSON: {exc}');continue
         for error in Draft202012Validator(schema).iter_errors(run):errors.append(f'{storage_ref(path)} {list(error.path)}: {error.message}')
         if run.get('business_id')!=business_id:errors.append(f'{storage_ref(path)} business_id mismatch')

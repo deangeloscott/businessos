@@ -3,7 +3,7 @@
 from pathlib import Path
 import argparse,json,subprocess,sys
 
-from _common import PRODUCT_ROOT,object_index,resolve_business,workspace_root
+from _common import PRODUCT_ROOT,object_index,resolve_business,workspace_root,business_transaction
 from enter import prepare_work
 from forget import forget
 from remember import remember
@@ -34,6 +34,18 @@ def doctor(business_id=None):
         retrieval_ok=False;retrieval_detail=str(exc)
     checks.append({'name':'retrieval','ok':retrieval_ok,'detail':retrieval_detail})
 
+    # Refuse an invasive probe on already-invalid state. In particular, a missing
+    # Business cannot support forget() validation and must not leave a probe behind.
+    initial_errors,_,_=validate_business(bid,True)
+    if initial_errors:
+        checks.append({'name':'organization_validation','ok':False,'detail':'; '.join(initial_errors[:5])})
+        return {'format_version':'1.0','status':'not_ready','workspace_root':root,'business_id':bid,'checks':checks,
+                'receipt':'The organization needs attention. No diagnostic records were created.'}
+    with business_transaction(bid):
+        return _probe(bid,root,checks)
+
+
+def _probe(bid,root,checks):
     probe_id=None;probe_ok=False;cleanup_ok=True
     try:
         persisted=remember(bid,{'objects':[{'object_type':'Asset','content':{'asset_type':'aura_doctor_probe','business_role':'temporary AURA readiness probe','version':'1','status':'active'}}]})

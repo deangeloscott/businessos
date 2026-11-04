@@ -37,7 +37,7 @@ def default_home():
     elif sys.platform.startswith('linux'):
         config = Path(os.environ.get('XDG_CONFIG_HOME') or Path.home() / '.config') / 'user-dirs.dirs'
         try:
-            match = re.search(r'^XDG_DOCUMENTS_DIR="([^"]+)"', config.read_text(), re.M)
+            match = re.search(r'^XDG_DOCUMENTS_DIR="([^"]+)"', config.read_text(encoding='utf-8'), re.M)
             if match:
                 documents = Path(match[1].replace('$HOME', str(Path.home())))
         except OSError:

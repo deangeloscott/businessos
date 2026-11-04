@@ -17,6 +17,8 @@
 # Local workspace selection/profile metadata and host-specific environment overlay.
 /.businessos/workspace.json
 /.businessos/environments/
+/.businessos/locks/
+/.businessos/staging/
 
 # Local secrets and environment files
 .env

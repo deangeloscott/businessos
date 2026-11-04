@@ -88,10 +88,10 @@ window.auraWork = (() => {
         try{
           const result=await api('/api/assistants',{business:state.business,action:'assign_task',task_id:task.id,id});
           if(!current())return;cache=result;scope=key;await overview(id);
-        }catch(error){if(current())$('#assistant-task-status').textContent=error.message;}
+        }catch(error){if(current())$('#assistant-task-status').textContent=humanError(error);}
         finally{saving=false;if(button.isConnected)button.disabled=false;}
       });paint();
-    }catch(error){if(current()){host.innerHTML=`<p class="error" role="status">${esc(error.message)}</p><button type="button" class="secondary" id="assistant-task-retry">Try again</button>`;$('#assistant-task-retry').onclick=()=>attempt(()=>chooseTask(id));}}
+    }catch(error){if(current()){host.innerHTML=`<p class="error" role="status">${esc(humanError(error))}</p><button type="button" class="secondary" id="assistant-task-retry">Try again</button>`;$('#assistant-task-retry').onclick=()=>attempt(()=>chooseTask(id));}}
   }
   async function assignTask(task,host){
     const data=await load();if(!data||!host.isConnected)return;
@@ -99,13 +99,13 @@ window.auraWork = (() => {
     host.hidden=!data.items.length&&!owner;if(host.hidden){host.innerHTML='';return;}
     host.innerHTML=`<label>Saved assistant<select id="task-assistant"><option value="">No assistant</option>${data.items.map(p=>`<option value="${esc(p.id)}" ${p.id===owner?.id?'selected':''}>${esc(p.name)}</option>`).join('')}</select></label><p class="small-note">Groups this task and its results. The task keeps its saved instructions.</p><p id="task-assistant-status" role="status"></p>`;
     let saved=owner?.id||'';
-    $('#task-assistant').onchange=()=>attempt(async()=>{const choice=$('#task-assistant'),key=currentScope();choice.disabled=true;try{const result=await api('/api/assistants',{business:state.business,action:'assign_task',task_id:task.id,id:choice.value});if(key!==currentScope()||!choice.isConnected)return;cache=result;scope=key;saved=choice.value;$('#task-assistant-status').textContent='Assignment saved.';}catch(error){if(key===currentScope()&&choice.isConnected){choice.value=saved;$('#task-assistant-status').textContent=error.message;}}finally{if(choice.isConnected)choice.disabled=false;}});
+    $('#task-assistant').onchange=()=>attempt(async()=>{const choice=$('#task-assistant'),key=currentScope();choice.disabled=true;try{const result=await api('/api/assistants',{business:state.business,action:'assign_task',task_id:task.id,id:choice.value});if(key!==currentScope()||!choice.isConnected)return;cache=result;scope=key;saved=choice.value;$('#task-assistant-status').textContent='Assignment saved.';}catch(error){if(key===currentScope()&&choice.isConnected){choice.value=saved;$('#task-assistant-status').textContent=humanError(error);}}finally{if(choice.isConnected)choice.disabled=false;}});
   }
   async function history(task,host){
     const key=currentScope();host.textContent='Loading results…';
     try{const result=await api('/api/schedules/history?id='+encodeURIComponent(task.id));if(key!==currentScope()||!host.isConnected)return;
       host.innerHTML=`<h3>Results</h3>${result.items.length?`<div class="task-results">${result.items.map((r,i)=>`<button type="button" class="row" data-task-run="${esc(r.id)}" data-task-source="${esc(task.id)}"><span class="row-text"><span class="row-title">${i===0?'Latest · ':''}${esc(r.name)}</span><span class="row-meta">${esc(r.status)}${r.at?' · '+esc(chatDate(Number(r.at)>1e12?Number(r.at)/1000:Number(r.at))):''}</span></span></button>`).join('')}</div>`:'<p class="muted">No saved results available here yet.</p>'}${result.note?`<p class="small-note">${esc(result.note)}</p>`:''}${result.items.length===result.limit?'<p class="small-note">Showing the 20 most recent results.</p>':''}`;
-    }catch(error){if(key!==currentScope()||!host.isConnected)return;host.innerHTML=`<h3>Results</h3><p class="error" role="status">${esc(error.message)}</p><button type="button" class="secondary">Try again</button>`;host.querySelector('button').onclick=()=>history(task,host);}
+    }catch(error){if(key!==currentScope()||!host.isConnected)return;host.innerHTML=`<h3>Results</h3><p class="error" role="status">${esc(humanError(error))}</p><button type="button" class="secondary">Try again</button>`;host.querySelector('button').onclick=()=>history(task,host);}
   }
   async function openResult(taskId,runId){
     const key=currentScope(),r=await api('/api/schedules/result?id='+encodeURIComponent(taskId)+(runId?'&run_id='+encodeURIComponent(runId):''));if(key!==currentScope())return;
@@ -156,8 +156,8 @@ window.auraWork = (() => {
     if(state.view==='assistants'&&state.data&&!$('#section-content').textContent.trim())attempt(()=>renderAssistants($('#section-content')));
   });
   document.addEventListener('submit',event=>{
-    if(event.target.id!=='assistant-form')return;event.preventDefault();const form=event.target,key=currentScope();
-    attempt(async()=>{const button=form.querySelector('.primary');button.disabled=true;try{const data=Object.fromEntries(new FormData(form));const result=await api('/api/assistants',{business:state.business,...data});if(key!==currentScope())return;cache=result;scope=key;const p=data.id?profile(data.id):cache.items.at(-1);if(state.view==='assistants')await renderAssistants($('#section-content'));if(p)await overview(p.id);}catch(error){if(form.isConnected)$('#assistant-save-status').textContent=error.message;}finally{if(button.isConnected)button.disabled=false;}});
+    if(!event.target.matches('form#assistant-form'))return;event.preventDefault();const form=event.target,key=currentScope();
+    attempt(async()=>{const button=form.querySelector('.primary');button.disabled=true;try{const data=Object.fromEntries(new FormData(form));const result=await api('/api/assistants',{business:state.business,...data});if(key!==currentScope())return;cache=result;scope=key;const p=data.id?profile(data.id):cache.items.at(-1);if(state.view==='assistants')await renderAssistants($('#section-content'));if(p)await overview(p.id);}catch(error){if(form.isConnected)$('#assistant-save-status').textContent=humanError(error);}finally{if(button.isConnected)button.disabled=false;}});
   });
   return {load,startAssistant,renderAssistants,overview,assignTask,chooseTask,history,openResult,renderDelegation,composer};
 })();

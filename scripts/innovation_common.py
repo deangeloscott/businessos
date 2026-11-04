@@ -8,7 +8,7 @@ FORBIDDEN_KEYS={'password','passwd','secret','client_secret','api_key','apikey',
 
 def schema_by_title(title):
     for path in schemas():
-        try:data=json.loads(path.read_text())
+        try:data=json.loads(path.read_text(encoding='utf-8'))
         except Exception:continue
         if data.get('title')==title:return data
     raise ValueError(f'Unknown schema title: {title}')
@@ -24,7 +24,7 @@ def iter_innovation_entries(business_id):
     if not root.exists():return []
     rows=[]
     for path in sorted(root.glob('iex_*.json')):
-        try:data=json.loads(path.read_text())
+        try:data=json.loads(path.read_text(encoding='utf-8'))
         except Exception:continue
         if isinstance(data,dict) and data.get('business_id')==business_id:rows.append((data,path))
     return rows
@@ -62,7 +62,7 @@ def load_package(path):
             elif len(names)==1:name=names[0]
             else:raise ValueError('ZIP must contain innovation-package.json or exactly one JSON package')
             return json.loads(archive.read(name).decode('utf-8'))
-    return json.loads(path.read_text())
+    return json.loads(path.read_text(encoding='utf-8'))
 def validate_package(package,require_export_approval=False):
     validate_schema('InnovationPackage',package);hits=find_forbidden_keys(package)
     if hits:raise ValueError('InnovationPackage contains forbidden secret/credential field(s): '+', '.join(hits))

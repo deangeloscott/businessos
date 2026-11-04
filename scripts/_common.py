@@ -1,5 +1,6 @@
 from pathlib import Path
-import json, re, yaml, hashlib, datetime, os, sys, tempfile
+import json, re, yaml, hashlib, datetime, os, sys, tempfile, stat
+import functools, inspect, threading, time
 from contextlib import contextmanager
 from contextvars import ContextVar
 
@@ -12,6 +13,80 @@ _WORKSPACE_ENV='BUSINESSOS_WORKSPACE'
 _WORKSPACE_CONFIG_ENV='BUSINESSOS_WORKSPACE_CONFIG'
 _STATE_NAMESPACES={'instances','runtime','knowledge','attachments'}
 _WORKSPACE_SCOPE=ContextVar('aura_workspace_scope',default=None)
+_TRANSACTION_LOCKS={}
+_TRANSACTION_GUARD=threading.Lock()
+_TRANSACTION_LOCAL=threading.local()
+
+
+def path_link(path):
+    """Recognize symlinks and Windows junctions, including older Python hosts."""
+    try:info=Path(path).lstat()
+    except FileNotFoundError:return False
+    return stat.S_ISLNK(info.st_mode) or getattr(info,'st_reparse_tag',None)==0xA0000003
+
+
+@contextmanager
+def business_transaction(business_id):
+    """Serialize supported organization mutations, including validation and rollback.
+
+    An OS-owned lock covers CLI processes; an RLock covers threads and nested helpers.
+    Locks live outside canonical records and release automatically on process exit.
+    """
+    if not isinstance(business_id,str) or not re.fullmatch(r'[a-z0-9][a-z0-9_-]{0,63}',business_id):
+        raise ValueError('Choose a valid organization before saving changes.')
+    root=Path(workspace_root()).resolve()
+    path=root/'.businessos/locks'/f'{business_id}.lock'
+    for candidate in (path,path.parent,path.parent.parent):
+        if path_link(candidate):
+            raise ValueError('The workspace lock folder is linked elsewhere. Choose its original workspace folder.')
+    key=os.path.normcase(str(path))
+    with _TRANSACTION_GUARD:
+        lock=_TRANSACTION_LOCKS.setdefault(key,threading.RLock())
+    if not lock.acquire(timeout=30):
+        raise ValueError('Another save is still using this organization. Wait a moment and try again.')
+    try:
+        held=getattr(_TRANSACTION_LOCAL,'held',set())
+        if key in held:
+            yield
+            return
+        path.parent.mkdir(parents=True,exist_ok=True)
+        with path.open('a+b') as handle:
+            handle.seek(0,2)
+            if not handle.tell():handle.write(b'0');handle.flush()
+            deadline=time.monotonic()+30
+            while True:
+                try:
+                    handle.seek(0)
+                    if os.name=='nt':
+                        import msvcrt
+                        msvcrt.locking(handle.fileno(),msvcrt.LK_NBLCK,1)
+                    else:
+                        import fcntl
+                        fcntl.flock(handle.fileno(),fcntl.LOCK_EX|fcntl.LOCK_NB)
+                    break
+                except OSError:
+                    if time.monotonic()>=deadline:
+                        raise ValueError('Another save is still using this organization. Wait a moment and try again.') from None
+                    time.sleep(.05)
+            _TRANSACTION_LOCAL.held=held|{key}
+            try:yield
+            finally:
+                _TRANSACTION_LOCAL.held=held
+                handle.seek(0)
+                if os.name=='nt':msvcrt.locking(handle.fileno(),msvcrt.LK_UNLCK,1)
+                else:fcntl.flock(handle.fileno(),fcntl.LOCK_UN)
+    finally:lock.release()
+
+
+def organization_transaction(fn):
+    """Guard a mutation whose first argument is its organization ID."""
+    signature=inspect.signature(fn)
+    @functools.wraps(fn)
+    def guarded(*args,**kwargs):
+        bound=signature.bind(*args,**kwargs);bound.apply_defaults()
+        bid=next(iter(bound.arguments.values()))
+        with business_transaction(bid):return fn(*args,**kwargs)
+    return guarded
 
 
 @contextmanager
@@ -170,6 +245,14 @@ def resolve_business(explicit=None):
 
 
 def write_json_atomic(path,data):
+    p=Path(path);root=Path(workspace_root()).resolve()
+    relative=p.absolute().relative_to(root) if p.absolute().is_relative_to(root) else None
+    if relative and len(relative.parts)>2 and relative.parts[0]=='instances' and relative.parts[1]!='_template':
+        with business_transaction(relative.parts[1]):return _write_json_atomic(p,data)
+    return _write_json_atomic(p,data)
+
+
+def _write_json_atomic(path,data):
     """Write JSON atomically in the destination directory."""
     p=Path(path);p.parent.mkdir(parents=True,exist_ok=True);tmp=None
     try:
@@ -336,11 +419,6 @@ def object_matches(obj,selector):
         if obj.get(k)!=v: return False
     return True
 def refs_in_object(obj):
-    """Return reference-shaped strings; callers decide whether they resolve canonically.
-
-    Do not maintain a second list of object-ID prefixes here. Canonical object namespaces
-    evolve with their schemas, while the consumers of this helper already intersect these
-    candidates with an actual organization object index before treating them as references.
-    """
-    pat=re.compile(r'(?<![A-Za-z0-9_-])[A-Za-z][A-Za-z0-9]*_[A-Za-z0-9_-]+(?![A-Za-z0-9_-])')
-    return set(pat.findall(json.dumps(obj)))
+    """Relationships live in reference fields, never in arbitrary prose or filenames."""
+    from validate_references import references_in
+    return references_in(obj)

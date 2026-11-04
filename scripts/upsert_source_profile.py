@@ -2,6 +2,7 @@
 """Create or update an organization-scoped external SourceProfile."""
 from _common import *
 from jsonschema import Draft202012Validator
+from canonical_store import DATE_FORMATS
 from urllib.parse import urlsplit,urlunsplit
 import argparse,hashlib,json,os
 
@@ -28,9 +29,9 @@ def _normalized_reference(value):
     return value
 
 def _profile_id(business_id,source_reference):return "sprof_"+hashlib.sha256(f"{business_id}:{_normalized_reference(source_reference)}".encode()).hexdigest()[:16]
-def _schema():return json.loads((ROOT/"core/schemas/intelligence/source-profile.schema.json").read_text())
+def _schema():return json.loads((ROOT/"core/schemas/intelligence/source-profile.schema.json").read_text(encoding='utf-8'))
 def _validate(obj):
-    errors=sorted(Draft202012Validator(_schema()).iter_errors(obj),key=lambda e:list(e.path))
+    errors=sorted(Draft202012Validator(_schema(),format_checker=DATE_FORMATS).iter_errors(obj),key=lambda e:list(e.path))
     if errors:raise ValueError("SourceProfile invalid: "+"; ".join(f"{list(e.path)} {e.message}" for e in errors))
 def _path(business_id,profile_id):return ROOT/"instances"/business_id/"intelligence"/"source-profiles"/f"{profile_id}.json"
 def _merge_unique(old,new):return list(dict.fromkeys([*(old or []),*(new or [])]))
@@ -89,11 +90,15 @@ def _parse_signal_cadences(values,existing,replace_user=False):
     return [rows[k] for k in sorted(rows)]
 
 def upsert(args):
+    with business_transaction(args.business_id):return _upsert(args)
+
+
+def _upsert(args):
     base=ROOT/"instances"/args.business_id
     if not base.exists():raise ValueError(f"Unknown business: {args.business_id}")
     ref=_normalized_reference(args.source_reference);profile_id=_profile_id(args.business_id,ref);path=_path(args.business_id,profile_id);ts=now()
     if path.exists():
-        obj=json.loads(path.read_text())
+        obj=json.loads(path.read_text(encoding='utf-8'))
         if _normalized_reference(obj.get("source_reference"))!=ref:raise ValueError("existing SourceProfile reference mismatch")
         obj["source_reference"]=ref;obj.pop('owner_systems',None)
     else:
@@ -120,7 +125,7 @@ def upsert(args):
         key=f'{args.fact_type}|{args.outcome}|{args.evidence_ref}'
         if not any(e.get('event_key')==key for e in events):events.append({'event_key':key,'fact_type':args.fact_type,'outcome':args.outcome,'evidence_ref':args.evidence_ref,'method_quality':args.method_quality or 'unknown','recorded_at':ts})
     obj['fact_type_assessments']=_rebuild_assessments(events,obj.get('fact_type_assessments'));obj['updated_at']=ts;_validate(obj)
-    path.parent.mkdir(parents=True,exist_ok=True);tmp=path.with_suffix('.tmp');tmp.write_text(json.dumps(obj,indent=2,ensure_ascii=False)+'\n');os.replace(tmp,path);return path,obj
+    path.parent.mkdir(parents=True,exist_ok=True);tmp=path.with_suffix('.tmp');tmp.write_text(json.dumps(obj,indent=2,ensure_ascii=False)+'\n', encoding='utf-8');os.replace(tmp,path);return path,obj
 
 def main():
     p=argparse.ArgumentParser(description='Create/update a SourceProfile. Domains are optional semantic relevance, not owners. Cadence/next-check fields are monitoring intent, never proof of an active scheduler binding.')

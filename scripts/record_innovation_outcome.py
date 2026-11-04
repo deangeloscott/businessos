@@ -6,7 +6,7 @@ import argparse,json,hashlib,os
 
 
 def _write(path,obj):
-    temporary=path.with_suffix('.tmp');temporary.write_text(json.dumps(obj,indent=2)+'\n');os.replace(temporary,path)
+    temporary=path.with_suffix('.tmp');temporary.write_text(json.dumps(obj,indent=2)+'\n', encoding='utf-8');os.replace(temporary,path)
 
 
 def record_outcome(business_id,entry_id,outcome,evidence_ref):

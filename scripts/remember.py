@@ -75,6 +75,7 @@ def _receipt(rows):
     return {'status':'saved','objects':len(rows),'created':created,'updated':updated,'object_types':dict(sorted(types.items())),'validation':'passed'}
 
 
+@organization_transaction
 def remember(business_id,payload):
     resolved=resolve_business(business_id)
     if resolved.get('status')!='resolved':raise ValueError(resolved.get('reason') or 'Organization could not be resolved.')

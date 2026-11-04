@@ -70,10 +70,10 @@ def main():
         'continuity':{'format_version':'2.0','purpose':'organizational_work_receipt','state':'active','method_type':method_type,'method_ref':method_ref,'summary':None,'evidence_refs':[],'result_refs':[],'decision_refs':[],'unresolved':[],'completed_at':None},
         'created_at':ts,'updated_at':ts
     }
-    (d/'run.json').write_text(json.dumps(obj,indent=2)+'\n')
+    (d/'run.json').write_text(json.dumps(obj,indent=2)+'\n', encoding='utf-8')
     for name in ('artifacts','work'):(d/name).mkdir()
-    (d/'artifacts'/'effective-preferences.json').write_text(json.dumps(pref,indent=2)+'\n')
-    (d/'README.md').write_text('Optional local continuity for one bounded piece of organizational work. Preserve only what helps the organization resume, inspect, or learn from the work. The active model/harness owns tools, permissions, retries, subagents, scheduling, and execution.\n')
+    (d/'artifacts'/'effective-preferences.json').write_text(json.dumps(pref,indent=2)+'\n', encoding='utf-8')
+    (d/'README.md').write_text('Optional local continuity for one bounded piece of organizational work. Preserve only what helps the organization resume, inspect, or learn from the work. The active model/harness owns tools, permissions, retries, subagents, scheduling, and execution.\n', encoding='utf-8')
     print(rid)
 
 if __name__=='__main__':main()

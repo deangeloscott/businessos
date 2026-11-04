@@ -89,6 +89,11 @@ def _asset(path, bid, source, version, lineage=None, existing=None):
 
 
 def save(path,bid,data,writable=False,asset=None,track_source=True):
+    from _common import business_transaction
+    with business_transaction(bid):return _save(path,bid,data,writable,asset,track_source)
+
+
+def _save(path,bid,data,writable=False,asset=None,track_source=True):
     path=Path(path);mode=data.get('mode','save')
     if not isinstance(mode,str) or mode not in {'save','version','copy'}:raise ValueError('Choose Save, Save new version, or Save a copy.')
     if not isinstance(data.get('expected_revision'),str) or not data['expected_revision']:raise ValueError('Reopen this file before saving.')

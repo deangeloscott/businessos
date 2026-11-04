@@ -218,6 +218,17 @@ time.sleep(30)
             assert not changed['records_unchanged'] and changed['records_revision']!=revision
             assert any(r['title']=='External application edit' for r in changed['records'])
             business_file.write_bytes(saved)
+            # Unexpected server exceptions stay readable and retain reportable diagnostics.
+            with patch.object(app,'library_items',side_effect=AttributeError("Cannot set properties of null (setting 'innerHTML')")):
+                failure=call('/api/library?discover=1',expect=500)
+                assert 'innerHTML' not in failure['error'] and failure['error_id']
+                environment=call('/api/support/environment')
+                assert environment['library_counts']['Workflow'] is None
+                assert any('Library details could not be read' in note for note in environment['notes'])
+                prepared=call('/api/support/prepare',{'kind':'troubleshooting','title':'Broken library','description':'Fixture failure','include_environment':True})
+                assert any(e['id']==failure['error_id'] for e in prepared['report']['environment']['recent_errors'])
+            assert any(r['id']==failure['error_id'] and r['type']=='AttributeError' for r in app.errors.snapshot())
+            app.errors.rows.clear()  # Keep the following privacy fixtures independent.
             # Automatic support fields are allowlisted. Only explicitly chosen attachments carry content.
             with patch('workspace_support.machine',return_value={'os':'Fixture','logical_cpus':8}),patch.object(app,'library_items',return_value={'items':[{'kind':'Skill','title':'Private fixture skill','version':'1.2.3'}]}),patch.object(app.connections,'rows',return_value={'items':[{'id':'custom-PRIVATE_ENV_NAME','name':'A private tool','status':'This session','key':'SECRET_FIXTURE','env':'PRIVATE_ENV_NAME','url':'private-host'}]}):
                 environment=call('/api/support/environment')

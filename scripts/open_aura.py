@@ -46,7 +46,7 @@ def main():
     target = None if bypass else workspace_updates.launch_target(root)
     if target:
         import subprocess
-        argv = [str(workspace_updates.bundled_python(target)), '-E', '-s', '-B',
+        argv = [str(workspace_updates.bundled_python(target)), '-X', 'utf8', '-E', '-s', '-B',
                 str(target / 'scripts/open_aura.py'), *sys.argv[1:]]
         return subprocess.call(argv)
     if not any(a == '--workspace' or a.startswith('--workspace=') for a in sys.argv) and not os.environ.get('BUSINESSOS_WORKSPACE') and not os.environ.get('BUSINESSOS_WORKSPACE_CONFIG'):
@@ -65,7 +65,7 @@ def main():
                 os.environ['AURA_STATE_DIR'] = str(preferences.resolve().parent)
         arguments = [a for a in sys.argv[1:] if a != '--background']
         pid = workspace_startup.launch_background(
-            [sys.executable, '-E', '-s', '-B', str(root / 'scripts/open_aura.py'), *arguments], root)
+            [sys.executable, '-X', 'utf8', '-E', '-s', '-B', str(root / 'scripts/open_aura.py'), *arguments], root)
         print('AURA is opening in the background (process ' + str(pid) + ').', flush=True)
         return 0
     # Clicking the launcher again opens the running view instead of starting

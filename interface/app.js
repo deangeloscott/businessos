@@ -15,6 +15,29 @@ const stamp = value => value ? new Date(value).toLocaleDateString(undefined,{mon
 const size = bytes => bytes < 1024 ? `${bytes} B` : bytes < 1048576 ? `${(bytes/1024).toFixed(0)} KB` : `${(bytes/1048576).toFixed(1)} MB`;
 const clockTime = value => value ? new Date(typeof value==='number'?value*1000:value).toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'}) : '';
 
+const recentErrors=[];
+const recordedErrors=new WeakSet();
+function technicalError(error){
+  const row=typeof error==='string'?{message:error}:error||{};
+  if(typeof row==='object'&&recordedErrors.has(row))return;
+  if(typeof row==='object')recordedErrors.add(row);
+  const redact=value=>String(value||'').replace(/((?:api[_-]?key|access[_-]?token|refresh[_-]?token|password|authorization|client_secret)["\s:=]+)(?:bearer\s+)?[^\s",}]+/gi,'$1[secret hidden]').replace(/https?:\/\/[^\s)]+/g,value=>value.split('?')[0]);
+  recentErrors.push({at:Date.now(),type:String(row.name||'Error').slice(0,80),message:redact(row.message).slice(0,1000),stack:redact(row.stack).slice(0,2000)});
+  if(recentErrors.length>12)recentErrors.shift();
+}
+function humanError(error){
+  const message=typeof error==='string'?error:String(error?.message||'');
+  if(error?.readable)return message;
+  technicalError(error);
+  if(error?.name==='AbortError'||error?.name==='TimeoutError')return 'This action is taking too long. Check the connection and try again.';
+  if(/Failed to fetch|NetworkError|Load failed/i.test(message))return 'AURA is not responding. Check that it is still open, then try again.';
+  const machine=/innerHTML|undefined|\bnull\b|Traceback|[{}<>]|(?:Type|Syntax|Reference|Attribute)Error|Unexpected token|JSON|is not a function|Cannot (?:read|set)|at .+?:\d+:\d+/i;
+  if(message&&message.length<=350&&!machine.test(message)&&!['TypeError','SyntaxError','ReferenceError','RangeError'].includes(error?.name))return message;
+  return 'AURA couldn’t complete this action. Try again. If it keeps happening, report it from Settings.';
+}
+window.addEventListener('error',event=>{technicalError(event.error||{message:event.message});notice(humanError(event.error||event.message),true);});
+window.addEventListener('unhandledrejection',event=>{technicalError(event.reason);notice(humanError(event.reason),true);});
+
 const clientPerformance={requests:0,errors:0,total_ms:0,max_ms:0,message_formats:0,message_format_ms:0,long_tasks:0,long_task_ms:0,max_long_task_ms:0};
 if(window.PerformanceObserver&&PerformanceObserver.supportedEntryTypes?.includes('longtask')){
   const observer=new PerformanceObserver(list=>{for(const entry of list.getEntries()){clientPerformance.long_tasks++;clientPerformance.long_task_ms+=entry.duration;clientPerformance.max_long_task_ms=Math.max(clientPerformance.max_long_task_ms,entry.duration);}});observer.observe({type:'longtask',buffered:false});
@@ -34,12 +57,13 @@ async function api(path, data, options={}) {
   try{
     const response=await fetch(path,{method:data?'POST':'GET',headers:{'X-Aura-Token':token,...(data&&state.data?.workspace?{'X-Aura-Workspace':state.data.workspace}:{}),...(data?{'Content-Type':'application/json'}:{})},...(data?{body:JSON.stringify(data)}:{}),...options});
     const body=await response.json();
-    if(!response.ok){const error=new Error(body.error||'Something could not be completed. Refresh and try again.');error.status=response.status;throw error;}
+    if(!response.ok){const error=new Error(body.error||'Something could not be completed. Refresh and try again.');error.status=response.status;error.readable=true;error.detailId=body.error_id;technicalError(error);throw error;}
     if(data&&!path.startsWith('/api/support/'))invalidateReads();return body;
-  }catch(error){failed=true;throw error;}
+  }catch(error){failed=true;if(!error.readable){const readable=new Error(humanError(error));readable.readable=true;throw readable;}throw error;}
   finally{const elapsed=performance.now()-started;clientPerformance.requests++;clientPerformance.errors+=Number(failed);clientPerformance.total_ms+=elapsed;clientPerformance.max_ms=Math.max(clientPerformance.max_ms,elapsed);}
 }
 function notice(text, error=false) {
+  if(error)text=humanError(text);
   $('#notice').textContent=text; $('#notice').classList.toggle('error',error); $('#notice').hidden=!text;
   if(!error) document.querySelectorAll('.dialog-error').forEach(message=>message.remove());
   const dialog=document.querySelector('dialog:modal')||document.querySelector('#detail[open]')||document.querySelector('dialog[open]');
@@ -49,7 +73,7 @@ function notice(text, error=false) {
     message.textContent=text;
   }
 }
-async function attempt(fn) { try { await fn(); } catch(error) { notice(error.message,true); } }
+async function attempt(fn) { try { await fn(); } catch(error) { notice(humanError(error),true); } }
 function empty(title, text, prompt) { return `<div class="empty"><strong>${esc(title)}</strong>${esc(text)}${prompt?`<div class="empty-cta"><button class="text-button" data-prompt="${esc(prompt)}">Ask your AI to help ↗</button></div>`:''}</div>`; }
 function goalInfo(goal){return goal?.extensions?.businessos?.goal||{};}
 function workspaceGoalRecords(includeInactive=false){return rows('Objective').filter(r=>goalInfo(r.data).scope!=='chat'&&!goalInfo(r.data).deleted_at&&(includeInactive||(r.data.status||'active')==='active'));}
@@ -162,7 +186,7 @@ async function loadAgentOptions(refresh=false) {
   finally {state.catalogLoading=false;connectionChoice();}
 }
 function modelFailure(error) {
-  const text=error.message.toLowerCase();state.modelReload=error.status===403||error.status===404;
+  const text=humanError(error).toLowerCase();state.modelReload=error.status===403||error.status===404;
   state.modelError=state.modelReload?'This page needs refreshing. Reload AURA, then try again.':/sign.in|authentication|unauthorized|credentials|401/.test(text)?'Sign in to your AI app, then try again.':/network|timeout|timed out|connection|fetch/.test(text)?'Couldn’t load models. Check your connection, then try again.':'Couldn’t load models. Try again, or go Back to choose another AI app.';
   connectionChoice();
 }
@@ -580,7 +604,7 @@ async function pollJob(job) {
     if(!current())return;
     state.busy=false;state.connectionInterrupted=true;state.activeJob=null;state.polling=false;state.stopping=false;
     taskStatus('Connection interrupted. Reconnect to check this chat; your request has not been resent.');
-    if(job.welcome){state.setupStep='failed';state.welcome={reply:error.message};}
+    if(job.welcome){state.setupStep='failed';state.welcome={reply:humanError(error)};}
     else notice('The connection was interrupted. Your draft and saved work are still here.',true);
     showMessages();chatControls();
   }
@@ -663,6 +687,7 @@ async function openLibrary(key,option=''){
   details(displayTitle,`<p class="small-note">${esc(item.subtype==='Playbook'?'Complete business guide':item.kind)}${item.apps?.length>1?' · Shared across '+item.apps.length+' apps':''}</p>${variants.length>1?`<label class="library-option">Version or connection<select id="library-option">${variants.map((v,i)=>`<option value="${esc(v.key)}" ${v.key===chosen.key?'selected':''}>${esc(librarySourceLabels(v.sources||[]).join(', ')||'Option '+(i+1))}</option>`).join('')}</select></label>`:''}${purpose?`<p>${esc(purpose)}</p>`:''}${sourceLabels.length?`<p class="small-note">${[...new Set(sourceLabels)].map(esc).join('<br>')}</p>`:''}${chosen.requirements?`<p><strong>Needs</strong> ${esc(chosen.requirements)}</p>`:''}<div class="inline-actions"><button class="primary" data-library-use="${esc(root.key)}" data-prompt="${esc(request)}">Prepare a request ↗</button><button class="text-button" data-library-favorite="${esc(root.key)}" aria-label="Toggle favorite">${libraryMarked(root)?'★':'☆'}</button></div>${actions.length?`<details ${q&&matching.length&&!item.title.toLowerCase().includes(q)?'open':''}><summary>Actions (${actions.length})</summary><div class="library-actions bounded-list">${orderedActions.map(m=>`<button class="row compact" data-method="${esc(m.key)}"><span class="row-text"><span class="row-title">${esc(human(m.title.split('.').at(-1)))}</span><span class="row-meta">${esc(m.description||'Reported action')}</span></span><span>→</span></button>`).join('')}</div></details>`:''}${item.related?.length?`<details><summary>Skills & connections (${item.related.length})</summary>${item.related.map(k=>state.library.find(r=>r.key===k)).filter(Boolean).map(m=>`<button class="row compact" data-method="${esc(m.key)}">${esc(m.title)} →</button>`).join('')}</details>`:''}${(doc.location?.endsWith('.md')||item.kind==='Skill'&&locations.length)?`<p><button type="button" class="secondary" data-library-document="${esc(root.key)}" data-option="${esc(chosen.key)}">Open file</button></p>`:''}${body?`<details><summary>Read the full guidance</summary><pre>${esc(body)}</pre></details>`:''}${locations.length?`<details><summary>File location${locations.length>1?'s':''}</summary><div class="library-sources">${locations.map(p=>`<p>${esc(p)}</p>`).join('')}</div></details>`:''}`);
 }
 function quickMethods() {
+  if(!$('#quick-methods'))return;
   const q=($('#quick-work-search')?.value||'').trim().toLowerCase();
   if(!q){const favorites=state.library.filter(r=>libraryMarked(r)).slice(0,3),recent=libraryPrefs().recent.map(k=>state.library.find(r=>r.key===k||r.aliases?.includes(k))).filter(Boolean).filter((r,i,all)=>all.indexOf(r)===i&&!favorites.includes(r)).slice(0,favorites.length?1:3);$('#quick-methods').innerHTML=(favorites.length?'<h4>Favorites</h4>'+favorites.map(methodRow).join(''):'')+(recent.length?'<h4>Recently chosen</h4>'+recent.map(methodRow).join(''):'');return;}
   const groups=Object.keys(libraryKinds).map(kind=>({kind,items:state.library.filter(r=>r.kind===kind&&libraryMatches(r,q))}));
@@ -850,7 +875,7 @@ async function scheduleOperation(payload) {
     state.scheduleJob=await api('/api/schedules/action',{business:state.business,...payload});
     state.dismissedScheduleJob=null;renderScheduleOperation();if(state.scheduleJob.status!=='working')await syncSchedules(true).catch(()=>{});
   } catch(error){
-    state.scheduleJob={id:'local-'+Date.now(),status:'error',message:error.status===400?error.message:'Task setup couldn’t connect to AURA. Try again when the connection is back.'};state.dismissedScheduleJob=null;
+    state.scheduleJob={id:'local-'+Date.now(),status:'error',message:error.status===400?humanError(error):'Task setup couldn’t connect to AURA. Try again when the connection is back.'};state.dismissedScheduleJob=null;
   } finally {state.scheduleStarting=false;renderScheduleOperation();}
 }
 async function createSchedule(chosen) {await scheduleOperation({...chosen,action:'create'});}
@@ -894,7 +919,7 @@ async function loadScheduleModels(refresh=false) {
     await loadScheduleEfforts();
   } catch(error) {
     if(request!==state.scheduleModelRequest||!select.isConnected)return;
-    $('#schedule-create-status').textContent=simpleSetupError(error.message);$('#schedule-retry-models').hidden=false;$('#create-schedule').disabled=true;
+    $('#schedule-create-status').textContent=simpleSetupError(humanError(error));$('#schedule-retry-models').hidden=false;$('#create-schedule').disabled=true;
   } finally {if(request===state.scheduleModelRequest)delete select.dataset.loading;}
 }
 async function loadScheduleEfforts() {
@@ -910,7 +935,7 @@ async function loadScheduleEfforts() {
     select.value=efforts.includes(preferred)?preferred:chosen.default_effort||efforts[0]||'';draft.effort=select.value;
     $('#schedule-effort-label').hidden=!efforts.length;select.disabled=false;
     $('#schedule-create-status').textContent='';$('#create-schedule').textContent='Create with '+(state.data.connection.choices.find(c=>c.id===app)?.name||human(app))+' →';renderScheduleOperation();
-  } catch(error) {if(select.isConnected&&app===$('#schedule-app').value&&model===$('#schedule-model').value){$('#schedule-create-status').textContent=simpleSetupError(error.message);$('#schedule-retry-models').hidden=false;}}
+  } catch(error) {if(select.isConnected&&app===$('#schedule-app').value&&model===$('#schedule-model').value){$('#schedule-create-status').textContent=simpleSetupError(humanError(error));$('#schedule-retry-models').hidden=false;}}
 }
 function scheduleFilters(scope) {return `<div class="schedule-controls"><div class="filters compact-filters" aria-label="Recurring task frequency">${scheduleKinds.map(([kind,name])=>`<button type="button" data-schedulefilter="${kind}" aria-pressed="${(state.scheduleFilter||'all')===kind}" class="${(state.scheduleFilter||'all')===kind?'active':''}">${name}</button>`).join('')}</div><label class="show-paused"><input type="checkbox" data-show-paused ${state.showPaused?'checked':''}>Show paused</label></div>`;}
 function orderedSchedules(items,query='',filter='all') {
@@ -1473,17 +1498,17 @@ document.addEventListener('keydown',event=>{
   }
 });
 document.addEventListener('submit',event=>{
-  const form=event.target;if(!['share-import-form','share-destination-form','share-package-form'].includes(form.id))return;
+  const form=event.target;if(!['share-import-form','share-destination-form','share-package-form'].includes(form.getAttribute('id')))return;
   event.preventDefault();event.stopImmediatePropagation();
   attempt(async()=>{const data=new FormData(form),button=form.querySelector('button.primary');button.disabled=true;
     try {
-      if(form.id==='share-package-form'){
+      if(form.getAttribute('id')==='share-package-form'){
         sharing.name=data.get('name').trim();sharing.note=data.get('note');
         sharing.pack=await shareApi(data.has('public')?'prepare-public':'prepare',{keys:[...sharing.selected],name:sharing.name,note:sharing.note,kind:data.get('kind'),description:data.get('description'),author:data.get('author'),based_on:data.get('based_on')});
         if(sharing.selectionId||data.has('save_selection'))await saveSharingSelection();
         sharing.review=null;sharing.exportPath='';sharing.destinationDraft=null;sharing.packEntry='editor';shareDestination('export');return;
       }
-      if(form.id==='share-import-form'){await readSharingPackage(data.get('path'));return;}
+      if(form.getAttribute('id')==='share-import-form'){await readSharingPackage(data.get('path'));return;}
       rememberShareDestination();
       const mode=data.get('mode');sharing.exportPath='';
       if(mode==='export'){
@@ -1747,7 +1772,7 @@ document.addEventListener('click',event=>attempt(async()=>{
       const index=state.chatList.findIndex(c=>c.id===id);if(index>=0)state.chatList[index]=result.chat;
       if(state.chatMeta?.id===id&&state.chat===messages&&!state.busy&&!state.starting){state.chat=result.messages;state.chatMeta=result.chat;state.liveJob=result.job;state.busy=result.job?.status==='working';state.activeJob=state.busy?result.job:null;window.auraContinuity?.acceptRecovery(result);showMessages();chatControls();if(state.busy)attempt(()=>pollJob(result.job));}
       await showChatDetails(id,result.history_note?'Couldn’t refresh from your AI app. Showing saved messages.':'Chat is up to date.');
-    }catch(error){if(ticket===state.fileDetailTicket)notice(error.message,true);}
+    }catch(error){if(ticket===state.fileDetailTicket)notice(humanError(error),true);}
     finally{if(button.isConnected){button.disabled=false;button.textContent='Refresh from app';button.setAttribute('aria-busy','false');}}
   }
   if(button.dataset.chat)await openShellChat(button.dataset.chat);
@@ -1854,7 +1879,7 @@ document.addEventListener('click',event=>attempt(async()=>{
     catch(error){
       let message=$('#usage-cache-action-status');
       if(!message){message=document.createElement('p');message.id='usage-cache-action-status';message.className='small-note error';message.setAttribute('role','status');$('#usage-cache').append(message);}
-      message.textContent=error.message;button.disabled=false;return;
+      message.textContent=humanError(error);button.disabled=false;return;
     }
     finally{state.starting=false;chatControls();}
     $('#detail').close();notice('');await pollJob(job);await hydrateConversation();
@@ -1879,49 +1904,49 @@ document.addEventListener('submit',event=>{
   event.preventDefault();
   attempt(async()=>{
     const form=event.target, data=new FormData(form); const submit=form.querySelector('[type=submit]')||form.querySelector('button.primary')||form.querySelector('button');
-    if(form.id==='chat-title-form'){
+    if(form.getAttribute('id')==='chat-title-form'){
       const business=state.business,workspace=state.data.workspace;submit.disabled=true;
       try{const result=await api('/api/chats/rename',{business,id:data.get('id'),title:data.get('title')});if(state.business!==business||state.data.workspace!==workspace)return;state.chatList[state.chatList.findIndex(c=>c.id===result.chat.id)]=result.chat;await showChatDetails(result.chat.id,'Title saved.');}
       finally{if(submit.isConnected)submit.disabled=false;}return;
     }
-    if(form.id==='organization-form'){
+    if(form.getAttribute('id')==='organization-form'){
       const business_map=Object.fromEntries([...document.querySelectorAll('.organization-group')].map(input=>[input.dataset.source+'|'+input.dataset.business,input.value]));
       await api('/api/organization/plan',{primary:data.get('primary'),sources:data.getAll('source'),destination:data.get('destination'),business_map});organizationProgress();await pollOrganization();return;
     }
-    if(form.id==='open-workspace-form'){submit.disabled=true;try{await previewWorkspace(data.get('path'));}finally{submit.disabled=false;}return;}
-      if(form.id==='create-workspace-form') {
+    if(form.getAttribute('id')==='open-workspace-form'){submit.disabled=true;try{await previewWorkspace(data.get('path'));}finally{submit.disabled=false;}return;}
+      if(form.getAttribute('id')==='create-workspace-form') {
         await api('/api/workspaces/create',Object.fromEntries(data));
         for(const dialog of document.querySelectorAll('dialog[open]'))dialog.close();
         state.business='';state.hydrated=false;state.chat=[];state.chatMeta=null;state.newAssistantId=null;state.newAssistantName='';state.catalog=null;state.library=[];state.setupPrompted=new Set();
         await refresh();notice('Your new workspace is ready.');return;
       }
-      if(form.id==='relocate-workspace-form') {
+      if(form.getAttribute('id')==='relocate-workspace-form') {
         rememberChatDraft();
         await api('/api/workspaces/relocate',{path:data.get('path')});
         for(const dialog of document.querySelectorAll('dialog[open]'))dialog.close();
         state.business='';state.hydrated=false;state.chat=[];state.chatMeta=null;state.newAssistantId=null;state.newAssistantName='';state.catalog=null;state.library=[];
         await refresh();notice('Copied and verified. You’re using the new folder; the original is still there.');return;
       }
-    if(form.id==='backup-workspace-form'||form.id==='restore-workspace-form'){
+    if(form.getAttribute('id')==='backup-workspace-form'||form.getAttribute('id')==='restore-workspace-form'){
       submit.disabled=true;
-      try{const restoring=form.id==='restore-workspace-form', r=await api('/api/workspaces/'+(restoring?'restore':'backup'),{...Object.fromEntries(data),include_linked:data.has('include_linked')});
+      try{const restoring=form.getAttribute('id')==='restore-workspace-form', r=await api('/api/workspaces/'+(restoring?'restore':'backup'),{...Object.fromEntries(data),include_linked:data.has('include_linked')});
         $('#storage-result').innerHTML=`<p>${restoring?'Your files were restored and verified. Open the restored workspace to continue.':'Backup saved and verified.'}</p><p class="storage-path">${esc(r.path)}</p><button class="text-button" data-copy-path="${esc(r.path)}">Copy location</button>${restoring?`<button class="primary" data-open-workspace="${esc(r.path)}">Open restored workspace →</button>`:''}`;
       }finally{submit.disabled=false;}return;
     }
-    if(form.id==='api-key-form'){
+    if(form.getAttribute('id')==='api-key-form'){
       submit.disabled=true;
       try{await api('/api/connections/save',Object.fromEntries(data));state.catalog=null;state.apiChanged=true;await showApiConnections();$('#api-save-status').textContent=state.apiReturn==='models'?'Key saved. Return to models.':'Key saved. Your next agent request can use it. Account access has not been verified.';}
       finally{const field=$('#api-secret');if(field)field.value='';submit.disabled=false;}
       return;
     }
-    if(form.id==='support-form'){await sendSupport(form);return;}
-    if(form.id==='usage-settings-form'){await api('/api/usage/settings',{business:state.business,alerts:$('#usage-alerts').checked,budget_usd:$('#usage-budget').value});$('#usage-settings-status').textContent='Saved';$('#usage-alert-summary').textContent=usageBudgetSummary({alerts:$('#usage-alerts').checked,budget_usd:$('#usage-budget').value?Number($('#usage-budget').value):null});state.data.usage_alerts=$('#usage-alerts').checked;checkUsageAlerts();return;}
-    if(form.id==='connect-form') { $('#connect-agent').disabled=true; try { await pickerSave;const route=selectedRoute(),kind=route?.agent||$('#agent-choice').value;await api('/api/connect',{kind,model:route?.model||'',effort:$('#effort-choice').value,workspace_write:true});if(kind!==state.data.connection.selected&&state.business){await api('/api/chats/new',{business:state.business});state.chat=[];state.chatMeta=null;showMessages();} const tour=state.tour||!state.data.onboarding.seen;state.connectionChecks=null;state.welcome=null;await refresh();await checkConnections(false);if(tour){state.setupStep='tour';renderConnection();}else if(state.connectionChecks?.ready)$('#connect-dialog').close();else finishSetup();notice(''); } catch(error){state.modelError=simpleSetupError(error.message);} finally {connectionChoice();} return; }
-    if(form.id==='chat-form') { await submitRequest($('#request').value); return; }
+    if(form.getAttribute('id')==='support-form'){await sendSupport(form);return;}
+    if(form.getAttribute('id')==='usage-settings-form'){await api('/api/usage/settings',{business:state.business,alerts:$('#usage-alerts').checked,budget_usd:$('#usage-budget').value});$('#usage-settings-status').textContent='Saved';$('#usage-alert-summary').textContent=usageBudgetSummary({alerts:$('#usage-alerts').checked,budget_usd:$('#usage-budget').value?Number($('#usage-budget').value):null});state.data.usage_alerts=$('#usage-alerts').checked;checkUsageAlerts();return;}
+    if(form.getAttribute('id')==='connect-form') { $('#connect-agent').disabled=true; try { await pickerSave;const route=selectedRoute(),kind=route?.agent||$('#agent-choice').value;await api('/api/connect',{kind,model:route?.model||'',effort:$('#effort-choice').value,workspace_write:true});if(kind!==state.data.connection.selected&&state.business){await api('/api/chats/new',{business:state.business});state.chat=[];state.chatMeta=null;showMessages();} const tour=state.tour||!state.data.onboarding.seen;state.connectionChecks=null;state.welcome=null;await refresh();await checkConnections(false);if(tour){state.setupStep='tour';renderConnection();}else if(state.connectionChecks?.ready)$('#connect-dialog').close();else finishSetup();notice(''); } catch(error){state.modelError=simpleSetupError(humanError(error));} finally {connectionChoice();} return; }
+    if(form.getAttribute('id')==='chat-form') { await submitRequest($('#request').value); return; }
     if(submit)submit.disabled=true;
     try {
-      if(['location-form','reconnect-location-form'].includes(form.id)){await api(data.get('asset')?'/api/files/reconnect':'/api/locations',{business:state.business,path:data.get('path'),name:data.get('name'),replace:data.get('replace'),ref:data.get('asset')});$('#detail').close();state.view='files';await refresh();notice('Linked. Your AI can reference this location when it helps your work.');}
-      if(form.id==='task-edit-form'){
+      if(['location-form','reconnect-location-form'].includes(form.getAttribute('id'))){await api(data.get('asset')?'/api/files/reconnect':'/api/locations',{business:state.business,path:data.get('path'),name:data.get('name'),replace:data.get('replace'),ref:data.get('asset')});$('#detail').close();state.view='files';await refresh();notice('Linked. Your AI can reference this location when it helps your work.');}
+      if(form.getAttribute('id')==='task-edit-form'){
         const task=state.editingTask,app=data.get('app'),moving=app!==task.owner;
         const changes={id:task.id,app,action:moving?'move':'edit'};
         for(const key of ['name','description','schedule','model']){
@@ -1930,18 +1955,18 @@ document.addEventListener('submit',event=>{
         }
         await scheduleOperation(changes);
       }
-      if(form.id==='setup-form') { const result=await api('/api/setup',{name:data.get('name')});state.drafts??={};state.drafts[state.business]=$('#request').value;$('#request').value=state.drafts[result.business_id]||'';state.business=result.business_id; state.view='home'; state.chat=[];state.chatMeta=null;state.newAssistantId=null;state.newAssistantName='';state.hydrated=false; state.setupStep='welcome';state.connectionChecks=null;state.welcome=null;showMessages();$('#detail').close(); notice('Ready. What would you like to do?'); await refresh(); }
-      if(form.id==='business-form') { await api('/api/save',{business:state.business,kind:'business',name:data.get('name'),ref:form.dataset.ref}); $('#detail').close(); notice('Saved.'); await refresh(); }
-      if(form.id==='startup-form') {
+      if(form.getAttribute('id')==='setup-form') { const result=await api('/api/setup',{name:data.get('name')});state.drafts??={};state.drafts[state.business]=$('#request').value;$('#request').value=state.drafts[result.business_id]||'';state.business=result.business_id; state.view='home'; state.chat=[];state.chatMeta=null;state.newAssistantId=null;state.newAssistantName='';state.hydrated=false; state.setupStep='welcome';state.connectionChecks=null;state.welcome=null;showMessages();$('#detail').close(); notice('Ready. What would you like to do?'); await refresh(); }
+      if(form.getAttribute('id')==='business-form') { await api('/api/save',{business:state.business,kind:'business',name:data.get('name'),ref:form.dataset.ref}); $('#detail').close(); notice('Saved.'); await refresh(); }
+      if(form.getAttribute('id')==='startup-form') {
         await api('/api/startup',{enabled:data.has('enabled'),business:state.business});
         $('#startup-save-status').textContent=data.has('enabled')?'Startup is on.':'Startup is off.';
       }
-      if(form.id==='task-request-form') {
+      if(form.getAttribute('id')==='task-request-form') {
         const task=state.editingTask;
         await scheduleOperation({id:task.id,app:task.owner,action:'request',request:data.get('request')});
       }
       if(form.classList.contains('schedule-answer'))await scheduleOperation({operation_id:state.scheduleJob.id,request:data.get('request')});
-      if(form.id==='schedule-form')await createSchedule(Object.fromEntries(data));
+      if(form.getAttribute('id')==='schedule-form')await createSchedule(Object.fromEntries(data));
     } finally { if(submit)submit.disabled=false;renderScheduleOperation(); }
   });
 });
@@ -2156,7 +2181,7 @@ async function supportReport(){
   const preview=async()=>{const mine=++ticket,form=$('#support-form');if(!form)return;const include=form.elements.include_environment.checked;
     if(!include){$('#support-preview').textContent='Technical details excluded.';return;}
     $('#support-preview').textContent='Reading local details…';
-    try{const data=await api('/api/support/environment?names=1');if(mine===ticket&&$('#support-preview'))$('#support-preview').textContent=JSON.stringify({...data,browser_performance:browserPerformance()},null,2);}catch(e){if(mine===ticket&&$('#support-preview'))$('#support-preview').textContent='Technical details could not be read. You can submit without them.';}
+    try{const data=await api('/api/support/environment?names=1');if(mine===ticket&&$('#support-preview'))$('#support-preview').textContent=JSON.stringify({...data,browser_performance:browserPerformance(),browser_errors:recentErrors},null,2);}catch(e){if(mine===ticket&&$('#support-preview'))$('#support-preview').textContent='Technical details could not be read. You can submit without them.';}
   };
   $('#support-form').elements.kind.onchange=e=>{$('#support-visibility').textContent=e.target.value==='feature'?'Feature titles and descriptions are public. Technical details and attachments stay private.':'Troubleshooting reports are private.';$('#support-description-label').firstChild.textContent=e.target.value==='feature'?'What would you like to do, and how would it help?':'What happened? What did you expect?';};
   $('#support-form').elements.include_environment.onchange=preview;
@@ -2169,12 +2194,12 @@ async function sendSupport(form){
   const popup=window.open('about:blank','aura-feedback-'+nonce);if(!popup){status.textContent='Allow this window to open the Aura feedback page, then try again.';return;}
   button.disabled=true;status.textContent='Preparing report…';
   try{const attachments=[];for(const file of $('#support-attachments').files){if(attachments.length>=4||file.size>1048576)throw Error('Choose up to four files, 1 MB each.');if(!['image/png','image/jpeg','image/webp','text/plain'].includes(file.type))throw Error('Choose PNG, JPEG, WebP or plain text files.');const raw=new Uint8Array(await file.arrayBuffer());let binary='';for(let i=0;i<raw.length;i+=32768)binary+=String.fromCharCode(...raw.subarray(i,i+32768));attachments.push({name:file.name,type:file.type,data:btoa(binary)});}
-    const include=form.elements.include_environment.checked,result=await api('/api/support/prepare',{kind:form.elements.kind.value,title:form.elements.title.value,description:form.elements.description.value,include_environment:include,include_names:include,browser_performance:include?browserPerformance():{},attachments});
+    const include=form.elements.include_environment.checked,result=await api('/api/support/prepare',{kind:form.elements.kind.value,title:form.elements.title.value,description:form.elements.description.value,include_environment:include,include_names:include,browser_performance:include?browserPerformance():{},browser_errors:include?recentErrors:[],attachments});
     const report={...result.report,submission_id:crypto.randomUUID(),environment:include?{...result.report.environment,browser_performance:result.report.browser_performance}:null};
     const timer=setTimeout(()=>window.removeEventListener('message',receive),15*60000);
     function receive(event){if(event.source!==popup||event.origin!==target.origin||event.data?.nonce!==nonce)return;if(event.data.type==='aura-feedback-ready')popup.postMessage({type:'aura-feedback-report',nonce,report},target.origin);if(event.data.type==='aura-feedback-submitted'){if(status.isConnected)status.textContent='Report submitted on the Aura website.';clearTimeout(timer);window.removeEventListener('message',receive);}}
     window.addEventListener('message',receive);popup.location=target.href;status.textContent='Review and submit on the Aura website. Use your existing ViralTrac account.';
-  }catch(error){popup.close();status.textContent=error.message;}finally{if(button.isConnected)button.disabled=false;}
+  }catch(error){popup.close();status.textContent=humanError(error);}finally{if(button.isConnected)button.disabled=false;}
 }
 async function addNativeChat(initialKind='',initialId=''){
   if(!state.business)return;
@@ -2183,8 +2208,8 @@ async function addNativeChat(initialKind='',initialId=''){
   if(initialKind)$('#native-chat-kind').value=initialKind;
   let ticket=0,preview=null;
   const current=()=>scope===JSON.stringify([state.data.workspace,state.business])&&!!$('#native-chat-recent');
-  const load=async()=>{const mine=++ticket;preview=null;$('#native-chat-preview').replaceChildren();$('#native-chat-recent').textContent='Finding recent conversations…';try{const kind=$('#native-chat-kind').value,r=await api('/api/chats/native?business='+encodeURIComponent(state.business)+'&kind='+kind);if(!current()||mine!==ticket||r.workspace!==state.data.workspace)return;$('#native-chat-recent').innerHTML=r.items.map(c=>`<button class="search-result" data-native-id="${esc(c.native_id)}"><span>${esc(c.title)}</span><small>${esc(c.description||c.native_workspace||'Native conversation')}</small></button>`).join('')+(r.note?`<p class="small-note">${esc(r.note)}</p>`:'');}catch(e){if(current()&&mine===ticket)$('#native-chat-recent').textContent=e.message;}};
-  const lookup=async id=>{const mine=++ticket,kind=$('#native-chat-kind').value;$('#native-chat-status').textContent='Reading saved conversation…';try{const r=await api('/api/chats/native?business='+encodeURIComponent(state.business)+'&kind='+kind+'&id='+encodeURIComponent(id));if(!current()||mine!==ticket||r.workspace!==state.data.workspace)return;preview={id,kind};$('#native-chat-status').textContent='';$('#native-chat-preview').innerHTML=`<h3>${esc(r.title)}</h3><p>${esc(r.description)}</p><p class="small-note">Native project: ${esc(r.native_workspace)}<br>Add to: ${esc($('#active-workspace-label').textContent)}</p><details><summary>Recent messages</summary>${r.messages.map(m=>`<p><strong>${m.role==='user'?'You':'AI'}</strong><br>${esc(m.text.slice(0,1400))}</p>`).join('')}</details><button id="confirm-native-chat" class="primary">Add this chat</button>`;$('#confirm-native-chat').onclick=()=>attempt(async()=>{if(!preview||!current())return;const chosen={...preview},r=await api('/api/chats/import',{business:state.business,kind:chosen.kind,id:chosen.id,confirmed:true});if(current())await openShellChat(r.id);});}catch(e){if(current()&&mine===ticket)$('#native-chat-status').textContent=e.message;}};
+  const load=async()=>{const mine=++ticket;preview=null;$('#native-chat-preview').replaceChildren();$('#native-chat-recent').textContent='Finding recent conversations…';try{const kind=$('#native-chat-kind').value,r=await api('/api/chats/native?business='+encodeURIComponent(state.business)+'&kind='+kind);if(!current()||mine!==ticket||r.workspace!==state.data.workspace)return;$('#native-chat-recent').innerHTML=r.items.map(c=>`<button class="search-result" data-native-id="${esc(c.native_id)}"><span>${esc(c.title)}</span><small>${esc(c.description||c.native_workspace||'Native conversation')}</small></button>`).join('')+(r.note?`<p class="small-note">${esc(r.note)}</p>`:'');}catch(e){if(current()&&mine===ticket)$('#native-chat-recent').textContent=humanError(e);}};
+  const lookup=async id=>{const mine=++ticket,kind=$('#native-chat-kind').value;$('#native-chat-status').textContent='Reading saved conversation…';try{const r=await api('/api/chats/native?business='+encodeURIComponent(state.business)+'&kind='+kind+'&id='+encodeURIComponent(id));if(!current()||mine!==ticket||r.workspace!==state.data.workspace)return;preview={id,kind};$('#native-chat-status').textContent='';$('#native-chat-preview').innerHTML=`<h3>${esc(r.title)}</h3><p>${esc(r.description)}</p><p class="small-note">Native project: ${esc(r.native_workspace)}<br>Add to: ${esc($('#active-workspace-label').textContent)}</p><details><summary>Recent messages</summary>${r.messages.map(m=>`<p><strong>${m.role==='user'?'You':'AI'}</strong><br>${esc(m.text.slice(0,1400))}</p>`).join('')}</details><button id="confirm-native-chat" class="primary">Add this chat</button>`;$('#confirm-native-chat').onclick=()=>attempt(async()=>{if(!preview||!current())return;const chosen={...preview},r=await api('/api/chats/import',{business:state.business,kind:chosen.kind,id:chosen.id,confirmed:true});if(current())await openShellChat(r.id);});}catch(e){if(current()&&mine===ticket)$('#native-chat-status').textContent=humanError(e);}};
   $('#native-chat-kind').onchange=load;$('#native-chat-recent').onclick=e=>{const b=e.target.closest('[data-native-id]');if(b)lookup(b.dataset.nativeId);};$('#native-chat-lookup').onsubmit=e=>{e.preventDefault();lookup(e.target.elements.id.value.trim());};if(initialId)await lookup(initialId);else await load();
 }
 async function checkNativeChanges(){
@@ -2201,7 +2226,7 @@ async function openShellSearch(){
     const [chats,files,library]=await Promise.all([api('/api/chats?business='+encodeURIComponent(business)),cachedApi('/api/files?business='+encodeURIComponent(business)),cachedApi('/api/library')]);
     if(ticket!==shellSearchTicket||root!==state.data.workspace||business!==state.business)return;
     shellSearchData={chats:chats.items,files:files.items,library,records:state.data.records};state.files=files.items;paintShellSearch();
-  }catch(e){$('#shell-search-status').textContent=e.message;}
+  }catch(e){$('#shell-search-status').textContent=humanError(e);}
 }
 function paintShellSearch(){
   if(!shellSearchData)return;const q=$('#shell-search').value.trim().toLowerCase(),source=shellSearchData;
@@ -2305,7 +2330,7 @@ async function refreshChat(){
     if(state.busy)attempt(()=>pollJob(r.job));
     notice(r.history_note?'Couldn’t refresh from your AI app. Your saved messages are still available.':'Chat is up to date.',!!r.history_note);
     taskStatus(r.history_note?'Refresh unavailable':'Chat refreshed');
-  }catch(error){if(scope===chatScope()){taskStatus('Refresh unavailable');notice(error.message,true);}}
+  }catch(error){if(scope===chatScope()){taskStatus('Refresh unavailable');notice(humanError(error),true);}}
   finally{state.refreshingChat=false;renderComposerConnection();}
 }
 async function readChatHistory(id){
@@ -2345,7 +2370,7 @@ async function loadChatModelOptions(refresh=false){
     state.chatModelOptions=options;if(!draft.model)draft.model=options.models.some(m=>m.id===options.model)?options.model:options.models[0]?.id||'';
     $('#chat-model-options').innerHTML=`<label class="sr-only" for="chat-model-search">Find a model</label><input id="chat-model-search" type="search" placeholder="Search all models…"><p id="chat-model-list-label" class="small-note" role="status"></p><div id="chat-model-list" role="list" aria-label="Available models"></div><button class="text-button" id="chat-model-more" hidden>Show more models</button><p id="chat-model-selection" class="chat-model-selection"></p><div id="chat-model-effort"></div><div class="inline-actions"><button class="primary" id="save-chat-model">${draft.target?'Use for assistant':'Use for this chat'}</button><button class="text-button" data-close="chat-model-dialog">Cancel</button></div>`;
     paintChatModels();if(options.models.some(m=>m.id===draft.model))await loadChatModelEfforts();else{$('#chat-model-effort').innerHTML='<p class="small-note">The current model is not available in this app’s list. Choose a model for your next message.</p>';$('#save-chat-model').disabled=true;}
-  }catch(e){if(request!==state.chatModelRequest||kind!==draft.kind||ticket!==chatModelTicket||draft!==state.chatModelDraft||!$('#chat-model-dialog').open||draft.scope!==chatScope()||(draft.target?.current&&!draft.target.current()))return;if($('#chat-model-options'))$('#chat-model-options').innerHTML=`<p class="error">${esc(e.message)}</p><button class="secondary" id="chat-model-retry">Try again</button>`;}
+  }catch(e){if(request!==state.chatModelRequest||kind!==draft.kind||ticket!==chatModelTicket||draft!==state.chatModelDraft||!$('#chat-model-dialog').open||draft.scope!==chatScope()||(draft.target?.current&&!draft.target.current()))return;if($('#chat-model-options'))$('#chat-model-options').innerHTML=`<p class="error">${esc(humanError(e))}</p><button class="secondary" id="chat-model-retry">Try again</button>`;}
 }
 function paintChatModels(){
   const draft=state.chatModelDraft,q=($('#chat-model-search')?.value||'').trim().toLowerCase(),terms=q.split(/\s+/).filter(Boolean),favorites=new Set(modelPicker().favorites);
@@ -2363,7 +2388,7 @@ async function loadChatModelEfforts(){
   try{const r=await api('/api/agent-efforts?kind='+encodeURIComponent(draft.kind)+'&model='+encodeURIComponent(model));if(request!==state.chatEffortRequest||draft!==state.chatModelDraft||kind!==draft.kind||model!==draft.model||draft.scope!==chatScope()||!$('#chat-model-dialog').open||!$('#chat-model-effort'))return;
     const efforts=r.efforts||[];draft.effort=efforts.includes(draft.effort)?draft.effort:r.default_effort||efforts[0]||'';
     $('#chat-model-effort').innerHTML=efforts.length?`<label>Effort<select id="chat-effort-choice">${efforts.map(e=>`<option ${e===draft.effort?'selected':''} value="${esc(e)}">${esc(human(e))}</option>`).join('')}</select></label>`:'';$('#save-chat-model').disabled=!model;
-  }catch(e){if(request===state.chatEffortRequest&&draft===state.chatModelDraft&&kind===draft.kind&&model===draft.model&&draft.scope===chatScope())notice(e.message,true);}
+  }catch(e){if(request===state.chatEffortRequest&&draft===state.chatModelDraft&&kind===draft.kind&&model===draft.model&&draft.scope===chatScope())notice(humanError(e),true);}
 }
 async function saveChatModel(){
   const draft=state.chatModelDraft;if(draft.scope!==chatScope())throw new Error('The chat changed. Reopen its model settings.');

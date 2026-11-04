@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from _common import *
 from jsonschema import Draft202012Validator
+from canonical_store import DATE_FORMATS
 from validate_references import reference_errors
 from validate_isolation import isolation_errors
 from validate_research_evidence import evidence_errors
@@ -105,7 +106,7 @@ def validate_business(business_id,require_context=False):
             typ=obj.get('object_type');oid=obj.get('id');rel=str(p.relative_to(ROOT))
             if typ not in schemas_by_title:errors.append(f'{rel} unknown object_type {typ}');continue
             schema,_=schemas_by_title[typ]
-            for e in Draft202012Validator(schema).iter_errors(obj):errors.append(f'{rel} {list(e.path)}: {e.message}')
+            for e in Draft202012Validator(schema,format_checker=DATE_FORMATS).iter_errors(obj):errors.append(f'{rel} {list(e.path)}: {e.message}')
             if obj.get('business_id')!=business_id:errors.append(f'{rel} business_id mismatch')
             if oid:
                 if oid in ids:errors.append(f'duplicate object id {oid}: {ids[oid]} and {rel}')
@@ -122,7 +123,7 @@ def validate_business(business_id,require_context=False):
     le_errors,le_warnings=local_evidence_errors(business_id);errors.extend(le_errors);warnings.extend(le_warnings)
     errors.extend(lifecycle_errors(business_id,objects))
     errors.extend(reference_errors(business_id))
-    iso,_=isolation_errors();errors.extend([e for e in iso if f'instances/{business_id}/' in e or f'-> {business_id}' in e])
+    iso,_=isolation_errors(business_id);errors.extend(iso)
     notes=[p for p in (base/'context').rglob('*.md') if p.name!='README.md'] if (base/'context').exists() else []
     if notes:warnings.append('supplemental Markdown exists under context; it is non-canonical and does not satisfy object writes: '+', '.join(str(p.relative_to(base)) for p in notes))
     if require_context and counts['Business']<1:errors.append('required canonical Business context is missing; free-form notes do not satisfy bootstrap')

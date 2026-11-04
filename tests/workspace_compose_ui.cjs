@@ -11,7 +11,7 @@ function node(id){
 const state={business:'studio',data:{workspace:'A',connection:{selected:'configured'},records:[{ref:'obj_goal',type:'Objective',title:'Launch',data:{id:'obj_goal',name:'Launch',status:'active'}},{ref:'obj_effort',type:'Objective',title:'Proposal',data:{id:'obj_effort',name:'Proposal',status:'active',extensions:{businessos:{goal:{scope:'chat',workspace_goal_ref:'obj_goal'}}}}}]},chatMeta:null,chat:[],selectedFiles:[],fileDetailTicket:0};
 const fixture={kind:'file',id:'attachments/studio/research.txt',label:'Research',description:'Workspace file'};
 state.pendingComposerDraft={references:[fixture],goal_id:'obj_goal'};
-const context={window:{},state,URLSearchParams,TextEncoder,Uint8Array,crypto:crypto.webcrypto,setTimeout,clearTimeout,
+const context={humanError:error=>error?.message||String(error),window:{},state,URLSearchParams,TextEncoder,Uint8Array,crypto:crypto.webcrypto,setTimeout,clearTimeout,
  FormData:class{constructor(){return [['name','Finish the offer brief'],['target','A useful brief']][Symbol.iterator]();}},cache:{clear(){}},refresh:async()=>{},
  document:{querySelector:()=>null,addEventListener:(name,fn)=>(events[name]??=[]).push(fn)},$:node,
  esc:v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),
@@ -99,7 +99,7 @@ function input(text){const el=node('#request');el.value=text;el.selectionStart=t
  recordContext.recordDetails('asset_local');recordContext.recordDetails('obj_goal');assert.deepEqual(opened,['asset/asset_local','obj_goal'],'Memory records must open the same file and goal views as their other entry points');
  let finishRead,failRead,refreshMessage='',refreshScope='chat';
  const refreshState={chatMeta:{id:'chat'},chat:[{role:'user',text:'Saved'}],busy:false},refreshNodes={};
- const refreshContext={state:refreshState,AbortSignal,encodeURIComponent,window:{auraContinuity:{acceptRecovery(){}}},
+ const refreshContext={humanError:error=>error?.message||String(error),state:refreshState,AbortSignal,encodeURIComponent,window:{auraContinuity:{acceptRecovery(){}}},
   $:s=>refreshNodes[s]??={value:'Keep this draft',disabled:false},chatScope:()=>refreshScope,
   api:()=>new Promise((resolve,reject)=>{finishRead=resolve;failRead=reject;}),
   renderComposerConnection(){},taskStatus(){},notice:text=>{refreshMessage=text;},showMessages(){},chatControls(){},attempt(){},pollJob(){}};

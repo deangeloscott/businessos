@@ -9,7 +9,7 @@ import argparse,json,os,re,subprocess,sys
 
 from _common import PRODUCT_ROOT,business_directory,business_ids,resolve_business,slug,workspace_profile,workspace_root
 from configure_workspace import configure
-from init_business import init_business
+from init_business import init_business,repair_initial_identity
 from doctor import doctor
 
 
@@ -89,6 +89,7 @@ def setup(workspace=None,profile=None,organization=None,business_id=None,knowled
         os.environ['BUSINESSOS_WORKSPACE']=str(target)
     bid,created=_resolve_or_initialize(organization,business_id)
     if created:changes.append({'action':'organization_initialized','business_id':bid})
+    elif bid and repair_initial_identity(bid):changes.append({'action':'organization_initialization_recovered','business_id':bid})
     skill=PRODUCT_ROOT/'skills/viraltrac-aura'
     result={
         'format_version':'1.0','status':'needs_input' if not bid else 'prepared',
@@ -96,7 +97,7 @@ def setup(workspace=None,profile=None,organization=None,business_id=None,knowled
         'business_id':bid,'changes':changes,
         'visual_workspace':{
             'optional':True,
-            'command':[sys.executable,str(PRODUCT_ROOT/'scripts/workspace_ui.py')]+(['--business-id',bid] if bid else []),
+            'command':[sys.executable,'-X','utf8',str(PRODUCT_ROOT/'scripts/workspace_ui.py'),'--workspace',str(workspace_root())]+(['--business-id',bid] if bid else []),
             'guide':str(PRODUCT_ROOT/'docs/visual-workspace.md'),
             'rule':'An optional local view of the same files. The installed agent owns authentication, execution and scheduling.'
         },

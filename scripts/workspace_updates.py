@@ -189,7 +189,7 @@ class Updater:
     def state(self):
         with self.lock:
             saved = read(self.path)
-            current = (self.product / 'VERSION').read_text().strip()
+            current = (self.product / 'VERSION').read_text(encoding='utf-8').strip()
             release = saved.get('release')
             available = bool(release and version(release['version']) > version(current))
             policy = saved.get('policy', 'notify')
@@ -365,7 +365,7 @@ class Updater:
             target = extract(archive, unpacked)
             metadata = read(target / 'BUNDLED-RUNTIME.json')
             if (metadata.get('platform') != native_platform() or metadata.get('aura_version') != release['version'] or
-                    (target / 'VERSION').read_text().strip() != release['version'] or modified(target)):
+                    (target / 'VERSION').read_text(encoding='utf-8').strip() != release['version'] or modified(target)):
                 raise ValueError('The update does not match this computer or its release.')
             if metadata.get('update_protocol') != 1 or metadata.get('workspace_schema_sha256') != schema_hash(target) or schema_hash(target) != schema_hash(self.product):
                 raise ValueError('This version needs a workspace upgrade. Back up your workspace and follow the release notes.')
@@ -439,7 +439,7 @@ def handoff(updater, workspace, business, port, extra):
         interpreter = bundled_python(root)
         if os.name == 'nt' and interpreter.with_name('pythonw.exe').exists():
             interpreter = interpreter.with_name('pythonw.exe')
-        argv = [str(interpreter), '-E', '-s', '-B', str(root / 'scripts/open_aura.py'),
+        argv = [str(interpreter), '-X', 'utf8', '-E', '-s', '-B', str(root / 'scripts/open_aura.py'),
                 '--workspace', str(workspace), '--port', str(port), '--no-open', *extra]
         if business:
             argv += ['--business-id', business]
@@ -458,7 +458,7 @@ def handoff(updater, workspace, business, port, extra):
                 with urlopen(request, timeout=2) as response:
                     state = json.load(response)
                 if (Path(state['product']).resolve() == root and Path(state['workspace']).resolve() == Path(workspace).resolve()
-                        and state['version'] == (root / 'VERSION').read_text().strip()):
+                        and state['version'] == (root / 'VERSION').read_text(encoding='utf-8').strip()):
                     return process
             except (OSError, ValueError, KeyError, AttributeError):
                 pass
@@ -482,8 +482,8 @@ def handoff(updater, workspace, business, port, extra):
         return
     saved = read(updater.path)
     roots = list(dict.fromkeys([*saved.get('launch_roots', []), str(previous), str(target)]))
-    target_version = (target / 'VERSION').read_text().strip()
-    previous_version = (previous / 'VERSION').read_text().strip()
+    target_version = (target / 'VERSION').read_text(encoding='utf-8').strip()
+    previous_version = (previous / 'VERSION').read_text(encoding='utf-8').strip()
     skipped_version = previous_version if version(target_version) < version(previous_version) else target_version
     updater.save(active=str(target), previous=str(previous), launch_roots=roots, error='',
                  skipped=skipped_version)

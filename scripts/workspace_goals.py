@@ -1,4 +1,5 @@
 """Existing business goals with scoped work links and bounded native continuation intent."""
+from _common import organization_transaction
 from pathlib import Path
 import argparse
 import hashlib
@@ -55,6 +56,7 @@ def check_chat(bid,ident,chat_id):
     return goal
 
 
+@organization_transaction
 def bind_chat(bid,ident,chat_id):
     from remember import remember
     goal=check_chat(bid,ident,chat_id)
@@ -64,6 +66,7 @@ def bind_chat(bid,ident,chat_id):
     return find(bid,ident)
 
 
+@organization_transaction
 def remove(bid,ident,restore=False):
     from remember import remember
     goal=find(bid,ident,include_deleted=True);info=dict(metadata(goal))
@@ -129,6 +132,7 @@ def guidance(goal):
         'A paused/completed goal is context for this deliberate user request, not authorization for unattended continuation.')
 
 
+@organization_transaction
 def save(bid,data):
     from remember import remember
     ident=data.get('id');old=find(bid,ident) if ident else None
@@ -188,6 +192,7 @@ def remember_link(bid,chat,goal):
         if item['id'] not in history:history.append(item['id'])
 
 
+@organization_transaction
 def link_asset(bid,asset_id,goal_id):
     from remember import remember
     from workspace_ui import records

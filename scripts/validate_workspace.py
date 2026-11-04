@@ -58,7 +58,7 @@ def _validate_playbooks_and_maps(errors,ids,types):
     if (ROOT/'core/process-map.json').exists():map_paths.append(ROOT/'core/process-map.json')
     map_paths+=sorted((ROOT/'systems').glob('*/process-map.json'))
     for map_path in map_paths:
-        try:data=json.loads(map_path.read_text())
+        try:data=json.loads(map_path.read_text(encoding='utf-8'))
         except Exception as exc:errors.append(f'{map_path.relative_to(ROOT)} invalid JSON: {exc}');continue
         if 'version' in data:errors.append(f'{map_path.relative_to(ROOT)}: redundant process-map version; VERSION/INSTALLATION.json are product-version authority')
         seen=set()
@@ -76,7 +76,7 @@ def _validate_playbooks_and_maps(errors,ids,types):
 def _validate_schemas(errors):
     titles=set()
     for path in schemas():
-        try:schema=json.loads(path.read_text())
+        try:schema=json.loads(path.read_text(encoding='utf-8'))
         except Exception as exc:errors.append(f'{path.relative_to(ROOT)} invalid JSON: {exc}');continue
         title=schema.get('title')
         if title:titles.add(title)

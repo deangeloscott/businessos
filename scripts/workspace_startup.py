@@ -85,7 +85,7 @@ def configure(enabled, product, workspace, business='', extra=(), interpreter=No
     interpreter = Path(interpreter or sys.executable).resolve()
     if sys.platform == 'win32' and interpreter.with_name('pythonw.exe').is_file():
         interpreter = interpreter.with_name('pythonw.exe')
-    argv = [str(interpreter), '-E', '-s', '-B', str(product / 'scripts/open_aura.py'),
+    argv = [str(interpreter), '-X', 'utf8', '-E', '-s', '-B', str(product / 'scripts/open_aura.py'),
             '--no-open', '--workspace', str(workspace), '--local-state', str(state_dir().resolve()), *extra]
     if business:
         argv += ['--business-id', business]

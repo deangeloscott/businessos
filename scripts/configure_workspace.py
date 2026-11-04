@@ -49,17 +49,17 @@ def configure(root_value,profile_value='simple',knowledge_enabled=True,write_lin
     schema=json.loads((PRODUCT_ROOT/'core/schemas/config/workspace-profile.schema.json').read_text(encoding='utf-8'))
     errs=list(Draft202012Validator(schema).iter_errors(data))
     if errs:raise ValueError('Invalid workspace profile: '+'; '.join(e.message for e in errs))
-    profile_path.write_text(json.dumps(data,indent=2)+'\n')
+    profile_path.write_text(json.dumps(data,indent=2)+'\n', encoding='utf-8')
     if root!=PRODUCT_ROOT.resolve():
         gi=root/'.gitignore';wr=root/'WORKSPACE.md'
-        if not gi.exists():gi.write_text(_workspace_gitignore())
-        if not wr.exists():wr.write_text(_workspace_readme(profile))
+        if not gi.exists():gi.write_text(_workspace_gitignore(), encoding='utf-8')
+        if not wr.exists():wr.write_text(_workspace_readme(profile), encoding='utf-8')
     if knowledge_enabled:
         readme=root/'knowledge/README.md'
-        if not readme.exists():readme.write_text('# ViralTrac AURA Human Knowledge Layer\n\nOpen this folder in Obsidian, VS Code, or any Markdown tool. Generated pages are derived from canonical AURA objects; human notes remain source material until explicitly incorporated with provenance.\n')
+        if not readme.exists():readme.write_text('# ViralTrac AURA Human Knowledge Layer\n\nOpen this folder in Obsidian, VS Code, or any Markdown tool. Generated pages are derived from canonical AURA objects; human notes remain source material until explicitly incorporated with provenance.\n', encoding='utf-8')
     link_path=workspace_config_path();link_written=False
     if write_link and root!=PRODUCT_ROOT.resolve():
-        link_path.parent.mkdir(parents=True,exist_ok=True);link={'format_version':'1.0','workspace_root':str(root),'profile':profile_id,'knowledge_enabled':bool(knowledge_enabled)};link_path.write_text(json.dumps(link,indent=2)+'\n');link_written=True
+        link_path.parent.mkdir(parents=True,exist_ok=True);link={'format_version':'1.0','workspace_root':str(root),'profile':profile_id,'knowledge_enabled':bool(knowledge_enabled)};link_path.write_text(json.dumps(link,indent=2)+'\n', encoding='utf-8');link_written=True
     return {'workspace_root':str(root),'profile':profile_id,'external_state':data['external_state'],'knowledge_enabled':bool(knowledge_enabled),'workspace_profile':str(profile_path),'local_link':str(link_path) if link_written else None,'git_strategy':profile['git_strategy'],'collaboration':profile['collaboration']}
 
 

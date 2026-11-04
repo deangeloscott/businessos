@@ -72,7 +72,7 @@ def _source(bid,item,workflow_id,method_type,method_ref,ts,created_paths):
     if acquisition not in KNOWN_ACQUISITION_METHODS:raise ValueError(f'unknown acquisition_method {acquisition!r}; use one of: {", ".join(sorted(KNOWN_ACQUISITION_METHODS))}')
     provenance=_source_provenance(item,ref,acquisition,snap)
     content_basis=text if isinstance(text,str) and text else (json.dumps(payload,sort_keys=True,ensure_ascii=False) if payload is not None else None)
-    ch='sha256:'+hashlib.sha256(content_basis.encode('utf-8')).hexdigest() if content_basis else None;sid=item.get('id') or _id('src',f'{ref}:{ch or pointer or "pointer"}')
+    ch='sha256:'+hashlib.sha256(content_basis.encode('utf-8')).hexdigest() if content_basis else None;sid=item.get('id') or _id('src',f'{bid}:{ref}:{ch or pointer or "pointer"}')
     asset_refs=[];asset_objs=[]
     if snap:
         aid,loc=_copy_snapshot(bid,sid,snap,created_paths);asset_refs.append(aid);a=_base('Asset',aid,bid,ts);ext=_method_extensions(workflow_id,method_type,method_ref);ext['source_ref']=sid
@@ -108,6 +108,7 @@ def _receipt(written):
     types=collections.Counter(obj.get('object_type') for obj,_ in written)
     return {'status':'saved','objects':len(written),'object_types':dict(sorted(types.items())),'validation':'passed'}
 
+@organization_transaction
 def persist(bid,bundle):
     created_paths=[]
     try:return _persist(bid,bundle,created_paths)

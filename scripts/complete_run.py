@@ -5,6 +5,7 @@ A receipt preserves material continuity one-way. It may truthfully name a Playbo
 Workflow, external Skill, model-created method, or ad-hoc method. Completion does not
 certify conformance, provider state, permissions, launch readiness, or business outcome.
 """
+from _common import organization_transaction
 import argparse,json
 from jsonschema import Draft202012Validator
 from _common import *
@@ -31,7 +32,7 @@ def _refs(business_id,values):
 
 
 def _validate_run(run):
-    schema=json.loads((PRODUCT_ROOT/'core/schemas/runtime/run.schema.json').read_text())
+    schema=json.loads((PRODUCT_ROOT/'core/schemas/runtime/run.schema.json').read_text(encoding='utf-8'))
     return [f'{list(e.path)}: {e.message}' for e in Draft202012Validator(schema).iter_errors(run)]
 
 
@@ -54,10 +55,11 @@ def _normalize_method(run):
     return method,method_ref
 
 
+@organization_transaction
 def complete_run(business_id,run_id,evidence=None,result_refs=None,decision_refs=None,summary=None,unresolved=None):
     rd=run_dir_path(business_id,run_id);rp=rd/'run.json'
     if not rp.exists():raise ValueError('Run file missing')
-    run=json.loads(rp.read_text())
+    run=json.loads(rp.read_text(encoding='utf-8'))
     if run.get('business_id')!=business_id or run.get('run_id')!=run_id:raise ValueError('Run identity mismatch')
     method_type,method_ref=_normalize_method(run)
     if run.get('status')=='completed':return {'run_id':run_id,'status':'completed','category':'already_completed','method_type':method_type,'continuity':run.get('continuity') or {}}
@@ -78,7 +80,7 @@ def complete_run(business_id,run_id,evidence=None,result_refs=None,decision_refs
         run['continuity']={'format_version':'2.0','purpose':'organizational_work_receipt','state':'completed','method_type':method_type,'method_ref':method_ref,'summary':final_summary,'evidence_refs':final_evidence,'result_refs':final_results,'decision_refs':final_decisions,'unresolved':final_unresolved,'completed_at':ts}
         schema_errors=_validate_run(run)
         if schema_errors:raise ValueError('Run schema invalid: '+'; '.join(schema_errors[:8]))
-        rp.write_text(json.dumps(run,indent=2)+'\n');errors,warnings,counts=validate_business(business_id)
+        rp.write_text(json.dumps(run,indent=2)+'\n', encoding='utf-8');errors,warnings,counts=validate_business(business_id)
         if errors:raise ValueError('active business validation is not clean:\n- '+'\n- '.join(errors[:12]))
     except Exception:
         rp.write_bytes(snapshot);raise
