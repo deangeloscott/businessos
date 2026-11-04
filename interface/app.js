@@ -367,7 +367,7 @@ async function syncNotifications(deliver=false) {
         try {
           const n=new Notification('AURA',{body:batch.claimed.length===1?(batch.claimed[0].kind==='usage'?'A usage limit needs your attention.':batch.claimed[0].status==='error'?'A request needs your attention.':batch.claimed[0].kind==='organization'?'Your organized workspace is ready.':'Your reply is ready.'):`${batch.claimed.length} updates are ready.`,tag:'aura-'+state.data.workspace+'-'+business,silent:true,renotify:false});
           state.systemAlert?.close();state.systemAlert=n;
-          n.onclick=()=>{window.focus();n.close();if(!$('#notification-dialog').open)$('#notification-dialog').showModal();};
+          n.onclick=()=>{window.focus();n.close();if(!$('#notification-dialog').open)openAnchoredSurface($('#notification-dialog'),$('#notification-bell'),{width:400,align:'end'});};
         } catch { /* The inbox remains available when system delivery is unsupported. */ }
       }
     }
@@ -658,10 +658,10 @@ function saveLibrary(prefs){state.data.library_preferences=prefs;const business=
 function libraryQuery(text){return human(text).toLowerCase().replace(/[_.-]+/g,' ').replace(/\s+/g,' ').trim();}
 function libraryMatches(item,q){return libraryQuery([item.title,item.description,item.category,item.group,item.id,...(item.apps||[]),...(item.sources||[]).map(s=>s.service||s.connection||'')].join(' ')).includes(libraryQuery(q))||(item.members||[]).some(m=>libraryMatches(m,q))||(item.variants||[]).some(v=>libraryMatches(v,q));}
 async function refreshLibrary(){
-  if(state.libraryRefreshing)return;state.libraryRefreshing=true;const button=$('#library-refresh'),workspace=state.data.workspace;
+  if(state.libraryRefreshing)return;state.libraryRefreshing=true;const button=state.view==='work'?$('#page-refresh'):null,workspace=state.data.workspace;
   if(button){button.disabled=true;button.textContent='Refreshing…';if(state.view==='work')renderWork();}
   try{const result=await api('/api/library?discover=1&details=1');if(state.data.workspace!==workspace)return;state.library=result.items;state.libraryNotes=result.notes;state.libraryRefreshed=workspace;quickMethods();if(state.view==='work'){renderWork();if($('#library-note'))$('#library-note').textContent=result.notes.length?'Some catalogs need attention. See How it works.':'';}}
-  finally{state.libraryRefreshing=false;if(button?.isConnected){button.disabled=false;button.textContent='Refresh';if(state.view==='work')renderWork();}}
+  finally{state.libraryRefreshing=false;if(button?.isConnected&&state.view==='work'){button.disabled=false;button.textContent='Refresh';renderWork();}}
 }
 function methodRow(method) {const favorite=libraryMarked(method),apps=method.apps||[],source=apps.length>1?'Shared · '+apps.length+' apps':apps.map(appName).join(', '),sources=method.sources||[],status=!sources.length?'':sources.every(s=>s.status==='Disabled')?'Disabled':sources.every(s=>s.status==='Found locally')?'Found locally':sources.some(s=>s.status==='Installed')?'Installed':sources.every(s=>s.status==='Configured')?'Configured':'',type=method.subtype==='Playbook'?'Complete guide':method.kind;return `<div class="library-row"><button class="row compact" data-method="${esc(method.key)}"><span class="row-text"><span class="row-title">${esc(method.title)}</span><span class="row-meta">${esc(type)}${method.members?.length?' · '+method.members.length+' actions':''}${source?' · '+esc(source):''}${status?' · '+esc(status):''}${sources.some(s=>s.stale)?' · Needs refresh':''}</span></span><span class="arrow">→</span></button><button class="library-star ${favorite?'active':''}" data-library-favorite="${esc(method.key)}" aria-label="${favorite?'Remove':'Add'} ${esc(method.title)} ${favorite?'from':'to'} favorites" aria-pressed="${favorite}">${favorite?'★':'☆'}</button></div>`;}
 function librarySourceLabels(sources){
@@ -715,6 +715,7 @@ async function render() {
   if(state.view==='home') { $('#section-dialog').close();$('#view').innerHTML='';return; }
   $('#detail').close();
   $('#section-description').textContent=({business:'Your goals, useful facts, preferences, and decisions.',files:'Find the work you have saved and the locations you have linked.',work:'Reusable guidance and tools your AI can use.',tools:'Schedules managed by your connected AI apps.',assistants:'Saved instructions, chats, and recurring tasks grouped under names you choose.'})[state.view]||'';
+  $('#page-refresh').disabled=state.view==='work'&&!!state.libraryRefreshing;$('#page-refresh').textContent=$('#page-refresh').disabled?'Refreshing…':'Refresh';
   $('#section-title').textContent=({business:'Business & memory',files:'Saved files & media',work:'Workflows & recipes',tools:'Recurring tasks',assistants:'Assistants'})[state.view];
   if(!$('#section-dialog').open) $('#section-dialog').show();
   if(state.view==='business') {
@@ -726,7 +727,7 @@ async function render() {
     renderFiles();
   } else if(state.view==='work') {
     if(!state.library.length){const library=await cachedApi('/api/library');if(!current())return;state.library=library;}
-    view.innerHTML=`<input class="search" id="work-search" type="search" aria-label="Search workflows, recipes, skills, tools and plugins" placeholder="Find guidance, a skill, or a tool…"><div class="filters"><button data-workfilter="all">All</button>${Object.entries(libraryKinds).map(([kind,label])=>`<button data-workfilter="${kind}">${label}</button>`).join('')}</div><div class="library-toolbar"><label>Show <select id="library-view"><option value="all" ${libraryView==='all'?'selected':''}>All items</option><option value="favorites" ${libraryView==='favorites'?'selected':''}>Favorites</option><option value="recent" ${libraryView==='recent'?'selected':''}>Recently chosen</option></select></label><span><button class="text-button" data-library-help>How it works</button><button class="text-button" id="library-refresh">Refresh</button></span></div><p id="library-note" class="small-note"></p><div class="section-head"><h3 id="work-category-title">Browse by topic</h3><button id="work-all-topics" class="text-button" hidden>All topics</button></div><div id="work-categories" class="topic-grid"></div><div id="work-list"></div>`;
+    view.innerHTML=`<input class="search" id="work-search" type="search" aria-label="Search workflows, recipes, skills, tools and plugins" placeholder="Find guidance, a skill, or a tool…"><div class="filters"><button data-workfilter="all">All</button>${Object.entries(libraryKinds).map(([kind,label])=>`<button data-workfilter="${kind}">${label}</button>`).join('')}</div><div class="library-toolbar"><label>Show <select id="library-view"><option value="all" ${libraryView==='all'?'selected':''}>All items</option><option value="favorites" ${libraryView==='favorites'?'selected':''}>Favorites</option><option value="recent" ${libraryView==='recent'?'selected':''}>Recently chosen</option></select></label><span><button class="text-button" data-library-help>How it works</button></span></div><p id="library-note" class="small-note"></p><div class="section-head"><h3 id="work-category-title">Browse by topic</h3><button id="work-all-topics" class="text-button" hidden>All topics</button></div><div id="work-categories" class="topic-grid"></div><div id="work-list"></div>`;
     renderWork();
     $('#section-content .library-toolbar>span').insertAdjacentHTML('afterbegin','<button class="text-button" id="library-connections">Add connection</button>');
     $('#library-connections').hidden=!['all','Tool'].includes(workFilter);
@@ -737,7 +738,7 @@ async function render() {
     const assistants=await window.auraWork?.load();if(!current())return;state.assistantProfiles=assistants?.items||[];
     const watches=rows('SourceProfile').filter(r=>r.data.watch_status||r.data.next_check_at);
     const schedules=state.schedules||{items:[],notes:[]};
-    view.innerHTML=`${scheduleForm()}<div class="section-head"><p>Schedules across your AI apps. <button class="text-button" data-schedules-help>How it works</button></p><button class="text-button" id="refresh-schedules">Refresh</button></div>${scheduleOperationMarkup()}<input class="search" id="schedule-search" type="search" aria-label="Search all recurring tasks" placeholder="Find a recurring task…" value="${esc(state.scheduleQuery||'')}">${scheduleFilters('full')}<div id="schedule-list" class="bounded-list" tabindex="0" aria-label="Recurring tasks"></div><p id="schedule-read-notes" class="error" ${schedules.notes.length?'':'hidden'}>${schedules.notes.map(esc).join('<br>')}</p>`+(watches.length?heading('Saved monitoring plans','These are business plans, not proof of an active schedule.')+`<div class="card">${watches.map(recordRow).join('')}</div>`:'');
+    view.innerHTML=`${scheduleForm()}<div class="section-head"><p>Schedules across your AI apps. <button class="text-button" data-schedules-help>How it works</button></p></div>${scheduleOperationMarkup()}<input class="search" id="schedule-search" type="search" aria-label="Search all recurring tasks" placeholder="Find a recurring task…" value="${esc(state.scheduleQuery||'')}">${scheduleFilters('full')}<div id="schedule-list" class="bounded-list" tabindex="0" aria-label="Recurring tasks"></div><p id="schedule-read-notes" class="error" ${schedules.notes.length?'':'hidden'}>${schedules.notes.map(esc).join('<br>')}</p>`+(watches.length?heading('Saved monitoring plans','These are business plans, not proof of an active schedule.')+`<div class="card">${watches.map(recordRow).join('')}</div>`:'');
     $('#schedule-add').addEventListener('toggle',()=>{state.scheduleAdding=$('#schedule-add').open;if(state.scheduleAdding&&!$('#schedule-add').dataset.loaded)loadScheduleModels();});
     if(state.scheduleAdding)loadScheduleModels();
     renderSchedules();attempt(()=>syncSchedules());
@@ -1129,16 +1130,65 @@ async function taskModels(app) {
   }catch{if(select.isConnected)$('#task-model-note').textContent='Couldn’t load other models. The current setting is unchanged.';}
   finally{if(select.isConnected&&$('#task-edit-form select[name=app]').value===app)select.disabled=false;}
 }
-function details(title,html,mode='panel'){
+// Small choices stay beside their trigger. Native dialogs remain available for larger tasks.
+let anchoredSurface=null;
+function closeAnchoredSurface(restoreFocus=true){
+  const surface=anchoredSurface;if(!surface)return;
+  anchoredSurface=null;surface.observer.disconnect();surface.parentDialog?.removeEventListener('close',surface.parentClosed);
+  const {dialog,anchor,parent,next}=surface;
+  if(dialog.open)dialog.close();
+  delete dialog.dataset.surface;dialog.style.removeProperty('left');dialog.style.removeProperty('top');dialog.style.removeProperty('width');dialog.style.removeProperty('max-height');
+  if(dialog.parentNode!==parent)parent.insertBefore(dialog,next?.parentNode===parent?next:null);
+  anchor.setAttribute('aria-expanded','false');
+  if(restoreFocus&&anchor.isConnected)anchor.focus({preventScroll:true});
+}
+function positionAnchoredSurface(){
+  const surface=anchoredSurface;if(!surface)return;
+  const {dialog,anchor,width,align,placement}=surface,r=anchor.getBoundingClientRect(),viewport=window.visualViewport;
+  const left=viewport?.offsetLeft||0,top=viewport?.offsetTop||0,w=viewport?.width||innerWidth,h=viewport?.height||innerHeight,gutter=12,gap=8;
+  if(!anchor.isConnected||!r.width||!r.height||r.bottom<top||r.top>top+h){closeAnchoredSurface(false);return;}
+  const actualWidth=Math.min(width,w-gutter*2),above=Math.max(0,r.top-top-gap-gutter),below=Math.max(0,top+h-r.bottom-gap-gutter);
+  const up=above>=Math.min(380,h*.6)||above>=below,available=up?above:below;
+  dialog.style.width=actualWidth+'px';dialog.style.maxHeight=(placement==='side'?h-gutter*2:available)+'px';
+  if(placement==='side'){
+    const sideX=r.right+gap+actualWidth<=left+w-gutter?r.right+gap:r.left-gap-actualWidth>=left+gutter?r.left-gap-actualWidth:r.left;
+    dialog.style.left=Math.max(left+gutter,Math.min(sideX,left+w-gutter-actualWidth))+'px';
+    dialog.style.top=Math.max(top+gutter,Math.min(r.top,top+h-gutter-dialog.getBoundingClientRect().height))+'px';return;
+  }
+  dialog.style.left=Math.max(left+gutter,Math.min(align==='end'?r.right-actualWidth:r.left,left+w-gutter-actualWidth))+'px';
+  dialog.style.top=(up?Math.max(top+gutter,r.top-gap-dialog.getBoundingClientRect().height):r.bottom+gap)+'px';
+}
+function openAnchoredSurface(dialog,anchor,{width=360,align='start',placement='vertical'}={}){
+  if(anchoredSurface?.dialog===dialog&&dialog.open){closeAnchoredSurface();return false;}
+  closeAnchoredSurface(false);
+  $('#chat-tools-menu').hidden=true;$('#composer-tools').setAttribute('aria-expanded','false');
+  if(dialog.open)dialog.close();
+  const parent=dialog.parentNode,next=dialog.nextSibling,parentDialog=anchor.closest('dialog:modal');
+  if(parentDialog&&parentDialog!==dialog)parentDialog.append(dialog);
+  const observer=new ResizeObserver(positionAnchoredSurface),parentClosed=()=>{if(!parentDialog.open)closeAnchoredSurface(false);};
+  anchoredSurface={dialog,anchor,parent,next,parentDialog,observer,parentClosed,width,align,placement};
+  parentDialog?.addEventListener('close',parentClosed);dialog.dataset.surface='popover';dialog.dataset.opened=Date.now();
+  anchor.setAttribute('aria-haspopup','dialog');anchor.setAttribute('aria-controls',dialog.id);anchor.setAttribute('aria-expanded','true');
+  dialog.show();positionAnchoredSurface();observer.observe(dialog);observer.observe(anchor);
+  return true;
+}
+document.addEventListener('close',event=>{if(anchoredSurface?.dialog===event.target&&!event.target.open)closeAnchoredSurface();},true);
+window.addEventListener('resize',positionAnchoredSurface);
+window.visualViewport?.addEventListener('resize',positionAnchoredSurface);
+document.addEventListener('scroll',event=>{if(anchoredSurface&&!anchoredSurface.dialog.contains(event.target))positionAnchoredSurface();},true);
+document.addEventListener('focusin',event=>{const s=anchoredSurface;if(s&&!s.dialog.contains(event.target)&&!s.anchor.contains(event.target))closeAnchoredSurface(false);});
+document.addEventListener('keydown',event=>{if(event.key==='Escape'&&anchoredSurface){event.preventDefault();event.stopImmediatePropagation();closeAnchoredSurface();}},true);
+function details(title,html,mode='panel',anchor=null){
+  closeAnchoredSurface(false);
   window.auraFiles?.detach();
   const d=$('#detail');state.fileDetailTicket=(state.fileDetailTicket||0)+1;shellReturnFocus=document.activeElement;
-  const page=mode==='page'||(state.view==='sharing'&&mode!=='context'),modal=!page&&mode!=='context';
+  const page=mode==='page'||(state.view==='sharing'&&mode!=='context'),modal=!anchor&&!page&&mode!=='context';
   if(d.open&&d.matches(':modal')!==modal)d.close();
   d.dataset.mode=page?'page':mode;d.dataset.opened=Date.now();$('#detail-title').textContent=title;$('#detail-content').innerHTML=html;
   $('#close-detail-page').hidden=!page;d.querySelector('[data-close="detail"]').hidden=page;
   $('#detail-footer').hidden=!page||state.view!=='sharing';$('#detail-footer').innerHTML=page&&state.view==='sharing'?workspaceLocation():'';
   const actions=$('#detail-content .share-selection-bar');if(page&&actions)$('#detail-footer').prepend(actions);
-  d.querySelectorAll('.dialog-error').forEach(el=>el.remove());if($('#notice').classList.contains('error'))notice('');if(!d.open){if(modal)d.showModal();else d.show();}
+  d.querySelectorAll('.dialog-error').forEach(el=>el.remove());if($('#notice').classList.contains('error'))notice('');if(anchor)openAnchoredSurface(d,anchor,{width:380});else if(!d.open){if(modal)d.showModal();else d.show();}
 }
 let apiConnections=[];
 async function showApiConnections(origin=state.apiReturn) {
@@ -1445,6 +1495,7 @@ document.addEventListener('change',event=>attempt(async()=>{
 document.addEventListener('click',event=>attempt(async()=>{
   const b=event.target.closest('button');if(!b)return;
   if(b.id==='composer-tools'){
+    closeAnchoredSurface(false);
     const menu=$('#chat-tools-menu');menu.hidden=!menu.hidden;b.setAttribute('aria-expanded',String(!menu.hidden));
     if(!menu.hidden)menu.querySelector('button').focus();
   }
@@ -1744,7 +1795,6 @@ document.addEventListener('click',event=>attempt(async()=>{
   if(button.dataset.libraryKind){const query=$('#quick-work-search')?.value||'';workFilter=button.dataset.libraryKind;libraryView='all';workCategory='';state.view='work';await render();$('#work-search').value=query;renderWork();}
   if(button.dataset.workcategory){workCategory=button.dataset.workcategory;if(state.view!=='work'){state.view='work';workFilter='Workflow';await render();}else renderWork();}
   if(button.id==='work-all-topics'){if(libraryView==='recent'){await saveLibrary({...libraryPrefs(),recent:[]});quickMethods();}workCategory='';renderWork();}
-  if(button.id==='refresh-schedules'){await syncSchedules(true);}
   if(button.id==='schedule-retry-models')await loadScheduleModels(true);
   if(button.dataset.schedule)await scheduleDetails(button.dataset.schedule);
   if(button.dataset.taskResult)await window.auraWork?.openResult(button.dataset.taskResult);
@@ -1786,14 +1836,13 @@ document.addEventListener('click',event=>attempt(async()=>{
   if(button.dataset.filetype) {state.fileLimit=100;fileFilter=button.dataset.filetype;renderQuickFiles();renderFiles();}
   if(button.id==='include-workspace-records'){state.includeRecords=!state.includeRecords;button.textContent=state.includeRecords?'Hide workspace records':'Show workspace records too';renderFiles();}
   if(button.dataset.workfilter) { workFilter=button.dataset.workfilter;workCategory=''; button.parentElement.querySelectorAll('button').forEach(b=>b.classList.toggle('active',b===button)); renderWork(); }
-  if(button.id==='library-refresh')await refreshLibrary();
   if(button.id==='library-connections')await showApiConnections('');
   if(button.hasAttribute('data-library-help'))details('Your library',`<p>Workflows guide business work, including complete guides called Playbooks. Recipes guide how something is made. Skills give your AI reusable instructions. Tools perform actions. Plugins bundle skills, tools, or extensions.</p><p>Shared items appear once. Their versions and app connections stay inside their details. A service's individual actions remain searchable.</p><p>Discovery reads known local files, configured packages, and catalogs exposed by installed AI apps. Codex reports skills, connected apps and paginated tool catalogs; Pi and OMP report commands and available metadata; Hermes reports toolsets. Claude Code and Google Antigravity use known local files and configuration here. Plugin cache files are marked Found locally, which does not prove installation or availability.</p><p>Found locally means a file exists. Configured means a connection is saved. Reported by app means its catalog lists it. Access is checked by your AI when used. Refresh sends no model prompt.</p>${state.libraryNotes?.length?'<p>Could not check:</p><ul>'+state.libraryNotes.map(n=>'<li>'+esc(n)+'</li>').join('')+'</ul>':''}<p>Prepare a request adds guidance to your current draft for review. It does not send it. This library does not limit your AI's normal capabilities.</p>`);
   if(button.dataset.libraryFavorite){const item=state.library.find(r=>r.key===button.dataset.libraryFavorite);if(!item)return;const prefs=libraryPrefs(),marked=libraryMarked(item),keys=[item.key,...(item.aliases||[])];const favorites=prefs.favorites.filter(k=>!keys.includes(k));if(!marked)favorites.push(item.key);await saveLibrary({...prefs,favorites});quickMethods();if(state.view==='work')renderWork();button.setAttribute('aria-pressed',String(!marked));button.textContent=marked?'☆':'★';}
   if(button.dataset.libraryUse){const item=state.library.find(r=>r.key===button.dataset.libraryUse);if(!item)return;await saveLibrary({...libraryPrefs(),recent:[item.key,...libraryPrefs().recent.filter(k=>k!==item.key)].slice(0,24)});quickMethods();}
   if(button.id==='make-skill')prompt('Help me turn the useful work in this conversation into a reusable skill. First check what was actually completed and which parts are worth reusing. Keep business facts and results in AURA; reference them rather than copying them into the skill. Check for an existing skill before creating another. Use this AI app’s normal skill creation guidance, include only necessary supporting files, and explain any requirements. Ask me one short question if the scope is unclear.');
   if(button.dataset.method)await openLibrary(button.dataset.method);
-  if(button.id==='more') $('#more-dialog').showModal();
+  if(button.id==='more') openAnchoredSurface($('#more-dialog'),button,{width:330});
   if(button.id==='api-connections')await showApiConnections('');
   if(button.id==='model-api-connections')await showApiConnections('models');
   if(button.id==='back-to-models')$('#detail').close();
@@ -1817,7 +1866,7 @@ document.addEventListener('click',event=>attempt(async()=>{
     $('#request').value=request;await submitRequest(request);
   }
   if(button.id==='setup-done') await dismissSetup();
-  if(button.id==='notification-bell') {await syncNotifications();$('#notification-dialog').showModal();}
+  if(button.id==='notification-bell') {if(openAnchoredSurface($('#notification-dialog'),button,{width:400,align:'end'}))await syncNotifications();}
   if(button.id==='notification-read-all') {if(state.business)state.inbox=await api('/api/notifications',{business:state.business,action:'read',all:true});state.updates=await api('/api/updates',{action:'read'});renderNotifications();state.systemAlert?.close();}
   if(button.dataset.notification) {
     const item=state.inbox.items.find(n=>n.id===button.dataset.notification);if(!item)return;
@@ -2219,20 +2268,40 @@ async function checkNativeChanges(){
   const scope=chatScope(),id=state.chatMeta.id;if(state.checkingNative===scope)return;state.checkingNative=scope;
   try{const r=await api('/api/chats/changes?business='+encodeURIComponent(state.business)+'&id='+encodeURIComponent(id));if(scope!==chatScope()||state.busy||!r.changed||r.workspace!==state.data.workspace)return;const top=$('#conversation').scrollTop;state.chat=r.conversation.messages;state.chatMeta=r.conversation.chat;window.auraContinuity?.acceptRecovery(r.conversation);showMessages();$('#conversation').scrollTop=top;renderShell();}catch{/* Manual refresh remains available when a host cannot report local changes. */}finally{if(state.checkingNative===scope)state.checkingNative=false;}
 }
+let shellSearchFilter='all',shellSearchLimit=50;
+const shellSearchTypes={all:'All',chats:'Chats',files:'Files',records:'Memory',library:'Library'};
 async function openShellSearch(){
-  if(!state.business)return;shellSearchData=null;const root=state.data.workspace,business=state.business,ticket=++shellSearchTicket;
-  if(!$('#search-dialog').open)$('#search-dialog').showModal();$('#shell-search').value='';$('#shell-search').focus();$('#shell-search-results').innerHTML='';$('#shell-search-status').textContent='Finding your workspace items…';
-  try{
-    const [chats,files,library]=await Promise.all([api('/api/chats?business='+encodeURIComponent(business)),cachedApi('/api/files?business='+encodeURIComponent(business)),cachedApi('/api/library')]);
-    if(ticket!==shellSearchTicket||root!==state.data.workspace||business!==state.business)return;
-    shellSearchData={chats:chats.items,files:files.items,library,records:state.data.records};state.files=files.items;paintShellSearch();
-  }catch(e){$('#shell-search-status').textContent=humanError(e);}
+  if(!state.business)return;closeAnchoredSurface(false);shellSearchData=null;shellSearchFilter='all';shellSearchLimit=50;
+  const root=state.data.workspace,business=state.business,ticket=++shellSearchTicket;
+  if(!$('#search-dialog').open)$('#search-dialog').showModal();$('#shell-search').value='';$('#shell-search').focus();$('#shell-search-results').innerHTML='';$('#shell-search-filters').innerHTML='';$('#shell-search-more').hidden=true;$('#shell-search-status').textContent='Finding your workspace items…';
+  const results=await Promise.allSettled([api('/api/chats?business='+encodeURIComponent(business)),cachedApi('/api/files?business='+encodeURIComponent(business)),cachedApi('/api/library')]);
+  if(ticket!==shellSearchTicket||root!==state.data.workspace||business!==state.business)return;
+  const value=(index,fallback)=>results[index].status==='fulfilled'?results[index].value:fallback;
+  const chats=value(0,{items:[]}),files=value(1,{items:[]}),library=value(2,[]);
+  shellSearchData={chats:chats.items,files:files.items,library,records:state.data.records,unavailable:results.flatMap((r,i)=>r.status==='rejected'?[['Chats','Files','Library'][i]]:[])};
+  if(results[1].status==='fulfilled')state.files=files.items;shellSearchData.items=indexShellSearch(shellSearchData);paintShellSearch();
+}
+function indexShellSearch(source){
+  const items=[
+    ...source.chats.map(c=>({type:'chats',label:'Chat',title:c.title,description:chatDescription(c),match:c.title+' '+chatDescription(c),attr:'data-chat',id:c.id})),
+    ...source.files.filter(usefulFile).map(f=>({type:'files',label:'File',title:f.name,description:f.location_name||(!f.path.startsWith('asset/')?f.path:''),match:f.name+' '+f.path,attr:'data-search-file',id:f.path})),
+    ...source.records.map(r=>({type:'records',label:'Memory',title:r.title,description:shareType(r.type||r.ref.split('/')[0]),match:r.title+' '+JSON.stringify(r.data),attr:'data-search-record',id:r.ref})),
+    ...source.library.map(i=>({type:'library',label:'Library',title:i.title||i.name||i.id,description:[i.subtype||i.kind,(i.apps||[]).map(appName).join(', ')].filter(Boolean).join(' · '),match:JSON.stringify(i),attr:'data-search-library',id:i.key||i.id}))
+  ];
+  return items.map(i=>({...i,match:String(i.match).toLowerCase(),titleLower:String(i.title).toLowerCase()}));
 }
 function paintShellSearch(){
-  if(!shellSearchData)return;const q=$('#shell-search').value.trim().toLowerCase(),source=shellSearchData;
-  const groups=[['Chats',source.chats.map(c=>({title:c.title,match:c.title+' '+chatDescription(c),attr:'data-chat',id:c.id}))],['Files',source.files.map(f=>({title:f.name,match:f.name+' '+f.path,attr:'data-search-file',id:f.path}))],['Memory',source.records.map(r=>({title:r.title,match:r.title+' '+JSON.stringify(r.data),attr:'data-search-record',id:r.ref}))],['Library',source.library.map(i=>({title:i.title||i.name||i.id,match:JSON.stringify(i),attr:'data-search-library',id:i.key||i.id}))]];
-  $('#shell-search-results').innerHTML=groups.map(([name,items])=>{const found=items.filter(i=>String(i.match).toLowerCase().includes(q));return found.length?`<h3 class="search-group">${name} · ${found.length}</h3>${found.slice(0,q?10:3).map(i=>`<button class="search-result" ${i.attr}="${esc(i.id)}"><span>${esc(i.title)}</span><small>${name==='Chats'?'Open':'View'}</small></button>`).join('')}${found.length>(q?10:3)?`<button class="text-button" data-search-section="${({Chats:'chats',Files:'files',Memory:'business',Library:'work'})[name]}">See all matching ${name.toLowerCase()}</button>`:''}`:'';}).join('')||empty('No matches','Try another word.');
-  $('#shell-search-status').textContent='Searches chat descriptions, saved information, library metadata and file names/locations.';
+  if(!shellSearchData)return;
+  const q=$('#shell-search').value.trim().toLowerCase(),terms=q.split(/\s+/).filter(Boolean),source=shellSearchData,items=source.items;
+  const matches=items.filter(i=>terms.every(term=>i.match.includes(term)));
+  const rank=i=>{const title=i.titleLower;return q&&title===q?0:q&&title.startsWith(q)?1:q&&terms.every(t=>title.includes(t))?2:3;};
+  if(q)matches.sort((a,b)=>rank(a)-rank(b)||a.titleLower.localeCompare(b.titleLower));
+  const filtered=matches.filter(i=>shellSearchFilter==='all'||i.type===shellSearchFilter);
+  $('#shell-search-filters').innerHTML=Object.entries(shellSearchTypes).map(([type,label])=>`<button type="button" data-search-filter="${type}" aria-pressed="${type===shellSearchFilter}">${label}<span>${type==='all'?matches.length:matches.filter(i=>i.type===type).length}</span></button>`).join('');
+  $('#shell-search-results').innerHTML=filtered.slice(0,shellSearchLimit).map(i=>`<li><button class="search-result" ${i.attr}="${esc(i.id)}"><span class="search-result-copy"><strong>${esc(i.title)}</strong>${i.description?`<small>${esc(i.description)}</small>`:''}</span><span class="search-result-type">${i.label}</span></button></li>`).join('')||`<li>${empty(q?'No matching '+(shellSearchFilter==='all'?'items':shellSearchTypes[shellSearchFilter].toLowerCase())+'.':'No '+(shellSearchFilter==='all'?'items':shellSearchTypes[shellSearchFilter].toLowerCase())+' here yet.',q?'Try another word or choose a different filter.':'')}</li>`;
+  const shown=Math.min(filtered.length,shellSearchLimit);
+  $('#shell-search-more').hidden=shown===filtered.length;$('#shell-search-more').textContent='Show more results';
+  $('#shell-search-status').textContent=`${shown<filtered.length?shown+' of ':''}${filtered.length} result${filtered.length===1?'':'s'}${source.unavailable.length?' · Couldn’t search '+source.unavailable.join(', ')+'. Close and reopen search to try again.':''}`;
 }
 // A deliberately small Markdown renderer: all content is escaped before markup.
 function chatMarkdown(value){
@@ -2249,7 +2318,7 @@ document.addEventListener('click',event=>attempt(async()=>{
   const b=event.target.closest('button');if(!b)return;
   if(b.id==='sidebar-collapse'){if(matchMedia('(max-width:760px)').matches){closeMobileSidebar();return;}const p=await api('/api/profile',{sidebar_collapsed:!state.profile?.sidebar_collapsed});state.data.profile=p;applyProfile(p);}
   if(b.id==='sidebar-open')openSidebar();if(b.id==='sidebar-scrim')closeMobileSidebar();
-  if(b.id==='add-native-chat')await addNativeChat();if(b.id==='profile-open')$('#more-dialog').showModal();if(b.id==='personalize-menu')await personalize();if(b.id==='account-settings')await accountProfile();if(b.id==='support-report')await supportReport();
+  if(b.id==='add-native-chat')await addNativeChat();if(b.id==='profile-open')openAnchoredSurface($('#more-dialog'),b,{width:330});if(b.id==='personalize-menu')await personalize();if(b.id==='account-settings')await accountProfile();if(b.id==='support-report')await supportReport();
   if(b.id==='reconnect-chat-workspace'){const scope=chatScope();b.disabled=true;try{const r=await api('/api/chats/reconnect',{business:state.business,id:state.chatMeta.id});if(scope!==chatScope())return;state.chatMeta=r.chat;rememberChatDraft();chatControls();await renderShell();}finally{if(b.isConnected)b.disabled=false;}}
   if(b.id==='search-open')await openShellSearch();
   if(b.id==='sidebar-more-chats'){state.chatLimit=(state.chatLimit||20)+30;await renderShell();}
@@ -2268,25 +2337,28 @@ document.addEventListener('click',event=>attempt(async()=>{
   if(b.dataset.searchFile||b.dataset.replyFile){$('#search-dialog').close();let ref=b.dataset.searchFile||b.dataset.replyFile;if(b.dataset.replyFile){try{ref=decodeURIComponent(ref);}catch{}}const result=await cachedApi('/api/files?business='+encodeURIComponent(state.business));state.files=result.items;const normalize=p=>{let value=String(p||'').replaceAll('\\','/').replace(/^file:\/\/\/?/i,'').replace(/#L\d+(?:-L?\d+)?$/,'');return /^[a-z]:\//i.test(value)?value.toLowerCase():value;};const f=state.files.find(f=>[f.path,f.local_path,state.data.workspace+'/'+f.path].some(p=>normalize(p)===normalize(ref)));if(f)await fileDetails(f.path);else notice('This file is not in the selected workspace or linked locations. Open Files & media to locate it.',true);}
   if(b.dataset.searchRecord){$('#search-dialog').close();recordDetails(b.dataset.searchRecord);}
   if(b.dataset.searchLibrary){$('#search-dialog').close();await openLibrary(b.dataset.searchLibrary);}
-  if(b.dataset.searchSection){const q=$('#shell-search').value;$('#search-dialog').close();if(b.dataset.searchSection==='chats')await showChats();else{state.view=b.dataset.searchSection;await render();const f=$(({files:'#file-search',business:'#record-search',work:'#work-search'})[state.view]);if(f){f.value=q;f.dispatchEvent(new Event('input',{bubbles:true}));}recordShellRoute();}}
+  if(b.dataset.searchFilter){shellSearchFilter=b.dataset.searchFilter;shellSearchLimit=50;paintShellSearch();$(`[data-search-filter="${shellSearchFilter}"]`).focus();}
+  if(b.id==='shell-search-more'){const position=[...document.querySelectorAll('#shell-search-results .search-result')].length;shellSearchLimit+=50;paintShellSearch();[...document.querySelectorAll('#shell-search-results .search-result')][position]?.focus();}
 }));
 document.addEventListener('submit',event=>{
   if(event.target.id!=='profile-form')return;event.preventDefault();attempt(async()=>{const data=Object.fromEntries(new FormData(event.target));const p=await api('/api/profile',{accent:data.accent,text_size:Number(data.text_size),panel_width:Number(data.panel_width)});await api('/api/preferences',{appearance:data.appearance});state.data.profile=p;state.data.appearance=data.appearance;applyProfile(p);applyAppearance(data.appearance);$('#detail').close();});
 });
-$('#shell-search').addEventListener('input',paintShellSearch);
+$('#shell-search').addEventListener('input',()=>{shellSearchLimit=50;paintShellSearch();});
 $('#search-dialog').addEventListener('click',event=>{if(event.target.closest('[data-chat]'))$('#search-dialog').close();});
 $('#request').addEventListener('input',rememberChatDraft);
 
 $('#conversation').addEventListener('scroll',()=>{clearTimeout(state.draftScrollTimer);state.draftScrollTimer=setTimeout(rememberChatDraft,150);});
-$('#detail').addEventListener('close',()=>{if(shellReturnFocus?.isConnected&&!document.querySelector('dialog:modal')&&!$('#detail').open)shellReturnFocus.focus({preventScroll:true});});
+$('#detail').addEventListener('close',()=>{if(shellReturnFocus?.isConnected&&!anchoredSurface&&!document.querySelector('dialog:modal')&&!$('#detail').open)shellReturnFocus.focus({preventScroll:true});});
 document.addEventListener('keydown',event=>{
   if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='k'){event.preventDefault();attempt(openShellSearch);}
   if(event.altKey&&!event.ctrlKey&&!event.metaKey&&event.key.toLowerCase()==='n'){event.preventDefault();attempt(newShellChat);}
   if(event.key==='Escape'){
+    if(event.defaultPrevented)return;
     if(document.querySelector('dialog:modal')){event.preventDefault();const top=document.activeElement?.closest('dialog:modal')||[...document.querySelectorAll('dialog:modal')].at(-1);top.close();return;}
     if(document.body.classList.contains('sidebar-mobile-open')){event.preventDefault();closeMobileSidebar();return;}
     const open=[...document.querySelectorAll('dialog[open]')].filter(d=>!d.matches(':modal')).sort((a,b)=>Number(b.dataset.opened||0)-Number(a.dataset.opened||0));if(open[0]){event.preventDefault();if(open[0].id==='section-dialog'||open[0].dataset.mode==='page')state.view='home';open[0].close();recordShellRoute();renderShell();}
   }
+  if(['ArrowDown','ArrowUp','Home','End'].includes(event.key)&&event.target.closest('#shell-search-results')){event.preventDefault();const items=[...document.querySelectorAll('#shell-search-results .search-result')],index=items.indexOf(document.activeElement),next=event.key==='Home'?0:event.key==='End'?items.length-1:index+(event.key==='ArrowDown'?1:-1);if(next<0)$('#shell-search').focus();else items[Math.min(next,items.length-1)]?.focus();}
   if(event.key==='ArrowDown'&&event.target.id==='shell-search'){event.preventDefault();$('#shell-search-results button')?.focus();}
 });
 const shellTimer=setInterval(()=>{if(!state.closed&&!document.hidden&&state.data)attempt(async()=>{await renderShell(false);});},4000);
@@ -2346,8 +2418,10 @@ async function saveProfilePicture(file){
 }
 let chatModelTicket=0;
 async function openChatModels(target=null){
+  if(!state.data)return;
   const scope=chatScope(),ticket=++chatModelTicket,c=target?.connection||composerConnection();
-  $('#chat-model-dialog').dataset.opened=Date.now();$('#chat-model-dialog').showModal();$('#chat-model-title').textContent=target?.title||(state.chatMeta?'Model for this chat':'AI for the new chat');
+  $('#chat-model-title').textContent=target?.title||(state.chatMeta?'Model for this chat':'AI for the new chat');
+  if(!openAnchoredSurface($('#chat-model-dialog'),target?.anchor||$('#model-settings'),{width:420,align:target?'start':'end',placement:target?'side':'vertical'}))return;
   if(!target&&state.busy){$('#chat-model-content').innerHTML='<p>Wait for this reply or stop the request before changing its model.</p>';return;}
   if(!target&&state.chatMeta?.agent==='hermes'&&state.chatMeta.native_id){$('#chat-model-content').innerHTML='<p>This Hermes conversation keeps its original model and effort. Start a new chat to choose another.</p><button class="secondary" id="model-new-chat">New chat</button>';return;}
   state.chatModelDraft={...c,scope,ticket,target};state.chatModelLimit=60;
@@ -2355,6 +2429,7 @@ async function openChatModels(target=null){
   $('#chat-model-content').innerHTML=`${state.chatMeta||target?`<p class="chat-model-owner">${esc(appName(c.kind))}${target?'':'<small>This conversation stays in its original AI app.</small>'}</p>`:`<label class="model-app-field">AI app<select id="chat-model-app">${choices.map(a=>`<option value="${esc(a.id)}" ${a.id===c.kind?'selected':''}>${esc(a.name)}</option>`).join('')}</select></label>`}<div id="chat-model-options"><p role="status">Loading this app’s models…</p></div>`;
   if(!state.chatMeta&&!target&&choices.length&&!choices.some(a=>a.id===c.kind))state.chatModelDraft.kind=choices[0].id;
   await loadChatModelOptions();
+  if(document.activeElement===$('#chat-model-dialog .close-button'))$('#chat-model-search')?.focus({preventScroll:true});
 }
 async function loadChatModelOptions(refresh=false){
   const draft=state.chatModelDraft,kind=draft.kind,ticket=draft.ticket,request=state.chatModelRequest=(state.chatModelRequest||0)+1;
@@ -2407,7 +2482,7 @@ document.addEventListener('click',event=>attempt(async()=>{
   if(b.id==='chat-model-more'){state.chatModelLimit+=60;paintChatModels();}if(b.id==='chat-model-retry'){$('#chat-model-options').innerHTML='<p role="status">Loading this app’s models…</p>';await loadChatModelOptions(true);}
   if(b.id==='close-detail-page')returnToChat();
   if(b.id==='chat-refresh')await refreshChat();
-  if(b.id==='page-refresh'){b.disabled=true;try{if(state.view==='tools')await syncSchedules(true);if(state.view==='work')state.library=[];await refresh();}finally{b.disabled=false;}}
+  if(b.id==='page-refresh'){b.disabled=true;b.textContent='Refreshing…';try{if(state.view==='work')await refreshLibrary();else if(state.view==='tools')await syncSchedules(true);else await refresh();}finally{b.disabled=false;b.textContent='Refresh';}}
   if(b.dataset.copyWorkspace){await navigator.clipboard.writeText(b.dataset.copyWorkspace);$('#workspace-copy-status').textContent='Copied';}
   if(b.id==='remove-profile-picture'){const p=await api('/api/profile',{avatar:''});state.data.profile=p;applyProfile(p);$('.profile-picture').innerHTML=avatarMarkup(p);b.hidden=true;}
 }));
@@ -2420,7 +2495,7 @@ document.addEventListener('submit',event=>{if(event.target.id==='account-form'){
 // Dismiss floating surfaces only after a complete outside click, never a drag.
 let outsideSurface=null;
 document.addEventListener('pointerdown',event=>{
-  outsideSurface=null;const dialogs=[...document.querySelectorAll('dialog[open]')].filter(d=>d.matches(':modal')||d.id==='detail'&&d.dataset.mode!=='page').sort((a,b)=>(a.matches(':modal')?-1:0)-(b.matches(':modal')?-1:0)||Number(b.dataset.opened||0)-Number(a.dataset.opened||0));
+  outsideSurface=null;if(anchoredSurface){const s=anchoredSurface;if(!s.dialog.contains(event.target)&&!s.anchor.contains(event.target))outsideSurface=s.dialog;return;}const dialogs=[...document.querySelectorAll('dialog[open]')].filter(d=>d.matches(':modal')||d.id==='detail'&&d.dataset.mode!=='page').sort((a,b)=>(a.matches(':modal')?-1:0)-(b.matches(':modal')?-1:0)||Number(b.dataset.opened||0)-Number(a.dataset.opened||0));
   const top=dialogs[0];if(!top)return;const r=top.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)outsideSurface=top;
 },true);
 document.addEventListener('pointerup',event=>{const d=outsideSurface;outsideSurface=null;if(!d?.open)return;const r=d.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)d.close();},true);

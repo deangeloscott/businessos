@@ -8,6 +8,7 @@ import json
 import re
 import os
 import shutil
+import subprocess
 import sys
 import tempfile
 import threading
@@ -18,6 +19,8 @@ sys.path.insert(0, str(ROOT / 'scripts'))
 
 
 def main():
+    if shutil.which('node'):
+        subprocess.run(['node', str(ROOT / 'tests/workspace_search_ui.cjs'), str(ROOT / 'interface/app.js')], check=True)
     prior = {key: os.environ.get(key) for key in ('BUSINESSOS_WORKSPACE', 'BUSINESSOS_WORKSPACE_CONFIG')}
     with tempfile.TemporaryDirectory(prefix='aura-view-test-') as tmp:
         base = Path(tmp)

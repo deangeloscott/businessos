@@ -52,7 +52,7 @@ window.auraWork = (() => {
       $('#assistant-pick-model').disabled=$('#assistant-pick-child').disabled=!nativeApps.includes(kind);
       $('#assistant-reset-model').hidden=!model.value&&!effort.value;$('#assistant-reset-child').hidden=!child.value;
     };
-    const pick=modelOnly=>{const chosenKind=kind;return attempt(()=>openChatModels({title:modelOnly?'Subagent model':'Assistant model & effort',modelOnly,
+    const pick=modelOnly=>{const chosenKind=kind;return attempt(()=>openChatModels({title:modelOnly?'Subagent model':'Assistant model & effort',modelOnly,anchor:$(modelOnly?'#assistant-pick-child':'#assistant-pick-model'),
       connection:{kind:chosenKind,model:modelOnly?child.value:model.value,effort:modelOnly?'':effort.value},
       current:()=>key===currentScope()&&form.isConnected&&$('#detail').open&&chosenKind===(app.value||state.data.connection.selected),
       onSelect:choice=>{app.value=choice.kind;kind=choice.kind;if(modelOnly)child.value=choice.model;else{model.value=choice.model;effort.value=choice.effort;}paint();}}));};

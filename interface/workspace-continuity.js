@@ -107,8 +107,10 @@ window.auraContinuity=(()=>{
   }
 
   async function permissions(forChat=true,selectedKind=''){
+    if(!state.data)return;
+    if(forChat&&anchoredSurface?.anchor===$('#chat-permissions')){closeAnchoredSurface();return;}
     const key=scope(),ticket=++viewTicket,chat=forChat?state.chatMeta?.id:'',kind=selectedKind||(forChat?state.chatMeta?.agent:'')||composerConnection().kind||state.data.connection.selected;
-    $('#more-dialog').close();details(forChat?'Permissions for this chat':'AI permissions','<p role="status">Reading permission choices…</p>');
+    $('#more-dialog').close();details(forChat?'Permissions for this chat':'AI permissions','<p role="status">Reading permission choices…</p>','panel',forChat?$('#chat-permissions'):null);
     viewDetailTicket=state.fileDetailTicket;const host=$('#detail-content');
     const data=await api('/api/permissions?'+params({kind,...(chat?{chat_id:chat}:{})}));
     if(!current(key,ticket,host))return;
