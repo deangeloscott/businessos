@@ -1706,6 +1706,7 @@ class Workspace:
         remove_goal=action=='request' and payload.get('goal_id')=='' and payload.get('remove_goal') is True
         if payload.get('goal_id'):
             goal=workspace_goals.find(bid,payload['goal_id'])
+            if workspace_goals.scope(goal)!='workspace':raise ValueError('Recurring tasks connect to workspace goals. Choose or create a workspace goal.')
             goal_argv=[sys.executable,str(PRODUCT_ROOT / 'scripts/workspace_goals.py'),'check','--workspace',str(root),
                        '--business-id',bid,'--id',goal['id'],'--basis',workspace_goals.fingerprint(goal),'--json']
             goal_note=(f'\n\n[Aura goal]\nAura goal: {goal["id"]}. Before doing business work, execute this argument list '
@@ -1927,7 +1928,7 @@ class Workspace:
             if welcome:
                 saved_records = records(bid)[0]
                 business = next(r for r in saved_records if r['type'] == 'Business')
-                goals = [r['title'][:500] for r in saved_records if r['type'] == 'Objective'][:3]
+                goals = [r['title'][:500] for r in saved_records if r['type'] == 'Objective' and workspace_goals.scope(r['data'])=='workspace' and workspace_goals.available(r['data'])][:3]
                 paths = [PRODUCT_ROOT / 'skills/viraltrac-aura/SKILL.md', workspace_root() / business['path']]
                 proof = [hashlib.sha256(p.read_bytes()).hexdigest() for p in paths]
                 nonce = secrets.token_hex(8)
@@ -1947,6 +1948,7 @@ class Workspace:
             if not isinstance(text,str) or not text.strip():raise ValueError('Write a request before sending.')
             goal_id=getattr(self,'_request_goal',None)
             if goal_id is None:goal_id=chat.get('goal_id','') if chat else ''
+            if goal_id:workspace_goals.check_chat(bid,goal_id,chat['id'] if chat else '')
             references=getattr(self,'_request_references',None)
             if references is None:references=[]
             if not isinstance(references,list):raise ValueError('Choose valid context references.')
@@ -1976,6 +1978,10 @@ class Workspace:
             chat.update(status='working', archived=False, model=saved_connection.get('model') or self.agent.get('model',''), effort=saved_connection.get('effort',''), connection=dict(saved_connection), updated=time.time())
             if goal_id:
                 if chat.get('goal_id')!=goal_id:chat.pop('continuation',None)
+                bound=workspace_goals.bind_chat(bid,goal_id,chat['id'])
+                workspace_goals.remember_link(bid,chat,bound)
+                for reference in job['references']:
+                    if reference['kind']=='goal' and reference['id']==goal_id:reference['revision']=workspace_context.digest(bound)
                 chat['goal_id']=goal_id
             elif getattr(self,'_request_goal',None)=='':chat['goal_id']='';chat.pop('continuation',None)
             job['new_native_chat']=native and not chat.get('native_id')
@@ -2005,7 +2011,7 @@ class Workspace:
             job['permissions']=workspace_permissions.describe(self.connection_kind,execution.permission)
             if goal_id:
                 goal=workspace_goals.find(bid,goal_id)
-                job['goal_basis']=workspace_goals.fingerprint(goal)
+                job['goal_basis']=workspace_goals.continuation_basis(bid,goal)
                 execution.continuation=dict(chat.get('continuation') or {'mode':'manual'})
                 if execution.continuation.get('goal_basis')!=job['goal_basis']:
                     execution.continuation={'mode':'manual'};chat.pop('continuation',None);self.save_preferences()
@@ -2332,7 +2338,7 @@ def handler_for(app):
                 elif route == '/api/context':
                     self.send(200,workspace_context.inventory(app,selected(query.get('business')),query.get('q',''),query.get('kind',''),query.get('limit',20),query.get('assistant')))
                 elif route == '/api/goals':
-                    self.send(200,workspace_goals.inventory(app,selected(query.get('business')),query.get('id')))
+                    self.send(200,workspace_goals.inventory(app,selected(query.get('business')),query.get('id'),query.get('show','active'),query.get('scope','workspace'),query.get('chat_id')))
                 elif route == '/api/activity/result':
                     self.send(200,workspace_activity.result(selected(query.get('business')),query.get('chat_id'),query.get('max_chars',6000)))
                 elif route == '/api/activity':
@@ -2994,23 +3000,26 @@ def handler_for(app):
                     elif route == '/api/goals':
                         bid=selected(data.get('business'));action=data.get('action','save')
                         if action=='save':
+                            if data.get('chat_id') and not any(c['id']==data['chat_id'] and c['business_id']==bid and c.get('workspace',app.workspace_path)==app.workspace_path for c in app.preferences['chats']):raise ValueError('Choose a chat in this workspace and business.')
                             goal=workspace_goals.save(bid,data);app.read_cache.clear()
-                            for chat in app.preferences['chats']:
-                                if chat['business_id']==bid and chat.get('goal_id')==goal['id']:chat.pop('continuation',None)
+                            workspace_goals.changed(app,bid,goal['id'])
+                        elif action in {'delete','restore'}:
+                            goal=workspace_goals.remove(bid,data.get('id'),restore=action=='restore')
+                            workspace_goals.changed(app,bid,goal['id'],remove_links=action=='delete')
                         elif action=='link_chat':workspace_goals.link_chat(app.preferences,bid,data.get('chat_id'),data.get('goal_id'))
                         elif action=='continuation':
                             workspace_goals.set_continuation(app.preferences,bid,data.get('chat_id'),data.get('mode','manual'),data.get('until'))
                         elif action=='link_asset':
                             workspace_goals.link_asset(bid,data.get('asset_id'),data.get('goal_id'));app.read_cache.clear()
                         else:raise ValueError('Choose a supported goal action.')
-                        app.save_preferences()
+                        app.read_cache.clear();app.save_preferences()
                         for pending in app.running_jobs(workspace_root()):
                             execution=app.executions.get(pending['id'])
                             if not execution or not hasattr(execution,'continuation'):continue
                             current=next((c for c in app.preferences['chats'] if c['id']==pending.get('chat_id')),None)
                             if current:execution.continuation=dict(current.get('continuation') or {'mode':'manual'})
                             if execution.retry_check_at is not None:execution.retry_check_at=time.time()
-                        self.send(200,workspace_goals.inventory(app,bid,(goal['id'] if action=='save' else data.get('goal_id')) or None))
+                        self.send(200,workspace_goals.inventory(app,bid,(goal['id'] if action in {'save','delete','restore'} else data.get('goal_id')) or None))
                     elif route == '/api/permissions':
                         bid=selected(data.get('business'));kind=data.get('kind') or app.connection_kind
                         chat=next((c for c in app.preferences['chats'] if c['id']==data.get('chat_id') and c['business_id']==bid),None)

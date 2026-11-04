@@ -199,7 +199,8 @@ The composer **+** menu contains **Add files or context**, **Goal**, and
 **Make a reusable skill**. Skill creation prepares a request for review without
 sending it. Permissions sit beside the plus; the model picker sits beside Send.
 Creating a chat goal asks for the outcome and links it to this chat. New goals
-start active. **Use a saved goal** provides a separate search for existing goals.
+start active. An optional workspace-goal connection provides broader direction.
+**Use a workspace goal only** explicitly connects an existing shared outcome.
 Recurring work continues to use the native recurring-task setup.
 
 **Refresh chat** reads saved history from the owning app without sending a model
@@ -247,21 +248,47 @@ index. Custom interfaces use these same shared resolution operations.
 
 ## Goals and interrupted work
 
-Aura uses its existing **Objective** records for goals: name, optional outcome
-and timeframe, and Active/Paused/Completed status. A chat has one primary goal.
-Its goal view groups linked chats and their existing next-step descriptions,
-saved Assets and native recurring tasks. Long chat lists are searchable and
-initially show 20. Finishing a reply does not complete a goal or invent a progress
-percentage. Mark completion when the actual outcome is achieved.
+Aura uses its existing **Objective** records with two scopes. Existing goals
+without scope metadata remain workspace goals, preserving their current meaning.
+Goals created from the chat composer belong to that chat's effort. They may
+explicitly connect to one workspace goal; completing the effort does not complete
+the broader outcome. **Make workspace goal** is an explicit promotion when a chat
+outcome should become shared. No arbitrary nesting or separate planning engine is
+introduced.
 
-**Work on this goal** creates an unsent draft. **Prepare continuation** checks
+The composer shows the chat goal and its connected workspace outcome separately.
+A chat has one selected goal at a time; earlier goals remain in its goal history.
+Chat goals are not offered as reusable context or assignable to other chats.
+Only the selected goal and its optional workspace connection are added to goal
+guidance, within the existing context-size limit. A newer user instruction takes
+precedence over goal guidance.
+
+Goal views provide **Complete goal**, **Pause goal**, **Resume/Reopen goal**,
+**Edit goal**, and **Remove from this chat**. Completion is deliberate; a finished
+reply does not complete the goal or invent a progress percentage. Business &
+memory lists active workspace goals. **Manage goals** provides current, completed,
+and deleted goals, including earlier chat efforts.
+
+**Delete goal** requires confirmation and retains the goal for recovery from
+**Deleted goals**. It removes the current chat selection, cancels future automatic
+continuation, and preserves conversations, saved files and historical links.
+Restore recovers the goal without reauthorizing continuation. Linked native
+recurring tasks retain their existing preflight instructions and need review;
+their settings are changed only through the normal native task controls.
+
+The existing Objective extensions store `businessos.goal.scope`, an optional
+owning `chat_id`, and an optional `workspace_goal_ref`. An unsent chat goal binds
+to its first real chat. Deletion/recovery and goal edits update the goal's revision
+so old continuation approval cannot become valid again after a pause or restore.
+
+Starting a chat toward a workspace goal creates an unsent draft. **Prepare continuation** checks
 what already succeeded before resuming remaining work, without blindly resending
 the original assignment or repeating external actions. Useful files, decisions
 and concise next steps use Aura's normal durable memory helpers; full transcripts
 and private reasoning are not saved as goal memory. An Asset may link to a goal
 through `extensions.businessos.goal_ref`.
 
-Goal-linked recurring tasks still belong to their native scheduler. Aura adds a
+Goal-linked recurring tasks use workspace goals and still belong to their native scheduler. Aura adds a
 small goal preflight instruction, then confirms the native task changed before
 recording its link. The instruction checks the goal's saved status and original
 assignment fingerprint before business work; a paused, completed or materially
@@ -284,29 +311,39 @@ connection must remain running; restarting either does not restart work. Other
 connections use the saved chat and manual continuation. A durable goal survives
 these interruptions, without a second scheduler, repeated model polling,
 automatic model/account switching or a promise to finish unattended.
-Continuation settings are available from the linked goal's view under **Chat
-continuation**. The standard composer keeps the everyday model, permission,
+Continuation settings are available from the linked goal's **More options**.
+Pausing or completing either selected goal disables future automatic continuation;
+the current reply keeps running until the user selects **Stop**.
+The standard composer keeps the everyday model, permission,
 context and goal controls together without a separate continuation setting.
 
 ```bash
 python scripts/workspace_goals.py list --workspace <folder> --business-id <id> --json
+python scripts/workspace_goals.py list --workspace <folder> --business-id <id> --scope all --show current --json
+python scripts/workspace_goals.py list --workspace <folder> --business-id <id> --scope all --show deleted --json
 python scripts/workspace_goals.py show --workspace <folder> --business-id <id> --id <objective-id> --json
 python scripts/workspace_goals.py save --workspace <folder> --business-id <id> --input <goal-change.json> --json
 python scripts/workspace_goals.py check --workspace <folder> --business-id <id> --id <objective-id> --basis <fingerprint> --json
 python scripts/workspace_goals.py link-chat --workspace <folder> --business-id <id> --chat <chat-id> --id <objective-id> --json
 python scripts/workspace_goals.py link-asset --workspace <folder> --business-id <id> --asset <asset-id> --id <objective-id> --json
+python scripts/workspace_goals.py delete --workspace <folder> --business-id <id> --id <objective-id> --json
+python scripts/workspace_goals.py restore --workspace <folder> --business-id <id> --id <objective-id> --json
 ```
 
 Goal changes use the existing canonical memory persistence/schema checks.
 Omit `--id` on a link command to remove that association. The `continuation`
 command accepts `--chat`, `--mode manual|native` and a Unix-seconds `--until`
 expiry, with the same native support and goal checks as the UI.
-Chat links and continuation choices go through the running local Aura API
+Chat links, deletion/restoration and continuation choices go through the running local Aura API
 (`--url http://127.0.0.1:<port>`, default 4187), so CLI changes cannot overwrite
-live chat settings from a second process. Canonical goal and Asset operations
-also work with Aura closed.
+live chat settings from a second process. Canonical goal reads/saves and Asset
+operations also work with Aura closed. A later execution rechecks the saved goal
+revision before using earlier continuation approval.
 `/api/goals` exposes the same goal reads/writes plus chat/task/Asset associations
-and machine-local continuation choices. It does not create a universal native
+and machine-local continuation choices. Reads accept `scope=workspace|chat|all`,
+`show=active|current|completed|deleted|all`, and an optional `chat_id` for local
+goal history. The default is active workspace goals; `show=all` also returns
+`deleted_items` separately for recovery views. It does not create a universal native
 goal-control protocol or replace a harness's own goals.
 
 ## Native protocol references

@@ -107,7 +107,7 @@ def main():
             shown=call('/api/conversation?business='+bid+'&chat_id='+job['chat_id']);message=shown['messages'][0]
             assert message['text']=='Research the offer' and len(message['references'])==2
             reused=call('/api/context/message',{'business':bid,'chat_id':job['chat_id'],'index':0,'digest':context.message_key(message)})
-            assert reused['text']=='Research the offer' and reused['goal_id']==goal['id']
+            assert reused['text']=='Research the offer' and reused['goal_id']==goal['id'] and reused['new_chat_goal_id']==goal['id']
             call('/api/context/message',{'business':bid,'chat_id':job['chat_id'],'index':0,'digest':'stale'},400)
             call('/api/chat',{'business':bid,'chat_id':job['chat_id'],'text':'Bad context','references':42},400)
             overview=call('/api/goals?business='+bid+'&id='+goal['id']);assert overview['chats'][0]['id']==job['chat_id']
@@ -128,6 +128,58 @@ def main():
             # Matching native message IDs retain the original receipt after history refresh.
             restored=[{'role':'user','text':message['text'],'request_id':job['id']},{'role':'assistant','text':'Saved useful progress'}]
             context.retain_receipts(restored,shown['messages']);assert restored[0]['references']==message['references'] and restored[1]['request_id']==job['id']
+            # Old objectives remain workspace goals; chat efforts are explicitly scoped.
+            legacy=remember(bid,{'objects':[{'object_type':'Objective','content':{'name':'Existing business objective','status':'active'}}]})['objects'][0]['id']
+            assert goals.scope(goals.find(bid,legacy))=='workspace' and not goals.metadata(goals.find(bid,legacy))
+            local=call('/api/goals',{'business':bid,'action':'save','name':'Finish the proposal','scope':'chat','chat_id':job['chat_id'],'workspace_goal_id':goal['id']})['goal']
+            assert goals.scope(local)=='chat'
+            assert local['id'] not in {g['id'] for g in call('/api/goals?business='+bid)['items']}
+            assert not context.inventory(app,bid,'Finish the proposal','goal')['items'],'Chat goals must not appear in workspace reuse choices'
+            call('/api/goals',{'business':bid,'action':'link_chat','chat_id':job['chat_id'],'goal_id':local['id']})
+            combined=context.resolve(app,bid,[],local['id'])
+            assert {r['id'] for r in combined['references']}=={local['id'],goal['id']} and combined['text'].count('Goal context:')==2
+            local_message={'role':'user','text':'Continue the proposal','goal_id':local['id'],'references':combined['references']}
+            history_path=app.chat_display_path(job['chat_id']);history_bytes=history_path.read_bytes()
+            try:
+                history_path.write_text(json.dumps([local_message]),encoding='utf-8')
+                reuse_local=context.reusable(app,bid,job['chat_id'],0)
+                assert reuse_local['new_chat_goal_id']==goal['id'] and not reuse_local['references'],'Reusing a prompt must transfer only its shared goal, without duplicating goal receipts'
+                goals.remove(bid,local['id'])
+                assert context.reusable(app,bid,job['chat_id'],0)['new_chat_goal_id']=='','A deleted effort must not silently transfer its goal connection'
+                goals.remove(bid,local['id'],restore=True)
+            finally:history_path.write_bytes(history_bytes)
+            policy={'mode':'native','until':time.time()+600};old_basis=goals.continuation_basis(bid,local)
+            selected_chat=next(c for c in app.preferences['chats'] if c['id']==job['chat_id']);selected_chat['continuation']=dict(policy)
+            call('/api/goals',{'business':bid,'action':'save','id':goal['id'],'status':'paused'})
+            assert 'continuation' not in selected_chat and goals.guard(bid,local['id'],old_basis,policy)
+            call('/api/goals',{'business':bid,'action':'save','id':goal['id'],'status':'active'})
+            assert goals.guard(bid,local['id'],old_basis,policy),'Reopening a goal must not restore old continuation approval'
+            call('/api/goals',{'business':bid,'action':'save','id':local['id'],'status':'completed'})
+            assert goals.find(bid,goal['id'])['status']=='active','Completing an effort must not complete its workspace outcome'
+            assert local['id'] in {g['id'] for g in call('/api/goals?business='+bid+'&scope=chat&show=completed')['items']}
+            # An unsent goal binds once to the first real chat and retains a correct receipt.
+            draft_goal=call('/api/goals',{'business':bid,'action':'save','name':'An independent effort','scope':'chat'})['goal']
+            draft_job=call('/api/chat',{'business':bid,'chat_id':'','text':'Do this effort','goal_id':draft_goal['id']},202)
+            wait(lambda:app.jobs[draft_job['id']]['status']!='working')
+            bound=goals.find(bid,draft_goal['id']);assert goals.metadata(bound)['chat_id']==draft_job['chat_id']
+            receipt=app.jobs[draft_job['id']]['references'][0];assert receipt['revision']==context.digest(bound)
+            call('/api/goals',{'business':bid,'action':'link_chat','chat_id':draft_job['chat_id'],'goal_id':local['id']},400)
+            jobs_before=len(app.jobs)
+            call('/api/chat',{'business':bid,'chat_id':draft_job['chat_id'],'text':'Wrong effort','goal_id':local['id']},400)
+            assert len(app.jobs)==jobs_before,'A foreign chat goal must be rejected before execution'
+            # Removing a link keeps the earlier effort discoverable; deletion is recoverable.
+            call('/api/goals',{'business':bid,'action':'link_chat','chat_id':job['chat_id'],'goal_id':goal['id']})
+            assert job['chat_id'] in {c['id'] for c in call('/api/goals?business='+bid+'&id='+local['id'])['chats']}
+            display_before=app.chat_display_path(job['chat_id']).read_bytes()
+            call('/api/goals',{'business':bid,'action':'delete','id':goal['id']})
+            assert selected_chat['goal_id']=='' and file.is_file() and app.chat_display_path(job['chat_id']).read_bytes()==display_before
+            assert goal['id'] in {g['id'] for g in call('/api/goals?business='+bid+'&show=deleted')['items']}
+            assert goals.review_reason(bid,local['id']),'Deleted connected goals must block automatic continuation'
+            check=subprocess.run([sys.executable,str(ROOT/'scripts/workspace_goals.py'),'check','--workspace',str(root),'--business-id',bid,'--id',goal['id'],'--json'],capture_output=True,text=True,check=True)
+            assert not json.loads(check.stdout)['eligible']
+            restored_goal=subprocess.run([sys.executable,str(ROOT/'scripts/workspace_goals.py'),'restore','--workspace',str(root),'--business-id',bid,'--id',goal['id'],'--url',f'http://127.0.0.1:{server.server_port}','--json'],capture_output=True,text=True,check=True)
+            assert not json.loads(restored_goal.stdout)['deleted'] and not goals.deleted(goals.find(bid,goal['id']))
+            assert not selected_chat.get('continuation') and job['chat_id'] in {c['id'] for c in call('/api/goals?business='+bid+'&id='+goal['id'])['chats']}
             file.unlink();call('/api/context/resolve',{'business':bid,'references':refs},400)
             call('/api/goals',{'business':bid,'action':'continuation','chat_id':job['chat_id'],'mode':'native','until':time.time()+3600},400)
             result=call('/api/goals',{'business':bid,'action':'save','id':goal['id'],'status':'paused'})

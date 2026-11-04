@@ -1,6 +1,6 @@
 /* Exercise the shipped composer module without another browser/build dependency. */
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict'),crypto=require('node:crypto');
-const nodes=new Map(),events={},calls=[],pending=[],newChats=[];let copied='',slowResolve=null,slowGoal=null,reusedGoal='',failGoalLink=false;
+const nodes=new Map(),events={},calls=[],pending=[],newChats=[];let copied='',slowResolve=null,slowGoal=null,reusedGoal='',reusedNewGoal,failGoalLink=false;
 function node(id){
  if(!nodes.has(id))nodes.set(id,{innerHTML:'',textContent:'',hidden:id==='#composer-menu',isConnected:true,value:'',dataset:{},selectionStart:0,attributes:{},listeners:{},
   addEventListener(name,fn){(this.listeners[name]??=[]).push(fn);},querySelectorAll(){return [];},querySelector(s){return node(id+' '+s);},
@@ -8,7 +8,7 @@ function node(id){
   insertAdjacentHTML(where,text){this.innerHTML+=text;},setRangeText(text,start,end){this.value=this.value.slice(0,start)+text+this.value.slice(end);this.selectionStart=start+text.length;}});
  return nodes.get(id);
 }
-const state={business:'studio',data:{workspace:'A',connection:{selected:'configured'},records:[{ref:'obj_goal',type:'Objective',title:'Launch'}]},chatMeta:null,chat:[],selectedFiles:[],fileDetailTicket:0};
+const state={business:'studio',data:{workspace:'A',connection:{selected:'configured'},records:[{ref:'obj_goal',type:'Objective',title:'Launch',data:{id:'obj_goal',name:'Launch',status:'active'}},{ref:'obj_effort',type:'Objective',title:'Proposal',data:{id:'obj_effort',name:'Proposal',status:'active',extensions:{businessos:{goal:{scope:'chat',workspace_goal_ref:'obj_goal'}}}}}]},chatMeta:null,chat:[],selectedFiles:[],fileDetailTicket:0};
 const fixture={kind:'file',id:'attachments/studio/research.txt',label:'Research',description:'Workspace file'};
 state.pendingComposerDraft={references:[fixture],goal_id:'obj_goal'};
 const context={window:{},state,URLSearchParams,TextEncoder,Uint8Array,crypto:crypto.webcrypto,setTimeout,clearTimeout,
@@ -16,6 +16,7 @@ const context={window:{},state,URLSearchParams,TextEncoder,Uint8Array,crypto:cry
  document:{querySelector:()=>null,addEventListener:(name,fn)=>(events[name]??=[]).push(fn)},$:node,
  esc:v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),
  pretty:v=>typeof v==='string'?v:JSON.stringify(v),human:v=>v,empty:v=>`<p>${v}</p>`,notice(){},
+ goalInfo:g=>g?.extensions?.businessos?.goal||{},workspaceGoalRecords:()=>state.data.records.filter(r=>r.type==='Objective'&&r.data),
  navigator:{clipboard:{writeText:async text=>{copied=text;}}},
  chatScope:()=>JSON.stringify([state.data.workspace,state.business,state.chatMeta?.id||'']),
  rememberChatDraft(){},renderComposerFiles(){context.window.auraCompose?.render();},composerConnection:()=>({kind:'configured',model:'fixture'}),
@@ -24,7 +25,7 @@ const context={window:{},state,URLSearchParams,TextEncoder,Uint8Array,crypto:cry
  newShellChat:async draft=>{newChats.push(draft);state.chatMeta=null;node('#request').value=draft?.text||'';},
  api:async(path,data)=>{calls.push({path,data});
   if(path.startsWith('/api/context?')){if(path.includes('q=slow'))return new Promise(resolve=>{slowResolve=resolve;});return {items:[fixture],total:1};}
-  if(path==='/api/context/message')return {text:state.chat[data.index].text,files:[],references:[fixture],goal_id:reusedGoal,connection:{kind:'configured'}};
+  if(path==='/api/context/message')return {text:state.chat[data.index].text,files:[],references:[fixture],goal_id:reusedGoal,new_chat_goal_id:reusedNewGoal,connection:{kind:'configured'}};
   if(path.startsWith('/api/goals?'))return new Promise(resolve=>{slowGoal=resolve;});
   if(path==='/api/schedules')return {items:[{id:'task',name:'Review',description:'basis'}],notes:[]};
   if(path==='/api/goals'&&data.action==='save')return {goal:{id:data.id||'obj_created'}};
@@ -39,6 +40,7 @@ function input(text){const el=node('#request');el.value=text;el.selectionStart=t
 (async()=>{
  assert.equal(ui.draft().references[0].id,fixture.id,'A composer module loaded after initial hydration must restore selected context');
  ui.restore({references:[{...fixture,label:'<Research>'}],goal_id:'obj_goal'});assert.equal(ui.draft().references.length,1);assert.match(node('#composer-contexts').innerHTML,/&lt;Research&gt;/);
+ ui.restore({goal_id:'obj_effort'});assert.match(node('#composer-contexts').innerHTML,/Chat goal: Proposal/);assert.match(node('#composer-contexts').innerHTML,/Workspace goal: Launch/);
  state.contextReferences=[];ui.restore({});await ui.choose();
  node('#compose-found').onclick({target:{closest:()=>({dataset:{composePick:'0'}})}});await Promise.all(pending);assert.equal(state.contextReferences[0].id,fixture.id);
  input('owner@example.com');await delay();assert.equal(node('#composer-menu').hidden,true,'Email addresses must stay ordinary text');
@@ -53,6 +55,8 @@ function input(text){const el=node('#request');el.value=text;el.selectionStart=t
  node('#request').value='Keep my draft';await ui.reuse(0);assert.equal(node('#request').value,'Keep my draft');
  node('#reuse-add').onclick();assert.match(node('#request').value,/Keep my draft\n\nOriginal/);
  await ui.reuse(0,true);assert.equal(newChats.at(-1).text,state.chat[0].text);assert.equal(newChats.at(-1).references[0].id,fixture.id);
+ state.chatMeta={id:'chat',agent:'configured'};reusedGoal='obj_effort';reusedNewGoal='obj_goal';await ui.reuse(0,true);assert.equal(newChats.at(-1).goal_id,'obj_goal','A new chat must use only the shared goal, not another chat’s effort');
+ state.chatMeta={id:'chat',agent:'configured'};reusedNewGoal='';await ui.reuse(0,true);assert.equal(newChats.at(-1).goal_id,'','An explicitly unavailable transfer must not fall back to the original effort');reusedNewGoal=undefined;
  assert.equal(calls.some(c=>c.path==='/api/chat'),false,'Reuse never submits model work');
  state.chatMeta={id:'chat',goal_id:'obj_current'};node('#request').value='';reusedGoal='obj_old';await ui.reuse(0);
  assert.equal(node('#request').value,'','A different original goal must require an explicit reuse choice');
@@ -73,7 +77,14 @@ function input(text){const el=node('#request');el.value=text;el.selectionStart=t
  failGoalLink=false;submit();await flush();await Promise.all(pending);
  assert.equal(state.chatMeta.goal_id,'obj_created','Creating a chat goal must link it to that chat');
  const saves=calls.filter(c=>c.path==='/api/goals'&&c.data.action==='save');assert.equal(saves.at(-2).data.status,'active');assert.equal(saves.at(-1).data.id,'obj_created','Retrying a failed link must not create duplicate goals');
+ assert.equal(saves.at(-2).data.scope,'chat');assert.equal(saves.at(-2).data.chat_id,'chat','Chat-created goals must carry their scope and owner');
  assert.equal(calls.some(c=>c.path==='/api/chat'),false,'Creating a goal must not submit a model request');
+ const manager=ui.manageGoals();await flush();slowGoal({items:[{id:'obj_goal',name:'Launch',status:'active'},{...state.data.records[1].data,status:'completed'}],deleted_items:[{id:'obj_removed',name:'Old effort',status:'paused',extensions:{businessos:{goal:{scope:'chat',deleted_at:1}}}}]});await manager;
+ assert.match(node('#goal-manager-list').innerHTML,/Launch/);assert.doesNotMatch(node('#goal-manager-list').innerHTML,/Proposal|Old effort/);
+ node('#goal-manager-show').value='completed';node('#goal-manager-show').onchange();assert.match(node('#goal-manager-list').innerHTML,/Proposal/);assert.doesNotMatch(node('#goal-manager-list').innerHTML,/Launch/);
+ node('#goal-manager-show').value='deleted';node('#goal-manager-show').onchange();assert.match(node('#goal-manager-list').innerHTML,/Old effort/);
+ const deletes=calls.filter(c=>c.data?.action==='delete').length;click({goalDelete:'obj_effort',linkedTasks:'0'});await flush();assert.match(node('#detail-content').innerHTML,/data-confirm-delete-goal=/);assert.equal(calls.filter(c=>c.data?.action==='delete').length,deletes,'Opening deletion confirmation must not delete the goal');
+ const promotes=calls.filter(c=>c.data?.scope==='workspace').length;click({goalPromote:'obj_effort'});await flush();assert.match(node('#detail-content').innerHTML,/connection to the existing workspace goal will be removed/);assert.equal(calls.filter(c=>c.data?.scope==='workspace').length,promotes,'Promotion must explain the removed parent connection before changing scope');
  // Exercise refresh completion, failure and navigation against the shipped functions.
  const appSource=fs.readFileSync(require('node:path').join(require('node:path').dirname(process.argv[2]),'app.js'),'utf8');
  let finishRead,failRead,refreshMessage='',refreshScope='chat';

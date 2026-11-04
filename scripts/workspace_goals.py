@@ -10,13 +10,86 @@ from _common import workspace_root,workspace_scope,resolve_business
 from remember import remember
 
 
-def goals(bid):
+def metadata(goal):
+    value=goal.get('extensions') or {}
+    for key in ('businessos','goal'):
+        if not isinstance(value,dict):return {}
+        value=value.get(key,{})
+    return value if isinstance(value,dict) else {}
+
+
+def scope(goal):return 'chat' if metadata(goal).get('scope')=='chat' else 'workspace'
+
+
+def deleted(goal):return bool(metadata(goal).get('deleted_at'))
+
+
+def available(goal):return not deleted(goal) and goal.get('status','active')=='active'
+
+
+def extensions(goal,info):
+    value=json.loads(json.dumps(goal.get('extensions') or {}))
+    if not isinstance(value.get('businessos',{}),dict):raise ValueError('This goal’s saved metadata needs attention before editing.')
+    value.setdefault('businessos',{})['goal']=info
+    return value
+
+
+def related(bid,goal):
+    """At most one effort and its explicitly selected workspace outcome."""
+    result=[goal];parent=metadata(goal).get('workspace_goal_ref')
+    if scope(goal)=='chat' and parent:
+        try:item=find(bid,parent)
+        except ValueError:return result
+        if scope(item)=='workspace':result.append(item)
+    return result
+
+
+def check_chat(bid,ident,chat_id):
+    goal=find(bid,ident);owner=metadata(goal).get('chat_id')
+    if scope(goal)=='chat' and owner and owner!=chat_id:
+        raise ValueError('This goal belongs to another chat. Choose a workspace goal or create a goal for this chat.')
+    return goal
+
+
+def bind_chat(bid,ident,chat_id):
+    goal=check_chat(bid,ident,chat_id)
+    if scope(goal)=='chat' and not metadata(goal).get('chat_id'):
+        info={**metadata(goal),'chat_id':chat_id}
+        remember(bid,{'objects':[{'object_ref':ident,'content':{'extensions':extensions(goal,info)},'replace_extensions':True}]})
+    return find(bid,ident)
+
+
+def remove(bid,ident,restore=False):
+    goal=find(bid,ident,include_deleted=True);info=dict(metadata(goal))
+    if restore:
+        if not deleted(goal):return goal
+        status=info.pop('deleted_status',goal.get('status','active'));info.pop('deleted_at',None)
+    else:
+        if deleted(goal):return goal
+        info.update(deleted_at=time.time(),deleted_status=goal.get('status','active'));status='paused'
+    info['revision']=time.time_ns()
+    remember(bid,{'objects':[{'object_ref':ident,'content':{'status':status,'extensions':extensions(goal,info)},'replace_extensions':True}]})
+    return find(bid,ident,include_deleted=True)
+
+
+def changed(app,bid,ident,remove_links=False):
+    affected={ident,*[g['id'] for g in goals(bid,include_deleted=True) if metadata(g).get('workspace_goal_ref')==ident]}
+    for chat in app.preferences['chats']:
+        if chat['business_id']!=bid or chat.get('goal_id') not in affected:continue
+        history=chat.setdefault('goal_history',[])
+        for value in (chat.get('goal_id'),ident):
+            if value and value not in history:history.append(value)
+        chat.pop('continuation',None)
+        if remove_links and chat.get('goal_id')==ident:chat['goal_id']=''
+
+
+def goals(bid,include_deleted=False):
     if resolve_business(bid)['status']!='resolved':raise ValueError('Choose an existing business.')
     from workspace_ui import records
-    return [row['data'] for row in records(bid)[0] if row['type']=='Objective']
+    return [row['data'] for row in records(bid)[0] if row['type']=='Objective' and (include_deleted or not deleted(row['data']))]
 
 
-def find(bid,ident):
+def find(bid,ident,include_deleted=False):
     if resolve_business(bid)['status']!='resolved' or not isinstance(ident,str) or not re.fullmatch(r'obj_[A-Za-z0-9_-]+',ident):raise ValueError('Choose an existing goal in this business.')
     from canonical_store import canonical_path
     from workspace_sharing import unlinked
@@ -24,15 +97,25 @@ def find(bid,ident):
     try:goal=json.loads(path.read_text(encoding='utf-8'))
     except FileNotFoundError:raise ValueError('This goal is no longer available in the selected business.') from None
     if goal.get('id')!=ident or goal.get('business_id')!=bid or goal.get('object_type')!='Objective':raise ValueError('This goal does not belong to the selected business.')
+    if deleted(goal) and not include_deleted:raise ValueError('This goal was deleted. Restore it from Deleted goals or choose another goal.')
     return goal
 
 
-def fingerprint(goal):return hashlib.sha256(json.dumps({k:goal.get(k) for k in ('name','target','horizon','status')},sort_keys=True).encode()).hexdigest()
+def fingerprint(goal):
+    value={k:goal.get(k) for k in ('name','target','horizon','status')}
+    info=metadata(goal)
+    if info:value['scope']={k:info[k] for k in ('scope','workspace_goal_ref','deleted_at','revision') if k in info}
+    return hashlib.sha256(json.dumps(value,sort_keys=True).encode()).hexdigest()
+
+
+def continuation_basis(bid,goal):
+    items=related(bid,goal)
+    return fingerprint(goal) if len(items)==1 else hashlib.sha256(json.dumps([fingerprint(g) for g in items]).encode()).hexdigest()
 
 
 def guidance(goal):
     return ('Goal context: '+json.dumps({k:goal[k] for k in ('id','name','target','horizon','status') if k in goal},ensure_ascii=False)+
-        '\nWork toward the user’s actual assignment. A finished reply does not complete the goal. '
+        '\nThis is a '+scope(goal)+' goal. Follow the user’s latest assignment; this goal never overrides newer instructions. A finished reply does not complete the goal. '
         'Preserve meaningful artifacts, decisions and a concise next step at natural stopping points, without repeated summary calls. '
         'When preserving a relevant Asset, its extensions.businessos.goal_ref can link it to this goal. '
         'Use normal memory helpers; do not save a full conversation or private reasoning as goal history. '
@@ -43,6 +126,25 @@ def guidance(goal):
 def save(bid,data):
     ident=data.get('id');old=find(bid,ident) if ident else None
     content={}
+    info=dict(metadata(old or {}));chosen=data.get('scope',scope(old or {}))
+    if chosen not in {'chat','workspace'}:raise ValueError('Choose a chat goal or workspace goal.')
+    if old and scope(old)=='workspace' and chosen=='chat':raise ValueError('Create a separate chat goal instead of moving a shared workspace goal.')
+    if not old or 'scope' in data:info['scope']=chosen
+    if chosen=='chat':
+        owner=data.get('chat_id',info.get('chat_id',''))
+        if not isinstance(owner,str) or owner and not re.fullmatch(r'[A-Za-z0-9_-]{1,100}',owner):raise ValueError('Choose a valid chat for this goal.')
+        if info.get('chat_id') and owner!=info['chat_id']:raise ValueError('A chat goal keeps its original chat.')
+        if owner:info['chat_id']=owner
+        if 'workspace_goal_id' in data:
+            parent=data['workspace_goal_id']
+            if parent:
+                if not isinstance(parent,str) or parent==ident or scope(find(bid,parent))!='workspace':raise ValueError('Choose a workspace goal to connect.')
+                info['workspace_goal_ref']=parent
+            else:info.pop('workspace_goal_ref',None)
+    else:
+        if data.get('workspace_goal_id'):raise ValueError('Workspace goals cannot be nested.')
+        info.pop('chat_id',None);info.pop('workspace_goal_ref',None)
+    if info!=metadata(old or {}):content['extensions']=extensions(old or {},info)
     for key,limit in [('name',2000),('horizon',300),('status',20)]:
         if key in data:
             value=data[key]
@@ -57,19 +159,26 @@ def save(bid,data):
     remove=[k for k in ('target','horizon') if k in data and not str(data[k]).strip() and old and k in old]
     content={k:v for k,v in content.items() if k not in remove}
     if not content and not remove:raise ValueError('Choose a goal change to save.')
+    info['revision']=time.time_ns();content['extensions']=extensions(old or {},info)
     item={'object_ref':ident} if old else {'object_type':'Objective'}
-    result=remember(bid,{'objects':[{**item,'content':content,**({'remove_fields':remove} if remove else {})}]})
+    result=remember(bid,{'objects':[{**item,'content':content,**({'replace_extensions':True} if old and 'extensions' in content else {}),**({'remove_fields':remove} if remove else {})}]})
     return find(bid,result['objects'][0]['id'])
 
 
 def link_chat(preferences,bid,chat_id,goal_id):
     chat=next((c for c in preferences['chats'] if c['id']==chat_id and c['business_id']==bid and c.get('workspace',str(workspace_root()))==str(workspace_root())),None)
     if not chat:raise ValueError('Choose a chat in this workspace and business.')
-    if goal_id:find(bid,goal_id)
+    if goal_id:remember_link(bid,chat,bind_chat(bid,goal_id,chat_id))
     chat['goal_id']=goal_id or ''
     # A new assignment needs its own deliberate continuation authorization.
     chat.pop('continuation',None)
     return chat
+
+
+def remember_link(bid,chat,goal):
+    history=chat.setdefault('goal_history',[])
+    for item in related(bid,goal):
+        if item['id'] not in history:history.append(item['id'])
 
 
 def link_asset(bid,asset_id,goal_id):
@@ -87,25 +196,47 @@ def set_continuation(preferences,bid,chat_id,mode='manual',until=None):
     chat=next((c for c in preferences['chats'] if c['id']==chat_id and c['business_id']==bid and c.get('workspace',str(workspace_root()))==str(workspace_root())),None)
     if not chat or not chat.get('goal_id'):raise ValueError('Choose a goal for this chat first.')
     goal=find(bid,chat['goal_id'])
-    if mode=='native' and goal.get('status','active')!='active':raise ValueError('Activate the goal before authorizing automatic continuation.')
-    policy=continuation(chat['agent'],mode,until);policy['goal_basis']=fingerprint(goal)
+    if mode=='native' and metadata(goal).get('workspace_goal_ref'):find(bid,metadata(goal)['workspace_goal_ref'])
+    if mode=='native' and any(not available(g) for g in related(bid,goal)):raise ValueError('Activate the chat goal and connected workspace goal before authorizing automatic continuation.')
+    policy=continuation(chat['agent'],mode,until);policy['goal_basis']=continuation_basis(bid,goal)
     chat['continuation']=policy
     return policy
 
 
-def inventory(app,bid,ident=None):
+def select_goals(items,show='active',scope_filter='workspace',chat_id=None):
+    if show not in {'active','current','completed','deleted','all'} or scope_filter not in {'workspace','chat','all'}:raise ValueError('Choose an available goal view.')
+    def matches(goal):
+        if scope_filter!='all' and scope(goal)!=scope_filter:return False
+        if chat_id and (scope(goal)!='chat' or metadata(goal).get('chat_id')!=chat_id):return False
+        if show=='deleted':return deleted(goal)
+        if deleted(goal):return False
+        if show=='active':return available(goal)
+        if show=='completed':return goal.get('status','active')=='completed'
+        return show=='all' or goal.get('status','active')!='completed'
+    return [g for g in items if matches(g)]
+
+
+def inventory(app,bid,ident=None,show='active',scope_filter='workspace',chat_id=None):
     from workspace_ui import records
     rows=app.cached_read(('context-records',bid),lambda:records(bid)[0],seconds=3)
-    items=[r['data'] for r in rows if r['type']=='Objective'];selected=find(bid,ident) if ident else None
+    all_items=[r['data'] for r in rows if r['type']=='Objective'];selected=find(bid,ident,include_deleted=True) if ident else None
+    if chat_id and not any(c['id']==chat_id and c['business_id']==bid and c.get('workspace',app.workspace_path)==app.workspace_path for c in app.preferences['chats']):raise ValueError('Choose a chat in this workspace and business.')
+    items=select_goals(all_items,show,scope_filter,chat_id)
+    linked_ids={ident,*[g['id'] for g in all_items if selected and metadata(g).get('workspace_goal_ref')==ident]}
+    owners={metadata(g).get('chat_id') for g in all_items if selected and g['id'] in linked_ids}
     chats=[{k:c[k] for k in ('id','title','agent','summary','status','updated','goal_id','work_state','continuation') if k in c} for c in app.preferences['chats']
-           if c['business_id']==bid and c.get('workspace',app.workspace_path)==app.workspace_path and c.get('goal_id') and (not ident or c['goal_id']==ident)]
+           if c['business_id']==bid and c.get('workspace',app.workspace_path)==app.workspace_path and
+              (c.get('goal_id') or c.get('goal_history') or c['id'] in owners) and (not ident or c.get('goal_id')==ident or ident in c.get('goal_history',[]) or c['id'] in owners)]
     links=app.preferences.get('goal_tasks',{}).get(bid,{})
     chats.sort(key=lambda c:c.get('updated',0),reverse=True)
     assets=[]
     for row in rows:
         obj=row['data']
-        if ident and row['type']=='Asset' and (obj.get('extensions') or {}).get('businessos',{}).get('goal_ref')==ident:assets.append({'id':obj['id'],'name':obj.get('business_role') or obj['id'],'path':obj.get('location_reference','')})
-    return {'items':items,'goal':selected,'goal_basis':fingerprint(selected) if selected else None,'chats':chats,'task_links':{task:goal for task,goal in links.items() if not ident or goal==ident},'assets':assets,
+        if ident and row['type']=='Asset' and (obj.get('extensions') or {}).get('businessos',{}).get('goal_ref') in linked_ids:assets.append({'id':obj['id'],'name':obj.get('business_role') or obj['id'],'path':obj.get('location_reference','')})
+    deleted_items=[g for g in all_items if deleted(g) and (scope_filter=='all' or scope(g)==scope_filter) and (not chat_id or metadata(g).get('chat_id')==chat_id)] if show=='all' else []
+    return {'items':items,'deleted_items':deleted_items,'goal':selected,'scope':scope(selected) if selected else None,'deleted':deleted(selected) if selected else False,
+            'workspace_goal':next(iter(related(bid,selected)[1:]),None) if selected else None,
+            'goal_basis':continuation_basis(bid,selected) if selected else None,'chats':chats,'task_links':{task:goal for task,goal in links.items() if not ident or goal==ident},'assets':assets,
             'running_chats':[j['chat_id'] for j in app.running_jobs(workspace_root()) if j['business_id']==bid],'workspace':app.workspace_path}
 
 
@@ -120,14 +251,21 @@ def continuation(kind,mode='manual',until=None):
             'note':'Uses retries already enabled by the native app. No scheduled restart or guarantee of quota availability. Aura and the native connection must remain running.'}
 
 
+def review_reason(bid,goal_id,basis=None):
+    try:goal=find(bid,goal_id)
+    except ValueError:return 'The selected goal is no longer available.'
+    if metadata(goal).get('workspace_goal_ref'):
+        try:find(bid,metadata(goal)['workspace_goal_ref'])
+        except ValueError:return 'The connected workspace goal is no longer available. Review the link.'
+    if any(not available(g) for g in related(bid,goal)):return 'A selected goal is paused or completed.'
+    if basis and continuation_basis(bid,goal)!=basis:return 'The goal changed. Review it before continuing.'
+    return ''
+
+
 def guard(bid,goal_id,basis,policy):
     if policy.get('mode')!='native':return 'Automatic continuation is off.'
     if time.time()>policy.get('until',0):return 'Automatic continuation has expired.'
-    try:goal=find(bid,goal_id)
-    except ValueError:return 'The selected goal is no longer available.'
-    if goal.get('status','active')!='active':return 'The goal is paused or completed.'
-    if fingerprint(goal)!=basis:return 'The goal changed. Review it before continuing.'
-    return ''
+    return review_reason(bid,goal_id,basis)
 
 
 def live_change(url,bid,payload,route='/api/goals'):
@@ -149,19 +287,21 @@ def live_change(url,bid,payload,route='/api/goals'):
 
 
 def main():
-    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('action',choices=['list','show','save','check','link-chat','link-asset','continuation'])
+    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('action',choices=['list','show','save','check','link-chat','link-asset','continuation','delete','restore'])
     parser.add_argument('--workspace',type=Path,default=workspace_root());parser.add_argument('--business-id',required=True);parser.add_argument('--id');parser.add_argument('--basis');parser.add_argument('--input',type=Path);parser.add_argument('--json',action='store_true')
     parser.add_argument('--chat');parser.add_argument('--asset');parser.add_argument('--mode',choices=['manual','native'],default='manual');parser.add_argument('--until',type=float)
-    parser.add_argument('--url',default='http://127.0.0.1:4187',help='Running local Aura address for chat links and continuation choices')
+    parser.add_argument('--scope',choices=['workspace','chat','all'],default='workspace');parser.add_argument('--show',choices=['active','current','completed','deleted','all'],default='active')
+    parser.add_argument('--url',default='http://127.0.0.1:4187',help='Running local Aura address for chat links, deletion/recovery and continuation choices')
     args=parser.parse_args()
     with workspace_scope(args.workspace):
-        if args.action in {'link-chat','link-asset','continuation'}:
+        if args.action in {'delete','restore'}:result=live_change(args.url,args.business_id,{'action':args.action,'id':args.id})
+        elif args.action in {'link-chat','link-asset','continuation'}:
             result=link_asset(args.business_id,args.asset,args.id) if args.action=='link-asset' else live_change(args.url,args.business_id,
                 {'action':'link_chat','chat_id':args.chat,'goal_id':args.id} if args.action=='link-chat' else {'action':'continuation','chat_id':args.chat,'mode':args.mode,'until':args.until})
-        else:result=save(args.business_id,json.loads(args.input.read_text(encoding='utf-8'))) if args.action=='save' else find(args.business_id,args.id) if args.action in {'show','check'} else {'items':goals(args.business_id)}
+        else:result=save(args.business_id,json.loads(args.input.read_text(encoding='utf-8'))) if args.action=='save' else find(args.business_id,args.id,include_deleted=args.action=='check' or args.show=='deleted') if args.action in {'show','check'} else {'items':select_goals(goals(args.business_id,include_deleted=True),args.show,args.scope,args.chat)}
         if args.action=='check':
-            eligible=result.get('status','active')=='active' and (not args.basis or args.basis==fingerprint(result))
-            result={'eligible':eligible,'goal':result,'reason':'' if eligible else 'The goal is paused, completed or changed; review before continuing.'}
+            reason=review_reason(args.business_id,args.id,args.basis)
+            result={'eligible':not reason,'goal':result,'reason':reason}
     print(json.dumps(result,ensure_ascii=False))
 
 

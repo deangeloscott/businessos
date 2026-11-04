@@ -18,7 +18,7 @@ def digest(value):return hashlib.sha256(json.dumps(value,sort_keys=True,ensure_a
 
 def inventory(app,bid,query='',kind='',limit=20,assistant_id=None):
     from workspace_ui import records
-    import workspace_assistants,workspace_activity
+    import workspace_assistants,workspace_activity,workspace_goals
     if kind and kind not in KINDS:raise ValueError('Choose a supported context type.')
     limit=max(1,min(60,int(limit)));query=str(query).strip().casefold();rows=[]
     def add(k,ident,label,description='',variant=None,request_id=None):
@@ -26,6 +26,7 @@ def inventory(app,bid,query='',kind='',limit=20,assistant_id=None):
         if query and query not in (label+' '+description).casefold():return
         rows.append({'kind':k,'id':ident,'label':label,'description':description[:300],**({'variant':variant} if variant else {}),**({'request_id':request_id} if request_id else {})})
     for row in app.cached_read(('context-records',bid),lambda:records(bid)[0],seconds=3):
+        if row['type']=='Objective' and (not workspace_goals.available(row['data']) or workspace_goals.scope(row['data'])!='workspace'):continue
         typ=row['type'];add('goal' if typ=='Objective' else 'record',row['ref'],row['title'],'Goal' if typ=='Objective' else typ)
     if not kind or kind=='file':
         for row in app.file_inventory(bid,{'q':query,'limit':60})['items']:
@@ -55,7 +56,9 @@ def resolve(app,bid,references,goal_id=None):
     if not isinstance(references,list) or len(references)>MAX_REFS:raise ValueError('Choose up to 12 context references.')
     receipt=[];guidance=[];previews=[];seen=set();index=None;catalog=None
     chosen=list(references)
-    if goal_id and not any(isinstance(r,dict) and r.get('kind')=='goal' and r.get('id')==goal_id for r in chosen):chosen.append({'kind':'goal','id':goal_id})
+    if goal_id:
+        for goal in workspace_goals.related(bid,workspace_goals.find(bid,goal_id)):
+            if not any(isinstance(r,dict) and r.get('kind')=='goal' and r.get('id')==goal['id'] for r in chosen):chosen.append({'kind':'goal','id':goal['id']})
     for ref in chosen:
         if not isinstance(ref,dict) or not isinstance(ref.get('kind'),str) or ref['kind'] not in KINDS or not isinstance(ref.get('id'),str) or not ref['id'] or len(ref['id'])>2000:
             raise ValueError('Select an available context item again.')
@@ -74,6 +77,7 @@ def resolve(app,bid,references,goal_id=None):
             if index is None:index={r['ref']:r for r in records(bid)[0]}
             item=index.get(ident)
             if not item or (kind=='goal' and item['type']!='Objective'):raise ValueError('A selected record is no longer available in this business. Remove or choose it again.')
+            if item['type']=='Objective' and workspace_goals.deleted(item['data']):raise ValueError('This goal was deleted. Restore it or remove it from the selected context.')
             row.update(label=item['title'],path=str(workspace_root()/item['path']),revision=digest(item['data']))
             text=f'{"Goal" if kind=="goal" else "Record"}: {item["title"]}\nRead {row["path"]} only when relevant.'
             if kind=='goal':text+='\n'+workspace_goals.guidance(item['data'])
@@ -154,9 +158,18 @@ def reusable(app,bid,chat_id,index,expected=None):
         if index>=len(messages):raise ValueError('This chat changed. Reopen the message before reusing it.')
         row=messages[index]
         if expected is not None and expected!=message_key(row):raise ValueError('This chat changed. Reopen the message before reusing it.')
+        import workspace_goals
+        new_chat_goal='';goal_receipts={row.get('goal_id')}
+        if row.get('goal_id'):
+            try:
+                original=workspace_goals.find(bid,row['goal_id'],include_deleted=True)
+                parent=workspace_goals.metadata(original).get('workspace_goal_ref');goal_receipts.add(parent)
+                candidate=parent if workspace_goals.scope(original)=='chat' else original['id']
+                if workspace_goals.available(original) and candidate and workspace_goals.available(workspace_goals.find(bid,candidate)):new_chat_goal=candidate
+            except ValueError:pass
         return {'text':row.get('text',''),'role':row.get('role'),'files':row.get('files',[]),
-                'references':[{k:r[k] for k in ('kind','id','label','variant','request_id') if k in r} for r in row.get('references',[]) if not (r['kind']=='file' and r['id'] in row.get('files',[])) and not (r['kind']=='goal' and r['id']==row.get('goal_id'))],
-                'goal_id':row.get('goal_id') or '', 'source_chat':chat_id,'source_message':index,
+                'references':[{k:r[k] for k in ('kind','id','label','variant','request_id') if k in r} for r in row.get('references',[]) if not (r['kind']=='file' and r['id'] in row.get('files',[])) and not (r['kind']=='goal' and r['id'] in goal_receipts)],
+                'goal_id':row.get('goal_id') or '', 'new_chat_goal_id':new_chat_goal,'source_chat':chat_id,'source_message':index,
                 'connection':{'kind':chat['agent'],'model':chat.get('model',''),'effort':chat.get('effort','')}}
 
 
