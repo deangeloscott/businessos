@@ -125,7 +125,7 @@ async function render(view){
   else if(info.kind==='pdf')await previewPdf(view,area);
   else if(info.kind==='media'){
     const audio=/\.(mp3|wav|ogg|m4a|aac|flac|opus)$/i.test(info.name),element=document.createElement(audio?'audio':'video');element.controls=true;element.preload='metadata';element.src=media(view);element.className='media-preview';area.replaceChildren(element);
-  }else area.innerHTML=`<div class="empty"><strong>${info.kind==='office'?'Open this document in an editor':'No inline preview'}</strong><p>${info.kind==='office'?'Choose an editor with Open in above.':''}</p></div>`;
+  }else area.innerHTML=`<div class="empty"><strong>${info.kind==='office'?'Open this file in an editor':'Preview unavailable'}</strong><p>${info.kind==='office'?'Choose an editor with Open in above.':''}</p></div>`;
 }
 async function editTable(view,area){
   css('/vendor/data-grid.css');const {Tabulator}=await import('/vendor/data-grid.js');if(!mounted(view,area))return;
@@ -261,7 +261,7 @@ window.auraFiles={detach,hasUnsaved:()=>[...drafts.values()].some(d=>d.dirty)};
 $('#detail').addEventListener('close',()=>{if(!$('#detail').open)detach();});
 document.addEventListener('keydown',event=>{if(current&&live(current)&&(event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='s'){event.preventDefault();if(current.dirty)save(current);}});
 window.addEventListener('beforeunload',event=>{if(imports.size||[...drafts.values()].some(d=>d.memoryOnly)||(current?.memoryOnly&&current.dirty)){event.preventDefault();event.returnValue='';}});
-window.addEventListener('focus',async()=>{const view=current;if(!view||!live(view)||view.dirty)return;try{const fresh=await api(view,'/api/documents?'+new URLSearchParams({business:view.ctx.business,workspace:view.ctx.workspace,path:view.ctx.ref,option:view.ctx.option||''}));if(live(view)&&fresh.workspace===view.ctx.workspace&&fresh.revision!==view.info.revision){await openFile(view.ctx);if(current)status(current,'Updated from the file.');}}catch{/* The current preview remains available. */}});
+window.addEventListener('focus',async()=>{const view=current;if(!view||!live(view)||view.dirty)return;try{const fresh=await api(view,'/api/documents?'+new URLSearchParams({business:view.ctx.business,workspace:view.ctx.workspace,path:view.ctx.ref,option:view.ctx.option||''}));if(live(view)&&fresh.workspace===view.ctx.workspace&&fresh.revision!==view.info.revision){await openFile(view.ctx);}}catch{/* The current preview remains available. */}});
 
 async function fileHistory(view,button){
   const panel=view.host.querySelector('#file-history-panel');panel.hidden=!panel.hidden;button.setAttribute('aria-expanded',String(!panel.hidden));if(panel.hidden)return;

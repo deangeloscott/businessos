@@ -1459,7 +1459,7 @@ class Workspace:
         managed=False
         if ref.startswith('library/'):
             item=workspace_library.find(self.library_items()['items'],ref[8:])
-            if not item or item['kind'] not in {'Skill','Workflow','Recipe'}:raise ValueError('Choose a document in your library.')
+            if not item or item['kind'] not in {'Skill','Workflow','Recipe'}:raise ValueError('Choose a file in your library.')
             variants=item.get('variants') or [item]
             chosen=next((v for v in variants if v['key']==option),None) if option else variants[0]
             if not chosen:raise ValueError('Choose an available library version.')
@@ -1824,7 +1824,7 @@ class Workspace:
                         if not original or original.get('status')!='paused':
                             raise ValueError('The new task was found, but the original is not confirmed paused. Check both tasks in their apps.')
                 execution.check()
-                job.update(task_id=confirmed['id'],message={'create':'Task created.','pause':'Task paused.','resume':'Task resumed.','move':'Task moved.'}.get(action,'Task updated.'))
+                job.update(task_id=confirmed['id'],message={'create':'Task created.','pause':'Task paused.','resume':'Task resumed.','move':'Task moved.'}.get(action,'Changes saved.'))
                 if assistant:
                     with self.lock:
                         self.load_portable()

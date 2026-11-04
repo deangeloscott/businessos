@@ -16,8 +16,8 @@ window.auraWork = (() => {
       const query=$('#assistant-search').value.trim().toLowerCase();
       const items=data.items.filter(p=>(p.name+' '+(p.instructions||'')).toLowerCase().includes(query));
       $('#assistant-list').innerHTML=items.map(p=>{
-        const chats=data.chats.filter(c=>c.assistant_id===p.id),active=chats.filter(c=>(data.running||[]).includes(c.id)).length;
-        return `<article class="card assistant-card"><div class="section-head"><h3>${esc(p.name)}</h3><button type="button" class="secondary" data-assistant-open="${esc(p.id)}">Open assistant</button></div><p>${esc(p.instructions||'Add instructions to give this assistant a purpose.')}</p><p class="row-meta">${chats.length} chats · ${(p.task_ids||[]).length} recurring tasks${active?' · '+active+' working':''}</p></article>`;
+        const chats=data.chats.filter(c=>c.assistant_id===p.id),active=chats.filter(c=>(data.running||[]).includes(c.id)).length,tasks=(p.task_ids||[]).length;
+        return `<article class="card assistant-card"><div class="section-head"><h3>${esc(p.name)}</h3><button type="button" class="secondary" data-assistant-open="${esc(p.id)}">Open assistant</button></div><p>${esc(p.instructions||'Add instructions to give this assistant a purpose.')}</p><p class="row-meta">${chats.length} ${chats.length===1?'chat':'chats'} · ${tasks} recurring ${tasks===1?'task':'tasks'}${active?' · '+active+' working':''}</p></article>`;
       }).join('')||empty(query?'No matching assistants.':'Create an assistant with a name and the instructions you want to reuse.');
     };
     $('#assistant-search').oninput=renderList;renderList();
@@ -35,7 +35,7 @@ window.auraWork = (() => {
       if(key!==currentScope()||!host.isConnected)return;
       const query=search.value.trim().toLowerCase(),matches=chats.filter(c=>(c.title||'').toLowerCase().includes(query));
       host.innerHTML=(matches.length?chatRows(matches,limit):empty(query?'No matching chats.':'No chats yet.'))+
-        (matches.length?`<p class="small-note">${Math.min(limit,matches.length)} of ${matches.length} chats</p>`:'')+
+        (matches.length?`<p class="small-note">${Math.min(limit,matches.length)} of ${matches.length} ${matches.length===1?'chat':'chats'}</p>`:'')+
         (matches.length>limit?'<button type="button" class="text-button" data-assistant-more-chats>Show more chats</button>':'');
     };
     search.oninput=()=>{limit=20;renderChats();};host.onclick=event=>{if(event.target.closest('[data-assistant-more-chats]')){limit+=20;renderChats();}};renderChats();
@@ -121,11 +121,11 @@ window.auraWork = (() => {
     const key=JSON.stringify([state.chatMeta?.id,children,delegationLimit]);host.hidden=!children.length;
     if(key===delegationKey)return;delegationKey=key;
     const opened=new Set([...host.querySelectorAll('details[open]')].map(d=>d.dataset.child));
-    const labels={working:'Working',pending:'Starting',complete:'Completed',error:'Failed',stopped:'Stopped',unconfirmed:'Outcome not reported',partial:'Partial result'};
+    const labels={working:'Working',pending:'Starting',complete:'Completed',error:'Failed',stopped:'Stopped',unconfirmed:'Check result',partial:'Partial result'};
     const parents=new Set(children.map(c=>c.parent_id)),leaves=children.filter(c=>!parents.has(c.id));
     const done=leaves.filter(c=>c.status==='complete').length;
     const ids=new Set(children.map(c=>c.id));
-    host.innerHTML=`<h3>Delegated work <span class="muted">${done} of ${leaves.length} completed</span></h3>${children.slice(0,delegationLimit).map(c=>`<details class="child-agent ${ids.has(c.parent_id)?'child-agent-nested':''}" data-child="${esc(c.id)}" ${opened.has(c.id)?'open':''}><summary><span>${esc(c.name)}${c.model?' · '+esc(c.model):''}</span><span class="child-status ${c.status==='working'?'working':''}">${esc(labels[c.status]||c.status)}</span></summary><div class="child-agent-body">${c.task?`<p class="assistant-instructions">${esc(c.task)}</p>`:''}<p class="small-note">${esc(c.activity||'Native delegation')}${c.started&&c.updated?' · '+Math.max(0,Math.round(c.updated-c.started))+'s observed':''}</p>${c.result?`<div>${chatMarkdown(c.result)}</div>`:'<p class="muted">No result reported yet.</p>'}${c.result_truncated==='true'||c.task_truncated==='true'?'<p class="small-note">Showing a saved excerpt.</p>':''}${state.chatMeta?.agent==='codex'?`<button type="button" class="text-button" data-result-native="${esc(c.id)}" data-result-owner="codex">View native chat</button>`:''}</div></details>`).join('')}${children.length>delegationLimit?'<button type="button" class="text-button" data-delegation-more>Show more agents</button>':''}${children.length-active.size>=50?'<p class="small-note">Showing active agents and recent history. Older work stays in the native chat.</p>':''}`;
+    host.innerHTML=`<h3>Delegated work <span class="muted">${done} of ${leaves.length} completed</span></h3>${children.slice(0,delegationLimit).map(c=>`<details class="child-agent ${ids.has(c.parent_id)?'child-agent-nested':''}" data-child="${esc(c.id)}" ${opened.has(c.id)?'open':''}><summary><span>${esc(c.name)}${c.model?' · '+esc(c.model):''}</span><span class="child-status ${c.status==='working'?'working':''}">${esc(labels[c.status]||c.status)}</span></summary><div class="child-agent-body">${c.task?`<p class="assistant-instructions">${esc(c.task)}</p>`:''}<p class="small-note">${esc(c.activity||'Delegated work')}</p>${c.result?`<div>${chatMarkdown(c.result)}</div>`:'<p class="muted">No result reported yet.</p>'}${c.result_truncated==='true'||c.task_truncated==='true'?'<p class="small-note">Showing a saved excerpt.</p>':''}${state.chatMeta?.agent==='codex'?`<button type="button" class="text-button" data-result-native="${esc(c.id)}" data-result-owner="codex">Open in Codex</button>`:''}</div></details>`).join('')}${children.length>delegationLimit?'<button type="button" class="text-button" data-delegation-more>Show more agents</button>':''}${children.length-active.size>=50?'<p class="small-note">Showing active agents and recent history. Older work stays in your AI app.</p>':''}`;
   }
   async function startAssistant(id,draft=null){
     if(!await load())return;const p=profile(id);if(!p)return;const key=currentScope();await newShellChat(draft);if(key!==currentScope())return;state.newAssistantId=p.id;state.newAssistantName=p.name;const known=state.data.connection.presets?.[p.app],base=!p.app||p.app===composerConnection().kind?composerConnection():{model:'',effort:''};state.newChatConnection={...base,...(known||{}),...(p.app?{kind:p.app}:{}),...Object.fromEntries(['model','effort'].filter(k=>p[k]).map(k=>[k,p[k]]))};rememberChatDraft();renderComposerConnection();$('#request').focus();
