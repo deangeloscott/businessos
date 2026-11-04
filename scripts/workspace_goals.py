@@ -7,7 +7,6 @@ import re
 import time
 
 from _common import workspace_root,workspace_scope,resolve_business
-from remember import remember
 
 
 def metadata(goal):
@@ -25,6 +24,11 @@ def deleted(goal):return bool(metadata(goal).get('deleted_at'))
 
 
 def available(goal):return not deleted(goal) and goal.get('status','active')=='active'
+
+
+def discoverable(obj):
+    """Ordinary organization context uses active shared goals, never another chat's effort."""
+    return obj.get('object_type')!='Objective' or available(obj) and scope(obj)=='workspace'
 
 
 def extensions(goal,info):
@@ -52,6 +56,7 @@ def check_chat(bid,ident,chat_id):
 
 
 def bind_chat(bid,ident,chat_id):
+    from remember import remember
     goal=check_chat(bid,ident,chat_id)
     if scope(goal)=='chat' and not metadata(goal).get('chat_id'):
         info={**metadata(goal),'chat_id':chat_id}
@@ -60,6 +65,7 @@ def bind_chat(bid,ident,chat_id):
 
 
 def remove(bid,ident,restore=False):
+    from remember import remember
     goal=find(bid,ident,include_deleted=True);info=dict(metadata(goal))
     if restore:
         if not deleted(goal):return goal
@@ -124,6 +130,7 @@ def guidance(goal):
 
 
 def save(bid,data):
+    from remember import remember
     ident=data.get('id');old=find(bid,ident) if ident else None
     content={}
     info=dict(metadata(old or {}));chosen=data.get('scope',scope(old or {}))
@@ -138,7 +145,7 @@ def save(bid,data):
         if 'workspace_goal_id' in data:
             parent=data['workspace_goal_id']
             if parent:
-                if not isinstance(parent,str) or parent==ident or scope(find(bid,parent))!='workspace':raise ValueError('Choose a workspace goal to connect.')
+                if not isinstance(parent,str) or parent==ident or (parent!=info.get('workspace_goal_ref') and scope(find(bid,parent))!='workspace'):raise ValueError('Choose a workspace goal to connect.')
                 info['workspace_goal_ref']=parent
             else:info.pop('workspace_goal_ref',None)
     else:
@@ -182,6 +189,7 @@ def remember_link(bid,chat,goal):
 
 
 def link_asset(bid,asset_id,goal_id):
+    from remember import remember
     from workspace_ui import records
     if goal_id:find(bid,goal_id)
     asset=next((r['data'] for r in records(bid)[0] if r['ref']==asset_id and r['type']=='Asset'),None)
@@ -221,7 +229,10 @@ def inventory(app,bid,ident=None,show='active',scope_filter='workspace',chat_id=
     rows=app.cached_read(('context-records',bid),lambda:records(bid)[0],seconds=3)
     all_items=[r['data'] for r in rows if r['type']=='Objective'];selected=find(bid,ident,include_deleted=True) if ident else None
     if chat_id and not any(c['id']==chat_id and c['business_id']==bid and c.get('workspace',app.workspace_path)==app.workspace_path for c in app.preferences['chats']):raise ValueError('Choose a chat in this workspace and business.')
-    items=select_goals(all_items,show,scope_filter,chat_id)
+    chat=next((c for c in app.preferences['chats'] if c['id']==chat_id and c['business_id']==bid),None) if chat_id else None
+    history=set((chat or {}).get('goal_history',[]))|{(chat or {}).get('goal_id')}
+    choices=[g for g in all_items if not chat_id or metadata(g).get('chat_id')==chat_id or g['id'] in history]
+    items=select_goals(choices,show,scope_filter)
     linked_ids={ident,*[g['id'] for g in all_items if selected and metadata(g).get('workspace_goal_ref')==ident]}
     owners={metadata(g).get('chat_id') for g in all_items if selected and g['id'] in linked_ids}
     chats=[{k:c[k] for k in ('id','title','agent','summary','status','updated','goal_id','work_state','continuation') if k in c} for c in app.preferences['chats']
@@ -232,12 +243,39 @@ def inventory(app,bid,ident=None,show='active',scope_filter='workspace',chat_id=
     assets=[]
     for row in rows:
         obj=row['data']
-        if ident and row['type']=='Asset' and (obj.get('extensions') or {}).get('businessos',{}).get('goal_ref') in linked_ids:assets.append({'id':obj['id'],'name':obj.get('business_role') or obj['id'],'path':obj.get('location_reference','')})
-    deleted_items=[g for g in all_items if deleted(g) and (scope_filter=='all' or scope(g)==scope_filter) and (not chat_id or metadata(g).get('chat_id')==chat_id)] if show=='all' else []
+        owner=(obj.get('extensions') or {}).get('businessos',{}).get('goal_ref')
+        if ident and row['type']=='Asset' and owner in linked_ids:assets.append({'id':obj['id'],'name':obj.get('business_role') or obj['id'],'path':obj.get('location_reference',''),'goal_id':owner})
+    deleted_items=select_goals(choices,'deleted',scope_filter) if show=='all' else []
     return {'items':items,'deleted_items':deleted_items,'goal':selected,'scope':scope(selected) if selected else None,'deleted':deleted(selected) if selected else False,
             'workspace_goal':next(iter(related(bid,selected)[1:]),None) if selected else None,
+            'chat_goals':[g for g in all_items if selected and scope(selected)=='workspace' and scope(g)=='chat' and metadata(g).get('workspace_goal_ref')==ident and not deleted(g)],
             'goal_basis':continuation_basis(bid,selected) if selected else None,'chats':chats,'task_links':{task:goal for task,goal in links.items() if not ident or goal==ident},'assets':assets,
             'running_chats':[j['chat_id'] for j in app.running_jobs(workspace_root()) if j['business_id']==bid],'workspace':app.workspace_path}
+
+
+def mutate(app,bid,data):
+    """One live lifecycle path for current UI/API and compatible older interfaces."""
+    action=data.get('action','save');goal=None
+    if data.get('basis') and data.get('id') and action in {'save','delete','restore'}:
+        current=find(bid,data['id'],include_deleted=True)
+        if continuation_basis(bid,current)!=data['basis']:raise ValueError('This goal changed elsewhere. Reopen it to review the latest version before changing it.')
+    if action=='save':
+        if data.get('chat_id') and not any(c['id']==data['chat_id'] and c['business_id']==bid and c.get('workspace',app.workspace_path)==app.workspace_path for c in app.preferences['chats']):raise ValueError('Choose a chat in this workspace and business.')
+        goal=save(bid,data);changed(app,bid,goal['id'])
+    elif action in {'delete','restore'}:
+        goal=remove(bid,data.get('id'),restore=action=='restore');changed(app,bid,goal['id'],remove_links=action=='delete')
+    elif action=='link_chat':link_chat(app.preferences,bid,data.get('chat_id'),data.get('goal_id'))
+    elif action=='continuation':set_continuation(app.preferences,bid,data.get('chat_id'),data.get('mode','manual'),data.get('until'))
+    elif action=='link_asset':link_asset(bid,data.get('asset_id'),data.get('goal_id'))
+    else:raise ValueError('Choose a supported goal action.')
+    app.read_cache.clear();app.save_preferences()
+    for pending in app.running_jobs(workspace_root()):
+        execution=app.executions.get(pending['id'])
+        if not execution or not hasattr(execution,'continuation'):continue
+        current=next((c for c in app.preferences['chats'] if c['id']==pending.get('chat_id')),None)
+        if current:execution.continuation=dict(current.get('continuation') or {'mode':'manual'})
+        if execution.retry_check_at is not None:execution.retry_check_at=time.time()
+    return inventory(app,bid,(goal['id'] if goal else data.get('goal_id')) or None)
 
 
 def continuation(kind,mode='manual',until=None):
@@ -269,7 +307,7 @@ def guard(bid,goal_id,basis,policy):
 
 
 def live_change(url,bid,payload,route='/api/goals'):
-    """Runtime chat choices go through their existing owner, never competing settings writes."""
+    """Live chat history and choices use their existing owner, never competing settings writes."""
     from urllib.parse import urlparse
     from urllib.request import Request,urlopen
     from _common import PRODUCT_ROOT
@@ -283,7 +321,8 @@ def live_change(url,bid,payload,route='/api/goals'):
     headers={'X-Aura-Token':token[1],'X-Aura-Workspace':str(workspace_root()),'Content-Type':'application/json'}
     with urlopen(Request(base+'/api/state',headers=headers),timeout=15) as response:state=json.load(response)
     if Path(state['product']).resolve()!=PRODUCT_ROOT.resolve():raise ValueError('Choose the Aura instance running this product copy.')
-    with urlopen(Request(base+route,headers=headers,data=json.dumps({'business':bid,**payload}).encode()),timeout=15) as response:return json.load(response)
+    body=json.dumps({'business':bid,**payload}).encode() if payload is not None else None
+    with urlopen(Request(base+route,headers=headers,data=body),timeout=15) as response:return json.load(response)
 
 
 def main():
@@ -294,7 +333,10 @@ def main():
     parser.add_argument('--url',default='http://127.0.0.1:4187',help='Running local Aura address for chat links, deletion/recovery and continuation choices')
     args=parser.parse_args()
     with workspace_scope(args.workspace):
-        if args.action in {'delete','restore'}:result=live_change(args.url,args.business_id,{'action':args.action,'id':args.id})
+        if args.action=='list' and args.chat:
+            from urllib.parse import urlencode
+            result=live_change(args.url,args.business_id,None,'/api/goals?'+urlencode({'business':args.business_id,'chat_id':args.chat,'scope':args.scope,'show':args.show}))
+        elif args.action in {'delete','restore'}:result=live_change(args.url,args.business_id,{'action':args.action,'id':args.id})
         elif args.action in {'link-chat','link-asset','continuation'}:
             result=link_asset(args.business_id,args.asset,args.id) if args.action=='link-asset' else live_change(args.url,args.business_id,
                 {'action':'link_chat','chat_id':args.chat,'goal_id':args.id} if args.action=='link-chat' else {'action':'continuation','chat_id':args.chat,'mode':args.mode,'until':args.until})

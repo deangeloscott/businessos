@@ -263,10 +263,19 @@ Only the selected goal and its optional workspace connection are added to goal
 guidance, within the existing context-size limit. A newer user instruction takes
 precedence over goal guidance.
 
+Business & memory and the composer are views of the same Objective records,
+not separate business/workspace goal stores. **All goals** filters by scope and
+current/completed/deleted status. It shows each chat goal's workspace connection.
+Workspace goal details list connected chat goals and their actual saved completion
+count; this is not an inferred percentage or a native execution progress estimate.
+Back navigation retains the list's search, filters, and scroll position. Linked
+files open the ordinary file editor, with a return to the same goal. Inherited
+results name their connected-goal origin; removing a link never deletes its file.
+
 Goal views provide **Complete goal**, **Pause goal**, **Resume/Reopen goal**,
 **Edit goal**, and **Remove from this chat**. Completion is deliberate; a finished
 reply does not complete the goal or invent a progress percentage. Business &
-memory lists active workspace goals. **Manage goals** provides current, completed,
+memory lists active workspace goals. **All goals** provides current, completed,
 and deleted goals, including earlier chat efforts.
 
 **Delete goal** requires confirmation and retains the goal for recovery from
@@ -275,6 +284,20 @@ continuation, and preserves conversations, saved files and historical links.
 Restore recovers the goal without reauthorizing continuation. Linked native
 recurring tasks retain their existing preflight instructions and need review;
 their settings are changed only through the normal native task controls.
+Task goal choices are submitted explicitly with **Update goal instructions**;
+selecting an option alone does not start a native update. Goal edits made from
+an older open panel are checked against the current record before saving, so
+they cannot silently overwrite a newer edit.
+Routine goal lifecycle and file-assignment bookkeeping does not generate a
+canonical correction-review task. Changed outcomes still preserve actual review
+impacts. Older correction receipts remain searchable without filling the everyday
+saved-context list with technical change logs.
+
+Ordinary entry context, automatic Workflow context, context pickers, and the
+generated knowledge overview use active workspace goals. Chat goals and inactive
+goals remain available through deliberate selection/history; they are not bulk
+loaded as every conversation's business priorities. Earlier interface goal saves
+use the same lifecycle operation as `/api/goals`.
 
 The existing Objective extensions store `businessos.goal.scope`, an optional
 owning `chat_id`, and an optional `workspace_goal_ref`. An unsent chat goal binds
@@ -339,6 +362,8 @@ Chat links, deletion/restoration and continuation choices go through the running
 live chat settings from a second process. Canonical goal reads/saves and Asset
 operations also work with Aura closed. A later execution rechecks the saved goal
 revision before using earlier continuation approval.
+`list --chat <chat-id> --scope all --show all` reads that chat's goal history
+through the live API too, including the workspace goals it actually used.
 `/api/goals` exposes the same goal reads/writes plus chat/task/Asset associations
 and machine-local continuation choices. Reads accept `scope=workspace|chat|all`,
 `show=active|current|completed|deleted|all`, and an optional `chat_id` for local

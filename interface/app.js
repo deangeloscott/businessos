@@ -53,10 +53,11 @@ async function attempt(fn) { try { await fn(); } catch(error) { notice(error.mes
 function empty(title, text, prompt) { return `<div class="empty"><strong>${esc(title)}</strong>${esc(text)}${prompt?`<div class="empty-cta"><button class="text-button" data-prompt="${esc(prompt)}">Ask your AI to help ↗</button></div>`:''}</div>`; }
 function goalInfo(goal){return goal?.extensions?.businessos?.goal||{};}
 function workspaceGoalRecords(includeInactive=false){return rows('Objective').filter(r=>goalInfo(r.data).scope!=='chat'&&!goalInfo(r.data).deleted_at&&(includeInactive||(r.data.status||'active')==='active'));}
-function recordRow(r) { return `<button class="row" data-record="${esc(r.ref)}"><span class="row-icon">${r.type==='Asset'?'▧':r.type==='Objective'?'↗':'◈'}</span><span class="row-text"><span class="row-title">${esc(r.title)}</span><span class="row-meta">${esc(({Business:'Business details',Asset:'Saved file',Objective:'Goal',SourceRecord:'Saved source',PreferenceProfile:'Preferences',Observation:'Finding',ProofRecord:'Evidence',MetricObservation:'Measurement'})[r.type]||human(r.type))}${r.data.status?' · '+esc(human(r.data.status)):''}${r.data.updated_at?' · '+stamp(r.data.updated_at):''}</span></span><span class="arrow">↗</span></button>`; }
+function recordRow(r) { return `<button class="row" data-record="${esc(r.ref)}"><span class="row-icon">${r.type==='Asset'?'▧':r.type==='Objective'?'↗':'◈'}</span><span class="row-text"><span class="row-title">${esc(r.title)}</span><span class="row-meta">${esc(({Business:'Business details',Asset:'Saved file',Objective:goalInfo(r.data).scope==='chat'?'Chat goal':'Workspace goal',SourceRecord:'Saved source',PreferenceProfile:'Preferences',Observation:'Finding',ProofRecord:'Evidence',MetricObservation:'Measurement'})[r.type]||human(r.type))}${r.data.status?' · '+esc(human(r.data.status)):''}${r.data.updated_at?' · '+stamp(r.data.updated_at):''}</span></span><span class="arrow">↗</span></button>`; }
 function heading(title, subtitle='') { return `<div class="section-head"><div><h2>${title}</h2>${subtitle?`<p>${subtitle}</p>`:''}</div></div>`; }
 
-async function refresh(light=false) {
+async function refresh(light=false,preserveDetails=light) {
+  const priorWorkspace=state.data?.workspace,priorBusiness=state.business;
   if(!light)invalidateReads();
   const ticket=state.refreshTicket=(state.refreshTicket||0)+1;
   $('#refresh').disabled=true;
@@ -98,7 +99,9 @@ async function refresh(light=false) {
     $('#send').disabled=!state.business || !state.hydrated || state.stopping;
     if(state.data.diagnostics.length) notice('Some saved records could not be read. Ask your agent to inspect them before relying on a complete overview.',true);
     else if(state.data.workspace_note)notice(state.data.workspace_note,true);
-    await render();
+    if(preserveDetails&&$('#detail').open&&priorWorkspace===state.data.workspace&&priorBusiness===state.business){
+      if(state.view==='business')renderMemory();
+    }else await render();
     if(ticket!==state.refreshTicket)return;
     if(state.business&&!state.hydrated) {state.hydrated=true;await hydrateConversation();}
     if(ticket!==state.refreshTicket)return;
@@ -720,7 +723,7 @@ let fileFilter='all', fileLocation='', workFilter='all', workCategory='', librar
 function recordMatches(record,q) {return !q||(record.title+' '+pretty(record.data)).toLowerCase().includes(q);}
 const addContextPrompt='Help me add useful business context to AURA. Ask only what matters for our current work and preserve my explicit facts and preferences. Do not invent facts.';
 function memoryGroups(q) {
-  return {goals:workspaceGoalRecords().filter(r=>recordMatches(r,q)),context:state.data.records.filter(r=>r.type!=='Objective'&&(q||r.data.source_type!=='organization_initialization_input')&&recordMatches(r,q))};
+  return {goals:workspaceGoalRecords().filter(r=>recordMatches(r,q)),context:state.data.records.filter(r=>r.type!=='Objective'&&(q||r.data.source_type!=='organization_initialization_input'&&!(r.type==='ChangeEvent'&&r.data.change_kind==='canonical_correction'))&&recordMatches(r,q))};
 }
 function renderMemory() {
   const q=(state.memoryQuery||'').trim().toLowerCase(),{goals,context}=memoryGroups(q);
@@ -728,11 +731,11 @@ function renderMemory() {
   const group=(title,items,action,home)=>{
     const heading=`<div class="mini-heading memory-heading"><${home?'span':'h3'}>${title}</${home?'span':'h3'}>${action}</div>`;
     const list=`<div class="${home?'':'card memory-results'}" ${home?'':'aria-label="'+title+'"'}>${items.length?(home?items.slice(0,q?4:2):items).map(recordRow).join(''):`<p class="small-note">${q?'No matching '+title.toLowerCase()+'.':'Nothing saved here yet.'}</p>`}</div>`;
-    return home?heading+list:`<section class="memory-group">${heading}<p class="memory-description">${title==='Workspace goals'?'Shared outcomes your chats and tasks can contribute to.':'Useful facts, preferences, decisions, and reference material.'}</p>${list}</section>`;
+    return home?heading+list:`<section class="memory-group">${heading}<p class="memory-description">${title==='Goals'?'Shared workspace goals. Open All goals for chat goals and completed or deleted goals.':'Useful facts, preferences, decisions, and reference material.'}</p>${list}</section>`;
   };
-  const goalAdd='<span class="inline-actions"><button class="text-button" data-goal-manager>Manage goals</button><button class="text-button" data-action="add-goal">＋ Add</button></span>',contextAdd=`<button class="text-button" data-prompt="${esc(addContextPrompt)}">＋ Add</button>`;
-  const quick=$('#quick-memory');if(quick)quick.innerHTML=q&&!goals.length&&!context.length?'<p class="small-note">No matching goals or saved information.</p>':group('Workspace goals',goals,goalAdd,true)+group('Saved context',context,contextAdd,true);
-  const full=$('#full-memory');if(full)full.innerHTML=q&&!goals.length&&!context.length?empty('No matches.','Try another name or phrase.'):group('Workspace goals',goals,goalAdd,false)+group('Saved context',context,contextAdd,false);
+  const goalAdd='<span class="inline-actions"><button class="text-button" data-goal-manager>All goals</button><button class="text-button" data-action="add-goal">＋ Workspace goal</button></span>',contextAdd=`<button class="text-button" data-prompt="${esc(addContextPrompt)}">＋ Add</button>`;
+  const quick=$('#quick-memory');if(quick)quick.innerHTML=group('Goals',goals,goalAdd,true)+group('Saved context',context,contextAdd,true);
+  const full=$('#full-memory');if(full)full.innerHTML=group('Goals',goals,goalAdd,false)+group('Saved context',context,contextAdd,false);
 }
 const fileKinds=[['all','All'],['images','Images'],['videos','Videos'],['audio','Audio'],['documents','Documents'],['other','Other']];
 function fileKind(file) {
@@ -1135,6 +1138,7 @@ function apiProviderHelp() {
 }
 function recordDetails(ref) {
   const r=state.data.records.find(r=>r.ref===ref); if(!r) return;
+  if(r.type==='Asset'&&r.data.location_reference&&!/^[a-z][a-z0-9+.-]*:\/\//i.test(r.data.location_reference)){attempt(()=>openFileWorkspace('asset/'+r.ref));return;}
   if(r.type==='SourceRecord') {
     const text=r.data.extensions?.businessos_evidence?.captured_text;
     const shared=r.data.extensions?.aura_sharing;
@@ -1142,9 +1146,9 @@ function recordDetails(ref) {
     return;
   }
   const mechanical=new Set(['id','object_type','schema_version','business_id','lineage','created_at','updated_at','extensions']);
-  if(r.type==='Objective'&&window.auraCompose){attempt(()=>window.auraCompose.openGoal(ref));return;}
+  if(r.type==='Objective'){if(window.auraCompose)attempt(()=>window.auraCompose.openGoal(ref));else notice('Goal controls are still loading. Try again in a moment.',true);return;}
   const fields=Object.entries(r.data).filter(([k,v])=>!mechanical.has(k)&&!['name','title'].includes(k)&&v!==null&&!(Array.isArray(v)&&!v.length));
-  details(r.title,`<p>${r.type==='Objective'?'Goal':esc(human(r.type))}</p>${fields.map(([k,v])=>`<div class="field"><strong>${esc(human(k))}</strong><p>${esc(pretty(v))}</p></div>`).join('')}${r.type==='Objective'?`<form id="edit-goal-form" class="form-grid" data-ref="${esc(r.ref)}"><label>Update this goal<input name="name" value="${esc(r.title)}" required maxlength="2000"></label><button class="primary">Save goal</button></form>`:''}<p><button class="text-button" data-prompt="${esc(`Help me work with the saved AURA record ${r.ref}: ${r.title}. Read the actual record and ask only what is necessary.`)}">Work with your AI ↗</button></p><p><button class="text-button" data-share-record="${esc(r.ref)}" data-share-scope="${esc(sharingScope())}">Share a copy →</button></p><details><summary>File details</summary><p>${esc(r.path)}</p><pre>${esc(JSON.stringify(r.data,null,2))}</pre></details>`,'context');
+  details(r.title,`<p>${esc(human(r.type))}</p>${fields.map(([k,v])=>`<div class="field"><strong>${esc(human(k))}</strong><p>${esc(pretty(v))}</p></div>`).join('')}<p><button class="text-button" data-prompt="${esc(`Help me work with the saved AURA record ${r.ref}: ${r.title}. Read the actual record and ask only what is necessary.`)}">Work with your AI ↗</button></p><p><button class="text-button" data-share-record="${esc(r.ref)}" data-share-scope="${esc(sharingScope())}">Share a copy →</button></p><details><summary>File details</summary><p>${esc(r.path)}</p><pre>${esc(JSON.stringify(r.data,null,2))}</pre></details>`,'context');
 }
 async function openFileWorkspace(ref,option='') {
   const business=state.business,workspace=state.data.workspace;
@@ -1809,8 +1813,7 @@ document.addEventListener('click',event=>attempt(async()=>{
     await api('/api/preferences',{notifications:!enabled&&permission==='granted'});
     await syncNotifications();if(enabled)state.systemAlert?.close();
   }
-  if(button.dataset.action==='add-goal'&&window.auraCompose){await window.auraCompose.editGoal();return;}
-  if(button.dataset.action==='add-goal')details('Add a goal',`<form id="goal-form" class="form-grid"><label>What do you want to accomplish?<input name="name" required maxlength="2000" autofocus></label><button class="primary">Save goal</button></form>`);
+  if(button.dataset.action==='add-goal'){if(window.auraCompose)await window.auraCompose.editGoal();else notice('Goal controls are still loading. Try again in a moment.',true);return;}
   if(button.dataset.action==='edit-business') { const b=rows('Business')[0]; details('Workspace name',`<form id="business-form" class="form-grid"><label>Workspace name<input name="name" value="${esc(b.title)}" required maxlength="160"></label><button class="primary">Save name</button></form>`); }
   if(button.id==='session-keys-only'){await api('/api/connections/session-only',{});await showApiConnections();}
   if(button.id==='organize-work')await organizeWork();
@@ -1928,7 +1931,7 @@ document.addEventListener('submit',event=>{
         await scheduleOperation(changes);
       }
       if(form.id==='setup-form') { const result=await api('/api/setup',{name:data.get('name')});state.drafts??={};state.drafts[state.business]=$('#request').value;$('#request').value=state.drafts[result.business_id]||'';state.business=result.business_id; state.view='home'; state.chat=[];state.chatMeta=null;state.newAssistantId=null;state.newAssistantName='';state.hydrated=false; state.setupStep='welcome';state.connectionChecks=null;state.welcome=null;showMessages();$('#detail').close(); notice('Ready. What would you like to do?'); await refresh(); }
-      if(['goal-form','edit-goal-form','business-form'].includes(form.id)) { await api('/api/save',{business:state.business,kind:form.id==='business-form'?'business':'goal',name:data.get('name'),ref:form.dataset.ref}); $('#detail').close(); notice('Saved.'); await refresh(); }
+      if(form.id==='business-form') { await api('/api/save',{business:state.business,kind:'business',name:data.get('name'),ref:form.dataset.ref}); $('#detail').close(); notice('Saved.'); await refresh(); }
       if(form.id==='startup-form') {
         await api('/api/startup',{enabled:data.has('enabled'),business:state.business});
         $('#startup-save-status').textContent=data.has('enabled')?'Startup is on.':'Startup is off.';

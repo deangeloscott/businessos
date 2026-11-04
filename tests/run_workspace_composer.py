@@ -157,6 +157,37 @@ def main():
             call('/api/goals',{'business':bid,'action':'save','id':local['id'],'status':'completed'})
             assert goals.find(bid,goal['id'])['status']=='active','Completing an effort must not complete its workspace outcome'
             assert local['id'] in {g['id'] for g in call('/api/goals?business='+bid+'&scope=chat&show=completed')['items']}
+            # Lifecycle/assignment changes do not imply that a linked artifact is wrong.
+            from correction_impacts import correction_event
+            before=goals.find(bid,local['id'])
+            with patch('correction_impacts.inbound_references',return_value=[{'object_type':'Asset','object_ref':asset}]):
+                assert correction_event(bid,before,{**before,'status':'paused','extensions':{'businessos':{'goal':{'scope':'chat','revision':999}}}},None,'event', 'now') is None
+                assert correction_event(bid,before,{**before,'target':'A materially different outcome'},None,'event','now'),'An actual outcome correction must still surface possible review impacts'
+            overview=call('/api/goals?business='+bid+'&id='+goal['id'])
+            assert overview['chat_goals'][0]['id']==local['id'] and overview['chat_goals'][0]['status']=='completed'
+            history=call('/api/goals?business='+bid+'&scope=all&show=all&chat_id='+job['chat_id'])
+            assert {local['id'],goal['id']} <= {g['id'] for g in history['items']},'Chat history must include the shared goal actually used by the chat'
+            history_cli=subprocess.run([sys.executable,str(ROOT/'scripts/workspace_goals.py'),'list','--workspace',str(root),'--business-id',bid,'--chat',job['chat_id'],'--scope','all','--show','all','--url',f'http://127.0.0.1:{server.server_port}','--json'],capture_output=True,text=True,check=True)
+            assert {g['id'] for g in json.loads(history_cli.stdout)['items']}=={g['id'] for g in history['items']},'CLI history must read the same goal relationships as the UI'
+            # Compatible older interfaces use the same lifecycle, not a second save path.
+            selected_chat['continuation']=dict(policy)
+            stale=overview['goal_basis']
+            renamed=call('/api/save',{'business':bid,'kind':'goal','ref':goal['id'],'name':'Research the offer together'})
+            assert renamed['objects'][0]['id']==goal['id'] and 'continuation' not in selected_chat
+            call('/api/goals',{'business':bid,'action':'save','id':goal['id'],'name':'Stale overwrite','basis':stale},400)
+            assert goals.find(bid,goal['id'])['name']=='Research the offer together'
+            # UI, CLI entry and generated knowledge agree about ordinary goal context.
+            from _common import object_index
+            import enter
+            from generate_knowledge_layer import generate
+            paused=goals.save(bid,{'name':'Paused shared outcome','status':'paused'})
+            gone=goals.save(bid,{'name':'Deleted shared outcome'});goals.remove(bid,gone['id'])
+            index=object_index(bid)
+            baseline={r['object_ref'] for r in enter._baseline_context(bid,index=index)}
+            assert goal['id'] in baseline and not {local['id'],paused['id'],gone['id']}&baseline
+            assert local['id'] not in {r['object_ref'] for r in enter._saved_work_candidates('Finish the proposal',index)}
+            generate(bid);priorities=(root/'knowledge'/bid/'_generated'/'Priorities.md').read_text(encoding='utf-8')
+            assert 'Research the offer together' in priorities and not any(name in priorities for name in ('Finish the proposal','Paused shared outcome','Deleted shared outcome'))
             # An unsent goal binds once to the first real chat and retains a correct receipt.
             draft_goal=call('/api/goals',{'business':bid,'action':'save','name':'An independent effort','scope':'chat'})['goal']
             draft_job=call('/api/chat',{'business':bid,'chat_id':'','text':'Do this effort','goal_id':draft_goal['id']},202)
@@ -172,6 +203,7 @@ def main():
             assert job['chat_id'] in {c['id'] for c in call('/api/goals?business='+bid+'&id='+local['id'])['chats']}
             display_before=app.chat_display_path(job['chat_id']).read_bytes()
             call('/api/goals',{'business':bid,'action':'delete','id':goal['id']})
+            call('/api/save',{'business':bid,'kind':'goal','ref':goal['id'],'name':'Cannot resurrect deleted goals'},400)
             assert selected_chat['goal_id']=='' and file.is_file() and app.chat_display_path(job['chat_id']).read_bytes()==display_before
             assert goal['id'] in {g['id'] for g in call('/api/goals?business='+bid+'&show=deleted')['items']}
             assert goals.review_reason(bid,local['id']),'Deleted connected goals must block automatic continuation'

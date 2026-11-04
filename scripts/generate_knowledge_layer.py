@@ -17,6 +17,7 @@ import json
 import os
 import shutil
 import tempfile
+from workspace_goals import discoverable
 
 PAGES=[
     ('Business','Durable organization, brand, product, offer, market and audience context.'),
@@ -38,7 +39,7 @@ SYSTEM_PAGES={
     'seo-aeo':'SEO-AEO','content-synthesis':'Content-Marketing','marketing-synthesis':'Content-Marketing','customer-optimization':'Customer-Optimization'}
 
 def _render_fingerprint():
-    paths=(Path(__file__),PRODUCT_ROOT/'scripts/_common.py',PRODUCT_ROOT/'generated/schema-registry.json')
+    paths=(Path(__file__),PRODUCT_ROOT/'scripts/_common.py',PRODUCT_ROOT/'scripts/workspace_goals.py',PRODUCT_ROOT/'generated/schema-registry.json')
     return hashlib.sha256(''.join(hashlib.sha256(path.read_bytes()).hexdigest() for path in paths).encode('ascii')).hexdigest()
 
 
@@ -206,7 +207,8 @@ def generate(business_id):
         rows='; '.join(f"{d['path']}: {d['reason']}" for d in unreadable)
         raise ValueError(f'Refusing to publish knowledge layer: {len(unreadable)} unreadable canonical record(s) ({rows}); the previous generated view was left unchanged')
     ts=now();grouped={name:[] for name,_ in PAGES}
-    for obj,path in objects:grouped[_page_for(obj)].append((obj,path))
+    for obj,path in objects:
+        if discoverable(obj):grouped[_page_for(obj)].append((obj,path))
     stage=_new_stage_dir(kbase)
     try:
         pages={}

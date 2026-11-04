@@ -2,8 +2,9 @@
 'use strict';
 window.auraCompose=(()=>{
   let lookupTicket=0,viewTicket=0,inlineItems=[],active=-1,inlineToken=null,timer=null;
+  let goalPage=null,goalTrail=[],returningGoal=false;
   const cache=new Map(),scope=()=>JSON.stringify([state.data?.workspace,state.business]),refs=()=>state.contextReferences||[];
-  const goal=()=>{const id=state.chatMeta?.goal_id||state.draftGoalId||'',saved=state.data?.records?.find(r=>r.ref===id)?.data;return goalInfo(saved).deleted_at?'':id;};
+  const goal=()=>state.chatMeta?.goal_id||state.draftGoalId||'';
   function newChatGoal(){
     const id=goal(),saved=state.data.records.find(r=>r.ref===id)?.data;
     if(!saved||goalInfo(saved).deleted_at||(saved.status||'active')!=='active')return '';
@@ -17,6 +18,29 @@ window.auraCompose=(()=>{
   const identity=r=>JSON.stringify([r.kind,r.id,r.variant||'',r.request_id||'']);
   const kinds={file:'File',record:'Saved context',goal:'Goal',library:'Library',assistant:'Assistant',result:'Saved result'};
   const shortcuts=[{id:'new',label:'New chat',description:'Keep this draft and open a new chat'},{id:'attach',label:'Attach context',description:'Files, saved work and operating knowledge'},{id:'assistant',label:'Choose assistant',description:'Start a chat with a named assistant'},{id:'goal',label:'Chat goal',description:'Set what this chat is working toward'}];
+  const goalStatus=g=>goalInfo(g).deleted_at?'Deleted':human(g?.status||'active');
+  const goalLabel=g=>(goalInfo(g).scope==='chat'?'Chat goal':'Workspace goal')+(goalInfo(g).deleted_at||(g?.status||'active')!=='active'?' · '+goalStatus(g):'');
+  function beginGoalPage(kind,id,title,open,mode='context'){
+    const prior=goalPage&&goalPage.ticket===state.fileDetailTicket&&$('#detail').open?goalPage:null;
+    if(!returningGoal){if(prior&&(prior.kind!==kind||prior.id!==id)){prior.scroll=$('#detail-content').scrollTop;goalTrail.push(prior);if(goalTrail.length>12)goalTrail.shift();}else if(!prior)goalTrail=[];}
+    returningGoal=false;details(title,'<p role="status">Reading goals…</p>',mode);goalPage={kind,id,title,open,ticket:state.fileDetailTicket};
+  }
+  function goalDetails(title,html,mode='context'){
+    details(title,(goalTrail.length?'<button type="button" class="text-button goal-back" data-goal-back>← Back</button>':'')+html,mode);
+    if(goalPage)goalPage.ticket=state.fileDetailTicket;
+  }
+  async function backGoal(){
+    const prior=goalTrail.pop();if(!prior)return;returningGoal=true;await prior.open();
+    if(goalPage?.kind===prior.kind&&goalPage?.id===prior.id)$('#detail-content').scrollTop=prior.scroll||0;
+  }
+  async function openRelatedGoal(kind,id){
+    const prior=goalPage,key=scope(),scroll=$('#detail-content').scrollTop;
+    if(kind==='file')await openFileWorkspace('asset/'+id);else await scheduleDetails(id);
+    if(key!==scope()||!prior||!$('#detail').open)return;
+    if(kind==='file'&&!$('#file-workspace')||kind==='task'&&(!$('#task-edit-form')||state.editingTask?.id!==id))return;
+    $('#detail-content').insertAdjacentHTML('afterbegin','<button type="button" class="text-button goal-back" id="return-related-goal">← Back to goal</button>');
+    $('#return-related-goal').onclick=()=>attempt(async()=>{if(key!==scope())return;returningGoal=true;await prior.open();if(key===scope())$('#detail-content').scrollTop=scroll;});
+  }
 
   async function lookup(q='',kind='',assistant=''){
     const key=scope(),id=JSON.stringify([key,q.toLowerCase(),kind,assistant]),prior=cache.get(id);
@@ -26,9 +50,9 @@ window.auraCompose=(()=>{
   }
   function paintComposer(){
     const host=$('#composer-contexts');if(!host)return;
-    const items=refs(),goalId=goal(),saved=state.data?.records?.find(r=>r.ref===goalId),info=goalInfo(saved?.data),name=saved?.title||'Selected goal',local=info.scope==='chat',parent=state.data?.records?.find(r=>r.ref===info.workspace_goal_ref&&!goalInfo(r.data).deleted_at);
+    const items=refs(),goalId=goal(),saved=state.data?.records?.find(r=>r.ref===goalId),info=goalInfo(saved?.data),name=saved?.title||'Unavailable goal',local=info.scope==='chat',parent=state.data?.records?.find(r=>r.ref===info.workspace_goal_ref);
     host.hidden=!items.length&&!goalId;
-    const markup=(goalId?`<span class="context-chip goal-chip"><button type="button" data-compose-goal="${esc(goalId)}" title="Open goal">${local?'Chat goal':'Workspace goal'}: ${esc(name)}</button><button type="button" data-compose-clear-goal aria-label="Remove goal from this chat">×</button></span>`:'')+(goalId&&parent?`<span class="context-chip"><button type="button" data-compose-goal="${esc(parent.ref)}">Workspace goal: ${esc(parent.title)}</button><button type="button" data-goal-unlink-workspace="${esc(goalId)}" aria-label="Disconnect workspace goal">×</button></span>`:'')+items.map((r,i)=>`<span class="context-chip"><button type="button" data-compose-inspect="${i}" title="Review selected context">${esc(r.label||r.id)}</button><button type="button" data-compose-remove="${i}" aria-label="Remove ${esc(r.label||r.id)}">×</button></span>`).join('');
+    const markup=(goalId?`<span class="context-chip goal-chip"><button type="button" data-compose-goal="${esc(goalId)}" title="Open goal">${esc(goalLabel(saved?.data))}: ${esc(name)}</button><button type="button" data-compose-clear-goal aria-label="Remove goal from this chat">×</button></span>`:'')+(goalId&&info.workspace_goal_ref?`<span class="context-chip"><button type="button" data-compose-goal="${esc(info.workspace_goal_ref)}">${esc(parent?goalLabel(parent.data):'Workspace goal')}: ${esc(parent?.title||'Unavailable')}</button><button type="button" data-goal-unlink-workspace="${esc(goalId)}" aria-label="Disconnect workspace goal">×</button></span>`:'')+items.map((r,i)=>`<span class="context-chip"><button type="button" data-compose-inspect="${i}" title="Review selected context">${esc(r.label||r.id)}</button><button type="button" data-compose-remove="${i}" aria-label="Remove ${esc(r.label||r.id)}">×</button></span>`).join('');
     if(host.innerHTML!==markup)host.innerHTML=markup;
     const button=$('#choose-goal');if(button){const label=button.querySelector('span');if(label)label.textContent=goalId?'Change goal':'Goal';else button.textContent=goalId?'Change goal':'Goal';}
   }
@@ -133,25 +157,32 @@ window.auraCompose=(()=>{
   async function setGoal(id){
     if(state.starting)throw new Error('Wait for this request to start, then change its goal.');
     const key=chatScope();
-    if(state.chatMeta){state.goalSetting=true;try{await api('/api/goals',{business:state.business,action:'link_chat',chat_id:state.chatMeta.id,goal_id:id});if(key!==chatScope())return;state.chatMeta.goal_id=id||'';delete state.chatMeta.continuation;}finally{state.goalSetting=false;}}
+    if(state.chatMeta){state.goalSetting=true;try{const linked=await api('/api/goals',{business:state.business,action:'link_chat',chat_id:state.chatMeta.id,goal_id:id});if(key!==chatScope())return;state.chatMeta.goal_id=id||'';if(id)state.chatMeta.goal_history=[...new Set([...(state.chatMeta.goal_history||[]),id,...(linked.workspace_goal?[linked.workspace_goal.id]:[])])];delete state.chatMeta.continuation;}finally{state.goalSetting=false;}}
     else state.draftGoalId=id||'';
     rememberChatDraft();paintComposer();
   }
   async function openGoal(id){
-    const key=scope(),request=++viewTicket;details('Goal','<p role="status">Reading goal…</p>','context');
-    const loading=state.fileDetailTicket,host=$('#detail-content'),data=await api('/api/goals?'+query({id}));if(request!==viewTicket||!same(key,loading,host))return;
+    const key=scope(),request=++viewTicket;beginGoalPage('goal',id,'Goal',()=>openGoal(id));
+    const loading=state.fileDetailTicket,host=$('#detail-content');let data;
+    try{data=await api('/api/goals?'+query({id}));}catch(error){
+      if(request===viewTicket&&same(key,loading,host))goalDetails('Goal unavailable',`<p>${esc(error.message)}</p><div class="inline-actions"><button type="button" class="secondary" data-compose-goal="${esc(id)}">Try again</button>${goal()===id?'<button type="button" class="text-button" data-compose-clear-goal>Remove from this chat</button>':''}<button type="button" class="text-button" data-goal-manager>All goals</button></div>`);return;
+    }
+    if(request!==viewTicket||!same(key,loading,host))return;
     const g=data.goal,info=goalInfo(g),local=data.scope==='chat'||info.scope==='chat',status=g.status||'active';
-    if(data.deleted||info.deleted_at){details(g.name,`<p>This goal was deleted. Its conversations and saved work are still available.</p><div class="inline-actions"><button type="button" class="primary" data-goal-restore="${esc(id)}">Restore goal</button><button type="button" class="text-button" data-goal-manager>Manage goals</button></div>`,'context');return;}
-    const current=goal()===id,owner=info.chat_id,ownerAvailable=data.chats.some(c=>c.id===owner);
-    const work=local?(owner&&owner!==state.chatMeta?.id?(ownerAvailable?`<button type="button" class="text-button" data-chat="${esc(owner)}">Open original chat</button>`:''):!current?`<button type="button" class="text-button" data-goal-use="${esc(id)}">Use in this chat</button>`:''):`<button type="button" class="text-button" data-goal-connect="${esc(id)}">${state.chatMeta?'Connect to this chat':'Start a chat toward this goal'}</button>`;
-    const toolbar=`<div class="inline-actions goal-actions"><button type="button" class="primary" data-goal-state="${esc(id)}" data-goal-status="${status==='active'?'completed':'active'}">${status==='completed'?'Reopen goal':status==='paused'?'Resume goal':'Complete goal'}</button><button type="button" class="secondary" data-goal-edit="${esc(id)}">Edit goal</button>${work}</div><details class="goal-options"><summary>More options</summary><div class="inline-actions">${status==='active'?`<button type="button" class="text-button" data-goal-state="${esc(id)}" data-goal-status="paused">Pause goal</button>`:''}${current?'<button type="button" class="text-button" data-compose-clear-goal>Remove from this chat</button>':''}${local?`<button type="button" class="text-button" data-goal-promote="${esc(id)}">Make workspace goal</button>`:''}${current&&status==='active'?'<button type="button" class="text-button" id="chat-continuation">Continuation settings</button>':''}<button type="button" class="text-button danger" data-goal-delete="${esc(id)}" data-linked-tasks="${Object.keys(data.task_links||{}).length}">Delete goal</button><button type="button" class="text-button" data-goal-manager ${local&&ownerAvailable?`data-chat-goals="${esc(owner)}"`:''}>${local&&ownerAvailable?'Chat goal history':'Manage goals'}</button></div></details>`;
-    details(g.name,`${toolbar}<p class="row-meta">${local?'Chat goal':'Workspace goal'} · ${esc(human(status))}</p>${g.target!==undefined?`<div class="goal-outcome"><h3>Done when</h3><p>${esc(pretty(g.target))}</p></div>`:''}${data.workspace_goal?`<p class="goal-parent">Contributes to <button type="button" class="text-button" data-compose-goal="${esc(data.workspace_goal.id)}">${esc(data.workspace_goal.name)}</button></p>`:info.workspace_goal_ref?'<p class="small-note">The connected workspace goal is unavailable. Edit this goal to change or remove its connection.</p>':''}${local&&current?'<button type="button" class="text-button" data-new-chat-goal>Set a different chat goal</button>':''}<h3>Related conversations</h3><label class="goal-chat-search" ${data.chats.length<=20?'hidden':''}>Find linked work<input id="goal-chat-find" type="search" class="search" placeholder="Search chats and next steps…"></label><div id="goal-chats"></div><button type="button" class="text-button" id="goal-chats-more" hidden>Show more chats</button><h3>Saved results</h3>${data.assets.map(a=>`<button type="button" class="row" data-file="asset/${esc(a.id)}">${esc(a.name)}</button><button type="button" class="text-button" data-goal-unlink-asset="${esc(a.id)}" data-goal-id="${esc(id)}">Unlink</button>`).join('')||'<p class="small-note">No saved results linked yet.</p>'}<button type="button" class="text-button" data-goal-asset="${esc(id)}">Link a saved file</button>${!local?`<h3>Recurring tasks</h3><div id="goal-tasks">Reading linked tasks…</div><button type="button" class="text-button" data-goal-task="${esc(id)}">Add recurring task</button>`:''}`,'context');
-    const ticket=state.fileDetailTicket;let limit=20;
+    if(goalPage)goalPage.basis=data.goal_basis;
+    if(data.deleted||info.deleted_at){goalDetails(g.name,`<p>This goal was deleted. Its conversations and saved work are still available.</p><div class="inline-actions"><button type="button" class="primary" data-goal-restore="${esc(id)}">Restore goal</button><button type="button" class="text-button" data-goal-manager>All goals</button></div>`,'context');return;}
+    const current=goal()===id,owner=info.chat_id,ownerAvailable=data.chats.some(c=>c.id===owner),connected=data.chat_goals||[];
+    const linked=connected.length?`<section class="goal-connected"><h3>Connected chat goals</h3><p class="small-note">${connected.length} connected · ${connected.filter(g=>g.status==='completed').length} completed</p><div id="goal-efforts"></div><button type="button" class="text-button" id="goal-efforts-more" hidden>Show more chat goals</button></section>`:'';
+    const work=local?(owner&&owner!==state.chatMeta?.id?(ownerAvailable?`<button type="button" class="text-button" data-chat="${esc(owner)}">Open original chat</button>`:''):!current?`<button type="button" class="text-button" data-goal-use="${esc(id)}">Use in this chat</button>`:''):`<button type="button" class="text-button" data-goal-connect="${esc(id)}" ${current?'disabled':''}>${current?'Connected to this chat':state.chatMeta?'Connect to this chat':'Start a chat toward this goal'}</button>`;
+    const toolbar=`<div class="inline-actions goal-actions"><button type="button" class="primary" data-goal-state="${esc(id)}" data-goal-status="${status==='active'?'completed':'active'}">${status==='completed'?'Reopen goal':status==='paused'?'Resume goal':'Complete goal'}</button><button type="button" class="secondary" data-goal-edit="${esc(id)}">Edit goal</button>${work}</div><details class="goal-options"><summary>More options</summary><div class="inline-actions">${status==='active'?`<button type="button" class="text-button" data-goal-state="${esc(id)}" data-goal-status="paused">Pause goal</button>`:''}${current?'<button type="button" class="text-button" data-compose-clear-goal>Remove from this chat</button>':''}${local?`<button type="button" class="text-button" data-goal-promote="${esc(id)}">Make workspace goal</button>`:''}${current&&status==='active'?'<button type="button" class="text-button" id="chat-continuation">Continuation settings</button>':''}<button type="button" class="text-button danger" data-goal-delete="${esc(id)}" data-linked-tasks="${Object.keys(data.task_links||{}).length}">Delete goal</button><button type="button" class="text-button" data-goal-manager ${local&&ownerAvailable?`data-chat-goals="${esc(owner)}"`:''}>${local&&ownerAvailable?'Chat goal history':'All goals'}</button></div></details>`;
+    goalDetails(g.name,`${toolbar}<p class="row-meta">${local?'Chat goal':'Workspace goal'} · ${esc(human(status))}</p>${g.target!==undefined?`<div class="goal-outcome"><h3>Done when</h3><p>${esc(pretty(g.target))}</p></div>`:''}${data.workspace_goal?`<p class="goal-parent">Contributes to <button type="button" class="text-button" data-compose-goal="${esc(data.workspace_goal.id)}">${esc(data.workspace_goal.name)}</button></p>`:info.workspace_goal_ref?'<p class="small-note">The connected workspace goal is unavailable. Edit this goal to change or remove its connection.</p>':''}${local&&current?'<button type="button" class="text-button" data-new-chat-goal>Set a different chat goal</button>':''}${linked}<h3>Related conversations</h3><label class="goal-chat-search" ${data.chats.length<=20?'hidden':''}>Find linked work<input id="goal-chat-find" type="search" class="search" placeholder="Search chats and next steps…"></label><div id="goal-chats"></div><button type="button" class="text-button" id="goal-chats-more" hidden>Show more chats</button><h3>Saved results</h3>${data.assets.map(a=>`<div class="goal-result-row"><button type="button" class="row" data-goal-open-file="${esc(a.id)}">${esc(a.name)}</button>${!a.goal_id||a.goal_id===id?`<button type="button" class="text-button" data-goal-unlink-asset="${esc(a.id)}" data-goal-id="${esc(id)}">Remove link</button>`:`<button type="button" class="text-button" data-compose-goal="${esc(a.goal_id)}">From ${esc(state.data.records.find(r=>r.ref===a.goal_id)?.title||'connected chat goal')}</button>`}</div>`).join('')||'<p class="small-note">No saved results linked yet.</p>'}<button type="button" class="text-button" data-goal-asset="${esc(id)}">Link a saved file</button>${!local?`<h3>Recurring tasks</h3><div id="goal-tasks">Reading linked tasks…</div><button type="button" class="text-button" data-goal-task="${esc(id)}">Add recurring task</button>`:''}`,'context');
+    const ticket=state.fileDetailTicket;let limit=20,effortLimit=20;
+    if(connected.length){const paint=()=>{$('#goal-efforts').innerHTML=connected.slice(0,effortLimit).map(g=>`<button type="button" class="row" data-compose-goal="${esc(g.id)}"><span><strong>${esc(g.name)}</strong><small class="row-meta">${esc(goalStatus(g))}</small></span></button>`).join('');$('#goal-efforts-more').hidden=connected.length<=effortLimit;};$('#goal-efforts-more').onclick=()=>{effortLimit+=20;paint();};paint();}
     const paintChats=()=>{const q=$('#goal-chat-find').value.trim().toLocaleLowerCase(),rows=data.chats.filter(c=>(c.title+' '+(c.summary||'')).toLocaleLowerCase().includes(q));$('#goal-chats').innerHTML=rows.slice(0,limit).map(c=>`<button type="button" class="row" data-chat="${esc(c.id)}"><span><strong>${esc(c.title)}</strong><small class="row-meta">${esc(data.running_chats.includes(c.id)?'Working':c.work_state==='waiting_for_usage'?'Paused after usage limit':c.status==='working'?'Last observed working':c.status==='complete'?'Reply ready':human(c.status||'Saved'))}${c.summary?' · '+esc(c.summary):''}</small></span></button>`).join('')||empty(q?'No matching linked chats.':'No chats linked yet.');$('#goal-chats-more').hidden=rows.length<=limit;};
     $('#goal-chat-find').oninput=()=>{limit=20;paintChats();};$('#goal-chats-more').onclick=()=>{limit+=20;paintChats();};paintChats();
     if(local)return;
     try{const tasks=await api('/api/schedules');if(!same(key,ticket,host))return;state.schedules=tasks;
-      $('#goal-tasks').innerHTML=tasks.items.filter(t=>data.task_links[t.id]===id).map(t=>`<button type="button" class="row" data-schedule="${esc(t.id)}">${esc(t.name)}${t.description?.includes(data.goal_basis)?'':'<small class="row-meta">Review goal instructions</small>'}</button>`).join('')||empty('No recurring tasks linked yet.');
+      $('#goal-tasks').innerHTML=tasks.items.filter(t=>data.task_links[t.id]===id).map(t=>`<button type="button" class="row" data-goal-open-task="${esc(t.id)}">${esc(t.name)}${t.description?.includes(data.goal_basis)?'':'<small class="row-meta">Review goal instructions</small>'}</button>`).join('')||empty('No recurring tasks linked yet.');
       if(tasks.notes?.length)$('#goal-tasks').insertAdjacentHTML('beforeend',`<p class="small-note">${tasks.notes.map(esc).join(' ')}</p>`);
     }catch(error){if(same(key,ticket,host))$('#goal-tasks').textContent=error.message;}
   }
@@ -161,16 +192,17 @@ window.auraCompose=(()=>{
   }
   async function editGoal(id='',forChat=false){
     const chatKey=chatScope();let savedId=id;
-    const key=scope(),request=++viewTicket;details(id?'Edit goal':forChat?'Goal for this chat':'New workspace goal','<p role="status">Reading goal…</p>');
+    const key=scope(),request=++viewTicket;beginGoalPage('edit',id||String(forChat),id?'Edit goal':forChat?'Goal for this chat':'New workspace goal',()=>editGoal(id,forChat),'panel');
     const loading=state.fileDetailTicket,loadingHost=$('#detail-content');
     const data=id?await api('/api/goals?'+query({id})):null;if(request!==viewTicket||!same(key,loading,loadingHost))return;
     const g=data?.goal||{},info=goalInfo(g),local=id?info.scope==='chat':forChat;
+    if(goalPage)goalPage.basis=data?.goal_basis;
     const current=state.data.records.find(r=>r.ref===goal())?.data;
     const parent=info.workspace_goal_ref||(!id&&forChat&&current?(goalInfo(current).scope==='chat'?goalInfo(current).workspace_goal_ref||'':goal()):'');
     const parents=workspaceGoalRecords(true).filter(r=>(r.data.status||'active')==='active'||r.ref===parent);
     const connection=local?`<details class="goal-connection" ${parent?'open':''}><summary>Connect to a workspace goal <span class="muted">Optional</span></summary><label>Workspace goal<select name="workspace_goal_id"><option value="">No connection</option>${parent&&!parents.some(r=>r.ref===parent)?`<option value="${esc(parent)}" selected>Unavailable workspace goal</option>`:''}${parents.map(r=>`<option value="${esc(r.ref)}" ${r.ref===parent?'selected':''}>${esc(r.title)}${r.data.status&&r.data.status!=='active'?' · '+esc(human(r.data.status)):''}</option>`).join('')}</select></label></details>`:'';
     const simple=g.target===undefined||typeof g.target==='string'||typeof g.target==='number';
-    details(id?local?'Edit chat goal':'Edit workspace goal':forChat?'Goal for this chat':'New workspace goal',`<form id="compose-goal-form" class="form-grid"><label>What do you want to accomplish?<input name="name" required maxlength="2000" value="${esc(g.name||'')}"></label>${simple?`<label><span>What does done look like? <span class="muted">Optional</span></span><textarea name="target" maxlength="5000" rows="3">${esc(g.target??'')}</textarea></label>`:`<p>${esc(pretty(g.target))}</p>`}${connection}<div class="inline-actions"><button class="primary">${forChat?'Add to this chat':'Save goal'}</button>${forChat?'<button type="button" class="text-button" id="choose-saved-goal">Use a workspace goal only</button>':''}</div><p id="goal-save-status" role="status"></p>${forChat&&state.chatMeta?.goal_history?.length?`<button type="button" class="text-button" data-goal-manager data-chat-goals="${esc(state.chatMeta.id)}">Goals from this chat</button>`:''}</form>`);
+    goalDetails(id?local?'Edit chat goal':'Edit workspace goal':forChat?'Goal for this chat':'New workspace goal',`${!id?`<p class="goal-intro">${forChat?'Set an outcome for this conversation. Optionally connect it to a shared workspace goal.':'Create a shared outcome in Business & memory. Chats and recurring tasks can contribute to it.'}</p>`:''}<form id="compose-goal-form" class="form-grid"><label>What do you want to accomplish?<input name="name" required maxlength="2000" value="${esc(g.name||'')}"></label>${simple?`<label><span>What does done look like? <span class="muted">Optional</span></span><textarea name="target" maxlength="5000" rows="3">${esc(g.target??'')}</textarea></label>`:`<p>${esc(pretty(g.target))}</p>`}${connection}<div class="inline-actions"><button class="primary">${forChat?'Add to this chat':'Save goal'}</button>${forChat&&workspaceGoalRecords().length?'<button type="button" class="text-button" id="choose-saved-goal">Use an existing workspace goal</button>':''}</div><p id="goal-save-status" role="status"></p>${forChat&&state.chatMeta?.goal_history?.length?`<button type="button" class="text-button" data-goal-manager data-chat-goals="${esc(state.chatMeta.id)}">Goals from this chat</button>`:''}</form>`);
     const ticket=state.fileDetailTicket,host=$('#detail-content');
     $('#compose-goal-form').onsubmit=event=>{event.preventDefault();const form=event.currentTarget;attempt(async()=>{
       if(!same(key,ticket,host)||forChat&&chatKey!==chatScope())return;
@@ -178,21 +210,21 @@ window.auraCompose=(()=>{
       if(!savedId){values.status='active';values.scope=local?'chat':'workspace';if(local&&state.chatMeta)values.chat_id=state.chatMeta.id;}
       const button=form.querySelector('button');button.disabled=true;
       try{
-        const saved=await api('/api/goals',{business:state.business,action:'save',...(savedId?{id:savedId}:{}),...values});savedId=saved.goal.id;
-        if(!same(key,ticket,host)||forChat&&chatKey!==chatScope())return;cache.clear();if(forChat)await setGoal(savedId);await refresh();paintComposer();
-        if(same(key,ticket,host)){if(forChat){$('#detail').close();$('#request').focus();notice('Goal added to this chat.');}else await openGoal(savedId);}
+        const saved=await api('/api/goals',{business:state.business,action:'save',...(savedId?{id:savedId,basis:data?.goal_basis}:{}),...values});savedId=saved.goal.id;
+        if(!same(key,ticket,host)||forChat&&chatKey!==chatScope())return;cache.clear();if(forChat)await setGoal(savedId);await refresh(false,true);paintComposer();
+        if(same(key,ticket,host)){if(forChat){$('#detail').close();$('#request').focus();notice('Goal added to this chat.');}else{if(goalTrail.at(-1)?.kind==='goal'&&goalTrail.at(-1)?.id===savedId)goalTrail.pop();returningGoal=true;await openGoal(savedId);}}
       }catch(error){if(same(key,ticket,host))$('#goal-save-status').textContent=error.message;}finally{if(button.isConnected)button.disabled=false;}
     });};
   }
   async function changeGoal(id,changes){
     const key=scope(),ticket=state.fileDetailTicket,current=goal(),parent=goalInfo(state.data.records.find(r=>r.ref===current)?.data).workspace_goal_ref;
-    await api('/api/goals',{business:state.business,id,action:'save',...changes});if(key!==scope())return;
+    await api('/api/goals',{business:state.business,id,action:'save',...(goalPage?.id===id?{basis:goalPage.basis}:{}),...changes});if(key!==scope())return;
     cache.clear();if(state.chatMeta&&(current===id||parent===id))delete state.chatMeta.continuation;
     if(changes.action==='delete'){
       if(state.chatMeta?.goal_id===id)state.chatMeta.goal_id='';if(state.draftGoalId===id)state.draftGoalId='';
       state.contextReferences=refs().filter(r=>!(['goal','record'].includes(r.kind)&&r.id===id));
     }
-    await refresh();if(key!==scope())return;paintComposer();rememberChatDraft();
+    await refresh(false,true);if(key!==scope())return;paintComposer();rememberChatDraft();
     if(ticket===state.fileDetailTicket&&$('#detail').open)await openGoal(id);
     if(changes.action==='delete')notice('Goal deleted. Conversations and saved files are kept.');
     else if(changes.action==='restore')notice('Goal restored. Automatic continuation stays off.');
@@ -207,29 +239,42 @@ window.auraCompose=(()=>{
   }
   function confirmDeleteGoal(id,tasks=0){
     const name=state.data.records.find(r=>r.ref===id)?.title||'this goal';
-    details('Delete goal?',`<p>Delete <strong>${esc(name)}</strong>? Conversations and saved files stay available. You can restore the goal from Deleted goals.</p>${tasks?'<p class="small-note">Linked recurring tasks will need review in their task settings.</p>':''}<div class="inline-actions"><button type="button" class="primary" data-confirm-delete-goal="${esc(id)}">Delete goal</button><button type="button" class="secondary" data-compose-goal="${esc(id)}">Cancel</button></div>`);
+    goalDetails('Delete goal?',`<p>Delete <strong>${esc(name)}</strong>? Conversations and saved files stay available. You can restore the goal from Deleted goals.</p>${tasks?'<p class="small-note">Linked recurring tasks will need review in their task settings.</p>':''}<div class="inline-actions"><button type="button" class="primary" data-confirm-delete-goal="${esc(id)}">Delete goal</button><button type="button" class="secondary" data-compose-goal="${esc(id)}">Cancel</button></div>`);
   }
   function promoteGoal(button,id){
     if(!goalInfo(state.data.records.find(r=>r.ref===id)?.data).workspace_goal_ref){goalAction(button,id,{scope:'workspace'});return;}
-    details('Make workspace goal?',`<p>This goal will become available across the workspace. Its connection to the existing workspace goal will be removed. Conversations and saved files stay available.</p><div class="inline-actions"><button type="button" class="primary" data-confirm-promote-goal="${esc(id)}">Make workspace goal</button><button type="button" class="secondary" data-compose-goal="${esc(id)}">Cancel</button></div>`);
+    goalDetails('Make workspace goal?',`<p>This goal will become available across the workspace. Its connection to the existing workspace goal will be removed. Conversations and saved files stay available.</p><div class="inline-actions"><button type="button" class="primary" data-confirm-promote-goal="${esc(id)}">Make workspace goal</button><button type="button" class="secondary" data-compose-goal="${esc(id)}">Cancel</button></div>`);
   }
-  async function manageGoals(chatOnly=false){
+  async function manageGoals(chatOnly=false,saved={}){
     const key=scope(),chat=typeof chatOnly==='string'?chatOnly:chatOnly?state.chatMeta?.id:'',request=++viewTicket;
-    details(chat?'Goals from this chat':'Manage goals','<p role="status">Reading goals…</p>');const ticket=state.fileDetailTicket,host=$('#detail-content');
+    beginGoalPage('manager',chat||'',chat?'Goals from this chat':'All goals',()=>manageGoals(chat,saved),'panel');const ticket=state.fileDetailTicket,host=$('#detail-content');
     const data=await api('/api/goals?'+query({show:'all',scope:'all',...(chat?{chat_id:chat}:{})}));if(request!==viewTicket||!same(key,ticket,host))return;
-    const items=[...data.items,...(data.deleted_items||[])];let limit=20;
-    host.innerHTML='<div class="goal-manager-filters"><input id="goal-manager-find" class="search" type="search" aria-label="Find a goal" placeholder="Find a goal…"><label>Show<select id="goal-manager-show"><option value="current">Current goals</option><option value="completed">Completed goals</option><option value="deleted">Deleted goals</option></select></label></div><div id="goal-manager-list"></div><button type="button" class="text-button" id="goal-manager-more" hidden>Show more goals</button>';
+    const items=[...data.items,...(data.deleted_items||[])];let limit=saved.limit||20;
+    goalDetails(chat?'Goals from this chat':'All goals','<p class="goal-intro">Workspace goals are shared outcomes in Business & memory. Chat goals guide individual conversations and can contribute to them.</p><div class="goal-manager-filters"><input id="goal-manager-find" class="search" type="search" aria-label="Find a goal" placeholder="Find a goal…"><label>Scope<select id="goal-manager-scope"><option value="all">All goals</option><option value="workspace">Workspace goals</option><option value="chat">Chat goals</option></select></label><label>Status<select id="goal-manager-show"><option value="current">Current goals</option><option value="completed">Completed goals</option><option value="deleted">Deleted goals</option></select></label></div><div id="goal-manager-list"></div><button type="button" class="text-button" id="goal-manager-more" hidden>Show more goals</button>','panel');
+    $('#goal-manager-find').value=saved.q||'';$('#goal-manager-scope').value=saved.scope||'all';$('#goal-manager-show').value=saved.show||'current';
     const paint=()=>{
-      const q=$('#goal-manager-find').value.trim().toLowerCase(),show=$('#goal-manager-show').value||'current';
-      const matches=items.filter(g=>{const gone=!!goalInfo(g).deleted_at;return (show==='deleted'?gone:!gone&&(show==='completed'?g.status==='completed':g.status!=='completed'))&&[g.name,typeof g.target==='string'?g.target:''].join(' ').toLowerCase().includes(q);});
-      $('#goal-manager-list').innerHTML=matches.slice(0,limit).map(g=>`<button type="button" class="row" data-compose-goal="${esc(g.id)}"><span><strong>${esc(g.name)}</strong><small class="row-meta">${goalInfo(g).scope==='chat'?'Chat goal':'Workspace goal'} · ${show==='deleted'?'Deleted':esc(human(g.status||'active'))}</small></span></button>`).join('')||empty('No '+(show==='current'?'current':show)+' goals'+(q?' match your search.':'.'));
+      const q=$('#goal-manager-find').value.trim().toLowerCase(),show=$('#goal-manager-show').value||'current',which=$('#goal-manager-scope').value||'all';
+      Object.assign(saved,{q:$('#goal-manager-find').value,show,scope:which,limit});
+      const matches=items.filter(g=>{const gone=!!goalInfo(g).deleted_at;return (which==='all'||which===(goalInfo(g).scope||'workspace'))&&(show==='deleted'?gone:!gone&&(show==='completed'?g.status==='completed':g.status!=='completed'))&&[g.name,typeof g.target==='string'?g.target:''].join(' ').toLowerCase().includes(q);});
+      $('#goal-manager-list').innerHTML=matches.slice(0,limit).map(g=>{
+        const parent=goalInfo(g).workspace_goal_ref,linked=items.find(p=>p.id===parent),info=parent?'Contributes to '+(linked?linked.name+(goalInfo(linked).deleted_at?' · Deleted':''):'an unavailable workspace goal'):'';
+        return `<button type="button" class="row" data-compose-goal="${esc(g.id)}"><span><strong>${esc(g.name)}</strong><small class="row-meta">${goalInfo(g).scope==='chat'?'Chat goal':'Workspace goal'} · ${show==='deleted'?'Deleted':esc(human(g.status||'active'))}</small>${info?`<small class="row-meta">${esc(info)}</small>`:''}</span></button>`;
+      }).join('')||empty('No '+(show==='current'?'current':show)+' goals'+(q?' match your search.':'.'));
       $('#goal-manager-more').hidden=matches.length<=limit;
     };
-    $('#goal-manager-find').oninput=()=>{limit=20;paint();};$('#goal-manager-show').onchange=()=>{limit=20;paint();};$('#goal-manager-more').onclick=()=>{limit+=20;paint();};paint();
+    $('#goal-manager-find').oninput=()=>{limit=20;paint();};$('#goal-manager-show').onchange=()=>{limit=20;paint();};$('#goal-manager-scope').onchange=()=>{limit=20;paint();};$('#goal-manager-more').onclick=()=>{limit+=20;paint();};paint();
   }
   async function linkAsset(id){
-    const key=scope();const assets=state.data.records.filter(r=>r.type==='Asset');details('Link a saved file',assets.map(a=>`<button type="button" class="row" data-link-goal-asset="${esc(a.ref)}">${esc(a.title)}</button>`).join('')||empty('Save a file to this business first.'));
-    $('#detail-content').onclick=event=>attempt(async()=>{const b=event.target.closest('[data-link-goal-asset]');if(!b||key!==scope())return;await api('/api/goals',{business:state.business,action:'link_asset',goal_id:id,asset_id:b.dataset.linkGoalAsset});if(key===scope())await openGoal(id);});
+    const key=scope(),assets=state.data.records.filter(r=>r.type==='Asset');let limit=20;
+    beginGoalPage('asset',id,'Link a saved file',()=>linkAsset(id),'panel');
+    goalDetails('Link a saved file','<p class="goal-intro">Links the existing file without copying it. If it belongs to another goal, choosing it moves that link here.</p><input id="goal-asset-find" class="search" type="search" aria-label="Find a saved file" placeholder="Find a saved file…"><div id="goal-asset-list"></div><button type="button" class="text-button" id="goal-asset-more" hidden>Show more files</button>','panel');
+    const paint=()=>{
+      const q=$('#goal-asset-find').value.trim().toLowerCase(),found=assets.filter(a=>(a.title+' '+(a.data.location_reference||'')).toLowerCase().includes(q));
+      $('#goal-asset-list').innerHTML=found.slice(0,limit).map(a=>{const owner=a.data.extensions?.businessos?.goal_ref,linked=state.data.records.find(r=>r.ref===owner);return `<button type="button" class="row" data-link-goal-asset="${esc(a.ref)}" ${owner===id?'disabled':''}><span><strong>${esc(a.title)}</strong>${owner?`<small class="row-meta">${owner===id?'Already linked here':esc('Linked to '+(linked?.title||'another goal'))+' · Move link here'}</small>`:''}</span></button>`;}).join('')||empty(q?'No matching saved files.':'No saved files available.');
+      $('#goal-asset-more').hidden=found.length<=limit;
+    };
+    $('#goal-asset-find').oninput=()=>{limit=20;paint();};$('#goal-asset-more').onclick=()=>{limit+=20;paint();};paint();
+    $('#detail-content').onclick=event=>attempt(async()=>{const b=event.target.closest('[data-link-goal-asset]');if(!b||key!==scope())return;await api('/api/goals',{business:state.business,action:'link_asset',goal_id:id,asset_id:b.dataset.linkGoalAsset});if(key===scope()){await refresh(false,true);if(key!==scope())return;if(goalTrail.at(-1)?.kind==='goal'&&goalTrail.at(-1)?.id===id)goalTrail.pop();returningGoal=true;await openGoal(id);}});
   }
   async function continuation(){
     if(!state.chatMeta||!goal())return;const key=chatScope(),c=state.chatMeta,p=c.continuation||{},supported=['pi','omp'].includes(c.agent);
@@ -254,7 +299,9 @@ window.auraCompose=(()=>{
       finally{if(select.isConnected)select.disabled=false;if(button.isConnected)button.disabled=false;}
       if(key===scope()&&host.isConnected)$('#task-goal-status').textContent=state.scheduleJob?.message||'Updating the native task…';
     });
-    $('#task-goal').onchange=update;$('#task-goal-update').onclick=update;
+    const saved=data.task_links[task.id]||'',active=new Set(data.items.filter(g=>!goalInfo(g).deleted_at&&(g.status||'active')==='active').map(g=>g.id));
+    const ready=()=>{const id=$('#task-goal').value;$('#task-goal-update').disabled=id?!active.has(id):!saved;};
+    $('#task-goal').onchange=ready;$('#task-goal-update').onclick=update;ready();
   }
   function draft(){return {references:refs(),goal_id:state.draftGoalId||''};}
   function restore(saved){state.contextReferences=Array.isArray(saved?.references)?saved.references.filter(r=>r&&kinds[r.kind]&&typeof r.id==='string'&&r.id).slice(0,12):[];state.draftGoalId=state.chatMeta?'':typeof saved?.goal_id==='string'?saved.goal_id:'';closeMenu();paintComposer();}
@@ -273,7 +320,9 @@ window.auraCompose=(()=>{
     if(b.dataset.composeGoal)attempt(()=>openGoal(b.dataset.composeGoal));
     if(b.dataset.goalEdit)attempt(()=>editGoal(b.dataset.goalEdit));
     if(b.dataset.goalAsset)attempt(()=>linkAsset(b.dataset.goalAsset));
-    if(b.dataset.goalUnlinkAsset)attempt(async()=>{const key=scope();await api('/api/goals',{business:state.business,action:'link_asset',goal_id:'',asset_id:b.dataset.goalUnlinkAsset});if(key===scope())await openGoal(b.dataset.goalId);});
+    if(b.dataset.goalUnlinkAsset)attempt(async()=>{const key=scope();await api('/api/goals',{business:state.business,action:'link_asset',goal_id:'',asset_id:b.dataset.goalUnlinkAsset});if(key===scope()){await refresh(false,true);if(key===scope())await openGoal(b.dataset.goalId);}});
+    if(b.dataset.goalOpenFile)attempt(()=>openRelatedGoal('file',b.dataset.goalOpenFile));
+    if(b.dataset.goalOpenTask)attempt(()=>openRelatedGoal('task',b.dataset.goalOpenTask));
     if(b.dataset.goalState)goalAction(b,b.dataset.goalState,{status:b.dataset.goalStatus});
     if(b.dataset.goalPromote)promoteGoal(b,b.dataset.goalPromote);
     if(b.dataset.confirmPromoteGoal)goalAction(b,b.dataset.confirmPromoteGoal,{scope:'workspace'});
@@ -281,6 +330,7 @@ window.auraCompose=(()=>{
     if(b.dataset.goalDelete)confirmDeleteGoal(b.dataset.goalDelete,Number(b.dataset.linkedTasks)||0);
     if(b.dataset.confirmDeleteGoal)goalAction(b,b.dataset.confirmDeleteGoal,{action:'delete'});
     if(b.dataset.goalRestore)goalAction(b,b.dataset.goalRestore,{action:'restore'});
+    if(b.hasAttribute('data-goal-back'))attempt(backGoal);
     if(b.hasAttribute('data-goal-manager'))attempt(()=>manageGoals(b.dataset.chatGoals||false));
     if(b.hasAttribute('data-new-chat-goal'))attempt(()=>editGoal('',true));
     if(b.dataset.goalUse)attempt(async()=>{await setGoal(b.dataset.goalUse);$('#detail').close();});

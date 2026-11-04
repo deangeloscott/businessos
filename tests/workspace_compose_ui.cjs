@@ -35,7 +35,7 @@ const context={window:{},state,URLSearchParams,TextEncoder,Uint8Array,crypto:cry
 };
 vm.createContext(context);vm.runInContext(fs.readFileSync(process.argv[2],'utf8'),context);
 const ui=context.window.auraCompose,flush=()=>new Promise(r=>setImmediate(r)),delay=()=>new Promise(r=>setTimeout(r,170));
-function click(dataset,id=''){for(const fn of events.click||[])fn({target:{closest:selector=>selector==='button'?{id,dataset,hasAttribute:()=>false}:selector==='#chat-form'?{}:null}});}
+function click(dataset,id=''){for(const fn of events.click||[])fn({target:{closest:selector=>selector==='button'?{id,dataset,hasAttribute:name=>Object.hasOwn(dataset,name.replace(/^data-/, '').replace(/-([a-z])/g,(_,c)=>c.toUpperCase()))}:selector==='#chat-form'?{}:null}});}
 function input(text){const el=node('#request');el.value=text;el.selectionStart=text.length;for(const fn of el.listeners.input||[])fn({});}
 (async()=>{
  assert.equal(ui.draft().references[0].id,fixture.id,'A composer module loaded after initial hydration must restore selected context');
@@ -81,12 +81,22 @@ function input(text){const el=node('#request');el.value=text;el.selectionStart=t
  assert.equal(calls.some(c=>c.path==='/api/chat'),false,'Creating a goal must not submit a model request');
  const manager=ui.manageGoals();await flush();slowGoal({items:[{id:'obj_goal',name:'Launch',status:'active'},{...state.data.records[1].data,status:'completed'}],deleted_items:[{id:'obj_removed',name:'Old effort',status:'paused',extensions:{businessos:{goal:{scope:'chat',deleted_at:1}}}}]});await manager;
  assert.match(node('#goal-manager-list').innerHTML,/Launch/);assert.doesNotMatch(node('#goal-manager-list').innerHTML,/Proposal|Old effort/);
- node('#goal-manager-show').value='completed';node('#goal-manager-show').onchange();assert.match(node('#goal-manager-list').innerHTML,/Proposal/);assert.doesNotMatch(node('#goal-manager-list').innerHTML,/Launch/);
+ node('#goal-manager-show').value='completed';node('#goal-manager-show').onchange();assert.match(node('#goal-manager-list').innerHTML,/Proposal/);assert.doesNotMatch(node('#goal-manager-list').innerHTML,/data-compose-goal="obj_goal"/);
+ node('#goal-manager-scope').value='workspace';node('#goal-manager-scope').onchange();assert.doesNotMatch(node('#goal-manager-list').innerHTML,/obj_effort/);node('#goal-manager-scope').value='all';
  node('#goal-manager-show').value='deleted';node('#goal-manager-show').onchange();assert.match(node('#goal-manager-list').innerHTML,/Old effort/);
+ node('#goal-manager-show').value='current';node('#goal-manager-scope').value='workspace';node('#goal-manager-find').value='Launch';node('#goal-manager-find').oninput();
+ node('#detail-content').scrollTop=145;const inspectGoal=ui.openGoal('obj_goal');await flush();slowGoal({goal:state.data.records[0].data,chats:[],assets:[],task_links:{},running_chats:[],chat_goals:[state.data.records[1].data]});await inspectGoal;
+ assert.match(node('#detail-content').innerHTML,/Connected chat goals/);node('#detail-content').scrollTop=0;click({goalBack:''});await flush();slowGoal({items:state.data.records.map(r=>r.data),deleted_items:[]});await Promise.all(pending);
+ assert.equal(node('#detail-content').scrollTop,145);assert.equal(node('#goal-manager-find').value,'Launch');assert.equal(node('#goal-manager-scope').value,'workspace','Returning to the list must preserve scope and search');
+ const taskHost=node('#assignment'),assignment=ui.assignTask({id:'task'},taskHost);await flush();slowGoal({items:[state.data.records[0].data],task_links:{task:'obj_goal'}});await assignment;
+ const callCount=calls.length;node('#task-goal').value='obj_goal';node('#task-goal').onchange();assert.equal(calls.length,callCount,'Picking a task goal must not launch an update');assert.equal(node('#task-goal-update').disabled,false,'An explicit update can refresh an existing goal preflight');
  const deletes=calls.filter(c=>c.data?.action==='delete').length;click({goalDelete:'obj_effort',linkedTasks:'0'});await flush();assert.match(node('#detail-content').innerHTML,/data-confirm-delete-goal=/);assert.equal(calls.filter(c=>c.data?.action==='delete').length,deletes,'Opening deletion confirmation must not delete the goal');
  const promotes=calls.filter(c=>c.data?.scope==='workspace').length;click({goalPromote:'obj_effort'});await flush();assert.match(node('#detail-content').innerHTML,/connection to the existing workspace goal will be removed/);assert.equal(calls.filter(c=>c.data?.scope==='workspace').length,promotes,'Promotion must explain the removed parent connection before changing scope');
  // Exercise refresh completion, failure and navigation against the shipped functions.
  const appSource=fs.readFileSync(require('node:path').join(require('node:path').dirname(process.argv[2]),'app.js'),'utf8');
+ const opened=[],recordContext={state:{data:{records:[{ref:'asset_local',type:'Asset',data:{location_reference:'attachments/studio/work.txt'}},{ref:'obj_goal',type:'Objective',data:{}}]}},attempt:fn=>fn(),openFileWorkspace:ref=>opened.push(ref),window:{auraCompose:{openGoal:ref=>opened.push(ref)}}};
+ vm.createContext(recordContext);vm.runInContext(appSource.slice(appSource.indexOf('function recordDetails('),appSource.indexOf('async function openFileWorkspace(')),recordContext);
+ recordContext.recordDetails('asset_local');recordContext.recordDetails('obj_goal');assert.deepEqual(opened,['asset/asset_local','obj_goal'],'Memory records must open the same file and goal views as their other entry points');
  let finishRead,failRead,refreshMessage='',refreshScope='chat';
  const refreshState={chatMeta:{id:'chat'},chat:[{role:'user',text:'Saved'}],busy:false},refreshNodes={};
  const refreshContext={state:refreshState,AbortSignal,encodeURIComponent,window:{auraContinuity:{acceptRecovery(){}}},

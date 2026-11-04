@@ -8,6 +8,9 @@ def _material_value(obj,key):
     value=dict(obj.get('extensions') or {})
     if isinstance(value.get('businessos'),dict):
         audit=dict(value['businessos']);audit.pop('memory_provenance',None)
+        # Goal assignment/lifecycle bookkeeping does not correct artifact contents.
+        if obj.get('object_type')=='Objective':audit.pop('goal',None)
+        if obj.get('object_type')=='Asset':audit.pop('goal_ref',None)
         if audit:value['businessos']=audit
         else:value.pop('businessos',None)
     return value
@@ -17,6 +20,7 @@ def correction_event(business_id, before, after, summary, event_id, timestamp):
     """Record possible review impacts, not inferred semantic dependencies."""
     ignored={'id','object_type','business_id','schema_version','created_at','updated_at'}
     if not summary:ignored.add('reviewed_at')
+    if not summary and before.get('object_type')=='Objective':ignored.add('status')
     changed=sorted(key for key in before.keys() | after.keys() if key not in ignored and _material_value(before,key)!=_material_value(after,key))
     if not changed or before.get('object_type')=='ChangeEvent':return None
     related=[row for row in inbound_references(business_id,after['id']) if row['object_type']!='ChangeEvent' and row.get('status') not in {'archived','superseded'}]

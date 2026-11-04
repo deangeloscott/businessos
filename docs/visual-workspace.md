@@ -101,7 +101,7 @@ Organization failures retain the originals and provide a short cause/remedy. An 
 
 The main page brings four areas together, without a row of tabs:
 
-- **Business & memory:** goals and saved context, with a panel for editing and reviewing the rest.
+- **Business & memory:** shared workspace goals and saved context. **All goals** also includes chat goals, their workspace connections, and completed/deleted goal history; it uses the same goal records as the chat composer.
 - **Saved files & media:** recent files and previews, with a searchable browser for all saved work.
 - **Workflows & recipes:** two separate collections, each browsable by topic and subgroup. Search can find both from the overview, with results separated by collection. Workflow instructions and recipe guidance retain their original identities and source files; categories are navigation aids.
 - **Recurring tasks:** a combined view of readable native Codex and Hermes schedules, Pi `pi-schedule-prompt` jobs in the current/recently opened workspaces, and documented Google Antigravity schedule sidecars (including plugin sidecars). Discovery does not modify native files or start a model. The list refreshes every 30 seconds while the page is visible and after an AI request, without replacing forms in progress. Saved AURA monitoring plans remain separate from scheduled jobs.

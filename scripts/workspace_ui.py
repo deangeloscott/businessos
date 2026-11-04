@@ -2774,10 +2774,8 @@ def handler_for(app):
                             obj = next(row for row in rows if row['type'] == 'Business')
                             item = {'object_ref': obj['ref'], 'content': {'name': name}}
                         elif kind == 'goal':
-                            ref = data.get('ref')
-                            if ref and not any(r['ref'] == ref and r['type'] == 'Objective' for r in rows):
-                                raise ValueError('Goal not found in this business.')
-                            item = {'content': {'name': name}, **({'object_ref': ref} if ref else {'object_type': 'Objective'})}
+                            result=workspace_goals.mutate(app,bid,{'action':'save','id':data.get('ref'),'name':name})
+                            self.send(200,{**result,'objects':[{'id':result['goal']['id'],'object_type':'Objective'}]});return
                         else:
                             raise ValueError('Unsupported edit. Use your agent for this change.')
                         self.send(200, remember(bid, {'objects': [item]}))
@@ -2998,28 +2996,7 @@ def handler_for(app):
                         app.save_preferences(portable=any(k in data for k in ('appearance','model_picker','library')))
                         self.send(200, {'ok': True})
                     elif route == '/api/goals':
-                        bid=selected(data.get('business'));action=data.get('action','save')
-                        if action=='save':
-                            if data.get('chat_id') and not any(c['id']==data['chat_id'] and c['business_id']==bid and c.get('workspace',app.workspace_path)==app.workspace_path for c in app.preferences['chats']):raise ValueError('Choose a chat in this workspace and business.')
-                            goal=workspace_goals.save(bid,data);app.read_cache.clear()
-                            workspace_goals.changed(app,bid,goal['id'])
-                        elif action in {'delete','restore'}:
-                            goal=workspace_goals.remove(bid,data.get('id'),restore=action=='restore')
-                            workspace_goals.changed(app,bid,goal['id'],remove_links=action=='delete')
-                        elif action=='link_chat':workspace_goals.link_chat(app.preferences,bid,data.get('chat_id'),data.get('goal_id'))
-                        elif action=='continuation':
-                            workspace_goals.set_continuation(app.preferences,bid,data.get('chat_id'),data.get('mode','manual'),data.get('until'))
-                        elif action=='link_asset':
-                            workspace_goals.link_asset(bid,data.get('asset_id'),data.get('goal_id'));app.read_cache.clear()
-                        else:raise ValueError('Choose a supported goal action.')
-                        app.read_cache.clear();app.save_preferences()
-                        for pending in app.running_jobs(workspace_root()):
-                            execution=app.executions.get(pending['id'])
-                            if not execution or not hasattr(execution,'continuation'):continue
-                            current=next((c for c in app.preferences['chats'] if c['id']==pending.get('chat_id')),None)
-                            if current:execution.continuation=dict(current.get('continuation') or {'mode':'manual'})
-                            if execution.retry_check_at is not None:execution.retry_check_at=time.time()
-                        self.send(200,workspace_goals.inventory(app,bid,(goal['id'] if action in {'save','delete','restore'} else data.get('goal_id')) or None))
+                        self.send(200,workspace_goals.mutate(app,selected(data.get('business')),data))
                     elif route == '/api/permissions':
                         bid=selected(data.get('business'));kind=data.get('kind') or app.connection_kind
                         chat=next((c for c in app.preferences['chats'] if c['id']==data.get('chat_id') and c['business_id']==bid),None)

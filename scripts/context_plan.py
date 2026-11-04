@@ -9,6 +9,7 @@ available tools, Skills, resources, and execution approach.
 from _common import *
 import argparse,json,os
 from resolve_preferences import resolve_effective_preferences,_load_task_preferences
+from workspace_goals import discoverable
 
 
 def _strings(value):
@@ -124,19 +125,19 @@ def build_plan(business_id,workflow_id,focus=None,operator_ref=None,team_ref=Non
             for ref in refs_in_object(obj):
                 if ref in seen or ref not in idx:continue
                 robj,rpath=idx[ref]
-                if robj.get('object_type') in context_types or any(object_matches(robj,s) for s in selectors):selected[ref]=(robj,rpath);nxt.append(ref);seen.add(ref)
+                if discoverable(robj) and (robj.get('object_type') in context_types or any(object_matches(robj,s) for s in selectors)):selected[ref]=(robj,rpath);nxt.append(ref);seen.add(ref)
         queue=nxt
 
     if owner in {'content-synthesis','marketing-synthesis'}:context_types.add('BusinessClaim')
     for typ in sorted(context_types):
-        candidates=[(o,p) for o,p in idx.values() if o.get('object_type')==typ and o.get('status') not in {'archived','superseded'}];already=any(o.get('object_type')==typ for o,_ in selected.values())
+        candidates=[(o,p) for o,p in idx.values() if o.get('object_type')==typ and o.get('status') not in {'archived','superseded'} and discoverable(o)];already=any(o.get('object_type')==typ for o,_ in selected.values())
         if not already and len(candidates)==1:selected[candidates[0][0]['id']]=candidates[0]
         elif not already and len(candidates)>1:unresolved.append({'type':typ,'reason':'multiple candidates; resolve from request/focus rather than bulk-loading'})
         elif not already:unresolved.append({'type':typ,'reason':'not present in durable AURA context'})
     for sel in selectors:
         ns=normalize_selector(sel)
         if any(object_matches(o,sel) for o,_ in selected.values()):continue
-        candidates=[(o,p) for o,p in idx.values() if object_matches(o,sel) and o.get('status') not in {'archived','superseded'}]
+        candidates=[(o,p) for o,p in idx.values() if object_matches(o,sel) and o.get('status') not in {'archived','superseded'} and discoverable(o)]
         if len(candidates)==1:selected[candidates[0][0]['id']]=candidates[0]
         elif len(candidates)>1:unresolved.append({**ns,'reason':'multiple candidates; resolve from request/focus rather than bulk-loading'})
         else:unresolved.append({**ns,'reason':'not present in durable AURA context'})

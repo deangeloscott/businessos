@@ -20,6 +20,7 @@ from process_plan import build_process_plan
 from _lexical import tokens,document_frequency,weighted_overlap
 from correction_impacts import pending_corrections
 from generate_knowledge_layer import knowledge_layer_freshness
+from workspace_goals import discoverable
 
 METHOD_TYPES=['aura_playbook','aura_workflow','external_skill','model_created','ad_hoc']
 BASELINE_TYPES=['Business','Brand','ProductService','Offer','AudienceSegment','Market','Objective','DecisionRecord','Learning']
@@ -36,7 +37,7 @@ def _baseline_context(business_id,limit_per_type=3,index=None):
     idx=index if index is not None else object_index(business_id);rows=[];by_type={typ:[] for typ in BASELINE_TYPES}
     for _,(obj,path) in idx.items():
         typ=obj.get('object_type')
-        if typ not in by_type or obj.get('status') in {'archived','superseded'}:continue
+        if typ not in by_type or obj.get('status') in {'archived','superseded'} or not discoverable(obj):continue
         by_type[typ].append((obj,path))
     for typ in BASELINE_TYPES:
         candidates=sorted(by_type[typ],key=lambda x:(x[0].get('updated_at') or x[0].get('created_at') or '',x[0].get('id') or ''),reverse=True)
@@ -50,6 +51,7 @@ def _saved_work_candidates(task,index,limit=6,offset=0):
     objects=[obj for obj,_ in index.values()]
     frequencies=document_frequency(objects,fields);terms=tokens(task);ranked=[]
     for obj,path in index.values():
+        if not discoverable(obj):continue
         text=' '.join(str(obj.get(key) or '') for key in fields)
         score,matched=weighted_overlap(terms,text,frequencies,len(objects))
         if not matched:continue
