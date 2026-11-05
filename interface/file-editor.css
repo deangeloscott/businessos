@@ -22,3 +22,7 @@
 .file-transfer-panel{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:0 0 18px;padding:12px;border:1px solid var(--line);border-radius:8px;background:var(--paper)}
 .file-transfer-panel button{font-size:12px}.file-transfer-panel p{flex-basis:100%;font-size:12px;margin:0;color:var(--muted)}
 @media(max-width:760px){.file-open-row button,.file-install-actions button,.file-save-actions button,.file-transfer-panel button{min-height:40px}.file-modes{flex-wrap:wrap}}
+
+/* Text previews use the dialog's scroll, so long guidance has one scroll owner. */
+.file-canvas:has(.file-markdown),.file-canvas:has(>pre){max-height:none;overflow:visible}
+.file-canvas>pre{white-space:pre-wrap;overflow-wrap:anywhere}

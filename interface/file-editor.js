@@ -53,6 +53,7 @@ async function render(view){
         <button type="button" data-file-action="transfer" aria-controls="file-transfer-panel" aria-expanded="false">${view.ctx.ref.startsWith('library/')?'Import':'Share or import'}</button>
       </div>
       <div class="file-toolbar-actions">
+        ${!view.ctx.ref.startsWith('library/')?view.ctx.favoriteMarkup?.(view.ctx.ref,info.name)||'':''}
         ${info.history_available?'<button type="button" class="text-button" data-file-action="history" aria-controls="file-history-panel" aria-expanded="false">History</button>':''}<button type="button" class="text-button" data-file-action="expand">${$('#detail').hasAttribute('data-file-wide')?'Reduce':'Expand'}</button>
         <button type="button" class="secondary" data-file-action="open" aria-controls="file-open-panel" aria-expanded="false">Open in…</button>
       </div>
@@ -99,8 +100,9 @@ async function render(view){
     view.host.querySelector('#file-import-choose').onclick=()=>importer.click();
     importer.onchange=()=>prepareImport(view,importer.files[0]);
   }
-  view.host.onclick=event=>{const button=event.target.closest('button');if(!button)return;const action=button.dataset.fileAction;
+  view.host.onclick=async event=>{const button=event.target.closest('button');if(!button)return;const action=button.dataset.fileAction;
     if(button.dataset.fileMode){snapshot(view);view.editing=button.dataset.fileMode==='edit';render(view).catch(e=>status(view,readableError(e),true));}
+    if(button.dataset.fileFavorite){try{const marked=await view.ctx.toggleFavorite?.(view.ctx.ref);if(live(view)){button.textContent=marked?'★ Favorited':'☆ Favorite';button.setAttribute('aria-pressed',String(marked));button.setAttribute('aria-label',`${marked?'Remove':'Add'} ${info.name} ${marked?'from':'to'} favorites`);}}catch(error){status(view,readableError(error),true);}}
     if(button.dataset.fileRelated)openFile({...view.ctx,ref:button.dataset.fileRelated});
     if(action==='expand'){$('#detail').toggleAttribute('data-file-wide');button.textContent=$('#detail').hasAttribute('data-file-wide')?'Reduce':'Expand';if(info.kind==='pdf')renderPdf(view);view.table?.redraw(true);}
     if(action==='open')openPanel(view);

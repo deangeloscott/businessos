@@ -447,3 +447,9 @@ input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px soli
 @media(prefers-reduced-motion:reduce){#chat-refresh[aria-busy=true] svg{animation:none}}
 
 .record-location{display:block;max-width:100%;text-align:left;padding:0;margin:0 0 20px;font:11px/1.6 ui-monospace,monospace;color:var(--muted);overflow-wrap:anywhere;border:0;background:transparent}.record-location:hover{color:var(--ink)}
+
+.detail-search-back{flex:none;min-height:40px;margin-right:8px;white-space:nowrap}
+.file-card-wrap{position:relative;min-width:0}.file-card-wrap>.file-card{width:100%;height:100%;padding-right:46px}
+.file-card-wrap>.file-star{position:absolute;top:8px;right:8px;background:var(--surface);font-size:18px}
+.capability-sources{padding-left:20px}.capability-sources li{padding:6px 0}.capability-sources .record-location{margin:5px 0}
+.capability-tools .row-text small{display:block;color:var(--muted);line-height:1.6;margin-top:4px}

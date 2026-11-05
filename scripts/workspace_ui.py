@@ -278,6 +278,7 @@ def library():
             group = {'audio':'Audio', 'video':'Video', 'motion-graphics':'Motion graphics',
                      'information-design':'Information design', 'copy-messaging':'Copy & messaging'}.get(
                          area.split('/')[1] if '/' in area else '', 'Creative direction')
+        group=re.sub(r'\bQa\b','QA',group)
         row.update(category=category, group='Complete business guides' if row.get('subtype')=='Playbook' else group)
         row.setdefault('key',row['kind'].lower()+':'+path)
     return out
@@ -2988,7 +2989,7 @@ def handler_for(app):
                             clean={}
                             for field,limit in [('favorites',500),('recent',24)]:
                                 values=prefs.get(field,[])
-                                if not isinstance(values,list) or len(values)>limit or any(not isinstance(v,str) or len(v)>500 or not re.fullmatch(r'(?:workflow|recipe|skill|tool|plugin):[^\r\n\x00]+',v) for v in values):
+                                if not isinstance(values,list) or len(values)>limit or any(not isinstance(v,str) or len(v)>2005 or not re.fullmatch(r'(?:workflow|recipe|skill|tool|plugin|file):[^\r\n\x00]+',v) for v in values):
                                     raise ValueError('Choose items from the library.')
                                 clean[field]=list(dict.fromkeys(values))
                             app.preferences['library'][bid]=clean

@@ -1,10 +1,10 @@
 /* Search behavior against the real shell functions, without a browser dependency. */
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
 const source=fs.readFileSync(process.argv[2],'utf8'),nodes=new Map();
-const node=id=>{if(!nodes.has(id))nodes.set(id,{value:'',innerHTML:'',textContent:'',hidden:false,focus(){},showModal(){this.open=true;}});return nodes.get(id);};
+const node=id=>{if(!nodes.has(id))nodes.set(id,{value:'',innerHTML:'',textContent:'',hidden:false,scrollTop:0,focus(){this.focused=true;},close(){this.open=false;},querySelectorAll(){return [];},showModal(){this.open=true;}});return nodes.get(id);};
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const records=[{title:'Customer guide',type:'Asset',ref:'Asset/guide',data:{topic:'retention'}}];
-const context={libraryGuidance:item=>['Workflow','Recipe','Skill'].includes(item.kind),state:{business:'studio',data:{workspace:'A',records}},shellSearchData:null,shellSearchTicket:0,$:node,
+const context={window:{auraFiles:{detach(){}}},libraryPrefs:()=>({favorites:['file:attachments/guide.md','guide-0']}),fileFavoriteKey:ref=>'file:'+ref,libraryGuidance:item=>['Workflow','Recipe','Skill'].includes(item.kind),state:{business:'studio',data:{workspace:'A',records}},shellSearchData:null,shellSearchTicket:0,$:node,
   goalInfo:value=>value?.extensions?.businessos?.goal||{},closeAnchoredSurface(){},esc,empty:(title,detail)=>esc(title+' '+detail),appName:id=>id,shareType:type=>type,
   usefulFile:file=>!file.path.startsWith('instances/'),chatDescription:chat=>chat.description||''};
 vm.createContext(context);
@@ -31,11 +31,20 @@ context.api=async()=>chats;context.cachedApi=async path=>path.startsWith('/api/f
   assert.equal(node('#shell-search').value,'Customer guide','Filtering preserves the query');
   vm.runInContext("shellSearchFilter='all';shellSearchLimit=100",context);node('#shell-search').value='guide';context.paintShellSearch();
   assert.match(node('#shell-search-results').innerHTML,/&lt;script&gt;guide&lt;\/script&gt;/);assert.equal(node('#shell-search-more').hidden,true);
+  vm.runInContext("shellSearchFavorites=true",context);node('#shell-search').value='';context.paintShellSearch();
+  assert.match(node('#shell-search-status').textContent,/^2 results$/,'The same favorites collection covers files and guidance');
+  assert.match(node('#shell-search-results').innerHTML,/data-search-file=/);assert.match(node('#shell-search-results').innerHTML,/data-search-library="guide-0"/);
+  node('#shell-search-results').scrollTop=123;node('#search-dialog').open=true;
+  const picked={hasAttribute:a=>a==='data-search-file',getAttribute:a=>a==='data-search-file'?'attachments/guide.md':null};
+  context.rememberSearchResult(picked);node('#search-dialog').close();context.backToSearchResults();
+  assert.equal(node('#search-dialog').open,true);assert.equal(node('#shell-search-results').scrollTop,123);
+  assert.match(node('#shell-search-status').textContent,/^2 results$/,'Back preserves the favorites filter');
+  node('#shell-search').value='Customer';context.rememberSearchResult(picked);node('#search-dialog').close();context.backToSearchResults();assert.equal(node('#shell-search').value,'Customer');
   context.cachedApi=async path=>{if(path==='/api/library')throw Error('unavailable');return files;};
   await context.openShellSearch();assert.match(node('#shell-search-status').textContent,/3 results · Couldn’t search Library/);
   assert.match(node('#shell-search-results').innerHTML,/data-chat="chat"/);
   let resolveChats;context.api=()=>new Promise(resolve=>resolveChats=resolve);
   const stale=context.openShellSearch();context.state.business='other';node('#shell-search-results').innerHTML='Other workspace';resolveChats(chats);await stale;
   assert.equal(node('#shell-search-results').innerHTML,'Other workspace');
-  console.log('Workspace search passed: one labeled list, ranking, filters, all-result pagination, escaping, partial availability, and stale-workspace isolation.');
+  console.log('Workspace search passed: one labeled list, ranking, filters, all-result pagination, escaping, shared favorites, search return, partial availability, and stale-workspace isolation.');
 })().catch(error=>{console.error(error);process.exitCode=1;});

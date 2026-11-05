@@ -34,6 +34,11 @@ def main():
             except HTTPError as error:
                 assert error.code==status,(error.code,error.read());return json.load(error)
         try:
+            favorite_keys=['workflow:fixture','file:attachments/'+bid+'/work/日本語.md','file:asset/ast_stable']
+            call('/api/preferences',{'business':bid,'library':{'favorites':favorite_keys,'recent':[]}})
+            assert call('/api/state?business='+bid)['library_preferences']['favorites']==favorite_keys
+            call('/api/preferences',{'business':bid,'library':{'favorites':['file:bad\npath'],'recent':[]}},400)
+            assert call('/api/state?business='+bid)['library_preferences']['favorites']==favorite_keys
             listed=call('/api/archive?business='+bid)['items'];assert {i['kind'] for i in listed}=={'chat','goal','recovery'} and 'other' not in {i['id'] for i in listed}
             def cli(*args):
                 result=subprocess.run([sys.executable,'-X','utf8',str(ROOT/'scripts/workspace_archive.py'),*args,'--workspace',str(root),'--business-id',bid,'--url',url,'--json'],capture_output=True,text=True,encoding='utf-8',check=True)
