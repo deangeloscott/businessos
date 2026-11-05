@@ -1219,7 +1219,7 @@ function setDetailBack(label,run){
 function details(title,html,mode='panel',anchor=null){
   closeAnchoredSurface(false);
   window.auraFiles?.detach();
-  setDetailTitleActions('');
+  setDetailTitleActions('');delete $('#detail').dataset.chatDetails;
   const d=$('#detail');state.fileDetailTicket=(state.fileDetailTicket||0)+1;shellReturnFocus=document.activeElement;
   const page=mode==='page'||(state.view==='sharing'&&mode!=='context'),modal=!anchor&&!page&&mode!=='context';
   if(d.open&&d.matches(':modal')!==modal)d.close();
@@ -1736,6 +1736,105 @@ async function showChats(archived=false){
   const shown=result.items.filter(c=>!!c.archived===archived&&(!state.chatProjectFilter||c.project===state.chatProjectFilter));
   details('Your chats',`<p>Pinned chats first, then most recently active.</p><div class="filters"><button data-chat-archive-view="false" class="${archived?'':'active'}" aria-pressed="${!archived}">Recent</button><button data-chat-archive-view="true" class="${archived?'active':''}" aria-pressed="${archived}">Archived</button></div>${projects.length?`<label class="chat-project-filter">Project<select id="chat-project-filter"><option value="">All chats</option>${projects.map(name=>`<option value="${esc(name)}" ${state.chatProjectFilter===name?'selected':''}>${esc(name)}</option>`).join('')}</select></label>`:''}<div class="chat-list bounded-list">${shown.length?shown.map(c=>`<div class="chat-list-row"><button class="row" data-chat="${esc(c.id)}" ><span class="row-text"><span class="row-title">${c.pinned?'<svg class="chat-pin" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="Pinned"><path d="m16 3 5 5-4 1-4 4-1 5-6-6 5-1 4-4 1-4ZM2 22l5-5"/></svg> ':''}${esc(c.title)}</span><span class="chat-description">${esc(chatDescription(c))}</span><span class="row-meta">${c.project?esc(c.project)+' · ':''}${esc(appName(c.agent))} · ${esc(c.model||'App default')} · ${esc(chatDate(c.updated))} · ${esc(({working:'Working',error:'Needs attention',stopped:'Stopped',complete:'Reply ready'})[c.status]||'Saved')}${c.summary_stale?' · Description may need updating':''}</span></span></button><button class="chat-options" data-edit-chat="${esc(c.id)}" aria-label="Chat details for ${esc(c.title)}" aria-haspopup="dialog" title="Chat details">⋯</button></div>`).join(''):empty(archived?'No archived chats.':'No saved chats yet.',archived?'Archived conversations stay available here.':'Start a new conversation. Your original chat history stays in your AI app.')}</div>`);
 }
+function folderIcon(){return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M3 7V5h7l2 2h9v13H3zM3 10h18"/></svg>';}
+function chevronIcon(){return '<svg class="disclosure-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg>';}
+function pinIcon(){return '<svg class="chat-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 3 5 5-4 1-4 4-1 5-6-6 5-1 4-4 1-4ZM2 22l5-5"/></svg>';}
+function editIcon(){return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M15 4l5 5M4 15L16 3l5 5L9 20l-6 1z"/></svg>';}
+function renderProjectTrigger(){
+  const button=$('#composer-project');if(!button)return;
+  const name=state.chatMeta?.project||(!state.chatMeta?state.newChatProject:'')||'';
+  button.innerHTML=folderIcon()+`<span>${esc(name||'Choose project')}</span>`+chevronIcon();
+  button.title=name?'Project · '+name:'Choose project';button.disabled=!state.business||!!state.navigating||!!state.starting;
+}
+function projectScope(){return JSON.stringify([state.data?.workspace,state.business]);}
+function projectChoices(){
+  const filter=$('#project-search').value.trim().toLocaleLowerCase(),picker=state.projectPicker;
+  if(!picker)return;
+  const selected=picker.chat?state.chatList.find(c=>c.id===picker.chat)?.project:state.newChatProject;
+  const projects=(state.projects||[]).filter(p=>(p.name+' '+p.folder).toLocaleLowerCase().includes(filter));
+  $('#project-choices').innerHTML=(!filter?`<button type="button" class="project-choice" data-project-choice="" aria-pressed="${!selected}"><span>No project</span>${!selected?'<span aria-hidden="true">✓</span>':''}</button>`:'')+projects.map(p=>`<button type="button" class="project-choice" data-project-choice="${esc(p.name)}" aria-pressed="${selected===p.name}">${folderIcon()}<span><strong>${esc(p.name)}</strong>${p.folder?`<small>${esc(p.folder)}</small>`:''}</span>${selected===p.name?'<span aria-hidden="true">✓</span>':''}</button>`).join('')+(filter&&!projects.length?'<p class="project-empty">No matching projects</p>':'');
+}
+function chooseProject(anchor,chat){
+  state.projectPicker={chat,scope:projectScope()};$('#project-search').value='';projectChoices();
+  if(openAnchoredSurface($('#project-picker'),anchor,{width:340}))$('#project-search').focus();
+}
+async function assignProject(name,picker){
+  if(picker.scope!==projectScope())return;
+  if(picker.chat){
+    const result=await api('/api/chats/organize',{business:state.business,id:picker.chat,project:name});
+    if(picker.scope!==projectScope())return;
+    const index=state.chatList.findIndex(c=>c.id===picker.chat);if(index>=0)state.chatList[index]=result.chat;
+    if(state.chatMeta?.id===picker.chat)state.chatMeta.project=result.chat.project;
+    const trigger=$('#detail-content [data-choose-project]');
+    if($('#detail').open&&trigger?.dataset.chooseProject===picker.chat)trigger.querySelector('span').textContent=name||'Add to project';
+  }else{state.newChatProject=name;rememberChatDraft();}
+  renderProjectTrigger();state.sidebarSignature='';await renderShell();
+}
+function editProject(name='',picker=null){
+  const old=(state.projects||[]).find(p=>p.name===name),dialog=$('#project-editor'),form=$('#project-editor-form');
+  state.projectEditor={name:old?.name||'',picker,scope:projectScope()};closeAnchoredSurface(false);
+  $('#project-editor-title').textContent=old?'Edit project':'New project';form.elements.name.value=old?.name||'';form.elements.folder.value=old?.folder||'';
+  form.querySelector('[type=submit]').textContent=old?'Save':'Create project';$('#remove-project').hidden=!old;
+  dialog.querySelectorAll('.dialog-error').forEach(el=>el.remove());dialog.dataset.opened=Date.now();dialog.showModal();form.elements.name.focus();
+}
+function projectOptions(name,anchor){
+  const p=(state.projects||[]).find(p=>p.name===name);if(!p)return;
+  $('#project-actions').innerHTML=`<button type="button" data-project-new-chat="${esc(name)}">＋ New chat</button>${p.folder?`<button type="button" data-project-open="${esc(name)}">${folderIcon()} Open folder</button>`:''}<button type="button" data-project-edit="${esc(name)}">${editIcon()} Edit project</button>`;
+  openAnchoredSurface($('#project-actions'),anchor,{width:220,placement:'side'});
+}
+function measureChatNames(target=null){
+  requestAnimationFrame(()=>{for(const name of target?[target]:document.querySelectorAll('.sidebar-chat .chat-name')){
+    const distance=Math.max(0,(name.firstElementChild?.scrollWidth||0)-name.clientWidth);
+    name.dataset.overflow=String(distance>1);name.style.setProperty('--name-travel',-distance+'px');name.style.setProperty('--name-duration',Math.max(4,distance/28+2)+'s');
+  }});
+}
+for(const type of ['pointerover','focusin'])document.addEventListener(type,event=>{const name=event.target.closest('.sidebar-chat')?.querySelector('.chat-name');if(name)measureChatNames(name);});
+window.addEventListener('resize',()=>measureChatNames());
+document.addEventListener('toggle',event=>{
+  const group=event.target;if(!group.matches('#sidebar-chat-list details[data-project-group]'))return;
+  state.sidebarProjectGroups??={};state.sidebarProjectGroups[group.dataset.projectGroup]=group.open;
+  try{localStorage.setItem('aura-chat-groups',JSON.stringify(state.sidebarProjectGroups));}catch{}
+},true);
+try{state.sidebarProjectGroups=JSON.parse(localStorage.getItem('aura-chat-groups')||'{}');}catch{}
+document.addEventListener('click',event=>{
+  const button=event.target.closest('button');if(!button)return;
+  if(button.hasAttribute('data-new-project')){event.preventDefault();editProject('',button.closest('#project-picker')?state.projectPicker:null);return;}
+  if(button.id==='composer-project'){chooseProject(button,state.chatMeta?.id||'');return;}
+  if(button.hasAttribute('data-choose-project')){chooseProject(button,button.dataset.chooseProject);return;}
+  if(button.hasAttribute('data-project-choice')){const picker=state.projectPicker;closeAnchoredSurface();attempt(()=>assignProject(button.dataset.projectChoice,picker));return;}
+  if(button.dataset.projectOptions){projectOptions(button.dataset.projectOptions,button);return;}
+  if(button.dataset.projectEdit){editProject(button.dataset.projectEdit);return;}
+  if(button.dataset.projectOpen){const name=button.dataset.projectOpen;closeAnchoredSurface();attempt(()=>api('/api/projects',{business:state.business,action:'open',name}));return;}
+  if(button.dataset.projectNewChat){const name=button.dataset.projectNewChat;closeAnchoredSurface(false);attempt(async()=>{await newShellChat();state.newChatProject=name;rememberChatDraft();renderProjectTrigger();});return;}
+  if(button.id==='browse-project-folder')attempt(async()=>{
+    const edit=state.projectEditor;button.disabled=true;
+    try{const result=await api('/api/locations/browse',{kind:'folder'});if(edit===state.projectEditor&&edit.scope===projectScope()&&result.path)$('#project-folder').value=result.path;}finally{button.disabled=false;}
+  });
+  if(button.id==='remove-project')attempt(async()=>{
+    const edit=state.projectEditor;if(edit.scope!==projectScope())return;
+    button.disabled=true;try{await api('/api/projects',{business:state.business,action:'remove',name:edit.name});if(edit.scope!==projectScope())return;if(state.chatMeta?.project===edit.name)state.chatMeta.project='';if(state.newChatProject===edit.name)state.newChatProject='';$('#project-editor').close();rememberChatDraft();state.sidebarSignature='';await renderShell();notice('Project removed. Its chats remain available.');}finally{button.disabled=false;}
+  });
+});
+$('#project-search').addEventListener('input',projectChoices);
+$('#project-picker').addEventListener('keydown',event=>{
+  if(!['ArrowDown','ArrowUp'].includes(event.key))return;
+  const choices=[...$('#project-choices').querySelectorAll('button')];if(!choices.length)return;
+  const index=choices.indexOf(document.activeElement),next=index<0?(event.key==='ArrowDown'?0:choices.length-1):(index+(event.key==='ArrowDown'?1:-1)+choices.length)%choices.length;
+  event.preventDefault();choices[next].focus();
+});
+$('#project-editor-form').addEventListener('submit',event=>{
+  event.preventDefault();attempt(async()=>{
+    const edit=state.projectEditor;if(edit.scope!==projectScope())return;
+    const form=event.target,button=form.querySelector('[type=submit]'),name=form.elements.name.value.trim();button.disabled=true;
+    try{
+      const result=await api('/api/projects',{business:state.business,action:edit.name?'edit':'create',name:edit.name||name,new_name:name,folder:form.elements.folder.value});
+      if(edit.scope!==projectScope())return;state.projects=result.projects;
+      if(edit.name){if(state.chatMeta?.project===edit.name)state.chatMeta.project=name;if(state.newChatProject===edit.name)state.newChatProject=name;}
+      $('#project-editor').close();if(edit.picker)await assignProject(name,edit.picker);else{renderProjectTrigger();state.sidebarSignature='';await renderShell();}
+      rememberChatDraft();
+    }finally{button.disabled=false;}
+  });
+});
 async function showChatDetails(id,note=''){
   const chat=state.chatList.find(c=>c.id===id);if(!chat)return;
   const description=chat.summary||chat.latest_request||'No description yet.';
@@ -1743,7 +1842,9 @@ async function showChatDetails(id,note=''){
   const fullRequest=state.chatMeta?.id===id?request(state.chat):'';
   const label=chat.summary?'Where things stand':fullRequest?'Latest request':chat.latest_request?'Latest request (preview)':'About this chat';
   const status=({working:'Working',error:'Needs attention',stopped:'Stopped',complete:'Reply ready'})[chat.status]||'Saved';
-  details('Chat details',`<div class="chat-detail"><div class="chat-detail-toolbar"><button class="text-button" id="chat-list-back">← All chats</button><button type="button" class="text-button" data-pin-chat="${esc(id)}" aria-pressed="${!!chat.pinned}">${chat.pinned?'Unpin chat':'Pin chat'}</button><button class="text-button" data-archive-chat="${esc(id)}" data-archived="${!chat.archived}" ${!chat.archived&&chat.status==='working'?'disabled':''}>${chat.archived?'Restore to recent chats':'Archive chat'}</button></div><div class="chat-detail-title"><h3>${esc(chat.title)}</h3><button class="icon-button" id="chat-rename" aria-label="Rename chat" title="Rename chat" aria-controls="chat-title-form"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M15 4l5 5M4 15L16 3l5 5L9 20l-6 1z"/></svg></button></div><form id="chat-title-form" class="chat-title-editor" hidden><input type="hidden" name="id" value="${esc(id)}"><label for="chat-title-input">Chat title</label><div class="chat-title-controls"><input id="chat-title-input" name="title" required maxlength="80" value="${esc(chat.title)}"><button class="secondary">Save title</button><button type="button" class="text-button" data-cancel-rename="${esc(id)}">Cancel</button></div></form><form id="chat-project-form" class="chat-project-form"><input type="hidden" name="id" value="${esc(id)}"><label>Project<input name="project" list="chat-project-names" maxlength="100" value="${esc(chat.project||'')}" placeholder="No project"></label><datalist id="chat-project-names">${[...new Set(state.chatList.map(c=>c.project).filter(Boolean))].sort((a,b)=>a.localeCompare(b)).map(name=>`<option value="${esc(name)}"></option>`).join('')}</datalist><button class="secondary">Save project</button></form><div class="chat-detail-meta"><p>${esc(appName(chat.agent))} · ${esc(chat.model||'App default')} · ${esc(chatDate(chat.updated))} · ${esc(status)}</p></div><section class="chat-description-section" aria-label="${esc(label)}"><h3>${esc(label)}</h3><p class="chat-full-description">${esc(chat.summary||fullRequest||description)}</p>${chat.summary?`<p class="chat-description-date">${esc(chat.summary_source==='App'?'App summary':'Description')} · ${esc(chatDate(chat.summary_updated))}${chat.summary_stale?' · May need updating':''}</p>`:''}</section>${note?`<p class="chat-detail-note" role="status">${esc(note)}</p>`:''}<div class="chat-detail-actions"><button class="secondary" data-refresh-chat="${esc(id)}">Refresh from app</button><div class="chat-detail-primary-actions"><button class="primary" data-chat="${esc(id)}">Open chat →</button></div></div></div>`);
+  details(chat.title,`<div class="chat-detail"><div class="chat-detail-meta"><p>${esc(appName(chat.agent))} · ${esc(chat.model||'App default')} · ${esc(chatDate(chat.updated))} · ${esc(status)}</p></div><div class="chat-detail-project"><button type="button" class="project-trigger" data-choose-project="${esc(id)}" aria-haspopup="dialog">${folderIcon()}<span>${esc(chat.project||'Add to project')}</span>${chevronIcon()}</button></div><form id="chat-title-form" class="chat-title-editor" hidden><input type="hidden" name="id" value="${esc(id)}"><label for="chat-title-input">Chat title</label><div class="chat-title-controls"><input id="chat-title-input" name="title" required maxlength="80" value="${esc(chat.title)}"><button class="secondary">Save title</button><button type="button" class="text-button" data-cancel-rename="${esc(id)}">Cancel</button></div></form><section class="chat-description-section" aria-label="${esc(label)}"><h3>${esc(label)}</h3><p class="chat-full-description">${esc(chat.summary||fullRequest||description)}</p>${chat.summary?`<p class="chat-description-date">${esc(chat.summary_source==='App'?'App summary':'Description')} · ${esc(chatDate(chat.summary_updated))}${chat.summary_stale?' · May need updating':''}</p>`:''}</section>${note?`<p class="chat-detail-note" role="status">${esc(note)}</p>`:''}<div class="chat-detail-actions"><button class="text-button" data-archive-chat="${esc(id)}" data-archived="${!chat.archived}" ${!chat.archived&&chat.status==='working'?'disabled':''}>${chat.archived?'Restore chat':'Archive chat'}</button><div class="chat-detail-primary-actions"><button class="secondary" data-refresh-chat="${esc(id)}">Refresh from app</button><button class="primary" data-chat="${esc(id)}">Open chat →</button></div></div></div>`);
+  $('#detail').dataset.chatDetails=id;
+  setDetailTitleActions(`<button type="button" class="icon-button chat-pin-toggle" data-pin-chat="${esc(id)}" aria-pressed="${!!chat.pinned}" aria-label="${chat.pinned?'Unpin chat':'Pin chat'}" title="${chat.pinned?'Unpin chat':'Pin chat'}">${pinIcon()}</button><button class="icon-button" id="chat-rename" aria-label="Rename chat" title="Rename chat" aria-controls="chat-title-form">${editIcon()}</button>`);
   if(chat.summary||fullRequest)return;
   const paragraph=$('.chat-full-description'),heading=$('.chat-description-section h3'),scope=JSON.stringify([state.data.workspace,state.business]);
   try{
@@ -1803,11 +1904,11 @@ async function submitRequest(text, scheduleId=null, organizationId=state.pending
   const sentReferences=[...(state.contextReferences||[])],sentGoal=state.chatMeta?.goal_id||state.draftGoalId||'',sentPermission=!state.chatMeta&&state.newChatPermission?.kind===connection.kind?{...state.newChatPermission}:null;
   const focus=chatScope(),navigation=state.navigationTicket,chatId=state.chatMeta?.id||'',files=[...(state.selectedFiles||[])],submitTicket=state.submitTicket=(state.submitTicket||0)+1;state.starting=true;chatControls();
   try {
-    const job=await api('/api/chat',{business:state.business,chat_id:chatId,connection,text,history:state.chat,files,references:sentReferences,goal_id:sentGoal,schedule_id:scheduleId,organization_id:organizationId,assistant_id:state.newAssistantId||null,...(sentPermission?{permission_mode:sentPermission.mode}:{})});
+    const job=await api('/api/chat',{business:state.business,chat_id:chatId,connection,text,history:state.chat,files,references:sentReferences,goal_id:sentGoal,schedule_id:scheduleId,organization_id:organizationId,assistant_id:state.newAssistantId||null,project:state.newChatProject||'',...(sentPermission?{permission_mode:sentPermission.mode}:{})});
     if(focus!==chatScope()||navigation!==state.navigationTicket)return;
     state.pendingOrganizationId=null;if(JSON.stringify(state.selectedFiles||[])===JSON.stringify(files))state.selectedFiles=[];if(JSON.stringify(state.contextReferences||[])===JSON.stringify(sentReferences))state.contextReferences=[];
     const currentGoal=state.chatMeta?state.chatMeta.goal_id:state.draftGoalId;
-    state.chatMeta={...(state.chatMeta||{}),...(sentPermission?{permission_mode:sentPermission.mode}:{}),goal_id:currentGoal===sentGoal?sentGoal:currentGoal||'',id:job.chat_id,business_id:state.business,workspace:state.data.workspace,agent:connection.kind,model:connection.model,effort:connection.effort,status:'working',assistant_id:state.chatMeta?.assistant_id||state.newAssistantId,assistant_name:state.chatMeta?.assistant_name||state.newAssistantName};
+    state.chatMeta={project:state.newChatProject||'',...(state.chatMeta||{}),...(sentPermission?{permission_mode:sentPermission.mode}:{}),goal_id:currentGoal===sentGoal?sentGoal:currentGoal||'',id:job.chat_id,business_id:state.business,workspace:state.data.workspace,agent:connection.kind,model:connection.model,effort:connection.effort,status:'working',assistant_id:state.chatMeta?.assistant_id||state.newAssistantId,assistant_name:state.chatMeta?.assistant_name||state.newAssistantName};
     state.chat.push({role:'user',text,at:new Date().toISOString(),files,references:job.references||sentReferences,goal_id:sentGoal,request_id:job.id});if($('#request').value===text)$('#request').value='';rememberChatDraft();notice('');showMessages(true);recordShellRoute();renderShell();
     state.starting=false;await pollJob(job);
   } finally {if(submitTicket===state.submitTicket){state.starting=false;chatControls();}}
@@ -1871,7 +1972,7 @@ document.addEventListener('click',event=>attempt(async()=>{
   if(button.dataset.close) $('#'+button.dataset.close).close();
   if(button.dataset.view) { if(button.dataset.view==='tools')state.scheduleAdding=button.hasAttribute('data-add-recurring');$('#more-dialog').close(); if(!state.data.diagnostics.length)notice(''); state.view=button.dataset.view; workFilter='all';workCategory=''; await render();recordShellRoute();await renderShell(); }
   if(button.hasAttribute('data-add-context'))await openContextChat();
-  if(button.dataset.pinChat){const chat=state.chatList.find(c=>c.id===button.dataset.pinChat);if(chat){await api('/api/chats/organize',{business:state.business,id:chat.id,pinned:!chat.pinned});chat.pinned=!chat.pinned;state.sidebarSignature='';await renderShell();await showChatDetails(chat.id);}}
+  if(button.dataset.pinChat){const scope=chatScope();const chat=state.chatList.find(c=>c.id===button.dataset.pinChat);if(chat){await api('/api/chats/organize',{business:state.business,id:chat.id,pinned:!chat.pinned});if(scope!==chatScope())return;chat.pinned=!chat.pinned;if(state.chatMeta?.id===chat.id)state.chatMeta.pinned=chat.pinned;button.setAttribute('aria-pressed',String(chat.pinned));button.setAttribute('aria-label',chat.pinned?'Unpin chat':'Pin chat');button.title=chat.pinned?'Unpin chat':'Pin chat';state.sidebarSignature='';await renderShell();}}
   if(button.dataset.prompt) prompt(button.dataset.prompt);
   if(button.dataset.record) recordDetails(button.dataset.record);
   if(button.dataset.file) await fileDetails(button.dataset.file);
@@ -2009,7 +2110,7 @@ document.addEventListener('submit',event=>{
     const form=event.target, data=new FormData(form); const submit=form.querySelector('[type=submit]')||form.querySelector('button.primary')||form.querySelector('button');
     if(form.getAttribute('id')==='chat-title-form'){
       const business=state.business,workspace=state.data.workspace;submit.disabled=true;
-      try{const result=await api('/api/chats/rename',{business,id:data.get('id'),title:data.get('title')});if(state.business!==business||state.data.workspace!==workspace)return;state.chatList[state.chatList.findIndex(c=>c.id===result.chat.id)]=result.chat;await showChatDetails(result.chat.id,'Title saved.');}
+      try{const result=await api('/api/chats/rename',{business,id:data.get('id'),title:data.get('title')});if(state.business!==business||state.data.workspace!==workspace)return;state.chatList[state.chatList.findIndex(c=>c.id===result.chat.id)]=result.chat;if(state.chatMeta?.id===result.chat.id)state.chatMeta.title=result.chat.title;state.sidebarSignature='';await renderShell();await showChatDetails(result.chat.id,'Title saved.');}
       finally{if(submit.isConnected)submit.disabled=false;}return;
     }
     if(form.getAttribute('id')==='organization-form'){
@@ -2044,7 +2145,7 @@ document.addEventListener('submit',event=>{
     }
     if(form.getAttribute('id')==='support-form'){await sendSupport(form);return;}
     if(form.getAttribute('id')==='usage-settings-form'){await api('/api/usage/settings',{business:state.business,alerts:$('#usage-alerts').checked,budget_usd:$('#usage-budget').value});$('#usage-settings-status').textContent='Saved';$('#usage-alert-summary').textContent=usageBudgetSummary({alerts:$('#usage-alerts').checked,budget_usd:$('#usage-budget').value?Number($('#usage-budget').value):null});state.data.usage_alerts=$('#usage-alerts').checked;checkUsageAlerts();return;}
-    if(form.getAttribute('id')==='chat-project-form'){const root=state.data.workspace,business=state.business,result=await api('/api/chats/organize',{business,id:data.get('id'),project:data.get('project')});if(root!==state.data.workspace||business!==state.business)return;state.chatList[state.chatList.findIndex(c=>c.id===result.chat.id)]=result.chat;state.sidebarSignature='';await renderShell();await showChatDetails(result.chat.id,'Project saved.');return;}
+
     if(form.getAttribute('id')==='connect-form') { $('#connect-agent').disabled=true; try { await pickerSave;const route=selectedRoute(),kind=route?.agent||$('#agent-choice').value;await api('/api/connect',{kind,model:route?.model||'',effort:$('#effort-choice').value,workspace_write:true});if(kind!==state.data.connection.selected&&state.business){await api('/api/chats/new',{business:state.business});state.chat=[];state.chatMeta=null;showMessages();} const tour=state.tour||!state.data.onboarding.seen;state.connectionChecks=null;state.welcome=null;await refresh();await checkConnections(false);if(tour){state.setupStep='tour';renderConnection();}else if(state.connectionChecks?.ready)$('#connect-dialog').close();else finishSetup();notice(''); } catch(error){state.modelError=simpleSetupError(humanError(error));} finally {connectionChoice();} return; }
     if(form.getAttribute('id')==='chat-form') { await submitRequest($('#request').value); return; }
     if(submit)submit.disabled=true;
@@ -2142,7 +2243,7 @@ function chatScope(){return JSON.stringify([state.data?.workspace||'',state.busi
 function draftKey(){return 'aura-chat-draft:v1:'+chatScope();}
 function rememberChatDraft(){
   if(!state.data?.workspace||!state.business)return;
-  try{sessionStorage.setItem(draftKey(),JSON.stringify({text:$('#request').value,files:state.selectedFiles||[],scroll:$('#conversation').scrollTop,assistant_id:state.newAssistantId||'',assistant_name:state.newAssistantName||'',connection:state.newChatConnection||null,permission:state.newChatPermission||null,...(window.auraCompose?.draft()||{})}));}catch{}
+  try{sessionStorage.setItem(draftKey(),JSON.stringify({text:$('#request').value,files:state.selectedFiles||[],scroll:$('#conversation').scrollTop,assistant_id:state.newAssistantId||'',assistant_name:state.newAssistantName||'',project:state.newChatProject||'',connection:state.newChatConnection||null,permission:state.newChatPermission||null,...(window.auraCompose?.draft()||{})}));}catch{}
 }
 function restoreChatDraft(){
   let saved=null;try{
@@ -2155,7 +2256,7 @@ function restoreChatDraft(){
   }catch{}
   $('#request').value=typeof saved?.text==='string'?saved.text:'';state.selectedFiles=Array.isArray(saved?.files)?saved.files.slice(0,12):[];
   state.newAssistantId=state.chatMeta?null:saved?.assistant_id||null;state.newAssistantName=state.chatMeta?null:saved?.assistant_name||'';
-  state.newChatPermission=state.chatMeta?null:saved?.permission||null;state.newChatConnection=state.chatMeta?null:saved?.connection||null;state.pendingComposerDraft=saved;window.auraCompose?.restore(saved);renderComposerFiles();renderComposerConnection();
+  state.newChatProject=state.chatMeta?'':saved?.project||'';state.newChatPermission=state.chatMeta?null:saved?.permission||null;state.newChatConnection=state.chatMeta?null:saved?.connection||null;state.pendingComposerDraft=saved;window.auraCompose?.restore(saved);renderComposerFiles();renderComposerConnection();
   if(Number.isFinite(saved?.scroll))requestAnimationFrame(()=>{$('#conversation').scrollTop=saved.scroll;});
 }
 function detachChatView(){
@@ -2178,10 +2279,10 @@ async function newShellChat(draft=null){
   if(!state.business)return;rememberChatDraft();detachChatView();
   state.pendingComposerDraft=draft;
   const ticket=state.navigationTicket=(state.navigationTicket||0)+1,root=state.data.workspace,business=state.business;
-  state.navigating=true;state.view='home';$('#section-dialog').close();$('#detail').close();state.chat=[];state.chatMeta=null;state.newAssistantId=null;state.newAssistantName='';state.newChatConnection=null;state.newChatPermission=null;state.selectedFiles=[];state.contextReferences=[];state.draftGoalId='';$('#request').value='';state.hydrated=true;
+  state.navigating=true;state.view='home';$('#section-dialog').close();$('#detail').close();state.chat=[];state.chatMeta=null;state.newAssistantId=null;state.newAssistantName='';state.newChatProject='';state.newChatConnection=null;state.newChatPermission=null;state.selectedFiles=[];state.contextReferences=[];state.draftGoalId='';$('#request').value='';state.hydrated=true;
   try{sessionStorage.removeItem(draftKey());}catch{}
   showMessages();taskStatus('');notice('');chatControls();
-  try{await api('/api/chats/new',{business});if(ticket!==state.navigationTicket||root!==state.data.workspace||business!==state.business)return;await refresh();if(ticket!==state.navigationTicket||root!==state.data.workspace||business!==state.business)return;if(draft){$('#request').value=draft.text;state.selectedFiles=draft.files;state.newChatConnection=draft.connection;state.newChatPermission=draft.permission||null;window.auraCompose?.restore(draft);rememberChatDraft();renderComposerFiles();renderComposerConnection();}recordShellRoute();closeMobileSidebar();}
+  try{await api('/api/chats/new',{business});if(ticket!==state.navigationTicket||root!==state.data.workspace||business!==state.business)return;await refresh();if(ticket!==state.navigationTicket||root!==state.data.workspace||business!==state.business)return;if(draft){$('#request').value=draft.text;state.selectedFiles=draft.files;state.newChatConnection=draft.connection;state.newChatPermission=draft.permission||null;state.newChatProject=draft.project||'';window.auraCompose?.restore(draft);rememberChatDraft();renderComposerFiles();renderComposerConnection();}recordShellRoute();closeMobileSidebar();}
   finally{if(ticket===state.navigationTicket){state.navigating=false;chatControls();$('#request').focus();}}
 }
 
@@ -2191,7 +2292,7 @@ function applyProfile(profile){
   document.documentElement.style.setProperty('--panel-width',p.panel_width+'px');document.documentElement.style.setProperty('--ui-text-size',p.text_size+'px');
   $('#profile-name').textContent=p.display_name||'Your profile';$('.profile-avatar').innerHTML=avatarMarkup(p);
   $('#welcome-name').textContent=p.display_name?'Welcome, '+p.display_name+'.':'Welcome to Aura';
-  const collapseLabel=matchMedia('(max-width:760px)').matches?'Close navigation':p.sidebar_collapsed?'Expand sidebar':'Collapse sidebar';$('#sidebar-collapse').setAttribute('aria-label',collapseLabel);$('#sidebar-collapse').title=collapseLabel;
+  const collapseLabel=matchMedia('(max-width:600px)').matches?'Close navigation':p.sidebar_collapsed?'Expand sidebar':'Collapse sidebar';$('#sidebar-collapse').setAttribute('aria-label',collapseLabel);$('#sidebar-collapse').title=collapseLabel;
   $('#sidebar-collapse').setAttribute('aria-expanded',String(!p.sidebar_collapsed));
   if(!$('#setup-display-name').value)$('#setup-display-name').value=p.display_name;
 }
@@ -2209,22 +2310,28 @@ async function renderShell(force=true){
   if(!state.business){$('#sidebar-chat-list').innerHTML='<p class="sidebar-empty">Choose a workspace to see its chats.</p>';return;}
   const root=state.data.workspace,business=state.business;
   const list=await api('/api/chats?business='+encodeURIComponent(business));if(root!==state.data.workspace||business!==state.business||(list.workspace&&list.workspace!==root))return;
-  state.chatList=list.items;state.runningChats=list.running||[];state.data.running_chats=state.runningChats;$('#background-work').hidden=!state.runningChats.length;$('#background-work').textContent=state.runningChats.length+' '+(state.runningChats.length===1?'chat working':'chats working');
+  state.chatList=list.items;state.projects=list.projects||[];renderProjectTrigger();state.runningChats=list.running||[];state.data.running_chats=state.runningChats;$('#background-work').hidden=!state.runningChats.length;$('#background-work').textContent=state.runningChats.length+' '+(state.runningChats.length===1?'chat working':'chats working');
   const owned=new Set(state.runningChats.filter(j=>j.workspace===root).map(j=>j.chat_id));
   const recent=list.items.filter(c=>!c.archived);
-  const limit=state.chatLimit||20,signature=JSON.stringify([recent.map(c=>[c.id,c.title,c.status,c.updated,c.pinned,c.project]),[...owned],state.chatMeta?.id,limit,state.inbox?.items?.map(n=>[n.chat_id,n.read])]);
+  const limit=state.chatLimit||20,signature=JSON.stringify([recent.map(c=>[c.id,c.title,c.status,c.updated,c.pinned,c.project]),[...owned],state.projects,state.chatMeta?.id,limit,state.inbox?.items?.map(n=>[n.chat_id,n.read])]);
   if(signature===state.sidebarSignature)return;state.sidebarSignature=signature;
   state.sidebarProjectGroups??={};
   document.querySelectorAll('#sidebar-chat-list details[data-project-group]').forEach(group=>{state.sidebarProjectGroups[group.dataset.projectGroup]=group.open;});
   const chatRow=c=>{
     const working=owned.has(c.id),check=c.status==='working'&&!working,unread=state.inbox?.items?.some(n=>n.chat_id===c.id&&!n.read);
     const status=working?'Working':check?'Review work':c.status==='error'?'Needs attention':unread?'Reply ready':'';
-    return `<div class="sidebar-chat-row"><button type="button" class="sidebar-chat" data-chat="${esc(c.id)}" aria-current="${c.id===state.chatMeta?.id}" title="${esc(c.title+(status?' · '+status:''))}"><span class="chat-indicator ${working?'working':check||c.status==='error'?'attention':unread?'ready':''}" aria-label="${esc(status)}"></span>${c.pinned?'<svg class="chat-pin" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="Pinned"><path d="m16 3 5 5-4 1-4 4-1 5-6-6 5-1 4-4 1-4ZM2 22l5-5"/></svg>':''}<span class="chat-name">${esc(c.title||'New chat')}</span>${check?'<small>Check</small>':''}</button><button type="button" class="chat-options" data-edit-chat="${esc(c.id)}" aria-label="Chat options for ${esc(c.title)}" title="Chat options">⋯</button></div>`;
+    return `<div class="sidebar-chat-row"><button type="button" class="sidebar-chat" data-chat="${esc(c.id)}" aria-current="${c.id===state.chatMeta?.id}" title="${esc(c.title+(status?' · '+status:''))}"><span class="chat-indicator ${working?'working':check||c.status==='error'?'attention':unread?'ready':''}" aria-label="${esc(status)}"></span>${c.pinned?pinIcon():''}<span class="chat-name"><span>${esc(c.title||'New chat')}</span></span>${check?'<small>Check</small>':''}</button><button type="button" class="chat-options" data-edit-chat="${esc(c.id)}" aria-label="Chat options for ${esc(c.title)}" title="Chat options">⋯</button></div>`;
   };
-  const visible=recent.slice(0,limit),pinned=visible.filter(c=>c.pinned),others=visible.filter(c=>!c.pinned),projects=Object.groupBy(others,c=>c.project||'');
   const projectKey=name=>JSON.stringify([root,business,name]);
-  $('#sidebar-chat-list').innerHTML=recent.length?(pinned.length?'<h4 class="sidebar-chat-group-label">Pinned</h4>'+pinned.map(chatRow).join(''):'')+Object.entries(projects).sort(([a],[b])=>a?b?a.localeCompare(b):-1:1).map(([name,chats])=>name?`<details class="sidebar-project" data-project-group="${esc(projectKey(name))}" ${state.sidebarProjectGroups[projectKey(name)]!==false?'open':''}><summary>${esc(name)}</summary>${chats.map(chatRow).join('')}</details>`:(pinned.length||Object.keys(projects).length>1?'<h4 class="sidebar-chat-group-label">Other chats</h4>':'')+chats.map(chatRow).join('')).join(''):'<p class="sidebar-empty">Start a conversation. Your useful work stays with this workspace.</p>';
-  $('#sidebar-more-chats').hidden=recent.length<=limit;
+  const group=(key,label,content,extra='')=>`<details class="sidebar-group" data-project-group="${esc(projectKey(key))}" ${state.sidebarProjectGroups[projectKey(key)]!==false?'open':''}><summary>${chevronIcon()}<span>${label}</span>${extra}</summary>${content}</details>`;
+  const pinned=recent.filter(c=>c.pinned),ungrouped=recent.filter(c=>!c.pinned&&!c.project);
+  const projectRows=state.projects.map(p=>{
+    const chats=recent.filter(c=>!c.pinned&&c.project===p.name),hasChats=recent.some(c=>c.project===p.name);
+    return `<div class="sidebar-project-row"><details class="sidebar-project" data-project-group="${esc(projectKey('project:'+p.name))}" ${state.sidebarProjectGroups[projectKey('project:'+p.name)]!==false?'open':''}><summary>${folderIcon()}<span title="${esc(p.name)}">${esc(p.name)}</span>${chevronIcon()}</summary>${chats.length?chats.slice(0,limit).map(chatRow).join(''):`<p class="sidebar-empty">${hasChats?'Chats are pinned above':'No chats'}</p>`}</details><button type="button" class="chat-options project-options" data-project-options="${esc(p.name)}" aria-label="Project options for ${esc(p.name)}">⋯</button></div>`;
+  }).join('');
+  $('#sidebar-chat-list').innerHTML=(pinned.length?group('section:pinned','Pinned',pinned.map(chatRow).join('')):'')+group('section:projects','Projects',projectRows||'<p class="sidebar-empty">Keep related chats together.</p>','<button type="button" class="icon-button" data-new-project aria-label="New project" title="New project">+</button>')+group('section:recent','Recents',ungrouped.slice(0,limit).map(chatRow).join('')||'<p class="sidebar-empty">No recent chats</p>');
+  measureChatNames();
+  $('#sidebar-more-chats').hidden=ungrouped.length<=limit&&!state.projects.some(p=>recent.filter(c=>!c.pinned&&c.project===p.name).length>limit);
   }finally{state.shellLoading=false;if(state.shellDirty){state.shellDirty=false;attempt(()=>renderShell());}}
 }
 function closeMobileSidebar(){document.body.classList.remove('sidebar-mobile-open');$('#sidebar-scrim').hidden=true;$('#sidebar-open').setAttribute('aria-expanded','false');}
@@ -2430,7 +2537,7 @@ document.addEventListener('click',event=>{
 },true);
 document.addEventListener('click',event=>attempt(async()=>{
   const b=event.target.closest('button');if(!b)return;
-  if(b.id==='sidebar-collapse'){if(matchMedia('(max-width:760px)').matches){closeMobileSidebar();return;}const p=await api('/api/profile',{sidebar_collapsed:!state.profile?.sidebar_collapsed});state.data.profile=p;applyProfile(p);}
+  if(b.id==='sidebar-collapse'){if(matchMedia('(max-width:600px)').matches){closeMobileSidebar();return;}const p=await api('/api/profile',{sidebar_collapsed:!state.profile?.sidebar_collapsed});state.data.profile=p;applyProfile(p);}
   if(b.id==='sidebar-open')openSidebar();if(b.id==='sidebar-scrim')closeMobileSidebar();
   if(b.id==='add-native-chat')await addNativeChat();if(b.id==='profile-open')openAnchoredSurface($('#more-dialog'),b,{width:330});if(b.id==='personalize-menu')await personalize();if(b.id==='account-settings')await accountProfile();if(b.id==='support-report')await supportReport();
   if(b.id==='reconnect-chat-workspace'){const scope=chatScope();b.disabled=true;try{const r=await api('/api/chats/reconnect',{business:state.business,id:state.chatMeta.id});if(scope!==chatScope())return;state.chatMeta=r.chat;rememberChatDraft();chatControls();await renderShell();}finally{if(b.isConnected)b.disabled=false;}}
@@ -2500,6 +2607,7 @@ function renderComposerPermissions(){
   button.setAttribute('aria-label',unrestricted?'Chat permissions · Full access':'Chat permissions');
 }
 function renderComposerConnection(){
+  renderProjectTrigger();
   if(!state.data)return;const c=composerConnection(),native=nativeApps.includes(c.kind);
   $('#model-settings').textContent=native?appName(c.kind)+' · '+(c.model||'Choose model')+(c.effort?' · '+human(c.effort):''):(state.data.connection.connected?appName(c.kind)||state.data.connection.name:'Choose AI');
   window.auraWork?.composer();
@@ -2626,7 +2734,7 @@ document.addEventListener('pointerdown',event=>{
 },true);
 document.addEventListener('pointerup',event=>{const d=outsideSurface;outsideSurface=null;if(!d?.open)return;const r=d.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)d.close();},true);
 
-matchMedia('(max-width:760px)').addEventListener('change',()=>{closeMobileSidebar();if(state.profile)applyProfile(state.profile);});
+matchMedia('(max-width:600px)').addEventListener('change',()=>{closeMobileSidebar();if(state.profile)applyProfile(state.profile);});
 
 async function openPersonalizationChat(){
   if(!state.data.connection.connected){$('#detail').close();openConnection(true,'connect');notice('Connect your AI to keep a separate personalization chat.');return;}

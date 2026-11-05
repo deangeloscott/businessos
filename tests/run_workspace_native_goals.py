@@ -170,7 +170,40 @@ def main():
                 try:call('/api/chats/organize',{'id':owner,'pinned':False,'project':'bad\nproject'})
                 except HTTPError as error:assert error.code==400
                 else:raise AssertionError('Invalid project labels must be rejected atomically')
-                assert moved['pinned'] and moved['project']=='研究 🚀'
+                unchanged=next(c for c in live.preferences['chats'] if c['id']==owner)
+                assert unchanged['pinned'] and unchanged['project']=='研究 🚀'
+                # Projects survive without chats, rename all their memberships, and
+                # removal ungroups without deleting a chat or its source folder.
+                created=call('/api/projects',{'action':'create','name':'Empty project','folder':str(root)})
+                assert any(p['name']=='Empty project' and p['folder']==str(root.resolve()) for p in created['projects'])
+                assert any(p['name']=='Empty project' for p in call('/api/chats?business='+bid)['projects'])
+                if os.name=='nt':
+                    with patch('workspace_chat_organization.os.startfile') as opened:
+                        assert call('/api/projects',{'action':'open','name':'Empty project'})['opened']
+                        opened.assert_called_once_with(str(root.resolve()))
+                renamed=call('/api/projects',{'action':'edit','name':'研究 🚀','new_name':'Launch research'})
+                assert next(c for c in live.preferences['chats'] if c['id']==owner)['project']=='Launch research'
+                assert any(p['name']=='Launch research' for p in renamed['projects'])
+                try:call('/api/projects',{'action':'edit','name':'Launch research','new_name':'EMPTY PROJECT'})
+                except HTTPError as error:assert error.code==400
+                else:raise AssertionError('Duplicate project names must not merge chats silently')
+                assert next(c for c in live.preferences['chats'] if c['id']==owner)['project']=='Launch research'
+                call('/api/projects',{'action':'remove','name':'Launch research'})
+                assert next(c for c in live.preferences['chats'] if c['id']==owner)['project']==''
+                assert root.is_dir()
+                call('/api/chats/organize',{'id':owner,'project':'研究 🚀'})
+                persisted=Workspace(agent=agent,settings_file=live.settings_file)
+                from workspace_chat_organization import projects
+                assert any(p['name']=='Empty project' for p in projects(persisted,bid))
+                assert projects(persisted,'another-business')==[]
+                with workspace_scope(Path(folder)/'another-workspace'):
+                    assert projects(persisted,bid)==[]
+                with patch.dict(live.configured_agent,{'argv':[sys.executable,'-c',"print('Saved project membership.')"]}):
+                    started=live.start_chat(bid,'Project fixture',[],chat_id='',project='Empty project')
+                    end=time.monotonic()+10
+                    while live.jobs[started['id']]['status']=='working' and time.monotonic()<end:time.sleep(.02)
+                    assert live.jobs[started['id']]['status']=='complete',live.jobs[started['id']]
+                    assert next(c for c in live.preferences['chats'] if c['id']==started['chat_id'])['project']=='Empty project'
                 result=call('/api/goals',{'action':'native_start','id':native['id'],'token_budget':1000})
                 end=time.monotonic()+15
                 while live.jobs[result['job']['id']]['status']=='working' and time.monotonic()<end:time.sleep(.02)

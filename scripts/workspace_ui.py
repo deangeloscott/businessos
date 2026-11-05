@@ -1891,7 +1891,7 @@ class Workspace:
         threading.Thread(target=work,daemon=True).start()
         return self.schedule_state(bid)
 
-    def start_chat(self, bid, text, history, welcome=False, schedule_id=None, organization_id=None, keep_warm_id=None, chat_id=None, files=None, connection=None, assistant_id=None,references=None,goal_id=None,permission_mode=None,native_goal=None):
+    def start_chat(self, bid, text, history, welcome=False, schedule_id=None, organization_id=None, keep_warm_id=None, chat_id=None, files=None, connection=None, assistant_id=None,references=None,goal_id=None,permission_mode=None,native_goal=None,project=None):
         with self.lock:
             owner=copy.copy(self)
             owner.agent=dict(self.agent) if self.agent else None
@@ -1899,6 +1899,8 @@ class Workspace:
             owner._request_references=references
             owner._request_goal=goal_id
             owner._request_native_goal=native_goal
+            owner._request_project=workspace_chat_organization.project_name(project,empty=True) if project is not None else ''
+            if owner._request_project and not any(p['name']==owner._request_project for p in workspace_chat_organization.projects(self,bid)):raise ValueError('Choose an existing project.')
             existing=self.active_chat(bid) if chat_id is None else next((c for c in self.preferences['chats'] if c['id']==chat_id and c['business_id']==bid),None)
             resolved_chat_id=chat_id
             if chat_id is None and existing and existing['agent']!=self.connection_kind:
@@ -2010,6 +2012,7 @@ class Workspace:
                         'title': 'Welcome to AURA' if welcome else text.strip()[:70],
                         'created': time.time(), 'native_id': None, 'workspace':str(workspace_root())}
                 if getattr(self,'_request_permission_mode',None) is not None:chat['permission_mode']=self._request_permission_mode
+                if getattr(self,'_request_project',''):chat['project']=self._request_project
                 self.preferences['chats'].append(chat)
                 self.preferences['active_chats'][bid] = chat['id']
                 if assistant:chat.update(assistant_id=assistant['id'],assistant_name=assistant['name'])
@@ -2483,7 +2486,9 @@ def handler_for(app):
                 elif route == '/api/chats':
                     bid = selected(query.get('business'))
                     self.send(200, {'workspace':str(workspace_root()),'items': sorted(({k:v for k,v in c.items() if k not in {'brief_token','subagents'}} for c in app.preferences['chats'] if c['business_id'] == bid),key=workspace_chat_organization.sort_key,reverse=True),
-                                    'active': app.preferences['active_chats'].get(bid), 'running': [{k:j.get(k) for k in ('id','chat_id','workspace','business_id','status','agent','model')} for j in app.running_jobs()]})
+                                    'projects':workspace_chat_organization.projects(app,bid),'active': app.preferences['active_chats'].get(bid), 'running': [{k:j.get(k) for k in ('id','chat_id','workspace','business_id','status','agent','model')} for j in app.running_jobs()]})
+                elif route == '/api/projects':
+                    self.send(200,{'projects':workspace_chat_organization.projects(app,selected(query.get('business')))})
                 elif route == '/api/chats/native':
                     self.send(200,app.native_chats(selected(query.get('business')),query.get('kind'),query.get('id')))
                 elif route == '/api/chats/changes':
@@ -2656,7 +2661,7 @@ def handler_for(app):
                         raise ValueError('Workspace organization is running. Wait or stop it before making changes.')
                     if app.schedule_job and app.schedule_job['status']=='working' and (route in {'/api/lifecycle','/api/workspaces/open','/api/workspaces/create','/api/workspaces/relocate','/api/workspaces/restore'} or route.startswith('/api/organization/')):
                         raise ValueError('Wait for task setup or stop it before changing workspaces or restarting AURA.')
-                    if app.running_jobs(None if route in {'/api/lifecycle','/api/workspaces/relocate','/api/workspaces/restore'} else workspace_root()) and route not in {'/api/goals','/api/chat/answer','/api/permissions','/api/assistants','/api/preferences','/api/profile','/api/interface/reset','/api/chats/recover','/api/chats/archive','/api/chats/reconnect','/api/notifications','/api/chat','/api/chat/stop','/api/chats/new','/api/chats/open','/api/chats/rename','/api/chats/organize','/api/chats/model','/api/chats/personalization','/api/chats/context','/api/connect','/api/workspaces/open','/api/usage/settings','/api/updates','/api/schedules/action','/api/schedules/stop'}:
+                    if app.running_jobs(None if route in {'/api/lifecycle','/api/workspaces/relocate','/api/workspaces/restore'} else workspace_root()) and route not in {'/api/goals','/api/chat/answer','/api/permissions','/api/assistants','/api/preferences','/api/profile','/api/interface/reset','/api/chats/recover','/api/chats/archive','/api/chats/reconnect','/api/notifications','/api/chat','/api/chat/stop','/api/chats/new','/api/chats/open','/api/chats/rename','/api/chats/organize','/api/projects','/api/chats/model','/api/chats/personalization','/api/chats/context','/api/connect','/api/workspaces/open','/api/usage/settings','/api/updates','/api/schedules/action','/api/schedules/stop'}:
                         raise ValueError('Your agent is working. Wait for its reply before changing this workspace.')
                     if route in {'/api/preferences','/api/locations'}:
                         app.load_portable()
@@ -3084,6 +3089,8 @@ def handler_for(app):
                         self.send(200, {'ok': True})
                     elif route == '/api/chats/organize':
                         self.send(200,workspace_chat_organization.mutate(app,selected(data.get('business')),data))
+                    elif route == '/api/projects':
+                        self.send(200,workspace_chat_organization.change_project(app,selected(data.get('business')),data))
                     elif route == '/api/chats/rename':
                         bid=selected(data.get('business'))
                         chat=next((c for c in app.preferences['chats'] if c['id']==data.get('id') and c['business_id']==bid),None)
@@ -3137,7 +3144,7 @@ def handler_for(app):
                         self.send(200, app.stop_chat(selected(data.get('business')), data.get('id')))
                     elif route == '/api/chat':
                         bid = selected(data.get('business'))
-                        self.send(202, app.start_chat(bid, data.get('text'), data.get('history'), data.get('welcome') is True, data.get('schedule_id'),data.get('organization_id'),chat_id=data.get('chat_id'),files=data.get('files'),connection=data.get('connection'),assistant_id=data.get('assistant_id'),references=data.get('references'),goal_id=data.get('goal_id'),permission_mode=data.get('permission_mode')))
+                        self.send(202, app.start_chat(bid, data.get('text'), data.get('history'), data.get('welcome') is True, data.get('schedule_id'),data.get('organization_id'),chat_id=data.get('chat_id'),files=data.get('files'),connection=data.get('connection'),assistant_id=data.get('assistant_id'),references=data.get('references'),goal_id=data.get('goal_id'),permission_mode=data.get('permission_mode'),project=data.get('project')))
                     else:
                         self.send(404, {'error': 'Not found.'})
             except PermissionError as exc:
