@@ -22,7 +22,7 @@ def wait(check):
 
 
 FIXTURE=r'''
-import json,sys
+import json,sys,threading
 def emit(v):print(json.dumps(v),flush=True)
 kind=sys.argv[1];turns=0
 for line in sys.stdin:
@@ -32,6 +32,20 @@ for line in sys.stdin:
   elif method=='thread/start':
    assert m['params']['sandbox']=='workspace-write' and m['params']['approvalPolicy']=='on-request'
    emit({'id':ident,'result':{'thread':{'id':'native-one'},'approvalPolicy':'on-request','sandbox':{'type':'workspaceWrite'}}})
+  elif method=='thread/backgroundTerminals/list':emit({'id':ident,'result':{'data':[]}})
+  elif method=='turn/interrupt':
+   emit({'id':ident,'result':{}})
+   closed=threading.Event()
+   def read_close():
+    if not sys.stdin.readline():closed.set()
+   threading.Thread(target=read_close,daemon=True).start()
+   assert not closed.wait(.1),'Aura closed the stream before native cancellation settled'
+   emit({'method':'turn/completed','params':{'threadId':'native-one','turn':{'id':'turn-one','status':'interrupted'}}})
+   break
+  elif method=='turn/steer':
+   assert m['params']['expectedTurnId']=='turn-one'
+   assert m['params']['input'][0]['text']=='Use the revised direction.'
+   emit({'id':ident,'result':{'turnId':'turn-one'}})
   elif method=='turn/start':
    turns+=1;assert turns==1
    emit({'id':ident,'result':{'turn':{'id':'turn-one'}}})
@@ -214,7 +228,7 @@ def main():
             try:codex.run([sys.executable,'-u',str(script),'codex','exec'],root,'Work',None,'model','medium',lambda **v:None,dict(os.environ),execution)
             except Exception as e:errors.append(e)
         thread=threading.Thread(target=stopping);thread.start();wait(lambda:execution.requests.snapshot());execution.stop();thread.join(5)
-        assert not thread.is_alive() and errors and all(r['status']=='expired' for r in execution.requests.snapshot())
+        assert not thread.is_alive() and errors and isinstance(errors[0],Stopped) and all(r['status']=='expired' for r in execution.requests.snapshot())
         # Exercise the real HTTP ownership boundary while a native process waits.
         from http.server import ThreadingHTTPServer
         from urllib.request import Request,urlopen
@@ -240,11 +254,17 @@ def main():
             job=call('/api/chat?business='+bid+'&id='+launched['id']);pending=next(r for r in job['requests'] if r['status']=='pending')
             payload={'business':bid,'job_id':job['id'],'chat_id':job['chat_id'],'id':pending['id'],'answers':{'decision':['Approve once']}}
             call('/api/chat/answer',{**payload,'chat_id':'different-chat'},400)
+            update={'business':bid,'job_id':job['id'],'chat_id':job['chat_id'],'text':'Use the revised direction.'}
+            call('/api/chat/steer',{**update,'chat_id':'different-chat'},400)
+            assert call('/api/chat/steer',update)['message']['native_update']
             call('/api/chat/answer',payload);call('/api/chat/answer',payload,400)
             wait(lambda:any(r['native_id']==42 and r['status']=='pending' for r in app.jobs[job['id']].get('requests',[])))
             request=next(r for r in app.jobs[job['id']]['requests'] if r['native_id']==42)
             call('/api/chat/answer',{**payload,'id':request['id'],'answers':{'direction':['North']}})
             wait(lambda:app.jobs[job['id']]['status']=='complete')
+            saved=json.loads(app.chat_display_path(job['chat_id']).read_text())
+            assert [m['text'] for m in saved if m['role']=='user']==['Continue north','Use the revised direction.']
+            call('/api/chat/steer',update,400)
             assert call('/api/permissions?business='+bid+'&chat_id='+job['chat_id'])['last_effective']['approvalPolicy']=='on-request'
             assert call('/api/activity?business='+bid)['items'][0]['chat_id']==job['chat_id']
             before=call('/api/history?business='+bid)

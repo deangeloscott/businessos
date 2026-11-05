@@ -71,16 +71,18 @@ def answers_for(questions, answers):
     result={}
     for q in questions:
         values=answers.get(q['id'],[])
+        if not values and not q.get('required',True):
+            result[q['id']]=[];continue
         if not isinstance(values,list) or not values or any(not isinstance(v,str) or not v.strip() or len(v)>12000 for v in values):
             raise ValueError('Answer each question before submitting.')
         values=list(dict.fromkeys(values))
         if not q.get('multiple') and len(values)!=1:raise ValueError('Choose one answer for this question.')
         allowed={o['value'] for o in q.get('options',[])}
-        if allowed and not q.get('text') and any(v not in allowed for v in values):raise ValueError('Choose one of the available answers.')
+        if allowed and not q.get('allow_text') and any(v not in allowed for v in values):raise ValueError('Choose one of the available answers.')
         result[q['id']]=values
     return result
 
 
 def question(ident, text, options=(), multiple=False, free=False):
     return {'id':str(ident),'text':str(text),'options':[{'value':str(v),'label':str(v)} for v in options],
-            'multiple':bool(multiple),'text':bool(free or not options)}
+            'multiple':bool(multiple),'allow_text':bool(free or not options)}

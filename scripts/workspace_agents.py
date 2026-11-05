@@ -19,7 +19,7 @@ def base_command(command):
             return command[:command.index(flag)]
     if 'chat' in command:
         return command[:command.index('chat')]
-    raise ValueError('This connection needs a supported print command.')
+    return list(command)
 
 
 class Metadata:
@@ -404,6 +404,7 @@ def _run(command, kind, cwd, env, prompt, native_id, model, effort, update, exec
         if native_id:argv += ['--conversation',native_id]
         if effort:argv += ['--effort',effort]
         prompt=json.dumps({'event':'user','message':{'content':prompt}})+'\n'
+    if kind=='claude':env={**env,'CLAUDE_CODE_SDK_READS_SESSION_STATE':'1'}
     argv+=extra or []
     if execution:
         from workspace_permissions import arguments
@@ -441,6 +442,13 @@ def _run(command, kind, cwd, env, prompt, native_id, model, effort, update, exec
                     error='The app returned a different chat ID. Check the native app before continuing.'
                 else:
                     ident=new_id;update(native_id=ident)
+            if event_type=='aura_notice':
+                from workspace_native_requests import notice
+                notice(execution,update,event.get('text',''),event.get('url'),event.get('key'));continue
+            if event_type=='aura_controls':update(native_controls={'steer':True,'interrupt':True});continue
+            if event_type=='aura_editor_text':update(native_editor={'id':event.get('id') or str(time.time_ns()),'text':event.get('text','')});continue
+            if event_type=='aura_native_title':update(native_title=event.get('title',''));continue
+            if event_type=='aura_reply_ready':update(reply_ready=True,background_work=event.get('background',False),progress='Background work is running' if event.get('background') else 'Finishing your request');continue
             if event_type=='aura_native_goal':update(native_goal=event.get('goal') or {})
             elif event_type=='message_end':
                 message=event.get('message',{})

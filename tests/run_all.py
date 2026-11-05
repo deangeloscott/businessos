@@ -38,6 +38,7 @@ TESTS=[
     'tests/run_workspace_conversations.py',
     'tests/run_workspace_assistants.py',
     'tests/run_workspace_coordination.py',
+    'tests/run_workspace_native_interop.py',
     'tests/run_workspace_composer.py',
     'tests/run_workspace_native_goals.py',
     'tests/run_workspace_recovery_controls.py',

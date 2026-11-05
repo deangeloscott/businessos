@@ -13,7 +13,7 @@ import workspace_chats
 
 
 def base_command(command):
-    return command[:command.index('exec')]
+    return command[:command.index('exec')] if 'exec' in command else list(command)
 
 
 def rpc(command, calls, cwd, env=None, experimental=False):

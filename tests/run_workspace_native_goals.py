@@ -28,6 +28,7 @@ for line in sys.stdin:
     r=json.loads(line);op=r.get('method',r.get('type',r.get('action')))
     if op=='initialize':reply(r,{})
     elif op=='thread/start':reply(r,{'thread':{'id':'native'}})
+    elif op=='thread/backgroundTerminals/list':reply(r,{'data':[]})
     elif op=='thread/goal/get':reply(r,{'goal':{'objective':'Other native work','status':'active'} if os.getenv('FOREIGN_GOAL') else None})
     elif op=='thread/goal/set':
         if r['params'].get('status')=='paused':

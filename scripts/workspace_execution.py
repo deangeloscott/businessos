@@ -3,6 +3,7 @@ import os
 import signal
 import subprocess
 import threading
+import secrets
 
 
 class Stopped(Exception):
@@ -22,12 +23,47 @@ class Execution:
         self.retry_check_at = None
         self.retry_check = None
         self.on_started = None
+        self.interrupt = None
+        self.steer = None
+        self.interrupt_requested = False
+        self.native_options = {}
+        self.native_handler = None
+        self.native_cwd = None
+        self.native_env = None
+        self.attachments = []
+        self.notices = []
+        self.helpers = set()
+        self.controls = {}
         from workspace_interactions import Requests
         self.requests = Requests()
 
     def check(self):
         if self.stopped.is_set():
             raise Stopped()
+
+    def control(self,send,value):
+        ident='aura-control-'+secrets.token_hex(8);ready=threading.Event();result={}
+        with self.lock:self.controls[ident]=(ready,result)
+        try:
+            send({**value,'id':ident})
+            if not ready.wait(15):raise ValueError('The native app has not confirmed this update. Check the chat before sending it again.')
+            if result.get('error'):raise ValueError(result['error'])
+        finally:
+            with self.lock:self.controls.pop(ident,None)
+
+    def resolve_control(self,ident,error=None):
+        with self.lock:
+            row=self.controls.get(ident)
+            if not row:return False
+            ready,result=row
+            if error:result['error']=str(error)
+            ready.set();return True
+
+    def close_controls(self):
+        with self.lock:
+            for ready,result in self.controls.values():
+                result.setdefault('error','The native connection ended before confirming this update. Check the chat before sending it again.')
+                ready.set()
 
     def popen(self, *args, **kwargs):
         with self.lock:
@@ -37,14 +73,35 @@ class Execution:
             else:
                 kwargs['start_new_session'] = True
             self.process = subprocess.Popen(*args, **kwargs)
+            self.native_cwd=kwargs.get('cwd');self.native_env=kwargs.get('env')
             process=self.process
         if self.on_started:self.on_started(process)
         return process
 
     def stop(self):
+        # Native cancellation gets the first chance to settle tools and children.
+        # A timer supplies the process-tree fallback without holding the UI lock.
+        with self.lock:
+            if self.interrupt and not self.interrupt_requested and self.process and self.process.poll() is None:
+                self.interrupt_requested=True
+                try:self.interrupt()
+                except (OSError,ValueError):pass
+                else:
+                    timer=threading.Timer(5,self._force_if_running);timer.daemon=True;timer.start()
+                    return
+        self._force_stop()
+
+    def _force_if_running(self):
+        with self.lock:
+            if not self.process or self.process.poll() is not None:return
+        self._force_stop()
+
+    def _force_stop(self):
         with self.lock:
             process = self.process
             self.stopped.set()
+            for helper in list(self.helpers):
+                if helper.poll() is None:helper.terminate()
             if process is None or process.poll() is not None:
                 self.requests.close()
                 return

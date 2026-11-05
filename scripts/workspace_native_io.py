@@ -48,35 +48,7 @@ def add_request(execution,ident,title,questions,send,convert,detail='',timeout=N
     execution.requests.add(ident,title,questions,send,validate,detail,timeout)
 
 
-def codex_request(event,execution,send):
-    ident=event['id'];method=event.get('method','');params=event.get('params') or {}
-    reply=lambda payload:send({'id':ident,'result':payload})
-    if method in {'item/commandExecution/requestApproval','item/fileChange/requestApproval'}:
-        available=params.get('availableDecisions')
-        allowed=[v for v in (available if available is not None else ['accept','decline','cancel']) if isinstance(v,str) and v in {'accept','decline','cancel'}]
-        if not allowed:
-            send({'id':ident,'error':{'code':-32601,'message':'Use the native app for this approval decision.'}});return
-        labels={'accept':'Approve once','decline':'Decline','cancel':'Cancel request'}
-        q=question('decision',params.get('reason') or 'Allow this native operation?', [labels[v] for v in allowed])
-        detail=json.dumps({k:params[k] for k in ('command','cwd','grantRoot','networkApprovalContext','additionalPermissions') if k in params},ensure_ascii=False,indent=2)
-        add_request(execution,ident,'Approval needed',[q],reply,lambda a:{'decision':next(v for v in allowed if labels[v]==a['decision'][0])},detail)
-    elif method=='item/tool/requestUserInput':
-        questions=[]
-        for value in params.get('questions',[]):
-            q=question(value['id'],value.get('question',''),[o['label'] for o in value.get('options') or []],free=value.get('isOther',False))
-            q['secret']=value.get('isSecret',False)
-            for option,original in zip(q['options'],value.get('options') or []):option['description']=original.get('description','')
-            questions.append(q)
-        add_request(execution,ident,'Your AI has a question',questions,reply,lambda a:{'answers':{k:{'answers':v} for k,v in a.items()}},timeout=params.get('autoResolutionMs'))
-    elif method=='item/permissions/requestApproval':
-        q=question('decision',params.get('reason') or 'Grant the requested access for this turn?', ['Approve this turn','Decline'])
-        permissions=params.get('permissions') or {}
-        add_request(execution,ident,'Permission request',[q],reply,
-            lambda a:{'permissions':permissions if a['decision']==['Approve this turn'] else {},'scope':'turn'},json.dumps(permissions,indent=2))
-    else:
-        # Auth, arbitrary MCP schemas, dynamic tools and future methods are not guessed.
-        send({'id':ident,'error':{'code':-32601,'message':'This native interaction is not supported in Aura. Use the native app.'}})
-
+from workspace_native_requests import codex_request, notice, provider
 
 def codex_run(command,cwd,prompt,native_id,model,effort,update,env,execution,child_model=''):
     from workspace_codex import base_command
@@ -84,24 +56,63 @@ def codex_run(command,cwd,prompt,native_id,model,effort,update,env,execution,chi
     from _process_errors import ErrorTail
     import workspace_usage
     mode=execution.permission
-    params={'cwd':str(cwd),'model':model}
+    params={**execution.native_options.get('thread',{k:v for k,v in execution.native_options.items() if k!='initialize'}),'cwd':str(cwd),**({'model':model} if model else {})}
     if mode!='native':params.update(sandbox='danger-full-access' if mode=='full' else mode,approvalPolicy='never' if mode=='full' else 'on-request')
     if child_model:params['config']={'agents.default_subagent_model':child_model}
     if native_id:params.update(threadId=native_id)
     final='';usage={};thread=native_id;complete=False;items={};delegation=Tracker(update)
-    previous_total=None;turn_tokens={};turn_started=False
+    previous_total=None;turn_tokens={};turn_started=False;turn_id=None;owned=set();child_started=set();background=[];background_checked=False;background_pages=[]
     goal=getattr(execution,'native_goal',None);goal_state=None;turn_finished=False
+    def settled():
+        return turn_finished and background_checked and not background and not execution.helpers and not any(c.get('status') in {'working','pending'} for c in delegation.items.values()) and not any(r['status']=='pending' for r in execution.requests.snapshot()) and (not goal or (goal_state or {}).get('status')!='active')
     with execution.popen([*base_command(command),'app-server'],cwd=cwd,env=env,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,
                          text=True,encoding='utf-8',errors='replace') as process:
         errors=ErrorTail(process,env);send,events,close=channel(process,execution,errors)
-        send({'id':'aura-init','method':'initialize','params':{'clientInfo':{'name':'aura_workspace','version':'1.0'},'capabilities':{'experimentalApi':True}}})
+        def start_turn(text,ident='aura-turn',images=None):
+            if text.strip()=='/compact':
+                send({'id':ident,'method':'thread/compact/start','params':{'threadId':thread}});return
+            if text.strip()=='/review' or text.lstrip().startswith('/review '):
+                instructions=text.strip()[len('/review'):].strip()
+                target={'type':'custom','instructions':instructions} if instructions else {'type':'uncommittedChanges'}
+                send({'id':ident,'method':'review/start','params':{'threadId':thread,'delivery':'inline','target':target}});return
+            turn={'threadId':thread,'input':[{'type':'text','text':text},*(images or [])],**({'model':model} if model else {})}
+            if effort:turn['effort']=effort
+            send({'id':ident,'method':'turn/start','params':turn})
+        send({'id':'aura-init','method':'initialize','params':{'clientInfo':{'name':'aura_workspace','version':'1.0'},'capabilities':{'experimentalApi':True},**execution.native_options.get('initialize',{})}})
         try:
             for event in events:
                 ident=event.get('id');method=event.get('method');p=event.get('params') or {}
+                if method=='thread/started':
+                    child=p.get('thread') or {}
+                    if child.get('parentThreadId') in {thread,*owned} and child.get('id'):
+                        owned.add(child['id']);delegation.put(child['id'],status='pending')
                 if method and ident is not None:
-                    if thread and p.get('threadId') and p['threadId']!=thread:
+                    if thread and p.get('threadId') and p['threadId']!=thread and p['threadId'] not in owned:
                         send({'id':ident,'error':{'code':-32602,'message':'Different thread.'}});continue
-                    codex_request(event,execution,send);continue
+                    codex_request(event,execution,send,update);continue
+                if execution.resolve_control(ident,(event.get('error') or {}).get('message')):
+                    returned=(event.get('result') or {}).get('turn') or {}
+                    if returned.get('id'):turn_id=returned['id'];turn_started=True;turn_finished=False;background_checked=False
+                    continue
+                if method=='thread/status/changed' and p.get('threadId') in owned:
+                    status=p.get('status') or {};status=status.get('type') if isinstance(status,dict) else status
+                    if status=='active':child_started.add(p['threadId']);delegation.put(p['threadId'],status='working')
+                    elif status in {'notLoaded','systemError'} or status=='idle' and p['threadId'] in child_started:delegation.put(p['threadId'],status='error' if status=='systemError' else 'complete')
+                if method=='turn/started' and p.get('threadId') in owned:
+                    child_started.add(p['threadId']);delegation.put(p['threadId'],status='working')
+                if method=='turn/completed' and p.get('threadId') in owned:
+                    delegation.put(p['threadId'],status='complete' if p.get('turn',{}).get('status')=='completed' else 'error')
+                if ident=='aura-background':
+                    result=event.get('result') or {}
+                    background_pages.extend(result.get('data') or [])
+                    if result.get('nextCursor'):
+                        send({'id':'aura-background','method':'thread/backgroundTerminals/list','params':{'threadId':thread,'cursor':result['nextCursor']}});continue
+                    background_checked=True;background=background_pages;background_pages=[]
+                    update(background_processes=background,reply_ready=turn_finished,progress='Background processes are running' if background else 'Finishing your request')
+                if ident=='aura-interrupt' and 'error' not in event:
+                    # The acknowledgement precedes turn/completed. Keep reading
+                    # so the native app can unwind its tools before stdin closes.
+                    continue
                 if ident in {'aura-init','aura-thread','aura-turn','aura-goal-read','aura-goal-set','aura-goal-check','aura-goal-control'} and 'error' in event:
                     raise ValueError(str(event['error'].get('message','Native request failed.')))
                 if ident=='aura-init':
@@ -113,11 +124,17 @@ def codex_run(command,cwd,prompt,native_id,model,effort,update,env,execution,chi
                     if native_id and thread!=native_id:raise ValueError('Codex returned a different native chat. No request was sent.')
                     effective={k:event['result'][k] for k in ('approvalPolicy','sandbox') if k in event['result']}
                     update(native_id=thread,permission_effective=effective)
+                    def interrupt():
+                        if not turn_id:raise ValueError('The native turn has not started yet.')
+                        send({'id':'aura-interrupt','method':'turn/interrupt','params':{'threadId':thread,'turnId':turn_id}})
+                    def steer(text,attachments=None):
+                        if turn_finished:
+                            execution.control(send,{'method':'turn/start','params':{'threadId':thread,'input':[{'type':'text','text':text},*(attachments or [])]}})
+                        else:execution.control(send,{'method':'turn/steer','params':{'threadId':thread,'expectedTurnId':turn_id,'input':[{'type':'text','text':text},*(attachments or [])]}})
+                    execution.interrupt=interrupt;execution.steer=steer
+                    update(native_controls={'steer':True,'interrupt':True})
                     if goal:send({'id':'aura-goal-read','method':'thread/goal/get','params':{'threadId':thread}})
-                    else:
-                        turn={'threadId':thread,'input':[{'type':'text','text':prompt}],'model':model}
-                        if effort:turn['effort']=effort
-                        send({'id':'aura-turn','method':'turn/start','params':turn})
+                    else:start_turn(prompt,images=execution.attachments)
                     execution.protocol_ready=True
                 elif ident=='aura-goal-read':
                     existing=(event.get('result') or {}).get('goal')
@@ -135,17 +152,16 @@ def codex_run(command,cwd,prompt,native_id,model,effort,update,env,execution,chi
                         send({'id':'aura-goal-control','method':'thread/goal/clear' if action=='clear' else 'thread/goal/set',
                               'params':{'threadId':thread,'origin':'user',**({} if action=='clear' else {'status':'complete' if action=='complete' else 'paused'})}})
                     execution.goal_control=control
-                    turn={'threadId':thread,'input':[{'type':'text','text':prompt}],'model':model}
-                    if effort:turn['effort']=effort
-                    send({'id':'aura-turn','method':'turn/start','params':turn})
+                    start_turn(prompt,images=execution.attachments)
                 elif ident in {'aura-goal-check','aura-goal-control'} or method in {'thread/goal/updated','thread/goal/cleared'} and p.get('threadId')==thread:
                     observed=(event.get('result') or p).get('goal')
                     if observed:
                         goal_state=observed;update(native_goal=observed)
                     elif ident in {'aura-goal-check','aura-goal-control'} or method=='thread/goal/cleared':
                         if (goal_state or {}).get('status')!='complete':goal_state={'status':'cleared'};update(native_goal=goal_state)
-                    if turn_finished and (goal_state or {}).get('status')!='active':complete=True;break
-                elif ident=='aura-turn' or method=='turn/started':turn_started=True;turn_finished=False
+                elif ident in {'aura-turn','aura-followup'} or method=='turn/started' and p.get('threadId',thread)==thread:
+                    turn_started=True;turn_finished=False;background_checked=False
+                    turn_id=((event.get('result') or {}).get('turn') or p.get('turn') or {}).get('id') or turn_id
                 elif method=='serverRequest/resolved':execution.requests.resolve(p.get('requestId'))
                 elif method=='thread/tokenUsage/updated' and p.get('threadId')==thread:
                     token=p.get('tokenUsage') or {};last=token.get('last') or {}
@@ -162,34 +178,56 @@ def codex_run(command,cwd,prompt,native_id,model,effort,update,env,execution,chi
                         usage['last']=workspace_usage.measure(raw,'codex',time.time());update(usage=usage)
                     if total:previous_total=total
                 elif p.get('threadId') and p['threadId']!=thread:
-                    delegation.observe('codex',{'type':method,**p});continue
+                    delegation.observe('codex',{'type':method,**p})
+                    if settled():complete=True;break
+                    continue
                 elif method in {'item/started','item/completed'}:
                     item=p.get('item') or {};typ=item.get('type')
                     if typ=='agentMessage':
                         items[item['id']]=item
                         if method=='item/completed' and item.get('phase')!='commentary':final=item.get('text','');update(reply=final)
+                    elif typ=='exitedReviewMode' and method=='item/completed':
+                        final=item.get('review') or final;update(reply=final)
+                    elif typ=='contextCompaction' and method=='item/completed':
+                        final='Conversation compacted.';update(reply=final)
                     else:
                         label={'commandExecution':'Running a command','fileChange':'Updating files','webSearch':'Searching the web','mcpToolCall':'Using a connected tool'}.get(typ)
                         if label:update(progress=label)
                         if typ=='collabAgentToolCall':
+                            new_children=set(item.get('receiverThreadIds',[]))-owned
+                            owned.update(new_children)
                             adapted={**item,'type':'collab_tool_call','sender_thread_id':item.get('senderThreadId'),
                                 'receiver_thread_ids':item.get('receiverThreadIds',[]),
                                 'agents_states':{key:{'status':{'pendingInit':'pending_init','notFound':'not_found'}.get(value.get('status'),value.get('status')),'message':value.get('message')}
                                                 for key,value in item.get('agentsStates',{}).items()}}
                             delegation.observe('codex',{'type':method.replace('/','.'),'item':adapted})
+                            for child in new_children:
+                                send({'id':'aura-child-'+child,'method':'thread/resume','params':{'threadId':child}})
                 elif method=='item/agentMessage/delta':
                     item=items.setdefault(p.get('itemId'),{'text':''});item['text']=item.get('text','')+p.get('delta','')
                     if item.get('phase')!='commentary':update(reply=item['text'])
                 elif method=='turn/completed':
                     turn=p.get('turn') or {}
+                    if execution.interrupt_requested:
+                        from workspace_execution import Stopped
+                        raise Stopped()
                     if turn.get('status')!='completed':raise ValueError(str((turn.get('error') or {}).get('message') or 'The native turn did not complete.'))
                     turn_finished=True
-                    if not goal or (goal_state or {}).get('status')!='active':complete=True;break
-                    send({'id':'aura-goal-check','method':'thread/goal/get','params':{'threadId':thread}})
+                    update(reply_ready=True,progress='Waiting for native background work' if any(c.get('status') in {'working','pending'} for c in delegation.items.values()) else 'Finishing your request')
+                    send({'id':'aura-background','method':'thread/backgroundTerminals/list','params':{'threadId':thread}})
+                    if goal and (goal_state or {}).get('status')=='active':send({'id':'aura-goal-check','method':'thread/goal/get','params':{'threadId':thread}})
                 elif method=='error' and not p.get('willRetry'):raise ValueError(str((p.get('error') or {}).get('message') or 'The native app reported an error.'))
-            if not complete:raise ValueError(errors.message('Codex disconnected before completing. Open the native chat; this request was not resubmitted.'))
+                if background and method in {'item/completed','thread/status/changed','item/commandExecution/terminalInteraction','process/exited'}:
+                    send({'id':'aura-background','method':'thread/backgroundTerminals/list','params':{'threadId':thread}})
+                if settled():
+                    complete=True;break
+            if not complete:
+                if execution.interrupt_requested:
+                    from workspace_execution import Stopped
+                    raise Stopped()
+                raise ValueError(errors.message('Codex disconnected before completing. Open the native chat; this request was not resubmitted.'))
         finally:
-            execution.goal_control=None;close();execution.requests.close();ErrorTail.close_input(process)
+            execution.goal_control=None;execution.interrupt=None;execution.steer=None;execution.close_controls();close();execution.requests.close();ErrorTail.close_input(process)
             try:process.wait(timeout=3)
             except subprocess.TimeoutExpired:process.terminate();process.wait(timeout=5)
     execution.check()
@@ -200,7 +238,7 @@ def codex_run(command,cwd,prompt,native_id,model,effort,update,env,execution,chi
 def agent_lines(process,kind,prompt,native_id,execution,errors):
     """Yield ordinary native events to the existing reply/usage/delegation parser."""
     send,events,close=channel(process,execution,errors);finished=False
-    goal=getattr(execution,'native_goal',None);last_goal_status=None
+    goal=getattr(execution,'native_goal',None);last_goal_status=None;result_received=False;session_state=None;tasks=set()
     def retry_check():
         reason=execution.continuation_guard()
         if reason:
@@ -208,11 +246,14 @@ def agent_lines(process,kind,prompt,native_id,execution,errors):
             execution.continuation_changed({'continuation_note':reason,'progress':'Continuation needs review'})
     execution.retry_check=retry_check
     if kind=='claude':
-        send({'type':'control_request','request_id':'aura-init','request':{'subtype':'initialize','hooks':None}})
+        send({'type':'control_request','request_id':'aura-init','request':{'subtype':'initialize',**execution.native_options.get('initialize',{})}})
+        execution.interrupt=lambda:send({'type':'control_request','request_id':'aura-interrupt','request':{'subtype':'interrupt'}})
+        execution.steer=lambda text,attachments=None:send({'type':'user','session_id':native_id or '','message':{'role':'user','content':[{'type':'text','text':text},*(attachments or [])]},'parent_tool_use_id':None})
     else:send({'id':'aura-state','type':'get_state'})
     try:
         for event in events:
             typ=event.get('type')
+            if typ=='response' and execution.resolve_control(event.get('id'),event.get('error') if event.get('success') is False else None):continue
             if kind in {'pi','omp'} and getattr(execution,'continuation',None) is not None:
                 if typ=='auto_retry_start':
                     delay=event.get('delayMs');until=execution.continuation.get('until')
@@ -231,28 +272,44 @@ def agent_lines(process,kind,prompt,native_id,execution,errors):
                     execution.retry_check_at=None;execution.release_continuation()
                     execution.continuation_changed({'retry_at':None,'progress':'Continuing the assignment' if event.get('success') else 'Native retries ended'})
             if kind=='claude':
+                if typ=='control_response' and event.get('response',{}).get('request_id')=='aura-interrupt':
+                    continue
                 if typ=='control_response' and event.get('response',{}).get('request_id')=='aura-init':
                     if event['response'].get('subtype')=='error':raise ValueError(event['response'].get('error','Claude initialization failed.'))
-                    send({'type':'user','session_id':native_id or '', 'message':{'role':'user','content':prompt},'parent_tool_use_id':None})
+                    send({'type':'user','session_id':native_id or '', 'message':{'role':'user','content':[{'type':'text','text':prompt},*execution.attachments] if execution.attachments else prompt},'parent_tool_use_id':None})
                     execution.protocol_ready=True
+                    yield json.dumps({'type':'aura_controls','steer':True,'interrupt':True})
                 elif typ=='control_cancel_request':execution.requests.resolve(event.get('request_id'))
                 elif typ=='control_request':
                     ident=event.get('request_id');request=event.get('request') or {}
                     def reply(payload,ident=ident):send({'type':'control_response','response':{'subtype':'success','request_id':ident,'response':payload}})
                     if request.get('subtype')!='can_use_tool':
+                        def bridge(value,ident=ident,reply=reply):
+                            if 'result' in value:reply(value['result'])
+                            else:send({'type':'control_response','response':{'subtype':'error','request_id':ident,'error':value.get('error',{}).get('message','The native provider needs attention.')}})
+                        if provider(execution,{'id':ident,'method':request.get('subtype'),'params':request},bridge):continue
                         send({'type':'control_response','response':{'subtype':'error','request_id':ident,'error':'Use the native app for this interaction.'}});continue
                     original=request.get('input') or {}
                     if request.get('tool_name')=='AskUserQuestion':
                         qs=[question(str(i),q.get('question',''),[o['label'] for o in q.get('options',[])],q.get('multiSelect'),True) for i,q in enumerate(original.get('questions',[]))]
-                        def convert(a,original=original):return {'behavior':'allow','updatedInput':{**original,'answers':{q.get('question',''):', '.join(a[str(i)]) for i,q in enumerate(original.get('questions',[]))}}}
+                        def convert(a,original=original,qs=qs):return {'behavior':'allow','updatedInput':{**original,'answers':{q.get('question',''):', '.join(a[str(i)]) for i,q in enumerate(original.get('questions',[]))}}}
                         add_request(execution,ident,'Your AI has a question',qs,reply,convert)
                     else:
-                        q=question('decision',request.get('description') or 'Allow this tool call?', ['Approve once','Decline'])
+                        suggestions=request.get('permission_suggestions') or []
+                        options=['Approve once',*(['Approve and apply the suggested native rule'] if suggestions else []),'Decline']
+                        q=question('decision',request.get('description') or 'Allow this tool call?', options)
                         add_request(execution,ident,'Approval needed: '+str(request.get('tool_name','Tool')),[q],reply,
-                            lambda a,original=original:{'behavior':'allow','updatedInput':original} if a['decision']==['Approve once'] else {'behavior':'deny','message':'Declined by the user in Aura.'},json.dumps(original,ensure_ascii=False,indent=2))
+                            lambda a,original=original,suggestions=suggestions:{'behavior':'deny','message':'Declined by the user in Aura.'} if a['decision']==['Decline'] else {'behavior':'allow','updatedInput':original,**({'updatedPermissions':suggestions} if a['decision']==['Approve and apply the suggested native rule'] else {})},json.dumps({'input':original,'permission_suggestions':suggestions},ensure_ascii=False,indent=2))
                     continue
+                if typ=='system':
+                    subtype=event.get('subtype');task=event.get('task_id')
+                    if subtype=='task_started' and task:tasks.add(task)
+                    elif subtype=='task_notification' and task:tasks.discard(task)
+                    elif subtype=='task_updated' and (event.get('patch') or {}).get('status') in {'completed','failed','stopped'}:tasks.discard(task)
+                    elif subtype=='session_state_changed':session_state=event.get('state')
                 yield json.dumps(event)
-                if typ=='result':finished=True;break
+                if typ=='result':result_received=True;yield json.dumps({'type':'aura_reply_ready','background':bool(tasks) or session_state not in {None,'idle'}})
+                if result_received and not tasks and session_state in {None,'idle'} and not execution.helpers and not any(r['status']=='pending' for r in execution.requests.snapshot()):finished=True;break
             else:
                 if typ=='response' and event.get('id')=='aura-state':
                     if not event.get('success'):raise ValueError(event.get('error','Could not read the native session.'))
@@ -260,9 +317,11 @@ def agent_lines(process,kind,prompt,native_id,execution,errors):
                     if not ident:raise ValueError('The native app did not provide a saved session ID. No request was sent.')
                     if native_id and ident!=native_id:raise ValueError('The native app opened a different session. No request was sent.')
                     yield json.dumps({'type':'session','id':ident})
+                    execution.interrupt=lambda:send({'id':'aura-interrupt','type':'abort'})
+                    execution.steer=lambda text,attachments=None:execution.control(send,{'type':'steer','message':text,**({'images':attachments} if attachments else {})})
                     if kind=='omp':
                         send({'id':'aura-ask','type':'set_ask_dialog','enabled':True})
-                        send({'id':'aura-children','type':'set_subagent_subscription','mode':'progress'})
+                        send({'id':'aura-children','type':'set_subagent_subscription','level':'progress'})
                     if goal and kind=='omp':
                         existing=state.get('goal')
                         if existing and existing.get('status') not in {'complete','completed'} and not existing.get('objective','').startswith(goal['objective']+'\n\n'):
@@ -273,8 +332,11 @@ def agent_lines(process,kind,prompt,native_id,execution,errors):
                         if goal.get('token_budget') is not None:values['token_budget']=goal['token_budget']
                         send(values)
                         execution.goal_control=lambda action:send({'id':'aura-goal-control','type':'goal','op':'pause' if action=='pause' else 'drop'})
-                    else:send({'id':'aura-prompt','type':'prompt','message':prompt})
+                    else:send({'id':'aura-prompt','type':'prompt','message':prompt,**({'images':execution.attachments} if execution.attachments else {})})
                     execution.protocol_ready=True
+                    yield json.dumps({'type':'aura_controls','steer':True,'interrupt':True})
+                elif typ=='response' and event.get('id')=='aura-children' and not event.get('success'):
+                    yield json.dumps({'type':'aura_notice','text':'This installed connection could not provide subagent progress. Work can continue without the progress display.'})
                 elif typ=='response' and event.get('id') in {'aura-goal-create','aura-goal-control'}:
                     if not event.get('success'):raise ValueError(event.get('error') or 'The native app could not change this goal.')
                     value=(event.get('data') or {}).get('goal')
@@ -303,13 +365,19 @@ def agent_lines(process,kind,prompt,native_id,execution,errors):
                                 **({'customInput':'\n'.join(v for v in a[q['id']] if v not in {o['value'] for o in q['options']})} if any(v not in {o['value'] for o in q['options']} for v in a[q['id']]) else {})} for q in qs]}
                         add_request(execution,ident,event.get('title') or 'Your AI has a question',qs,reply,convert,timeout=event.get('timeout'))
                     elif method in {'select','confirm','input','editor'}:
-                        if event.get('secret'):
-                            send({'type':'extension_ui_response','id':ident,'cancelled':True});continue
                         options=event.get('options',[]) if method=='select' else ['Yes','No'] if method=='confirm' else []
-                        q=question('answer',event.get('message') or event.get('title',''),options)
+                        q=question('answer',event.get('message') or event.get('title',''),options);q.update(secret=bool(event.get('secret')),default=None if event.get('secret') else event.get('prefill'))
                         def reply(payload,ident=ident):send({'type':'extension_ui_response','id':ident,**payload})
                         def convert(a,method=method):return {'confirmed':a['answer']==['Yes']} if method=='confirm' else {'value':a['answer'][0]}
                         add_request(execution,ident,event.get('title') or 'Your AI has a question',[q],reply,convert,timeout=event.get('timeout'))
+                    elif method in {'notify','setStatus','setWidget'}:
+                        text=event.get('message') or event.get('statusText') or '\n'.join(event.get('widgetLines') or [])
+                        key=method+':'+str(event.get('statusKey') or event.get('widgetKey') or 'default') if method!='notify' else None
+                        if text or key:yield json.dumps({'type':'aura_notice','text':text,'key':key,'level':event.get('notifyType','info')})
+                    elif method=='open_url':yield json.dumps({'type':'aura_notice','text':event.get('instructions') or 'Open the native sign-in page.', 'url':event.get('launchUrl') or event.get('url')})
+                    elif method=='set_editor_text':yield json.dumps({'type':'aura_editor_text','text':event.get('text','')})
+                    elif method=='setTitle':yield json.dumps({'type':'aura_native_title','title':event.get('title','')})
+                    else:yield json.dumps({'type':'aura_notice','text':'Your AI requested a display this connection cannot show. Open its native app to use that display.'})
                     continue
                 else:yield json.dumps(event)
                 if typ in {'agent_settled','session_settled'}:finished=True;break
@@ -321,10 +389,14 @@ def agent_lines(process,kind,prompt,native_id,execution,errors):
                     settled=state.get('isSettled') if 'isSettled' in state else state.get('isStreaming') is False and not any(state.get(k) for k in ('isCompacting','isRetrying','pendingMessageCount','queuedMessageCount','hasPendingAsyncWork'))
                     if settled:
                         finished=True;break
+        if execution.interrupt_requested:
+            from workspace_execution import Stopped
+            raise Stopped()
         if not finished:raise ValueError(errors.message('The native connection closed before completing. Open its saved chat before retrying.'))
     finally:
         execution.goal_control=None
+        execution.interrupt=None;execution.steer=None
         execution.retry_check_at=None
-        close();execution.requests.close();errors.close_input(process)
+        execution.close_controls();close();execution.requests.close();errors.close_input(process)
         try:process.wait(timeout=3)
         except subprocess.TimeoutExpired:process.terminate();process.wait(timeout=5)

@@ -65,30 +65,38 @@ window.auraContinuity=(()=>{
     const host=$('#native-requests');if(!host)return;
     const job=state.liveJob,chat=state.chatMeta?.id||'';
     const key=JSON.stringify([scope(),chat,job?.id]);
-    const rows=job?.chat_id===chat&&job?.workspace===state.data?.workspace?(job.requests||[]):[];
-    const signature=JSON.stringify(rows);
+    const matches=job?.chat_id===chat&&job?.workspace===state.data?.workspace;
+    const rows=matches?(job.requests||[]):[],notices=matches?(job.native_notices||[]):[],editor=matches?job.native_editor:null;
+    const signature=JSON.stringify([rows,notices,editor]);
     if(key===requestScope&&signature===requestKey)return;
     const active=document.activeElement,form=active?.closest?.('form[data-native-request]');
     const focus=key===requestScope&&form&&host.contains(form)?{id:form.dataset.nativeRequest,index:[...form.querySelectorAll('input,textarea,button')].indexOf(active),start:active.selectionStart,end:active.selectionEnd}:null;
     host.querySelectorAll('form[data-native-request]').forEach(form=>{const a=readAnswers(form);form.querySelectorAll('input[type=password]').forEach(i=>delete a[i.closest('[data-question]').dataset.question]);drafts.set(form.dataset.nativeRequest,a);});
-    requestScope=key;requestKey=signature;host.hidden=!rows.length;
-    host.innerHTML=rows.map(r=>`<article class="native-request ${esc(r.status)}"><div class="section-head"><h3>${esc(r.title)}</h3><span class="row-meta">${r.status==='pending'?'Needs your input':r.status==='answered'?'Answer sent':'Request ended'}</span></div>${r.detail?`<details><summary>Requested operation</summary><pre>${esc(r.detail)}</pre></details>`:''}${r.status==='pending'?`<form data-native-request="${esc(r.id)}">${r.questions.map(q=>`<fieldset data-question="${esc(q.id)}" data-multiple="${q.multiple?'1':''}"><legend>${esc(q.text)}</legend>${q.options.map((o,i)=>`<label class="native-option"><input type="${q.multiple?'checkbox':'radio'}" name="answer-${esc(q.id)}" value="${esc(o.value)}"><span>${esc(o.label)}${o.description?`<small>${esc(o.description)}</small>`:''}</span></label>`).join('')}${q.text?`<label class="native-free">${q.options.length?'Or write an answer':'Your answer'}<${q.secret?'input type="password" autocomplete="off"':'textarea rows="2"'} data-native-text maxlength="12000" aria-label="${esc(q.text)}">${q.secret?'':'</textarea>'}</label>`:''}</fieldset>`).join('')}<div class="inline-actions"><button type="submit" class="primary">Submit answer</button><span class="small-note" data-request-status role="status"></span></div></form>`:''}</article>`).join('');
+    requestScope=key;requestKey=signature;host.hidden=!rows.length&&!notices.length&&!editor;
+    host.innerHTML=notices.map(n=>`<p class="native-notice">${esc(n.text)}${/^https?:\/\//i.test(n.url||'')?` <a href="${esc(n.url)}" target="_blank" rel="noopener noreferrer">Open page ↗</a>`:''}</p>`).join('')+
+      (editor?`<div class="native-request"><h3>Draft from your AI</h3><pre>${esc(editor.text)}</pre><button type="button" class="secondary" data-native-draft>Use draft</button></div>`:'')+
+      rows.map(r=>`<article class="native-request ${esc(r.status)}"><div class="section-head"><h3>${esc(r.title)}</h3><span class="row-meta">${r.status==='pending'?'Needs your input':r.status==='answered'?'Answer sent':'Request ended'}</span></div>${r.detail?`<details><summary>Requested operation</summary><pre>${esc(r.detail)}</pre></details>`:''}${r.status==='pending'?`<form data-native-request="${esc(r.id)}">${r.questions.map(requestQuestion).join('')}<div class="inline-actions">${requestActions(r)}<span class="small-note" data-request-status role="status"></span></div></form>`:''}</article>`).join('');
+    const draftButton=host.querySelector('[data-native-draft]');if(draftButton)draftButton.onclick=()=>{if(key!==requestScope)return;const input=$('#request');input.value=[input.value,editor.text].filter(Boolean).join('\n\n');rememberChatDraft();input.focus();draftButton.disabled=true;};
     host.querySelectorAll('form[data-native-request]').forEach(form=>{
       const saved=drafts.get(form.dataset.nativeRequest)||{};
       form.querySelectorAll('[data-question]').forEach(field=>{
-        const values=saved[field.dataset.question]||[];
+        const q=rows.find(r=>r.id===form.dataset.nativeRequest)?.questions.find(q=>q.id===field.dataset.question);
+        const preset=q&&!q.secret&&q.default!=null?[typeof q.default==='boolean'&&!q.options.some(o=>o.value===JSON.stringify(q.default))?q.default?'Yes':'No':typeof q.default==='string'?q.default:JSON.stringify(q.default)]:[];
+        const values=saved[field.dataset.question]||preset;
         field.querySelectorAll('input[value]').forEach(input=>{input.checked=values.includes(input.value);});
         const text=field.querySelector('[data-native-text]');if(text&&text.type!=='password')text.value=values.filter(v=>![...field.querySelectorAll('input[value]')].some(i=>i.value===v)).join('\n');
       });
       form.onsubmit=event=>{event.preventDefault();attempt(async()=>{
         if(key!==requestScope)return;
-        const button=form.querySelector('button'),status=form.querySelector('[data-request-status]');button.disabled=true;status.textContent='Sending…';
+        const buttons=[...form.querySelectorAll('button')],status=form.querySelector('[data-request-status]');buttons.forEach(b=>b.disabled=true);status.textContent='Sending…';
         try{
-          await api('/api/chat/answer',{business:state.business,chat_id:chat,job_id:job.id,id:form.dataset.nativeRequest,answers:readAnswers(form)});
+          const answers=readAnswers(form),actions=rows.find(r=>r.id===form.dataset.nativeRequest)?.questions.find(q=>q.actions);
+          if(actions)answers[actions.id]=[event.submitter?.dataset.nativeAction||actions.options[0].value];
+          await api('/api/chat/answer',{business:state.business,chat_id:chat,job_id:job.id,id:form.dataset.nativeRequest,answers});
           drafts.delete(form.dataset.nativeRequest);
           if(key!==requestScope||!form.isConnected)return;
           status.textContent='Answer sent.';form.querySelectorAll('input,textarea,button').forEach(el=>{el.disabled=true;});
-        }catch(error){if(form.isConnected){status.textContent=humanError(error);button.disabled=false;}}
+        }catch(error){if(form.isConnected){status.textContent=humanError(error);buttons.forEach(b=>b.disabled=false);}}
       });};
     });
     if(focus){
@@ -98,6 +106,18 @@ window.auraContinuity=(()=>{
     }
     rows.filter(r=>r.status!=='pending').forEach(r=>drafts.delete(r.id));
     while(drafts.size>100)drafts.delete(drafts.keys().next().value);
+  }
+
+  function requestQuestion(q){
+    if(q.actions)return `<p class="native-prompt">${esc(q.text)}</p>`;
+    return `<fieldset data-question="${esc(q.id)}" data-multiple="${q.multiple?'1':''}"><legend>${esc(q.text)}</legend>
+      ${q.description?`<p class="small-note">${esc(q.description)}</p>`:''}
+      ${q.options.map(o=>`<label class="native-option"><input type="${q.multiple?'checkbox':'radio'}" name="answer-${esc(q.id)}" value="${esc(o.value)}"><span>${esc(o.label)}${o.description?`<small>${esc(o.description)}</small>`:''}</span></label>`).join('')}
+      ${q.allow_text?`<label class="native-free">${q.options.length?'Or write an answer':''}<${q.secret?'input type="password" autocomplete="off"':'textarea rows="2"'} data-native-text maxlength="12000" aria-label="${esc(q.text)}">${q.secret?'':'</textarea>'}</label>`:''}</fieldset>`;
+  }
+  function requestActions(request){
+    const actions=request.questions.find(q=>q.actions);
+    return actions?actions.options.map((o,i)=>`<button type="submit" class="${i===0?'primary':'secondary'}" data-native-action="${esc(o.value)}">${esc(o.label)}</button>`).join(''):'<button type="submit" class="primary">Submit answer</button>';
   }
 
   function readAnswers(form){

@@ -17,10 +17,16 @@ const flush=()=>new Promise(resolve=>setImmediate(resolve));
 function click(id){for(const fn of listeners.click||[])fn({target:{closest:()=>({id})}});}
 const permission={choices:[{id:'native',name:'Use harness settings',native:'No override',description:'Follow the settings in your AI app.'},{id:'full',name:'Full access',native:'danger-full-access · never',description:'Allow actions without asking for approval.',unrestricted:true}],mode:'native',default:'native',interactive:true};
 (async()=>{
-  state.liveJob={id:'job',chat_id:'chat',workspace:'A',requests:[{id:'request',status:'pending',title:'<Approval>',detail:'echo <unsafe>',questions:[{id:'q',text:'Choose?',multiple:true,text:true,options:[{label:'A',value:'A'}]}]}]};
+  state.liveJob={id:'job',chat_id:'chat',workspace:'A',requests:[{id:'request',status:'pending',title:'<Approval>',detail:'echo <unsafe>',questions:[{id:'q',text:'Choose?',multiple:true,allow_text:true,options:[{label:'A',value:'A'}]}]}]};
   const host=node('#native-requests');context.window.auraContinuity.renderRequests();
   assert.match(host.innerHTML,/&lt;Approval&gt;/);assert.match(host.innerHTML,/type="checkbox"/);assert.match(host.innerHTML,/Submit answer/);
   host.innerHTML='keep focused editor';context.window.auraContinuity.renderRequests();assert.equal(host.innerHTML,'keep focused editor','Unchanged polling must not replace question inputs');
+  node('#request').value='Unsent user draft';state.liveJob.native_editor={id:'native-draft',text:'Suggested addition'};
+  state.liveJob.native_notices=[{text:'<Native notice>',url:'javascript:alert(1)'}];
+  state.liveJob.requests[0].questions.push({id:'action',text:'Save this?',actions:true,options:[{label:'Submit',value:'Submit'},{label:'Cancel',value:'Cancel'}]});
+  context.window.auraContinuity.renderRequests();assert.match(host.innerHTML,/&lt;Native notice&gt;/);assert.doesNotMatch(host.innerHTML,/javascript:|data-question="action"/);assert.match(host.innerHTML,/data-native-action="Submit"/);
+  assert.equal(node('#request').value,'Unsent user draft','Native prepared text must not overwrite the composer');
+  node('#native-requests [data-native-draft]').onclick();assert.equal(node('#request').value,'Unsent user draft\n\nSuggested addition');
   state.data.workspace='B';context.window.auraContinuity.renderRequests();assert.equal(host.hidden,true,'A different workspace must not display actionable requests');state.data.workspace='A';
   click('chat-permissions');await flush();assert.match(calls.at(-1).path,/chat_id=chat/);
   context.details('Different page','Keep this page');calls.at(-1).resolve(permission);await Promise.all(pending);pending=[];

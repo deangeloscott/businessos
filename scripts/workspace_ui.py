@@ -62,7 +62,7 @@ from workspace_execution import Execution, Stopped
 from workspace_connections import Connections, PRESETS
 
 STATIC = PRODUCT_ROOT / 'interface'
-MAX_BODY = 96 * 1024
+MAX_BODY = 8 * 1024 * 1024
 HIDDEN = {'__pycache__', 'credentials', 'secrets', 'node_modules'}
 MEDIA = {'.png', '.jpg', '.jpeg', '.gif', '.webp', '.avif', '.mp4', '.webm', '.mov', '.m4v', '.mp3', '.wav', '.ogg', '.m4a', '.aac', '.flac', '.opus'}
 NATIVE_AGENTS = {'codex', 'claude', 'pi', 'omp', 'hermes', 'antigravity'}
@@ -424,7 +424,6 @@ class Workspace:
         self.execution = None
         self.jobs = {}
         self.executions = {}
-        self.continuation_waiters = {}
         self.workspace_views = {}
         self.workspace_path = str(workspace_root().resolve())
         self.schedule_job = None
@@ -852,7 +851,9 @@ class Workspace:
         command = list(choice['argv'])
         if choice['id'] == 'codex':
             command[-1:-1] = ['--sandbox', 'workspace-write' if workspace_write else 'read-only']
-        self.agent = {'name': choice['name'], 'argv': command,**({'native_goal':copy.deepcopy(choice['native_goal'])} if choice.get('native_goal') else {})}
+        self.agent = {'name':choice['name'],'argv':command,**{key:copy.deepcopy(choice[key]) for key in ('native_goal','native_protocol','native_requests','native_options') if key in choice}}
+        overrides=(self.configured_agent or {}).get('connections',{}).get(choice['id'],{})
+        self.agent.update({key:copy.deepcopy(overrides[key]) for key in ('native_requests','native_options') if key in overrides})
         self.connection_kind = choice['id']
         self.handoff = False
         self.verified_business = None
@@ -1382,6 +1383,7 @@ class Workspace:
         shown = [r for r in shown if r.get('request_id') != job['id']]
         shown.append({'role':'user', 'text':self.connections.redact(workspace_agents.display_text(text)),
                       'at':job['created'], 'request_id':job['id'],'files':job.get('files',[]),'references':json.loads(self.connections.redact(json.dumps(job.get('references',[])))),'goal_id':job.get('goal_id','')})
+        shown.extend(job.get('messages',[]))
         if final:
             shown.append({'role':'assistant', 'text':job['reply'], 'at':job['updated'],
                           'agent':job.get('agent',self.agent['name']), 'model':job.get('model',chat['model']), 'effort':job.get('effort',chat['effort']),
@@ -1631,8 +1633,10 @@ class Workspace:
                 'workspace':str(workspace_root())}
 
     def request_text(self, bid, text, history=None, schedule_id=None, organization_id=None):
-        if not isinstance(text, str) or not text.strip() or len(text) > 16000:
-            raise ValueError('Enter a request of up to 16,000 characters.')
+        if not isinstance(text, str) or not text.strip() or len(text) > 1024*1024:
+            raise ValueError('Enter a request of up to 1 million characters, or attach a file for larger text.')
+        if text.lstrip().startswith('/'):
+            return text.strip()
         # User/assistant transcript stays in memory; it is never canonical memory.
         prior = []
         organization_context=''
@@ -1668,16 +1672,15 @@ class Workspace:
                 f"AURA Skill guidance for this task: read {PRODUCT_ROOT / 'skills/viraltrac-aura/SKILL.md'}. "
                 "This supplies guidance here; it does not establish a global Skill installation in your app.\n"
                 "Do the user's actual work with your normal tools, permissions and supported capabilities. "
-                "When delegating, give each child the selected business/workspace, relevant goal, constraints and source references. "
-                "Have children return clarification questions to their parent; the parent asks the user when needed. Preserve native approvals. "
-                "Do not alter AURA product source. Preserve useful business meaning, not this chat transcript. "
+                "Use native delegation, approvals, tools, and execution normally. User instructions take priority over this contextual guidance. "
+                "Preserve useful business meaning, not this chat transcript. "
                 "Reply in everyday language, focusing on what the user can use or do next. "
                 "Keep record types, internal IDs, validation receipts, and explanations of which records you did not create out of normal replies. "
                 "If you save something useful, briefly say what and where. Explain technical details only when requested or needed to resolve a problem. "
                 f"For new workspace-owned outputs, prefer {workspace_root() / 'attachments' / bid / 'work'} unless the user chooses another location. "
                 "Preserve useful artifacts with an Asset and truthful provenance; use workspace-relative location_reference for local workspace files. "
                 "Scheduling intent is not an active schedule: use your real scheduler and report its confirmation, "
-                "or explain what remains unavailable. This interface may close the native app process after its reply. "
+                "or explain what remains unavailable. "
                 "For ongoing recurring work, identify the durable scheduler/runtime that will execute it after this turn; "
                 "do not present a session-only timer or persisted definition as unattended scheduled work. "
                 "Never claim tools, accounts or actions were verified without evidence.\n"
@@ -1940,9 +1943,10 @@ class Workspace:
         with self.lock:
             if not self.agent:
                 raise ValueError('Connect an installed agent, or copy the request to your existing chat.')
-            native = self.connection_kind in NATIVE_AGENTS
+            protocol_kind=self.agent.get('native_protocol') or self.connection_kind
+            native = protocol_kind in NATIVE_AGENTS
             saved_connection = dict(getattr(self,'_effective_connection',self.preferences.get('connection', {})))
-            if native and not saved_connection.get('model'):
+            if native and self.connection_kind!='configured' and not saved_connection.get('model'):
                 raise ValueError('Choose your model in Connect AI before sending a request.')
             if self.connection_kind == 'codex' and not saved_connection.get('effort'):
                 raise ValueError('Choose your model and effort in Connect AI before sending a request.')
@@ -1997,6 +2001,8 @@ class Workspace:
             if files is not None and (not isinstance(files,list) or any(not isinstance(p,str) for p in files)):raise ValueError('Choose valid workspace file references.')
             if len(files or [])+len(references)>12:raise ValueError('Choose up to 12 context references for this message.')
             selected_context=workspace_context.resolve(self,bid,[*references,*[{'kind':'file','id':p} for p in files or []]],goal_id) if not welcome and keep_warm_id is None else {'references':[],'text':''}
+            from workspace_native_requests import attachments
+            native_images=attachments(selected_context['references'],protocol_kind)
             prompt = text if keep_warm_id is not None else self.request_text(bid, text, None if native else history, schedule_id, organization_id)
             if selected_context['text']:prompt=prompt.replace('\nUser request:\n',selected_context['text']+'\nUser request:\n',1)
             assistant=getattr(self,'_assistant',None)
@@ -2051,11 +2057,15 @@ class Workspace:
                     except OSError:job['recovery_warning']='Work is running, but its recovery reference could not be saved.'
             execution.on_started=started
             execution.connection=dict(saved_connection)
+            execution.native_options=dict(self.agent.get('native_options') or {})
+            execution.native_handler=self.agent.get('native_requests')
+            execution.native_kind=protocol_kind
+            execution.attachments=native_images
             execution.native_goal=native_spec
             execution.interactive = native
             execution.permission = workspace_permissions.validate(self.connection_kind,chat.get('permission_mode') or self.preferences.get('harness_permissions',{}).get(self.connection_kind,'native'))
             job['permissions']=workspace_permissions.describe(self.connection_kind,execution.permission)
-            if goal_id and not native_spec:
+            if goal_id and not native_spec and chat.get('continuation',{}).get('mode')=='native':
                 goal=workspace_goals.find(bid,goal_id)
                 job['goal_basis']=workspace_goals.continuation_basis(bid,goal)
                 execution.continuation=dict(chat.get('continuation') or {'mode':'manual'})
@@ -2083,22 +2093,11 @@ class Workspace:
                     except (OSError,ValueError):return 'Saved work changed or is unavailable. Review before continuing.'
                     return ''
                 execution.continuation_guard=preflight_continuation
-                def claim_continuation():
-                    with self.lock:
-                        # Funding identity is not reliably exposed by every app.
-                        # One unknown-funding waiter avoids a burst of parallel retries.
-                        other=self.continuation_waiters.get('unknown-funding')
-                        if other and other!=job['id']:return 'Another assignment is already waiting for native retries. Continue this assignment manually.'
-                        self.continuation_waiters['unknown-funding']=job['id']
-                    return ''
-                def release_continuation():
-                    with self.lock:
-                        if self.continuation_waiters.get('unknown-funding')==job['id']:self.continuation_waiters.pop('unknown-funding',None)
-                execution.claim_continuation=claim_continuation
-                execution.release_continuation=release_continuation
+                execution.claim_continuation=lambda:''
+                execution.release_continuation=lambda:None
             self.executions[job['id']]=execution
             command = list(self.agent['argv'])
-            kind = self.connection_kind
+            kind = protocol_kind
             env = self.agent_environment()
             root=workspace_root().resolve();native_root=Path(chat.get('native_workspace') or root);native_root=native_root if native_root.is_dir() else root;model=job['model'];effort=job['effort'];native_id=chat.get('native_id')
             def update(**values):
@@ -2119,7 +2118,11 @@ class Workspace:
                     if 'native_goal' in values and native_spec:
                         workspace_native_goals.observe(self,bid,chat,native_spec,values['native_goal'])
                     if 'reply' in values:
-                        values['reply'] = self.connections.redact(workspace_chats.clean(values['reply'][-100000:],streaming=True))
+                        values['reply'] = self.connections.redact(workspace_chats.clean(values['reply'],streaming=True))
+                    if values.get('native_title') and not chat.get('title_edited'):
+                        chat['title']=self.connections.redact(str(values['native_title'])[:100]);self.save_preferences()
+                    for key in ('requests','native_notices','native_editor'):
+                        if key in values:values[key]=json.loads(self.connections.redact(json.dumps(values[key])))
                     if 'requests' in values:
                         if any(r['status']=='pending' for r in values['requests']):values['progress']='Needs your input'
                         elif job.get('progress')=='Needs your input' and not execution.stopped.is_set():values['progress']='Continuing your request'
@@ -2127,8 +2130,6 @@ class Workspace:
                         job['activity'] = [*job['activity'], {'text':values['progress'], 'at':time.time()}][-12:]
                     job.update(values, updated=time.time())
                     if 'requests' in values:
-                        values['requests']=json.loads(self.connections.redact(json.dumps(values['requests'])))
-                        job['requests']=values['requests']
                         for request in values['requests']:
                             ident='input-'+request['id']
                             item=next((n for n in self.preferences['notification_items'] if n['id']==ident),None)
@@ -2189,7 +2190,7 @@ class Workspace:
                     with self.lock:
                         execution.check()
                         terminal = 'complete' if code == 0 else 'error'
-                        job['reply'] = self.connections.redact(workspace_chats.clean(output[-100000:])) if code == 0 else self.connections.redact(
+                        job['reply'] = self.connections.redact(workspace_chats.clean(output)) if code == 0 else self.connections.redact(
                             (stderr or output)[-5000:].strip() or f'The agent exited with code {code}. Open your AI app to check the failure. Your request was not marked complete.')
                         if not job['reply']:
                             job['reply'] = 'The command finished without a text reply. Check the agent and refresh your workspace.'
@@ -2219,7 +2220,7 @@ class Workspace:
                         terminal='stopped';job.update(progress='Stopped', reply=job.get('reply') or '')
                 except Exception as exc:
                     with self.lock:
-                        if execution.stopped.is_set():
+                        if execution.stopped.is_set() or execution.interrupt_requested:
                             terminal='stopped';job.update(progress='Stopped')
                         else:
                             detail = self.connections.redact(str(exc))
@@ -2281,6 +2282,7 @@ class Workspace:
             if chat:chat.pop('continuation',None);self.save_preferences()
             if execution and hasattr(execution,'continuation'):execution.continuation={'mode':'manual'}
             execution.stop()
+            execution.requests.close()
             job.update(stopping=True, progress='Stopping this request…', updated=time.time())
         return {'id':job['id'], 'status':job['status']}
 
@@ -2630,7 +2632,37 @@ def handler_for(app):
                         if job['status']!='working' or job.get('chat_id')!=data.get('chat_id'):raise ValueError('This native request is no longer waiting in this chat.')
                         execution=app.executions.get(job['id'])
                     if not execution:raise ValueError('This request expired when Aura restarted. Check the native chat.')
+                    if execution.interrupt_requested:raise ValueError('This request is stopping. Wait for it to finish.')
                     self.send(200,execution.requests.answer(data.get('id'),data.get('answers')));return
+                if route == '/api/chat/steer':
+                    text=data.get('text')
+                    if not isinstance(text,str) or not text.strip() or len(text)>1024*1024:raise ValueError('Enter an update of up to 1 million characters, or attach a file for larger text.')
+                    with app.lock:
+                        bid=selected(data.get('business'));job=app.find_job(data.get('job_id'),bid)
+                        if job['status']!='working' or job.get('chat_id')!=data.get('chat_id'):raise ValueError('This request has ended. Send a new message instead.')
+                        execution=app.executions.get(job['id'])
+                        if not execution or not execution.steer:raise ValueError('This connection cannot receive an update while running. Wait for its reply.')
+                        if execution.interrupt_requested:raise ValueError('This request is stopping. Wait for it to finish.')
+                        steer=execution.steer
+                        chat=next(c for c in app.preferences['chats'] if c['id']==job['chat_id'] and c['business_id']==bid)
+                        files=data.get('files') or [];refs=data.get('references') or []
+                        if not isinstance(files,list) or any(not isinstance(p,str) for p in files) or not isinstance(refs,list):raise ValueError('Choose valid context references.')
+                        context=workspace_context.resolve(app,bid,[*refs,*[{'kind':'file','id':p} for p in files]])
+                        from workspace_native_requests import attachments
+                        images=attachments(context['references'],execution.native_kind)
+                    # Native acknowledgements arrive on the worker thread; do not
+                    # hold the workspace lock while waiting for one.
+                    steer((context['text']+'\n\n' if context['text'] and not text.lstrip().startswith('/') else '')+text,images)
+                    with app.lock:
+                        message={'role':'user','text':app.connections.redact(text),'at':time.time(),'request_id':job['id'],'native_update':True,'files':files,'references':json.loads(app.connections.redact(json.dumps(context['references'])))}
+                        job.setdefault('messages',[]).append(message)
+                        path=app.chat_display_path(chat['id'])
+                        shown=json.loads(path.read_text(encoding='utf-8')) if path.exists() else []
+                        insert=next((i for i,r in enumerate(shown) if r.get('request_id')==job['id'] and r.get('role')=='assistant'),len(shown))
+                        shown.insert(insert,message)
+                        from _common import write_json_atomic
+                        write_json_atomic(path,shown)
+                    self.send(200,{'message':message});return
                 if route == '/api/history/restore':
                     with app.lock:
                         bid=selected(data.get('business'))

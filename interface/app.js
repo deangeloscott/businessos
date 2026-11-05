@@ -620,6 +620,7 @@ function chatControls() {
   $('#send').disabled=!state.business||!state.hydrated||state.navigating||state.stopping||state.starting||state.settling||!!blocked;
   $('#send').title=blocked;
   $('#send').textContent=state.navigating?'Loading chat…':state.stopping?'Stopping…':state.starting?'Starting…':state.settling?'Finishing…':state.busy?'Stop ■':state.data?.connection.connected?'Send ↑':state.data?.connection.mode==='copy'?'Copy request ↗':'Connect AI →';
+  const update=$('#send-update');if(update){update.hidden=!(state.busy&&state.liveJob?.native_controls?.steer);update.disabled=state.stopping||state.steering||state.navigating;update.textContent=state.steering?'Sending…':'Send update';}
   const location=$('#chat-location-note');if(location)location.hidden=!previousFolder;
   $('#stop-request').hidden=!state.busy;$('#stop-request').disabled=state.stopping;$('#stop-request').textContent=state.stopping?'Stopping…':'Stop';
   $('#business').disabled=false;$('#new-chat').disabled=!state.business;$('#chats').disabled=!state.business;renderComposerConnection();
@@ -630,6 +631,20 @@ async function stopRequest() {
   state.stopping=true;chatControls();
   try {await api('/api/chat/stop',{business:state.business,id:state.activeJob.id});}
   catch(error){state.stopping=false;state.nextRequest=null;chatControls();throw error;}
+}
+async function sendUpdate(){
+  const job=state.activeJob,text=$('#request').value,scope=chatScope(),files=[...(state.selectedFiles||[])],references=[...(state.contextReferences||[])];
+  if(!job||state.steering||state.stopping||!text.trim())return;
+  state.steering=true;chatControls();
+  try{
+    const result=await api('/api/chat/steer',{business:state.business,chat_id:state.chatMeta.id,job_id:job.id,text,files,references});
+    if(scope!==chatScope())return;
+    if(!state.chat.some(m=>m.native_update&&m.at===result.message.at))state.chat.push(result.message);
+    if($('#request').value===text)$('#request').value='';
+    if(JSON.stringify(state.selectedFiles||[])===JSON.stringify(files))state.selectedFiles=[];
+    if(JSON.stringify(state.contextReferences||[])===JSON.stringify(references))state.contextReferences=[];
+    rememberChatDraft();renderComposerFiles();showMessages(true);
+  }finally{state.steering=false;chatControls();}
 }
 function usefulFile(f) {
   if(!f.asset&&(/\/imports\/[^/]+\/(instances|runtime|\.businessos)\//.test(f.path)||/\.source\.txt$/.test(f.path)))return false;
@@ -1904,7 +1919,7 @@ async function submitRequest(text, scheduleId=null, organizationId=state.pending
   const sentReferences=[...(state.contextReferences||[])],sentGoal=state.chatMeta?.goal_id||state.draftGoalId||'',sentPermission=!state.chatMeta&&state.newChatPermission?.kind===connection.kind?{...state.newChatPermission}:null;
   const focus=chatScope(),navigation=state.navigationTicket,chatId=state.chatMeta?.id||'',files=[...(state.selectedFiles||[])],submitTicket=state.submitTicket=(state.submitTicket||0)+1;state.starting=true;chatControls();
   try {
-    const job=await api('/api/chat',{business:state.business,chat_id:chatId,connection,text,history:state.chat,files,references:sentReferences,goal_id:sentGoal,schedule_id:scheduleId,organization_id:organizationId,assistant_id:state.newAssistantId||null,project:state.newChatProject||'',...(sentPermission?{permission_mode:sentPermission.mode}:{})});
+    const job=await api('/api/chat',{business:state.business,chat_id:chatId,connection,text,history:nativeApps.includes(connection.kind)?[]:state.chat,files,references:sentReferences,goal_id:sentGoal,schedule_id:scheduleId,organization_id:organizationId,assistant_id:state.newAssistantId||null,project:state.newChatProject||'',...(sentPermission?{permission_mode:sentPermission.mode}:{})});
     if(focus!==chatScope()||navigation!==state.navigationTicket)return;
     state.pendingOrganizationId=null;if(JSON.stringify(state.selectedFiles||[])===JSON.stringify(files))state.selectedFiles=[];if(JSON.stringify(state.contextReferences||[])===JSON.stringify(sentReferences))state.contextReferences=[];
     const currentGoal=state.chatMeta?state.chatMeta.goal_id:state.draftGoalId;
@@ -1917,6 +1932,7 @@ async function submitRequest(text, scheduleId=null, organizationId=state.pending
 document.addEventListener('click',event=>attempt(async()=>{
   const button=event.target.closest('button'); if(!button) return;
   if(button.id==='stop-request')await stopRequest();
+  if(button.id==='send-update')await sendUpdate();
   if(button.id==='restart-aura'||button.id==='quit-aura')await closeAura(button.id==='restart-aura'?'restart':'quit');
   if(button.id==='startup-settings'||button.hasAttribute('data-update-open'))await openUpdates();
   if(['update-check','update-install','update-later','update-skip','update-rollback'].includes(button.id)) {

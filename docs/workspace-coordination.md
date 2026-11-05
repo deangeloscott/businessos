@@ -52,7 +52,7 @@ restrictive mode when that is the intended change.
 
 | App | Session choices exposed by Aura | Native interaction transport |
 | --- | --- | --- |
-| Codex | Native settings; read-only/on-request; workspace-write/on-request; danger-full-access/never | App-server, native thread/start or thread/resume, then turn/start |
+| Codex | Native settings; read-only/on-request; workspace-write/on-request; danger-full-access/never | App-server approvals/rules, questions, turn/session permissions, MCP forms and browser steps |
 | Claude Code | Native settings; default; acceptEdits; plan; dontAsk; bypassPermissions | Stream-JSON control requests over stdin/stdout |
 | Pi | Native settings; extensions retain their own policies | RPC extension UI select, confirm, input and editor |
 | OMP | Native settings; always-ask; always-ask-cached; write; yolo | RPC extension UI, including supported ask dialogs |
@@ -77,8 +77,88 @@ Each request can be answered once. Cancellation, native timeout, Stop, disconnec
 or completion expires pending controls. A restarted Aura process cannot answer
 an old request. Pending grants/answers are not portable configuration. Secret
 answers are not cached in Aura's navigation drafts or saved displays. Native
-authentication and unsupported MCP forms/control messages are not reimplemented
-or auto-approved; use the owning native app for those flows.
+forms retain their field labels, descriptions, defaults and validation. Browser
+steps expose the supplied link; answering never opens it automatically. Native
+authentication proofs are never fabricated or auto-approved.
+
+**Send update** appears while Codex, Claude, Pi or OMP is running. It sends the
+composer text and selected context to that same native process. Codex uses
+`turn/steer` (or a new native turn when only background work remains), Pi/OMP use
+their native steering command, and Claude accepts another user message on its
+stream. The harness decides when to consume it. Enter keeps an unfinished draft
+while work runs; sending an update requires the explicit button. The shared
+`POST /api/chat/steer` endpoint takes `business`, `chat_id`, `job_id`, `text` and
+optional `files`/`references`; it checks the same live chat/workspace ownership
+as `POST /api/chat/answer`.
+
+Stop first requests native interruption on these connections. A five-second
+process-tree fallback handles an unresponsive local process. A final parent reply
+does not end a Codex connection while known child requests, child work, native
+goals or background terminals remain. Claude task and session-state events keep
+its stream alive while reported background tasks remain. Pi/OMP use their native
+settled state. Closing the browser tab does not stop the server's work. These
+connections must remain running; this is not a durable background service after
+Aura or the native process exits.
+An idle, completed request still releases its native process. State that a
+harness keeps only in that process may therefore end between messages; a saved
+native conversation is not a promise that every runtime grant or desktop service
+survives. Persistent native-client sessions remain separate integration work.
+
+Selected PNG, JPEG, WebP and GIF files are passed as native image input to Codex,
+Claude, Pi and OMP. Other files remain scoped native file references. Inline
+images have a 32 MB per-file bound; the harness may impose smaller limits. Text
+requests accept up to 1,048,576 characters, and saved replies retain their full text.
+Large references can be attached as files. Aura does not resend the browser's
+display transcript to these native sessions on each message.
+
+Native extension notices, status/widget text, safe browser links and editor
+drafts are visible in their chat. An offered draft requires **Use draft** and does
+not replace text already in the composer. Terminal-specific extension layouts
+still require their native interface.
+
+### Optional native client callbacks
+
+An app-server/SDK can ask its client to execute a client-owned tool, supply an MCP
+callback, refresh externally managed credentials or obtain an attestation. These
+are implementations supplied by that client, not ordinary built-in harness tools.
+Aura can forward such requests to a trusted local provider command in the
+machine-owned `--agent-file`; imported workspace records cannot install one:
+
+```json
+{
+  "name": "My native client",
+  "argv": ["my-client"],
+  "native_protocol": "codex",
+  "native_options": {"thread": {"dynamicTools": []}},
+  "native_requests": {"argv": ["my-native-provider"], "timeout": 120}
+}
+```
+
+`native_protocol` reuses a supported transport (`codex`, `claude`, `pi`, `omp`,
+`hermes`, `antigravity`) with that command. It does not infer a different app's
+model catalog or grant capabilities. `native_options.thread` passes native Codex
+thread-start/resume options; `native_options.initialize` passes native Codex or
+Claude initialization options. Existing Codex/Claude connections can instead
+receive these options through `connections.codex` or `connections.claude`
+in the same agent file. Native policy remains authoritative.
+
+The provider reads one JSON request (`id`, `method`, `params`) from stdin and
+returns one JSON object with `result` or `error` on stdout. It inherits the native
+process's working directory/environment; diagnostic output belongs on stderr.
+Claude callbacks use the same envelope and are translated to its control response.
+Answers go to the original request ID. The command must implement the real
+provider operation: returning a fabricated authentication or execution success
+is invalid. Without that provider Aura explains what is missing and returns a
+native unsupported response. It never silently approves an unknown interaction.
+
+Antigravity headless and Hermes single-query streams still lack an interactive
+approval channel in Aura. ACP is the supported next transport to evaluate;
+Antigravity documents `agy acp`, while Hermes's ACP toolset differs from its CLI
+defaults and needs deliberate configuration to retain cron and messaging tools.
+An embedded terminal is an optional native-interface fallback, not a substitute
+for these protocol implementations. Native computer/browser tools remain owned
+by the harness and its configured providers; a desktop-client-only integration
+requires that provider or the native desktop client.
 
 For example, OMP asks which of three deliverables to prioritize. Its actual
 question appears below the working chat; answering it leaves an unfinished
@@ -227,7 +307,11 @@ loaded wholesale. Source instructions remain source material, not authorization.
 
 Type **/** to choose **/new**, **/attach**, **/assistant** or **/goal**. These call
 the existing new-chat, context, assistant and goal operations. Arrow keys and
-Enter select a visible option; Escape dismisses it. Unknown slash text and email
+Enter select a visible option; Escape dismisses it. Other slash-prefixed messages
+are passed without Aura's contextual envelope. Codex `/compact` invokes native
+compaction; `/review` invokes native review of uncommitted changes, with optional
+review instructions after the command. Other commands depend on the connected
+native interface; desktop menus are not automatically app-server commands. Email
 addresses stay ordinary text. The composer remains a plain editable textarea.
 
 For example, reuse an earlier research prompt, select a new product brief with
@@ -320,13 +404,14 @@ Aura does not intercept independently launched native schedules. Changing or
 removing a goal uses the same existing native-task operation, preserving timing,
 model and permissions.
 
-**Continuation** defaults to manual. Pi/OMP goal chats may explicitly allow
-already-enabled native retries until an expiry within seven days. Aura does not
-turn on retries in shared native settings. It uses the native retry event and
-abort control, rechecks the goal, permissions and selected context before the
-reported retry, and allows only one waiting assignment when funding identity is
-unknown. Stop, completion, a new goal assignment or a goal change clears the
-authorization. Native retry success clears an earlier transient error.
+Native retry policy belongs to Pi/OMP. Linking a goal as context does not abort
+their retries or serialize unrelated chats behind an unknown-funding lock.
+Pi/OMP goal chats may explicitly apply a bounded continuation expiry within seven
+days. Aura does not enable retries in shared native settings. For that explicit
+bounded choice only, it rechecks the goal, permissions and selected context before
+the reported retry and uses the native abort control if the authorization ended.
+Stop, completion, a new goal assignment or a goal change clears that choice.
+Native retry success clears an earlier transient error.
 
 This is bounded native retry handling, not scheduled quota-reset recovery. The
 native app may end a request rather than wait for a reset. Aura and its native
@@ -378,3 +463,4 @@ goal-control protocol or replace a harness's own goals.
 - [Pi RPC](https://github.com/badlogic/pi-mono/blob/main/packages/coding-agent/docs/rpc.md) and [extension UI](https://github.com/badlogic/pi-mono/blob/main/packages/coding-agent/docs/rpc-extension-ui.md).
 - [OMP RPC](https://github.com/can1357/oh-my-pi/blob/main/docs/rpc.md) and [approval modes](https://github.com/can1357/oh-my-pi/blob/main/docs/approval-mode.md).
 - [Hermes security](https://hermes-agent.nousresearch.com/docs/user-guide/security).
+- [Hermes ACP](https://hermes-agent.nousresearch.com/docs/user-guide/features/acp) and [Antigravity ACP](https://antigravity.google/docs/cli/acp/).
