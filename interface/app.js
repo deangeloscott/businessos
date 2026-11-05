@@ -388,10 +388,10 @@ async function hydrateConversation() {
   restoreChatDraft();showMessages();chatControls();
   if(!state.busy)attempt(()=>window.auraContinuity?.checkRecovery());
   if(state.busy){state.setupStep=result.job.welcome?'checking':state.setupStep;attempt(()=>pollJob(result.job));}
-  else if(state.needsCheck)taskStatus('Check this chat in its AI app before continuing.');
+  else if(state.needsCheck)taskStatus('Check this chat in '+appName(state.chatMeta?.agent)+' before continuing.');
   else if(result.job?.status==='error'||result.chat?.status==='error')taskStatus('Needs your attention');
   else if(result.chat?.status==='stopped')taskStatus('Stopped. You can continue this chat.');
-  else if(state.chat.length)taskStatus('Latest reply · '+clockTime(state.chat.at(-1).at));
+  else if(state.chat.length){const last=state.chat.at(-1),when=clockTime(last.at);taskStatus((last.role==='assistant'?'Latest reply':'Last message')+(when?' · '+when:''));}
   else taskStatus('');
 }
 
