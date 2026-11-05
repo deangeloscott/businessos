@@ -167,9 +167,6 @@ def _check(app,bid,ident,refresh):
             current['recovery']['status']='complete';app.save_preferences()
             result['chat']=dict(current);state=describe(current,job);state.update(state='complete',message='The saved reply is ready.')
         result['recovery']=state;result['workspace']=root
-        if result.get('history_note'):
-            # Raw native errors belong in diagnostics, not the daily recovery UI.
-            result['history_note']='Showing the saved messages. The latest reply could not be checked in your AI app.'
         return result
 
 

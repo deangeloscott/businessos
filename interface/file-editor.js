@@ -27,14 +27,14 @@ function label(n){let name='';for(n++;n;n=Math.floor((n-1)/26))name=String.fromC
 function nextName(view){const dot=view.info.name.lastIndexOf('.'),stem=dot<0?view.info.name:view.info.name.slice(0,dot),ext=dot<0?'':view.info.name.slice(dot);return view.mode==='copy'?stem+' copy'+ext:stem+' v'+Math.max(2,...(view.info.related||[]).map(r=>Number(r.version)+1).filter(Number.isFinite))+ext;}
 
 export async function openFile(ctx){
-  detach();ctx.details('File',`<div id="file-workspace"><p>Opening file…</p></div>`,'context');
+  detach();ctx.details('File',`<div id="file-workspace"><p>Opening file…</p></div>`);
   const view={ctx,host:$('#file-workspace'),dirty:false,editing:false,edit:{},mode:'save',columns:0};current=view;
   try{
     const info=await api(view,'/api/documents?'+new URLSearchParams({business:ctx.business,workspace:ctx.workspace,path:ctx.ref,option:ctx.option||''}));
     if(!live(view)||info.workspace!==ctx.workspace)return;
     view.info=info;view.imported=imports.get(key(view));view.edit={text:info.text,rows:info.rows?.map(r=>[...r])};view.mode=info.writable?(info.kind==='image'?'version':'save'):'copy';view.name=nextName(view);
     const saved=readDraft(view);if(saved){view.edit={...view.edit,...saved};view.dirty=true;view.mode=saved.mode||view.mode;view.name=saved.name||view.name;view.info.revision=saved.revision;view.editing=info.editable;}
-    if(view.imported){view.dirty=true;view.mode='version';}$('#detail-title').textContent=info.name;await render(view);
+    if(view.imported){view.dirty=true;view.mode='version';}$('#detail-title').textContent=ctx.title||info.name;await render(view);
   }catch(error){if(live(view))view.host.innerHTML=`<p class="error">${esc(readableError(error))}</p>`;}
 }
 async function render(view){
@@ -45,6 +45,7 @@ async function render(view){
       <span class="file-location-path">${esc(info.location||view.ctx.ref)}</span>
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V4a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h4"/></svg>
     </button>
+    ${view.ctx.summary||''}
     <div class="file-toolbar">
       <div class="filters file-modes">
         <button type="button" data-file-mode="preview" class="${view.editing?'':'active'}" aria-pressed="${!view.editing}">Preview</button>
@@ -119,7 +120,7 @@ async function render(view){
     view.editor=new EditorView({doc:view.edit.text||'',extensions,parent:area});view.editor.contentDOM.setAttribute('aria-label','Edit '+info.name);
   }else if(view.editing&&info.kind==='table')await editTable(view,area);
   else if(view.editing&&info.kind==='image')await editImage(view,area);
-  else if(info.kind==='text')area.innerHTML=/\.m(?:d|arkdown)$/i.test(info.name)?`<article class="file-markdown">${view.ctx.markdown(view.edit.text||'')}</article>`:`<pre>${esc(view.edit.text||'')}</pre>`;
+  else if(info.kind==='text')area.innerHTML=/\.m(?:d|arkdown)$/i.test(info.name)?`<article class="file-markdown">${view.ctx.markdown(view.ctx.ref.startsWith('library/')?(view.edit.text||'').replace(/^---\r?\n[\s\S]*?\r?\n---(?:\r?\n|$)/,''):view.edit.text||'')}</article>`:`<pre>${esc(view.edit.text||'')}</pre>`;
   else if(info.kind==='table')area.innerHTML=`<div class="file-table-preview"><table>${(view.edit.rows||[]).slice(0,200).map(row=>`<tr>${row.map(cell=>`<td>${esc(cell)}</td>`).join('')}</tr>`).join('')}</table></div>${view.edit.rows?.length>200?'<p>Previewing the first 200 rows. Choose Edit to see the full table.</p>':''}`;
   else if(info.kind==='image')await previewImage(view,area);
   else if(info.kind==='pdf')await previewPdf(view,area);

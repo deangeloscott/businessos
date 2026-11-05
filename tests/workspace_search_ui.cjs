@@ -4,7 +4,7 @@ const source=fs.readFileSync(process.argv[2],'utf8'),nodes=new Map();
 const node=id=>{if(!nodes.has(id))nodes.set(id,{value:'',innerHTML:'',textContent:'',hidden:false,focus(){},showModal(){this.open=true;}});return nodes.get(id);};
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const records=[{title:'Customer guide',type:'Asset',ref:'Asset/guide',data:{topic:'retention'}}];
-const context={state:{business:'studio',data:{workspace:'A',records}},shellSearchData:null,shellSearchTicket:0,$:node,
+const context={libraryGuidance:item=>['Workflow','Recipe','Skill'].includes(item.kind),state:{business:'studio',data:{workspace:'A',records}},shellSearchData:null,shellSearchTicket:0,$:node,
   goalInfo:value=>value?.extensions?.businessos?.goal||{},closeAnchoredSurface(){},esc,empty:(title,detail)=>esc(title+' '+detail),appName:id=>id,shareType:type=>type,
   usefulFile:file=>!file.path.startsWith('instances/'),chatDescription:chat=>chat.description||''};
 vm.createContext(context);
@@ -12,6 +12,7 @@ vm.runInContext(source.slice(source.indexOf("let shellSearchFilter='all'"),sourc
 const chats={items:[{id:'chat',title:'Customer guide',description:'Retention plan',updated:100},{id:'old',title:'Hidden archived chat',archived:true,updated:900}]};
 const files={items:[{name:'Customer guide.md',path:'attachments/guide.md',modified:300},{name:'Asset.json',path:'instances/studio/assets/Asset.json'}]};
 const library=Array.from({length:78},(_,i)=>({title:'Guide '+String(i).padStart(2,'0'),key:'guide-'+i,kind:'Workflow',description:'retention'}));
+library.push({title:'Opaque plugin',key:'plugin',kind:'Plugin'},{title:'Opaque tool',key:'tool',kind:'Tool'});
 library.push({title:'<script>guide</script>',key:'unsafe',kind:'Skill'});
 context.api=async()=>chats;context.cachedApi=async path=>path.startsWith('/api/files')?files:library;
 (async()=>{
@@ -20,7 +21,7 @@ context.api=async()=>chats;context.cachedApi=async path=>path.startsWith('/api/f
   assert(!node('#shell-search-results').innerHTML.includes('Hidden'));
   assert(node('#shell-search-results').innerHTML.indexOf('data-search-file=')<node('#shell-search-results').innerHTML.indexOf('data-chat='),'Empty search uses dates across types');
   assert.match(node('#shell-search-status').textContent,/50 of 82 results/);
-  assert.doesNotMatch(node('#shell-search-results').innerHTML,/Asset.json|See all matching/);
+  assert.doesNotMatch(node('#shell-search-results').innerHTML,/Asset.json|See all matching|Opaque plugin|Opaque tool/);
   node('#shell-search').value='Customer guide';context.paintShellSearch();
   const mixed=node('#shell-search-results').innerHTML;
   for(const label of ['Chat','File','Memory'])assert(mixed.includes('search-result-type">'+label));

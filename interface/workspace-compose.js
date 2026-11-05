@@ -351,5 +351,5 @@ window.auraCompose=(()=>{
   document.addEventListener('click',event=>{if(!event.target.closest('#chat-form'))closeMenu();});
   if('pendingComposerDraft' in state)restore(state.pendingComposerDraft);
   if(state.hydrated)queueMicrotask(()=>{state.formattedSource=null;showMessages();});
-  return {render:paintComposer,actions,draft,restore,choose,openGoal,editGoal,closeMenu,assignTask,prepareContinuation,reuse,manageGoals};
+  return {render:paintComposer,add,actions,draft,restore,choose,openGoal,editGoal,closeMenu,assignTask,prepareContinuation,reuse,manageGoals};
 })();

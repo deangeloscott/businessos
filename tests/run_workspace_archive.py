@@ -41,6 +41,9 @@ def main():
             assert cli('list')['items']==listed
             cli('restore','--kind','chat','--id','archived');assert not app.preferences['chats'][0]['archived']
             cli('restore','--kind','goal','--id',goal['id']);assert not goals.deleted(goals.find(bid,goal['id']))
+            finished=goals.save(bid,{'name':'Delivered outcome','status':'completed'});goals.remove(bid,finished['id'])
+            trashed=next(i for i in cli('list')['items'] if i['id']==finished['id']);assert trashed['state']=='deleted' and trashed['previous_status']=='completed' and trashed['action']=='Restore as completed'
+            cli('restore','--kind','goal','--id',finished['id']);assert goals.find(bid,finished['id'])['status']=='completed'
             cli('restore','--kind','recovery','--id',ident);assert (base/'Original'/'kept.txt').read_text()=='Keep this work' and not copy.exists()
             assert call('/api/archive?business='+bid)['items']==[]
             assert permissions.arguments('antigravity','native')==[]

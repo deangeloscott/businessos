@@ -102,7 +102,7 @@ def lookup(command,kind,cwd,env,ident):
                 if r and r['native_id']==ident:source=r;break
     native_cwd=(source or {}).get('native_workspace') or str(cwd)
     if not Path(native_cwd).is_dir():native_cwd=str(cwd)
-    result=workspace_codex.history(command,Path(native_cwd),ident) if kind=='codex' else workspace_agents.history(command,kind,Path(native_cwd),env,ident)
+    result=workspace_codex.history(command,Path(native_cwd),ident,env) if kind=='codex' else workspace_agents.history(command,kind,Path(native_cwd),env,ident)
     if result.get('native_id',ident)!=ident:raise ValueError('The app returned a different session. Nothing was added.')
     messages=result.get('messages',[])
     result.update(native_workspace=(source or {}).get('native_workspace') or result.get('native_workspace') or str(cwd),source_file=(source or {}).get('source_file') or result.get('source_file') or (str(storage(kind,env)) if kind=='hermes' and storage(kind,env).is_file() else ''))

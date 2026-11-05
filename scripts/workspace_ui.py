@@ -1306,22 +1306,30 @@ class Workspace:
             shown = json.loads(path.read_text(encoding='utf-8')) if path.is_file() else []
             result={'messages':shown,'chat':chat,'job':job}
             result['recovery']=workspace_recovery.describe(chat,job,workspace_recovery.saved_observation(shown))
-            if not shown and chat.get('native_id') and not path.is_file():result['history_note']='Use Refresh chat to read this conversation from its AI app.'
+            if not shown and chat.get('native_id') and not path.is_file():result['history_note']='Refresh to read this conversation from '+chat.get('agent','your AI app').capitalize()+'.'
             return result
         observed_marker=workspace_native_chats.marker(chat.get('source_file'))
         try:
             choice = next(a for a in installed_agents() if a['id'] == chat['agent'] and a['argv'])
             chat_root = Path(chat.get('native_workspace') or chat.get('workspace') or workspace_root())
             if not chat_root.is_dir():chat_root=workspace_root()
-            result = (workspace_codex.history(choice['argv'], chat_root, chat['native_id']) if chat['agent']=='codex' else
-                      workspace_agents.history(choice['argv'],chat['agent'],chat_root,self.agent_environment(),chat['native_id']))
+            result = (workspace_codex.history(choice['argv'], chat_root, chat['native_id'], self.agent_environment()) if chat['agent']=='codex' else
+                      workspace_agents.history(choice['argv'],chat['agent'],chat_root,self.agent_environment(),chat['native_id'], **({'source_file':chat['source_file']} if chat.get('source_file') and chat['agent'] in {'pi','omp'} else {})))
         except (ValueError, OSError, StopIteration, subprocess.SubprocessError) as exc:
             if job and job['status'] == 'working':
                 return {'messages': [], 'chat': chat, 'job': job}
+            self.errors.record(exc,'conversation/refresh',self.connections.redact)
+            message=workspace_support.human_error(exc)
+            if message==workspace_support.UNEXPECTED_ERROR:
+                message=setup_error(str(exc))
+                if message==SETUP_ERRORS['unknown']:
+                    name=next((a['name'] for a in installed_agents() if a['id']==chat['agent']),chat['agent'])
+                    message='Aura could not read this chat from '+name+'. Check the original chat in that app. Your saved messages are still available.'
+            message=self.connections.redact(message)
             path = self.chat_display_path(chat['id'])
             if not path.is_file():
-                raise ValueError(str(exc) or 'Reconnect the app that owns this chat.') from None
-            result = {'messages':json.loads(path.read_text(encoding='utf-8')), 'usage':{}, 'history_note':str(exc)}
+                raise ValueError(message) from None
+            result = {'messages':json.loads(path.read_text(encoding='utf-8')), 'usage':{}, 'history_note':message}
         # Native metadata is authoritative if the chat was also used in Codex.
         if not (job and job['status']=='working') and not chat.get('model_choice_pending'):chat.update({k: result[k] for k in ('model', 'effort') if result.get(k)})
         for message in result['messages']:

@@ -3,7 +3,7 @@ const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/st
 const nodes=new Map(),listeners={},calls=[];let pending=[];
 function node(id){if(!nodes.has(id))nodes.set(id,{innerHTML:'',textContent:'',hidden:false,isConnected:true,classList:{toggle(){}},value:'native',dataset:{},querySelectorAll:()=>[],querySelector:s=>node(id+' '+s),contains:()=>false,addEventListener(){},scrollIntoView(){},setAttribute(){},focus(){},close(){this.open=false;}});return nodes.get(id);}
 const state={data:{workspace:'A',connection:{selected:'codex',choices:[{id:'codex',name:'Codex',available:true}]}},business:'studio',chatMeta:{id:'chat',agent:'codex'},fileDetailTicket:0};
-const context={anchoredSurface:null,closeAnchoredSurface(){},renderComposerPermissions(){},humanError:error=>error?.message||String(error),window:{},document:{activeElement:null,addEventListener:(name,fn)=>(listeners[name]??=[]).push(fn)},state,$:node,
+const context={appName:id=>id||'AI app',anchoredSurface:null,closeAnchoredSurface(){},renderComposerPermissions(){},humanError:error=>error?.message||String(error),window:{},document:{activeElement:null,addEventListener:(name,fn)=>(listeners[name]??=[]).push(fn)},state,$:node,
   esc:v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),
   human:v=>v,chatDate:v=>String(v),empty:v=>`<p>${v}</p>`,URLSearchParams,composerConnection:()=>({kind:'codex'}),
   details:(title,html)=>{state.fileDetailTicket++;node('#detail').open=true;node('#detail-content').innerHTML=html;},
@@ -26,7 +26,7 @@ const permission={choices:[{id:'native',name:'Use harness settings',native:'No o
   context.details('Different page','Keep this page');calls.at(-1).resolve(permission);await Promise.all(pending);pending=[];
   assert.equal(node('#detail-content').innerHTML,'Keep this page','An older permission read must not overwrite another panel');
   click('harness-permissions');await flush();calls.at(-1).resolve(permission);await Promise.all(pending);pending=[];
-  assert.match(node('#detail-content').innerHTML,/Default for this AI app/);assert.match(node('#permissions-native').textContent,/Follow the settings/);
+  assert.match(node('#detail-content').innerHTML,/Default for this AI app/);assert.equal(node('#permissions-native').hidden,true,'Native inheritance does not need boilerplate');
   node('#permissions-mode').value='full';node('#permissions-mode').onchange();assert.match(node('#permissions-native').textContent,/without asking for approval/);const form=node('#permissions-form');form.onsubmit({preventDefault(){},currentTarget:form});await flush();
   assert.equal(calls.at(-1).data.mode,'full');assert.equal(calls.at(-1).data.kind,'codex');assert.equal(calls.at(-1).data.chat_id,undefined,'Editing defaults must not mutate an individual chat');calls.at(-1).resolve({saved:true});await Promise.all(pending);pending=[];
   const originalChat=state.chatMeta;state.chatMeta=null;

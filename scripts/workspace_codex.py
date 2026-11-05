@@ -207,14 +207,14 @@ def run(command, cwd, prompt, native_id, model, effort, update, env=None, execut
     return {'reply': final, 'native_id': thread, 'usage': usage}
 
 
-def history(command, cwd, native_id):
+def history(command, cwd, native_id, env=None):
     from workspace_delegation import Tracker
     delegation=Tracker(None)
-    result = rpc(command, [('thread/read', {'threadId': native_id, 'includeTurns': False})], cwd)[0]
+    result = rpc(command, [('thread/read', {'threadId': native_id, 'includeTurns': False})], cwd, env)[0]
     thread = result['thread']
     path = Path(thread.get('path') or '')
     if not path.is_file():
-        raise ValueError('Codex has not made this conversation transcript available yet. Try Refresh or open it in Codex.')
+        raise ValueError('Codex lists this chat, but its transcript file is missing from this computer. Aura can show its saved messages. Check the original chat in Codex if you need to recover newer work.')
     messages, model, effort, usage, cache_hit, brief = [], '', '', {}, None, None
     observation={'request_id':'','state':'unknown'}
     with path.open(encoding='utf-8') as stream:

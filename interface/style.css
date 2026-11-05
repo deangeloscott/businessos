@@ -437,3 +437,13 @@ input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px soli
 
 #archive-filters button{min-height:32px;font-size:12px;padding:6px 10px}
 @media(max-width:400px){#search-dialog>.dialog-top h2{font-size:18px}#archive-filters button{min-height:36px}}
+
+/* Shared item details keep identity, context actions and file preview together. */
+.item-summary{padding-bottom:18px;margin-bottom:14px;border-bottom:1px solid var(--line)}
+.item-summary>p{margin:0 0 12px}.item-type{font-size:12px;color:var(--muted)}
+.item-summary .inline-actions{gap:12px;flex-wrap:wrap}.guidance-preview{padding-top:18px;overflow-wrap:anywhere}
+#chat-refresh[aria-busy=true] svg{animation:aura-refresh 1s linear infinite}
+@keyframes aura-refresh{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){#chat-refresh[aria-busy=true] svg{animation:none}}
+
+.record-location{display:block;max-width:100%;text-align:left;padding:0;margin:0 0 20px;font:11px/1.6 ui-monospace,monospace;color:var(--muted);overflow-wrap:anywhere;border:0;background:transparent}.record-location:hover{color:var(--ink)}

@@ -25,6 +25,32 @@ def main():
     prior=dict(os.environ)
     with tempfile.TemporaryDirectory(prefix='aura-conversations-') as tmp:
         base=Path(tmp);a=base/'A';b=base/'B'
+        import workspace_agents,workspace_codex
+        native_file=base/'old-project'/'session.jsonl';native_file.parent.mkdir()
+        native_file.write_text(json.dumps({'type':'session','id':'exact-session','cwd':str(base/'gone-project')})+'\n',encoding='utf-8')
+        with patch('workspace_native_chats.source_hint',return_value=str(native_file)),patch.object(workspace_agents,'Metadata') as metadata:
+            metadata.return_value.call.side_effect=[{'sessionId':'exact-session','sessionFile':str(native_file)},{'messages':[]}]
+            result=workspace_agents.history(['fixture','--print'],'pi',base,dict(os.environ),'exact-session')
+            assert metadata.call_args.kwargs['native_id']==str(native_file) and result['native_id']=='exact-session'
+            try:workspace_agents.session_reference('pi','another-session',dict(os.environ),str(native_file));raise AssertionError('Mismatched session was accepted')
+            except ValueError:pass
+        with patch.object(workspace_codex,'rpc',return_value=[{'thread':{'path':str(base/'missing.jsonl')}}]) as rpc:
+            try:workspace_codex.history(['fixture','exec'],base,'missing',{'CODEX_HOME':'isolated'});raise AssertionError('Missing transcript was accepted')
+            except ValueError as error:assert 'file is missing' in str(error) and 'Try Refresh' not in str(error)
+            assert rpc.call_args.args[-1]=={'CODEX_HOME':'isolated'}
+        def replay_call(method,**params):
+            if method=='initialize':return {'agentCapabilities':{'loadSession':True}}
+            callback=metadata.call_args.kwargs['on_update']
+            for session,kind,text in [('other','agent_message_chunk','Wrong chat'),('agy','user_message_chunk','Question'),('agy','agent_thought_chunk','Hidden thought'),('agy','agent_message_chunk','Useful '),('agy','agent_message_chunk','reply')]:
+                callback({'sessionId':session,'update':{'sessionUpdate':kind,'content':{'type':'text','text':text}}})
+            return {'sessionId':'agy','models':{'currentModelId':'native-model'}}
+        with patch.object(workspace_agents,'Metadata') as metadata:
+            metadata.return_value.call.side_effect=replay_call
+            result=workspace_agents.history(['fixture','--print'],'antigravity',base,{},'agy')
+            assert [m['text'] for m in result['messages']]==['Question','Useful reply'] and result['native_id']=='agy'
+            assert [c.args[0] for c in metadata.return_value.call.call_args_list]==['initialize','session/load'],'Reading must never send a prompt'
+
+
         os.environ.update(BUSINESSOS_WORKSPACE_CONFIG=str(base/'pointer.json'),LOCALAPPDATA=str(base/'local'))
         for root in (a,b):
             os.environ['BUSINESSOS_WORKSPACE']=str(root)
@@ -174,6 +200,10 @@ print('## Reply '+name+'\\n\\nWorkspace: '+str(root))
                 with patch('workspace_ui.installed_agents',return_value=[{'id':'codex','name':'Codex fixture','argv':['fixture','exec','-']}]),patch('workspace_codex.history',return_value={'messages':[{'role':'assistant','text':'Fresh display'}],'usage':{'input_tokens':100}}):
                     call('/api/conversation?business='+bid+'&chat_id='+native['id']+'&refresh=1')
                     assert json.loads(app.settings_file.read_text(encoding='utf-8'))['usage_chats'][native['id']]['input_tokens']==100,'Native usage was not persisted'
+                with patch('workspace_ui.installed_agents',return_value=[{'id':'codex','name':'Codex fixture','argv':['fixture','exec','-']}]),patch('workspace_codex.history',side_effect=ValueError('<!DOCTYPE html><h1>502 Bad Gateway</h1>')):
+                    fallback=call('/api/conversation?business='+bid+'&chat_id='+native['id']+'&refresh=1')
+                    assert fallback['messages'] and '<' not in fallback['history_note'] and '502' not in fallback['history_note']
+                    assert 'DOCTYPE' in app.errors.snapshot()[-1]['message'],'Native failure details belong in technical reports'
                 # Native discovery/import is explicit, bounded and uses the same saved session.
                 native_store=base/'native-sessions';native_store.mkdir()
                 rows=[]
@@ -182,7 +212,7 @@ print('## Reply '+name+'\\n\\nWorkspace: '+str(root))
                     path.write_text(json.dumps({'type':'session_meta','payload':{'id':'native-recent-'+str(i),'cwd':str(b)}})+'\n',encoding='utf-8')
                     rows.append({'id':'native-recent-'+str(i),'preview':'Native idea '+str(i),'cwd':str(b),'path':str(path),'updatedAt':time.time()})
                 def native_catalog(command,calls,cwd,env):return calls(lambda method,params:{'data':rows,'nextCursor':None})
-                def native_history(command,cwd,ident):
+                def native_history(command,cwd,ident,env=None):
                     path=native_store/(ident+'.jsonl');return {'native_id':ident,'title':'Native idea','summary':'A native summary','model':'next-model','effort':'high','source_file':str(path),'native_workspace':str(b),'messages':[{'role':'assistant','text':'Changed outside' if path.stat().st_size>150 else 'Original native reply'}],'usage':{'input_tokens':50}}
                 with patch('workspace_ui.installed_agents',return_value=[{'id':'codex','name':'Codex fixture','argv':['fixture','exec','-']}]),patch('workspace_native_chats.storage',return_value=native_store),patch('workspace_codex.rpc',side_effect=native_catalog),patch('workspace_codex.history',side_effect=native_history) as history:
                     found=call('/api/chats/native?business='+bid+'&kind=codex');assert len(found['items'])==5

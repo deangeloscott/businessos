@@ -23,9 +23,9 @@ def base_command(command):
 
 
 class Metadata:
-    def __init__(self, command, kind, cwd, env, model='', native_id='', fork_from='', execution=None):
+    def __init__(self, command, kind, cwd, env, model='', native_id='', fork_from='', execution=None, on_update=None):
         args = ['--mode', 'rpc', '--no-session'] if kind in {'pi', 'omp'} else ['-p', '--input-format', 'stream-json', '--output-format', 'stream-json', '--verbose', '--no-session-persistence']
-        if kind == 'hermes':
+        if kind in {'hermes','antigravity'}:
             args = ['acp']
         if native_id:
             args = ['--mode', 'rpc', '--session' if kind == 'pi' else '--resume', native_id]
@@ -36,6 +36,7 @@ class Metadata:
             args += ['--model', model]
         if kind=='omp':args+=['--cwd',str(cwd)]
         self.kind, self.number, self.events = kind, 0, queue.Queue()
+        self.on_update=on_update
         self.process = (execution.popen if execution else subprocess.Popen)([*base_command(command), *args], cwd=cwd, env=env, stdin=subprocess.PIPE,
                                         stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
                                         encoding='utf-8', errors='replace', creationflags=subprocess.CREATE_NO_WINDOW if os.name=='nt' else 0)
@@ -53,7 +54,7 @@ class Metadata:
         self.number += 1
         ident = str(self.number)
         value = {'id': ident, 'type': kind, **params} if self.kind != 'claude' else {'type': 'control_request', 'request_id': ident, 'request': {'subtype': kind, **params}}
-        if self.kind == 'hermes':
+        if self.kind in {'hermes','antigravity'}:
             value = {'jsonrpc':'2.0', 'id':ident, 'method':kind, 'params':params}
         self.errors.send(self.process, json.dumps(value) + '\n')
         deadline = time.monotonic() + timeout
@@ -64,13 +65,14 @@ class Metadata:
                 break
             if event is None:
                 break
+            if self.on_update and event.get('method')=='session/update':self.on_update(event.get('params') or {})
             response = event.get('response', {}) if self.kind == 'claude' else event
             if response.get('request_id' if self.kind == 'claude' else 'id') != ident:
                 continue
             if response.get('success') is False or response.get('subtype') == 'error' or 'error' in response:
                 detail=response.get('error') or response.get('message') or 'This app version could not return that setting. Update it or use its own settings.'
                 raise ValueError(str(detail.get('message',detail) if isinstance(detail,dict) else detail))
-            return response.get('result', {}) if self.kind == 'hermes' else response.get('response', {}) if self.kind == 'claude' else response.get('data', {})
+            return response.get('result', {}) if self.kind in {'hermes','antigravity'} else response.get('response', {}) if self.kind == 'claude' else response.get('data', {})
         raise ValueError(self.errors.message('The AI app did not return its catalogue. Open it to check sign-in or update it, then refresh the choices.'))
 
     def close(self):
@@ -215,14 +217,27 @@ def resume_command(kind, native_id):
             'antigravity':['agy','--conversation',native_id]}[kind]
 
 
-def history(command, kind, cwd, env, native_id):
+def session_reference(kind, native_id, env, source_file=''):
+    """Keep the native ID as identity, but reopen its exact local session file."""
+    import workspace_native_chats
+    source=source_file or workspace_native_chats.source_hint(kind,env,native_id)
+    if not source or not Path(source).is_file():return native_id
+    info=workspace_native_chats.inspect_file(Path(source),kind)
+    if not info or info.get('native_id')!=native_id:
+        raise ValueError('The saved session file belongs to a different chat. Reopen the original chat in its AI app.')
+    return source
+
+
+def history(command, kind, cwd, env, native_id, source_file=''):
     from workspace_delegation import Tracker
     delegation=Tracker(None)
-    source_file='';native_workspace=''
+    native_workspace=''
     model, effort, window = '', '', None
     native_title=native_summary='';summary_updated=None
     if kind in {'pi','omp'}:
-        host=Metadata(command,kind,cwd,env,native_id=native_id)
+        # IDs are searched relative to cwd, which may change after setup or a move.
+        source=session_reference(kind,native_id,env,source_file)
+        host=Metadata(command,kind,cwd,env,native_id=source)
         try:
             state=host.call('get_state',timeout=15)
             if state.get('sessionId')!=native_id:
@@ -261,8 +276,31 @@ def history(command, kind, cwd, env, native_id):
             if row.get('type')=='custom-title':native_title=row.get('customTitle','')
             if row.get('type') in {'user','assistant'} and isinstance(row.get('message'),dict):
                 messages.append({**row['message'],'timestamp':row.get('timestamp')})
+    elif kind=='antigravity':
+        messages=[]
+        def replay(params):
+            if params.get('sessionId')!=native_id:return
+            update=params.get('update') or {};content=update.get('content') or {}
+            role={'user_message_chunk':'user','agent_message_chunk':'assistant'}.get(update.get('sessionUpdate'))
+            if not role or content.get('type')!='text':return
+            text=content.get('text','')
+            if not isinstance(text,str):return
+            if messages and messages[-1]['role']==role:messages[-1]['content']+=text
+            else:messages.append({'role':role,'content':text})
+        host=Metadata(command,kind,cwd,env,on_update=replay)
+        try:
+            info=host.call('initialize',protocolVersion=1,clientCapabilities={},clientInfo={'name':'aura-workspace','version':'1'})
+            capabilities=info.get('agentCapabilities') or {}
+            if not capabilities.get('loadSession',capabilities.get('load_session')):
+                raise ValueError('This version of Antigravity cannot read saved chats through Aura. Update Antigravity or view the chat in its app.')
+            state=host.call('session/load',sessionId=native_id,cwd=str(cwd),mcpServers=[])
+            if state.get('sessionId',native_id)!=native_id:raise ValueError('Antigravity returned a different chat. Your saved messages have been kept.')
+            if not messages:raise ValueError('Antigravity returned no messages for this chat. Your saved messages have been kept; check the original chat in Antigravity.')
+            model=(state.get('models') or {}).get('currentModelId','')
+            effort=next((c.get('currentValue','') for c in state.get('configOptions',[]) if c.get('category')=='thought_level'),'')
+        finally:host.close()
     else:
-        raise ValueError('Showing the saved display. Antigravity keeps the full native chat; edits made in its app may not appear here.')
+        raise ValueError('This AI app does not expose saved chat history through Aura.')
     out=[];brief=None
     from workspace_recovery import native_observation
     observation=native_observation(messages,kind)
@@ -279,7 +317,7 @@ def history(command, kind, cwd, env, native_id):
         at=message.get('timestamp') or message.get('created_at')
         if isinstance(at,(int,float)) and at>1e11:at/=1000
         if text:out.append({'role':message['role'],'text':text,'at':at,**({'request_id':aura_ref} if aura_ref else {}),
-                           'agent':{'pi':'Pi','omp':'OMP','claude':'Claude Code','hermes':'Hermes'}[kind]})
+                        'agent':{'pi':'Pi','omp':'OMP','claude':'Claude Code','hermes':'Hermes','antigravity':'Google Antigravity'}[kind]})
         if candidate:brief=dict(candidate,through=len(out),at=workspace_usage.timestamp(at))
     return {**({'subagents':list(delegation.items.values())} if delegation.items else {}),
             'messages':out,'model':model,'effort':effort,'usage':workspace_usage.messages_usage(messages,kind,window),'native_id':native_id,'native_observation':observation,
@@ -329,7 +367,7 @@ def run(command, kind, cwd, env, prompt, native_id, model, effort, update, execu
     interactive=bool(execution and execution.interactive and kind in {'pi','omp','claude'})
     if kind in {'pi','omp'}:
         argv += ['--mode','rpc'] if interactive else ['--print','--mode','json']
-        if native_id:argv += ['--session' if kind=='pi' else '--resume',native_id]
+        if native_id:argv += ['--session' if kind=='pi' else '--resume',session_reference(kind,native_id,env)]
         if kind=='omp':argv+=['--cwd',str(cwd)]
         argv=execution_command(argv,kind,model,effort)
     elif kind=='claude':

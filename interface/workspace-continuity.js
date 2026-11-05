@@ -9,7 +9,7 @@ window.auraContinuity=(()=>{
   let recoveryTicket=0,recoveryPending='',recoveryLast='',recoveryAt=0,recoveryError='',recoveryMarkup='';
 
   function acceptRecovery(result){
-    state.recovery=result.recovery||null;
+    state.recovery=result.recovery||null;state.recoveryHistoryNote=result.history_note||'';
     state.needsCheck=!state.busy&&(result.chat?.status==='working'||state.recovery&&['running_elsewhere','interrupted','uncertain'].includes(state.recovery.state));
   }
   function renderRecovery(){
@@ -19,9 +19,11 @@ window.auraContinuity=(()=>{
     const key=chatScope(),r=state.recovery,pending=recoveryPending===key;
     const show=!state.busy&&(state.needsCheck||state.connectionInterrupted||pending);
     host.hidden=!show;if(!show){host.innerHTML='';recoveryMarkup='';return;}
-    const message=pending?'Checking the latest work…':recoveryError||r?.message||'The connection ended. Check the latest work before continuing.';
+    const owner=appName(state.chatMeta?.agent);
+    const message=(pending?'Checking the latest work in '+owner+'…':recoveryError||r?.message||'The connection ended. Check the latest work before continuing.').replace(/your AI app/g,owner);
+    const history=state.recoveryHistoryNote;
     const action=!pending&&r?.can_continue?`<button type="button" class="secondary" id="recovery-continue">${r.state==='uncertain'?'I’ve reviewed · Continue':'Continue chat'}</button>`:'';
-    const html=`<p>${esc(message)}</p><div class="inline-actions">${action}<button type="button" class="text-button" id="recovery-check" ${pending?'disabled':''}>${pending?'Checking…':state.connectionInterrupted?'Reconnect':'Check again'}</button></div>`;
+    const html=`<p>${esc(message)}</p>${history?`<p class="small-note">${esc(history)}</p>`:''}<div class="inline-actions">${action}<button type="button" class="text-button" id="recovery-check" ${pending?'disabled':''}>${pending?'Checking…':state.connectionInterrupted?'Reconnect':'Check again'}</button></div>`;
     if(html!==recoveryMarkup){const focus=host.contains(document.activeElement)?document.activeElement.id:'';host.innerHTML=html;recoveryMarkup=html;if(focus)$('#'+focus)?.focus({preventScroll:true});}
     $('#request-recovery').hidden=true;
   }
@@ -38,7 +40,7 @@ window.auraContinuity=(()=>{
       state.connectionInterrupted=false;acceptRecovery(result);recoveryLast=key;recoveryAt=Date.now();
       showMessages(follow);if(!follow)view.scrollTop=top;chatControls();renderShell();
       if(state.busy)attempt(()=>pollJob(result.job));else if(result.recovery.state==='complete')taskStatus('Recovered reply');else if(state.needsCheck)taskStatus('');
-    }catch{if(key===chatScope()&&ticket===recoveryTicket)recoveryError='The latest work couldn’t be checked. Reopen Aura or your AI app, then try again.';}
+    }catch{if(key===chatScope()&&ticket===recoveryTicket)recoveryError='The latest work couldn’t be checked in '+appName(state.chatMeta?.agent)+'. Open that app to review the chat before continuing.';}
     finally{if(ticket===recoveryTicket){recoveryPending='';renderRecovery();}}
   }
   async function continueRecovery(){
@@ -121,10 +123,10 @@ window.auraContinuity=(()=>{
       host.innerHTML=`${appField}<p>${esc(data.note||'This connection uses its own permission settings. It does not expose a permission mode that Aura can change.')}</p><button type="button" class="secondary" data-close="detail">Done</button>`;bindApp();return;
     }
     const override=chat?data.override:forChat&&state.newChatPermission?.kind===kind?state.newChatPermission.mode:'';
-    host.innerHTML=`<form id="permissions-form" class="form-grid">${appField}<label>${forChat?(chat?'This chat':'This new chat'):'Default for this AI app'}<select id="permissions-mode">${forChat?`<option value="inherit" ${!override?'selected':''}>Use default (${esc(data.choices.find(c=>c.id===data.default)?.name||'AI app settings')})</option>`:''}${data.choices.map(c=>`<option value="${esc(c.id)}" ${(forChat?override:data.mode)===c.id?'selected':''}>${esc(c.name)}</option>`).join('')}</select></label><p id="permissions-native" class="small-note"></p><p class="small-note">${esc(data.note||'Applies to the next request in Aura. Running requests keep their current permissions.')}</p><div class="inline-actions"><button class="primary">Save permissions</button><span id="permissions-status" role="status"></span></div></form>`;
+    host.innerHTML=`<form id="permissions-form" class="form-grid">${appField}<label>${forChat?(chat?'This chat':'This new chat'):'Default for this AI app'}<select id="permissions-mode">${forChat?`<option value="inherit" ${!override?'selected':''}>Use default (${esc((data.choices.find(c=>c.id===data.default)?.name||'AI app settings').replace(/^Use /,''))})</option>`:''}${data.choices.filter(c=>!forChat||c.id!=='native'||data.default!=='native'||override==='native').map(c=>`<option value="${esc(c.id)}" ${(forChat?override:data.mode)===c.id?'selected':''}>${esc(c.name)}</option>`).join('')}</select></label><p id="permissions-native" class="small-note"></p>${kind==='antigravity'?'<p class="small-note">Actions needing approval must be handled in Antigravity.</p>':''}<div class="inline-actions"><button class="primary">Save permissions</button><span id="permissions-status" role="status"></span></div></form>`;
     const select=$('#permissions-mode'),paint=()=>{
       const choice=data.choices.find(c=>c.id===(select.value==='inherit'?data.default:select.value));
-      $('#permissions-native').textContent=choice?.description||'Use the permission settings configured in your AI app.';
+      $('#permissions-native').textContent=choice?.unrestricted?choice.description:'';$('#permissions-native').hidden=!choice?.unrestricted;
       select.classList.toggle('permission-unrestricted',!!choice?.unrestricted);$('#permissions-native').classList.toggle('permission-warning',!!choice?.unrestricted);
     };paint();select.onchange=paint;bindApp();
     $('#permissions-form').onsubmit=event=>{event.preventDefault();const form=event.currentTarget;attempt(async()=>{
@@ -137,7 +139,7 @@ window.auraContinuity=(()=>{
           if(chat){if(select.value==='inherit')delete state.chatMeta.permission_mode;else state.chatMeta.permission_mode=select.value;}
           else{state.data.harness_permissions??={};state.data.harness_permissions[kind]=select.value;}
         }
-        if(current(key,ticket,host)){$('#permissions-status').textContent=chat?'Saved for the next request.':forChat?'Saved for this new chat.':'Default saved. Inheriting chats use it on their next request.';renderComposerPermissions();}
+        if(current(key,ticket,host)){$('#permissions-status').textContent=chat?'Saved.':forChat?'Saved for this new chat.':'Default saved.';renderComposerPermissions();}
       }finally{if(button.isConnected)button.disabled=false;}
     });};
   }

@@ -344,7 +344,7 @@ Open dialogs contain scrolling so their background page stays still. Inner lists
 
 ## Preview and edit files
 
-Open a file from Files & media, a chat file link, or a supported Library document to use the same file panel. Preview stays read-only until you choose Edit. Expand gives the file the center area; Reduce returns to the side panel.
+Open a file from Files & media, a chat file link, or a supported Library document to use the same file preview dialog. Preview stays read-only until you choose Edit. Expand gives the file the center area; Reduce returns to the dialog.
 
 - Text, Markdown and skill documents: UTF-8 text editing, undo, find, and Markdown preview. Limit: 2 MB.
 - CSV/TSV: edit cells, add rows/columns, remove selected rows, and sort. All rows, including headers, remain data. The grid is a table editor, without spreadsheet formula evaluation. Limit: 100,000 cells and 500 columns; larger supported text files use text editing. Preview shows up to 200 rows.
@@ -363,3 +363,12 @@ Custom interfaces can call GET `/api/documents` and POST `/api/documents/save` u
 See [what makes up Aura](components.md) for bundled components, optional tools, licenses and maintenance.
 
 See [work continuity](workspace-coordination.md) for scoped cross-harness activity, session permission choices, in-chat native questions/approvals and automatic local file history, including native support and recovery limits.
+
+
+Library search and item details show workflows, recipes and skills. Tools and plugins remain under the native AI app’s control; they are not presented as tasks to launch. Skill descriptions come from SKILL.md frontmatter or native catalog metadata. Details name the associated apps, show a copyable file location, and include the shared file preview/editor where a local document exists. Add to chat attaches a context reference to the current draft without writing a task, sending it, or switching apps. Favorite marks are available through the Library’s Show → Favorites filter.
+
+Memory details use the same dialog treatment and Add to chat action. Record data remains inspectable and copyable; changes to canonical memory still use the shared validated persistence operations rather than raw file editing.
+
+Pi and OMP refresh and continuation resolve an existing session file by its native ID, so chats remain readable when the original project folder changes. Antigravity refresh reads public user/assistant messages through ACP initialize and session/load; it sends no model prompt and excludes thought and tool updates. Older Antigravity versions without session loading retain Aura’s saved messages and explain the limitation. Codex metadata can outlive its transcript file; a missing file is reported as missing, with the saved Aura display retained. Detailed refresh failures are kept in the reviewed support diagnostics while the daily interface shows a readable explanation.
+
+Archived and deleted items can be filtered by state. Goals retain their status before deletion: restoring a completed goal restores it as completed. Completion alone does not delete a goal. This view covers archived chats, soft-deleted goals, and workspace recovery copies; it does not promise that every removal elsewhere is recoverable.

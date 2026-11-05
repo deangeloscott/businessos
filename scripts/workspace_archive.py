@@ -11,15 +11,17 @@ import workspace_organization
 
 def inventory(app, bid):
     items = [dict(kind='chat', id=c['id'], title=c.get('title') or 'Chat',
-                  at=c.get('archived_at') or c.get('updated'), action='Unarchive')
+                  at=c.get('archived_at'), state='archived', action='Unarchive')
              for c in app.preferences['chats'] if c['business_id'] == bid and c.get('archived')]
     items += [dict(kind='goal', id=g['id'], title=g.get('name') or 'Goal',
-                   at=workspace_goals.metadata(g).get('deleted_at'), action='Restore')
+                   at=workspace_goals.metadata(g).get('deleted_at'), state='deleted',
+                   previous_status=workspace_goals.metadata(g).get('deleted_status','active'),
+                   action='Restore as completed' if workspace_goals.metadata(g).get('deleted_status')=='completed' else 'Restore')
               for g in workspace_goals.goals(bid, include_deleted=True) if workspace_goals.deleted(g)]
     notes = []
     try:
         items += [dict(kind='recovery', id=e['id'], title=Path(e['original']).name,
-                       at=e.get('retired'), action='Restore', expires=e.get('expires'), days=e.get('days', 0))
+                       at=e.get('retired'), state='recovery', action='Restore', expires=e.get('expires'), days=e.get('days', 0))
                   for e in workspace_organization.recovery(app.settings_file.parent)
                   if e.get('status') in {'available', 'changed'} and
                   Path(e.get('destination', '')).resolve() == workspace_root().resolve()]
