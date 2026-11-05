@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+## v0.2.6 — 2026-11-05
+
+- Add native chat goal execution through supported harness connections, separate from shared workspace outcomes. Codex and OMP report native goal status and budgets; Claude and Antigravity use native goal commands with completion review. Custom harnesses can provide a goal adapter. Pi and Hermes retain goal context when their current connection cannot control native goal mode.
+- Add chat pins, persistent projects (including empty projects), optional project folder shortcuts, and one searchable project picker in chat details and the composer. Keep Pinned, Projects and Recents collapsible; preserve the compact sidebar rail in smaller desktop windows.
+- Unify workspace search into a labeled, filterable result list with preserved search navigation, activity dates, shared favorites, and separate archive/recovery access. Keep tools and plugins discoverable in the Library without presenting unusable search actions.
+- Make chat permissions and model choices use nearby popovers, simplify user-facing language, align favorites and goal actions, and show readable errors while retaining troubleshooting details.
+- Repair native transcript refresh and conversation recovery, synchronize shared goal lifecycle operations, and harden memory persistence, workspace isolation and portability. Reuse one dedicated business-context chat instead of placing context requests into an unrelated conversation.
+
 - Preserve the current file and source workspace when opening sharing from Assets, file lists, or linked folders; retain preselection during refresh and reuse saved linked-file selections. Put Share or import beside Preview/Edit, move the copyable path beneath the title, and use Cancel for discarding edits across file types.
 
 - Simplify file actions with one external-editor selector, general Download copy beside Save, reviewed imports, separate sharing, and a single clickable location row. Export pending edits without changing workspace files.
