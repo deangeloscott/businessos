@@ -122,7 +122,7 @@ async function render(view){
     view.editor=new EditorView({doc:view.edit.text||'',extensions,parent:area});view.editor.contentDOM.setAttribute('aria-label','Edit '+info.name);
   }else if(view.editing&&info.kind==='table')await editTable(view,area);
   else if(view.editing&&info.kind==='image')await editImage(view,area);
-  else if(info.kind==='text')area.innerHTML=/\.m(?:d|arkdown)$/i.test(info.name)?`<article class="file-markdown">${view.ctx.markdown(view.ctx.ref.startsWith('library/')?(view.edit.text||'').replace(/^---\r?\n[\s\S]*?\r?\n---(?:\r?\n|$)/,''):view.edit.text||'')}</article>`:`<pre>${esc(view.edit.text||'')}</pre>`;
+  else if(info.kind==='text')area.innerHTML=/\.m(?:d|arkdown)$/i.test(info.name)?`<article class="file-markdown">${view.ctx.markdown(view.ctx.ref.startsWith('library/')?(view.edit.text||'').replace(/^---\r?\n[\s\S]*?\r?\n---(?:\r?\n|$)/,'').replace(view.ctx.hideTitle?/^# [^\n]+\n+/:/$^/,''):view.edit.text||'')}</article>`:`<pre>${esc(view.edit.text||'')}</pre>`;
   else if(info.kind==='table')area.innerHTML=`<div class="file-table-preview"><table>${(view.edit.rows||[]).slice(0,200).map(row=>`<tr>${row.map(cell=>`<td>${esc(cell)}</td>`).join('')}</tr>`).join('')}</table></div>${view.edit.rows?.length>200?'<p>Previewing the first 200 rows. Choose Edit to see the full table.</p>':''}`;
   else if(info.kind==='image')await previewImage(view,area);
   else if(info.kind==='pdf')await previewPdf(view,area);
@@ -223,7 +223,7 @@ async function save(view,imported=null){
     data={...data,...await editedPayload(view,imported)};
     if(!live(view))return;
     const saved=await api(view,'/api/documents/save',data);if(!live(view))return;
-    clearDraft(view);await view.ctx.saved?.(saved).catch(()=>{});if(!live(view))return;await openFile({...view.ctx,ref:'asset/'+saved.asset,option:''});if(current)status(current,saved.mode==='save'?'Saved.':saved.mode==='version'?'New version saved.':'Copy saved.');
+    clearDraft(view);await view.ctx.saved?.(saved).catch(()=>{});if(!live(view))return;await openFile({...view.ctx,ref:'asset/'+saved.asset,option:'',title:'',summary:'',hideTitle:false});if(current)status(current,saved.mode==='save'?'Saved.':saved.mode==='version'?'New version saved.':'Copy saved.');
   }catch(e){status(view,readableError(e),true);if(e.status===409){view.host.querySelector('#file-conflict').hidden=false;}if(button.isConnected)button.disabled=false;}finally{view.saving=false;}
 }
 async function prepareImport(view,file){

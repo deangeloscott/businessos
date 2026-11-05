@@ -59,6 +59,12 @@ def main():
         connection=library.entry('Tool','Drive','A saved connection.','hermes','saved-drive','Configured',type='Connection')
         linked=library.organize([*tools,connection])
         assert len(linked)==2 and len(linked[0]['apps'])==3, 'Connection summaries and reported actions share one service row'
+        plugin=library.entry('Plugin','Drive plugin','A local package.','codex','plugin-drive');plugin['app_ids']=['drive-app']
+        native_app=library.entry('Tool','Drive','Connected documents.','codex','drive-app','Reported by app',type='App',service='Drive',app_id='drive-app')
+        linked_plugin=next(i for i in library.organize([plugin,native_app]) if i['kind']=='Plugin')
+        assert linked_plugin['sources'][0]['connection_reported'] and linked_plugin['sources'][0]['status']=='Found locally','A matching app proves connection discovery, not plugin installation'
+        native_app['sources'][0]['app']='omp'
+        assert not next(i for i in library.organize([plugin,native_app]) if i['kind']=='Plugin')['sources'][0]['connection_reported'],'Another harness must not confirm this app connection'
         international=[library.entry('Tool','search','Search', 'codex',name,type='Tool',service=name) for name in ['百度','搜狗']]
         assert len(library.organize(international))==2, 'Different non-Latin services must not share a grouping identity'
         retained=library.retain_catalog(tools,[],True)

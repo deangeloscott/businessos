@@ -90,7 +90,7 @@ async function refresh(light=false,preserveDetails=light) {
     if(data.records_unchanged&&state.data?.workspace===data.workspace&&state.business===data.business_id)data.records=state.data.records;
     if(ticket!==state.refreshTicket)return;state.data=data;
     state.business=state.data.business_id || '';state.scheduleJob=state.data.schedule_operation;
-    const scope=state.data.workspace+'|'+state.business;if(state.searchScope&&state.searchScope!==scope){state.memoryQuery='';state.fileQuery='';state.scheduleQuery='';state.scheduleFilter='all';state.scheduleDraft=null;state.showPaused=false;fileFilter='all';state.fileFavoritesOnly=false;state.includeRecords=false;}state.searchScope=scope;
+    const scope=state.data.workspace+'|'+state.business;if(state.searchScope&&state.searchScope!==scope){state.memoryQuery='';state.memoryGoalStatus='current';state.memoryGoalScope='all';state.fileQuery='';state.scheduleQuery='';state.scheduleFilter='all';state.scheduleDraft=null;state.showPaused=false;fileFilter='all';state.fileFavoritesOnly=false;}state.searchScope=scope;
     $('.composer').hidden=!state.business;
     $('#connection').disabled=!state.business;
     $('#chats').disabled=!state.business;$('#add-native-chat').disabled=!state.business;
@@ -670,7 +670,7 @@ async function refreshLibrary(){
   try{const result=await api('/api/library?discover=1&details=1');if(state.data.workspace!==workspace)return;state.library=result.items;state.libraryNotes=result.notes;state.libraryRefreshed=workspace;quickMethods();if(state.view==='work'){renderWork();if($('#library-note'))$('#library-note').textContent=result.notes.length?'Some catalogs need attention. See How it works.':'';}}
   finally{state.libraryRefreshing=false;if(button?.isConnected&&state.view==='work'){button.disabled=false;button.textContent='Refresh';renderWork();}}
 }
-function methodRow(method) {const favorite=libraryMarked(method),apps=method.apps||[],source=apps.length>1?'Shared · '+apps.length+' apps':apps.map(appName).join(', '),sources=method.sources||[],status=!sources.length?'':sources.every(s=>s.status==='Disabled')?'Disabled':sources.every(s=>s.status==='Found locally')?'Found locally':sources.some(s=>s.status==='Installed')?'Installed':sources.every(s=>s.status==='Configured')?'Configured':'',type=method.subtype==='Playbook'?'Complete guide':method.kind;return `<div class="library-row"><button class="row compact" data-method="${esc(method.key)}"><span class="row-text"><span class="row-title">${esc(method.title)}</span><span class="row-meta">${esc(type)}${method.members?.length?' · '+method.members.length+' actions':''}${source?' · '+esc(source):''}${status&&status!=='Found locally'?' · '+esc(status):''}${sources.some(s=>s.stale)?' · Needs refresh':''}</span></span><span class="arrow">→</span></button><button class="library-star ${favorite?'active':''}" data-library-favorite="${esc(method.key)}" aria-label="${favorite?'Remove':'Add'} ${esc(method.title)} ${favorite?'from':'to'} favorites" aria-pressed="${favorite}">${favorite?'★':'☆'}</button></div>`;}
+function methodRow(method) {const favorite=libraryMarked(method),apps=method.apps||[],source=apps.length>1?'Shared · '+apps.length+' apps':apps.map(appName).join(', '),sources=method.sources||[],status=!sources.length?'':sources.every(s=>s.status==='Disabled')?'Disabled':sources.some(s=>s.connection_reported)?'Connection listed':sources.every(s=>s.status==='Found locally')?'Found locally':sources.some(s=>s.status==='Installed')?'Installed':sources.every(s=>s.status==='Configured')?'Configured':'',type=method.subtype==='Playbook'?'Playbook':method.kind;return `<div class="library-row"><button class="row compact" data-method="${esc(method.key)}"><span class="row-text"><span class="row-title">${esc(method.title)}</span><span class="row-meta">${esc(type)}${method.members?.length?' · '+method.members.length+' actions':''}${source?' · '+esc(source):''}${status&&status!=='Found locally'?' · '+esc(status):''}${sources.some(s=>s.stale)?' · Needs refresh':''}</span></span><span class="arrow">→</span></button><button class="library-star ${favorite?'active':''}" data-library-favorite="${esc(method.key)}" aria-label="${favorite?'Remove':'Add'} ${esc(method.title)} ${favorite?'from':'to'} favorites" aria-pressed="${favorite}">${favorite?'★':'☆'}</button></div>`;}
 function librarySourceLabels(sources){
   const rank={'Reported by app':6,'Enabled in app':5,'Installed':4,'Disabled':3,'Configured':2,'Found locally':1};
   return Object.values(Object.groupBy(sources,s=>(s.app||'local')+':'+(s.service||s.connection||''))).map(rows=>{
@@ -679,7 +679,9 @@ function librarySourceLabels(sources){
   });
 }
 
-async function openLibrary(key,option=''){
+async function openLibrary(key,option='',returning=false){
+  const previous=state.libraryPage&&state.libraryPage.ticket===state.fileDetailTicket&&state.libraryPage.scope===JSON.stringify([state.data?.workspace,state.business])&&$('#detail').open?{...state.libraryPage,scroll:$('#detail-content').scrollTop}:null;
+  if(!returning){if(previous&&previous.key!==key){state.libraryTrail=[...(state.libraryTrail||[]),previous].slice(-12);}else if(!previous)state.libraryTrail=[];}
   const ticket=state.libraryDetailTicket=(state.libraryDetailTicket||0)+1,workspace=state.data.workspace,business=state.business;
   const doc=await api('/api/library/item?key='+encodeURIComponent(key)+'&option='+encodeURIComponent(option)+'&app='+encodeURIComponent(composerConnection().kind));
   if(ticket!==state.libraryDetailTicket||business!==state.business||workspace!==state.data.workspace)return;
@@ -687,16 +689,31 @@ async function openLibrary(key,option=''){
   if(!state.library.some(r=>r.key===item.key))state.library.push(item);
   const root=state.library.find(r=>r.key===item.key||r.members?.some(m=>m.key===item.key))||item;
   rememberLibraryOpen(root);
-  if(!libraryGuidance(item)){
-    const sources=item.sources||chosen.sources||[],apps=[...new Set(sources.map(s=>s.app).filter(Boolean))],members=item.members||[];
-    details(item.title,`<p class="item-type">${esc(item.kind)}${apps.length?' · '+apps.map(appName).map(esc).join(' · '):''}</p><p>${esc(chosen.description||item.description||'The AI app has not provided a description for this item.')}</p>${sources.length?`<ul class="capability-sources">${sources.map(s=>`<li><strong>${esc(appName(s.app)||'This computer')}</strong> · ${esc(s.status==='Found locally'?'Local files; availability not confirmed':s.status||'Availability not reported')}${s.service||s.connection?' · '+esc(s.service||s.connection):''}${s.path?`<button type="button" class="record-location" data-copy-item-location="${esc(s.path)}" title="Copy file location">${esc(s.path)} ⧉</button>`:''}</li>`).join('')}</ul>`:''}<p class="small-note">Your AI app chooses when to use its tools and plugins. Access and configuration are managed by that app.</p><button type="button" class="text-button" data-library-favorite="${esc(root.key)}" aria-pressed="${libraryMarked(root)}">${libraryMarked(root)?'★ Favorited':'☆ Favorite'}</button>${members.length?`<h3>Tools (${members.length})</h3><div class="capability-tools">${members.map(m=>`<button type="button" class="row" data-method="${esc(m.key)}"><span class="row-text"><strong>${esc(m.title)}</strong><small>${esc(m.description||'No description provided by the app.')}</small></span><span>→</span></button>`).join('')}</div>`:''}`);
-    return;
+  const inventory=!libraryGuidance(item),sources=item.sources||chosen.sources||[],variants=item.variants||[];
+  const locations=[...new Set([doc.location,...(chosen.sources||sources).map(s=>s.path)].filter(Boolean))];
+  const identity=item.subtype==='Playbook'?'Playbook':item.kind,apps=[...new Set(sources.map(s=>s.app).filter(Boolean))];
+  const locationMarkup=locations.map(path=>`<button type="button" class="item-location" data-copy-item-location="${esc(path)}" title="Copy file location"><span>${esc(path)}</span><span aria-hidden="true">⧉</span></button>`).join('');
+  const statusLabel=s=>s.status==='Disabled'?'Disabled':s.connection_reported?'Connection listed':({'Found locally':'Local copy','Configured':'Enabled in settings','Reported by app':'Listed by app','Enabled in app':'Enabled'})[s.status]||s.status||'Not reported';
+  const statusNote=s=>s.connection_reported?'The app lists a matching connection.':s.status==='Found locally'?'Package files exist here; the app has not reported this plugin as enabled.':s.stale?'This is the last reported state; refresh the Library to check again.':'';
+  const statuses=inventory?`<div class="item-statuses">${[...new Map(sources.map(s=>[s.app+':'+statusLabel(s),s])).values()].map(s=>`<span class="item-status" title="${esc(statusNote(s))}">${esc(appName(s.app)||'This computer')} · ${esc(statusLabel(s))}${s.stale?' · Last known':''}</span>`).join('')}</div>`:'';
+  const description=chosen.description||item.description||'';
+  const actions=`<div class="inline-actions">${!inventory?`<button type="button" class="primary" data-add-library="${esc(root.key)}" data-variant="${esc(variants.length>1?chosen.key:'')}" data-label="${esc(item.title)}">Add to chat</button>`:''}<button type="button" class="text-button" data-library-favorite="${esc(root.key)}" aria-pressed="${libraryMarked(root)}">${libraryMarked(root)?'★ Favorited':'☆ Favorite'}</button></div>`;
+  const metadata=`<div class="item-summary"><p class="item-type">${esc(identity)}${!inventory&&apps.length?' · '+apps.map(appName).map(esc).join(' · '):''}</p>${statuses}${!inventory&&variants.length>1?`<label class="library-option">Version<select id="library-option">${variants.map((v,i)=>`<option value="${esc(v.key)}" ${v.key===chosen.key?'selected':''}>${esc((v.apps||v.sources?.map(s=>s.app)||[]).map(appName).join(', ')||'Version '+(i+1))}</option>`).join('')}</select></label>`:''}${description?`<p>${esc(description)}</p>`:''}${chosen.requirements?`<p class="small-note">Needs: ${esc(chosen.requirements)}</p>`:''}${actions}</div>`;
+  if(inventory){
+    const related=[...(item.members||[]),...(item.related||[]).map(key=>state.library.find(r=>r.key===key)).filter(Boolean)].filter((r,i,all)=>all.findIndex(v=>v.key===r.key)===i);
+    details(item.title,locationMarkup+metadata+(related.length?`<h3>Included items</h3><div class="capability-tools">${related.map(m=>`<button type="button" class="row" data-method="${esc(m.key)}"><span class="row-text"><strong>${esc(m.title)}</strong><small>${esc(m.description||m.kind)}</small></span><span>→</span></button>`).join('')}</div>`:''));
+  }else if(doc.location?.endsWith('.md')||item.kind==='Skill'&&locations.length){
+    await openFileWorkspace('library/'+root.key,chosen.key,{title:item.title,summary:metadata,hideTitle:true});
+  }else{
+    const lines=body.replace(/^# [^\n]+\n+/,'');
+    const guidance=(description&&lines.startsWith(description)?lines.slice(description.length).trim():lines).replace(/^Start with workflow [^\n]+ when useful\.$/m,'').trim();
+    details(item.title,locationMarkup+metadata+(guidance?'<div class="guidance-preview">'+chatMarkdown(guidance)+'</div>':'')+(item.entry?`<button type="button" class="text-button" data-method="${esc(item.entry.key)}">Open ${esc(item.entry.title)} workflow →</button>`:''));
   }
-  const variants=item.variants||[],apps=[...new Set((chosen.sources||[]).map(s=>s.app).filter(Boolean))];
-  const metadata=`<div class="item-summary"><p class="item-type">${esc(item.subtype==='Playbook'?'Complete guide':item.kind)}${apps.length?' · '+apps.map(appName).map(esc).join(' · '):''}</p>${variants.length>1?`<label class="library-option">Version<select id="library-option">${variants.map((v,i)=>`<option value="${esc(v.key)}" ${v.key===chosen.key?'selected':''}>${esc((v.apps||v.sources?.map(s=>s.app)||[]).map(appName).join(', ')||'Version '+(i+1))}</option>`).join('')}</select></label>`:''}${chosen.description||item.description?`<p>${esc(chosen.description||item.description)}</p>`:''}${chosen.requirements?`<p class="small-note">Needs: ${esc(chosen.requirements)}</p>`:''}<div class="inline-actions"><button type="button" class="primary" data-add-library="${esc(root.key)}" data-variant="${esc(variants.length>1?chosen.key:'')}" data-label="${esc(item.title)}">Add to chat</button><button type="button" class="text-button" data-library-favorite="${esc(root.key)}" aria-pressed="${libraryMarked(root)}">${libraryMarked(root)?'★ Favorited':'☆ Favorite'}</button></div></div>`;
-  const locations=(chosen.sources||[]).map(s=>s.path).filter(Boolean);
-  if(doc.location?.endsWith('.md')||item.kind==='Skill'&&locations.length)await openFileWorkspace('library/'+root.key,chosen.key,{title:item.title,summary:metadata});
-  else details(item.title,metadata+(body?'<div class="guidance-preview">'+chatMarkdown(body)+'</div>':''));
+  if(ticket!==state.libraryDetailTicket||business!==state.business||workspace!==state.data.workspace)return;
+  state.libraryPage={key,option,scope:JSON.stringify([workspace,business]),ticket:state.fileDetailTicket};
+  if(state.libraryTrail?.length){const parent=state.libraryTrail.at(-1);setDetailBack(parent.title||'Library item',async()=>{state.libraryTrail.pop();await openLibrary(parent.key,parent.option,true);$('#detail-content').scrollTop=parent.scroll||0;});}
+  state.libraryPage.title=item.title+(item.subtype==='Playbook'?' Playbook':'');
+
 }
 
 function quickMethods() {
@@ -736,7 +753,7 @@ async function render() {
     renderMemory();
   } else if(state.view==='files') {
     const result=await cachedApi('/api/files?business='+encodeURIComponent(state.business));if(!current())return; state.files=result.items;state.fileLocations=result.locations||[];state.missingAssets=result.missing_assets||[];fileLocation='';
-    view.innerHTML=`<div class="section-head file-actions"><span>All saved work</span><button class="secondary" data-add-location>＋ Add files or folder</button></div><div class="linked-locations">${state.fileLocations.map(l=>`<div class="linked-location"><button ${l.missing?'data-reconnect-location':'data-filelocation'}="${esc(l.id)}"><strong>${esc(l.name)}</strong><small>${l.missing?'Location missing · Reconnect':l.kind==='folder'?'Linked folder':'Linked file'}</small></button><button data-unlink-location="${esc(l.id)}" aria-label="Unlink ${esc(l.name)}">✕</button></div>`).join('')}</div>${state.missingAssets.length?`<details class="missing-files"><summary>${state.missingAssets.length} saved file${state.missingAssets.length===1?' has moved or is':'s have moved or are'} unavailable</summary>${state.missingAssets.map(f=>`<button class="row" data-reconnect-asset="${esc(f.ref)}">${esc(f.name)} · Reconnect →</button>`).join('')}</details>`:''}<input class="search" id="file-search" type="search" aria-label="Search saved files" placeholder="Find a file…" value="${esc(state.fileQuery||'')}">${fileTypeFilters('full')}<button id="file-all-locations" class="text-button" hidden>All locations</button><div id="file-list" class="file-grid bounded-list" tabindex="0" aria-label="Saved files"></div><details><summary>Saved information</summary><button class="secondary" id="include-workspace-records">${state.includeRecords?'Hide workspace records':'Show workspace records too'}</button></details><p class="small-note">Search covers all discovered file names and locations. File contents stay unloaded until opened.</p>`;
+    view.innerHTML=`<div class="linked-locations">${state.fileLocations.map(l=>`<div class="linked-location"><button ${l.missing?'data-reconnect-location':'data-filelocation'}="${esc(l.id)}"><strong>${esc(l.name)}</strong><small>${l.missing?'Location missing · Reconnect':l.kind==='folder'?'Linked folder':'Linked file'}</small></button><button data-unlink-location="${esc(l.id)}" aria-label="Unlink ${esc(l.name)}">✕</button></div>`).join('')}</div>${state.missingAssets.length?`<details class="missing-files"><summary>${state.missingAssets.length} saved file${state.missingAssets.length===1?' has moved or is':'s have moved or are'} unavailable</summary>${state.missingAssets.map(f=>`<button class="row" data-reconnect-asset="${esc(f.ref)}">${esc(f.name)} · Reconnect →</button>`).join('')}</details>`:''}<div class="files-toolbar"><input class="search" id="file-search" type="search" aria-label="Search saved files" placeholder="Find a file…" value="${esc(state.fileQuery||'')}"><button type="button" class="secondary" data-add-location>＋ Add files or folder</button></div>${fileTypeFilters('full')}<button id="file-all-locations" class="text-button" hidden>All locations</button><div id="file-list" class="file-grid bounded-list" tabindex="0" aria-label="Saved files"></div>`;
     renderFiles();
   } else if(state.view==='work') {
     if(!state.library.length){const library=await cachedApi('/api/library');if(!current())return;state.library=library;}
@@ -765,26 +782,25 @@ function memoryGroups(q) {
   return {goals:workspaceGoalRecords().filter(r=>recordMatches(r,q)),context:state.data.records.filter(r=>r.type!=='Objective'&&(q||r.data.source_type!=='organization_initialization_input'&&!(r.type==='ChangeEvent'&&r.data.change_kind==='canonical_correction'))&&recordMatches(r,q))};
 }
 function renderMemory() {
-  const q=(state.memoryQuery||'').trim().toLowerCase(),{goals,context}=memoryGroups(q);
+  const q=(state.memoryQuery||'').trim().toLowerCase(),{context}=memoryGroups(q),status=state.memoryGoalStatus||'current',scope=state.memoryGoalScope||'all';
+  const all=state.data.records.filter(r=>r.type==='Objective'),goals=all.filter(r=>recordMatches(r,q)&&(scope==='all'||(goalInfo(r.data).scope||'workspace')===scope)&&(status==='deleted'?!!goalInfo(r.data).deleted_at:!goalInfo(r.data).deleted_at&&(status==='completed'?r.data.status==='completed':r.data.status!=='completed')));
   for(const id of ['quick-memory-search','record-search'])if($('#'+id)&&$('#'+id).value!==(state.memoryQuery||''))$('#'+id).value=state.memoryQuery||'';
-  const group=(title,items,action,home)=>{
-    const heading=`<div class="mini-heading memory-heading"><${home?'span':'h3'}>${title}</${home?'span':'h3'}>${action}</div>`;
-    const list=`<div class="${home?'':'card memory-results'}" ${home?'':'aria-label="'+title+'"'}>${items.length?(home?items.slice(0,q?4:2):items).map(recordRow).join(''):`<p class="small-note">${q?'No matching '+title.toLowerCase()+'.':'Nothing saved here yet.'}</p>`}</div>`;
-    return home?heading+list:`<section class="memory-group">${heading}<p class="memory-description">${title==='Goals'?'Shared workspace goals. Open All goals for chat goals and completed or deleted goals.':'Useful facts, preferences, decisions, and reference material.'}</p>${list}</section>`;
-  };
-  const goalAdd='<span class="inline-actions"><button class="text-button" data-goal-manager>All goals</button><button class="text-button" data-action="add-goal">＋ Workspace goal</button></span>',contextAdd=`<button class="text-button" data-prompt="${esc(addContextPrompt)}">＋ Add</button>`;
-  const quick=$('#quick-memory');if(quick)quick.innerHTML=group('Goals',goals,goalAdd,true)+group('Saved context',context,contextAdd,true);
-  const full=$('#full-memory');if(full)full.innerHTML=group('Goals',goals,goalAdd,false)+group('Saved context',context,contextAdd,false);
+  const goalRow=r=>`<button type="button" class="row" data-record="${esc(r.ref)}"><span class="row-text"><strong class="row-title">${esc(r.title)}</strong><small class="row-meta">${goalInfo(r.data).scope==='chat'?'Chat goal':'Workspace goal'} · ${goalInfo(r.data).deleted_at?'Deleted':esc(human(r.data.status||'active'))}</small>${r.data.target?`<small class="goal-list-outcome">${esc(pretty(r.data.target))}</small>`:''}</span><span>→</span></button>`;
+  const filters=`<div class="goal-page-filters"><div class="filters" role="group" aria-label="Goal status">${[['current','Current'],['completed','Completed'],['deleted','Deleted']].map(([value,label])=>`<button type="button" data-memory-goals="${value}" aria-pressed="${status===value}" class="${status===value?'active':''}">${label}</button>`).join('')}</div>${all.some(r=>goalInfo(r.data).scope==='chat')?`<label>Type<select id="memory-goal-scope"><option value="all" ${scope==='all'?'selected':''}>All goals</option><option value="workspace" ${scope==='workspace'?'selected':''}>Workspace</option><option value="chat" ${scope==='chat'?'selected':''}>Chat</option></select></label>`:''}</div>`;
+  const goalAdd='<span class="inline-actions"><button type="button" class="text-button" data-goal-help>How goals work</button><button type="button" class="secondary" data-action="add-goal">＋ New goal</button></span>';
+  const full=$('#full-memory');if(full)full.innerHTML=`<section class="memory-group"><div class="mini-heading memory-heading"><h3>Goals</h3>${goalAdd}</div>${filters}<div class="memory-results" aria-label="Goals">${goals.map(goalRow).join('')||empty('No '+status+' goals'+(q?' match your search.':'.'))}</div></section><section class="memory-group"><div class="mini-heading memory-heading"><h3>Saved context</h3><button type="button" class="text-button" data-prompt="${esc(addContextPrompt)}">＋ Add</button></div><p class="memory-description">Useful facts, preferences, decisions, and reference material.</p><div class="memory-results" aria-label="Saved context">${context.map(recordRow).join('')||empty('No saved context'+(q?' matches your search.':' yet.'))}</div></section>`;
+  const quick=$('#quick-memory');if(quick)quick.innerHTML='<div class="mini-heading"><span>Goals</span>'+goalAdd+'</div>'+goals.slice(0,3).map(goalRow).join('');
 }
+
 const fileKinds=[['all','All'],['images','Images'],['videos','Videos'],['audio','Audio'],['documents','Documents'],['other','Other']];
 function fileKind(file) {
   const ext=(file.name||file.path).split('.').pop().toLowerCase();
   return /^(png|jpe?g|gif|webp|avif|svg|heic|bmp|tiff?|ico)$/.test(ext)?'images':/^(mp4|webm|mov|m4v|mkv|avi|mpe?g)$/.test(ext)?'videos':/^(mp3|wav|ogg|oga|m4a|aac|flac|opus|aiff|wma)$/.test(ext)?'audio':/^(pdf|docx?|xlsx?|pptx?|od[tsp]|txt|md|csv|json|ya?ml|html?|rtf|log|py|js|ts|css|xml)$/.test(ext)?'documents':'other';
 }
 function fileTypeFilters(scope) {return `<div class="filters compact-filters" aria-label="File types">${fileKinds.map(([kind,name])=>`<button type="button" data-filetype="${kind}" aria-pressed="${fileFilter===kind}" class="${fileFilter===kind?'active':''}">${name}</button>`).join('')}<button type="button" data-file-favorites aria-pressed="${!!state.fileFavoritesOnly}" class="${state.fileFavoritesOnly?'active':''}">★ Favorites</button></div>`;}
-function matchingFiles(includeRecords=false) {
+function matchingFiles() {
   const q=(state.fileQuery||'').trim().toLowerCase();
-  return state.files.filter(f=>(includeRecords||usefulFile(f))&&(!state.fileFavoritesOnly||fileMarked(f.path))&&(fileFilter==='all'||fileKind(f)===fileFilter)&&(f.path+' '+f.name+' '+(f.location_name||'')).toLowerCase().includes(q)).sort((a,b)=>b.modified-a.modified);
+  return state.files.filter(f=>usefulFile(f)&&(!state.fileFavoritesOnly||fileMarked(f.path))&&(fileFilter==='all'||fileKind(f)===fileFilter)&&(f.path+' '+f.name+' '+(f.location_name||'')).toLowerCase().includes(q)).sort((a,b)=>b.modified-a.modified);
 }
 function renderQuickFiles() {
   const target=$('#quick-files');if(!target)return;
@@ -806,7 +822,7 @@ async function mediaBlob(path) {
 function renderFiles() {
   if(!$('#file-list'))return;
   state.fileObserver?.disconnect();
-  const matches=matchingFiles(state.includeRecords).filter(f=>!fileLocation||f.location===fileLocation);
+  const matches=matchingFiles().filter(f=>!fileLocation||f.location===fileLocation);
   $('#file-list').innerHTML=matches.length?matches.slice(0,state.fileLimit||100).map(f=>`<div class="file-card-wrap"><button class="file-card" data-file="${esc(f.path)}"><span class="file-thumb">${f.media?'◈':'▤'}</span><div class="file-info"><strong>${esc(f.name)}</strong><small>${esc(f.location_name||'Workspace')} · ${size(f.bytes)}</small></div></button>${fileFavoriteButton(f.path,f.name,true)}</div>`).join(''):empty(state.fileFavoritesOnly?'No favorite files match.':'No matching files here yet.','Link a file or folder, or save work in this workspace.');
   $('#file-more')?.remove();
   if(matches.length>(state.fileLimit||100))$('#file-list').insertAdjacentHTML('afterend',`<button type="button" class="secondary" id="file-more">Load more · showing ${Math.min(state.fileLimit||100,matches.length)} of ${matches.length}</button>`);
@@ -1070,7 +1086,7 @@ async function openUpdates() {
   await syncUpdates(true);
   const startup=await api('/api/startup');
   details('Startup & updates',startupSection(startup)+`<section class="updates-section"><h3>Updates</h3><div id="update-panel"><div class="update-top"><span id="update-current" class="small-note"></span><button class="text-button" id="update-check">Check now</button></div><h4 id="update-heading"></h4><p id="update-message" role="status"></p><section id="update-release" hidden><ul id="update-highlights"></ul><details class="update-notes"><summary>Release notes</summary><pre id="update-notes"></pre><a id="update-release-link" target="_blank" rel="noopener noreferrer">View release ↗</a></details><p id="update-manual" class="small-note" hidden></p><div class="update-actions"><button class="primary" id="update-install" hidden>Update now</button><button class="secondary" id="update-later">Later</button><button class="text-button" id="update-skip">Skip this version</button></div></section><label class="update-policy">Updates<select id="update-policy"><option value="notify">Notify me</option><option value="auto">Update automatically when idle</option><option value="manual">Manual only</option></select></label><p class="small-note">Your workspace, connections, and custom views stay yours.</p><div class="update-bottom"><small id="update-checked"></small><button class="text-button" id="update-rollback" hidden>Use previous version</button><a href="https://github.com/deangeloscott/businessos/releases" target="_blank" rel="noopener noreferrer">Downloads ↗</a></div></div></section>`,'page');
-  $('#detail').dataset.mode='page';$('#close-detail-page').hidden=false;$('#detail [data-close=detail]').hidden=true;state.updateSignature='';renderUpdates();
+  $('#detail').dataset.mode='page';$('#detail [data-close=detail]').hidden=true;state.updateSignature='';renderUpdates();
   state.updates=await api('/api/updates',{action:'read'});renderNotifications();
 }
 async function reconnectUpdate() {
@@ -1190,15 +1206,20 @@ window.visualViewport?.addEventListener('resize',positionAnchoredSurface);
 document.addEventListener('scroll',event=>{if(anchoredSurface&&!anchoredSurface.dialog.contains(event.target))positionAnchoredSurface();},true);
 document.addEventListener('focusin',event=>{const s=anchoredSurface;if(s&&!s.dialog.contains(event.target)&&!s.anchor.contains(event.target))closeAnchoredSurface(false);});
 document.addEventListener('keydown',event=>{if(event.key==='Escape'&&anchoredSurface){event.preventDefault();event.stopImmediatePropagation();closeAnchoredSurface();}},true);
+function setDetailBack(label,run){
+  const button=$('#detail-search-back');state.detailBack={scope:JSON.stringify([state.data?.workspace,state.business]),run};
+  button.hidden=false;button.textContent='← '+label;button.setAttribute('aria-label',label==='Results'?'Back to search results':'Back to '+label.toLowerCase());button.title='Back to '+label;
+}
 function details(title,html,mode='panel',anchor=null){
   closeAnchoredSurface(false);
   window.auraFiles?.detach();
   const d=$('#detail');state.fileDetailTicket=(state.fileDetailTicket||0)+1;shellReturnFocus=document.activeElement;
   const page=mode==='page'||(state.view==='sharing'&&mode!=='context'),modal=!anchor&&!page&&mode!=='context';
   if(d.open&&d.matches(':modal')!==modal)d.close();
-  $('#detail-search-back').hidden=!state.searchReturn||state.searchReturn.scope!==JSON.stringify([state.data?.workspace,state.business])||!!anchor;
+  state.detailBack=null;$('#detail-search-back').hidden=true;
+  if(state.searchReturn?.scope===JSON.stringify([state.data?.workspace,state.business])&&!anchor)setDetailBack('Results',backToSearchResults);
   d.dataset.mode=page?'page':mode;d.dataset.opened=Date.now();$('#detail-title').textContent=title;$('#detail-content').innerHTML=html;
-  $('#close-detail-page').hidden=!page;d.querySelector('[data-close="detail"]').hidden=page;
+  d.querySelector('[data-close="detail"]').hidden=page;
   $('#detail-footer').hidden=!page||state.view!=='sharing';$('#detail-footer').innerHTML=page&&state.view==='sharing'?workspaceLocation():'';
   const actions=$('#detail-content .share-selection-bar');if(page&&actions)$('#detail-footer').prepend(actions);
   d.querySelectorAll('.dialog-error').forEach(el=>el.remove());if($('#notice').classList.contains('error'))notice('');if(anchor)openAnchoredSurface(d,anchor,{width:380});else if(!d.open){if(modal)d.showModal();else d.show();}
@@ -1821,7 +1842,6 @@ document.addEventListener('click',event=>attempt(async()=>{
   if(button.hasAttribute('data-stop-schedule')){await api('/api/schedules/stop',{business:state.business,operation_id:state.scheduleJob.id});await syncScheduleOperation();}
   if(button.hasAttribute('data-dismiss-schedule')){state.dismissedScheduleJob=state.scheduleJob.id;renderScheduleOperation();}
   if(button.dataset.openSchedule){await syncSchedules(true);await scheduleDetails(button.dataset.openSchedule);}
-  if(button.id==='close-section') {state.view='home';$('#section-dialog').close();recordShellRoute();renderShell();}
   if(button.id==='new-chat')await newShellChat();
   if(button.id==='chats'||button.id==='chat-list-back')await showChats(button.id==='chat-list-back'&&!!state.chatArchiveView);
   if(button.hasAttribute('data-chat-archive-view'))await showChats(button.dataset.chatArchiveView==='true');
@@ -1852,13 +1872,14 @@ document.addEventListener('click',event=>attempt(async()=>{
   }
   if(button.dataset.copyRecordLocation){const item=state.data.records.find(r=>r.ref===button.dataset.copyRecordLocation);if(item){await navigator.clipboard.writeText(state.data.workspace.replace(/[\\/]$/,'')+'/'+item.path);button.setAttribute('aria-label','File location copied');notice('File location copied.');}}
   if(button.dataset.copyRecord){const item=state.data.records.find(r=>r.ref===button.dataset.copyRecord);if(item){await navigator.clipboard.writeText(JSON.stringify(item.data,null,2));button.textContent='Copied';}}
+  if(button.dataset.memoryGoals){state.memoryGoalStatus=button.dataset.memoryGoals;renderMemory();$(`[data-memory-goals="${state.memoryGoalStatus}"]`)?.focus();}
+  if(button.hasAttribute('data-goal-help'))details('How goals work','<p>A workspace goal is an outcome you can work toward across chats. A chat goal is an assignment for one conversation; it can contribute to a workspace goal.</p><p>When a goal is linked to a chat, Aura includes it with your next request. Linking a goal does not start work or turn on a native goal mode. Your AI app handles execution and continuation.</p><p>Link useful saved files here, or ask your AI to link them when saving. Aura does not automatically assign every created file to a goal. Completion is an explicit change; a finished reply does not complete a goal.</p>');
   if(button.dataset.copyItemLocation){await navigator.clipboard.writeText(button.dataset.copyItemLocation);notice('File location copied.');}
   if(button.hasAttribute('data-file-favorites')){state.fileFavoritesOnly=!state.fileFavoritesOnly;renderQuickFiles();renderFiles();document.querySelectorAll('[data-file-favorites]').forEach(b=>{b.setAttribute('aria-pressed',String(!!state.fileFavoritesOnly));b.classList.toggle('active',!!state.fileFavoritesOnly);});}
   if(button.dataset.fileFavorite&&!button.closest('#file-workspace')){const marked=await toggleFileFavorite(button.dataset.fileFavorite);if(button.isConnected){button.setAttribute('aria-pressed',String(marked));button.textContent=marked?'★':'☆';}}
   if(button.dataset.libraryDocument)await openFileWorkspace('library/'+button.dataset.libraryDocument,button.dataset.option||'');
   if(button.id==='version')await showComponents();
   if(button.dataset.filetype) {state.fileLimit=100;fileFilter=button.dataset.filetype;renderQuickFiles();renderFiles();}
-  if(button.id==='include-workspace-records'){state.includeRecords=!state.includeRecords;button.textContent=state.includeRecords?'Hide workspace records':'Show workspace records too';renderFiles();}
   if(button.dataset.workfilter) { workFilter=button.dataset.workfilter;workCategory=''; button.parentElement.querySelectorAll('button').forEach(b=>b.classList.toggle('active',b===button)); renderWork(); }
   if(button.id==='library-connections')await showApiConnections('');
   if(button.hasAttribute('data-library-help'))details('Your library','<p>Workflows, recipes and skills provide reusable guidance. Tools and plugins show what your AI apps list, including disabled or unconfirmed items. Your AI chooses which capabilities to use.</p><p>Skill names, descriptions and requirements come from their SKILL.md files or the AI app’s catalog. App labels show where each skill was discovered; they do not guarantee every dependency is installed.</p><p>Add to chat attaches the selected guidance to your draft. Describe the outcome you want before sending. Show defaults to All items. Recently opened lists the last items you inspected. Favorites narrows this Library list to your starred items. File favorites use the same workspace collection; workspace search can show favorite files and guidance together.</p>'+((state.libraryNotes||[]).length?'<h3>Catalog status</h3><ul>'+state.libraryNotes.map(note=>'<li>'+esc(note)+'</li>').join('')+'</ul>':''));
@@ -2064,7 +2085,7 @@ document.addEventListener('change',event=>{
 });
 document.addEventListener('input',event=>{if(event.target.closest('#schedule-form'))state.scheduleDraft[event.target.name]=event.target.value;});
 document.addEventListener('change',event=>{if(['task-cadence','task-day','task-time','task-every','task-unit','task-custom'].includes(event.target.id))updateTaskTiming();if(event.target.id==='api-provider')apiProviderHelp();if(event.target.name==='app'&&event.target.closest('#task-edit-form')){taskModels(event.target.value).catch(()=>{});const moved=event.target.value!==state.editingTask.owner;$('#task-edit-form button[type=submit],#task-edit-form .primary').textContent=moved?'Ask AI to move':state.editingTask.editable?'Save changes':'Ask AI to adjust';$('#task-edit-note').textContent=moved?'Your AI must confirm the new schedule before pausing the old one.':state.editingTask.editable?'Changes are saved in your AI app.':'Your AI confirms schedule changes in the app.';}});
-$('#detail').addEventListener('close',()=>{if(!$('#detail').open){if(state.searchReturn)shellReturnFocus=$('#search-open');state.searchReturn=null;}state.libraryDetailTicket=(state.libraryDetailTicket||0)+1;const field=$('#api-secret');if(field)field.value='';const changed=state.apiChanged,reload=state.apiReturn==='models'&&changed;state.apiReturn='';state.apiChanged=false;if(reload)loadAgentOptions(true).catch(modelFailure);if(changed)attempt(async()=>{state.library=await cachedApi('/api/library');quickMethods();if(state.view==='work')renderWork();});});
+$('#detail').addEventListener('close',()=>{if(!$('#detail').open){state.detailBack=null;if(state.searchReturn)shellReturnFocus=$('#search-open');state.searchReturn=null;}state.libraryDetailTicket=(state.libraryDetailTicket||0)+1;const field=$('#api-secret');if(field)field.value='';const changed=state.apiChanged,reload=state.apiReturn==='models'&&changed;state.apiReturn='';state.apiChanged=false;if(reload)loadAgentOptions(true).catch(modelFailure);if(changed)attempt(async()=>{state.library=await cachedApi('/api/library');quickMethods();if(state.view==='work')renderWork();});});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){state.systemAlert?.close();checkNativeChanges();syncNotifications().catch(()=>{});syncUpdates(true);attempt(()=>renderShell());}});
 window.addEventListener('focus',()=>{state.systemAlert?.close();checkNativeChanges();syncNotifications().catch(()=>{});if(Date.now()-(state.updatePolledAt||0)>1000)syncUpdates(true);attempt(()=>renderShell(false));});
 const notificationTimer=setInterval(()=>{if(!state.closed)syncNotifications(true).catch(()=>{});},8000);
@@ -2089,7 +2110,7 @@ attempt(refresh);
 attempt(syncUpdates);
 const updateTimer=setInterval(()=>{if(!state.closed)syncUpdates();},2000);
 document.addEventListener('input',()=>{state.lastEdit=Date.now();});
-document.addEventListener('change',event=>{if(event.target.id==='library-view'){libraryView=event.target.value;workCategory='';renderWork();}});
+document.addEventListener('change',event=>{if(event.target.id==='memory-goal-scope'){state.memoryGoalScope=event.target.value;renderMemory();}if(event.target.id==='library-view'){libraryView=event.target.value;workCategory='';renderWork();}});
 window.addEventListener('beforeunload',rememberChatDraft);
 
 const usageAlertTimer=setInterval(()=>{if(!document.hidden)checkUsageAlerts();},300000);
@@ -2170,7 +2191,7 @@ async function renderShell(force=true){
   state.shellLoading=true;state.shellPolledAt=Date.now();
   try{
   applyProfile(state.data.profile||state.profile||{});renderComposerConnection();$('#active-workspace-label').textContent=rows('Business')[0]?.title||'Choose a workspace';
-  $('#active-chat-label').textContent=state.chatMeta?.title||'';
+  $('#active-chat-label').textContent=state.view==='home'?(state.chatMeta?.title||''):({business:'Business & memory',files:'Files & media',work:'Library',assistants:'Assistants',tools:'Recurring tasks',sharing:'Share or import'})[state.view]||'';
   $('#sidebar [data-shell-action=sharing]').setAttribute('aria-current',state.view==='sharing'?'page':'false');
   for(const b of document.querySelectorAll('.sidebar-sections [data-view]'))b.setAttribute('aria-current',b.dataset.view===state.view?'page':'false');
   const running=state.data.running_chats||[];$('#background-work').hidden=!running.length;$('#background-work').textContent=running.length+' '+(running.length===1?'chat working':'chats working');
@@ -2412,7 +2433,7 @@ document.addEventListener('click',event=>attempt(async()=>{
   if(b.id==='chat-reconnect-now'){if(window.auraContinuity)await window.auraContinuity.checkRecovery(true);else{state.connectionInterrupted=false;await hydrateConversation();}}
   if(b.id==='restore-standard-view'){await api('/api/interface/reset',{});location.reload();}
   if(b.dataset.searchFile||b.dataset.searchRecord||b.dataset.searchLibrary)rememberSearchResult(b);
-  if(b.id==='detail-search-back'){backToSearchResults();return;}
+  if(b.id==='detail-search-back'){const back=state.detailBack;if(back?.scope===JSON.stringify([state.data?.workspace,state.business]))await back.run();return;}
   if(b.dataset.searchFile||b.dataset.replyFile){$('#search-dialog').close();let ref=b.dataset.searchFile||b.dataset.replyFile;if(b.dataset.replyFile){try{ref=decodeURIComponent(ref);}catch{}}const result=await cachedApi('/api/files?business='+encodeURIComponent(state.business));state.files=result.items;const normalize=p=>{let value=String(p||'').replaceAll('\\','/').replace(/^file:\/\/\/?/i,'').replace(/#L\d+(?:-L?\d+)?$/,'');return /^[a-z]:\//i.test(value)?value.toLowerCase():value;};const f=state.files.find(f=>[f.path,f.local_path,state.data.workspace+'/'+f.path].some(p=>normalize(p)===normalize(ref)));if(f)await fileDetails(f.path);else notice('This file is not in the selected workspace or linked locations. Open Files & media to locate it.',true);}
   if(b.dataset.searchRecord){$('#search-dialog').close();recordDetails(b.dataset.searchRecord);}
   if(b.dataset.searchLibrary){$('#search-dialog').close();await openLibrary(b.dataset.searchLibrary);}
@@ -2437,7 +2458,7 @@ document.addEventListener('keydown',event=>{
     if(event.defaultPrevented)return;
     if(document.querySelector('dialog:modal')){event.preventDefault();const top=document.activeElement?.closest('dialog:modal')||[...document.querySelectorAll('dialog:modal')].at(-1);top.close();return;}
     if(document.body.classList.contains('sidebar-mobile-open')){event.preventDefault();closeMobileSidebar();return;}
-    const open=[...document.querySelectorAll('dialog[open]')].filter(d=>!d.matches(':modal')).sort((a,b)=>Number(b.dataset.opened||0)-Number(a.dataset.opened||0));if(open[0]){event.preventDefault();if(open[0].id==='section-dialog'||open[0].dataset.mode==='page')state.view='home';open[0].close();recordShellRoute();renderShell();}
+    const open=[...document.querySelectorAll('dialog[open]')].filter(d=>!d.matches(':modal')&&d.id!=='section-dialog'&&d.dataset.mode!=='page').sort((a,b)=>Number(b.dataset.opened||0)-Number(a.dataset.opened||0));if(open[0]){event.preventDefault();open[0].close();recordShellRoute();renderShell();}
   }
   if(['ArrowDown','ArrowUp','Home','End'].includes(event.key)&&event.target.closest('#shell-search-results')){event.preventDefault();const items=[...document.querySelectorAll('#shell-search-results .search-result')],index=items.indexOf(document.activeElement),next=event.key==='Home'?0:event.key==='End'?items.length-1:index+(event.key==='ArrowDown'?1:-1);if(next<0)$('#shell-search').focus();else items[Math.min(next,items.length-1)]?.focus();}
   if(event.key==='ArrowDown'&&event.target.id==='shell-search'){event.preventDefault();$('#shell-search-results button')?.focus();}
@@ -2570,7 +2591,6 @@ document.addEventListener('click',event=>attempt(async()=>{
   if(b.id==='model-manage-connections'){$('#chat-model-dialog').close();$('#detail').close();openConnection(true,'connect');}
   if(b.dataset.chatModel){state.chatModelDraft.model=b.dataset.chatModel;paintChatModels();await loadChatModelEfforts();}
   if(b.id==='chat-model-more'){state.chatModelLimit+=60;paintChatModels();}if(b.id==='chat-model-retry'){$('#chat-model-options').innerHTML='<p role="status">Loading this app’s models…</p>';await loadChatModelOptions(true);}
-  if(b.id==='close-detail-page')returnToChat();
   if(b.id==='chat-refresh')await refreshChat();
   if(b.id==='page-refresh'){b.disabled=true;b.textContent='Refreshing…';try{if(state.view==='work')await refreshLibrary();else if(state.view==='tools')await syncSchedules(true);else await refresh();}finally{b.disabled=false;b.textContent='Refresh';}}
   if(b.dataset.copyWorkspace){await navigator.clipboard.writeText(b.dataset.copyWorkspace);$('#workspace-copy-status').textContent='Copied';}

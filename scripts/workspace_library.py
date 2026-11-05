@@ -174,6 +174,11 @@ def organize(rows, group_services=True, scope=''):
     skill_rows=[r for r in rows if r['kind']=='Skill' and any(s.get('plugin') for s in r.get('sources',[]))]
     for item in result:
         if item['kind']=='Plugin':
+            for source in item.get('sources',[]):
+                source['connection_reported']=any(t['kind']=='Tool' and any(
+                    s.get('app')==source.get('app') and s.get('app_id') in item.get('app_ids',[]) and
+                    s.get('status') in {'Reported by app','Enabled in app'} and not s.get('stale')
+                    for s in t.get('sources',[])) for t in result)
             linked={r['key'] for r in skill_rows if any(s.get('plugin') in [item['key'],*item.get('aliases',[])] for s in r['sources'])}
             item['related']=[s['key'] for s in result if s['kind']=='Skill' and linked.intersection([s['key'],*s.get('aliases',[])])]
             item['related'] += [t['key'] for t in result if t['kind']=='Tool' and any(s.get('app_id') in item.get('app_ids',[]) for s in t.get('sources',[]))]

@@ -243,11 +243,14 @@ def library():
         out.append({'title': title, 'path': path.relative_to(PRODUCT_ROOT).as_posix(),
                     'kind': 'Recipe', 'area': path.parent.relative_to(PRODUCT_ROOT / 'recipes').as_posix()})
     from operating_knowledge import installed_playbooks
+    workflows_by_id={r['id']:r for r in out if r.get('id')}
     for row in installed_playbooks():
         out.append({'title':row['title'],'id':row['id'],'kind':'Workflow','subtype':'Playbook','area':row['owner_system'],
                     'description':row['summary'],'guidance':'# '+row['title']+'\n\n'+row['summary']+'\n\nExample request: '+row['example']+
                     ('\n\nStart with workflow '+row['entry_workflow']+' when useful.' if row.get('entry_workflow') else ''),
-                    'key':'workflow:playbook:'+row['id']})
+                    'key':'workflow:playbook:'+row['id'],
+                    'entry':({'key':'workflow:'+workflows_by_id[row['entry_workflow']]['path'],'title':workflows_by_id[row['entry_workflow']]['title']}
+                             if row.get('entry_workflow') in workflows_by_id else None)})
     for row in out:
         area, path = row['area'], row.get('path','')
         if row['kind'] == 'Workflow':
@@ -279,7 +282,7 @@ def library():
                      'information-design':'Information design', 'copy-messaging':'Copy & messaging'}.get(
                          area.split('/')[1] if '/' in area else '', 'Creative direction')
         group=re.sub(r'\bQa\b','QA',group)
-        row.update(category=category, group='Complete business guides' if row.get('subtype')=='Playbook' else group)
+        row.update(category=category, group='Playbooks' if row.get('subtype')=='Playbook' else group)
         row.setdefault('key',row['kind'].lower()+':'+path)
     return out
 

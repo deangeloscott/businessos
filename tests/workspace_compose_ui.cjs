@@ -1,6 +1,6 @@
 /* Exercise the shipped composer module without another browser/build dependency. */
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict'),crypto=require('node:crypto');
-const nodes=new Map(),events={},calls=[],pending=[],newChats=[];let copied='',slowResolve=null,slowGoal=null,reusedGoal='',reusedNewGoal,failGoalLink=false;
+const nodes=new Map(),events={},calls=[],pending=[],newChats=[];let formValues=[['name','Finish the offer brief'],['target','A useful brief']],copied='',slowResolve=null,slowGoal=null,reusedGoal='',reusedNewGoal,failGoalLink=false;
 function node(id){
  if(!nodes.has(id))nodes.set(id,{innerHTML:'',textContent:'',hidden:id==='#composer-menu',isConnected:true,value:'',dataset:{},selectionStart:0,attributes:{},listeners:{},
   addEventListener(name,fn){(this.listeners[name]??=[]).push(fn);},querySelectorAll(){return [];},querySelector(s){return node(id+' '+s);},
@@ -11,8 +11,8 @@ function node(id){
 const state={business:'studio',data:{workspace:'A',connection:{selected:'configured'},records:[{ref:'obj_goal',type:'Objective',title:'Launch',data:{id:'obj_goal',name:'Launch',status:'active'}},{ref:'obj_effort',type:'Objective',title:'Proposal',data:{id:'obj_effort',name:'Proposal',status:'active',extensions:{businessos:{goal:{scope:'chat',workspace_goal_ref:'obj_goal'}}}}}]},chatMeta:null,chat:[],selectedFiles:[],fileDetailTicket:0};
 const fixture={kind:'file',id:'attachments/studio/research.txt',label:'Research',description:'Workspace file'};
 state.pendingComposerDraft={references:[fixture],goal_id:'obj_goal'};
-const context={humanError:error=>error?.message||String(error),window:{},state,URLSearchParams,TextEncoder,Uint8Array,crypto:crypto.webcrypto,setTimeout,clearTimeout,
- FormData:class{constructor(){return [['name','Finish the offer brief'],['target','A useful brief']][Symbol.iterator]();}},cache:{clear(){}},refresh:async()=>{},
+const context={setDetailBack(label,run){context.detailBack=run;},appName:id=>id,humanError:error=>error?.message||String(error),window:{},state,URLSearchParams,TextEncoder,Uint8Array,crypto:crypto.webcrypto,setTimeout,clearTimeout,
+ FormData:class{constructor(){return formValues[Symbol.iterator]();}},cache:{clear(){}},refresh:async()=>{},
  document:{querySelector:()=>null,addEventListener:(name,fn)=>(events[name]??=[]).push(fn)},$:node,
  esc:v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),
  pretty:v=>typeof v==='string'?v:JSON.stringify(v),human:v=>v,empty:v=>`<p>${v}</p>`,notice(){},
@@ -92,6 +92,21 @@ function input(text){const el=node('#request');el.value=text;el.selectionStart=t
  const callCount=calls.length;node('#task-goal').value='obj_goal';node('#task-goal').onchange();assert.equal(calls.length,callCount,'Picking a task goal must not launch an update');assert.equal(node('#task-goal-update').disabled,false,'An explicit update can refresh an existing goal preflight');
  const deletes=calls.filter(c=>c.data?.action==='delete').length;click({goalDelete:'obj_effort',linkedTasks:'0'});await flush();assert.match(node('#detail-content').innerHTML,/data-confirm-delete-goal=/);assert.equal(calls.filter(c=>c.data?.action==='delete').length,deletes,'Opening deletion confirmation must not delete the goal');
  const promotes=calls.filter(c=>c.data?.scope==='workspace').length;click({goalPromote:'obj_effort'});await flush();assert.match(node('#detail-content').innerHTML,/connection to the existing workspace goal will be removed/);assert.equal(calls.filter(c=>c.data?.scope==='workspace').length,promotes,'Promotion must explain the removed parent connection before changing scope');
+ // Workspace goal controls must never silently target a background chat.
+ state.view='business';state.chatMeta={id:'background',goal_id:'obj_goal'};
+ const goalData={goal:{...state.data.records[0].data,target:{metric:'Published landing page',value:1}},chats:[],assets:[],task_links:{},running_chats:[],chat_goals:[]};
+ const pageGoal=ui.openGoal('obj_goal');await flush();slowGoal(goalData);await pageGoal;
+ assert.match(node('#detail-content').innerHTML,/data-goal-start=/);assert.doesNotMatch(node('#detail-content').innerHTML,/data-goal-connect=|Remove from this chat/);
+ const editStructured=ui.editGoal('obj_goal');await flush();slowGoal(goalData);await editStructured;
+ assert.match(node('#detail-content').innerHTML,/textarea name="target"/);assert.match(node('#detail-content').innerHTML,/Published landing page/);
+ formValues=[['name','Launch'],['target',JSON.stringify(goalData.goal.target)]];
+ node('#compose-goal-form').onsubmit({preventDefault(){},currentTarget:node('#compose-goal-form')});await flush();
+ assert.equal(calls.filter(c=>c.path==='/api/goals'&&c.data.action==='save').at(-1).data.target,undefined,'Editing another field must preserve structured completion criteria');
+ slowGoal(goalData);await Promise.all(pending);
+ const localGoal=ui.openGoal('obj_effort');await flush();slowGoal({...goalData,goal:{...state.data.records[1].data,extensions:{businessos:{goal:{scope:'chat',chat_id:'background'}}}},chats:[{id:'background',title:'Background chat'}]});await localGoal;
+ assert.match(node('#detail-content').innerHTML,/data-chat="background">Open chat/,'A chat goal viewed from Business & memory must offer its owner even when it is the background chat');
+ assert.doesNotMatch(node('#detail-content').innerHTML,/data-goal-use=|Remove from this chat/);
+ state.view='home';state.chatMeta=null;
  // Exercise refresh completion, failure and navigation against the shipped functions.
  const appSource=fs.readFileSync(require('node:path').join(require('node:path').dirname(process.argv[2]),'app.js'),'utf8');
  const opened=[],recordContext={state:{data:{records:[{ref:'asset_local',type:'Asset',data:{location_reference:'attachments/studio/work.txt'}},{ref:'obj_goal',type:'Objective',data:{}}]}},attempt:fn=>fn(),openFileWorkspace:ref=>opened.push(ref),window:{auraCompose:{openGoal:ref=>opened.push(ref)}}};
