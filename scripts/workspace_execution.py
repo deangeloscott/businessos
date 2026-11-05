@@ -16,6 +16,9 @@ class Execution:
         self.process = None
         self.interactive = False
         self.permission = 'native'
+        self.native_goal = None
+        self.goal_control = None
+        self.goal_cancelled = False
         self.retry_check_at = None
         self.retry_check = None
         self.on_started = None

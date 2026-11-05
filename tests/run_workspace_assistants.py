@@ -206,7 +206,7 @@ def main():
         rows=[{'type':'event_msg','timestamp':'2026-11-01T12:00:00Z','payload':{'type':'collab_agent_spawn_end','new_thread_id':'child','new_agent_nickname':'Scout','model':'worker','status':'running','prompt':'Research'}},
               {'type':'event_msg','timestamp':'2026-11-01T12:01:00Z','payload':{'type':'collab_waiting_end','statuses':{'child':{'completed':'Done'}}}}]
         transcript.write_text('\n'.join(json.dumps(r) for r in rows),encoding='utf-8')
-        with patch.object(codex,'rpc',return_value=[{'thread':{'path':str(transcript)}}]):
+        with patch.object(codex,'rpc',return_value={'id':'parent','path':str(transcript)}):
             restored=codex.history(['fixture'],root,'parent')['subagents'][0]
             assert restored['name']=='Scout' and restored['model']=='worker' and restored['status']=='complete'
             assert restored['updated']-restored['started']==60

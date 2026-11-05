@@ -39,6 +39,7 @@ TESTS=[
     'tests/run_workspace_assistants.py',
     'tests/run_workspace_coordination.py',
     'tests/run_workspace_composer.py',
+    'tests/run_workspace_native_goals.py',
     'tests/run_workspace_recovery_controls.py',
     'tests/run_workspace_library.py',
     'tests/run_workspace_documents.py',

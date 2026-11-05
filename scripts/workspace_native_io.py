@@ -90,6 +90,7 @@ def codex_run(command,cwd,prompt,native_id,model,effort,update,env,execution,chi
     if native_id:params.update(threadId=native_id)
     final='';usage={};thread=native_id;complete=False;items={};delegation=Tracker(update)
     previous_total=None;turn_tokens={};turn_started=False
+    goal=getattr(execution,'native_goal',None);goal_state=None;turn_finished=False
     with execution.popen([*base_command(command),'app-server'],cwd=cwd,env=env,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,
                          text=True,encoding='utf-8',errors='replace') as process:
         errors=ErrorTail(process,env);send,events,close=channel(process,execution,errors)
@@ -101,7 +102,7 @@ def codex_run(command,cwd,prompt,native_id,model,effort,update,env,execution,chi
                     if thread and p.get('threadId') and p['threadId']!=thread:
                         send({'id':ident,'error':{'code':-32602,'message':'Different thread.'}});continue
                     codex_request(event,execution,send);continue
-                if ident in {'aura-init','aura-thread','aura-turn'} and 'error' in event:
+                if ident in {'aura-init','aura-thread','aura-turn','aura-goal-read','aura-goal-set','aura-goal-check','aura-goal-control'} and 'error' in event:
                     raise ValueError(str(event['error'].get('message','Native request failed.')))
                 if ident=='aura-init':
                     send({'method':'initialized','params':{}})
@@ -112,11 +113,39 @@ def codex_run(command,cwd,prompt,native_id,model,effort,update,env,execution,chi
                     if native_id and thread!=native_id:raise ValueError('Codex returned a different native chat. No request was sent.')
                     effective={k:event['result'][k] for k in ('approvalPolicy','sandbox') if k in event['result']}
                     update(native_id=thread,permission_effective=effective)
+                    if goal:send({'id':'aura-goal-read','method':'thread/goal/get','params':{'threadId':thread}})
+                    else:
+                        turn={'threadId':thread,'input':[{'type':'text','text':prompt}],'model':model}
+                        if effort:turn['effort']=effort
+                        send({'id':'aura-turn','method':'turn/start','params':turn})
+                    execution.protocol_ready=True
+                elif ident=='aura-goal-read':
+                    existing=(event.get('result') or {}).get('goal')
+                    if existing and existing.get('status') not in {'complete','completed'} and existing.get('objective')!=goal['objective']:
+                        raise ValueError('This native chat has a different goal. Review or clear it in Codex before starting this goal.')
+                    values={'threadId':thread,'objective':goal['objective'],'status':'active','origin':'user'}
+                    if goal.get('token_budget') is not None:values['tokenBudget']=goal['token_budget']
+                    send({'id':'aura-goal-set','method':'thread/goal/set','params':values})
+                elif ident=='aura-goal-set':
+                    if execution.goal_cancelled:raise ValueError('The goal changed before work started. Reopen it before continuing.')
+                    goal_state=(event.get('result') or {}).get('goal')
+                    if not goal_state or goal_state.get('status')!='active':raise ValueError('Codex did not activate native goal mode. No goal request was submitted.')
+                    update(native_goal=goal_state)
+                    def control(action):
+                        send({'id':'aura-goal-control','method':'thread/goal/clear' if action=='clear' else 'thread/goal/set',
+                              'params':{'threadId':thread,'origin':'user',**({} if action=='clear' else {'status':'complete' if action=='complete' else 'paused'})}})
+                    execution.goal_control=control
                     turn={'threadId':thread,'input':[{'type':'text','text':prompt}],'model':model}
                     if effort:turn['effort']=effort
                     send({'id':'aura-turn','method':'turn/start','params':turn})
-                    execution.protocol_ready=True
-                elif ident=='aura-turn' or method=='turn/started':turn_started=True
+                elif ident in {'aura-goal-check','aura-goal-control'} or method in {'thread/goal/updated','thread/goal/cleared'} and p.get('threadId')==thread:
+                    observed=(event.get('result') or p).get('goal')
+                    if observed:
+                        goal_state=observed;update(native_goal=observed)
+                    elif ident in {'aura-goal-check','aura-goal-control'} or method=='thread/goal/cleared':
+                        if (goal_state or {}).get('status')!='complete':goal_state={'status':'cleared'};update(native_goal=goal_state)
+                    if turn_finished and (goal_state or {}).get('status')!='active':complete=True;break
+                elif ident=='aura-turn' or method=='turn/started':turn_started=True;turn_finished=False
                 elif method=='serverRequest/resolved':execution.requests.resolve(p.get('requestId'))
                 elif method=='thread/tokenUsage/updated' and p.get('threadId')==thread:
                     token=p.get('tokenUsage') or {};last=token.get('last') or {}
@@ -154,11 +183,13 @@ def codex_run(command,cwd,prompt,native_id,model,effort,update,env,execution,chi
                 elif method=='turn/completed':
                     turn=p.get('turn') or {}
                     if turn.get('status')!='completed':raise ValueError(str((turn.get('error') or {}).get('message') or 'The native turn did not complete.'))
-                    complete=True;break
+                    turn_finished=True
+                    if not goal or (goal_state or {}).get('status')!='active':complete=True;break
+                    send({'id':'aura-goal-check','method':'thread/goal/get','params':{'threadId':thread}})
                 elif method=='error' and not p.get('willRetry'):raise ValueError(str((p.get('error') or {}).get('message') or 'The native app reported an error.'))
             if not complete:raise ValueError(errors.message('Codex disconnected before completing. Open the native chat; this request was not resubmitted.'))
         finally:
-            close();execution.requests.close();ErrorTail.close_input(process)
+            execution.goal_control=None;close();execution.requests.close();ErrorTail.close_input(process)
             try:process.wait(timeout=3)
             except subprocess.TimeoutExpired:process.terminate();process.wait(timeout=5)
     execution.check()
@@ -169,6 +200,7 @@ def codex_run(command,cwd,prompt,native_id,model,effort,update,env,execution,chi
 def agent_lines(process,kind,prompt,native_id,execution,errors):
     """Yield ordinary native events to the existing reply/usage/delegation parser."""
     send,events,close=channel(process,execution,errors);finished=False
+    goal=getattr(execution,'native_goal',None);last_goal_status=None
     def retry_check():
         reason=execution.continuation_guard()
         if reason:
@@ -231,8 +263,32 @@ def agent_lines(process,kind,prompt,native_id,execution,errors):
                     if kind=='omp':
                         send({'id':'aura-ask','type':'set_ask_dialog','enabled':True})
                         send({'id':'aura-children','type':'set_subagent_subscription','mode':'progress'})
-                    send({'id':'aura-prompt','type':'prompt','message':prompt})
+                    if goal and kind=='omp':
+                        existing=state.get('goal')
+                        if existing and existing.get('status') not in {'complete','completed'} and not existing.get('objective','').startswith(goal['objective']+'\n\n'):
+                            raise ValueError('OMP already has a different native goal in this chat. Review or drop it in OMP before starting another goal.')
+                        if existing and existing.get('status') not in {'complete','completed'} and goal.get('token_budget') is not None and existing.get('tokenBudget')!=goal['token_budget']:
+                            raise ValueError('OMP keeps the existing native goal budget when resuming. Keep that budget or drop the native goal in OMP before choosing a different one.')
+                        values={'id':'aura-goal-create','type':'goal','op':'resume' if existing and existing.get('status') not in {'complete','completed'} else 'create','objective':goal['objective']+'\n\n'+prompt}
+                        if goal.get('token_budget') is not None:values['token_budget']=goal['token_budget']
+                        send(values)
+                        execution.goal_control=lambda action:send({'id':'aura-goal-control','type':'goal','op':'pause' if action=='pause' else 'drop'})
+                    else:send({'id':'aura-prompt','type':'prompt','message':prompt})
                     execution.protocol_ready=True
+                elif typ=='response' and event.get('id') in {'aura-goal-create','aura-goal-control'}:
+                    if not event.get('success'):raise ValueError(event.get('error') or 'The native app could not change this goal.')
+                    value=(event.get('data') or {}).get('goal')
+                    if event['id']=='aura-goal-create' and not value:raise ValueError('OMP did not confirm native goal activation.')
+                    if value:
+                        last_goal_status=value.get('status');yield json.dumps({'type':'aura_native_goal','goal':value})
+                    elif event['id']=='aura-goal-control' and last_goal_status not in {'complete','completed'}:
+                        last_goal_status='cleared';yield json.dumps({'type':'aura_native_goal','goal':{'status':'cleared'}})
+                elif typ=='goal_updated' and goal:
+                    value=event.get('goal') or (event.get('data') or {}).get('goal')
+                    if value:
+                        last_goal_status=value.get('status');yield json.dumps({'type':'aura_native_goal','goal':value})
+                    elif last_goal_status not in {'complete','completed'}:
+                        last_goal_status='cleared';yield json.dumps({'type':'aura_native_goal','goal':{'status':'cleared'}})
                 elif typ=='response' and event.get('id')=='aura-prompt' and not event.get('success'):raise ValueError(event.get('error','The native app rejected this request.'))
                 elif typ=='extension_ui_request':
                     ident=event.get('id');method=event.get('method')
@@ -267,6 +323,7 @@ def agent_lines(process,kind,prompt,native_id,execution,errors):
                         finished=True;break
         if not finished:raise ValueError(errors.message('The native connection closed before completing. Open its saved chat before retrying.'))
     finally:
+        execution.goal_control=None
         execution.retry_check_at=None
         close();execution.requests.close();errors.close_input(process)
         try:process.wait(timeout=3)

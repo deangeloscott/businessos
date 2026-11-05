@@ -170,6 +170,7 @@ def save(bid,data):
     remove=[k for k in ('target','horizon') if k in data and not str(data[k]).strip() and old and k in old]
     content={k:v for k,v in content.items() if k not in remove}
     if not content and not remove:raise ValueError('Choose a goal change to save.')
+    if old and not remove and all(old.get(k)==v for k,v in content.items()):return old
     info['revision']=time.time_ns();content['extensions']=extensions(old or {},info)
     item={'object_ref':ident} if old else {'object_type':'Objective'}
     result=remember(bid,{'objects':[{**item,'content':content,**({'replace_extensions':True} if old and 'extensions' in content else {}),**({'remove_fields':remove} if remove else {})}]})
@@ -229,7 +230,7 @@ def select_goals(items,show='active',scope_filter='workspace',chat_id=None):
     return [g for g in items if matches(g)]
 
 
-def inventory(app,bid,ident=None,show='active',scope_filter='workspace',chat_id=None):
+def inventory(app,bid,ident=None,show='active',scope_filter='workspace',chat_id=None,connection_kind=None):
     from workspace_ui import records
     rows=app.cached_read(('context-records',bid),lambda:records(bid)[0],seconds=3)
     all_items=[r['data'] for r in rows if r['type']=='Objective'];selected=find(bid,ident,include_deleted=True) if ident else None
@@ -251,24 +252,50 @@ def inventory(app,bid,ident=None,show='active',scope_filter='workspace',chat_id=
         owner=(obj.get('extensions') or {}).get('businessos',{}).get('goal_ref')
         if ident and row['type']=='Asset' and owner in linked_ids:assets.append({'id':obj['id'],'name':obj.get('business_role') or obj['id'],'path':obj.get('location_reference',''),'goal_id':owner})
     deleted_items=select_goals(choices,'deleted',scope_filter) if show=='all' else []
+    owner=next((c for c in app.preferences['chats'] if selected and c['id']==metadata(selected).get('chat_id') and c['business_id']==bid and Path(c.get('workspace') or app.workspace_path).resolve()==Path(app.workspace_path).resolve()),None)
+    native_support=None
+    if selected and scope(selected)=='chat':
+        from workspace_native_goals import support
+        from workspace_ui import installed_agents
+        kind=owner['agent'] if owner else connection_kind or app.connection_kind
+        agent=(getattr(app,'configured_agent',None) or {}) if kind=='configured' else next((a for a in installed_agents() if a['id']==kind),{})
+        native_support=support(kind,agent)
+        if not agent.get('argv'):native_support={**native_support,'supported':False,'reason':'Connect this chat’s AI app before starting native goal mode.'}
+
     return {'items':items,'deleted_items':deleted_items,'goal':selected,'scope':scope(selected) if selected else None,'deleted':deleted(selected) if selected else False,
             'workspace_goal':next(iter(related(bid,selected)[1:]),None) if selected else None,
             'chat_goals':[g for g in all_items if selected and scope(selected)=='workspace' and scope(g)=='chat' and metadata(g).get('workspace_goal_ref')==ident and not deleted(g)],
-            'goal_basis':continuation_basis(bid,selected) if selected else None,'chats':chats,'task_links':{task:goal for task,goal in links.items() if not ident or goal==ident},'assets':assets,
+            'goal_basis':continuation_basis(bid,selected) if selected else None,'native_goal_support':native_support,'native_goal':owner.get('native_goal') if owner else None,'chats':chats,'task_links':{task:goal for task,goal in links.items() if not ident or goal==ident},'assets':assets,
             'running_chats':[j['chat_id'] for j in app.running_jobs(workspace_root()) if j['business_id']==bid],'workspace':app.workspace_path}
 
 
 def mutate(app,bid,data):
     """One live lifecycle path for current UI/API and compatible older interfaces."""
     action=data.get('action','save');goal=None
-    if data.get('basis') and data.get('id') and action in {'save','delete','restore'}:
+    if data.get('basis') and data.get('id') and action in {'save','delete','restore','native_start'}:
         current=find(bid,data['id'],include_deleted=True)
         if continuation_basis(bid,current)!=data['basis']:raise ValueError('This goal changed elsewhere. Reopen it to review the latest version before changing it.')
+    if action=='native_start':
+        goal=find(bid,data.get('id'));owner=metadata(goal).get('chat_id')
+        if scope(goal)!='chat':raise ValueError('Create a chat goal for this workspace outcome before starting native work.')
+        reason=review_reason(bid,goal['id'])
+        if reason:raise ValueError(reason)
+        job=app.start_chat(bid,'Work toward this chat goal and verify its completion criteria.',[],chat_id=owner or '',connection=data.get('connection') if not owner else None,goal_id=goal['id'],native_goal={k:data[k] for k in ('token_budget',) if k in data})
+        return {'job':job,'chat_id':job['chat_id']}
     if action=='save':
         if data.get('chat_id') and not any(c['id']==data['chat_id'] and c['business_id']==bid and c.get('workspace',app.workspace_path)==app.workspace_path for c in app.preferences['chats']):raise ValueError('Choose a chat in this workspace and business.')
+        prior=find(bid,data['id']) if data.get('id') else None
         goal=save(bid,data);changed(app,bid,goal['id'])
+        semantic_change=bool(prior and (any(prior.get(k)!=goal.get(k) for k in ('name','target')) or scope(prior)!=scope(goal)))
+        if data.get('status') in {'paused','completed'} or semantic_change:
+            from workspace_native_goals import control
+            control(app,bid,prior or goal,'clear' if semantic_change else 'complete' if data.get('status')=='completed' else 'pause')
     elif action in {'delete','restore'}:
-        goal=remove(bid,data.get('id'),restore=action=='restore');changed(app,bid,goal['id'],remove_links=action=='delete')
+        goal=remove(bid,data.get('id'),restore=action=='restore')
+        if action=='delete':
+            from workspace_native_goals import control
+            control(app,bid,goal,'clear')
+        changed(app,bid,goal['id'],remove_links=action=='delete')
     elif action=='link_chat':link_chat(app.preferences,bid,data.get('chat_id'),data.get('goal_id'))
     elif action=='continuation':set_continuation(app.preferences,bid,data.get('chat_id'),data.get('mode','manual'),data.get('until'))
     elif action=='link_asset':link_asset(bid,data.get('asset_id'),data.get('goal_id'))
@@ -331,9 +358,9 @@ def live_change(url,bid,payload,route='/api/goals'):
 
 
 def main():
-    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('action',choices=['list','show','save','check','link-chat','link-asset','continuation','delete','restore'])
+    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('action',choices=['list','show','save','check','link-chat','link-asset','continuation','delete','restore','native-start','pause','resume','complete'])
     parser.add_argument('--workspace',type=Path,default=workspace_root());parser.add_argument('--business-id',required=True);parser.add_argument('--id');parser.add_argument('--basis');parser.add_argument('--input',type=Path);parser.add_argument('--json',action='store_true')
-    parser.add_argument('--chat');parser.add_argument('--asset');parser.add_argument('--mode',choices=['manual','native'],default='manual');parser.add_argument('--until',type=float)
+    parser.add_argument('--token-budget',type=int);parser.add_argument('--chat');parser.add_argument('--asset');parser.add_argument('--mode',choices=['manual','native'],default='manual');parser.add_argument('--until',type=float)
     parser.add_argument('--scope',choices=['workspace','chat','all'],default='workspace');parser.add_argument('--show',choices=['active','current','completed','deleted','all'],default='active')
     parser.add_argument('--url',default='http://127.0.0.1:4187',help='Running local Aura address for chat links, deletion/recovery and continuation choices')
     args=parser.parse_args()
@@ -341,6 +368,8 @@ def main():
         if args.action=='list' and args.chat:
             from urllib.parse import urlencode
             result=live_change(args.url,args.business_id,None,'/api/goals?'+urlencode({'business':args.business_id,'chat_id':args.chat,'scope':args.scope,'show':args.show}))
+        elif args.action in {'pause','resume','complete'}:result=live_change(args.url,args.business_id,{'action':'save','id':args.id,'status':{'pause':'paused','resume':'active','complete':'completed'}[args.action]})
+        elif args.action=='native-start':result=live_change(args.url,args.business_id,{'action':'native_start','id':args.id,**({'token_budget':args.token_budget} if args.token_budget is not None else {})})
         elif args.action in {'delete','restore'}:result=live_change(args.url,args.business_id,{'action':args.action,'id':args.id})
         elif args.action in {'link-chat','link-asset','continuation'}:
             result=link_asset(args.business_id,args.asset,args.id) if args.action=='link-asset' else live_change(args.url,args.business_id,

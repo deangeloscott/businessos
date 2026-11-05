@@ -54,6 +54,8 @@ import workspace_permissions
 import workspace_archive
 import workspace_context
 import workspace_goals
+import workspace_native_goals
+import workspace_chat_organization
 import workspace_recovery
 from configure_workspace import configure
 from workspace_execution import Execution, Stopped
@@ -850,7 +852,7 @@ class Workspace:
         command = list(choice['argv'])
         if choice['id'] == 'codex':
             command[-1:-1] = ['--sandbox', 'workspace-write' if workspace_write else 'read-only']
-        self.agent = {'name': choice['name'], 'argv': command}
+        self.agent = {'name': choice['name'], 'argv': command,**({'native_goal':copy.deepcopy(choice['native_goal'])} if choice.get('native_goal') else {})}
         self.connection_kind = choice['id']
         self.handoff = False
         self.verified_business = None
@@ -1889,13 +1891,14 @@ class Workspace:
         threading.Thread(target=work,daemon=True).start()
         return self.schedule_state(bid)
 
-    def start_chat(self, bid, text, history, welcome=False, schedule_id=None, organization_id=None, keep_warm_id=None, chat_id=None, files=None, connection=None, assistant_id=None,references=None,goal_id=None,permission_mode=None):
+    def start_chat(self, bid, text, history, welcome=False, schedule_id=None, organization_id=None, keep_warm_id=None, chat_id=None, files=None, connection=None, assistant_id=None,references=None,goal_id=None,permission_mode=None,native_goal=None):
         with self.lock:
             owner=copy.copy(self)
             owner.agent=dict(self.agent) if self.agent else None
             owner._view_owner=self
             owner._request_references=references
             owner._request_goal=goal_id
+            owner._request_native_goal=native_goal
             existing=self.active_chat(bid) if chat_id is None else next((c for c in self.preferences['chats'] if c['id']==chat_id and c['business_id']==bid),None)
             resolved_chat_id=chat_id
             if chat_id is None and existing and existing['agent']!=self.connection_kind:
@@ -1981,6 +1984,11 @@ class Workspace:
             goal_id=getattr(self,'_request_goal',None)
             if goal_id is None:goal_id=chat.get('goal_id','') if chat else ''
             if goal_id:workspace_goals.check_chat(bid,goal_id,chat['id'] if chat else '')
+            native_request=getattr(self,'_request_native_goal',None)
+            native_spec=None
+            if native_request is not None:
+                if not isinstance(native_request,dict) or not goal_id:raise ValueError('Choose a chat goal before starting native goal mode.')
+                native_spec=workspace_native_goals.spec(workspace_goals.find(bid,goal_id),native_request,self.connection_kind,self.agent)
             references=getattr(self,'_request_references',None)
             if references is None:references=[]
             if not isinstance(references,list):raise ValueError('Choose valid context references.')
@@ -2039,10 +2047,12 @@ class Workspace:
                     try:self.save_preferences()
                     except OSError:job['recovery_warning']='Work is running, but its recovery reference could not be saved.'
             execution.on_started=started
+            execution.connection=dict(saved_connection)
+            execution.native_goal=native_spec
             execution.interactive = native
             execution.permission = workspace_permissions.validate(self.connection_kind,chat.get('permission_mode') or self.preferences.get('harness_permissions',{}).get(self.connection_kind,'native'))
             job['permissions']=workspace_permissions.describe(self.connection_kind,execution.permission)
-            if goal_id:
+            if goal_id and not native_spec:
                 goal=workspace_goals.find(bid,goal_id)
                 job['goal_basis']=workspace_goals.continuation_basis(bid,goal)
                 execution.continuation=dict(chat.get('continuation') or {'mode':'manual'})
@@ -2103,6 +2113,8 @@ class Workspace:
                             except OSError:job['recovery_warning']='Work is running, but its recovery reference could not be saved.'
                     if values.get('native_id') and not job.get('native_id'):
                         values.setdefault('progress', 'Connected. Waiting for your AI')
+                    if 'native_goal' in values and native_spec:
+                        workspace_native_goals.observe(self,bid,chat,native_spec,values['native_goal'])
                     if 'reply' in values:
                         values['reply'] = self.connections.redact(workspace_chats.clean(values['reply'][-100000:],streaming=True))
                     if 'requests' in values:
@@ -2144,7 +2156,11 @@ class Workspace:
                     except (OSError,ValueError):job['history_warning']='Local history could not be updated for this request.'
                     try:workspace_activity.record(bid,job,chat)
                     except (OSError,ValueError):job['activity_warning']='Work status could not be saved locally.'
-                    if native:
+                    if native_spec and native_spec['protocol']=='aura-goal-v1':
+                        result=workspace_native_goals.custom_run(self.agent['native_goal']['argv'],native_root,env,prompt,native_id,execution,update)
+                        output=result['reply'];stderr='';code=0
+                        if result.get('native_id'):update(native_id=result['native_id'])
+                    elif native:
                         resumed_id=native_id
                         if chat.get('relocate_session'):
                             update(progress='Reconnecting your saved conversation')
@@ -2229,6 +2245,10 @@ class Workspace:
                             uncertain=kind=='hermes' and job['status']=='stopped'
                             if uncertain:job['stop_note']='The local Hermes connection stopped. Hermes may still be working in its gateway; check its outcome before continuing.'
                             if job['status'] in {'complete','stopped'}:chat.pop('continuation',None)
+                            if native_spec and job['status']=='stopped':
+                                current_goal=workspace_goals.find(bid,native_spec['id'],include_deleted=True)
+                                if not workspace_goals.deleted(current_goal) and current_goal.get('status')=='active':current_goal=workspace_goals.save(bid,{'id':current_goal['id'],'status':'paused'});self.read_cache.clear()
+                                workspace_native_goals.control(self,bid,current_goal,'pause')
                             chat.update(status='working' if uncertain else job['status'], updated=job['updated'])
                             workspace_recovery.finish(chat,job)
                             if job.get('goal_id'):
@@ -2378,7 +2398,7 @@ def handler_for(app):
                 elif route == '/api/context':
                     self.send(200,workspace_context.inventory(app,selected(query.get('business')),query.get('q',''),query.get('kind',''),query.get('limit',20),query.get('assistant')))
                 elif route == '/api/goals':
-                    self.send(200,workspace_goals.inventory(app,selected(query.get('business')),query.get('id'),query.get('show','active'),query.get('scope','workspace'),query.get('chat_id')))
+                    self.send(200,workspace_goals.inventory(app,selected(query.get('business')),query.get('id'),query.get('show','active'),query.get('scope','workspace'),query.get('chat_id'),query.get('kind')))
                 elif route == '/api/activity/result':
                     self.send(200,workspace_activity.result(selected(query.get('business')),query.get('chat_id'),query.get('max_chars',6000)))
                 elif route == '/api/activity':
@@ -2462,7 +2482,7 @@ def handler_for(app):
                     with app.lock:self.send(200,app.assistants(selected(query.get('business'))))
                 elif route == '/api/chats':
                     bid = selected(query.get('business'))
-                    self.send(200, {'workspace':str(workspace_root()),'items': sorted(({k:v for k,v in c.items() if k not in {'brief_token','subagents'}} for c in app.preferences['chats'] if c['business_id'] == bid),key=lambda c:c.get('updated',0),reverse=True),
+                    self.send(200, {'workspace':str(workspace_root()),'items': sorted(({k:v for k,v in c.items() if k not in {'brief_token','subagents'}} for c in app.preferences['chats'] if c['business_id'] == bid),key=workspace_chat_organization.sort_key,reverse=True),
                                     'active': app.preferences['active_chats'].get(bid), 'running': [{k:j.get(k) for k in ('id','chat_id','workspace','business_id','status','agent','model')} for j in app.running_jobs()]})
                 elif route == '/api/chats/native':
                     self.send(200,app.native_chats(selected(query.get('business')),query.get('kind'),query.get('id')))
@@ -2636,7 +2656,7 @@ def handler_for(app):
                         raise ValueError('Workspace organization is running. Wait or stop it before making changes.')
                     if app.schedule_job and app.schedule_job['status']=='working' and (route in {'/api/lifecycle','/api/workspaces/open','/api/workspaces/create','/api/workspaces/relocate','/api/workspaces/restore'} or route.startswith('/api/organization/')):
                         raise ValueError('Wait for task setup or stop it before changing workspaces or restarting AURA.')
-                    if app.running_jobs(None if route in {'/api/lifecycle','/api/workspaces/relocate','/api/workspaces/restore'} else workspace_root()) and route not in {'/api/goals','/api/chat/answer','/api/permissions','/api/assistants','/api/preferences','/api/profile','/api/interface/reset','/api/chats/recover','/api/chats/archive','/api/chats/reconnect','/api/notifications','/api/chat','/api/chat/stop','/api/chats/new','/api/chats/open','/api/chats/rename','/api/chats/model','/api/chats/personalization','/api/chats/context','/api/connect','/api/workspaces/open','/api/usage/settings','/api/updates','/api/schedules/action','/api/schedules/stop'}:
+                    if app.running_jobs(None if route in {'/api/lifecycle','/api/workspaces/relocate','/api/workspaces/restore'} else workspace_root()) and route not in {'/api/goals','/api/chat/answer','/api/permissions','/api/assistants','/api/preferences','/api/profile','/api/interface/reset','/api/chats/recover','/api/chats/archive','/api/chats/reconnect','/api/notifications','/api/chat','/api/chat/stop','/api/chats/new','/api/chats/open','/api/chats/rename','/api/chats/organize','/api/chats/model','/api/chats/personalization','/api/chats/context','/api/connect','/api/workspaces/open','/api/usage/settings','/api/updates','/api/schedules/action','/api/schedules/stop'}:
                         raise ValueError('Your agent is working. Wait for its reply before changing this workspace.')
                     if route in {'/api/preferences','/api/locations'}:
                         app.load_portable()
@@ -3062,6 +3082,8 @@ def handler_for(app):
                         app.preferences['active_chats'][bid] = None
                         app.save_preferences()
                         self.send(200, {'ok': True})
+                    elif route == '/api/chats/organize':
+                        self.send(200,workspace_chat_organization.mutate(app,selected(data.get('business')),data))
                     elif route == '/api/chats/rename':
                         bid=selected(data.get('business'))
                         chat=next((c for c in app.preferences['chats'] if c['id']==data.get('id') and c['business_id']==bid),None)

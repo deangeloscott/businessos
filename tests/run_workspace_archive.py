@@ -76,7 +76,7 @@ def main():
                 permission_cli('--save','--mode','inherit');assert permission_cli('--current')['mode']=='plan'
                 before=len(app.preferences['chats']);call('/api/chat',{'business':bid,'chat_id':'','text':'Do work','permission_mode':'invented'},400);assert len(app.preferences['chats'])==before
             native=base/'antigravity_fixture.py'
-            native.write_text("import sys,json;assert '--print' in sys.argv;assert '--mode' in sys.argv and 'plan' in sys.argv;sys.stdin.read();print('Permission required for tool command(git): denied in headless mode',file=sys.stderr);print(json.dumps({'event':'result','result':{'conversation_id':'native-fixture','status':'SUCCESS','response':'Read-only findings'}}))",encoding='utf-8')
+            native.write_text("import sys,json;assert '--input-format' in sys.argv and 'stream-json' in sys.argv;assert '--print' not in sys.argv;assert '--mode' in sys.argv and 'plan' in sys.argv;sys.stdin.read();print('Permission required for tool command(git): denied in headless mode',file=sys.stderr);print(json.dumps({'event':'result','result':{'conversation_id':'native-fixture','status':'SUCCESS','response':'Read-only findings'}}))",encoding='utf-8')
             updates=[]
             from workspace_execution import Execution
             execution=Execution();execution.permission='plan';execution.interactive=False

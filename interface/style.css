@@ -486,3 +486,8 @@ input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px soli
 @media(max-width:600px){#detail-title{font-size:20px}.goal-actions>.inline-actions{gap:8px}.goal-linked-summary{flex-basis:100%}.goal-status{font-size:10px}}
 
 .message.user>strong{display:block;font-size:0;margin:0 0 7px}.message.user>strong time{font-size:10px;margin-left:0;color:var(--muted)}
+
+.chat-project-form{display:flex;align-items:end;gap:12px;margin:20px 0}.chat-project-form label{flex:1;min-width:0;font-size:12px;display:grid;gap:6px}.chat-project-form input{padding:9px 11px}.chat-project-form .secondary{flex:none}
+.chat-project-filter{display:flex;align-items:center;gap:10px;font-size:12px;margin:12px 0}.chat-project-filter select{width:auto;max-width:75%}
+.chat-pin{font-size:15px;color:var(--accent);flex:none}.sidebar-chat-group-label{font-size:10px;font-weight:500;color:var(--muted);margin:15px 10px 5px}.sidebar-project{margin:10px 0}.sidebar-project>summary{padding:5px 10px;color:var(--muted);font-size:11px;overflow-wrap:anywhere;cursor:pointer}.sidebar-project .sidebar-chat-row{margin-left:6px}
+@media(max-width:500px){.chat-project-form{flex-wrap:wrap}.chat-project-form label{flex-basis:100%}}

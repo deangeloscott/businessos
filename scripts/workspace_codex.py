@@ -16,7 +16,7 @@ def base_command(command):
     return command[:command.index('exec')]
 
 
-def rpc(command, calls, cwd, env=None):
+def rpc(command, calls, cwd, env=None, experimental=False):
     """Read host metadata without inference or changing its shared settings."""
     events = queue.Queue()
     with subprocess.Popen([*base_command(command), 'app-server'], cwd=cwd, env=env,
@@ -51,7 +51,7 @@ def rpc(command, calls, cwd, env=None):
             raise ValueError(errors.message('Codex did not return its settings in time. Open Codex and try again.'))
 
         try:
-            send({'id': 0, 'method': 'initialize', 'params': {'clientInfo': {'name': 'aura_workspace', 'version': '1.0'}}})
+            send({'id': 0, 'method': 'initialize', 'params': {'clientInfo': {'name': 'aura_workspace', 'version': '1.0'},**({'capabilities':{'experimentalApi':True}} if experimental else {})}})
             response(0)
             send({'method': 'initialized', 'params': {}})
             number=0

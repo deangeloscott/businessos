@@ -385,7 +385,7 @@ Workspace pages use the available content width and scroll at the page level. Th
 
 Library details keep location, type, description and Favorite together near the title. Playbooks are labeled separately from Workflow documents: a Playbook is a starting guide with an entry Workflow, not a duplicate document. Where available, its entry Workflow is a direct link. Previews omit repeated top-level titles while edits retain the complete source. Opening an included tool, skill or Workflow provides a contextual Back control to its parent item. Native catalog matching can show Connection listed for a plugin with a matching app connection from the same harness; Local copy means only package files were found. Neither label claims that all actions are authorized. Tool/plugin details omit generic execution boilerplate.
 
-Business & memory lists goals directly with Current, Completed and Deleted filters, a type filter when chat goals exist, and completion criteria in the result rows. A workspace goal is a saved cross-chat outcome; a chat goal belongs to one conversation and can contribute to a workspace goal. Selecting a goal adds that context to requests sent through Aura. It does not enable a native harness goal mode or start an autonomous work loop. The native app owns execution; the optional Pi/OMP continuation policy only permits its existing native retries until an explicit expiry.
+Business & memory lists goals directly with Current, Completed and Deleted filters, a type filter when chat goals exist, and completion criteria in the result rows. A workspace goal is a saved cross-chat outcome; a chat goal belongs to one conversation and can contribute to a workspace goal. Selecting a goal adds that context to requests sent through Aura. Saving or linking a goal does not start work. For a chat goal, Work toward goal can start the connected harness’s native goal mode as described below. The native app owns execution; the optional Pi/OMP continuation policy only permits its existing native retries until an explicit expiry.
 
 Workspace goal details offer Start a chat and an explicit Link a chat picker. Controls referring to This chat only appear while actually in the chat view, so browsing Business & memory cannot silently change a background chat. Starting a chat prepares an empty draft with the goal attached; it submits no model request. Saved files are explicit relationships recorded by the user or AI when preserving an Asset; Aura does not infer goal ownership from every file creation. Scheduled tasks remain explicit linked native tasks.
 
@@ -397,3 +397,46 @@ Favorites use an outlined star when off and a filled gold star when on. File and
 Goal detail headers show the current status beside the name. Edit, completion and pause/resume actions are visible; Delete is a separate icon with the existing confirmation. Linked chat rows show their actual saved descriptions, limited to two lines, rather than a generic Reply ready label. Chat message timestamps include the local calendar date and time.
 
 Saved context's Add action opens one dedicated Business context chat per business and workspace, using the same chat primitive as personalization. The authenticated `POST /api/chats/context` endpoint prepares or finds it without submitting a model request or changing the active chat; the UI then explicitly opens it and preserves the prior chat draft. Existing context-chat drafts are retained. Archiving the context chat leaves it archived; the next Add action creates a fresh context chat. Durable facts still live in canonical memory and can be saved from any chat or native entry point; this chat is a convenient place to discuss them, not a second memory store.
+
+
+### Native chat goals
+
+A workspace goal is a shared outcome. A chat goal is one assignment in one conversation and may contribute to a workspace goal. If a workspace goal is linked to the current chat, open it and choose **Set a chat goal** to define that conversation’s assignment under the shared outcome. Open a chat goal and choose **Work toward goal**, review its optional native token budget when supported, then choose **Start work**. An unbound chat goal starts a new chat; an existing chat goal uses its own chat and connection. Ordinary Send still sends the user's request with its selected goal context. Merely saving, linking, reopening or viewing a goal never starts autonomous work.
+
+The native harness owns every continuation, evaluation, permission decision, usage limit and stop condition. Aura does not repeatedly re-prompt the model or add a goal scheduler. Codex uses `thread/goal/get`, `thread/goal/set`, `thread/goal/updated` and `thread/goal/clear`. OMP uses its `goal` RPC and settlement events; its goal/RPC continuation settings are enabled with a temporary per-run overlay, leaving the user's settings intact. Both retain native usage accounting and accept an explicit token budget. A missing budget leaves the native default intact.
+
+Claude Code uses its documented non-interactive `/goal` command, with Aura request context supplied through its append-system-prompt file option. Antigravity uses `/goal` over its documented stream-JSON input. These connections do not currently return a structured goal completion verdict to Aura, so the UI requests review after the native invocation ends; a successful process or final reply never fabricates a completed goal. Claude and Antigravity goal cancellation stops the Aura-owned process. They may retain native session state; review it before continuing in another surface.
+
+Native completion evidence updates only the linked chat goal. Native pause, blocking and budget/usage limits pause that chat goal; later native completion can settle the same run. Revision checks prevent a late result from undoing a user's newer pause, edit, deletion or completion. A parent workspace goal is never automatically completed. Editing a goal’s outcome stops and clears the previous native assignment; starting work again applies the new outcome. Saving unchanged goal fields preserves the existing revision. Pausing/completing/deleting a goal controls its matching live native run; idle Codex/OMP sessions use native metadata operations without sending a prompt. If native confirmation fails, the UI explicitly requests review and retains technical details locally. Stop cancels the request's process tree and pauses its chat goal. Restarting Aura does not silently resume autonomous work.
+
+Pi has no standard goal API in its current connection. Hermes has native persistent goals, but its single-query/ACP interface does not expose that lifecycle; Aura does not submit a literal `/goal` as ordinary model text and call it native support. Both retain useful goal context, and installations with an extension or another interface can supply the custom adapter below. Native support can vary by installed version, settings and workspace trust. An unsupported native operation fails visibly instead of silently switching to a synthetic Aura loop.
+
+The shared goal API accepts `POST /api/goals` with `action: "native_start"`, `id` and optional positive `token_budget`. CLI access uses `scripts/workspace_goals.py native-start --workspace <folder> --business-id <id> --id <goal> [--token-budget <n>] [--url <Aura address>]`. Live `pause`, `resume`, `complete`, `delete` and `restore` actions use the same canonical lifecycle. Resume makes the saved goal active; Work toward goal/native-start is the explicit execution action. These APIs work with Aura running without a browser. Low-level offline `save` remains a canonical memory edit, not an execution command.
+
+### Custom harness goal adapter
+
+An existing machine-owned `--agent-file` can include:
+
+```json
+{
+  "name": "My harness",
+  "argv": ["python", "my_chat_bridge.py"],
+  "native_goal": {
+    "protocol": "aura-goal-v1",
+    "argv": ["python", "my_goal_bridge.py"],
+    "token_budget": true
+  }
+}
+```
+
+Use commands and paths appropriate to the local installation. No provider, model, OS, language or account is inferred from this example. The adapter is trusted local connection configuration; imported business records cannot install or replace it.
+
+Aura starts the goal adapter as the existing request-owned process and sends one JSON line with `action: "run"`, `goal` (ID, objective and optional token budget), `prompt`, `workspace`, `native_id`, selected `connection` and `permission_mode`. The bridge must activate the real harness goal, preserve its native chat identity and forward its own native evidence. It emits JSON lines: `type: "session", id`; `type: "reply", text` (current complete reply); `type: "goal", status` plus optional reason/usage; and finally `type: "result", status: "complete"`. A result completes the request, not the goal; only a separate native `goal` event with `complete` or `completed` can complete the canonical chat goal. An error emits `type: "error", message`. Other native stops may report `paused`, `blocked`, `budget-limited` or `usage-limited`.
+
+While live, the same stdin accepts `action: "pause"`, `"complete"` or `"clear"`. For an idle saved session, the bridge is invoked with one action line containing its `native_id` and objective; it must return a native `goal` acknowledgement without starting inference. It must refuse unsupported operations and different native goals rather than invent successful acknowledgements. The bridge owns protocol adaptation and continuation; Aura only supervises that one process. A new harness can use this interface without editing Aura's built-in harness lists.
+
+### Chat pins and projects
+
+Chat details offers Pin/Unpin and a Project field. Enter a new project label, choose an existing label, or clear it to remove the grouping. The sidebar shows pinned chats first, including pins outside projects, followed by collapsible project groups and other chats. Archived chats remain outside that list. All chats can filter by project. Pins and project labels live on the existing workspace chat records; they do not move files, change native working directories, copy conversations, or claim to synchronize a native app's project system.
+
+`POST /api/chats/organize` accepts a chat `id` and `pinned` boolean and/or `project` string. Names are Unicode labels, never filesystem paths. Validation occurs before mutation. CLI access uses `scripts/workspace_chat_organization.py list|pin|unpin|move --workspace <folder> --business-id <id> [--chat <chat>] [--project <name>] [--url <Aura address>]`. The shared API preserves business/workspace isolation and makes the same metadata available to custom interfaces and agents.

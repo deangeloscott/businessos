@@ -361,6 +361,25 @@ def relocate_pi(command, cwd, env, native_id, execution=None, source_file=''):
 
 
 def run(command, kind, cwd, env, prompt, native_id, model, effort, update, execution=None):
+    import tempfile
+    goal=getattr(execution,'native_goal',None)
+    if not goal:return _run(command,kind,cwd,env,prompt,native_id,model,effort,update,execution)
+    with tempfile.TemporaryDirectory(prefix='aura-native-goal-') as folder:
+        extra=[]
+        if kind=='omp':
+            config=Path(folder)/'goal.json';config.write_text(json.dumps({'goal':{'enabled':True,'continuationModes':['rpc']}}),encoding='utf-8')
+            extra=['--config',str(config)]
+        elif kind=='claude':
+            context=Path(folder)/'context.txt';context.write_text(prompt,encoding='utf-8')
+            extra=['--append-system-prompt-file',str(context),'--system-prompt-snapshot','off']
+            prompt='/goal '+goal['objective']
+        elif kind=='antigravity':prompt='/goal '+goal['objective']+'\n\n'+prompt
+        result=_run(command,kind,cwd,env,prompt,native_id,model,effort,update,execution,extra)
+        if kind in {'claude','antigravity'}:update(native_goal={'status':'needs_review','reason':'The native goal request ended. This connection does not report a structured completion verdict to Aura.'})
+        return result
+
+
+def _run(command, kind, cwd, env, prompt, native_id, model, effort, update, execution=None, extra=None):
     from workspace_delegation import Tracker
     delegation = Tracker(update)
     argv=base_command(command)
@@ -381,10 +400,11 @@ def run(command, kind, cwd, env, prompt, native_id, model, effort, update, execu
         argv += ['--model',model]
         if effort:argv += ['--reasoning',effort]
     else:
-        argv += ['--print','--input-format','stream-json','--output-format','stream-json','--model',model]
+        argv += ['--input-format','stream-json','--output-format','stream-json','--model',model]
         if native_id:argv += ['--conversation',native_id]
         if effort:argv += ['--effort',effort]
         prompt=json.dumps({'event':'user','message':{'content':prompt}})+'\n'
+    argv+=extra or []
     if execution:
         from workspace_permissions import arguments
         argv += arguments(kind,execution.permission)
@@ -421,7 +441,8 @@ def run(command, kind, cwd, env, prompt, native_id, model, effort, update, execu
                     error='The app returned a different chat ID. Check the native app before continuing.'
                 else:
                     ident=new_id;update(native_id=ident)
-            if event_type=='message_end':
+            if event_type=='aura_native_goal':update(native_goal=event.get('goal') or {})
+            elif event_type=='message_end':
                 message=event.get('message',{})
                 if message.get('role')=='assistant':
                     observe(message)
