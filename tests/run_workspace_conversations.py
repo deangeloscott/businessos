@@ -34,10 +34,23 @@ def main():
             assert metadata.call_args.kwargs['native_id']==str(native_file) and result['native_id']=='exact-session'
             try:workspace_agents.session_reference('pi','another-session',dict(os.environ),str(native_file));raise AssertionError('Mismatched session was accepted')
             except ValueError:pass
-        with patch.object(workspace_codex,'rpc',return_value=[{'thread':{'path':str(base/'missing.jsonl')}}]) as rpc:
-            try:workspace_codex.history(['fixture','exec'],base,'missing',{'CODEX_HOME':'isolated'});raise AssertionError('Missing transcript was accepted')
-            except ValueError as error:assert 'file is missing' in str(error) and 'Try Refresh' not in str(error)
-            assert rpc.call_args.args[-1]=={'CODEX_HOME':'isolated'}
+        reads=[]
+        def native_turns(command,read,cwd,env):
+            assert env=={'CODEX_HOME':'isolated'}
+            def call(method,params):
+                reads.append((method,params))
+                return {'thread':{'id':'unreadable','path':str(base/'missing.jsonl'),'turns':[{'status':'completed','items':[
+                    {'type':'userMessage','content':[{'type':'text','text':'User request:\nDo useful work'}]},
+                    {'type':'reasoning','summary':['Private']},
+                    {'type':'agentMessage','text':'Working','phase':'commentary'},
+                    {'type':'agentMessage','text':'Useful result','phase':'final_answer'}]}]}}
+            return read(call)
+        with patch.object(workspace_codex,'rpc',side_effect=native_turns):
+            result=workspace_codex.history(['fixture','exec'],base,'unreadable',{'CODEX_HOME':'isolated'})
+            assert [m['text'] for m in result['messages']]==['User request:\nDo useful work','Useful result'] and result['usage']=={}
+            assert [p['includeTurns'] for _,p in reads]==[False,True],'Unreadable paths must fall back to native turns on the same connection'
+        try:workspace_codex.history_turns({'turns':[]},'empty');raise AssertionError('Empty native history was accepted')
+        except ValueError as error:assert 'could not return any messages' in str(error) and 'Try Refresh' not in str(error)
         def replay_call(method,**params):
             if method=='initialize':return {'agentCapabilities':{'loadSession':True}}
             callback=metadata.call_args.kwargs['on_update']

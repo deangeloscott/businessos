@@ -207,14 +207,47 @@ def run(command, cwd, prompt, native_id, model, effort, update, env=None, execut
     return {'reply': final, 'native_id': thread, 'usage': usage}
 
 
+def history_turns(thread, native_id):
+    """Public native turns when the app owns a transcript Aura cannot open."""
+    from workspace_context import message_ref
+    messages=[];brief=None;observation={'request_id':'','state':'unknown'}
+    for turn in thread.get('turns',[]):
+        for item in turn.get('items',[]):
+            if item.get('type')=='userMessage':
+                role='user';text='\n'.join(p.get('text','') for p in item.get('content',[]) if p.get('type')=='text').replace('\r\n','\n')
+                at=turn.get('startedAt')
+                if text.lstrip().startswith('<environment_context>') or (text.startswith('# AGENTS.md instructions for ') and '<environment_context>' in text):continue
+                reference=message_ref(text);observation={'request_id':reference,'state':'unfinished'}
+                if '\nUser request:\n' in text:text=text.split('\nUser request:\n',1)[1]
+                if text.startswith('Welcome me to my AURA workspace'):text='Set up my AURA workspace and suggest a useful next step.'
+            elif item.get('type')=='agentMessage' and item.get('phase') in {None,'final_answer'}:
+                role='assistant';text=item.get('text','');at=turn.get('completedAt');reference=''
+                if observation['request_id'] and turn.get('status')=='completed':observation['state']='complete'
+            else:continue
+            candidate=workspace_chats.brief(text) if role=='assistant' else None
+            text=workspace_chats.clean(re.sub(r'(?m)^\s*AURA_SETUP[^\n]*','',text)).strip()
+            if text:messages.append({'role':role,'text':text,'at':workspace_usage.timestamp(at),'agent':'Codex',**({'request_id':reference} if reference else {})})
+            if candidate:brief=dict(candidate,through=len(messages),at=workspace_usage.timestamp(at))
+    if not messages:
+        raise ValueError('Codex could not return any messages for this chat. Open the original chat in Codex or restore its transcript from a backup.')
+    return {'messages':messages,'model':'','effort':'','usage':{},'native_id':native_id,'native_observation':observation,'chat_brief':brief,
+            'title':thread.get('name'),'summary':thread.get('summary'),'summary_updated':thread.get('summaryUpdatedAt'),
+            'status':thread.get('status'),'native_workspace':thread.get('cwd',''),'resume':f'codex resume {native_id}'}
+
+
 def history(command, cwd, native_id, env=None):
     from workspace_delegation import Tracker
     delegation=Tracker(None)
-    result = rpc(command, [('thread/read', {'threadId': native_id, 'includeTurns': False})], cwd, env)[0]
-    thread = result['thread']
+    def read(call):
+        thread=call('thread/read',{'threadId':native_id,'includeTurns':False})['thread']
+        if not Path(thread.get('path') or '').is_file():
+            thread=call('thread/read',{'threadId':native_id,'includeTurns':True})['thread']
+        return thread
+    thread = rpc(command, read, cwd, env)
+    if thread.get('id',native_id)!=native_id:raise ValueError('Codex returned a different chat. Your saved messages have been kept.')
     path = Path(thread.get('path') or '')
     if not path.is_file():
-        raise ValueError('Codex lists this chat, but its transcript file is missing from this computer. Aura can show its saved messages. Check the original chat in Codex if you need to recover newer work.')
+        return history_turns(thread,native_id)
     messages, model, effort, usage, cache_hit, brief = [], '', '', {}, None, None
     observation={'request_id':'','state':'unknown'}
     with path.open(encoding='utf-8') as stream:
