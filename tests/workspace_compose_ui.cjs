@@ -11,7 +11,7 @@ function node(id){
 const state={business:'studio',data:{workspace:'A',connection:{selected:'configured'},records:[{ref:'obj_goal',type:'Objective',title:'Launch',data:{id:'obj_goal',name:'Launch',status:'active'}},{ref:'obj_effort',type:'Objective',title:'Proposal',data:{id:'obj_effort',name:'Proposal',status:'active',extensions:{businessos:{goal:{scope:'chat',workspace_goal_ref:'obj_goal'}}}}}]},chatMeta:null,chat:[],selectedFiles:[],fileDetailTicket:0};
 const fixture={kind:'file',id:'attachments/studio/research.txt',label:'Research',description:'Workspace file'};
 state.pendingComposerDraft={references:[fixture],goal_id:'obj_goal'};
-const context={setDetailBack(label,run){context.detailBack=run;},appName:id=>id,humanError:error=>error?.message||String(error),window:{},state,URLSearchParams,TextEncoder,Uint8Array,crypto:crypto.webcrypto,setTimeout,clearTimeout,
+const context={setDetailTitleActions(html){context.titleActions=html;},setDetailBack(label,run){context.detailBack=run;},appName:id=>id,humanError:error=>error?.message||String(error),window:{},state,URLSearchParams,TextEncoder,Uint8Array,crypto:crypto.webcrypto,setTimeout,clearTimeout,
  FormData:class{constructor(){return formValues[Symbol.iterator]();}},cache:{clear(){}},refresh:async()=>{},
  document:{querySelector:()=>null,addEventListener:(name,fn)=>(events[name]??=[]).push(fn)},$:node,
  esc:v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),
@@ -96,6 +96,7 @@ function input(text){const el=node('#request');el.value=text;el.selectionStart=t
  state.view='business';state.chatMeta={id:'background',goal_id:'obj_goal'};
  const goalData={goal:{...state.data.records[0].data,target:{metric:'Published landing page',value:1}},chats:[],assets:[],task_links:{},running_chats:[],chat_goals:[]};
  const pageGoal=ui.openGoal('obj_goal');await flush();slowGoal(goalData);await pageGoal;
+ assert.match(context.titleActions,/data-status="active"/);assert.doesNotMatch(node('#detail-content').innerHTML,/More options|Reply ready/);
  assert.match(node('#detail-content').innerHTML,/data-goal-start=/);assert.doesNotMatch(node('#detail-content').innerHTML,/data-goal-connect=|Remove from this chat/);
  const editStructured=ui.editGoal('obj_goal');await flush();slowGoal(goalData);await editStructured;
  assert.match(node('#detail-content').innerHTML,/textarea name="target"/);assert.match(node('#detail-content').innerHTML,/Published landing page/);

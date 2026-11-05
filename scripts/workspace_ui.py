@@ -1203,26 +1203,30 @@ class Workspace:
             self.save_preferences()
 
     def personalization_chat(self,bid,connection=None):
+        return self.workspace_chat(bid,'personalization',connection)
+
+    def workspace_chat(self,bid,purpose,connection=None):
         """One local conversation reference per business; opening never submits work."""
+        title={'personalization':'Personalize Aura','context':'Business context'}[purpose]
         root=str(workspace_root().resolve())
         with self.lock:
-            existing=next((c for c in self.preferences['chats'] if c.get('purpose')=='personalization' and c['business_id']==bid and c.get('workspace')==root),None)
+            existing=next((c for c in self.preferences['chats'] if c.get('purpose')==purpose and c['business_id']==bid and c.get('workspace')==root and not c.get('archived')),None)
             if existing:return {'id':existing['id']}
             desired=self.preferences.get('connection',{}) if connection is None else connection
             if not isinstance(desired,dict):raise ValueError('Choose an AI connection.')
             kind=desired.get('kind')
-            if not isinstance(kind,str) or kind not in NATIVE_AGENTS|{'configured'}:raise ValueError('Connect your AI before opening a personalization chat.')
+            if not isinstance(kind,str) or kind not in NATIVE_AGENTS|{'configured'}:raise ValueError('Connect your AI before opening this chat.')
             known=self.preferences['connected_apps'].get(kind)
-            if not known and kind!=self.connection_kind:raise ValueError('Connect this AI app before opening a personalization chat.')
+            if not known and kind!=self.connection_kind:raise ValueError('Connect this AI app before opening this chat.')
             if kind=='configured':available=bool(self.configured_agent)
             else:available=any(a['id']==kind and a['argv'] for a in installed_agents())
-            if not available:raise ValueError('Reconnect this AI app before opening a personalization chat.')
+            if not available:raise ValueError('Reconnect this AI app before opening this chat.')
             effective={**(known or self.preferences['connection']),**{k:desired[k] for k in ('kind','model','effort') if k in desired}}
             if any(not isinstance(effective.get(k,''),str) or len(effective.get(k,''))>300 for k in ('model','effort')):raise ValueError('Choose a valid model and effort.')
-            if kind in NATIVE_AGENTS and not effective.get('model'):raise ValueError('Choose a model before opening a personalization chat.')
-            if kind=='codex' and not effective.get('effort'):raise ValueError('Choose an effort before opening a personalization chat.')
-            chat={'id':secrets.token_urlsafe(12),'business_id':bid,'workspace':root,'purpose':'personalization',
-                  'title':'Personalize Aura','title_edited':True,'created':time.time(),'updated':time.time(),
+            if kind in NATIVE_AGENTS and not effective.get('model'):raise ValueError('Choose a model before opening this chat.')
+            if kind=='codex' and not effective.get('effort'):raise ValueError('Choose an effort before opening this chat.')
+            chat={'id':secrets.token_urlsafe(12),'business_id':bid,'workspace':root,'purpose':purpose,
+                  'title':title,'title_edited':True,'created':time.time(),'updated':time.time(),
                   'status':'ready','agent':kind,'native_id':None,'model':effective.get('model',''),'effort':effective.get('effort',''),'connection':effective}
             self.preferences['chats'].append(chat);self.save_preferences()
             return {'id':chat['id']}
@@ -1599,7 +1603,7 @@ class Workspace:
             elif action=='assign_task':
                 ident=data.get('task_id')
                 task=next((t for t in workspace_schedules.inventory(workspaces=[workspace_root()])['items'] if t['id']==ident),None)
-                if not task:raise ValueError('Refresh recurring tasks before assigning this task.')
+                if not task:raise ValueError('Refresh scheduled tasks before assigning this task.')
                 target=data.get('id')
                 if target:workspace_assistants.find(self.preferences,bid,target)
                 for profile in workspace_assistants.profiles(self.preferences,bid):
@@ -1696,7 +1700,7 @@ class Workspace:
         continuation = data.get('operation_id')
         if continuation:
             if not previous or previous['id']!=continuation or previous['business_id']!=bid or previous['status']!='needs_input':
-                raise ValueError('This task question is no longer open. Refresh recurring tasks.')
+                raise ValueError('This task question is no longer open. Refresh scheduled tasks.')
             payload = dict(previous['payload'], request=str(data.get('request') or '').strip())
             native_id = previous.get('native_id')
         else:
@@ -1709,7 +1713,7 @@ class Workspace:
         before = workspace_schedules.inventory(workspaces=folders)['items']
         task = next((t for t in before if t['id']==payload.get('id')),None)
         if action!='create' and not task:
-            raise ValueError('This task is no longer listed. Refresh recurring tasks.')
+            raise ValueError('This task is no longer listed. Refresh scheduled tasks.')
         kind = payload.get('app') or (task or {}).get('owner')
         choice = next((a for a in installed_agents() if a['id']==kind and a['argv']),None)
         if kind not in NATIVE_AGENTS or not choice:
@@ -1732,7 +1736,7 @@ class Workspace:
         remove_goal=action=='request' and payload.get('goal_id')=='' and payload.get('remove_goal') is True
         if payload.get('goal_id'):
             goal=workspace_goals.find(bid,payload['goal_id'])
-            if workspace_goals.scope(goal)!='workspace':raise ValueError('Recurring tasks connect to workspace goals. Choose or create a workspace goal.')
+            if workspace_goals.scope(goal)!='workspace':raise ValueError('Scheduled tasks connect to workspace goals. Choose or create a workspace goal.')
             goal_argv=[sys.executable,str(PRODUCT_ROOT / 'scripts/workspace_goals.py'),'check','--workspace',str(root),
                        '--business-id',bid,'--id',goal['id'],'--basis',workspace_goals.fingerprint(goal),'--json']
             goal_note=(f'\n\n[Aura goal]\nAura goal: {goal["id"]}. Before doing business work, execute this argument list '
@@ -1790,7 +1794,7 @@ class Workspace:
                     if not any(m['id']==model for m in options['models']):
                         raise ValueError('Choose an available model in this task’s settings.')
                     # This is task management only. No active-chat state is used.
-                    instruction = ('Manage only the requested native recurring task; do not execute its business work, research, or change unrelated files. '
+                    instruction = ('Manage only the requested native scheduled task; do not execute its business work, research, or change unrelated files. '
                         'Use supported scheduling controls, never undocumented scheduler-file edits. Do not create duplicates. '
                         'Preserve delivery, timezone and settings the user did not change. If moving a task, confirm the new task before pausing the original. '
                         'Use the requested app and run model/effort; do not silently substitute another. '
@@ -2632,7 +2636,7 @@ def handler_for(app):
                         raise ValueError('Workspace organization is running. Wait or stop it before making changes.')
                     if app.schedule_job and app.schedule_job['status']=='working' and (route in {'/api/lifecycle','/api/workspaces/open','/api/workspaces/create','/api/workspaces/relocate','/api/workspaces/restore'} or route.startswith('/api/organization/')):
                         raise ValueError('Wait for task setup or stop it before changing workspaces or restarting AURA.')
-                    if app.running_jobs(None if route in {'/api/lifecycle','/api/workspaces/relocate','/api/workspaces/restore'} else workspace_root()) and route not in {'/api/goals','/api/chat/answer','/api/permissions','/api/assistants','/api/preferences','/api/profile','/api/interface/reset','/api/chats/recover','/api/chats/archive','/api/chats/reconnect','/api/notifications','/api/chat','/api/chat/stop','/api/chats/new','/api/chats/open','/api/chats/rename','/api/chats/model','/api/chats/personalization','/api/connect','/api/workspaces/open','/api/usage/settings','/api/updates','/api/schedules/action','/api/schedules/stop'}:
+                    if app.running_jobs(None if route in {'/api/lifecycle','/api/workspaces/relocate','/api/workspaces/restore'} else workspace_root()) and route not in {'/api/goals','/api/chat/answer','/api/permissions','/api/assistants','/api/preferences','/api/profile','/api/interface/reset','/api/chats/recover','/api/chats/archive','/api/chats/reconnect','/api/notifications','/api/chat','/api/chat/stop','/api/chats/new','/api/chats/open','/api/chats/rename','/api/chats/model','/api/chats/personalization','/api/chats/context','/api/connect','/api/workspaces/open','/api/usage/settings','/api/updates','/api/schedules/action','/api/schedules/stop'}:
                         raise ValueError('Your agent is working. Wait for its reply before changing this workspace.')
                     if route in {'/api/preferences','/api/locations'}:
                         app.load_portable()
@@ -3051,6 +3055,8 @@ def handler_for(app):
                         self.send(200,app.assistants(selected(data.get('business')),data))
                     elif route == '/api/chats/personalization':
                         self.send(200,app.personalization_chat(selected(data.get('business')),data.get('connection')))
+                    elif route == '/api/chats/context':
+                        self.send(200,app.workspace_chat(selected(data.get('business')),'context',data.get('connection')))
                     elif route == '/api/chats/new':
                         bid = selected(data.get('business'))
                         app.preferences['active_chats'][bid] = None

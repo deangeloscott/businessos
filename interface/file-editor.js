@@ -19,7 +19,7 @@ function snapshot(view){
 function changed(view){if(!live(view)||view.building)return;view.dirty=true;snapshot(view);status(view,'Unsaved changes');const save=view.host.querySelector('#file-save');if(save)save.disabled=false;}
 function status(view,message,error=false){if(!live(view))return;const el=view.host.querySelector('#file-status');if(el){el.textContent=message;el.classList.toggle('error',error);}}
 function destroyWidgets(view){snapshot(view);view.editor?.destroy();view.editor=null;view.table?.destroy();view.table=null;if(view.cropper){view.cropper.destroy();view.cropper=null;}view.pdfTask?.cancel();view.pdfTask=null;}
-export function detach(){if(!current)return;const view=current;destroyWidgets(view);view.pdf?.destroy();view.pdf=null;view.loadingTask?.destroy();if(view.objectURL)URL.revokeObjectURL(view.objectURL);current=null;$('#detail')?.removeAttribute('data-file-wide');}
+export function detach(){if(!current)return;const view=current;destroyWidgets(view);view.pdf?.destroy();view.pdf=null;view.loadingTask?.destroy();if(view.objectURL)URL.revokeObjectURL(view.objectURL);current=null;}
 function media(view,download=false){return '/api/media?'+new URLSearchParams({business:view.ctx.business,workspace:view.ctx.workspace,path:view.ctx.ref,option:view.ctx.option||'',...(download?{download:'1'}:{})});}
 function api(view,path,data){return view.ctx.api(path,data);}
 function tableRows(view){const data=view.table.getData('active');return data.map(row=>Array.from({length:view.columns},(_,i)=>String(row['c'+i]??'')));}
@@ -40,6 +40,7 @@ export async function openFile(ctx){
 async function render(view){
   if(!live(view))return;destroyWidgets(view);const info=view.info;
   const editing=view.editing||view.dirty;
+  if(!view.ctx.ref.startsWith('library/'))view.ctx.titleActions?.(view.ctx.favoriteMarkup?.(view.ctx.ref,info.name)||'');
   view.host.innerHTML=`
     <button type="button" id="file-copy-location" class="file-location" title="${esc(info.location||view.ctx.ref)}" aria-label="Copy file location">
       <span class="file-location-path">${esc(info.location||view.ctx.ref)}</span>
@@ -53,8 +54,7 @@ async function render(view){
         <button type="button" data-file-action="transfer" aria-controls="file-transfer-panel" aria-expanded="false">${view.ctx.ref.startsWith('library/')?'Import':'Share or import'}</button>
       </div>
       <div class="file-toolbar-actions">
-        ${!view.ctx.ref.startsWith('library/')?view.ctx.favoriteMarkup?.(view.ctx.ref,info.name)||'':''}
-        ${info.history_available?'<button type="button" class="text-button" data-file-action="history" aria-controls="file-history-panel" aria-expanded="false">History</button>':''}<button type="button" class="text-button" data-file-action="expand">${$('#detail').hasAttribute('data-file-wide')?'Reduce':'Expand'}</button>
+        ${info.history_available?'<button type="button" class="text-button" data-file-action="history" aria-controls="file-history-panel" aria-expanded="false">History</button>':''}
         <button type="button" class="secondary" data-file-action="open" aria-controls="file-open-panel" aria-expanded="false">Open in…</button>
       </div>
     </div>
@@ -102,9 +102,7 @@ async function render(view){
   }
   view.host.onclick=async event=>{const button=event.target.closest('button');if(!button)return;const action=button.dataset.fileAction;
     if(button.dataset.fileMode){snapshot(view);view.editing=button.dataset.fileMode==='edit';render(view).catch(e=>status(view,readableError(e),true));}
-    if(button.dataset.fileFavorite){try{const marked=await view.ctx.toggleFavorite?.(view.ctx.ref);if(live(view)){button.textContent=marked?'★ Favorited':'☆ Favorite';button.setAttribute('aria-pressed',String(marked));button.setAttribute('aria-label',`${marked?'Remove':'Add'} ${info.name} ${marked?'from':'to'} favorites`);}}catch(error){status(view,readableError(error),true);}}
     if(button.dataset.fileRelated)openFile({...view.ctx,ref:button.dataset.fileRelated});
-    if(action==='expand'){$('#detail').toggleAttribute('data-file-wide');button.textContent=$('#detail').hasAttribute('data-file-wide')?'Reduce':'Expand';if(info.kind==='pdf')renderPdf(view);view.table?.redraw(true);}
     if(action==='open')openPanel(view);
     if(action==='history')fileHistory(view,button).catch(e=>status(view,readableError(e),true));
     if(action==='transfer'){

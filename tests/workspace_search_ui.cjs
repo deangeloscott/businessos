@@ -53,13 +53,13 @@ context.api=async()=>chats;context.cachedApi=async path=>path.startsWith('/api/f
   const playbook={key:'workflow:playbook:article',kind:'Workflow',subtype:'Playbook',title:'Article Production',description:'Short summary'};
   const documents={['tool:parent']:{item:parent,text:'',location:''},['tool:child']:{item:child,text:'',location:''},[playbook.key]:{item:playbook,text:'# Article Production\n\nShort summary\n\nExample request: Write an article.',location:'/product/operating_knowledge.py'}};
   const detailContext={state:{business:'studio',data:{workspace:'A'},library:[parent,playbook]},$:detailNode,esc,appName:id=>id,encodeURIComponent,
-    libraryGuidance:item=>['Workflow','Recipe','Skill'].includes(item.kind),rememberLibraryOpen(){},libraryMarked:()=>false,composerConnection:()=>({kind:'hermes'}),chatMarkdown:text=>text,
+    favoriteControl:()=>'<button data-library-favorite></button>',setDetailTitleActions(html){detailContext.titleActions=html;},libraryGuidance:item=>['Workflow','Recipe','Skill'].includes(item.kind),rememberLibraryOpen(){},libraryMarked:()=>false,composerConnection:()=>({kind:'hermes'}),chatMarkdown:text=>text,
     api:async path=>documents[new URL('http://local'+path).searchParams.get('key')],
     details(title,html){detailContext.state.fileDetailTicket=(detailContext.state.fileDetailTicket||0)+1;detailNode('#detail').open=true;detailContext.title=title;detailContext.html=html;},
     setDetailBack(label,run){detailContext.back=run;detailContext.backLabel=label;}};
   vm.createContext(detailContext);vm.runInContext(source.slice(source.indexOf('async function openLibrary('),source.indexOf('function quickMethods()')),detailContext);
   await detailContext.openLibrary(parent.key);assert.match(detailContext.html,/Included items/);assert(!detailContext.html.includes('Your AI app chooses'));
-  assert(detailContext.html.indexOf('data-library-favorite')<detailContext.html.indexOf('Included items'),'Inventory favorites belong in the shared header');
+  assert.match(detailContext.titleActions,/data-library-favorite/,'Inventory favorites belong beside the title');assert.doesNotMatch(detailContext.html,/Favorited|Favorite/);
   detailNode('#detail-content').scrollTop=85;await detailContext.openLibrary(child.key);assert.equal(detailContext.backLabel,'Execution');await detailContext.back();assert.equal(detailContext.title,'Execution');assert.equal(detailNode('#detail-content').scrollTop,85);
   detailNode('#detail').open=false;await detailContext.openLibrary(playbook.key);assert.match(detailContext.html,/item-location/);assert.match(detailContext.html,/Playbook/);assert.equal((detailContext.html.match(/Short summary/g)||[]).length,1);assert(!detailContext.html.includes('# Article Production'));
   console.log('Workspace search passed: one labeled list, ranking, filters, all-result pagination, escaping, shared favorites, search return, partial availability, and stale-workspace isolation.');

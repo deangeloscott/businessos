@@ -264,6 +264,16 @@ print('## Reply '+name+'\\n\\nWorkspace: '+str(root))
                 target=next(c for c in app.preferences['chats'] if c['id']==custom['id'])
                 assert target['purpose']=='personalization' and target['title_edited'] and target['native_id'] is None
                 assert target['workspace']==str(b) and target['business_id']==bid
+                context_chat=call('/api/chats/context',{'business':bid,'connection':connection})
+                assert context_chat==call('/api/chats/context',{'business':bid,'connection':connection})
+                assert context_chat!=custom and set(app.jobs)==jobs_before
+                assert app.preferences['active_chats']==active_before
+                context_row=next(c for c in app.preferences['chats'] if c['id']==context_chat['id'])
+                assert context_row['purpose']=='context' and context_row['title']=='Business context'
+                assert call('/api/chats/open',{'business':bid,'id':context_chat['id']})['messages']==[]
+                context_row['archived']=True;app.save_preferences()
+                fresh_context=call('/api/chats/context',{'business':bid,'connection':connection})
+                assert fresh_context!=context_chat,'Archived context chats must not be silently reopened'
                 assert call('/api/chats/open',{'business':bid,'id':custom['id']})['messages']==[]
                 restarted=Workspace(agent=app.configured_agent,settings_file=app.settings_file)
                 assert restarted.personalization_chat(bid,connection)==custom
