@@ -21,7 +21,7 @@ def run(command,kind,cwd,env,prompt,native_id,model,effort,update,execution):
     from workspace_agents import base_command
     from workspace_native_io import channel
     from _process_errors import ErrorTail
-    session=execution.native_session;native=native_id;final='';usage={};ready=False;capabilities={};config=[];pending=[];permissions={};applied=set()
+    session=execution.native_session;native=native_id;final='';usage={};ready=False;capabilities={};config=[];state={};pending=[];permissions={};applied=set()
     argv=[*base_command(command),'acp'] if kind!='acp' else list(command)
     if execution.permission=='full' and kind=='antigravity':argv+=['--dangerously-skip-permissions']
     if execution.permission=='yolo' and kind=='hermes':env={**env,'HERMES_YOLO_MODE':'1'}
@@ -49,8 +49,9 @@ def run(command,kind,cwd,env,prompt,native_id,model,effort,update,execution):
             pending.clear()
             selections=[('model',model),('thought_level',effort)]
             mode=execution.permission
-            if mode not in {'native','full','yolo'}:
-                desired={'review':'default','accept-edits':'accept-edits' if kind=='antigravity' else 'accept_edits'}.get(mode,mode)
+            launch_override=(kind=='antigravity' and mode=='full') or (kind=='hermes' and mode=='yolo')
+            if mode!='native' and not launch_override:
+                desired='default' if kind=='antigravity' and mode=='review' else mode
                 selections.append(('mode',desired))
             for category,value in selections:
                 if not value:continue
@@ -112,8 +113,9 @@ def run(command,kind,cwd,env,prompt,native_id,model,effort,update,execution):
             elif ident is not None:
                 if not provider(execution,event,send,update):
                     send({'id':ident,'error':{'code':-32601,'message':'This client interaction needs its configured native provider.'}})
-                    notice(execution,update,'This interaction needs a native provider that is not connected. Your saved conversation is still available.')
-        init={'protocolVersion':1,'clientCapabilities':{'elicitation':{'form':{},'url':{}},'session':{'notices':{},'configOptions':{'boolean':{}}}},'clientInfo':{'name':'aura-workspace','version':'1'}}
+                    notice(execution,update,'This step is not available through this connection. Open the chat in your AI app to continue.')
+                    update(native_diagnostic={'method':method,'reason':'Native client provider required'})
+        init={'protocolVersion':1,'clientCapabilities':{'elicitation':{'form':{},'url':{}},'session':{'notices':{}}},'clientInfo':{'name':'aura-workspace','version':'1'}}
         init.update(execution.native_options.get('initialize',{}))
         request('aura-init','initialize',**init)
         try:
@@ -128,9 +130,9 @@ def run(command,kind,cwd,env,prompt,native_id,model,effort,update,execution):
                     if native_id and not capabilities.get('loadSession',capabilities.get('load_session')):raise ValueError('This native connection cannot reopen that saved conversation. Open it in its original app.')
                     request('aura-session','session/load' if native_id else 'session/new',cwd=str(cwd),mcpServers=execution.native_options.get('mcpServers',[]),**({'sessionId':native_id} if native_id else {}))
                 elif ident=='aura-session':
-                    state=result;native=result.get('sessionId') or native_id
+                    state={**state,**result};native=result.get('sessionId') or native_id
                     if not native or native_id and native!=native_id:raise ValueError('The native app returned a different conversation. No message was sent.')
-                    config=result.get('configOptions') or [];ready=True;execution.protocol_ready=True
+                    config=result.get('configOptions',config);ready=True;execution.protocol_ready=True
                     update(native_id=native,native_capabilities=capabilities,native_config=config,native_modes=result.get('modes') or {})
                     controls();configure()
                 elif ident=='aura-config':

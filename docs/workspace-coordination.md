@@ -107,7 +107,11 @@ configuration changes reopen the saved native conversation with those settings.
 Aura shutdown and explicit Stop close owned work; a disconnected process is not
 a guarantee that the native app's own external services stop. Restart never
 resends an unconfirmed request or starts a goal automatically. The connection
-pool is in the existing Aura server, not a separate service.
+pool is in the existing Aura server, not a separate service. Archiving a settled
+chat releases its idle connection. Pending approvals, native requests and provider
+work prevent that cleanup; archiving never silently interrupts them.
+Automatic updates also wait while a retained connection has pending interactions
+or provider work, even after its parent message has finished.
 
 Repeated messages use a compact business/request envelope once the same native
 conversation has received the current Aura guidance. Explicitly selected context,
@@ -182,10 +186,16 @@ client's private integrations.
 
 Inline native output images are saved once in the business's ordinary work folder
 and opened with the existing file viewer. The display transcript stores the file
-reference, not base64 image bytes. Context-window usage remains separate from input
+reference, not base64 image bytes. Refresh retains images attached to an unchanged
+reply and reads inline output images when ACP replays them. Context-window usage remains separate from input
 or output billing totals; unsupported measures remain unknown.
 
 ## Continue with another AI
+
+Aura's own composer shortcuts use `/aura-new`, `/aura-attach`,
+`/aura-assistant` and `/aura-goal`. Native command names such as `/goal` are
+not intercepted as Aura actions. They reach the connected harness through its
+ordinary send path; supported native commands still depend on that protocol.
 
 Choose **Continue with another AI** in the composer's plus menu. Aura prepares an
 unsent draft and opens the existing model picker. It pins the last completed

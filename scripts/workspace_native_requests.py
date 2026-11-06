@@ -178,7 +178,8 @@ def codex_request(event,execution,send,update=lambda **v:None):
     elif method=='mcpServer/elicitation/request':
         if params.get('mode','form') not in {'form','url','openai/form','openaiForm'}:
             if provider(execution,event,send,update):return
-            notice(execution,update,'This verification needs its native authentication provider.')
+            notice(execution,update,'This verification step needs your AI app. Open the chat there to continue.')
+            update(native_diagnostic={'method':method,'reason':'Native verification provider required'})
             send({'id':ident,'error':{'code':-32601,'message':'A supported native verification provider is required.'}});return
         link=form_request(execution,event,reply)
         if link:notice(execution,update,link['text'],link.get('url'))
@@ -187,7 +188,8 @@ def codex_request(event,execution,send,update=lambda **v:None):
         title={'attestation/generate':'This interaction needs a supported native attestation provider.',
                'account/chatgptAuthTokens/refresh':'This login needs its native credential provider.',
                'item/tool/call':'This tool needs its configured native execution provider.'}.get(method,'This AI app requested an interaction its connection has not registered: '+method)
-        notice(execution,update,title+' Add its native request handler to the connection, then continue in the saved chat.')
+        notice(execution,update,'This step is not available through this connection. Open the chat in your AI app to continue.')
+        update(native_diagnostic={'method':method,'reason':title})
         send({'id':ident,'error':{'code':-32601,'message':title}})
 
 

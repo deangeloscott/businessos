@@ -52,7 +52,7 @@ def observe(app,bid,chat,request,value):
     if isinstance(native_objective,str) and native_objective!=request['objective'] and not native_objective.startswith(request['objective']+'\n\n'):
         request['native_changed']=True
     if request.get('native_changed'):
-        state.update(status='needs_review',reason='The native goal changed in this chat. Review it before continuing with this saved goal.')
+        state.update(status='needs_review',native_changed=True,reason='The native goal changed in this chat. Review it before continuing with this saved goal.')
         chat['native_goal']=state;app.save_preferences();return
     chat['native_goal']=state
     try:goal=find(bid,request['id'],include_deleted=True)
@@ -78,6 +78,7 @@ def control(app,bid,goal,action):
     owner=metadata(goal).get('chat_id')
     chat=next((c for c in app.preferences['chats'] if c['id']==owner and c['business_id']==bid and Path(c.get('workspace') or app.workspace_path).resolve()==Path(app.workspace_path).resolve()),None)
     if not chat:return
+    if (chat.get('native_goal') or {}).get('native_changed'):return
     for job in app.running_jobs():
         if job.get('chat_id')==owner and job.get('workspace')==app.workspace_path:
             execution=app.executions.get(job['id'])

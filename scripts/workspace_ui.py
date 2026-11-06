@@ -834,6 +834,7 @@ class Workspace:
     def update_idle(self):
         return not (time.time() < getattr(self, 'update_editing_until', 0) or
                     bool(self.running_jobs()) or
+                    self.native_sessions.busy() or
                     (self.schedule_job and self.schedule_job['status'] == 'working') or
                     (self.organization_job and self.organization_job['status'] == 'working'))
 
@@ -1051,7 +1052,12 @@ class Workspace:
             else:chat.pop('archived_at',None)
             if archived and self.preferences['active_chats'].get(bid)==ident:self.preferences['active_chats'][bid]=None
             self.save_preferences()
-            return {'chat':{k:v for k,v in chat.items() if k!='brief_token'}}
+            result={'chat':{k:v for k,v in chat.items() if k!='brief_token'}}
+            session_key=(str(Path(self.workspace_path).resolve()),bid,ident)
+        if archived:
+            try:self.native_sessions.release_idle(session_key)
+            except (OSError,ValueError):result['warning']='The chat is archived. Its AI connection could not close; quit Aura to release it.'
+        return result
 
     def usage(self, bid, period='chat', refresh=False, offset=0, since=None, month_start=None):
         # Slow native/account reads keep their original workspace even through A/B/A.
@@ -1371,6 +1377,14 @@ class Workspace:
         if not (job and job['status']=='working') and not chat.get('model_choice_pending'):chat.update({k: result[k] for k in ('model', 'effort') if result.get(k)})
         for message in result['messages']:
             message['text'] = self.connections.redact(workspace_chats.clean(message['text']))
+            for image in message.pop('native_images',[]):
+                from workspace_native_requests import save_image
+                try:
+                    media=save_image(image,bid)
+                    message['native_media']=list({r['path']:r for r in [*message.get('native_media',[]),media]}.values())
+                except (OSError,ValueError) as error:
+                    self.errors.record(error,'conversation/image',self.connections.redact)
+                    result['history_note']='Your messages are available, but one image could not be saved. Open its original output in the AI app.'
         if display.is_file():workspace_context.retain_receipts(result['messages'],json.loads(display.read_text(encoding='utf-8')))
         if root!=workspace_root().resolve():raise ValueError('The workspace changed. Open the chat list again.')
         with self.lock:
@@ -2140,6 +2154,8 @@ class Workspace:
             root=workspace_root().resolve();native_root=Path(chat.get('native_workspace') or root);native_root=native_root if native_root.is_dir() else root;model=job['model'];effort=job['effort'];native_id=chat.get('native_id')
             def update(**values):
                 with self.lock:
+                    if 'native_diagnostic' in values:
+                        self.errors.record(ValueError(json.dumps(values.pop('native_diagnostic'))),'native/interaction',self.connections.redact)
                     if 'native_output' in values:
                         from workspace_native_requests import save_image
                         try:

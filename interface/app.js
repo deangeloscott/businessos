@@ -1242,10 +1242,11 @@ function details(title,html,mode='panel',anchor=null){
   if(d.open&&d.matches(':modal')!==modal)d.close();
   state.detailBack=null;$('#detail-search-back').hidden=true;
   if(state.searchReturn?.scope===JSON.stringify([state.data?.workspace,state.business])&&!anchor)setDetailBack('Results',backToSearchResults);
-  d.dataset.mode=page?'page':mode;d.dataset.opened=Date.now();$('#detail-title').textContent=title;$('#detail-content').innerHTML=html;
+  d.dataset.mode=page?'page':mode;d.dataset.opened=Date.now();$('#detail-title').textContent=title;
+  $('#detail-content').innerHTML=(page&&state.view==='sharing'?workspaceLocation():'')+html;
   d.querySelector('[data-close="detail"]').hidden=page;
-  $('#detail-footer').hidden=!page||state.view!=='sharing';$('#detail-footer').innerHTML=page&&state.view==='sharing'?workspaceLocation():'';
-  const actions=$('#detail-content .share-selection-bar');if(page&&actions)$('#detail-footer').prepend(actions);
+  $('#detail-footer').innerHTML='';$('#detail-footer').hidden=true;
+  const actions=$('#detail-content .share-selection-bar');if(page&&actions){$('#detail-footer').append(actions);$('#detail-footer').hidden=false;}
   d.querySelectorAll('.dialog-error').forEach(el=>el.remove());if($('#notice').classList.contains('error'))notice('');if(anchor)openAnchoredSurface(d,anchor,{width:380});else if(!d.open){if(modal)d.showModal();else d.show();}
 }
 let apiConnections=[];
@@ -2657,7 +2658,8 @@ function renderComposerConnection(){
   $('#chat-refresh').setAttribute('aria-busy',String(!!state.refreshingChat));
 }
 function workspaceLocation(){
-  const path=sharing?.scope===sharingScope()?sharing.workspace:state.data.workspace, label=state.view==='sharing'&&sharing?.tab==='share'?'Source workspace':'Current workspace';
+  const source=state.view==='sharing'&&sharing?.tab==='share';
+  const path=source&&sharing?.scope===sharingScope()?sharing.workspace:state.data.workspace, label=source?'Source workspace':'Current workspace';
   return `<div class="workspace-location"><span>${label}</span><button type="button" data-copy-workspace="${esc(path)}" title="Copy ${esc(path)}"><span>${esc(path)}</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M8 8h12v13H8zM16 8V3H3v13h5"/></svg></button><small id="workspace-copy-status" role="status"></small></div>`;
 }
 function returnToChat(){state.view='home';$('#detail').close();$('#section-dialog').close();recordShellRoute();renderShell();$('#request').focus();}

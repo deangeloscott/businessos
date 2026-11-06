@@ -3,8 +3,8 @@ import json,os,sys,tempfile,threading,time
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1];sys.path.insert(0,str(ROOT/'scripts'))
 FIXTURE=r'''
-import json,sys,os
-turn=0;ready=False;granted=False;initializations=0
+import json,sys,os,base64
+turn=0;ready=False;granted=False;initializations=0;mode='default'
 def emit(v):print(json.dumps({'jsonrpc':'2.0',**v}),flush=True)
 def result():
  emit({'method':'session/update','params':{'sessionId':'native-acp','update':{'sessionUpdate':'usage_update','used':75,'size':1000}}})
@@ -19,10 +19,15 @@ for line in sys.stdin:
   emit({'id':i,'result':{'protocolVersion':1,'agentCapabilities':{'loadSession':True,'promptCapabilities':{'image':True}}}})
  elif op in {'session/new','session/load'}:
   if op=='session/load':
+   emit({'method':'session/update','params':{'sessionId':'native-acp','update':{'sessionUpdate':'current_mode_update','currentModeId':'default'}}})
+   emit({'method':'session/update','params':{'sessionId':'native-acp','update':{'sessionUpdate':'config_option_update','configOptions':[{'id':'model','category':'model','type':'select','currentValue':'native-model','options':[{'value':'native-model','name':'Native model'}]}]}}})
    emit({'method':'session/update','params':{'sessionId':'native-acp','update':{'sessionUpdate':'user_message_chunk','content':{'type':'text','text':'Earlier work'}}}})
    emit({'method':'session/update','params':{'sessionId':'native-acp','update':{'sessionUpdate':'agent_message_chunk','content':{'type':'text','text':'Saved native reply'}}}})
-  emit({'id':i,'result':{'sessionId':'native-acp','models':{'currentModelId':'native-model','availableModels':[{'modelId':'native-model','name':'Native model'}]}}})
+   emit({'method':'session/update','params':{'sessionId':'native-acp','update':{'sessionUpdate':'agent_message_chunk','content':{'type':'image','mimeType':'image/png','data':base64.b64encode(b'\x89PNG\r\n\x1a\nfixture').decode()}}}})
+  emit({'id':i,'result':{'sessionId':'native-acp','models':{'currentModelId':'native-model','availableModels':[{'modelId':'native-model','name':'Native model'}]},'modes':{'currentModeId':'default','availableModes':[{'id':'default','name':'Ask'},{'id':'full','name':'Native full mode'},{'id':'review','name':'Review mode'}]}}})
+ elif op=='session/set_mode':mode=p['modeId'];assert mode in {'full','review'};emit({'id':i,'result':{}})
  elif op=='session/prompt':
+  assert mode==('full' if turn==0 else 'review'),'The explicit native mode was skipped or renamed'
   turn+=1
   if granted:result()
   else:emit({'id':'native-permission','method':'session/request_permission','params':{'sessionId':'native-acp','toolCall':{'toolCallId':'one','title':'Read the selected file','rawInput':{'path':'selected.txt'}},'options':[{'optionId':'allow-session','name':'Allow for this session','kind':'allow_always'},{'optionId':'deny','name':'Decline','kind':'reject_once'}]}})
@@ -42,11 +47,11 @@ def main():
         pool=Sessions();key=(str(root),'studio','acp');updates=[];pid=None
         try:
             for turn in (1,2):
-                execution=Execution();execution.interactive=True;out={}
+                execution=Execution();execution.interactive=True;execution.permission='full' if turn==1 else 'review';out={}
                 def update(**v):updates.append(v)
                 def work():
-                    try:out.update(pool.run(key,{},'Work',None if turn==1 else 'native-acp',execution,update,
-                        lambda:run([sys.executable,'-u',str(script)],'acp',root,dict(os.environ),'Work',None if turn==1 else 'native-acp','native-model','',update,execution),root))
+                    try:out.update(pool.run(key,{},'Work','native-acp',execution,update,
+                        lambda:run([sys.executable,'-u',str(script)],'acp',root,dict(os.environ),'Work','native-acp','native-model','',update,execution),root))
                     except Exception as error:out['error']=error
                 thread=threading.Thread(target=work);thread.start();seen=set();end=time.monotonic()+8
                 while thread.is_alive() and time.monotonic()<end:
@@ -84,6 +89,9 @@ def main():
                 app.preferences['chats'].append({'id':'custom-chat','business_id':bid,'workspace':app.workspace_path,'agent':'configured','native_id':'native-acp','status':'complete','model':'native-model','effort':''})
                 refreshed=app.conversation(bid,'custom-chat',refresh=True)
                 assert refreshed['messages'][-1]['text']=='Saved native reply' and not refreshed.get('history_note'),refreshed
+                image=refreshed['messages'][-1]['native_media'][0]
+                assert 'native_images' not in refreshed['messages'][-1] and (Path(app.workspace_path)/image['path']).is_file()
+                assert app.conversation(bid,'custom-chat',refresh=True)['messages'][-1]['native_media']==[image]
             finally:app.native_sessions.close();server.shutdown();server.server_close()
     print('ACP passed: native initialization, same-process follow-ups, exact permission choices and typed forms without inference.')
 

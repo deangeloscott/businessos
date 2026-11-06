@@ -74,13 +74,13 @@ window.auraCompose=(()=>{
   }
   function paintMenu(){
     const menu=$('#composer-menu');menu.hidden=!inlineItems.length;$('#request').setAttribute('aria-expanded',String(!menu.hidden));
-    menu.innerHTML=inlineItems.map((r,i)=>`<button type="button" role="option" id="composer-option-${i}" aria-selected="${i===active}" data-compose-option="${i}" class="${i===active?'selected':''}"><span>${esc(r.label)}</span><small>${esc(r.kind?kinds[r.kind]:r.description)}${r.kind&&r.description?' · '+esc(r.description):''}</small></button>`).join('');
+    menu.innerHTML=inlineItems.map((r,i)=>`<button type="button" role="option" id="composer-option-${i}" aria-selected="${i===active}" data-compose-option="${i}" class="${i===active?'selected':''}"><span>${r.kind?'':esc('/aura-'+r.id)+' · '}${esc(r.label)}</span><small>${esc(r.kind?kinds[r.kind]:r.description)}${r.kind&&r.description?' · '+esc(r.description):''}</small></button>`).join('');
     if(active>=0)$('#request').setAttribute('aria-activedescendant','composer-option-'+active);
   }
   async function suggest(){
     const selected=token(),key=chatScope(),ticket=++lookupTicket;
     if(!selected){closeMenu();return;}
-    const data=selected.type==='slash'?{items:shortcuts.filter(c=>c.id.startsWith(selected.q.toLowerCase()))}:await lookup(selected.q);
+    const data=selected.type==='slash'?{items:shortcuts.filter(c=>('aura-'+c.id).startsWith(selected.q.toLowerCase()))}:await lookup(selected.q);
     if(ticket!==lookupTicket||key!==chatScope()||JSON.stringify(selected)!==JSON.stringify(token())||!data)return;
     inlineToken=selected;inlineItems=data.items.slice(0,8);active=inlineItems.length?0:-1;paintMenu();
   }

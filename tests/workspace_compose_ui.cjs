@@ -45,7 +45,12 @@ function input(text){const el=node('#request');el.value=text;el.selectionStart=t
  node('#compose-found').onclick({target:{closest:()=>({dataset:{composePick:'0'}})}});await Promise.all(pending);assert.equal(state.contextReferences[0].id,fixture.id);
  input('owner@example.com');await delay();assert.equal(node('#composer-menu').hidden,true,'Email addresses must stay ordinary text');
  input('/unrecognized');await delay();assert.equal(node('#composer-menu').hidden,true,'Unknown slash text must not execute an Aura action');
- input('/new');await delay();assert.equal(node('#composer-menu').hidden,false);
+ for(const command of ['/new','/goal']){
+  input(command);await delay();assert.equal(node('#composer-menu').hidden,true,'Native command names must not be claimed by Aura');
+  let caught=false;for(const fn of node('#request').listeners.keydown||[])fn({key:'Enter',preventDefault(){caught=true;},stopImmediatePropagation(){}});
+  assert.equal(caught,false,'Native command input must reach the ordinary send path');
+ }
+ input('/aura-new');await delay();assert.equal(node('#composer-menu').hidden,false);
  let prevented=false;for(const fn of node('#request').listeners.keydown||[])fn({key:'Enter',preventDefault(){prevented=true;},stopImmediatePropagation(){}});
  await flush();await Promise.all(pending);assert.equal(prevented,true);assert.equal(newChats.length,1,'Selecting the shortcut calls the existing action once');
  input('@slow');await delay();assert.ok(slowResolve);ui.closeMenu();slowResolve({items:[fixture]});await flush();assert.equal(node('#composer-menu').hidden,true,'A late lookup must not reopen a dismissed picker');

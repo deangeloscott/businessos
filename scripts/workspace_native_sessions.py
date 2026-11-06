@@ -79,6 +79,9 @@ class Session:
 class Sessions:
     def __init__(self):self.lock=threading.RLock();self.items={}
 
+    def busy(self):
+        return any(not s.closed and (s.active is not None or s.execution.helpers or any(r['status']=='pending' for r in s.requests.snapshot())) for s in list(self.items.values()))
+
     def owns_idle(self,key):
         session=self.items.get(key)
         return bool(session and not session.closed and session.active is None and session.process and session.process.poll() is None)
@@ -104,3 +107,15 @@ class Sessions:
         with self.lock:sessions=list(self.items.values());self.items.clear()
         for session in sessions:session.close()
         for session in sessions:session.worker.join(6)
+
+    def release_idle(self,key):
+        session=self.items.get(key)
+        if not session:return False
+        with session.lock:
+            if session.active or session.execution.helpers or any(r['status']=='pending' for r in session.requests.snapshot()):return False
+            session.closed=True
+        session.close()
+        with self.lock:
+            if self.items.get(key) is session:self.items.pop(key,None)
+        session.worker.join(6)
+        return True

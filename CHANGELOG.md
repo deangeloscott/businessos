@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- Keep the model picker beside Send at desktop and phone widths. Show the source/current workspace directly under the Share or import title on every tab.
+- Honor custom ACP permission modes named full or yolo, and handle native configuration notifications arriving before session loading completes.
+- Preserve native output images when refreshing history and read inline images reported by ACP history.
+- Release settled native connections when their chats are archived, while preserving pending native work.
+- Delay automatic updates while an idle native connection has a pending interaction or provider work.
+- Observe idle OMP goal changes and prevent an older saved goal from controlling a replacement native assignment.
+- Namespace Aura composer shortcuts with /aura- so native command names are not intercepted as Aura actions.
+- Explain unsupported native steps in plain language and keep protocol details in troubleshooting diagnostics.
+
 ## v0.3.0 — 2026-11-05
 
 - Keep native conversation processes connected between messages, preserving process-local state and grants. Preserve native background-work settlement, scoped cancellation, and clean shutdown without adding an Aura execution loop.

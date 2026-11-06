@@ -150,6 +150,13 @@ def main():
             # Matching native message IDs retain the original receipt after history refresh.
             restored=[{'role':'user','text':message['text'],'request_id':job['id']},{'role':'assistant','text':'Saved useful progress'}]
             context.retain_receipts(restored,shown['messages']);assert restored[0]['references']==message['references'] and restored[1]['request_id']==job['id']
+            saved_media=[{'role':'user','text':'Show the result','request_id':'image-turn'},{'role':'assistant','text':'Image ready.','request_id':'image-turn','native_media':[media]}]
+            replay=[{'role':'user','text':'Show the result','request_id':'image-turn'},{'role':'assistant','text':'Image ready.'}]
+            context.retain_receipts(replay,saved_media);assert replay[-1]['native_media']==[media]
+            replay[-1]['native_media']=[{**media,'path':'new-native-image.png'}];context.retain_receipts(replay,saved_media)
+            assert replay[-1]['native_media'][0]['path']=='new-native-image.png','Fresh native output must take precedence over a saved image'
+            replay[-1]={'role':'assistant','text':'A changed result'};context.retain_receipts(replay,saved_media)
+            assert not replay[-1].get('native_media'),'An old image was attached to a different native reply'
             # Old objectives remain workspace goals; chat efforts are explicitly scoped.
             legacy=remember(bid,{'objects':[{'object_type':'Objective','content':{'name':'Existing business objective','status':'active'}}]})['objects'][0]['id']
             assert goals.scope(goals.find(bid,legacy))=='workspace' and not goals.metadata(goals.find(bid,legacy))

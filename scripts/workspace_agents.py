@@ -292,11 +292,10 @@ def history(command, kind, cwd, env, native_id, source_file=''):
             if params.get('sessionId')!=native_id:return
             update=params.get('update') or {};content=update.get('content') or {}
             role={'user_message_chunk':'user','agent_message_chunk':'assistant'}.get(update.get('sessionUpdate'))
-            if not role or content.get('type')!='text':return
-            text=content.get('text','')
-            if not isinstance(text,str):return
-            if messages and messages[-1]['role']==role:messages[-1]['content']+=text
-            else:messages.append({'role':role,'content':text})
+            if not role or content.get('type') not in {'text','image'}:return
+            if not messages or messages[-1]['role']!=role:messages.append({'role':role,'content':''})
+            if content.get('type')=='text':messages[-1]['content']+=content.get('text','')
+            elif role=='assistant':messages[-1].setdefault('native_images',[]).append(content)
         host=Metadata(command,kind,cwd,env,on_update=replay)
         try:
             info=host.call('initialize',protocolVersion=1,clientCapabilities={},clientInfo={'name':'aura-workspace','version':'1'})
@@ -324,10 +323,12 @@ def history(command, kind, cwd, env, native_id, source_file=''):
         from workspace_context import message_ref
         aura_ref=message_ref(message_text(message.get('content',''))) if message['role']=='user' else ''
         text=display_text(message.get('content',''))
+        images=message.get('native_images') or []
+        if images and not text:text='Image ready.'
         at=message.get('timestamp') or message.get('created_at')
         if isinstance(at,(int,float)) and at>1e11:at/=1000
         if text:out.append({'role':message['role'],'text':text,'at':at,**({'request_id':aura_ref} if aura_ref else {}),
-                        'agent':{'pi':'Pi','omp':'OMP','claude':'Claude Code','hermes':'Hermes','antigravity':'Google Antigravity'}.get(kind,'AI app')})
+                        'agent':{'pi':'Pi','omp':'OMP','claude':'Claude Code','hermes':'Hermes','antigravity':'Google Antigravity'}.get(kind,'AI app'),**({'native_images':images} if images else {})})
         if candidate:brief=dict(candidate,through=len(out),at=workspace_usage.timestamp(at))
     return {**({'subagents':list(delegation.items.values())} if delegation.items else {}),
             'messages':out,'model':model,'effort':effort,'usage':workspace_usage.messages_usage(messages,kind,window),'native_id':native_id,'native_observation':observation,

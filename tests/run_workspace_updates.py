@@ -208,6 +208,8 @@ HTTPServer(('127.0.0.1',int(sys.argv[sys.argv.index('--port')+1])),Handler).serv
     assert not app.update_idle()
     app.update_editing_until = 0
     assert app.update_idle()
+    with patch.object(app.native_sessions,'busy',return_value=True):
+        assert not app.update_idle(),'Automatic updates must wait for pending native interactions after a message finishes'
     app.job = {'status':'working'}
     server = ThreadingHTTPServer(('127.0.0.1', 0), handler_for(app))
     threading.Thread(target=server.serve_forever, daemon=True).start()

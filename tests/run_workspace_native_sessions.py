@@ -78,6 +78,7 @@ def main():
                 first,result,worker=request(1)
                 wait(lambda:first.requests.snapshot() or not worker.is_alive())
                 assert worker.is_alive(),result
+                assert not sessions.release_idle(key),'Pending native work was closed'
                 q=next(r for r in first.requests.snapshot() if r['status']=='pending')
                 answers={'decision':['Approve for this session']} if kind=='codex' else {'decision':['Approve once']} if kind=='claude' else {'answer':['Yes']}
                 first.requests.answer(q['id'],answers);worker.join(8)
@@ -88,6 +89,10 @@ def main():
                 assert second.process.pid==pid and first.requests is second.requests
                 assert result2['reply']==f'Turn 2, native PID {pid}, permission True'
                 first.stop();assert second.process.poll() is None,'An old request stopped the reused native conversation'
+                second.requests.add('late-input','Late native question',q['questions'],lambda value:None,lambda value:{})
+                assert sessions.busy() and not sessions.release_idle(key),'An idle native question must keep the connection and delay updates'
+                second.requests.resolve('late-input');assert not sessions.busy()
+                assert sessions.release_idle(key) and second.process.poll() is not None and key not in sessions.items
             finally:sessions.close()
     print('Native sessions passed: two messages, one process/initialization, retained native grants, scoped stale Stop and clean shutdown across Codex/Claude/Pi/OMP.')
 

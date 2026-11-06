@@ -163,10 +163,13 @@ def message_ref(raw):
 
 def retain_receipts(messages,saved):
     index={m['request_id']:m for m in saved if m.get('role')=='user' and m.get('request_id')}
+    media={(m['request_id'],message_key(m)):m['native_media'] for m in saved if m.get('role')=='assistant' and m.get('request_id') and m.get('native_media')}
     current=None
     for row in messages:
         if row.get('role')=='user':current=row.get('request_id') if row.get('request_id') in index else None
         elif row.get('role')=='assistant' and current:row.setdefault('request_id',current)
+        if row.get('role')=='assistant' and (row.get('request_id'),message_key(row)) in media:
+            row.setdefault('native_media',media[(row['request_id'],message_key(row))])
         prior=index.get(row.get('request_id'))
         if prior and row.get('role')=='user' and row.get('text')==prior.get('text'):
             row.update({k:prior[k] for k in ('files','references','goal_id') if k in prior})

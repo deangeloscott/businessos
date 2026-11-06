@@ -152,6 +152,14 @@ def main():
             observe(app,bid,chat,request,{'status':'complete'})
             assert goals.find(bid,fresh['id'])['status']=='active','A different native goal must not complete the saved assignment'
             assert chat['native_goal']['status']=='needs_review'
+            # Editing the old saved goal must not control an unrelated native assignment.
+            from workspace_native_goals import control
+            app.workspace_path=str(root);chat.update(agent='codex',native_id='native-chat')
+            with patch('workspace_native_goals.saved_control') as native_change:
+                app.running_jobs=lambda:[]
+                control(app,bid,fresh,'pause');native_change.assert_not_called()
+                app.running_jobs=lambda:[{'chat_id':'chat','workspace':str(root),'id':'live'}]
+                control(app,bid,fresh,'clear');native_change.assert_not_called()
             from workspace_ui import Workspace,handler_for
             fixture=Path(folder)/'custom.py';fixture.write_text(FIXTURE,encoding='utf-8')
             agent={'name':'Different harness','argv':[sys.executable,str(fixture)],'native_goal':{'protocol':'aura-goal-v1','argv':[sys.executable,str(fixture)],'token_budget':True}}

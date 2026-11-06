@@ -285,6 +285,9 @@ def agent_lines(process,kind,prompt,native_id,execution,errors):
             value=(event.get('data') or {}).get('goal')
             if value:session.update(native_goal=value)
             return
+        if event.get('type')=='goal_updated' and goal:
+            session.update(native_goal=event.get('goal') or (event.get('data') or {}).get('goal') or {'status':'cleared'})
+            return
         if event.get('type')=='control_request' and kind=='claude':claude_request(event,execution,send)
         elif event.get('type')=='control_cancel_request':execution.requests.resolve(event.get('request_id'))
         elif event.get('type')=='extension_ui_request':
