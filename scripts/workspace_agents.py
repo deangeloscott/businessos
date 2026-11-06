@@ -382,6 +382,20 @@ def relocate_pi(command, cwd, env, native_id, execution=None, source_file=''):
 
 
 def run(command, kind, cwd, env, prompt, native_id, model, effort, update, execution=None):
+    import tempfile
+    child=getattr(execution,'child_model','')
+    if kind=='claude' and child:env={**env,'CLAUDE_CODE_SUBAGENT_MODEL':child}
+    if kind=='omp' and child:
+        # OMP's task model role supplies its general delegated-worker default.
+        # Specialized agents retain their own native selections and overrides.
+        with tempfile.TemporaryDirectory(prefix='aura-native-model-') as folder:
+            config=Path(folder)/'models.json'
+            config.write_text(json.dumps({'modelRoles':{'task':child}}),encoding='utf-8')
+            return _native_run([*base_command(command),'--config',str(config)],kind,cwd,env,prompt,native_id,model,effort,update,execution)
+    return _native_run(command,kind,cwd,env,prompt,native_id,model,effort,update,execution)
+
+
+def _native_run(command, kind, cwd, env, prompt, native_id, model, effort, update, execution=None):
     if execution and execution.interactive and kind=='hermes':
         import workspace_hermes
         if workspace_hermes.enabled(command,execution.native_options,execution.permission):
@@ -422,6 +436,7 @@ def _run(command, kind, cwd, env, prompt, native_id, model, effort, update, exec
         argv=execution_command(argv,kind,model,effort)
     elif kind=='claude':
         argv += ['-p','--output-format','stream-json','--verbose']
+        if getattr(execution,'native_agent',''):argv+=['--agent',execution.native_agent]
         if interactive:argv += ['--input-format','stream-json','--permission-prompt-tool','stdio']
         if native_id:argv += ['--resume',native_id]
         argv=execution_command(argv,kind,model,effort)

@@ -101,9 +101,9 @@ def read_json(path):
     return data
 
 
-def describe(command,kind,cwd,env=None):
+def describe(command,kind,cwd,env=None,definitions=None,profile=None):
     env=dict(os.environ if env is None else env);command=native_command(command,kind)
-    definitions=FIELDS.get(kind,[]);values={};note='';shadowed=[];local={};scope='Native app settings on this computer. Other chats using this profile share these settings.'
+    definitions=FIELDS.get(kind,[]) if definitions is None else definitions;values={};note='';shadowed=[];local={};scope='Native app settings on this computer. Other chats using this profile share these settings.'
     if not definitions:return {'app':kind,'fields':[],'note':'This connection does not report editable cache or compaction settings. Its native behavior stays in effect.'}
     if kind=='omp':
         raw=json.loads(run(command,['config','list','--json'],cwd,env))
@@ -119,13 +119,14 @@ def describe(command,kind,cwd,env=None):
             shadowed=[key for key,*_ in definitions if nested(local,key) is not None]
             if shadowed:note+=' Some settings are controlled by this project.'
     elif kind=='hermes':
-        raw={section:json.loads(run(command,['config','get',section,'--json'],cwd,env)) for section in ('compression','prompt_caching')}
-        values={key:nested(raw,key) for key,*_ in definitions if nested(raw,key) is not None}
+        prefix=['--profile',profile] if profile else []
+        raw={section:json.loads(run(command,[*prefix,'config','get',section,'--json'],cwd,env)) for section in dict.fromkeys(key.split('.')[0] for key,*_ in definitions)}
+        values={key:nested(raw,key) for key,*_ in definitions}
     elif kind=='codex':
         from workspace_codex import rpc
         native=rpc(command,[('config/read',{'includeLayers':False,'cwd':str(cwd)})],cwd,env)[0]
         raw=native['config']
-        values={key:raw[key] for key,*_ in definitions if key in raw}
+        values={key:raw[key] if key in raw else nested(raw,key) for key,*_ in definitions if key in raw or nested(raw,key) is not None or key.startswith('agents.')}
     else:
         # These apps document JSON settings files. Preserve unrelated keys and layers.
         if any(Path(arg).name.lower() in {'wsl','wsl.exe','ssh','ssh.exe','docker','podman'} for arg in command):
@@ -157,6 +158,7 @@ def describe(command,kind,cwd,env=None):
             row.update(type='select',options=[{'value':v,'name':{'streaming':'During work','idle':'During work and short breaks','off':'Off','auto':'Automatic','short':'Short','long':'Long','none':'Disabled','5m':'5 minutes','1h':'1 hour'}.get(v,v)} for v in kind_spec])
             if row['value'] is not None and row['value'] not in kind_spec:row['options'].append({'value':row['value'],'name':'Current: '+str(row['value'])})
         elif isinstance(kind_spec,tuple):row.update(type='number',min=0 if kind=='hermes' else kind_spec[0],max=9007199254740991 if kind_spec[1]==100000000 else kind_spec[1],step='any' if kind=='hermes' else 1)
+        elif kind_spec in {'text','model-map'}:row.update(type=kind_spec)
         elif kind_spec=='methods':
             order=row['value'] if isinstance(row['value'],list) else []
             names={'remote':'Provider compaction','snapcompact':'Snapcompact','handoff':'Handoff document','shake':'Shake','soft':'Summary'}
@@ -172,11 +174,12 @@ def describe(command,kind,cwd,env=None):
         if key=='env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE':row['description']='Can lower the native trigger; values above the native default do not raise it.'
         if kind=='hermes' and isinstance(kind_spec,tuple):row['display_scale']=100
         if kind=='claude':
-            source={'promptCacheTtl':'CLAUDE_CODE_PROMPT_CACHE_TTL','subagentPromptCacheTtl':'CLAUDE_CODE_SUBAGENT_PROMPT_CACHE_TTL',
-                    'env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE':'CLAUDE_AUTOCOMPACT_PCT_OVERRIDE','autoCompactEnabled':'DISABLE_AUTO_COMPACT'}.get(key)
+            source=key[4:] if key.startswith('env.') else {'promptCacheTtl':'CLAUDE_CODE_PROMPT_CACHE_TTL','subagentPromptCacheTtl':'CLAUDE_CODE_SUBAGENT_PROMPT_CACHE_TTL',
+                    'autoCompactEnabled':'DISABLE_AUTO_COMPACT'}.get(key)
             if source and env.get(source):row.update(readonly=True,project_value=env[source],source_name='Environment')
         rows.append(row)
-    revision=hashlib.sha256(json.dumps(rows,sort_keys=True).encode()).hexdigest()
+    revision=hashlib.sha256(json.dumps({'fields':rows,'app':kind,'cwd':str(Path(cwd).resolve()),'profile':profile,
+        'homes':{k:env.get(k) for k in ('HOME','USERPROFILE','CODEX_HOME','PI_CODING_AGENT_DIR','CLAUDE_CONFIG_DIR','HERMES_HOME')}},sort_keys=True).encode()).hexdigest()
     return {'app':kind,'scope':scope,'fields':rows,'revision':revision,'note':note}
 
 
@@ -212,12 +215,16 @@ def validate(rows,changes):
             value=value if isinstance(value,list) else [v.strip() for v in str(value).split(',') if v.strip()]
             allowed={'remote','snapcompact','handoff','shake','soft',*(row.get('value') or [])}
             if not value or not all(isinstance(v,str) for v in value) or len(value)!=len(set(value)) or set(value)-allowed:raise ValueError('Choose valid native compaction methods without duplicates.')
+        elif row['type']=='text':
+            if not isinstance(value,str) or len(value)>300 or '\0' in value:raise ValueError('Enter a valid model or provider for '+row['name']+'.')
+        elif row['type']=='model-map':
+            if not isinstance(value,dict) or len(value)>200 or any(not isinstance(k,str) or not k or len(k)>100 or not isinstance(v,str) or not v or len(v)>300 for k,v in value.items()):raise ValueError('Give each native role or agent a name and a model.')
         result[key]=value
     return result
 
 
-def save(command,kind,cwd,env,changes,revision):
-    current=describe(command,kind,cwd,env)
+def save(command,kind,cwd,env,changes,revision,definitions=None,profile=None):
+    current=describe(command,kind,cwd,env,definitions,profile)
     if revision!=current.get('revision'):raise ValueError('The native settings changed. Refresh them before saving.')
     changes=validate(current['fields'],changes);base=native_command(command,kind)
     if kind in {'pi','claude'}:
@@ -236,15 +243,15 @@ def save(command,kind,cwd,env,changes,revision):
         rpc(base,[('config/batchWrite',{'edits':[{'keyPath':k,'value':v,'mergeStrategy':'replace'} for k,v in changes.items()]})],cwd,env)
     else:
         for key,value in changes.items():
-            args=(['config','reset',key,'--json'] if kind=='omp' else ['config','unset',key]) if value is None else ['config','set',key,json.dumps(value)]
-            run(base,args,cwd,env)
-    result=describe(command,kind,cwd,env)
+            args=(['config','reset',key,'--json'] if kind=='omp' else ['config','unset',key]) if value is None else ['config','set',key,value if kind=='hermes' and isinstance(value,str) else json.dumps(value)]
+            run(base,['--profile',profile,*args] if kind=='hermes' and profile else args,cwd,env)
+    result=describe(command,kind,cwd,env,definitions,profile)
     observed={r['id']:r['value'] for r in result['fields']}
     if any(value is not None and observed.get(key)!=value for key,value in changes.items()):raise ValueError('The AI app did not apply every requested value. Refresh to see its current settings.')
     return result
 
 
-def main():
+def main(section='context'):
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--app',required=True);parser.add_argument('--business-id',required=True)
     parser.add_argument('--chat');parser.add_argument('--url',default='http://127.0.0.1:4187')
@@ -254,19 +261,21 @@ def main():
     from workspace_goals import live_change
     from urllib.parse import urlencode
     data={'kind':args.app,**({'chat_id':args.chat} if args.chat else {})}
-    result=live_change(args.url,args.business_id,{**data,'changes':json.loads(args.set),'revision':args.revision},'/api/context-settings') if args.set else live_change(args.url,args.business_id,None,'/api/context-settings?'+urlencode({'business':args.business_id,**data}))
+    endpoint='/api/delegation-settings' if section=='delegation' else '/api/context-settings'
+    result=live_change(args.url,args.business_id,{**data,'changes':json.loads(args.set),'revision':args.revision},endpoint) if args.set else live_change(args.url,args.business_id,None,endpoint+'?'+urlencode({'business':args.business_id,**data}))
     print(json.dumps(result,ensure_ascii=False))
+
+
+def cli_error(error):
+    from urllib.error import HTTPError,URLError
+    from workspace_support import human_error
+    if isinstance(error,HTTPError):
+        try:return human_error(ValueError(json.load(error).get('error','Aura could not save this change.')))
+        except ValueError:return 'Aura could not save this change. Check --url and try again.'
+    if isinstance(error,URLError):return 'Aura is not reachable. Start the local Aura service and check --url.'
+    return human_error(error)
 
 
 if __name__=='__main__':
     try:main()
-    except (OSError,ValueError) as error:
-        from urllib.error import HTTPError,URLError
-        if isinstance(error,HTTPError):
-            try:message=json.load(error).get('error','Aura could not change these settings.')
-            except ValueError:message='Aura could not change these settings.'
-        elif isinstance(error,URLError):message='Aura is not reachable. Start the local Aura service and check --url.'
-        else:
-            from workspace_support import human_error
-            message=human_error(error)
-        raise SystemExit('Error: '+message)
+    except (OSError,ValueError) as error:raise SystemExit('Error: '+cli_error(error))

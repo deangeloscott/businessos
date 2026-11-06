@@ -809,9 +809,9 @@ async function render() {
   if(!current())return;
   if(state.view==='home') { $('#section-dialog').close();$('#view').innerHTML='';return; }
   $('#detail').close();
-  $('#section-description').textContent=({business:'Your goals, useful facts, preferences, and decisions.',files:'Find the work you have saved and the locations you have linked.',work:'Reusable guidance and the capabilities listed by your AI apps.',tools:'Schedules managed by your connected AI apps.',assistants:'Saved instructions, chats, and scheduled tasks grouped under names you choose.'})[state.view]||'';
+  $('#section-description').textContent=({business:'Your goals, useful facts, preferences, and decisions.',files:'Find the work you have saved and the locations you have linked.',work:'Reusable guidance and the capabilities listed by your AI apps.',tools:'Schedules managed by your connected AI apps.',assistants:'Reusable agents, native specialists, and the work you do with them.'})[state.view]||'';
   $('#page-refresh').disabled=state.view==='work'&&!!state.libraryRefreshing;$('#page-refresh').textContent=$('#page-refresh').disabled?'Refreshing…':'Refresh';
-  $('#section-title').textContent=({business:'Business & memory',files:'Saved files & media',work:'Workflows & recipes',tools:'Scheduled tasks',assistants:'Assistants'})[state.view];
+  $('#section-title').textContent=({business:'Business & memory',files:'Saved files & media',work:'Workflows & recipes',tools:'Scheduled tasks',assistants:'Agents'})[state.view];
   if(!$('#section-dialog').open) $('#section-dialog').show();
   if(state.view==='business') {
     view.innerHTML=`<div class="section-head business-title"><span>Business · <strong>${esc(rows('Business')[0]?.title)}</strong></span><button class="text-button" data-action="edit-business">Edit name</button></div><input class="search" id="record-search" type="search" aria-label="Search goals and saved information" placeholder="Find goals or saved information…" value="${esc(state.memoryQuery||'')}"><div id="full-memory"></div>`;
@@ -906,7 +906,7 @@ function renderWork() {
   state.libraryExpanded??={};
   document.querySelectorAll('#work-list details[data-library-group]').forEach(group=>{state.libraryExpanded[group.dataset.libraryGroup]=group.open;});
   const groupKey=name=>JSON.stringify([state.data.workspace,state.business,workFilter,workCategory,libraryView,name]);
-  $('#section-description').textContent=({business:'Your goals, useful facts, preferences, and decisions.',files:'Find the work you have saved and the locations you have linked.',work:'Reusable guidance and the capabilities listed by your AI apps.',tools:'Schedules managed by your connected AI apps.',assistants:'Saved instructions, chats, and scheduled tasks grouped under names you choose.'})[state.view]||'';
+  $('#section-description').textContent=({business:'Your goals, useful facts, preferences, and decisions.',files:'Find the work you have saved and the locations you have linked.',work:'Reusable guidance and the capabilities listed by your AI apps.',tools:'Schedules managed by your connected AI apps.',assistants:'Reusable agents, native specialists, and the work you do with them.'})[state.view]||'';
   $('#section-title').textContent=libraryKinds[workFilter]||'Workflows, recipes & more';
   if($('#library-connections'))$('#library-connections').hidden=!['all','Tool'].includes(workFilter);
   document.querySelectorAll('[data-workfilter]').forEach(b=>{b.setAttribute('aria-pressed',String(b.dataset.workfilter===workFilter));b.classList.toggle('active',b.dataset.workfilter===workFilter);});
@@ -2385,7 +2385,7 @@ async function renderShell(force=true){
   state.shellLoading=true;state.shellPolledAt=Date.now();
   try{
   applyProfile(state.data.profile||state.profile||{});renderComposerConnection();$('#active-workspace-label').textContent=rows('Business')[0]?.title||'Choose a workspace';
-  $('#active-chat-label').textContent=state.view==='home'?(state.chatMeta?.title||''):({business:'Business & memory',files:'Files & media',work:'Library',assistants:'Assistants',tools:'Scheduled tasks',sharing:'Share or import'})[state.view]||'';
+  $('#active-chat-label').textContent=state.view==='home'?(state.chatMeta?.title||''):({business:'Business & memory',files:'Files & media',work:'Library',assistants:'Agents',tools:'Scheduled tasks',sharing:'Share or import'})[state.view]||'';
   $('#sidebar [data-shell-action=sharing]').setAttribute('aria-current',state.view==='sharing'?'page':'false');
   for(const b of document.querySelectorAll('.sidebar-sections [data-view]'))b.setAttribute('aria-current',b.dataset.view===state.view?'page':'false');
   const running=state.data.running_chats||[];$('#background-work').hidden=!running.length;$('#background-work').textContent=running.length+' '+(running.length===1?'chat working':'chats working');
@@ -2753,7 +2753,7 @@ async function openChatModels(target=null){
 }
 async function loadChatModelOptions(refresh=false){
   const draft=state.chatModelDraft,kind=draft.kind,ticket=draft.ticket,request=state.chatModelRequest=(state.chatModelRequest||0)+1;
-  if(!nativeConnection(kind)){$('#chat-model-options').innerHTML='<p class="shell-help">This connection uses its own model settings.</p>'+(state.chatMeta&&!draft.target?'<button class="secondary" data-close="chat-model-dialog">Done</button>':`<button class="primary" id="save-chat-model">${draft.target?'Use for assistant':'Use for this chat'}</button>`);return;}
+  if(!nativeConnection(kind)){$('#chat-model-options').innerHTML='<p class="shell-help">This connection uses its own model settings.</p>'+(state.chatMeta&&!draft.target?'<button class="secondary" data-close="chat-model-dialog">Done</button>':`<button class="primary" id="save-chat-model">${draft.target?'Use model':'Use for this chat'}</button>`);return;}
   try{
     await pickerSave.catch(()=>{});
     const catalog=await (refresh?api('/api/model-catalog?kind='+encodeURIComponent(kind)+'&refresh=1'):cachedApi('/api/model-catalog?kind='+encodeURIComponent(kind)));
@@ -2766,8 +2766,8 @@ async function loadChatModelOptions(refresh=false){
     const nativeRows=!draft.target&&state.chatMeta?(state.chatMeta.native_config||[]).filter(r=>r.type==='select'&&!['model','mode','thought_level'].includes(r.category)):[];
     const nativeOptions=rows=>rows.flatMap(r=>r.options?nativeOptions(r.options):[r]);
     const moreSettings=nativeRows.length?`<details class="native-settings"><summary>More settings</summary>${nativeRows.map(r=>`<label>${esc(r.name||r.id)}<select aria-label="${esc(r.name||r.id)}" data-native-setting="${esc(r.id)}">${nativeOptions(r.options||[]).map(o=>`<option value="${esc(o.value)}" ${o.value===(state.chatMeta.native_settings?.[r.id]??r.currentValue)?'selected':''}>${esc(o.name||o.value)}</option>`).join('')}</select></label>`).join('')}</details>`:'';
-    $('#chat-model-options').innerHTML=`<label class="sr-only" for="chat-model-search">Find a model</label><input id="chat-model-search" type="search" placeholder="Search all models…"><p id="chat-model-list-label" class="small-note" role="status"></p><div id="chat-model-list" role="list" aria-label="Available models"></div><button class="text-button" id="chat-model-more" hidden>Show more models</button><p id="chat-model-selection" class="chat-model-selection"></p>${moreSettings}<div class="chat-model-bottom"><div id="chat-model-effort"></div><div class="inline-actions"><button class="text-button" data-close="chat-model-dialog">Cancel</button><button class="primary" id="save-chat-model">${draft.target?'Use for assistant':'Use for this chat'}</button></div></div>`;
-    paintChatModels();if(options.models.some(m=>m.id===draft.model))await loadChatModelEfforts();else{$('#chat-model-effort').innerHTML='<p class="small-note">The current model is not available in this app’s list. Choose a model for your next message.</p>';$('#save-chat-model').disabled=true;}
+    $('#chat-model-options').innerHTML=`<label class="sr-only" for="chat-model-search">Find a model</label><input id="chat-model-search" type="search" placeholder="Search all models…"><p id="chat-model-list-label" class="small-note" role="status"></p><div id="chat-model-list" role="list" aria-label="Available models"></div><button class="text-button" id="chat-model-more" hidden>Show more models</button><p id="chat-model-selection" class="chat-model-selection"></p>${moreSettings}<div class="chat-model-bottom"><div id="chat-model-effort"></div><div class="inline-actions"><button class="text-button" data-close="chat-model-dialog">Cancel</button><button class="primary" id="save-chat-model">${draft.target?'Use model':'Use for this chat'}</button></div></div>`;
+    paintChatModels();if(options.models.some(m=>m.id===draft.model))await loadChatModelEfforts();else{$('#chat-model-effort').innerHTML='<p class="small-note">'+(draft.target?'Choose an available model here, or keep the native model or role entered in the form.':'The current model is not available in this app’s list. Choose a model for your next message.')+'</p>';$('#save-chat-model').disabled=true;}
   }catch(e){if(request!==state.chatModelRequest||kind!==draft.kind||ticket!==chatModelTicket||draft!==state.chatModelDraft||!$('#chat-model-dialog').open||draft.scope!==chatScope()||(draft.target?.current&&!draft.target.current()))return;if($('#chat-model-options'))$('#chat-model-options').innerHTML=`<p class="error">${esc(humanError(e))}</p><button class="secondary" id="chat-model-retry">Try again</button>`;}
 }
 function paintChatModels(){

@@ -61,7 +61,7 @@ def codex_run(command,cwd,prompt,native_id,model,effort,update,env,execution,chi
     mode=execution.permission
     params={**execution.native_options.get('thread',{k:v for k,v in execution.native_options.items() if k!='initialize'}),'cwd':str(cwd),**({'model':model} if model else {})}
     if mode!='native':params.update(sandbox='danger-full-access' if mode=='full' else mode,approvalPolicy='never' if mode=='full' else 'on-request')
-    if child_model:params['config']={'agents.default_subagent_model':child_model}
+    if child_model:params['config']={**params.get('config',{}),'agents.default_subagent_model':child_model}
     if native_id:params.update(threadId=native_id)
     final='';usage={};thread=native_id;complete=False;items={};delegation=Tracker(update)
     previous_total=None;turn_tokens={};turn_started=False;turn_id=None;owned=set();child_started=set();background=[];background_checked=False;background_pages=[]

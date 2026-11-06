@@ -32,6 +32,8 @@ def main():
     import workspace_storage as storage
     import workspace_codex as codex
     import workspace_agents as agents
+    import workspace_specialists as specialists
+    import workspace_agent_settings as delegation_settings
     from workspace_delegation import Tracker
     from workspace_ui import Workspace,handler_for
     from setup import setup
@@ -40,6 +42,56 @@ def main():
         os.environ.update(BUSINESSOS_WORKSPACE=str(root),BUSINESSOS_WORKSPACE_CONFIG=str(base/'pointer.json'),
                           LOCALAPPDATA=str(base/'local'),CODEX_HOME=str(base/'codex'),HERMES_HOME=str(base/'hermes'))
         bid=setup(organization='Assistant studio')['business_id']
+        native_env={**os.environ,'HOME':str(base/'home'),'USERPROFILE':str(base/'home'),'PI_CODING_AGENT_DIR':str(base/'pi')}
+        for kind in specialists.APPS:
+            native_env['PI_CODING_AGENT_DIR']=str(base/kind/'config')
+            # Native files remain authoritative, including settings Aura does not understand.
+            saved=specialists.save(kind,root,native_env,{'scope':'project','name':'Jeff','description':'Find evidence with sources.',
+                                                       'instructions':'Read the relevant references.','model':'pro' if kind=='antigravity' else 'provider/model'})
+            original=saved
+            extra=saved['source']+'\n[features]\nmemories = false\n' if kind=='codex' else saved['source'].replace('---\n','---\n# Keep this native option\ncustom: {enabled: true}\n',1)
+            saved=specialists.save(kind,root,native_env,{**saved,'source':extra})
+            saved=specialists.save(kind,root,native_env,{'scope':'project','file':saved['file'],'revision':saved['revision'],
+                                                      'description':'Research customer needs.','instructions':'Return evidence.\nExplain unknowns.','model':''})
+            assert not saved['model'] and saved['instructions']=='Return evidence.\nExplain unknowns.'
+            assert saved['settings']['features']['memories'] is False if kind=='codex' else saved['settings']['custom']['enabled'] is True
+            assert '# Keep this native option' in saved['source'] if kind!='codex' else True
+            try:specialists.save(kind,root,native_env,{**original,'description':'Stale replacement'});raise AssertionError('A stale native definition overwrote an external edit')
+            except ValueError as error:assert 'changed' in str(error)
+            try:specialists.read(kind,root,native_env,'project','../outside'+('.toml' if kind=='codex' else '.md'));raise AssertionError('Native file traversal succeeded')
+            except ValueError:pass
+            profile={'id':'linked','name':'Jeff','app':kind,'native_agent':{k:saved[k] for k in ('app','scope','file')}}
+            assistants.validate({bid:[profile]})
+            current=assistants.resolved(profile,kind,root,native_env)
+            assert current['instructions']==saved['instructions'] and 'instructions' not in profile
+            native_user=specialists.save(kind,root,native_env,{'scope':'user','name':'Jeff','description':'Personal agent','instructions':'Personal'})
+            inventory=specialists.inventory(kind,root,native_env)
+            assert any(r['scope']=='user' and r['shadowed'] for r in inventory['items'])
+        # TOML-looking instructions are data, not keys for the structured editor.
+        source='name = "Jeff"\ndescription = "Research"\ndeveloper_instructions = """\nmodel = "keep this example"\n[features]\n"""\nmodel = "old"\n'
+        changed=specialists.changed_source('codex',source,{'model':'new'})
+        assert specialists.parse('codex',changed)['model']=='new' and 'model = "keep this example"' in changed
+        # Only native-reported ACP settings are exposed; unrelated settings stay separate.
+        reported=delegation_settings.reported([{'id':'workers','name':'Subagent model','options':[{'value':'small','name':'Small'}],'currentValue':'small'},
+                                             {'id':'cache','name':'Cache','options':[{'value':'on'}],'currentValue':'on'}])
+        assert len(reported['fields'])==1 and reported['fields'][0]['id']=='workers'
+        # Hermes treats string settings literally; JSON quoting would change the model ID.
+        hermes_values={'model':'','provider':''}
+        def hermes_config(command,args,cwd,env):
+            if args[:1]==['--profile']:
+                assert args[1]=='research';args=args[2:]
+            if args[:2]==['config','get']:return json.dumps(hermes_values)
+            assert args[:2]==['config','set']
+            hermes_values[args[2].split('.')[-1]]=args[3]
+            return ''
+        with patch('workspace_context_settings.run',side_effect=hermes_config):
+            before=delegation_settings.describe(['native-fixture'],'hermes',root,native_env)
+            after=delegation_settings.save(['native-fixture'],'hermes',root,native_env,{'delegation.model':'provider/model'},before['revision'])
+            assert hermes_values['model']=='provider/model'
+            scoped=delegation_settings.describe(['native-fixture'],'hermes',root,native_env,profile='research')
+            assert scoped['revision']!=after['revision'],'A settings revision lost its native profile scope'
+            delegation_settings.save(['native-fixture'],'hermes',root,native_env,{'delegation.provider':'custom'},scoped['revision'],profile='research')
+            assert hermes_values['provider']=='custom'
         program="import sys;from pathlib import Path;Path('received.txt').write_text(sys.stdin.read(),encoding='utf-8');print('Finished the requested work.')"
         app=Workspace(agent={'name':'Local fixture','argv':[sys.executable,'-c',program]},settings_file=base/'prefs.json')
         app.preferences['connection']={'kind':'configured','model':'original-model','effort':''}
@@ -56,6 +108,19 @@ def main():
                 assert exc.code==status,(exc.code,exc.read())
                 return {}
         try:
+            with patch.object(app,'native_choice',return_value={'id':'omp','name':'OMP','argv':['native-fixture']}):
+                linked=call('/api/agents',{'business':bid,'name':'Researcher','description':'Research with sources.',
+                                         'instructions':'Return evidence and unknowns.','app':'omp','publish_native':'on'})['items'][0]
+                assert linked['native_agent']=={'app':'omp','scope':'project','file':'Researcher.md'} and not linked['instructions']
+                definition=call('/api/native-agents?business='+bid+'&kind=omp&action=read&scope=project&file=Researcher.md')
+                assert definition['instructions']=='Return evidence and unknowns.'
+                definition['description']='Find primary sources.'
+                call('/api/native-agents',{'business':bid,'kind':'omp','action':'save',**{k:definition[k] for k in ('scope','file','revision','description')}})
+                call('/api/native-agents',{'business':bid,'kind':'omp','action':'save',**{k:definition[k] for k in ('scope','file','revision','description')}},400)
+                assert call('/api/agents?business='+bid)['items'][0]['id']==linked['id']
+                call('/api/agents',{'business':bid,'id':linked['id'],'name':'Research partner'})
+                call('/api/agents',{'business':bid,'action':'remove','id':linked['id']})
+                assert Path(definition['path']).exists(),'Removing a profile removed the native definition'
             saved=call('/api/assistants',{'business':bid,'name':'Jeff','instructions':'Research carefully.','model':'assistant-model'})['items'][0]
             assert storage.view_preferences(root)['assistants'][bid][0]['id']==saved['id']
             call('/api/assistants',{'business':bid,'name':[]},400)
@@ -192,6 +257,11 @@ def main():
         tracker.observe('claude',{'type':'system','subtype':'task_notification','task_id':'native-task','status':'completed','summary':'Done'})
         assert len(tracker.items)==1 and tracker.items['background']['status']=='complete'
         # Extension progress remains working until the native tool reports completion.
+        tracker=Tracker(None)
+        tracker.observe('claude',{'type':'assistant','message':{'content':[{'type':'tool_use','id':'model-proof','name':'Agent','input':{'model':'requested-alias'}}]}})
+        assert tracker.items['model-proof']['requested_model']=='requested-alias' and not tracker.items['model-proof'].get('model')
+        tracker.observe('claude',{'type':'assistant','parent_tool_use_id':'model-proof','message':{'model':'reported-model-id','content':[]}})
+        assert tracker.items['model-proof']['model']=='reported-model-id'
         tracker=Tracker(None)
         tracker.observe('pi',{'type':'tool_execution_start','toolName':'subagent','toolCallId':'tool','args':{'task':'Research'}})
         detail={'details':{'results':[{'agent':'Scout','task':'Find evidence','model':'worker','exitCode':-1,'messages':[]}]}}

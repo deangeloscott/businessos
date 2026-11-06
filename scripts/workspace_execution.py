@@ -27,6 +27,7 @@ class Execution:
         self.steer = None
         self.interrupt_requested = False
         self.native_options = {}
+        self.child_model = ''
         self.native_handler = None
         self.native_cwd = None
         self.native_env = None

@@ -105,7 +105,7 @@ class Tracker:
             if parent_tool:
                 content = (event.get('message') or {}).get('content', [])
                 text = '\n'.join(b.get('text', '') for b in content if isinstance(b, dict) and b.get('type') == 'text') if isinstance(content, list) else ''
-                self.put(parent_tool, result=text or None, activity='Working')
+                self.put(parent_tool, result=text or None, model=(event.get('message') or {}).get('model'),activity='Working')
                 return True
             if event_type == 'system' and event.get('subtype') in {'task_started', 'task_progress', 'task_notification'}:
                 task_id=event.get('task_id')
@@ -120,7 +120,7 @@ class Tracker:
                     if isinstance(block, dict) and block.get('type') == 'tool_use' and block.get('name') in {'Agent', 'Task'}:
                         data = block.get('input') or {}
                         self.put(block.get('id'), name=data.get('description') or data.get('subagent_type') or 'Subagent',
-                                 task=data.get('prompt'), model=data.get('model'), activity='Starting',
+                                 task=data.get('prompt'), requested_model=data.get('model'), activity='Starting',
                                  background='true' if data.get('run_in_background') else None)
             if event_type == 'user':
                 for block in (event.get('message') or {}).get('content', []):
@@ -157,7 +157,7 @@ class Tracker:
                 return False
             if tool in {'subagent', 'task', 'delegate_task'} and event_type in {'tool_execution_start', 'tool_start', 'tool_use'}:
                 self.put(ident, name='Delegated work', task=args.get('task') or args.get('prompt'),
-                         model=args.get('model'), activity='Starting')
+                         requested_model=args.get('model'), activity='Starting')
             result = event.get('result') or event.get('partialResult') or {}
             details = result.get('details') or {} if isinstance(result, dict) else {}
             children = details.get('results') or [] if isinstance(details, dict) else []

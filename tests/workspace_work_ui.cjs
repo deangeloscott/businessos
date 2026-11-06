@@ -1,7 +1,7 @@
 /* DOM-independent view checks; no browser, network, or frontend dependency. */
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
 const nodes=new Map(),listeners={};
-function node(id){if(!nodes.has(id))nodes.set(id,{innerHTML:'',textContent:'',hidden:false,isConnected:true,value:'',dataset:{},classes:{},classList:{toggle(name,on){this[name]=on;}},setAttribute(name,value){this[name]=value;},querySelectorAll:()=>[],querySelector:selector=>node(id+' '+selector),insertAdjacentHTML(where,text){this.innerHTML+=text;},showModal(){this.open=true;},close(){this.open=false;}});return nodes.get(id);}
+function node(id){if(!nodes.has(id))nodes.set(id,{innerHTML:'',textContent:'',hidden:false,isConnected:true,value:'',dataset:{},classes:{},classList:{toggle(name,on){this[name]=on;}},setAttribute(name,value){this[name]=value;},querySelectorAll:()=>[],querySelector:selector=>node(id+' '+selector),addEventListener(){},insertAdjacentHTML(where,text){this.innerHTML+=text;},showModal(){this.open=true;},close(){this.open=false;}});return nodes.get(id);}
 const profiles={items:[{id:'jeff',name:'<Jeff>',instructions:'Find useful evidence.',task_ids:['weekly']}],chats:[],workspace:'A'};
 const tasks={items:[{id:'weekly',name:'Weekly review',owner:'hermes'}],notes:[]};
 const history={items:[{id:'report.md',name:'Weekly findings',status:'Saved result'}],limit:20,note:''};
@@ -12,7 +12,7 @@ const context={humanError:error=>error?.message||String(error),window:{},documen
   empty:text=>`<p>${text}</p>`,appName:name=>name,chatDate:at=>String(at),chatMarkdown:text=>`<p>${text}</p>`,
   scheduleRow:t=>`<button data-schedule="${t.id}">${t.name}</button>`,
   details:(title,html)=>{opened={title,html};context.state.fileDetailTicket=(context.state.fileDetailTicket||0)+1;node('#detail-content').innerHTML=html;node('#detail').open=true;},notice:()=>{},nativeApps:['codex','pi','hermes'],
-  api:async path=>path.startsWith('/api/assistants')?profiles:path.split('?')[0]==='/api/schedules'?tasks:path.startsWith('/api/schedules/history')?history:{name:'Weekly review',file:'Report',text:'Useful findings',owner:'codex',native_id:'native-run'},
+  api:async path=>(path.startsWith('/api/assistants')||path.startsWith('/api/agents'))?profiles:path.split('?')[0]==='/api/schedules'?tasks:path.startsWith('/api/schedules/history')?history:{name:'Weekly review',file:'Report',text:'Useful findings',owner:'codex',native_id:'native-run'},
   attempt:fn=>Promise.resolve().then(fn),addNativeChat:async(kind,id)=>{nativePreview={kind,id};},
 };
 vm.createContext(context);vm.runInContext(fs.readFileSync(process.argv[2],'utf8'),context);
@@ -128,7 +128,7 @@ context.state.data.harness_permissions={};context.state.chatMeta=originalPermiss
   // Late responses cannot populate the next workspace with previous profiles.
   let release;context.api=()=>new Promise(resolve=>{release=resolve;});
   const pending=work.renderAssistants(host);context.state.data.workspace='B';release(profiles);await pending;
-  assert.equal(host.innerHTML,'<p role="status">Loading assistants…</p>');
+  assert.equal(host.innerHTML,'<p role="status">Loading agents…</p>');
   context.state.chatMeta=null;context.state.liveJob=null;work.renderDelegation();assert.equal(node('#delegated-work').hidden,true,'A new chat without a job must render without freezing navigation');
   console.log('Work views passed: history navigation, shared model/effort picker, stale-request isolation, active-agent visibility, and honest read errors.');
 })().catch(error=>{console.error(error);process.exitCode=1;});

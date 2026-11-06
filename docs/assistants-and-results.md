@@ -1,17 +1,31 @@
-# Assistants, recurring results, and delegated work
+# Agents, scheduled results, and delegated work
 
 Aura organizes native work without running another scheduler or agent service.
 
 ## Everyday use
 
-- Open **Recurring tasks**, choose a task, and use **Results**. The latest result appears first; up to 20 recent results are available. Task settings remain below the results.
-- Open **Assistants → Create assistant**. Give it any name and reusable instructions. Optional AI preferences use the same model picker, favorites, search, and supported effort choices as chats. Changing the AI app clears incompatible preferences; defaults can be restored explicitly. **New chat** starts a separate conversation using those preferences; existing conversations retain their native app and model settings.
-- Open an assistant to find its recurring tasks and related conversations. **Assign existing task** searches discovered native tasks. Tasks already assigned here are excluded; a task assigned to someone else shows that assistant's name and **Move here**. Task details also provide assignment and removal. Each task links to the same results shown under Recurring tasks.
-- **Create recurring task** from an assistant preselects it. A newly created task receives a copy of its assistant instructions and its own native schedule. Later profile edits apply to future chat requests and newly created tasks. Existing schedules keep their saved instructions; adjust those through task settings when needed. Assigning an existing task groups it without rewriting its instructions, changing its model or timing, or launching it.
+- Open **Scheduled tasks**, choose a task, and use **Results**. The latest result appears first; up to 20 recent results are available. Task settings remain below the results.
+- Open **Agents → Create agent**. Give it any name and reusable instructions. Optional AI preferences use the same model picker, favorites, search, and supported effort choices as chats. Changing the AI app clears incompatible preferences; defaults can be restored explicitly. **New chat** starts a separate conversation using those preferences; existing conversations retain their native app and model settings.
+- Open an assistant to find its recurring tasks and related conversations. **Assign existing task** searches discovered native tasks. Tasks already assigned here are excluded; a task assigned to someone else shows that assistant's name and **Move here**. Task details also provide assignment and removal. Each task links to the same results shown under Scheduled tasks.
+- **Create scheduled task** from an assistant preselects it. A newly created task receives a copy of its assistant instructions and its own native schedule. Later profile edits apply to future chat requests and newly created tasks. Existing schedules keep their saved instructions; adjust those through task settings when needed. Assigning an existing task groups it without rewriting its instructions, changing its model or timing, or launching it.
 - General conversations are not reassigned from chat details. Use **New chat with [name]** for a dedicated conversation using that assistant's saved instructions. Existing conversations and their native histories remain available. Search conversation titles or use **Show more chats** to reach older work.
 - Removing an assistant removes its saved profile and task grouping. Native schedules, conversations, reports, and produced files remain available in their usual places.
 
 Profiles are business-specific, customizable JSON in `.businessos/view.json`. They travel with workspace backups. They contain names, instructions, model preferences, and task references; credentials and native histories remain separate. Restoring profiles does not activate schedules. A native task unavailable on another computer is shown as an unavailable link.
+
+## Native agents and model assignments
+
+**Agents → Native agents & delegation** opens native definitions for Codex, OMP, Pi, Claude Code, and Antigravity. Create an agent with a name, a concise description of when to use it, instructions, and optional model settings. Choose project or personal scope. Creating a saved Aura agent can also make it available as a native subagent. Registration makes an agent available; the native harness decides when to invoke it.
+
+The editor changes the native file directly, preserves unfamiliar fields, and checks its revision before saving. The full native definition remains editable for supported settings such as tools, memory, skills, or native delegation policy. Existing native identifiers remain stable in the structured editor. A missing, unreadable, or externally changed file produces an explanation rather than replacing it. Closing the editor does not remove the definition.
+
+**Use instructions in Aura** links a saved agent to that native definition. Future chat requests read its current instructions, rather than a competing saved copy. The lead chat retains its selected model and permissions. Claude Code can select the linked native agent through its `--agent` option; other lead-chat paths reuse instructions without claiming specialist-only settings apply to the parent. Native specialist settings apply when the harness delegates to the definition. Existing chats remain separate assignments. Unchanged instructions are not resent on every ordinary turn. Removing the Aura profile preserves native definitions, memory, chats, files, and schedules.
+
+**Delegation settings** reads native defaults and verifies writes through the same readers used for cache/context settings. OMP exposes its native model-role map and named-agent overrides; Codex exposes subagent defaults and concurrency; Claude exposes its native model default; Hermes exposes delegation model/provider defaults. The screen identifies shared app/profile scope and project overrides. Supported ACP connections can report their own delegation controls without an Aura model catalog. Pi requires its compatible subagent extension; Antigravity agent models use its native tiers.
+
+Hermes can use named model/profile routes through its optional [official Advanced Delegation plugin](https://hermes-agent.nousresearch.com/marketplace/advanced-delegation) on a compatible version. Aura preserves native slash commands and does not silently install or enable plugins. Installed extensions and harness versions determine available features; file discovery alone does not establish that an agent loaded or that a model request succeeded.
+
+Native references store app, scope, and relative filename. Personal definitions stay in the native app’s configuration directory; back them up or transfer them using that app’s normal mechanisms. Project definitions travel with their project. Native credentials and histories are not copied into Aura profiles. Definitions missing on a different machine must be reconnected. Cross-harness execution and model substitution are not inferred from matching names.
 
 ## Native results
 
@@ -31,7 +45,7 @@ Native refresh can recover Codex collaboration observations and supported tool r
 
 Counts reflect reported child tasks; open-ended work has no invented completion percentage. Unknown child outcomes stay unconfirmed when the parent finishes. The existing **Stop** stops the owning Aura request; it is not an independent per-child control. Hermes gateway work may outlive a local connection, as its normal stop notice explains.
 
-Assistant child-model preferences become a per-request native Codex default where applicable. Other harnesses receive the preference in task instructions and use their supported native configuration; Aura does not claim they applied it. Normal delegation guidance asks the parent to provide workspace context and resolve child questions before involving the user. Native permissions and actual parent-child messaging remain with the harness.
+Chat-specific subagent defaults use Codex’s native configuration, Claude’s `CLAUDE_CODE_SUBAGENT_MODEL` environment setting, or OMP’s `task` model role. OMP specialists keep their own role assignments and overrides. Other connections retain existing instruction preferences without claiming a native override. Native delegation settings expose supported app/profile defaults separately; Pi models belong to its native agent files and extension. Normal delegation guidance asks the parent to provide workspace context and resolve child questions before involving the user. Native permissions and actual parent-child messaging remain with the harness.
 
 ## Shared interfaces
 
@@ -41,6 +55,9 @@ The UI calls the same Python helpers as these JSON commands:
 python scripts/workspace_assistants.py list --business example-studio
 python scripts/workspace_assistants.py save --business example-studio --input '{"name":"Jeff","instructions":"Help with research."}'
 python scripts/workspace_assistants.py remove --business example-studio --id ASSISTANT_ID
+python scripts/workspace_specialists.py list --app omp --business-id example-studio
+python scripts/workspace_specialists.py save --app omp --business-id example-studio --input '{"name":"researcher","description":"Research with sources","instructions":"Return evidence and unknowns."}'
+python scripts/workspace_agent_settings.py --app omp --business-id example-studio
 python scripts/workspace_schedules.py list --workspace /path/to/workspace
 python scripts/workspace_schedules.py history --id TASK_ID --workspace /path/to/workspace
 python scripts/workspace_schedules.py result --id TASK_ID --run-id RUN_ID --workspace /path/to/workspace
@@ -50,10 +67,12 @@ Assistant commands use Aura's normal workspace selection (`BUSINESSOS_WORKSPACE`
 
 Local authenticated API routes:
 
-- `GET /api/assistants?business=…` returns profiles and associated chat summaries.
-- `POST /api/assistants` saves a profile; `action` can also be `remove`, `assign_task`, or `assign_chat`.
+- `GET /api/agents?business=…` (also `/api/assistants` for existing integrations) returns profiles and associated chat summaries.
+- `POST /api/agents` (also `/api/assistants`) saves a profile; `action` can also be `remove`, `assign_task`, or `assign_chat`.
 - `POST /api/chat` accepts `assistant_id` for a new conversation. Existing chat identity determines the assistant on continuation.
 - `GET /api/schedules/history?id=…` lists available native results; `GET /api/schedules/result?id=…&run_id=…` reads a selected result.
+- `GET /api/native-agents?business=…&kind=…` lists native definitions; add `action=read`, `scope`, and `file` to read one. Authenticated `POST /api/native-agents` accepts `action: "save"`, edited fields or full `source`, and the returned `revision` for an existing file.
+- `GET /api/delegation-settings?business=…&kind=…` reads native defaults; authenticated POST accepts `changes` and the returned `revision`.
 - Normal chat job/conversation responses include reported `subagents` display details. Native execution, history, cancellation, and model permissions retain their existing owners.
 
 Custom interfaces can use these operations without copying their implementation. No new frontend dependency, daemon, scheduler, automatic model router, or hosted connection is required.

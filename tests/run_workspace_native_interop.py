@@ -4,15 +4,23 @@ import json,os,sys,tempfile,threading,time
 ROOT=Path(__file__).resolve().parents[1];sys.path.insert(0,str(ROOT/'scripts'))
 
 FIXTURE=r'''
-import json,sys,threading,time
+import json,sys,threading,time,os
 from pathlib import Path
 kind=sys.argv[1];release=Path(sys.argv[2]);background=True
+if kind=='claude':
+ assert sys.argv[sys.argv.index('--agent')+1]=='jeff'
+ assert os.environ['CLAUDE_CODE_SUBAGENT_MODEL']=='child-default'
+if kind=='omp':
+ assert json.loads(Path(sys.argv[sys.argv.index('--config')+1]).read_text())=={'modelRoles':{'task':'child-default'}}
 def emit(value):print(json.dumps(value),flush=True)
 for line in sys.stdin:
  m=json.loads(line);method=m.get('method');typ=m.get('type');ident=m.get('id')
  if kind.startswith('codex'):
   if method=='initialize':emit({'id':ident,'result':{}})
-  elif method=='thread/start':emit({'id':ident,'result':{'thread':{'id':'parent'}}})
+  elif method=='thread/start':
+   if m['params'].get('config',{}).get('agents.default_subagent_model'):
+    assert m['params']['config']=={'model_verbosity':'low','agents.default_subagent_model':'child-default'}
+   emit({'id':ident,'result':{'thread':{'id':'parent'}}})
   elif method=='thread/resume':emit({'id':ident,'result':{'thread':{'id':m['params']['threadId']}}})
   elif method in {'review/start','thread/compact/start'}:
    assert (kind=='codex-review')==(method=='review/start')
@@ -123,11 +131,11 @@ def main():
             media=attachments([{'kind':'file','path':str(image)}],kind);assert len(media)==1
             if kind=='codex':assert media[0]=={'type':'localImage','path':str(image)}
             assert attachments([{'kind':'record','path':str(image)}],kind)==[]
-            live=Execution();live.interactive=True;updates=[];result={};release=root/(kind+'-release')
+            live=Execution();live.interactive=True;live.child_model='child-default';live.native_agent='jeff';live.native_options={'thread':{'config':{'model_verbosity':'low'}}} if kind=='codex' else {};updates=[];result={};release=root/(kind+'-release')
             def run():
                 try:
                     argv=[sys.executable,'-u',str(script),kind,str(release),'exec' if kind=='codex' else '--print']
-                    result.update(workspace_codex.run(argv,root,'Work',None,'fixture','',lambda **v:updates.append(v),dict(os.environ),live) if kind=='codex' else workspace_agents.run(argv,kind,root,dict(os.environ),'Work',None,'fixture','',lambda **v:updates.append(v),live))
+                    result.update(workspace_codex.run(argv,root,'Work',None,'fixture','',lambda **v:updates.append(v),dict(os.environ),live,child_model='child-default') if kind=='codex' else workspace_agents.run(argv,kind,root,dict(os.environ),'Work',None,'fixture','',lambda **v:updates.append(v),live))
                 except Exception as error:result['error']=error
             worker=threading.Thread(target=run);worker.start()
             try:
