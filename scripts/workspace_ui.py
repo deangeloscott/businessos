@@ -373,7 +373,7 @@ SETUP_ERRORS = {
     'model_ready': 'Your model is not ready. Check its connection or choose another model.',
     'files': 'Your AI could not access this folder. Allow access in your AI app and try again.',
     'permissions': 'Your AI app denied this request. Open the app to check its permissions, then try again.',
-    'unknown': 'Your AI app did not finish connecting. Open the app to check what needs attention, then try again.',
+    'unknown': 'Your AI app could not complete this request. Open it to check what needs attention, then try again.',
     'proof': 'Your AI replied, but AURA could not confirm workspace access. Try again or check file access in your AI app.',
 }
 

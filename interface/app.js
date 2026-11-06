@@ -2333,6 +2333,8 @@ function applyProfile(profile){
 }
 async function renderShell(force=true){
   if(!state.data||!$('#sidebar'))return;
+  $('#main').inert=state.view!=='home';
+  $('.skip').setAttribute('href',state.view==='home'?'#main':['sharing','updates'].includes(state.view)?'#detail-content':'#section-content');
   if(!force&&Date.now()-(state.shellPolledAt||0)<(state.busy||state.runningChats?.length?4000:15000))return;
   if(state.shellLoading){if(force)state.shellDirty=true;return;}
   state.shellLoading=true;state.shellPolledAt=Date.now();

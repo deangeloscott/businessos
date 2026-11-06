@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Keep covered chat controls out of keyboard and screen-reader navigation on workspace pages, and send Skip to content to the visible page. Describe unclassified native failures without incorrectly claiming the app never connected.
 - Connect to Hermes’s native desktop/TUI gateway where available, with native commands, approvals, evaluator-owned goal continuation and confirmed completion. Keep ACP available for older installations and explicit ACP-only settings.
 - Preserve normalized native goal assignments and completion contracts without storing Aura’s context as the goal. Reject control through an older assignment when native criteria change.
 - Discover native commands in the composer and expose additional ACP select settings in the existing model picker, using exact native IDs and acknowledgements before work.
