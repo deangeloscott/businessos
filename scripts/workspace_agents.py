@@ -241,7 +241,7 @@ def session_reference(kind, native_id, env, source_file=''):
 def history(command, kind, cwd, env, native_id, source_file=''):
     from workspace_delegation import Tracker
     delegation=Tracker(None)
-    native_workspace=''
+    native_workspace='';native_stats=None
     model, effort, window = '', '', None
     native_title=native_summary='';summary_updated=None
     if kind in {'pi','omp'}:
@@ -253,6 +253,8 @@ def history(command, kind, cwd, env, native_id, source_file=''):
             if state.get('sessionId')!=native_id:
                 raise ValueError('The AI app did not reopen the exact saved chat. No request was sent.')
             messages=host.call('get_messages',timeout=15).get('messages',[])
+            try:native_stats=host.call('get_session_stats',timeout=15)
+            except ValueError:pass
             source_file=state.get('sessionFile') or '';native_workspace=state.get('cwd') or ''
             current=state.get('model') or {}
             model=(current.get('provider','')+'/'+current.get('id','')).strip('/')
@@ -330,8 +332,16 @@ def history(command, kind, cwd, env, native_id, source_file=''):
         if text:out.append({'role':message['role'],'text':text,'at':at,**({'request_id':aura_ref} if aura_ref else {}),
                         'agent':{'pi':'Pi','omp':'OMP','claude':'Claude Code','hermes':'Hermes','antigravity':'Google Antigravity'}.get(kind,'AI app'),**({'native_images':images} if images else {})})
         if candidate:brief=dict(candidate,through=len(out),at=workspace_usage.timestamp(at))
+    usage=workspace_usage.messages_usage(messages,kind,window)
+    if native_stats and isinstance(native_stats.get('tokens'),dict):
+        # Includes off-transcript native warming/compaction. Replace totals, never add them twice.
+        total=workspace_usage.measure({**native_stats['tokens'],'cost':{'total':native_stats.get('cost')}},kind)
+        usage={**usage,**{k:v for k,v in total.items() if k!='at'}}
+        context=native_stats.get('contextUsage') or {}
+        if workspace_usage.number(context.get('tokens')) is not None and workspace_usage.number(context.get('contextWindow')):
+            usage['context']={'tokens':context['tokens'],'window':context['contextWindow'],'est':True}
     return {**({'subagents':list(delegation.items.values())} if delegation.items else {}),
-            'messages':out,'model':model,'effort':effort,'usage':workspace_usage.messages_usage(messages,kind,window),'native_id':native_id,'native_observation':observation,
+            'messages':out,'model':model,'effort':effort,'usage':usage,'native_id':native_id,'native_observation':observation,
             'chat_brief':brief,'title':native_title,'summary':native_summary,'summary_updated':summary_updated,
             'source_file':source_file,'native_workspace':native_workspace,'resume':subprocess.list2cmdline(resume_command(kind,native_id))}
 
@@ -486,6 +496,8 @@ def _run(command, kind, cwd, env, prompt, native_id, model, effort, update, exec
             if event_type=='aura_native_commands':
                 update(native_commands=[{'name':v,'description':''} if isinstance(v,str) else v for v in event.get('commands',[])])
                 continue
+            if event_type=='aura_compact_done':
+                final='Conversation compacted.';update(reply=final);continue
             if event_type=='aura_reply_ready':update(reply_ready=True,background_work=event.get('background',False),progress='Background work is running' if event.get('background') else 'Finishing your request');continue
             if event_type=='aura_native_goal':update(native_goal=event.get('goal') or {})
             elif event_type=='message_end':

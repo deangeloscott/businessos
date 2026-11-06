@@ -468,12 +468,12 @@ function usageAccounts(data) {
 function usageKeepWarm(view) {
   if(!view.keep_warm)return '';
   const cache=view.cache_window||view.usage?.cache||view.usage?.last?.cache;
-  return `<button class="text-button usage-keep-warm" data-keep-warm="${esc(view.info.id)}" data-cache-expires="${Number(cache?.expires_at)||0}" title="One manual attempt in this chat. Uses tokens; retention and savings aren’t guaranteed.">Keep warm</button>`;
+  return `<button class="text-button usage-keep-warm" data-keep-warm="${esc(view.info.id)}" data-cache-expires="${Number(cache?.expires_at)||0}" title="Sends a message asking for OK. Uses tokens; retention and savings aren’t guaranteed.">Warm-up message</button>`;
 }
 function renderCacheWindows() {
   document.querySelectorAll('[data-cache-clock]').forEach(target=>{
     const expires=Number(target.dataset.cacheExpires),hit=Number(target.dataset.cacheHit),minutes=expires?Math.ceil((expires-Date.now()/1000)/60):null;
-    target.textContent=minutes===null?(hit?'Last reuse '+usageAge(hit):'Expiry not reported'):minutes<=0?'Est. window elapsed':`Est. ${target.dataset.cacheModeled==='true'?'~':''}${minutes<60?minutes+'m':Math.floor(minutes/60)+'h '+minutes%60+'m'} left`;
+    target.textContent=target.dataset.cacheInvalidated==='true'?'Context changed':minutes===null?(hit?'Last reuse '+usageAge(hit):'Expiry not reported'):minutes<=0?'Est. window elapsed':`Est. ${target.dataset.cacheModeled==='true'?'~':''}${minutes<60?minutes+'m':Math.floor(minutes/60)+'h '+minutes%60+'m'} left`;
     target.classList.toggle('cache-ending',minutes!==null&&minutes>0&&minutes<=5);
 
   });
@@ -485,7 +485,7 @@ function usageChatCard(view,primary=false) {
   const contextPercent=context?Math.round(100*context.tokens/context.window):null;
   const hasUsage=Object.keys(last).length>0||context||cache||Number.isFinite(u.input_tokens);
   const name=info.title||'Chat',position=primary&&view.position==='Recent'?'Latest':view.position;
-  return `<article role="row" class="usage-cache-chat ${primary?'primary-cache':''}"><div role="cell" class="usage-cache-name"><strong title="${esc(name)}">${esc(name)}</strong><small class="usage-chat-model" title="${esc([human(info.agent),info.model].filter(Boolean).join(' · '))}">${esc(human(info.agent))} · ${esc(position)}</small>${usageKeepWarm(view)}</div>${hasUsage?`<div role="cell" class="usage-cache-metric"><strong>${percent!==null?percent+'% reused':Number.isFinite(cached)?usageShort(cached)+' tokens reused':'Not reported'}</strong>${percent!==null?`<meter min="0" max="100" value="${percent}" aria-label="${esc(name)} cached input reused"></meter>`:''}<small data-cache-clock data-cache-expires="${Number(cache?.expires_at)||0}" data-cache-hit="${Number(u.cache_hit?.at)||0}" data-cache-modeled="${!!cache?.modeled}" title="${esc(cache?.basis||(cache?.expires_at?new Date(cache.expires_at*1000).toLocaleString():'Provider did not report cache expiry.'))}"></small></div><div role="cell" class="usage-cache-metric"><strong>${contextPercent!==null?contextPercent+'% used':'Not reported'}</strong>${context?`<meter min="0" max="100" value="${Math.min(100,contextPercent)}" aria-label="${esc(name)} context used"></meter><small>${usageShort(context.tokens)} / ${usageShort(context.window)} · Est.</small>`:''}</div>`:`<div role="cell" aria-colspan="2" class="usage-cache-empty">${esc(view.usage_note||'No usage report yet')}</div>`}</article>`;
+  return `<article role="row" class="usage-cache-chat ${primary?'primary-cache':''}"><div role="cell" class="usage-cache-name"><strong title="${esc(name)}">${esc(name)}</strong><small class="usage-chat-model" title="${esc([human(info.agent),info.model].filter(Boolean).join(' · '))}">${esc(human(info.agent))} · ${esc(position)}</small>${usageKeepWarm(view)}</div>${hasUsage?`<div role="cell" class="usage-cache-metric"><strong>${percent!==null?percent+'% reused':Number.isFinite(cached)?usageShort(cached)+' tokens reused':'Not reported'}</strong>${percent!==null?`<meter min="0" max="100" value="${percent}" aria-label="${esc(name)} cached input reused"></meter>`:''}<small data-cache-clock data-cache-expires="${Number(cache?.expires_at)||0}" data-cache-hit="${Number(u.cache_hit?.at)||0}" data-cache-modeled="${!!cache?.modeled}" data-cache-invalidated="${!!cache?.invalidated}" title="${esc(cache?.basis||(cache?.expires_at?new Date(cache.expires_at*1000).toLocaleString():'Provider did not report cache expiry.'))}"></small></div><div role="cell" class="usage-cache-metric"><strong>${contextPercent!==null?contextPercent+'% used':'Not reported'}</strong>${context?`<meter min="0" max="100" value="${Math.min(100,contextPercent)}" aria-label="${esc(name)} context used"></meter><small>${usageShort(context.tokens)} / ${usageShort(context.window)} · Est.</small>`:''}</div>`:`<div role="cell" aria-colspan="2" class="usage-cache-empty">${esc(view.usage_note||'No usage report yet')}</div>`}</article>`;
 }
 function usageCacheTable(chats) {
   return chats.length?`<div class="usage-cache-table" role="table" aria-label="Recent chat cache and context"><div class="usage-cache-head" role="row"><span role="columnheader">Chat</span><span role="columnheader">Cache</span><span role="columnheader">Context</span></div>${chats.slice(0,5).map((view,index)=>usageChatCard(view,index===0)).join('')}</div>`:'<p class="usage-no-data">Your chats will appear here when you start working.</p>';
@@ -523,7 +523,49 @@ function usagePeriodCompact(periods) {
     return `<span><small>${{chat:'Chat',today:'Today',month:'Month'}[k]}</small><strong>${usagePartial(periods[k],'Tokens')?'Partial ':''}${tokens}</strong>${Number.isFinite(t.cost_usd)?`<small>${usagePartial(periods[k],'Cost')?'Partial ':''}${t.cost_kind==='est'?'Est. ':''}${money(t.cost_usd)}</small>`:''}</span>`;
   }).join('');
 }
+function usageMaintenance(row) {
+  if(!row||!Object.keys(row).length)return '';
+  const tokens=Number.isFinite(row.input_tokens)||Number.isFinite(row.output_tokens)?usageShort((row.input_tokens||0)+(row.output_tokens||0))+' tokens':'';
+  return `<p class="usage-scope-note">Reported cache warming &amp; compaction: ${esc([tokens,Number.isFinite(row.cost_usd)?(row.cost_kind==='est'?'Est. ':'')+money(row.cost_usd):''].filter(Boolean).join(' · '))}. Included in chat totals.</p>`;
+}
 function usageBudgetSummary(settings) {return (settings.alerts?'Alerts on':'Alerts off')+' · '+(Number.isFinite(settings.budget_usd)?money(settings.budget_usd)+'/month':'No budget');}
+async function loadContextSettings() {
+  const root=$('#usage-native-content'),business=state.business,workspace=state.data.workspace,chat=state.chatMeta?.id,ticket=state.usagePanelTicket;
+  if(!root)return;
+  const current=()=>root.isConnected&&business===state.business&&workspace===state.data.workspace&&chat===state.chatMeta?.id&&ticket===state.usagePanelTicket;
+  root.textContent='Reading native settings…';
+  try{
+    const query=`business=${encodeURIComponent(business)}${chat?'&chat_id='+encodeURIComponent(chat):''}`;
+    const data=await api('/api/context-settings?'+query);
+    if(!current())return;
+    if(!data.fields?.length){root.textContent=data.note||'The AI app manages these settings.';return;}
+    const fields=group=>data.fields.filter(r=>r.group===group).map((r,index)=>{
+      const value=r.value,ident=`native-context-${group}-${index}`,readonly=r.readonly?' disabled':'';
+      const control=['select','methods'].includes(r.type)?`<select id="${ident}" data-native-context="${esc(r.id)}"${readonly}><option value="null"${value==null?' selected':''}>Use native default</option>${r.options.map(o=>`<option value="${esc(JSON.stringify(o.value))}"${JSON.stringify(value)===JSON.stringify(o.value)?' selected':''}>${esc(o.name)}</option>`).join('')}</select>`:`<input id="${ident}" data-native-context="${esc(r.id)}" type="${r.type==='number'?'number':'text'}"${r.type==='number'?` min="${r.min*(r.display_scale||1)}" max="${r.max*(r.display_scale||1)}" step="${r.step}"`:''} value="${esc(Array.isArray(value)?value.join(', '):typeof value==='number'?Number((value*(r.display_scale||1)).toPrecision(12)):value??'')}" placeholder="Native default"${readonly}>`;
+      return `<div class="context-setting"><label for="${ident}">${esc(r.name)}</label>${control}${r.description?`<small>${esc(r.description)}</small>`:''}${r.readonly?`<small>${esc(r.source_name||'Project setting')}: ${esc(JSON.stringify(r.project_value))}</small>`:''}</div>`;
+    }).join('');
+    root.innerHTML=`<p class="small-note">${esc(data.scope)}</p>${data.note?`<p class="small-note">${esc(data.note)}</p>`:''}<form id="native-context-form">${['cache','context'].map(group=>fields(group)?`<fieldset class="context-setting-group"><legend>${group==='cache'?'Cache':'Context'}</legend>${fields(group)}</fieldset>`:'').join('')}<div class="context-setting-actions"><button class="text-button" type="button" id="native-context-defaults">Restore native defaults</button><button class="secondary" type="submit">Save</button></div><p class="small-note" id="native-context-status" role="status"></p></form>`;
+    const form=$('#native-context-form');
+    form.addEventListener('submit',async event=>{
+      event.preventDefault();const changes={};
+      for(const row of data.fields){
+        const control=[...form.querySelectorAll('[data-native-context]')].find(n=>n.dataset.nativeContext===row.id);
+        if(!control||control.disabled)continue;
+        const value=form.dataset.defaults==='true'?null:['select','methods'].includes(row.type)?JSON.parse(control.value):control.value.trim()===''?null:row.type==='number'?Number(control.value)/(row.display_scale||1):control.value.split(',').map(v=>v.trim()).filter(Boolean);
+        if(JSON.stringify(value)!==JSON.stringify(row.value))changes[row.id]=value;
+      }
+      const status=$('#native-context-status');
+      if(!Object.keys(changes).length){status.textContent='No changes to save.';return;}
+      form.querySelectorAll('button').forEach(b=>b.disabled=true);status.textContent='Saving native settings…';
+      try{
+        const result=await api('/api/context-settings',{business,kind:data.kind,chat_id:chat,changes,revision:data.revision});
+        if(!current())return;
+        await loadContextSettings();if($('#native-context-status'))$('#native-context-status').textContent=result.message;
+      }catch(error){if(current()){await loadContextSettings();if(current()&&$('#native-context-status'))$('#native-context-status').textContent=error.message;}}
+    });
+    $('#native-context-defaults').addEventListener('click',()=>{form.dataset.defaults='true';form.requestSubmit();});
+  }catch(error){if(current())root.innerHTML=`<p class="small-note" role="status">${esc(error.message)}</p><button class="text-button" type="button" id="native-context-retry">Try again</button>`;$('#native-context-retry')?.addEventListener('click',loadContextSettings);}
+}
 function renderUsage(data) {
   if(!$('#usage-panel'))return;
   const saved=usageDisclosures();
@@ -536,7 +578,7 @@ function renderUsage(data) {
   if(data.hidden_running_count)$('#usage-cache').insertAdjacentHTML('beforeend',`<p class="small-note">${data.hidden_running_count} more chats are working. This view shows up to five; all requests are tracked.</p>`);
   const periods=data.periods||{[data.period]:data};state.usageHadRunning=Boolean(data.running_count);
   if($('#usage-live-status'))$('#usage-live-status').textContent=data.refreshing?'Refreshing account reports…':periods.chat?.in_progress?'Current request · reported usage':'';
-  $('#usage-panel').innerHTML=usagePeriodTable(periods);
+  $('#usage-panel').innerHTML=usagePeriodTable(periods)+usageMaintenance(periods.chat?.maintenance);
   $('#usage-token-compact').innerHTML=usagePeriodCompact(periods);
   $('#usage-alert-summary').textContent=usageBudgetSummary(data.settings||{});
   renderCacheWindows();
@@ -566,6 +608,9 @@ async function openUsage() {
   state.usagePanelTicket=(state.usagePanelTicket||0)+1;state.usageGeneratedAt=0;state.usageRefreshing=false;state.usageSettingsLoaded=false;
   details('Usage & spend',`<div class="usage-toolbar"><span class="small-note">Your connected accounts</span><span id="usage-live-status" class="small-note" role="status"></span><button class="text-button" id="usage-refresh">Refresh</button></div><div id="usage-accounts" aria-live="polite">Reading usage…</div><section class="usage-category usage-collapsible"><details data-usage-disclosure="cache" open><summary>Cache &amp; context</summary><div id="usage-cache"></div></details><div class="usage-closed" id="usage-cache-compact"></div></section><section class="usage-category usage-collapsible"><details data-usage-disclosure="tokens"><summary>Tokens &amp; cost</summary><div id="usage-panel" aria-live="polite"></div></details><div class="usage-closed usage-token-compact" id="usage-token-compact"></div></section><details class="usage-section usage-budget-section" data-usage-disclosure="budget"><summary>Alerts &amp; budget <small id="usage-alert-summary"></small></summary><form id="usage-settings-form" class="usage-budget-form"><label class="startup-choice"><input type="checkbox" id="usage-alerts"> Quiet limit alerts</label><label class="usage-budget-field">Monthly API budget · USD<input id="usage-budget" type="number" min="0.01" step="0.01" placeholder="Optional"></label><button class="secondary">Save</button><span id="usage-settings-status" role="status"></span><p class="usage-scope-note">API costs recorded in AURA; estimates may apply.</p></form></details>`);
   restoreUsageDisclosures($('#detail-content'));
+  const cache=$('[data-usage-disclosure="cache"]');
+  cache.querySelector('summary').insertAdjacentHTML('afterend','<details class="usage-section" id="usage-native-settings"><summary>Cache &amp; context settings</summary><div id="usage-native-content" aria-live="polite"></div></details>');
+  $('#usage-native-settings').addEventListener('toggle',event=>{if(event.target.open&&!$('#usage-native-content').hasChildNodes())loadContextSettings();});
   await loadUsage();
   await loadUsage(true);
 }

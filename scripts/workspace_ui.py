@@ -998,6 +998,56 @@ class Workspace:
         return {**os.environ, **self.connections.environment(), **overrides,'BUSINESSOS_WORKSPACE':str(workspace_root()),'PYTHONUTF8':'1',
                 'PATH':overrides.get('PATH',os.pathsep.join(filter(None,[os.environ.get('PATH'),str(Path(sys.executable).parent)])))}
 
+    def context_settings(self,bid,kind=None,chat_id=None,changes=None,revision=None):
+        import workspace_context_settings as context_settings
+        chat=next((c for c in self.preferences['chats'] if c['id']==chat_id and c['business_id']==bid),None) if chat_id else self.active_chat(bid)
+        if chat_id and not chat:raise ValueError('Choose a chat in this workspace.')
+        if chat_id and kind and kind!=chat['agent']:raise ValueError('This chat belongs to a different AI app.')
+        if chat and kind and kind!=chat['agent']:chat=None
+        kind=kind or (chat or {}).get('agent') or self.connection_kind
+        choice=self.native_choice(kind)
+        if not choice:raise ValueError('Connect this AI app before opening its settings.')
+        protocol=self.native_kind(kind);env=self.agent_environment(choice)
+        cwd=Path((chat or {}).get('native_workspace') or workspace_root())
+        if not cwd.is_dir():cwd=workspace_root()
+        if protocol in {'acp','antigravity'}:
+            if not chat:raise ValueError('Open a chat to view its native context settings.')
+            rows=chat.get('native_config') or self.agent_options(kind).get('native_config',[])
+            result=context_settings.reported(rows,chat.get('native_settings'))
+            if changes is not None:
+                if revision!=result['revision']:raise ValueError('The native settings changed. Refresh them before saving.')
+                checked=context_settings.validate(result['fields'],changes)
+                key=(str(workspace_root().resolve()),bid,chat['id'])
+                session=self.native_sessions.items.get(key)
+                if chat.get('status')=='working' or session and session.pending():raise ValueError('Finish this chat’s current work before changing its settings.')
+                saved=dict(chat.get('native_settings') or {})
+                for ident,value in checked.items():
+                    if value is None:saved.pop(ident,None)
+                    else:saved[ident]=value
+                chat['native_settings']=saved;self.save_preferences();self.native_sessions.release_idle(key)
+                result=context_settings.reported(rows,saved)
+                result['message']='Saved. The AI app will confirm these settings when you next continue this chat.'
+            return {**result,'app':protocol,'kind':kind,'workspace':str(workspace_root()),'chat_id':chat['id']}
+        with self.lock:
+            if changes is not None:
+                # Native global/profile settings must not change under active work.
+                affected=[c for c in self.preferences['chats'] if c.get('agent')==kind]
+                affected_ids={c['id'] for c in affected}
+                sessions=[s for key,s in list(self.native_sessions.items.items()) if key[2] in affected_ids]
+                if any(j.get('status')=='working' and j.get('chat_id') in {c['id'] for c in affected} for j in self.jobs.values()) or any(s.pending() for s in sessions):
+                    raise ValueError('Finish this AI app’s running work before changing its context settings.')
+                result=context_settings.save(choice['argv'],protocol,cwd,env,changes,revision)
+                for c in affected:
+                    workspace_usage.invalidate(self.preferences,c['id'])
+                    self.native_sessions.release_idle((str(workspace_root().resolve()),c['business_id'],c['id']))
+                self.save_preferences()
+                result['message']='Saved in '+choice['name']+'. Aura will use these settings when you next continue a chat.'
+                self.option_cache.pop(kind,None)
+            else:result=context_settings.describe(choice['argv'],protocol,cwd,env)
+        result.update(kind=kind,workspace=str(workspace_root()),chat_id=(chat or {}).get('id'))
+        if result.get('scope'):result['scope']=choice['name']+' settings on this computer. Other chats using this profile share these settings.'
+        return result
+
     def active_chat(self, bid):
         key = self.preferences['active_chats'].get(bid)
         return next((c for c in self.preferences['chats'] if c['id'] == key and c['business_id'] == bid), None)
@@ -2173,6 +2223,15 @@ class Workspace:
             root=workspace_root().resolve();native_root=Path(chat.get('native_workspace') or root);native_root=native_root if native_root.is_dir() else root;model=job['model'];effort=job['effort'];native_id=chat.get('native_id')
             def update(**values):
                 with self.lock:
+                    if 'native_maintenance' in values:
+                        event=values['native_maintenance'];session=execution.native_session
+                        if session and event.get('type') in {'cache_warming_start','cache_warming_end'}:
+                            session.warming_until=time.monotonic()+60 if event['type']=='cache_warming_start' else 0
+                        if event.get('type')!='cache_warming_start':
+                            workspace_usage.maintenance(self.preferences,bid,chat,event)
+                            try:self.save_preferences()
+                            except OSError:job['usage_warning']='Native maintenance ran, but its usage report could not be saved.'
+                        return
                     if 'native_diagnostic' in values:
                         self.errors.record(ValueError(json.dumps(values.pop('native_diagnostic'))),'native/interaction',self.connections.redact)
                     if 'native_output' in values:
@@ -2528,6 +2587,8 @@ def handler_for(app):
                     self.send(200,workspace_history.inventory(bid,path))
                 elif route == '/api/archive':
                     self.send(200,workspace_archive.inventory(app,selected(query.get('business'))))
+                elif route == '/api/context-settings':
+                    self.send(200,app.context_settings(selected(query.get('business')),query.get('kind'),query.get('chat_id')))
                 elif route == '/api/permissions':
                     bid=selected(query.get('business'));kind=query.get('kind') or app.connection_kind
                     chat=next((c for c in app.preferences['chats'] if c['id']==query.get('chat_id') and c['business_id']==bid),None)
@@ -2807,7 +2868,7 @@ def handler_for(app):
                         raise ValueError('Workspace organization is running. Wait or stop it before making changes.')
                     if app.schedule_job and app.schedule_job['status']=='working' and (route in {'/api/lifecycle','/api/workspaces/open','/api/workspaces/create','/api/workspaces/relocate','/api/workspaces/restore'} or route.startswith('/api/organization/')):
                         raise ValueError('Wait for task setup or stop it before changing workspaces or restarting AURA.')
-                    if app.running_jobs(None if route in {'/api/lifecycle','/api/workspaces/relocate','/api/workspaces/restore'} else workspace_root()) and route not in {'/api/goals','/api/chat/answer','/api/permissions','/api/assistants','/api/preferences','/api/profile','/api/interface/reset','/api/chats/recover','/api/chats/archive','/api/chats/reconnect','/api/notifications','/api/chat','/api/chat/stop','/api/chats/new','/api/chats/open','/api/chats/rename','/api/chats/organize','/api/projects','/api/chats/model','/api/chats/personalization','/api/chats/context','/api/connect','/api/workspaces/open','/api/usage/settings','/api/updates','/api/schedules/action','/api/schedules/stop'}:
+                    if app.running_jobs(None if route in {'/api/lifecycle','/api/workspaces/relocate','/api/workspaces/restore'} else workspace_root()) and route not in {'/api/goals','/api/chat/answer','/api/permissions','/api/assistants','/api/preferences','/api/profile','/api/interface/reset','/api/chats/recover','/api/chats/archive','/api/chats/reconnect','/api/notifications','/api/chat','/api/chat/stop','/api/chats/new','/api/chats/open','/api/chats/rename','/api/chats/organize','/api/projects','/api/chats/model','/api/chats/personalization','/api/chats/context','/api/connect','/api/workspaces/open','/api/usage/settings','/api/context-settings','/api/updates','/api/schedules/action','/api/schedules/stop'}:
                         raise ValueError('Your agent is working. Wait for its reply before changing this workspace.')
                     if route in {'/api/preferences','/api/locations'}:
                         app.load_portable()
@@ -3214,6 +3275,8 @@ def handler_for(app):
                         self.send(200, {'ok': True})
                     elif route == '/api/goals':
                         self.send(200,workspace_goals.mutate(app,selected(data.get('business')),data))
+                    elif route == '/api/context-settings':
+                        self.send(200,app.context_settings(selected(data.get('business')),data.get('kind'),data.get('chat_id'),data.get('changes'),data.get('revision')))
                     elif route == '/api/permissions':
                         bid=selected(data.get('business'));kind=data.get('kind') or app.connection_kind
                         chat=next((c for c in app.preferences['chats'] if c['id']==data.get('chat_id') and c['business_id']==bid),None)
@@ -3272,6 +3335,7 @@ def handler_for(app):
                             from workspace_native_settings import selections
                             native_settings=selections(chat.get('native_config',[]),data['native_settings'])
                             chat['native_settings']=native_settings
+                        workspace_usage.invalidate(app.preferences,chat['id'])
                         chat.update(model=model['id'],effort=effort,connection={**chat.get('connection',{}),'kind':chat['agent'],'model':model['id'],'effort':effort},model_choice_pending=True)
                         app.save_preferences();self.send(200,{'chat':chat})
                     elif route == '/api/chats/open':

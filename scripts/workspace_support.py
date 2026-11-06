@@ -44,7 +44,7 @@ class ErrorDetails:
     def record(self,error,operation,redactor=lambda value:value):
         import secrets
         from _process_errors import redact
-        message=redactor(redact(str(error)))
+        message=redactor(redact(str(error)+('\n'+str(error.diagnostic) if getattr(error,'diagnostic',None) else '')))
         # Full local paths and URL query strings are not needed to identify code failures.
         message=re.sub(r'(?:[A-Za-z]:[\\/]|/(?:Users|home)/)[^\s\"\'<>]+','[local path]',message)
         message=re.sub(r'(https?://[^\s?]+)\?[^\s]+',r'\1?[details hidden]',message)

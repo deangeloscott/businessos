@@ -15,7 +15,7 @@ class Call:
 class Session:
     def __init__(self,signature,call,launch,workspace):
         self.signature=signature;self.lock=threading.RLock();self.closed=False
-        self.last_activity=time.monotonic();self.goal_active=False;self.background=False;self.native_work=False
+        self.last_activity=time.monotonic();self.goal_active=False;self.background=False;self.native_work=False;self.warming_until=0
         self.active=call;self.execution=call.execution;self.events=None;self.process=None
         self.requests=call.execution.requests;self.update=call.update
         self.native_id=call.native_id
@@ -66,7 +66,7 @@ class Session:
                 with self.lock:self.bind(event)
                 return event
             idle(event)
-            self.touch()
+            if not isinstance(event,dict) or not str(event.get('type','')).startswith('cache_warming_'):self.touch()
         raise ValueError('The native connection ended. Your saved conversation is available; no message was resent.')
 
     def submit(self,call):
@@ -84,7 +84,7 @@ class Session:
     def touch(self):self.last_activity=time.monotonic()
 
     def pending(self):
-        return bool(self.active or self.goal_active or self.background or self.native_work or self.execution.helpers or
+        return bool(self.active or self.goal_active or self.background or self.native_work or self.warming_until>time.monotonic() or self.execution.helpers or
                     self.execution.native_client_tools and self.execution.native_client_tools.busy() or
                     any(r['status']=='pending' for r in self.requests.snapshot()))
 

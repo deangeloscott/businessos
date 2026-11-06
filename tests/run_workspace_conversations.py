@@ -29,9 +29,11 @@ def main():
         native_file=base/'old-project'/'session.jsonl';native_file.parent.mkdir()
         native_file.write_text(json.dumps({'type':'session','id':'exact-session','cwd':str(base/'gone-project')})+'\n',encoding='utf-8')
         with patch('workspace_native_chats.source_hint',return_value=str(native_file)),patch.object(workspace_agents,'Metadata') as metadata:
-            metadata.return_value.call.side_effect=[{'sessionId':'exact-session','sessionFile':str(native_file)},{'messages':[]}]
+            metadata.return_value.call.side_effect=[{'sessionId':'exact-session','sessionFile':str(native_file)},{'messages':[]},
+                {'tokens':{'input':10,'cacheRead':90,'output':1},'cost':.02}]
             result=workspace_agents.history(['fixture','--print'],'pi',base,dict(os.environ),'exact-session')
             assert metadata.call_args.kwargs['native_id']==str(native_file) and result['native_id']=='exact-session'
+            assert result['usage']['input_tokens']==100 and result['usage']['cost_usd']==.02
             try:workspace_agents.session_reference('pi','another-session',dict(os.environ),str(native_file));raise AssertionError('Mismatched session was accepted')
             except ValueError:pass
         reads=[]

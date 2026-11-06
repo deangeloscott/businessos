@@ -118,7 +118,7 @@ def remember(preferences, chat_id, usage, scope='request'):
     prior = snapshots.get(chat_id, {})
     if scope == 'session':
         if usage:
-            snapshots[chat_id] = {**{k:prior[k] for k in ('session_cost_usd','cost_usd','cost_kind','cache_hit') if k in prior}, **usage, 'session':True}
+            snapshots[chat_id] = {**{k:prior[k] for k in ('session_cost_usd','cost_usd','cost_kind','cache_hit','cache_invalidated_at') if k in prior}, **usage, 'session':True}
     else:
         snapshot = combine([prior, usage])
         snapshot['last'] = usage.get('last') or usage
@@ -129,6 +129,7 @@ def remember(preferences, chat_id, usage, scope='request'):
             snapshot['context'] = usage['context']
         elif prior.get('context'):
             snapshot['context'] = prior['context']
+        if prior.get('cache_invalidated_at'):snapshot['cache_invalidated_at']=prior['cache_invalidated_at']
         if 'session_cost_usd' in usage:
             snapshot['session_cost_usd'] = usage['session_cost_usd']
             snapshot['cost_usd'] = usage['session_cost_usd']
@@ -172,6 +173,36 @@ def record(preferences, job, chat, agent):
         preferences['usage_history_limited'] = True
 
 
+def maintenance(preferences,business,chat,event):
+    """Record native off-transcript usage once; never create a user turn or notification."""
+    typ=event.get('type');snapshots=preferences.setdefault('usage_chats',{})
+    if typ in {'auto_compaction_end','manual_compaction_end'} and event.get('success') is not False and not event.get('error'):
+        invalidate(preferences,chat['id'])
+    if typ not in {'cache_warming_end','auto_compaction_end','manual_compaction_end'}:return
+    raw=event.get('usage')
+    if not isinstance(raw,dict):return
+    row=measure({**raw,'_provider':event.get('provider')},chat['agent'],event.get('timestamp') or time.time())
+    if not row:return
+    ident=str(event.get('id') or time.time_ns())
+    records=preferences.setdefault('usage_receipts',[])
+    ident='maintenance:'+chat['id']+':'+ident
+    if any(r.get('id')==ident for r in records):return
+    if typ=='cache_warming_end':remember(preferences,chat['id'],row)
+    else:
+        prior=snapshots.setdefault(chat['id'],{})
+        prior.update(combine([prior,row]))
+    records.append({**row,'id':ident,'chat_id':chat['id'],'business_id':business,'agent':chat['agent'],
+                    'model':event.get('model') or chat.get('model',''),'kind':'cache_warming' if typ=='cache_warming_end' else 'compaction'})
+    if len(records)>10000:del records[:-10000];preferences['usage_history_limited']=True
+
+
+def invalidate(preferences,chat_id):
+    snapshot=preferences.get('usage_chats',{}).get(chat_id)
+    if not snapshot:return
+    snapshot.pop('cache',None)
+    snapshot['cache_invalidated_at']=time.time()
+
+
 def summary(preferences, business, chat_id, period='chat', now=None, offset=0, since=None):
     now = now or time.time()
     offset = max(-840, min(840, int(offset))) * 60
@@ -197,6 +228,7 @@ def summary(preferences, business, chat_id, period='chat', now=None, offset=0, s
         groups.append({'name':name, **combine(items), 'requests':len(items),
                        'missing_costs':sum('cost_usd' not in r for r in items)})
     return {'period':period, 'totals':totals, 'requests':len(rows), 'missing_costs':len(rows)-len(costs),
+            'maintenance':combine([r for r in rows if r.get('kind') in {'cache_warming','compaction'}]),
             'groups':groups, 'chat':chat, 'budget_costs':combine([r for r in rows if r.get('billing')=='api' or r.get('cost_kind')=='reported']),
             'missing_token_reports':sum(number(r.get('input_tokens')) is None or number(r.get('output_tokens')) is None
                                         for r in ([chat] if period=='chat' and chat.get('session') else rows)),
@@ -220,6 +252,8 @@ def chat_views(preferences, business, running_id=None):
 def cache_window(chat, snapshot):
     """Reported policy first; a labeled reference model is never stored as provider fact."""
     last=snapshot.get('last') or {}
+    if snapshot.get('cache_invalidated_at',0)>=(timestamp(last.get('at')) or 0) and snapshot.get('cache_invalidated_at'):
+        return {'source':'Context changed','invalidated':True,'basis':'The native app compacted this context. Cache reuse will be checked on the next reported request.'}
     native=snapshot.get('cache') or last.get('cache')
     if native:return native
     # A reported miss supersedes an earlier hit. Unknown is not a new hit.
@@ -227,14 +261,8 @@ def cache_window(chat, snapshot):
     hit=timestamp(snapshot.get('cache_hit',{}).get('at'))
     if not hit and last.get('cached_input_tokens',0)>0:hit=timestamp(last.get('at'))
     if not hit:return None
-    model=str(chat.get('model','')).lower().rsplit('/',1)[-1].rsplit(':',1)[-1]
-    if model.startswith(('gpt-','o1','o3','o4')) or chat.get('agent')=='codex':
-        basis='5m reference based on earlier OpenAI in-memory guidance. This connection’s actual retention may differ; newer API policies can be longer.'
-    elif model.startswith('gemini-'):
-        basis='5m working assumption after observed reuse. Google publishes no fixed implicit-cache lifetime; this is not its explicit-cache TTL.'
-    else:return None
-    return {'expires_at':hit+300,'observed_at':hit,'est':True,'modeled':True,
-            'source':'Reference estimate','basis':basis}
+    return {'observed_at':hit,'source':'Observed reuse',
+            'basis':'This request reused cached input. The connection did not report its lifetime.'}
 
 
 def can_keep_warm(chat, snapshot, connection, kind, now=None):
@@ -242,10 +270,10 @@ def can_keep_warm(chat, snapshot, connection, kind, now=None):
     expiry = timestamp(cache.get('expires_at'))
     # One manual attempt in the same native conversation, never a provider guarantee.
     model=str((chat or {}).get('model','')).lower().rsplit('/',1)[-1].rsplit(':',1)[-1]
-    return bool(chat and chat.get('agent') == kind and kind in {'codex','claude','pi','omp','hermes','antigravity'} and chat.get('native_id') and
+    return bool(chat and chat.get('agent') == kind and kind in {'codex','claude','hermes','antigravity'} and chat.get('native_id') and
                 chat.get('status') == 'complete' and chat.get('model') == connection.get('model') and
                 chat.get('effort', '') == connection.get('effort', '') and
-                (cache.get('modeled') or cache.get('refresh_seconds') in {300,3600}) and
+                cache.get('refresh_seconds') in {300,3600} and
                 not model.startswith('gemini-4') and
                 expiry and expiry > (now or time.time()))
 
@@ -535,7 +563,9 @@ def cache_observation(raw, at=None):
     native=raw.get('prompt_cache') or {}
     if isinstance(native,dict) and timestamp(native.get('expires_at')) is not None:
         result={'expires_at':timestamp(native['expires_at']),'est':True,'observed_at':now,'source':'Native cache policy'}
-        ttl={'5m':300,'1h':3600}.get(native.get('ttl'))
+        import re
+        match=re.fullmatch(r'([1-9][0-9]*)(s|m|h)',str(native.get('ttl','')))
+        ttl=int(match[1])*{'s':1,'m':60,'h':3600}[match[2]] if match else None
         if ttl:result['refresh_seconds']=ttl
         return result
     created=raw.get('cache_creation') or {}

@@ -17,6 +17,35 @@ import workspace_usage as usage
 
 
 def main():
+    import workspace_context_settings as context
+    from workspace_support import ErrorDetails,human_error
+    diagnostic=context.NativeSettingsError('The AI app could not save this setting.','Native setting key was rejected.')
+    assert human_error(diagnostic)=='The AI app could not save this setting.'
+    errors=ErrorDetails();errors.record(diagnostic,'context-settings')
+    assert 'Native setting key was rejected.' in errors.snapshot()[0]['message']
+    with tempfile.TemporaryDirectory(prefix='aura-context-settings-') as folder:
+        home=Path(folder);project=home/'project';project.mkdir()
+        env={**os.environ,'PI_CODING_AGENT_DIR':str(home/'pi'),'CLAUDE_CONFIG_DIR':str(home/'claude')}
+        settings=home/'pi/settings.json';settings.parent.mkdir()
+        settings.write_text(json.dumps({'unrelated':{'keep':'yes'}}))
+        initial=context.describe(['pi','--print'],'pi',project,env)
+        saved=context.save(['pi','--print'],'pi',project,env,{'compaction.reserveTokens':24000,'cacheWarming':'idle'},initial['revision'])
+        assert json.loads(settings.read_text())['unrelated']=={'keep':'yes'}
+        try:context.save(['pi'],'pi',project,env,{'cacheWarming':'off'},initial['revision']);raise AssertionError('Stale native settings were overwritten')
+        except ValueError:pass
+        reset=context.save(['pi'],'pi',project,env,{'compaction.reserveTokens':None,'cacheWarming':None},saved['revision'])
+        assert json.loads(settings.read_text()).get('cacheWarming') is None
+        assert not any(r['value'] is not None for r in reset['fields'])
+        (project/'.pi').mkdir();(project/'.pi/settings.json').write_text('{"compaction":{"reserveTokens":9000}}')
+        assert next(r for r in context.describe(['pi'],'pi',project,env)['fields'] if r['id']=='compaction.reserveTokens')['readonly']
+        try:context.validate(initial['fields'],{'compaction.reserveTokens':True});raise AssertionError('Invalid native value accepted')
+        except ValueError:pass
+        with patch.object(context,'run',return_value='2.1.290'):
+            initial=context.describe(['claude'],'claude',project,env)
+            saved=context.save(['claude'],'claude',project,env,{'env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE':60},initial['revision'])
+            assert json.loads((home/'claude/settings.json').read_text())['env']['CLAUDE_AUTOCOMPACT_PCT_OVERRIDE']=='60'
+        dynamic=context.reported([{'id':'context-policy','name':'Context policy','type':'select','currentValue':'auto','options':[{'value':'auto','name':'Automatic'}]}])
+        assert context.validate(dynamic['fields'],{'context-policy':'auto'})=={'context-policy':'auto'}
     # Usage chooses a display automatically without switching native context or crossing businesses.
     views_prefs={'active_chats':{'a':'older'},'chats':[
         {'id':'older','business_id':'a','updated':1}, {'id':'newer','business_id':'a','updated':2},
@@ -44,15 +73,23 @@ def main():
         candidate={**chat,'agent':kind,'model':model}
         before=json.dumps(observed,sort_keys=True)
         estimate=usage.cache_window(candidate,observed)
-        assert estimate['modeled'] and estimate['expires_at']==1300 and estimate['basis']
-        assert usage.can_keep_warm(candidate,observed,{'model':model,'effort':'low'},kind,now=1100)
+        assert 'expires_at' not in estimate and estimate['observed_at']==1000 and estimate['basis']
+        assert not usage.can_keep_warm(candidate,observed,{'model':model,'effort':'low'},kind,now=1100)
         assert not usage.can_keep_warm(candidate,observed,{'model':model,'effort':'low'},kind,now=1400)
         assert json.dumps(observed,sort_keys=True)==before,'A reference estimate became a provider fact'
         miss={**observed,'last':{'cached_input_tokens':0}}
         assert usage.cache_window(candidate,miss) is None
-    assert usage.cache_window({'model':'unidentified'},observed) is None
+    assert usage.cache_window({'model':'unidentified'},observed)['source']=='Observed reuse'
     assert not usage.can_keep_warm({**chat,'agent':'pi','model':'google:gemini-4-argon'},observed,{'model':'google:gemini-4-argon','effort':'low'},'pi',now=1100)
     assert usage.cache_window({'agent':'codex'},policy)==policy['cache'],'Native policy lost priority'
+    assert usage.cache_observation({'prompt_cache':{'expires_at':40000,'ttl':'12h'}},1000)['refresh_seconds']==43200
+    maintenance_prefs={'usage_chats':{'c':{'input_tokens':100,'last':{'at':1000},'cache':policy['cache']}}}
+    event={'id':'warm-1','type':'cache_warming_end','outcome':'hit','usage':{'input':1,'cacheRead':99,'output':1,'cost':{'total':.01}}}
+    usage.maintenance(maintenance_prefs,'a',chat,event);usage.maintenance(maintenance_prefs,'a',chat,event)
+    assert len(maintenance_prefs['usage_receipts'])==1 and maintenance_prefs['usage_chats']['c']['input_tokens']==200
+    assert usage.summary(maintenance_prefs,'a','c')['maintenance']['cost_usd']==.01
+    usage.maintenance(maintenance_prefs,'a',chat,{'type':'manual_compaction_end'})
+    assert usage.cache_window(chat,maintenance_prefs['usage_chats']['c'])['invalidated']
     assert usage.measure({'prompt_tokens':100,'total_cached_tokens':50},'google')['cached_input_tokens']==50
     # A completed ping alone isn't a cache hit; only confirmed reuse extends observed retention.
     for read,expected in [(80,1400),(0,None)]:

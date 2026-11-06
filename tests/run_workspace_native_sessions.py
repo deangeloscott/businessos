@@ -46,6 +46,8 @@ for line in sys.stdin:
    if approved:finish()
    else:emit({'type':'extension_ui_request','id':'approval','method':'confirm','message':'Continue?'})
   elif typ=='extension_ui_response':assert m['confirmed'];approved=True;finish()
+  elif typ=='fixture-cache':emit({'type':'cache_warming_end','outcome':'hit','usage':{'cacheRead':100}})
+  elif typ=='compact':assert m.get('customInstructions')=='Preserve decisions';emit({'type':'response','id':i,'success':True,'data':{}})
 '''
 
 def wait(check):
@@ -63,14 +65,15 @@ def main():
         root=Path(td);fixture=root/'native.py';fixture.write_text(FIXTURE,encoding='utf-8')
         for kind in ('codex','claude','pi','omp'):
             sessions=Sessions();key=(str(root),'studio',kind);updates=[]
-            def request(number,native_id=None):
+            def request(number,native_id=None,text=None):
+                text=text or 'Message '+str(number)
                 execution=Execution();execution.interactive=True;execution.connection={};result={}
                 argv=[sys.executable,'-u',str(fixture),kind,'exec' if kind=='codex' else '--print']
                 def update(**v):updates.append(v)
                 def launch():
-                    return workspace_codex.run(argv,root,'Message '+str(number),native_id,'fixture','',update,dict(os.environ),execution) if kind=='codex' else workspace_agents.run(argv,kind,root,dict(os.environ),'Message '+str(number),native_id,'fixture','',update,execution)
+                    return workspace_codex.run(argv,root,text,native_id,'fixture','',update,dict(os.environ),execution) if kind=='codex' else workspace_agents.run(argv,kind,root,dict(os.environ),text,native_id,'fixture','',update,execution)
                 def run():
-                    try:result.update(sessions.run(key,{'kind':kind},'Message '+str(number),native_id,execution,update,launch,root))
+                    try:result.update(sessions.run(key,{'kind':kind},text,native_id,execution,update,launch,root))
                     except Exception as error:result['error']=error
                 worker=threading.Thread(target=run);worker.start()
                 return execution,result,worker
@@ -92,6 +95,14 @@ def main():
                 second.requests.add('late-input','Late native question',q['questions'],lambda value:None,lambda value:{})
                 assert sessions.busy() and not sessions.release_idle(key),'An idle native question must keep the connection and delay updates'
                 second.requests.resolve('late-input');assert not sessions.busy()
+                if kind in {'pi','omp'}:
+                    third,result3,worker3=request(3,result['native_id'],'/compact Preserve decisions');worker3.join(8)
+                    assert not worker3.is_alive() and 'error' not in result3,result3
+                    assert result3['reply']=='Conversation compacted.' and third.process.pid==pid
+                    session=sessions.items[key];session.last_activity=time.monotonic()-601;old=session.last_activity
+                    second.process.stdin.write(json.dumps({'type':'fixture-cache'})+'\n');second.process.stdin.flush()
+                    wait(lambda:any(u.get('native_maintenance',{}).get('type')=='cache_warming_end' for u in updates))
+                    assert session.last_activity==old,'Native warming reset the inactivity timer'
                 assert sessions.release_idle(key) and second.process.poll() is not None and key not in sessions.items
             finally:sessions.close()
     print('Native sessions passed: two messages, one process/initialization, retained native grants, scoped stale Stop and clean shutdown across Codex/Claude/Pi/OMP.')

@@ -221,6 +221,8 @@ def codex_run(command,cwd,prompt,native_id,model,effort,update,env,execution,chi
                     if settled() and finish():complete=True;break
                     continue
                 elif method in {'item/started','item/completed'}:
+                    if method=='item/completed' and (p.get('item') or {}).get('type')=='contextCompaction':
+                        update(native_maintenance={'type':'auto_compaction_end'})
                     item=p.get('item') or {};typ=item.get('type')
                     if typ=='agentMessage':
                         items[item['id']]=item
@@ -281,6 +283,9 @@ def agent_lines(process,kind,prompt,native_id,execution,errors):
     session=execution.native_session
     def idle(event):
         from workspace_native_requests import claude_request,extension_request,display
+        if event.get('type') in {'cache_warming_start','cache_warming_end','auto_compaction_end','manual_compaction_end'}:
+            session.update(native_maintenance=event)
+            return
         if event.get('type')=='response' and execution.resolve_control(event.get('id'),event.get('error') if event.get('success') is False else None):
             value=(event.get('data') or {}).get('goal')
             if value:session.update(native_goal=value)
@@ -334,6 +339,10 @@ def agent_lines(process,kind,prompt,native_id,execution,errors):
     try:
         for event in events:
             typ=event.get('type')
+            if kind=='claude' and typ=='system' and event.get('subtype')=='compact_boundary' and session:
+                session.update(native_maintenance={'type':'auto_compaction_end'})
+            if typ in {'cache_warming_start','cache_warming_end','auto_compaction_end','manual_compaction_end'}:
+                session.update(native_maintenance=event) if session else None
             if kind in {'pi','omp'} and (typ in {'agent_start','tool_execution_start','prompt_result'} or typ in {'message_start','message_end','message_update'} and (event.get('message') or {}).get('role','assistant')=='assistant'):activity=True
             if typ=='response' and execution.resolve_control(event.get('id'),event.get('error') if event.get('success') is False else None):continue
             if kind in {'pi','omp'} and getattr(execution,'continuation',None) is not None:
@@ -407,9 +416,17 @@ def agent_lines(process,kind,prompt,native_id,execution,errors):
                             if session and session.active is None:execution.control(send,value)
                             else:send({'id':'aura-goal-control',**value})
                         execution.goal_control=control
+                    elif prompt.strip()=='/compact' or prompt.strip().startswith('/compact '):
+                        send({'id':'aura-compact','type':'compact',**({'customInstructions':prompt.strip()[8:].strip()} if prompt.strip()[8:].strip() else {})})
                     else:send({'id':'aura-prompt','type':'prompt','message':prompt,**({'images':execution.attachments} if execution.attachments else {})})
                     execution.protocol_ready=True
                     yield json.dumps({'type':'aura_controls','steer':True,'interrupt':True})
+                elif typ=='response' and event.get('id')=='aura-compact':
+                    if not event.get('success'):raise ValueError(event.get('error') or 'The AI app could not compact this conversation.')
+                    if session:session.update(native_maintenance={'type':'manual_compaction_end'})
+                    yield json.dumps({'type':'aura_compact_done'})
+                    if session:yield from next_request();continue
+                    finished=True;break
                 elif typ=='response' and event.get('id')=='aura-children' and not event.get('success'):
                     yield json.dumps({'type':'aura_notice','text':'This installed connection could not provide subagent progress. Work can continue without the progress display.'})
                 elif typ=='response' and event.get('id') in {'aura-goal-create','aura-goal-control'}:
