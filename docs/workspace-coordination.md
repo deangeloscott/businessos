@@ -56,7 +56,7 @@ restrictive mode when that is the intended change.
 | Claude Code | Native settings; default; acceptEdits; plan; dontAsk; bypassPermissions | Stream-JSON control requests over stdin/stdout |
 | Pi | Native settings; extensions retain their own policies | RPC extension UI select, confirm, input and editor |
 | OMP | Native settings; always-ask; always-ask-cached; write; yolo | RPC extension UI, including supported ask dialogs |
-| Hermes | App-reported modes; explicit native YOLO option | ACP permissions, native options, forms and browser steps |
+| Hermes | Native settings and YOLO through its gateway; ACP edit modes retain ACP | Native gateway approvals/questions/commands/goals; ACP permissions and forms when that route is selected |
 | Antigravity | App-reported modes; explicit full-access option | ACP permissions, native options, forms and browser steps; explicit auto mode retains the headless transport |
 | Custom ACP | App-reported modes | The same ACP client; tools, authentication and supported features come from the configured agent |
 
@@ -110,6 +110,12 @@ resends an unconfirmed request or starts a goal automatically. The connection
 pool is in the existing Aura server, not a separate service. Archiving a settled
 chat releases its idle connection. Pending approvals, native requests and provider
 work prevent that cleanup; archiving never silently interrupts them.
+Settled native connections are also released after ten minutes without native
+activity. Active goals, native loops/heartbeats, reported child work, client terminal processes, provider work and pending input
+keep their connection. The next message resumes the same saved native conversation;
+process-local grants may need approval again. No model request is sent to keep a
+connection warm. `POST /api/preferences` accepts `native_idle_timeout_seconds`
+from 0 to 86,400; zero disables idle expiry. This is machine-local configuration.
 Automatic updates also wait while a retained connection has pending interactions
 or provider work, even after its parent message has finished.
 
@@ -164,8 +170,28 @@ Answers go to the original request ID. The command must implement the real
 provider operation: returning a fabricated authentication or execution success
 is invalid. Without that provider Aura explains what is missing and returns a
 native unsupported response. It never silently approves an unknown interaction.
+Hermes gateway providers can list their implemented server-request names in
+`native_requests.methods`; Aura advertises those exact names alongside its
+built-in approval and question handlers.
 
-Hermes and Antigravity use their documented ACP connection for interactive chat.
+Hermes uses its own desktop/TUI JSON-RPC gateway when its installed runtime is
+available. It keeps native tools, commands, approval choices and structured goal
+state in Hermes, including its evaluator and continuation turns. Goal text is
+separate from Aura context; native normalization is confirmed before work starts.
+Changing the native objective or completion contract invalidates control through
+the earlier Aura assignment. Recognized installations are located relative to
+the actual executable, without user-specific paths. A custom launcher can supply
+`native_options.gateway_argv` and optional native `native_options.session` values
+such as `profile`. An explicit `gateway_argv` of `[]` keeps the ACP connection.
+For a profile shared by discovery, history and chat, set its native `HERMES_HOME`
+in the connection environment. A raw session `profile` option applies to the
+gateway session, rather than changing the CLI's discovery profile.
+Older installations without this gateway retain ACP. A native gateway that fails
+does not cause Aura to replay the prompt through another transport.
+Explicit ACP edit modes or extra ACP settings retain ACP rather than silently
+dropping the selection. Those combinations do not supply Hermes native goal mode.
+
+Antigravity and compatible custom agents use their documented ACP connection for interactive chat.
 Aura reads native model/configuration and permission choices, waits for native
 acknowledgements, and returns the exact offered approval option. ACP v1 serializes
 prompts, so it does not offer same-turn steering. Each agent's ACP profile remains
@@ -180,9 +206,29 @@ The command is the complete ACP launch command. No brand-specific Aura adapter i
 needed for compatible ACP v1 agents. Agent-owned browser/computer tools remain
 agent-owned. A desktop-only service, client tool or authentication callback still
 needs its actual native provider; Aura never fabricates access or acknowledgements.
-Client filesystem/terminal capabilities are not advertised unless a configured
-provider implements them. Adding a terminal alone does not provide a desktop
-client's private integrations.
+ACP connections can explicitly enable Aura's standard client file and command
+services with `native_options.client_tools: true`. File reads/writes and terminal
+create/output/wait/kill/release use the local account and selected working folder.
+Waits do not block the approval reader; command output is bounded and owned
+processes are cleaned up. Read-only/restricted permission modes do not advertise
+client writes or terminals. These client services do not recreate a harness's
+sandbox, so keep them disabled when that sandbox must contain execution. Without
+this opt-in, the agent's own native file/terminal tools remain responsible.
+Adding client command execution does not provide a desktop client's private integrations.
+
+Extra ACP select settings appear under **More settings** in the existing chat
+model picker. Choices retain native IDs, remain specific to that chat, and are
+acknowledged by the native app before the next work prompt. Model, effort and
+permissions keep their existing controls. Unsupported setting types are not
+advertised as supported.
+
+Machine-local agent files may provide an `env` object, including within
+`connections.<app>`, to select a native account/profile/configuration directory.
+Catalog discovery and execution use that connection's environment. Prefer paths
+and native credential stores instead of embedding credentials in JSON. History,
+account usage, library discovery and task operations use their owning connection's
+environment as well, even when another app is selected in the interface. These
+overrides are not imported as business memory or shared with other connections.
 
 Inline native output images are saved once in the business's ordinary work folder
 and opened with the existing file viewer. The display transcript stores the file
@@ -356,9 +402,11 @@ explicit references: at most 12 selected items plus the chat's primary goal,
 with a 24,000-character context-guidance ceiling. Other conversations are never
 loaded wholesale. Source instructions remain source material, not authorization.
 
-Type **/** to choose **/new**, **/attach**, **/assistant** or **/goal**. These call
+Type **/** to find commands reported by the connected app, alongside
+**/aura-new**, **/aura-attach**, **/aura-assistant** and **/aura-goal**. Aura shortcuts call
 the existing new-chat, context, assistant and goal operations. Arrow keys and
-Enter select a visible option; Escape dismisses it. Other slash-prefixed messages
+Enter select a visible option; Escape dismisses it. Selecting a native command
+fills the composer without sending it. Other slash-prefixed messages
 are passed without Aura's contextual envelope. Codex `/compact` invokes native
 compaction; `/review` invokes native review of uncommitted changes, with optional
 review instructions after the command. Other commands depend on the connected
@@ -403,6 +451,41 @@ not separate business/workspace goal stores. **All goals** filters by scope and
 current/completed/deleted status. It shows each chat goal's workspace connection.
 Workspace goal details list connected chat goals and their actual saved completion
 count; this is not an inferred percentage or a native execution progress estimate.
+
+### Native chat goal execution
+
+**Start native goal** starts the selected harness's goal mechanism for a chat
+goal. Creating or attaching an Aura goal alone does not start autonomous work.
+Workspace goals remain shared outcomes; their connected chat goals can contribute
+without completing the workspace outcome automatically.
+
+| Connection | Native execution | Completion in Aura |
+| --- | --- | --- |
+| Codex | Native app-server goal lifecycle | Native goal status |
+| OMP | Native RPC goal lifecycle | Native goal status |
+| Hermes gateway | Native command, evaluator, continuation and controls | Confirmed native control snapshot |
+| Claude Code | Native `/goal` command and loop | Review when this connection supplies no structured verdict |
+| Antigravity | Native `/goal` command and loop | Review when this connection supplies no structured verdict |
+| Pi core / Hermes ACP | Goal context; no equivalent goal lifecycle exposed here | Explicit completion; an installed extension can supply a native goal adapter |
+| Custom native goal adapter | Existing `aura-goal-v1` command contract | Reported native goal state |
+
+Aura never infers completion from a final reply or manufactures another goal
+loop. Native pause/completion/deletion controls apply only to the linked native
+assignment; a changed objective or completion contract requires review. A lost
+connection does not authorize resending work. Native capabilities and account
+access still depend on the installed harness. In particular, protocol-fixture
+coverage does not establish authenticated Claude Code access.
+
+### Choosing integration components
+
+Prefer a supported native backend when it exposes the required operation. The
+Hermes gateway closes a demonstrated ACP goal gap without a terminal emulator.
+Standard ACP file/command callbacks use existing Python process primitives.
+An interactive terminal library, xterm.js or optional tmux integration should be
+added only for a demonstrated workflow that these native interfaces cannot serve;
+none is a prerequisite for the integrations above. Keep native adapters and
+machine-local configuration separate so a better supported interface can replace
+one connection without migrating organization memory or redesigning the UI.
 Back navigation retains the list's search, filters, and scroll position. Linked
 files open the ordinary file editor, with a return to the same goal. Inherited
 results name their connected-goal origin; removing a link never deletes its file.

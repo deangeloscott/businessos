@@ -14,11 +14,11 @@ import workspace_chats
 
 def base_command(command):
     # Built-in adapters put their print flag after the complete launcher prefix.
+    if 'chat' in command:
+        return command[:command.index('chat')]
     for flag in ('--print', '-p'):
         if flag in command:
             return command[:command.index(flag)]
-    if 'chat' in command:
-        return command[:command.index('chat')]
     return list(command)
 
 
@@ -372,6 +372,12 @@ def relocate_pi(command, cwd, env, native_id, execution=None, source_file=''):
 
 
 def run(command, kind, cwd, env, prompt, native_id, model, effort, update, execution=None):
+    if execution and execution.interactive and kind=='hermes':
+        import workspace_hermes
+        if workspace_hermes.enabled(command,execution.native_options,execution.permission):
+            return workspace_hermes.run(command,cwd,env,prompt,native_id,model,effort,update,execution)
+        if execution.native_goal and execution.native_goal['protocol']=='hermes-gateway':
+            raise ValueError('This Hermes permission or extra setting uses its ACP connection, which does not expose native goals. Use the AI app settings for a native goal, or keep this goal as chat context.')
     if execution and execution.interactive and kind in {'hermes','antigravity','acp'} and not (kind=='antigravity' and execution.permission=='auto'):
         from workspace_acp import run as acp_run
         if execution.native_goal:prompt='/goal '+execution.native_goal['objective']+'\n\n'+prompt
@@ -477,6 +483,9 @@ def _run(command, kind, cwd, env, prompt, native_id, model, effort, update, exec
             if event_type=='aura_controls':update(native_controls={'steer':True,'interrupt':True});continue
             if event_type=='aura_editor_text':update(native_editor={'id':event.get('id') or str(time.time_ns()),'text':event.get('text','')});continue
             if event_type=='aura_native_title':update(native_title=event.get('title',''));continue
+            if event_type=='aura_native_commands':
+                update(native_commands=[{'name':v,'description':''} if isinstance(v,str) else v for v in event.get('commands',[])])
+                continue
             if event_type=='aura_reply_ready':update(reply_ready=True,background_work=event.get('background',False),progress='Background work is running' if event.get('background') else 'Finishing your request');continue
             if event_type=='aura_native_goal':update(native_goal=event.get('goal') or {})
             elif event_type=='message_end':

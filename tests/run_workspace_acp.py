@@ -4,7 +4,8 @@ from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1];sys.path.insert(0,str(ROOT/'scripts'))
 FIXTURE=r'''
 import json,sys,os,base64
-turn=0;ready=False;granted=False;initializations=0;mode='default'
+if os.environ.get('AURA_FIXTURE_PROFILE'):assert os.environ['AURA_FIXTURE_PROFILE']=='expected','Another connection profile was used'
+turn=0;ready=False;granted=False;initializations=0;mode='default';tier='standard'
 def emit(v):print(json.dumps({'jsonrpc':'2.0',**v}),flush=True)
 def result():
  emit({'method':'session/update','params':{'sessionId':'native-acp','update':{'sessionUpdate':'usage_update','used':75,'size':1000}}})
@@ -24,10 +25,12 @@ for line in sys.stdin:
    emit({'method':'session/update','params':{'sessionId':'native-acp','update':{'sessionUpdate':'user_message_chunk','content':{'type':'text','text':'Earlier work'}}}})
    emit({'method':'session/update','params':{'sessionId':'native-acp','update':{'sessionUpdate':'agent_message_chunk','content':{'type':'text','text':'Saved native reply'}}}})
    emit({'method':'session/update','params':{'sessionId':'native-acp','update':{'sessionUpdate':'agent_message_chunk','content':{'type':'image','mimeType':'image/png','data':base64.b64encode(b'\x89PNG\r\n\x1a\nfixture').decode()}}}})
-  emit({'id':i,'result':{'sessionId':'native-acp','models':{'currentModelId':'native-model','availableModels':[{'modelId':'native-model','name':'Native model'}]},'modes':{'currentModeId':'default','availableModes':[{'id':'default','name':'Ask'},{'id':'full','name':'Native full mode'},{'id':'review','name':'Review mode'}]}}})
+  emit({'id':i,'result':{'sessionId':'native-acp','configOptions':[{'id':'native-tier','name':'Service tier','category':'service_tier','type':'select','currentValue':tier,'options':[{'value':'standard'},{'value':'priority'}]}],'models':{'currentModelId':'native-model','availableModels':[{'modelId':'native-model','name':'Native model'}]},'modes':{'currentModeId':'default','availableModes':[{'id':'default','name':'Ask'},{'id':'full','name':'Native full mode'},{'id':'review','name':'Review mode'}]}}})
+ elif op=='session/set_config_option':assert p['configId']=='native-tier' and p['value']=='priority';tier=p['value'];emit({'id':i,'result':{}})
  elif op=='session/set_mode':mode=p['modeId'];assert mode in {'full','review'};emit({'id':i,'result':{}})
  elif op=='session/prompt':
   assert mode==('full' if turn==0 else 'review'),'The explicit native mode was skipped or renamed'
+  assert tier=='priority','The native setting was not acknowledged before inference'
   turn+=1
   if granted:result()
   else:emit({'id':'native-permission','method':'session/request_permission','params':{'sessionId':'native-acp','toolCall':{'toolCallId':'one','title':'Read the selected file','rawInput':{'path':'selected.txt'}},'options':[{'optionId':'allow-session','name':'Allow for this session','kind':'allow_always'},{'optionId':'deny','name':'Decline','kind':'reject_once'}]}})
@@ -36,6 +39,33 @@ for line in sys.stdin:
   granted=True
   emit({'id':'native-form','method':'elicitation/create','params':{'sessionId':'native-acp','mode':'form','message':'Choose output','requestedSchema':{'type':'object','properties':{'name':{'type':'string'}},'required':['name']}}})
  elif i=='native-form':assert m['result']=={'action':'accept','content':{'name':'Guide'}};result()
+'''
+
+CLIENT_TOOLS_FIXTURE=r'''
+import json,sys
+from pathlib import Path
+path=str(Path(__file__).with_suffix('.txt'))
+def emit(v):print(json.dumps({'jsonrpc':'2.0',**v}),flush=True)
+def call(i,method,**p):emit({'id':i,'method':method,'params':{'sessionId':'tools',**p}})
+for line in sys.stdin:
+ m=json.loads(line);op=m.get('method');i=m.get('id');p=m.get('params') or {}
+ if op=='initialize':
+  assert p['clientCapabilities']['terminal'] and p['clientCapabilities']['fs']['writeTextFile']
+  emit({'id':i,'result':{'protocolVersion':1,'agentCapabilities':{}}})
+ elif op=='session/new':emit({'id':i,'result':{'sessionId':'tools'}})
+ elif op=='session/prompt':call('write','fs/write_text_file',path=path,content='one\n研究\nthree\n')
+ elif i=='write':assert m['result']=={};call('read','fs/read_text_file',path=path,line=2,limit=1)
+ elif i=='read':
+  assert m['result']['content']=='研究\n'
+  call('create','terminal/create',command=sys.executable,args=['-c',"import time;time.sleep(.2);print('terminal ok')"],outputByteLimit=100)
+ elif i=='create':
+  terminal=m['result']['terminalId'];call('wait','terminal/wait_for_exit',terminalId=terminal)
+  emit({'id':'decision','method':'session/request_permission','params':{'sessionId':'tools','toolCall':{'title':'Continue fixture'},'options':[{'optionId':'allow','name':'Allow once'}]}})
+ elif i=='wait':assert m['result']['exitCode']==0;call('output','terminal/output',terminalId=terminal)
+ elif i=='output':assert m['result']['output'].strip()=='terminal ok';call('release','terminal/release',terminalId=terminal)
+ elif i=='release':
+  emit({'method':'session/update','params':{'sessionId':'tools','update':{'sessionUpdate':'agent_message_chunk','content':{'type':'text','text':'Client services work.'}}}})
+  emit({'id':'aura-prompt','result':{'stopReason':'end_turn'}})
 '''
 
 def main():
@@ -48,6 +78,7 @@ def main():
         try:
             for turn in (1,2):
                 execution=Execution();execution.interactive=True;execution.permission='full' if turn==1 else 'review';out={}
+                execution.native_options={'config':{'native-tier':'priority'}}
                 def update(**v):updates.append(v)
                 def work():
                     try:out.update(pool.run(key,{},'Work','native-acp',execution,update,
@@ -78,7 +109,7 @@ def main():
         from workspace_ui import Workspace,handler_for
         with patch.dict(os.environ,{'BUSINESSOS_WORKSPACE':str(root/'workspace'),'BUSINESSOS_WORKSPACE_CONFIG':str(root/'pointer.json'),'AURA_STATE_DIR':str(root/'state')}):
             bid=setup(organization='Custom ACP studio')['business_id']
-            app=Workspace(agent={'name':'Custom native agent','argv':[sys.executable,'-u',str(script)],'native_protocol':'acp'})
+            app=Workspace(agent={'name':'Custom native agent','argv':[sys.executable,'-u',str(script)],'native_protocol':'acp','env':{'AURA_FIXTURE_PROFILE':'expected'}})
             server=ThreadingHTTPServer(('127.0.0.1',0),handler_for(app));threading.Thread(target=server.serve_forever,daemon=True).start()
             try:
                 assert app.agent_options('configured')['models'][0]['id']=='native-model'
@@ -86,6 +117,8 @@ def main():
                 req=Request(f'http://127.0.0.1:{server.server_port}/api/connect',data=json.dumps({'kind':'configured','model':'native-model','effort':''}).encode(),headers={'Content-Type':'application/json','X-Aura-Token':app.token,'X-Aura-Workspace':app.workspace_path})
                 with urlopen(req,timeout=15) as response:connected=json.load(response)
                 assert connected['model']=='native-model' and connected['model_controls']
+                app.agent={**app.agent,'env':{'AURA_FIXTURE_PROFILE':'wrong'}}
+                assert app.agent_options('configured',refresh=True)['models'][0]['id']=='native-model'
                 app.preferences['chats'].append({'id':'custom-chat','business_id':bid,'workspace':app.workspace_path,'agent':'configured','native_id':'native-acp','status':'complete','model':'native-model','effort':''})
                 refreshed=app.conversation(bid,'custom-chat',refresh=True)
                 assert refreshed['messages'][-1]['text']=='Saved native reply' and not refreshed.get('history_note'),refreshed
@@ -93,6 +126,44 @@ def main():
                 assert 'native_images' not in refreshed['messages'][-1] and (Path(app.workspace_path)/image['path']).is_file()
                 assert app.conversation(bid,'custom-chat',refresh=True)['messages'][-1]['native_media']==[image]
             finally:app.native_sessions.close();server.shutdown();server.server_close()
-    print('ACP passed: native initialization, same-process follow-ups, exact permission choices and typed forms without inference.')
+    with tempfile.TemporaryDirectory(prefix='aura-acp-tools-') as td:
+        root=Path(td);script=root/'agent.py';script.write_text(CLIENT_TOOLS_FIXTURE,encoding='utf-8')
+        execution=Execution();execution.native_options={'client_tools':True};out={}
+        def work():
+            try:out.update(run([sys.executable,'-u',str(script)],'acp',root,dict(os.environ,PYTHONUTF8='1'),'Work',None,'','',lambda **v:None,execution))
+            except Exception as error:out['error']=error
+        worker=threading.Thread(target=work);worker.start();end=time.monotonic()+8
+        while not execution.requests.snapshot() and worker.is_alive() and time.monotonic()<end:time.sleep(.01)
+        pending=next((r for r in execution.requests.snapshot() if r['status']=='pending'),None)
+        assert pending,('A terminal wait blocked the native approval reader',out)
+        execution.requests.answer(pending['id'],{'decision':['allow']});worker.join(8)
+        assert not worker.is_alive() and out.get('reply')=='Client services work.',out
+        assert not execution.native_client_tools.busy()
+        # Cancellation may arrive while the OS is creating a client terminal.
+        from workspace_acp_tools import ClientTools
+        import subprocess
+        tools=ClientTools(root,dict(os.environ));started=threading.Event();release=threading.Event();closing=threading.Event();children=[];errors=[]
+        launch=subprocess.Popen
+        def delayed(*args,**kwargs):
+            process=launch(*args,**kwargs);children.append(process);started.set();assert release.wait(5);return process
+        def create():
+            try:tools.call('terminal/create',{'command':sys.executable,'args':['-c','import time;time.sleep(30)']})
+            except Exception as error:errors.append(error)
+        def close():closing.set();tools.close()
+        try:
+            with patch('workspace_acp_tools.subprocess.Popen',side_effect=delayed):
+                creator=threading.Thread(target=create);creator.start();assert started.wait(5)
+                cleaner=threading.Thread(target=close);cleaner.start();assert closing.wait(5);release.set()
+                creator.join(5);cleaner.join(5)
+            assert not errors and not creator.is_alive() and not cleaner.is_alive(),errors
+            assert all(p.poll() is not None for p in children),'Cancellation leaked a newly created terminal'
+            try:tools.call('terminal/create',{'command':sys.executable})
+            except ValueError:pass
+            else:raise AssertionError('A closed connection started another terminal')
+        finally:
+            release.set();tools.close()
+            for process in children:
+                if process.poll() is None:process.kill();process.wait()
+    print('ACP passed: native initialization, same-process follow-ups, exact permissions, forms, real client files and terminal execution without inference.')
 
 if __name__=='__main__':main()

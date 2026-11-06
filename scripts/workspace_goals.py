@@ -258,8 +258,10 @@ def inventory(app,bid,ident=None,show='active',scope_filter='workspace',chat_id=
         from workspace_native_goals import support
         from workspace_ui import installed_agents
         kind=owner['agent'] if owner else connection_kind or app.connection_kind
-        agent=(getattr(app,'configured_agent',None) or {}) if kind=='configured' else next((a for a in installed_agents() if a['id']==kind),{})
-        native_support=support(kind,agent)
+        agent=app.native_choice(kind) or {}
+        if (owner or {}).get('native_settings'):agent={**agent,'native_options':{**agent.get('native_options',{}),'config':owner['native_settings']}}
+        permission=(owner or {}).get('permission_mode') or app.preferences.get('harness_permissions',{}).get(kind,'native')
+        native_support=support(app.native_kind(kind),agent,permission)
         if not agent.get('argv'):native_support={**native_support,'supported':False,'reason':'Connect this chat’s AI app before starting native goal mode.'}
 
     return {'items':items,'deleted_items':deleted_items,'goal':selected,'scope':scope(selected) if selected else None,'deleted':deleted(selected) if selected else False,

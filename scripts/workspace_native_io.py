@@ -328,7 +328,9 @@ def agent_lines(process,kind,prompt,native_id,execution,errors):
     if kind=='claude':
         send({'type':'control_request','request_id':'aura-init','request':{'subtype':'initialize',**execution.native_options.get('initialize',{})}})
         controls()
-    else:send({'id':'aura-state','type':'get_state'})
+    else:
+        send({'id':'aura-commands','type':'get_commands'})
+        send({'id':'aura-state','type':'get_state'})
     try:
         for event in events:
             typ=event.get('type')
@@ -356,6 +358,8 @@ def agent_lines(process,kind,prompt,native_id,execution,errors):
                     continue
                 if typ=='control_response' and event.get('response',{}).get('request_id')=='aura-init':
                     if event['response'].get('subtype')=='error':raise ValueError(event['response'].get('error','Claude initialization failed.'))
+                    available=event['response'].get('response') or {}
+                    yield json.dumps({'type':'aura_native_commands','commands':available.get('commands') or available.get('slash_commands') or []})
                     send({'type':'user','session_id':native_id or '', 'message':{'role':'user','content':[{'type':'text','text':prompt},*execution.attachments] if execution.attachments else prompt},'parent_tool_use_id':None})
                     execution.protocol_ready=True
                     yield json.dumps({'type':'aura_controls','steer':True,'interrupt':True})
@@ -376,6 +380,9 @@ def agent_lines(process,kind,prompt,native_id,execution,errors):
                     if session:yield from next_request();continue
                     finished=True;break
             else:
+                if typ=='response' and event.get('id')=='aura-commands':
+                    if event.get('success'):yield json.dumps({'type':'aura_native_commands','commands':(event.get('data') or {}).get('commands') or []})
+                    continue
                 if typ=='response' and event.get('id')=='aura-state':
                     if not event.get('success'):raise ValueError(event.get('error','Could not read the native session.'))
                     state=event.get('data') or {};ident=state.get('sessionId')

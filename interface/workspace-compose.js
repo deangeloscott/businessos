@@ -19,6 +19,7 @@ window.auraCompose=(()=>{
   const identity=r=>JSON.stringify([r.kind,r.id,r.variant||'',r.request_id||'']);
   const kinds={file:'File',record:'Saved context',goal:'Goal',library:'Library',assistant:'Assistant',result:'Saved result'};
   const shortcuts=[{id:'new',label:'New chat',description:'Keep this draft and open a new chat'},{id:'attach',label:'Attach context',description:'Files, saved work and operating knowledge'},{id:'assistant',label:'Choose assistant',description:'Start a chat with a named assistant'},{id:'goal',label:'Chat goal',description:'Set what this chat is working toward'}];
+  const nativeCommands=()=>{const rows=state.liveJob?.native_commands||state.chatMeta?.native_commands||[];return rows.filter(c=>typeof c.name==='string'&&c.name&&!c.name.startsWith('aura-')).map(c=>({id:c.name.replace(/^\//,''),native:true,label:c.name.replace(/^\//,''),description:c.description||'AI app command'}));};
   const goalVersion=g=>JSON.stringify([g?.name,g?.status,g?.target,goalInfo(g).revision,goalInfo(g).deleted_at]);
   const goalStatus=g=>goalInfo(g).deleted_at?'Deleted':human(g?.status||'active');
   const goalLabel=g=>(goalInfo(g).scope==='chat'?'Chat goal':'Workspace goal')+(goalInfo(g).deleted_at||(g?.status||'active')!=='active'?' · '+goalStatus(g):'');
@@ -67,28 +68,28 @@ window.auraCompose=(()=>{
   function closeMenu(){++lookupTicket;inlineItems=[];active=-1;inlineToken=null;const menu=$('#composer-menu');if(menu){menu.hidden=true;menu.innerHTML='';}$('#request').removeAttribute('aria-activedescendant');$('#request').setAttribute('aria-expanded','false');}
   function token(){
     const input=$('#request'),before=input.value.slice(0,input.selectionStart);
-    const slash=before.match(/^\/([a-z-]*)$/i);if(slash)return {type:'slash',q:slash[1],start:0,end:input.selectionStart};
+    const slash=before.match(/^\/([^\s]*)$/u);if(slash)return {type:'slash',q:slash[1],start:0,end:input.selectionStart};
     const mention=before.match(/(?:^|\s)@([^\n@]{0,80})$/);if(!mention)return null;
     if(refs().some(r=>mention[1]===(r.label||r.id)||mention[1].startsWith((r.label||r.id)+' ')))return null;
     return {type:'mention',q:mention[1],start:before.length-mention[1].length-1,end:input.selectionStart};
   }
   function paintMenu(){
     const menu=$('#composer-menu');menu.hidden=!inlineItems.length;$('#request').setAttribute('aria-expanded',String(!menu.hidden));
-    menu.innerHTML=inlineItems.map((r,i)=>`<button type="button" role="option" id="composer-option-${i}" aria-selected="${i===active}" data-compose-option="${i}" class="${i===active?'selected':''}"><span>${r.kind?'':esc('/aura-'+r.id)+' · '}${esc(r.label)}</span><small>${esc(r.kind?kinds[r.kind]:r.description)}${r.kind&&r.description?' · '+esc(r.description):''}</small></button>`).join('');
+    menu.innerHTML=inlineItems.map((r,i)=>`<button type="button" role="option" id="composer-option-${i}" aria-selected="${i===active}" data-compose-option="${i}" class="${i===active?'selected':''}"><span>${r.native?esc('/'+r.id):(r.kind?'':esc('/aura-'+r.id)+' · ')+esc(r.label)}</span><small>${esc(r.kind?kinds[r.kind]:r.description)}${r.kind&&r.description?' · '+esc(r.description):''}</small></button>`).join('');
     if(active>=0)$('#request').setAttribute('aria-activedescendant','composer-option-'+active);
   }
   async function suggest(){
     const selected=token(),key=chatScope(),ticket=++lookupTicket;
     if(!selected){closeMenu();return;}
-    const data=selected.type==='slash'?{items:shortcuts.filter(c=>('aura-'+c.id).startsWith(selected.q.toLowerCase()))}:await lookup(selected.q);
+    const data=selected.type==='slash'?{items:[...nativeCommands(),...shortcuts].filter(c=>((c.native?'':'aura-')+c.id).toLowerCase().startsWith(selected.q.toLowerCase()))}:await lookup(selected.q);
     if(ticket!==lookupTicket||key!==chatScope()||JSON.stringify(selected)!==JSON.stringify(token())||!data)return;
     inlineToken=selected;inlineItems=data.items.slice(0,8);active=inlineItems.length?0:-1;paintMenu();
   }
   async function selectInline(index){
     const item=inlineItems[index],selected=inlineToken;if(!item||!selected)return;
     if(selected.type==='mention'&&item.kind!=='assistant'&&!add(item))return;
-    const input=$('#request');input.setRangeText(selected.type==='mention'&&item.kind!=='assistant'?'@'+item.label+' ':'',selected.start,selected.end,'end');closeMenu();rememberChatDraft();
-    if(selected.type==='slash')await command(item.id);
+    const input=$('#request');input.setRangeText(item.native?'/'+item.id+' ':selected.type==='mention'&&item.kind!=='assistant'?'@'+item.label+' ':'',selected.start,selected.end,'end');closeMenu();rememberChatDraft();
+    if(selected.type==='slash'&&!item.native)await command(item.id);
     else if(item.kind==='assistant')await choose('result',item.id);
     if(!document.querySelector('dialog:modal'))input.focus();
   }
@@ -369,6 +370,7 @@ window.auraCompose=(()=>{
     if(b.dataset.goalTask){$('#detail').close();state.scheduleDraft={name:'',description:'',when:'',goal_id:b.dataset.goalTask};state.scheduleAdding=true;state.view='tools';attempt(async()=>{await render();recordShellRoute();await renderShell();});}
     if(b.dataset.composeAssistant)attempt(()=>window.auraWork.startAssistant(b.dataset.composeAssistant,{text:$('#request').value,files:state.selectedFiles||[],references:refs(),goal_id:newChatGoal(),connection:composerConnection()}));
   });
+  $('#composer-menu').setAttribute('aria-label','Commands and context');
   const input=$('#request');input.addEventListener('input',()=>{clearTimeout(timer);timer=setTimeout(()=>attempt(suggest),120);});
   input.addEventListener('keydown',event=>{
     if(event.isComposing||$('#composer-menu').hidden)return;

@@ -31,6 +31,13 @@ jobs:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
           persist-credentials: false
+      - name: Check native client portability
+        run: |
+          python -m pip install -r requirements.txt
+          python tests/run_workspace_native_sessions.py
+          python tests/run_workspace_native_interop.py
+          python tests/run_workspace_acp.py
+          python tests/run_workspace_hermes.py
       - name: Build and verify the native download
         run: python -u scripts/package_runtime.py --platform "${{ matrix.target }}" --output-dir "${{ runner.temp }}/bundles" --cache-dir "${{ runner.temp }}/runtime-cache"
       - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5

@@ -113,6 +113,12 @@ Do not convert hypotheses, competitor patterns, placeholders, or inferred detail
 
 ## Product boundary
 
+### Native capability and continued improvement
+
+The optional visual interface connects users to their existing harnesses. Prefer supported native interfaces and preserve native identity, account/profile, tools, permissions, background work and saved context. Discover settings and commands from the installed harness when available. Keep adapters small and replaceable so improvements in models, harnesses and tools can improve Aura without rebuilding their intelligence or execution loops.
+
+Choose dependencies for a demonstrated user benefit, supported platforms and maintenance cost. Reuse a working native mechanism before adding a helper or service. Product upgrades should preserve organization data, machine-local connections and user interface customizations; native integration changes need focused compatibility checks and accurate capability documentation.
+
 During ordinary organizational work, do not modify AURA product source to work around an execution problem. Organization-specific context, preferences, evidence, Learning, Assets, and reusable local Workflow knowledge belong in organization state. Product changes belong to explicit AURA development work.
 
 ## Practical entry

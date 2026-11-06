@@ -50,6 +50,10 @@ function input(text){const el=node('#request');el.value=text;el.selectionStart=t
   let caught=false;for(const fn of node('#request').listeners.keydown||[])fn({key:'Enter',preventDefault(){caught=true;},stopImmediatePropagation(){}});
   assert.equal(caught,false,'Native command input must reach the ordinary send path');
  }
+ state.chatMeta={id:'native-chat',native_commands:[{name:'tools',description:'Show native tools'}]};
+ input('/tools');await delay();assert.equal(node('#composer-menu').hidden,false);
+ for(const fn of node('#request').listeners.keydown||[])fn({key:'Enter',preventDefault(){},stopImmediatePropagation(){}});
+ await flush();await Promise.all(pending);assert.equal(node('#request').value,'/tools ');assert.equal(calls.some(c=>c.path==='/api/chat'),false,'Choosing a native command must not submit it');state.chatMeta=null;
  input('/aura-new');await delay();assert.equal(node('#composer-menu').hidden,false);
  let prevented=false;for(const fn of node('#request').listeners.keydown||[])fn({key:'Enter',preventDefault(){prevented=true;},stopImmediatePropagation(){}});
  await flush();await Promise.all(pending);assert.equal(prevented,true);assert.equal(newChats.length,1,'Selecting the shortcut calls the existing action once');

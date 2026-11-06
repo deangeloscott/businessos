@@ -370,6 +370,7 @@ SETUP_ERRORS = {
     'service': 'The AI service is temporarily unavailable. Try again later or choose another connection.',
     'network': 'Your AI app could not connect. Check your connection and try again.',
     'model': 'The selected model is unavailable. Refresh the model choices and choose another one.',
+    'model_ready': 'Your model is not ready. Check its connection or choose another model.',
     'files': 'Your AI could not access this folder. Allow access in your AI app and try again.',
     'permissions': 'Your AI app denied this request. Open the app to check its permissions, then try again.',
     'unknown': 'Your AI app did not finish connecting. Open the app to check what needs attention, then try again.',
@@ -396,6 +397,8 @@ def setup_error(message):
         return SETUP_ERRORS['files']
     if re.search(r'model.{0,100}(access|permission|denied|forbidden|not allowed)|(?:access|permission|denied|forbidden|not allowed).{0,100}model', text) or re.search(r'\b403\b', text):
         return SETUP_ERRORS['model_access']
+    if re.search(r'(?:model|reasoner|inference service).{0,80}(?:not healthy|not ready|failed to start)',text):
+        return SETUP_ERRORS['model_ready']
     if any(word in text for word in ('service unavailable', 'service is unavailable', 'overloaded', 'no available endpoints', 'no endpoints found')) or re.search(r'\b50[234]\b', text):
         return SETUP_ERRORS['service']
     if any(word in text for word in ('network', 'timeout', 'timed out', 'connection', 'unreachable', 'fetch failed')):
@@ -722,7 +725,7 @@ class Workspace:
             configured[self.connection_kind] = dict(self.preferences.get('connection', {}))
         def check(entry):
             kind, settings = entry
-            choice = choices.get(kind, {})
+            choice = self.native_choice(kind) or choices.get(kind, {})
             command = (self.configured_agent or {}).get('argv') if kind == 'configured' else choice.get('argv')
             row = {'id':kind, 'name':(self.configured_agent or {}).get('name','Your AI app') if kind == 'configured' else choice.get('name',kind),
                    'status':'checking', 'checked_at':time.time()}
@@ -733,12 +736,12 @@ class Workspace:
                 if kind in NATIVE_AGENTS:
                     model = settings.get('model', '')
                     if kind == 'hermes':
-                        workspace_agents.check_transport(command, kind, workspace_root(), self.agent_environment())
+                        workspace_agents.check_transport(command, kind, workspace_root(), self.agent_environment(choice))
                     else:
                         options = self.agent_options(kind, refresh=True)
                         if not any(m['id'] == model for m in options['models']):
                             raise ValueError('The selected model is unavailable. Refresh the model choices and choose another one.')
-                    workspace_agents.check_signin(command, kind, model, workspace_root(), self.agent_environment())
+                    workspace_agents.check_signin(command, kind, model, workspace_root(), self.agent_environment(choice))
                     row['detail'] = 'App responded. Ready to send a request.'
                 else:
                     row['detail'] = 'Command found. Its response is checked when you send a request.'
@@ -855,16 +858,20 @@ class Workspace:
         command = list(choice['argv'])
         if choice['id'] == 'codex':
             command[-1:-1] = ['--sandbox', 'workspace-write' if workspace_write else 'read-only']
-        self.agent = {'name':choice['name'],'argv':command,**{key:copy.deepcopy(choice[key]) for key in ('native_goal','native_protocol','native_requests','native_options') if key in choice}}
+        self.agent = {'name':choice['name'],'argv':command,**{key:copy.deepcopy(choice[key]) for key in ('native_goal','native_protocol','native_requests','native_options','env') if key in choice}}
         overrides=(self.configured_agent or {}).get('connections',{}).get(choice['id'],{})
-        self.agent.update({key:copy.deepcopy(overrides[key]) for key in ('native_requests','native_options') if key in overrides})
+        self.agent.update({key:copy.deepcopy(overrides[key]) for key in ('native_requests','native_options','env') if key in overrides})
         self.connection_kind = choice['id']
         self.handoff = False
         self.verified_business = None
 
     def native_choice(self,kind):
         if kind=='configured' and self.configured_agent:return {'id':'configured',**self.configured_agent}
-        return next((a for a in installed_agents() if a['id']==kind and a['argv']),None)
+        choice=next((a for a in installed_agents() if a['id']==kind and a['argv']),None)
+        if choice:
+            overrides=(self.configured_agent or {}).get('connections',{}).get(kind,{})
+            choice={**choice,**{key:copy.deepcopy(overrides[key]) for key in ('native_requests','native_options','env') if key in overrides}}
+        return choice
 
     def native_kind(self,kind):
         if kind=='configured':return (self.configured_agent or {}).get('native_protocol','configured')
@@ -895,9 +902,9 @@ class Workspace:
             if not command:
                 raise ValueError('This AI app is not installed or its command needs setup.')
             if protocol == 'codex':
-                self.option_cache[kind] = workspace_codex.options(command, workspace_root(), self.agent_environment())
+                self.option_cache[kind] = workspace_codex.options(command, workspace_root(), self.agent_environment(choice))
             else:
-                self.option_cache[kind] = workspace_agents.options(command, protocol, workspace_root(), self.agent_environment())
+                self.option_cache[kind] = workspace_agents.options(command, protocol, workspace_root(), self.agent_environment(choice))
         return self.option_cache[kind]
 
     def agent_efforts(self, kind, model):
@@ -908,7 +915,7 @@ class Workspace:
         if chosen.get('discover_efforts') and not chosen.get('efforts_loaded'):
             command = self.native_choice(kind)['argv']
             try:
-                result = workspace_agents.efforts(command,self.native_kind(kind),workspace_root(),self.agent_environment(),model)
+                result = workspace_agents.efforts(command,self.native_kind(kind),workspace_root(),self.agent_environment(self.native_choice(kind)),model)
                 chosen.update(result)
             except ValueError:
                 # Older hosts lack effort metadata. Never invent supported tiers.
@@ -984,9 +991,12 @@ class Workspace:
             picker = {'view':'all', 'favorites':favorites, 'providers':list(dict.fromkeys(m['provider'] for m in models)), 'efforts':efforts}
         return {'models':models, 'picker':picker, 'unavailable':unavailable, 'kind':kind}
 
-    def agent_environment(self):
-        return dict(os.environ, BUSINESSOS_WORKSPACE=str(workspace_root()), PYTHONUTF8='1',
-                    PATH=os.pathsep.join(filter(None,[os.environ.get('PATH'),str(Path(sys.executable).parent)])), **self.connections.environment())
+    def agent_environment(self,agent=None):
+        selected_agent=self.agent if agent is None else agent
+        overrides=(selected_agent or {}).get('env') or {}
+        if not isinstance(overrides,dict) or any(not isinstance(k,str) or not k or '=' in k or '\0' in k or not isinstance(v,str) or '\0' in v for k,v in overrides.items()):raise ValueError('Connection environment needs variable names and text values.')
+        return {**os.environ, **self.connections.environment(), **overrides,'BUSINESSOS_WORKSPACE':str(workspace_root()),'PYTHONUTF8':'1',
+                'PATH':overrides.get('PATH',os.pathsep.join(filter(None,[os.environ.get('PATH'),str(Path(sys.executable).parent)])))}
 
     def active_chat(self, bid):
         key = self.preferences['active_chats'].get(bid)
@@ -1079,7 +1089,7 @@ class Workspace:
                     connected = dict(self.preferences['connected_apps'])
                     accounts = {}
                     reporting=[]
-                    try:env = self.agent_environment()
+                    try:env = self.agent_environment({})
                     except ValueError:
                         env=dict(os.environ)
                         reporting.append({'name':'API connections','note':'Saved API keys couldn’t be read. Check API connections.'})
@@ -1096,7 +1106,7 @@ class Workspace:
                                 try:activity=call('account/usage/read',{})
                                 except (ValueError,OSError,subprocess.SubprocessError):pass
                                 return workspace_usage.codex_account(native,limits,activity)
-                            account=workspace_codex.rpc(command,read_account,root,env)
+                            account=workspace_codex.rpc(command,read_account,root,self.agent_environment(self.native_choice('codex')))
                             accounts['codex']=[account] if account else []
                             reporting.append({'name':'Codex','note':'Account limits and activity' if account else 'No subscription account reported'})
                         except (ValueError,OSError,subprocess.SubprocessError):
@@ -1104,7 +1114,7 @@ class Workspace:
                     for kind in ('omp','hermes','claude'):
                         if kind not in connected or kind not in choices:continue
                         try:
-                            accounts[kind]=workspace_usage.native_accounts(choices[kind]['argv'],kind,root,env)
+                            accounts[kind]=workspace_usage.native_accounts(choices[kind]['argv'],kind,root,self.agent_environment(self.native_choice(kind)))
                             reporting.append({'name':choices[kind]['name'],'note':'Native account limits' if accounts[kind] else 'Limits not exposed by this app version'})
                         except (ValueError,OSError,subprocess.SubprocessError):
                             reporting.append({'name':choices[kind]['name'],'note':'Couldn’t refresh. Check the app.'})
@@ -1138,8 +1148,9 @@ class Workspace:
                         try:
                             native_root=Path(chat.get('native_workspace') or root)
                             if not native_root.is_dir():native_root=root
-                            native=(workspace_codex.history(choice['argv'],native_root,chat['native_id']) if chat['agent']=='codex' else
-                                    workspace_agents.history(choice['argv'],chat['agent'],native_root,env,chat['native_id']))
+                            native_env=self.agent_environment(self.native_choice(chat['agent']))
+                            native=(workspace_codex.history(choice['argv'],native_root,chat['native_id'],native_env) if chat['agent']=='codex' else
+                                    workspace_agents.history(choice['argv'],chat['agent'],native_root,native_env,chat['native_id']))
                             if native.get('usage'):observed[chat['id']]=native['usage']
                         except (ValueError,OSError,subprocess.SubprocessError):pass
                     with self.lock:
@@ -1268,7 +1279,7 @@ class Workspace:
     def native_chats(self,bid,kind,ident=None,add=False):
         with self.lock:
             owner=copy.copy(self);root=Path(owner.workspace_path)
-            choice=next((a for a in installed_agents() if a['id']==kind and a['argv']),None)
+            choice=owner.native_choice(kind)
             if not choice:raise ValueError('Choose an installed native AI app.')
             existing=next((c for c in self.preferences['chats'] if c.get('agent')==kind and c.get('native_id')==ident),None) if ident else None
             if existing and add:
@@ -1276,7 +1287,7 @@ class Workspace:
                 return {'id':existing['id']}
             excluded={c.get('native_id') for c in self.preferences['chats'] if c.get('agent')==kind}
         with workspace_scope(root):
-            env=owner.agent_environment()
+            env=owner.agent_environment(choice)
             if not ident:
                 result=workspace_native_chats.recent(choice['argv'],kind,root,env,excluded)
                 for item in result['items']:
@@ -1310,7 +1321,7 @@ class Workspace:
             if any(j.get('chat_id')==ident for j in self.running_jobs()):return {'changed':False,'supported':False,'workspace':owner.workspace_path}
         # Even the first source-file lookup stays outside the shared UI lock.
         with workspace_scope(owner.workspace_path):
-            path=chat.get('source_file') or workspace_native_chats.source_hint(chat['agent'],owner.agent_environment(),chat.get('native_id'))
+            path=chat.get('source_file') or workspace_native_chats.source_hint(chat['agent'],owner.agent_environment(owner.native_choice(chat['agent'])),chat.get('native_id'))
             old=chat.get('source_marker');stamp=workspace_native_chats.marker(path)
             display=owner.chat_display_path(chat['id'])
             same=bool(stamp and not old and display.exists() and stamp[0][1]<=display.stat().st_mtime_ns)
@@ -1356,8 +1367,9 @@ class Workspace:
             if not choice:raise ValueError('This AI app is not connected. Reconnect it to refresh this chat.')
             chat_root = Path(chat.get('native_workspace') or chat.get('workspace') or workspace_root())
             if not chat_root.is_dir():chat_root=workspace_root()
-            result = (workspace_codex.history(choice['argv'], chat_root, chat['native_id'], self.agent_environment()) if protocol=='codex' else
-                      workspace_agents.history(choice['argv'],protocol,chat_root,self.agent_environment(),chat['native_id'], **({'source_file':chat['source_file']} if chat.get('source_file') and protocol in {'pi','omp'} else {})))
+            env=self.agent_environment(choice)
+            result = (workspace_codex.history(choice['argv'], chat_root, chat['native_id'], env) if protocol=='codex' else
+                      workspace_agents.history(choice['argv'],protocol,chat_root,env,chat['native_id'], **({'source_file':chat['source_file']} if chat.get('source_file') and protocol in {'pi','omp'} else {})))
         except (ValueError, OSError, StopIteration, subprocess.SubprocessError) as exc:
             if job and job['status'] == 'working':
                 return {'messages': [], 'chat': chat, 'job': job}
@@ -1470,12 +1482,11 @@ class Workspace:
         if discover and refresh_lock.acquire(blocking=False):
             try:
                 if time.time()-self.library_checked>15:
-                    env=self.agent_environment()
                     def read(choice):
                         previous=self.library_native.get(choice['id'],([],''))[0]
                         try:
                             warnings=[]
-                            rows=workspace_library.native(choice,root,env,warnings)
+                            rows=workspace_library.native(choice,root,self.agent_environment(self.native_choice(choice['id'])),warnings)
                             return choice['id'],workspace_library.retain_catalog(previous,rows,bool(warnings)),' '.join(warnings)
                         except (OSError,ValueError,TypeError,KeyError,AttributeError,subprocess.SubprocessError):
                             return choice['id'],workspace_library.retain_catalog(previous,[],True),choice['name']+': could not refresh its catalog. Open the app, then try again.'
@@ -1761,7 +1772,7 @@ class Workspace:
         if action!='create' and not task:
             raise ValueError('This task is no longer listed. Refresh scheduled tasks.')
         kind = payload.get('app') or (task or {}).get('owner')
-        choice = next((a for a in installed_agents() if a['id']==kind and a['argv']),None)
+        choice = self.native_choice(kind)
         if kind not in NATIVE_AGENTS or not choice:
             raise ValueError('Connect this AI app in Adjust AI settings, then try again.')
         for field, limit in [('name',200),('description',20000),('when',300),('schedule',300),('model',500),('effort',32),('request',2000)]:
@@ -1801,7 +1812,7 @@ class Workspace:
                    created=time.time(),updated=time.time(),payload=payload)
         self.schedule_job = job
         execution = self.schedule_execution = Execution()
-        command, env = list(choice['argv']), self.agent_environment()
+        command, env = list(choice['argv']), self.agent_environment(choice)
         connection = dict(self.preferences.get('connected_apps',{}).get(kind) or {})
         if kind=='codex':
             command[-1:-1] = ['--sandbox','workspace-write' if connection.get('workspace_write',True) else 'read-only']
@@ -2033,9 +2044,16 @@ class Workspace:
             if goal_id:workspace_goals.check_chat(bid,goal_id,chat['id'] if chat else '')
             native_request=getattr(self,'_request_native_goal',None)
             native_spec=None
+            permission=workspace_permissions.validate(self.connection_kind,(chat or {}).get('permission_mode') or getattr(self,'_request_permission_mode',None) or self.preferences.get('harness_permissions',{}).get(self.connection_kind,'native'),self.permission_modes(self.connection_kind,chat))
+            native_options=dict(self.agent.get('native_options') or {})
+            if (chat or {}).get('native_settings'):native_options['config']={**native_options.get('config',{}),**chat['native_settings']}
             if native_request is not None:
                 if not isinstance(native_request,dict) or not goal_id:raise ValueError('Choose a chat goal before starting native goal mode.')
-                native_spec=workspace_native_goals.spec(workspace_goals.find(bid,goal_id),native_request,self.connection_kind,self.agent)
+                native_spec=workspace_native_goals.spec(workspace_goals.find(bid,goal_id),native_request,protocol_kind,{**self.agent,'native_options':native_options},permission)
+                prior=(chat or {}).get('native_goal') or {}
+                if prior.get('goal_id')==native_spec['id'] and prior.get('requested_objective')==native_spec['objective'] and not prior.get('native_changed'):
+                    if prior.get('objective'):native_spec['native_objective']=prior['objective']
+                    if prior.get('native_basis'):native_spec['native_basis']=prior['native_basis']
             references=getattr(self,'_request_references',None)
             if references is None:references=[]
             if not isinstance(references,list):raise ValueError('Choose valid context references.')
@@ -2109,13 +2127,14 @@ class Workspace:
                     except OSError:job['recovery_warning']='Work is running, but its recovery reference could not be saved.'
             execution.on_started=started
             execution.connection=dict(saved_connection)
-            execution.native_options=dict(self.agent.get('native_options') or {})
+            execution.native_model_changed=bool(chat.get('model_choice_pending'))
+            execution.native_options=native_options
             execution.native_handler=self.agent.get('native_requests')
             execution.native_kind=protocol_kind
             execution.attachments=native_images
             execution.native_goal=native_spec
             execution.interactive = native
-            execution.permission = workspace_permissions.validate(self.connection_kind,chat.get('permission_mode') or self.preferences.get('harness_permissions',{}).get(self.connection_kind,'native'),self.permission_modes(self.connection_kind,chat))
+            execution.permission = permission
             job['permissions']=workspace_permissions.describe(self.connection_kind,execution.permission,self.permission_modes(self.connection_kind,chat))
             if goal_id and not native_spec and chat.get('continuation',{}).get('mode')=='native':
                 goal=workspace_goals.find(bid,goal_id)
@@ -2179,12 +2198,20 @@ class Workspace:
                         values.setdefault('progress', 'Connected. Waiting for your AI')
                     if 'native_goal' in values and native_spec:
                         workspace_native_goals.observe(self,bid,chat,native_spec,values['native_goal'])
+                    session=execution.native_session
+                    if session:
+                        session.touch()
+                        if 'native_goal' in values:session.goal_active=(values['native_goal'] or {}).get('status')=='active'
+                        if 'background_processes' in values:session.background=bool(values['background_processes'])
                     if 'reply' in values:
                         values['reply'] = self.connections.redact(workspace_chats.clean(values['reply'],streaming=True))
                     if values.get('native_title') and not chat.get('title_edited'):
-                        chat['title']=self.connections.redact(str(values['native_title'])[:100]);self.save_preferences()
+                        title=self.connections.redact(str(values['native_title'])[:100])
+                        if chat.get('title')!=title:chat['title']=title;self.save_preferences()
                     for key in ('requests','native_notices','native_editor','native_modes','native_config','native_commands'):
                         if key in values:values[key]=json.loads(self.connections.redact(json.dumps(values[key])))
+                    for key in ('native_config','native_commands'):
+                        if key in values:chat[key]=values[key]
                     if 'native_modes' in values or 'native_config' in values:
                         info={**job,**values}
                         modes=(info.get('native_modes') or {}).get('availableModes')
@@ -3030,7 +3057,7 @@ def handler_for(app):
                             job['message']='Stopping task setup…'
                         self.send(200,{'job':app.schedule_state(bid)})
                     elif route == '/api/schedules/update':
-                        choice = next((a for a in installed_agents() if a['id'] == 'hermes' and a['argv']), None)
+                        choice = app.native_choice('hermes')
                         command = workspace_agents.base_command(choice['argv']) if choice else None
                         if 'model' in data:
                             model = str(data['model'])
@@ -3043,7 +3070,7 @@ def handler_for(app):
                                 data['provider'], data['model'] = ':'.join(parts[:-1]), parts[-1]
                             else:
                                 data['provider'] = ''
-                        result = workspace_schedules.update(data.get('id'), data, command, app.agent_environment())
+                        result = workspace_schedules.update(data.get('id'), data, command, app.agent_environment(choice))
                         self.send(200, {'task':result})
                     elif route == '/api/files/reconnect':
                         bid = selected(data.get('business'))
@@ -3133,6 +3160,10 @@ def handler_for(app):
                         if chat.get('recovery'):chat['recovery']['status']='reviewed'
                         app.save_preferences();self.send(200,{'ok':True})
                     elif route == '/api/preferences':
+                        if 'native_idle_timeout_seconds' in data:
+                            seconds=data['native_idle_timeout_seconds']
+                            if workspace_usage.number(seconds) is None or seconds>86400:raise ValueError('Use an idle timeout from 0 to 86,400 seconds. Zero keeps settled connections open.')
+                            app.preferences['native_idle_timeout_seconds']=seconds
                         if 'library' in data:
                             bid=selected(data.get('business'))
                             prefs=data['library']
@@ -3237,6 +3268,10 @@ def handler_for(app):
                         efforts=app.agent_efforts(chat['agent'],model['id']).get('efforts',model.get('efforts',[]))
                         if effort and effort not in efforts:raise ValueError('Choose a supported effort for this model.')
                         if chat['agent']=='codex' and not effort:raise ValueError('Choose an effort for this Codex model.')
+                        if 'native_settings' in data:
+                            from workspace_native_settings import selections
+                            native_settings=selections(chat.get('native_config',[]),data['native_settings'])
+                            chat['native_settings']=native_settings
                         chat.update(model=model['id'],effort=effort,connection={**chat.get('connection',{}),'kind':chat['agent'],'model':model['id'],'effort':effort},model_choice_pending=True)
                         app.save_preferences();self.send(200,{'chat':chat})
                     elif route == '/api/chats/open':
@@ -3316,6 +3351,7 @@ def main():
             # Runs only with the visual interface. No separate updater service.
             while not update_stop.wait(2):
                 try:
+                    app.native_sessions.expire_idle(app.preferences.get('native_idle_timeout_seconds',600))
                     updater = app.updates
                     with updater.lock:
                         running = updater.operation and updater.operation.is_alive()

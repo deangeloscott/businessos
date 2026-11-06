@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- Connect to Hermes’s native desktop/TUI gateway where available, with native commands, approvals, evaluator-owned goal continuation and confirmed completion. Keep ACP available for older installations and explicit ACP-only settings.
+- Preserve normalized native goal assignments and completion contracts without storing Aura’s context as the goal. Reject control through an older assignment when native criteria change.
+- Discover native commands in the composer and expose additional ACP select settings in the existing model picker, using exact native IDs and acknowledgements before work.
+- Release settled native processes after ten idle minutes while retaining goals, background commands, provider work and pending input; resume saved native conversations on demand.
+- Support connection-specific environments for native profiles and account configuration. Add opt-in standard ACP client file and command services without another runtime dependency.
+- Check native client portability in the six-platform download workflow, and document supported execution paths and remaining native-service boundaries.
+- Keep native account/profile environments consistent during refresh, discovery, usage and task operations. Preserve the selected Hermes profile for saved goal controls and guard changed native criteria before work starts.
+- Count Hermes cumulative usage once across replies and reconnections, and close client terminals safely when cancellation races with process creation.
+- Apply Hermes provider/model choices through its native model selector, then apply effort, so new chats do not send qualified IDs to the wrong provider or lose their reasoning choice.
+
 - Keep the model picker beside Send at desktop and phone widths. Show the source/current workspace directly under the Share or import title on every tab.
 - Honor custom ACP permission modes named full or yolo, and handle native configuration notifications arriving before session loading completes.
 - Preserve native output images when refreshing history and read inline images reported by ACP history.

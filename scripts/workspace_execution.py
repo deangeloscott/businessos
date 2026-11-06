@@ -35,6 +35,7 @@ class Execution:
         self.helpers = set()
         self.controls = {}
         self.native_session = None
+        self.native_client_tools = None
         from workspace_interactions import Requests
         self.requests = Requests()
 
@@ -103,6 +104,7 @@ class Execution:
 
     def _force_stop(self):
         with self.lock:
+            if self.native_client_tools:self.native_client_tools.close()
             process = self.process
             self.stopped.set()
             for helper in list(self.helpers):

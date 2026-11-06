@@ -1,7 +1,9 @@
 """Live native conversations. Requests finish independently of their connection."""
 import hashlib
 import json
+import math
 import threading
+import time
 
 
 class Call:
@@ -13,6 +15,7 @@ class Call:
 class Session:
     def __init__(self,signature,call,launch,workspace):
         self.signature=signature;self.lock=threading.RLock();self.closed=False
+        self.last_activity=time.monotonic();self.goal_active=False;self.background=False;self.native_work=False
         self.active=call;self.execution=call.execution;self.events=None;self.process=None
         self.requests=call.execution.requests;self.update=call.update
         self.native_id=call.native_id
@@ -39,6 +42,7 @@ class Session:
 
     def bind(self,call):
         self.active=call;self.execution=call.execution;self.update=call.update
+        self.touch()
         call.execution.native_session=self;call.execution.requests=self.requests
         self.requests.changed=lambda rows:self.update(requests=rows)
         if self.process:
@@ -51,6 +55,7 @@ class Session:
     def complete(self,result):
         with self.lock:
             if self.active:
+                self.touch()
                 if result and result.get('native_id'):self.native_id=result['native_id']
                 self.active.result=result;self.active.ready.set();self.active=None
 
@@ -61,6 +66,7 @@ class Session:
                 with self.lock:self.bind(event)
                 return event
             idle(event)
+            self.touch()
         raise ValueError('The native connection ended. Your saved conversation is available; no message was resent.')
 
     def submit(self,call):
@@ -75,12 +81,19 @@ class Session:
         self.closed=True
         self.execution._force_stop()
 
+    def touch(self):self.last_activity=time.monotonic()
+
+    def pending(self):
+        return bool(self.active or self.goal_active or self.background or self.native_work or self.execution.helpers or
+                    self.execution.native_client_tools and self.execution.native_client_tools.busy() or
+                    any(r['status']=='pending' for r in self.requests.snapshot()))
+
 
 class Sessions:
     def __init__(self):self.lock=threading.RLock();self.items={}
 
     def busy(self):
-        return any(not s.closed and (s.active is not None or s.execution.helpers or any(r['status']=='pending' for r in s.requests.snapshot())) for s in list(self.items.values()))
+        return any(not s.closed and s.pending() for s in list(self.items.values()))
 
     def owns_idle(self,key):
         session=self.items.get(key)
@@ -93,7 +106,7 @@ class Sessions:
             session=self.items.get(key)
             if session and (session.closed or session.signature!=signature or not session.process or session.process.poll() is not None):
                 if not session.closed:
-                    if session.active or session.execution.helpers or any(r['status']=='pending' for r in session.requests.snapshot()):raise ValueError('Finish this conversation’s pending work before changing its connection.')
+                    if session.pending():raise ValueError('Finish this conversation’s pending work before changing its connection.')
                     session.close()
                 self.items.pop(key,None);session=None
             if session:session.submit(call)
@@ -108,14 +121,22 @@ class Sessions:
         for session in sessions:session.close()
         for session in sessions:session.worker.join(6)
 
-    def release_idle(self,key):
-        session=self.items.get(key)
-        if not session:return False
-        with session.lock:
-            if session.active or session.execution.helpers or any(r['status']=='pending' for r in session.requests.snapshot()):return False
-            session.closed=True
-        session.close()
+    def release_idle(self,key,older_than=None):
         with self.lock:
-            if self.items.get(key) is session:self.items.pop(key,None)
+            session=self.items.get(key)
+            if not session:return False
+            with session.lock:
+                if session.pending() or older_than is not None and session.last_activity>older_than:return False
+                session.closed=True
+                self.items.pop(key,None)
+        session.close()
         session.worker.join(6)
         return True
+
+    def expire_idle(self,timeout=600):
+        """Release settled connections, using the existing UI maintenance loop."""
+        if not isinstance(timeout,(int,float)) or isinstance(timeout,bool) or not math.isfinite(timeout) or timeout<0:raise ValueError('Native idle timeout must be zero or a positive number of seconds.')
+        if timeout==0:return 0
+        cutoff=time.monotonic()-timeout
+        with self.lock:keys=list(self.items)
+        return sum(self.release_idle(key,older_than=cutoff) for key in keys)

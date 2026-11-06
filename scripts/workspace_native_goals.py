@@ -13,7 +13,7 @@ def objective(goal,limit=None):
     return text
 
 
-def support(kind,agent):
+def support(kind,agent,permission='native'):
     custom=agent.get('native_goal') or {}
     if custom:
         argv=custom.get('argv')
@@ -22,16 +22,19 @@ def support(kind,agent):
         return {'supported':True,'protocol':'aura-goal-v1','token_budget':bool(custom.get('token_budget')),'status_sync':True}
     if kind=='antigravity' and '--disable-slash-commands' in agent.get('argv',[]):return {'supported':False,'protocol':None,'token_budget':False,'status_sync':False,'reason':'This connection disables native commands. Enable them in its connection command or use a native goal adapter.'}
     protocol={'codex':'codex','omp':'omp','claude':'slash','antigravity':'slash'}.get(kind)
-    return {'supported':bool(protocol),'protocol':protocol,'token_budget':kind in {'codex','omp'},'status_sync':kind in {'codex','omp'},
+    if kind=='hermes':
+        from workspace_hermes import enabled
+        if enabled(agent.get('argv',[]),agent.get('native_options'),permission):protocol='hermes-gateway'
+    return {'supported':bool(protocol),'protocol':protocol,'token_budget':kind in {'codex','omp'},'status_sync':kind in {'codex','omp'} or protocol=='hermes-gateway',
             'reason':{'pi':'Native goal mode is not available in this Pi connection. You can still use the goal in chat.',
                       'hermes':'Native goal mode is not available in this Hermes connection. Use Hermes directly for persistent goals, or use this goal as chat context.'}.get(kind,'Native goal mode is not available in this connection. You can still use the goal as chat context.') if not protocol else ''}
 
 
-def spec(goal,options,kind,agent):
+def spec(goal,options,kind,agent,permission='native'):
     from workspace_goals import scope,available,fingerprint
     if scope(goal)!='chat':raise ValueError('Native goal mode belongs to a chat goal. Create a chat goal for this workspace outcome.')
     if not available(goal):raise ValueError('Resume this chat goal before starting native work.')
-    capability=support(kind,agent)
+    capability=support(kind,agent,permission)
     if not capability['supported']:raise ValueError(capability['reason'])
     budget=options.get('token_budget')
     if budget is not None:
@@ -44,13 +47,18 @@ def observe(app,bid,chat,request,value):
     """Record native evidence; only a native completion can finish the linked chat goal."""
     from workspace_goals import find,save,scope,deleted,changed,fingerprint
     if not isinstance(value,dict):return
-    allowed={'status','objective','tokenBudget','tokensUsed','timeUsedSeconds','reason','native_id'}
+    allowed={'status','objective','tokenBudget','tokensUsed','timeUsedSeconds','reason','native_id','native_basis'}
     state={k:v for k,v in (value or {}).items() if k in allowed}
     if isinstance(state.get('objective'),str) and len(state['objective'])>4000:state['objective']=request['objective']
-    state.update(goal_id=request['id'],checked_at=time.time(),protocol=request['protocol'])
+    state.update(goal_id=request['id'],checked_at=time.time(),protocol=request['protocol'],requested_objective=request['objective'])
     native_objective=value.get('objective')
-    if isinstance(native_objective,str) and native_objective!=request['objective'] and not native_objective.startswith(request['objective']+'\n\n'):
+    if value.get('bound_to')==request['objective'] and isinstance(native_objective,str) and 'native_objective' not in request:
+        request['native_objective']=native_objective
+        if value.get('native_basis'):request['native_basis']=value['native_basis']
+    expected=request.get('native_objective',request['objective'])
+    if isinstance(native_objective,str) and native_objective!=expected and not native_objective.startswith(expected+'\n\n'):
         request['native_changed']=True
+    if value.get('native_basis') and request.get('native_basis') and value['native_basis']!=request['native_basis']:request['native_changed']=True
     if request.get('native_changed'):
         state.update(status='needs_review',native_changed=True,reason='The native goal changed in this chat. Review it before continuing with this saved goal.')
         chat['native_goal']=state;app.save_preferences();return
@@ -97,18 +105,20 @@ def control(app,bid,goal,action):
             chat['native_goal']={**state,'status':'needs_review','reason':'The native app could not confirm this goal change. Check its goal before continuing.'}
             chat['native_goal_error']=str(error)
         return
-    from workspace_ui import installed_agents
-    agent=(getattr(app,'configured_agent',None) or {}) if chat['agent']=='configured' else next((a for a in installed_agents() if a['id']==chat['agent']),{})
+    agent=app.native_choice(chat['agent']) or {}
     try:
-        actual=saved_control(agent,chat['agent'],app.workspace_path,app.agent_environment(),chat['native_id'],state.get('objective') or objective(goal),action)
+        actual=saved_control(agent,agent.get('native_protocol') or chat['agent'],app.workspace_path,app.agent_environment(agent),chat['native_id'],state.get('objective') or objective(goal),action,expected_basis=state.get('native_basis'))
         chat['native_goal']={**state,**actual,'checked_at':time.time()}
     except (ValueError,OSError,subprocess.SubprocessError) as error:
         chat['native_goal']={**state,'status':'needs_review','reason':'The local goal changed, but the native app could not confirm the same change. Check its goal before continuing.'}
         chat['native_goal_error']=str(error)
 
 
-def saved_control(agent,kind,cwd,env,native_id,expected,action):
+def saved_control(agent,kind,cwd,env,native_id,expected,action,expected_basis=None):
     """No prompt or native goal resume is sent by a pause, completion or clear operation."""
+    if kind=='hermes':
+        import workspace_hermes
+        return workspace_hermes.saved_control(agent['argv'],agent.get('native_options'),cwd,env,native_id,expected,action,expected_basis)
     if kind=='codex':
         from workspace_codex import rpc
         def call(client):

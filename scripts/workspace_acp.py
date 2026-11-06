@@ -23,6 +23,10 @@ def run(command,kind,cwd,env,prompt,native_id,model,effort,update,execution):
     from _process_errors import ErrorTail
     session=execution.native_session;native=native_id;final='';usage={};ready=False;capabilities={};config=[];state={};pending=[];permissions={};applied=set()
     argv=[*base_command(command),'acp'] if kind!='acp' else list(command)
+    tools=None
+    if execution.native_options.get('client_tools'):
+        from workspace_acp_tools import ClientTools
+        tools=ClientTools(cwd,env);execution.native_client_tools=tools
     if execution.permission=='full' and kind=='antigravity':argv+=['--dangerously-skip-permissions']
     if execution.permission=='yolo' and kind=='hermes':env={**env,'HERMES_YOLO_MODE':'1'}
     with execution.popen(argv,cwd=cwd,env=env,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,encoding='utf-8',errors='replace') as process:
@@ -31,6 +35,7 @@ def run(command,kind,cwd,env,prompt,native_id,model,effort,update,execution):
         def request(ident,method,**params):send({'id':ident,'method':method,'params':params})
         def controls():
             owner=execution
+            execution.native_client_tools=tools
             def interrupt():
                 if session and (not session.active or session.active.execution is not owner):return
                 for ident,reply in list(permissions.items()):
@@ -48,15 +53,16 @@ def run(command,kind,cwd,env,prompt,native_id,model,effort,update,execution):
         def configure():
             pending.clear()
             selections=[('model',model),('thought_level',effort)]
+            selections.extend(('id:'+ident,value) for ident,value in execution.native_options.get('config',{}).items())
             mode=execution.permission
             launch_override=(kind=='antigravity' and mode=='full') or (kind=='hermes' and mode=='yolo')
             if mode!='native' and not launch_override:
                 desired='default' if kind=='antigravity' and mode=='review' else mode
                 selections.append(('mode',desired))
             for category,value in selections:
-                if not value:continue
+                if not value and not category.startswith('id:'):continue
                 if (category,value) in applied:continue
-                item=next((r for r in config if r.get('category')==category),None)
+                item=next((r for r in config if r.get('id')==category[3:]),None) if category.startswith('id:') else next((r for r in config if r.get('category')==category),None)
                 if item:
                     if value==item.get('currentValue'):continue
                     if value not in {r['value'] for r in options(item.get('options',[]))}:raise ValueError('This native connection does not offer the selected '+category.replace('_',' ')+'. Choose an available option in its settings.')
@@ -111,12 +117,15 @@ def run(command,kind,cwd,env,prompt,native_id,model,effort,update,execution):
                 if link:notice(execution,update,link['text'],link.get('url'))
             elif method in {'elicitation/cancel','session/cancel_request'}:execution.requests.resolve(p.get('id') or p.get('requestId'))
             elif ident is not None:
+                if tools and (method=='fs/read_text_file' or execution.permission in {'native','full','yolo','auto'}) and tools.handle(event,send,execution,update):return
                 if not provider(execution,event,send,update):
                     send({'id':ident,'error':{'code':-32601,'message':'This client interaction needs its configured native provider.'}})
                     notice(execution,update,'This step is not available through this connection. Open the chat in your AI app to continue.')
                     update(native_diagnostic={'method':method,'reason':'Native client provider required'})
         init={'protocolVersion':1,'clientCapabilities':{'elicitation':{'form':{},'url':{}},'session':{'notices':{}}},'clientInfo':{'name':'aura-workspace','version':'1'}}
         init.update(execution.native_options.get('initialize',{}))
+        if tools:
+            init.setdefault('clientCapabilities',{}).update(fs={'readTextFile':True,'writeTextFile':execution.permission in {'native','full','yolo','auto'}},terminal=execution.permission in {'native','full','yolo','auto'})
         request('aura-init','initialize',**init)
         try:
             for event in events:
@@ -160,6 +169,7 @@ def run(command,kind,cwd,env,prompt,native_id,model,effort,update,execution):
                     controls();configure()
             raise ValueError(errors.message('The native connection ended before completing. Check its saved conversation before retrying.'))
         finally:
+            if tools:tools.close()
             execution.interrupt=None;execution.steer=None;execution.close_controls();close();execution.requests.close();ErrorTail.close_input(process)
             try:process.wait(timeout=3)
             except subprocess.TimeoutExpired:execution._force_stop();process.wait(timeout=5)

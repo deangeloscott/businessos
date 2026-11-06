@@ -39,6 +39,7 @@ def main():
                                  ('503 no available endpoints for model example','service'),
                                  ('Network timeout while loading model example','network'),
                                  ('model_not_found: example does not exist','model'),
+                                 ('The owned reasoner is not healthy; inspect llm logs.','model_ready'),
                                  ("Permission denied: '/workspace/context.json'",'files'),
                                  ("Permission denied: '/workspace/model.json'",'files'),
                                  ("Permission denied for model 'example'",'model_access'),
