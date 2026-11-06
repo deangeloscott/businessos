@@ -33,7 +33,7 @@ def attachments(references,kind):
         path=Path(ref['path']);mime=mimetypes.guess_type(path.name)[0]
         if mime not in {'image/png','image/jpeg','image/webp','image/gif'}:continue
         if kind=='codex':result.append({'type':'localImage','path':str(path)})
-        elif kind in {'claude','pi','omp'}:
+        elif kind in {'claude','pi','omp','hermes','antigravity','acp'}:
             if path.stat().st_size>32*1024*1024:raise ValueError('This image is too large for native chat input. Choose a smaller image or reference its folder instead.')
             data=base64.b64encode(path.read_bytes()).decode('ascii')
             result.append({'type':'image','source':{'type':'base64','media_type':mime,'data':data}} if kind=='claude' else {'type':'image','mimeType':mime,'data':data})
@@ -189,3 +189,84 @@ def codex_request(event,execution,send,update=lambda **v:None):
                'item/tool/call':'This tool needs its configured native execution provider.'}.get(method,'This AI app requested an interaction its connection has not registered: '+method)
         notice(execution,update,title+' Add its native request handler to the connection, then continue in the saved chat.')
         send({'id':ident,'error':{'code':-32601,'message':title}})
+
+
+def claude_request(event,execution,send):
+    ident=event.get('request_id');request=event.get('request') or {}
+    def reply(payload,ident=ident):send({'type':'control_response','response':{'subtype':'success','request_id':ident,'response':payload}})
+    if request.get('subtype')!='can_use_tool':
+        def bridge(value,ident=ident,reply=reply):
+            if 'result' in value:reply(value['result'])
+            else:send({'type':'control_response','response':{'subtype':'error','request_id':ident,'error':value.get('error',{}).get('message','The native provider needs attention.')}})
+        if provider(execution,{'id':ident,'method':request.get('subtype'),'params':request},bridge):return
+        send({'type':'control_response','response':{'subtype':'error','request_id':ident,'error':'Use the native app for this interaction.'}});return
+    original=request.get('input') or {}
+    if request.get('tool_name')=='AskUserQuestion':
+        qs=[question(str(i),q.get('question',''),[o['label'] for o in q.get('options',[])],q.get('multiSelect'),True) for i,q in enumerate(original.get('questions',[]))]
+        def convert(a,original=original,qs=qs):return {'behavior':'allow','updatedInput':{**original,'answers':{q.get('question',''):', '.join(a[str(i)]) for i,q in enumerate(original.get('questions',[]))}}}
+        add(execution,ident,'Your AI has a question',qs,reply,convert)
+    else:
+        suggestions=request.get('permission_suggestions') or []
+        options=['Approve once',*(['Approve and apply the suggested native rule'] if suggestions else []),'Decline']
+        q=question('decision',request.get('description') or 'Allow this tool call?', options)
+        add(execution,ident,'Approval needed: '+str(request.get('tool_name','Tool')),[q],reply,
+            lambda a,original=original,suggestions=suggestions:{'behavior':'deny','message':'Declined by the user in Aura.'} if a['decision']==['Decline'] else {'behavior':'allow','updatedInput':original,**({'updatedPermissions':suggestions} if a['decision']==['Approve and apply the suggested native rule'] else {})},json.dumps({'input':original,'permission_suggestions':suggestions},ensure_ascii=False,indent=2))
+
+
+def extension_request(event,execution,send):
+    ident=event.get('id');method=event.get('method')
+    if method=='cancel':execution.requests.resolve(event.get('targetId'))
+    elif method=='ask':
+        qs=[question(q['id'],q.get('question',''),[o['label'] for o in q.get('options',[])],q.get('multi'),True) for q in event.get('questions',[])]
+        for q,original in zip(qs,event.get('questions',[])):
+            for option,source in zip(q['options'],original.get('options',[])):option['description']=source.get('description','')
+        def reply(payload,ident=ident):send({'type':'extension_ui_response','id':ident,**payload})
+        def convert(a,qs=qs):
+            return {'answers':[{'id':q['id'],'selectedOptions':[v for v in a[q['id']] if v in {o['value'] for o in q['options']}],
+                **({'customInput':'\n'.join(v for v in a[q['id']] if v not in {o['value'] for o in q['options']})} if any(v not in {o['value'] for o in q['options']} for v in a[q['id']]) else {})} for q in qs]}
+        add(execution,ident,event.get('title') or 'Your AI has a question',qs,reply,convert,timeout=event.get('timeout'))
+    elif method in {'select','confirm','input','editor'}:
+        options=event.get('options',[]) if method=='select' else ['Yes','No'] if method=='confirm' else []
+        q=question('answer',event.get('message') or event.get('title',''),options);q.update(secret=bool(event.get('secret')),default=None if event.get('secret') else event.get('prefill'))
+        def reply(payload,ident=ident):send({'type':'extension_ui_response','id':ident,**payload})
+        def convert(a,method=method):return {'confirmed':a['answer']==['Yes']} if method=='confirm' else {'value':a['answer'][0]}
+        add(execution,ident,event.get('title') or 'Your AI has a question',[q],reply,convert,timeout=event.get('timeout'))
+    elif method in {'notify','setStatus','setWidget'}:
+        text=event.get('message') or event.get('statusText') or '\n'.join(event.get('widgetLines') or [])
+        key=method+':'+str(event.get('statusKey') or event.get('widgetKey') or 'default') if method!='notify' else None
+        if text or key:return ({'type':'aura_notice','text':text,'key':key,'level':event.get('notifyType','info')})
+    elif method=='open_url':return ({'type':'aura_notice','text':event.get('instructions') or 'Open the native sign-in page.', 'url':event.get('launchUrl') or event.get('url')})
+    elif method=='set_editor_text':return ({'type':'aura_editor_text','text':event.get('text','')})
+    elif method=='setTitle':return ({'type':'aura_native_title','title':event.get('title','')})
+    else:return ({'type':'aura_notice','text':'Your AI requested a display this connection cannot show. Open its native app to use that display.'})
+
+
+def display(event,execution,update):
+    typ=event.get('type')
+    if typ=='aura_notice':notice(execution,update,event.get('text',''),event.get('url'),event.get('key'))
+    elif typ=='aura_editor_text':update(native_editor={'id':event.get('id') or str(time.time_ns()),'text':event.get('text','')})
+    elif typ=='aura_native_title':update(native_title=event.get('title',''))
+    else:return False
+    return True
+
+
+def save_image(content,bid):
+    """Materialize a native inline output once; the normal file viewer serves it."""
+    import hashlib
+    from _common import workspace_root
+    mime=content.get('mimeType');data=content.get('data')
+    extensions={'image/png':'.png','image/jpeg':'.jpg','image/webp':'.webp','image/gif':'.gif'}
+    if mime not in extensions or not isinstance(data,str) or len(data)>44*1024*1024:raise ValueError('This image cannot be displayed here. Open its saved output in the native app.')
+    try:raw=base64.b64decode(data,validate=True)
+    except ValueError:raise ValueError('The native app returned an incomplete image.') from None
+    valid=(raw.startswith(b'\x89PNG\r\n\x1a\n') if mime=='image/png' else raw.startswith(b'\xff\xd8\xff') if mime=='image/jpeg' else raw.startswith(b'RIFF') and raw[8:12]==b'WEBP' if mime=='image/webp' else raw.startswith((b'GIF87a',b'GIF89a')))
+    if not valid or len(raw)>32*1024*1024:raise ValueError('The native app returned an image that cannot be displayed here.')
+    base=workspace_root().resolve()/'attachments'/bid
+    path=base/'work'/('Image-'+hashlib.sha256(raw).hexdigest()[:16]+extensions[mime])
+    if not path.resolve().is_relative_to(base):raise ValueError('The image output folder points outside this business. Choose a regular workspace folder.')
+    path.parent.mkdir(parents=True,exist_ok=True)
+    try:
+        with path.open('xb') as output:output.write(raw)
+    except FileExistsError:
+        if path.read_bytes()!=raw:raise ValueError('This image could not be saved without replacing a different file.')
+    return {'path':path.relative_to(workspace_root()).as_posix(),'name':'Image','mime':mime}

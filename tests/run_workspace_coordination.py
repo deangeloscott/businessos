@@ -269,7 +269,7 @@ def main():
             assert call('/api/activity?business='+bid)['items'][0]['chat_id']==job['chat_id']
             before=call('/api/history?business='+bid)
             assert before['items'] and '/api/chat/answer' not in json.dumps(before)
-        finally:server.shutdown();server.server_close()
+        finally:app.native_sessions.close();server.shutdown();server.server_close()
         check=subprocess.run([sys.executable,str(ROOT/'scripts/workspace_activity.py'),'--business-id',bid,'--search','Research','--json'],capture_output=True,text=True,check=True)
         assert any(r['chat_id']=='c' for r in json.loads(check.stdout)['items'])
         import shutil

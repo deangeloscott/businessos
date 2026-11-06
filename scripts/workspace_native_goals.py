@@ -88,6 +88,14 @@ def control(app,bid,goal,action):
                 return
     state=chat.get('native_goal') or {}
     if state.get('goal_id')!=goal['id'] or not chat.get('native_id'):return
+    session=getattr(app,'native_sessions',None)
+    session=session.items.get((str(Path(app.workspace_path).resolve()),bid,owner)) if session else None
+    if session and not session.closed and session.active is None and (session.execution.native_goal or {}).get('id')==goal['id'] and session.execution.goal_control:
+        try:session.execution.goal_control(action)
+        except (ValueError,OSError) as error:
+            chat['native_goal']={**state,'status':'needs_review','reason':'The native app could not confirm this goal change. Check its goal before continuing.'}
+            chat['native_goal_error']=str(error)
+        return
     from workspace_ui import installed_agents
     agent=(getattr(app,'configured_agent',None) or {}) if chat['agent']=='configured' else next((a for a in installed_agents() if a['id']==chat['agent']),{})
     try:

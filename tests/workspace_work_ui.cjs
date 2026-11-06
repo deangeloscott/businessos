@@ -18,6 +18,7 @@ const context={humanError:error=>error?.message||String(error),window:{},documen
 vm.createContext(context);vm.runInContext(fs.readFileSync(process.argv[2],'utf8'),context);
 // Exercise the existing shared picker directly, without starting the app shell.
 const appSource=fs.readFileSync(require('node:path').join(require('node:path').dirname(process.argv[2]),'app.js'),'utf8');
+vm.runInContext(appSource.slice(appSource.indexOf('function nativeConnection('),appSource.indexOf('function applyAppearance(')),context);
 const pickerStart=appSource.indexOf('let chatModelTicket=0;'),pickerEnd=appSource.indexOf("\ndocument.addEventListener('click',event=>attempt",pickerStart);
 Object.assign(context,{cachedApi:(...args)=>context.api(...args),openAnchoredSurface:dialog=>{dialog.showModal();return true;},pickerSave:Promise.resolve(),structuredClone,human:s=>s[0].toUpperCase()+s.slice(1),
   modelPicker:()=>({favorites:['catalog-model']}),chatScope:()=>JSON.stringify([context.state.data.workspace,context.state.business,context.state.chatMeta?.id]),

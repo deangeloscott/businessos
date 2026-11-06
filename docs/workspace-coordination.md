@@ -56,8 +56,9 @@ restrictive mode when that is the intended change.
 | Claude Code | Native settings; default; acceptEdits; plan; dontAsk; bypassPermissions | Stream-JSON control requests over stdin/stdout |
 | Pi | Native settings; extensions retain their own policies | RPC extension UI select, confirm, input and editor |
 | OMP | Native settings; always-ask; always-ask-cached; write; yolo | RPC extension UI, including supported ask dialogs |
-| Hermes | Native settings; per-launch --yolo | Existing stream adapter; other approvals/authentication stay in Hermes |
-| Antigravity/custom | Native settings | Existing adapter; unsupported interactive flows stay native |
+| Hermes | App-reported modes; explicit native YOLO option | ACP permissions, native options, forms and browser steps |
+| Antigravity | App-reported modes; explicit full-access option | ACP permissions, native options, forms and browser steps; explicit auto mode retains the headless transport |
+| Custom ACP | App-reported modes | The same ACP client; tools, authentication and supported features come from the configured agent |
 
 These are native modes, not equivalent isolation guarantees. **dontAsk** denies
 operations needing approval; it is not bypass mode. Native managed policy, hard
@@ -74,7 +75,7 @@ prompt, start another turn or change the composer draft. The bell points to a
 chat that needs input. It is not a second approval inbox.
 
 Each request can be answered once. Cancellation, native timeout, Stop, disconnect
-or completion expires pending controls. A restarted Aura process cannot answer
+or connection shutdown expires pending controls. A completed message leaves its live native connection and any later native interaction available. A restarted Aura process cannot answer
 an old request. Pending grants/answers are not portable configuration. Secret
 answers are not cached in Aura's navigation drafts or saved displays. Native
 forms retain their field labels, descriptions, defaults and validation. Browser
@@ -99,13 +100,22 @@ its stream alive while reported background tasks remain. Pi/OMP use their native
 settled state. Closing the browser tab does not stop the server's work. These
 connections must remain running; this is not a durable background service after
 Aura or the native process exits.
-An idle, completed request still releases its native process. State that a
-harness keeps only in that process may therefore end between messages; a saved
-native conversation is not a promise that every runtime grant or desktop service
-survives. Persistent native-client sessions remain separate integration work.
+A completed message leaves its native process connected for follow-up messages.
+Aura initializes once per live conversation and preserves process-local grants,
+extensions and native state. Explicit model, effort, permission or connection
+configuration changes reopen the saved native conversation with those settings.
+Aura shutdown and explicit Stop close owned work; a disconnected process is not
+a guarantee that the native app's own external services stop. Restart never
+resends an unconfirmed request or starts a goal automatically. The connection
+pool is in the existing Aura server, not a separate service.
+
+Repeated messages use a compact business/request envelope once the same native
+conversation has received the current Aura guidance. Explicitly selected context,
+recovery references and assistant instructions remain available. Aura does not
+load every business record or copy another chat's transcript into each request.
 
 Selected PNG, JPEG, WebP and GIF files are passed as native image input to Codex,
-Claude, Pi and OMP. Other files remain scoped native file references. Inline
+Claude, Pi, OMP and image-capable ACP agents. Other files remain scoped native file references. Inline
 images have a 32 MB per-file bound; the harness may impose smaller limits. Text
 requests accept up to 1,048,576 characters, and saved replies retain their full text.
 Large references can be attached as files. Aura does not resend the browser's
@@ -151,14 +161,45 @@ provider operation: returning a fabricated authentication or execution success
 is invalid. Without that provider Aura explains what is missing and returns a
 native unsupported response. It never silently approves an unknown interaction.
 
-Antigravity headless and Hermes single-query streams still lack an interactive
-approval channel in Aura. ACP is the supported next transport to evaluate;
-Antigravity documents `agy acp`, while Hermes's ACP toolset differs from its CLI
-defaults and needs deliberate configuration to retain cron and messaging tools.
-An embedded terminal is an optional native-interface fallback, not a substitute
-for these protocol implementations. Native computer/browser tools remain owned
-by the harness and its configured providers; a desktop-client-only integration
-requires that provider or the native desktop client.
+Hermes and Antigravity use their documented ACP connection for interactive chat.
+Aura reads native model/configuration and permission choices, waits for native
+acknowledgements, and returns the exact offered approval option. ACP v1 serializes
+prompts, so it does not offer same-turn steering. Each agent's ACP profile remains
+native: Hermes may expose a different toolset from its CLI profile. Aura does not
+rewrite global profiles or claim every native UI/CLI feature is available through
+every protocol. Antigravity's explicit auto permission setting retains its existing
+headless transport because its current ACP catalog does not offer that mode.
+
+A custom harness can use the same client with a machine-owned agent configuration:
+`{"name":"My agent","argv":["my-agent","acp"],"native_protocol":"acp"}`.
+The command is the complete ACP launch command. No brand-specific Aura adapter is
+needed for compatible ACP v1 agents. Agent-owned browser/computer tools remain
+agent-owned. A desktop-only service, client tool or authentication callback still
+needs its actual native provider; Aura never fabricates access or acknowledgements.
+Client filesystem/terminal capabilities are not advertised unless a configured
+provider implements them. Adding a terminal alone does not provide a desktop
+client's private integrations.
+
+Inline native output images are saved once in the business's ordinary work folder
+and opened with the existing file viewer. The display transcript stores the file
+reference, not base64 image bytes. Context-window usage remains separate from input
+or output billing totals; unsupported measures remain unknown.
+
+## Continue with another AI
+
+Choose **Continue with another AI** in the composer's plus menu. Aura prepares an
+unsent draft and opens the existing model picker. It pins the last completed
+public reply, preserves the current draft text and project, and carries an active
+shared workspace goal when applicable. A chat goal remains with its original
+chat. The new AI sees one bounded result reference; no full transcript, private
+reasoning, credentials or runtime grants move between harnesses. Changed or missing
+source messages require selecting a result again.
+
+The same preparation is available through authenticated
+`GET /api/chats/handoff?business=<id>&id=<chat-id>` and
+`python scripts/workspace_context.py handoff --workspace <folder> --business-id <id> --chat <chat-id> --json`.
+Neither operation creates a chat or starts a model request. Normal chat creation
+and send APIs consume the returned draft.
 
 For example, OMP asks which of three deliverables to prioritize. Its actual
 question appears below the working chat; answering it leaves an unfinished

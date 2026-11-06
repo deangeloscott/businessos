@@ -40,25 +40,31 @@ DESCRIPTIONS = {
 }
 
 
-def choices(kind):
-    return [dict(id=ident,name=name,native=native,description=DESCRIPTIONS[ident],unrestricted=ident in FULL_ACCESS_MODES)
+def choices(kind,reported=None):
+    rows=[dict(id=ident,name=name,native=native,description=DESCRIPTIONS[ident],unrestricted=ident in FULL_ACCESS_MODES)
             for ident,name,native in [('native','Use AI app settings','No permission override'),*MODES.get(kind,[])]]
+    if reported:
+        rows=[rows[0],*[dict(id=r['id'],name=r.get('name') or r['id'],native=r['id'],description=r.get('description',''),unrestricted=r['id'] in FULL_ACCESS_MODES) for r in reported]]
+        rows.extend(r for r in choices(kind) if r['id'] in FULL_ACCESS_MODES or kind=='antigravity' and r['id']=='auto')
+    return list({r['id']:r for r in rows}.values())
 
 
-def validate(kind, mode):
-    if mode not in {row['id'] for row in choices(kind)}:
+def validate(kind, mode,reported=None):
+    if mode not in {row['id'] for row in choices(kind)}|{row['id'] for row in choices(kind,reported)}:
         raise ValueError('This AI app does not support that permission choice in Aura.')
     return mode
 
 
-def describe(kind, mode='native'):
-    validate(kind,mode)
-    return {'app':kind,'mode':mode,'choices':choices(kind),'scope':'New requests launched through Aura on this computer',
-            'native':next(row['native'] for row in choices(kind) if row['id']==mode),
-            'interactive':kind in {'codex','claude','pi','omp'},
+def describe(kind, mode='native',reported=None):
+    validate(kind,mode,reported)
+    rows=choices(kind,reported)
+    if kind=='antigravity' and mode=='review' and reported:mode='default'
+    if mode not in {r['id'] for r in rows}:rows+= [r for r in choices(kind) if r['id']==mode]
+    return {'app':kind,'mode':mode,'choices':rows,'scope':'New requests launched through Aura on this computer',
+            'native':next(row['native'] for row in rows if row['id']==mode),
+            'interactive':kind in {'codex','claude','pi','omp','hermes','antigravity','acp'},
             'unrestricted':mode in FULL_ACCESS_MODES,
             'note':('Pi has no built-in permission mode to change here. Approval extensions keep their own settings.' if kind=='pi' else
-                    'Applies to the next request in Aura. This Antigravity connection declines actions needing an interactive approval; it cannot show those prompts here.' if kind=='antigravity' else
                     'Applies to the next request in Aura. An already running request keeps its current permissions.')}
 
 

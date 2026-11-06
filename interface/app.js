@@ -4,6 +4,7 @@ const token = $('meta[name="aura-token"]').content;
 const state = {data:null, view:'home', business:new URLSearchParams(location.search).get('business') || '', library:[], files:[], chat:[], busy:false, urls:[], setupStep:'welcome', welcome:null, setupPrompted:new Set(), catalog:null, catalogLoading:false, chatMeta:null, polling:false, hydrated:false, tour:false, apiReturn:'', apiChanged:false};
 const systemTheme=matchMedia('(prefers-color-scheme: dark)');
 const nativeApps=['codex','claude','pi','omp','hermes','antigravity'];
+function nativeConnection(kind){return nativeApps.includes(kind)||!!state.data?.connection?.choices?.some(c=>c.id===kind&&c.native);}
 function applyAppearance(value) { document.documentElement.dataset.theme=value==='system'?(systemTheme.matches?'dark':'light'):value; }
 systemTheme.addEventListener('change',()=>applyAppearance(state.data?.appearance||'system'));
 applyAppearance('system');
@@ -149,7 +150,7 @@ const selectedRoute=()=>chosenModel()?.routes.find(r=>r.agent===$('#agent-choice
 const modelSource=model=>!model?'':model.access==='signin'?providerLabel(model.provider)+' sign-in':model.access==='api'?providerLabel(model.provider)+' API':model.access==='provider'?providerLabel(model.provider)+' connection':({openrouter:'OpenRouter',local:'Local model','google-app':'Google Antigravity'})[model.access]||'Configured in '+(model.routes.find(r=>r.agent===$('#agent-choice').value)?.app||'your AI app');
 function connectionChoice() {
   const choice=state.data.connection.choices.find(c=>c.id===$('#agent-choice').value), route=selectedRoute();
-  const native=nativeApps.includes(choice?.id), models=catalogModels();
+  const native=nativeConnection(choice?.id), models=catalogModels();
   $('#choose-agent').disabled=!choice?.available||state.busy||state.checkingConnections;
   $('#connect-agent').disabled=state.busy||state.checkingConnections||state.catalogLoading||state.effortsLoading||!!state.modelError||(native?!route:!choice?.available);
   for(const id of ['model-fields','model-picker-controls','model-providers','favorite-model'])$('#'+id).hidden=!models.length;
@@ -171,7 +172,7 @@ async function loadAgentOptions(refresh=false) {
   state.modelError='';state.modelReload=false;state.catalogLoading=true;connectionChoice();
   try {
     const kind=$('#agent-choice').value;
-    const [services,catalog]=await Promise.all([api('/api/connections'),!nativeApps.includes(kind)?Promise.resolve({kind,models:[],picker:{view:'all',favorites:[],providers:[],efforts:{}},unavailable:[]}):state.catalog?.kind===kind&&!refresh?Promise.resolve(state.catalog):api('/api/model-catalog?kind='+encodeURIComponent(kind)+(refresh?'&refresh=1':''))]);
+    const [services,catalog]=await Promise.all([api('/api/connections'),!nativeConnection(kind)?Promise.resolve({kind,models:[],picker:{view:'all',favorites:[],providers:[],efforts:{}},unavailable:[]}):state.catalog?.kind===kind&&!refresh?Promise.resolve(state.catalog):api('/api/model-catalog?kind='+encodeURIComponent(kind)+(refresh?'&refresh=1':''))]);
     if($('#agent-choice').value!==kind)return;
     state.catalog=catalog;state.data.model_picker??={};
     if(!state.data.model_picker.all)state.data.model_picker.all={...structuredClone(catalog.picker),providers:[...new Set(catalog.models.map(providerKey))]};
@@ -623,6 +624,7 @@ function chatControls() {
   const update=$('#send-update');if(update){update.hidden=!(state.busy&&state.liveJob?.native_controls?.steer);update.disabled=state.stopping||state.steering||state.navigating;update.textContent=state.steering?'Sending…':'Send update';}
   const location=$('#chat-location-note');if(location)location.hidden=!previousFolder;
   $('#stop-request').hidden=!state.busy;$('#stop-request').disabled=state.stopping;$('#stop-request').textContent=state.stopping?'Stopping…':'Stop';
+  const handoff=$('#handoff-chat');if(handoff){handoff.hidden=!state.chatMeta;handoff.disabled=state.navigating||state.starting;}
   $('#business').disabled=false;$('#new-chat').disabled=!state.business;$('#chats').disabled=!state.business;renderComposerConnection();
 }
 
@@ -950,7 +952,7 @@ async function syncScheduleOperation() {
   } finally {state.scheduleOperationLoading=false;}
 }
 function scheduleForm() {
-  const current=state.data.connection,apps=current.choices.filter(c=>c.available&&nativeApps.includes(c.id));
+  const current=state.data.connection,apps=current.choices.filter(c=>c.available&&nativeConnection(c.id));
   const draft=state.scheduleDraft??={name:'',description:'',when:'',app:apps.some(c=>c.id===current.selected)?current.selected:apps[0]?.id||'',model:current.model||'',effort:current.effort||''};
   return `<details id="schedule-add" class="schedule-add" ${state.scheduleAdding?'open':''}><summary>＋ Add scheduled task</summary><form class="form-grid" id="schedule-form"><div class="schedule-basics"><label>Task name<input name="name" required maxlength="200" value="${esc(draft.name)}" placeholder="Weekly competitor check"></label><label>When?<input name="when" required maxlength="300" value="${esc(draft.when)}" placeholder="Every Monday at 9am"></label></div><label>What should it do?<textarea name="description" required rows="2" maxlength="20000" placeholder="Check competitor pricing and summarize meaningful changes.">${esc(draft.description)}</textarea></label><label>Workspace goal<select name="goal_id"><option value="">No workspace goal</option>${workspaceGoalRecords().map(g=>`<option value="${esc(g.ref)}" ${g.ref===draft.goal_id?'selected':''}>${esc(g.title)}</option>`).join('')}</select></label><label>Assistant<select name="assistant_id" id="schedule-assistant"><option value="">Unassigned</option>${(state.assistantProfiles||[]).map(p=>`<option value="${esc(p.id)}" ${p.id===draft.assistant_id?'selected':''}>${esc(p.name)}</option>`).join('')}</select></label><div class="schedule-run-with"><label>AI app<select name="app" id="schedule-app" required>${apps.map(c=>`<option value="${esc(c.id)}" ${c.id===draft.app?'selected':''}>${esc(c.name)}</option>`).join('')||'<option value="">Connect an AI app first</option>'}</select></label><label>Model<select name="model" id="schedule-model" required disabled><option>Finding models…</option></select></label><label id="schedule-effort-label" hidden>Effort<select name="effort" id="schedule-effort"></select></label></div><p id="schedule-create-status" class="small-note" role="status"></p><div class="inline-actions"><button class="primary" id="create-schedule" disabled>Create task →</button><button type="button" class="text-button" id="schedule-retry-models" hidden>Try again</button></div></form></details>`;
 }
@@ -1556,6 +1558,9 @@ document.addEventListener('click',event=>attempt(async()=>{
     const menu=$('#chat-tools-menu');menu.hidden=!menu.hidden;b.setAttribute('aria-expanded',String(!menu.hidden));
     if(!menu.hidden)menu.querySelector('button').focus();
   }
+  if(b.id==='handoff-chat'){
+    $('#chat-tools-menu').hidden=true;$('#composer-tools').setAttribute('aria-expanded','false');await handoffChat();
+  }
   if(b.dataset.shareScope&&b.dataset.shareScope!==sharingScope())throw new Error('The workspace changed. Reopen the item before sharing.');
   if(b.id==='workspace-sharing'||b.dataset.shareRecord||b.dataset.shareFile)await openSharing(b.dataset.shareRecord?'record:'+b.dataset.shareRecord:b.dataset.shareFile?'file:'+b.dataset.shareFile:'');
   if(b.dataset.shareTab){sharing.tab=b.dataset.shareTab;renderSharing();}
@@ -1869,6 +1874,9 @@ async function showChatDetails(id,note=''){
     if(text){paragraph.textContent=text;heading.textContent='Latest request';paragraph.closest('section').setAttribute('aria-label','Latest request');}
   }catch{/* Keep the labeled preview when a saved display cannot be read. */}
 }
+function nativeMedia(items){
+  return (items||[]).length?`<div class="native-output-media">${items.map(m=>`<button type="button" class="text-button" data-file="${esc(m.path)}" aria-label="Open ${esc(m.name||'image')}"><img class="media-preview" src="${esc(mediaURL(m.path))}" alt="${esc(m.name||'Image from your AI')}" loading="lazy"></button>`).join('')}</div>`:'';
+}
 function showMessages(latest=false) {
   const failed=!state.busy&&(state.chatMeta?.status==='error'||(!state.chatMeta&&state.liveJob?.status==='error'));
   $('#request-recovery').hidden=!failed||state.needsCheck;$('#retry-request').textContent=state.chatMeta?.goal_id?'Prepare continuation':'Edit & retry';
@@ -1881,7 +1889,7 @@ function showMessages(latest=false) {
   const formatKey=JSON.stringify([chat,state.chat.length,state.data?.connection.name]);
   if(state.formattedSource!==state.chat||state.formattedKey!==formatKey){
     const started=performance.now();
-    state.formattedHistory=state.chat.map((r,index)=>`<div class="message ${r.role}"><strong>${r.role==='user'?'YOU':esc(r.agent||state.data?.connection.name||'YOUR AGENT')}${r.at?` <time>${esc(clockTime(r.at))}</time>`:''}${r.role==='assistant'&&r.model?` · ${esc(r.model)}${r.effort?' · '+esc(human(r.effort)):''}`:''}</strong>${r.role==='assistant'?chatMarkdown(r.text):esc(r.text)}${window.auraCompose?.actions(r,index)||''}</div>`).join('');
+    state.formattedHistory=state.chat.map((r,index)=>`<div class="message ${r.role}"><strong>${r.role==='user'?'YOU':esc(r.agent||state.data?.connection.name||'YOUR AGENT')}${r.at?` <time>${esc(clockTime(r.at))}</time>`:''}${r.role==='assistant'&&r.model?` · ${esc(r.model)}${r.effort?' · '+esc(human(r.effort)):''}`:''}</strong>${r.role==='assistant'?chatMarkdown(r.text):esc(r.text)}${nativeMedia(r.native_media)}${window.auraCompose?.actions(r,index)||''}</div>`).join('');
     state.formattedSource=state.chat;state.formattedKey=formatKey;clientPerformance.message_formats++;clientPerformance.message_format_ms+=performance.now()-started;
   }
   const markup=state.formattedHistory;
@@ -1890,6 +1898,7 @@ function showMessages(latest=false) {
   $('#working-label').textContent=state.liveJob?.progress||'Starting your AI…';
   $('#live-reply').hidden=!state.busy||!state.liveJob?.reply;
   $('#live-reply-text').textContent=state.busy?state.liveJob?.reply||'':'';
+  let media=$('#native-output-media');if(!media){media=document.createElement('div');media.id='native-output-media';$('#live-reply').after(media);}media.innerHTML=state.busy?nativeMedia(state.liveJob?.native_media):'';
   window.auraWork?.renderDelegation();
   window.auraContinuity?.renderRequests();
   const continuityNote=$('#continuity-note');if(continuityNote){const job=state.liveJob;const notes=job?.chat_id===chat?[job.history_warning,job.activity_warning,job.continuation_note,...(job.history_observation?.notes||[])].filter(Boolean):[];continuityNote.textContent=notes.join(' ');continuityNote.hidden=!notes.length;}
@@ -1910,7 +1919,7 @@ async function submitRequest(text, scheduleId=null, organizationId=state.pending
   if(!text.trim()){$('#request').focus();return;}
   const connection=composerConnection();
   if(!state.data.connection.connected&&state.data.connection.mode!=='copy'){$('#request').value=text;openConnection(true);return;}
-  if(nativeApps.includes(connection.kind)&&!connection.model){openConnection(true);return;}
+  if(nativeConnection(connection.kind)&&!connection.model){openConnection(true);return;}
   if(!state.data.connection.connected){
     const request=await api('/api/request',{business:state.business,text,history:state.chat,files:state.selectedFiles||[],references:state.contextReferences||[],goal_id:state.chatMeta?.goal_id||state.draftGoalId||'',schedule_id:scheduleId,organization_id:organizationId});
     details('Copy to your AI',`<p>Paste this request into your AI app. Attach the selected files there if it cannot read local paths.</p><button class="primary" id="copy-handoff">Copy request</button><textarea id="handoff-text" class="handoff" readonly></textarea>`);$('#handoff-text').value=request.text;
@@ -1919,7 +1928,7 @@ async function submitRequest(text, scheduleId=null, organizationId=state.pending
   const sentReferences=[...(state.contextReferences||[])],sentGoal=state.chatMeta?.goal_id||state.draftGoalId||'',sentPermission=!state.chatMeta&&state.newChatPermission?.kind===connection.kind?{...state.newChatPermission}:null;
   const focus=chatScope(),navigation=state.navigationTicket,chatId=state.chatMeta?.id||'',files=[...(state.selectedFiles||[])],submitTicket=state.submitTicket=(state.submitTicket||0)+1;state.starting=true;chatControls();
   try {
-    const job=await api('/api/chat',{business:state.business,chat_id:chatId,connection,text,history:nativeApps.includes(connection.kind)?[]:state.chat,files,references:sentReferences,goal_id:sentGoal,schedule_id:scheduleId,organization_id:organizationId,assistant_id:state.newAssistantId||null,project:state.newChatProject||'',...(sentPermission?{permission_mode:sentPermission.mode}:{})});
+    const job=await api('/api/chat',{business:state.business,chat_id:chatId,connection,text,history:nativeConnection(connection.kind)?[]:state.chat,files,references:sentReferences,goal_id:sentGoal,schedule_id:scheduleId,organization_id:organizationId,assistant_id:state.newAssistantId||null,project:state.newChatProject||'',...(sentPermission?{permission_mode:sentPermission.mode}:{})});
     if(focus!==chatScope()||navigation!==state.navigationTicket)return;
     state.pendingOrganizationId=null;if(JSON.stringify(state.selectedFiles||[])===JSON.stringify(files))state.selectedFiles=[];if(JSON.stringify(state.contextReferences||[])===JSON.stringify(sentReferences))state.contextReferences=[];
     const currentGoal=state.chatMeta?state.chatMeta.goal_id:state.draftGoalId;
@@ -2302,6 +2311,15 @@ async function newShellChat(draft=null){
   finally{if(ticket===state.navigationTicket){state.navigating=false;chatControls();$('#request').focus();}}
 }
 
+async function handoffChat(){
+  if(!state.chatMeta)return;
+  const scope=chatScope(),text=$('#request').value;
+  const draft=await api('/api/chats/handoff?'+new URLSearchParams({business:state.business,id:state.chatMeta.id}));
+  if(scope!==chatScope())return;
+  await newShellChat({...draft,text,connection:null});
+  await openChatModels();
+}
+
 function applyProfile(profile){
   state.profile={display_name:'',sidebar_collapsed:false,panel_width:480,text_size:15,accent:'forest',...profile};
   const p=state.profile;document.body.classList.toggle('sidebar-collapsed',p.sidebar_collapsed);document.documentElement.dataset.accent=p.accent;
@@ -2325,7 +2343,11 @@ async function renderShell(force=true){
   const running=state.data.running_chats||[];$('#background-work').hidden=!running.length;$('#background-work').textContent=running.length+' '+(running.length===1?'chat working':'chats working');
   if(!state.business){$('#sidebar-chat-list').innerHTML='<p class="sidebar-empty">Choose a workspace to see its chats.</p>';return;}
   const root=state.data.workspace,business=state.business;
-  const list=await api('/api/chats?business='+encodeURIComponent(business));if(root!==state.data.workspace||business!==state.business||(list.workspace&&list.workspace!==root))return;
+  const list=await api('/api/chats?'+new URLSearchParams({business,chat_id:state.chatMeta?.id||''}));if(root!==state.data.workspace||business!==state.business||(list.workspace&&list.workspace!==root))return;
+  const events=list.native_events;
+  if(!state.busy&&events&&state.chatMeta&&events.chat_id===state.chatMeta.id&&(!state.liveJob||state.liveJob.id===events.id||events.created>state.liveJob.created)){
+    state.liveJob={...(state.liveJob?.id===events.id?state.liveJob:{}),...events};window.auraContinuity?.renderRequests();
+  }
   state.chatList=list.items;state.projects=list.projects||[];renderProjectTrigger();state.runningChats=list.running||[];state.data.running_chats=state.runningChats;$('#background-work').hidden=!state.runningChats.length;$('#background-work').textContent=state.runningChats.length+' '+(state.runningChats.length===1?'chat working':'chats working');
   const owned=new Set(state.runningChats.filter(j=>j.workspace===root).map(j=>j.chat_id));
   const recent=list.items.filter(c=>!c.archived);
@@ -2335,7 +2357,7 @@ async function renderShell(force=true){
   document.querySelectorAll('#sidebar-chat-list details[data-project-group]').forEach(group=>{state.sidebarProjectGroups[group.dataset.projectGroup]=group.open;});
   const chatRow=c=>{
     const working=owned.has(c.id),check=c.status==='working'&&!working,unread=state.inbox?.items?.some(n=>n.chat_id===c.id&&!n.read);
-    const status=working?'Working':check?'Review work':c.status==='error'?'Needs attention':unread?'Reply ready':'';
+    const status=c.needs_input?'Needs input':working?'Working':check?'Review work':c.status==='error'?'Needs attention':unread?'Reply ready':'';
     return `<div class="sidebar-chat-row"><button type="button" class="sidebar-chat" data-chat="${esc(c.id)}" aria-current="${c.id===state.chatMeta?.id}" title="${esc(c.title+(status?' · '+status:''))}"><span class="chat-indicator ${working?'working':check||c.status==='error'?'attention':unread?'ready':''}" aria-label="${esc(status)}"></span>${c.pinned?pinIcon():''}<span class="chat-name"><span>${esc(c.title||'New chat')}</span></span>${check?'<small>Check</small>':''}</button><button type="button" class="chat-options" data-edit-chat="${esc(c.id)}" aria-label="Chat options for ${esc(c.title)}" title="Chat options">⋯</button></div>`;
   };
   const projectKey=name=>JSON.stringify([root,business,name]);
@@ -2624,7 +2646,7 @@ function renderComposerPermissions(){
 }
 function renderComposerConnection(){
   renderProjectTrigger();
-  if(!state.data)return;const c=composerConnection(),native=nativeApps.includes(c.kind);
+  if(!state.data)return;const c=composerConnection(),native=nativeConnection(c.kind);
   $('#model-settings').textContent=native?appName(c.kind)+' · '+(c.model||'Choose model')+(c.effort?' · '+human(c.effort):''):(state.data.connection.connected?appName(c.kind)||state.data.connection.name:'Choose AI');
   window.auraWork?.composer();
   renderComposerPermissions();
@@ -2673,7 +2695,6 @@ async function openChatModels(target=null){
   $('#chat-model-title').textContent=target?.title||(state.chatMeta?'Model for this chat':'AI for the new chat');
   if(!openAnchoredSurface($('#chat-model-dialog'),target?.anchor||$('#model-settings'),{width:420,align:target?'start':'end',placement:target?'side':'vertical'}))return;
   if(!target&&state.busy){$('#chat-model-content').innerHTML='<p>Wait for this reply or stop the request before changing its model.</p>';return;}
-  if(!target&&state.chatMeta?.agent==='hermes'&&state.chatMeta.native_id){$('#chat-model-content').innerHTML='<p>This Hermes conversation keeps its original model and effort. Start a new chat to choose another.</p><button class="secondary" id="model-new-chat">New chat</button>';return;}
   state.chatModelDraft={...c,scope,ticket,target};state.chatModelLimit=60;
   const choices=state.data.connection.choices.filter(a=>a.available&&(state.data.connection.apps?.some(x=>x.id===a.id)||a.id===c.kind));
   $('#chat-model-content').innerHTML=`${state.chatMeta||target?`<p class="chat-model-owner">${esc(appName(c.kind))}${target?'':'<small>This conversation stays in its original AI app.</small>'}</p>`:`<label class="model-app-field">AI app<select id="chat-model-app">${choices.map(a=>`<option value="${esc(a.id)}" ${a.id===c.kind?'selected':''}>${esc(a.name)}</option>`).join('')}</select></label>`}<div id="chat-model-options"><p role="status">Loading this app’s models…</p></div>`;
@@ -2683,7 +2704,7 @@ async function openChatModels(target=null){
 }
 async function loadChatModelOptions(refresh=false){
   const draft=state.chatModelDraft,kind=draft.kind,ticket=draft.ticket,request=state.chatModelRequest=(state.chatModelRequest||0)+1;
-  if(!nativeApps.includes(kind)){$('#chat-model-options').innerHTML='<p class="shell-help">This connection uses its own model settings.</p>'+(state.chatMeta&&!draft.target?'<button class="secondary" data-close="chat-model-dialog">Done</button>':`<button class="primary" id="save-chat-model">${draft.target?'Use for assistant':'Use for this chat'}</button>`);return;}
+  if(!nativeConnection(kind)){$('#chat-model-options').innerHTML='<p class="shell-help">This connection uses its own model settings.</p>'+(state.chatMeta&&!draft.target?'<button class="secondary" data-close="chat-model-dialog">Done</button>':`<button class="primary" id="save-chat-model">${draft.target?'Use for assistant':'Use for this chat'}</button>`);return;}
   try{
     await pickerSave.catch(()=>{});
     const catalog=await (refresh?api('/api/model-catalog?kind='+encodeURIComponent(kind)+'&refresh=1'):cachedApi('/api/model-catalog?kind='+encodeURIComponent(kind)));

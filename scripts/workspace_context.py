@@ -108,16 +108,22 @@ def resolve(app,bid,references,goal_id=None):
             # A named assistant is a profile, not an already-running agent endpoint.
             raise ValueError('Choose a saved result from this assistant, or start a chat with it from Assistants.')
         elif kind=='result':
-            if request_id:
+            if request_id or variant:
                 chat=next((c for c in app.preferences['chats'] if c['id']==ident and c['business_id']==bid and c.get('workspace',app.workspace_path)==app.workspace_path),None)
                 if not chat:raise ValueError('This saved result is not in the selected business and workspace.')
                 path=app.chat_display_path(ident)
                 messages=json.loads(path.read_text(encoding='utf-8')) if path.is_file() else []
-                message=next((m for m in reversed(messages) if m.get('role')=='assistant' and m.get('request_id')==request_id),None)
+                if variant:
+                    try:
+                        prefix,index,basis=variant.split(':');message=messages[int(index)]
+                        if prefix!='message' or int(index)<0 or message_key(message)!=basis:message=None
+                    except (ValueError,IndexError):message=None
+                else:message=next((m for m in reversed(messages) if m.get('role')=='assistant' and m.get('request_id')==request_id),None)
+                if message and message.get('role')!='assistant':message=None
                 if not message:raise ValueError('This specific result is no longer available. Choose a saved result again.')
                 raw=message.get('text','');result={'text':raw[:6000],'truncated':len(raw)>6000,'source':chat.get('agent','Native app'),'observed_at':message.get('at') or chat.get('updated')}
             else:result=workspace_activity.result(bid,ident,6000)
-            row.update(label=chat.get('title','Saved result') if request_id else 'Saved result',revision=digest(result['text']),source=result['source'])
+            row.update(label=chat.get('title','Saved result') if request_id or variant else 'Saved result',revision=digest(result['text']),source=result['source'])
             previews.append({'text':result['text'],'source':result['source'],'truncated':result['truncated']})
             text=f'Saved public reply from {result["source"]}, observed {result["observed_at"]}; not established business truth:\n{result["text"]}'+('\n[Excerpt truncated]' if result['truncated'] else '')
         # Labels from the browser are never used to resolve or authorize a source.
@@ -129,6 +135,24 @@ def resolve(app,bid,references,goal_id=None):
 
 
 def message_key(row):return hashlib.sha256((row.get('role','')+'\0'+row.get('text','')).encode()).hexdigest()
+
+
+def handoff(app,bid,chat_id):
+    chat=next((c for c in app.preferences['chats'] if c['id']==chat_id and c['business_id']==bid and c.get('workspace',app.workspace_path)==app.workspace_path),None)
+    if not chat:raise ValueError('Choose a conversation in this business and workspace.')
+    path=app.chat_display_path(chat_id)
+    messages=json.loads(path.read_text(encoding='utf-8')) if path.is_file() else []
+    for index in range(len(messages)-1,-1,-1):
+        message=messages[index]
+        if message.get('role')!='assistant' or not message.get('text','').strip() or message.get('status') in {'error','stopped','working'}:continue
+        origin_index=next((i for i in range(index-1,-1,-1) if messages[i].get('role')=='user'),None)
+        origin=messages[origin_index] if origin_index is not None else {}
+        if origin.get('text','').startswith('Keep this chat’s cache warm.'):continue
+        source=reusable(app,bid,chat_id,origin_index if origin_index is not None else index,message_key(origin if origin_index is not None else message))
+        reference={'kind':'result','id':chat_id,'label':chat.get('title','Saved result'),'variant':f'message:{index}:{message_key(message)}'}
+        return {'text':'','files':[],'references':[reference],'goal_id':source['new_chat_goal_id'],'project':chat.get('project',''),
+                'source_chat':chat_id,'source_title':chat.get('title','Saved result'),'workspace':app.workspace_path}
+    raise ValueError('This conversation has no completed reply to continue from yet.')
 
 
 def message_ref(raw):
@@ -174,7 +198,7 @@ def reusable(app,bid,chat_id,index,expected=None):
 
 
 def main():
-    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('action',choices=['find','resolve','message'])
+    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('action',choices=['find','resolve','message','handoff'])
     parser.add_argument('--workspace',type=Path,default=workspace_root());parser.add_argument('--business-id',required=True)
     parser.add_argument('--search',default='');parser.add_argument('--kind',default='');parser.add_argument('--input',type=Path);parser.add_argument('--goal');parser.add_argument('--chat');parser.add_argument('--index',type=int,default=0);parser.add_argument('--json',action='store_true')
     args=parser.parse_args()
@@ -182,7 +206,7 @@ def main():
         if resolve_business(args.business_id)['status']!='resolved':raise ValueError('Choose an existing business.')
         from workspace_ui import Workspace
         app=Workspace()
-        result=inventory(app,args.business_id,args.search,args.kind) if args.action=='find' else reusable(app,args.business_id,args.chat,args.index) if args.action=='message' else resolve(app,args.business_id,json.loads(args.input.read_text(encoding='utf-8')) if args.input else [],args.goal)
+        result=inventory(app,args.business_id,args.search,args.kind) if args.action=='find' else reusable(app,args.business_id,args.chat,args.index) if args.action=='message' else handoff(app,args.business_id,args.chat) if args.action=='handoff' else resolve(app,args.business_id,json.loads(args.input.read_text(encoding='utf-8')) if args.input else [],args.goal)
     print(json.dumps(result,ensure_ascii=False))
 
 

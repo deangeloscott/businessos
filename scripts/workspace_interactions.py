@@ -21,6 +21,8 @@ class Requests:
             # A retransmitted native request must not create a second actionable card.
             existing=next((r for r in self.rows.values() if r['native_id']==native_id),None)
             if existing:return existing['id']
+            completed=[key for key,row in self.rows.items() if row['status']!='pending']
+            for key in completed[:-99]:self.rows.pop(key,None)
             ident=secrets.token_urlsafe(18)
             self.rows[ident]={'id':ident,'native_id':native_id,'title':str(title)[:300],'detail':str(detail)[:12000],
                 'questions':copy.deepcopy(questions),'status':'pending','created':time.time(),

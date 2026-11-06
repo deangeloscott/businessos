@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+## v0.3.0 — 2026-11-05
+
+- Keep native conversation processes connected between messages, preserving process-local state and grants. Preserve native background-work settlement, scoped cancellation, and clean shutdown without adding an Aura execution loop.
+- Use native ACP for interactive Hermes and Antigravity chats: app-reported models and permission choices, exact approvals, forms, safe sign-in links and output images. Compatible custom ACP agents use the same transport. Explicit Antigravity auto mode retains its existing headless route.
+- Add Continue with another AI through the existing composer and model picker. Prepare an unsent draft with one pinned public reply, current text, project and eligible shared goal; preserve native conversation and permission boundaries. The API and CLI share the same operation.
+- Avoid repeating unchanged Aura setup guidance on every native message. Use linked project folders for new chats while preserving existing chats' native directories. Keep the current layout and display native output images through the existing file viewer.
+- Fix Pi startup settlement ordering, permit native Hermes model changes, retain idle native interactions, redact native display metadata, and distinguish context-window usage from billed tokens.
+- Validate real two-message, same-process file-tool workflows on installed Codex, OMP, Pi, Hermes and Antigravity. Claude lifecycle is covered by subprocess fixtures; Claude is not installed on the validation machine. Native profile, protocol and desktop-provider differences remain explicit in the continuity guide.
+
 ## v0.2.6 — 2026-11-05
 
 - Add native chat goal execution through supported harness connections, separate from shared workspace outcomes. Codex and OMP report native goal status and budgets; Claude and Antigravity use native goal commands with completion review. Custom harnesses can provide a goal adapter. Pi and Hermes retain goal context when their current connection cannot control native goal mode.

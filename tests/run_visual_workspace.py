@@ -549,6 +549,7 @@ else:
                 call('/api/connect', {'kind':'codex','model':'fixture-model','effort':'low'})
                 assert instructions.read_text().startswith('Keep this user-authored instruction.')
                 assert call('/api/state?business='+bid)['connection']['attachment']['discovered']
+                native_pid=None
                 for index in (1, 2):
                     job = call('/api/chat', {'business':bid, 'text':'Continue with native history'}, expect=202)
                     for _ in range(100):
@@ -557,6 +558,8 @@ else:
                         time.sleep(.05)
                     assert result['status'] == 'complete', result
                     assert result['native_id'] == 'native-one'
+                    native_pid=native_pid or app.executions[job['id']].process.pid
+                    assert app.executions[job['id']].process.pid==native_pid,'Follow-ups must retain the live native process'
                     assert f'Native turn {index}' in result['reply']
                     assert 'AURA_CHAT_BRIEF_' not in result['reply']
                     saved_chat=call('/api/chats?business='+bid)['items'][0]
@@ -566,7 +569,7 @@ else:
                         call('/api/chats/rename',{'business':bid,'id':saved_chat['id'],'title':''},expect=400)
                         call('/api/chats/rename',{'business':bid,'id':saved_chat['id'],'title':'My launch work'})
                     else:assert saved_chat['title']=='My launch work', 'AI updates must preserve the chosen title'
-                assert 'resumed=True' in result['reply'] and result['usage']['output_tokens'] == 20
+                assert result['usage']['output_tokens'] == 20
                 chats = [c for c in call('/api/chats?business='+bid)['items'] if c['agent']=='codex']
                 assert len(chats) == 1 and not call('/api/chats?business=other-business')['items']
                 call('/api/chats/open', {'business':'other-business','id':chats[0]['id']}, expect=400)
@@ -618,7 +621,7 @@ log=Path(__file__).with_suffix('.'+kind+'.json')
 def emit(v): print(json.dumps(v),flush=True)
 def history():return json.loads(log.read_text()) if log.exists() else []
 def respond(text):
- if kind=='antigravity':text=json.loads(text)['message']['content']
+ if kind=='antigravity' and text.startswith('{'):text=json.loads(text)['message']['content']
  payload={'key_available':os.environ.get('FAL_KEY')=='aura-fixture-key-never-use-with-a-provider','argv':sys.argv[2:]}
  reply=json.dumps(payload)
  if 'Welcome me to my AURA workspace' in text:
@@ -630,7 +633,7 @@ def respond(text):
  messages=history()+[{'role':'user','content':text},{'role':'assistant','content':[{'type':'text','text':reply}]}]
  log.write_text(json.dumps(messages))
  return reply
-live=('rpc' in sys.argv and '--no-session' not in sys.argv) or '--permission-prompt-tool' in sys.argv
+live=('acp' in sys.argv) or ('rpc' in sys.argv and '--no-session' not in sys.argv) or '--permission-prompt-tool' in sys.argv
 if 'models' in sys.argv:
  print('gemini-fixture\\tGemini fixture')
 elif 'sessions' in sys.argv:
@@ -648,7 +651,16 @@ elif live or 'rpc' in sys.argv or 'acp' in sys.argv or '--no-session-persistence
    else:emit({'type':'result','session_id':ident,'result':reply})
    continue
   if 'method' in req:
-   data={} if req['method']=='initialize' else {'models':{'currentModelId':'fixture:model','availableModels':[{'modelId':'fixture:model','name':'Fixture'}]}}
+   method=req['method'];params=req.get('params') or {}
+   data={'protocolVersion':1,'agentCapabilities':{'loadSession':True}} if method=='initialize' else {'sessionId':ident,'models':{'currentModelId':'fixture:model','availableModels':[{'modelId':'fixture:model','name':'Fixture'}]}}
+   if method=='session/load':
+    for message in history():
+     text=message.get('content','');text=text if isinstance(text,str) else ''.join(b.get('text','') for b in text)
+     emit({'method':'session/update','params':{'sessionId':ident,'update':{'sessionUpdate':'user_message_chunk' if message['role']=='user' else 'agent_message_chunk','content':{'type':'text','text':text}}}})
+   if method=='session/prompt':
+    reply=respond(params['prompt'][0]['text'])
+    emit({'method':'session/update','params':{'sessionId':ident,'update':{'sessionUpdate':'agent_message_chunk','content':{'type':'text','text':reply}}}})
+    data={'stopReason':'end_turn'}
    emit({'jsonrpc':'2.0','id':req['id'],'result':data});continue
   if 'request_id' in req:
    emit({'type':'control_response','response':{'request_id':req['request_id'],'subtype':'success','response':{'models':[{'value':'claude-fixture','displayName':'Claude fixture','supportedEffortLevels':['low','high']}]}}});continue
@@ -682,6 +694,7 @@ else:
                     effort='high' if 'high' in efforts['efforts'] else ''
                     call('/api/connect', {'kind':kind,'model':model,'effort':'invented'}, expect=400)
                     call('/api/connect', {'kind':kind,'model':model,'effort':effort})
+                    native_pid=None
                     for turn in (1,2):
                         job=call('/api/chat', {'business':bid,'text':'Check selected settings, turn '+str(turn)}, expect=202)
                         for _ in range(100):
@@ -691,10 +704,11 @@ else:
                         assert result['status']=='complete', result
                         assert result['native_id']=='native-'+kind
                         payload=json.loads(result['reply'])
-                        assert payload['key_available'] and '--model' in payload['argv'] and model in payload['argv']
-                        if turn==2:
-                            flag={'pi':'--session','omp':'--resume','claude':'--resume','hermes':'--resume','antigravity':'--conversation'}[kind]
-                            assert flag in payload['argv'] and 'native-'+kind in payload['argv']
+                        assert payload['key_available']
+                        if kind not in {'hermes','antigravity'}:assert '--model' in payload['argv'] and model in payload['argv']
+                        else:assert 'acp' in payload['argv']
+                        native_pid=native_pid or app.executions[job['id']].process.pid
+                        assert app.executions[job['id']].process.pid==native_pid
                     restored=Workspace(settings_file=app.settings_file).conversation(bid)
                     assert len(restored['messages'])==4, restored
                     assert restored['messages'][0]['text']=='Check selected settings, turn 1'
@@ -772,6 +786,7 @@ else:
                 view.installed_agents, app.agent_options=original_agents, original_options
             print('Visual workspace HTTP, isolation, native transport/discovery, protected API credentials, welcome, and preferences passed.')
         finally:
+            app.native_sessions.close()
             server.shutdown()
             server.server_close()
             for key, value in prior.items():

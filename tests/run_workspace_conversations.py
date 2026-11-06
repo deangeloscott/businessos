@@ -78,6 +78,7 @@ while not (root/('release_'+name)).exists():time.sleep(.03)
 print('## Reply '+name+'\\n\\nWorkspace: '+str(root))
 ''',encoding='utf-8')
         app=Workspace(agent={'name':'Isolated process','argv':[sys.executable,'-u',str(agent)]},settings_file=base/'a.json')
+        native_sessions=app.native_sessions
         app.preferences['connection']={'kind':'configured','model':'original-model','effort':''}
         identities={r:(r/'instances'/bid/'context/business.json').read_bytes() for r in (a,b)}
         try:
@@ -92,12 +93,14 @@ print('## Reply '+name+'\\n\\nWorkspace: '+str(root))
             active=app.conversation(bid,first['chat_id']);assert active['job']['id']==first['id'] and 'TURN FIRST' in active['messages'][0]['text']
             app.preferences['connection']['model']='later-model';app.agent={'name':'Changed selection','argv':[sys.executable,'-u',str(agent)]}
             app.open_workspace(b)
+            assert app.native_sessions is native_sessions,'Workspace navigation lost native connection ownership'
             assert len(app.running_jobs())==2
             try:app.find_job(first['id'],bid);raise AssertionError('Another folder could access the request')
             except ValueError:pass
             third=app.start_chat(bid,'TURN THIRD',[],chat_id='')
             until(lambda:(b/'started_THIRD').exists())
             app.open_workspace(a)
+            assert app.native_sessions is native_sessions
             assert any(c['id']==first['chat_id'] for c in app.preferences['chats'])
             app.stop_chat(bid,first['id'])
             until(lambda:app.jobs[first['id']]['status']=='stopped')

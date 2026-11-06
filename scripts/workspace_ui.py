@@ -65,7 +65,7 @@ STATIC = PRODUCT_ROOT / 'interface'
 MAX_BODY = 8 * 1024 * 1024
 HIDDEN = {'__pycache__', 'credentials', 'secrets', 'node_modules'}
 MEDIA = {'.png', '.jpg', '.jpeg', '.gif', '.webp', '.avif', '.mp4', '.webm', '.mov', '.m4v', '.mp3', '.wav', '.ogg', '.m4a', '.aac', '.flac', '.opus'}
-NATIVE_AGENTS = {'codex', 'claude', 'pi', 'omp', 'hermes', 'antigravity'}
+NATIVE_AGENTS = {'codex', 'claude', 'pi', 'omp', 'hermes', 'antigravity','acp'}
 
 
 def selected(value):
@@ -424,6 +424,8 @@ class Workspace:
         self.execution = None
         self.jobs = {}
         self.executions = {}
+        from workspace_native_sessions import Sessions
+        self.native_sessions=Sessions()
         self.workspace_views = {}
         self.workspace_path = str(workspace_root().resolve())
         self.schedule_job = None
@@ -572,6 +574,7 @@ class Workspace:
         else:
             fresh = Workspace(self.configured_agent, self.static, self.settings_file.parent / (identity + '.json'))
         fresh.jobs, fresh.executions, fresh.workspace_views = self.jobs, self.executions, self.workspace_views
+        fresh.native_sessions=self.native_sessions
         fresh.performance=self.performance
         fresh.errors=self.errors
         fresh.workspace_path = str(target.resolve())
@@ -858,21 +861,42 @@ class Workspace:
         self.handoff = False
         self.verified_business = None
 
+    def native_choice(self,kind):
+        if kind=='configured' and self.configured_agent:return {'id':'configured',**self.configured_agent}
+        return next((a for a in installed_agents() if a['id']==kind and a['argv']),None)
+
+    def native_kind(self,kind):
+        if kind=='configured':return (self.configured_agent or {}).get('native_protocol','configured')
+        return kind
+
+    def permission_modes(self,kind,chat=None):
+        job=self.chat_job(chat['business_id'],chat['id']) if chat else None
+        info={**self.option_cache.get(kind,{}),**{k:v for k,v in (job or {}).items() if k in {'native_modes','native_config'}}}
+        config=next((r for r in info.get('native_config',[]) if r.get('category')=='mode'),None)
+        if config:
+            def flatten(rows):
+                for row in rows:
+                    if 'options' in row:yield from flatten(row['options'])
+                    elif 'value' in row:yield {'id':row['value'],'name':row.get('name',row['value']),'description':row.get('description','')}
+            return list(flatten(config.get('options',[])))
+        return (info.get('native_modes') or {}).get('availableModes') or (chat or {}).get('native_permission_modes')
+
     def agent_options(self, kind, refresh=False):
         if refresh:
             self.option_cache.pop(kind, None)
-        if kind not in NATIVE_AGENTS:
+        protocol=self.native_kind(kind)
+        if protocol not in NATIVE_AGENTS:
             return {'models': [], 'sessions': False,
                     'note': 'This command uses its app settings. Model controls and chat restoration need a native session connection.'}
         if kind not in self.option_cache:
-            choice = next((a for a in installed_agents() if a['id'] == kind), None)
+            choice = self.native_choice(kind)
             command = choice and choice['argv']
             if not command:
                 raise ValueError('This AI app is not installed or its command needs setup.')
-            if kind == 'codex':
+            if protocol == 'codex':
                 self.option_cache[kind] = workspace_codex.options(command, workspace_root(), self.agent_environment())
             else:
-                self.option_cache[kind] = workspace_agents.options(command, kind, workspace_root(), self.agent_environment())
+                self.option_cache[kind] = workspace_agents.options(command, protocol, workspace_root(), self.agent_environment())
         return self.option_cache[kind]
 
     def agent_efforts(self, kind, model):
@@ -881,9 +905,9 @@ class Workspace:
         if not chosen:
             raise ValueError('Choose a model returned by this AI app.')
         if chosen.get('discover_efforts') and not chosen.get('efforts_loaded'):
-            command = next(a['argv'] for a in installed_agents() if a['id'] == kind and a['argv'])
+            command = self.native_choice(kind)['argv']
             try:
-                result = workspace_agents.efforts(command, kind, workspace_root(), self.agent_environment(), model)
+                result = workspace_agents.efforts(command,self.native_kind(kind),workspace_root(),self.agent_environment(),model)
                 chosen.update(result)
             except ValueError:
                 # Older hosts lack effort metadata. Never invent supported tiers.
@@ -893,9 +917,10 @@ class Workspace:
 
     def model_catalog(self, refresh=False, kind=None):
         """One view of native catalogues; execution still uses an explicit host."""
-        if kind is not None and kind not in NATIVE_AGENTS:
+        if kind is not None and self.native_kind(kind) not in NATIVE_AGENTS:
             raise ValueError('Choose a supported AI app.')
         choices = [a for a in installed_agents() if a['argv'] and a['id'] in NATIVE_AGENTS and (kind is None or a['id'] == kind)]
+        if self.native_kind('configured') in NATIVE_AGENTS and kind in {None,'configured'}:choices.append(self.native_choice('configured'))
         def discover(choice):
             try:
                 return choice, self.agent_options(choice['id'], refresh), None
@@ -1321,11 +1346,12 @@ class Workspace:
             return result
         observed_marker=workspace_native_chats.marker(chat.get('source_file'))
         try:
-            choice = next(a for a in installed_agents() if a['id'] == chat['agent'] and a['argv'])
+            choice=self.native_choice(chat['agent']);protocol=self.native_kind(chat['agent'])
+            if not choice:raise ValueError('This AI app is not connected. Reconnect it to refresh this chat.')
             chat_root = Path(chat.get('native_workspace') or chat.get('workspace') or workspace_root())
             if not chat_root.is_dir():chat_root=workspace_root()
-            result = (workspace_codex.history(choice['argv'], chat_root, chat['native_id'], self.agent_environment()) if chat['agent']=='codex' else
-                      workspace_agents.history(choice['argv'],chat['agent'],chat_root,self.agent_environment(),chat['native_id'], **({'source_file':chat['source_file']} if chat.get('source_file') and chat['agent'] in {'pi','omp'} else {})))
+            result = (workspace_codex.history(choice['argv'], chat_root, chat['native_id'], self.agent_environment()) if protocol=='codex' else
+                      workspace_agents.history(choice['argv'],protocol,chat_root,self.agent_environment(),chat['native_id'], **({'source_file':chat['source_file']} if chat.get('source_file') and protocol in {'pi','omp'} else {})))
         except (ValueError, OSError, StopIteration, subprocess.SubprocessError) as exc:
             if job and job['status'] == 'working':
                 return {'messages': [], 'chat': chat, 'job': job}
@@ -1389,6 +1415,7 @@ class Workspace:
                           'agent':job.get('agent',self.agent['name']), 'model':job.get('model',chat['model']), 'effort':job.get('effort',chat['effort']),
                           'request_id':job['id'], 'error_detail':job.get('error_detail','')})
             shown[-1]['status']=job['status']
+            if job.get('native_media'):shown[-1]['native_media']=job['native_media']
             if job['status']=='complete' and chat.get('source_file'):
                 chat['source_marker']=workspace_native_chats.marker(chat['source_file'])
             if job['status']=='complete' and not job.get('keep_warm'):
@@ -1400,7 +1427,7 @@ class Workspace:
         temporary.replace(path)
 
     def connection(self, bid=None):
-        choices = ([{'id': 'configured', 'name': self.configured_agent['name'], 'available': True}] if self.configured_agent else [])
+        choices = ([{'id': 'configured', 'name': self.configured_agent['name'], 'available': True,**({'native':True} if self.native_kind('configured') in NATIVE_AGENTS else {})}] if self.configured_agent else [])
         choices += [{'id': a['id'], 'name': a['name'], 'available': bool(a['argv']),
                      'guide':workspace_guidance.GUIDES.get(a['id'], ('',''))} for a in installed_agents()]
         return {'connected': bool(self.agent), 'name': (self.agent or {}).get('name', 'Your existing chat'),
@@ -1412,13 +1439,13 @@ class Workspace:
                 'verified': bool(bid and self.verified_business == bid),
                 'workspace_write': self.preferences.get('connection', {}).get('workspace_write') is True,
                 'effort': self.preferences.get('connection', {}).get('effort') or '',
-                'native_sessions': self.connection_kind in NATIVE_AGENTS,
-                'model_controls': self.connection_kind in NATIVE_AGENTS,
+                'native_sessions': self.native_kind(self.connection_kind) in NATIVE_AGENTS,
+                'model_controls': self.native_kind(self.connection_kind) in NATIVE_AGENTS,
                 'attachment': self.preferences.get('connection', {}).get('attachment'),
                 'mode': 'agent' if self.agent else ('copy' if self.handoff else 'unconnected'),
                 'model': self.preferences.get('connection', {}).get('model') or (self.agent or {}).get('model') or '',
                 'codex_available': codex_command() is not None,
-                'scope': 'A saved native conversation.' if self.connection_kind in NATIVE_AGENTS else 'Independent command requests; native chat restoration is not available.',
+                'scope': 'A saved native conversation.' if self.native_kind(self.connection_kind) in NATIVE_AGENTS else 'Independent command requests; native chat restoration is not available.',
                 'authentication': 'Owned by the installed agent. Availability is not proof of sign-in.'}
 
     def library_items(self, discover=False):
@@ -1934,7 +1961,7 @@ class Workspace:
                 owner.select_agent(choice,effective.get('workspace_write') is True)
                 owner._effective_connection=effective
             if permission_mode is not None and existing:raise ValueError('Use this chat’s permission settings before sending.')
-            owner._request_permission_mode=workspace_permissions.validate(owner.connection_kind,permission_mode) if permission_mode is not None else None
+            owner._request_permission_mode=workspace_permissions.validate(owner.connection_kind,permission_mode,owner.permission_modes(owner.connection_kind,existing)) if permission_mode is not None else None
             result=owner._start_chat(bid,text,history,welcome,schedule_id,organization_id,keep_warm_id,resolved_chat_id,files)
             self.job=owner.job;self.execution=owner.execution
             return result
@@ -1953,7 +1980,7 @@ class Workspace:
             chat = self.active_chat(bid) if chat_id is None else next((c for c in self.preferences['chats'] if c['id']==chat_id and c['business_id']==bid),None)
             if chat_id and not chat:raise ValueError('This chat does not belong to this workspace.')
             if chat and any(j.get('chat_id')==chat['id'] for j in self.running_jobs(workspace_root())):raise ValueError('This chat is still working. Use another chat, or stop this request first.')
-            if chat and workspace_recovery.process_state(chat.get('recovery') or {})=='running':raise ValueError('This request is still running in its AI app. Check its latest reply before continuing.')
+            if chat and workspace_recovery.process_state(chat.get('recovery') or {})=='running' and not self.native_sessions.owns_idle((str(workspace_root().resolve()),bid,chat['id'])):raise ValueError('This request is still running in its AI app. Check its latest reply before continuing.')
             if chat and chat['agent'] != self.connection_kind:
                 raise ValueError('Open this chat in its original AI connection, or start a new chat.')
             if chat and Path(chat.get('workspace') or workspace_root()).resolve()!=workspace_root().resolve():
@@ -2004,13 +2031,18 @@ class Workspace:
             from workspace_native_requests import attachments
             native_images=attachments(selected_context['references'],protocol_kind)
             prompt = text if keep_warm_id is not None else self.request_text(bid, text, None if native else history, schedule_id, organization_id)
-            if selected_context['text']:prompt=prompt.replace('\nUser request:\n',selected_context['text']+'\nUser request:\n',1)
             assistant=getattr(self,'_assistant',None)
+            context_key=workspace_context.digest({'business':bid,'workspace':str(workspace_root().resolve()),'assistant':assistant,
+                'guidance':[(str(p),p.stat().st_mtime_ns,p.stat().st_size) for p in (PRODUCT_ROOT/'AGENTS.md',PRODUCT_ROOT/'skills/viraltrac-aura/SKILL.md')]})
+            if native and chat and chat.get('native_id') and chat.get('aura_context')==context_key and not any((welcome,keep_warm_id is not None,schedule_id,organization_id)) and not text.lstrip().startswith('/'):
+                prompt=f'Selected Aura business: {bid}.\n\nUser request:\n'+text.strip()
+            if selected_context['text']:prompt=prompt.replace('\nUser request:\n',selected_context['text']+'\nUser request:\n',1)
             if assistant and not welcome and keep_warm_id is None:
                 prompt=prompt.replace('\nUser request:\n',workspace_assistants.guidance(assistant)+'\nUser request:\n',1)
             job = {'id': secrets.token_urlsafe(12), 'business_id': bid, 'status': 'working', 'reply': '', 'activity': [],
                    'created': time.time(), 'updated': time.time(), 'progress': 'Starting your AI'}
             job.update(references=selected_context['references'],files=files or [],goal_id=goal_id or '')
+            if native:job['aura_context']=context_key
             if native and not welcome and keep_warm_id is None:prompt=prompt.replace('\nUser request:\n',f'\nAURA message reference: {job["id"]}\nUser request:\n',1)
             if keep_warm_id is not None:job['keep_warm']=True
             if not chat:
@@ -2019,6 +2051,12 @@ class Workspace:
                         'created': time.time(), 'native_id': None, 'workspace':str(workspace_root())}
                 if getattr(self,'_request_permission_mode',None) is not None:chat['permission_mode']=self._request_permission_mode
                 if getattr(self,'_request_project',''):chat['project']=self._request_project
+                if chat.get('project'):
+                    project=next((p for p in workspace_chat_organization.projects(self,bid) if p['name']==chat['project']),None)
+                    if project and project.get('folder'):
+                        folder=Path(project['folder']).expanduser().resolve()
+                        if not folder.is_dir():raise ValueError('This project folder is unavailable. Choose another project or check its folder.')
+                        chat['native_workspace']=str(folder)
                 self.preferences['chats'].append(chat)
                 self.preferences['active_chats'][bid] = chat['id']
                 if assistant:chat.update(assistant_id=assistant['id'],assistant_name=assistant['name'])
@@ -2063,8 +2101,8 @@ class Workspace:
             execution.attachments=native_images
             execution.native_goal=native_spec
             execution.interactive = native
-            execution.permission = workspace_permissions.validate(self.connection_kind,chat.get('permission_mode') or self.preferences.get('harness_permissions',{}).get(self.connection_kind,'native'))
-            job['permissions']=workspace_permissions.describe(self.connection_kind,execution.permission)
+            execution.permission = workspace_permissions.validate(self.connection_kind,chat.get('permission_mode') or self.preferences.get('harness_permissions',{}).get(self.connection_kind,'native'),self.permission_modes(self.connection_kind,chat))
+            job['permissions']=workspace_permissions.describe(self.connection_kind,execution.permission,self.permission_modes(self.connection_kind,chat))
             if goal_id and not native_spec and chat.get('continuation',{}).get('mode')=='native':
                 goal=workspace_goals.find(bid,goal_id)
                 job['goal_basis']=workspace_goals.continuation_basis(bid,goal)
@@ -2102,6 +2140,14 @@ class Workspace:
             root=workspace_root().resolve();native_root=Path(chat.get('native_workspace') or root);native_root=native_root if native_root.is_dir() else root;model=job['model'];effort=job['effort'];native_id=chat.get('native_id')
             def update(**values):
                 with self.lock:
+                    if 'native_output' in values:
+                        from workspace_native_requests import save_image
+                        try:
+                            media=save_image(values.pop('native_output'),bid)
+                            values['native_media']=list({r['path']:r for r in [*job.get('native_media',[]),media]}.values())
+                        except (OSError,ValueError) as error:
+                            values.pop('native_output',None)
+                            values['native_notices']=[*job.get('native_notices',[]),{'text':str(error)}][-20:]
                     if 'subagents' in values:
                         observed={row['id']:{k:self.connections.redact(v) if isinstance(v,str) else v for k,v in row.items()}
                                   for row in values['subagents']}
@@ -2121,9 +2167,22 @@ class Workspace:
                         values['reply'] = self.connections.redact(workspace_chats.clean(values['reply'],streaming=True))
                     if values.get('native_title') and not chat.get('title_edited'):
                         chat['title']=self.connections.redact(str(values['native_title'])[:100]);self.save_preferences()
-                    for key in ('requests','native_notices','native_editor'):
+                    for key in ('requests','native_notices','native_editor','native_modes','native_config','native_commands'):
                         if key in values:values[key]=json.loads(self.connections.redact(json.dumps(values[key])))
+                    if 'native_modes' in values or 'native_config' in values:
+                        info={**job,**values}
+                        modes=(info.get('native_modes') or {}).get('availableModes')
+                        selector=next((c for c in info.get('native_config',[]) if c.get('category')=='mode'),None)
+                        if selector:
+                            def flatten_options(rows):
+                                for row in rows:
+                                    if 'options' in row:yield from flatten_options(row['options'])
+                                    elif 'value' in row:yield {'id':row['value'],'name':row.get('name',row['value']),'description':row.get('description','')}
+                            modes=list(flatten_options(selector.get('options',[])))
+                        if modes:chat['native_permission_modes']=modes
                     if 'requests' in values:
+                        chat['needs_input']=any(r['status']=='pending' for r in values['requests'])
+                        if job['id'] not in self.jobs:self.jobs[job['id']]=job;self.executions[job['id']]=execution
                         if any(r['status']=='pending' for r in values['requests']):values['progress']='Needs your input'
                         elif job.get('progress')=='Needs your input' and not execution.stopped.is_set():values['progress']='Continuing your request'
                     if values.get('progress') and (not job['activity'] or job['activity'][-1]['text'] != values['progress']):
@@ -2175,9 +2234,15 @@ class Workspace:
                                 chat.update(continued);chat.pop('relocate_session',None)
                                 self.save_preferences()
                             resumed_id=continued['native_id']
-                        result = (workspace_codex.run(command, native_root, prompt, resumed_id, model, effort, update, env, execution,
-                                                     **({'child_model':assistant['child_model']} if assistant and assistant.get('child_model') else {}))
-                                  if kind=='codex' else workspace_agents.run(command,kind,native_root,env,prompt,resumed_id,model,effort,update,execution))
+                        def launch():
+                            return (workspace_codex.run(command,native_root,prompt,resumed_id,model,effort,update,env,execution,
+                                **({'child_model':assistant['child_model']} if assistant and assistant.get('child_model') else {})) if kind=='codex' else
+                                workspace_agents.run(command,kind,native_root,env,prompt,resumed_id,model,effort,update,execution))
+                        if kind in {'codex','claude','pi','omp','hermes','antigravity','acp'} and not (kind=='antigravity' and execution.permission=='auto'):
+                            settings={'command':command,'cwd':str(native_root),'env':env,'model':model,'effort':effort,'permission':execution.permission,
+                                      'options':execution.native_options,'handler':execution.native_handler,'goal':native_spec,'child_model':(assistant or {}).get('child_model')}
+                            result=self.native_sessions.run((str(root),bid,chat['id']),settings,prompt,resumed_id,execution,update,launch,root)
+                        else:result=launch()
                         output, code = result['reply'], 0
                         if not welcome and keep_warm_id is None:candidate=workspace_chats.brief(output)
                         job['usage'] = result['usage']
@@ -2226,7 +2291,7 @@ class Workspace:
                             detail = self.connections.redact(str(exc))
                             terminal='error';job.update(error_detail=detail, error_type=type(exc).__name__, reply=setup_error(detail))
                 finally:
-                    execution.requests.close()
+                    if not execution.native_session:execution.requests.close()
                     if hasattr(execution,'release_continuation'):execution.release_continuation()
                     try:
                         if not welcome and keep_warm_id is None:job['history_observation']=workspace_history.observe(bid,'Observed after native work')
@@ -2245,7 +2310,9 @@ class Workspace:
                         workspace_usage.record(self.preferences,job,chat,self.agent['name'])
                         self.record_notification(job, chat)
                         if chat:
-                            if job['status']=='complete':chat.pop('model_choice_pending',None)
+                            if job['status']=='complete':
+                                chat.pop('model_choice_pending',None)
+                                if job.get('aura_context'):chat['aura_context']=job['aura_context']
                             uncertain=kind=='hermes' and job['status']=='stopped'
                             if uncertain:job['stop_note']='The local Hermes connection stopped. Hermes may still be working in its gateway; check its outcome before continuing.'
                             if job['status'] in {'complete','stopped'}:chat.pop('continuation',None)
@@ -2425,7 +2492,7 @@ def handler_for(app):
                     if chat:kind=chat['agent']
                     default=app.preferences.get('harness_permissions',{}).get(kind,'native')
                     job=app.chat_job(bid,chat['id']) if chat else None
-                    self.send(200,{**workspace_permissions.describe(kind,chat.get('permission_mode',default) if chat else default),'default':default,'override':chat.get('permission_mode','') if chat else '', 'last_effective':(job or {}).get('permission_effective')})
+                    self.send(200,{**workspace_permissions.describe(kind,chat.get('permission_mode',default) if chat else default,app.permission_modes(kind,chat)),'default':default,'override':chat.get('permission_mode','') if chat else '', 'last_effective':(job or {}).get('permission_effective')})
                 elif route == '/api/documents':
                     with app.lock:owner=copy.copy(app)
                     if query.get('workspace') and query['workspace']!=owner.workspace_path:raise ValueError('The workspace changed. Reopen this file.')
@@ -2487,8 +2554,10 @@ def handler_for(app):
                     with app.lock:self.send(200,app.assistants(selected(query.get('business'))))
                 elif route == '/api/chats':
                     bid = selected(query.get('business'))
+                    watched=app.chat_job(bid,query.get('chat_id')) if query.get('chat_id') else None
+                    events={k:watched.get(k) for k in ('id','chat_id','workspace','business_id','created','status','updated','requests','native_notices','native_editor','native_controls')} if watched else None
                     self.send(200, {'workspace':str(workspace_root()),'items': sorted(({k:v for k,v in c.items() if k not in {'brief_token','subagents'}} for c in app.preferences['chats'] if c['business_id'] == bid),key=workspace_chat_organization.sort_key,reverse=True),
-                                    'projects':workspace_chat_organization.projects(app,bid),'active': app.preferences['active_chats'].get(bid), 'running': [{k:j.get(k) for k in ('id','chat_id','workspace','business_id','status','agent','model')} for j in app.running_jobs()]})
+                                    'projects':workspace_chat_organization.projects(app,bid),'active': app.preferences['active_chats'].get(bid), 'native_events':events, 'running': [{k:j.get(k) for k in ('id','chat_id','workspace','business_id','status','agent','model')} for j in app.running_jobs()]})
                 elif route == '/api/projects':
                     self.send(200,{'projects':workspace_chat_organization.projects(app,selected(query.get('business')))})
                 elif route == '/api/chats/native':
@@ -2502,6 +2571,8 @@ def handler_for(app):
                         reason=setup_error(result['history_note'])
                         note='This app could not refresh the chat. Its saved details are still available.' if reason==SETUP_ERRORS['unknown'] else reason
                     self.send(200, {'chat':result['chat'],'history_note':note})
+                elif route == '/api/chats/handoff':
+                    with app.lock:self.send(200,workspace_context.handoff(app,selected(query.get('business')),query.get('id')))
                 elif route == '/api/conversation':
                     self.send(200, app.conversation(selected(query.get('business')),query.get('chat_id'),query.get('refresh')=='1'))
                 elif route == '/api/chats/recovery':
@@ -2629,7 +2700,7 @@ def handler_for(app):
                 if route == '/api/chat/answer':
                     with app.lock:
                         bid=selected(data.get('business'));job=app.find_job(data.get('job_id'),bid)
-                        if job['status']!='working' or job.get('chat_id')!=data.get('chat_id'):raise ValueError('This native request is no longer waiting in this chat.')
+                        if job.get('chat_id')!=data.get('chat_id'):raise ValueError('This native request is no longer waiting in this chat.')
                         execution=app.executions.get(job['id'])
                     if not execution:raise ValueError('This request expired when Aura restarted. Check the native chat.')
                     if execution.interrupt_requested:raise ValueError('This request is stopping. Wait for it to finish.')
@@ -2880,7 +2951,7 @@ def handler_for(app):
                         self.send(200, remember(bid, {'objects': [item]}))
                     elif route == '/api/connect':
                         model, effort, attachment = '', '', None
-                        if data.get('kind') in NATIVE_AGENTS:
+                        if app.native_kind(data.get('kind')) in NATIVE_AGENTS:
                             options = app.agent_options(data['kind'])
                             model = data.get('model')
                             chosen = next((m for m in options['models'] if m['id'] == model), None)
@@ -3063,7 +3134,7 @@ def handler_for(app):
                             app.preferences['preferred_app'] = data['preferred_app']
                         if 'model_picker' in data:
                             picker = data['model_picker']
-                            if not isinstance(picker, dict) or picker.get('kind') not in NATIVE_AGENTS | {'all'} or picker.get('view') not in {'favorites', 'all'}:
+                            if not isinstance(picker, dict) or picker.get('kind') not in NATIVE_AGENTS | {'all','configured'} or picker.get('view') not in {'favorites', 'all'}:
                                 raise ValueError('Choose Favorites or All models for a supported AI app.')
                             for field, limit in (('favorites', 2000), ('providers', 200)):
                                 values = picker.get(field)
@@ -3104,7 +3175,7 @@ def handler_for(app):
                         mode=data.get('mode')
                         if chat and mode=='inherit':chat.pop('permission_mode',None)
                         else:
-                            workspace_permissions.validate(kind,mode)
+                            workspace_permissions.validate(kind,mode,app.permission_modes(kind,chat))
                             if chat:chat['permission_mode']=mode
                             else:app.preferences.setdefault('harness_permissions',{})[kind]=mode
                         app.save_preferences();self.send(200,{'saved':True,'applies':'Next request; running native requests keep their permissions.'})
@@ -3142,8 +3213,7 @@ def handler_for(app):
                         if not chat:raise ValueError('Choose a chat in this workspace.')
                         if data.get('kind',chat['agent'])!=chat['agent']:raise ValueError('An existing chat stays in its original AI app. Start a new chat to use another app.')
                         if any(j.get('chat_id')==chat['id'] for j in app.running_jobs(workspace_root())) or chat.get('status')=='working':raise ValueError('Wait for this request to finish before changing its model.')
-                        if chat['agent'] not in NATIVE_AGENTS:raise ValueError('This connection uses its own model settings.')
-                        if chat['agent']=='hermes' and chat.get('native_id'):raise ValueError('Start a new Hermes chat to choose another model or effort.')
+                        if app.native_kind(chat['agent']) not in NATIVE_AGENTS:raise ValueError('This connection uses its own model settings.')
                         options=app.agent_options(chat['agent'])
                         model=next((m for m in options['models'] if m['id']==data.get('model')),None)
                         if not model:raise ValueError('Choose an available model for this AI app.')
@@ -3268,6 +3338,7 @@ def main():
         pass
     finally:
         update_stop.set()
+        if 'app' in locals():app.native_sessions.close()
         if server:
             server.server_close()
             print(time.strftime('%Y-%m-%d %H:%M:%S') + ' AURA stopped: ' +

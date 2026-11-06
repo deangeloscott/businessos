@@ -106,6 +106,28 @@ def main():
             assert 'Goal context:' in (root/'received.txt').read_text() and 'Research the offer' in (root/'received.txt').read_text()
             shown=call('/api/conversation?business='+bid+'&chat_id='+job['chat_id']);message=shown['messages'][0]
             assert message['text']=='Research the offer' and len(message['references'])==2
+            # Handoff prepares one pinned public result, without inference or transcript copying.
+            before_jobs=set(app.jobs);before_chats=len(app.preferences['chats'])
+            draft=call('/api/chats/handoff?business='+bid+'&id='+job['chat_id'])
+            assert set(app.jobs)==before_jobs and len(app.preferences['chats'])==before_chats
+            assert len(draft['references'])==1 and not draft['text'] and draft['goal_id']==goal['id']
+            pinned=context.resolve(app,bid,draft['references']);assert 'Saved useful progress' in pinned['text'] and 'Research the offer' not in pinned['text']
+            handoff_path=app.chat_display_path(job['chat_id']);saved_bytes=handoff_path.read_bytes()
+            try:
+                changed=json.loads(saved_bytes);changed[-1]['text']='A different reply';handoff_path.write_text(json.dumps(changed),encoding='utf-8')
+                try:context.resolve(app,bid,draft['references']);raise AssertionError('Stale handoff reused changed content')
+                except ValueError:pass
+            finally:handoff_path.write_bytes(saved_bytes)
+            try:context.handoff(app,'another-business',job['chat_id']);raise AssertionError('Cross-business handoff accepted')
+            except ValueError:pass
+            # Native image bytes stay in one scoped file, not in job or chat JSON.
+            import base64
+            from workspace_native_requests import save_image
+            image={'type':'image','mimeType':'image/png','data':base64.b64encode(b'\x89PNG\r\n\x1a\nfixture').decode()}
+            media=save_image(image,bid);assert media==save_image(image,bid) and (root/media['path']).is_file()
+            assert 'data' not in media
+            try:save_image({**image,'data':base64.b64encode(b'<script>bad</script>').decode()},bid);raise AssertionError('Non-image output saved as an image')
+            except ValueError:pass
             reused=call('/api/context/message',{'business':bid,'chat_id':job['chat_id'],'index':0,'digest':context.message_key(message)})
             assert reused['text']=='Research the offer' and reused['goal_id']==goal['id'] and reused['new_chat_goal_id']==goal['id']
             call('/api/context/message',{'business':bid,'chat_id':job['chat_id'],'index':0,'digest':'stale'},400)

@@ -34,6 +34,7 @@ class Execution:
         self.notices = []
         self.helpers = set()
         self.controls = {}
+        self.native_session = None
         from workspace_interactions import Requests
         self.requests = Requests()
 
@@ -75,10 +76,14 @@ class Execution:
             self.process = subprocess.Popen(*args, **kwargs)
             self.native_cwd=kwargs.get('cwd');self.native_env=kwargs.get('env')
             process=self.process
+            if self.native_session:
+                self.native_session.process=process
+                self.native_session.cwd=self.native_cwd;self.native_session.env=self.native_env
         if self.on_started:self.on_started(process)
         return process
 
     def stop(self):
+        if self.native_session and (not self.native_session.active or self.native_session.active.execution is not self):return
         # Native cancellation gets the first chance to settle tools and children.
         # A timer supplies the process-tree fallback without holding the UI lock.
         with self.lock:

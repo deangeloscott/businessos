@@ -27,6 +27,7 @@ class Metadata:
         args = ['--mode', 'rpc', '--no-session'] if kind in {'pi', 'omp'} else ['-p', '--input-format', 'stream-json', '--output-format', 'stream-json', '--verbose', '--no-session-persistence']
         if kind in {'hermes','antigravity'}:
             args = ['acp']
+        elif kind=='acp':args=[]
         if native_id:
             args = ['--mode', 'rpc', '--session' if kind == 'pi' else '--resume', native_id]
         if fork_from:
@@ -54,7 +55,7 @@ class Metadata:
         self.number += 1
         ident = str(self.number)
         value = {'id': ident, 'type': kind, **params} if self.kind != 'claude' else {'type': 'control_request', 'request_id': ident, 'request': {'subtype': kind, **params}}
-        if self.kind in {'hermes','antigravity'}:
+        if self.kind in {'hermes','antigravity','acp'}:
             value = {'jsonrpc':'2.0', 'id':ident, 'method':kind, 'params':params}
         self.errors.send(self.process, json.dumps(value) + '\n')
         deadline = time.monotonic() + timeout
@@ -72,7 +73,7 @@ class Metadata:
             if response.get('success') is False or response.get('subtype') == 'error' or 'error' in response:
                 detail=response.get('error') or response.get('message') or 'This app version could not return that setting. Update it or use its own settings.'
                 raise ValueError(str(detail.get('message',detail) if isinstance(detail,dict) else detail))
-            return response.get('result', {}) if self.kind in {'hermes','antigravity'} else response.get('response', {}) if self.kind == 'claude' else response.get('data', {})
+            return response.get('result', {}) if self.kind in {'hermes','antigravity','acp'} else response.get('response', {}) if self.kind == 'claude' else response.get('data', {})
         raise ValueError(self.errors.message('The AI app did not return its catalogue. Open it to check sign-in or update it, then refresh the choices.'))
 
     def close(self):
@@ -89,22 +90,7 @@ class Metadata:
 
 
 def options(command, kind, cwd, env):
-    if kind == 'antigravity':
-        result = subprocess.run([*base_command(command), 'models'], cwd=cwd, env=env, stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE, text=True, encoding='utf-8', timeout=40, creationflags=subprocess.CREATE_NO_WINDOW if os.name=='nt' else 0)
-        rows = []
-        for line in result.stdout.splitlines():
-            if '\t' not in line:
-                continue
-            ident, name = line.split('\t', 1)
-            provider = 'anthropic' if ident.startswith('claude-') else 'openai' if ident.startswith(('gpt-', 'o1', 'o3')) else 'google'
-            rows.append({'id':ident, 'name':name.strip(), 'provider':provider, 'efforts':[], 'default_effort':''})
-        if result.returncode or not rows:
-            raise ValueError(result.stderr.strip()[-4000:] or 'Antigravity did not return its models. Sign in through agy, then refresh the choices.')
-        return {'models':rows, 'model':'', 'effort':'', 'sessions':True,
-                'note':'Models come from agy. Effort is included in some model names; separate supported tiers are not reported.'}
-    if kind == 'hermes':
-        return hermes_options(command, cwd, env)
+    if kind in {'hermes','antigravity','acp'}:return acp_options(command,kind,cwd,env)
     host = Metadata(command, kind, cwd, env)
     try:
         if kind == 'claude':
@@ -126,6 +112,17 @@ def options(command, kind, cwd, env):
 
 
 def efforts(command, kind, cwd, env, model):
+    if kind in {'hermes','antigravity','acp'}:
+        host=Metadata(command,kind,cwd,env)
+        try:
+            host.call('initialize',protocolVersion=1,clientCapabilities={},clientInfo={'name':'aura-workspace','version':'1'})
+            state=host.call('session/new',cwd=str(cwd),mcpServers=[])
+            entry=next((r for r in state.get('configOptions',[]) if r.get('category')=='model'),None)
+            if entry:result=host.call('session/set_config_option',sessionId=state['sessionId'],configId=entry['id'],value=model)
+            else:result=host.call('session/set_model',sessionId=state['sessionId'],modelId=model)
+            thought=next((r for r in result.get('configOptions',[]) if r.get('category')=='thought_level'),None)
+            return {'efforts':[r['value'] for r in thought.get('options',[]) if 'value' in r] if thought else [],'default_effort':thought.get('currentValue','') if thought else ''}
+        finally:host.close()
     host = Metadata(command, kind, cwd, env, model)
     try:
         result = host.call('get_available_thinking_levels')
@@ -181,15 +178,28 @@ def execution_command(command, kind, model, effort):
 
 
 def hermes_options(command, cwd, env):
-    host = Metadata(command, 'hermes', cwd, env)
+    return acp_options(command,'hermes',cwd,env)
+
+
+def acp_options(command,kind,cwd,env):
+    host = Metadata(command,kind,cwd,env)
     try:
         host.call('initialize', protocolVersion=1, clientCapabilities={}, clientInfo={'name':'aura-workspace','version':'1'})
         state = host.call('session/new', cwd=str(cwd), mcpServers=[])
         catalog = state.get('models') or {}
-        rows = [{'id':m['modelId'], 'name':m['name'], 'provider':m['modelId'].split(':',1)[0],
-                 'efforts':[], 'default_effort':''} for m in catalog.get('availableModels', [])]
-        return {'models':rows, 'model':catalog.get('currentModelId',''), 'effort':'', 'sessions':True,
-                'note':'Models come from Hermes through ACP. Supported effort tiers are not exposed by this interface; Hermes keeps its own reasoning setting.'}
+        config=state.get('configOptions') or []
+        models=next((c for c in config if c.get('category')=='model'),None)
+        values=models.get('options',[]) if models else [{'value':m['modelId'],'name':m['name']} for m in catalog.get('availableModels',[])]
+        def flatten(values):
+            for value in values:
+                if 'options' in value:yield from flatten(value['options'])
+                else:yield value
+        thought=next((c for c in config if c.get('category')=='thought_level'),None)
+        rows=[{'id':m['value'],'name':m.get('name',m['value']),'provider':m['value'].split(':',1)[0] if ':' in m['value'] else kind,
+               'efforts':[],'default_effort':'','discover_efforts':bool(thought)} for m in flatten(values)]
+        return {'models':rows, 'model':models.get('currentValue','') if models else catalog.get('currentModelId',''), 'effort':thought.get('currentValue','') if thought else '', 'sessions':True,
+                'native_modes':state.get('modes') or {},'native_config':config,
+                'note':'Choices come from your AI app. Its native settings and available tools remain authoritative.'}
     finally:
         host.close()
 
@@ -214,7 +224,7 @@ def display_text(value):
 def resume_command(kind, native_id):
     return {'pi':['pi','--session',native_id], 'omp':['omp','--resume',native_id],
             'claude':['claude','--resume',native_id], 'hermes':['hermes','--resume',native_id],
-            'antigravity':['agy','--conversation',native_id]}[kind]
+            'antigravity':['agy','--conversation',native_id]}.get(kind,[])
 
 
 def session_reference(kind, native_id, env, source_file=''):
@@ -276,7 +286,7 @@ def history(command, kind, cwd, env, native_id, source_file=''):
             if row.get('type')=='custom-title':native_title=row.get('customTitle','')
             if row.get('type') in {'user','assistant'} and isinstance(row.get('message'),dict):
                 messages.append({**row['message'],'timestamp':row.get('timestamp')})
-    elif kind=='antigravity':
+    elif kind in {'antigravity','acp'}:
         messages=[]
         def replay(params):
             if params.get('sessionId')!=native_id:return
@@ -292,10 +302,10 @@ def history(command, kind, cwd, env, native_id, source_file=''):
             info=host.call('initialize',protocolVersion=1,clientCapabilities={},clientInfo={'name':'aura-workspace','version':'1'})
             capabilities=info.get('agentCapabilities') or {}
             if not capabilities.get('loadSession',capabilities.get('load_session')):
-                raise ValueError('This version of Antigravity cannot read saved chats through Aura. Update Antigravity or view the chat in its app.')
+                raise ValueError('This AI app cannot read saved chats through this connection. Update it or view the chat in its native app.')
             state=host.call('session/load',sessionId=native_id,cwd=str(cwd),mcpServers=[])
-            if state.get('sessionId',native_id)!=native_id:raise ValueError('Antigravity returned a different chat. Your saved messages have been kept.')
-            if not messages:raise ValueError('Antigravity returned no messages for this chat. Your saved messages have been kept; check the original chat in Antigravity.')
+            if state.get('sessionId',native_id)!=native_id:raise ValueError('The AI app returned a different chat. Your saved messages have been kept.')
+            if not messages:raise ValueError('The AI app returned no messages for this chat. Your saved messages have been kept; check its original conversation.')
             model=(state.get('models') or {}).get('currentModelId','')
             effort=next((c.get('currentValue','') for c in state.get('configOptions',[]) if c.get('category')=='thought_level'),'')
         finally:host.close()
@@ -317,7 +327,7 @@ def history(command, kind, cwd, env, native_id, source_file=''):
         at=message.get('timestamp') or message.get('created_at')
         if isinstance(at,(int,float)) and at>1e11:at/=1000
         if text:out.append({'role':message['role'],'text':text,'at':at,**({'request_id':aura_ref} if aura_ref else {}),
-                        'agent':{'pi':'Pi','omp':'OMP','claude':'Claude Code','hermes':'Hermes','antigravity':'Google Antigravity'}[kind]})
+                        'agent':{'pi':'Pi','omp':'OMP','claude':'Claude Code','hermes':'Hermes','antigravity':'Google Antigravity'}.get(kind,'AI app')})
         if candidate:brief=dict(candidate,through=len(out),at=workspace_usage.timestamp(at))
     return {**({'subagents':list(delegation.items.values())} if delegation.items else {}),
             'messages':out,'model':model,'effort':effort,'usage':workspace_usage.messages_usage(messages,kind,window),'native_id':native_id,'native_observation':observation,
@@ -361,6 +371,10 @@ def relocate_pi(command, cwd, env, native_id, execution=None, source_file=''):
 
 
 def run(command, kind, cwd, env, prompt, native_id, model, effort, update, execution=None):
+    if execution and execution.interactive and kind in {'hermes','antigravity','acp'} and not (kind=='antigravity' and execution.permission=='auto'):
+        from workspace_acp import run as acp_run
+        if execution.native_goal:prompt='/goal '+execution.native_goal['objective']+'\n\n'+prompt
+        return acp_run(command,kind,cwd,env,prompt,native_id,model,effort,update,execution)
     import tempfile
     goal=getattr(execution,'native_goal',None)
     if not goal:return _run(command,kind,cwd,env,prompt,native_id,model,effort,update,execution)
@@ -431,11 +445,25 @@ def _run(command, kind, cwd, env, prompt, native_id, model, effort, update, exec
         else:
             errors.send(process, prompt);ErrorTail.close_input(process);lines=process.stdout
         for line in lines:
+            from workspace_native_sessions import Call
+            if isinstance(line,Call):
+                execution=line.execution;update=line.update;prompt=line.prompt;native_id=line.native_id or execution.native_session.native_id
+                ident=native_id;final='';error='';measures=[];seen_usage={};session_cost=None;request_started=time.time();delegation=Tracker(update)
+                update(native_id=ident,native_controls={'steer':True,'interrupt':True})
+                continue
             try:event=json.loads(line)
             except ValueError:continue
             if not isinstance(event, dict):continue
             if delegation.observe(kind, event):continue
             event_type=event.get('type',event.get('event'))
+            if event_type=='aura_turn_end':
+                if error or not ident or not final.strip():
+                    lines.close()
+                    raise ValueError(error or errors.message('The AI app ended without a saved reply. Check its native conversation before retrying.'))
+                value={**workspace_usage.combine(measures),'last':measures[-1]} if measures else {}
+                if session_cost is not None:value.update(session_cost_usd=session_cost,cost_kind='est')
+                execution.native_session.turn_result={'reply':final,'native_id':ident,'usage':value}
+                continue
             new_id=event.get('session_id') or (event.get('id') if event_type=='session' else None) or event.get('conversation_id')
             if new_id:
                 if native_id and new_id!=native_id:
