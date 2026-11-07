@@ -157,7 +157,8 @@ def remember(business_id,payload):
         elif supplied_extensions or provenance:
             raise ValueError(f'{typ} does not support extensions/provenance payloads.')
         if 'observed_at' in properties and not obj.get('observed_at'):obj['observed_at']=ts
-        if typ=='Asset':
+        # Defaults describe a new deliverable, never override later explicit edits.
+        if typ=='Asset' and not existing:
             from workspace_projects import asset_context
             obj=asset_context(bid,obj)
         try:validate_canonical(typ,obj)

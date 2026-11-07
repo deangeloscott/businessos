@@ -210,8 +210,11 @@ def main():
             command=[sys.executable,str(ROOT/'scripts/workspace_schedules.py'),'result','--id',task['id'],'--workspace',str(root)]
             result=subprocess.run(command,capture_output=True,text=True,encoding='utf-8',check=True)
             assert json.loads(result.stdout)['text']=='Report 02'
+            import workspace_collections as collections
+            collection=collections.create(bid,{'key':'agent-reference','name':'Agent research','purpose':'Reuse relevant saved findings'})
+            collections.apply(bid,collection['id'],{'revision':collection['revision'],'run_id':'agent-reference-proof','items':[{'id':'finding','title':'DATASET_BODY_MUST_NOT_BE_IN_TASK_PROMPT'}]})
             result=subprocess.run([sys.executable,str(ROOT/'scripts/workspace_assistants.py'),'save','--business',bid,'--input','-'],
-                input=json.dumps({'name':'CLI assistant','instructions':'Keep it simple.'}),capture_output=True,text=True,encoding='utf-8',check=True)
+                input=json.dumps({'name':'CLI assistant','instructions':'Keep it simple.','context_refs':[{'kind':'collection','id':collection['id']}]}),capture_output=True,text=True,encoding='utf-8',check=True)
             cli_profile=json.loads(result.stdout)
             assert call('/api/assistants?business='+bid)['items'][0]['id']==cli_profile['id']
             created=[]
@@ -230,6 +233,8 @@ def main():
                 wait(lambda:app.schedule_job['status']!='working')
                 assert app.schedule_job['status']=='complete',app.schedule_job
             assert 'Keep it simple.' in created[0]['description'] and bid in created[0]['description']
+            assert collection['id'] in created[0]['description'] and 'workspace_collections.py' in created[0]['description']
+            assert 'DATASET_BODY_MUST_NOT_BE_IN_TASK_PROMPT' not in created[0]['description']
             assert app.schedule_job['task_id'] in assistants.find(storage.view_preferences(root),bid,cli_profile['id'])['task_ids']
             # Portable profiles survive a view round trip; another workspace cannot see them.
             portable=storage.view_preferences(root);assert portable['assistants'][bid][0]['name']=='CLI assistant'

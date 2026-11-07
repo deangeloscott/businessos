@@ -1937,7 +1937,8 @@ class Workspace:
         if action=='create' and payload.get('assistant_id'):
             self.load_portable()
             assistant=workspace_assistants.resolved(workspace_assistants.find(self.preferences,bid,payload['assistant_id']),self.native_kind(kind),root,self.agent_environment(choice),choice['argv'],choice.get('native_options'))
-            payload['description']=(f"Agent: {assistant['name']}\n"+assistant.get('instructions','')+
+            saved_context=workspace_context.resolve(self,bid,assistant.get('context_refs',[]),pointers=True)['text']
+            payload['description']=(f"Agent: {assistant['name']}\n"+assistant.get('instructions','')+saved_context+
                                     (f"\nPreferred subagent model: {assistant['child_model']}" if assistant.get('child_model') else '')+
                                     '\n\nTask:\n'+payload['description']+
                                     f'\n\nWork for Aura business {bid} in workspace {root}. Include saved file links in your result when you produce files.')

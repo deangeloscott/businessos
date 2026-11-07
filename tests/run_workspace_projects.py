@@ -36,6 +36,35 @@ def main():
         saved=remember(bid,{'objects':[{'object_type':'Asset','content':{'asset_type':'document','business_role':'Funding brief','version':'1','status':'active','location_reference':output.relative_to(root).as_posix()}}]})
         obj=object_index(bid)[saved['objects'][0]['id']][0];assert ident in obj['extensions']['businessos']['work']['project_refs']
         assert projects.resources(app,bid,ident)['items'][0]['id']==obj['id']
+        # Automatic provenance must cooperate with older goal/file controls.
+        import workspace_goals as goals
+        import workspace_assistants as assistants
+        import workspace_context as context
+        goal=goals.save(bid,{'name':'Find relevant funding','scope':'workspace'})
+        projects.bind(bid,'chat','producer-chat',[ident],goal_id=goal['id'])
+        new=collections.create(bid,{'key':'goal-linked-results','name':'Goal-linked results','purpose':'Keep relevant opportunities current'})
+        aid=new['asset_id'];assert object_index(bid)[aid][0]['extensions']['businessos']['goal_ref']==goal['id']
+        refs=[{'kind':'collection','id':new['id']}]
+        projects.change(bid,{'action':'edit','id':ident,'context_refs':refs})
+        agent=assistants.save(app.preferences,bid,{'name':'Funding partner','context_refs':refs})
+        inherited=context.inherited(app,bid,project='Funding opportunities',assistant=agent)
+        assert inherited==refs
+        pointer=context.resolve(app,bid,inherited)
+        assert new['id'] in pointer['text'] and 'Retrieve only relevant rows' in pointer['text']
+        goals.link_asset(bid,aid,None)
+        assert not object_index(bid)[aid][0]['extensions']['businessos'].get('goal_ref')
+        current=collections.show(bid,new['id'])
+        collections.apply(bid,new['id'],{'revision':current['revision'],'run_id':'after-explicit-unlink','items':[{'id':'proof','title':'Useful finding'}]})
+        after=object_index(bid)[aid][0]['extensions']['businessos']
+        assert not after.get('goal_ref') and after['work']['project_refs']==[ident]
+        # Existing file/record editing also retains an explicit project unlink.
+        previous=object_index(bid)[obj['id']][0]['extensions'];previous['businessos']['work']['project_refs']=[]
+        remember(bid,{'objects':[{'object_ref':obj['id'],'replace_extensions':True,'content':{'extensions':previous}}]})
+        remember(bid,{'objects':[{'object_ref':obj['id'],'content':{'version':'2'}}]})
+        assert object_index(bid)[obj['id']][0]['extensions']['businessos']['work']['project_refs']==[]
+        # Preserve the fixture's intended original association for later checks.
+        previous['businessos']['work']['project_refs']=[ident]
+        remember(bid,{'objects':[{'object_ref':obj['id'],'replace_extensions':True,'content':{'extensions':previous}}]})
         # Reusing a renamed project's former label creates a separate identity.
         another=organization.change_project(app,bid,{'name':'Funding'})['project']
         assert another['id']!=ident

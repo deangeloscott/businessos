@@ -8,7 +8,7 @@ Projects are ordinary portable workspace data in `.businessos/projects.json`. Ol
 
 ## Producing useful work
 
-Aura chat processes receive a scoped producer reference. When a native app deliberately saves an Asset through `remember.py`, the existing helper preserves known project, chat and goal associations. Existing explicit associations win; project membership remains separate from automatic model context. A raw tool file-change event is not proof of a finished deliverable, so Aura does not promote every temporary file into memory.
+Aura chat processes receive a scoped producer reference. When a native app deliberately creates an Asset through `remember.py`, the existing helper records known project, chat and goal associations. Later edits preserve the saved associations and respect explicit changes or removals. Existing explicit associations win; project membership remains separate from automatic model context. A raw tool file-change event is not proof of a finished deliverable, so Aura does not promote every temporary file into memory.
 
 For repeated research, choose a maintained collection when the user needs current entries. Choose dated reports when each installment is a historical deliverable. Keep native documents, spreadsheets, databases and media in their useful formats; an Asset or project reference can point to them. The local collection helper is optional and requires no running UI, cloud, database service or additional model.
 
@@ -68,7 +68,7 @@ Each collection is one JSON file under `attachments/BUSINESS_ID/collections/`, r
 
 ## Scheduled work
 
-Open a scheduled task and choose **Save results to → Apply to scheduled task**. Aura writes the chosen collection instructions through the existing native scheduling path, then reads back the task to confirm them before saving its association. The scheduler continues to own execution, cadence, model, delivery and retries. A confirmed task definition does not prove its scheduler is running. User-selected native delivery remains unchanged. A task without a collection retains its ordinary native results.
+Open a scheduled task and choose **Save results to → Apply to scheduled task**. Aura writes the chosen collection instructions through the existing native scheduling path, then reads back the task to confirm them before saving its association. The scheduler continues to own execution, cadence, model, delivery and retries. A confirmed task definition does not prove its scheduler is running. User-selected native delivery remains unchanged. A task without a collection retains its ordinary native results. Tasks created from a saved agent also carry that agent’s selected context references; collections remain retrieval pointers rather than full dataset copies.
 
 Use native run identities and write the collection from the scheduled producer itself. Aura does not require its UI to stay open, invent unattended timers, or claim that selecting a destination alone wires the native task. Native-only activity and arbitrary files written outside these helpers remain discoverable through normal folders/native results; their semantic associations and check coverage are not fabricated. If a native app expires a useful output, save the needed artifact or evidence snapshot deliberately before relying on a temporary reference.
 
