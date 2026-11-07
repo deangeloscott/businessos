@@ -422,6 +422,7 @@ class Workspace:
         if not all((self.static / name).is_file() for name in ('index.html', 'app.js', 'style.css')):
             raise ValueError('The interface folder needs index.html, app.js, and style.css.')
         self.lock = threading.RLock()
+        self.native_agent_lock = threading.RLock()
         self.recovery_lock = threading.Lock()
         self.job = None
         self.execution = None
@@ -889,33 +890,36 @@ class Workspace:
             return list(flatten(config.get('options',[])))
         return (info.get('native_modes') or {}).get('availableModes') or (chat or {}).get('native_permission_modes')
 
-    def agent_options(self, kind, refresh=False):
+    def agent_options(self, kind, refresh=False, profile=None):
+        if profile is not None and (self.native_kind(kind)!='hermes' or not isinstance(profile,str) or not re.fullmatch(r'[a-z0-9][a-z0-9_-]{0,63}',profile)):
+            raise ValueError('Choose a valid native Hermes profile.')
+        cache_key=(kind,profile) if profile else kind
         if refresh:
-            self.option_cache.pop(kind, None)
+            self.option_cache.pop(cache_key, None)
         protocol=self.native_kind(kind)
         if protocol not in NATIVE_AGENTS:
             return {'models': [], 'sessions': False,
                     'note': 'This command uses its app settings. Model controls and chat restoration need a native session connection.'}
-        if kind not in self.option_cache:
+        if cache_key not in self.option_cache:
             choice = self.native_choice(kind)
             command = choice and choice['argv']
             if not command:
                 raise ValueError('This AI app is not installed or its command needs setup.')
             if protocol == 'codex':
-                self.option_cache[kind] = workspace_codex.options(command, workspace_root(), self.agent_environment(choice))
+                self.option_cache[cache_key] = workspace_codex.options(command, workspace_root(), self.agent_environment(choice))
             else:
-                self.option_cache[kind] = workspace_agents.options(command, protocol, workspace_root(), self.agent_environment(choice))
-        return self.option_cache[kind]
+                self.option_cache[cache_key] = workspace_agents.options(command, protocol, workspace_root(), self.agent_environment(choice),**({'profile':profile} if profile else {}))
+        return self.option_cache[cache_key]
 
-    def agent_efforts(self, kind, model):
-        options = self.agent_options(kind)
+    def agent_efforts(self, kind, model, profile=None):
+        options = self.agent_options(kind,**({'profile':profile} if profile else {}))
         chosen = next((m for m in options['models'] if m['id'] == model), None)
         if not chosen:
             raise ValueError('Choose a model returned by this AI app.')
         if chosen.get('discover_efforts') and not chosen.get('efforts_loaded'):
             command = self.native_choice(kind)['argv']
             try:
-                result = workspace_agents.efforts(command,self.native_kind(kind),workspace_root(),self.agent_environment(self.native_choice(kind)),model)
+                result = workspace_agents.efforts(command,self.native_kind(kind),workspace_root(),self.agent_environment(self.native_choice(kind)),model,**({'profile':profile} if profile else {}))
                 chosen.update(result)
             except ValueError:
                 # Older hosts lack effort metadata. Never invent supported tiers.
@@ -923,7 +927,7 @@ class Workspace:
             chosen['efforts_loaded'] = True
         return {'efforts': chosen['efforts'], 'default_effort': chosen.get('default_effort', '')}
 
-    def model_catalog(self, refresh=False, kind=None):
+    def model_catalog(self, refresh=False, kind=None, profile=None):
         """One view of native catalogues; execution still uses an explicit host."""
         if kind is not None and self.native_kind(kind) not in NATIVE_AGENTS:
             raise ValueError('Choose a supported AI app.')
@@ -931,7 +935,7 @@ class Workspace:
         if self.native_kind('configured') in NATIVE_AGENTS and kind in {None,'configured'}:choices.append(self.native_choice('configured'))
         def discover(choice):
             try:
-                return choice, self.agent_options(choice['id'], refresh), None
+                return choice, self.agent_options(choice['id'], refresh,**({'profile':profile} if profile and self.native_kind(choice['id'])=='hermes' else {})), None
             except (ValueError, OSError, subprocess.SubprocessError) as exc:
                 return choice, None, setup_error(str(exc))
         grouped, unavailable = {}, []
@@ -998,7 +1002,8 @@ class Workspace:
         return {**os.environ, **self.connections.environment(), **overrides,'BUSINESSOS_WORKSPACE':str(workspace_root()),'PYTHONUTF8':'1',
                 'PATH':overrides.get('PATH',os.pathsep.join(filter(None,[os.environ.get('PATH'),str(Path(sys.executable).parent)])))}
 
-    def context_settings(self,bid,kind=None,chat_id=None,changes=None,revision=None,section='context'):
+    def context_settings(self,bid,kind=None,chat_id=None,changes=None,revision=None,section='context',profile=None):
+        from contextlib import nullcontext
         if section=='delegation':import workspace_agent_settings as context_settings
         else:import workspace_context_settings as context_settings
         chat=next((c for c in self.preferences['chats'] if c['id']==chat_id and c['business_id']==bid),None) if chat_id else self.active_chat(bid)
@@ -1009,7 +1014,12 @@ class Workspace:
         choice=self.native_choice(kind)
         if not choice:raise ValueError('Connect this AI app before opening its settings.')
         protocol=self.native_kind(kind);env=self.agent_environment(choice)
-        native_profile=((choice.get('native_options') or {}).get('session') or {}).get('profile') if protocol=='hermes' else None
+        if profile is not None:
+            if protocol!='hermes' or not isinstance(profile,str) or not re.fullmatch(r'[a-z0-9][a-z0-9_-]{0,63}',profile):raise ValueError('Choose a valid Hermes profile.')
+            if chat_id:raise ValueError('Choose either a chat or a native profile for these settings.')
+            chat=None
+        native_profile=((chat or {}).get('native_profile') or ((choice.get('native_options') or {}).get('session') or {}).get('profile')) if protocol=='hermes' else None
+        if profile is not None:native_profile=profile
         if native_profile is not None and (not isinstance(native_profile,str) or len(native_profile)>100 or '\0' in native_profile):raise ValueError('Choose a valid native Hermes profile.')
         profile_options={'profile':native_profile} if native_profile else {}
         cwd=Path((chat or {}).get('native_workspace') or workspace_root())
@@ -1033,7 +1043,7 @@ class Workspace:
                 result=context_settings.reported(rows,saved)
                 result['message']='Saved. The AI app will confirm these settings when you next continue this chat.'
             return {**result,'app':protocol,'kind':kind,'workspace':str(workspace_root()),'chat_id':chat['id']}
-        with self.lock:
+        with self.lock if changes is not None else nullcontext():
             if changes is not None:
                 # Native global/profile settings must not change under active work.
                 affected=[c for c in self.preferences['chats'] if c.get('agent')==kind]
@@ -1047,9 +1057,10 @@ class Workspace:
                     self.native_sessions.release_idle((str(workspace_root().resolve()),c['business_id'],c['id']))
                 self.save_preferences()
                 result['message']='Saved in '+choice['name']+'. Aura will use these settings when you next continue a chat.'
-                self.option_cache.pop(kind,None)
+                for cache_key in list(self.option_cache):
+                    if cache_key==kind or isinstance(cache_key,tuple) and cache_key[0]==kind:self.option_cache.pop(cache_key,None)
             else:result=context_settings.describe(choice['argv'],protocol,cwd,env,**profile_options)
-        result.update(kind=kind,workspace=str(workspace_root()),chat_id=(chat or {}).get('id'))
+        result.update(kind=kind,workspace=str(workspace_root()),chat_id=(chat or {}).get('id'),profile=native_profile)
         if result.get('scope'):result['scope']=choice['name']+(' · '+native_profile if native_profile else '')+' settings on this computer. Other chats using this profile share these settings.'
         return result
 
@@ -1060,17 +1071,18 @@ class Workspace:
         protocol=self.native_kind(kind);env=self.agent_environment(choice)
         cwd=workspace_root()
         action=(data or {}).get('action','list')
-        if action=='list':result=specialists.inventory(protocol,cwd,env,choice['argv'])
+        if action=='list':result=specialists.inventory(protocol,cwd,env,choice['argv'],choice.get('native_options'))
         else:
             if not specialists.local(choice['argv']):raise ValueError('Manage this connection’s native agents in its own environment.')
-            if action=='read':result=specialists.read(protocol,cwd,env,data.get('scope'),data.get('file'))
+            if action=='read':result=specialists.read(protocol,cwd,env,data.get('scope'),data.get('file'),choice['argv'],choice.get('native_options'))
             elif action=='save':
-                if any(s.pending() and getattr(s.execution,'native_kind',None)==protocol for s in self.native_sessions.items.values() if not s.closed):
+                if any(s.pending() and getattr(s.execution,'native_kind',None)==protocol for s in list(self.native_sessions.items.values()) if not s.closed):
                     raise ValueError('Finish this AI app’s running work before editing its native agents.')
-                result=specialists.save(protocol,cwd,env,data)
+                with self.native_agent_lock:result=specialists.save(protocol,cwd,env,data,choice['argv'],choice.get('native_options'))
                 for key,s in list(self.native_sessions.items.items()):
                     if not s.closed and getattr(s.execution,'native_kind',None)==protocol:self.native_sessions.release_idle(key)
-                self.option_cache.pop(kind,None)
+                for cache_key in list(self.option_cache):
+                    if cache_key==kind or isinstance(cache_key,tuple) and cache_key[0]==kind:self.option_cache.pop(cache_key,None)
             else:raise ValueError('Choose a supported native agent action.')
         return {**result,'kind':kind,'workspace':str(cwd)}
 
@@ -1872,7 +1884,7 @@ class Workspace:
         assistant=None
         if action=='create' and payload.get('assistant_id'):
             self.load_portable()
-            assistant=workspace_assistants.resolved(workspace_assistants.find(self.preferences,bid,payload['assistant_id']),self.native_kind(kind),root,self.agent_environment(choice),choice['argv'])
+            assistant=workspace_assistants.resolved(workspace_assistants.find(self.preferences,bid,payload['assistant_id']),self.native_kind(kind),root,self.agent_environment(choice),choice['argv'],choice.get('native_options'))
             payload['description']=(f"Agent: {assistant['name']}\n"+assistant.get('instructions','')+
                                     (f"\nPreferred subagent model: {assistant['child_model']}" if assistant.get('child_model') else '')+
                                     '\n\nTask:\n'+payload['description']+
@@ -2061,7 +2073,11 @@ class Workspace:
                     profile=owner._assistant
                     profile_app=profile.get('app') or self.connection_kind
                     known=self.preferences['connection'] if profile_app==self.connection_kind else self.preferences['connected_apps'].get(profile_app,{})
-                    connection={**known,'kind':profile_app,**{k:profile[k] for k in ('model','effort') if profile.get(k)},**(connection or {})}
+                    defaults={}
+                    if (profile.get('native_agent') or {}).get('app')=='hermes' and not profile.get('model') and not (connection or {}).get('model'):
+                        native=self.native_agents(bid,profile_app,{'action':'read',**profile['native_agent']})
+                        defaults={'model':native['model'],'effort':''}
+                    connection={**known,'kind':profile_app,**defaults,**{k:profile[k] for k in ('model','effort') if profile.get(k)},**(connection or {})}
             desired=dict(existing.get('connection') or {},kind=existing['agent'],model=existing.get('model',''),effort=existing.get('effort','')) if existing else connection
             if desired:
                 if not isinstance(desired,dict):raise ValueError('Choose an AI connection.')
@@ -2135,6 +2151,8 @@ class Workspace:
             native_spec=None
             permission=workspace_permissions.validate(self.connection_kind,(chat or {}).get('permission_mode') or getattr(self,'_request_permission_mode',None) or self.preferences.get('harness_permissions',{}).get(self.connection_kind,'native'),self.permission_modes(self.connection_kind,chat))
             native_options=dict(self.agent.get('native_options') or {})
+            if protocol_kind=='hermes' and (chat or {}).get('native_profile'):
+                native_options['session']={**native_options.get('session',{}),'profile':chat['native_profile']}
             if (chat or {}).get('native_settings'):native_options['config']={**native_options.get('config',{}),**chat['native_settings']}
             if native_request is not None:
                 if not isinstance(native_request,dict) or not goal_id:raise ValueError('Choose a chat goal before starting native goal mode.')
@@ -2154,7 +2172,17 @@ class Workspace:
             prompt = text if keep_warm_id is not None else self.request_text(bid, text, None if native else history, schedule_id, organization_id)
             assistant=getattr(self,'_assistant',None)
             if assistant:
-                assistant=workspace_assistants.resolved(assistant,protocol_kind,Path((chat or {}).get('native_workspace') or workspace_root()),self.agent_environment(),self.agent['argv'])
+                agent_cwd=Path((chat or {}).get('native_workspace') or workspace_root())
+                if not chat and getattr(self,'_request_project',''):
+                    project=next((p for p in workspace_chat_organization.projects(self,bid) if p['name']==self._request_project),None)
+                    if project and project.get('folder'):agent_cwd=Path(project['folder']).expanduser().resolve()
+                if protocol_kind=='hermes' and (chat or {}).get('native_profile'):
+                    assistant={**assistant,'native_agent':{'app':'hermes','scope':'profile','file':chat['native_profile']}}
+                assistant=workspace_assistants.resolved(assistant,protocol_kind,agent_cwd,self.agent_environment(),self.agent['argv'],native_options,native_only=True)
+                if protocol_kind=='hermes' and assistant.get('native_primary'):
+                    name=assistant['native_name'];prior=(chat or {}).get('native_profile') or (native_options.get('session') or {}).get('profile','default')
+                    if (chat or {}).get('native_id') and prior!=name:raise ValueError('Start a new chat to use a different Hermes profile. This chat keeps its original profile and history.')
+                    native_options['session']={**native_options.get('session',{}),'profile':name}
             context_key=workspace_context.digest({'business':bid,'workspace':str(workspace_root().resolve()),'assistant':assistant,
                 'guidance':[(str(p),p.stat().st_mtime_ns,p.stat().st_size) for p in (PRODUCT_ROOT/'AGENTS.md',PRODUCT_ROOT/'skills/viraltrac-aura/SKILL.md')]})
             reuse_context=native and chat and chat.get('native_id') and chat.get('aura_context')==context_key and not any((welcome,keep_warm_id is not None,schedule_id,organization_id)) and not text.lstrip().startswith('/')
@@ -2162,7 +2190,7 @@ class Workspace:
                 prompt=f'Selected Aura business: {bid}.\n\nUser request:\n'+text.strip()
             if selected_context['text']:prompt=prompt.replace('\nUser request:\n',selected_context['text']+'\nUser request:\n',1)
             if assistant and not reuse_context and not welcome and keep_warm_id is None:
-                prompt=prompt.replace('\nUser request:\n',workspace_assistants.guidance(assistant,child_native=protocol_kind in {'codex','omp','claude'},native_primary=protocol_kind=='claude' and bool(assistant.get('native_name')))+'\nUser request:\n',1)
+                prompt=prompt.replace('\nUser request:\n',workspace_assistants.guidance(assistant,child_native=protocol_kind in {'codex','omp','claude'},native_primary=assistant.get('native_primary',False))+'\nUser request:\n',1)
             job = {'id': secrets.token_urlsafe(12), 'business_id': bid, 'status': 'working', 'reply': '', 'activity': [],
                    'created': time.time(), 'updated': time.time(), 'progress': 'Starting your AI'}
             job.update(references=selected_context['references'],files=files or [],goal_id=goal_id or '')
@@ -2199,6 +2227,7 @@ class Workspace:
             job['new_native_chat']=native and not chat.get('native_id')
             job['subagents']=copy.deepcopy(workspace_delegation.retain(chat.get('subagents',[])))
             job.update(chat_id=chat['id'], model=chat['model'], effort=chat['effort'])
+            if protocol_kind=='hermes' and assistant and assistant.get('native_primary'):chat['native_profile']=assistant['native_name']
             workspace_recovery.begin(chat,job)
             self.save_chat_turn(chat, job, text)
             self.save_preferences()
@@ -2225,6 +2254,7 @@ class Workspace:
             execution.native_kind=protocol_kind
             execution.child_model=(assistant or {}).get('child_model','')
             execution.native_agent=(assistant or {}).get('native_name','')
+            if assistant and protocol_kind in {'claude','antigravity'} and not assistant.get('native_primary'):execution.native_agent=''
             execution.attachments=native_images
             execution.native_goal=native_spec
             execution.interactive = native
@@ -2632,7 +2662,7 @@ def handler_for(app):
                 elif route == '/api/archive':
                     self.send(200,workspace_archive.inventory(app,selected(query.get('business'))))
                 elif route in {'/api/context-settings','/api/delegation-settings'}:
-                    self.send(200,app.context_settings(selected(query.get('business')),query.get('kind'),query.get('chat_id'),section='delegation' if route=='/api/delegation-settings' else 'context'))
+                    self.send(200,app.context_settings(selected(query.get('business')),query.get('kind'),query.get('chat_id'),section='delegation' if route=='/api/delegation-settings' else 'context',profile=query.get('profile')))
                 elif route == '/api/native-agents':
                     self.send(200,app.native_agents(selected(query.get('business')),query.get('kind'),query))
                 elif route == '/api/permissions':
@@ -2666,9 +2696,9 @@ def handler_for(app):
                 elif route == '/api/agent-options':
                     self.send(200, app.agent_options(query.get('kind'), query.get('refresh') == '1'))
                 elif route == '/api/model-catalog':
-                    self.send(200, app.model_catalog(query.get('refresh') == '1', query.get('kind')))
+                    self.send(200, app.model_catalog(query.get('refresh') == '1', query.get('kind'),query.get('profile')))
                 elif route == '/api/agent-efforts':
-                    self.send(200, app.agent_efforts(query.get('kind'), query.get('model')))
+                    self.send(200, app.agent_efforts(query.get('kind'), query.get('model'),query.get('profile')))
                 elif route == '/api/connections':
                     self.send(200, app.connections.rows())
                 elif route == '/api/usage':
@@ -2815,6 +2845,14 @@ def handler_for(app):
                 if not isinstance(data, dict):
                     raise ValueError('Expected an object.')
                 route = urlsplit(self.path).path
+                if route == '/api/native-agents':
+                    # Native profile creation may seed bundled skills. Keep other chats responsive.
+                    with app.lock:
+                        if getattr(app,'update_restart',False):raise ValueError('Aura is restarting. Try again when your workspace reopens.')
+                        if app.organization_job and app.organization_job['status']=='working':raise ValueError('Wait for workspace organization before changing native agents.')
+                        owner=copy.copy(app)
+                    with workspace_scope(owner.workspace_path):result=owner.native_agents(selected(data.get('business')),data.get('kind'),data)
+                    self.send(200,result);return
                 if route in {'/api/documents/save','/api/documents/open'}:
                     with app.lock:
                         expected=data.get('workspace') or self.headers.get('X-Aura-Workspace')
@@ -3322,9 +3360,7 @@ def handler_for(app):
                     elif route == '/api/goals':
                         self.send(200,workspace_goals.mutate(app,selected(data.get('business')),data))
                     elif route in {'/api/context-settings','/api/delegation-settings'}:
-                        self.send(200,app.context_settings(selected(data.get('business')),data.get('kind'),data.get('chat_id'),data.get('changes'),data.get('revision'),section='delegation' if route=='/api/delegation-settings' else 'context'))
-                    elif route == '/api/native-agents':
-                        self.send(200,app.native_agents(selected(data.get('business')),data.get('kind'),data))
+                        self.send(200,app.context_settings(selected(data.get('business')),data.get('kind'),data.get('chat_id'),data.get('changes'),data.get('revision'),section='delegation' if route=='/api/delegation-settings' else 'context',profile=data.get('profile')))
                     elif route == '/api/permissions':
                         bid=selected(data.get('business'));kind=data.get('kind') or app.connection_kind
                         chat=next((c for c in app.preferences['chats'] if c['id']==data.get('chat_id') and c['business_id']==bid),None)
@@ -3372,11 +3408,12 @@ def handler_for(app):
                         if data.get('kind',chat['agent'])!=chat['agent']:raise ValueError('An existing chat stays in its original AI app. Start a new chat to use another app.')
                         if any(j.get('chat_id')==chat['id'] for j in app.running_jobs(workspace_root())) or chat.get('status')=='working':raise ValueError('Wait for this request to finish before changing its model.')
                         if app.native_kind(chat['agent']) not in NATIVE_AGENTS:raise ValueError('This connection uses its own model settings.')
-                        options=app.agent_options(chat['agent'])
+                        profile_options={'profile':chat['native_profile']} if app.native_kind(chat['agent'])=='hermes' and chat.get('native_profile') else {}
+                        options=app.agent_options(chat['agent'],**profile_options)
                         model=next((m for m in options['models'] if m['id']==data.get('model')),None)
                         if not model:raise ValueError('Choose an available model for this AI app.')
                         effort=data.get('effort','')
-                        efforts=app.agent_efforts(chat['agent'],model['id']).get('efforts',model.get('efforts',[]))
+                        efforts=app.agent_efforts(chat['agent'],model['id'],**profile_options).get('efforts',model.get('efforts',[]))
                         if effort and effort not in efforts:raise ValueError('Choose a supported effort for this model.')
                         if chat['agent']=='codex' and not effort:raise ValueError('Choose an effort for this Codex model.')
                         if 'native_settings' in data:

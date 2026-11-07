@@ -5,6 +5,7 @@ import hashlib
 import json
 import os
 import re
+import subprocess
 import tempfile
 import tomllib
 
@@ -72,7 +73,11 @@ def parse(kind,source):
         raise ValueError('This native agent needs a name, a description, and valid '+('TOML' if kind=='codex' else 'Markdown frontmatter')+'.') from None
 
 
-def read(kind,cwd,env,scope,file):
+def read(kind,cwd,env,scope,file,command=(),options=None):
+    if kind=='hermes':
+        if scope!='profile':raise ValueError('Choose a native Hermes profile.')
+        from workspace_hermes import profile
+        return profile(command,options,cwd,env,file)
     path=path_for(kind,cwd,env,scope,file)
     try:
         raw=path.read_bytes()
@@ -83,8 +88,14 @@ def read(kind,cwd,env,scope,file):
     return {**row,'app':kind,'scope':scope,'file':file,'path':str(path),'source':source,'revision':hashlib.sha256(raw).hexdigest()}
 
 
-def inventory(kind,cwd,env,command=()):
+def inventory(kind,cwd,env,command=(),options=None):
     if not local(command):return {'items':[],'note':'This connection runs in another environment. Manage its native agents there.','editable':False}
+    if kind=='hermes':
+        from workspace_hermes import profiles
+        rows=profiles(command,options,cwd,env)
+        return {'items':[{'app':kind,'scope':'profile','file':p['name'],'name':p.get('display_name') or p['name'],
+            'description':p.get('description',''),'model':p.get('model',''),'primary':True,'readonly':False} for p in rows],
+            'editable':True,'app':kind,'note':'Profiles keep their native memory, tools, and connections.'}
     if kind not in APPS:
         return {'items':[],'editable':False,'note':('Hermes uses native profiles and delegation routes. Configure them in Native delegation settings.' if kind=='hermes' else 'This connection does not expose native agent files. Its native agent behavior remains available.')}
     rows=[];notes=[];seen=set()
@@ -101,8 +112,30 @@ def inventory(kind,cwd,env,command=()):
                 notes.append(path.name+': '+human_error(error));continue
             row['shadowed']=row['name'] in seen;seen.add(row['name'])
             rows.append({k:v for k,v in row.items() if k not in {'source','settings','instructions'}})
+    if kind=='omp' and command:
+        try:
+            from workspace_agents import Metadata
+            host=Metadata(command,kind,cwd,env)
+            try:state=host.call('get_state')
+            finally:host.close()
+            tool=next((t for t in state.get('dumpTools',[]) if t.get('name')=='task'),{})
+            roster=reported_agents(tool.get('description',''))
+            for row in rows:row['reported']=row['name'] in roster
+            rows.extend({'app':kind,'scope':'native','name':name,'description':description,'readonly':True,'reported':True}
+                        for name,description in roster.items() if name not in seen)
+        except (OSError,ValueError,subprocess.SubprocessError) as error:
+            from workspace_support import human_error
+            notes.append('The native agent list could not be checked. '+human_error(error))
     return {'items':rows,'editable':True,'notes':notes,'note':('Pi requires a compatible subagent extension. Project agents also depend on its scope settings.' if kind=='pi' else ''),
             'locations':{k:str(v) for k,v in roots(kind,cwd,env).items()}}
+
+
+def reported_agents(description):
+    """OMP reports its active task roster in the tool schema; never copy bundled files."""
+    section=re.split(r'(?m)^# Available Agents\s*$',description,maxsplit=1)
+    if len(section)!=2:return {}
+    block=re.split(r'(?m)^#{1,3} ',section[1],maxsplit=1)[0]
+    return {m[1]:m[2].strip() for m in re.finditer(r'(?m)^- `([^`]+)`[^\n:]*:\s*([^\n]+)',block)}
 
 
 def changed_source(kind,source,changes):
@@ -160,7 +193,10 @@ def _toml_complete(source):
     except ValueError:return False
 
 
-def save(kind,cwd,env,data):
+def save(kind,cwd,env,data,command=(),options=None):
+    if kind=='hermes':
+        from workspace_hermes import save_profile
+        return save_profile(command,options,cwd,env,data)
     scope=data.get('scope','project');file=data.get('file','');revision=data.get('revision')
     changes={k:data[k] for k in ('name','description','instructions','model','effort') if k in data}
     if any(not isinstance(v,str) or len(v)>20000 for v in changes.values()):raise ValueError('Enter valid agent instructions and preferences.')
@@ -183,7 +219,7 @@ def save(kind,cwd,env,data):
         if not isinstance(source,str) or len(source)>256000:raise ValueError('Enter a native agent definition of up to 256,000 characters.')
     else:source=changed_source(kind,source,changes)
     parsed=parse(kind,source)
-    if kind=='antigravity' and parsed['model'] not in {'','inherit','flash','pro'}:raise ValueError('Antigravity agent models use Inherit, Flash, or Pro.')
+    if kind=='antigravity' and (not isinstance(parsed['model'],str) or parsed['model'] not in {'','inherit','flash','pro'}):raise ValueError('Antigravity agent models use Inherit, Flash, or Pro.')
     if kind=='omp' and parsed['name'].strip().lower() in {'main','sub'}:raise ValueError('OMP reserves this agent name. Choose another name.')
     path.parent.mkdir(parents=True,exist_ok=True)
     handle,tmp=tempfile.mkstemp(prefix=path.name+'.',dir=path.parent)

@@ -6,7 +6,7 @@ const profiles={items:[{id:'jeff',name:'<Jeff>',instructions:'Find useful eviden
 const tasks={items:[{id:'weekly',name:'Weekly review',owner:'hermes'}],notes:[]};
 const history={items:[{id:'report.md',name:'Weekly findings',status:'Saved result'}],limit:20,note:''};
 let opened=null,nativePreview=null;
-const context={humanError:error=>error?.message||String(error),window:{},document:{addEventListener:(name,callback)=>(listeners[name]??=[]).push(callback)},
+const context={URLSearchParams,humanError:error=>error?.message||String(error),window:{},document:{addEventListener:(name,callback)=>(listeners[name]??=[]).push(callback)},
   state:{data:{workspace:'A',connection:{choices:[],selected:'codex'}},business:'studio',view:'assistants',chatMeta:{id:'parent'}},
   $:node,esc:value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),
   empty:text=>`<p>${text}</p>`,appName:name=>name,chatDate:at=>String(at),chatMarkdown:text=>`<p>${text}</p>`,

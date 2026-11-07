@@ -12,7 +12,9 @@ if kind=='claude':
  assert os.environ['CLAUDE_CODE_SUBAGENT_MODEL']=='child-default'
 if kind=='omp':
  assert json.loads(Path(sys.argv[sys.argv.index('--config')+1]).read_text())=={'modelRoles':{'task':'child-default'}}
-def emit(value):print(json.dumps(value),flush=True)
+output_lock=threading.Lock()
+def emit(value):
+ with output_lock:print(json.dumps(value),flush=True)
 for line in sys.stdin:
  m=json.loads(line);method=m.get('method');typ=m.get('type');ident=m.get('id')
  if kind.startswith('codex'):
@@ -31,6 +33,7 @@ for line in sys.stdin:
   elif method=='turn/start':
    emit({'id':ident,'result':{'turn':{'id':'turn'}}})
    emit({'method':'thread/started','params':{'thread':{'id':'child','parentThreadId':'parent'}}})
+   emit({'method':'item/started','params':{'threadId':'parent','item':{'id':'new-delegate','type':'subAgentActivity','kind':'started','agentThreadId':'child','agentPath':'/root/research','model':'native-worker'}}})
    emit({'method':'item/started','params':{'threadId':'parent','item':{'id':'delegate','type':'collabAgentToolCall','receiverThreadIds':['child'],'agentsStates':{'child':{'status':'running'}}}}})
    emit({'method':'item/completed','params':{'threadId':'parent','item':{'id':'reply','type':'agentMessage','phase':'final_answer','text':'x'*100123}}})
    emit({'method':'turn/completed','params':{'threadId':'parent','turn':{'id':'turn','status':'completed'}}})
@@ -38,6 +41,7 @@ for line in sys.stdin:
   elif ident=='child-approval':
    assert m['result']=={'decision':'acceptForSession'}
    emit({'method':'turn/completed','params':{'threadId':'child','turn':{'id':'child-turn','status':'completed'}}})
+   emit({'method':'item/completed','params':{'threadId':'parent','item':{'id':'new-complete','type':'subAgentActivity','kind':'completed','agentThreadId':'child','agentPath':'/root/research'}}})
    def finish():
     while not release.exists():time.sleep(.01)
     emit({'method':'item/completed','params':{'threadId':'parent','item':{'id':'bg','type':'commandExecution','status':'completed'}}})
@@ -146,7 +150,7 @@ def main():
                 live.requests.answer(pending['id'],answer)
                 if kind=='codex':
                     wait(lambda:any(u.get('background_processes') for u in updates));assert worker.is_alive(),'Parent completion killed background work';release.touch()
-                worker.join(8);assert not worker.is_alive() and 'error' not in result,result
+                worker.join(8);assert not worker.is_alive() and 'error' not in result,(kind,result)
                 if kind=='codex':assert len(result['reply'])==100123 and result['native_id']=='parent'
                 elif kind=='claude':assert result['reply']=='Child finished too.'
                 else:

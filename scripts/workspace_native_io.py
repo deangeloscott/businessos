@@ -224,7 +224,10 @@ def codex_run(command,cwd,prompt,native_id,model,effort,update,env,execution,chi
                     if method=='item/completed' and (p.get('item') or {}).get('type')=='contextCompaction':
                         update(native_maintenance={'type':'auto_compaction_end'})
                     item=p.get('item') or {};typ=item.get('type')
-                    if typ=='agentMessage':
+                    if typ=='subAgentActivity':
+                        if item.get('agentThreadId'):owned.add(item['agentThreadId'])
+                        delegation.observe('codex',{'item':item})
+                    elif typ=='agentMessage':
                         items[item['id']]=item
                         if method=='item/completed' and item.get('phase')!='commentary':final=item.get('text','');update(reply=final)
                     elif typ=='exitedReviewMode' and method=='item/completed':

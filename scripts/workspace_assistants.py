@@ -43,7 +43,7 @@ def validate(data):
                 if not isinstance(binding,dict) or set(binding)-{'app','scope','file'} or not all(isinstance(binding.get(k),str) and binding[k] and len(binding[k])<300 for k in ('app','scope','file')):
                     raise ValueError('Choose a valid native agent reference.')
                 from pathlib import PurePosixPath
-                if binding['scope'] not in {'project','user'} or PurePosixPath(binding['file']).is_absolute() or '..' in PurePosixPath(binding['file']).parts or '\\' in binding['file'] or ':' in binding['file']:
+                if binding['scope'] not in ({'profile'} if binding['app']=='hermes' else {'project','user'}) or PurePosixPath(binding['file']).is_absolute() or '..' in PurePosixPath(binding['file']).parts or '\\' in binding['file'] or ':' in binding['file']:
                     raise ValueError('Native agent references must stay relative to their native agent folder.')
             tasks = item.get('task_ids', [])
             if not isinstance(tasks, list) or len(tasks) > 1000 or any(not isinstance(t, str) or len(t) > 100 for t in tasks):
@@ -91,15 +91,20 @@ def guidance(profile,child_native=False,native_primary=False):
             'Read only results relevant to the request.\n')
 
 
-def resolved(profile,kind,cwd,env,command=()):
+def resolved(profile,kind,cwd,env,command=(),options=None,native_only=False):
     """A link reuses current native instructions; never maintain a competing copy."""
     binding=profile.get('native_agent')
     if not binding:return dict(profile)
     if binding['app']!=kind:raise ValueError('This agent is linked to a different AI app. Choose its AI app or unlink the native definition.')
     from workspace_specialists import read,local
     if not local(command):raise ValueError('This agent definition belongs to another environment. Reconnect it there.')
-    native=read(kind,cwd,env,binding['scope'],binding['file'])
-    return {**profile,'description':native['description'],'instructions':native['instructions'],'native_name':native['name'],'native_revision':native['revision']}
+    if kind=='hermes' and native_only:
+        # Hermes reads its own profile. Do not launch a second gateway on each message.
+        return {**profile,'instructions':'','native_name':binding['file'],'native_primary':True,'native_revision':binding['file']}
+    native=read(kind,cwd,env,binding['scope'],binding['file'],command,options)
+    primary=kind in {'claude','hermes'} or kind=='antigravity' and native['settings'].get('mainAgent',True) is not False
+    return {**profile,'description':native['description'],'instructions':native['instructions'],'native_name':native['name'],
+            'native_primary':primary,'native_revision':native['revision']}
 
 
 def main():

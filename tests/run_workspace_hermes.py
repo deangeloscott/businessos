@@ -40,6 +40,8 @@ for line in sys.stdin:
   emit({'id':'approval-'+str(turn),'method':'approval','params':{'session_id':'runtime','description':'Read fixture','command':'read','choices':['once','deny']}})
  elif str(i).startswith('approval-'):
   assert m['result']=={'choice':'once'}
+  event('subagent.start',{'subagent_id':'child-'+str(turn),'goal':'Read the evidence','model':'native-worker'})
+  event('subagent.complete',{'subagent_id':'child-'+str(turn),'goal':'Read the evidence','status':'completed','summary':'Verified result','model':'native-worker'})
   event('message.complete',{'text':f'Turn {turn}, PID {os.getpid()}','status':'complete','usage':{'input':offset+10*turn,'output':offset//2+5*turn}})
   if goal:
    event('session.control.update',{'control':{'goal':goal}})
@@ -100,6 +102,7 @@ def main():
     assert not pool.release_idle(key)
     execution.requests.answer(pending['id'],{'choice':['once']});worker.join(10)
     assert not worker.is_alive() and 'error' not in result,result
+    assert any(v.get('subagents') and v['subagents'][-1].get('model')=='native-worker' and v['subagents'][-1].get('result')=='Verified result' for v in updates)
     assert result['native_id']=='stored' and result['reply'].startswith(f'Turn {1 if turn>=3 else turn}, PID ')
     assert result['usage']=={'input_tokens':10,'output_tokens':5},('Cumulative native usage was counted twice',result)
     if turn==2:assert pid==execution.process.pid

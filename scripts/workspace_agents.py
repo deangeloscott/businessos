@@ -23,7 +23,7 @@ def base_command(command):
 
 
 class Metadata:
-    def __init__(self, command, kind, cwd, env, model='', native_id='', fork_from='', execution=None, on_update=None):
+    def __init__(self, command, kind, cwd, env, model='', native_id='', fork_from='', execution=None, on_update=None, profile=None):
         args = ['--mode', 'rpc', '--no-session'] if kind in {'pi', 'omp'} else ['-p', '--input-format', 'stream-json', '--output-format', 'stream-json', '--verbose', '--no-session-persistence']
         if kind in {'hermes','antigravity'}:
             args = ['acp']
@@ -36,6 +36,7 @@ class Metadata:
         if model:
             args += ['--model', model]
         if kind=='omp':args+=['--cwd',str(cwd)]
+        if kind=='hermes' and profile:args=['--profile',profile,*args]
         self.kind, self.number, self.events = kind, 0, queue.Queue()
         self.on_update=on_update
         self.process = (execution.popen if execution else subprocess.Popen)([*base_command(command), *args], cwd=cwd, env=env, stdin=subprocess.PIPE,
@@ -89,8 +90,8 @@ class Metadata:
             self.process.wait(timeout=5)
 
 
-def options(command, kind, cwd, env):
-    if kind in {'hermes','antigravity','acp'}:return acp_options(command,kind,cwd,env)
+def options(command, kind, cwd, env, profile=None):
+    if kind in {'hermes','antigravity','acp'}:return acp_options(command,kind,cwd,env,**({'profile':profile} if profile else {}))
     host = Metadata(command, kind, cwd, env)
     try:
         if kind == 'claude':
@@ -111,9 +112,9 @@ def options(command, kind, cwd, env):
         host.close()
 
 
-def efforts(command, kind, cwd, env, model):
+def efforts(command, kind, cwd, env, model, profile=None):
     if kind in {'hermes','antigravity','acp'}:
-        host=Metadata(command,kind,cwd,env)
+        host=Metadata(command,kind,cwd,env,**({'profile':profile} if profile else {}))
         try:
             host.call('initialize',protocolVersion=1,clientCapabilities={},clientInfo={'name':'aura-workspace','version':'1'})
             state=host.call('session/new',cwd=str(cwd),mcpServers=[])
@@ -181,8 +182,8 @@ def hermes_options(command, cwd, env):
     return acp_options(command,'hermes',cwd,env)
 
 
-def acp_options(command,kind,cwd,env):
-    host = Metadata(command,kind,cwd,env)
+def acp_options(command,kind,cwd,env,profile=None):
+    host = Metadata(command,kind,cwd,env,**({'profile':profile} if profile else {}))
     try:
         host.call('initialize', protocolVersion=1, clientCapabilities={}, clientInfo={'name':'aura-workspace','version':'1'})
         state = host.call('session/new', cwd=str(cwd), mcpServers=[])
@@ -316,9 +317,9 @@ def history(command, kind, cwd, env, native_id, source_file=''):
     from workspace_recovery import native_observation
     observation=native_observation(messages,kind)
     for message in messages:
-        if kind in {'pi','omp'} and message.get('role')=='toolResult' and message.get('toolName') in {'task','subagent'}:
+        if kind in {'pi','omp'} and message.get('role')=='toolResult' and (message.get('toolName') in {'task','subagent'} or kind=='omp' and (message.get('details') or {}).get('jobs')):
             ident=message.get('toolCallId')
-            delegation.put(ident,name='Delegated work')
+            if message.get('toolName') in {'task','subagent'}:delegation.put(ident,name='Delegated work')
             delegation.observe(kind,{'type':'tool_execution_end','toolCallId':ident,'result':message,'isError':message.get('isError')},workspace_usage.timestamp(message.get('timestamp')))
         if message.get('role') not in {'user','assistant'}:continue
         candidate=workspace_chats.brief(message_text(message.get('content',''))) if message['role']=='assistant' else None
@@ -447,6 +448,7 @@ def _run(command, kind, cwd, env, prompt, native_id, model, effort, update, exec
         if effort:argv += ['--reasoning',effort]
     else:
         argv += ['--input-format','stream-json','--output-format','stream-json','--model',model]
+        if kind=='antigravity' and getattr(execution,'native_agent',''):argv+=['--agent',execution.native_agent]
         if native_id:argv += ['--conversation',native_id]
         if effort:argv += ['--effort',effort]
         prompt=json.dumps({'event':'user','message':{'content':prompt}})+'\n'

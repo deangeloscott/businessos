@@ -67,6 +67,17 @@ def main():
             native_user=specialists.save(kind,root,native_env,{'scope':'user','name':'Jeff','description':'Personal agent','instructions':'Personal'})
             inventory=specialists.inventory(kind,root,native_env)
             assert any(r['scope']=='user' and r['shadowed'] for r in inventory['items'])
+        # Native reported roles stay display-only; the harness owns their definitions.
+        roster=specialists.reported_agents('# Available Agents\n- `scout` (READ-ONLY): Find evidence.\n- `reviewer`: Review changes.\n# Examples\n- `ignore`: example')
+        assert roster=={'scout':'Find evidence.','reviewer':'Review changes.'}
+        # Named routes retain native fields that Aura does not edit, including private credentials.
+        native_routes={'backend':'model_map','custom':True,'backends':{'model_map':{'default':'research','extra':7,'options':[{'name':'research','model':'old','provider':'native','api_key':'private','service_tier':'priority'}]}}}
+        edited=delegation_settings.route_changes(native_routes,{'mode':'model_map','models':[{'name':'research','model':'new','provider':'native','description':'Find evidence.'}],'model_default':'research'})
+        route=edited['backends']['model_map']['options'][0]
+        assert route['api_key']=='private' and route['service_tier']=='priority' and edited['custom'] and edited['backends']['model_map']['extra']==7
+        assert native_routes['backends']['model_map']['options'][0]['model']=='old'
+        try:delegation_settings.route_changes(native_routes,{'mode':'model_map','models':[]});raise AssertionError('Empty native routes activated')
+        except ValueError:pass
         # TOML-looking instructions are data, not keys for the structured editor.
         source='name = "Jeff"\ndescription = "Research"\ndeveloper_instructions = """\nmodel = "keep this example"\n[features]\n"""\nmodel = "old"\n'
         changed=specialists.changed_source('codex',source,{'model':'new'})
@@ -75,11 +86,39 @@ def main():
         reported=delegation_settings.reported([{'id':'workers','name':'Subagent model','options':[{'value':'small','name':'Small'}],'currentValue':'small'},
                                              {'id':'cache','name':'Cache','options':[{'value':'on'}],'currentValue':'on'}])
         assert len(reported['fields'])==1 and reported['fields'][0]['id']=='workers'
+        # A Hermes link selects the native profile without another gateway on every message.
+        native_profile={'id':'profile','name':'Research','app':'hermes','native_agent':{'app':'hermes','scope':'profile','file':'research'}}
+        assistants.validate({bid:[native_profile]})
+        with patch('workspace_specialists.read',side_effect=AssertionError('Unexpected metadata process')):
+            linked_profile=assistants.resolved(native_profile,'hermes',root,native_env,native_only=True)
+            assert linked_profile['native_primary'] and linked_profile['native_name']=='research' and linked_profile['instructions']==''
+        # Profile saves reuse one native client, preserve native defaults, and verify readback.
+        import workspace_hermes as hermes
+        native_profile_state={'name':'research','description':'Research','soul':'Read evidence.','model':{'provider':'native','default':'worker'},'skills':[],
+                              'toolsets':[{'name':'files','enabled':True}],'toolsets_pinned':False,'mcp_servers':[]}
+        native_calls=[]
+        def profile_call(method,**params):
+            native_calls.append((method,params))
+            if method=='profiles.create':
+                assert params['mirror_credentials'] is False and params['no_alias'] and params['no_skills'] is False
+                native_profile_state.update(soul=params['soul'],description=params['description']);return {'ok':True}
+            if method=='profiles.describe':return json.loads(json.dumps(native_profile_state))
+            if method=='profiles.configure':
+                native_profile_state['soul']=params.get('soul',native_profile_state['soul'])
+                if params.get('enabled_toolsets')==[]:native_profile_state['toolsets_pinned']=False
+                return {'ok':True}
+            raise AssertionError(method)
+        saved_profile=hermes._save_profile(profile_call,{'name':'research','description':'Research','instructions':'Native instructions','model':''})
+        saved_profile=hermes._save_profile(profile_call,{'file':'research','revision':saved_profile['revision'],'instructions':'Changed instructions','enabled_toolsets':[]})
+        assert saved_profile['instructions']=='Changed instructions' and saved_profile['model']=='native:worker'
+        try:hermes._save_profile(profile_call,{'file':'research','revision':'stale','instructions':'Wrong'});raise AssertionError('Stale profile overwrote native instructions')
+        except ValueError:pass
         # Hermes treats string settings literally; JSON quoting would change the model ID.
         hermes_values={'model':'','provider':''}
         def hermes_config(command,args,cwd,env):
             if args[:1]==['--profile']:
                 assert args[1]=='research';args=args[2:]
+            if args[:2]==['plugins','list']:return '[]'
             if args[:2]==['config','get']:return json.dumps(hermes_values)
             assert args[:2]==['config','set']
             hermes_values[args[2].split('.')[-1]]=args[3]
@@ -256,6 +295,11 @@ def main():
         assert tracker.items['background']['status']=='working'
         tracker.observe('claude',{'type':'system','subtype':'task_notification','task_id':'native-task','status':'completed','summary':'Done'})
         assert len(tracker.items)==1 and tracker.items['background']['status']=='complete'
+        # OMP's native background task and wait result refer to the same worker.
+        tracker=Tracker(None)
+        tracker.observe('omp',{'type':'tool_execution_end','toolCallId':'spawn','result':{'details':{'progress':[{'index':0,'id':'job','agent':'scout','status':'pending','resolvedModelIdentity':'native-worker'}]}}})
+        tracker.observe('omp',{'type':'tool_execution_end','toolCallId':'wait','result':{'details':{'jobs':[{'id':'job','status':'completed','resultText':'Evidence found','resolvedModelIdentity':'native-worker'}]}}})
+        assert tracker.items['spawn']['status']=='complete' and tracker.items['spawn:0']['model']=='native-worker' and tracker.items['spawn:0']['result']=='Evidence found'
         # Extension progress remains working until the native tool reports completion.
         tracker=Tracker(None)
         tracker.observe('claude',{'type':'assistant','message':{'content':[{'type':'tool_use','id':'model-proof','name':'Agent','input':{'model':'requested-alias'}}]}})

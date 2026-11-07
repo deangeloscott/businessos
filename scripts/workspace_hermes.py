@@ -7,6 +7,7 @@ import shlex
 from pathlib import Path
 import subprocess
 from functools import lru_cache
+from contextlib import contextmanager
 
 
 @lru_cache(maxsize=16)
@@ -45,6 +46,81 @@ def session_options(options):
     if {'session_id','cwd','cwd_explicit','model','provider','reasoning_effort','omit_messages','lazy'}&values.keys():
         raise ValueError('Set the chat, folder, model and effort through their Aura controls. Keep other Hermes session options here.')
     return dict(values)
+
+
+@contextmanager
+def profile_client(command,options,cwd,env):
+    """Use the installed gateway's profile APIs without starting a model turn."""
+    from workspace_agents import Metadata
+    launch=connection(command,options)
+    if not launch:raise ValueError('This Hermes connection does not expose native profile management. Update Hermes or use its own profile settings.')
+    argv,root=launch
+    if root:env={**env,'PYTHONPATH':os.pathsep.join([root,env.get('PYTHONPATH','')])}
+    host=Metadata(argv,'acp',cwd,env)
+    try:yield host.call
+    finally:host.close()
+
+
+def metadata(command,options,cwd,env,method,**params):
+    with profile_client(command,options,cwd,env) as call:return call(method,**params)
+
+
+def profiles(command,options,cwd,env):
+    return metadata(command,options,cwd,env,'profiles.list',include_sessions=False).get('profiles',[])
+
+
+def profile(command,options,cwd,env,name):
+    """Return the native editor snapshot, with no sign-ins or private histories."""
+    return profile_snapshot(metadata(command,options,cwd,env,'profiles.describe',name=name),name)
+
+
+def profile_snapshot(row,name):
+    model=row.get('model') or {};provider=model.get('provider','');model=model.get('default','')
+    return {'app':'hermes','scope':'profile','file':name,'name':name,'description':row.get('description',''),
+        'instructions':row.get('soul',''),'model':provider+':'+model if provider and model else model,'effort':'',
+        'settings':row,'primary':True,'revision':hashlib.sha256(json.dumps(row,sort_keys=True).encode()).hexdigest()}
+
+
+def save_profile(command,options,cwd,env,data):
+    with profile_client(command,options,cwd,env) as call:return _save_profile(call,data)
+
+
+def _save_profile(call,data):
+    name=data.get('file') or data.get('name','')
+    if not isinstance(name,str) or not re.fullmatch(r'[a-z0-9][a-z0-9_-]{0,63}',name):raise ValueError('Use a Hermes profile name with lowercase letters, numbers, hyphens, or underscores.')
+    fields={k:data[k] for k in ('name','description','instructions','model') if k in data}
+    if any(not isinstance(v,str) or len(v)>20000 for v in fields.values()):raise ValueError('Enter valid profile instructions and preferences.')
+    if not data.get('file'):
+        call('profiles.create',name=name,no_alias=True,mirror_credentials=False,
+                 no_skills=data.get('include_skills') is False,soul=data.get('instructions',''),description=data.get('description',''),timeout=120)
+    current=profile_snapshot(call('profiles.describe',name=name),name)
+    if data.get('file') and data.get('revision')!=current['revision']:raise ValueError('This Hermes profile changed. Reopen it before saving.')
+    changes={native:data[key] for key,native in (('description','description'),('instructions','soul')) if key in data and data[key]!=current[key]}
+    if 'model' in data and data['model']!=current['model']:
+        if data['model']:
+            catalog=call('model.options',profile=name,explicit_only=True)
+            changes.update(model_route(catalog,data['model']))
+        elif data.get('file'):raise ValueError('Choose a model for this Hermes profile, or keep its current model.')
+    for key in ('disabled_skills','enabled_toolsets','enabled_mcp_servers'):
+        if key in data:
+            if not isinstance(data[key],list) or any(not isinstance(v,str) for v in data[key]):raise ValueError('Choose valid native profile capabilities.')
+            available=current['settings'].get({'disabled_skills':'skills','enabled_toolsets':'toolsets','enabled_mcp_servers':'mcp_servers'}[key],[])
+            if set(data[key])-{r['name'] for r in available}:raise ValueError('The native capabilities changed. Reopen this profile.')
+            changes[key]=data[key]
+    if changes:
+        result=call('profiles.configure',name=name,**changes)
+        if not result.get('ok') or result.get('confirm_required'):raise ValueError(result.get('confirm_message') or 'Hermes did not apply every profile change. Reopen its settings to check.')
+    saved=profile_snapshot(call('profiles.describe',name=name),name)
+    if any(saved[key]!=data[key] for key in ('description','instructions') if key in data):raise ValueError('Hermes did not confirm these instructions. Reopen the profile to check.')
+    if any(saved['settings'].get('model',{}).get('default' if key=='model' else key)!=changes[key] for key in ('model','provider') if key in changes):raise ValueError('Hermes did not confirm the selected model. Reopen the profile to check.')
+    for key,collection in (('disabled_skills','skills'),('enabled_toolsets','toolsets'),('enabled_mcp_servers','mcp_servers')):
+        if key in changes:
+            if key=='enabled_toolsets' and not changes[key]:
+                if saved['settings'].get('toolsets_pinned'):raise ValueError('Hermes did not restore its default tools. Reopen the profile to check.')
+                continue
+            actual={r['name'] for r in saved['settings'].get(collection,[]) if bool(r.get('enabled'))!=(key=='disabled_skills')}
+            if actual!=set(changes[key]):raise ValueError('Hermes did not confirm every capability change. Reopen the profile to check.')
+    return saved
 
 
 def tokens(value):
@@ -100,6 +176,8 @@ def run(command,cwd,env,prompt,native_id,model,effort,update,execution):
     from workspace_interactions import question,answers_for
     from workspace_execution import Stopped
     from _process_errors import ErrorTail
+    from workspace_delegation import Tracker
+    delegation=Tracker(lambda **values:update(**values))
     launch=connection(command,execution.native_options)
     if not launch:raise ValueError('This Hermes installation does not expose its native gateway. Update Hermes or configure its gateway command.')
     argv,root=launch
@@ -172,6 +250,8 @@ def run(command,cwd,env,prompt,native_id,model,effort,update,execution):
             if method!='event':return
             if params.get('session_id') not in {None,runtime}:return
             typ=params.get('type');p=params.get('payload') or {}
+            if typ.startswith('subagent.'):
+                delegation.observe('hermes',{'type':typ,'payload':p})
             if typ=='message.start':final='';update(reply='')
             elif typ=='message.delta':final+=p.get('text','');update(reply=final)
             elif typ=='message.complete':

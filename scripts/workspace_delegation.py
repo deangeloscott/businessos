@@ -56,6 +56,27 @@ class Tracker:
         if self.items and self.update:
             self.update(subagents=copy.deepcopy(list(self.items.values())))
 
+    def omp_jobs(self,ident,details):
+        """Observe native async task results and wait snapshots without polling."""
+        statuses={'pending':'pending','running':'working','completed':'complete','failed':'error','cancelled':'stopped','aborted':'stopped'}
+        progress=details.get('progress') or []
+        if progress and ident:
+            self.put(ident,name='Delegated work',status='working')
+            for index,child in enumerate(progress):
+                child_id=ident+':'+str(child.get('index',index))
+                if child.get('id'):self.aliases[child['id']]=child_id
+                if self.items.get(child_id,{}).get('status') in {'complete','error','stopped'} and child.get('status') in {'pending','running'}:continue
+                self.put(child_id,parent_id=ident,name=child.get('agent'),task=child.get('task'),
+                         model=child.get('resolvedModelIdentity'),status=statuses.get(child.get('status'),'working'))
+        for job in details.get('jobs') or []:
+            child_id=self.aliases.get(job.get('id'))
+            if not child_id:continue
+            self.put(child_id,status=statuses.get(job.get('status'),'unconfirmed'),model=job.get('resolvedModelIdentity'),result=job.get('resultText'))
+        for parent in {r.get('parent_id') for r in self.items.values() if r.get('parent_id')}:
+            children=[r for r in self.items.values() if r.get('parent_id')==parent]
+            if children and all(r['status'] not in {'working','pending'} for r in children):
+                self.put(parent,status='error' if any(r['status']=='error' for r in children) else 'complete')
+
     def observe(self, kind, event, at=None):
         """Return True for child-only frames so they cannot overwrite the parent reply/ID."""
         try:
@@ -72,6 +93,11 @@ class Tracker:
     def _observe(self, kind, event):
         event_type = event.get('type', event.get('event', ''))
         item = event.get('item') or {}
+        if kind=='codex' and item.get('type')=='subAgentActivity':
+            status={'started':'working','completed':'complete','errored':'error','interrupted':'stopped'}.get(item.get('kind'))
+            path=item.get('agentPath') or ''
+            self.put(item.get('agentThreadId'),name=path.rstrip('/').rsplit('/',1)[-1] or None,model=item.get('model'),status=status)
+            return True
         if kind=='codex' and event_type in {'collab_agent_spawn_end','collab_waiting_end','collab_close_end'}:
             def state(value):
                 name=next(iter(value),'unconfirmed') if isinstance(value,dict) else value
@@ -134,6 +160,13 @@ class Tracker:
             tool = event.get('toolName') or event.get('name') or event.get('tool')
             ident = event.get('toolCallId') or event.get('tool_call_id') or event.get('tool_use_id') or event.get('id')
             args = event.get('args') or event.get('input') or {}
+            if kind=='hermes' and event_type in {'subagent.spawn_requested','subagent.start','subagent.progress','subagent.tool','subagent.complete'}:
+                p=event.get('payload') or {}
+                ident=p.get('subagent_id') or p.get('child_session_id') or (str(p['delegation_id'])+':'+str(p.get('task_index',0)) if p.get('delegation_id') else None)
+                status={'completed':'complete','failed':'error','error':'error','timeout':'error','interrupted':'stopped','running':'working'}.get(p.get('status'),'unconfirmed') if event_type=='subagent.complete' else 'pending' if event_type=='subagent.spawn_requested' else 'working'
+                self.put(ident,parent_id=p.get('parent_id'),task=p.get('goal'),model=p.get('model'),status=status,
+                         activity=p.get('tool_name'),result=p.get('summary') if event_type=='subagent.complete' else None)
+                return True
             if kind=='hermes' and tool=='delegate_task':
                 if event_type=='tool_use':
                     tasks=args.get('tasks') or ([{'goal':args['goal']}] if args.get('goal') else [])
@@ -161,8 +194,12 @@ class Tracker:
             result = event.get('result') or event.get('partialResult') or {}
             details = result.get('details') or {} if isinstance(result, dict) else {}
             children = details.get('results') or [] if isinstance(details, dict) else []
+            if kind=='omp' and isinstance(details,dict) and (details.get('progress') or details.get('jobs')):
+                self.omp_jobs(ident,details)
+                return False
             if ident in self.items:
                 complete = event_type in {'tool_execution_end', 'tool_end', 'tool_result'}
+                if not complete and self.items[ident]['status'] in {'complete','error','stopped'}:return False
                 content = result.get('content', []) if isinstance(result, dict) else []
                 text = '\n'.join(b.get('text', '') for b in content if isinstance(b, dict) and b.get('type') == 'text')
                 self.put(ident, status=('error' if event.get('isError') else 'complete') if complete else 'working',

@@ -23,6 +23,7 @@ def run(command,kind,cwd,env,prompt,native_id,model,effort,update,execution):
     from _process_errors import ErrorTail
     session=execution.native_session;native=native_id;final='';usage={};ready=False;capabilities={};config=[];state={};pending=[];permissions={};applied=set()
     argv=[*base_command(command),'acp'] if kind!='acp' else list(command)
+    if kind=='antigravity' and getattr(execution,'native_agent',''):argv+=['--agent',execution.native_agent]
     tools=None
     if execution.native_options.get('client_tools'):
         from workspace_acp_tools import ClientTools

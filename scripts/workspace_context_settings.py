@@ -255,12 +255,13 @@ def main(section='context'):
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--app',required=True);parser.add_argument('--business-id',required=True)
     parser.add_argument('--chat');parser.add_argument('--url',default='http://127.0.0.1:4187')
+    parser.add_argument('--profile',help='Native Hermes profile instead of an active chat')
     parser.add_argument('--set',help='JSON object of native setting keys and values; null removes a setting')
     parser.add_argument('--revision',help='Revision returned when reading settings')
     args=parser.parse_args()
     from workspace_goals import live_change
     from urllib.parse import urlencode
-    data={'kind':args.app,**({'chat_id':args.chat} if args.chat else {})}
+    data={'kind':args.app,**({'chat_id':args.chat} if args.chat else {}),**({'profile':args.profile} if args.profile else {})}
     endpoint='/api/delegation-settings' if section=='delegation' else '/api/context-settings'
     result=live_change(args.url,args.business_id,{**data,'changes':json.loads(args.set),'revision':args.revision},endpoint) if args.set else live_change(args.url,args.business_id,None,endpoint+'?'+urlencode({'business':args.business_id,**data}))
     print(json.dumps(result,ensure_ascii=False))

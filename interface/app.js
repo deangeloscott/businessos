@@ -2684,7 +2684,7 @@ attempt(restoreInitialRoute);
 // Chat-specific choices never rewrite another chat or the saved app defaults.
 function composerConnection(){
   const c=state.chatMeta;
-  return c?{kind:c.agent,model:c.model||'',effort:c.effort||''}:state.newChatConnection||{kind:state.data?.connection.selected||'',model:state.data?.connection.model||'',effort:state.data?.connection.effort||''};
+  return c?{kind:c.agent,model:c.model||'',effort:c.effort||'',...(c.native_profile?{native_profile:c.native_profile}:{})}:state.newChatConnection||{kind:state.data?.connection.selected||'',model:state.data?.connection.model||'',effort:state.data?.connection.effort||''};
 }
 function renderComposerPermissions(){
   if(!state.data)return;const kind=composerConnection().kind,override=state.chatMeta?.permission_mode||(!state.chatMeta&&state.newChatPermission?.kind===kind?state.newChatPermission.mode:''),mode=override||state.data.harness_permissions?.[kind]||'native';
@@ -2756,7 +2756,8 @@ async function loadChatModelOptions(refresh=false){
   if(!nativeConnection(kind)){$('#chat-model-options').innerHTML='<p class="shell-help">This connection uses its own model settings.</p>'+(state.chatMeta&&!draft.target?'<button class="secondary" data-close="chat-model-dialog">Done</button>':`<button class="primary" id="save-chat-model">${draft.target?'Use model':'Use for this chat'}</button>`);return;}
   try{
     await pickerSave.catch(()=>{});
-    const catalog=await (refresh?api('/api/model-catalog?kind='+encodeURIComponent(kind)+'&refresh=1'):cachedApi('/api/model-catalog?kind='+encodeURIComponent(kind)));
+    const catalogUrl='/api/model-catalog?'+new URLSearchParams({kind,...(kind==='hermes'&&draft.native_profile?{profile:draft.native_profile}:{})});
+    const catalog=await (refresh?api(catalogUrl+'&refresh=1'):cachedApi(catalogUrl));
     const models=catalog.models.flatMap(m=>m.routes.filter(r=>r.agent===kind).map(r=>({id:r.model,name:m.name,provider:m.provider,favorite_id:m.id,efforts:r.efforts,default_effort:r.default_effort,discover_efforts:r.discover_efforts,current:r.current})));
     const options={models,model:models.find(m=>m.current)?.id||''};
     if(request!==state.chatModelRequest||kind!==draft.kind||ticket!==chatModelTicket||draft!==state.chatModelDraft||!$('#chat-model-dialog').open||draft.scope!==chatScope()||(draft.target?.current&&!draft.target.current()))return;
@@ -2783,7 +2784,7 @@ function paintChatModels(){
 async function loadChatModelEfforts(){
   const draft=state.chatModelDraft,model=draft.model,kind=draft.kind,request=state.chatEffortRequest=(state.chatEffortRequest||0)+1;$('#save-chat-model').disabled=true;
   if(draft.target?.modelOnly){$('#chat-model-effort').innerHTML='';draft.effort='';$('#save-chat-model').disabled=!model;return;}
-  try{const known=state.chatModelOptions.models.find(m=>m.id===model);const r=known&&!known.discover_efforts?known:await api('/api/agent-efforts?kind='+encodeURIComponent(draft.kind)+'&model='+encodeURIComponent(model));if(request!==state.chatEffortRequest||draft!==state.chatModelDraft||kind!==draft.kind||model!==draft.model||draft.scope!==chatScope()||!$('#chat-model-dialog').open||!$('#chat-model-effort'))return;
+  try{const known=state.chatModelOptions.models.find(m=>m.id===model);const r=known&&!known.discover_efforts?known:await api('/api/agent-efforts?kind='+encodeURIComponent(draft.kind)+'&model='+encodeURIComponent(model)+(draft.kind==='hermes'&&draft.native_profile?'&profile='+encodeURIComponent(draft.native_profile):''));if(request!==state.chatEffortRequest||draft!==state.chatModelDraft||kind!==draft.kind||model!==draft.model||draft.scope!==chatScope()||!$('#chat-model-dialog').open||!$('#chat-model-effort'))return;
     if(known)Object.assign(known,{efforts:r.efforts||[],default_effort:r.default_effort||'',discover_efforts:false});
     const efforts=r.efforts||[];draft.effort=efforts.includes(draft.effort)?draft.effort:r.default_effort||efforts[0]||'';
     $('#chat-model-effort').innerHTML=efforts.length?`<label>Effort<select id="chat-effort-choice">${efforts.map(e=>`<option ${e===draft.effort?'selected':''} value="${esc(e)}">${esc(human(e))}</option>`).join('')}</select></label>`:'';$('#save-chat-model').disabled=!model;
@@ -2812,7 +2813,7 @@ document.addEventListener('click',event=>attempt(async()=>{
 document.addEventListener('input',event=>{if(event.target.id==='chat-model-search'){state.chatModelLimit=60;paintChatModels();}});
 document.addEventListener('change',event=>{
   if(event.target.id==='profile-picture-input')attempt(()=>saveProfilePicture(event.target.files[0]));
-  if(event.target.id==='chat-model-app')attempt(async()=>{state.chatModelDraft.kind=event.target.value;state.chatModelDraft.model='';state.chatModelDraft.effort='';$('#chat-model-options').innerHTML='<p>Loading models…</p>';await loadChatModelOptions();});
+  if(event.target.id==='chat-model-app')attempt(async()=>{state.chatModelDraft.kind=event.target.value;delete state.chatModelDraft.native_profile;state.chatModelDraft.model='';state.chatModelDraft.effort='';$('#chat-model-options').innerHTML='<p>Loading models…</p>';await loadChatModelOptions();});
 });
 document.addEventListener('submit',event=>{if(event.target.id==='account-form'){event.preventDefault();attempt(async()=>{const p=await api('/api/profile',{display_name:new FormData(event.target).get('display_name')});state.data.profile=p;applyProfile(p);$('#detail').close();});}});
 // Dismiss floating surfaces only after a complete outside click, never a drag.
