@@ -6,7 +6,7 @@ window.auraInsight=(()=>{
   function view(){return owner?'full':mode||state.data?.profile?.activity_view||'highlights';}
   function paint(){
     const host=$('#native-activity');if(!host)return;
-    const fallback=state.liveJob?.chat_id===state.chatMeta?.id?(state.liveJob.activity||[]).map((r,i)=>({id:'progress-'+i,kind:'commentary',title:r.text,owner:'',text:'',at:r.at})):[];
+    const fallback=state.liveJob&&state.liveJob.chat_id===state.chatMeta?.id?(state.liveJob.activity||[]).map((r,i)=>({id:'progress-'+i,kind:'commentary',title:r.text,owner:'',text:'',at:r.at})):[];
     const v=view(),rows=(data?.items?.length?data.items:fallback).filter(r=>(!owner||r.owner===owner)&&(v==='full'||r.kind==='plan'||r.kind==='file'||r.kind==='delegation'||['error','failed','errored'].includes(r.status)||r.kind==='commentary'));
     const children=state.liveJob?.chat_id===state.chatMeta?.id?state.liveJob?.subagents:state.chatMeta?.subagents;
     const names=new Map((children||[]).flatMap(c=>[[c.id,c.name],...(c.native_id?[[c.native_id,c.name]]:[])]));

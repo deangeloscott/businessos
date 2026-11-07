@@ -134,7 +134,8 @@ context.state.data.harness_permissions={};context.state.chatMeta=originalPermiss
   context.queueMicrotask=()=>{};context.human=value=>String(value);context.state.busy=false;
   const traceReplies=[];context.api=path=>path.startsWith('/api/profile')?Promise.resolve({activity_view:'off'}):new Promise(resolve=>traceReplies.push(resolve));
   vm.runInContext(fs.readFileSync(require('node:path').join(require('node:path').dirname(process.argv[2]),'workspace-insight.js'),'utf8'),context);
-  const insight=context.window.auraInsight;context.state.chatMeta={id:'one',trace_id:'request-one'};insight.render();
+  const insight=context.window.auraInsight;context.state.chatMeta=null;context.state.liveJob=undefined;insight.render();
+  context.state.chatMeta={id:'one',trace_id:'request-one'};insight.render();
   context.state.chatMeta={id:'two',trace_id:'request-two'};insight.render();
   traceReplies[1]({revision:1,items:[{id:'1',kind:'commentary',title:'Current work',text:'<safe>',has_detail:true,owner:''}]});await new Promise(resolve=>setImmediate(resolve));
   traceReplies[0]({revision:1,items:[{id:'1',kind:'commentary',title:'Stale private work',text:'Wrong chat',owner:''}]});await new Promise(resolve=>setImmediate(resolve));
