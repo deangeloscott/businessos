@@ -7,7 +7,7 @@ import json
 import re
 import time
 
-from _common import workspace_root,workspace_scope,resolve_business
+from _common import workspace_root,workspace_scope,resolve_business,read_json_input
 
 
 def metadata(goal):
@@ -362,7 +362,7 @@ def live_change(url,bid,payload,route='/api/goals'):
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('action',choices=['list','show','save','check','link-chat','link-asset','continuation','delete','restore','native-start','pause','resume','complete'])
-    parser.add_argument('--workspace',type=Path,default=workspace_root());parser.add_argument('--business-id',required=True);parser.add_argument('--id');parser.add_argument('--basis');parser.add_argument('--input',type=Path);parser.add_argument('--json',action='store_true')
+    parser.add_argument('--workspace',type=Path,default=workspace_root());parser.add_argument('--business-id',required=True);parser.add_argument('--id');parser.add_argument('--basis');parser.add_argument('--input');parser.add_argument('--json',action='store_true')
     parser.add_argument('--token-budget',type=int);parser.add_argument('--chat');parser.add_argument('--asset');parser.add_argument('--mode',choices=['manual','native'],default='manual');parser.add_argument('--until',type=float)
     parser.add_argument('--scope',choices=['workspace','chat','all'],default='workspace');parser.add_argument('--show',choices=['active','current','completed','deleted','all'],default='active')
     parser.add_argument('--url',default='http://127.0.0.1:4187',help='Running local Aura address for chat links, deletion/recovery and continuation choices')
@@ -377,7 +377,7 @@ def main():
         elif args.action in {'link-chat','link-asset','continuation'}:
             result=link_asset(args.business_id,args.asset,args.id) if args.action=='link-asset' else live_change(args.url,args.business_id,
                 {'action':'link_chat','chat_id':args.chat,'goal_id':args.id} if args.action=='link-chat' else {'action':'continuation','chat_id':args.chat,'mode':args.mode,'until':args.until})
-        else:result=save(args.business_id,json.loads(args.input.read_text(encoding='utf-8'))) if args.action=='save' else find(args.business_id,args.id,include_deleted=args.action=='check' or args.show=='deleted') if args.action in {'show','check'} else {'items':select_goals(goals(args.business_id,include_deleted=True),args.show,args.scope,args.chat)}
+        else:result=save(args.business_id,read_json_input(args.input)) if args.action=='save' else find(args.business_id,args.id,include_deleted=args.action=='check' or args.show=='deleted') if args.action in {'show','check'} else {'items':select_goals(goals(args.business_id,include_deleted=True),args.show,args.scope,args.chat)}
         if args.action=='check':
             reason=review_reason(args.business_id,args.id,args.basis)
             result={'eligible':not reason,'goal':result,'reason':reason}

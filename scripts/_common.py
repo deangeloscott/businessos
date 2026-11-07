@@ -18,6 +18,18 @@ _TRANSACTION_GUARD=threading.Lock()
 _TRANSACTION_LOCAL=threading.local()
 
 
+def read_json_input(value):
+    """Read a CLI JSON argument: a file path, `-` for stdin, or inline JSON.
+
+    Tolerates a UTF-8 byte-order mark, which Windows PowerShell 5.1 writes by default.
+    """
+    text=str(value).strip()
+    if text=='-':raw=sys.stdin.buffer.read().decode('utf-8-sig')
+    elif text[:1] in '{[' and not Path(text).is_file():raw=text
+    else:raw=Path(text).read_text(encoding='utf-8-sig')
+    return json.loads(raw)
+
+
 def path_link(path):
     """Recognize symlinks and Windows junctions, including older Python hosts."""
     try:info=Path(path).lstat()
@@ -402,6 +414,7 @@ def describe_object(obj,path):
     if obj.get('location_reference'):result['artifact_reference']=obj['location_reference']
     if obj.get('version'):result['version']=obj['version']
     if obj.get('business_role'):result['purpose']=obj['business_role']
+    elif isinstance(obj.get('description'),str) and obj['description'].strip():result['summary']=obj['description'].strip()[:240]
     return result
 
 def resolve_focus(index,focus,diagnostics=None):

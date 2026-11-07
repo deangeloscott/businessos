@@ -13,6 +13,19 @@ GUIDES = {
 }
 
 
+START, END = '<!-- AURA workspace attachment -->', '<!-- /AURA workspace attachment -->'
+
+
+def attachment_block(product, workspace):
+    """The one managed pointer: go straight to the shared guidance."""
+    product = Path(product)
+    return (START + f'\nFor organizational work, read `{product / "CONTEXT.md"}` once. AURA product folder: `{product}`.\n'
+            f'Organization workspace: `{workspace}`. Use AURA helpers with BUSINESSOS_WORKSPACE set to this folder. '
+            'Resolve the intended business; do not guess across businesses.\n'
+            'The user owns this workspace. Customize its optional visual interface in an organization-owned copy, '
+            f'using `{product / "docs/visual-workspace.md"}`.\n' + END)
+
+
 def attach(kind, product, workspace):
     product, workspace = Path(product).resolve(), Path(workspace).resolve()
     name = {'claude':'CLAUDE.md', 'pi':'AGENTS.md', 'omp':'AGENTS.md'}.get(kind)
@@ -33,9 +46,7 @@ def attach(kind, product, workspace):
     start, end = '<!-- AURA workspace attachment -->', '<!-- /AURA workspace attachment -->'
     if (start in current) != (end in current):
         raise ValueError('An unfinished AURA instruction was found. Ask your AI to check it; existing instructions were kept.')
-    block = (start + f'\nFor organizational work, read `{product / "AGENTS.md"}` and '
-             f'`{product / "skills/viraltrac-aura/SKILL.md"}`.\nOrganization workspace: `{workspace}`. '
-             'Use AURA helpers with BUSINESSOS_WORKSPACE set to this folder. Resolve the intended business; do not guess across businesses.\n' + end)
+    block = attachment_block(product, workspace)
     pattern = re.escape(start) + r'[\s\S]*?' + re.escape(end)
     updated = re.sub(pattern, lambda _:block, current) if start in current else current.rstrip() + '\n\n' + block + '\n'
     if updated != current:
@@ -55,9 +66,7 @@ def refresh(product, workspace):
             text = path.read_text(encoding='utf-8')
             start, end = '<!-- AURA workspace attachment -->', '<!-- /AURA workspace attachment -->'
             if start in text and end in text:
-                block = (start + f'\nFor organizational work, read `{Path(product) / "AGENTS.md"}` and '
-                         f'`{Path(product) / "skills/viraltrac-aura/SKILL.md"}`.\nOrganization workspace: `{workspace}`. '
-                         'Use AURA helpers with BUSINESSOS_WORKSPACE set to this folder. Resolve the intended business; do not guess across businesses.\n' + end)
+                block = attachment_block(product, workspace)
                 updated = re.sub(re.escape(start)+r'[\s\S]*?'+re.escape(end), lambda _:block, text)
                 if updated != text:
                     temporary = path.with_suffix(path.suffix + '.aura-tmp')

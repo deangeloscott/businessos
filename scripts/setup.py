@@ -72,7 +72,7 @@ def _resolve_or_initialize(organization=None,business_id=None):
     return None,False
 
 
-def setup(workspace=None,profile=None,organization=None,business_id=None,knowledge_enabled=True,write_link=True,run_doctor=True):
+def setup(workspace=None,profile=None,organization=None,business_id=None,knowledge_enabled=True,write_link=True,run_doctor=True,allow_state_switch=False):
     changes=[]
     if _ensure_generated():changes.append({'action':'generated_indexes_refreshed'})
     target=_target_path(workspace);current=workspace_root().resolve();target_profile=_profile_for(target,profile)
@@ -82,7 +82,7 @@ def setup(workspace=None,profile=None,organization=None,business_id=None,knowled
         try:needs_config=bool(profile and workspace_profile().get('profile')!=target_profile)
         except Exception:needs_config=bool(profile)
     if needs_config:
-        configured=configure(target,target_profile,knowledge_enabled,write_link,False,False)
+        configured=configure(target,target_profile,knowledge_enabled,write_link,False,allow_state_switch)
         changes.append({'action':'workspace_configured','workspace_root':configured['workspace_root'],'profile':configured['profile']})
     if workspace is not None and target!=workspace_root().resolve():
         # Ensure this setup invocation uses the selected target even when --no-link was requested.
@@ -129,9 +129,10 @@ def main():
     p.add_argument('--no-knowledge',action='store_true')
     p.add_argument('--no-link',action='store_true',help='Do not persist the local workspace pointer.')
     p.add_argument('--no-doctor',action='store_true',help='Prepare state without running the readiness proof.')
+    p.add_argument('--allow-state-switch',action='store_true',help='Select a different workspace even though the current one holds organizations it lacks. Data is not moved.')
     p.add_argument('--json',action='store_true')
     a=p.parse_args()
-    try:r=setup(a.workspace,a.profile,a.organization,a.business_id,not a.no_knowledge,not a.no_link,not a.no_doctor)
+    try:r=setup(a.workspace,a.profile,a.organization,a.business_id,not a.no_knowledge,not a.no_link,not a.no_doctor,a.allow_state_switch)
     except (ValueError,FileExistsError,OSError,json.JSONDecodeError,subprocess.CalledProcessError) as exc:raise SystemExit(str(exc))
     if a.json:print(json.dumps(r,indent=2,ensure_ascii=False))
     else:

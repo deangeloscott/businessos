@@ -15,7 +15,7 @@ import sys
 import tempfile
 from contextlib import nullcontext
 
-from _common import workspace_root
+from _common import workspace_root,read_json_input
 from remember import remember
 from workspace_sharing import destination_lock, unlinked, safe
 
@@ -212,7 +212,7 @@ def main():
         path=local_file(args.business_id,args.path)
         asset=next((r['data'] for r in records(args.business_id)[0] if r['type']=='Asset' and asset_path(args.business_id,r['data'].get('location_reference'))==path),None)
         writable=path.is_relative_to(workspace_root().resolve()/'attachments'/args.business_id) or path.is_relative_to(workspace_root().resolve()/'knowledge'/args.business_id)
-        result=inspect(path,writable,asset) if args.action=='show' else save(path,args.business_id,json.loads(Path(args.input).read_text(encoding='utf-8')),writable,asset)
+        result=inspect(path,writable,asset) if args.action=='show' else save(path,args.business_id,read_json_input(args.input),writable,asset)
     print(json.dumps(result,ensure_ascii=False))
 
 

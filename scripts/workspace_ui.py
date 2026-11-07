@@ -1885,7 +1885,7 @@ class Workspace:
                 prior.append(f"{row['role']}: {row['text'][:4000]}")
         return (f"Work for the explicitly selected AURA business ID: {bid}.\n"
                 f"AURA product: {PRODUCT_ROOT}\nOrganization workspace: {workspace_root()}\n"
-                f"Read {PRODUCT_ROOT / 'AGENTS.md'} and use the existing AURA helpers and workspace.\n"
+                f"Read {PRODUCT_ROOT / 'CONTEXT.md'} once unless its current contents are already loaded, and use the existing AURA helpers and workspace.\n"
                 f"For Python helpers, the running interpreter is {Path(sys.executable).as_posix()}. "
                 "Quote its full path for your shell; do not assume python3 is installed. "
                 "You can read workspace files directly with your normal tools. A simple conversation does not need helper calls.\n"

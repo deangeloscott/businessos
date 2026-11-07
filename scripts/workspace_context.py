@@ -6,7 +6,7 @@ import json
 import re
 import time
 
-from _common import workspace_root,workspace_scope,resolve_business,PRODUCT_ROOT
+from _common import workspace_root,workspace_scope,resolve_business,PRODUCT_ROOT,read_json_input
 
 KINDS={'file','record','goal','library','assistant','result','collection'}
 MAX_REFS=12
@@ -317,7 +317,7 @@ def reusable(app,bid,chat_id,index,expected=None):
 def main():
     parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('action',choices=['find','recall','result','resolve','message','handoff'])
     parser.add_argument('--workspace',type=Path,default=workspace_root());parser.add_argument('--business-id',required=True)
-    parser.add_argument('--search',default='');parser.add_argument('--kind',default='');parser.add_argument('--input',type=Path);parser.add_argument('--goal');parser.add_argument('--chat');parser.add_argument('--index',type=int,default=0);parser.add_argument('--json',action='store_true')
+    parser.add_argument('--search',default='');parser.add_argument('--kind',default='');parser.add_argument('--input');parser.add_argument('--goal');parser.add_argument('--chat');parser.add_argument('--index',type=int,default=0);parser.add_argument('--json',action='store_true')
     parser.add_argument('--project',default='');parser.add_argument('--assistant',default='');parser.add_argument('--exclude-chat',default='')
     parser.add_argument('--variant',default='',help='Exact variant from recall results');parser.add_argument('--request-id',default='')
     args=parser.parse_args()
@@ -334,7 +334,7 @@ def main():
         else:
             if not args.input:raise ValueError('Choose --chat CHAT_ID to retrieve a result, or --input FILE for context references. Use - to read references from standard input.')
             import sys
-            result=resolve(app,args.business_id,json.loads(sys.stdin.read() if str(args.input)=='-' else args.input.read_text(encoding='utf-8')),args.goal)
+            result=resolve(app,args.business_id,read_json_input(args.input),args.goal)
     print(json.dumps(result,ensure_ascii=False))
 
 

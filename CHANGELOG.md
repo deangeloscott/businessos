@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Make the everyday save cheaper for any AI: workspace and per-request guidance point straight at `CONTEXT.md`, which now carries a one-line `remember.py` example; JSON helpers accept a file, `-` for stdin, or inline JSON and tolerate the UTF-8 BOM Windows PowerShell writes. `Business` gains an optional `description` that retrieval shows inline. A Codex "remember this" request fell from 9 tool calls and ~296K tokens to 4 and ~135K.
+- `setup.py` accepts the `--allow-state-switch` flag its own workspace-switch message recommends.
 - Keep covered chat controls out of keyboard and screen-reader navigation on workspace pages, and send Skip to content to the visible page. Describe unclassified native failures without incorrectly claiming the app never connected.
 - Connect to Hermes’s native desktop/TUI gateway where available, with native commands, approvals, evaluator-owned goal continuation and confirmed completion. Keep ACP available for older installations and explicit ACP-only settings.
 - Preserve normalized native goal assignments and completion contracts without storing Aura’s context as the goal. Reject control through an older assignment when native criteria change.

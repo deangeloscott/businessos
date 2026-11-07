@@ -104,12 +104,8 @@ def attach(product, workspace):
     instructions = workspace / 'AGENTS.md'
     if instructions.is_symlink():
         raise ValueError('Workspace instructions are linked elsewhere. Ask your AI to attach AURA without replacing them.')
-    block = (f'<!-- AURA workspace attachment -->\nFor organizational work, read `{product / "AGENTS.md"}` '
-             f'and `{product / "skills/viraltrac-aura/SKILL.md"}`.\n'
-             f'Organization workspace: `{workspace}`. Use AURA helpers with BUSINESSOS_WORKSPACE set to this folder. '
-             'Resolve the intended business; do not guess across businesses.\n'
-             'The user owns this workspace. Customize its optional visual interface in an organization-owned copy, '
-             f'using `{product / "docs/visual-workspace.md"}`.\n<!-- /AURA workspace attachment -->')
+    from workspace_guidance import attachment_block
+    block = attachment_block(product, workspace)
     current = instructions.read_text(encoding='utf-8') if instructions.exists() else ''
     pattern = r'<!-- AURA workspace attachment -->[\s\S]*?<!-- /AURA workspace attachment -->'
     updated = re.sub(pattern, lambda _: block, current) if re.search(pattern, current) else current.rstrip()+'\n\n'+block+'\n'

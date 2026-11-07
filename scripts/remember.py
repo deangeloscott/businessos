@@ -208,9 +208,9 @@ def remember(business_id,payload):
 
 def main():
     ap=argparse.ArgumentParser(description='Remember durable organization-owned meaning without requiring a Run or AURA playbook.')
-    ap.add_argument('business_id');ap.add_argument('--input',required=True,help='JSON file containing a non-empty objects list and optional provenance object. New objects require object_type; updates can infer it from object_ref. key is optional unless @local references are needed.')
+    ap.add_argument('business_id');ap.add_argument('--input',required=True,help='JSON file, - for stdin, or inline JSON with a non-empty objects list and optional provenance object. New objects require object_type; updates can infer it from object_ref. key is optional unless @local references are needed.')
     a=ap.parse_args()
-    try:payload=json.loads(Path(a.input).read_text(encoding='utf-8'));result=remember(a.business_id,payload)
+    try:payload=read_json_input(a.input);result=remember(a.business_id,payload)
     except (ValueError,FileExistsError,json.JSONDecodeError,OSError) as exc:raise SystemExit(str(exc))
     print(json.dumps(result,indent=2,ensure_ascii=False))
 

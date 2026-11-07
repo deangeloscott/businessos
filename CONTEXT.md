@@ -42,7 +42,13 @@ Before saving anything, ask:
 
 If no, do not persist it merely because a schema/helper exists.
 
-`scripts/remember.py <business-id> --input <json>` is the ordinary create/update primitive. It does not require a Run, Playbook, or Workflow. Use `remove_fields` when an obsolete top-level semantic field should explicitly disappear. Use `scripts/forget.py` when an entire unreferenced canonical object no longer deserves durable memory.
+`scripts/remember.py <business-id> --input <json>` is the ordinary create/update primitive; `--input` takes a file, `-` for stdin, or inline JSON. It does not require a Run, Playbook, or Workflow. Update an existing record by `object_ref`; create one with `object_type` and its semantic fields from `core/schemas/` (AURA adds IDs, timestamps and validation):
+
+```json
+{"provenance":{"method":"ad_hoc"},"objects":[{"object_ref":"biz_<business-id>","content":{"description":"What the organization does, in the user's words."}}]}
+```
+
+Use `remove_fields` when an obsolete top-level semantic field should explicitly disappear. Use `scripts/forget.py` when an entire unreferenced canonical object no longer deserves durable memory.
 
 Useful real deliverables should remain in an appropriate durable file/repository/system and be remembered as an `Asset` with the identity/reference/provenance/status future work actually needs. Prefer `attachments/<business-id>/work/` in the selected workspace unless the user chooses another location. Use relative `location_reference` for workspace files; preserve explicit external references and attribution. Do not ingest every temporary file.
 
