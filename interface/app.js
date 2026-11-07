@@ -817,8 +817,8 @@ async function render() {
     view.innerHTML=`<div class="section-head business-title"><span>Business · <strong>${esc(rows('Business')[0]?.title)}</strong></span><button class="text-button" data-action="edit-business">Edit name</button></div><input class="search" id="record-search" type="search" aria-label="Search goals and saved information" placeholder="Find goals or saved information…" value="${esc(state.memoryQuery||'')}"><div id="full-memory"></div>`;
     renderMemory();
   } else if(state.view==='files') {
-    const result=await cachedApi('/api/files?business='+encodeURIComponent(state.business));if(!current())return; state.files=result.items;state.fileLocations=result.locations||[];state.missingAssets=result.missing_assets||[];fileLocation='';
-    view.innerHTML=`<div class="linked-locations">${state.fileLocations.map(l=>`<div class="linked-location"><button ${l.missing?'data-reconnect-location':'data-filelocation'}="${esc(l.id)}"><strong>${esc(l.name)}</strong><small>${l.missing?'Location missing · Reconnect':l.kind==='folder'?'Linked folder':'Linked file'}</small></button><button data-unlink-location="${esc(l.id)}" aria-label="Unlink ${esc(l.name)}">✕</button></div>`).join('')}</div>${state.missingAssets.length?`<details class="missing-files"><summary>${state.missingAssets.length} saved file${state.missingAssets.length===1?' has moved or is':'s have moved or are'} unavailable</summary>${state.missingAssets.map(f=>`<button class="row" data-reconnect-asset="${esc(f.ref)}">${esc(f.name)} · Reconnect →</button>`).join('')}</details>`:''}<div class="files-toolbar"><input class="search" id="file-search" type="search" aria-label="Search saved files" placeholder="Find a file…" value="${esc(state.fileQuery||'')}"><button type="button" class="secondary" data-add-location>＋ Add files or folder</button></div>${fileTypeFilters('full')}<button id="file-all-locations" class="text-button" hidden>All locations</button><div id="file-list" class="file-grid bounded-list" tabindex="0" aria-label="Saved files"></div>`;
+    const result=await cachedApi('/api/files?business='+encodeURIComponent(state.business));if(!current())return; state.files=result.items;state.fileLocations=result.locations||[];state.missingAssets=result.missing_assets||[];state.fileProjects=result.projects||[];if(!state.fileProjects.some(p=>p.id===state.fileProject))state.fileProject='';fileLocation='';
+    view.innerHTML=`<div class="linked-locations">${state.fileLocations.map(l=>`<div class="linked-location"><button ${l.missing?'data-reconnect-location':'data-filelocation'}="${esc(l.id)}"><strong>${esc(l.name)}</strong><small>${l.missing?'Location missing · Reconnect':l.kind==='folder'?'Linked folder':'Linked file'}</small></button><button data-unlink-location="${esc(l.id)}" aria-label="Unlink ${esc(l.name)}">✕</button></div>`).join('')}</div>${state.missingAssets.length?`<details class="missing-files"><summary>${state.missingAssets.length} saved file${state.missingAssets.length===1?' has moved or is':'s have moved or are'} unavailable</summary>${state.missingAssets.map(f=>`<button class="row" data-reconnect-asset="${esc(f.ref)}">${esc(f.name)} · Reconnect →</button>`).join('')}</details>`:''}<div class="files-toolbar"><input class="search" id="file-search" type="search" aria-label="Search saved files" placeholder="Find a file…" value="${esc(state.fileQuery||'')}"><label class="sr-only" for="file-project-filter">Project</label><select id="file-project-filter"><option value="">All projects</option>${(state.fileProjects||[]).map(p=>`<option value="${esc(p.id)}" ${state.fileProject===p.id?'selected':''}>${esc(p.name)}</option>`).join('')}</select><button type="button" class="text-button" data-create-collection="${esc(state.fileProject||'')}">New collection</button><button type="button" class="secondary" data-add-location>＋ Add files or folder</button></div>${fileTypeFilters('full')}<button id="file-all-locations" class="text-button" hidden>All locations</button><div id="file-list" class="file-grid bounded-list" tabindex="0" aria-label="Saved files"></div>`;
     renderFiles();
   } else if(state.view==='work') {
     if(!state.library.length){const library=await cachedApi('/api/library');if(!current())return;state.library=library;}
@@ -865,7 +865,7 @@ function fileKind(file) {
 function fileTypeFilters(scope) {return `<div class="filters compact-filters" aria-label="File types">${fileKinds.map(([kind,name])=>`<button type="button" data-filetype="${kind}" aria-pressed="${fileFilter===kind}" class="${fileFilter===kind?'active':''}">${name}</button>`).join('')}<button type="button" data-file-favorites aria-pressed="${!!state.fileFavoritesOnly}" class="${state.fileFavoritesOnly?'active':''}">★ Favorites</button></div>`;}
 function matchingFiles() {
   const q=(state.fileQuery||'').trim().toLowerCase();
-  return state.files.filter(f=>usefulFile(f)&&(!state.fileFavoritesOnly||fileMarked(f.path))&&(fileFilter==='all'||fileKind(f)===fileFilter)&&(f.path+' '+f.name+' '+(f.location_name||'')).toLowerCase().includes(q)).sort((a,b)=>b.modified-a.modified);
+  return state.files.filter(f=>usefulFile(f)&&(!state.fileFavoritesOnly||fileMarked(f.path))&&(fileFilter==='all'||fileKind(f)===fileFilter)&&(!state.fileProject||f.project_refs?.includes(state.fileProject))&&(f.path+' '+f.name+' '+(f.location_name||'')).toLowerCase().includes(q)).sort((a,b)=>b.modified-a.modified);
 }
 function renderQuickFiles() {
   const target=$('#quick-files');if(!target)return;
@@ -1209,6 +1209,7 @@ async function scheduleDetails(id) {
   renderScheduleOperation();
   const resultHost=document.createElement('section');resultHost.className='task-results-section';$('#task-request-form').before(resultHost);window.auraWork?.history(task,resultHost);
   const assistantHost=document.createElement('section');assistantHost.className='task-assignment';$('#detail-content .task-options').before(assistantHost);window.auraWork?.assignTask(task,assistantHost);const goalHost=document.createElement('section');goalHost.className='task-assignment';assistantHost.after(goalHost);window.auraCompose?.assignTask(task,goalHost);
+  const outputHost=document.createElement('section');outputHost.className='task-assignment';$('#detail-content .task-options').before(outputHost);window.auraProjects?.assignTask(task,outputHost).catch(()=>{if(outputHost.isConnected)outputHost.innerHTML='<p class="small-note">Saved result destinations could not be read.</p>';});
   const options=$('#detail-content .task-options');
   options.addEventListener('toggle',()=>{if(options.open&&!options.dataset.loaded){options.dataset.loaded='true';taskModels(task.owner).catch(()=>{});}});
 }
@@ -1331,6 +1332,7 @@ function recordDetails(ref) {
   details(r.title,`<p class="item-type">${esc(human(r.type))} · Memory</p>${location}${fields.map(([k,v])=>`<div class="field"><strong>${esc(human(k))}</strong><p>${esc(pretty(v))}</p></div>`).join('')}<div class="inline-actions"><button type="button" class="primary" data-add-record="${esc(r.ref)}" data-label="${esc(r.title)}">Add to chat</button><button type="button" class="text-button" data-copy-record="${esc(r.ref)}">Copy record</button></div><p><button class="text-button" data-share-record="${esc(r.ref)}" data-share-scope="${esc(sharingScope())}">Share a copy →</button></p><details><summary>Record data</summary><pre>${esc(JSON.stringify(r.data,null,2))}</pre></details>`);
 }
 async function openFileWorkspace(ref,option='',presentation={}) {
+  if(!presentation.raw&&window.auraProjects&&await window.auraProjects.openForFile(ref))return;
   const business=state.business,workspace=state.data.workspace;
   const module=await import('/file-editor.js');
   if(business!==state.business||workspace!==state.data.workspace)return;
@@ -1847,7 +1849,7 @@ function editProject(name='',picker=null){
 }
 function projectOptions(name,anchor){
   const p=(state.projects||[]).find(p=>p.name===name);if(!p)return;
-  $('#project-actions').innerHTML=`<button type="button" data-project-new-chat="${esc(name)}">＋ New chat</button>${p.folder?`<button type="button" data-project-open="${esc(name)}">${folderIcon()} Open folder</button>`:''}<button type="button" data-project-edit="${esc(name)}">${editIcon()} Edit project</button>`;
+  $('#project-actions').innerHTML=`<button type="button" data-open-project="${esc(p.id)}">Project work</button><button type="button" data-project-new-chat="${esc(name)}">＋ New chat</button>${p.folder?`<button type="button" data-project-open="${esc(name)}">${folderIcon()} Open folder</button>`:''}<button type="button" data-project-edit="${esc(name)}">${editIcon()} Edit project</button>`;
   openAnchoredSurface($('#project-actions'),anchor,{width:220,placement:'side'});
 }
 function measureChatNames(target=null){
@@ -1880,7 +1882,7 @@ document.addEventListener('click',event=>{
   });
   if(button.id==='remove-project')attempt(async()=>{
     const edit=state.projectEditor;if(edit.scope!==projectScope())return;
-    button.disabled=true;try{await api('/api/projects',{business:state.business,action:'remove',name:edit.name});if(edit.scope!==projectScope())return;if(state.chatMeta?.project===edit.name)state.chatMeta.project='';if(state.newChatProject===edit.name)state.newChatProject='';$('#project-editor').close();rememberChatDraft();state.sidebarSignature='';await renderShell();notice('Project removed. Its chats remain available.');}finally{button.disabled=false;}
+    button.disabled=true;try{await api('/api/projects',{business:state.business,action:'remove',name:edit.name});if(edit.scope!==projectScope())return;if(state.chatMeta?.project===edit.name)state.chatMeta.project='';if(state.newChatProject===edit.name)state.newChatProject='';$('#project-editor').close();rememberChatDraft();state.sidebarSignature='';await renderShell();notice('Project archived. Its files and scheduled tasks remain available.');}finally{button.disabled=false;}
   });
 });
 $('#project-search').addEventListener('input',projectChoices);
@@ -1895,7 +1897,7 @@ $('#project-editor-form').addEventListener('submit',event=>{
     const edit=state.projectEditor;if(edit.scope!==projectScope())return;
     const form=event.target,button=form.querySelector('[type=submit]'),name=form.elements.name.value.trim();button.disabled=true;
     try{
-      const result=await api('/api/projects',{business:state.business,action:edit.name?'edit':'create',name:edit.name||name,new_name:name,folder:form.elements.folder.value,context_refs:$('#project-context')?._references?.()||[]});
+      const result=await api('/api/projects',{business:state.business,action:edit.name?'edit':'create',name:edit.name||name,new_name:name,folder:form.elements.folder.value,revision:(state.projects||[]).find(p=>p.name===edit.name)?.revision,context_refs:$('#project-context')?._references?.()||[]});
       if(edit.scope!==projectScope())return;state.projects=result.projects;
       if(edit.name){if(state.chatMeta?.project===edit.name)state.chatMeta.project=name;if(state.newChatProject===edit.name)state.newChatProject=name;}
       $('#project-editor').close();if(edit.picker)await assignProject(name,edit.picker);else{renderProjectTrigger();state.sidebarSignature='';await renderShell();}
@@ -2566,8 +2568,8 @@ async function showArchivedItems(filter='all',query=''){
   if(!dialog.open)dialog.showModal();host.innerHTML='<p role="status">Reading archived and deleted items…</p>';
   const data=await api('/api/archive?business='+encodeURIComponent(state.business));
   if(!dialog.open||ticket!==state.archiveTicket||scope!==JSON.stringify([state.data.workspace,state.business]))return;
-  const labels={all:'All',archived:'Archived',deleted:'Deleted',recovery:'Recovery copies'},types={chat:'Chat',goal:'Goal',recovery:'File'};let limit=50;
-  host.innerHTML=`<label class="sr-only" for="archive-find">Find an archived or deleted item</label><input id="archive-find" class="search" type="search" placeholder="Find an item…"><div class="filters" id="archive-filters"></div><p id="archive-count" class="small-note" role="status"></p><div id="archive-list"></div><button type="button" id="archive-more" class="text-button" hidden>Show more items</button><p class="small-note archive-retention">Archive hides a chat from recent chats and search. Delete removes a goal from current work; restoring keeps its previous status. Neither expires automatically. Recovery copies follow their chosen retention; automatic removal is permanent.</p>${data.items.some(i=>i.kind==='recovery')?'<button type="button" class="text-button" id="archive-manage-recovery">Manage recovery copies</button>':''}${data.notes.map(n=>`<p class="small-note">${esc(n)}</p>`).join('')}`;
+  const labels={all:'All',archived:'Archived',deleted:'Deleted',recovery:'Recovery copies'},types={project:'Project',chat:'Chat',goal:'Goal',recovery:'File'};let limit=50;
+  host.innerHTML=`<label class="sr-only" for="archive-find">Find an archived or deleted item</label><input id="archive-find" class="search" type="search" placeholder="Find an item…"><div class="filters" id="archive-filters"></div><p id="archive-count" class="small-note" role="status"></p><div id="archive-list"></div><button type="button" id="archive-more" class="text-button" hidden>Show more items</button><p class="small-note archive-retention">Archive hides chats and projects from current navigation and search. Delete removes a goal from current work; restoring keeps its previous status. Neither expires automatically. Recovery copies follow their chosen retention; automatic removal is permanent.</p>${data.items.some(i=>i.kind==='recovery')?'<button type="button" class="text-button" id="archive-manage-recovery">Manage recovery copies</button>':''}${data.notes.map(n=>`<p class="small-note">${esc(n)}</p>`).join('')}`;
   $('#archive-find').value=query;
   const paint=()=>{
     const q=$('#archive-find').value.trim().toLowerCase(),items=data.items.filter(i=>(filter==='all'||(i.state||({chat:'archived',goal:'deleted',recovery:'recovery'})[i.kind])===filter)&&i.title.toLowerCase().includes(q));
@@ -2584,7 +2586,7 @@ async function showArchivedItems(filter='all',query=''){
     if(b.id==='archive-manage-recovery'){dialog.close();await auraRecovery();}
     if(b.dataset.archiveRestore){
       const id=b.dataset.archiveRestore,kind=b.dataset.archiveKind;b.disabled=true;
-      try{await api(kind==='chat'?'/api/chats/archive':kind==='goal'?'/api/goals':'/api/recovery/update',{business:state.business,id,...(kind==='chat'?{archived:false}:{action:'restore'})});
+      try{await api(kind==='chat'?'/api/chats/archive':kind==='goal'?'/api/goals':kind==='project'?'/api/project-resources':'/api/recovery/update',{business:state.business,id,...(kind==='chat'?{archived:false}:{action:'restore'})});
         if(scope!==JSON.stringify([state.data.workspace,state.business]))return;
         await refresh();if(dialog.open){await showArchivedItems(filter,$('#archive-find').value);$('#archive-find').focus();}
       }finally{if(b.isConnected)b.disabled=false;}

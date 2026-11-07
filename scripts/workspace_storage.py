@@ -67,7 +67,7 @@ def save_view(root, preferences):
                          'folder':folder.relative_to(root).as_posix() if relative else str(folder or ''),'relative':relative})
     saved_projects=projects if 'chat_projects' in preferences else load_view(root).get('projects')
     workspace_catalog.write_json(checked_metadata(root), {'format':1, 'file_locations':locations,
-        **({'projects':saved_projects} if saved_projects is not None else {}),
+        **({'projects':saved_projects} if saved_projects is not None and not (root/'.businessos/projects.json').is_file() else {}),
         'appearance':preferences.get('appearance','system'), 'model_picker':preferences.get('model_picker', {}),
         'library':preferences.get('library',{}), 'assistants':preferences.get('assistants',{})})
 
@@ -110,6 +110,10 @@ def view_preferences(root):
             if p.get('relative') and (folder.is_absolute() or '..' in folder.parts):raise ValueError('This project folder is outside the workspace.')
             result['chat_projects'].append({'name':project_name(p.get('name')),'business_id':p['business_id'],
                 'workspace':str(Path(root).resolve()),'folder':str(Path(root)/folder) if p.get('relative') else p['folder'],'context_refs':references(p.get('context_refs',[]))})
+    if (Path(root)/'.businessos/projects.json').is_file():
+        import workspace_projects
+        from _common import workspace_scope
+        with workspace_scope(root):result['chat_projects']=[workspace_projects.public(p) for p in workspace_projects.load()['projects'] if p.get('status','active')=='active']
     return result
 
 
@@ -143,6 +147,8 @@ def workspace_files(source, hashes=True):
     metadata = checked_metadata(source)
     if metadata.is_file():
         rows.append((Path(VIEW_FILE),metadata,_sha256(metadata) if hashes else '',metadata.stat().st_size))
+    project_file=source/'.businessos/projects.json'
+    if project_file.is_file() and not linked(project_file):rows.append((Path('.businessos/projects.json'),project_file,_sha256(project_file) if hashes else '',project_file.stat().st_size))
     return sorted(rows, key=lambda r:r[0].as_posix()), excluded
 
 
@@ -342,7 +348,7 @@ def _restore(archive, destination):
         for name, record in manifest['files'].items():
             rel = PurePosixPath(name)
             allowed = (rel.parts and (rel.parts[0] in NAMESPACES if manifest['format']=='aura-workspace-backup-1'
-                       else not private_file(rel) or name == VIEW_FILE))
+                       else not private_file(rel) or name in {VIEW_FILE,'.businessos/projects.json'}))
             if not allowed or '..' in rel.parts or '\\' in name or ':' in name or rel.is_absolute():
                 raise ValueError('The backup contains an unsafe file location. Nothing was restored.')
             info = z.getinfo(name)

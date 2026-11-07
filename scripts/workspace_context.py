@@ -8,7 +8,7 @@ import time
 
 from _common import workspace_root,workspace_scope,resolve_business,PRODUCT_ROOT
 
-KINDS={'file','record','goal','library','assistant','result'}
+KINDS={'file','record','goal','library','assistant','result','collection'}
 MAX_REFS=12
 MAX_CONTEXT_CHARS=24000
 
@@ -115,6 +115,9 @@ def inventory(app,bid,query='',kind='',limit=20,assistant_id=None):
         rows.append({'kind':k,'id':ident,'label':label,'description':description[:300],**({'variant':variant} if variant else {}),**({'request_id':request_id} if request_id else {})})
     for row in app.cached_read(('context-records',bid),lambda:records(bid)[0],seconds=3):
         if row['type']=='Objective' and (not workspace_goals.available(row['data']) or workspace_goals.scope(row['data'])!='workspace'):continue
+        collection=((row['data'].get('extensions') or {}).get('businessos',{}).get('collection') or {})
+        if row['type']=='Asset' and collection.get('id'):
+            add('collection',collection['id'],row['title'],'Maintained results' if collection.get('mode')=='collection' else 'Dated reports');continue
         typ=row['type'];add('goal' if typ=='Objective' else 'record',row['ref'],row['title'],'Goal' if typ=='Objective' else typ)
     if not kind or kind=='file':
         for row in app.file_inventory(bid,{'q':query,'limit':60})['items']:
@@ -154,7 +157,14 @@ def resolve(app,bid,references,goal_id=None,pointers=False,sources=None):
         if not isinstance(request_id,str) or len(request_id)>100:raise ValueError('Choose a valid saved result.')
         if (kind,ident,variant,request_id) in seen:continue
         seen.add((kind,ident,variant,request_id));row={'kind':kind,'id':ident,**({'variant':variant} if variant else {}),**({'request_id':request_id} if request_id else {})};text=''
-        if kind=='file':
+        if kind=='collection':
+            import workspace_collections
+            d=workspace_collections.read(bid,ident)
+            basis={k:v for k,v in d.items() if k not in {'checks','receipts','version','updated_at'}}
+            basis['items']=[{k:v for k,v in i.items() if k not in {'last_seen','updated_at'}} for i in d['items']]
+            row.update(label=d['name'],path=str(workspace_collections.path(bid,ident)),revision=digest(basis))
+            text=f'Saved results: {d["name"]}. Purpose: {d["purpose"]}. Retrieve only relevant rows with {PRODUCT_ROOT / "scripts/workspace_collections.py"} show --workspace {json.dumps(str(workspace_root()))} --business-id {bid} --id {ident} --search <specific query> --limit 5. Check reported coverage, source dates and user corrections before relying on a result.'
+        elif kind=='file':
             path=app.document_source(bid,ident,include_asset=False)[0];info=path.stat()
             row.update(label=path.name,path=str(path),revision=f'{info.st_mtime_ns}:{info.st_size}',basis='File metadata at send; the native app reads the file when needed')
             text=f'File reference: {path}'

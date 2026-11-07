@@ -25,14 +25,18 @@ def project_name(value,empty=False):
 
 
 def projects(app,bid):
-    root=Path(workspace_root()).resolve()
-    saved=[dict(p) for p in app.preferences.get('chat_projects',[]) if p['business_id']==bid and Path(p['workspace']).resolve()==root]
-    known={p['name'] for p in saved}
-    # Older chat labels remain usable without an eager migration or extra files.
+    import workspace_projects
+    archived={p['name'] for p in workspace_projects.list_projects(bid,app.preferences.get('chat_projects',[]),archived=True) if p.get('status')=='archived'}
+    saved=workspace_projects.list_projects(bid,app.preferences.get('chat_projects',[]));known={p['name'] for p in saved}
     for chat in items(app,bid):
+        if chat.get('project_id'):
+            matched=next((p for p in saved if p['id']==chat['project_id']),None)
+            if matched:chat['project']=matched['name']
+            elif any(p['id']==chat['project_id'] for p in workspace_projects.list_projects(bid,archived=True)):chat['project']='';continue
         name=chat.get('project')
+        if name in archived:chat['project']='';continue
         if name and name not in known:
-            saved.append({'name':name,'folder':'','workspace':str(root),'business_id':bid});known.add(name)
+            saved.append({'id':workspace_projects.identity(bid,name),'name':name,'folder':'','workspace':str(workspace_root().resolve()),'business_id':bid,'context_refs':[],'members':[]});known.add(name)
     return sorted(saved,key=lambda p:p['name'].casefold())
 
 
@@ -48,31 +52,15 @@ def change_project(app,bid,data):
             else:subprocess.Popen(['open' if sys.platform=='darwin' else 'xdg-open',str(path)],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
         except OSError as exc:raise ValueError('Could not open the folder. Open its location in your file manager.') from exc
         return {'opened':True}
-    if action not in {'create','edit','remove'}:raise ValueError('Choose a project action.')
-    if action!='create' and not old:raise ValueError('This project is no longer available.')
-    if action=='create' and old:raise ValueError('A project with this name already exists.')
-    target=project_name(data.get('new_name',name))
-    if any(p['name'].casefold()==target.casefold() and p is not old for p in current):raise ValueError('A project with this name already exists.')
-    folder=data.get('folder',old.get('folder','') if old else '')
-    if not isinstance(folder,str):raise ValueError('Enter a folder location.')
-    folder=folder.strip()
-    if folder and action!='remove':
-        path=Path(folder).expanduser()
-        if not path.is_absolute():path=Path(workspace_root())/path
-        if not path.is_dir():raise ValueError('Choose an existing folder on this computer.')
-        folder=str(path.resolve())
-    from workspace_context import references
-    refs=references(data.get('context_refs',(old or {}).get('context_refs',[])))
-    current=[p for p in current if p['name']!=name]
-    if action!='remove':current.append({'name':target,'folder':folder,'workspace':str(Path(workspace_root()).resolve()),'business_id':bid,'context_refs':refs})
-    # Removing a project only ungroups its chats; it never deletes chats or folders.
+    import workspace_projects
+    result=workspace_projects.change(bid,data,current);p=result['project']
     for chat in items(app,bid):
-        if chat.get('project')==name:chat['project']='' if action=='remove' else target
-    root=Path(workspace_root()).resolve()
-    outside=[p for p in app.preferences.get('chat_projects',[]) if p['business_id']!=bid or Path(p['workspace']).resolve()!=root]
-    app.preferences['chat_projects']=outside+current
+        if chat.get('project')==name or chat.get('project_id')==p['id']:
+            chat['project']='' if action=='remove' else p['name'];chat['project_id']='' if action=='remove' else p['id']
+            workspace_projects.bind(bid,'chat',chat['id'],[] if action=='remove' else [p['id']],goal_id=chat.get('goal_id',''))
+    app.preferences['chat_projects']=[v for v in app.preferences.get('chat_projects',[]) if v['business_id']!=bid or Path(v['workspace']).resolve()!=workspace_root().resolve()]+result['projects']
     app.save_preferences(portable=True)
-    return {'projects':projects(app,bid)}
+    return {'projects':projects(app,bid),'project':p}
 
 
 def mutate(app,bid,data):
@@ -86,7 +74,9 @@ def mutate(app,bid,data):
         current=projects(app,bid)
         existing=next((p for p in current if p['name'].casefold()==value.casefold()),None)
         if existing:value=existing['name']
-        elif value:current.append({'name':value,'folder':'','workspace':str(Path(workspace_root()).resolve()),'business_id':bid})
+        elif value:
+            import workspace_projects
+            existing=workspace_projects.change(bid,{'name':value},app.preferences.get('chat_projects',[]))['project'];current=projects(app,bid)
     if not {'pinned','project'}.intersection(data):raise ValueError('Choose a pin or project change.')
     if 'pinned' in data:chat['pinned']=data['pinned']
     if 'project' in data:
@@ -94,6 +84,9 @@ def mutate(app,bid,data):
         outside=[p for p in app.preferences.get('chat_projects',[]) if p['business_id']!=bid or Path(p['workspace']).resolve()!=root]
         app.preferences['chat_projects']=outside+current
         chat['project']=value
+        import workspace_projects
+        chat['project_id']=existing['id'] if value else ''
+        workspace_projects.bind(bid,'chat',chat['id'],[existing['id']] if value else [],goal_id=chat.get('goal_id',''))
     app.save_preferences(portable=True)
     return {'chat':chat}
 

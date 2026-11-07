@@ -18,6 +18,8 @@ def inventory(app, bid):
                    previous_status=workspace_goals.metadata(g).get('deleted_status','active'),
                    action='Restore as completed' if workspace_goals.metadata(g).get('deleted_status')=='completed' else 'Restore')
               for g in workspace_goals.goals(bid, include_deleted=True) if workspace_goals.deleted(g)]
+    import workspace_projects
+    items += [dict(kind='project',id=p['id'],title=p['name'],at=p.get('updated'),state='archived',action='Restore') for p in workspace_projects.list_projects(bid,archived=True) if p.get('status')=='archived']
     notes = []
     try:
         items += [dict(kind='recovery', id=e['id'], title=Path(e['original']).name,
@@ -35,6 +37,9 @@ def restore(url, bid, kind, ident):
         return workspace_goals.live_change(url, bid, {'id': ident, 'archived': False}, '/api/chats/archive')
     if kind == 'goal':
         return workspace_goals.live_change(url, bid, {'id': ident, 'action': 'restore'})
+    if kind == 'project':
+        import workspace_projects
+        return workspace_projects.change(bid,{'id':ident,'action':'restore'})
     if kind == 'recovery':
         return workspace_goals.live_change(url, bid, {'id': ident, 'action': 'restore'}, '/api/recovery/update')
     raise ValueError('Choose an archived chat, deleted goal, or recovery copy.')
@@ -46,7 +51,7 @@ def main():
     parser.add_argument('--business-id', required=True)
     parser.add_argument('--workspace', type=Path, default=workspace_root())
     parser.add_argument('--url', default='http://127.0.0.1:4187', help='Running local Aura address')
-    parser.add_argument('--kind', choices=['chat', 'goal', 'recovery'])
+    parser.add_argument('--kind', choices=['chat', 'goal', 'recovery','project'])
     parser.add_argument('--id')
     parser.add_argument('--json', action='store_true')
     args = parser.parse_args()

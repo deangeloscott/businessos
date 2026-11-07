@@ -35,6 +35,8 @@ import workspace_schedules
 import workspace_assistants
 import workspace_delegation
 import workspace_storage
+import workspace_projects
+import workspace_collections
 import workspace_guidance
 import workspace_startup
 import workspace_catalog
@@ -110,6 +112,12 @@ def file_roots(bid):
 
 
 def local_file(bid, ref, locations=None):
+    if ref.startswith('project/'):
+        parts=ref.split('/',2)
+        if len(parts)!=3:raise ValueError('Choose a project file.')
+        project=workspace_projects.find(bid,parts[1],archived=True)
+        if not project.get('folder'):raise ValueError('This project has no linked folder.')
+        return workspace_locations.resolve('linked/'+parts[1]+'/'+parts[2],[{'id':parts[1],'path':project['folder'],'kind':'folder'}],private_path)
     if ref.startswith('asset-dir/'):
         parts = ref.split('/',2)
         if len(parts) != 3:
@@ -1619,7 +1627,37 @@ class Workspace:
         with self.lock:owner=copy.copy(self);locations=copy.deepcopy(self.preferences['file_locations'].get(bid,[]))
         with workspace_scope(owner.workspace_path),owner.inventory_lock:
             value=owner.cached_read(('files',bid,json.dumps(locations,sort_keys=True)),lambda:files(bid,locations),force=query.get('refresh')=='1')
-            value={**value,'workspace':owner.workspace_path}
+            project_rows=workspace_chat_organization.projects(owner,bid)
+            value={**value,'items':[dict(f) for f in value['items']],'workspace':owner.workspace_path,'projects':project_rows}
+            known={}
+            for row in records(bid)[0]:
+                if row['type']=='Asset':
+                    bos=(row['data'].get('extensions') or {}).get('businessos',{})
+                    known[row['ref']]={'path':asset_path(bid,row['data'].get('location_reference')),'projects':(bos.get('work') or {}).get('project_refs',[]),'collection':bos.get('collection'),'label':row['title']}
+            members={p['id']:{r['id'] for r in p.get('members',[])} for p in project_rows}
+            for f in value['items']:
+                info=known.get(f['path'].split('/')[1],{}) if f['path'].startswith('asset/') else {}
+                f['project_refs']=list(info.get('projects',[]))
+                if f['path'].startswith('asset/'):f['asset_id']=f['path'].split('/')[1]
+                native=info.get('path') or Path(f.get('local_path') or (str(workspace_root()/f['path']) if not f['path'].startswith(('asset/','linked/')) else ''))
+                for project in project_rows:
+                    if f['path'] in members[project['id']] or f.get('asset_id') in members[project['id']] or (info.get('collection') or {}).get('id') in members[project['id']] or project.get('folder') and native.is_absolute() and native.is_relative_to(Path(project['folder'])):
+                        if project['id'] not in f['project_refs']:f['project_refs'].append(project['id'])
+                for project in project_rows:
+                    if any(r['id'] in {f['path'],f.get('asset_id'),info.get('collection',{}).get('id') if info.get('collection') else None} for r in project.get('excluded_members',[])):
+                        f['project_refs']=[i for i in f['project_refs'] if i!=project['id']]
+                if info.get('collection'):f.update(collection_id=info['collection']['id'],collection_mode=info['collection']['mode'],name=info['label'])
+            # Project folders are explicit user-selected sources, with existing path protections.
+            seen={str(known.get(f.get('asset_id'),{}).get('path') or f.get('local_path') or workspace_root()/f['path']) for f in value['items']}
+            for project in project_rows:
+                if not project.get('folder'):continue
+                extra=owner.cached_read(('project-files',bid,project['id'],project['folder']),lambda p=project:workspace_locations.entries([{'id':p['id'],'name':p['name'],'path':p['folder'],'kind':'folder'}],private_path,MEDIA,2000),force=query.get('refresh')=='1')
+                for raw in extra['items']:
+                    f=dict(raw)
+                    if f['local_path'] in seen:continue
+                    seen.add(f['local_path']);f.update(path=f['path'].replace('linked/','project/',1),project_refs=[project['id']]);value['items'].append(f)
+                value['limited']=value.get('limited',False) or extra['limited']
+            if query.get('project'):value['items']=[f for f in value['items'] if query['project'] in f.get('project_refs',[])]
             if 'limit' in query:
                 limit=max(1,min(500,int(query['limit'])));offset=max(0,int(query.get('offset',0)));text=query.get('q','').casefold()
                 items=[r for r in value['items'] if text in (r['name']+' '+r['path']+' '+r.get('location_name','')).casefold()]
@@ -1650,6 +1688,7 @@ class Workspace:
         writable=any(path.is_relative_to(root/area/bid) for area in ('attachments','knowledge')) and not private_path(path.relative_to(root))
         if path.is_relative_to(PRODUCT_ROOT) and not root.is_relative_to(PRODUCT_ROOT):writable=False
         asset=next((r['data'] for r in records(bid)[0] if r['type']=='Asset' and asset_path(bid,r['data'].get('location_reference'))==path),None) if include_asset else None
+        if asset and ((asset.get('extensions') or {}).get('businessos',{}).get('collection')):writable=False;managed=True
         return path,writable,asset,managed and not writable
 
     def document_info(self,bid,ref,option=''):
@@ -1837,12 +1876,13 @@ class Workspace:
                 "Use native delegation, approvals, tools, and execution normally. User instructions take priority over this contextual guidance. "
                 f"For relevant prior work across AI apps, use {PRODUCT_ROOT / 'scripts/workspace_context.py'} recall --business-id {bid} --workspace \"{workspace_root()}\" --search <specific query>. "
                 "Retrieve a saved answer with the same helper: result --business-id <id> --workspace <workspace> --chat <result id> --variant <result variant>. Search only when useful; current records and corrections take priority over historic replies. "
+                f"Project links: {PRODUCT_ROOT / 'scripts/workspace_projects.py'}. Maintained result lists or dated reports: {PRODUCT_ROOT / 'scripts/workspace_collections.py'}. Read docs/projects-and-results.md when useful; retrieve matching rows, not full datasets. Deliberately saved Assets retain known Aura producer context. "
                 "Preserve native memory and skills in their owning app; do not mirror private native stores or treat incidental conversation as established truth. "
                 "Preserve useful business meaning, not this chat transcript. "
                 "Reply in everyday language, focusing on what the user can use or do next. "
                 "Keep record types, internal IDs, validation receipts, and explanations of which records you did not create out of normal replies. "
                 "If you save something useful, briefly say what and where. Explain technical details only when requested or needed to resolve a problem. "
-                f"For new workspace-owned outputs, prefer {workspace_root() / 'attachments' / bid / 'work'} unless the user chooses another location. "
+                f"For new workspace-owned outputs, prefer {getattr(self,'_output_root',workspace_root() / 'attachments' / bid / 'work')} unless the user chooses another location. "
                 "Preserve useful artifacts with an Asset and truthful provenance; use workspace-relative location_reference for local workspace files. "
                 "Scheduling intent is not an active schedule: use your real scheduler and report its confirmation, "
                 "or explain what remains unavailable. "
@@ -1902,6 +1942,11 @@ class Workspace:
                                     '\n\nTask:\n'+payload['description']+
                                     f'\n\nWork for Aura business {bid} in workspace {root}. Include saved file links in your result when you produce files.')
             if len(payload['description'])>20000:raise ValueError('Shorten the assistant or task instructions before scheduling.')
+        collection_id=payload.get('collection_id') if 'collection_id' in payload else None
+        if collection_id is not None:
+            description=re.sub(r'\n*\[Aura results\].*?\[/Aura results\]','',payload.get('description',(task or {}).get('description') or ''),flags=re.S).rstrip()
+            if collection_id:description+=workspace_collections.instructions(bid,collection_id)
+            payload['description']=description
         goal=None
         remove_goal=action=='request' and payload.get('goal_id')=='' and payload.get('remove_goal') is True
         if payload.get('goal_id'):
@@ -2038,6 +2083,12 @@ class Workspace:
                             links[confirmed['id']]=goal['id']
                         else:links.pop(confirmed['id'],None)
                         self.save_preferences()
+                if collection_id is not None:
+                    description=confirmed.get('description') or ''
+                    if collection_id and ('Collection: '+collection_id+'.' not in description or '[Aura results]' not in description):raise ValueError('The task was saved, but its result destination could not be confirmed. Reopen the task before retrying.')
+                    if not collection_id and '[Aura results]' in description:raise ValueError('The result destination was not removed. Reopen the native task.')
+                    project_refs=workspace_collections.read(bid,collection_id).get('project_refs',[]) if collection_id else []
+                    workspace_projects.bind(bid,'task',confirmed['id'],project_refs,collection_id)
                 execution.check()
                 job['status']='complete'
             except Stopped:
@@ -2192,6 +2243,8 @@ class Workspace:
                     except (ValueError,OSError):context_notes.append('A project or agent reference is unavailable. Check its saved context.')
             from workspace_native_requests import attachments
             native_images=attachments(selected_context['references'],protocol_kind)
+            output_project=next((p for p in workspace_chat_organization.projects(self,bid) if p['name']==((chat or {}).get('project') or getattr(self,'_request_project',''))),None)
+            self._output_root=(Path(output_project['folder'])/'outputs' if output_project and output_project.get('folder') else workspace_root()/'attachments'/bid/'projects'/output_project['id']/'outputs' if output_project else workspace_root()/'attachments'/bid/'work')
             prompt = text if keep_warm_id is not None else self.request_text(bid, text, None if native else history, schedule_id, organization_id)
             assistant=getattr(self,'_assistant',None)
             if assistant:
@@ -2335,6 +2388,13 @@ class Workspace:
             command = list(self.agent['argv'])
             kind = protocol_kind
             env = self.agent_environment()
+            try:
+                project=next((p for p in workspace_chat_organization.projects(self,bid) if p['name']==chat.get('project')),None)
+                if project and not workspace_projects.target().is_file():workspace_projects.change(bid,{'action':'edit','id':project['id'],'name':project['name']},self.preferences.get('chat_projects',[]))
+                workspace_projects.bind(bid,'chat',chat['id'],[project['id']] if project else [],goal_id=chat.get('goal_id',''))
+                if project:chat['project_id']=project['id']
+                env['AURA_PRODUCER']=json.dumps({'kind':'chat','id':chat['id'],'business_id':bid,'workspace':str(workspace_root().resolve())})
+            except (OSError,ValueError):job['context_note']='Project output links could not be saved. Your AI can continue working.'
             root=workspace_root().resolve();native_root=Path(chat.get('native_workspace') or root);native_root=native_root if native_root.is_dir() else root;model=job['model'];effort=job['effort'];native_id=chat.get('native_id')
             def update(**values):
                 with self.lock:
@@ -2679,7 +2739,7 @@ def handler_for(app):
                 elif route in {'/app.js', '/style.css'}:
                     path = app.static / route[1:]
                     self.send(200, path.read_bytes(), 'text/javascript; charset=utf-8' if path.suffix == '.js' else 'text/css; charset=utf-8')
-                elif route in {'/file-editor.js','/file-editor.css','/workspace-work.js','/workspace-continuity.js','/workspace-compose.js','/workspace-insight.js'} or route.startswith('/vendor/'):
+                elif route in {'/file-editor.js','/file-editor.css','/workspace-work.js','/workspace-continuity.js','/workspace-compose.js','/workspace-insight.js','/workspace-projects.js'} or route.startswith('/vendor/'):
                     relative=Path(route.lstrip('/'))
                     path=(STATIC/relative).resolve()
                     base=(STATIC/'vendor').resolve() if route.startswith('/vendor/') else STATIC.resolve()
@@ -2687,6 +2747,14 @@ def handler_for(app):
                     self.send(200,path.read_bytes(),mimetypes.guess_type(path.name)[0] or 'application/octet-stream')
                 elif route == '/api/components':
                     self.send(200,workspace_catalog.read_json(PRODUCT_ROOT/'distribution/ui-components.json',{'components':[]}))
+                elif route in {'/api/project-resources','/api/project-binding','/api/collections'}:
+                    with app.lock:root=app.workspace_path
+                    with workspace_scope(root):
+                        bid=selected(query.get('business'))
+                        if route=='/api/project-resources':result=workspace_projects.resources(app,bid,query.get('id'))
+                        elif route=='/api/project-binding':result=workspace_projects.binding(bid,query.get('kind'),query.get('id'))
+                        else:result=workspace_collections.show(bid,query['id'],query.get('q',''),query.get('view','current'),query.get('offset',0),query.get('limit',50),item_id=query.get('item',''),history=query.get('history')=='1') if query.get('id') else workspace_collections.inventory(bid,query.get('project',''))
+                    self.send(200,result)
                 elif route == '/api/memory-feedback':
                     import workspace_memory_feedback
                     self.send(200,workspace_memory_feedback.inventory(selected(query.get('business')),query.get('since',0)))
@@ -2950,6 +3018,25 @@ def handler_for(app):
                             result=workspace_recovery.prepare(owner,bid,data.get('id'),data['revision'],data.get('reviewed') is True)
                         else:raise ValueError('Choose Check or Continue chat.')
                     self.send(200,result);return
+                if route in {'/api/project-resources','/api/project-binding','/api/collections'}:
+                    # Pin the selected workspace before a slower file mutation;
+                    # another window can switch selection without redirecting it.
+                    with app.lock:
+                        root=app.workspace_path
+                        expected=self.headers.get('X-Aura-Workspace')
+                        if expected and expected!=root:raise ValueError('The workspace changed. Refresh before saving.')
+                    with workspace_scope(root):
+                        bid=selected(data.get('business'))
+                        if route=='/api/project-resources':result=workspace_projects.change(bid,data)
+                        elif route=='/api/project-binding':result=workspace_projects.bind(bid,data.get('kind'),data.get('id'),data.get('project_refs',[]),data.get('collection_id'))
+                        else:
+                            action=data.get('action')
+                            if action=='create':result=workspace_collections.create(bid,data)
+                            elif action=='apply':result=workspace_collections.apply(bid,data.get('id'),data)
+                            elif action=='configure':result=workspace_collections.configure(bid,data.get('id'),data)
+                            elif action=='feedback':result=workspace_collections.feedback(bid,data.get('id'),{**data,'action':data.get('choice')})
+                            else:raise ValueError('Choose a collection action.')
+                    app.read_cache.clear();self.send(200,result);return
                 if route == '/api/memory-feedback':
                     import workspace_memory_feedback
                     self.send(200,workspace_memory_feedback.respond(selected(data.get('business')),data.get('id'),data.get('action')));return

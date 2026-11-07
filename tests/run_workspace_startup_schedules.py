@@ -163,6 +163,26 @@ def main():
                 assert not app.update_idle(), 'An update could restart a task operation'
                 gate.set();assert done()['status']=='complete'
                 ai.assert_not_called()
+                # Saving an output destination changes the real native prompt,
+                # and only binds after the edited prompt is read back.
+                import workspace_collections as collections
+                import workspace_projects as projects
+                destination=collections.create(bid,{'key':'scheduled-results','name':'Scheduled results'})
+                task_id=app.schedule_job['task_id']
+                def edit_native(ident,changes,*args,**kwargs):
+                    jobs=json.loads(jobs_path.read_text())['jobs']
+                    native_id=next(t for t in schedules.inventory()['items'] if t['id']==ident)['native_id']
+                    job=next(j for j in jobs if j['id']==native_id)
+                    job['prompt']=changes['description'];jobs_path.write_text(json.dumps({'jobs':jobs}),encoding='utf-8')
+                    return next(t for t in schedules.inventory()['items'] if t['id']==ident)
+                with patch.object(schedules,'update',side_effect=edit_native):
+                    post_task({'id':task_id,'app':'hermes','action':'edit','collection_id':destination['id']})
+                    assert done()['status']=='complete',app.schedule_job
+                    assert projects.binding(bid,'task',task_id)['collection_id']==destination['id']
+                    assert '[Aura results]' in next(t for t in schedules.inventory()['items'] if t['id']==task_id)['description']
+                    post_task({'id':task_id,'app':'hermes','action':'edit','collection_id':''})
+                    assert done()['status']=='complete',app.schedule_job
+                    assert not projects.binding(bid,'task',task_id).get('collection_id')
                 assert app.preferences['connection']==original_connection
                 assert app.preferences['chats']==original_chats and app.preferences['active_chats']==original_active
                 def isolated_agent(command,kind,root,env,prompt,native_id,model,effort,update,execution):

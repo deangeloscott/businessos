@@ -157,6 +157,9 @@ def remember(business_id,payload):
         elif supplied_extensions or provenance:
             raise ValueError(f'{typ} does not support extensions/provenance payloads.')
         if 'observed_at' in properties and not obj.get('observed_at'):obj['observed_at']=ts
+        if typ=='Asset':
+            from workspace_projects import asset_context
+            obj=asset_context(bid,obj)
         try:validate_canonical(typ,obj)
         except ValueError as exc:raise ValueError(f'{row["key"]} ({typ}): {exc}. See the {typ} schema and OPERATOR-GUIDE.md memory examples.') from exc
         row['object']=obj;objects.append(obj)
