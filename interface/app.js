@@ -720,11 +720,39 @@ function libraryMarked(item,list='favorites'){return [item.key,...(item.aliases|
 let librarySave=Promise.resolve();
 function saveLibrary(prefs){state.data.library_preferences=prefs;const business=state.business,workspace=state.data.workspace;librarySave=librarySave.catch(()=>{}).then(()=>{if(business===state.business&&workspace===state.data.workspace)return api('/api/preferences',{business,library:prefs});});return librarySave;}
 function fileFavoriteKey(ref){return 'file:'+(ref.startsWith('asset/')?ref.split('/').slice(0,2).join('/'):ref);}
-function fileMarked(ref){return libraryPrefs().favorites.includes(fileFavoriteKey(ref));}
+function fileFavoriteKeys(ref){
+  const id=ref.startsWith('asset/')?ref.split('/')[1]:null;
+  const asset=state.data?.records?.find(r=>r.type==='Asset'&&(id?r.ref===id:r.data.location_reference===ref));
+  return [...new Set([fileFavoriteKey(ref),...(asset?['file:asset/'+asset.ref,...(asset.data.location_reference?['file:'+asset.data.location_reference]:[])]:[])])];
+}
+function fileMarked(ref){return fileFavoriteKeys(ref).some(key=>libraryPrefs().favorites.includes(key));}
 function favoriteControl(attribute,key,label,marked,classes=''){return `<button type="button" class="favorite-star ${classes}" ${attribute}="${esc(key)}" aria-pressed="${marked}" aria-label="${marked?'Remove':'Add'} ${esc(label)} ${marked?'from':'to'} favorites" title="${marked?'Remove from favorites':'Add to favorites'}">${marked?'★':'☆'}</button>`;}
 function fileFavoriteButton(ref,label='file',compact=false){return favoriteControl('data-file-favorite',ref,label,fileMarked(ref),compact?'file-star':'title-star');}
 function setDetailTitleActions(html){$('#detail-title-actions').innerHTML=html;}
-async function toggleFileFavorite(ref){const key=fileFavoriteKey(ref),prefs=libraryPrefs(),marked=fileMarked(ref);await saveLibrary({...prefs,favorites:marked?prefs.favorites.filter(k=>k!==key):[...prefs.favorites,key]});if(state.view==='files')renderFiles();renderQuickFiles();return !marked;}
+function archiveControl(kind,id){return `<button type="button" class="icon-button" data-archive-item="${esc(id)}" data-archive-type="${kind}" aria-label="Archive" title="Archive"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 8h16v12H4zM3 4h18v4H3zM9 12h6"/></svg></button>`;}
+document.addEventListener('click',event=>{
+  const button=event.target.closest('[data-archive-item]');if(!button)return;
+  const business=state.business,workspace=state.data.workspace;
+  attempt(async()=>{
+    button.disabled=true;
+    try{
+      const save=$('#file-save');
+      if(save&&!save.disabled&&!save.hidden)throw new Error('Save your changes before archiving this file.');
+      const search=state.searchReturn?{query:$('#shell-search').value,filter:shellSearchFilter,favorites:shellSearchFavorites,scroll:$('#shell-search-results').scrollTop}:null;
+      await api('/api/archive',{business,kind:button.dataset.archiveType,id:button.dataset.archiveItem,action:'archive'});
+      if(business!==state.business||workspace!==state.data.workspace)return;
+      $('#detail').close();await refresh();
+      if(search){
+        await openShellSearch();
+        if(business!==state.business||workspace!==state.data.workspace)return;
+        $('#shell-search').value=search.query;shellSearchFilter=search.filter;shellSearchFavorites=search.favorites;
+        paintShellSearch();$('#shell-search-results').scrollTop=search.scroll;
+      }
+      notice('Archived. Restore it from Archived & deleted.');
+    }finally{if(button.isConnected)button.disabled=false;}
+  });
+});
+async function toggleFileFavorite(ref){const keys=fileFavoriteKeys(ref),prefs=libraryPrefs(),marked=fileMarked(ref);await saveLibrary({...prefs,favorites:marked?prefs.favorites.filter(k=>!keys.includes(k)):[...prefs.favorites,keys[0]]});if(state.view==='files')renderFiles();renderQuickFiles();return !marked;}
 function rememberLibraryOpen(item){const prefs=libraryPrefs();if(prefs.recent[0]===item.key)return;attempt(async()=>{await saveLibrary({...prefs,recent:[item.key,...prefs.recent.filter(k=>k!==item.key)].slice(0,24)});if(state.view==='work'&&$('#work-list'))renderWork();});}
 function libraryQuery(text){return human(text).toLowerCase().replace(/[_.-]+/g,' ').replace(/\s+/g,' ').trim();}
 function libraryMatches(item,q){return libraryQuery([item.title,item.description,item.category,item.group,item.id,...(item.apps||[]),...(item.sources||[]).map(s=>s.service||s.connection||'')].join(' ')).includes(libraryQuery(q))||(item.members||[]).some(m=>libraryMatches(m,q))||(item.variants||[]).some(v=>libraryMatches(v,q));}
@@ -1325,18 +1353,19 @@ function recordDetails(ref) {
     const text=r.data.extensions?.businessos_evidence?.captured_text;
     const shared=r.data.extensions?.aura_sharing;
     details(r.title,`<p class="item-type">Saved source · Memory</p>${location}${shared?`<p class="small-note">Shared by ${esc(shared.origin.name)} · Copied ${stamp(shared.copied_at)}. Source material; local business facts stay separate.</p><p><button class="text-button" data-file="${esc(r.data.source_reference)}">Open shared material →</button></p>`:''}${text?'<pre>'+esc(text)+'</pre>':'<p>'+esc(r.data.source_reference||'Saved source')+'</p>'}<button type="button" class="primary" data-add-record="${esc(r.ref)}" data-label="${esc(r.title)}">Add to chat</button><p><button class="text-button" data-share-record="${esc(r.ref)}" data-share-scope="${esc(sharingScope())}">Share a copy →</button></p><details><summary>Record data</summary><pre>${esc(JSON.stringify(r.data,null,2))}</pre></details>`);
-    return;
+    setDetailTitleActions(archiveControl('record',ref));return;
   }
   const mechanical=new Set(['id','object_type','schema_version','business_id','lineage','created_at','updated_at','extensions']);
   const fields=Object.entries(r.data).filter(([k,v])=>!mechanical.has(k)&&!['name','title'].includes(k)&&v!==null&&!(Array.isArray(v)&&!v.length));
   details(r.title,`<p class="item-type">${esc(human(r.type))} · Memory</p>${location}${fields.map(([k,v])=>`<div class="field"><strong>${esc(human(k))}</strong><p>${esc(pretty(v))}</p></div>`).join('')}<div class="inline-actions"><button type="button" class="primary" data-add-record="${esc(r.ref)}" data-label="${esc(r.title)}">Add to chat</button><button type="button" class="text-button" data-copy-record="${esc(r.ref)}">Copy record</button></div><p><button class="text-button" data-share-record="${esc(r.ref)}" data-share-scope="${esc(sharingScope())}">Share a copy →</button></p><details><summary>Record data</summary><pre>${esc(JSON.stringify(r.data,null,2))}</pre></details>`);
+  if(r.type!=='Business')setDetailTitleActions(archiveControl('record',ref));
 }
 async function openFileWorkspace(ref,option='',presentation={}) {
   if(!presentation.raw&&window.auraProjects&&await window.auraProjects.openForFile(ref))return;
   const business=state.business,workspace=state.data.workspace;
   const module=await import('/file-editor.js');
   if(business!==state.business||workspace!==state.data.workspace)return;
-  await module.openFile({...presentation,ref,option,business,workspace,token,api,details,markdown:chatMarkdown,favoriteMarkup:(ref,name)=>fileFavoriteButton(ref,name),titleActions:setDetailTitleActions,share:ref=>attempt(async()=>{if(state.business!==business||state.data.workspace!==workspace)throw new Error('The workspace changed. Reopen the file before sharing.');await openSharing('file:'+ref);}),current:()=>state.business===business&&state.data.workspace===workspace,
+  await module.openFile({...presentation,ref,option,business,workspace,token,api,details,markdown:chatMarkdown,favoriteMarkup:(ref,name)=>fileFavoriteButton(ref,name)+(!ref.startsWith("library/")?archiveControl("file",ref):""),titleActions:setDetailTitleActions,share:ref=>attempt(async()=>{if(state.business!==business||state.data.workspace!==workspace)throw new Error('The workspace changed. Reopen the file before sharing.');await openSharing('file:'+ref);}),current:()=>state.business===business&&state.data.workspace===workspace,
     saved:async()=>{invalidateReads();const [files,data]=await Promise.all([api('/api/files?business='+encodeURIComponent(business)),api('/api/state?business='+encodeURIComponent(business))]);if(state.business!==business||state.data.workspace!==workspace)return;state.files=files.items;state.data.records=data.records;state.data.records_revision=data.records_revision;if($('#file-list'))renderFiles();if($('#quick-files'))renderQuickFiles();}
   });
 }
@@ -2568,8 +2597,8 @@ async function showArchivedItems(filter='all',query=''){
   if(!dialog.open)dialog.showModal();host.innerHTML='<p role="status">Reading archived and deleted items…</p>';
   const data=await api('/api/archive?business='+encodeURIComponent(state.business));
   if(!dialog.open||ticket!==state.archiveTicket||scope!==JSON.stringify([state.data.workspace,state.business]))return;
-  const labels={all:'All',archived:'Archived',deleted:'Deleted',recovery:'Recovery copies'},types={project:'Project',chat:'Chat',goal:'Goal',recovery:'File'};let limit=50;
-  host.innerHTML=`<label class="sr-only" for="archive-find">Find an archived or deleted item</label><input id="archive-find" class="search" type="search" placeholder="Find an item…"><div class="filters" id="archive-filters"></div><p id="archive-count" class="small-note" role="status"></p><div id="archive-list"></div><button type="button" id="archive-more" class="text-button" hidden>Show more items</button><p class="small-note archive-retention">Archive hides chats and projects from current navigation and search. Delete removes a goal from current work; restoring keeps its previous status. Neither expires automatically. Recovery copies follow their chosen retention; automatic removal is permanent.</p>${data.items.some(i=>i.kind==='recovery')?'<button type="button" class="text-button" id="archive-manage-recovery">Manage recovery copies</button>':''}${data.notes.map(n=>`<p class="small-note">${esc(n)}</p>`).join('')}`;
+  const labels={all:'All',archived:'Archived',deleted:'Deleted',recovery:'Recovery copies'},types={project:'Project',chat:'Chat',goal:'Goal',agent:'Agent',record:'Memory',collection:'Collection',file:'File',recovery:'File','deleted-file':'Deleted record','file-version':'Saved file copy'};let limit=50;
+  host.innerHTML=`<label class="sr-only" for="archive-find">Find an archived or deleted item</label><input id="archive-find" class="search" type="search" placeholder="Find an item…"><div class="filters" id="archive-filters"></div><p id="archive-count" class="small-note" role="status"></p><div id="archive-list"></div><button type="button" id="archive-more" class="text-button" hidden>Show more items</button><p class="small-note archive-retention">Archived items and deleted goals stay until restored. Archiving does not pause native schedules or move files. Deleted records use local file history (up to 20 versions per file, 500 entries and 256 MB); older copies can be removed as history fills. Recovery copies follow their chosen retention.</p>${data.items.some(i=>i.kind==='recovery')?'<button type="button" class="text-button" id="archive-manage-recovery">Manage recovery copies</button>':''}${data.notes.map(n=>`<p class="small-note">${esc(n)}</p>`).join('')}`;
   $('#archive-find').value=query;
   const paint=()=>{
     const q=$('#archive-find').value.trim().toLowerCase(),items=data.items.filter(i=>(filter==='all'||(i.state||({chat:'archived',goal:'deleted',recovery:'recovery'})[i.kind])===filter)&&i.title.toLowerCase().includes(q));
@@ -2586,7 +2615,7 @@ async function showArchivedItems(filter='all',query=''){
     if(b.id==='archive-manage-recovery'){dialog.close();await auraRecovery();}
     if(b.dataset.archiveRestore){
       const id=b.dataset.archiveRestore,kind=b.dataset.archiveKind;b.disabled=true;
-      try{await api(kind==='chat'?'/api/chats/archive':kind==='goal'?'/api/goals':kind==='project'?'/api/project-resources':'/api/recovery/update',{business:state.business,id,...(kind==='chat'?{archived:false}:{action:'restore'})});
+      try{await api('/api/archive',{business:state.business,id,kind,action:'restore'});
         if(scope!==JSON.stringify([state.data.workspace,state.business]))return;
         await refresh();if(dialog.open){await showArchivedItems(filter,$('#archive-find').value);$('#archive-find').focus();}
       }finally{if(b.isConnected)b.disabled=false;}
@@ -2594,10 +2623,11 @@ async function showArchivedItems(filter='all',query=''){
   });paint();
 }
 function indexShellSearch(source){
+  const fileRefs=new Set(source.files.flatMap(f=>[f.asset_id,...(/^(asset|asset-dir)\//.test(f.path)?[f.path.split('/')[1]]:[])].filter(Boolean)));
   const items=[
     ...source.chats.filter(c=>!c.archived&&!c.deleted_at&&!['deleted','trashed'].includes(c.status)).map(c=>({at:c.updated||c.created,type:'chats',label:'Chat',title:c.title,description:(c.summary||c.latest_request||c.description)?chatDescription(c):'',match:c.title+' '+((c.summary||c.latest_request||c.description)?chatDescription(c):''),attr:'data-chat',id:c.id})),
-    ...source.files.filter(usefulFile).map(f=>({favoriteKeys:[fileFavoriteKey(f.path)],at:f.modified,type:'files',label:'File',title:f.name,description:f.location_name||(!f.path.startsWith('asset/')?f.path:''),match:f.name+' '+f.path,attr:'data-search-file',id:f.path})),
-    ...source.records.filter(r=>!searchHidden(r.data)).map(r=>({at:r.data.updated_at||r.data.created_at,type:'records',label:'Memory',title:r.title,description:shareType(r.type||r.ref.split('/')[0]),match:r.title+' '+JSON.stringify(r.data),attr:'data-search-record',id:r.ref})),
+    ...source.files.filter(usefulFile).map(f=>({favoriteKeys:fileFavoriteKeys(f.path),at:f.modified,type:'files',label:'File',title:f.name,description:f.location_name||(!f.path.startsWith('asset/')?f.path:''),match:f.name+' '+f.path,attr:'data-search-file',id:f.path})),
+    ...source.records.filter(r=>!searchHidden(r.data)&&(r.type!=='Asset'||!fileRefs.has(r.ref))).map(r=>({at:r.data.updated_at||r.data.created_at,type:'records',label:'Memory',title:r.title,description:shareType(r.type||r.ref.split('/')[0]),match:r.title+' '+JSON.stringify(r.data),attr:'data-search-record',id:r.ref})),
     ...source.library.filter(libraryGuidance).map(i=>({favoriteKeys:[i.key,...(i.aliases||[])],at:i.updated_at,type:'library',label:'Library',title:i.title||i.name||i.id,description:[i.subtype||i.kind,(i.apps||[]).map(appName).join(', ')].filter(Boolean).join(' · '),match:JSON.stringify(i),attr:'data-search-library',id:i.key||i.id}))
   ];
   return items.map(i=>({...i,at:searchTimestamp(i.at),match:String(i.match).toLowerCase(),titleLower:String(i.title).toLowerCase()})).sort((a,b)=>b.at-a.at||a.titleLower.localeCompare(b.titleLower));

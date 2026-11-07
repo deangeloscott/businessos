@@ -8,6 +8,7 @@ const context={window:{auraFiles:{detach(){}}},libraryPrefs:()=>({favorites:['fi
   goalInfo:value=>value?.extensions?.businessos?.goal||{},closeAnchoredSurface(){},esc,empty:(title,detail)=>esc(title+' '+detail),appName:id=>id,shareType:type=>type,
   usefulFile:file=>!file.path.startsWith('instances/'),chatDescription:chat=>chat.description||''};
 vm.createContext(context);
+vm.runInContext(source.slice(source.indexOf('function fileFavoriteKey('),source.indexOf('function favoriteControl(')),context);
 vm.runInContext(source.slice(source.indexOf("let shellSearchFilter='all'"),source.indexOf('// A deliberately small Markdown renderer')),context);
 const chats={items:[{id:'chat',title:'Customer guide',description:'Retention plan',updated:100},{id:'old',title:'Hidden archived chat',archived:true,updated:900}]};
 const files={items:[{name:'Customer guide.md',path:'attachments/guide.md',modified:300},{name:'Asset.json',path:'instances/studio/assets/Asset.json'}]};
@@ -62,5 +63,18 @@ context.api=async()=>chats;context.cachedApi=async path=>path.startsWith('/api/f
   assert.match(detailContext.titleActions,/data-library-favorite/,'Inventory favorites belong beside the title');assert.doesNotMatch(detailContext.html,/Favorited|Favorite/);
   detailNode('#detail-content').scrollTop=85;await detailContext.openLibrary(child.key);assert.equal(detailContext.backLabel,'Execution');await detailContext.back();assert.equal(detailContext.title,'Execution');assert.equal(detailNode('#detail-content').scrollTop,85);
   detailNode('#detail').open=false;await detailContext.openLibrary(playbook.key);assert.match(detailContext.html,/item-location/);assert.match(detailContext.html,/Playbook/);assert.equal((detailContext.html.match(/Short summary/g)||[]).length,1);assert(!detailContext.html.includes('# Article Production'));
+  // Registering a previously unregistered file during archive must keep its favorite.
+  const archivedAsset={ref:'ast_guide',type:'Asset',title:'Customer guide',data:{location_reference:'attachments/guide.md'}};
+  context.state.data.records=[archivedAsset];
+  let prefs={favorites:['file:attachments/guide.md']};context.libraryPrefs=()=>prefs;
+  context.saveLibrary=async value=>{prefs=value;};context.renderQuickFiles=()=>{};
+  vm.runInContext(source.match(/^async function toggleFileFavorite\(.*$/m)[0],context);
+  const assetFile={name:'Customer guide.md',path:'asset/ast_guide/guide.md',asset_id:'ast_guide'};
+  assert(context.fileMarked(assetFile.path),'The same physical file keeps its favorite after registration');
+  const once=context.indexShellSearch({files:[assetFile],records:[archivedAsset],chats:[],library:[]});
+  assert.equal(once.length,1,'A registered file must not also appear as a memory result');
+  assert(once[0].favoriteKeys.includes('file:attachments/guide.md'));
+  await context.toggleFileFavorite(assetFile.path);assert(!context.fileMarked(assetFile.path),'Unfavorite removes the earlier path alias too');
+  await context.toggleFileFavorite(assetFile.path);assert(context.fileMarked('attachments/guide.md'),'Both entry paths use the same favorite');
   console.log('Workspace search passed: one labeled list, ranking, filters, all-result pagination, escaping, shared favorites, search return, partial availability, and stale-workspace isolation.');
 })().catch(error=>{console.error(error);process.exitCode=1;});

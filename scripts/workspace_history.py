@@ -93,7 +93,7 @@ def _commit(bid,prepared):
         latest={r['path']:r for r in rows}
         for row,content in prepared:
             previous=latest.get(row['path'])
-            if previous and previous['hash']==row['hash']:
+            if previous and previous['hash']==row['hash'] and row['reason']!='Deleted':
                 if 'mtime_ns' in row and previous.get('mtime_ns')!=row['mtime_ns']:
                     previous['mtime_ns']=row['mtime_ns'];changed=True
                 results.append(previous);continue
@@ -220,6 +220,19 @@ def restore(bid,ident,expected):
         if row['path'].startswith('instances/'):
             from remember import remember,MECHANICAL_FIELDS
             saved=json.loads(content);current=json.loads(path.read_text(encoding='utf-8')) if path.is_file() else None
+            if not current and saved.get('business_id')==bid:
+                from _common import object_index
+                from canonical_store import write_canonical
+                from validate_business import validate_business
+                if saved.get('object_type')=='Business' or saved.get('id') in object_index(bid):raise ValueError('This record already exists or cannot be restored here.')
+                try:
+                    write_canonical(saved,path)
+                    errors,warnings,counts=validate_business(bid)
+                    if errors:raise ValueError('This record cannot be restored until its references are available. Restore its related records first.')
+                except Exception:
+                    path.unlink(missing_ok=True)
+                    raise
+                return {'path':row['path'],'revision':revision(path),'restored':True,'validation':{'status':'clean','warnings':warnings[:5]}}
             if not current or saved.get('id')!=current.get('id') or saved.get('business_id')!=bid:
                 raise ValueError('Restore this business record through its business editor so its references can be reviewed.')
             content_fields={k:v for k,v in saved.items() if k not in MECHANICAL_FIELDS}

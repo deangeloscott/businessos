@@ -169,7 +169,7 @@ def resolve(app,bid,references,goal_id=None,pointers=False,sources=None):
             row.update(label=path.name,path=str(path),revision=f'{info.st_mtime_ns}:{info.st_size}',basis='File metadata at send; the native app reads the file when needed')
             text=f'File reference: {path}'
         elif kind in {'record','goal'}:
-            if index is None:index={r['ref']:r for r in records(bid)[0]};sources['records']=index
+            if index is None:index={r['ref']:r for r in records(bid,include_archived=True)[0]};sources['records']=index
             item=index.get(ident)
             if not item or (kind=='goal' and item['type']!='Objective'):raise ValueError('A selected record is no longer available in this business. Remove or choose it again.')
             if item['type']=='Objective' and workspace_goals.deleted(item['data']):raise ValueError('This goal was deleted. Restore it or remove it from the selected context.')

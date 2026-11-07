@@ -298,11 +298,12 @@ def show(bid,ident,q='',view='current',offset=0,limit=50,at=None,item_id='',hist
 
 
 def inventory(bid,project=''):
+    from workspace_lifecycle import archived
     out=[]
     p=projects.find(bid,project) if project else {};linked={r['id'] for r in p.get('members',[])};excluded={r['id'] for r in p.get('excluded_members',[])}
     for obj,p in object_index(bid).values():
         info=((obj.get('extensions') or {}).get('businessos',{}).get('collection') or {})
-        if obj['object_type']!='Asset' or not info.get('id'):continue
+        if obj['object_type']!='Asset' or not info.get('id') or archived(obj):continue
         if project and (obj['id'] in excluded or info['id'] in excluded or project not in ((obj.get('extensions') or {}).get('businessos',{}).get('work') or {}).get('project_refs',[]) and not linked.intersection({obj['id'],info['id']})):continue
         try:
             d=read(bid,info['id']);rows=[effective(i,d['feedback']) for i in d['items']]

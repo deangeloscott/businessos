@@ -25,7 +25,7 @@ def support(kind,agent,permission='native'):
     if kind=='hermes':
         from workspace_hermes import enabled
         if enabled(agent.get('argv',[]),agent.get('native_options'),permission):protocol='hermes-gateway'
-    return {'supported':bool(protocol),'protocol':protocol,'token_budget':kind in {'codex','omp'},'status_sync':kind in {'codex','omp'} or protocol=='hermes-gateway',
+    return {'supported':bool(protocol),'protocol':protocol,'token_budget':kind in {'codex','omp'},'status_sync':kind in {'codex','omp','claude'} or protocol=='hermes-gateway',
             'reason':{'pi':'Native goal mode is not available in this Pi connection. You can still use the goal in chat.',
                       'hermes':'Native goal mode is not available in this Hermes connection. Use Hermes directly for persistent goals, or use this goal as chat context.'}.get(kind,'Native goal mode is not available in this connection. You can still use the goal as chat context.') if not protocol else ''}
 
@@ -76,6 +76,28 @@ def observe(app,bid,chat,request,value):
     app.save_preferences()
 
 
+def claude_status(event,expected,native_id=None):
+    """Accept only native goal envelopes, never assistant prose or tool output.
+
+    Claude's goal_status attachment is version-dependent and not in every SDK's
+    typed union. Unknown shapes keep the existing review fallback.
+    """
+    if not isinstance(event,dict):return None
+    if native_id and event.get('session_id') not in {None,native_id}:return None
+    if event.get('type')=='system' and event.get('subtype')=='goal_status':value=event
+    elif event.get('type')=='attachment' and isinstance(event.get('attachment'),dict) and event['attachment'].get('type')=='goal_status':value=event['attachment']
+    else:return None
+    if not isinstance(value.get('condition'),str) or type(value.get('met')) is not bool:return None
+    state={'objective':value['condition'],'status':'completed' if value['met'] else 'active'}
+    if state['objective']!=expected:
+        return {**state,'status':'needs_review','reason':'The native goal changed. Review it before continuing.'}
+    if isinstance(value.get('reason'),str):state['reason']=value['reason'][:2000]
+    for source,target in [('tokens','tokensUsed'),('durationMs','timeUsedSeconds')]:
+        number=value.get(source)
+        if type(number) in {int,float} and __import__('math').isfinite(number) and number>=0:state[target]=number/1000 if source=='durationMs' else number
+    return state
+
+
 def control(app,bid,goal,action):
     """Change only the selected goal in its live process or saved native session."""
     from workspace_goals import metadata,scope,goals
@@ -93,7 +115,10 @@ def control(app,bid,goal,action):
             if execution and (getattr(execution,'native_goal',None) or {}).get('id')==goal['id']:
                 execution.goal_cancelled=True
                 if getattr(execution,'goal_control',None):execution.goal_control(action)
-                else:execution.stop()
+                else:
+                    execution.stop()
+                    chat['native_goal']={**(chat.get('native_goal') or {}),'status':'needs_review',
+                                         'reason':'Work stopped. This connection cannot confirm a saved native goal change. Check the goal in its AI app before resuming.'}
                 return
     state=chat.get('native_goal') or {}
     if state.get('goal_id')!=goal['id'] or not chat.get('native_id'):return
@@ -125,8 +150,8 @@ def saved_control(agent,kind,cwd,env,native_id,expected,action,expected_basis=No
             client('thread/resume',{'threadId':native_id})
             current=client('thread/goal/get',{'threadId':native_id}).get('goal')
             if not current:return {'status':'cleared'}
-            if action=='complete' and current.get('status')=='complete':return current
             if current.get('objective')!=expected:raise ValueError('The native goal changed. No native goal was modified.')
+            if action=='complete' and current.get('status')=='complete':return current
             result=client('thread/goal/clear',{'threadId':native_id,'origin':'user'}) if action=='clear' else client('thread/goal/set',{'threadId':native_id,'origin':'user','status':'complete' if action=='complete' else 'paused'})
             return result.get('goal') or {'status':'cleared'}
         return rpc(agent['argv'],call,cwd,env,experimental=True)
@@ -136,7 +161,8 @@ def saved_control(agent,kind,cwd,env,native_id,expected,action,expected_basis=No
         try:
             current=host.call('goal',op='get').get('goal')
             if not current:return {'status':'cleared'}
-            if not current.get('objective','').startswith(expected):raise ValueError('The native goal changed. No native goal was modified.')
+            actual=current.get('objective','')
+            if actual!=expected and not actual.startswith(expected+'\n\n'):raise ValueError('The native goal changed. No native goal was modified.')
             result=host.call('goal',op='pause' if action=='pause' else 'drop')
             return result.get('goal') or {'status':'cleared'}
         finally:host.close()

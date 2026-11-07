@@ -58,7 +58,7 @@ def _probe(bid,root,checks):
         checks.append({'name':'persistence_readback','ok':probe_ok,'detail':'temporary canonical probe created and read back' if probe_ok else 'temporary canonical probe was not readable'})
     finally:
         if probe_id:
-            try:forget(bid,probe_id)
+            try:forget(bid,probe_id,recoverable=False)
             except Exception as exc:
                 cleanup_ok=False;checks.append({'name':'probe_cleanup','ok':False,'detail':str(exc)})
             else:checks.append({'name':'probe_cleanup','ok':probe_id not in object_index(bid),'detail':'temporary probe removed'})

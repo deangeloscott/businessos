@@ -367,6 +367,15 @@ def agent_lines(process,kind,prompt,native_id,execution,errors):
                     execution.retry_check_at=None;execution.release_continuation()
                     execution.continuation_changed({'retry_at':None,'progress':'Continuing the assignment' if event.get('success') else 'Native retries ended'})
             if kind=='claude':
+                if goal:
+                    from workspace_native_goals import claude_status
+                    observed=claude_status(event,goal['objective'],native_id)
+                    if observed:
+                        last_goal_status=observed['status']
+                        yield json.dumps({'type':'aura_native_goal','goal':observed})
+                    if typ=='result' and event.get('is_error') is True:
+                        last_goal_status='needs_review'
+                        yield json.dumps({'type':'aura_native_goal','goal':{'status':'needs_review','reason':'The native goal stopped with an error. Resolve it before continuing.'}})
                 if typ=='control_response' and event.get('response',{}).get('request_id')=='aura-interrupt':
                     continue
                 if typ=='control_response' and event.get('response',{}).get('request_id')=='aura-init':
@@ -388,8 +397,11 @@ def agent_lines(process,kind,prompt,native_id,execution,errors):
                     elif subtype=='task_updated' and (event.get('patch') or {}).get('status') in {'completed','failed','stopped'}:tasks.discard(task)
                     elif subtype=='session_state_changed':session_state=event.get('state')
                 yield json.dumps(event)
-                if typ=='result':result_received=True;yield json.dumps({'type':'aura_reply_ready','background':bool(tasks) or session_state not in {None,'idle'}})
-                if result_received and not tasks and session_state in {None,'idle'} and not execution.helpers and not any(r['status']=='pending' for r in execution.requests.snapshot()):
+                if typ=='result':result_received=True;yield json.dumps({'type':'aura_reply_ready','background':bool(tasks) or session_state not in {None,'idle'} or last_goal_status=='active'})
+                if result_received and not tasks and session_state in {None,'idle'} and last_goal_status!='active' and not execution.helpers and not any(r['status']=='pending' for r in execution.requests.snapshot()):
+                    if goal and last_goal_status is None:
+                        last_goal_status='needs_review'
+                        yield json.dumps({'type':'aura_native_goal','goal':{'status':'needs_review','reason':'The native request ended without a recognized goal verdict. Review the result before marking this goal complete.'}})
                     if session:yield from next_request();continue
                     finished=True;break
             else:

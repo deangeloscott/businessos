@@ -29,7 +29,8 @@ def available(goal):return not deleted(goal) and goal.get('status','active')=='a
 
 def discoverable(obj):
     """Ordinary organization context uses active shared goals, never another chat's effort."""
-    return obj.get('object_type')!='Objective' or available(obj) and scope(obj)=='workspace'
+    from workspace_lifecycle import archived
+    return not archived(obj) and (obj.get('object_type')!='Objective' or available(obj) and scope(obj)=='workspace')
 
 
 def extensions(goal,info):

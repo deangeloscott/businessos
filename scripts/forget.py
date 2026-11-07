@@ -14,7 +14,7 @@ from validate_references import inbound_references
 
 
 @organization_transaction
-def forget(business_id,object_ref):
+def forget(business_id,object_ref,recoverable=True):
     resolved=resolve_business(business_id)
     if resolved.get('status')!='resolved':raise ValueError(resolved.get('reason') or 'Organization could not be resolved')
     bid=resolved['business_id'];idx=object_index(bid)
@@ -28,7 +28,11 @@ def forget(business_id,object_ref):
     path=Path(path);stored=json.loads(path.read_text(encoding='utf-8'))
     if not isinstance(stored,dict) or stored.get('id')!=object_ref:
         raise ValueError(f'{object_ref} is not stored as one independently removable canonical object')
-    snapshot=path.read_bytes();path.unlink()
+    snapshot=path.read_bytes()
+    from workspace_history import capture
+    retained=capture(path,bid,'Deleted',snapshot) if recoverable else {}
+    if retained.get('skipped'):raise ValueError('This record could not be preserved for recovery. Archive it instead.')
+    path.unlink()
     try:
         errors,warnings,counts=validate_business(bid,require_context=True)
         if errors:raise ValueError('Post-removal validation failed: '+'; '.join(errors[:12]))
@@ -36,7 +40,7 @@ def forget(business_id,object_ref):
         path.parent.mkdir(parents=True,exist_ok=True);path.write_bytes(snapshot);raise
     return {
         'status':'forgotten','business_id':bid,'object_ref':object_ref,'object_type':typ,
-        'former_path':storage_ref(path),'validation':{'status':'clean','warnings':warnings[:5],'canonical_object_counts':counts},
+        'former_path':storage_ref(path),'recovery_id':retained.get('id'),'validation':{'status':'clean','warnings':warnings[:5],'canonical_object_counts':counts},
         'rule':'The object was removed because no canonical state depended on it. AURA did not fabricate historical replacement state.'
     }
 

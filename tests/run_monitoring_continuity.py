@@ -28,8 +28,10 @@ def main():
     # The model-facing contract should describe the work naturally and keep the host free
     # to use whatever tools/Skills actually fit, rather than restoring an AURA tool ontology.
     skill=(ROOT/'skills/viraltrac-aura/SKILL.md').read_text()
-    for phrase in ['Use the host normally','AURA does not define an allowlist','Use monitoring correctly','actual wakeups, recurrence, retries, and notification delivery']:
-        req(phrase in skill,f'AURA Skill lost monitoring/tool boundary: {phrase}')
+    req('CONTEXT.md' in skill,'The Skill must point to the shared operating guidance')
+    contract=(ROOT/'CONTEXT.md').read_text(encoding='utf-8')
+    for phrase in ['Work normally','AURA does not define a tool allowlist or universal capability vocabulary.','## Monitoring','actual wakeups, recurrence, webhooks, retries, and notification delivery']:
+        req(phrase in contract,f'AURA guidance lost monitoring/tool boundary: {phrase}')
 
     tmp=Path(tempfile.mkdtemp(prefix='aura-monitoring-continuity-'));env={**os.environ,'BUSINESSOS_WORKSPACE':str(tmp),'PYTHONDONTWRITEBYTECODE':'1','PYTHONUTF8':'1'};prior=os.environ.get('BUSINESSOS_WORKSPACE')
     try:

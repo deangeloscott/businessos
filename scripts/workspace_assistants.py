@@ -7,12 +7,12 @@ import time
 from _common import workspace_root
 
 
-def profiles(preferences, business):
-    return preferences.get('assistants', {}).get(business, [])
+def profiles(preferences, business, include_archived=False):
+    return [p for p in preferences.get('assistants', {}).get(business, []) if include_archived or not p.get('archived_at')]
 
 
-def find(preferences, business, ident):
-    profile = next((p for p in profiles(preferences, business) if p['id'] == ident), None)
+def find(preferences, business, ident, include_archived=False):
+    profile = next((p for p in profiles(preferences, business, include_archived) if p['id'] == ident), None)
     if not profile:
         raise ValueError('This agent is no longer available in this workspace.')
     return profile
@@ -38,6 +38,7 @@ def validate(data):
             if not item.get('id') or not item.get('name', '').strip() or item['id'] in seen:
                 raise ValueError('Each agent needs a name and a unique identity.')
             seen.add(item['id'])
+            if 'archived_at' in item and (type(item['archived_at']) not in {int,float} or not __import__('math').isfinite(item['archived_at']) or item['archived_at']<=0):raise ValueError('An agent has an invalid archive date.')
             binding=item.get('native_agent')
             if binding is not None:
                 if not isinstance(binding,dict) or set(binding)-{'app','scope','file'} or not all(isinstance(binding.get(k),str) and binding[k] and len(binding[k])<300 for k in ('app','scope','file')):
@@ -55,7 +56,7 @@ def validate(data):
 
 def save(preferences, business, data):
     old = find(preferences, business, data['id']) if data.get('id') else {}
-    profile = {**old, 'id':old.get('id') or secrets.token_urlsafe(12), 'updated':time.time()}
+    profile = {**old, 'id':old.get('id') or 'agt_'+secrets.token_urlsafe(12), 'updated':time.time()}
     for field in ('name', 'description', 'instructions', 'app', 'model', 'effort', 'child_model'):
         if field in data:
             if not isinstance(data[field], str):
@@ -72,16 +73,23 @@ def save(preferences, business, data):
         from workspace_context import references
         profile['context_refs']=references(data['context_refs'])
     profile.setdefault('task_ids', [])
-    updated = [p for p in profiles(preferences, business) if p['id'] != profile['id']] + [profile]
+    updated = [p for p in profiles(preferences, business, True) if p['id'] != profile['id']] + [profile]
     validate({business:updated})
     preferences.setdefault('assistants', {})[business] = updated
     return profile
 
 
 def remove(preferences, business, ident):
-    find(preferences, business, ident)
-    preferences['assistants'][business] = [p for p in profiles(preferences, business) if p['id'] != ident]
+    find(preferences, business, ident)['archived_at'] = time.time()
     # Chats, schedules, files and their native histories are intentionally retained.
+
+
+def restore(preferences, business, ident):
+    profile = next((p for p in profiles(preferences, business, True) if p['id'] == ident), None)
+    if not profile:
+        raise ValueError('This agent is no longer available in this workspace.')
+    profile.pop('archived_at', None)
+    return profile
 
 
 def guidance(profile,child_native=False,native_primary=False):
@@ -114,10 +122,11 @@ def resolved(profile,kind,cwd,env,command=(),options=None,native_only=False):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('action', choices=['list', 'save', 'remove'])
+    parser.add_argument('action', choices=['list', 'save', 'remove', 'archive', 'restore'])
     parser.add_argument('--business', required=True)
     parser.add_argument('--input', help='JSON profile; use - to read standard input')
     parser.add_argument('--id')
+    parser.add_argument('--include-archived', action='store_true')
     args = parser.parse_args()
     from workspace_storage import view_preferences, save_view
     from workspace_catalog import preview
@@ -125,13 +134,13 @@ def main():
         raise ValueError('Choose a business in this workspace.')
     prefs = view_preferences(workspace_root())
     if args.action == 'list':
-        result = profiles(prefs, args.business)
+        result = profiles(prefs, args.business, args.include_archived)
     elif args.action == 'save':
         import sys
         result = save(prefs, args.business, json.loads(sys.stdin.read() if args.input == '-' else args.input or '{}'))
         save_view(workspace_root(), prefs)
     else:
-        remove(prefs, args.business, args.id)
+        (restore if args.action == 'restore' else remove)(prefs, args.business, args.id)
         save_view(workspace_root(), prefs)
         result = {'ok':True}
     print(json.dumps(result, ensure_ascii=False))

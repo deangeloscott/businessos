@@ -90,6 +90,77 @@ def main():
     else:raise AssertionError('Workspace goals must never start an autonomous chat loop')
     with tempfile.TemporaryDirectory(prefix='aura-goal-protocol-') as folder:
         root=Path(folder);fixture=root/'native.py';fixture.write_text(FIXTURE,encoding='utf-8')
+        from workspace_native_goals import saved_control
+        from unittest.mock import Mock
+        native_client=Mock();native_client.call.return_value={'goal':{'objective':'Finish the guide for a different project'}}
+        with patch('workspace_agents.Metadata',return_value=native_client):
+            try:saved_control({'argv':['fixture']},'omp',root,{},'native','Finish the guide','pause')
+            except ValueError:pass
+            else:raise AssertionError('An objective prefix is not the same native goal')
+        assert native_client.call.call_count==1
+        operations=[]
+        def codex_client(method,params):
+            operations.append(method)
+            return {'goal':{'objective':'Different completed goal','status':'complete'}}
+        with patch('workspace_codex.rpc',side_effect=lambda argv,callback,*a,**k:callback(codex_client)):
+            try:saved_control({'argv':['fixture']},'codex',root,{},'native','Finish the guide','complete')
+            except ValueError:pass
+            else:raise AssertionError('A foreign completed goal cannot confirm this assignment')
+        assert operations==['thread/resume','thread/goal/get']
+        from workspace_native_goals import claude_status
+        event={'type':'system','subtype':'goal_status','session_id':'native','condition':'Finish the guide','met':True,'tokens':120,'durationMs':2500}
+        assert claude_status(event,'Finish the guide','native')['status']=='completed'
+        assert claude_status(event,'Finish the guide','other') is None
+        assert claude_status({**event,'type':'assistant'},'Finish the guide') is None
+        assert claude_status({**event,'met':'true'},'Finish the guide') is None
+        assert claude_status({**event,'condition':'Different goal'},'Finish the guide')['status']=='needs_review'
+        native_claude=root/'claude.py'
+        native_claude.write_text("""import json,sys,os
+for line in sys.stdin:
+ event=json.loads(line)
+ if event.get('type')=='control_request':
+  print(json.dumps({'type':'control_response','response':{'request_id':event['request_id'],'subtype':'success','response':{'commands':[{'name':'goal'}]}}}),flush=True)
+ elif event.get('type')=='user':
+  if os.getenv('FIXTURE_GOAL_UNKNOWN'):
+   for item in [{'type':'system','subtype':'init','session_id':'native'},{'type':'assistant','message':{'content':[{'type':'text','text':'Result to review'}]}},{'type':'result','subtype':'success','result':'Result to review','session_id':'native'}]:print(json.dumps(item),flush=True)
+   continue
+  if os.getenv('FIXTURE_GOAL_ERROR'):
+   for item in [{'type':'system','subtype':'goal_status','condition':'Finish the guide','met':False,'sentinel':True},{'type':'result','is_error':True,'subtype':'error_during_execution','errors':['Native quota exhausted']}]:print(json.dumps(item),flush=True)
+   continue
+  for item in [
+   {'type':'system','subtype':'init','session_id':'native'},
+   {'type':'system','subtype':'goal_status','condition':'Finish the guide','met':False,'sentinel':True},
+   {'type':'assistant','message':{'content':[{'type':'text','text':'First step'}]}},
+   {'type':'result','subtype':'success','result':'First step','session_id':'native'},
+   {'type':'attachment','attachment':{'type':'goal_status','condition':'Finish the guide','met':False,'reason':'Continue with verification.'}},
+   {'type':'assistant','message':{'content':[{'type':'text','text':'Verified result'}]}},
+   {'type':'result','subtype':'success','result':'Verified result','session_id':'native'},
+   {'type':'attachment','attachment':{'type':'goal_status','condition':'Finish the guide','met':True,'reason':'The requested artifact was verified.'}}
+  ]: print(json.dumps(item),flush=True)
+""",encoding='utf-8')
+        observed=[];execution=Execution();execution.interactive=True
+        execution.native_goal=spec(goal,{},'claude',{})
+        result=run([sys.executable,str(native_claude)],'claude',root,os.environ.copy(),'Aura context and user request',None,'fixture','',lambda **v:observed.append(v),execution)
+        assert result['reply']=='Verified result'
+        assert [v['native_goal']['status'] for v in observed if 'native_goal' in v]==['active','active','completed'], observed
+        failed=Execution();failed.interactive=True;failed.native_goal=spec(goal,{},'claude',{});errors=[]
+        try:run([sys.executable,str(native_claude)],'claude',root,{**os.environ,'FIXTURE_GOAL_ERROR':'1'},'Aura context',None,'fixture','',lambda **v:errors.append(v),failed)
+        except ValueError:pass
+        else:raise AssertionError('A native goal error must not become a successful reply')
+        assert any(v.get('native_goal',{}).get('status')=='needs_review' for v in errors)
+        # A retained process must report missing evidence before it becomes idle,
+        # rather than waiting until the process eventually closes.
+        from workspace_native_sessions import Sessions
+        sessions=Sessions();pending=Execution();pending.interactive=True;pending.native_goal=spec(goal,{},'claude',{});unknown=[]
+        update=lambda **v:unknown.append(v)
+        try:
+            result=sessions.run(('proof','business','chat'),{'goal':pending.native_goal},'Aura context',None,pending,update,
+                lambda:run([sys.executable,str(native_claude)],'claude',root,{**os.environ,'FIXTURE_GOAL_UNKNOWN':'1'},'Aura context',None,'fixture','',update,pending),root)
+            assert result['reply']=='Result to review'
+            assert any(v.get('native_goal',{}).get('status')=='needs_review' for v in unknown)
+        finally:sessions.close()
+
+
         for kind in ('codex','omp','configured'):
             observed=[];execution=Execution();execution.interactive=True
             agent={'native_goal':{'protocol':'aura-goal-v1','argv':[sys.executable,str(fixture)],'token_budget':True}} if kind=='configured' else {}

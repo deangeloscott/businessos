@@ -421,7 +421,7 @@ def _native_run(command, kind, cwd, env, prompt, native_id, model, effort, updat
             prompt='/goal '+goal['objective']
         elif kind=='antigravity':prompt='/goal '+goal['objective']+'\n\n'+prompt
         result=_run(command,kind,cwd,env,prompt,native_id,model,effort,update,execution,extra)
-        if kind in {'claude','antigravity'}:update(native_goal={'status':'needs_review','reason':'The native goal request ended. This connection does not report a structured completion verdict to Aura.'})
+        if kind in {'claude','antigravity'} and not goal.get('verdict_received'):update(native_goal={'status':'needs_review','reason':'The native goal request ended without a recognized completion verdict. Review the result before marking this goal complete.'})
         return result
 
 
@@ -517,7 +517,10 @@ def _run(command, kind, cwd, env, prompt, native_id, model, effort, update, exec
             if event_type=='aura_compact_done':
                 final='Conversation compacted.';update(reply=final);continue
             if event_type=='aura_reply_ready':update(reply_ready=True,background_work=event.get('background',False),progress='Background work is running' if event.get('background') else 'Finishing your request');continue
-            if event_type=='aura_native_goal':update(native_goal=event.get('goal') or {})
+            if event_type=='aura_native_goal':
+                value=event.get('goal') or {}
+                if execution.native_goal and value.get('status') in {'complete','completed','paused','blocked','cleared','needs_review'}:execution.native_goal['verdict_received']=True
+                update(native_goal=value)
             elif event_type=='message_end':
                 message=event.get('message',{})
                 if message.get('role')=='assistant':

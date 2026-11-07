@@ -77,11 +77,13 @@ def selected(value):
     return result['business_id']
 
 
-def records(bid):
+def records(bid, include_archived=False):
     # Preserve diagnostics: an unreadable record must not silently look absent.
     diagnostics = []
     rows = []
     for obj, path in iter_instance_objects(bid, diagnostics=diagnostics):
+        if not include_archived and workspace_archive.archived(obj):
+            continue
         if not path.resolve().is_relative_to(workspace_root().resolve() / 'instances' / bid):
             diagnostics.append({'path': path.name, 'reason': 'Linked record is outside this business.'})
             continue
@@ -122,7 +124,7 @@ def local_file(bid, ref, locations=None):
         parts = ref.split('/',2)
         if len(parts) != 3:
             raise ValueError('Choose a saved file.')
-        asset = next((r for r in records(bid)[0] if r['type']=='Asset' and r['ref']==parts[1]),None)
+        asset = next((r for r in records(bid,include_archived=True)[0] if r['type']=='Asset' and r['ref']==parts[1]),None)
         path = asset_path(bid,asset['data'].get('location_reference')) if asset else None
         if not path or not path.is_dir():
             raise ValueError('This saved folder is missing. Reconnect it in Saved files & media.')
@@ -130,7 +132,7 @@ def local_file(bid, ref, locations=None):
         return workspace_locations.resolve('linked/'+parts[1]+'/'+parts[2],[item],private_path)
     if ref.startswith('asset/'):
         ident = ref.split('/',2)[1]
-        asset = next((r for r in records(bid)[0] if r['type']=='Asset' and r['ref']==ident),None)
+        asset = next((r for r in records(bid,include_archived=True)[0] if r['type']=='Asset' and r['ref']==ident),None)
         if not asset:
             raise ValueError('This saved file reference is no longer available.')
         path = asset_path(bid,asset['data'].get('location_reference'))
@@ -179,10 +181,24 @@ def asset_path(bid, value):
     return path
 
 
+def archived_paths(bid,rows=None):
+    rows=records(bid,include_archived=True)[0] if rows is None else rows
+    return {os.path.normcase(str(p)) for r in rows if workspace_archive.archived(r['data'])
+            for p in [workspace_root()/r['path'],asset_path(bid,r['data'].get('location_reference')) if r['type']=='Asset' else None] if p}
+
+
+def file_visible(path,hidden):
+    key=os.path.normcase(str(path))
+    return not any(key==p or key.startswith(p+os.sep) for p in hidden)
+
+
 def files(bid, locations=None, limit=None):
     root = workspace_root().resolve()
     out, seen, seen_paths, missing = [], set(), set(), []
-    rows, _ = records(bid)
+    all_rows, _ = records(bid, include_archived=True)
+    rows = [r for r in all_rows if not workspace_archive.archived(r['data'])]
+    hidden_paths = archived_paths(bid,all_rows)
+    def visible(path):return file_visible(path,hidden_paths)
     candidates, asset_refs = [], set()
     for row in rows:
         if row['type'] != 'Asset':
@@ -196,7 +212,7 @@ def files(bid, locations=None, limit=None):
             for item in found['items']:
                 item['path'] = item['path'].replace('linked/','asset-dir/',1)
                 item['asset'] = True
-                if os.path.normcase(item['local_path']) not in seen_paths:
+                if os.path.normcase(item['local_path']) not in seen_paths and visible(item['local_path']):
                     seen_paths.add(os.path.normcase(item['local_path']));out.append(item)
             continue
         if not path.is_file():
@@ -225,7 +241,7 @@ def files(bid, locations=None, limit=None):
         except (ValueError, OSError):
             continue
         key = os.path.normcase(str(path))
-        if key in seen_paths:
+        if key in seen_paths or not visible(path):
             continue
         seen_paths.add(key)
         seen.add(ref)
@@ -234,7 +250,7 @@ def files(bid, locations=None, limit=None):
         if limit is not None and len(out) >= limit:
             break
     linked = workspace_locations.entries(locations or [], private_path, MEDIA,limit)
-    return {'items': out + [f for f in linked['items'] if os.path.normcase(f['local_path']) not in seen_paths], 'locations': linked['locations'], 'missing_assets':missing,
+    return {'items': out + [f for f in linked['items'] if os.path.normcase(f['local_path']) not in seen_paths and visible(f['local_path'])], 'locations': linked['locations'], 'missing_assets':missing,
             'limited': (limit is not None and len(out) >= limit) or linked['limited']}
 
 
@@ -1157,7 +1173,8 @@ class Workspace:
         """Hide a saved chat from recents without changing its history or usage."""
         if not isinstance(archived,bool):raise ValueError('Choose whether to archive this chat.')
         with self.lock:
-            chat=next((c for c in self.preferences['chats'] if c['id']==ident and c['business_id']==bid),None)
+            chat=next((c for c in self.preferences['chats'] if c['id']==ident and c['business_id']==bid and
+                       Path(c.get('workspace') or self.workspace_path).resolve()==Path(self.workspace_path).resolve()),None)
             if not chat:raise ValueError('This chat does not belong to the selected business.')
             if archived and (chat.get('status')=='working' or any(j.get('chat_id')==ident for j in self.running_jobs(workspace_root()))):
                 raise ValueError('Finish or stop this request before archiving the chat.')
@@ -1629,7 +1646,7 @@ class Workspace:
             value=owner.cached_read(('files',bid,json.dumps(locations,sort_keys=True)),lambda:files(bid,locations),force=query.get('refresh')=='1')
             project_rows=workspace_chat_organization.projects(owner,bid)
             value={**value,'items':[dict(f) for f in value['items']],'workspace':owner.workspace_path,'projects':project_rows}
-            known={}
+            known={};hidden=archived_paths(bid)
             for row in records(bid)[0]:
                 if row['type']=='Asset':
                     bos=(row['data'].get('extensions') or {}).get('businessos',{})
@@ -1654,7 +1671,7 @@ class Workspace:
                 extra=owner.cached_read(('project-files',bid,project['id'],project['folder']),lambda p=project:workspace_locations.entries([{'id':p['id'],'name':p['name'],'path':p['folder'],'kind':'folder'}],private_path,MEDIA,2000),force=query.get('refresh')=='1')
                 for raw in extra['items']:
                     f=dict(raw)
-                    if f['local_path'] in seen:continue
+                    if f['local_path'] in seen or not file_visible(f['local_path'],hidden):continue
                     seen.add(f['local_path']);f.update(path=f['path'].replace('linked/','project/',1),project_refs=[project['id']]);value['items'].append(f)
                 value['limited']=value.get('limited',False) or extra['limited']
             if query.get('project'):value['items']=[f for f in value['items'] if query['project'] in f.get('project_refs',[])]
@@ -1687,7 +1704,7 @@ class Workspace:
         root=Path(self.workspace_path)
         writable=any(path.is_relative_to(root/area/bid) for area in ('attachments','knowledge')) and not private_path(path.relative_to(root))
         if path.is_relative_to(PRODUCT_ROOT) and not root.is_relative_to(PRODUCT_ROOT):writable=False
-        asset=next((r['data'] for r in records(bid)[0] if r['type']=='Asset' and asset_path(bid,r['data'].get('location_reference'))==path),None) if include_asset else None
+        asset=next((r['data'] for r in records(bid,include_archived=True)[0] if r['type']=='Asset' and asset_path(bid,r['data'].get('location_reference'))==path),None) if include_asset else None
         if asset and ((asset.get('extensions') or {}).get('businessos',{}).get('collection')):writable=False;managed=True
         return path,writable,asset,managed and not writable
 
@@ -1695,7 +1712,7 @@ class Workspace:
         path,writable,asset,managed=self.document_source(bid,ref,option)
         result=workspace_documents.inspect(path,writable,asset)
         result.update(ref=ref,option=option,managed=managed,workspace=self.workspace_path,location=str(path))
-        assets={r['ref']:r['data'] for r in records(bid)[0] if r['type']=='Asset'}
+        assets={r['ref']:r['data'] for r in records(bid,include_archived=True)[0] if r['type']=='Asset'}
         family={asset['id']} if asset else set()
         neighbors={key:set() for key in assets}
         for key,value in assets.items():
@@ -1790,8 +1807,10 @@ class Workspace:
         if data:
             if not self.portable_view_ok:raise ValueError('Saved workspace settings need attention before editing assistants.')
             action=data.get('action','save')
-            if action=='remove':
+            if action in {'remove','archive'}:
                 workspace_assistants.remove(self.preferences,bid,data.get('id'))
+            elif action=='restore':
+                workspace_assistants.restore(self.preferences,bid,data.get('id'))
             elif action=='assign_task':
                 ident=data.get('task_id')
                 task=next((t for t in workspace_schedules.inventory(workspaces=[workspace_root()])['items'] if t['id']==ident),None)
@@ -1870,8 +1889,6 @@ class Workspace:
                 f"For Python helpers, the running interpreter is {Path(sys.executable).as_posix()}. "
                 "Quote its full path for your shell; do not assume python3 is installed. "
                 "You can read workspace files directly with your normal tools. A simple conversation does not need helper calls.\n"
-                f"AURA Skill guidance for this task: read {PRODUCT_ROOT / 'skills/viraltrac-aura/SKILL.md'}. "
-                "This supplies guidance here; it does not establish a global Skill installation in your app.\n"
                 "Do the user's actual work with your normal tools, permissions and supported capabilities. "
                 "Use native delegation, approvals, tools, and execution normally. User instructions take priority over this contextual guidance. "
                 f"For relevant prior work across AI apps, use {PRODUCT_ROOT / 'scripts/workspace_context.py'} recall --business-id {bid} --workspace \"{workspace_root()}\" --search <specific query>. "
@@ -2130,7 +2147,7 @@ class Workspace:
             if assistant_id:
                 owner.load_portable()
                 try:
-                    owner._assistant = dict(workspace_assistants.find(owner.preferences,bid,assistant_id))
+                    owner._assistant = dict(workspace_assistants.find(owner.preferences,bid,assistant_id,include_archived=bool(existing)))
                 except ValueError:
                     if not existing:raise
                 if not existing and owner._assistant:
@@ -2261,7 +2278,7 @@ class Workspace:
                     if (chat or {}).get('native_id') and prior!=name:raise ValueError('Start a new chat to use a different Hermes profile. This chat keeps its original profile and history.')
                     native_options['session']={**native_options.get('session',{}),'profile':name}
             context_key=workspace_context.digest({'business':bid,'workspace':str(workspace_root().resolve()),'assistant':assistant,'working_preferences':self.profile().get('working_preferences',''),
-                'guidance':[(str(p),p.stat().st_mtime_ns,p.stat().st_size) for p in (PRODUCT_ROOT/'AGENTS.md',PRODUCT_ROOT/'skills/viraltrac-aura/SKILL.md')]})
+                'guidance':[(str(p),p.stat().st_mtime_ns,p.stat().st_size) for p in (PRODUCT_ROOT/'AGENTS.md',PRODUCT_ROOT/'CONTEXT.md')]})
             reuse_context=native and chat and chat.get('native_id') and chat.get('aura_context')==context_key and not any((welcome,keep_warm_id is not None,schedule_id,organization_id)) and not text.lstrip().startswith('/')
             if reuse_context:
                 prompt=f'Selected Aura business: {bid}.\n\nUser request:\n'+text.strip()
@@ -3111,7 +3128,7 @@ def handler_for(app):
                         raise ValueError('Workspace organization is running. Wait or stop it before making changes.')
                     if app.schedule_job and app.schedule_job['status']=='working' and (route in {'/api/lifecycle','/api/workspaces/open','/api/workspaces/create','/api/workspaces/relocate','/api/workspaces/restore'} or route.startswith('/api/organization/')):
                         raise ValueError('Wait for task setup or stop it before changing workspaces or restarting AURA.')
-                    if app.running_jobs(None if route in {'/api/lifecycle','/api/workspaces/relocate','/api/workspaces/restore'} else workspace_root()) and route not in {'/api/goals','/api/chat/answer','/api/permissions','/api/assistants','/api/agents','/api/native-agents','/api/delegation-settings','/api/preferences','/api/profile','/api/interface/reset','/api/chats/recover','/api/chats/archive','/api/chats/reconnect','/api/notifications','/api/chat','/api/chat/stop','/api/chats/new','/api/chats/open','/api/chats/rename','/api/chats/organize','/api/projects','/api/chats/model','/api/chats/personalization','/api/chats/context','/api/connect','/api/workspaces/open','/api/usage/settings','/api/context-settings','/api/updates','/api/schedules/action','/api/schedules/stop'}:
+                    if app.running_jobs(None if route in {'/api/lifecycle','/api/workspaces/relocate','/api/workspaces/restore'} else workspace_root()) and route not in {'/api/goals','/api/chat/answer','/api/archive','/api/permissions','/api/assistants','/api/agents','/api/native-agents','/api/delegation-settings','/api/preferences','/api/profile','/api/interface/reset','/api/chats/recover','/api/chats/archive','/api/chats/reconnect','/api/notifications','/api/chat','/api/chat/stop','/api/chats/new','/api/chats/open','/api/chats/rename','/api/chats/organize','/api/projects','/api/chats/model','/api/chats/personalization','/api/chats/context','/api/connect','/api/workspaces/open','/api/usage/settings','/api/context-settings','/api/updates','/api/schedules/action','/api/schedules/stop'}:
                         raise ValueError('Your agent is working. Wait for its reply before changing this workspace.')
                     if route in {'/api/preferences','/api/locations'}:
                         app.load_portable()
@@ -3213,6 +3230,9 @@ def handler_for(app):
                         self.send(200,workspace_organization.retire(data['id'],data['path'],int(data.get('days',0)),app.settings_file.parent,app.organization_references()))
                     elif route == '/api/organization/discard':
                         self.send(200,workspace_organization.discard(data['id'],app.settings_file.parent))
+                    elif route == '/api/archive':
+                        bid=selected(data.get('business'))
+                        self.send(200,workspace_archive.change(app,bid,data.get('kind'),data.get('id'),data.get('action','restore')))
                     elif route == '/api/recovery/update':
                         self.send(200,workspace_organization.recover(data['id'],data['action'],app.settings_file.parent,
                             int(data['days']) if 'days' in data else None,app.organization_references()))
@@ -3378,7 +3398,7 @@ def handler_for(app):
                         self.send(200, {'task':result})
                     elif route == '/api/files/reconnect':
                         bid = selected(data.get('business'))
-                        asset = next((r for r in records(bid)[0] if r['type']=='Asset' and r['ref']==data.get('ref')),None)
+                        asset = next((r for r in records(bid,include_archived=True)[0] if r['type']=='Asset' and r['ref']==data.get('ref')),None)
                         if not asset:
                             raise ValueError('That saved file is no longer available.')
                         path = workspace_locations.validate(str(data.get('path','')),workspace_root(),business_directory(),bid,private_path)

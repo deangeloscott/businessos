@@ -26,9 +26,10 @@ def _is_local(extension):return str(extension.get('workflow_id') or '').startswi
 def all_extensions(business_id,index=None):return [obj for obj,_ in (index.values() if index is not None else iter_instance_objects(business_id)) if obj.get('object_type')=='ProcessExtension']
 
 def active_extensions(business_id,team_ref=None,role_ref=None,operator_ref=None,index=None):
+    from workspace_lifecycle import archived
     out=[]
     for extension in all_extensions(business_id,index):
-        if extension.get('status')!='active' or not _scope_applies(extension,team_ref,role_ref,operator_ref):continue
+        if archived(extension) or extension.get('status')!='active' or not _scope_applies(extension,team_ref,role_ref,operator_ref):continue
         out.append(extension)
     return sorted(out,key=lambda extension:(SCOPE_ORDER.get(extension.get('scope'),99),extension.get('id','')))
 def get_extension(business_id,extension_id):

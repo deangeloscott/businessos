@@ -161,7 +161,7 @@ def main():
                 call('/api/agents',{'business':bid,'action':'remove','id':linked['id']})
                 assert Path(definition['path']).exists(),'Removing a profile removed the native definition'
             saved=call('/api/assistants',{'business':bid,'name':'Jeff','instructions':'Research carefully.','model':'assistant-model'})['items'][0]
-            assert storage.view_preferences(root)['assistants'][bid][0]['id']==saved['id']
+            assert assistants.profiles(storage.view_preferences(root),bid)[0]['id']==saved['id']
             call('/api/assistants',{'business':bid,'name':[]},400)
             call('/api/assistants',{'business':'another-business','name':'Wrong'},400)
             started=call('/api/chat',{'business':bid,'chat_id':'','text':'Find the next step.','assistant_id':saved['id']},202)
@@ -237,7 +237,7 @@ def main():
             assert 'DATASET_BODY_MUST_NOT_BE_IN_TASK_PROMPT' not in created[0]['description']
             assert app.schedule_job['task_id'] in assistants.find(storage.view_preferences(root),bid,cli_profile['id'])['task_ids']
             # Portable profiles survive a view round trip; another workspace cannot see them.
-            portable=storage.view_preferences(root);assert portable['assistants'][bid][0]['name']=='CLI assistant'
+            portable=storage.view_preferences(root);assert assistants.profiles(portable,bid)[0]['name']=='CLI assistant'
             other=base/'other';storage.save_view(other,{})
             assert not storage.view_preferences(other).get('assistants')
         finally:server.shutdown();server.server_close()

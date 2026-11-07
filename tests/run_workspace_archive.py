@@ -21,6 +21,7 @@ def main():
         app = Workspace(agent={'name':'Fixture','argv':[sys.executable]})
         app.preferences['chats'].append({'id':'archived','business_id':bid,'title':'Earlier work','agent':'configured','status':'complete','archived':True,'updated':10})
         app.preferences['chats'].append({'id':'other','business_id':'other','title':'Private elsewhere','archived':True,'updated':50})
+        app.preferences['chats'].append({'id':'other-workspace','business_id':bid,'workspace':str(base/'another-workspace'),'title':'Same business ID elsewhere','archived':True,'updated':50})
         goal = goals.save(bid, {'name':'Return to this goal','target':'Useful work','horizon':'This quarter','status':'active'})
         goals.remove(bid, goal['id']); app.save_preferences()
         ident = 'a'*32; recovery_root=base/'AURA Recovery'; copy=recovery_root/('Original-'+ident[:8]);copy.mkdir(parents=True);(copy/'kept.txt').write_text('Keep this work')
@@ -40,10 +41,18 @@ def main():
             call('/api/preferences',{'business':bid,'library':{'favorites':['file:bad\npath'],'recent':[]}},400)
             assert call('/api/state?business='+bid)['library_preferences']['favorites']==favorite_keys
             listed=call('/api/archive?business='+bid)['items'];assert {i['kind'] for i in listed}=={'chat','goal','recovery'} and 'other' not in {i['id'] for i in listed}
+            with patch('workspace_history.inventory',side_effect=PermissionError('Unreadable history')):
+                partial=call('/api/archive?business='+bid)
+                assert partial['items']==listed and partial['notes'],'A history read failure must not hide the available archive'
             def cli(*args):
-                result=subprocess.run([sys.executable,'-X','utf8',str(ROOT/'scripts/workspace_archive.py'),*args,'--workspace',str(root),'--business-id',bid,'--url',url,'--json'],capture_output=True,text=True,encoding='utf-8',check=True)
+                args=list(args)
+                if '--id' in args:
+                    at=args.index('--id');args[at:at+2]=['--id='+args[at+1]]
+                result=subprocess.run([sys.executable,'-X','utf8',str(ROOT/'scripts/workspace_archive.py'),*args,'--workspace',str(root),'--business-id',bid,'--url',url,'--json'],capture_output=True,text=True,encoding='utf-8')
+                assert result.returncode==0,result.stderr
                 return json.loads(result.stdout)
             assert cli('list')['items']==listed
+            call('/api/archive',{'business':bid,'kind':'chat','id':'other-workspace','action':'restore'},400)
             cli('restore','--kind','chat','--id','archived');assert not app.preferences['chats'][0]['archived']
             cli('restore','--kind','goal','--id',goal['id']);assert not goals.deleted(goals.find(bid,goal['id']))
             finished=goals.save(bid,{'name':'Delivered outcome','status':'completed'});goals.remove(bid,finished['id'])
@@ -51,6 +60,61 @@ def main():
             cli('restore','--kind','goal','--id',finished['id']);assert goals.find(bid,finished['id'])['status']=='completed'
             cli('restore','--kind','recovery','--id',ident);assert (base/'Original'/'kept.txt').read_text()=='Keep this work' and not copy.exists()
             assert call('/api/archive?business='+bid)['items']==[]
+            # One lifecycle across UI/API and CLI; archiving keeps native links and files.
+            import workspace_assistants as agents,workspace_collections as collections
+            from _common import object_index
+            from remember import remember
+            from forget import forget
+            agent=app.assistants(bid,{'name':'Research partner','instructions':'Use the actual sources','task_ids':['native-task']})['items'][0]
+            cli('archive','--kind','agent','--id',agent['id'])
+            assert not app.assistants(bid)['items']
+            app.assistants(bid,{'name':'Another partner'})
+            assert agents.profiles(app.preferences,bid,True)[0]['task_ids']==['native-task']
+            cli('restore','--kind','agent','--id',agent['id'])
+            assert agents.find(app.preferences,bid,agent['id'])['instructions']=='Use the actual sources'
+            saved=root/'attachments'/bid/'work'/'useful.md';saved.parent.mkdir(parents=True,exist_ok=True);saved.write_text('Useful output',encoding='utf-8')
+            relative=saved.relative_to(root).as_posix()
+            import workspace_projects as projects
+            project=projects.change(bid,{'name':'Launch','folder':str(saved.parent)})['project']
+            projects.change(bid,{'id':project['id'],'action':'link','reference':{'kind':'file','id':relative}})
+            cli('archive','--kind','file','--id',relative)
+            archived=next(i for i in cli('list')['items'] if i['kind']=='file')
+            assert saved.read_text()=='Useful output' and all(f['name']!='useful.md' for f in workspace_ui.files(bid)['items'])
+            assert all(r['ref']!=archived['id'] for r in workspace_ui.records(bid)[0])
+            assert not app.file_inventory(bid,{'project':project['id']})['items'],'Linked project folders must not reintroduce archived files'
+            assert not projects.resources(app,bid,project['id'])['items'],'Archive preserves links without showing them as current work'
+            from workspace_context import resolve
+            assert resolve(app,bid,[{'kind':'record','id':archived['id']}])['references'], 'Explicit selected references remain readable'
+            cli('restore','--kind','file','--id',archived['id'])
+            assert any(f['name']=='useful.md' for f in workspace_ui.files(bid)['items'])
+            assert projects.resources(app,bid,project['id'])['items'],'Restore returns the same project association'
+            collection=collections.create(bid,{'key':'shortlist','name':'Shortlist','purpose':'Keep useful findings current'})
+            cli('archive','--kind','collection','--id',collection['id'])
+            assert not collections.inventory(bid)['items']
+            collections.configure(bid,collection['id'],{'name':'Useful shortlist','revision':collections.revision(collections.read(bid,collection['id']))})
+            assert not collections.inventory(bid)['items'],'A producer must not silently unarchive a collection'
+            cli('restore','--kind','collection','--id',collection['asset_id'])
+            assert collections.inventory(bid)['items'][0]['name']=='Useful shortlist'
+            source=remember(bid,{'objects':[{'object_type':'SourceRecord','content':{'source_type':'user','source_reference':'A useful note','retrieved_at':'2026-11-07T12:00:00Z','access_scope':'organization'}}]})['objects'][0]['id']
+            original=object_index(bid)[source][0]
+            with patch.object(app,'running_jobs',return_value=[{'id':'busy','business_id':bid,'chat_id':'working'}]):
+                cli('archive','--kind','record','--id',source)
+            from workspace_goals import discoverable
+            assert not discoverable(object_index(bid)[source][0])
+            cli('restore','--kind','record','--id',source)
+            original=object_index(bid)[source][0]
+            deleted=forget(bid,source);assert source not in object_index(bid)
+            cli('restore','--kind','deleted-file','--id',deleted['recovery_id'])
+            assert object_index(bid)[source][0]==original,'Restoration preserves canonical identity and original meaning'
+            assert not cli('list')['items']
+            import workspace_history
+            draft=root/'attachments'/bid/'work'/'notes.md';draft.write_text('Useful working notes',encoding='utf-8')
+            workspace_history.capture(draft,bid,'Observed native work');draft.unlink()
+            recovery=next(i for i in cli('list')['items'] if i['kind']=='file-version')
+            assert recovery['state']=='recovery','Missing does not establish why a native file disappeared'
+            cli('restore','--kind','file-version','--id',recovery['id'])
+            assert draft.read_text()=='Useful working notes'
+            call('/api/archive',{'business':bid,'kind':'record','id':next(o['id'] for o,p in object_index(bid).values() if o['object_type']=='Business'),'action':'archive'},400)
             assert permissions.arguments('antigravity','native')==[]
             assert permissions.arguments('antigravity','full')==['--dangerously-skip-permissions']
             assert json.loads(permissions.arguments('antigravity','review')[1])['toolPermission']=='request-review'

@@ -182,15 +182,20 @@ def asset_context(bid,obj):
 
 
 def resources(app,bid,ident):
-    from workspace_ui import records
-    p=find(bid,ident,archived=True);rows=records(bid)[0];index={r['ref']:r for r in rows};out=[]
+    from workspace_ui import records,archived_paths,file_visible
+    from workspace_lifecycle import archived
+    all_rows=records(bid,include_archived=True)[0];hidden_refs={r['ref'] for r in all_rows if archived(r['data'])};hidden_paths=archived_paths(bid,all_rows)
+    p=find(bid,ident,archived=True);rows=[r for r in all_rows if r['ref'] not in hidden_refs];index={r['ref']:r for r in rows};out=[]
     excluded={r['id'] for r in p.get('excluded_members',[])}
     for ref in p.get('members',[]):
+        if ref['id'] in hidden_refs:continue
         record=index.get(ref['id']);label=record['title'] if record else ref['id'];available=bool(record) if ref['kind'] in {'asset','record','goal'} else None
         if ref['kind']=='file':
             try:
                 from workspace_ui import local_file
-                original=local_file(bid,ref['id'],app.preferences.get('file_locations',{}).get(bid,[]));label=original.name;available=True
+                original=local_file(bid,ref['id'],app.preferences.get('file_locations',{}).get(bid,[]))
+                if not file_visible(original,hidden_paths):continue
+                label=original.name;available=True
             except (ValueError,OSError):label=Path(ref['id']).name;available=False
         elif ref['kind']=='library':
             import workspace_library
