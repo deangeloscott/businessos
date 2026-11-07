@@ -3,6 +3,7 @@ import argparse
 import hashlib
 import json
 import os
+import secrets
 import time
 from pathlib import Path
 from _common import workspace_root,workspace_scope,resolve_business,write_json_atomic,object_index
@@ -105,7 +106,7 @@ def change(bid,data,legacy=()):
         if action=='create' and old:raise ValueError('An archived project uses this name. Restore it in Archive & recovery, or choose another name.' if old.get('status')=='archived' else 'A project with this name already exists.')
         if action!='create' and not old:raise ValueError('This project is no longer available.')
         if old and data.get('revision') is not None and data['revision']!=digest(old):raise ValueError('This project changed. Reopen it before saving.')
-        p=dict(old or {'id':identity(bid,project_name(data.get('name'))),'business_id':bid,'members':[],'context_refs':[]})
+        p=dict(old or {'id':'prj_'+secrets.token_hex(10),'business_id':bid,'members':[],'context_refs':[]})
         p.setdefault('context_refs',[]);p.setdefault('members',[])
         if action in {'create','edit'}:
             name=project_name(data.get('new_name',data.get('name',p.get('name'))))

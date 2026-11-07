@@ -36,6 +36,15 @@ def main():
         saved=remember(bid,{'objects':[{'object_type':'Asset','content':{'asset_type':'document','business_role':'Funding brief','version':'1','status':'active','location_reference':output.relative_to(root).as_posix()}}]})
         obj=object_index(bid)[saved['objects'][0]['id']][0];assert ident in obj['extensions']['businessos']['work']['project_refs']
         assert projects.resources(app,bid,ident)['items'][0]['id']==obj['id']
+        # Reusing a renamed project's former label creates a separate identity.
+        another=organization.change_project(app,bid,{'name':'Funding'})['project']
+        assert another['id']!=ident
+        assert {p['name'] for p in projects.list_projects(bid)}=={'Funding','Funding opportunities'}
+        assert projects.find(bid,ident)['folder']==str(folder)
+        assert projects.resources(app,bid,ident)['items'][0]['id']==obj['id']
+        assert projects.resources(app,bid,another['id'])['items']==[]
+        assert projects.binding(bid,'chat','producer-chat')['project_refs']==[ident]
+        organization.change_project(app,bid,{'name':'Funding','action':'remove'})
         c=collections.create(bid,{'key':'grants','name':'Grant shortlist','source_refs':['agency-a','agency-b']});cid=c['id']
         assert collections.create(bid,{'key':'grants','name':'Grant shortlist'})['existing']
         assert collections.show(bid,cid)['project_refs']==[ident]

@@ -273,8 +273,13 @@ def check_summary(c):
 
 
 def show(bid,ident,q='',view='current',offset=0,limit=50,at=None,item_id='',history=False):
-    d=read(bid,ident);needle=str(q).casefold();rows=[effective(i,d['feedback'],at) for i in d['items']]
+    d=read(bid,ident);needle=str(q).casefold()
     if view not in {'current','all','saved','handled','review','changes'}:raise ValueError('Choose Current, Changes, Saved, Review, Handled, or All.')
+    if item_id:
+        selected=next((effective(i,d['feedback'],at) for i in d['items'] if i['id']==item_id),None)
+        if not selected:raise ValueError('This result is unavailable. Refresh the collection.')
+        return {'item':selected,'revision':revision(d),'collection_id':d['id']}
+    rows=[effective(i,d['feedback'],at) for i in d['items']]
     if view=='current':rows=[r for r in rows if r['display_state']=='active' and not r['hidden']]
     elif view=='saved':rows=[r for r in rows if r['saved']]
     elif view=='handled':rows=[r for r in rows if r['hidden'] or r['disposition']=='acknowledged' or r['display_state']!='active']
@@ -283,10 +288,6 @@ def show(bid,ident,q='',view='current',offset=0,limit=50,at=None,item_id='',hist
         rows=[r for r in rows if not r['hidden'] and (r['changed_since_handled'] or r['disposition']!='acknowledged')]
     if needle:rows=[r for r in rows if needle in json.dumps({k:r.get(k) for k in ('title','summary','fields','source_refs')},ensure_ascii=False).casefold()]
     offset=max(0,int(offset));limit=max(1,min(100,int(limit)))
-    if item_id:
-        selected=next((effective(i,d['feedback'],at) for i in d['items'] if i['id']==item_id),None)
-        if not selected:raise ValueError('This result is unavailable. Refresh the collection.')
-        return {'item':selected,'revision':revision(d),'collection_id':d['id']}
     def compact(r):
         return {**{k:v for k,v in r.items() if k not in {'fields','reported','summary','source_refs','correction_note'}},'summary':r.get('summary','')[:800],
                 'fields':{k:(v if isinstance(v,(bool,int,float)) or v is None else str(v)[:200]) for k,v in list(r.get('fields',{}).items())[:6]},'excerpt':True}
