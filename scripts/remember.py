@@ -183,13 +183,19 @@ def remember(business_id,payload):
             elif path.exists():path.unlink()
         raise
 
+    # Optional feedback observes a confirmed save; it never changes persistence semantics.
+    try:
+        from workspace_memory_feedback import record
+        feedback=record(bid,prepared,snapshots)
+    except (OSError,ValueError,TypeError,KeyError):feedback=[]
+
     rows=[{
         'key':row['key'],'id':row['id'],'object_type':row['type'],
         'operation':'updated' if row['existing'] else 'created','removed_fields':list(row['remove_fields']),'path':storage_ref(row['path'])
     } for row in prepared]
     return {
         'format_version':'1.0','status':'persisted','business_id':bid,'objects':rows,'receipt':_receipt(rows),
-        'corrections':corrections,
+        'corrections':corrections,'memory_feedback':[r['id'] for r in feedback],
         'knowledge_view':knowledge_layer_freshness(bid),
         'validation':{'status':'clean','warnings':warnings[:5],'canonical_object_counts':counts,'scope':'Schema, reference/provenance integrity and organization isolation; not factual accuracy, artifact quality, deployment or measured effect.'},
         'semantic_boundary':'Only caller-authored organizational meaning was persisted; AURA supplied mechanical canonical wrapping, explicit field removal, storage, and integrity validation.',

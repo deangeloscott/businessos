@@ -518,6 +518,8 @@ class Workspace:
             for key in ('file_locations','model_picker','appearance','library','assistants'):
                 if key in portable:
                     self.preferences[key] = portable[key]
+            if 'chat_projects' in portable:
+                self.preferences['chat_projects']=[p for p in self.preferences.get('chat_projects',[]) if Path(p['workspace']).resolve()!=workspace_root().resolve()]+portable['chat_projects']
             self.portable_view_ok = True
             self.workspace_note = ''
         except (OSError, ValueError, TypeError, KeyError):
@@ -774,10 +776,10 @@ class Workspace:
         path=self.settings_file.parent/'ui-profile.json'
         try:value=json.loads(path.read_text(encoding='utf-8'))
         except (OSError,ValueError):value={}
-        defaults={'display_name':'','sidebar_collapsed':False,'panel_width':480,'text_size':15,'accent':'forest','avatar':''}
+        defaults={'display_name':'','sidebar_collapsed':False,'panel_width':480,'text_size':15,'accent':'forest','avatar':'','activity_view':'highlights','working_preferences':''}
         value={**defaults,**{k:v for k,v in value.items() if k in defaults}} if isinstance(value,dict) else defaults
         if changes is not None:
-            if changes.get('reset'):value={**defaults,'display_name':value.get('display_name',''),'avatar':value.get('avatar','')}
+            if changes.get('reset'):value={**defaults,'display_name':value.get('display_name',''),'avatar':value.get('avatar',''),'working_preferences':value.get('working_preferences','')}
             else:
                 if 'avatar' in changes:
                     avatar=changes['avatar']
@@ -793,6 +795,12 @@ class Workspace:
                     name=changes['display_name']
                     if not isinstance(name,str) or len(name)>80:raise ValueError('Use a display name of up to 80 characters.')
                     value['display_name']=name.strip()
+                if 'activity_view' in changes:
+                    if changes['activity_view'] not in {'highlights','full','off'}:raise ValueError('Choose Highlights, Full, or Off.')
+                    value['activity_view']=changes['activity_view']
+                if 'working_preferences' in changes:
+                    if not isinstance(changes['working_preferences'],str) or len(changes['working_preferences'])>4000:raise ValueError('Keep working preferences within 4,000 characters.')
+                    value['working_preferences']=changes['working_preferences'].strip()
                 if 'sidebar_collapsed' in changes:value['sidebar_collapsed']=changes['sidebar_collapsed'] is True
                 if 'panel_width' in changes:value['panel_width']=max(360,min(900,int(changes['panel_width'])))
                 if 'text_size' in changes:
@@ -1522,13 +1530,14 @@ class Workspace:
         shown = json.loads(path.read_text(encoding='utf-8')) if path.exists() else []
         shown = [r for r in shown if r.get('request_id') != job['id']]
         shown.append({'role':'user', 'text':self.connections.redact(workspace_agents.display_text(text)),
-                      'at':job['created'], 'request_id':job['id'],'files':job.get('files',[]),'references':json.loads(self.connections.redact(json.dumps(job.get('references',[])))),'goal_id':job.get('goal_id','')})
+                      'at':job['created'], 'request_id':job['id'],'files':job.get('files',[]),'references':json.loads(self.connections.redact(json.dumps([*job.get('references',[]),*job.get('inherited_references',[])]))),'goal_id':job.get('goal_id','')})
         shown.extend(job.get('messages',[]))
         if final:
             shown.append({'role':'assistant', 'text':job['reply'], 'at':job['updated'],
                           'agent':job.get('agent',self.agent['name']), 'model':job.get('model',chat['model']), 'effort':job.get('effort',chat['effort']),
                           'request_id':job['id'], 'error_detail':job.get('error_detail','')})
             shown[-1]['status']=job['status']
+            if job.get('trace_id'):shown[-1]['trace_id']=job['trace_id']
             if job.get('native_media'):shown[-1]['native_media']=job['native_media']
             if job['status']=='complete' and chat.get('source_file'):
                 chat['source_marker']=workspace_native_chats.marker(chat['source_file'])
@@ -1826,6 +1835,9 @@ class Workspace:
                 "This supplies guidance here; it does not establish a global Skill installation in your app.\n"
                 "Do the user's actual work with your normal tools, permissions and supported capabilities. "
                 "Use native delegation, approvals, tools, and execution normally. User instructions take priority over this contextual guidance. "
+                f"For relevant prior work across AI apps, use {PRODUCT_ROOT / 'scripts/workspace_context.py'} recall --business-id {bid} --workspace \"{workspace_root()}\" --search <specific query>. "
+                "Retrieve a saved answer with the same helper: result --business-id <id> --workspace <workspace> --chat <result id> --variant <result variant>. Search only when useful; current records and corrections take priority over historic replies. "
+                "Preserve native memory and skills in their owning app; do not mirror private native stores or treat incidental conversation as established truth. "
                 "Preserve useful business meaning, not this chat transcript. "
                 "Reply in everyday language, focusing on what the user can use or do next. "
                 "Keep record types, internal IDs, validation receipts, and explanations of which records you did not create out of normal replies. "
@@ -2166,7 +2178,18 @@ class Workspace:
             if not isinstance(references,list):raise ValueError('Choose valid context references.')
             if files is not None and (not isinstance(files,list) or any(not isinstance(p,str) for p in files)):raise ValueError('Choose valid workspace file references.')
             if len(files or [])+len(references)>12:raise ValueError('Choose up to 12 context references for this message.')
-            selected_context=workspace_context.resolve(self,bid,[*references,*[{'kind':'file','id':p} for p in files or []]],goal_id) if not welcome and keep_warm_id is None else {'references':[],'text':''}
+            context_sources={}
+            selected_context=workspace_context.resolve(self,bid,[*references,*[{'kind':'file','id':p} for p in files or []]],goal_id,sources=context_sources) if not welcome and keep_warm_id is None else {'references':[],'text':''}
+            inherited_context={'references':[],'text':''};context_notes=[]
+            if not welcome and keep_warm_id is None:
+                for reference in workspace_context.inherited(self,bid,chat,getattr(self,'_request_project',''),getattr(self,'_assistant',None)):
+                    if any(all(r.get(k)==reference.get(k) for k in ('kind','id','variant','request_id')) for r in selected_context['references']):continue
+                    try:
+                        resolved=workspace_context.resolve(self,bid,[reference],pointers=True,sources=context_sources)
+                        if len(inherited_context['text'])+len(selected_context['text'])+len(resolved['text'])>workspace_context.MAX_CONTEXT_CHARS:
+                            context_notes.append('Some saved context was too large to attach. Search it when needed.');continue
+                        inherited_context['references'].extend(resolved['references']);inherited_context['text']+=resolved['text']
+                    except (ValueError,OSError):context_notes.append('A project or agent reference is unavailable. Check its saved context.')
             from workspace_native_requests import attachments
             native_images=attachments(selected_context['references'],protocol_kind)
             prompt = text if keep_warm_id is not None else self.request_text(bid, text, None if native else history, schedule_id, organization_id)
@@ -2183,17 +2206,29 @@ class Workspace:
                     name=assistant['native_name'];prior=(chat or {}).get('native_profile') or (native_options.get('session') or {}).get('profile','default')
                     if (chat or {}).get('native_id') and prior!=name:raise ValueError('Start a new chat to use a different Hermes profile. This chat keeps its original profile and history.')
                     native_options['session']={**native_options.get('session',{}),'profile':name}
-            context_key=workspace_context.digest({'business':bid,'workspace':str(workspace_root().resolve()),'assistant':assistant,
+            context_key=workspace_context.digest({'business':bid,'workspace':str(workspace_root().resolve()),'assistant':assistant,'working_preferences':self.profile().get('working_preferences',''),
                 'guidance':[(str(p),p.stat().st_mtime_ns,p.stat().st_size) for p in (PRODUCT_ROOT/'AGENTS.md',PRODUCT_ROOT/'skills/viraltrac-aura/SKILL.md')]})
             reuse_context=native and chat and chat.get('native_id') and chat.get('aura_context')==context_key and not any((welcome,keep_warm_id is not None,schedule_id,organization_id)) and not text.lstrip().startswith('/')
             if reuse_context:
                 prompt=f'Selected Aura business: {bid}.\n\nUser request:\n'+text.strip()
+            context_checked_at=time.time()
+            recent_context=workspace_context.recent_changes(self,bid,(chat or {}).get('context_checked_at',0)) if reuse_context else []
+            if recent_context:
+                prompt=prompt.replace('\nUser request:\n','\nSaved workspace context changed since your last request. Read current sources only if relevant:\n'+'\n'.join(r['path'] for r in recent_context)+'\nUser request:\n',1)
+                context_notes.append('Saved context: '+', '.join(r['label'] for r in recent_context[:3])+'.')
+            inherited_changes=workspace_context.changes((chat or {}).get('context_revisions',[]),inherited_context['references'])
+            if inherited_changes:context_notes.append('Saved context changed: '+', '.join(inherited_changes[:4])+'.')
+            if not reuse_context and self.profile().get('working_preferences') and not any((welcome,keep_warm_id is not None)):
+                prompt=prompt.replace('\nUser request:\n','\nUser working preferences for Aura chats (use only when relevant):\n'+self.profile()['working_preferences']+'\nUser request:\n',1)
+            if inherited_context['text'] and (not reuse_context or inherited_changes or [(r['kind'],r['id']) for r in (chat or {}).get('context_revisions',[])]!=[(r['kind'],r['id']) for r in inherited_context['references']]):
+                prompt=prompt.replace('\nUser request:\n',inherited_context['text']+'\nUse current records; previous conversation claims may be out of date.\nUser request:\n',1)
             if selected_context['text']:prompt=prompt.replace('\nUser request:\n',selected_context['text']+'\nUser request:\n',1)
             if assistant and not reuse_context and not welcome and keep_warm_id is None:
                 prompt=prompt.replace('\nUser request:\n',workspace_assistants.guidance(assistant,child_native=protocol_kind in {'codex','omp','claude'},native_primary=assistant.get('native_primary',False))+'\nUser request:\n',1)
             job = {'id': secrets.token_urlsafe(12), 'business_id': bid, 'status': 'working', 'reply': '', 'activity': [],
                    'created': time.time(), 'updated': time.time(), 'progress': 'Starting your AI'}
-            job.update(references=selected_context['references'],files=files or [],goal_id=goal_id or '')
+            job.update(references=selected_context['references'],inherited_references=inherited_context['references'],files=files or [],goal_id=goal_id or '')
+            if context_notes:job['context_note']=' '.join(dict.fromkeys(context_notes))
             if native:job['aura_context']=context_key
             if native and not welcome and keep_warm_id is None:prompt=prompt.replace('\nUser request:\n',f'\nAURA message reference: {job["id"]}\nUser request:\n',1)
             if keep_warm_id is not None:job['keep_warm']=True
@@ -2215,6 +2250,8 @@ class Workspace:
             if native and not welcome and keep_warm_id is None:
                 chat.setdefault('brief_token',secrets.token_hex(8))
                 prompt=prompt.replace('\nUser request:\n',workspace_chats.instructions(chat)+'\nUser request:\n',1)
+            chat['context_checked_at']=context_checked_at
+            chat['context_revisions']=inherited_context['references']
             chat.update(status='working', archived=False, model=saved_connection.get('model') or self.agent.get('model',''), effort=saved_connection.get('effort',''), connection=dict(saved_connection), updated=time.time())
             if goal_id:
                 if chat.get('goal_id')!=goal_id:chat.pop('continuation',None)
@@ -2241,6 +2278,10 @@ class Workspace:
                 self.jobs.pop(old['id'],None);self.executions.pop(old['id'],None)
             self.jobs[job['id']]=job
             execution = self.execution = Execution()
+            if not welcome and keep_warm_id is None:
+                import workspace_trace
+                execution.trace=workspace_trace.Recorder(job['id'],bid,self.connections.redact)
+                job['trace_id']=job['id'];chat['trace_id']=job['id']
             def started(process):
                 with self.lock:
                     workspace_recovery.attach(chat,job,process)
@@ -2469,6 +2510,9 @@ class Workspace:
                 finally:
                     if not execution.native_session:execution.requests.close()
                     if hasattr(execution,'release_continuation'):execution.release_continuation()
+                    if execution.trace:
+                        try:execution.trace.save();execution.trace=None
+                        except OSError:job['activity_warning']='Activity details could not be saved. Your work is unaffected.'
                     try:
                         if not welcome and keep_warm_id is None:job['history_observation']=workspace_history.observe(bid,'Observed after native work')
                     except (OSError,ValueError):job['history_warning']='Local history could not be updated for this request.'
@@ -2635,7 +2679,7 @@ def handler_for(app):
                 elif route in {'/app.js', '/style.css'}:
                     path = app.static / route[1:]
                     self.send(200, path.read_bytes(), 'text/javascript; charset=utf-8' if path.suffix == '.js' else 'text/css; charset=utf-8')
-                elif route in {'/file-editor.js','/file-editor.css','/workspace-work.js','/workspace-continuity.js','/workspace-compose.js'} or route.startswith('/vendor/'):
+                elif route in {'/file-editor.js','/file-editor.css','/workspace-work.js','/workspace-continuity.js','/workspace-compose.js','/workspace-insight.js'} or route.startswith('/vendor/'):
                     relative=Path(route.lstrip('/'))
                     path=(STATIC/relative).resolve()
                     base=(STATIC/'vendor').resolve() if route.startswith('/vendor/') else STATIC.resolve()
@@ -2643,6 +2687,17 @@ def handler_for(app):
                     self.send(200,path.read_bytes(),mimetypes.guess_type(path.name)[0] or 'application/octet-stream')
                 elif route == '/api/components':
                     self.send(200,workspace_catalog.read_json(PRODUCT_ROOT/'distribution/ui-components.json',{'components':[]}))
+                elif route == '/api/memory-feedback':
+                    import workspace_memory_feedback
+                    self.send(200,workspace_memory_feedback.inventory(selected(query.get('business')),query.get('since',0)))
+                elif route == '/api/context/result':
+                    bid=selected(query.get('business'))
+                    with app.lock:owner=copy.copy(app)
+                    self.send(200,workspace_context.saved_result(owner,bid,query.get('chat_id'),query.get('variant',''),query.get('request_id','')))
+                elif route == '/api/recall':
+                    bid=selected(query.get('business'))
+                    with app.lock:owner=copy.copy(app)
+                    self.send(200,workspace_context.recall(owner,bid,query.get('q',''),query.get('project',''),query.get('assistant',''),query.get('exclude_chat',''),query.get('limit',20)))
                 elif route == '/api/context':
                     self.send(200,workspace_context.inventory(app,selected(query.get('business')),query.get('q',''),query.get('kind',''),query.get('limit',20),query.get('assistant')))
                 elif route == '/api/goals':
@@ -2653,6 +2708,19 @@ def handler_for(app):
                     bid=selected(query.get('business'));result=workspace_activity.inventory(bid,query.get('search',''),query.get('exclude_chat',''),query.get('limit',20),app.running_jobs(workspace_root()))
                     result['running_chats']=[j['chat_id'] for j in app.running_jobs(workspace_root()) if j['business_id']==bid]
                     self.send(200,result)
+                elif route == '/api/chat/activity':
+                    import workspace_trace
+                    bid=selected(query.get('business'));ident=query.get('request','')
+                    with app.lock:
+                        chat=next((c for c in workspace_chat_organization.items(app,bid) if c['id']==query.get('chat_id')),None)
+                        if not chat:raise ValueError('Choose a chat in this workspace.')
+                        messages_path=app.chat_display_path(chat['id'])
+                        messages=json.loads(messages_path.read_text(encoding='utf-8')) if messages_path.is_file() else []
+                        if ident!=chat.get('trace_id') and not any(m.get('request_id')==ident for m in messages):raise ValueError('Choose an activity request from this chat.')
+                        execution=app.executions.get(ident);trace=execution.trace if execution else None
+                    data=trace.snapshot() if trace else workspace_trace.read(ident)
+                    if data.get('business_id',bid)!=bid:raise ValueError('This activity belongs to another business.')
+                    self.send(200,workspace_trace.public(data,query.get('item',''),query.get('after','')))
                 elif route == '/api/history/version':
                     self.send(200,workspace_history.version(selected(query.get('business')),query.get('id')))
                 elif route == '/api/history':
@@ -2882,6 +2950,9 @@ def handler_for(app):
                             result=workspace_recovery.prepare(owner,bid,data.get('id'),data['revision'],data.get('reviewed') is True)
                         else:raise ValueError('Choose Check or Continue chat.')
                     self.send(200,result);return
+                if route == '/api/memory-feedback':
+                    import workspace_memory_feedback
+                    self.send(200,workspace_memory_feedback.respond(selected(data.get('business')),data.get('id'),data.get('action')));return
                 if route == '/api/context/resolve':
                     with app.lock:self.send(200,workspace_context.resolve(app,selected(data.get('business')),data.get('references'),data.get('goal_id')))
                     return

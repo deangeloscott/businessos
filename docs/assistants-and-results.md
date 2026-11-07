@@ -80,3 +80,33 @@ Local authenticated API routes:
 - Normal chat job/conversation responses include reported `subagents` display details. Native execution, history, cancellation, and model permissions retain their existing owners.
 
 Custom interfaces can use these operations without copying their implementation. No new frontend dependency, daemon, scheduler, automatic model router, or hosted connection is required.
+
+
+## Reuse context across AI apps
+
+Projects and agents have **Saved context** in their editors. Choose existing files, memory, goals, Library guidance, or a saved answer. Aura stores references, resolves their current sources, and lets the native app read what is relevant. It does not make another copy of those instructions or combine every conversation into one memory. Missing references are reported without stopping ordinary chat. Changed sources are mentioned on the next request; unchanged references are not sent repeatedly.
+
+The context picker searches saved public conversations across connected apps in the selected workspace and business. Archived chats stay out of discovery. Historic answers are source material, and corrections to referenced records take priority. Native-only conversations become searchable after Aura opens or refreshes them; this does not crawl private native memory stores. Native memory and skill building continue in the owning harness. **Your profile → Working preferences** holds optional, user-written preferences for Aura chats on this computer; business facts remain in Business & memory.
+
+```sh
+python scripts/workspace_context.py recall --business-id example-studio --workspace /path/to/workspace --search "offer research"
+python scripts/workspace_context.py result --business-id example-studio --workspace /path/to/workspace --chat CHAT_ID --variant VARIANT
+```
+
+Use `--project NAME`, `--assistant AGENT_ID`, or `--exclude-chat CHAT_ID` to narrow recall. `result` retrieves the exact `variant` returned by recall; omitting it chooses the latest completed public answer. `resolve --input -` accepts a JSON reference array from standard input. Agent profiles accept `context_refs`; project CLI create/edit accepts `--context FILE` containing that same reference array. Workspace-relative references and project folders remain relative in portable workspace settings. External/native sources still need to exist on the destination computer.
+
+Shared API operations: `GET /api/recall` takes `business`, `q`, optional `project`, `assistant`, `exclude_chat`, and `limit`. `GET /api/context/result` takes `business`, `chat_id`, and optional `variant` or `request_id`. Both use the same scope and resolver as the CLI and composer.
+
+## See native activity
+
+Chat **Activity** offers **Highlights**, **Full**, and **Off**. Highlights shows reported plans, progress, file changes, delegation, and failures. Full also includes public thinking summaries and tool inputs/results supplied by the connection. Expand a row to load larger details. Each delegated agent has an Activity action when its native identity is available. Off hides optional activity; approvals, questions, failures, and the final reply remain visible. Display choices do not alter model instructions, native permissions, or execution.
+
+Codex exposes plans, commentary, public reasoning summaries, tools, and reported child activity. OMP uses its native full subagent-event subscription. Pi displays parent events and child messages its installed extensions return. ACP connections expose plans, thoughts, and tools they publish. Hermes exposes parent and child gateway events. Claude displays the public events in its stream. Details that a harness does not publish cannot be reconstructed. Encrypted/private reasoning is not displayed.
+
+Activity is local display history, separate from canonical memory and model context. Per request, Aura retains up to 500 recent entries and about 1 million characters, with 24,000 characters per text or input; a notice identifies excerpts. The workspace display cache keeps up to 200 requests within 64 MB, and finished buffers are released from memory. Old history remains in the native app. Large tool details are loaded on demand rather than copied into each chat poll. `GET /api/chat/activity?business=…&chat_id=…&request=…` returns a small index; add `item=ENTRY_ID` for details or `after=REVISION` for an unchanged response. `python scripts/workspace_trace.py --workspace /path/to/workspace --request REQUEST_ID` reads locally saved details.
+
+## Review saved memory
+
+A successful canonical memory save can show a small **Saved to workspace** card after work finishes: **Keep**, **Edit**, or **Undo**. It comes from verified persistence, not an assistant's prose. Keep dismisses the card; the save already happened. Edit asks your current AI to apply the correction through normal memory helpers. Undo uses existing version history and checks that no newer edit would be overwritten. New records can be removed only when no saved work depends on them. The card does not create an approval inbox or notification-bell item. Saves from concurrent work are labeled as workspace saves, not attributed to the open chat.
+
+`python scripts/workspace_memory_feedback.py list --business-id example-studio --workspace /path/to/workspace` lists recent pending feedback. `keep` and `undo` take `--id RECEIPT_ID`. The UI and authenticated `GET/POST /api/memory-feedback` use those same helpers. Local recovery retention applies; this is not a second source of business truth.

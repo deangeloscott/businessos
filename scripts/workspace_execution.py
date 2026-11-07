@@ -37,6 +37,7 @@ class Execution:
         self.controls = {}
         self.native_session = None
         self.native_client_tools = None
+        self.trace = None
         from workspace_interactions import Requests
         self.requests = Requests()
 

@@ -58,7 +58,16 @@ def save_view(root, preferences):
             relative = path.is_absolute() and path.is_relative_to(root)
             locations[bid].append({k:item[k] for k in ('id','name','kind')})
             locations[bid][-1].update(path=path.relative_to(root).as_posix() if relative else str(path), relative=relative)
+    projects=[]
+    for project in preferences.get('chat_projects',[]):
+        if Path(project['workspace']).resolve()!=root:continue
+        folder=Path(project['folder']) if project.get('folder') else None
+        relative=bool(folder and folder.is_absolute() and folder.is_relative_to(root))
+        projects.append({**{k:project[k] for k in ('name','business_id','context_refs') if k in project},
+                         'folder':folder.relative_to(root).as_posix() if relative else str(folder or ''),'relative':relative})
+    saved_projects=projects if 'chat_projects' in preferences else load_view(root).get('projects')
     workspace_catalog.write_json(checked_metadata(root), {'format':1, 'file_locations':locations,
+        **({'projects':saved_projects} if saved_projects is not None else {}),
         'appearance':preferences.get('appearance','system'), 'model_picker':preferences.get('model_picker', {}),
         'library':preferences.get('library',{}), 'assistants':preferences.get('assistants',{})})
 
@@ -88,7 +97,20 @@ def view_preferences(root):
                     raise ValueError('A saved folder link is outside its workspace.')
                 path = Path(root) / path
             locations[bid].append({**item,'path':str(path)})
-    return {**{k:data[k] for k in ('format','appearance','model_picker','library','assistants') if k in data}, 'file_locations':locations}
+    result={**{k:data[k] for k in ('format','appearance','model_picker','library','assistants') if k in data}, 'file_locations':locations}
+    if 'projects' in data:
+        from workspace_context import references
+        from workspace_chat_organization import project_name
+        projects=data['projects']
+        if not isinstance(projects,list) or len(projects)>1000:raise ValueError('Saved projects need attention.')
+        result['chat_projects']=[]
+        for p in projects:
+            if not isinstance(p,dict) or not isinstance(p.get('folder'),str) or not isinstance(p.get('business_id'),str):raise ValueError('Saved projects need attention.')
+            folder=Path(p['folder'])
+            if p.get('relative') and (folder.is_absolute() or '..' in folder.parts):raise ValueError('This project folder is outside the workspace.')
+            result['chat_projects'].append({'name':project_name(p.get('name')),'business_id':p['business_id'],
+                'workspace':str(Path(root).resolve()),'folder':str(Path(root)/folder) if p.get('relative') else p['folder'],'context_refs':references(p.get('context_refs',[]))})
+    return result
 
 
 def workspace_files(source, hashes=True):

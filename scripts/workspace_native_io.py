@@ -131,6 +131,7 @@ def codex_run(command,cwd,prompt,native_id,model,effort,update,env,execution,chi
                     child=p.get('thread') or {}
                     if child.get('parentThreadId') in {thread,*owned} and child.get('id'):
                         owned.add(child['id']);delegation.put(child['id'],status='pending')
+                if getattr(execution,'trace',None) and (not p.get('threadId') or p['threadId'] in {thread,*owned}):execution.trace.observe('codex',event,thread)
                 if method and ident is not None:
                     if thread and p.get('threadId') and p['threadId']!=thread and p['threadId'] not in owned:
                         send({'id':ident,'error':{'code':-32602,'message':'Different thread.'}});continue
@@ -404,7 +405,7 @@ def agent_lines(process,kind,prompt,native_id,execution,errors):
                     controls()
                     if kind=='omp':
                         send({'id':'aura-ask','type':'set_ask_dialog','enabled':True})
-                        send({'id':'aura-children','type':'set_subagent_subscription','level':'progress'})
+                        send({'id':'aura-children','type':'set_subagent_subscription','level':'events' if execution.trace else 'progress'})
                     if goal and kind=='omp':
                         existing=state.get('goal')
                         if existing and existing.get('status') not in {'complete','completed'} and not existing.get('objective','').startswith(goal['objective']+'\n\n'):

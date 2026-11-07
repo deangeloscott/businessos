@@ -1840,6 +1840,8 @@ function editProject(name='',picker=null){
   const old=(state.projects||[]).find(p=>p.name===name),dialog=$('#project-editor'),form=$('#project-editor-form');
   state.projectEditor={name:old?.name||'',picker,scope:projectScope()};closeAnchoredSurface(false);
   $('#project-editor-title').textContent=old?'Edit project':'New project';form.elements.name.value=old?.name||'';form.elements.folder.value=old?.folder||'';
+  let contextHost=form.querySelector('#project-context');if(!contextHost){contextHost=document.createElement('div');contextHost.id='project-context';form.querySelector('[type=submit]').parentElement.before(contextHost);}
+  window.auraInsight?.references(contextHost,old?.context_refs||[]);
   form.querySelector('[type=submit]').textContent=old?'Save':'Create project';$('#remove-project').hidden=!old;
   dialog.querySelectorAll('.dialog-error').forEach(el=>el.remove());dialog.dataset.opened=Date.now();dialog.showModal();form.elements.name.focus();
 }
@@ -1893,7 +1895,7 @@ $('#project-editor-form').addEventListener('submit',event=>{
     const edit=state.projectEditor;if(edit.scope!==projectScope())return;
     const form=event.target,button=form.querySelector('[type=submit]'),name=form.elements.name.value.trim();button.disabled=true;
     try{
-      const result=await api('/api/projects',{business:state.business,action:edit.name?'edit':'create',name:edit.name||name,new_name:name,folder:form.elements.folder.value});
+      const result=await api('/api/projects',{business:state.business,action:edit.name?'edit':'create',name:edit.name||name,new_name:name,folder:form.elements.folder.value,context_refs:$('#project-context')?._references?.()||[]});
       if(edit.scope!==projectScope())return;state.projects=result.projects;
       if(edit.name){if(state.chatMeta?.project===edit.name)state.chatMeta.project=name;if(state.newChatProject===edit.name)state.newChatProject=name;}
       $('#project-editor').close();if(edit.picker)await assignProject(name,edit.picker);else{renderProjectTrigger();state.sidebarSignature='';await renderShell();}
@@ -1947,9 +1949,11 @@ function showMessages(latest=false) {
   let media=$('#native-output-media');if(!media){media=document.createElement('div');media.id='native-output-media';$('#live-reply').after(media);}media.innerHTML=state.busy?nativeMedia(state.liveJob?.native_media):'';
   window.auraWork?.renderDelegation();
   window.auraContinuity?.renderRequests();
-  const continuityNote=$('#continuity-note');if(continuityNote){const job=state.liveJob;const notes=job?.chat_id===chat?[job.history_warning,job.activity_warning,job.continuation_note,...(job.history_observation?.notes||[])].filter(Boolean):[];continuityNote.textContent=notes.join(' ');continuityNote.hidden=!notes.length;}
+  const continuityNote=$('#continuity-note');if(continuityNote){const job=state.liveJob;const notes=job?.chat_id===chat?[job.history_warning,job.activity_warning,job.context_note,job.continuation_note,...(job.history_observation?.notes||[])].filter(Boolean):[];continuityNote.textContent=notes.join(' ');continuityNote.hidden=!notes.length;}
   const activity=state.liveJob?.activity||[];
-  $('#request-activity').hidden=!activity.length;
+  $('#request-activity').hidden=!!window.auraInsight||!activity.length;
+  window.auraInsight?.render();
+  if(window.auraInsight)window.auraInsight.memory().catch(()=>{});
   const activitySignature=JSON.stringify(activity);
   if(state.activitySignature!==activitySignature){$('#activity-list').innerHTML=activity.map(a=>`<li><time>${esc(clockTime(a.at))}</time> ${esc(a.text)}</li>`).join('');state.activitySignature=activitySignature;}
   conversation.scrollTop=follow?conversation.scrollHeight:top;
@@ -2462,7 +2466,7 @@ function avatarMarkup(p=state.profile||{}){return p.avatar?`<img src="${esc(p.av
 function leavePage(){if($('#detail').dataset.mode==='page'){$('#detail').close();state.view='home';recordShellRoute();renderShell();}}
 async function accountProfile(){
   $('#more-dialog').close();leavePage();const p=state.profile||{};
-  details('Your profile',`<p class="shell-help">Your name and picture stay on this computer.</p><form id="account-form" class="form-grid"><div class="profile-fields"><div class="profile-picture-row"><span class="profile-picture">${avatarMarkup(p)}</span><div><label class="secondary picture-upload">Choose picture<input id="profile-picture-input" type="file" accept="image/png,image/jpeg,image/webp" hidden></label><button type="button" class="text-button" id="remove-profile-picture" ${p.avatar?'':'hidden'}>Remove picture</button></div></div><label>Your name<input name="display_name" maxlength="80" autocomplete="given-name" value="${esc(p.display_name||'')}" placeholder="Your name"></label></div><div><button class="primary">Save profile</button></div></form>`);
+  details('Your profile',`<p class="shell-help">Your name and picture stay on this computer.</p><form id="account-form" class="form-grid"><div class="profile-fields"><div class="profile-picture-row"><span class="profile-picture">${avatarMarkup(p)}</span><div><label class="secondary picture-upload">Choose picture<input id="profile-picture-input" type="file" accept="image/png,image/jpeg,image/webp" hidden></label><button type="button" class="text-button" id="remove-profile-picture" ${p.avatar?'':'hidden'}>Remove picture</button></div></div><label>Your name<input name="display_name" maxlength="80" autocomplete="given-name" value="${esc(p.display_name||'')}" placeholder="Your name"></label><label>Working preferences<textarea name="working_preferences" maxlength="4000" rows="3" placeholder="How you like your AI to work">${esc(p.working_preferences||'')}</textarea><span class="small-note">Used in Aura chats across AI apps. Business facts belong in Business &amp; memory.</span></label></div><div><button class="primary">Save profile</button></div></form>`);
 }
 async function personalize(){
   $('#more-dialog').close();leavePage();const p=state.profile||{};
@@ -2815,7 +2819,7 @@ document.addEventListener('change',event=>{
   if(event.target.id==='profile-picture-input')attempt(()=>saveProfilePicture(event.target.files[0]));
   if(event.target.id==='chat-model-app')attempt(async()=>{state.chatModelDraft.kind=event.target.value;delete state.chatModelDraft.native_profile;state.chatModelDraft.model='';state.chatModelDraft.effort='';$('#chat-model-options').innerHTML='<p>Loading models…</p>';await loadChatModelOptions();});
 });
-document.addEventListener('submit',event=>{if(event.target.id==='account-form'){event.preventDefault();attempt(async()=>{const p=await api('/api/profile',{display_name:new FormData(event.target).get('display_name')});state.data.profile=p;applyProfile(p);$('#detail').close();});}});
+document.addEventListener('submit',event=>{if(event.target.id==='account-form'){event.preventDefault();attempt(async()=>{const p=await api('/api/profile',{display_name:new FormData(event.target).get('display_name'),working_preferences:new FormData(event.target).get('working_preferences')});state.data.profile=p;applyProfile(p);$('#detail').close();});}});
 // Dismiss floating surfaces only after a complete outside click, never a drag.
 let outsideSurface=null;
 document.addEventListener('pointerdown',event=>{

@@ -130,5 +130,22 @@ context.state.data.harness_permissions={};context.state.chatMeta=originalPermiss
   const pending=work.renderAssistants(host);context.state.data.workspace='B';release(profiles);await pending;
   assert.equal(host.innerHTML,'<p role="status">Loading agents…</p>');
   context.state.chatMeta=null;context.state.liveJob=null;work.renderDelegation();assert.equal(node('#delegated-work').hidden,true,'A new chat without a job must render without freezing navigation');
+  // A late trace from another chat/request must never populate the current view.
+  context.queueMicrotask=()=>{};context.human=value=>String(value);context.state.busy=false;
+  const traceReplies=[];context.api=path=>path.startsWith('/api/profile')?Promise.resolve({activity_view:'off'}):new Promise(resolve=>traceReplies.push(resolve));
+  vm.runInContext(fs.readFileSync(require('node:path').join(require('node:path').dirname(process.argv[2]),'workspace-insight.js'),'utf8'),context);
+  const insight=context.window.auraInsight;context.state.chatMeta={id:'one',trace_id:'request-one'};insight.render();
+  context.state.chatMeta={id:'two',trace_id:'request-two'};insight.render();
+  traceReplies[1]({revision:1,items:[{id:'1',kind:'commentary',title:'Current work',text:'<safe>',has_detail:true,owner:''}]});await new Promise(resolve=>setImmediate(resolve));
+  traceReplies[0]({revision:1,items:[{id:'1',kind:'commentary',title:'Stale private work',text:'Wrong chat',owner:''}]});await new Promise(resolve=>setImmediate(resolve));
+  assert.match(node('#native-activity').innerHTML,/Current work/);assert.doesNotMatch(node('#native-activity').innerHTML,/Stale private work/);assert.match(node('#native-activity').innerHTML,/&lt;safe&gt;/);
+  // Switching requests within the same chat needs the same isolation.
+  context.state.chatMeta={id:'three',trace_id:'old-request'};insight.render();
+  context.state.chatMeta.trace_id='new-request';insight.render();
+  traceReplies[3]({revision:1,items:[{id:'1',kind:'commentary',title:'New request',text:'Current',owner:''}]});await new Promise(resolve=>setImmediate(resolve));
+  traceReplies[2]({revision:1,items:[{id:'1',kind:'commentary',title:'Old request',text:'Late',owner:''}]});await new Promise(resolve=>setImmediate(resolve));
+  assert.match(node('#native-activity').innerHTML,/New request/);assert.doesNotMatch(node('#native-activity').innerHTML,/Old request/);
+  node('#activity-view').value='off';await node('#activity-view').onchange();await new Promise(resolve=>setImmediate(resolve));
+  assert.doesNotMatch(node('#native-activity').innerHTML,/New request/);assert.equal(node('#delegated-work').hidden,true);
   console.log('Work views passed: history navigation, shared model/effort picker, stale-request isolation, active-agent visibility, and honest read errors.');
 })().catch(error=>{console.error(error);process.exitCode=1;});

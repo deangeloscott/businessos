@@ -45,6 +45,8 @@ def validate(data):
                 from pathlib import PurePosixPath
                 if binding['scope'] not in ({'profile'} if binding['app']=='hermes' else {'project','user'}) or PurePosixPath(binding['file']).is_absolute() or '..' in PurePosixPath(binding['file']).parts or '\\' in binding['file'] or ':' in binding['file']:
                     raise ValueError('Native agent references must stay relative to their native agent folder.')
+            from workspace_context import references
+            references(item.get('context_refs',[]))
             tasks = item.get('task_ids', [])
             if not isinstance(tasks, list) or len(tasks) > 1000 or any(not isinstance(t, str) or len(t) > 100 for t in tasks):
                 raise ValueError('An agent has invalid task links.')
@@ -66,6 +68,9 @@ def save(preferences, business, data):
         if not isinstance(data['task_ids'], list) or any(not isinstance(t, str) for t in data['task_ids']):
             raise ValueError('Choose valid scheduled tasks.')
         profile['task_ids'] = list(dict.fromkeys(data['task_ids']))
+    if 'context_refs' in data:
+        from workspace_context import references
+        profile['context_refs']=references(data['context_refs'])
     profile.setdefault('task_ids', [])
     updated = [p for p in profiles(preferences, business) if p['id'] != profile['id']] + [profile]
     validate({business:updated})

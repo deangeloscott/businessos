@@ -43,6 +43,7 @@ TESTS=[
     'tests/run_workspace_acp.py',
     'tests/run_workspace_hermes.py',
     'tests/run_workspace_composer.py',
+    'tests/run_workspace_insight.py',
     'tests/run_workspace_native_goals.py',
     'tests/run_workspace_recovery_controls.py',
     'tests/run_workspace_library.py',

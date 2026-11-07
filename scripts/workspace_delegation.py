@@ -67,7 +67,7 @@ class Tracker:
                 if child.get('id'):self.aliases[child['id']]=child_id
                 if self.items.get(child_id,{}).get('status') in {'complete','error','stopped'} and child.get('status') in {'pending','running'}:continue
                 self.put(child_id,parent_id=ident,name=child.get('agent'),task=child.get('task'),
-                         model=child.get('resolvedModelIdentity'),status=statuses.get(child.get('status'),'working'))
+                         model=child.get('resolvedModelIdentity'),native_id=child.get('id'),status=statuses.get(child.get('status'),'working'))
         for job in details.get('jobs') or []:
             child_id=self.aliases.get(job.get('id'))
             if not child_id:continue

@@ -488,6 +488,7 @@ def _run(command, kind, cwd, env, prompt, native_id, model, effort, update, exec
             try:event=json.loads(line)
             except ValueError:continue
             if not isinstance(event, dict):continue
+            if getattr(execution,'trace',None):execution.trace.observe(kind,event)
             if delegation.observe(kind, event):continue
             event_type=event.get('type',event.get('event'))
             if event_type=='aura_turn_end':

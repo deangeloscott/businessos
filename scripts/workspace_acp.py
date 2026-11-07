@@ -149,6 +149,7 @@ def run(command,kind,cwd,env,prompt,native_id,model,effort,update,execution):
                     if result.get('configOptions') is not None:config=result['configOptions'];update(native_config=config)
                     advance()
                 elif method=='session/update' and p.get('sessionId')==native and ready:
+                    if getattr(execution,'trace',None):execution.trace.observe('antigravity',event,native)
                     value=p.get('update') or {};typ=value.get('sessionUpdate');content=value.get('content') or {}
                     if typ=='agent_message_chunk' and content.get('type')=='text':final+=content.get('text','');update(reply=final)
                     elif typ in {'tool_call','tool_call_update'}:update(progress=value.get('title') or 'Using a native tool')

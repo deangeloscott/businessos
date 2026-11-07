@@ -61,15 +61,17 @@ def change_project(app,bid,data):
         if not path.is_absolute():path=Path(workspace_root())/path
         if not path.is_dir():raise ValueError('Choose an existing folder on this computer.')
         folder=str(path.resolve())
+    from workspace_context import references
+    refs=references(data.get('context_refs',(old or {}).get('context_refs',[])))
     current=[p for p in current if p['name']!=name]
-    if action!='remove':current.append({'name':target,'folder':folder,'workspace':str(Path(workspace_root()).resolve()),'business_id':bid})
+    if action!='remove':current.append({'name':target,'folder':folder,'workspace':str(Path(workspace_root()).resolve()),'business_id':bid,'context_refs':refs})
     # Removing a project only ungroups its chats; it never deletes chats or folders.
     for chat in items(app,bid):
         if chat.get('project')==name:chat['project']='' if action=='remove' else target
     root=Path(workspace_root()).resolve()
     outside=[p for p in app.preferences.get('chat_projects',[]) if p['business_id']!=bid or Path(p['workspace']).resolve()!=root]
     app.preferences['chat_projects']=outside+current
-    app.save_preferences()
+    app.save_preferences(portable=True)
     return {'projects':projects(app,bid)}
 
 
@@ -92,7 +94,7 @@ def mutate(app,bid,data):
         outside=[p for p in app.preferences.get('chat_projects',[]) if p['business_id']!=bid or Path(p['workspace']).resolve()!=root]
         app.preferences['chat_projects']=outside+current
         chat['project']=value
-    app.save_preferences()
+    app.save_preferences(portable=True)
     return {'chat':chat}
 
 
@@ -103,6 +105,7 @@ def main():
     parser.add_argument('--business-id',required=True);parser.add_argument('--chat');parser.add_argument('--project',default='')
     parser.add_argument('--name');parser.add_argument('--folder')
     parser.add_argument('--workspace',type=Path,default=workspace_root());parser.add_argument('--url',default='http://127.0.0.1:4187')
+    parser.add_argument('--context',type=Path,help='JSON array of saved context references')
     args=parser.parse_args()
     with workspace_scope(args.workspace):
         if args.action=='list':
@@ -110,7 +113,7 @@ def main():
             result=live_change(args.url,args.business_id,None,'/api/chats?'+urlencode({'business':args.business_id}))
         elif args.action=='projects':result=live_change(args.url,args.business_id,None,'/api/projects?business='+args.business_id)
         elif args.action.endswith('-project'):
-            result=live_change(args.url,args.business_id,{'action':args.action.removesuffix('-project'),'name':args.project,**({'new_name':args.name} if args.name is not None else {}),**({'folder':args.folder} if args.folder is not None else {})},'/api/projects')
+            result=live_change(args.url,args.business_id,{'action':args.action.removesuffix('-project'),'name':args.project,**({'context_refs':json.loads(args.context.read_text(encoding='utf-8'))} if args.context else {}),**({'new_name':args.name} if args.name is not None else {}),**({'folder':args.folder} if args.folder is not None else {})},'/api/projects')
         else:
             result=live_change(args.url,args.business_id,{'id':args.chat,**({'project':args.project} if args.action=='move' else {'pinned':args.action=='pin'})},'/api/chats/organize')
     print(json.dumps(result,ensure_ascii=False))

@@ -249,6 +249,7 @@ def run(command,cwd,env,prompt,native_id,model,effort,update,execution):
                 return
             if method!='event':return
             if params.get('session_id') not in {None,runtime}:return
+            if getattr(execution,'trace',None):execution.trace.observe('hermes',event,runtime)
             typ=params.get('type');p=params.get('payload') or {}
             if typ.startswith('subagent.'):
                 delegation.observe('hermes',{'type':typ,'payload':p})

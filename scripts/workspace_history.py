@@ -117,6 +117,12 @@ def capture(path,bid,reason='Saved',content=None):
     return prepared if isinstance(prepared,dict) else _commit(bid,[prepared])[0]
 
 
+def capture_many(bid,snapshots,reason='Saved'):
+    """Reuse one retention/index pass for a canonical transaction's prior bytes."""
+    prepared=[_prepare(path,bid,reason,content) for path,content in snapshots.items()]
+    return _commit(bid,[p for p in prepared if not isinstance(p,dict)]) if prepared else []
+
+
 def inventory(bid,path=None):
     relative=managed(path,bid)[1] if path else None
     with locked(bid) as base:rows=_read(base)
