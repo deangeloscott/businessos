@@ -164,7 +164,9 @@ def add_claude(command, token, nickname=''):
         checked = json.loads(result.stdout or '{}')
     except (OSError, ValueError, subprocess.SubprocessError):
         raise ValueError('Claude Code could not check this token. Try again in a moment.') from None
-    if checked.get('is_error'):
+    if (result.returncode != 0 or not isinstance(checked, dict) or checked.get('type') != 'result'
+            or checked.get('subtype') != 'success' or checked.get('is_error') is not False
+            or not isinstance(checked.get('result'), str) or not checked['result'].strip()):
         raise ValueError('Claude Code did not accept this token. Run `claude setup-token` again and paste the new token.')
     status = {}
     data = load()

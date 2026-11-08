@@ -117,13 +117,10 @@ def handler_for(app):
                 route = parsed.path
                 if route == '/api/task-limit-options':
                     bid=selected(query.get('business'))
-                    folders=[ui.workspace_root().resolve(),*(ui.Path(r['path']) for r in app.recent_workspaces())]
-                    task=next((t for t in ui.workspace_schedules.inventory(workspaces=folders)['items'] if t['id']==query.get('task_id')),None)
-                    if not task:raise ValueError('This task is no longer listed. Refresh scheduled tasks.')
-                    self.send(200,{**app.limit_options(bid,None,task.get('owner')),'task':{k:task.get(k) for k in ('id','name','app','owner','last_error')}});return
+                    self.send(200,app.task_recovery_options(bid,query.get('task_id')));return
                 if route == '/api/limit-options':
                     bid=selected(query.get('business'));chat_id=query.get('chat_id') or None
-                    self.send(200,{**app.limit_options(bid,chat_id),'pending':workspace_resume.for_chat(chat_id) if chat_id else None});return
+                    self.send(200,{**app.limit_options(bid,chat_id),'pending':workspace_resume.for_chat(chat_id,app.workspace_path,bid) if chat_id else None});return
                 if route == '/api/glance':
                     self.send(200,app.glance(selected(query.get('business')),query.get('chat_id') or None));return
                 if route == '/':
@@ -492,7 +489,8 @@ def handler_for(app):
                 if route == '/api/accounts':
                     self.send(200,app.accounts_action(selected(data.get('business')),data));return
                 if route == '/api/task-recover':
-                    self.send(200,app.task_recover(selected(data.get('business')),data.get('task_id'),data.get('action'),data.get('target','')));return
+                    self.send(200,app.task_recover(selected(data.get('business')),data.get('task_id'),data.get('action'),data.get('target',''),
+                        confirmed=data.get('confirm_destination') is True,expected_basis=data.get('task_basis')));return
                 if route == '/api/limit-action':
                     bid=selected(data.get('business'));chat_id=data.get('chat_id');action=data.get('action')
                     if action=='account':result=app.accounts_action(bid,{'action':'use','chat_id':chat_id,'account_id':data.get('account_id','')})
@@ -501,7 +499,7 @@ def handler_for(app):
                         options=app.limit_options(bid,chat_id)
                         if not options.get('resets_at'):raise ValueError('This app has not reported when its limit resets.')
                         result=app.resume_add(bid,chat_id,options['resets_at'],str(data.get('text') or 'Continue where you left off.'))
-                    elif action=='cancel_resume':workspace_resume.cancel(chat_id);result={'cancelled':True}
+                    elif action=='cancel_resume':result=app.resume_cancel(bid,chat_id)
                     else:raise ValueError('Choose how to continue.')
                     self.send(200,result);return
                 if route == '/api/locations/browse':

@@ -105,7 +105,11 @@ def claude_transcript_status(session_id,expected,config_dir=None):
     root=Path(config_dir or os.environ.get('CLAUDE_CONFIG_DIR') or Path.home()/'.claude')/'projects'
     matches=list(root.glob('*/'+session_id+'.jsonl'))
     if len(matches)!=1:return None
-    try:lines=matches[0].read_text(encoding='utf-8').splitlines()
+    try:
+        with matches[0].open('rb') as stream:
+            stream.seek(0,2);start=max(0,stream.tell()-2*1024*1024);stream.seek(start)
+            if start:stream.readline()  # A partial JSON record is never a verdict.
+            lines=stream.read(2*1024*1024).decode('utf-8',errors='replace').splitlines()
     except OSError:return None
     for line in reversed(lines):
         if '"goal_status"' not in line:continue

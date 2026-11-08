@@ -257,8 +257,8 @@ class ChatRun:
                         chat['work_state']='waiting_for_usage' if job['status']=='error' and setup_error(job.get('error_detail') or job['reply'])==SETUP_ERRORS['limit'] else 'needs_input' if job['status']=='error' else job['status']
                     if job['status']=='error' and not welcome and keep_warm_id is None and setup_error(job.get('error_detail') or job['reply'])==SETUP_ERRORS['limit']:
                         # Follow the user's choice for plan limits (Ask by default) once this request is fully recorded.
-                        owner=getattr(app,'_view_owner',app)
-                        threading.Thread(target=owner.after_limit,args=(bid,chat['id'],text,'goals' if job.get('goal_id') else 'chats'),daemon=True).start()
+                        # This request's workspace stays pinned even if the UI opens another one.
+                        threading.Thread(target=app.after_limit,args=(bid,chat['id'],text,'goals' if job.get('goal_id') else 'chats',job['id'],job.get('limit_recovery',False)),daemon=True).start()
                     try:
                         app.save_chat_turn(chat, job, text, final=True, candidate=candidate)
                         app.save_preferences()

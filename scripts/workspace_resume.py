@@ -13,12 +13,16 @@ import shutil
 import subprocess
 import sys
 import time
+import math
+import threading
 from datetime import datetime
 from pathlib import Path
 
 from workspace_startup import state_dir
+from workspace_sharing import destination_lock
 
 TASK = 'ViralTrac AURA continue'
+LOCK = threading.RLock()
 
 
 def _path():
@@ -28,9 +32,14 @@ def _path():
 def pending():
     try:
         rows = json.loads(_path().read_text(encoding='utf-8'))
-    except (OSError, ValueError):
+    except FileNotFoundError:
         return []
-    return [r for r in rows if isinstance(r, dict) and (r.get('chat_id') or r.get('app')) and isinstance(r.get('at'), (int, float))]
+    except (OSError,ValueError):
+        raise ValueError('Saved continuations could not be read. The original file was kept; restore it before scheduling more work.') from None
+    if not isinstance(rows,list) or any(not isinstance(r,dict) or not all(isinstance(r.get(k),str) for k in ('id','workspace','business','chat_id'))
+            or not (r.get('chat_id') or r.get('app')) or type(r.get('at')) not in {int,float} or not math.isfinite(r['at']) for r in rows):
+        raise ValueError('Saved continuations need attention. The original file was kept.')
+    return rows
 
 
 def _write(rows):
@@ -41,31 +50,52 @@ def _write(rows):
     temporary.replace(target)
 
 
-def add(business, workspace, chat_id, at, text='Continue where you left off.', app=''):
+def add(business, workspace, chat_id, at, text='Continue where you left off.', app='', basis=None, **context):
     """chat_id continues that chat; with no chat, app starts a new chat (a limited scheduled task)."""
-    rows = [r for r in pending() if not chat_id or r['chat_id'] != chat_id]
-    rows.append({'id': secrets.token_hex(6), 'business': business, 'workspace': str(workspace), 'chat_id': chat_id or '',
-                 'app': app, 'at': float(at) + 60, 'text': text, 'created': time.time()})
-    _write(rows)
-    return rows[-1]
+    if type(at) not in {int,float} or not math.isfinite(at):raise ValueError('Choose a valid reset time.')
+    workspace=str(Path(workspace).resolve())
+    with LOCK,destination_lock(_path()):
+        rows = [r for r in pending() if not (r['workspace']==workspace and r['business']==business and
+            (chat_id and r['chat_id']==chat_id or not chat_id and context.get('task_id') and r.get('task_id')==context['task_id']))]
+        rows.append({'id': secrets.token_hex(6), 'business': business, 'workspace': workspace, 'chat_id': chat_id or '',
+                     'app': app, 'at': float(at) + 60, 'text': text, 'created': time.time(), 'status':'pending','basis':basis,
+                     **{k:v for k,v in context.items() if k in {'task_id','task_basis','goal_id','project','limit_recovery'}}})
+        _write(rows)
+        return rows[-1]
 
 
-def cancel(chat_id):
-    _write([r for r in pending() if r['chat_id'] != chat_id])
+def cancel(chat_id, workspace=None, business=None):
+    with LOCK,destination_lock(_path()):
+        _write([r for r in pending() if not (chat_id and r['chat_id']==chat_id and
+            (workspace is None or Path(r['workspace']).resolve()==Path(workspace).resolve()) and (business is None or r['business']==business))])
+
+
+def settle(ident, reason='', retry=False):
+    """Consume only a confirmed start; retain uncertain work for review, or defer a busy chat."""
+    with LOCK,destination_lock(_path()):
+        rows=pending()
+        for row in rows:
+            if row['id']==ident:
+                row.update(status='pending' if retry else 'needs_review',reason=reason)
+                if retry:row['next_attempt_at']=time.time()+30
+        _write([r for r in rows if r['id']!=ident or reason])
 
 
 def take_due(workspace, now=None):
-    """Continues that are due for this workspace; they are removed before running so they run once."""
-    now = now or time.time()
-    rows = pending()
-    due = [r for r in rows if r['at'] <= now and Path(r['workspace']).resolve() == Path(workspace).resolve()]
-    if due:
-        _write([r for r in rows if r not in due])
-    return due
+    """Claim due work durably. A crash during launch requires review rather than a duplicate action."""
+    now = time.time() if now is None else now
+    with LOCK,destination_lock(_path()):
+        rows = pending()
+        due = [r for r in rows if r.get('status','pending')=='pending' and max(r['at'],r.get('next_attempt_at',0))<=now
+               and Path(r['workspace']).resolve()==Path(workspace).resolve()]
+        for row in due:row.update(status='needs_review',reason='A continuation was interrupted. Review the chat before continuing.')
+        if due:_write(rows)
+        return due
 
 
-def for_chat(chat_id):
-    return next((r for r in pending() if chat_id and r['chat_id'] == chat_id), None)
+def for_chat(chat_id, workspace=None, business=None):
+    return next((r for r in pending() if chat_id and r['chat_id']==chat_id and
+        (workspace is None or Path(r['workspace']).resolve()==Path(workspace).resolve()) and (business is None or r['business']==business)),None)
 
 
 # --- Even when closed: one system wake-up for the earliest pending continue ----------------
@@ -80,10 +110,10 @@ def _launch_argv(product, workspace):
 
 def schedule_wake(product):
     """Point the single AURA wake-up at the earliest pending continue, or remove it when none remain."""
-    rows = sorted(pending(), key=lambda r: r['at'])
+    rows = sorted((r for r in pending() if r.get('status','pending')=='pending'), key=lambda r:max(r['at'],r.get('next_attempt_at',0)))
     if not rows:
         return clear_wake()
-    at, argv = rows[0]['at'], _launch_argv(product, rows[0]['workspace'])
+    at, argv = max(time.time()+60,rows[0]['at'],rows[0].get('next_attempt_at',0)), _launch_argv(product, rows[0]['workspace'])
     if sys.platform == 'win32':
         quoted = lambda value: "'" + str(value).replace("'", "''") + "'"
         when = datetime.fromtimestamp(at).strftime('%Y-%m-%dT%H:%M:%S')

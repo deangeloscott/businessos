@@ -551,7 +551,7 @@ input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px soli
 .glance-bar{display:block;height:4px;margin-top:5px;border-radius:4px;background:var(--line);overflow:hidden}.glance-bar span{display:block;height:100%;background:#8fc7a5}
 .glance-bar.mid span{background:#d9b36b}.glance-bar.high span{background:#e58f8f}
 
-.limit-choices{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:8px 4px 0;padding:10px 12px;border:1px solid var(--line);border-radius:10px;font-size:12px}
+.limit-choices{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:0 4px 8px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;font-size:12px}
 .limit-choices .inline-actions{display:flex;flex-wrap:wrap;gap:6px}.limit-choices .small-note{flex-basis:100%;margin:0}
 .accounts-section{margin:18px 0;padding-top:12px;border-top:1px solid var(--line)}.accounts-section h3{font-size:13px;margin:0 0 8px}
 .accounts-section label{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:8px 0;font-size:12px}

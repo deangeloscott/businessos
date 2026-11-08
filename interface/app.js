@@ -147,12 +147,14 @@ const providerKey=model=>'connection:'+modelProvider(model);
 const catalogModels=()=>state.catalog?.models||[];
 // Plan limits: choose how to continue before a request is cut off, not after.
 // Ask (default) shows the choices; Automatic uses another account or the backup app; Off sends as usual.
-const limitState={key:'',data:null};
+const limitState={key:'',data:null,ticket:0};
+const limitScope=()=>JSON.stringify([state.data?.workspace,state.business,state.chatMeta?.id||'',state.data?.connection?.selected]);
 const limitAppName=kind=>appName(kind)||kind;
 async function loadLimitOptions(){
-  const chat=state.chatMeta?.id||'';if(!state.business)return;
-  try{limitState.data=await api('/api/limit-options?business='+encodeURIComponent(state.business)+(chat?'&chat_id='+encodeURIComponent(chat):''));limitState.key=state.business+'|'+chat;}
-  catch(error){limitState.data=null;}
+  const chat=state.chatMeta?.id||'',business=state.business,key=limitScope(),ticket=++limitState.ticket;if(!business)return;
+  if(limitState.key!==key){limitState.data=null;limitState.key=key;paintLimitChoices();}
+  try{const data=await api('/api/limit-options?business='+encodeURIComponent(business)+(chat?'&chat_id='+encodeURIComponent(chat):''));if(key!==limitScope()||ticket!==limitState.ticket)return;limitState.data=data;}
+  catch(error){if(key!==limitScope()||ticket!==limitState.ticket)return;limitState.data=null;}
   paintLimitChoices();
 }
 function limitSummary(o){
@@ -160,10 +162,10 @@ function limitSummary(o){
   return `${limitAppName(o.app)}: ${w.name} ${o.blocked?'reached':Math.round(w.used_percent)+'% used'}${w.resets_at?' · resets '+glanceTime(w.resets_at):''}`;
 }
 function paintLimitChoices(open=false){
-  const host=$('#limit-choices'),o=limitState.data;if(!host)return;
+  const host=$('#limit-choices'),o=limitState.key===limitScope()?limitState.data:null;if(!host)return;
   const lastLimited=state.chat?.at(-1)?.role==='assistant'&&/usage limit/i.test(state.chat.at(-1).text||'')&&state.chatMeta?.status==='error';
   if(o?.pending){
-    host.hidden=false;host.innerHTML=`<span>Will continue this chat at ${esc(glanceTime(o.pending.at))}.</span><button type="button" class="text-button" data-limit-action="cancel_resume">Cancel</button>`;return;
+    host.hidden=false;host.innerHTML=`<span>${o.pending.status==='needs_review'?esc(o.pending.reason||'Review this chat before continuing.'):o.pending.reason?esc(o.pending.reason):'Will continue this chat at '+esc(glanceTime(o.pending.at))+'.'}</span><button type="button" class="text-button" data-limit-action="cancel_resume">${o.pending.status==='needs_review'?'Dismiss':'Cancel'}</button>`;return;
   }
   const show=o&&(o.near||o.blocked||lastLimited)&&(open||o.blocked||lastLimited);
   host.hidden=!show;if(!show)return;
@@ -171,34 +173,35 @@ function paintLimitChoices(open=false){
     o.backup_app?`<button type="button" class="secondary" data-limit-action="app" data-app="${esc(o.backup_app)}">Continue in ${esc(limitAppName(o.backup_app))}</button>`:'',
     o.resets_at?`<button type="button" class="secondary" data-limit-action="resume">Continue at ${esc(glanceTime(o.resets_at))}</button>`:'',
     o.blocked?'':`<button type="button" class="text-button" data-limit-action="anyway">Send anyway</button>`].filter(Boolean);
-  const cost=o.accounts.length?'<span class="small-note">Another account’s first message costs more (its cache starts fresh).</span>':'';
-  host.innerHTML=`<span>${esc(limitSummary(o))}</span><div class="inline-actions">${buttons.join('')||'<span class="small-note">Add another account or a backup app in Accounts &amp; backups.</span>'}</div>${cost}`;
+  host.innerHTML=`<span>${esc(limitSummary(o))}</span><div class="inline-actions">${buttons.join('')||'<span class="small-note">Add another account or a backup app in Accounts &amp; backups.</span>'}</div>`;
 }
 // Returns true when the limit flow handled this send.
 async function limitGate(text){
-  const o=limitState.data;if(!o||!(o.near||o.blocked)||limitState.bypass){limitState.bypass=false;return false;}
+  const key=limitScope(),o=limitState.key===key?limitState.data:null;if(!o||!(o.near||o.blocked)||limitState.bypass===key){limitState.bypass=false;return false;}
   if(o.mode==='off')return false;
   if(o.mode==='auto'){
     const account=o.accounts[0];
-    if(account){await api('/api/limit-action',{business:state.business,chat_id:state.chatMeta?.id||'',action:'account',account_id:account.id});notice('Sending with '+account.nickname+'.');await loadLimitOptions();return false;}
+    if(account){await api('/api/limit-action',{business:state.business,chat_id:state.chatMeta?.id||'',action:'account',account_id:account.id});if(key!==limitScope())return true;notice('Sending with '+account.nickname+'.');await loadLimitOptions();return key!==limitScope();}
     if(o.backup_app){await limitContinue('app',text,{app:o.backup_app});return true;}
     return false;
   }
   $('#request').value=text;paintLimitChoices(true);$('#limit-choices').scrollIntoView({block:'nearest'});return true;
 }
 async function limitContinue(action,text,extra={}){
-  const chat=state.chatMeta?.id||'';
+  const chat=state.chatMeta?.id||'',key=limitScope(),draft=$('#request').value;
   const result=await api('/api/limit-action',{business:state.business,chat_id:chat,action,text,...extra});
-  if(action==='app'){$('#request').value='';notice('Continuing in '+limitAppName(extra.app)+' with this chat’s latest result.');if(result.chat_id&&typeof openShellChat==='function')await openShellChat(result.chat_id);}
-  if(action==='resume'){$('#request').value='';notice('This chat will continue when the limit resets.'+(result.note?' '+result.note:''));}
+  if(key!==limitScope())return;
+  if(action==='app'){if($('#request').value!==draft)return;$('#request').value='';notice('Continuing in '+limitAppName(extra.app)+' with this chat’s latest result.');if(result.chat_id&&typeof openShellChat==='function')await openShellChat(result.chat_id);}
+  if(action==='resume'){if($('#request').value===draft)$('#request').value='';notice('This chat will continue when the limit resets.'+(result.note?' '+result.note:''));}
   await loadLimitOptions();
 }
 document.addEventListener('click',event=>{
   const b=event.target.closest('[data-limit-action]');if(!b)return;event.preventDefault();
   attempt(async()=>{
-    const action=b.dataset.limitAction,text=$('#request').value.trim()||'Continue where you left off.';
-    if(action==='anyway'){limitState.bypass=true;$('#limit-choices').hidden=true;$('#send').click();return;}
-    if(action==='account'){await api('/api/limit-action',{business:state.business,chat_id:state.chatMeta?.id||'',action:'account',account_id:b.dataset.account});limitState.bypass=true;$('#limit-choices').hidden=true;if(!$('#request').value.trim())$('#request').value=text;$('#send').click();return;}
+    const key=limitScope(),draft=$('#request').value,action=b.dataset.limitAction,text=draft.trim()||'Continue where you left off.';
+    if(limitState.key!==key)return;
+    if(action==='anyway'){limitState.bypass=key;$('#limit-choices').hidden=true;$('#send').click();return;}
+    if(action==='account'){await api('/api/limit-action',{business:state.business,chat_id:state.chatMeta?.id||'',action:'account',account_id:b.dataset.account});if(key!==limitScope()||$('#request').value!==draft)return;limitState.bypass=key;$('#limit-choices').hidden=true;if(!draft.trim())$('#request').value=text;$('#send').click();return;}
     if(action==='app')return limitContinue('app',text,{app:b.dataset.app});
     if(action==='resume')return limitContinue('resume',text);
     if(action==='cancel_resume')return limitContinue('cancel_resume','');
@@ -207,16 +210,31 @@ document.addEventListener('click',event=>{
 
 // A scheduled task stopped at its app's plan limit: run its instructions another way.
 async function showTaskLimit(taskId){
-  const o=await api('/api/task-limit-options?business='+encodeURIComponent(state.business)+'&task_id='+encodeURIComponent(taskId));
+  const key=limitScope(),business=state.business;
+  const o=await api('/api/task-limit-options?business='+encodeURIComponent(business)+'&task_id='+encodeURIComponent(taskId));
+  if(key!==limitScope())return;
   const go=(action,target='')=>`data-task-recover="${esc(action)}" data-target="${esc(target)}"`;
   const buttons=[...o.accounts.slice(0,2).map(a=>`<button type="button" class="secondary" ${go('account',a.id)}>Run now with ${esc(a.nickname)}</button>`),
     o.backup_app?`<button type="button" class="secondary" ${go('app',o.backup_app)}>Run now in ${esc(limitAppName(o.backup_app))}</button>`:'',
     o.resets_at?`<button type="button" class="secondary" ${go('reset')}>Run at ${esc(glanceTime(o.resets_at))}</button>`:''].filter(Boolean);
-  details(o.task.name,`<p>This scheduled task stopped at ${esc(o.task.app)}’s plan limit. The task itself stays in ${esc(o.task.app)}; these run its instructions once, as a chat.</p>
-    <div class="inline-actions">${buttons.join('')||'<span class="small-note">Add another account or a backup app in Accounts &amp; backups.</span>'}</div>${o.accounts.length?'<p class="small-note">Another account’s first message costs more (its cache starts fresh).</p>':''}`);
+  details(o.task.name,`<p>Run this task once as a chat. Its schedule stays in ${esc(o.task.app)}.</p>
+    <p><strong>${esc(o.destination.name)}</strong><br><span class="small-note storage-path">${esc(o.destination.workspace)}</span>${o.destination.project?'<br>'+esc(o.destination.project):''}</p>
+    ${o.needs_destination_confirmation?'<div class="form-grid"><label class="check-label"><input type="checkbox" data-task-confirm> Run in this workspace</label></div>':''}
+    <div class="inline-actions">${buttons.join('')||'<span class="small-note">Add another account or a backup app in Accounts &amp; backups.</span>'}</div>`);
   $('#detail').querySelectorAll('[data-task-recover]').forEach(b=>b.addEventListener('click',()=>attempt(async()=>{
-    const r=await api('/api/task-recover',{business:state.business,task_id:taskId,action:b.dataset.taskRecover,target:b.dataset.target});$('#detail').close();
-    if(b.dataset.taskRecover==='reset')notice('It will run when the limit resets.');else if(r.chat_id&&typeof openShellChat==='function')await openShellChat(r.chat_id);
+    if(key!==limitScope())return;
+    const confirmed=!!$('#detail').querySelector('[data-task-confirm]')?.checked;
+    if(o.needs_destination_confirmation&&!confirmed){notice('Confirm where to run this task.',true);return;}
+    b.disabled=true;
+    try{
+      const r=await api('/api/task-recover',{business,task_id:taskId,action:b.dataset.taskRecover,target:b.dataset.target,confirm_destination:confirmed,task_basis:o.task_basis});
+      if(key!==limitScope())return;$('#detail').close();
+      if(b.dataset.taskRecover==='reset')notice('It will run when the limit resets.'+(r.note?' '+r.note:''));
+      else if(r.chat_id&&typeof openShellChat==='function'){
+        if(r.workspace&&r.workspace!==state.data.workspace)await api('/api/workspaces/open',{path:r.workspace});
+        state.business=r.business||business;await load();await openShellChat(r.chat_id);
+      }
+    }finally{b.disabled=false;}
   })));
 }
 // Settings → Accounts & backups: one place for accounts, nicknames and what happens at a limit.
@@ -254,15 +272,16 @@ async function showAccounts(){
 }
 // One small gauge beside the model: this chat's app plan limit (tightest window), or its context when
 // the app reports no limits. Hover lists every window; click shows this chat's context, tokens and cost.
-const glance={key:'',at:0,data:null,loading:false};
+const glance={key:'',at:0,data:null,loading:'',ticket:0};
 const glanceTime=t=>{const d=new Date(t*1000);return d-Date.now()<20*3600e3?d.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}):d.toLocaleString([],{weekday:'short',hour:'numeric',minute:'2-digit'});};
 const glanceUsed=w=>w.status==='rejected'?100:w.used_percent;
 async function loadGlance(force=false){
-  const chat=state.chatMeta?.id||'',key=[state.business,chat,state.data?.connection?.selected].join('|');
-  if(!state.business||glance.loading||!force&&key===glance.key&&Date.now()-glance.at<60000)return paintGlance();
-  glance.loading=true;loadLimitOptions();
-  try{const data=await api('/api/glance?business='+encodeURIComponent(state.business)+(chat?'&chat_id='+encodeURIComponent(chat):''));glance.key=key;glance.at=Date.now();glance.data=data;}
-  catch(error){}finally{glance.loading=false;}
+  const chat=state.chatMeta?.id||'',business=state.business,key=limitScope();
+  if(!business||glance.loading===key||!force&&key===glance.key&&Date.now()-glance.at<60000)return paintGlance();
+  const ticket=++glance.ticket;glance.loading=key;loadLimitOptions();
+  if(glance.key!==key){glance.data=null;paintGlance();}
+  try{const data=await api('/api/glance?business='+encodeURIComponent(business)+(chat?'&chat_id='+encodeURIComponent(chat):''));if(key!==limitScope()||ticket!==glance.ticket)return;glance.key=key;glance.at=Date.now();glance.data=data;}
+  catch(error){}finally{if(ticket===glance.ticket)glance.loading='';}
   paintGlance();
 }
 function glanceParts(d){
@@ -271,8 +290,8 @@ function glanceParts(d){
   return {windows,top,context,contextPct:context?.window?100*context.tokens/context.window:null};
 }
 function paintGlance(){
-  const button=$('#usage-gauge'),d=glance.data;if(!button)return;
-  if(!d){button.hidden=true;return;}
+  const button=$('#usage-gauge'),d=glance.key===limitScope()?glance.data:null;if(!button)return;
+  if(!d){button.hidden=true;$('#usage-pop').hidden=true;return;}
   const {windows,top,context,contextPct}=glanceParts(d),pct=top?glanceUsed(top):contextPct;
   button.hidden=!Number.isFinite(pct);if(button.hidden)return;
   button.dataset.level=top&&(top.status==='rejected'||pct>=90)?'high':pct>=75?'mid':'low';
@@ -284,7 +303,7 @@ function paintGlance(){
   if(!$('#usage-pop').hidden)paintGlancePanel();
 }
 function paintGlancePanel(){
-  const d=glance.data;if(!d)return;const {windows,context,contextPct}=glanceParts(d),c=d.chat||{};
+  const d=glance.key===limitScope()?glance.data:null;if(!d){$('#usage-pop').hidden=true;return;}const {windows,context,contextPct}=glanceParts(d),c=d.chat||{};
   const bar=(pct,cls='')=>`<span class="glance-bar ${cls}"><span style="width:${Math.min(100,Math.max(0,pct))}%"></span></span>`;
   const level=w=>w.status==='rejected'||glanceUsed(w)>=90?'high':glanceUsed(w)>=75?'mid':'';
   const limits=windows.length?windows.map(w=>`<div class="glance-row"><span>${esc(w.name)}</span><span class="row-meta">${w.resets_at?'Resets '+esc(glanceTime(w.resets_at))+' · ':''}${w.status==='rejected'?'Reached':Math.round(w.used_percent)+'%'}</span></div>${bar(glanceUsed(w),level(w))}`).join('')

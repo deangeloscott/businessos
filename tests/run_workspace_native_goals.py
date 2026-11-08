@@ -121,6 +121,12 @@ for line in sys.stdin:
  if event.get('type')=='control_request':
   print(json.dumps({'type':'control_response','response':{'request_id':event['request_id'],'subtype':'success','response':{'commands':[{'name':'goal'}]}}}),flush=True)
  elif event.get('type')=='user':
+  if os.getenv('FIXTURE_TRANSCRIPT'):
+   from pathlib import Path
+   p=Path(os.environ['CLAUDE_CONFIG_DIR'])/'projects'/'fixture'/'native.jsonl';p.parent.mkdir(parents=True,exist_ok=True)
+   p.write_text(json.dumps({'type':'attachment','sessionId':'native','attachment':{'type':'goal_status','condition':'Finish the guide','met':True}})+'\\n')
+   for item in [{'type':'system','subtype':'init','session_id':'native'},{'type':'assistant','message':{'content':[{'type':'text','text':'Verified in custom profile'}]}},{'type':'result','subtype':'success','result':'Verified in custom profile'}]:print(json.dumps(item),flush=True)
+   continue
   if os.getenv('FIXTURE_GOAL_UNKNOWN'):
    for item in [{'type':'system','subtype':'init','session_id':'native'},{'type':'assistant','message':{'content':[{'type':'text','text':'Result to review'}]}},{'type':'result','subtype':'success','result':'Result to review','session_id':'native'}]:print(json.dumps(item),flush=True)
    continue
@@ -143,6 +149,10 @@ for line in sys.stdin:
         result=run([sys.executable,str(native_claude)],'claude',root,os.environ.copy(),'Aura context and user request',None,'fixture','',lambda **v:observed.append(v),execution)
         assert result['reply']=='Verified result'
         assert [v['native_goal']['status'] for v in observed if 'native_goal' in v]==['active','active','completed'], observed
+        observed=[];execution=Execution();execution.interactive=True;execution.native_goal=spec(goal,{},'claude',{})
+        run([sys.executable,str(native_claude)],'claude',root,{**os.environ,'FIXTURE_TRANSCRIPT':'1','CLAUDE_CONFIG_DIR':str(root/'custom-profile')},
+            'Aura context',None,'fixture','',lambda **v:observed.append(v),execution)
+        assert [v['native_goal']['status'] for v in observed if 'native_goal' in v]==['completed'],observed
         failed=Execution();failed.interactive=True;failed.native_goal=spec(goal,{},'claude',{});errors=[]
         try:run([sys.executable,str(native_claude)],'claude',root,{**os.environ,'FIXTURE_GOAL_ERROR':'1'},'Aura context',None,'fixture','',lambda **v:errors.append(v),failed)
         except ValueError:pass

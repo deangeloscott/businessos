@@ -242,6 +242,25 @@ Cache reuse is a confirmed hit on a native reply, not a guarantee of another hit
 
 **Alerts & budget** is optional and off initially. It uses the notification bell for near-limit (90%) and monthly budget (80%/100%) notices, once per account window or budget level in the selected business. Refresh occurs after ordinary activity and every five minutes while the page is visible with alerts enabled. Signed-out or unidentified snapshots do not generate quota alerts. The advisory budget counts recorded API costs (including identified API estimates), excluding unknown subscription-equivalent estimates; it never stops tasks or changes models. Compact receipts (latest 10,000), per-chat snapshots, masked/hashed account history and alert settings stay in machine-local preferences, outside portable business memory, credentials and transcripts. This remains a usage view, not a complete provider billing ledger.
 
+### Accounts and continuing after a limit
+
+**Settings → Accounts & backups** keeps the default at **Ask me**. Automatic recovery makes at most one
+attempt on another saved account, a connected backup app, or after a reported reset. A second limit asks
+for your choice. Continuing the same native chat asks it to check its saved progress rather than repeat
+the original actions. Moving to another app requires a completed saved reply to carry over; uncertain
+partial work stays available for review in the original app.
+
+Codex account changes also change its shared local sign-in. AURA waits for its Codex work to finish,
+releases idle connections, and checks the account through Codex before sending more work. Claude tokens
+are saved only after Claude confirms a successful request. Saved credentials and continuation queues
+remain on this computer, outside shared workspace packages.
+
+A continuation keeps its original workspace and business even when you open another workspace. Busy
+chats wait; changed, archived, paused or completed work needs review. An interrupted launch is retained
+for review instead of being retried blindly. You can cancel or dismiss it above the composer. Scheduled
+task recovery shows its destination and keeps known project and goal links. If ownership is unclear,
+confirm where to run it. Recovery runs the instructions once as a chat; it does not change the native schedule.
+
 ## Portable data and customization
 
 Use plain English throughout the interface. Favor clarity over cleverness: say what the user is choosing, what will happen, and what they can do next. Keep wording concise without hiding information needed to make a decision. Avoid internal terminology and abstract metaphors.

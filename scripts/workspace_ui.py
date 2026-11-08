@@ -1654,63 +1654,130 @@ class Workspace:
         names={workspace_usage.account('openai',a.get('account'))['id']:a['nickname'] for a in workspace_accounts.load()['accounts'] if a['app']=='codex' and a.get('account')}
         return [{**r,'label':names[r['id']]} if r.get('id') in names else r for r in rows]
 
-    def notify(self, bid, chat_id, title, kind='limit'):
+    def notify(self, bid, chat_id, title, kind='limit', task_id=None):
         """A bell notification for something that happened while the user may not be looking."""
         with self.lock:
             self.preferences['notification_items']=[*self.preferences['notification_items'],{'id':secrets.token_urlsafe(12),'business_id':bid,'chat_id':chat_id,
-                'kind':kind,'agent':'AURA','title':title,'status':'complete','at':time.time(),'read':False,'delivered':False}][-50:]
+                'kind':kind,'agent':'AURA','title':title,'status':'complete','at':time.time(),'read':False,'delivered':False,
+                **({'task_id':task_id} if task_id else {})}][-50:]
             self.save_preferences()
 
-    def resume_add(self, bid, chat_id, at, text='Continue where you left off.'):
-        """Continue this same chat once its limit resets."""
-        if not isinstance(at,(int,float)) or at<time.time()-60 or at>time.time()+31*86400:raise ValueError('Choose a reset time within the next month.')
-        item=workspace_resume.add(bid,self.workspace_path,chat_id,at,text)
-        note=''
+    def recovery_workspace(self, root):
+        """Use a saved workspace without moving the user's current view."""
+        root=str(Path(root).resolve())
+        with self.lock,workspace_scope(root):
+            if root==str(Path(self.workspace_path).resolve()):return copy.copy(self)
+            if not Path(root).is_dir() or not business_directory():raise ValueError('The original workspace is unavailable. Open its folder before continuing.')
+            cached=self.workspace_views.get(root)
+            if cached:
+                owner=object.__new__(Workspace);owner.__dict__.update(cached)
+            else:
+                identity=hashlib.sha256(root.encode()).hexdigest()[:20]
+                owner=Workspace(getattr(self,'launch_agent',None),self.static,self.settings_file.parent/(identity+'.json'))
+            for key in ('lock','jobs','executions','workspace_views','native_sessions','connections','performance','errors'):
+                setattr(owner,key,getattr(self,key))
+            owner.workspace_path=root
+            self.workspace_views[root]=owner.__dict__
+            return owner
+
+    def resume_basis(self,bid,chat_id):
+        chat=next((c for c in self.preferences['chats'] if c['id']==chat_id and c['business_id']==bid
+                   and Path(c.get('workspace') or self.workspace_path).resolve()==Path(self.workspace_path).resolve()),None)
+        if not chat:raise ValueError('Choose a chat in this workspace.')
+        if chat.get('archived'):raise ValueError('This chat is archived. Review it before continuing.')
+        goal_id=chat.get('goal_id')
+        reason=workspace_goals.review_reason(bid,goal_id) if goal_id else ''
+        if reason:raise ValueError(reason)
+        return {'chat':workspace_recovery.revision(chat),'settings':workspace_context.digest({k:chat.get(k) for k in
+                    ('connection','model','effort','permission_mode','context_refs','project','account_id')}),
+                'goal':workspace_goals.continuation_basis(bid,workspace_goals.find(bid,goal_id)) if goal_id else None}
+
+    def resume_wake(self):
         if workspace_accounts.load()['policy'].get('resume')=='closed':
             try:workspace_resume.schedule_wake(PRODUCT_ROOT)
-            except (OSError,ValueError,subprocess.SubprocessError) as error:note=f'AURA will continue while it is open. {error}'
-        return {**item,'note':note}
+            except (OSError,ValueError,subprocess.SubprocessError):return 'AURA will continue while it is open. The system wake-up could not be scheduled.'
+        return ''
+
+    def resume_add(self, bid, chat_id, at, text='Continue where you left off.', limit_recovery=False):
+        """Continue this same chat once its limit resets."""
+        if type(at) not in {int,float} or not __import__('math').isfinite(at) or at<time.time()-60 or at>time.time()+31*86400:raise ValueError('Choose a reset time within the next month.')
+        with self.lock,workspace_scope(self.workspace_path):
+            item=workspace_resume.add(bid,self.workspace_path,chat_id,at,text,basis=self.resume_basis(bid,chat_id),limit_recovery=limit_recovery)
+        return {**item,'note':self.resume_wake()}
 
     def resume_due(self):
-        """Run continues that are due for this workspace; called from the interface's housekeeping loop."""
-        due=workspace_resume.take_due(self.workspace_path)
+        """Run due work in its original workspace, using the existing housekeeping loop."""
+        roots={r['workspace'] for r in workspace_resume.pending() if r.get('status','pending')=='pending'}
+        due=[item for root in roots for item in workspace_resume.take_due(root)]
         for item in due:
             try:
-                with workspace_scope(self.workspace_path):
+                owner=self.recovery_workspace(item['workspace'])
+                with self.lock,workspace_scope(item['workspace']):
+                    if not any(row['id']==item['id'] for row in workspace_resume.pending()):continue
                     if item.get('app'):
-                        known=self.preferences['connected_apps'].get(item['app']) or {}
-                        self.start_chat(item['business'],item['text'],None,chat_id='',connection={'kind':item['app'],'model':known.get('model',''),'effort':known.get('effort','')})
-                    else:self.start_chat(item['business'],item['text'],None,chat_id=item['chat_id'])
-                self.notify(item['business'],item['chat_id'],'Continued after the limit reset')
+                        task=owner.task_recovery_options(item['business'],item.get('task_id'))
+                        if not item.get('task_basis') or item['task_basis']!=task['task_basis']:raise ValueError('The scheduled task changed. Review it before running again.')
+                        owner.task_recover(item['business'],item['task_id'],'run',confirmed=True,limit_recovery=True)
+                    else:
+                        if any(j.get('chat_id')==item['chat_id'] for j in owner.running_jobs(None)):
+                            workspace_resume.settle(item['id'],'Waiting for this chat to finish.',retry=True);continue
+                        if not item.get('basis') or owner.resume_basis(item['business'],item['chat_id'])!=item['basis']:
+                            raise ValueError('This chat or its goal changed. Review it before continuing.')
+                        owner.start_chat(item['business'],item['text'],None,chat_id=item['chat_id'],limit_recovery=True)
+                    workspace_resume.settle(item['id'])
+                owner.notify(item['business'],item['chat_id'],'Continued after the limit reset')
             except (ValueError,OSError) as error:
-                self.notify(item['business'],item['chat_id'],'Couldn’t continue after the reset: '+str(error)[:120])
-        if due and workspace_accounts.load()['policy'].get('resume')=='closed':
-            try:workspace_resume.schedule_wake(PRODUCT_ROOT)
-            except (OSError,ValueError,subprocess.SubprocessError):pass
+                self.errors.record(error,'/api/limit-action',self.connections.redact)
+                reason=workspace_support.human_error(error)
+                workspace_resume.settle(item['id'],reason[:200])
+                try:self.recovery_workspace(item['workspace']).notify(item['business'],item['chat_id'],'Continuation needs review: '+reason[:120])
+                except (ValueError,OSError):pass
+        if due:self.resume_wake()
 
-    def after_limit(self, bid, chat_id, text, context='chats'):
+    def resume_cancel(self,bid,chat_id):
+        with self.lock:
+            workspace_resume.cancel(chat_id,self.workspace_path,bid)
+        return {'cancelled':True,'note':self.resume_wake()}
+
+    def after_limit(self, bid, chat_id, text, context='chats', request_id=None, recovered=False):
+        with self.lock,workspace_scope(self.workspace_path):
+            return self._after_limit(bid,chat_id,text,context,request_id,recovered)
+
+    def _after_limit(self, bid, chat_id, text, context='chats', request_id=None, recovered=False):
         """A request stopped at a plan limit: follow the user's choice (Ask by default)."""
+        with self.lock,workspace_scope(self.workspace_path):
+            chat=next((c for c in self.preferences['chats'] if c['id']==chat_id and c['business_id']==bid),None)
+            if not chat or request_id and chat.get('recovery',{}).get('request_id')!=request_id:return
+            try:basis=self.resume_basis(bid,chat_id)
+            except ValueError:return
         mode=workspace_accounts.mode_for(context)
         options=self.limit_options(bid,chat_id)
         app_name={'claude':'Claude','codex':'Codex'}.get(options['app'],options['app'].capitalize())
         if mode=='off':return
-        if mode=='ask':
+        if mode=='ask' or recovered:
             self.notify(bid,chat_id,f'{app_name} plan limit reached. Open the chat to choose how to continue.');return
+        if request_id and chat.get('limit_recovered_request')==request_id:return
         try:
+            # A single automatic recovery per user request. Never bounce between accounts or replay its actions.
+            text=workspace_recovery.CONTINUE
+            with self.lock,workspace_scope(self.workspace_path):
+                if self.resume_basis(bid,chat_id)!=basis:return
+                if request_id:chat['limit_recovered_request']=request_id;self.save_preferences()
             if options['accounts']:
                 choice=min(options['accounts'],key=lambda a:a['used'] if a['used'] is not None else 50)
                 self.accounts_action(bid,{'action':'use','chat_id':chat_id,'account_id':choice['id']})
-                with workspace_scope(self.workspace_path):self.start_chat(bid,text,None,chat_id=chat_id)
+                with workspace_scope(self.workspace_path):self.start_chat(bid,text,None,chat_id=chat_id,limit_recovery=True)
                 self.notify(bid,chat_id,f'{app_name} limit reached. Continued on {choice["nickname"]}.');return
             if options['backup_app']:
-                started=self.continue_elsewhere(bid,chat_id,text,options['backup_app'])
+                started=self.continue_elsewhere(bid,chat_id,text,options['backup_app'],limit_recovery=True)
                 self.notify(bid,started['chat_id'],f'{app_name} limit reached. Continued in {options["backup_app"].capitalize()}.');return
             if options['resume']!='off' and options['resets_at']:
-                self.resume_add(bid,chat_id,options['resets_at'],text)
+                self.resume_add(bid,chat_id,options['resets_at'],text,limit_recovery=True)
                 self.notify(bid,chat_id,f'{app_name} limit reached. Will continue at {time.strftime("%a %H:%M",time.localtime(options["resets_at"]))}.');return
             self.notify(bid,chat_id,f'{app_name} plan limit reached. No other account or backup app is set up.')
         except (ValueError,OSError,subprocess.SubprocessError) as error:
-            self.notify(bid,chat_id,f'{app_name} limit reached and AURA couldn’t continue automatically: {str(error)[:120]}')
+            self.errors.record(error,'/api/limit-action',self.connections.redact)
+            self.notify(bid,chat_id,f'{app_name} limit reached and AURA couldn’t continue automatically: {workspace_support.human_error(error)[:120]}')
 
     def check_task_limits(self):
         """Native scheduled tasks run inside their app. When one stops at a plan limit, ring the bell once."""
@@ -1718,50 +1785,109 @@ class Workspace:
             folders=[workspace_root().resolve(),*(Path(r['path']) for r in self.recent_workspaces())]
             tasks=workspace_schedules.inventory(workspaces=folders)['items']
         except (OSError,ValueError):return
-        resolved=resolve_business(None)
-        bid=resolved.get('business_id') if resolved.get('status')=='resolved' else next(iter(self.preferences.get('active_chats',{})),'')
-        if not bid:return
-        seen=self.preferences.setdefault('task_limit_seen',[])
         for task in tasks:
             if task.get('last_status') not in {'error','failed','failure'} or setup_error(task.get('last_error') or '')!=SETUP_ERRORS['limit']:continue
             key=f"{task['id']}:{task.get('last_run','')}"
-            if key in seen:continue
-            self.preferences['task_limit_seen']=seen=[*seen,key][-200:]
-            self.notify(bid,None,f"\u201c{task['name']}\u201d stopped at {task.get('app','its app')}\u2019s plan limit. Open to run it another way.",kind='task_limit')
-            with self.lock:self.preferences['notification_items'][-1]['task_id']=task['id'];self.save_preferences()
+            destination=self.task_destination(task)
+            if not destination:continue  # Unknown ownership belongs in scheduled tasks, not an unrelated business's bell.
+            owner=self.recovery_workspace(destination['workspace']);bid=destination['business']
+            with self.lock:
+                seen=owner.preferences.setdefault('task_limit_seen',[])
+                if key in seen:continue
+                owner.preferences['task_limit_seen']=[*seen,key][-200:]
+                owner.notify(bid,None,f"\u201c{task['name']}\u201d stopped at {task.get('app','its app')}\u2019s plan limit. Open to run it another way.",kind='task_limit',task_id=task['id'])
 
-    def task_recover(self, bid, task_id, action, target=''):
-        """Run a limited task's instructions as a chat: now on another account or app, or when its limit resets."""
-        folders=[workspace_root().resolve(),*(Path(r['path']) for r in self.recent_workspaces())]
+    def task_destination(self,task):
+        """Native working folders and existing project bindings identify ownership; the visible page does not."""
+        folders=task.get('workspace') or []
+        if isinstance(folders,str):folders=[folders]
+        folders={Path(p).resolve() for p in folders if isinstance(p,str) and p}
+        roots={str(Path(p).resolve()) for p in [self.workspace_path,*[r['path'] for r in self.recent_workspaces()]]}
+        linked=[];matched=[]
+        for root in roots:
+            with workspace_scope(root):
+                if not Path(root).is_dir():continue
+                cached=self.workspace_views.get(root)
+                local=self.preferences if Path(root)==Path(self.workspace_path).resolve() else (cached or {}).get('preferences')
+                if local is None:
+                    try:local=json.loads((self.settings_file.parent/(hashlib.sha256(root.encode()).hexdigest()[:20]+'.json')).read_text(encoding='utf-8'))
+                    except (OSError,ValueError):local={}
+                for business in business_directory():
+                    bid=business['id'];binding=workspace_projects.binding(bid,'task',task['id'])
+                    projects=workspace_projects.list_projects(bid)
+                    project=next((p['name'] for p in projects if p['id'] in binding.get('project_refs',[]) or
+                                  p['folder'] and Path(p['folder']).resolve() in folders),'')
+                    goal=binding.get('goal_ref') or local.get('goal_tasks',{}).get(bid,{}).get(task['id'],'')
+                    destination={'workspace':root,'business':bid,'name':business['name'],'project':project,'goal_id':goal,'binding':binding}
+                    if binding or goal:linked.append(destination)
+                    elif Path(root) in folders or any(p['folder'] and Path(p['folder']).resolve() in folders for p in projects):matched.append(destination)
+        candidates=linked or matched
+        return candidates[0] if len(candidates)==1 else None
+
+    def task_recovery_options(self,bid,task_id):
+        with self.lock,workspace_scope(self.workspace_path):return self._task_recovery_options(bid,task_id)
+
+    def _task_recovery_options(self,bid,task_id):
+        folders=[self.workspace_path,*(r['path'] for r in self.recent_workspaces())]
         task=next((t for t in workspace_schedules.inventory(workspaces=folders)['items'] if t['id']==task_id),None)
         if not task:raise ValueError('This task is no longer listed. Refresh scheduled tasks.')
+        destination=self.task_destination(task)
+        ambiguous=destination is None
+        if ambiguous:
+            business=next((b for b in business_directory() if b['id']==bid),None)
+            if not business:raise ValueError('Choose a workspace for this task.')
+            destination={'workspace':str(Path(self.workspace_path).resolve()),'business':bid,'name':business['name'],'project':'','goal_id':'','binding':{}}
+        owner=self.recovery_workspace(destination['workspace'])
+        with workspace_scope(destination['workspace']):
+            goal=destination.get('goal_id')
+            reason=workspace_goals.review_reason(destination['business'],goal) if goal else ''
+            if reason:raise ValueError(reason)
+            basis=workspace_context.digest({'task':task,'destination':destination,
+                'goal':workspace_goals.continuation_basis(destination['business'],workspace_goals.find(destination['business'],goal)) if goal else None})
+            return {**owner.limit_options(destination['business'],None,task.get('owner')),'task':task,'destination':destination,
+                    'needs_destination_confirmation':ambiguous,'task_basis':basis}
+
+    def task_recover(self, bid, task_id, action, target='',confirmed=False,limit_recovery=False,expected_basis=None):
+        with self.lock,workspace_scope(self.workspace_path):
+            return self._task_recover(bid,task_id,action,target,confirmed,limit_recovery,expected_basis)
+
+    def _task_recover(self, bid, task_id, action, target='',confirmed=False,limit_recovery=False,expected_basis=None):
+        """Run a limited task's instructions as a chat: now on another account or app, or when its limit resets."""
+        options=self.task_recovery_options(bid,task_id)
+        if expected_basis and expected_basis!=options['task_basis']:raise ValueError('This task changed. Reopen it to review the latest instructions.')
+        if options['needs_destination_confirmation'] and not confirmed:raise ValueError('This task has no single saved workspace. Choose where to run it first.')
+        task=options['task'];destination=options['destination'];owner=self.recovery_workspace(destination['workspace']);bid=destination['business']
         text=(f"Run the scheduled task \u201c{task['name']}\u201d now:\n\n"+(task.get('description') or '')).strip()
         app_kind=task.get('owner')
-        if action=='app':
-            return self.continue_elsewhere(bid,None,text,target)
-        if action=='account':
-            known=self.preferences['connected_apps'].get(app_kind) or {}
+        if action in {'app','account','run'}:
+            if action=='app':app_kind=target
+            known=owner.preferences['connected_apps'].get(app_kind)
+            if not known:raise ValueError('Connect the AI app in the task’s original workspace first.')
             connection={'kind':app_kind,'model':task.get('model') or known.get('model',''),'effort':task.get('effort') or known.get('effort','')}
-            if app_kind=='codex':workspace_accounts.codex_switch(target)
-            with workspace_scope(self.workspace_path):
-                return self.start_chat(bid,text,None,chat_id='',connection=connection,account_id=target if app_kind=='claude' else None)
+            if action=='app':connection.update(model=known.get('model',''),effort=known.get('effort',''))
+            with self.lock,workspace_scope(destination['workspace']):
+                if action=='account':
+                    if app_kind=='codex':owner.accounts_action(bid,{'action':'codex_switch','id':target})
+                    elif app_kind!='claude' or (owner.saved_account(target) or {}).get('app')!='claude':raise ValueError('Choose a saved account for this AI app.')
+                started=owner.start_chat(bid,text,None,chat_id='',connection=connection,account_id=target if action=='account' and app_kind=='claude' else None,
+                    goal_id=destination['goal_id'] or None,project=destination['project'] or None,limit_recovery=limit_recovery,source_task=task_id)
+                return {**started,'workspace':destination['workspace'],'business':bid}
         if action=='reset':
-            info=self.limit_options(bid,None,app_kind)
-            if not info.get('resets_at'):raise ValueError('This app has not reported when its limit resets.')
-            return workspace_resume.add(bid,self.workspace_path,'',info['resets_at'],text,app=app_kind)
+            if not options.get('resets_at'):raise ValueError('This app has not reported when its limit resets.')
+            item=workspace_resume.add(bid,destination['workspace'],'',options['resets_at'],text,app=app_kind,task_id=task_id,task_basis=options['task_basis'])
+            return {**item,'note':owner.resume_wake()}
         raise ValueError('Choose how to run this task.')
 
-    def continue_elsewhere(self, bid, chat_id, text, app_kind):
+    def continue_elsewhere(self, bid, chat_id, text, app_kind,limit_recovery=False):
         """A new chat in another app, carrying this chat's latest result and goal over (the existing handoff)."""
         with self.lock:
             known=self.preferences['connected_apps'].get(app_kind)
             if not known:raise ValueError('Connect that AI app first.')
-        try:carried=workspace_context.handoff(self,bid,chat_id) if chat_id else {}
-        except ValueError:carried={'references':[],'goal_id':'','project':''}
+        carried=workspace_context.handoff(self,bid,chat_id) if chat_id else {}
         connection={'kind':app_kind,'model':known.get('model',''),'effort':known.get('effort','')}
         with workspace_scope(self.workspace_path):
             return self.start_chat(bid,text,None,chat_id='',connection=connection,references=carried.get('references'),
-                                   goal_id=carried.get('goal_id') or None,project=carried.get('project') or None)
+                                   goal_id=carried.get('goal_id') or None,project=carried.get('project') or None,limit_recovery=limit_recovery)
 
     def accounts_action(self, bid, data):
         """Several accounts per app through each app's own sign-in. Secrets never leave this computer."""
@@ -1772,20 +1898,44 @@ class Workspace:
             argv=list(choice['argv'])
             return argv[:argv.index('exec')] if kind=='codex' and 'exec' in argv else workspace_agents.base_command(argv)
         def codex_idle():
+            chats=[*self.preferences['chats'],*(c for view in self.workspace_views.values() for c in view['preferences']['chats'])]
             busy={j.get('chat_id') for j in self.running_jobs(None)}
-            if any(c['id'] in busy and c.get('agent')=='codex' for c in self.preferences['chats']):
+            if any(c['id'] in busy and c.get('agent')=='codex' for c in chats):
                 raise ValueError('Wait for Codex to finish its current request before switching accounts.')
+            with self.native_sessions.lock:
+                sessions=[(key,s) for key,s in self.native_sessions.items.items() if s.execution.native_kind=='codex']
+                if any(s.pending() for key,s in sessions):raise ValueError('Codex still has work running. Wait for it to finish before switching accounts.')
+                for key,s in sessions:self.native_sessions.release_idle(key)
+        def switch_codex(ident):
+            with self.lock:
+                codex_idle()
+                choice=self.native_choice('codex')
+                if not choice:raise ValueError('Connect Codex first.')
+                env=self.agent_environment(choice)
+                if Path(env.get('CODEX_HOME') or Path.home()/'.codex').resolve()!=workspace_accounts.codex_home().resolve():
+                    raise ValueError('This Codex connection uses a different profile. Switch its account in Codex.')
+                target=self.saved_account(ident)
+                result=workspace_accounts.codex_switch(ident)
+                try:
+                    raw=workspace_codex.rpc(choice['argv'],[('account/read',{'refreshToken':False})],workspace_root(),env)[0]
+                    account=raw.get('account') or {};native_id=account.get('accountId') or (raw.get('workspaceRouting') or {}).get('chatgptAccountId')
+                    confirmed=(native_id==target.get('account')) if native_id else bool(target.get('email') and account.get('email','').casefold()==target['email'].casefold())
+                    if account.get('type') not in {'chatgpt','chatgptAuthTokens'} or not confirmed:raise ValueError('Account not confirmed')
+                except (ValueError,OSError,subprocess.SubprocessError,KeyError,TypeError):
+                    raise ValueError('The saved sign-in changed, but Codex could not confirm the account. Check its sign-in before sending work.') from None
+                self.usage_refresh['codex_limits_at']=0
+                return result
         if action=='claude_add':result=workspace_accounts.add_claude(base('claude'),data.get('token'),data.get('nickname'))
         elif action=='codex_capture':workspace_accounts.codex_capture(data.get('nickname',''));result=workspace_accounts.public('codex')
         elif action=='codex_login':
-            codex_idle();process=workspace_accounts.codex_login(base('codex'))
+            with self.lock:codex_idle();process=workspace_accounts.codex_login(base('codex'))
             def finish():
                 try:
                     if process.wait(timeout=900)==0:workspace_accounts.codex_capture(data.get('nickname',''))
                 except (subprocess.SubprocessError,OSError,ValueError):pass
             threading.Thread(target=finish,daemon=True).start()
             result={**workspace_accounts.public('codex'),'note':'Codex opened its sign-in in your browser. Sign in with the other account; it appears here when done.'}
-        elif action=='codex_switch':codex_idle();result=workspace_accounts.codex_switch(data.get('id'))
+        elif action=='codex_switch':result=switch_codex(data.get('id'))
         elif action=='rename':result=workspace_accounts.rename(data.get('id'),data.get('nickname'))
         elif action=='remove':result=workspace_accounts.remove(data.get('id'))
         elif action=='policy':result={**workspace_accounts.public(),'policy':workspace_accounts.set_policy(data.get('changes'))}
@@ -1796,12 +1946,12 @@ class Workspace:
                 if chat.get('status')=='working':raise ValueError('Wait for this chat to finish before changing its account.')
                 account=data.get('account_id') or ''
                 if chat['agent']=='claude':
-                    if account and not self.saved_account(account):raise ValueError('That Claude account is no longer saved.')
+                    if account and (self.saved_account(account) or {}).get('app')!='claude':raise ValueError('That Claude account is no longer saved.')
                     if account:chat['account_id']=account
                     else:chat.pop('account_id',None)
                     self.save_preferences()
                 elif chat['agent']=='codex':
-                    codex_idle();workspace_accounts.codex_switch(account)
+                    switch_codex(account)
                 else:raise ValueError('This app manages its own accounts.')
             result=workspace_accounts.public(chat['agent'])
         elif action=='pi_install':
@@ -2428,12 +2578,14 @@ class Workspace:
         threading.Thread(target=work,daemon=True).start()
         return self.schedule_state(bid)
 
-    def start_chat(self, bid, text, history, welcome=False, schedule_id=None, organization_id=None, keep_warm_id=None, chat_id=None, files=None, connection=None, assistant_id=None,references=None,goal_id=None,permission_mode=None,native_goal=None,project=None,account_id=None):
+    def start_chat(self, bid, text, history, welcome=False, schedule_id=None, organization_id=None, keep_warm_id=None, chat_id=None, files=None, connection=None, assistant_id=None,references=None,goal_id=None,permission_mode=None,native_goal=None,project=None,account_id=None,limit_recovery=False,source_task=None):
         with self.lock:
             owner=copy.copy(self)
             owner.agent=dict(self.agent) if self.agent else None
             owner._view_owner=self
             owner._request_references=references
+            owner._limit_recovery=limit_recovery
+            owner._source_task=source_task
             owner._request_goal=goal_id
             owner._request_native_goal=native_goal
             owner._request_account=account_id if account_id and self.saved_account(account_id) else None
@@ -2637,6 +2789,10 @@ class Workspace:
             job['new_native_chat']=native and not chat.get('native_id')
             job['subagents']=copy.deepcopy(workspace_delegation.retain(chat.get('subagents',[])))
             job.update(chat_id=chat['id'], model=chat['model'], effort=chat['effort'])
+            job['limit_recovery']=bool(getattr(self,'_limit_recovery',False))
+            if getattr(self,'_source_task',None):
+                binding=workspace_projects.binding(bid,'task',self._source_task)
+                if binding:workspace_projects.bind(bid,'chat',chat['id'],binding.get('project_refs',[]),binding.get('collection_id'),binding.get('goal_ref'))
             if protocol_kind=='hermes' and assistant and assistant.get('native_primary'):chat['native_profile']=assistant['native_name']
             workspace_recovery.begin(chat,job)
             self.save_chat_turn(chat, job, text)

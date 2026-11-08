@@ -377,6 +377,8 @@ def agent_lines(process,kind,prompt,native_id,execution,errors):
                     execution.retry_check_at=None;execution.release_continuation()
                     execution.continuation_changed({'retry_at':None,'progress':'Continuing the assignment' if event.get('success') else 'Native retries ended'})
             if kind=='claude':
+                if native_id is None or typ=='system' and event.get('subtype')=='init':
+                    native_id=event.get('session_id') or native_id
                 if goal:
                     from workspace_native_goals import claude_status
                     observed=claude_status(event,goal['objective'],native_id)
@@ -411,7 +413,8 @@ def agent_lines(process,kind,prompt,native_id,execution,errors):
                 if result_received and not tasks and session_state in {None,'idle'} and last_goal_status!='active' and not execution.helpers and not any(r['status']=='pending' for r in execution.requests.snapshot()):
                     if goal and last_goal_status is None and kind=='claude':
                         from workspace_native_goals import claude_transcript_status
-                        observed=claude_transcript_status(event.get('session_id') or native_id,goal['objective'])
+                        observed=claude_transcript_status(event.get('session_id') or native_id or (session.native_id if session else None),
+                                                          goal['objective'],(execution.native_env or {}).get('CLAUDE_CONFIG_DIR'))
                         if observed:
                             last_goal_status=observed['status']
                             yield json.dumps({'type':'aura_native_goal','goal':observed})

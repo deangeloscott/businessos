@@ -136,5 +136,26 @@ function input(text){const el=node('#request');el.value=text;el.selectionStart=t
  assert.equal(refreshState.refreshingChat,false);assert.match(refreshMessage,/unavailable/);
  reading=refreshContext.refreshChat();refreshScope='another-chat';finishRead({messages:[{text:'Wrong chat'}],chat:{id:'chat'}});await reading;assert.equal(refreshState.chat[0].text,'Latest');
  refreshScope='chat';reading=refreshContext.refreshChat();refreshState.chat=[{text:'A newer turn'}];finishRead({messages:[{text:'Older read'}],chat:{id:'chat'}});await reading;assert.equal(refreshState.chat[0].text,'A newer turn');
- console.log('Composer UI passed: context chips, email handling, explicit shortcuts, stale lookups, draft-safe reuse and manual continuation.');
+ // Usage/account choices belong to the workspace and chat that requested them.
+ const reads=[],limitNodes={'#request':{value:'Original draft'}},openedChats=[];
+ const limits={state:{business:'a',data:{workspace:'A',connection:{selected:'claude'}},chatMeta:{id:'chat-a'}},
+  api:url=>new Promise(resolve=>reads.push({url,resolve})),appName:x=>x,paintLimitChoices(){},paintGlance(){},notice(){},
+  $:id=>limitNodes[id],openShellChat:async id=>openedChats.push(id)};
+ vm.createContext(limits);
+ vm.runInContext(appSource.slice(appSource.indexOf('const limitState='),appSource.indexOf('function limitSummary(')),limits);
+ vm.runInContext(appSource.slice(appSource.indexOf('const glance='),appSource.indexOf('function glanceParts(')),limits);
+ let first=limits.loadLimitOptions();limits.state.business='b';limits.state.data.workspace='B';limits.state.chatMeta.id='chat-b';
+ let second=limits.loadLimitOptions();reads[1].resolve({app:'b'});await second;reads[0].resolve({app:'a'});await first;
+ assert.equal(vm.runInContext('limitState.data.app',limits),'b','Old workspace account choices replaced the current choices');
+ reads.length=0;limits.state.data.workspace='A';first=limits.loadGlance(true);
+ limits.state.data.workspace='B';second=limits.loadGlance(true);
+ assert.equal(reads.length,4,'An old request blocked usage loading for the new workspace');
+ reads[2].resolve({app:'b'});reads[3].resolve({app:'b'});await second;
+ reads[0].resolve({app:'a'});reads[1].resolve({app:'a'});await first;
+ assert.equal(vm.runInContext('glance.data.app',limits),'b','Old usage replaced current workspace usage');
+ vm.runInContext(appSource.slice(appSource.indexOf('async function limitContinue('),appSource.indexOf("document.addEventListener('click',event=>{",appSource.indexOf('async function limitContinue('))),limits);
+ reads.length=0;const continuing=limits.limitContinue('app','Original draft',{app:'codex'});
+ limitNodes['#request'].value='New unsent work';reads[0].resolve({chat_id:'created-chat'});await continuing;
+ assert.equal(limitNodes['#request'].value,'New unsent work');assert.equal(openedChats.length,0,'A delayed recovery hid a newer draft');
+ console.log('Composer UI passed: context chips, stale lookups, draft-safe reuse, scoped account/usage reads and manual continuation.');
 })().catch(error=>{console.error(error);process.exitCode=1;});
