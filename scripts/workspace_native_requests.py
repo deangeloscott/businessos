@@ -212,7 +212,7 @@ def claude_request(event,execution,send):
         options=['Approve once',*(['Approve and apply the suggested native rule'] if suggestions else []),'Decline']
         q=question('decision',request.get('description') or 'Allow this tool call?', options)
         add(execution,ident,'Approval needed: '+str(request.get('tool_name','Tool')),[q],reply,
-            lambda a,original=original,suggestions=suggestions:{'behavior':'deny','message':'Declined by the user in Aura.'} if a['decision']==['Decline'] else {'behavior':'allow','updatedInput':original,**({'updatedPermissions':suggestions} if a['decision']==['Approve and apply the suggested native rule'] else {})},json.dumps({'input':original,'permission_suggestions':suggestions},ensure_ascii=False,indent=2))
+            lambda a,original=original,suggestions=suggestions:{'behavior':'deny','message':'Declined by the user in AURA.'} if a['decision']==['Decline'] else {'behavior':'allow','updatedInput':original,**({'updatedPermissions':suggestions} if a['decision']==['Approve and apply the suggested native rule'] else {})},json.dumps({'input':original,'permission_suggestions':suggestions},ensure_ascii=False,indent=2))
 
 
 def extension_request(event,execution,send):

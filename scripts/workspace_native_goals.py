@@ -177,7 +177,7 @@ def saved_control(agent,kind,cwd,env,native_id,expected,action,expected_basis=No
 
 
 def custom_run(command,cwd,env,prompt,native_id,execution,update):
-    """Optional machine-owned JSONL adapter; it drives its own harness, never an Aura loop."""
+    """Optional machine-owned JSONL adapter; it drives its own harness, never an AURA loop."""
     from _process_errors import ErrorTail
     from workspace_native_io import channel
     request=execution.native_goal;reply='';ident=native_id;finished=False

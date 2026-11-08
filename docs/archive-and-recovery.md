@@ -11,11 +11,11 @@ Use **Archived & deleted** at the bottom of workspace search to find and restore
 | Deleted goal | Leaves current work; retains its status before deletion | Returns as active, paused or completed as it was |
 | Record removed with `forget.py` | Removes an unreferenced canonical record after preserving a local recovery copy | Reinstates its original ID and data if its references remain valid |
 | Missing workspace file with a saved version | Lists its latest retained copy without assuming why it disappeared | Restores that copy without overwriting a current file |
-| Explicitly retired originals from workspace organization | Keeps the selected originals in Aura Recovery | Returns the originals if their original location is still empty |
+| Explicitly retired originals from workspace organization | Keeps the selected originals in AURA Recovery | Returns the originals if their original location is still empty |
 
 **Archive does not pause a native schedule, cancel work or restart it on restore.** Manage native work through its task or chat controls. Existing chats and explicitly selected references can still use archived context; archive is not an access restriction. Native-owned tools, plugins, sign-ins, native histories and bundled guidance remain managed by their owner.
 
-Archived records, profiles and projects travel with the workspace and do not expire automatically. Chat archive state remains in Aura's machine-local chat store. File history is also machine-local and bounded to 20 versions per file, 500 entries and 256 MB per business/workspace, with a 32 MB per-file limit. Deleted record recovery shares those bounds: it is not indefinite trash or an OS recycle-bin stage. Later history can evict old copies. Explicitly retired originals follow the retention selected in Aura Recovery; automatic removal there is permanent. Keep normal backups for durable recovery.
+Archived records, profiles and projects travel with the workspace and do not expire automatically. Chat archive state remains in AURA's machine-local chat store. File history is also machine-local and bounded to 20 versions per file, 500 entries and 256 MB per business/workspace, with a 32 MB per-file limit. Deleted record recovery shares those bounds: it is not indefinite trash or an OS recycle-bin stage. Later history can evict old copies. Explicitly retired originals follow the retention selected in AURA Recovery; automatic removal there is permanent. Keep normal backups for durable recovery.
 
 The Business identity cannot be archived or forgotten. Goals retain their own lifecycle. Restoring a deleted record validates organization ownership, ID uniqueness and references; it does not overwrite a newer record. Restore missing related records first when necessary. Nothing automatically resumes execution.
 
@@ -35,4 +35,4 @@ python scripts/workspace_archive.py archive --workspace <folder> --business-id <
 python scripts/workspace_archive.py restore --workspace <folder> --business-id <id> --kind record --id=<record-id>
 ```
 
-These commands use the running local Aura service (`--url` selects another local address). Existing chat, goal, project and agent endpoints remain compatible. Direct `workspace_assistants.py archive/restore` also works offline on the same portable profile state. Product and native files are never deleted by an archive action.
+These commands use the running local AURA service (`--url` selects another local address). Existing chat, goal, project and agent endpoints remain compatible. Direct `workspace_assistants.py archive/restore` also works offline on the same portable profile state. Product and native files are never deleted by an archive action.

@@ -135,7 +135,7 @@ def run(command,kind,cwd,env,prompt,native_id,model,effort,update,execution):
                 if ident in {'aura-init','aura-session','aura-config','aura-prompt'} and 'error' in event:
                     raise ValueError(str((event['error'] or {}).get('message') or 'The native connection could not complete this operation.'))
                 if ident=='aura-init':
-                    if result.get('protocolVersion')!=1:raise ValueError('This AI app uses a different connection version. Update Aura or use its native app.')
+                    if result.get('protocolVersion')!=1:raise ValueError('This AI app uses a different connection version. Update AURA or use its native app.')
                     capabilities=result.get('agentCapabilities') or {}
                     if native_id and not capabilities.get('loadSession',capabilities.get('load_session')):raise ValueError('This native connection cannot reopen that saved conversation. Open it in its original app.')
                     request('aura-session','session/load' if native_id else 'session/new',cwd=str(cwd),mcpServers=execution.native_options.get('mcpServers',[]),**({'sessionId':native_id} if native_id else {}))

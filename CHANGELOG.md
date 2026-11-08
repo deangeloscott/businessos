@@ -14,7 +14,7 @@
 - The visual workspace's HTTP layer moves to `scripts/workspace_http.py`. When the server runs as a script, helpers share the running module instead of loading a second copy.
 - Keep covered chat controls out of keyboard and screen-reader navigation on workspace pages, and send Skip to content to the visible page. Describe unclassified native failures without incorrectly claiming the app never connected.
 - Connect to Hermes’s native desktop/TUI gateway where available, with native commands, approvals, evaluator-owned goal continuation and confirmed completion. Keep ACP available for older installations and explicit ACP-only settings.
-- Preserve normalized native goal assignments and completion contracts without storing Aura’s context as the goal. Reject control through an older assignment when native criteria change.
+- Preserve normalized native goal assignments and completion contracts without storing AURA’s context as the goal. Reject control through an older assignment when native criteria change.
 - Discover native commands in the composer and expose additional ACP select settings in the existing model picker, using exact native IDs and acknowledgements before work.
 - Release settled native processes after ten idle minutes while retaining goals, background commands, provider work and pending input; resume saved native conversations on demand.
 - Support connection-specific environments for native profiles and account configuration. Add opt-in standard ACP client file and command services without another runtime dependency.
@@ -29,7 +29,7 @@
 - Release settled native connections when their chats are archived, while preserving pending native work.
 - Delay automatic updates while an idle native connection has a pending interaction or provider work.
 - Observe idle OMP goal changes and prevent an older saved goal from controlling a replacement native assignment.
-- Namespace Aura composer shortcuts with /aura- so native command names are not intercepted as Aura actions.
+- Namespace AURA composer shortcuts with /aura- so native command names are not intercepted as AURA actions.
 - Explain unsupported native steps in plain language and keep protocol details in troubleshooting diagnostics.
 
 ## v0.3.0 — 2026-11-05

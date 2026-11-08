@@ -321,7 +321,7 @@ def continuation(kind,mode='manual',until=None):
         if isinstance(until,bool) or not isinstance(until,(float,int)) or not time.time()<until<=time.time()+7*86400:
             raise ValueError('Choose a continuation expiry within the next seven days.')
     return {'mode':mode,'until':until if mode=='native' else None,'native_supported':supported,
-            'note':'Uses retries already enabled by the native app. No scheduled restart or guarantee of quota availability. Aura and the native connection must remain running.'}
+            'note':'Uses retries already enabled by the native app. No scheduled restart or guarantee of quota availability. AURA and the native connection must remain running.'}
 
 
 def review_reason(bid,goal_id,basis=None):
@@ -348,14 +348,14 @@ def live_change(url,bid,payload,route='/api/goals'):
     from _common import PRODUCT_ROOT
     parts=urlparse(url)
     if parts.scheme!='http' or parts.hostname not in {'127.0.0.1','localhost','::1'} or parts.username or parts.password or parts.path not in {'','/'} or parts.query or parts.fragment:
-        raise ValueError('Use the local Aura address, such as http://127.0.0.1:4187.')
+        raise ValueError('Use the local AURA address, such as http://127.0.0.1:4187.')
     base=url.rstrip('/')
     with urlopen(base,timeout=10) as response:page=response.read().decode('utf-8')
     token=re.search(r'<meta name="aura-token" content="([^"]+)"',page)
-    if not token:raise ValueError('This address is not an Aura interface.')
+    if not token:raise ValueError('This address is not an AURA interface.')
     headers={'X-Aura-Token':token[1],'X-Aura-Workspace':str(workspace_root()),'Content-Type':'application/json'}
     with urlopen(Request(base+'/api/state',headers=headers),timeout=15) as response:state=json.load(response)
-    if Path(state['product']).resolve()!=PRODUCT_ROOT.resolve():raise ValueError('Choose the Aura instance running this product copy.')
+    if Path(state['product']).resolve()!=PRODUCT_ROOT.resolve():raise ValueError('Choose the AURA instance running this product copy.')
     body=json.dumps({'business':bid,**payload}).encode() if payload is not None else None
     with urlopen(Request(base+route,headers=headers,data=body),timeout=15) as response:return json.load(response)
 
@@ -365,7 +365,7 @@ def main():
     parser.add_argument('--workspace',type=Path,default=workspace_root());parser.add_argument('--business-id',required=True);parser.add_argument('--id');parser.add_argument('--basis');parser.add_argument('--input');parser.add_argument('--json',action='store_true')
     parser.add_argument('--token-budget',type=int);parser.add_argument('--chat');parser.add_argument('--asset');parser.add_argument('--mode',choices=['manual','native'],default='manual');parser.add_argument('--until',type=float)
     parser.add_argument('--scope',choices=['workspace','chat','all'],default='workspace');parser.add_argument('--show',choices=['active','current','completed','deleted','all'],default='active')
-    parser.add_argument('--url',default='http://127.0.0.1:4187',help='Running local Aura address for chat links, deletion/recovery and continuation choices')
+    parser.add_argument('--url',default='http://127.0.0.1:4187',help='Running local AURA address for chat links, deletion/recovery and continuation choices')
     args=parser.parse_args()
     with workspace_scope(args.workspace):
         if args.action=='list' and args.chat:

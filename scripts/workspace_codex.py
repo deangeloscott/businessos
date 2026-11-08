@@ -210,7 +210,7 @@ def run(command, cwd, prompt, native_id, model, effort, update, env=None, execut
 
 
 def history_turns(thread, native_id):
-    """Public native turns when the app owns a transcript Aura cannot open."""
+    """Public native turns when the app owns a transcript AURA cannot open."""
     from workspace_context import message_ref
     messages=[];brief=None;observation={'request_id':'','state':'unknown'}
     for turn in thread.get('turns',[]):

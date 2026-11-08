@@ -1096,7 +1096,7 @@ class Workspace:
                     workspace_usage.invalidate(self.preferences,c['id'])
                     self.native_sessions.release_idle((str(workspace_root().resolve()),c['business_id'],c['id']))
                 self.save_preferences()
-                result['message']='Saved in '+choice['name']+'. Aura will use these settings when you next continue a chat.'
+                result['message']='Saved in '+choice['name']+'. AURA will use these settings when you next continue a chat.'
                 for cache_key in list(self.option_cache):
                     if cache_key==kind or isinstance(cache_key,tuple) and cache_key[0]==kind:self.option_cache.pop(cache_key,None)
             else:result=context_settings.describe(choice['argv'],protocol,cwd,env,**profile_options)
@@ -1166,7 +1166,7 @@ class Workspace:
                 chat.setdefault('relocate_session',{'native_id':chat['native_id'],'source_workspace':str(source)})
 
     def reconnect_chat(self,bid,ident):
-        """Explicit repair for local chat settings copied by older Aura versions."""
+        """Explicit repair for local chat settings copied by older AURA versions."""
         with self.lock:
             chat=next((c for c in self.preferences['chats'] if c['id']==ident and c['business_id']==bid),None)
             if not chat:raise ValueError('Choose a chat in this workspace.')
@@ -1195,7 +1195,7 @@ class Workspace:
             session_key=(str(Path(self.workspace_path).resolve()),bid,ident)
         if archived:
             try:self.native_sessions.release_idle(session_key)
-            except (OSError,ValueError):result['warning']='The chat is archived. Its AI connection could not close; quit Aura to release it.'
+            except (OSError,ValueError):result['warning']='The chat is archived. Its AI connection could not close; quit AURA to release it.'
         return result
 
     def usage(self, bid, period='chat', refresh=False, offset=0, since=None, month_start=None):
@@ -1381,7 +1381,7 @@ class Workspace:
 
     def workspace_chat(self,bid,purpose,connection=None):
         """One local conversation reference per business; opening never submits work."""
-        title={'personalization':'Personalize Aura','context':'Business context'}[purpose]
+        title={'personalization':'Personalize AURA','context':'Business context'}[purpose]
         root=str(workspace_root().resolve())
         with self.lock:
             existing=next((c for c in self.preferences['chats'] if c.get('purpose')==purpose and c['business_id']==bid and c.get('workspace')==root and not c.get('archived')),None)
@@ -1508,7 +1508,7 @@ class Workspace:
                 message=setup_error(str(exc))
                 if message==SETUP_ERRORS['unknown']:
                     name=next((a['name'] for a in installed_agents() if a['id']==chat['agent']),chat['agent'])
-                    message='Aura could not read this chat from '+name+'. Check the original chat in that app. Your saved messages are still available.'
+                    message='AURA could not read this chat from '+name+'. Check the original chat in that app. Your saved messages are still available.'
             message=self.connections.redact(message)
             path = self.chat_display_path(chat['id'])
             if not path.is_file():
@@ -1758,7 +1758,7 @@ class Workspace:
         return revision,self.read_cache[key][1]
 
     def support_environment(self,names=False):
-        notes=['Only Aura-related applications and discovered capabilities are included. Unreported versions and hardware fields remain unavailable. Recent error messages may describe the affected item; review these details before submitting.']
+        notes=['Only AURA-related applications and discovered capabilities are included. Unreported versions and hardware fields remain unavailable. Recent error messages may describe the affected item; review these details before submitting.']
         def optional(read,label,default):
             try:return read()
             except Exception as exc:
@@ -1901,7 +1901,7 @@ class Workspace:
                 "Use native delegation, approvals, tools, and execution normally. User instructions take priority over this contextual guidance. "
                 f"For relevant prior work across AI apps, use {PRODUCT_ROOT / 'scripts/workspace_context.py'} recall --business-id {bid} --workspace \"{workspace_root()}\" --search <specific query>. "
                 "Retrieve a saved answer with the same helper: result --business-id <id> --workspace <workspace> --chat <result id> --variant <result variant>. Search only when useful; current records and corrections take priority over historic replies. "
-                f"Project links: {PRODUCT_ROOT / 'scripts/workspace_projects.py'}. Maintained result lists or dated reports: {PRODUCT_ROOT / 'scripts/workspace_collections.py'}. Read docs/projects-and-results.md when useful; retrieve matching rows, not full datasets. Deliberately saved Assets retain known Aura producer context. "
+                f"Project links: {PRODUCT_ROOT / 'scripts/workspace_projects.py'}. Maintained result lists or dated reports: {PRODUCT_ROOT / 'scripts/workspace_collections.py'}. Read docs/projects-and-results.md when useful; retrieve matching rows, not full datasets. Deliberately saved Assets retain known AURA producer context. "
                 "Preserve native memory and skills in their owning app; do not mirror private native stores or treat incidental conversation as established truth. "
                 "Preserve useful business meaning, not this chat transcript. "
                 "Reply in everyday language, focusing on what the user can use or do next. "
@@ -1966,7 +1966,7 @@ class Workspace:
             payload['description']=(f"Agent: {assistant['name']}\n"+assistant.get('instructions','')+saved_context+
                                     (f"\nPreferred subagent model: {assistant['child_model']}" if assistant.get('child_model') else '')+
                                     '\n\nTask:\n'+payload['description']+
-                                    f'\n\nWork for Aura business {bid} in workspace {root}. Include saved file links in your result when you produce files.')
+                                    f'\n\nWork for AURA business {bid} in workspace {root}. Include saved file links in your result when you produce files.')
             if len(payload['description'])>20000:raise ValueError('Shorten the assistant or task instructions before scheduling.')
         collection_id=payload.get('collection_id') if 'collection_id' in payload else None
         if collection_id is not None:
@@ -2289,7 +2289,7 @@ class Workspace:
                 'guidance':[(str(p),p.stat().st_mtime_ns,p.stat().st_size) for p in (PRODUCT_ROOT/'AGENTS.md',PRODUCT_ROOT/'CONTEXT.md')]})
             reuse_context=native and chat and chat.get('native_id') and chat.get('aura_context')==context_key and not any((welcome,keep_warm_id is not None,schedule_id,organization_id)) and not text.lstrip().startswith('/')
             if reuse_context:
-                prompt=f'Selected Aura business: {bid}.\n\nUser request:\n'+text.strip()
+                prompt=f'Selected AURA business: {bid}.\n\nUser request:\n'+text.strip()
             context_checked_at=time.time()
             recent_context=workspace_context.recent_changes(self,bid,(chat or {}).get('context_checked_at',0)) if reuse_context else []
             if recent_context:
@@ -2298,7 +2298,7 @@ class Workspace:
             inherited_changes=workspace_context.changes((chat or {}).get('context_revisions',[]),inherited_context['references'])
             if inherited_changes:context_notes.append('Saved context changed: '+', '.join(inherited_changes[:4])+'.')
             if not reuse_context and self.profile().get('working_preferences') and not any((welcome,keep_warm_id is not None)):
-                prompt=prompt.replace('\nUser request:\n','\nUser working preferences for Aura chats (use only when relevant):\n'+self.profile()['working_preferences']+'\nUser request:\n',1)
+                prompt=prompt.replace('\nUser request:\n','\nUser working preferences for AURA chats (use only when relevant):\n'+self.profile()['working_preferences']+'\nUser request:\n',1)
             if inherited_context['text'] and (not reuse_context or inherited_changes or [(r['kind'],r['id']) for r in (chat or {}).get('context_revisions',[])]!=[(r['kind'],r['id']) for r in inherited_context['references']]):
                 prompt=prompt.replace('\nUser request:\n',inherited_context['text']+'\nUse current records; previous conversation claims may be out of date.\nUser request:\n',1)
             if selected_context['text']:prompt=prompt.replace('\nUser request:\n',selected_context['text']+'\nUser request:\n',1)

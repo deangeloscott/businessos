@@ -312,7 +312,7 @@ def history(command, kind, cwd, env, native_id, source_file=''):
             effort=next((c.get('currentValue','') for c in state.get('configOptions',[]) if c.get('category')=='thought_level'),'')
         finally:host.close()
     else:
-        raise ValueError('This AI app does not expose saved chat history through Aura.')
+        raise ValueError('This AI app does not expose saved chat history through AURA.')
     out=[];brief=None
     from workspace_recovery import native_observation
     observation=native_observation(messages,kind)

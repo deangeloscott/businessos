@@ -1,4 +1,4 @@
-"""Native delegation preferences; no Aura routing or scheduling loop."""
+"""Native delegation preferences; no AURA routing or scheduling loop."""
 import re
 import copy
 import hashlib

@@ -70,7 +70,7 @@ def recall(app,bid,query='',project='',assistant='',exclude_chat='',limit=20):
         if i>=32 or size>8*1024*1024 or time.monotonic()-at>15:app.read_cache.pop(key,None)
     found.sort(key=lambda r:(r['match_score'],r['at']),reverse=True)
     return {'items':found[:limit],'total':len(found),'business_id':bid,'workspace':str(workspace_root().resolve()),
-            'searched_chats':scanned,'query':str(query),'source':'Saved public conversations in this workspace. Matches rank by matching words, then recency. No matches does not mean no history exists. Native-only history must first be opened or refreshed in Aura.'}
+            'searched_chats':scanned,'query':str(query),'source':'Saved public conversations in this workspace. Matches rank by matching words, then recency. No matches does not mean no history exists. Native-only history must first be opened or refreshed in AURA.'}
 
 
 def inherited(app,bid,chat=None,project='',assistant=None):

@@ -118,7 +118,7 @@ def main():
     parser.add_argument('action', choices=['list', 'archive', 'restore'])
     parser.add_argument('--business-id', required=True)
     parser.add_argument('--workspace', type=Path, default=workspace_root())
-    parser.add_argument('--url', default='http://127.0.0.1:4187', help='Running local Aura address')
+    parser.add_argument('--url', default='http://127.0.0.1:4187', help='Running local AURA address')
     parser.add_argument('--kind', choices=['chat', 'goal', 'recovery','project','agent','record','file','collection','deleted-file','file-version'])
     parser.add_argument('--id')
     parser.add_argument('--json', action='store_true')
@@ -137,10 +137,10 @@ if __name__=='__main__':
     from urllib.error import HTTPError,URLError
     try:main()
     except HTTPError as error:
-        try:message=json.load(error).get('error','Aura could not complete this action.')
-        except (ValueError,OSError):message='Aura could not complete this action.'
+        try:message=json.load(error).get('error','AURA could not complete this action.')
+        except (ValueError,OSError):message='AURA could not complete this action.'
         print('Error: '+str(message),file=sys.stderr);sys.exit(1)
     except URLError:
-        print('Error: Aura is not reachable. Start the local Aura service and check --url.',file=sys.stderr);sys.exit(1)
+        print('Error: AURA is not reachable. Start the local AURA service and check --url.',file=sys.stderr);sys.exit(1)
     except (OSError,ValueError) as error:
         print('Error: '+str(error),file=sys.stderr);sys.exit(1)

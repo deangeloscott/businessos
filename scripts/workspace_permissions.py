@@ -51,7 +51,7 @@ def choices(kind,reported=None):
 
 def validate(kind, mode,reported=None):
     if mode not in {row['id'] for row in choices(kind)}|{row['id'] for row in choices(kind,reported)}:
-        raise ValueError('This AI app does not support that permission choice in Aura.')
+        raise ValueError('This AI app does not support that permission choice in AURA.')
     return mode
 
 
@@ -60,12 +60,12 @@ def describe(kind, mode='native',reported=None):
     rows=choices(kind,reported)
     if kind=='antigravity' and mode=='review' and reported:mode='default'
     if mode not in {r['id'] for r in rows}:rows+= [r for r in choices(kind) if r['id']==mode]
-    return {'app':kind,'mode':mode,'choices':rows,'scope':'New requests launched through Aura on this computer',
+    return {'app':kind,'mode':mode,'choices':rows,'scope':'New requests launched through AURA on this computer',
             'native':next(row['native'] for row in rows if row['id']==mode),
             'interactive':kind in {'codex','claude','pi','omp','hermes','antigravity','acp'},
             'unrestricted':mode in FULL_ACCESS_MODES,
             'note':('Pi has no built-in permission mode to change here. Approval extensions keep their own settings.' if kind=='pi' else
-                    'Applies to the next request in Aura. An already running request keeps its current permissions.')}
+                    'Applies to the next request in AURA. An already running request keeps its current permissions.')}
 
 
 def arguments(kind, mode):
@@ -105,10 +105,10 @@ if __name__=='__main__':
     from urllib.error import HTTPError,URLError
     try:main()
     except HTTPError as error:
-        try:message=json.load(error).get('error','Aura could not complete this action.')
-        except (ValueError,OSError):message='Aura could not complete this action.'
+        try:message=json.load(error).get('error','AURA could not complete this action.')
+        except (ValueError,OSError):message='AURA could not complete this action.'
         print('Error: '+str(message),file=sys.stderr);sys.exit(1)
     except URLError:
-        print('Error: Aura is not reachable. Start the local Aura service and check --url.',file=sys.stderr);sys.exit(1)
+        print('Error: AURA is not reachable. Start the local AURA service and check --url.',file=sys.stderr);sys.exit(1)
     except (OSError,ValueError) as error:
         print('Error: '+str(error),file=sys.stderr);sys.exit(1)

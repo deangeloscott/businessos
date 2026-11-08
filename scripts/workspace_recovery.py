@@ -89,7 +89,7 @@ def saved_observation(messages):
 
 
 def native_observation(messages,kind):
-    """Only an explicit native final reply for an identified Aura request is proof."""
+    """Only an explicit native final reply for an identified AURA request is proof."""
     from workspace_context import message_ref
     from workspace_agents import message_text
     current='';state='unknown'

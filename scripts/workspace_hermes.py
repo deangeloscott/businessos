@@ -44,7 +44,7 @@ def session_options(options):
     values=(options or {}).get('session',{})
     if not isinstance(values,dict):raise ValueError('Hermes session options must be an object.')
     if {'session_id','cwd','cwd_explicit','model','provider','reasoning_effort','omit_messages','lazy'}&values.keys():
-        raise ValueError('Set the chat, folder, model and effort through their Aura controls. Keep other Hermes session options here.')
+        raise ValueError('Set the chat, folder, model and effort through their AURA controls. Keep other Hermes session options here.')
     return dict(values)
 
 

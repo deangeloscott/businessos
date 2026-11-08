@@ -76,7 +76,7 @@ class Performance:
     def snapshot(self):
         with self.lock:
             rows={k:{**v,'mean_ms':round(v['total_ms']/v['requests'],2),'total_ms':round(v['total_ms'],2),'max_ms':round(v['max_ms'],2)} for k,v in self.rows.items()}
-            return {'uptime_seconds':round(time.monotonic()-self.started),'operations':rows,'recent':list(self.recent),'scope':'This Aura process only; no prompts, URLs, paths or error text.'}
+            return {'uptime_seconds':round(time.monotonic()-self.started),'operations':rows,'recent':list(self.recent),'scope':'This AURA process only; no prompts, URLs, paths or error text.'}
 
 
 def machine(root):

@@ -8,7 +8,7 @@ Projects are ordinary portable workspace data in `.businessos/projects.json`. Ol
 
 ## Producing useful work
 
-Aura chat processes receive a scoped producer reference. When a native app deliberately creates an Asset through `remember.py`, the existing helper records known project, chat and goal associations. Later edits preserve the saved associations and respect explicit changes or removals. Existing explicit associations win; project membership remains separate from automatic model context. A raw tool file-change event is not proof of a finished deliverable, so Aura does not promote every temporary file into memory.
+AURA chat processes receive a scoped producer reference. When a native app deliberately creates an Asset through `remember.py`, the existing helper records known project, chat and goal associations. Later edits preserve the saved associations and respect explicit changes or removals. Existing explicit associations win; project membership remains separate from automatic model context. A raw tool file-change event is not proof of a finished deliverable, so AURA does not promote every temporary file into memory.
 
 For repeated research, choose a maintained collection when the user needs current entries. Choose dated reports when each installment is a historical deliverable. Keep native documents, spreadsheets, databases and media in their useful formats; an Asset or project reference can point to them. The local collection helper is optional and requires no running UI, cloud, database service or additional model.
 
@@ -16,7 +16,7 @@ The model determines relevance, source identity, semantic duplication, materiali
 
 ## Shared CLI and API
 
-Commands accept `--workspace /path/to/workspace` and `--business-id BUSINESS_ID`. Mutations accept JSON using `--input -` on standard input, or a JSON string as `--input`. Paths below are relative to the Aura product folder. Use the workspace's available Python interpreter.
+Commands accept `--workspace /path/to/workspace` and `--business-id BUSINESS_ID`. Mutations accept JSON using `--input -` on standard input, or a JSON string as `--input`. Paths below are relative to the AURA product folder. Use the workspace's available Python interpreter.
 
 ```sh
 python scripts/workspace_projects.py list --workspace /path/to/workspace --business-id example-studio
@@ -52,7 +52,7 @@ The create result returns a stable collection ID and current revision. Repeating
 
 Send it to `workspace_collections.py apply --id COLLECTION_ID --input -` with the same workspace/business flags. Despite the producer's requested complete status, this example is recorded as partial because one expected source failed. Coverage is producer-reported, not an independent verifier of factual truth. For work without a predefined source list, supply a concise `coverage.scope` and the actual checked sources. Failed/unknown coverage never becomes a successful no-change receipt. Absence from a partial scan does not close or delete an existing entry.
 
-Retry the identical payload with the same native run ID. Aura returns its receipt without applying it twice. Reusing that run ID for different data fails clearly. Revisions prevent two producers from overwriting one another: reread and reconcile after a conflict. If a runtime does not expose a run ID, establish and retain one identity for that run before writing; do not generate a different identity for each retry. Old receipts are bounded to 500; an older unrecognized retry still needs the current revision.
+Retry the identical payload with the same native run ID. AURA returns its receipt without applying it twice. Reusing that run ID for different data fails clearly. Revisions prevent two producers from overwriting one another: reread and reconcile after a conflict. If a runtime does not expose a run ID, establish and retain one identity for that run before writing; do not generate a different identity for each retry. Old receipts are bounded to 500; an older unrecognized retry still needs the current revision.
 
 Only changed meaning creates a change entry. A new `last_checked_at` alone does not reopen a dismissed result. `material_change: false` can record a producer-judged nonmaterial edit without resurfacing it. Set explicit `state: "closed"` or `"superseded"` only with a basis; `supersedes: "ITEM_ID"` links a replacement to its predecessor. Optional `order: ["ITEM_ID", "..."]` sets a curated order without inventing a universal priority score. Dated report series reject replacement of an existing installment unless `amend: true` and a change reason explicitly identify a correction.
 
@@ -68,9 +68,9 @@ Each collection is one JSON file under `attachments/BUSINESS_ID/collections/`, r
 
 ## Scheduled work
 
-Open a scheduled task and choose **Save results to → Apply to scheduled task**. Aura writes the chosen collection instructions through the existing native scheduling path, then reads back the task to confirm them before saving its association. The scheduler continues to own execution, cadence, model, delivery and retries. A confirmed task definition does not prove its scheduler is running. User-selected native delivery remains unchanged. A task without a collection retains its ordinary native results. Tasks created from a saved agent also carry that agent’s selected context references; collections remain retrieval pointers rather than full dataset copies.
+Open a scheduled task and choose **Save results to → Apply to scheduled task**. AURA writes the chosen collection instructions through the existing native scheduling path, then reads back the task to confirm them before saving its association. The scheduler continues to own execution, cadence, model, delivery and retries. A confirmed task definition does not prove its scheduler is running. User-selected native delivery remains unchanged. A task without a collection retains its ordinary native results. Tasks created from a saved agent also carry that agent’s selected context references; collections remain retrieval pointers rather than full dataset copies.
 
-Use native run identities and write the collection from the scheduled producer itself. Aura does not require its UI to stay open, invent unattended timers, or claim that selecting a destination alone wires the native task. Native-only activity and arbitrary files written outside these helpers remain discoverable through normal folders/native results; their semantic associations and check coverage are not fabricated. If a native app expires a useful output, save the needed artifact or evidence snapshot deliberately before relying on a temporary reference.
+Use native run identities and write the collection from the scheduled producer itself. AURA does not require its UI to stay open, invent unattended timers, or claim that selecting a destination alone wires the native task. Native-only activity and arbitrary files written outside these helpers remain discoverable through normal folders/native results; their semantic associations and check coverage are not fabricated. If a native app expires a useful output, save the needed artifact or evidence snapshot deliberately before relying on a temporary reference.
 
 Authenticated API routes:
 

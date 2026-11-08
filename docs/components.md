@@ -1,12 +1,12 @@
-# What makes up Aura
+# What makes up AURA
 
-Aura consists of a local browser interface, a Python application/API, CLI helpers, file-backed organizational memory, and reusable operating knowledge. The UI and CLI call the same persistence and file-editing functions. Connected AI apps own model execution and their native tools; Aura does not replace them.
+AURA consists of a local browser interface, a Python application/API, CLI helpers, file-backed organizational memory, and reusable operating knowledge. The UI and CLI call the same persistence and file-editing functions. Connected AI apps own model execution and their native tools; AURA does not replace them.
 
 ## Included runtime
 
 | Component | Role | License |
 | --- | --- | --- |
-| Aura Python and browser code | Workspace resolution, memory, file access, sharing, conversations and views | Aura source-available license |
+| AURA Python and browser code | Workspace resolution, memory, file access, sharing, conversations and views | AURA source-available license |
 | Python standard library | Local HTTP server, file IO, streaming, CSV, processes | Python license |
 | PyYAML | YAML configuration and front matter | MIT |
 | jsonschema and its runtime dependencies | Canonical record validation | See installed package licenses |

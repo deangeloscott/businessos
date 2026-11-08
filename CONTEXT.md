@@ -52,7 +52,7 @@ Use `remove_fields` when an obsolete top-level semantic field should explicitly 
 
 Useful real deliverables should remain in an appropriate durable file/repository/system and be remembered as an `Asset` with the identity/reference/provenance/status future work actually needs. Prefer `attachments/<business-id>/work/` in the selected workspace unless the user chooses another location. Use relative `location_reference` for workspace files; preserve explicit external references and attribution. Do not ingest every temporary file.
 
-For relevant prior work across Aura-connected apps, use `scripts/workspace_context.py recall --business-id <id> --workspace <folder> --search <specific query>`, then `result` with the chosen chat and variant. Retrieve matching answers, not entire chat histories. Public saved replies and last-observed activity are context, not canonical truth or proof of current native work. Native-only history may be unavailable. Keep native memory and skills in their owning app rather than mirroring private stores.
+For relevant prior work across AURA-connected apps, use `scripts/workspace_context.py recall --business-id <id> --workspace <folder> --search <specific query>`, then `result` with the chosen chat and variant. Retrieve matching answers, not entire chat histories. Public saved replies and last-observed activity are context, not canonical truth or proof of current native work. Native-only history may be unavailable. Keep native memory and skills in their owning app rather than mirroring private stores.
 
 Projects and maintained collections are optional. Use `scripts/workspace_projects.py` and `scripts/workspace_collections.py`; read [projects and results](docs/projects-and-results.md) when relevant. Retrieve matching rows, not whole datasets. Selected project and agent context should add useful references without copying every related conversation.
 
@@ -127,7 +127,7 @@ Do not convert hypotheses, competitor patterns, placeholders, or inferred detail
 
 ### Native capability and continued improvement
 
-The optional visual interface connects users to their existing harnesses. Prefer supported native interfaces and preserve native identity, account/profile, tools, permissions, background work and saved context. Discover settings and commands from the installed harness when available. Keep adapters small and replaceable so improvements in models, harnesses and tools can improve Aura without rebuilding their intelligence or execution loops.
+The optional visual interface connects users to their existing harnesses. Prefer supported native interfaces and preserve native identity, account/profile, tools, permissions, background work and saved context. Discover settings and commands from the installed harness when available. Keep adapters small and replaceable so improvements in models, harnesses and tools can improve AURA without rebuilding their intelligence or execution loops.
 
 Choose dependencies for a demonstrated user benefit, supported platforms and maintenance cost. Reuse a working native mechanism before adding a helper or service. Product upgrades should preserve organization data, machine-local connections and user interface customizations; native integration changes need focused compatibility checks and accurate capability documentation.
 

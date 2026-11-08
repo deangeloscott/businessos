@@ -16,7 +16,7 @@ def record(bid,job,chat):
     target=store(bid).parent/'activity'/f'{bid}.json';target.parent.mkdir(parents=True,exist_ok=True)
     row={k:job[k] for k in ('id','chat_id','agent','status','progress','created','updated','native_id') if k in job}
     row.update(title=chat.get('title','Work'),app=chat.get('agent',''),assistant=chat.get('assistant_name',''),
-               source='Aura native connection',observed_at=time.time())
+               source='AURA native connection',observed_at=time.time())
     if chat.get('summary'):row['summary']=str(chat['summary'])[:600]
     if job.get('requests'):row['needs_input']=any(r['status']=='pending' for r in job['requests'])
     with destination_lock(target):
@@ -48,7 +48,7 @@ def inventory(bid,query='',exclude_chat='',limit=20,live_jobs=()):
     rows=[r for r in rows if r.get('chat_id')!=exclude_chat and (not query or query in ' '.join(str(r.get(k,'')) for k in ('title','summary','assistant','agent','status','progress')).casefold())]
     rows.sort(key=lambda r:r.get('observed_at',0),reverse=True)
     return {'items':rows[:limit],'total':len(rows),'workspace':str(workspace_root().resolve()),'business_id':bid,
-            'source':'Observed Aura-launched work; native-only activity may not appear. Status is last observed, not a live lock.',
+            'source':'Observed AURA-launched work; native-only activity may not appear. Status is last observed, not a live lock.',
             'checked_at':time.time()}
 
 
@@ -61,7 +61,7 @@ def result(bid,chat_id,limit=6000):
     folder=hashlib.sha256(str(workspace_root().resolve()).encode()).hexdigest()[:20]
     path=state_dir()/'chat-views'/folder/(chat_id+'.json')
     try:messages=json.loads(path.read_text(encoding='utf-8'))
-    except FileNotFoundError:raise ValueError('This result is not available in the saved display. Open the chat in Aura or its native app.') from None
+    except FileNotFoundError:raise ValueError('This result is not available in the saved display. Open the chat in AURA or its native app.') from None
     message=next((m for m in reversed(messages) if m.get('role')=='assistant' and m.get('request_id')==row['id']),None)
     if not message:raise ValueError('This request has not saved a public result yet. Check its last-observed status.')
     limit=max(100,min(12000,int(limit)));text=str(message.get('text',''))

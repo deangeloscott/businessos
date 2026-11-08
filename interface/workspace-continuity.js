@@ -57,7 +57,7 @@ window.auraContinuity=(()=>{
         }
       }
       rememberChatDraft();showMessages();chatControls();renderShell();taskStatus('Ready to continue');$('#request').focus();
-    }catch(error){if(key===chatScope()&&ticket===recoveryTicket)recoveryError=error.status===400?'This chat changed. Check its latest work before continuing.':'Aura couldn’t reconnect. Try again when it’s available.';}
+    }catch(error){if(key===chatScope()&&ticket===recoveryTicket)recoveryError=error.status===400?'This chat changed. Check its latest work before continuing.':'AURA couldn’t reconnect. Try again when it’s available.';}
     finally{if(ticket===recoveryTicket){recoveryPending='';renderRecovery();}}
   }
 
@@ -140,7 +140,7 @@ window.auraContinuity=(()=>{
     const appField=!forChat?`<label>AI app<select id="permissions-app">${connected.map(a=>`<option value="${esc(a.id)}" ${a.id===kind?'selected':''}>${esc(a.name)}</option>`).join('')}</select></label>`:'';
     const bindApp=()=>$('#permissions-app')?.addEventListener('change',event=>permissions(false,event.target.value));
     if(data.choices.length===1){
-      host.innerHTML=`${appField}<p>${esc(data.note||'This connection uses its own permission settings. It does not expose a permission mode that Aura can change.')}</p><button type="button" class="secondary" data-close="detail">Done</button>`;bindApp();return;
+      host.innerHTML=`${appField}<p>${esc(data.note||'This connection uses its own permission settings. It does not expose a permission mode that AURA can change.')}</p><button type="button" class="secondary" data-close="detail">Done</button>`;bindApp();return;
     }
     const override=chat?data.override:forChat&&state.newChatPermission?.kind===kind?state.newChatPermission.mode:'';
     host.innerHTML=`<form id="permissions-form" class="form-grid">${appField}<label>${forChat?(chat?'This chat':'This new chat'):'Default for this AI app'}<select id="permissions-mode">${forChat?`<option value="inherit" ${!override?'selected':''}>Use default (${esc((data.choices.find(c=>c.id===data.default)?.name||'AI app settings').replace(/^Use /,''))})</option>`:''}${data.choices.filter(c=>!forChat||c.id!=='native'||data.default!=='native'||override==='native').map(c=>`<option value="${esc(c.id)}" ${(forChat?override:data.mode)===c.id?'selected':''}>${esc(c.name)}</option>`).join('')}</select></label><p id="permissions-native" class="small-note"></p>${kind==='antigravity'?'<p class="small-note">Actions needing approval must be handled in Antigravity.</p>':''}<div class="inline-actions"><button class="primary">Save permissions</button><span id="permissions-status" role="status"></span></div></form>`;
@@ -167,7 +167,7 @@ window.auraContinuity=(()=>{
   async function activity(){
     const key=scope(),ticket=++viewTicket;details('Other work','<p role="status">Reading workspace activity…</p>');viewDetailTicket=state.fileDetailTicket;const host=$('#detail-content');
     const data=await api('/api/activity?'+params({limit:100,exclude_chat:state.chatMeta?.id||''}));if(!current(key,ticket,host))return;
-    host.innerHTML='<p>Work observed in this workspace across connected AI apps.</p><input class="search" id="work-activity-search" type="search" placeholder="Find work…" aria-label="Find workspace activity"><div id="work-activity-list"></div><p class="small-note">Status is last observed. Work started outside Aura may not appear.</p>';
+    host.innerHTML='<p>Work observed in this workspace across connected AI apps.</p><input class="search" id="work-activity-search" type="search" placeholder="Find work…" aria-label="Find workspace activity"><div id="work-activity-list"></div><p class="small-note">Status is last observed. Work started outside AURA may not appear.</p>';
     const list=$('#work-activity-list');let limit=20;
     const paint=()=>{
       const q=$('#work-activity-search').value.trim().toLowerCase(),rows=data.items.filter(r=>[r.title,r.summary,r.assistant,r.agent,r.status].join(' ').toLowerCase().includes(q));
@@ -184,7 +184,7 @@ window.auraContinuity=(()=>{
     const paint=()=>{
       const query=$('#history-search').value.trim().toLowerCase(),groups=new Map();
       data.items.filter(r=>r.path.toLowerCase().includes(query)).forEach(r=>{if(!groups.has(r.path))groups.set(r.path,[]);groups.get(r.path).push(r);});
-      const rows=[...groups.entries()];$('#history-list').innerHTML=rows.slice(0,limit).map(([path,versions])=>`<details class="history-file"><summary>${esc(path)} <span class="row-meta">${versions.length} versions</span></summary>${versions.map(r=>`<div class="section-head"><span>${esc(new Date(r.at*1000).toLocaleString())}<small class="small-note">${esc(r.reason)} · ${Math.ceil(r.bytes/1024)} KB</small></span><button class="text-button" type="button" data-history-review="${esc(r.id)}">Review</button></div>`).join('')}</details>`).join('')||empty(query?'No matching files.':'Versions appear when you save changes or run work through Aura.');
+      const rows=[...groups.entries()];$('#history-list').innerHTML=rows.slice(0,limit).map(([path,versions])=>`<details class="history-file"><summary>${esc(path)} <span class="row-meta">${versions.length} versions</span></summary>${versions.map(r=>`<div class="section-head"><span>${esc(new Date(r.at*1000).toLocaleString())}<small class="small-note">${esc(r.reason)} · ${Math.ceil(r.bytes/1024)} KB</small></span><button class="text-button" type="button" data-history-review="${esc(r.id)}">Review</button></div>`).join('')}</details>`).join('')||empty(query?'No matching files.':'Versions appear when you save changes or run work through AURA.');
       if(rows.length>limit)$('#history-list').insertAdjacentHTML('beforeend','<button type="button" class="text-button" data-history-more>Show more files</button>');
     };$('#history-search').oninput=()=>{limit=20;paint();};
     $('#history-list').onclick=event=>attempt(async()=>{

@@ -1,7 +1,7 @@
 """One machine-local ACP agent the user adds from the interface.
 
 Same shape as --agent-file. Stored outside the product folder so upgrades keep it.
-The agent owns its models, accounts, tools and permissions; Aura only launches it.
+The agent owns its models, accounts, tools and permissions; AURA only launches it.
 """
 import json
 import os

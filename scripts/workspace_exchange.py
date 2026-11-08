@@ -156,7 +156,7 @@ def prepare(root, bid, keys, name, note='', kind='starter', description='', auth
 def import_package(path,store=None):
     try:return _import_package(path,store)
     except (zipfile.BadZipFile, RuntimeError, json.JSONDecodeError, KeyError, TypeError):
-        raise ValueError('This package could not be read. Choose a verified Aura sharing or InnovationPackage ZIP.') from None
+        raise ValueError('This package could not be read. Choose a verified AURA sharing or InnovationPackage ZIP.') from None
 
 
 def _import_package(path,store=None):
@@ -172,7 +172,7 @@ def _import_package(path,store=None):
             return result
         archive_manifest(archive)
         if 'innovation-package.json' not in names or any(n not in ('innovation-package.json','README.txt','COMMUNITY-TERMS.md','LICENSE.md','PUBLISHER.json') for n in names):
-            raise ValueError('Choose an Aura sharing or Innovation Exchange package.')
+            raise ValueError('Choose an AURA sharing or Innovation Exchange package.')
         from innovation_common import validate_package
         original=archive.read('innovation-package.json')
         package=json.loads(original)

@@ -1,4 +1,4 @@
-"""Read and edit native context settings. No Aura scheduler or provider requests."""
+"""Read and edit native context settings. No AURA scheduler or provider requests."""
 from pathlib import Path
 import argparse
 import hashlib
@@ -130,7 +130,7 @@ def describe(command,kind,cwd,env=None,definitions=None,profile=None):
     else:
         # These apps document JSON settings files. Preserve unrelated keys and layers.
         if any(Path(arg).name.lower() in {'wsl','wsl.exe','ssh','ssh.exe','docker','podman'} for arg in command):
-            return {'app':kind,'fields':[],'note':'This launcher runs outside Aura’s local environment. Use its native settings there.'}
+            return {'app':kind,'fields':[],'note':'This launcher runs outside AURA’s local environment. Use its native settings there.'}
         if kind=='claude':
             version=re.search(r'\b(\d+)\.(\d+)\.(\d+)\b',run(command,['--version'],cwd,env))
             version=tuple(map(int,version.groups())) if version else (0,0,0)
@@ -184,7 +184,7 @@ def describe(command,kind,cwd,env=None,definitions=None,profile=None):
 
 
 def reported(rows,overrides=None):
-    """New ACP connections can expose native context controls without an Aura catalog."""
+    """New ACP connections can expose native context controls without an AURA catalog."""
     from workspace_native_settings import options
     fields=[]
     for row in rows:
@@ -271,9 +271,9 @@ def cli_error(error):
     from urllib.error import HTTPError,URLError
     from workspace_support import human_error
     if isinstance(error,HTTPError):
-        try:return human_error(ValueError(json.load(error).get('error','Aura could not save this change.')))
-        except ValueError:return 'Aura could not save this change. Check --url and try again.'
-    if isinstance(error,URLError):return 'Aura is not reachable. Start the local Aura service and check --url.'
+        try:return human_error(ValueError(json.load(error).get('error','AURA could not save this change.')))
+        except ValueError:return 'AURA could not save this change. Check --url and try again.'
+    if isinstance(error,URLError):return 'AURA is not reachable. Start the local AURA service and check --url.'
     return human_error(error)
 
 

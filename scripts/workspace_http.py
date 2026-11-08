@@ -365,7 +365,7 @@ def handler_for(app):
                 if route == '/api/native-agents':
                     # Native profile creation may seed bundled skills. Keep other chats responsive.
                     with app.lock:
-                        if getattr(app,'update_restart',False):raise ValueError('Aura is restarting. Try again when your workspace reopens.')
+                        if getattr(app,'update_restart',False):raise ValueError('AURA is restarting. Try again when your workspace reopens.')
                         if app.organization_job and app.organization_job['status']=='working':raise ValueError('Wait for workspace organization before changing native agents.')
                         owner=copy.copy(app)
                     with workspace_scope(owner.workspace_path):result=owner.native_agents(selected(data.get('business')),data.get('kind'),data)
@@ -429,7 +429,7 @@ def handler_for(app):
                         bid=selected(data.get('business'));job=app.find_job(data.get('job_id'),bid)
                         if job.get('chat_id')!=data.get('chat_id'):raise ValueError('This native request is no longer waiting in this chat.')
                         execution=app.executions.get(job['id'])
-                    if not execution:raise ValueError('This request expired when Aura restarted. Check the native chat.')
+                    if not execution:raise ValueError('This request expired when AURA restarted. Check the native chat.')
                     if execution.interrupt_requested:raise ValueError('This request is stopping. Wait for it to finish.')
                     self.send(200,execution.requests.answer(data.get('id'),data.get('answers')));return
                 if route == '/api/chat/steer':

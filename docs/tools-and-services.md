@@ -60,14 +60,14 @@ Document converters, image editors, local search, transcription tools, and speci
 
 ## Documents, spreadsheets and presentations
 
-Aura includes lightweight local text/Markdown, CSV/TSV and image editing, PDF viewing, and browser audio/video playback. Richer Office editing is optional.
+AURA includes lightweight local text/Markdown, CSV/TSV and image editing, PDF viewing, and browser audio/video playback. Richer Office editing is optional.
 
 | Option / official entry | Useful work | Setup direction |
 | --- | --- | --- |
-| [LibreOffice](https://www.libreoffice.org/download/) | Local documents, spreadsheets and presentations with richer formatting and formulas | Follow its normal installer. In Aura, choose Open in, then Check again; LibreOffice appears when its executable is found. Default app uses the computer's existing file association. |
-| [Google Docs, Sheets and Slides](https://support.google.com/drive/answer/9406611) | Browser-based Office editing when wanted | Aura's Open in panel offers a download and Google Drive link. Upload the copy yourself, edit, download in its original format, and Import edited version to create a tracked local version. This does not connect an account or synchronize Drive. |
+| [LibreOffice](https://www.libreoffice.org/download/) | Local documents, spreadsheets and presentations with richer formatting and formulas | Follow its normal installer. In AURA, choose Open in, then Check again; LibreOffice appears when its executable is found. Default app uses the computer's existing file association. |
+| [Google Docs, Sheets and Slides](https://support.google.com/drive/answer/9406611) | Browser-based Office editing when wanted | AURA's Open in panel offers a download and Google Drive link. Upload the copy yourself, edit, download in its original format, and Import edited version to create a tracked local version. This does not connect an account or synchronize Drive. |
 
-These tools are not required or bundled. Aura does not install them silently. See [components](components.md) for what is included.
+These tools are not required or bundled. AURA does not install them silently. See [components](components.md) for what is included.
 
 ## Websites, commerce, customer work, and measurement
 
