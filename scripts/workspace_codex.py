@@ -90,6 +90,12 @@ def options(command, cwd, env=None):
              'efforts': [v['reasoningEffort'] for v in row.get('supportedReasoningEfforts', [])],
              'default_effort': row.get('defaultReasoningEffort', ''), 'access': access}
             for row in models.get('data', []) if not row.get('hidden')]
+    configured = config.get('model_reasoning_effort')
+    if configured:
+        # The user's own Codex setting is the app default; a model's built-in default is only a fallback.
+        for row in rows:
+            if configured in row['efforts']:
+                row['default_effort'] = configured
     default = config.get('model') or next((m['model'] for m in models.get('data', []) if m.get('isDefault')), '')
     return {'models': rows, 'model': default,
             'effort': config.get('model_reasoning_effort') or next((m['default_effort'] for m in rows if m['id'] == default), ''),

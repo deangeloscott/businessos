@@ -23,7 +23,7 @@ The AI-guided setup can inspect the environment, reuse or configure an organizat
 
 You do not need to choose a Playbook, Workflow, schema, provider, tool, or operating mode first.
 
-**New to AURA or AI tools? Start with `START-HERE.md`.** `BEGINNERS-GUIDE.md` provides the fuller human guide for attachment, memory, upgrades, optional tools, multi-device use, and troubleshooting.
+**New to AURA or AI tools? Start with [START-HERE.md](START-HERE.md)**: setup, attachment, memory, upgrades, several computers and common problems in one guide.
 
 ## What AURA can help with
 
@@ -95,20 +95,12 @@ ViralTrac is AURA's optional first-party companion for tracking, attribution, me
 
 ## Where to go next
 
-- **`START-HERE.md`** — simplest human entry point
-- **`SETUP-WITH-AI.md`** — adaptive setup instructions for a capable AI/agent
-- **`BEGINNERS-GUIDE.md`** — full setup and usage guide
-- **`AURA-ATTACHMENT.md`** — attach AURA once to a harness even when work starts elsewhere
-- **`skills/viraltrac-aura/SKILL.md`** — included Agent Skill adapter
-- **`PLAYBOOKS.md`** — high-level business jobs
-- **`WORKFLOW-INDEX.md`** — detailed reusable procedures
-- **`recipes/README.md`** — optional creative starting points and craft references
-- **`OPERATOR-GUIDE.md`** — practical commands and advanced use
-- **`DEPLOYMENT.md`** — workspace, storage, upgrades, multi-device, and team details
-- **`CONTEXT.md`** — universal instructions for AI agents using AURA
-- **`docs/components.md`** — included components, optional tools, licenses and maintenance
-- **`CHANGELOG.md`** — alpha changes and version history
-- **`LICENSE.md`** — source-available license
+- **[START-HERE.md](START-HERE.md)** — the human guide
+- **[SETUP-WITH-AI.md](SETUP-WITH-AI.md)** — setup and upgrade instructions for your AI
+- **[CONTEXT.md](CONTEXT.md)** — how AI should work with AURA
+- **[PLAYBOOKS.md](PLAYBOOKS.md)** and **[WORKFLOW-INDEX.md](WORKFLOW-INDEX.md)** — business jobs and detailed procedures
+- **[docs/](docs/)** — reference: [operator guide](docs/operator-guide.md), [deployment](docs/deployment.md), [attachment](docs/attachment.md), [visual workspace](docs/visual-workspace.md), [components](docs/components.md), [glossary](docs/glossary.md)
+- **[CHANGELOG.md](CHANGELOG.md)** and **[LICENSE.md](LICENSE.md)**
 
 ## License
 

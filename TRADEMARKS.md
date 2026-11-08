@@ -4,7 +4,7 @@ The AURA Materials are source-available, but the license does not grant ownershi
 
 The official public product name is **ViralTrac AURA**. AURA stands for **Agentic Understanding and Reinforcement Architecture**. The current descriptor is **organization-owned memory and operating knowledge for capable AI**. The repository name `businessos` and some `BUSINESSOS_*` identifiers remain technical compatibility terms, not the current public product category or architecture.
 
-Because “AURA” is used by many unrelated products and organizations, official public materials should normally use the composite **ViralTrac AURA** name rather than bare “AURA” when external context could be ambiguous. See `BRANDING.md`.
+Because “AURA” is used by many unrelated products and organizations, official public materials should normally use the composite **ViralTrac AURA** name rather than bare “AURA” when external context could be ambiguous. See `docs/branding.md`.
 
 ## You may
 

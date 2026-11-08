@@ -4,6 +4,13 @@
 
 - Make the everyday save cheaper for any AI: workspace and per-request guidance point straight at `CONTEXT.md`, which now carries a one-line `remember.py` example; JSON helpers accept a file, `-` for stdin, or inline JSON and tolerate the UTF-8 BOM Windows PowerShell writes. `Business` gains an optional `description` that retrieval shows inline. A Codex "remember this" request fell from 9 tool calls and ~296K tokens to 4 and ~135K.
 - `setup.py` accepts the `--allow-state-switch` flag its own workspace-switch message recommends.
+- Setup asks what the business does (optional) and saves it as the business description; Business & memory can edit it later.
+- Add any Agent Client Protocol agent from setup (**Add an ACP agent**: name plus launch command). It is saved on this computer outside the product folder, so upgrades keep it, and can be removed from the same place.
+- Codex connections default to the effort configured in Codex instead of the model's built-in default. Model names display as the app reports them.
+- While a request runs, its status appears once; command activity is labelled with the command it ran and its exit code when it fails.
+- `enter.py` prints a compact result by default (about a third of the previous size) and states its boundary once; `--verbose` keeps the full form. Script hints name the helper rather than guessing a `python3` interpreter, and guides use `python`.
+- Docs: `BEGINNERS-GUIDE.md` is merged into `START-HERE.md`; the operator guide, deployment, attachment, glossary, branding, public-distribution and Innovation Exchange guides move under `docs/`. Tests no longer pin guidance wording.
+- The visual workspace's HTTP layer moves to `scripts/workspace_http.py`. When the server runs as a script, helpers share the running module instead of loading a second copy.
 - Keep covered chat controls out of keyboard and screen-reader navigation on workspace pages, and send Skip to content to the visible page. Describe unclassified native failures without incorrectly claiming the app never connected.
 - Connect to Hermes’s native desktop/TUI gateway where available, with native commands, approvals, evaluator-owned goal continuation and confirmed completion. Keep ACP available for older installations and explicit ACP-only settings.
 - Preserve normalized native goal assignments and completion contracts without storing Aura’s context as the goal. Reject control through an older assignment when native criteria change.

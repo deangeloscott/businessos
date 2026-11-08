@@ -21,7 +21,7 @@ def req(cond,msg):
     if not cond:fail(msg)
 
 def main():
-    required=['BRANDING.md','OPERATOR-GUIDE.md','distribution/deployment-profiles.json','core/policies/workspace-and-human-knowledge.md','core/schemas/config/workspace-profile.schema.json','scripts/configure_workspace.py','scripts/migrate_workspace.py','scripts/workspace_status.py','scripts/generate_knowledge_layer.py','scripts/register_human_note.py']
+    required=['docs/branding.md','docs/operator-guide.md','distribution/deployment-profiles.json','core/policies/workspace-and-human-knowledge.md','core/schemas/config/workspace-profile.schema.json','scripts/configure_workspace.py','scripts/migrate_workspace.py','scripts/workspace_status.py','scripts/generate_knowledge_layer.py','scripts/register_human_note.py']
     for rel in required:req((ROOT/rel).exists(),f'missing {rel}')
     retired=['core/schemas/runtime/workspace-profile.schema.json','deployment/operator-profile.json','scripts/preflight_capabilities.py','scripts/resolve_capability.py','core/providers/registry.json']
     for rel in retired:req(not (ROOT/rel).exists(),f'retired runtime/provider artifact still shipped: {rel}')
@@ -50,7 +50,7 @@ def main():
         mig=migrate(migrated,'organization',True,activate=False,write_link=False);req(mig.get('verified') and (migrated/'instances'/BID/'instance.json').exists(),'workspace migration failed')
         req((migrated/'knowledge'/BID/'notes/keep-me.md').exists() and (migrated/'knowledge/README.md').read_text()==custom,'migration lost human knowledge')
         pkg=build_distribution('content',output_dir=tmp/'packages',keep_folder=True);pdir=Path(pkg['folder'])
-        for rel in ['OPERATOR-GUIDE.md','scripts/configure_workspace.py','scripts/migrate_workspace.py','scripts/generate_knowledge_layer.py','core/schemas/config/workspace-profile.schema.json']:
+        for rel in ['docs/operator-guide.md','scripts/configure_workspace.py','scripts/migrate_workspace.py','scripts/generate_knowledge_layer.py','core/schemas/config/workspace-profile.schema.json']:
             req((pdir/rel).exists(),f'component edition lost {rel}')
         for rel in retired:req(not (pdir/rel).exists(),f'component edition restored retired runtime machinery: {rel}')
         cws=tmp/'component-workspace';env={**os.environ,'BUSINESSOS_WORKSPACE':str(cws),'PYTHONDONTWRITEBYTECODE':'1'}

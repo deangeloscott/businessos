@@ -16,7 +16,7 @@ Good examples include:
 
 Do not persist transient tool/runtime trouble, routine execution steps, or ordinary reminders merely because they happened. If a runtime problem becomes a durable organizational condition, preserve the organizational meaning rather than the tool chatter.
 
-Use `python3 scripts/upsert_attention.py ...` when useful. One semantic condition gets one stable business-scoped `dedupe_key`.
+Use `python scripts/upsert_attention.py ...` when useful. One semantic condition gets one stable business-scoped `dedupe_key`.
 
 **Repetition updates the same condition.** While an item remains open or acknowledged, repeated observation updates `last_seen`, increments `occurrence_count`, and merges useful refs rather than creating another item. A resolved/archived item may reopen when that same semantic condition genuinely recurs. If the meaning changes enough to be a different condition, use a different dedupe key rather than building a supersession graph.
 
@@ -28,7 +28,7 @@ Use `python3 scripts/upsert_attention.py ...` when useful. One semantic conditio
 
 These statuses describe organizational memory. They do not authorize, block, assign, schedule, or prove execution.
 
-Canonical active items live under `instances/<business-id>/operations/attention/`. Harnesses may query them with `python3 scripts/list_attention.py <business-id> --json` or read/watch the canonical files. AURA makes no assumption about delivery channel, cadence, scheduler, daemon, webhook, or UI.
+Canonical active items live under `instances/<business-id>/operations/attention/`. Harnesses may query them with `python scripts/list_attention.py <business-id> --json` or read/watch the canonical files. AURA makes no assumption about delivery channel, cadence, scheduler, daemon, webhook, or UI.
 
 ## Historical retention
 
@@ -36,7 +36,7 @@ Keeping the active view small is useful, but **elapsed time is not semantic auth
 
 When the active model/user determines that an already-resolved AttentionItem should remain available only as history, use:
 
-`python3 scripts/archive_history.py <business-id> <attention-id> --reason "<why this should leave the active view>"`
+`python scripts/archive_history.py <business-id> <attention-id> --reason "<why this should leave the active view>"`
 
 The helper performs only mechanical work: it verifies that the item is already `resolved`, changes it to `archived`, preserves the explicit reason/time, and moves it under `instances/<business-id>/history/AttentionItem/`. It does not choose candidates, infer retention value, or schedule housekeeping.
 

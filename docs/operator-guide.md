@@ -1,6 +1,6 @@
 # ViralTrac AURA — Operator Guide
 
-This is the practical reference for people who want more control over how AURA is set up and used. If you are new to AURA, start with `BEGINNERS-GUIDE.md`.
+This is the practical reference for people who want more control over how AURA is set up and used. If you are new to AURA, start with `START-HERE.md`.
 
 AURA keeps useful business memory, evidence, operating knowledge, work continuity, outcomes, and Learning. The AI and its tools still do the reasoning and execution.
 
@@ -15,8 +15,8 @@ A separate workspace is usually better for regular use because it makes upgrades
 Create an empty separate workspace:
 
 ```bash
-python3 scripts/configure_workspace.py /path/to/workspace --profile power_user
-python3 scripts/workspace_status.py
+python scripts/configure_workspace.py /path/to/workspace --profile power_user
+python scripts/workspace_status.py
 ```
 
 If the current AURA folder already contains organization information, move it with `scripts/migrate_workspace.py` instead of copying only some folders or simply switching the workspace path.
@@ -33,14 +33,14 @@ skills/viraltrac-aura/
 
 using the harness's normal personal/global Skill mechanism.
 
-For a harness without Skills, use the small persistent instruction in `AURA-ATTACHMENT.md`.
+For a harness without Skills, use the small persistent instruction in `docs/attachment.md`.
 
 Awareness and file access are separate. The Skill/instruction can tell the model AURA exists; the harness still needs permission or a connector/mount that lets it actually read and write the AURA product/workspace files.
 
 ## Set up an organization
 
 ```bash
-python3 scripts/init_business.py <business-id> --name "Business Name"
+python scripts/init_business.py <business-id> --name "Business Name"
 ```
 
 Save supplied facts and evidence through AURA's supported context/evidence helpers. If something is unknown, leave it unknown instead of inventing a likely answer.
@@ -50,7 +50,7 @@ Save supplied facts and evidence through AURA's supported context/evidence helpe
 Normal organization work starts with the user's natural-language request:
 
 ```bash
-python3 scripts/enter.py "<complete business request>" --business-id <business-id>
+python scripts/enter.py "<complete business request>" --business-id <business-id>
 ```
 
 AURA retrieves a small amount of relevant organization memory and may surface high-level Playbook candidates plus detailed Workflow candidates.
@@ -72,26 +72,26 @@ Repeat `--focus <object-id>` for known records, including archived/superseded hi
 Browse candidate Playbooks:
 
 ```bash
-python3 scripts/find_playbooks.py "<request>"
+python scripts/find_playbooks.py "<request>"
 ```
 
 Browse candidate Workflows:
 
 ```bash
-python3 scripts/find_workflows.py "<request>"
+python scripts/find_workflows.py "<request>"
 ```
 
 Load an explicitly chosen Workflow with bounded context:
 
 ```bash
-python3 scripts/enter.py "<request>" --business-id <business-id> --selected-workflow <workflow-id>
+python scripts/enter.py "<request>" --business-id <business-id> --selected-workflow <workflow-id>
 ```
 
 A model may use an AURA Playbook/Workflow, adapt it, combine it with another installed Skill, use another Skill instead, create another sound method, or work ad hoc.
 
 AURA does **not** maintain a universal capability catalog or tool allowlist. Workflows describe what should be accomplished in natural language. The active AI/harness decides which real tools, providers, Skills, APIs, subagents, renderers, and orchestration methods best serve the outcome.
 
-For optional selection and connection help, see [tools, models, and services](docs/tools-and-services.md). It includes current-information guidance and outcome-based combinations, not a runtime registry. Reuse existing access, honor organization preferences, and confirm connections through the actual work when possible. Unlisted providers need no AURA registration; save durable local choices through existing organization memory so product upgrades preserve them.
+For optional selection and connection help, see [tools, models, and services](tools-and-services.md). It includes current-information guidance and outcome-based combinations, not a runtime registry. Reuse existing access, honor organization preferences, and confirm connections through the actual work when possible. Unlisted providers need no AURA registration; save durable local choices through existing organization memory so product upgrades preserve them.
 
 ## Minimum sufficient guidance
 
@@ -106,7 +106,7 @@ See `docs/workflow-authoring.md` and `docs/operating-knowledge.md`.
 For ordinary durable organizational meaning, use:
 
 ```bash
-python3 scripts/remember.py <business-id> --input <json-file>
+python scripts/remember.py <business-id> --input <json-file>
 ```
 
 The model/user supplies the semantic meaning. AURA supplies IDs, schema-supported timestamps, schema/reference checks, paths, organization isolation, atomic writes, and rollback where appropriate. Observation times remain distinct from creation/update times; schemas such as PlatformProfile are not given unsupported timestamp fields.
@@ -166,7 +166,7 @@ When revising an authored deliverable, preserve useful prior versions, update th
 When an entire unreferenced object should no longer exist:
 
 ```bash
-python3 scripts/forget.py <business-id> <object-ref>
+python scripts/forget.py <business-id> <object-ref>
 ```
 
 Unknown/not-found is not absence.
@@ -178,19 +178,19 @@ A Run is an optional bounded work receipt. Create one only when continuity or pr
 If a high-level AURA Playbook materially framed the work:
 
 ```bash
-python3 scripts/create_run.py <business-id> "<task>" --playbook-id <playbook-id>
+python scripts/create_run.py <business-id> "<task>" --playbook-id <playbook-id>
 ```
 
 If a detailed AURA Workflow materially framed the work:
 
 ```bash
-python3 scripts/create_run.py <business-id> "<task>" --workflow-id <workflow-id>
+python scripts/create_run.py <business-id> "<task>" --workflow-id <workflow-id>
 ```
 
 For another method:
 
 ```bash
-python3 scripts/create_run.py <business-id> "<task>" --method-type <external_skill|model_created|ad_hoc> [--method-ref <name>]
+python scripts/create_run.py <business-id> "<task>" --method-type <external_skill|model_created|ad_hoc> [--method-ref <name>]
 ```
 
 A method reference records truthful provenance. It does **not** create an execution graph, conformance regime, permission gate, or capability preflight.
@@ -198,7 +198,7 @@ A method reference records truthful provenance. It does **not** create an execut
 When the receipt itself is worth closing:
 
 ```bash
-python3 scripts/complete_run.py <business-id> <run-id> --summary "<material result>" [--evidence <ref>] [--result <ref>] [--decision <ref>] [--unresolved <item>]
+python scripts/complete_run.py <business-id> <run-id> --summary "<material result>" [--evidence <ref>] [--result <ref>] [--decision <ref>] [--unresolved <item>]
 ```
 
 Completing a Run means only that the useful receipt was closed and its material continuity was preserved. It does not certify Playbook/Workflow conformance, QA, publication readiness, deployment, external authorization, or business outcomes.
@@ -228,7 +228,7 @@ A one-time instruction such as “do not publish this” or “do not contact cu
 ## Human-readable knowledge view
 
 ```bash
-python3 scripts/generate_knowledge_layer.py <business-id>
+python scripts/generate_knowledge_layer.py <business-id>
 ```
 
 This creates Markdown pages that are easier for people to read.
@@ -241,7 +241,7 @@ Human-note registration preserves the exact UTF-8 text as a hashed capture, so l
 
 When upgrading an existing workspace, retain a backup and validate a copy with the new product first. If older evidence is rejected, inspect its retained capture or acquisition receipt before correcting metadata through supported helpers. Do not bulk-relabel unknown acquisition as verified. If a referenced file has changed since its recorded hash, preserve the original SourceRecord and capture a new revision rather than replacing the old hash to hide the mismatch. Apply related record updates together with `remember.py` where validation requires a consistent batch. Update unreadable or outdated saved-artifact descriptions when their purpose/version is known, review reported impacts, and regenerate the knowledge layer. Older product versions may not understand the new optional evidence fields; use the upgraded product with the upgraded workspace.
 
-Normal save and entry responses include `knowledge_view`: freshness checks canonical content plus the renderer, shared presentation helper and schema registry—not object counts alone. `python3 scripts/generate_knowledge_layer.py <business-id> --freshness` checks without writing. Older views without these fingerprints are not certified current; regenerate once. Missing/damaged pages or unreadable canonical records also prevent a current result. “Current” means the generated representation matches its inputs—not that authored deliverables have been reviewed or that their claims are true.
+Normal save and entry responses include `knowledge_view`: freshness checks canonical content plus the renderer, shared presentation helper and schema registry—not object counts alone. `python scripts/generate_knowledge_layer.py <business-id> --freshness` checks without writing. Older views without these fingerprints are not certified current; regenerate once. Missing/damaged pages or unreadable canonical records also prevent a current result. “Current” means the generated representation matches its inputs—not that authored deliverables have been reviewed or that their claims are true.
 
 Native type sections derive from the schema registry's system ownership; optional domain values still organize generic domain-tagged records. Generated pages use the same saved-work titles as retrieval and expose artifact version/location and recorded correction-review status.
 
@@ -250,8 +250,8 @@ Native type sections derive from the schema registry's system ownership; optiona
 AURA can remember what should be watched, why it matters, how often another check may be useful, what changes matter, and what was found before:
 
 ```bash
-python3 scripts/monitoring_status.py <business-id>
-python3 scripts/list_due_monitoring.py <business-id> --due-only
+python scripts/monitoring_status.py <business-id>
+python scripts/list_due_monitoring.py <business-id> --due-only
 ```
 
 These commands do **not** mean a background task is actually scheduled.

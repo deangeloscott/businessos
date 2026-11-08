@@ -9,7 +9,7 @@ EXPECTED_EXPANSION='Agentic Understanding and Reinforcement Architecture'
 EXPECTED_DESCRIPTOR='organization-owned memory and operating knowledge for capable AI'
 EXPECTED_MATURITY='alpha'
 REQUIRED=[
-    'VERSION','LICENSE.md','COMMUNITY-TERMS.md','TRADEMARKS.md','SECURITY.md','PUBLIC-DISTRIBUTION.md','PUBLISHER.json','BRANDING.md','DEPLOYMENT.md',
+    'VERSION','LICENSE.md','COMMUNITY-TERMS.md','TRADEMARKS.md','SECURITY.md','docs/public-distribution.md','PUBLISHER.json','docs/branding.md','docs/deployment.md',
     'distribution/deployment-profiles.json','core/policies/workspace-and-human-knowledge.md','core/schemas/config/workspace-profile.schema.json','core/schemas/config/publisher-metadata.schema.json',
     'scripts/configure_workspace.py','scripts/migrate_workspace.py','scripts/workspace_status.py','scripts/generate_knowledge_layer.py','scripts/register_human_note.py'
 ]
@@ -17,7 +17,7 @@ RETIRED_UPDATE_PATHS=[
     'scripts/check_for_updates.py','scripts/set_update_policy.py','deployment/update-policy.json','distribution/update-manifest.json'
 ]
 LEGACY_PUBLIC_NAMES=["ViralTrac's BusinessOS",'ViralTrac BusinessOS']
-LEGACY_BRAND_ALLOW={'CHANGELOG.md','BRANDING.md','PUBLISHER.json','scripts/validate_public_distribution.py'}
+LEGACY_BRAND_ALLOW={'CHANGELOG.md','docs/branding.md','PUBLISHER.json','scripts/validate_public_distribution.py'}
 FORBIDDEN_PATH_PARTS=['apps/api/src','packages/contracts','infra/d1','DIRECTIVES_STATUS.md']
 FORBIDDEN_TEXT=[
     (re.compile(r'\bDirective\s+\d+(?:\.\d+)?\b',re.I),'internal engineering directive numbering'),

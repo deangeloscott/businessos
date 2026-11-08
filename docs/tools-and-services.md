@@ -20,7 +20,7 @@ Then tell it:
 | [OMP / Oh My Pi](https://github.com/can1357/oh-my-pi) | A terminal agent with additional development and execution capabilities | Use its own installation/provider instructions; do not assume Pi configuration is interchangeable. |
 | [Hermes Agent](https://github.com/NousResearch/hermes-agent) | Agent work across supported CLI and messaging interfaces | Configure a supported model provider and the tools needed for the job. |
 
-AURA's [attachment guide](../AURA-ATTACHMENT.md) explains awareness and workspace access. Use the host's native Skill/instruction mechanism. An existing suitable agent does not need replacing to use this guide.
+AURA's [attachment guide](attachment.md) explains awareness and workspace access. Use the host's native Skill/instruction mechanism. An existing suitable agent does not need replacing to use this guide.
 
 ## Intelligence and downloadable models
 
@@ -83,7 +83,7 @@ Choose for the business goal and existing setup. One suitable platform may cover
 | [HubSpot](https://www.hubspot.com/) / [knowledge base](https://knowledge.hubspot.com/) | CRM, marketing, sales, and customer service | Reuse the organization's portal and available features; connect through supported native access. |
 | [Apollo](https://www.apollo.io/) / [developer docs](https://docs.apollo.io/) | Prospect/company research, lead enrichment, and supported sales workflows | Check the actual plan's data/API access and credits; use the relevant native connector, API, or UI. |
 | [Instantly](https://instantly.ai/) / [developer docs](https://developer.instantly.ai/) | Cold email/outreach, campaigns, lead lists, and connected sending accounts | Connect the intended workspace/mailboxes and use current native interfaces. Setup or a draft does not authorize sending a campaign. |
-| [ViralTrac](https://viraltrac.com) / the connected product's current help and interface | Optional first-party attribution, measurement, experiments, and supported growth work | Reuse the user's connection; discover actual available capabilities. See the [operator guidance](../OPERATOR-GUIDE.md#viraltrac). |
+| [ViralTrac](https://viraltrac.com) / the connected product's current help and interface | Optional first-party attribution, measurement, experiments, and supported growth work | Reuse the user's connection; discover actual available capabilities. See the [operator guidance](operator-guide.md#viraltrac). |
 | [Google Analytics / GA4](https://analytics.google.com/) / [setup and APIs](https://developers.google.com/analytics/devguides/collection/ga4) | Website/app events and conversion measurement | Reuse the correct property/data stream and install only the instrumentation needed for the question. |
 | [Microsoft Clarity](https://clarity.microsoft.com/) / [setup](https://learn.microsoft.com/en-us/clarity/setup-and-installation/clarity-setup) | Session recordings and heatmaps for understanding site behavior | Connect the correct site/project and its tracking integration. |
 

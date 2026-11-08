@@ -212,7 +212,7 @@ def _literal_claim_quote(statement,source_text,label):
 
 def build_objects(business_id,industries=None,business_models=None,markets=None,services=None,objectives=None,lead_sources=None,approved_claims=None,claim_constraints=None,brand=None,source_reference=None,source_text=None,source_members=None):
     base=ROOT/'instances'/business_id
-    if not base.exists():raise ValueError(f'Unknown business: {business_id}; initialize it first with: python3 scripts/init_business.py {business_id} --name "Business Name"')
+    if not base.exists():raise ValueError(f'Unknown business: {business_id}; initialize it first with: scripts/init_business.py {business_id} --name "Business Name"')
     inst=json.loads((base/'instance.json').read_text(encoding='utf-8'));name=inst.get('name') or business_id
     industries=[str(x).strip() for x in (industries or []) if str(x).strip()];business_models=[str(x).strip() for x in (business_models or []) if str(x).strip()]
     markets=[str(x).strip() for x in (markets or []) if str(x).strip()]
@@ -353,7 +353,7 @@ Repeat --source-file for multi-source onboarding; AURA preserves each member ref
           'brand':merged_brand,
         }
         objs,paths=persist_explicit_context(business_id,**facts,source_reference=a.source_reference,source_members=source_members)
-    except (ValueError,FileExistsError) as exc:raise SystemExit(str(exc)+'\nSupported path: run `python3 scripts/bootstrap_explicit_context.py --help`; do not hand-author replacement canonical state.')
+    except (ValueError,FileExistsError) as exc:raise SystemExit(str(exc)+'\nSupported path: run `scripts/bootstrap_explicit_context.py --help`; do not hand-author replacement canonical state.')
 
     preference_written=[]
     if a.preference_profile_file:
@@ -374,7 +374,7 @@ Repeat --source-file for multi-source onboarding; AURA preserves each member ref
       'business_id':business_id,'objects_written':[{'id':obj['id'],'object_type':obj['object_type'],'path':path.relative_to(ROOT).as_posix()} for obj,path in zip(objs,paths)],
       'preference_profiles_written':preference_written,'brand_profile_files_used':brand_profile_files,
       'truth_rule':'source provenance is preserved; semantic interpretation belongs to the capable model; explicit outward BusinessClaim wording remains literal-source-bounded',
-      'validation_required':f'python3 scripts/validate_business.py {business_id} --require-context','completion_state':'context_persisted',
+      'validation_required':f'scripts/validate_business.py {business_id} --require-context','completion_state':'context_persisted',
       'required_next_action':'Validate active organization state, then continue the user\'s actual request using model judgment and the host\'s real capabilities.'
     }
     print(json.dumps(payload,indent=2))

@@ -19,7 +19,7 @@ For an upgrade, reuse the existing organization workspace before considering ini
 3. **Reuse or move the workspace.** Reuse an external workspace in place. If organization data lives inside the old product folder, use the old installation's helper to copy and hash-verify it into a separate, non-nested workspace:
 
    ```bash
-   python3 scripts/migrate_workspace.py "/path/to/separate-workspace" --no-activate --json
+   python scripts/migrate_workspace.py "/path/to/separate-workspace" --no-activate --json
    ```
 
    Confirm the source workspace in the result. `--no-activate` preserves the old installation's workspace selection. This helper copies organizational files; release-specific data-format migrations remain separate.
@@ -27,7 +27,7 @@ For an upgrade, reuse the existing organization workspace before considering ini
 4. **Connect the new product.** From the new AURA folder, select the verified workspace and an existing organization ID:
 
    ```bash
-   python3 scripts/setup.py \
+   python scripts/setup.py \
      --workspace "/path/to/existing-workspace" \
      --business-id <existing-business-id> \
      --json
@@ -43,7 +43,7 @@ Local readiness proves AURA mechanics; it does not prove every external artifact
 AURA now has one product-owned setup entry point:
 
 ```bash
-python3 scripts/setup.py --organization "Organization Name" --json
+python scripts/setup.py --organization "Organization Name" --json
 ```
 
 That command is idempotent. It reuses existing configured state, initializes the organization only when needed, and runs AURA's readiness proof.
@@ -51,7 +51,7 @@ That command is idempotent. It reuses existing configured state, initializes the
 For a separate organization-owned workspace, supply the path:
 
 ```bash
-python3 scripts/setup.py \
+python scripts/setup.py \
   --workspace /path/to/aura-workspace \
   --organization "Organization Name" \
   --json
@@ -62,7 +62,7 @@ When a new external workspace is explicitly selected and no profile already exis
 If setup/readiness is already configured and you only need to verify it:
 
 ```bash
-python3 scripts/doctor.py --business-id <business-id> --json
+python scripts/doctor.py --business-id <business-id> --json
 ```
 
 ## What `setup.py` owns
@@ -108,7 +108,7 @@ skills/viraltrac-aura/
 
 `setup.py` reports that source path, but it deliberately does not guess how every harness installs Skills or persistent instructions.
 
-If the host supports Agent Skills, install/copy the bundled Skill using that host's normal personal/global Skill mechanism. If Skills are unavailable, use the minimal persistent instruction from `AURA-ATTACHMENT.md` through the host's normal instruction mechanism.
+If the host supports Agent Skills, install/copy the bundled Skill using that host's normal personal/global Skill mechanism. If Skills are unavailable, use the minimal persistent instruction from `docs/attachment.md` through the host's normal instruction mechanism.
 
 If the model is already working inside the AURA folder and the harness automatically honors project instructions such as `AGENTS.md`, `CLAUDE.md`, or `GEMINI.md`, do not add redundant configuration just to say attachment occurred.
 
@@ -154,7 +154,7 @@ Preserve durable organizational meaning with provenance when it will materially 
 For ordinary durable create/update work, use:
 
 ```bash
-python3 scripts/remember.py <business-id> --input <json-file>
+python scripts/remember.py <business-id> --input <json-file>
 ```
 
 The persistence interface handles mechanical identity, update, and local-reference details where they can be safely inferred. New canonical objects still name their semantic `object_type`. Specialized helpers remain appropriate when their semantics genuinely matter.
@@ -170,18 +170,18 @@ Do not create a Run, receipt object, or extra history merely to say a save occur
 If the setup entry point identifies a real issue, the existing lower-level helpers remain available for diagnosis and repair:
 
 ```bash
-python3 scripts/workspace_status.py
-python3 scripts/configure_workspace.py /path/to/workspace --profile power_user
-python3 scripts/list_businesses.py --json
-python3 scripts/init_business.py <business-id> --name "Organization Name"
-python3 scripts/doctor.py --business-id <business-id>
-python3 scripts/validate_business.py <business-id> --require-context
-python3 scripts/validate_workspace.py
+python scripts/workspace_status.py
+python scripts/configure_workspace.py /path/to/workspace --profile power_user
+python scripts/list_businesses.py --json
+python scripts/init_business.py <business-id> --name "Organization Name"
+python scripts/doctor.py --business-id <business-id>
+python scripts/validate_business.py <business-id> --require-context
+python scripts/validate_workspace.py
 ```
 
 Use those helpers to resolve the specific problem. Do not treat the fallback sequence as the normal onboarding experience.
 
-If existing organization state must move between workspaces, use the supported migration path documented in `BEGINNERS-GUIDE.md` / `OPERATOR-GUIDE.md`; do not copy only selected folders or bypass the migration guards.
+If existing organization state must move between workspaces, use the supported migration path documented in `START-HERE.md` / `docs/operator-guide.md`; do not copy only selected folders or bypass the migration guards.
 
 ## Completion
 

@@ -11,4 +11,4 @@ Use the product root supplied by the user or harness. In the bundled distributio
 
 Read the product's root `CONTEXT.md` once unless its current contents are already loaded. That is the shared guidance: identify the organization, retrieve little, work normally with other Skills and native tools, remember durable value, and preserve truth. Ignore AURA for unrelated work. User instructions retain priority.
 
-If setup is genuinely unknown, use `scripts/setup.py` and `scripts/doctor.py` from that root. Host-native Skill attachment is separate from file access. See root `AGENTS.md` for the small setup and entry commands; `OPERATOR-GUIDE.md` supplies persistence examples only when needed.
+If setup is genuinely unknown, use `scripts/setup.py` and `scripts/doctor.py` from that root. Host-native Skill attachment is separate from file access. See root `AGENTS.md` for the small setup and entry commands; `docs/operator-guide.md` supplies persistence examples only when needed.

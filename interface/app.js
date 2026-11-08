@@ -145,6 +145,7 @@ const providerLabel=id=>({openai:'OpenAI',anthropic:'Anthropic',google:'Google',
 const modelProvider=model=>model.access==='openrouter'?'openrouter':model.access==='local'?'local':model.access==='google-app'?'google':['openai','anthropic','google','xai'].includes(model.provider)?model.provider:'other';
 const providerKey=model=>'connection:'+modelProvider(model);
 const catalogModels=()=>state.catalog?.models||[];
+const modelDisplay=id=>id&&(catalogModels().find(m=>m.routes?.some(r=>r.model===id))?.name||state.chatModelOptions?.models?.find(m=>m.id===id)?.name)||id;
 const chosenModel=()=>catalogModels().find(m=>m.id===$('#model-choice').value);
 const selectedRoute=()=>chosenModel()?.routes.find(r=>r.agent===$('#agent-choice').value);
 const modelSource=model=>!model?'':model.access==='signin'?providerLabel(model.provider)+' sign-in':model.access==='api'?providerLabel(model.provider)+' API':model.access==='provider'?providerLabel(model.provider)+' connection':({openrouter:'OpenRouter',local:'Local model','google-app':'Google Antigravity'})[model.access]||'Configured in '+(model.routes.find(r=>r.agent===$('#agent-choice').value)?.app||'your AI app');
@@ -274,7 +275,7 @@ function renderConnection() {
   $('#first-task').hidden=!ready||!state.data.connection.connected;
   $('#first-task').disabled=state.busy;
   $('#welcome-request').disabled=state.busy||state.checkingConnections; connectionChoice();
-  $('#welcome-model').textContent=`Your requests will use ${state.data.connection.model||state.data.connection.name} · ${human(state.data.connection.effort||'App default')}`;
+  {const c=state.data.connection;$('#welcome-model').textContent=`Your requests will use ${modelDisplay(c.model)||c.name} · ${human(c.effort||'App default')}`;}
 }
 function connectionStatusRows(items) {
   return items.map(c=>`<div class="connection-status-row"><span class="connection-status-icon ${c.status==='ready'?'ready':c.status==='error'?'error':'unchecked'}" aria-label="${c.status==='ready'?'Ready to send':c.status==='error'?'Needs attention':'Not checked'}">${c.status==='ready'?'✓':c.status==='error'?'✕':'○'}</span><span><strong>${esc(c.name)}</strong><small>${esc(c.detail||'Not checked yet.')}${c.checked_at?' · '+clockTime(c.checked_at):''}</small></span></div>`).join('');
@@ -1974,7 +1975,7 @@ function showMessages(latest=false) {
   const markup=state.formattedHistory;
   if(state.messageMarkup!==markup){$('#messages').innerHTML=markup;state.messageMarkup=markup;}
   $('#working').hidden=!state.busy;
-  $('#working-label').textContent=state.liveJob?.progress||'Starting your AI…';
+  $('#working-label').textContent=state.liveJob?.progress&&$('#chat-status').hidden?state.liveJob.progress:'Working…';
   $('#live-reply').hidden=!state.busy||!state.liveJob?.reply;
   $('#live-reply-text').textContent=state.busy?state.liveJob?.reply||'':'';
   let media=$('#native-output-media');if(!media){media=document.createElement('div');media.id='native-output-media';$('#live-reply').after(media);}media.innerHTML=state.busy?nativeMedia(state.liveJob?.native_media):'';
@@ -2113,7 +2114,7 @@ document.addEventListener('click',event=>attempt(async()=>{
   if(button.dataset.favorite)await toggleFavorite(button.dataset.favorite);
   if(button.dataset.pickModel){$('#model-choice').value=button.dataset.pickModel;favoriteButton();renderFavoriteList();try{await selectModel();}catch(error){modelFailure(error);}}
   if(button.dataset.action==='connect'||['connection','review-setup'].includes(button.id)) {state.tour=button.id==='review-setup';openConnection(true,state.tour?'welcome':button.id==='model-settings'?'models':'connect');}
-  if(button.id==='setup-start'||button.id==='models-back'){if(button.id==='setup-start'){const p=await api('/api/profile',{display_name:$('#setup-display-name').value});state.data.profile=p;applyProfile(p);}state.setupStep='connect';renderConnection();}
+  if(button.id==='setup-start'||button.id==='models-back'){if(button.id==='setup-start'){const p=await api('/api/profile',{display_name:$('#setup-display-name').value});state.data.profile=p;applyProfile(p);const described=$('#setup-business-description').value.trim();if(described!==(rows('Business')[0]?.data?.description||'')){await api('/api/save',{business:state.business,kind:'business',description:described});await refresh();}}state.setupStep='connect';renderConnection();}
   if(button.id==='connect-back'){state.setupStep='welcome';renderConnection();}
   if(button.id==='choose-agent'||button.id==='setup-back'){state.setupStep='models';renderConnection();await loadAgentOptions();}
   if(button.id==='welcome-request')finishSetup();
@@ -2149,7 +2150,12 @@ document.addEventListener('click',event=>attempt(async()=>{
     await syncNotifications();if(enabled)state.systemAlert?.close();
   }
   if(button.dataset.action==='add-goal'){if(window.auraCompose)await window.auraCompose.editGoal();else notice('Goal controls are still loading. Try again in a moment.',true);return;}
-  if(button.dataset.action==='edit-business') { const b=rows('Business')[0]; details('Workspace name',`<form id="business-form" class="form-grid"><label>Workspace name<input name="name" value="${esc(b.title)}" required maxlength="160"></label><button class="primary">Save name</button></form>`); }
+  if(button.dataset.action==='custom-agent') {
+    const current=state.data.connection.choices?.find(c=>c.id==='configured');
+    details('Add an ACP agent',`<form id="custom-agent-form" class="form-grid"><p class="small-note">Use any agent that speaks the Agent Client Protocol. Its own models, sign-in and permissions stay in that agent.</p><label>Name<input name="name" required maxlength="80" value="${esc(current?.name||'')}" placeholder="Gemini CLI"></label><label>Command that starts it in ACP mode<input name="command" required maxlength="2000" placeholder="gemini --experimental-acp"></label><p class="small-note">Examples: <code>gemini --experimental-acp</code>, <code>opencode acp</code>, <code>copilot --acp</code>. Flags change between versions, so check your agent’s docs.</p><button class="primary">Save agent</button>${current?'<button type="button" class="text-button" data-action="remove-custom-agent">Remove '+esc(current.name)+'</button>':''}</form>`);
+  }
+  if(button.dataset.action==='remove-custom-agent') {await api('/api/custom-agent',{remove:true});$('#detail').close();notice('Agent removed.');await refresh();}
+  if(button.dataset.action==='edit-business') { const b=rows('Business')[0]; details('Workspace details',`<form id="business-form" class="form-grid"><label>Workspace name<input name="name" value="${esc(b.title)}" required maxlength="160"></label><label>What does your business do? <span class="muted">Optional</span><textarea name="description" maxlength="2000" rows="3">${esc(b.data?.description||'')}</textarea></label><button class="primary">Save</button></form>`); }
   if(button.id==='session-keys-only'){await api('/api/connections/session-only',{});await showApiConnections();}
   if(button.id==='organize-work')await organizeWork();
   if(button.id==='organization-stop'){await api('/api/organization/stop',{});button.disabled=true;button.textContent='Stopping…';}
@@ -2267,7 +2273,8 @@ document.addEventListener('submit',event=>{
         await scheduleOperation(changes);
       }
       if(form.getAttribute('id')==='setup-form') { const result=await api('/api/setup',{name:data.get('name')});state.drafts??={};state.drafts[state.business]=$('#request').value;$('#request').value=state.drafts[result.business_id]||'';state.business=result.business_id; state.view='home'; state.chat=[];state.chatMeta=null;state.newAssistantId=null;state.newAssistantName='';state.hydrated=false; state.setupStep='welcome';state.connectionChecks=null;state.welcome=null;showMessages();$('#detail').close(); notice('Ready. What would you like to do?'); await refresh(); }
-      if(form.getAttribute('id')==='business-form') { await api('/api/save',{business:state.business,kind:'business',name:data.get('name'),ref:form.dataset.ref}); $('#detail').close(); notice('Saved.'); await refresh(); }
+      if(form.getAttribute('id')==='custom-agent-form') { const saved=await api('/api/custom-agent',{name:data.get('name'),command:data.get('command')}); $('#detail').close(); notice(saved.name+' added. Choose it as your AI app.'); await refresh(); }
+      if(form.getAttribute('id')==='business-form') { await api('/api/save',{business:state.business,kind:'business',name:data.get('name'),description:data.get('description')||'',ref:form.dataset.ref}); $('#detail').close(); notice('Saved.'); await refresh(); }
       if(form.getAttribute('id')==='startup-form') {
         await api('/api/startup',{enabled:data.has('enabled'),business:state.business});
         $('#startup-save-status').textContent=data.has('enabled')?'Startup is on.':'Startup is off.';
@@ -2410,6 +2417,7 @@ function applyProfile(profile){
   const collapseLabel=matchMedia('(max-width:600px)').matches?'Close navigation':p.sidebar_collapsed?'Expand sidebar':'Collapse sidebar';$('#sidebar-collapse').setAttribute('aria-label',collapseLabel);$('#sidebar-collapse').title=collapseLabel;
   $('#sidebar-collapse').setAttribute('aria-expanded',String(!p.sidebar_collapsed));
   if(!$('#setup-display-name').value)$('#setup-display-name').value=p.display_name;
+  if(!$('#setup-business-description').value)$('#setup-business-description').value=rows('Business')[0]?.data?.description||'';
 }
 async function renderShell(force=true){
   if(!state.data||!$('#sidebar'))return;
@@ -2731,7 +2739,7 @@ function renderComposerPermissions(){
 function renderComposerConnection(){
   renderProjectTrigger();
   if(!state.data)return;const c=composerConnection(),native=nativeConnection(c.kind);
-  $('#model-settings').textContent=native?appName(c.kind)+' · '+(c.model||'Choose model')+(c.effort?' · '+human(c.effort):''):(state.data.connection.connected?appName(c.kind)||state.data.connection.name:'Choose AI');
+  $('#model-settings').textContent=native?appName(c.kind)+' · '+(modelDisplay(c.model)||'Choose model')+(c.effort?' · '+human(c.effort):''):(state.data.connection.connected?appName(c.kind)||state.data.connection.name:'Choose AI');
   window.auraWork?.composer();
   renderComposerPermissions();
   $('#model-settings').title=state.chatMeta?'Model for this chat · '+appName(c.kind):'AI app and model for the new chat';

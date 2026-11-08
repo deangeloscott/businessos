@@ -10,6 +10,14 @@ from _common import workspace_root, workspace_scope, write_json_atomic
 from workspace_startup import state_dir
 
 
+def command_title(command):
+    """A short readable label for a shell step: the command itself, without shell wrappers."""
+    text=' '.join(command) if isinstance(command,list) else str(command or '')
+    text=re.sub(r'^\S*(?:powershell|pwsh|bash|sh|cmd)(?:\.exe)?"?\s+(?:-NoProfile\s+)?(?:-Command|-lc|-c|/c)\s+','',text.strip(),flags=re.I).strip().strip('"\'')
+    text=' '.join(text.split())
+    return ('Command: '+text[:70]+('…' if len(text)>70 else '')) if text else 'Terminal command'
+
+
 def path(request_id):
     if not isinstance(request_id,str) or not re.fullmatch(r'[A-Za-z0-9_-]{1,100}',request_id):
         raise ValueError('Choose a valid request.')
@@ -109,7 +117,8 @@ class Recorder:
             if method not in {'item/started','item/completed'}:return
             if it=='agentMessage' and item.get('phase')=='commentary':self.put('commentary','Progress',item.get('text',''),owner=owner,ident=ident)
             elif it in {'commandExecution','fileChange','webSearch','mcpToolCall','dynamicToolCall'}:
-                title=item.get('tool') or ('Terminal command' if it=='commandExecution' else None) or {'fileChange':'File changes','webSearch':'Web search'}.get(it,'Tool')
+                title=item.get('tool') or (command_title(item.get('command')) if it=='commandExecution' else None) or {'fileChange':'File changes','webSearch':'Web search'}.get(it,'Tool')
+                if it=='commandExecution' and item.get('exitCode') not in (None,0):title+=f" · exit {item['exitCode']}"
                 body=item.get('aggregatedOutput') or text(item.get('result')) or json.dumps(item.get('changes') or item.get('action') or item.get('arguments') or {},ensure_ascii=False)
                 self.put('file' if it=='fileChange' else 'tool',title,body,owner=owner,ident=ident,status=item.get('status') or ('completed' if method.endswith('completed') else 'in_progress'),inputs=str(item['command']) if item.get('command') else json.dumps(item.get('arguments'),ensure_ascii=False) if item.get('arguments') else '')
             elif it=='subAgentActivity':self.put('delegation','Agent '+str(item.get('kind','activity')),item.get('message') or item.get('summary',''),owner=item.get('agentThreadId',''),ident=ident,status=item.get('kind',''))

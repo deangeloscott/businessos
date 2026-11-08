@@ -22,7 +22,7 @@ including screenshots, before sharing. This is deliberate selection, not automat
 anonymization. Exporting stays local; uploading is a separate explicit step.
 
 Use a free ViralTrac account to submit the ZIP. Verify your email, choose a public name
-or pseudonym and accept the [community terms](COMMUNITY-TERMS.md). The website checks
+or pseudonym and accept the [community terms](../COMMUNITY-TERMS.md). The website checks
 the package and shows its file list. Submissions stay private until a publication
 moderator reviews them. **My contributions** shows status/review notes, supports new
 fixed revisions, and unpublishes individual revisions. A new revision never replaces
@@ -55,11 +55,11 @@ When reusable procedural knowledge is worth preserving:
 2. Prepare a small ProcessExtension specification containing the Workflow relationship, purpose, applicability, instructions, and useful provenance.
 3. Persist it directly:
 
-   `python3 scripts/persist_process_extension.py <business-id> --spec-file <process-extension.json>`
+   `python scripts/persist_process_extension.py <business-id> --spec-file <process-extension.json>`
 
 4. Resolve the effective organization-specific Workflow knowledge when useful:
 
-   `python3 scripts/resolve_workflow.py <workflow-id> --business-id <business-id> --show`
+   `python scripts/resolve_workflow.py <workflow-id> --business-id <business-id> --show`
 
 A `ProcessExtension` is retrieval context, not execution authority. The active model/user may use, adapt, combine, or ignore it when another method is better.
 
@@ -91,7 +91,7 @@ Do not add provider/tool bindings, capability vocabularies, schedules, permissio
 
 Configure contribution defaults and optional discovery sources:
 
-`python3 scripts/configure_innovation_sharing.py <business-id> --detail workflow_only --identity anonymous [--enable-discovery] [--source <index-reference>]`
+`python scripts/configure_innovation_sharing.py <business-id> --detail workflow_only --identity anonymous [--enable-discovery] [--source <index-reference>]`
 
 These settings remember formatting/discovery preferences only. They do not decide when AURA should interrupt the user, prepare a contribution, or disclose anything.
 
@@ -111,13 +111,13 @@ Detail and identity are independent.
 
 For an explicit sharing task, prepare a bounded local draft:
 
-`python3 scripts/prepare_innovation_package.py <business-id> <process-extension-id> --detail workflow_only --identity anonymous`
+`python scripts/prepare_innovation_package.py <business-id> <process-extension-id> --detail workflow_only --identity anonymous`
 
 The draft is not approved for external disclosure.
 
 After the user explicitly authorizes the current export:
 
-`python3 scripts/export_innovation_package.py <draft.json> --output <innovation-package.zip> --approve`
+`python scripts/export_innovation_package.py <draft.json> --output <innovation-package.zip> --approve`
 
 This creates a portable file only. AURA does not upload or publish it automatically.
 
@@ -127,21 +127,21 @@ The package `format_version` describes the portable file format only. It is not 
 
 Validate a received package:
 
-`python3 scripts/validate_innovation_package.py <innovation-package.zip> --require-export-approval`
+`python scripts/validate_innovation_package.py <innovation-package.zip> --require-export-approval`
 
 Import it for one organization:
 
-`python3 scripts/import_innovation_package.py <business-id> <innovation-package.zip>`
+`python scripts/import_innovation_package.py <business-id> <innovation-package.zip>`
 
 Import preserves the exact contribution as organization-local support data and creates a canonical `SourceRecord` pointing to that evidence. It does **not** manufacture an `Insight`, `Learning`, ProcessExtension, confidence score, recommendation, compatibility judgment, or adoption decision.
 
 Browse locally imported support data:
 
-`python3 scripts/list_innovation_exchange.py <business-id>`
+`python scripts/list_innovation_exchange.py <business-id>`
 
 If the active organization tests an imported method and has a real `OutcomeEvaluation`, associate that evidence mechanically:
 
-`python3 scripts/record_innovation_outcome.py <business-id> <exchange-entry-id> --outcome supported --evidence-ref eval_...`
+`python scripts/record_innovation_outcome.py <business-id> <exchange-entry-id> --outcome supported --evidence-ref eval_...`
 
 The model/user decides what imported and local evidence means. Reported community outcomes and active-organization outcomes remain separate so popularity or repeated contribution cannot masquerade as independent replication.
 
@@ -151,10 +151,10 @@ Approved packages can be exchanged through ordinary files, repositories, email/f
 
 A curator/community can generate a portable discovery index from a directory of approved packages:
 
-`python3 scripts/build_innovation_exchange_index.py <package-directory> --exchange-id community-name`
+`python scripts/build_innovation_exchange_index.py <package-directory> --exchange-id community-name`
 
 Browse an available index without importing anything:
 
-`python3 scripts/browse_innovation_exchange_index.py <innovation-index.json> --query "landing page"`
+`python scripts/browse_innovation_exchange_index.py <innovation-index.json> --query "landing page"`
 
 A configured `exchange_sources` list may help the active model/harness discover indexes. Retrieving remote material remains a host responsibility; import, interpretation, testing, local persistence, and sharing remain explicit work.

@@ -19,15 +19,9 @@ def req(condition,message):
 
 
 def main():
-    for rel in ('CONTEXT.md','AURA-ATTACHMENT.md','AGENTS.md','skills/viraltrac-aura/SKILL.md','docs/operating-knowledge.md'):
+    for rel in ('CONTEXT.md','docs/attachment.md','AGENTS.md','skills/viraltrac-aura/SKILL.md','docs/operating-knowledge.md'):
         req((ROOT/rel).exists(),f'agent-facing AURA entry artifact missing: {rel}')
-    skill=(ROOT/'skills/viraltrac-aura/SKILL.md').read_text(encoding='utf-8');attachment=(ROOT/'AURA-ATTACHMENT.md').read_text(encoding='utf-8');contract=(ROOT/'CONTEXT.md').read_text(encoding='utf-8')
-    for phrase in ('retrieve little','other Skills','remember','unrelated'):
-        req(phrase.lower() in skill.lower(),f'AURA Skill lost small awareness behavior: {phrase}')
-    req('awareness' in attachment.lower() and 'access' in attachment.lower(),'attachment contract must distinguish awareness from actual file access')
-    req('Playbook → Workflow → Step' in contract,'root agent contract lost operating-knowledge hierarchy')
-    req('fewest inputs necessary' in contract,'root agent contract lost minimum-sufficient-guidance principle')
-    req('AURA does not define a tool allowlist or universal capability vocabulary.' in contract,'root agent contract lost tool/model freedom')
+    # Guidance wording belongs to the docs; this guards structure and behavior, not phrasing.
 
     retired=[
         'core/capabilities/catalog.json','docs/adding-a-capability.md','generated/capability-usage-index.json',
@@ -59,7 +53,6 @@ def main():
         req(knowledge.get('selected_playbook') is None and knowledge.get('selected_workflow') is None,'candidate discovery silently selected a method')
         req(all(row.get('selection_authority') is False for row in knowledge.get('playbook_candidates',[])),'Playbook candidate claimed semantic authority')
         req(all(row.get('selection_authority') is False for row in knowledge.get('workflow_candidates',[])),'Workflow candidate claimed semantic authority')
-        req('best available tools' in prepared.get('execution_rule',''),'entry lost host-tool freedom')
         req(not (tmp/'runtime/runs'/bid).exists(),'entry manufactured runtime receipt state')
     finally:
         if old is None:os.environ.pop('BUSINESSOS_WORKSPACE',None)

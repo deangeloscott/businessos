@@ -59,4 +59,4 @@ These describe where organization-owned AURA memory lives and how people may col
 ## 8. Upgrade rule
 Upgrading AURA product source must not require moving or rewriting organization state merely because product files changed. Business-scoped `ProcessExtension` objects and other organization state remain in the workspace. Product migrations may be required when schemas intentionally change, but the workspace remains organization-owned and separately recoverable.
 
-The public product name is ViralTrac AURA; `BusinessOS` remains only where a compatibility namespace/name still has a concrete reason to exist. See `BRANDING.md`.
+The public product name is ViralTrac AURA; `BusinessOS` remains only where a compatibility namespace/name still has a concrete reason to exist. See `docs/branding.md`.

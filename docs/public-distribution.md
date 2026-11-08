@@ -40,7 +40,7 @@ Optional component editions are smaller distributions generated from the same ca
 
 AURA can operate from one local folder or use a separate organization-owned workspace. Keeping organization state separate from product source is useful for upgrades, teams, private Git, and customized deployments.
 
-Use the verified workspace helpers in `OPERATOR-GUIDE.md` / `DEPLOYMENT.md` rather than bundling live business state into a release artifact.
+Use the verified workspace helpers in `docs/operator-guide.md` / `docs/deployment.md` rather than bundling live business state into a release artifact.
 
 ## Updating
 
@@ -52,4 +52,4 @@ Use Git/GitHub, official release assets, or the active harness/user's normal sof
 
 AURA is **source-available, not open source**. Internal business use, customization, and agency/consulting use for clients are permitted under `LICENSE.md`; see the license for restrictions on white-label resale and standalone repackaging.
 
-See `BRANDING.md` for naming and maturity guidance and `SECURITY.md` for the public/private boundary.
+See `docs/branding.md` for naming and maturity guidance and `SECURITY.md` for the public/private boundary.

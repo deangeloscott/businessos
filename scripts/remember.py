@@ -162,7 +162,7 @@ def remember(business_id,payload):
             from workspace_projects import asset_context
             obj=asset_context(bid,obj)
         try:validate_canonical(typ,obj)
-        except ValueError as exc:raise ValueError(f'{row["key"]} ({typ}): {exc}. See the {typ} schema and OPERATOR-GUIDE.md memory examples.') from exc
+        except ValueError as exc:raise ValueError(f'{row["key"]} ({typ}): {exc}. See the {typ} schema and docs/operator-guide.md memory examples.') from exc
         row['object']=obj;objects.append(obj)
 
     paths=[];snapshots={};corrections=[]

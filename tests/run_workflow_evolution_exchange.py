@@ -48,7 +48,7 @@ def workflow_by_id(workflow_id):
 def main():
     required=[
         'core/policies/workflow-evolution.md','core/schemas/learning/process-extension.schema.json',
-        'scripts/persist_process_extension.py','scripts/process_extensions.py','INNOVATION-EXCHANGE.md'
+        'scripts/persist_process_extension.py','scripts/process_extensions.py','docs/innovation-exchange.md'
     ]
     for rel in required:req((ROOT/rel).exists(),f'missing organization-local Workflow knowledge component: {rel}')
     retired=[

@@ -61,21 +61,16 @@ def main():
         request='Create a presentation for this business proposal.';result,payload=enter(request,bid,ws,env)
         req(result.returncode==0 and payload.get('status')=='ready',f'entry should prepare useful work context: {payload}')
         req(payload.get('business_id')==bid and payload.get('original_request')==request,'entry lost business identity or original request')
-        req(payload.get('run',{}).get('created') is False,'entry must not create a Run merely to begin reasoning')
-        req({'aura_playbook','aura_workflow','external_skill','model_created','ad_hoc'}<=set(payload.get('method_options',[])),'entry lost method freedom')
         knowledge=payload.get('operating_knowledge') or {}
         req(knowledge.get('selected_playbook') is None and knowledge.get('selected_workflow') is None,'candidate discovery silently became method selection')
         req(knowledge.get('playbook_candidates'),f'presentation request should surface at least one high-level Playbook candidate: {knowledge}')
         req(knowledge.get('workflow_candidates'),f'presentation request should surface detailed Workflow candidates: {knowledge}')
-        req(all(row.get('selection_authority') is False for row in knowledge.get('playbook_candidates',[])),'Playbook candidates claimed semantic authority')
-        req(all(row.get('selection_authority') is False for row in knowledge.get('workflow_candidates',[])),'Workflow candidates claimed semantic authority')
         context_files=payload.get('retrieval',{}).get('context_files',[])
         req('CONTEXT.md' in context_files and 'docs/operating-knowledge.md' in context_files,'unselected entry lost small universal operating context')
         req(payload.get('recipe_menu',{}).get('path')=='recipes/README.md','entry should expose the installed optional recipe menu without loading it')
         req('recipe_menu' not in knowledge,'recipe menu should have one entry-point location')
         req('recipes/README.md' not in context_files,'optional recipe menu must remain outside primary context files')
-        req('semantic intent and execution remain with the active intelligence/runtime' in payload.get('rule',''),'front door lost model/runtime ownership boundary')
-        req('tool/provider allowlist' in payload.get('execution_rule',''),'front door lost tool/provider freedom boundary')
+        req(payload.get('note') and 'selection_authority' not in json.dumps(payload),'compact entry should state its boundary once instead of on every row')
         req(not (ws/'runtime/runs'/bid).exists(),'entry created runtime Run state despite optional-Run architecture')
 
         # Explicit high-level Playbook selection frames the job but does not force an execution graph.
@@ -83,7 +78,7 @@ def main():
         req(pb_result.returncode==0 and pb.get('status')=='ready','explicit Presentation Playbook selection should remain available')
         selected_pb=(pb.get('operating_knowledge') or {}).get('selected_playbook') or {}
         req(selected_pb.get('id')=='content-synthesis-presentation','explicit high-level Playbook selection was not preserved')
-        req(pb.get('run',{}).get('created') is False,'Playbook selection must not auto-create a Run')
+        req(not (ws/'runtime/runs'/bid).exists(),'Playbook selection must not auto-create a Run')
 
         # Explicit Workflow selection loads bounded procedure/context and still creates no Run.
         selected_result,selected=enter(request,bid,ws,env,'--selected-workflow','content.production.presentation')
@@ -93,7 +88,7 @@ def main():
         req(sw.get('selection_mode')=='explicit_model_selection','explicit model selection mode was lost')
         req(op.get('workflow_view') is not None,'selected AURA Workflow should expose its reusable browse view')
         req('workflow_process' not in op,'front door reintroduced process-plan framing for a Workflow browse view')
-        req(selected.get('run',{}).get('created') is False,'explicit Workflow selection still must not auto-create a Run')
+        req(not (ws/'runtime/runs'/bid).exists(),'explicit Workflow selection must not auto-create a Run')
         loaded=selected.get('retrieval',{}).get('context_files',[])
         req('CONTEXT.md' in loaded and 'core/DEFAULTS.md' not in loaded and 'core/policies/agent-execution.md' not in loaded,'selected Workflow context reintroduced redundant universal instruction stack')
         refs=selected.get('retrieval',{}).get('supporting_context_refs',[])

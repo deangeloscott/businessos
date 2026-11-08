@@ -165,7 +165,9 @@ For the included Codex option, selection reuses CLI authentication without bypas
 
 ### Another agent
 
-An agent can connect its supported non-interactive command with a small local JSON file:
+**Any ACP agent, from the interface.** In setup, choose **Add an ACP agent** under *My AI app isn't listed*, name it, and enter the command that starts it in Agent Client Protocol mode (for example `gemini --experimental-acp` or `opencode acp`; flags change between versions, so check the agent's docs). Aura saves it on this computer, outside the product folder, so upgrades keep it, and lists it with your other AI apps. The agent keeps its own models, sign-in, tools and permissions. Remove or change it from the same place.
+
+**A plain command, from a file.** An agent can also connect its supported non-interactive command with a small local JSON file:
 
 ```json
 {
@@ -255,6 +257,16 @@ The standard visual assets live in `interface/`; the launcher is `scripts/worksp
 The server listens only on `127.0.0.1`, checks the local Host/Origin, and protects file/state APIs and mutations with a per-launch token. Other business namespaces, hidden configuration, secrets, and paths escaping the selected workspace are excluded. Asset previews are bounded and do not execute saved HTML, SVG, or scripts. The browser UI itself loads no third-party assets. Using a cloud agent can still send permitted context to that agent under its normal policies; local storage does not imply local model inference.
 
 For a browsable document view instead of an app, the existing `scripts/generate_knowledge_layer.py` helper remains available.
+
+### Build your own view
+
+Ask your AI for the view you want, for example:
+
+- **Research:** "Build a local research workspace from my Aura records: saved findings about competitors, customers and our industry, links to the evidence, and the relevant research Workflows."
+- **Creative work:** "Put brand guidance, audience insights, briefs and saved creative assets in one place, with links to the actual deliverables."
+- **Growth and priorities:** "Show our goals, opportunities, experiments, results and unresolved work, with the evidence behind each decision."
+
+Add: "Use my existing Aura records and helpers for saving changes, show only what is actually saved, and keep the custom interface outside the Aura product folder so upgrades keep it."
 
 The model screen opens a language-model-only view of the same API connections form and protected store as Settings. OpenAI, Anthropic, Google, xAI, OpenRouter, and user-added LLM services belong here. Kie AI, fal.ai, Higgsfield, ElevenLabs, and other tool services remain in general Settings. Custom services can be classified as model providers when added through this view; this UI distinction does not constrain the host’s tools.
 

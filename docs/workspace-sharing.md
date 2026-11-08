@@ -32,7 +32,7 @@ locations. AURA's internal `.sharing` folder is expected and does not need atten
 For reusable public methods/designs/starters, **Explore community setups** opens the
 [Innovation Exchange](https://viraltrac.com/aura/community/). **Create a package →
 Prepare for community sharing** prepares a clean public-format selection locally;
-it never uploads automatically. See [the exchange guide](../INNOVATION-EXCHANGE.md)
+it never uploads automatically. See [the exchange guide](innovation-exchange.md)
 for contribution review, source notices, rights and publication.
 
 **Import a package** lists sharing ZIPs found in recent package locations, this

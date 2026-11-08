@@ -139,15 +139,47 @@ def prepare_work(task,business_id=None,workspace=None,focus=None,operator_ref=No
         'operating_knowledge':{'selected_playbook':playbook,'playbook_candidates':playbook_candidates,'playbook_view':playbook_view,'selected_workflow':selected_workflow,'workflow_candidates':workflow_candidates,'workflow_view':workflow_view if selected_workflow_id else None,'rule':'Playbooks frame end-to-end business jobs; Workflows provide reusable procedures. The active model/user decides what applies, how to compose it, and whether another Skill or method is better.'},
         'recipe_menu':recipe_menu,
         'method_options':METHOD_TYPES,'execution_rule':'Use the active model/harness normally. AURA does not define a tool/provider allowlist; use the best available tools, external Skills, resources, and orchestration that serve the requested outcome.','run':{'created':False,'rule':'Do not create a Run merely to begin reasoning. A bounded work receipt is optional when continuity/provenance materially benefits from one.'},
-        'next':{'work':'Use the active model/harness normally with the retrieved organizational context.','select_playbook':f'python3 scripts/enter.py {json.dumps(task)} --business-id {bid} --selected-playbook <playbook-id>','select_workflow':f'python3 scripts/enter.py {json.dumps(task)} --business-id {bid} --selected-workflow <workflow-id>','persistence':'Persist only material organizational meaning through supported canonical helpers. A Run is optional and should not be required merely to remember durable truth.'},
+        'next':{'work':'Use the active model/harness normally with the retrieved organizational context.','select_playbook':'Re-run with --selected-playbook <playbook-id>.','select_workflow':'Re-run with --selected-workflow <workflow-id>.','persistence':'Persist only material organizational meaning through supported canonical helpers. A Run is optional and should not be required merely to remember durable truth.'},
         'persistence_test':'Would a capable future model working for this organization materially benefit from knowing this after the current session/runtime is gone?','rule':'AURA supplies organization memory and reusable operating knowledge; semantic intent and execution remain with the active intelligence/runtime.'
     }
 
 
+# Guidance that CONTEXT.md already gives once; the CLI states it in one note instead of per row.
+_REPEATED_GUIDANCE={'rule','lookup_rule','context_reading_rule','boundary','execution_rule','persistence_test',
+    'method_options','precedence','broaden','selection_authority','next','run',
+    'current_fingerprint','fingerprint','discovery_terms','example'}
+NOTE=('Candidates are lexical matches, not decisions: read what looks relevant and judge it; no match is not proof of absence. '
+      'Work with your normal tools and any method (an AURA Playbook/Workflow, another Skill, or your own); no Run is needed. '
+      'Re-run with --selected-playbook/--selected-workflow <id> only after choosing one. Remember only durable meaning.')
+
+
+def compact(result):
+    """Model-facing CLI form: drop empty values and guidance already stated once."""
+    def walk(value,depth=0):
+        if isinstance(value,dict):
+            out={}
+            for key,item in value.items():
+                if key in _REPEATED_GUIDANCE or (depth and key in {'format_version','business_id'}):continue
+                if key=='reason' and isinstance(item,str) and item.endswith('judges applicability and execution approach.'):continue
+                if key=='reason' and isinstance(item,str) and item.startswith('Playbook candidate only;'):continue
+                item=walk(item,depth+1)
+                if item in (None,'',[],{}) or (key.endswith('_count') and item==0):continue
+                if isinstance(item,float):item=round(item,1)
+                out[key]=item
+            return out
+        if isinstance(value,list):return [walk(item,depth+1) for item in value]
+        return value
+    out=walk(result);retrieval=out.get('retrieval',{})
+    if not retrieval.get('saved_work_candidates'):retrieval.pop('saved_work_search',None)
+    if not (retrieval.get('knowledge_view') or {}).get('generated'):retrieval.pop('knowledge_view',None)
+    if result.get('status') in {'ready','needs_judgment'} and result.get('business_id'):out['note']=NOTE
+    return out
+
+
 def main():
-    p=argparse.ArgumentParser(description='Resolve organization context and optional AURA Playbook/Workflow candidates without semantic routing or execution-control machinery.');p.add_argument('task');p.add_argument('--business-id');p.add_argument('--workspace');p.add_argument('--focus',action='append',default=[],metavar='OBJECT_ID',help='Exact saved object ID; repeat for multiple records. Put search words in the positional task.');p.add_argument('--operator-ref');p.add_argument('--team-ref');p.add_argument('--role-ref');p.add_argument('--task-preferences');p.add_argument('--output-type');p.add_argument('--channel');p.add_argument('--selected-playbook');p.add_argument('--selected-workflow');p.add_argument('--json',action='store_true',help='JSON is already the default.');p.add_argument('--saved-work-limit',type=int,default=6);p.add_argument('--saved-work-offset',type=int,default=0);a=p.parse_args()
+    p=argparse.ArgumentParser(description='Resolve organization context and optional AURA Playbook/Workflow candidates without semantic routing or execution-control machinery.');p.add_argument('task');p.add_argument('--business-id');p.add_argument('--workspace');p.add_argument('--focus',action='append',default=[],metavar='OBJECT_ID',help='Exact saved object ID; repeat for multiple records. Put search words in the positional task.');p.add_argument('--operator-ref');p.add_argument('--team-ref');p.add_argument('--role-ref');p.add_argument('--task-preferences');p.add_argument('--output-type');p.add_argument('--channel');p.add_argument('--selected-playbook');p.add_argument('--selected-workflow');p.add_argument('--json',action='store_true',help='JSON is already the default.');p.add_argument('--verbose',action='store_true',help='Print the full result, including per-row guidance and empty fields.');p.add_argument('--saved-work-limit',type=int,default=6);p.add_argument('--saved-work-offset',type=int,default=0);a=p.parse_args()
     try:result=prepare_work(a.task,a.business_id,a.workspace,a.focus,a.operator_ref,a.team_ref,a.role_ref,a.task_preferences,a.output_type,a.channel,a.selected_playbook,a.selected_workflow,a.saved_work_limit,a.saved_work_offset)
     except (ValueError,json.JSONDecodeError) as exc:result={'format_version':'4.2','status':'needs_judgment','reason':str(exc)}
-    print(json.dumps(result,indent=2,ensure_ascii=False));raise SystemExit(0 if result.get('status')=='ready' else 2)
+    print(json.dumps(result,indent=2,ensure_ascii=False) if a.verbose else json.dumps(compact(result),ensure_ascii=False,separators=(',',':')));raise SystemExit(0 if result.get('status')=='ready' else 2)
 
 if __name__=='__main__':main()

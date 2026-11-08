@@ -122,6 +122,6 @@ For example, evidence that customers value fast emergency response may support i
 ## Normal persistence path
 During ordinary business work, use the supported deterministic persistence helpers instead of writing custom BusinessOS scripts or reverse-engineering schemas. For bounded research evidence, prefer:
 
-`python3 scripts/persist_research_bundle.py <business-id> --bundle-file runtime/<bundle>.json`
+`python scripts/persist_research_bundle.py <business-id> --bundle-file runtime/<bundle>.json`
 
 If the helper rejects the bundle, correct the structured input using `--help`. Do not patch BusinessOS product internals or create a replacement canonical writer during normal operation.

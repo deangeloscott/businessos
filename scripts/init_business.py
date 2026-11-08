@@ -97,7 +97,7 @@ def main():
     try: dest=init_business(a.business_id,a.name)
     except (ValueError,FileExistsError) as e: raise SystemExit(str(e))
     print(dest)
-    print(f'Initialized canonical organization identity for {a.name!r}. Validate with `python3 scripts/validate_business.py {a.business_id} --require-context`. Add more grounded context later only when it is useful; do not invent facts to satisfy setup.')
+    print(f'Initialized canonical organization identity for {a.name!r}. Validate with `scripts/validate_business.py {a.business_id} --require-context`. Add more grounded context later only when it is useful; do not invent facts to satisfy setup.')
 
 
 if __name__=='__main__':main()

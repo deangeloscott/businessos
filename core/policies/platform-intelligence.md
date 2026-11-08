@@ -2,7 +2,7 @@
 
 AURA should separate **durable product operating knowledge** from **volatile external platform knowledge**. Changes in Google, Bing, Meta, LinkedIn, YouTube, AI answer systems, standards, APIs, or other external platforms should normally update verified organization-relevant knowledge/state rather than require an AURA product release.
 
-`PlatformChange` is a durable primitive for a business-relevant verified platform/topic state when preserving that state materially helps future work. Use `python3 scripts/record_platform_change.py ...` when useful.
+`PlatformChange` is a durable primitive for a business-relevant verified platform/topic state when preserving that state materially helps future work. Use `python scripts/record_platform_change.py ...` when useful.
 
 ## Versioning behavior
 A stable `semantic_key` identifies one platform/topic (for example `google-search:faq-rich-results`).

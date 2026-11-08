@@ -157,6 +157,6 @@ def main():
     print('source_retained=true')
     print(f"activated={str(r['activated']).lower()}")
     if r.get('activation_instruction'): print('NEXT: '+r['activation_instruction'])
-    else: print('NEXT: run `python3 scripts/workspace_status.py` and validate the migrated business state before retiring any old local copy.')
+    else: print('NEXT: run `scripts/workspace_status.py` and validate the migrated business state before retiring any old local copy.')
 
 if __name__=='__main__': main()
