@@ -421,6 +421,10 @@ def _native_run(command, kind, cwd, env, prompt, native_id, model, effort, updat
             prompt='/goal '+goal['objective']
         elif kind=='antigravity':prompt='/goal '+goal['objective']+'\n\n'+prompt
         result=_run(command,kind,cwd,env,prompt,native_id,model,effort,update,execution,extra)
+        if kind=='claude' and not goal.get('verdict_received'):
+            from workspace_native_goals import claude_transcript_status
+            observed=claude_transcript_status((result or {}).get('native_id') or native_id,goal['objective'],env.get('CLAUDE_CONFIG_DIR'))
+            if observed:goal['verdict_received']=True;update(native_goal=observed)
         if kind in {'claude','antigravity'} and not goal.get('verdict_received'):update(native_goal={'status':'needs_review','reason':'The native goal request ended without a recognized completion verdict. Review the result before marking this goal complete.'})
         return result
 
@@ -558,7 +562,10 @@ def _run(command, kind, cwd, env, prompt, native_id, model, effort, update, exec
                     if block.get('type')=='tool_use':update(progress=tool_activity(block.get('name')))
             elif event_type=='result':
                 result=event.get('result') if isinstance(event.get('result'),dict) else event
-                if not measures and isinstance(result.get('usage'),dict):
+                if isinstance(result.get('usage'),dict) and (not measures or kind=='claude'):
+                    # Claude Code's per-message usage is an early snapshot (output is a few tokens);
+                    # its result carries the turn's final totals.
+                    if kind=='claude':measures.clear();seen_usage.clear()
                     observe({'usage':result['usage'],'timestamp':time.time()})
                 session_cost=workspace_usage.number(result.get('total_cost_usd'))
                 if session_cost is not None:

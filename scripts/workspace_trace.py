@@ -10,6 +10,17 @@ from _common import workspace_root, workspace_scope, write_json_atomic
 from workspace_startup import state_dir
 
 
+def tool_title(name,value):
+    """Readable label for a named tool call: what it ran, read or delegated."""
+    value=value if isinstance(value,dict) else {}
+    if value.get('command'):return command_title(value['command'])
+    if name in {'Task','Agent'} and value.get('description'):return 'Sub-agent: '+str(value['description'])[:70]
+    if value.get('url'):return f"{name}: {str(value['url'])[:80]}"
+    if value.get('pattern'):return f"{name}: {str(value['pattern'])[:80]}"
+    target=value.get('file_path') or value.get('path')
+    return f'{name}: {Path(str(target)).name or target}' if target else name
+
+
 def command_title(command):
     """A short readable label for a shell step: the command itself, without shell wrappers."""
     text=' '.join(command) if isinstance(command,list) else str(command or '')
@@ -56,15 +67,15 @@ class Recorder:
 
     def put(self,kind,title,body='',*,owner='',ident='',status='',delta=False,inputs=''):
         with self.lock:
-            body=self.redact(str(body));title=self.redact(str(title))[:240]
+            body=self.redact(str(body));title=None if title is None else self.redact(str(title))[:240]
             key=(kind,str(owner),str(ident))
             row=next((r for r in reversed(self.rows) if (r['kind'],r['owner'],r['native_id'])==key),None) if ident else None
             if row is None:
-                row={'id':str(self.revision+1),'kind':kind,'owner':str(owner),'native_id':str(ident),'title':title,'text':'','at':time.time()}
+                row={'id':str(self.revision+1),'kind':kind,'owner':str(owner),'native_id':str(ident),'title':title or 'Tool result','text':'','at':time.time()}
                 self.rows.append(row)
             old=len(row['text'])+len(row.get('input',''));raw=self.redact((row['text']+body) if delta else (body or row['text']))
             if len(raw)>24000:row['truncated']=True
-            row.update(title=title,text=raw[:24000],status=str(status or row.get('status','')),updated=time.time())
+            row.update(title=title or row['title'],text=raw[:24000],status=str(status or row.get('status','')),updated=time.time())
             if inputs:row['input']=self.redact(str(inputs))[:24000]
             self.bytes+=len(row['text'])+len(row.get('input',''))-old
             while len(self.rows)>500 or self.bytes>1000000:
@@ -186,10 +197,10 @@ class Recorder:
                 for i,c in enumerate((e.get('message') or {}).get('content',[])):
                     ident=(e.get('message') or {}).get('id','')+':'+str(i)
                     if c.get('type')=='thinking':self.put('thinking','Thinking',c.get('thinking',''),owner=owner,ident=ident)
-                    elif c.get('type')=='tool_use':self.put('tool',c.get('name','Tool'),json.dumps(c.get('input') or {},ensure_ascii=False),owner=owner,ident=c.get('id',''),status='in_progress')
+                    elif c.get('type')=='tool_use':self.put('tool',tool_title(c.get('name','Tool'),c.get('input')),'',owner=owner,ident=c.get('id',''),status='in_progress',inputs=json.dumps(c.get('input') or {},ensure_ascii=False))
             elif typ=='user':
                 for c in (e.get('message') or {}).get('content',[]) if isinstance(e.get('message',{}).get('content'),list) else []:
-                    if c.get('type')=='tool_result':self.put('tool','Tool result',text(c.get('content')),owner=owner,ident=c.get('tool_use_id',''),status='error' if c.get('is_error') else 'completed')
+                    if c.get('type')=='tool_result':self.put('tool',None,text(c.get('content')),owner=owner,ident=c.get('tool_use_id',''),status='error' if c.get('is_error') else 'completed')
 
 
 def read(request_id):

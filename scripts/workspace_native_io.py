@@ -399,6 +399,12 @@ def agent_lines(process,kind,prompt,native_id,execution,errors):
                 yield json.dumps(event)
                 if typ=='result':result_received=True;yield json.dumps({'type':'aura_reply_ready','background':bool(tasks) or session_state not in {None,'idle'} or last_goal_status=='active'})
                 if result_received and not tasks and session_state in {None,'idle'} and last_goal_status!='active' and not execution.helpers and not any(r['status']=='pending' for r in execution.requests.snapshot()):
+                    if goal and last_goal_status is None and kind=='claude':
+                        from workspace_native_goals import claude_transcript_status
+                        observed=claude_transcript_status(event.get('session_id') or native_id,goal['objective'])
+                        if observed:
+                            last_goal_status=observed['status']
+                            yield json.dumps({'type':'aura_native_goal','goal':observed})
                     if goal and last_goal_status is None:
                         last_goal_status='needs_review'
                         yield json.dumps({'type':'aura_native_goal','goal':{'status':'needs_review','reason':'The native request ended without a recognized goal verdict. Review the result before marking this goal complete.'}})

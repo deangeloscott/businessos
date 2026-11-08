@@ -6,6 +6,9 @@
 - `setup.py` accepts the `--allow-state-switch` flag its own workspace-switch message recommends.
 - Setup asks what the business does (optional) and saves it as the business description; Business & memory can edit it later.
 - Add any Agent Client Protocol agent from setup (**Add an ACP agent**: name plus launch command). It is saved on this computer outside the product folder, so upgrades keep it, and can be removed from the same place.
+- Claude goals record Claude Code's own verdict (completed, reason, tokens, time) from its session transcript when the live stream omits it, instead of always asking for review.
+- Claude usage reports the turn's final totals; per-message snapshots had shown only a few output tokens.
+- Claude activity is labelled by what each step did (command, file, search pattern, sub-agent) with parent and child steps kept apart, and a finished request no longer says background work is running. Plan-mode approvals show the plan.
 - Claude Code can read AURA's own guidance and helpers without asking at the start of every chat (`--add-dir` for the product folder); commands and edits still follow its permission mode.
 - Apps that do not report a default effort (such as Claude Code) offer **App default** and send no override, instead of silently choosing Low.
 - Approval cards show the exact command, file or address an app wants to use, open while waiting; AURA's own setup messages are no longer replaced by a generic error. Model names stay readable after a reload.

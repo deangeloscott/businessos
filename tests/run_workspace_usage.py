@@ -237,11 +237,12 @@ def main():
                 {'type':'assistant','message':{'id':'m','role':'assistant','content':[{'type':'text','text':'Done'}],
                  'usage':{'input_tokens':10,'output_tokens':5,'cache_read_input_tokens':80}}}]
         events+=[events[-1],{'type':'rate_limit_event','rate_limit_info':{'status':'allowed_warning','utilization':.95}},
-                 {'type':'result','session_id':'fixture','total_cost_usd':2,'usage':{'input_tokens':900}}]
+                 {'type':'result','session_id':'fixture','total_cost_usd':2,'usage':{'input_tokens':10,'output_tokens':42,'cache_read_input_tokens':80}}]
         stream.write_text('import json,sys\nsys.stdin.read()\nfor event in '+repr(events)+':print(json.dumps(event),flush=True)\n')
         updates=[]
         native=workspace_agents.run([sys.executable,str(stream),'-p'],'claude',Path(td),dict(os.environ),'Fixture only',None,'','',lambda **values:updates.append(values))
-        assert native['usage']['input_tokens']==90 and native['usage']['output_tokens']==5
+        # Claude Code's per-message usage is an early snapshot; the result's final totals replace it (not added).
+        assert native['usage']['input_tokens']==90 and native['usage']['output_tokens']==42,native['usage']
         assert native['usage']['session_cost_usd']==2
         assert any(v.get('quota_windows',[{}])[0].get('used_percent')==95 for v in updates if v.get('quota_windows'))
         os.environ['BUSINESSOS_WORKSPACE']=str(Path(td)/'workspace')

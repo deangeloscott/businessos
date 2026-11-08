@@ -292,6 +292,18 @@ for line in sys.stdin:
                 assert call('/api/chats?business='+bid)['items'][0]['pinned']
                 assert Workspace(agent=agent,settings_file=live.settings_file).preferences['chats'][0]['project']=='研究 🚀'
             finally:server.shutdown();server.server_close()
+    # Claude Code writes its goal verdict to the session transcript; the live stream may omit it.
+    from workspace_native_goals import claude_transcript_status
+    with tempfile.TemporaryDirectory() as config:
+        transcript=Path(config)/'projects/some-project/session-1.jsonl';transcript.parent.mkdir(parents=True)
+        rows=[{'type':'attachment','sessionId':'session-1','attachment':{'type':'goal_status','met':False,'condition':'Ship it'}},
+              {'type':'assistant','sessionId':'session-1','message':{'content':[{'type':'text','text':'goal_status met'}]}},
+              {'type':'attachment','sessionId':'session-1','attachment':{'type':'goal_status','met':True,'condition':'Ship it','reason':'Checked.'}}]
+        transcript.write_text('\n'.join(json.dumps(r) for r in rows),encoding='utf-8')
+        observed=claude_transcript_status('session-1','Ship it',config)
+        assert observed and observed['status']=='completed' and observed['reason']=='Checked.',observed
+        assert claude_transcript_status('session-1','Something else',config)['status']=='needs_review'
+        assert claude_transcript_status('missing','Ship it',config) is None
     print('Native goal transports passed: native continuation, explicit budgets, completion evidence, workspace boundary and custom-harness protocol.')
 
 

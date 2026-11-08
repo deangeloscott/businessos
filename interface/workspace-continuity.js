@@ -65,7 +65,7 @@ window.auraContinuity=(()=>{
   function operation(detail){
     try{
       const input=(JSON.parse(detail)||{}).input||{};
-      const exact=input.command||input.file_path||input.path||input.url||input.pattern;
+      const exact=input.command||input.plan||input.file_path||input.path||input.url||input.pattern;
       if(typeof exact==='string'&&exact)return (input.description&&input.command?input.description+'\n\n':'')+exact;
     }catch(error){}
     return detail;

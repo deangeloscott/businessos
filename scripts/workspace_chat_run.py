@@ -222,6 +222,10 @@ class ChatRun:
                         child['status']='stopped' if job['status']=='stopped' and kind!='hermes' else 'unconfirmed'
                 job['subagents']=workspace_delegation.retain(job.get('subagents',[]))
                 if chat:chat['subagents']=job['subagents']
+                # A finished request with nothing still running should not keep saying it is busy.
+                if job['status']=='complete' and job.get('progress')=='Background work is running' and not job.get('background_processes') \
+                        and not any(c.get('status') in {'working','pending'} for c in job['subagents']):
+                    job['progress']='Done'
                 workspace_usage.record(app.preferences,job,chat,app.agent['name'])
                 app.record_notification(job, chat)
                 if chat:

@@ -98,6 +98,24 @@ def claude_status(event,expected,native_id=None):
     return state
 
 
+def claude_transcript_status(session_id,expected,config_dir=None):
+    """Claude Code records its goal verdict in the session transcript; the live stream may omit it."""
+    import json,os,re
+    if not isinstance(session_id,str) or not re.fullmatch(r'[a-zA-Z0-9_-]{1,100}',session_id):return None
+    root=Path(config_dir or os.environ.get('CLAUDE_CONFIG_DIR') or Path.home()/'.claude')/'projects'
+    matches=list(root.glob('*/'+session_id+'.jsonl'))
+    if len(matches)!=1:return None
+    try:lines=matches[0].read_text(encoding='utf-8').splitlines()
+    except OSError:return None
+    for line in reversed(lines):
+        if '"goal_status"' not in line:continue
+        try:event=json.loads(line)
+        except ValueError:continue
+        if event.get('sessionId') not in {None,session_id}:continue
+        return claude_status(event,expected)
+    return None
+
+
 def control(app,bid,goal,action):
     """Change only the selected goal in its live process or saved native session."""
     from workspace_goals import metadata,scope,goals
