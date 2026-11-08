@@ -468,7 +468,7 @@ def _run(command, kind, cwd, env, prompt, native_id, model, effort, update, exec
         argv += arguments(kind,execution.permission)
     final, ident, error='',native_id,''
     request_started=time.time()
-    measures, seen_usage, session_cost = [], {}, None
+    measures, seen_usage, session_cost, context_seen = [], {}, None, None
     def observe(message):
         ident = workspace_usage.message_id(message)
         raw=message.get('usage') or {}
@@ -491,7 +491,7 @@ def _run(command, kind, cwd, env, prompt, native_id, model, effort, update, exec
             from workspace_native_sessions import Call
             if isinstance(line,Call):
                 execution=line.execution;update=line.update;prompt=line.prompt;native_id=line.native_id or execution.native_session.native_id
-                ident=native_id;final='';error='';measures=[];seen_usage={};session_cost=None;request_started=time.time();delegation=Tracker(update)
+                ident=native_id;final='';error='';measures=[];seen_usage={};session_cost=None;context_seen=None;request_started=time.time();delegation=Tracker(update)
                 update(native_id=ident,native_controls={'steer':True,'interrupt':True})
                 continue
             try:event=json.loads(line)
@@ -504,7 +504,7 @@ def _run(command, kind, cwd, env, prompt, native_id, model, effort, update, exec
                 if error or not ident or not final.strip():
                     lines.close()
                     raise ValueError(error or errors.message('The AI app ended without a saved reply. Check its native conversation before retrying.'))
-                value={**workspace_usage.combine(measures),'last':measures[-1]} if measures else {}
+                value={**workspace_usage.combine(measures),'last':measures[-1],**({'context':context_seen} if context_seen else {})} if measures else {}
                 if session_cost is not None:value.update(session_cost_usd=session_cost,cost_kind='est')
                 execution.native_session.turn_result={'reply':final,'native_id':ident,'usage':value}
                 continue
@@ -567,9 +567,16 @@ def _run(command, kind, cwd, env, prompt, native_id, model, effort, update, exec
                     # its result carries the turn's final totals.
                     if kind=='claude':measures.clear();seen_usage.clear()
                     observe({'usage':result['usage'],'timestamp':time.time()})
+                    if kind=='claude':
+                        # The last model call's input is what the conversation now occupies.
+                        calls=result['usage'].get('iterations') or [result['usage']]
+                        last_call=calls[-1] if isinstance(calls[-1],dict) else {}
+                        windows=[m.get('contextWindow') for m in (result.get('modelUsage') or {}).values() if isinstance(m,dict)]
+                        used=sum(workspace_usage.number(last_call.get(k)) or 0 for k in ('input_tokens','cache_read_input_tokens','cache_creation_input_tokens','output_tokens'))
+                        if used and windows and workspace_usage.number(max(windows)):context_seen={'tokens':used,'window':max(windows)}
                 session_cost=workspace_usage.number(result.get('total_cost_usd'))
                 if session_cost is not None:
-                    update(usage={**workspace_usage.combine(measures),'last':measures[-1] if measures else {},
+                    update(usage={**workspace_usage.combine(measures),'last':measures[-1] if measures else {},**({'context':context_seen} if context_seen else {}),
                                   'session_cost_usd':session_cost,'cost_kind':'est'})
                 result_id=result.get('conversation_id') or result.get('session_id') or ident
                 if native_id and result_id!=native_id:
@@ -593,6 +600,6 @@ def _run(command, kind, cwd, env, prompt, native_id, model, effort, update, exec
         diagnostic=errors.message('')
         if re.search(r'(?is)(?:permission|approval|confirmation|tool).{0,160}(?:denied|declined|requires? approval)|(?:denied|declined).{0,160}(?:permission|approval|tool)',diagnostic):
             update(permission_warning='Antigravity blocked an action that needs approval. Review Chat permissions before continuing.',permission_detail=diagnostic)
-    usage={**workspace_usage.combine(measures),'last':measures[-1]} if measures else {}
+    usage={**workspace_usage.combine(measures),'last':measures[-1],**({'context':context_seen} if context_seen else {})} if measures else {}
     if session_cost is not None:usage.update(session_cost_usd=session_cost,cost_kind='est')
     return {'reply':final,'native_id':ident,'usage':usage}

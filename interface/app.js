@@ -145,6 +145,65 @@ const providerLabel=id=>({openai:'OpenAI',anthropic:'Anthropic',google:'Google',
 const modelProvider=model=>model.access==='openrouter'?'openrouter':model.access==='local'?'local':model.access==='google-app'?'google':['openai','anthropic','google','xai'].includes(model.provider)?model.provider:'other';
 const providerKey=model=>'connection:'+modelProvider(model);
 const catalogModels=()=>state.catalog?.models||[];
+// One small gauge beside the model: this chat's app plan limit (tightest window), or its context when
+// the app reports no limits. Hover lists every window; click shows this chat's context, tokens and cost.
+const glance={key:'',at:0,data:null,loading:false};
+const glanceTime=t=>{const d=new Date(t*1000);return d-Date.now()<20*3600e3?d.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}):d.toLocaleString([],{weekday:'short',hour:'numeric',minute:'2-digit'});};
+const glanceUsed=w=>w.status==='rejected'?100:w.used_percent;
+async function loadGlance(force=false){
+  const chat=state.chatMeta?.id||'',key=[state.business,chat,state.data?.connection?.selected].join('|');
+  if(!state.business||glance.loading||!force&&key===glance.key&&Date.now()-glance.at<60000)return paintGlance();
+  glance.loading=true;
+  try{const data=await api('/api/glance?business='+encodeURIComponent(state.business)+(chat?'&chat_id='+encodeURIComponent(chat):''));glance.key=key;glance.at=Date.now();glance.data=data;}
+  catch(error){}finally{glance.loading=false;}
+  paintGlance();
+}
+function glanceParts(d){
+  const windows=(d.limits?.windows||[]).filter(w=>Number.isFinite(w.used_percent)||w.status==='rejected');
+  const top=windows.reduce((a,w)=>!a||glanceUsed(w)>glanceUsed(a)?w:a,null),context=d.chat?.context;
+  return {windows,top,context,contextPct:context?.window?100*context.tokens/context.window:null};
+}
+function paintGlance(){
+  const button=$('#usage-gauge'),d=glance.data;if(!button)return;
+  if(!d){button.hidden=true;return;}
+  const {windows,top,context,contextPct}=glanceParts(d),pct=top?glanceUsed(top):contextPct;
+  button.hidden=!Number.isFinite(pct);if(button.hidden)return;
+  button.dataset.level=top&&(top.status==='rejected'||pct>=90)?'high':pct>=75?'mid':'low';
+  button.querySelector('.fill').setAttribute('stroke-dasharray',Math.min(100,Math.max(3,pct))+' 100');
+  const lines=windows.map(w=>`${w.name}: ${w.status==='rejected'?'reached':Math.round(w.used_percent)+'% used'}${w.resets_at?' · resets '+glanceTime(w.resets_at):''}`);
+  if(context)lines.push(`Context: ${usageShort(context.tokens)} of ${usageShort(context.window)}`);
+  if(top&&d.limits.observed_at)lines.push('As of '+new Date(d.limits.observed_at*1000).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}));
+  button.title=lines.join('\n');button.setAttribute('aria-label',(top?'Plan usage ':'Context used ')+Math.round(pct)+'%. Show details');
+  if(!$('#usage-pop').hidden)paintGlancePanel();
+}
+function paintGlancePanel(){
+  const d=glance.data;if(!d)return;const {windows,context,contextPct}=glanceParts(d),c=d.chat||{};
+  const bar=(pct,cls='')=>`<span class="glance-bar ${cls}"><span style="width:${Math.min(100,Math.max(0,pct))}%"></span></span>`;
+  const level=w=>w.status==='rejected'||glanceUsed(w)>=90?'high':glanceUsed(w)>=75?'mid':'';
+  const limits=windows.length?windows.map(w=>`<div class="glance-row"><span>${esc(w.name)}</span><span class="row-meta">${w.resets_at?'Resets '+esc(glanceTime(w.resets_at))+' · ':''}${w.status==='rejected'?'Reached':Math.round(w.used_percent)+'%'}</span></div>${bar(glanceUsed(w),level(w))}`).join('')
+    :`<p class="small-note">${d.limits_reported?(d.app==='claude'?'Limits appear after this app’s next request.':'Checking limits…'):'This app doesn’t report plan limits.'}</p>`;
+  const tokens=[['In',c.input_tokens],['Out',c.output_tokens],['Cached',c.cached_input_tokens]].filter(([,v])=>Number.isFinite(v)).map(([k,v])=>`${k} ${usageShort(v)}`).join(' · ');
+  const cost=Number.isFinite(c.cost_usd)?`${money(c.cost_usd)} <span class="row-meta">${c.cost_kind==='reported'||c.billing==='api'?'charged':'estimated API value'}</span>`:'';
+  $('#usage-pop').innerHTML=`<div class="glance-head"><strong>${esc(appName(d.app))} plan${d.account?.plan?' · '+esc(human(d.account.plan)):''}</strong><button type="button" class="text-button" data-glance-all>See all →</button></div>${limits}
+    ${d.limits?.observed_at&&windows.length?`<p class="small-note">As of ${esc(new Date(d.limits.observed_at*1000).toLocaleString([],{weekday:'short',hour:'numeric',minute:'2-digit'}))}</p>`:''}
+    <div class="glance-head glance-chat"><strong>This chat</strong></div>
+    ${context?`<div class="glance-row"><span>Context</span><span class="row-meta">${usageShort(context.tokens)} of ${usageShort(context.window)}</span></div>${bar(contextPct,contextPct>=90?'high':contextPct>=75?'mid':'')}`:''}
+    ${tokens?`<div class="glance-row"><span>Tokens</span><span class="row-meta">${tokens}</span></div>`:''}
+    ${cost?`<div class="glance-row"><span>Cost</span><span>${cost}</span></div>`:''}
+    ${!context&&!tokens&&!cost?'<p class="small-note">Usage appears after this chat’s first reply.</p>':''}`;
+}
+function toggleGlance(open){
+  const pop=$('#usage-pop'),button=$('#usage-gauge');open=open??pop.hidden;pop.hidden=!open;button.setAttribute('aria-expanded',String(open));
+  if(open){paintGlancePanel();loadGlance(true);}
+}
+// A plan limit that is nearly used up is worth knowing before sending, not after a refusal.
+function limitNotice(){
+  const n=state.data?.connection?.limit_notice,el=$('#limit-notice');if(!el)return;el.hidden=!n?.blocked;if(!n?.blocked)return;
+  const reset=n.resets_at?new Date(n.resets_at*1000):null,soon=reset&&reset-Date.now()<20*3600e3;
+  const when=reset?' · resets '+(soon?reset.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}):reset.toLocaleString([],{weekday:'short',hour:'numeric',minute:'2-digit'})):'';
+  el.textContent=`${n.app}: ${n.blocked?n.window+' reached':n.window+' '+Math.round(n.used_percent)+'% used'}${when}`;
+  el.classList.toggle('error',!!n.blocked);
+}
 // Apps that do not report a default effort keep their own: offer "App default" and send no override.
 const effortLabel=e=>e?({xhigh:'Extra high',max:'Maximum'})[e]||human(e):'App default';
 const effortChoices=(efforts,fallback)=>[...(efforts.length&&!fallback?['']:[]),...efforts];
@@ -310,7 +369,7 @@ function simpleSetupError(message='') {
   const text=message.toLowerCase();
   if(text.includes('could not confirm workspace access')||/^choose /.test(text))return message;
   if(/payment required|insufficient balance|insufficient credits|out of credits|billing|\b402\b/.test(text))return 'Your AI provider needs credits or a billing update. Check billing or choose another connection, then try again.';
-  if(/quota|rate.limit|credits|usage limit|429/.test(text))return 'Your AI account has reached a usage limit. Try another model or try again later.';
+  if(/quota|rate.limit|credits|usage limit|429|hit your limit|limit reached|limit will reset/.test(text))return 'Your AI account has reached a usage limit. Try another model or try again later.';
   if(/invalid_grant|oauth refresh failed|refresh token expired|refresh token revoked|refresh token has already been used/.test(text))return 'Your AI app needs you to sign in. Open it, sign in, and try again.';
   if(/api.key|authentication|unauthorized|credentials|401/.test(text))return 'Your AI connection needs valid credentials. Check its sign-in or API key, then try again.';
   if(/sign.in|login expired|token expired|token has expired/.test(text))return 'Your AI app needs you to sign in. Open it, sign in, and try again.';
@@ -650,7 +709,7 @@ async function pollJob(job) {
       state.chat=conversation.messages;state.chatMeta=conversation.chat;state.needsCheck=conversation.chat?.status==='working';state.busy=false;state.recovery=conversation.recovery||null;window.auraContinuity?.acceptRecovery(conversation);state.stopping=false;state.activeJob=null;state.polling=false;
       if(result.status==='error'&&!job.welcome)notice(result.reply,true);
       if(result.preference_warning)notice(result.preference_warning,true);if(result.permission_warning)notice(result.permission_warning,true);if(result.stop_note)notice(result.stop_note);
-      replyAlert(result);showMessages();chatControls();invalidateReads();await refresh(true);renderConnection();return;
+      replyAlert(result);showMessages();chatControls();invalidateReads();await refresh(true);renderConnection();loadGlance(true);return;
     }
   } catch(error) {
     if(!current())return;
@@ -2743,6 +2802,7 @@ function renderComposerPermissions(){
 function renderComposerConnection(){
   renderProjectTrigger();
   if(!state.data)return;const c=composerConnection(),native=nativeConnection(c.kind);
+  limitNotice();loadGlance();
   $('#model-settings').textContent=native?appName(c.kind)+' · '+(modelDisplay(c.model)||'Choose model')+(c.effort?' · '+human(c.effort):''):(state.data.connection.connected?appName(c.kind)||state.data.connection.name:'Choose AI');
   window.auraWork?.composer();
   renderComposerPermissions();
@@ -2896,3 +2956,10 @@ async function openContextChat(){
   if(!$('#request').value.trim())prompt(addContextPrompt);
   rememberChatDraft();$('#request').focus();
 }
+
+document.addEventListener('click',event=>{
+  if(event.target.closest('#usage-gauge')){event.preventDefault();toggleGlance();return;}
+  if(event.target.closest('[data-glance-all]')){toggleGlance(false);$('#usage-open')?.click();return;}
+  if(!$('#usage-pop')?.hidden&&!event.target.closest('#usage-pop'))toggleGlance(false);
+});
+document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!$('#usage-pop')?.hidden){toggleGlance(false);$('#usage-gauge')?.focus();}});

@@ -278,6 +278,13 @@ def can_keep_warm(chat, snapshot, connection, kind, now=None):
                 expiry and expiry > (now or time.time()))
 
 
+def window_name(minutes):
+    """Plain names for plan windows: 5-hour limit, Weekly limit, 30-day limit."""
+    if not minutes:return 'Usage'
+    if minutes==10080:return 'Weekly limit'
+    return f'{minutes / 60:g}-hour limit' if minutes < 1440 else f'{minutes / 1440:g}-day limit'
+
+
 def codex_limits(raw):
     buckets = raw.get('rateLimitsByLimitId')
     buckets = list(buckets.values()) if isinstance(buckets, dict) and buckets else [raw.get('rateLimits') or {}]
@@ -290,21 +297,50 @@ def codex_limits(raw):
             if not isinstance(w, dict) or number(w.get('usedPercent')) is None:
                 continue
             minutes = number(w.get('windowDurationMins'))
-            name = (f'{minutes / 60:g}h' if minutes and minutes < 1440 else f'{minutes / 1440:g}d' if minutes else 'Usage')
+            name = window_name(minutes)
             windows.append({'name':name, 'bucket':str(bucket.get('limitName') or bucket.get('limitId') or 'Codex')[:80],
                             'used_percent':min(100, w['usedPercent']), 'resets_at':timestamp(w.get('resetsAt'))})
     return windows
 
 
+CLAUDE_WINDOWS={'five_hour':'5-hour limit','seven_day':'Weekly limit','seven_day_opus':'Weekly limit (Opus)',
+                'seven_day_sonnet':'Weekly limit (Sonnet)','overage':'Extra usage'}
+
+
 def claude_limits(raw):
+    """Every limit window Claude Code reports with a request (5-hour, weekly, per-model)."""
     if not isinstance(raw, dict):
         return []
-    result = {'name':str(raw.get('rateLimitType') or 'Plan usage')[:80], 'status':str(raw.get('status') or '')[:40],
-              'resets_at':timestamp(raw.get('resetsAt'))}
-    value = number(raw.get('utilization'))
-    if value is not None:
-        result['used_percent'] = min(100, value * 100)
-    return [result] if result['status'] or value is not None else []
+    windows = raw.get('unifiedWindows') if isinstance(raw.get('unifiedWindows'), dict) and raw.get('unifiedWindows') else {raw.get('rateLimitType') or 'Plan usage': raw}
+    rows = []
+    for key, value in windows.items():
+        if not isinstance(value, dict):
+            continue
+        result = {'name': CLAUDE_WINDOWS.get(str(key), str(key).replace('_', ' ').capitalize())[:80],
+                  'status': str(value.get('status') or '')[:40], 'resets_at': timestamp(value.get('resetsAt'))}
+        used = number(value.get('utilization'))
+        if used is not None:
+            result['used_percent'] = min(100, used * 100)
+        if result['status'] or used is not None:
+            rows.append(result)
+    return rows
+
+
+def attach_events(preferences, rows):
+    """Apps report limits during requests without naming the account; each app uses one signed-in account at a time."""
+    known = {**preferences.get('usage_account_history', {}), **{r['id']: r for r in rows if r.get('identified')}}
+    result = list(rows)
+    for event in [r for r in rows if not r.get('identified') and r.get('windows') and r.get('via')]:
+        app = event['via'][0]
+        targets = [r for r in known.values() if r.get('provider') == event.get('provider') and r.get('mode') == 'subscription' and app in r.get('via', [])]
+        if len(targets) != 1:
+            continue
+        current = next((r for r in result if r['id'] == targets[0]['id']), targets[0])
+        if (current.get('limits_at') or current.get('checked_at') or 0) > (event.get('checked_at') or 0) and current.get('windows'):
+            result.remove(event);continue
+        target = {**current, 'windows': event['windows'], 'checked_at': event['checked_at'], 'limits_at': event['checked_at']}
+        result = [r for r in result if r is not event and r['id'] != target['id']] + [target]
+    return result
 
 
 class NoRedirect(HTTPRedirectHandler):

@@ -53,6 +53,11 @@ def add_request(execution,ident,title,questions,send,convert,detail='',timeout=N
 
 from workspace_native_requests import codex_request, notice, provider
 
+def workspace_usage_limits(params):
+    from workspace_usage import codex_limits
+    return codex_limits(params)
+
+
 def codex_run(command,cwd,prompt,native_id,model,effort,update,env,execution,child_model=''):
     from workspace_codex import base_command
     from workspace_delegation import Tracker
@@ -203,6 +208,7 @@ def codex_run(command,cwd,prompt,native_id,model,effort,update,env,execution,chi
                     turn_started=True;turn_finished=False;background_checked=False
                     turn_id=((event.get('result') or {}).get('turn') or p.get('turn') or {}).get('id') or turn_id
                 elif method=='serverRequest/resolved':execution.requests.resolve(p.get('requestId'))
+                elif method=='account/rateLimits/updated':update(limit_windows=workspace_usage_limits(p))
                 elif method=='thread/tokenUsage/updated' and p.get('threadId')==thread:
                     token=p.get('tokenUsage') or {};last=token.get('last') or {}
                     fields=[('inputTokens','input_tokens'),('outputTokens','output_tokens'),('cachedInputTokens','cached_input_tokens')]
@@ -215,7 +221,11 @@ def codex_run(command,cwd,prompt,native_id,model,effort,update,env,execution,chi
                                 if isinstance(delta,(float,int)):turn_tokens[dest]=turn_tokens.get(dest,0)+delta
                             elif dest in raw:turn_tokens[dest]=raw[dest]
                         usage=workspace_usage.measure(turn_tokens,'codex',time.time())
-                        usage['last']=workspace_usage.measure(raw,'codex',time.time());update(usage=usage)
+                        usage['last']=workspace_usage.measure(raw,'codex',time.time())
+                        window=token.get('modelContextWindow')
+                        if isinstance(window,(int,float)) and window>0 and raw:
+                            usage['context']={'tokens':sum(raw.get(k,0) for k in ('input_tokens','output_tokens')),'window':window}
+                        update(usage=usage)
                     if total:previous_total=total
                 elif p.get('threadId') and p['threadId']!=thread:
                     delegation.observe('codex',{'type':method,**p})

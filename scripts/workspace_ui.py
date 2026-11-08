@@ -419,7 +419,7 @@ def setup_error(message):
         return message
     if any(word in text for word in ('payment required', 'insufficient balance', 'insufficient credits', 'out of credits', 'billing')) or re.search(r'\b402\b', text):
         return SETUP_ERRORS['billing']
-    if any(word in text for word in ('quota', 'rate limit', 'rate_limit', 'resource_exhausted', 'usage limit', 'too many requests', '429')):
+    if any(word in text for word in ('quota', 'rate limit', 'rate_limit', 'resource_exhausted', 'usage limit', 'too many requests', '429', 'hit your limit', 'limit reached', 'limit will reset')):
         return SETUP_ERRORS['limit']
     if any(word in text for word in ('invalid_grant', 'oauth refresh failed', 'refresh token expired', 'refresh token revoked', 'refresh token has already been used')):
         return SETUP_ERRORS['signin']
@@ -1291,7 +1291,7 @@ class Workspace:
                         if workspace_root()!=root:
                             raise ValueError('The workspace changed. Refresh usage.')
                         # A Claude event arriving during refresh remains the newer observation.
-                        for kind in set(accounts)|{k for k in self.usage_accounts if k!='claude-events'}:
+                        for kind in set(accounts)|{k for k in self.usage_accounts if not k.endswith('-events')}:
                             if kind in accounts:self.usage_accounts[kind]=accounts[kind]
                             else:self.usage_accounts.pop(kind,None)
                         self.usage_refresh['reporting']=reporting
@@ -1340,6 +1340,7 @@ class Workspace:
             result['chats']=views
             prior=json.dumps(self.preferences.get('usage_account_history',{}),sort_keys=True)
             native_rows=[a for group in self.usage_accounts.values() for a in group]
+            native_rows=workspace_usage.attach_events(self.preferences,native_rows)
             result['accounts']=workspace_usage.remember_accounts(self.preferences,workspace_usage.linked_accounts(self.preferences,native_rows))
             result['account_links']=self.preferences.get('usage_account_links',{})
             result['link_sources']=[{'id':r['id'],'name':', '.join(r.get('via',[]))} for r in native_rows if r.get('linkable')]
@@ -1351,6 +1352,14 @@ class Workspace:
             self.usage_alerts(bid,result,offset,month_start)
             return result
 
+    def check_usage_alerts(self, bid):
+        """Opted-in limit and budget alerts after each reply, not only while Usage & spend is open."""
+        settings=self.preferences.get('usage_settings',{}).get(bid,{'alerts':False,'budget_usd':None})
+        if not settings.get('alerts'):return
+        rows=workspace_usage.attach_events(self.preferences,[a for group in self.usage_accounts.values() for a in group])
+        accounts=workspace_usage.remember_accounts(self.preferences,workspace_usage.linked_accounts(self.preferences,rows))
+        self.usage_alerts(bid,{'settings':settings,'accounts':accounts})
+
     def usage_alerts(self, bid, result, offset=0, month_start=None):
         settings=result['settings']
         if not settings.get('alerts'):return
@@ -1360,7 +1369,7 @@ class Workspace:
             if not account.get('available',True) or account.get('identified') is False:continue
             for w in account.get('windows',[]):
                 if (workspace_usage.number(w.get('used_percent')) or 0)>=90 and w.get('resets_at') and w['resets_at']>time.time():
-                    candidates.append((f"quota-{account['id']}-{w.get('bucket','')}-{w['name']}-{w['resets_at']}",account['name'],'Usage is near its limit'))
+                    candidates.append((f"quota-{account['id']}-{w.get('bucket','')}-{w['name']}-{w['resets_at']}",account['name'],f"{w['name']} {round(w['used_percent'])}% used · resets {time.strftime('%a %H:%M',time.localtime(w['resets_at']))}"))
         budget=workspace_usage.number(settings.get('budget_usd'))
         month=workspace_usage.summary(self.preferences,bid,'','month',offset=int(offset),since=month_start)
         spent=month['budget_costs'].get('cost_usd')
@@ -1587,6 +1596,66 @@ class Workspace:
         temporary.write_text(json.dumps(shown), encoding='utf-8')
         temporary.replace(path)
 
+    def glance(self, bid, chat_id=None):
+        """At-a-glance usage for one chat: its app's plan limits plus the chat's context, tokens and cost."""
+        with self.lock:
+            chat=next((c for c in self.preferences['chats'] if c['id']==chat_id and c['business_id']==bid),None) if chat_id else None
+            kind=(chat or {}).get('agent') or self.connection_kind
+            provider=workspace_usage.PROVIDERS.get(kind,kind)
+            rows=workspace_usage.attach_events(self.preferences,[a for group in self.usage_accounts.values() for a in group])
+            history=list(self.preferences.get('usage_account_history',{}).values())
+            accounts=[a for a in [*rows,*history] if a.get('provider')==provider and a.get('mode')=='subscription' and a.get('windows')]
+            account=max(accounts,key=lambda a:a.get('limits_at') or a.get('checked_at') or 0) if accounts else None
+            usage=dict(self.preferences.get('usage_chats',{}).get(chat_id,{})) if chat_id else {}
+            live=next((j for j in self.running_jobs(workspace_root()) if j.get('chat_id')==chat_id and j.get('usage')),None) if chat_id else None
+            if live:
+                shown={'usage_chats':{chat_id:usage}};workspace_usage.remember(shown,chat_id,live['usage']);usage=shown['usage_chats'][chat_id]
+            stale=time.time()-(self.usage_refresh.get('codex_limits_at') or 0)>300
+            if kind=='codex' and stale and not self.usage_refresh.get('codex_limits_running'):
+                self.usage_refresh['codex_limits_running']=True
+                threading.Thread(target=self._refresh_codex_limits,daemon=True).start()
+        now=time.time()
+        windows=[w for w in (account or {}).get('windows',[]) if not (w.get('resets_at') and w['resets_at']<=now)]
+        return {'app':kind,'account':{k:account[k] for k in ('label','plan') if account and account.get(k)} if account else None,
+                'limits':{'windows':windows,'observed_at':account.get('limits_at') or account.get('checked_at')} if account else None,
+                'limits_reported':kind in {'claude','codex','omp','hermes'},
+                'chat':{k:usage[k] for k in ('input_tokens','output_tokens','cached_input_tokens','context','cost_usd','cost_kind','billing','last') if k in usage}}
+
+    def _refresh_codex_limits(self):
+        """Free account read: Codex reports limits without running a model request."""
+        try:
+            choice=self.native_choice('codex')
+            def read_account(call):
+                native=call('account/read',{'refreshToken':False})
+                if not workspace_usage.codex_account(native):return None
+                try:limits=call('account/rateLimits/read',{})
+                except (ValueError,OSError,subprocess.SubprocessError):limits={}
+                return workspace_usage.codex_account(native,limits)
+            account=workspace_codex.rpc(choice['argv'],read_account,workspace_root(),self.agent_environment(choice)) if choice else None
+            with self.lock:
+                if account:self.usage_accounts['codex']=[account];workspace_usage.remember_accounts(self.preferences,[account])
+                self.usage_refresh['codex_limits_at']=time.time()
+        except (ValueError,OSError,subprocess.SubprocessError,KeyError):
+            with self.lock:self.usage_refresh['codex_limits_at']=time.time()
+        finally:
+            with self.lock:self.usage_refresh['codex_limits_running']=False
+
+    def limit_notice(self):
+        """The connected app's tightest plan limit, only when it is nearly used up or reached."""
+        kind=self.connection_kind;provider=workspace_usage.PROVIDERS.get(kind,kind);now=time.time();best=None
+        rows=workspace_usage.attach_events(self.preferences,[a for group in self.usage_accounts.values() for a in group])
+        for account in [*rows,*self.preferences.get('usage_account_history',{}).values()]:
+            if account.get('provider')!=provider or account.get('mode')!='subscription':continue
+            for window in account.get('windows') or []:
+                if window.get('resets_at') and window['resets_at']<=now:continue
+                used=window.get('used_percent');blocked=window.get('status')=='rejected'
+                if not blocked and (used is None or used<90):continue
+                score=101 if blocked else used
+                if not best or score>best[0]:
+                    best=(score,{'app':(self.agent or {}).get('name') or kind,'window':window.get('name','Plan limit'),'used_percent':used,
+                                 'blocked':blocked,'resets_at':window.get('resets_at'),'observed_at':account.get('limits_at') or account.get('checked_at')})
+        return best[1] if best else None
+
     def connection(self, bid=None):
         choices = ([{'id': 'configured', 'name': self.configured_agent['name'], 'available': True,**({'native':True} if self.native_kind('configured') in NATIVE_AGENTS else {})}] if self.configured_agent else [])
         choices += [{'id': a['id'], 'name': a['name'], 'available': bool(a['argv']),
@@ -1606,6 +1675,7 @@ class Workspace:
                 'mode': 'agent' if self.agent else ('copy' if self.handoff else 'unconnected'),
                 'model': self.preferences.get('connection', {}).get('model') or (self.agent or {}).get('model') or '',
                 'model_name': self.preferences.get('connection', {}).get('model_name', ''),
+                'limit_notice': self.limit_notice(),
                 'codex_available': codex_command() is not None,
                 'scope': 'A saved native conversation.' if self.native_kind(self.connection_kind) in NATIVE_AGENTS else 'Independent command requests; native chat restoration is not available.',
                 'authentication': 'Owned by the installed agent. Availability is not proof of sign-in.'}

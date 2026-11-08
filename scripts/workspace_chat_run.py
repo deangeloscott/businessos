@@ -108,10 +108,12 @@ class ChatRun:
                             'title':request['title'],'kind':'input','agent':app.agent['name'],'status':'needs_input',
                             'at':time.time(),'read':False,'delivered':False})
                     elif item and request['status']!='pending':item.update(read=True,delivered=True)
-            if values.get('quota_windows'):
-                row=workspace_usage.account('anthropic',via=app.agent['name'])
-                row.update(windows=values['quota_windows'],checked_at=time.time())
-                app.usage_accounts['claude-events']=[row]
+            # Plan limits reported during a request (Claude events, Codex notifications).
+            if values.get('quota_windows') or values.get('limit_windows'):
+                kind=self.kind;provider={'claude':'anthropic','codex':'openai'}.get(kind,kind)
+                row=workspace_usage.account(provider,via=app.agent['name'])
+                row.update(windows=values.pop('limit_windows',None) or values['quota_windows'],checked_at=time.time())
+                app.usage_accounts[kind+'-events']=[row]
             if chat and values.get('native_id'):
                 chat['native_id'] = values['native_id']
                 try:
@@ -227,6 +229,8 @@ class ChatRun:
                         and not any(c.get('status') in {'working','pending'} for c in job['subagents']):
                     job['progress']='Done'
                 workspace_usage.record(app.preferences,job,chat,app.agent['name'])
+                try:app.check_usage_alerts(bid)
+                except (OSError,ValueError):pass
                 app.record_notification(job, chat)
                 if chat:
                     if job['status']=='complete':

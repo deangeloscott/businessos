@@ -114,6 +114,8 @@ def handler_for(app):
                 parsed = urlsplit(self.path)
                 query = {key: val[0] for key, val in parse_qs(parsed.query).items()}
                 route = parsed.path
+                if route == '/api/glance':
+                    self.send(200,app.glance(selected(query.get('business')),query.get('chat_id') or None));return
                 if route == '/':
                     page = (app.static / 'index.html').read_text(encoding='utf-8').replace('__AURA_TOKEN__', app.token)
                     self.send(200, page.encode(), 'text/html; charset=utf-8',{'Set-Cookie':f'aura_media_{self.server.server_port}={app.media_token}; HttpOnly; SameSite=Strict; Path=/api/media'})
