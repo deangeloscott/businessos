@@ -61,6 +61,15 @@ window.auraContinuity=(()=>{
     finally{if(ticket===recoveryTicket){recoveryPending='';renderRecovery();}}
   }
 
+  // Show what will actually run or be touched, not only the app's own summary of it.
+  function operation(detail){
+    try{
+      const input=(JSON.parse(detail)||{}).input||{};
+      const exact=input.command||input.file_path||input.path||input.url||input.pattern;
+      if(typeof exact==='string'&&exact)return (input.description&&input.command?input.description+'\n\n':'')+exact;
+    }catch(error){}
+    return detail;
+  }
   function renderRequests(){
     const host=$('#native-requests');if(!host)return;
     const job=state.liveJob,chat=state.chatMeta?.id||'';
@@ -75,7 +84,7 @@ window.auraContinuity=(()=>{
     requestScope=key;requestKey=signature;host.hidden=!rows.length&&!notices.length&&!editor;
     host.innerHTML=notices.map(n=>`<p class="native-notice">${esc(n.text)}${/^https?:\/\//i.test(n.url||'')?` <a href="${esc(n.url)}" target="_blank" rel="noopener noreferrer">Open page ↗</a>`:''}</p>`).join('')+
       (editor?`<div class="native-request"><h3>Draft from your AI</h3><pre>${esc(editor.text)}</pre><button type="button" class="secondary" data-native-draft>Use draft</button></div>`:'')+
-      rows.map(r=>`<article class="native-request ${esc(r.status)}"><div class="section-head"><h3>${esc(r.title)}</h3><span class="row-meta">${r.status==='pending'?'Needs your input':r.status==='answered'?'Answer sent':'Request ended'}</span></div>${r.detail?`<details><summary>Requested operation</summary><pre>${esc(r.detail)}</pre></details>`:''}${r.status==='pending'?`<form data-native-request="${esc(r.id)}">${r.questions.map(requestQuestion).join('')}<div class="inline-actions">${requestActions(r)}<span class="small-note" data-request-status role="status"></span></div></form>`:''}</article>`).join('');
+      rows.map(r=>`<article class="native-request ${esc(r.status)}"><div class="section-head"><h3>${esc(r.title)}</h3><span class="row-meta">${r.status==='pending'?'Needs your input':r.status==='answered'?'Answer sent':'Request ended'}</span></div>${r.detail?`<details ${r.status==='pending'?'open':''}><summary>Requested operation</summary><pre>${esc(operation(r.detail))}</pre></details>`:''}${r.status==='pending'?`<form data-native-request="${esc(r.id)}">${r.questions.map(requestQuestion).join('')}<div class="inline-actions">${requestActions(r)}<span class="small-note" data-request-status role="status"></span></div></form>`:''}</article>`).join('');
     const draftButton=host.querySelector('[data-native-draft]');if(draftButton)draftButton.onclick=()=>{if(key!==requestScope)return;const input=$('#request');input.value=[input.value,editor.text].filter(Boolean).join('\n\n');rememberChatDraft();input.focus();draftButton.disabled=true;};
     host.querySelectorAll('form[data-native-request]').forEach(form=>{
       const saved=drafts.get(form.dataset.nativeRequest)||{};

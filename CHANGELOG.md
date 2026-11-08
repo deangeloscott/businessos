@@ -6,6 +6,11 @@
 - `setup.py` accepts the `--allow-state-switch` flag its own workspace-switch message recommends.
 - Setup asks what the business does (optional) and saves it as the business description; Business & memory can edit it later.
 - Add any Agent Client Protocol agent from setup (**Add an ACP agent**: name plus launch command). It is saved on this computer outside the product folder, so upgrades keep it, and can be removed from the same place.
+- Claude Code can read AURA's own guidance and helpers without asking at the start of every chat (`--add-dir` for the product folder); commands and edits still follow its permission mode.
+- Apps that do not report a default effort (such as Claude Code) offer **App default** and send no override, instead of silently choosing Low.
+- Approval cards show the exact command, file or address an app wants to use, open while waiting; AURA's own setup messages are no longer replaced by a generic error. Model names stay readable after a reload.
+- `CONTEXT.md` advises a file for non-English text: Windows PowerShell 5.1 turns such characters into `?` when piping.
+- On Windows, npm-installed AI apps that ship a native program (current Claude Code) launch it directly instead of through a PowerShell script that execution policy can block.
 - Codex connections default to the effort configured in Codex instead of the model's built-in default. Model names display as the app reports them.
 - While a request runs, its status appears once; command activity is labelled with the command it ran and its exit code when it fails.
 - `enter.py` prints a compact result by default (about a third of the previous size) and states its boundary once; `--verbose` keeps the full form. Script hints name the helper rather than guessing a `python3` interpreter, and guides use `python`.

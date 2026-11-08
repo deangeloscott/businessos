@@ -158,6 +158,20 @@ def main():
                     assert 'ephemeral-secret' not in json.dumps(updates) and 'ephemeral-secret' not in json.dumps(live.requests.snapshot())
             finally:
                 if worker.is_alive():live.stop();worker.join(8)
+    if os.name=='nt':
+        # npm shims for packages that ship a native program (current Claude Code) launch it
+        # directly, not through a PowerShell script that execution policy may block.
+        from unittest.mock import patch
+        import workspace_ui
+        with tempfile.TemporaryDirectory() as td:
+            bin_dir=Path(td);exe=bin_dir/'node_modules/@anthropic-ai/claude-code/bin/claude.exe'
+            exe.parent.mkdir(parents=True);exe.write_bytes(b'')
+            (bin_dir/'claude.cmd').write_text('@ECHO off\r\n"%dp0%\\node_modules\\@anthropic-ai\\claude-code\\bin\\claude.exe"   %*\r\n')
+            (bin_dir/'claude.ps1').write_text('# npm PowerShell shim\r\n')
+            found=lambda name:str(bin_dir/'claude.cmd') if name=='claude' else None
+            with patch('workspace_ui.shutil.which',side_effect=found):
+                claude=next(a for a in workspace_ui.installed_agents() if a['id']=='claude')
+            assert claude['argv'][0]==str(exe),claude
     print('Native interop passed: child approvals, background lifetime, native rules/forms, secret input, extension notices and images; no model calls.')
 
 if __name__=='__main__':main()

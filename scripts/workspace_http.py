@@ -701,7 +701,7 @@ def handler_for(app):
                         app.save_preferences()
                         self.send(200,{'status':'removed' if agent is None else 'saved','name':(agent or {}).get('name','')})
                     elif route == '/api/connect':
-                        model, effort, attachment = '', '', None
+                        model, effort, attachment, chosen = '', '', None, None
                         if app.native_kind(data.get('kind')) in NATIVE_AGENTS:
                             options = app.agent_options(data['kind'])
                             model = data.get('model')
@@ -709,7 +709,9 @@ def handler_for(app):
                             effort = data.get('effort') or ''
                             if chosen:
                                 app.agent_efforts(data['kind'], model)
-                            if not chosen or (chosen['efforts'] and effort not in chosen['efforts']) or (not chosen['efforts'] and effort):
+                            # An empty effort keeps the app's own default; Codex needs an explicit level.
+                            app_default = effort == '' and app.native_kind(data['kind']) != 'codex'
+                            if not chosen or (chosen['efforts'] and effort not in chosen['efforts'] and not app_default) or (not chosen['efforts'] and effort):
                                 raise ValueError('Choose an available model and its supported effort level.')
                         if data.get('kind') == 'configured' and app.configured_agent:
                             app.agent = app.configured_agent
@@ -733,7 +735,8 @@ def handler_for(app):
                             attachment = workspace_guidance.attach(app.connection_kind, PRODUCT_ROOT, workspace_root())
                         app.preferences['connection'] = {'kind': 'handoff' if app.handoff else app.connection_kind,
                                                          'workspace_write': data.get('workspace_write', True) is True,
-                                                         'model': model, 'effort': effort, 'attachment': attachment}
+                                                         'model': model, 'model_name': (chosen or {}).get('name', '') if model else '',
+                                                         'effort': effort, 'attachment': attachment}
                         if app.connection_kind in NATIVE_AGENTS | {'configured'} and not app.handoff:
                             app.preferences['connected_apps'][app.connection_kind] = dict(app.preferences['connection'])
                         app.save_preferences()

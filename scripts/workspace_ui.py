@@ -373,8 +373,13 @@ def installed_agents():
             except OSError:
                 shim = ''
             node = shutil.which('node')
+            # npm shims for packages that ship a native program call it directly.
+            native = re.search(r'"%dp0%/(node_modules/[^"%]+\.exe)"', shim, re.IGNORECASE)
+            native = path.parent / native[1] if native else None
             if node and target.is_file() and entry in shim:
                 command = [node, str(target), *options]
+            elif native and native.is_file() and native.resolve().is_relative_to(path.parent.resolve()):
+                command = [str(native), *options]
             else:
                 # Static Python forwarding wrappers can be preserved without a
                 # command shell. Unknown batch programs still need configuration.
@@ -1600,6 +1605,7 @@ class Workspace:
                 'attachment': self.preferences.get('connection', {}).get('attachment'),
                 'mode': 'agent' if self.agent else ('copy' if self.handoff else 'unconnected'),
                 'model': self.preferences.get('connection', {}).get('model') or (self.agent or {}).get('model') or '',
+                'model_name': self.preferences.get('connection', {}).get('model_name', ''),
                 'codex_available': codex_command() is not None,
                 'scope': 'A saved native conversation.' if self.native_kind(self.connection_kind) in NATIVE_AGENTS else 'Independent command requests; native chat restoration is not available.',
                 'authentication': 'Owned by the installed agent. Availability is not proof of sign-in.'}

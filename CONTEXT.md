@@ -48,6 +48,8 @@ If no, do not persist it merely because a schema/helper exists.
 {"provenance":{"method":"ad_hoc"},"objects":[{"object_ref":"biz_<business-id>","content":{"description":"What the organization does, in the user's words."}}]}
 ```
 
+When the text has non-English characters, write the JSON to a file with your file tool and pass the file: Windows PowerShell 5.1 replaces them with `?` when piping text to a program.
+
 Use `remove_fields` when an obsolete top-level semantic field should explicitly disappear. Use `scripts/forget.py` when an entire unreferenced canonical object no longer deserves durable memory.
 
 Useful real deliverables should remain in an appropriate durable file/repository/system and be remembered as an `Asset` with the identity/reference/provenance/status future work actually needs. Prefer `attachments/<business-id>/work/` in the selected workspace unless the user chooses another location. Use relative `location_reference` for workspace files; preserve explicit external references and attribution. Do not ingest every temporary file.

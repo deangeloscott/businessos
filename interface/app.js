@@ -145,7 +145,11 @@ const providerLabel=id=>({openai:'OpenAI',anthropic:'Anthropic',google:'Google',
 const modelProvider=model=>model.access==='openrouter'?'openrouter':model.access==='local'?'local':model.access==='google-app'?'google':['openai','anthropic','google','xai'].includes(model.provider)?model.provider:'other';
 const providerKey=model=>'connection:'+modelProvider(model);
 const catalogModels=()=>state.catalog?.models||[];
-const modelDisplay=id=>id&&(catalogModels().find(m=>m.routes?.some(r=>r.model===id))?.name||state.chatModelOptions?.models?.find(m=>m.id===id)?.name)||id;
+// Apps that do not report a default effort keep their own: offer "App default" and send no override.
+const effortLabel=e=>e?({xhigh:'Extra high',max:'Maximum'})[e]||human(e):'App default';
+const effortChoices=(efforts,fallback)=>[...(efforts.length&&!fallback?['']:[]),...efforts];
+const effortPick=(efforts,fallback,preferred)=>effortChoices(efforts,fallback).includes(preferred)?preferred:fallback||'';
+const modelDisplay=id=>id&&(catalogModels().find(m=>m.routes?.some(r=>r.model===id))?.name||state.chatModelOptions?.models?.find(m=>m.id===id)?.name||(state.data?.connection?.model===id?state.data.connection.model_name:''))||id;
 const chosenModel=()=>catalogModels().find(m=>m.id===$('#model-choice').value);
 const selectedRoute=()=>chosenModel()?.routes.find(r=>r.agent===$('#agent-choice').value);
 const modelSource=model=>!model?'':model.access==='signin'?providerLabel(model.provider)+' sign-in':model.access==='api'?providerLabel(model.provider)+' API':model.access==='provider'?providerLabel(model.provider)+' connection':({openrouter:'OpenRouter',local:'Local model','google-app':'Google Antigravity'})[model.access]||'Configured in '+(model.routes.find(r=>r.agent===$('#agent-choice').value)?.app||'your AI app');
@@ -239,8 +243,8 @@ async function effortOptions(){
     if(route.discover_efforts&&!route.efforts_loaded){Object.assign(route,await api('/api/agent-efforts?kind='+encodeURIComponent(route.agent)+'&model='+encodeURIComponent(route.model)));route.efforts_loaded=true;}
     if(selectedRoute()?.key!==route.key||$('#model-choice').value!==id)return;
     const saved=state.data.connection,preferred=modelPicker().efforts?.[route.key]??(saved.selected===route.agent&&saved.model===route.model?saved.effort:'');
-    $('#effort-choice').innerHTML=route.efforts.map(e=>`<option value="${esc(e)}">${esc(({xhigh:'Extra high',max:'Maximum'})[e]||human(e))}</option>`).join('')||'<option value="">App default</option>';
-    $('#effort-choice').value=route.efforts.includes(preferred)?preferred:route.default_effort||route.efforts[0]||'';
+    $('#effort-choice').innerHTML=effortChoices(route.efforts,route.default_effort).map(e=>`<option value="${esc(e)}">${esc(effortLabel(e))}</option>`).join('')||'<option value="">App default</option>';
+    $('#effort-choice').value=effortPick(route.efforts,route.default_effort,preferred);
     $('#model-change-note').textContent=route.agent!==saved.selected&&state.chat.length?`Continuing with ${route.app} starts a new chat. Your current chat is in ${saved.name}.`:'';
     $('#model-change-note').hidden=!$('#model-change-note').textContent;
   } finally {if(selectedRoute()?.key===route.key&&$('#model-choice').value===id){state.effortsLoading=false;$('#effort-choice').disabled=false;connectionChoice();}}
@@ -304,7 +308,7 @@ function finishSetup() {
 }
 function simpleSetupError(message='') {
   const text=message.toLowerCase();
-  if(text.includes('could not confirm workspace access'))return message;
+  if(text.includes('could not confirm workspace access')||/^choose /.test(text))return message;
   if(/payment required|insufficient balance|insufficient credits|out of credits|billing|\b402\b/.test(text))return 'Your AI provider needs credits or a billing update. Check billing or choose another connection, then try again.';
   if(/quota|rate.limit|credits|usage limit|429/.test(text))return 'Your AI account has reached a usage limit. Try another model or try again later.';
   if(/invalid_grant|oauth refresh failed|refresh token expired|refresh token revoked|refresh token has already been used/.test(text))return 'Your AI app needs you to sign in. Open it, sign in, and try again.';
@@ -1056,9 +1060,9 @@ async function loadScheduleEfforts() {
     if(chosen.discover_efforts&&!chosen.efforts_loaded){Object.assign(chosen,await api('/api/agent-efforts?kind='+encodeURIComponent(app)+'&model='+encodeURIComponent(model)));chosen.efforts_loaded=true;}
     if(!select.isConnected||app!==$('#schedule-app').value||model!==$('#schedule-model').value)return;
     const efforts=chosen.efforts||[];
-    select.innerHTML=efforts.map(e=>`<option value="${esc(e)}">${esc(({xhigh:'Extra high',max:'Maximum'})[e]||human(e))}</option>`).join('')||'<option value="">App default</option>';
+    select.innerHTML=effortChoices(efforts,chosen.default_effort).map(e=>`<option value="${esc(e)}">${esc(effortLabel(e))}</option>`).join('')||'<option value="">App default</option>';
     const preferred=draft.effort||(app===state.data.connection.selected&&model===state.data.connection.model?state.data.connection.effort:'');
-    select.value=efforts.includes(preferred)?preferred:chosen.default_effort||efforts[0]||'';draft.effort=select.value;
+    select.value=effortPick(efforts,chosen.default_effort,preferred);draft.effort=select.value;
     $('#schedule-effort-label').hidden=!efforts.length;select.disabled=false;
     $('#schedule-create-status').textContent='';$('#create-schedule').textContent='Create with '+(state.data.connection.choices.find(c=>c.id===app)?.name||human(app))+' →';renderScheduleOperation();
   } catch(error) {if(select.isConnected&&app===$('#schedule-app').value&&model===$('#schedule-model').value){$('#schedule-create-status').textContent=simpleSetupError(humanError(error));$('#schedule-retry-models').hidden=false;}}
@@ -2830,8 +2834,8 @@ async function loadChatModelEfforts(){
   if(draft.target?.modelOnly){$('#chat-model-effort').innerHTML='';draft.effort='';$('#save-chat-model').disabled=!model;return;}
   try{const known=state.chatModelOptions.models.find(m=>m.id===model);const r=known&&!known.discover_efforts?known:await api('/api/agent-efforts?kind='+encodeURIComponent(draft.kind)+'&model='+encodeURIComponent(model)+(draft.kind==='hermes'&&draft.native_profile?'&profile='+encodeURIComponent(draft.native_profile):''));if(request!==state.chatEffortRequest||draft!==state.chatModelDraft||kind!==draft.kind||model!==draft.model||draft.scope!==chatScope()||!$('#chat-model-dialog').open||!$('#chat-model-effort'))return;
     if(known)Object.assign(known,{efforts:r.efforts||[],default_effort:r.default_effort||'',discover_efforts:false});
-    const efforts=r.efforts||[];draft.effort=efforts.includes(draft.effort)?draft.effort:r.default_effort||efforts[0]||'';
-    $('#chat-model-effort').innerHTML=efforts.length?`<label>Effort<select id="chat-effort-choice">${efforts.map(e=>`<option ${e===draft.effort?'selected':''} value="${esc(e)}">${esc(human(e))}</option>`).join('')}</select></label>`:'';$('#save-chat-model').disabled=!model;
+    const efforts=r.efforts||[];draft.effort=effortPick(efforts,r.default_effort,draft.effort);
+    $('#chat-model-effort').innerHTML=efforts.length?`<label>Effort<select id="chat-effort-choice">${effortChoices(efforts,r.default_effort).map(e=>`<option ${e===draft.effort?'selected':''} value="${esc(e)}">${esc(effortLabel(e))}</option>`).join('')}</select></label>`:'';$('#save-chat-model').disabled=!model;
   }catch(e){if(request===state.chatEffortRequest&&draft===state.chatModelDraft&&kind===draft.kind&&model===draft.model&&draft.scope===chatScope())notice(humanError(e),true);}
 }
 async function saveChatModel(){

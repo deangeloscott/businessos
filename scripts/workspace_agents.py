@@ -440,6 +440,11 @@ def _run(command, kind, cwd, env, prompt, native_id, model, effort, update, exec
         if getattr(execution,'native_agent',''):argv+=['--agent',execution.native_agent]
         if interactive:argv += ['--input-format','stream-json','--permission-prompt-tool','stdio']
         if native_id:argv += ['--resume',native_id]
+        # AURA's guidance and helpers live in the product folder. Claude Code otherwise asks to read
+        # them at the start of every chat; its own option makes that folder reachable. Commands and
+        # edits still follow Claude Code's permission mode.
+        from _common import PRODUCT_ROOT
+        if not Path(cwd).resolve().is_relative_to(PRODUCT_ROOT.resolve()):argv += ['--add-dir',str(PRODUCT_ROOT)]
         argv=execution_command(argv,kind,model,effort)
     elif kind=='hermes':
         argv += ['chat','--query-file','-','--format','stream-json','--no-restore-cwd','--in',str(cwd)]
