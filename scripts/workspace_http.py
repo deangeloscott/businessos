@@ -4,6 +4,7 @@ Workspace behavior lives in workspace_ui.Workspace; this module only routes requ
 `installed_agents` is read through the module so tests and callers can substitute it.
 """
 import workspace_ui as ui
+import workspace_resume
 from workspace_ui import (BaseHTTPRequestHandler, MAX_BODY, MEDIA, NATIVE_AGENTS, PRODUCT_ROOT, Path,
     SETUP_ERRORS, STATIC, business_directory, copy, files, json, local_file, mimetypes, os, parse_qs,
     private_path, quote, re, records, remember, secrets, selected, setup, setup_error, subprocess, sys,
@@ -114,6 +115,15 @@ def handler_for(app):
                 parsed = urlsplit(self.path)
                 query = {key: val[0] for key, val in parse_qs(parsed.query).items()}
                 route = parsed.path
+                if route == '/api/task-limit-options':
+                    bid=selected(query.get('business'))
+                    folders=[ui.workspace_root().resolve(),*(ui.Path(r['path']) for r in app.recent_workspaces())]
+                    task=next((t for t in ui.workspace_schedules.inventory(workspaces=folders)['items'] if t['id']==query.get('task_id')),None)
+                    if not task:raise ValueError('This task is no longer listed. Refresh scheduled tasks.')
+                    self.send(200,{**app.limit_options(bid,None,task.get('owner')),'task':{k:task.get(k) for k in ('id','name','app','owner','last_error')}});return
+                if route == '/api/limit-options':
+                    bid=selected(query.get('business'));chat_id=query.get('chat_id') or None
+                    self.send(200,{**app.limit_options(bid,chat_id),'pending':workspace_resume.for_chat(chat_id) if chat_id else None});return
                 if route == '/api/glance':
                     self.send(200,app.glance(selected(query.get('business')),query.get('chat_id') or None));return
                 if route == '/':
@@ -479,6 +489,21 @@ def handler_for(app):
                     environment=owner.support_environment(data.get('include_names') is True) if data.get('include_environment') is True else None
                     self.send(200,workspace_support.prepare(data,environment,owner.settings_file.parent/'support-drafts',persist=route=='/api/support/test'))
                     return
+                if route == '/api/accounts':
+                    self.send(200,app.accounts_action(selected(data.get('business')),data));return
+                if route == '/api/task-recover':
+                    self.send(200,app.task_recover(selected(data.get('business')),data.get('task_id'),data.get('action'),data.get('target','')));return
+                if route == '/api/limit-action':
+                    bid=selected(data.get('business'));chat_id=data.get('chat_id');action=data.get('action')
+                    if action=='account':result=app.accounts_action(bid,{'action':'use','chat_id':chat_id,'account_id':data.get('account_id','')})
+                    elif action=='app':result=app.continue_elsewhere(bid,chat_id,str(data.get('text') or 'Continue where you left off.'),data.get('app'))
+                    elif action=='resume':
+                        options=app.limit_options(bid,chat_id)
+                        if not options.get('resets_at'):raise ValueError('This app has not reported when its limit resets.')
+                        result=app.resume_add(bid,chat_id,options['resets_at'],str(data.get('text') or 'Continue where you left off.'))
+                    elif action=='cancel_resume':workspace_resume.cancel(chat_id);result={'cancelled':True}
+                    else:raise ValueError('Choose how to continue.')
+                    self.send(200,result);return
                 if route == '/api/locations/browse':
                     if data.get('kind') not in {'folder', 'file'}:
                         raise ValueError('Choose a file or folder.')

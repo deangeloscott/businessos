@@ -38,6 +38,20 @@ def codex_rows(home, table, native_id=None):
         raise ValueError('Could not read Codex’s local task database. Check Codex or try again.') from None
 
 
+def codex_latest_runs(home):
+    """Latest run per Codex automation: its status and summary, read-only."""
+    path = Path(home) / 'sqlite/codex.db'
+    if not path.is_file():
+        return {}
+    try:
+        with closing(sqlite3.connect(path.resolve().as_uri() + '?mode=ro', uri=True, timeout=.5)) as db:
+            rows = db.execute('SELECT automation_id,status,coalesce(inbox_summary,archived_assistant_message,"") FROM automation_runs '
+                              'WHERE created_at=(SELECT max(created_at) FROM automation_runs r WHERE r.automation_id=automation_runs.automation_id)')
+            return {str(a): {'status': str(st or '').lower(), 'summary': str(text or '')[:500]} for a, st, text in rows}
+    except (sqlite3.Error, OSError):
+        return {}
+
+
 def inventory(codex_home=None, hermes_home=None, workspaces=(), antigravity_home=None):
     defaults = roots()
     codex_home, hermes_home = Path(codex_home or defaults[0]), Path(hermes_home or defaults[1])
@@ -49,12 +63,14 @@ def inventory(codex_home=None, hermes_home=None, workspaces=(), antigravity_home
         native_tasks=codex_rows(codex_home,'automations')
     except ValueError as exc:
         notes.append(str(exc));native_tasks=[]
+    latest=codex_latest_runs(codex_home)
     for data in native_tasks:
         try:
             append('codex', 'default', data['id'], app='Codex', name=data['name'],
                    description=data['prompt'], schedule=data['rrule'], model=data['model'] or '',
                    effort=data['reasoning_effort'] or '', status=data['status'].lower(),
                    next_run=data['next_run_at'] or '', last_run=data['last_run_at'] or '',
+                   last_status=(latest.get(data['id']) or {}).get('status',''),last_error=(latest.get(data['id']) or {}).get('summary',''),
                    workspace=json.loads(data['cwds']), editable=False, runtime='Requires the Codex desktop app')
         except (ValueError, TypeError, AttributeError):
             notes.append('Codex: a local task could not be read. Check it in Codex.')
@@ -97,6 +113,7 @@ def inventory(codex_home=None, hermes_home=None, workspaces=(), antigravity_home
                        model=job.get('model') or '', effort=job.get('reasoning_effort') or '',
                        provider=job.get('model_provider') or '',
                        last_run=job.get('last_run_at') or '', last_status=job.get('last_status') or '',
+                       last_error=str(job.get('last_error') or '')[:500],
                        has_result=bool(result_path(home,job['id'])),
                        status=job.get('state') or ('active' if job.get('enabled', True) else 'paused'),
                        next_run=job.get('next_run_at') or '', workspace=job.get('workdir') or '', editable=True,

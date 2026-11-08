@@ -145,6 +145,113 @@ const providerLabel=id=>({openai:'OpenAI',anthropic:'Anthropic',google:'Google',
 const modelProvider=model=>model.access==='openrouter'?'openrouter':model.access==='local'?'local':model.access==='google-app'?'google':['openai','anthropic','google','xai'].includes(model.provider)?model.provider:'other';
 const providerKey=model=>'connection:'+modelProvider(model);
 const catalogModels=()=>state.catalog?.models||[];
+// Plan limits: choose how to continue before a request is cut off, not after.
+// Ask (default) shows the choices; Automatic uses another account or the backup app; Off sends as usual.
+const limitState={key:'',data:null};
+const limitAppName=kind=>appName(kind)||kind;
+async function loadLimitOptions(){
+  const chat=state.chatMeta?.id||'';if(!state.business)return;
+  try{limitState.data=await api('/api/limit-options?business='+encodeURIComponent(state.business)+(chat?'&chat_id='+encodeURIComponent(chat):''));limitState.key=state.business+'|'+chat;}
+  catch(error){limitState.data=null;}
+  paintLimitChoices();
+}
+function limitSummary(o){
+  const w=o.top;if(!w)return limitAppName(o.app)+' limit reached';
+  return `${limitAppName(o.app)}: ${w.name} ${o.blocked?'reached':Math.round(w.used_percent)+'% used'}${w.resets_at?' · resets '+glanceTime(w.resets_at):''}`;
+}
+function paintLimitChoices(open=false){
+  const host=$('#limit-choices'),o=limitState.data;if(!host)return;
+  const lastLimited=state.chat?.at(-1)?.role==='assistant'&&/usage limit/i.test(state.chat.at(-1).text||'')&&state.chatMeta?.status==='error';
+  if(o?.pending){
+    host.hidden=false;host.innerHTML=`<span>Will continue this chat at ${esc(glanceTime(o.pending.at))}.</span><button type="button" class="text-button" data-limit-action="cancel_resume">Cancel</button>`;return;
+  }
+  const show=o&&(o.near||o.blocked||lastLimited)&&(open||o.blocked||lastLimited);
+  host.hidden=!show;if(!show)return;
+  const buttons=[...o.accounts.slice(0,2).map(a=>`<button type="button" class="secondary" data-limit-action="account" data-account="${esc(a.id)}">Send with ${esc(a.nickname)}</button>`),
+    o.backup_app?`<button type="button" class="secondary" data-limit-action="app" data-app="${esc(o.backup_app)}">Continue in ${esc(limitAppName(o.backup_app))}</button>`:'',
+    o.resets_at?`<button type="button" class="secondary" data-limit-action="resume">Continue at ${esc(glanceTime(o.resets_at))}</button>`:'',
+    o.blocked?'':`<button type="button" class="text-button" data-limit-action="anyway">Send anyway</button>`].filter(Boolean);
+  const cost=o.accounts.length?'<span class="small-note">Another account’s first message costs more (its cache starts fresh).</span>':'';
+  host.innerHTML=`<span>${esc(limitSummary(o))}</span><div class="inline-actions">${buttons.join('')||'<span class="small-note">Add another account or a backup app in Accounts &amp; backups.</span>'}</div>${cost}`;
+}
+// Returns true when the limit flow handled this send.
+async function limitGate(text){
+  const o=limitState.data;if(!o||!(o.near||o.blocked)||limitState.bypass){limitState.bypass=false;return false;}
+  if(o.mode==='off')return false;
+  if(o.mode==='auto'){
+    const account=o.accounts[0];
+    if(account){await api('/api/limit-action',{business:state.business,chat_id:state.chatMeta?.id||'',action:'account',account_id:account.id});notice('Sending with '+account.nickname+'.');await loadLimitOptions();return false;}
+    if(o.backup_app){await limitContinue('app',text,{app:o.backup_app});return true;}
+    return false;
+  }
+  $('#request').value=text;paintLimitChoices(true);$('#limit-choices').scrollIntoView({block:'nearest'});return true;
+}
+async function limitContinue(action,text,extra={}){
+  const chat=state.chatMeta?.id||'';
+  const result=await api('/api/limit-action',{business:state.business,chat_id:chat,action,text,...extra});
+  if(action==='app'){$('#request').value='';notice('Continuing in '+limitAppName(extra.app)+' with this chat’s latest result.');if(result.chat_id&&typeof openShellChat==='function')await openShellChat(result.chat_id);}
+  if(action==='resume'){$('#request').value='';notice('This chat will continue when the limit resets.'+(result.note?' '+result.note:''));}
+  await loadLimitOptions();
+}
+document.addEventListener('click',event=>{
+  const b=event.target.closest('[data-limit-action]');if(!b)return;event.preventDefault();
+  attempt(async()=>{
+    const action=b.dataset.limitAction,text=$('#request').value.trim()||'Continue where you left off.';
+    if(action==='anyway'){limitState.bypass=true;$('#limit-choices').hidden=true;$('#send').click();return;}
+    if(action==='account'){await api('/api/limit-action',{business:state.business,chat_id:state.chatMeta?.id||'',action:'account',account_id:b.dataset.account});limitState.bypass=true;$('#limit-choices').hidden=true;if(!$('#request').value.trim())$('#request').value=text;$('#send').click();return;}
+    if(action==='app')return limitContinue('app',text,{app:b.dataset.app});
+    if(action==='resume')return limitContinue('resume',text);
+    if(action==='cancel_resume')return limitContinue('cancel_resume','');
+  });
+});
+
+// A scheduled task stopped at its app's plan limit: run its instructions another way.
+async function showTaskLimit(taskId){
+  const o=await api('/api/task-limit-options?business='+encodeURIComponent(state.business)+'&task_id='+encodeURIComponent(taskId));
+  const go=(action,target='')=>`data-task-recover="${esc(action)}" data-target="${esc(target)}"`;
+  const buttons=[...o.accounts.slice(0,2).map(a=>`<button type="button" class="secondary" ${go('account',a.id)}>Run now with ${esc(a.nickname)}</button>`),
+    o.backup_app?`<button type="button" class="secondary" ${go('app',o.backup_app)}>Run now in ${esc(limitAppName(o.backup_app))}</button>`:'',
+    o.resets_at?`<button type="button" class="secondary" ${go('reset')}>Run at ${esc(glanceTime(o.resets_at))}</button>`:''].filter(Boolean);
+  details(o.task.name,`<p>This scheduled task stopped at ${esc(o.task.app)}’s plan limit. The task itself stays in ${esc(o.task.app)}; these run its instructions once, as a chat.</p>
+    <div class="inline-actions">${buttons.join('')||'<span class="small-note">Add another account or a backup app in Accounts &amp; backups.</span>'}</div>${o.accounts.length?'<p class="small-note">Another account’s first message costs more (its cache starts fresh).</p>':''}`);
+  $('#detail').querySelectorAll('[data-task-recover]').forEach(b=>b.addEventListener('click',()=>attempt(async()=>{
+    const r=await api('/api/task-recover',{business:state.business,task_id:taskId,action:b.dataset.taskRecover,target:b.dataset.target});$('#detail').close();
+    if(b.dataset.taskRecover==='reset')notice('It will run when the limit resets.');else if(r.chat_id&&typeof openShellChat==='function')await openShellChat(r.chat_id);
+  })));
+}
+// Settings → Accounts & backups: one place for accounts, nicknames and what happens at a limit.
+async function showAccounts(){
+  $('#more-dialog')?.close();
+  const data=await api('/api/accounts',{business:state.business,action:'list'}),p=data.policy;
+  const connected=Object.keys(state.data.connection.presets||{}),apps=(state.data.connection.choices||[]).filter(c=>connected.includes(c.id));
+  const option=(value,label,current)=>`<option value="${esc(value)}" ${value===current?'selected':''}>${esc(label)}</option>`;
+  const modes=current=>option('ask','Ask me',current)+option('auto','Automatically',current)+option('off','Don’t switch',current);
+  const row=a=>`<div class="glance-row account-row"><span><strong>${esc(a.nickname)}</strong>${a.active?' <span class="row-meta">· in use</span>':''}<br><small class="row-meta">${esc([a.email,a.plan&&human(a.plan)].filter(Boolean).join(' · '))}</small></span><span class="inline-actions">${a.app==='codex'&&!a.active?`<button type="button" class="text-button" data-account-switch="${esc(a.id)}">Use</button>`:''}<button type="button" class="text-button" data-account-rename="${esc(a.id)}">Rename</button><button type="button" class="text-button" data-account-remove="${esc(a.id)}">Remove</button></span></div>`;
+  const claude=data.accounts.filter(a=>a.app==='claude'),codex=data.accounts.filter(a=>a.app==='codex');
+  details('Accounts & backups',`<p class="shell-help">Use more than one subscription. Each app signs in its own way; sign-ins stay protected on this computer.</p>
+    <section class="accounts-section"><h3>When a plan limit is reached</h3>
+      <label>Continue on another account or app<select data-policy="mode">${modes(p.mode)}</select></label>
+      <label>Chats<select data-policy="chats">${option('','Same as above',p.chats)}${modes(p.chats)}</select></label>
+      <label>Goals<select data-policy="goals">${option('','Same as above',p.goals)}${modes(p.goals)}</select></label>
+      <label>Backup app<select data-policy="backup_app">${option('','None',p.backup_app)}${apps.map(c=>option(c.id,c.name,p.backup_app)).join('')}</select></label>
+      <label>Continue this chat when the limit resets<select data-policy="resume">${option('off','Off',p.resume)}${option('open','While AURA is open',p.resume)}${option('closed','Even when AURA is closed',p.resume)}</select></label>
+      <p class="small-note">A backup app starts a new chat with this chat’s latest result. Scheduled tasks run inside each app and follow that app’s own behavior. You’re responsible for following each provider’s terms.</p>
+    </section>
+    <section class="accounts-section"><h3>Claude Code</h3>${claude.map(row).join('')||'<p class="small-note">Only Claude Code’s own sign-in so far.</p>'}
+      <details><summary>Add a Claude account</summary><ol class="small-note"><li>In a terminal, run <code>claude setup-token</code> and sign in with the other account.</li><li>Paste the token it prints.</li></ol>
+      <form id="claude-account-form" class="form-grid"><label>Nickname<input name="nickname" maxlength="40" placeholder="Work"></label><label>Token<input name="token" type="password" autocomplete="off" required></label><button class="primary">Add account</button></form></details></section>
+    <section class="accounts-section"><h3>Codex</h3>${data.codex_supported?(codex.map(row).join('')||'<p class="small-note">Save the account Codex uses now, then add another.</p>')+`<div class="inline-actions"><button type="button" class="secondary" data-codex-capture>Save current account</button><button type="button" class="secondary" data-codex-login>Sign in to another account</button></div><p class="small-note">Switching also switches the account in your Codex app. Your chats stay.</p>`:`<p class="small-note">${esc(data.codex_reason)}</p>`}</section>
+    <section class="accounts-section"><h3>Other apps</h3>${Object.entries(data.native).map(([k,v])=>`<p class="small-note"><strong>${esc(limitAppName(k))}:</strong> ${esc(v)}${k==='pi'&&data.pi?(data.pi.installed?' <span class="row-meta">· Installed</span>':' <button type="button" class="text-button" data-pi-install>Set it up</button>'):''}</p>`).join('')}<p class="small-note">See <a href="https://github.com/deangeloscott/businessos/blob/main/docs/tools-and-services.md#several-accounts-or-subscriptions" target="_blank" rel="noopener noreferrer">several accounts ↗</a> for setup.</p></section>`);
+  const host=$('#detail');
+  host.querySelectorAll('[data-policy]').forEach(select=>select.addEventListener('change',()=>attempt(async()=>{await api('/api/accounts',{business:state.business,action:'policy',changes:{[select.dataset.policy]:select.value}});notice('Saved.');await loadLimitOptions();})));
+  $('#claude-account-form')?.addEventListener('submit',event=>{event.preventDefault();attempt(async()=>{const f=new FormData(event.target);await api('/api/accounts',{business:state.business,action:'claude_add',token:f.get('token'),nickname:f.get('nickname')});notice('Claude account added.');await showAccounts();});});
+  host.querySelector('[data-pi-install]')?.addEventListener('click',()=>attempt(async()=>{if(!confirm('Install pi-multi-account, a third-party Pi extension, through Pi’s installer? Then sign in to each account with /login in Pi.'))return;notice('Installing in Pi…');await api('/api/accounts',{business:state.business,action:'pi_install'});notice('Installed. Sign in to each account with /login in Pi.');await showAccounts();}));
+  host.querySelector('[data-codex-capture]')?.addEventListener('click',()=>attempt(async()=>{await api('/api/accounts',{business:state.business,action:'codex_capture',nickname:''});await showAccounts();}));
+  host.querySelector('[data-codex-login]')?.addEventListener('click',()=>attempt(async()=>{const r=await api('/api/accounts',{business:state.business,action:'codex_login'});notice(r.note||'Sign in with the other account in your browser.');}));
+  host.querySelectorAll('[data-account-switch]').forEach(b=>b.addEventListener('click',()=>attempt(async()=>{await api('/api/accounts',{business:state.business,action:'codex_switch',id:b.dataset.accountSwitch});notice('Codex now uses this account.');await showAccounts();})));
+  host.querySelectorAll('[data-account-rename]').forEach(b=>b.addEventListener('click',()=>attempt(async()=>{const name=prompt('Nickname');if(!name)return;await api('/api/accounts',{business:state.business,action:'rename',id:b.dataset.accountRename,nickname:name});await showAccounts();})));
+  host.querySelectorAll('[data-account-remove]').forEach(b=>b.addEventListener('click',()=>attempt(async()=>{if(!confirm('Remove this saved account from AURA?'))return;await api('/api/accounts',{business:state.business,action:'remove',id:b.dataset.accountRemove});await showAccounts();})));
+}
 // One small gauge beside the model: this chat's app plan limit (tightest window), or its context when
 // the app reports no limits. Hover lists every window; click shows this chat's context, tokens and cost.
 const glance={key:'',at:0,data:null,loading:false};
@@ -153,7 +260,7 @@ const glanceUsed=w=>w.status==='rejected'?100:w.used_percent;
 async function loadGlance(force=false){
   const chat=state.chatMeta?.id||'',key=[state.business,chat,state.data?.connection?.selected].join('|');
   if(!state.business||glance.loading||!force&&key===glance.key&&Date.now()-glance.at<60000)return paintGlance();
-  glance.loading=true;
+  glance.loading=true;loadLimitOptions();
   try{const data=await api('/api/glance?business='+encodeURIComponent(state.business)+(chat?'&chat_id='+encodeURIComponent(chat):''));glance.key=key;glance.at=Date.now();glance.data=data;}
   catch(error){}finally{glance.loading=false;}
   paintGlance();
@@ -404,7 +511,7 @@ function renderNotifications() {
   $('#notification-bell').setAttribute('aria-label',count?`Notifications, ${count} unread`:'Notifications');
   document.title=count?`(${count}) AURA`:'AURA';
   $('#notification-read-all').disabled=!count;
-  $('#notification-list').innerHTML=inbox.items.length?[...inbox.items].reverse().map(n=>`<button class="notification-item ${n.read?'':'unread'}" data-notification="${esc(n.id)}" ${state.busy&&n.chat_id!==state.chatMeta?.id?'disabled':''}><span class="notification-dot" aria-hidden="true"></span><span><strong>${n.kind==='usage'?'Usage alert':n.status==='error'?'Needs your attention':n.kind==='organization'?'Workspace ready':'Reply ready'}</strong>${n.title?'<span class="notification-subject">'+esc(n.title)+'</span>':''}<small>${esc(n.agent)} · <time datetime="${new Date(n.at*1000).toISOString()}">${esc(new Date(n.at*1000).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}))}</time>${n.read?'':' · Unread'}</small></span><span aria-hidden="true">→</span></button>`).join(''):'<p class="notification-empty">You’re all caught up. New replies will appear here.</p>';
+  $('#notification-list').innerHTML=inbox.items.length?[...inbox.items].reverse().map(n=>`<button class="notification-item ${n.read?'':'unread'}" data-notification="${esc(n.id)}" ${state.busy&&n.chat_id!==state.chatMeta?.id?'disabled':''}><span class="notification-dot" aria-hidden="true"></span><span><strong>${n.kind==='usage'?'Usage alert':n.kind==='limit'?'Plan limit':n.kind==='task_limit'?'Scheduled task':n.status==='error'?'Needs your attention':n.kind==='organization'?'Workspace ready':'Reply ready'}</strong>${n.title?'<span class="notification-subject">'+esc(n.title)+'</span>':''}<small>${esc(n.agent)} · <time datetime="${new Date(n.at*1000).toISOString()}">${esc(new Date(n.at*1000).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}))}</time>${n.read?'':' · Unread'}</small></span><span aria-hidden="true">→</span></button>`).join(''):'<p class="notification-empty">You’re all caught up. New replies will appear here.</p>';
   if(update?.notice){
     if(!inbox.items.length)$('#notification-list').innerHTML='';
     $('#notification-list').insertAdjacentHTML('afterbegin',`<button class="notification-item ${update.unread?'unread':''}" data-update-open><span class="notification-dot" aria-hidden="true"></span><span><strong>AURA update available</strong><small>Version ${esc(update.release.version)}</small></span><span aria-hidden="true">→</span></button>`);
@@ -2062,6 +2169,7 @@ async function submitRequest(text, scheduleId=null, organizationId=state.pending
   if(state.chatMeta?.workspace&&!sameWorkspace(state.chatMeta.workspace,state.data?.workspace)){chatControls();$('#chat-location-note')?.scrollIntoView({block:'nearest'});return;}
   if(state.busy){await stopRequest();return;}
   if(!text.trim()){$('#request').focus();return;}
+  if(!scheduleId&&!organizationId&&await limitGate(text))return;
   const connection=composerConnection();
   if(!state.data.connection.connected&&state.data.connection.mode!=='copy'){$('#request').value=text;openConnection(true);return;}
   if(nativeConnection(connection.kind)&&!connection.model){openConnection(true);return;}
@@ -2169,6 +2277,7 @@ document.addEventListener('click',event=>attempt(async()=>{
   if(button.dataset.method)await openLibrary(button.dataset.method);
   if(button.id==='more') openAnchoredSurface($('#more-dialog'),button,{width:330});
   if(button.id==='api-connections')await showApiConnections('');
+  if(button.id==='accounts-settings')await showAccounts();
   if(button.id==='model-api-connections')await showApiConnections('models');
   if(button.id==='back-to-models')$('#detail').close();
   if(button.dataset.removeApi){await api('/api/connections/remove',{provider:button.dataset.removeApi});state.catalog=null;state.apiChanged=true;await showApiConnections();}
@@ -2195,6 +2304,7 @@ document.addEventListener('click',event=>attempt(async()=>{
   if(button.id==='notification-read-all') {if(state.business)state.inbox=await api('/api/notifications',{business:state.business,action:'read',all:true});state.updates=await api('/api/updates',{action:'read'});renderNotifications();state.systemAlert?.close();}
   if(button.dataset.notification) {
     const item=state.inbox.items.find(n=>n.id===button.dataset.notification);if(!item)return;
+    if(item.kind==='task_limit'&&item.task_id){await showTaskLimit(item.task_id);}
     if(item.chat_id&&item.chat_id!==state.chatMeta?.id) {
       const result=await api('/api/chats/open',{business:state.business,id:item.chat_id});
       state.chat=result.messages;state.chatMeta=result.chat;await refresh();

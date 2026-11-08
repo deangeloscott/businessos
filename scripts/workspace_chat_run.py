@@ -111,9 +111,17 @@ class ChatRun:
             # Plan limits reported during a request (Claude events, Codex notifications).
             if values.get('quota_windows') or values.get('limit_windows'):
                 kind=self.kind;provider={'claude':'anthropic','codex':'openai'}.get(kind,kind)
-                row=workspace_usage.account(provider,via=app.agent['name'])
-                row.update(windows=values.pop('limit_windows',None) or values['quota_windows'],checked_at=time.time())
-                app.usage_accounts[kind+'-events']=[row]
+                windows=values.pop('limit_windows',None) or values['quota_windows']
+                saved=app.saved_account(chat.get('account_id')) if kind=='claude' and chat and chat.get('account_id') else None
+                if saved:
+                    # A chat on a saved Claude account: its limits belong to that account, kept as last known.
+                    row=workspace_usage.account(provider,'aura:'+saved['id'],saved.get('email') or '',saved.get('plan') or '',app.agent['name'])
+                    row.update(label=saved['nickname'],aura_account=saved['id'],windows=windows,checked_at=time.time(),limits_at=time.time())
+                    app.usage_accounts[kind+'-events-'+saved['id']]=[row];workspace_usage.remember_accounts(app.preferences,[row])
+                else:
+                    row=workspace_usage.account(provider,via=app.agent['name'])
+                    row.update(windows=windows,checked_at=time.time())
+                    app.usage_accounts[kind+'-events']=[row]
             if chat and values.get('native_id'):
                 chat['native_id'] = values['native_id']
                 try:
@@ -247,6 +255,10 @@ class ChatRun:
                     workspace_recovery.finish(chat,job)
                     if job.get('goal_id'):
                         chat['work_state']='waiting_for_usage' if job['status']=='error' and setup_error(job.get('error_detail') or job['reply'])==SETUP_ERRORS['limit'] else 'needs_input' if job['status']=='error' else job['status']
+                    if job['status']=='error' and not welcome and keep_warm_id is None and setup_error(job.get('error_detail') or job['reply'])==SETUP_ERRORS['limit']:
+                        # Follow the user's choice for plan limits (Ask by default) once this request is fully recorded.
+                        owner=getattr(app,'_view_owner',app)
+                        threading.Thread(target=owner.after_limit,args=(bid,chat['id'],text,'goals' if job.get('goal_id') else 'chats'),daemon=True).start()
                     try:
                         app.save_chat_turn(chat, job, text, final=True, candidate=candidate)
                         app.save_preferences()

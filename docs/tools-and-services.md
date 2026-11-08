@@ -22,6 +22,23 @@ Then tell it:
 
 AURA's [attachment guide](attachment.md) explains awareness and workspace access. Use the host's native Skill/instruction mechanism. An existing suitable agent does not need replacing to use this guide.
 
+## Several accounts or subscriptions
+
+When one account reaches its plan limit, you can keep working on another without losing the conversation. Each app does this its own way; AURA uses that way and adds a switch where an app has none.
+
+| App | How | Setup |
+| --- | --- | --- |
+| Claude Code | AURA runs each chat on the account you choose, using Claude Code's own long-lived token. Same chat, model and context. | Settings → Accounts & backups → Add a Claude account. Run `claude setup-token`, sign in with the other account, paste the token. |
+| Codex | AURA swaps Codex's saved sign-in, as signing out and back in does. Your chats stay. It also switches the account in your Codex app. | Settings → Accounts & backups → Save current account, then Sign in to another account. Not available when Codex keeps its sign-in in your system keyring. |
+| OMP | Built in: OMP balances work across every account you sign in to. | Run `omp login` once per account. `omp usage` shows each account's limits. |
+| Hermes | Built in: its [credential pool](https://github.com/NousResearch/hermes-agent) rotates to the next account at a limit, then to a fallback provider. | Add several credentials for the provider in Hermes. |
+| Pi | The third-party [pi-multi-account](https://pi.dev/packages/pi-multi-account) extension switches to the next signed-in account at a limit. | Settings → Accounts & backups → Set it up, or `pi install npm:pi-multi-account`; then `/login` once per account in Pi. Review third-party code before installing. |
+| Antigravity | Not available yet. | — |
+
+**When a limit is reached** (Settings → Accounts & backups): *Ask me* (default), *Automatically*, or *Don't switch*, with separate choices for chats and goals. AURA can also continue in a **backup app** (a new chat carrying this chat's latest result) or **continue the same chat when the limit resets**, while AURA is open or, using your system's scheduler, even when it's closed. Scheduled tasks run inside each app and follow that app's own behavior.
+
+The first message on another account costs more, because the provider's prompt cache belongs to each account. Sign-ins stay in protected storage on this computer, never in business files or exports. You're responsible for following each provider's terms.
+
 ## Intelligence and downloadable models
 
 Choose the model together with its harness/runtime: reasoning quality, reliable tool use, relevant image/audio inputs, context, hardware, and cost all affect the result. A chat subscription, API account, model download, and agent are different things. Use only authentication routes supported by the provider and chosen harness; do not assume subscription access includes general API credits or works in every third-party agent. [OpenAI's authentication guidance](https://developers.openai.com/codex/auth) illustrates the distinction.

@@ -34,6 +34,8 @@ from remember import remember
 from setup import setup
 import workspace_codex
 import workspace_custom_agent
+import workspace_accounts
+import workspace_resume
 import workspace_agents
 import workspace_locations
 import workspace_schedules
@@ -1291,7 +1293,7 @@ class Workspace:
                         if workspace_root()!=root:
                             raise ValueError('The workspace changed. Refresh usage.')
                         # A Claude event arriving during refresh remains the newer observation.
-                        for kind in set(accounts)|{k for k in self.usage_accounts if not k.endswith('-events')}:
+                        for kind in set(accounts)|{k for k in self.usage_accounts if '-events' not in k}:
                             if kind in accounts:self.usage_accounts[kind]=accounts[kind]
                             else:self.usage_accounts.pop(kind,None)
                         self.usage_refresh['reporting']=reporting
@@ -1596,15 +1598,19 @@ class Workspace:
         temporary.write_text(json.dumps(shown), encoding='utf-8')
         temporary.replace(path)
 
-    def glance(self, bid, chat_id=None):
+    def glance(self, bid, chat_id=None, app_kind=None):
         """At-a-glance usage for one chat: its app's plan limits plus the chat's context, tokens and cost."""
         with self.lock:
             chat=next((c for c in self.preferences['chats'] if c['id']==chat_id and c['business_id']==bid),None) if chat_id else None
-            kind=(chat or {}).get('agent') or self.connection_kind
+            kind=app_kind or (chat or {}).get('agent') or self.connection_kind
             provider=workspace_usage.PROVIDERS.get(kind,kind)
             rows=workspace_usage.attach_events(self.preferences,[a for group in self.usage_accounts.values() for a in group])
             history=list(self.preferences.get('usage_account_history',{}).values())
-            accounts=[a for a in [*rows,*history] if a.get('provider')==provider and a.get('mode')=='subscription' and a.get('windows')]
+            # A Claude chat on a saved account shows that account; otherwise the app's own sign-in.
+            own=(chat or {}).get('account_id') if kind=='claude' else None
+            accounts=[a for a in [*rows,*history] if a.get('provider')==provider and a.get('mode')=='subscription' and a.get('windows')
+                      and a.get('aura_account')==own]
+            if kind=='codex':accounts=self.nicknamed(accounts)
             account=max(accounts,key=lambda a:a.get('limits_at') or a.get('checked_at') or 0) if accounts else None
             usage=dict(self.preferences.get('usage_chats',{}).get(chat_id,{})) if chat_id else {}
             live=next((j for j in self.running_jobs(workspace_root()) if j.get('chat_id')==chat_id and j.get('usage')),None) if chat_id else None
@@ -1639,6 +1645,216 @@ class Workspace:
             with self.lock:self.usage_refresh['codex_limits_at']=time.time()
         finally:
             with self.lock:self.usage_refresh['codex_limits_running']=False
+
+    def saved_account(self, account_id):
+        return next((a for a in workspace_accounts.load()['accounts'] if a['id']==account_id),None) if account_id else None
+
+    def nicknamed(self, rows):
+        """Show saved nicknames on usage rows for the same account."""
+        names={workspace_usage.account('openai',a.get('account'))['id']:a['nickname'] for a in workspace_accounts.load()['accounts'] if a['app']=='codex' and a.get('account')}
+        return [{**r,'label':names[r['id']]} if r.get('id') in names else r for r in rows]
+
+    def notify(self, bid, chat_id, title, kind='limit'):
+        """A bell notification for something that happened while the user may not be looking."""
+        with self.lock:
+            self.preferences['notification_items']=[*self.preferences['notification_items'],{'id':secrets.token_urlsafe(12),'business_id':bid,'chat_id':chat_id,
+                'kind':kind,'agent':'AURA','title':title,'status':'complete','at':time.time(),'read':False,'delivered':False}][-50:]
+            self.save_preferences()
+
+    def resume_add(self, bid, chat_id, at, text='Continue where you left off.'):
+        """Continue this same chat once its limit resets."""
+        if not isinstance(at,(int,float)) or at<time.time()-60 or at>time.time()+31*86400:raise ValueError('Choose a reset time within the next month.')
+        item=workspace_resume.add(bid,self.workspace_path,chat_id,at,text)
+        note=''
+        if workspace_accounts.load()['policy'].get('resume')=='closed':
+            try:workspace_resume.schedule_wake(PRODUCT_ROOT)
+            except (OSError,ValueError,subprocess.SubprocessError) as error:note=f'AURA will continue while it is open. {error}'
+        return {**item,'note':note}
+
+    def resume_due(self):
+        """Run continues that are due for this workspace; called from the interface's housekeeping loop."""
+        due=workspace_resume.take_due(self.workspace_path)
+        for item in due:
+            try:
+                with workspace_scope(self.workspace_path):
+                    if item.get('app'):
+                        known=self.preferences['connected_apps'].get(item['app']) or {}
+                        self.start_chat(item['business'],item['text'],None,chat_id='',connection={'kind':item['app'],'model':known.get('model',''),'effort':known.get('effort','')})
+                    else:self.start_chat(item['business'],item['text'],None,chat_id=item['chat_id'])
+                self.notify(item['business'],item['chat_id'],'Continued after the limit reset')
+            except (ValueError,OSError) as error:
+                self.notify(item['business'],item['chat_id'],'Couldn’t continue after the reset: '+str(error)[:120])
+        if due and workspace_accounts.load()['policy'].get('resume')=='closed':
+            try:workspace_resume.schedule_wake(PRODUCT_ROOT)
+            except (OSError,ValueError,subprocess.SubprocessError):pass
+
+    def after_limit(self, bid, chat_id, text, context='chats'):
+        """A request stopped at a plan limit: follow the user's choice (Ask by default)."""
+        mode=workspace_accounts.mode_for(context)
+        options=self.limit_options(bid,chat_id)
+        app_name={'claude':'Claude','codex':'Codex'}.get(options['app'],options['app'].capitalize())
+        if mode=='off':return
+        if mode=='ask':
+            self.notify(bid,chat_id,f'{app_name} plan limit reached. Open the chat to choose how to continue.');return
+        try:
+            if options['accounts']:
+                choice=min(options['accounts'],key=lambda a:a['used'] if a['used'] is not None else 50)
+                self.accounts_action(bid,{'action':'use','chat_id':chat_id,'account_id':choice['id']})
+                with workspace_scope(self.workspace_path):self.start_chat(bid,text,None,chat_id=chat_id)
+                self.notify(bid,chat_id,f'{app_name} limit reached. Continued on {choice["nickname"]}.');return
+            if options['backup_app']:
+                started=self.continue_elsewhere(bid,chat_id,text,options['backup_app'])
+                self.notify(bid,started['chat_id'],f'{app_name} limit reached. Continued in {options["backup_app"].capitalize()}.');return
+            if options['resume']!='off' and options['resets_at']:
+                self.resume_add(bid,chat_id,options['resets_at'],text)
+                self.notify(bid,chat_id,f'{app_name} limit reached. Will continue at {time.strftime("%a %H:%M",time.localtime(options["resets_at"]))}.');return
+            self.notify(bid,chat_id,f'{app_name} plan limit reached. No other account or backup app is set up.')
+        except (ValueError,OSError,subprocess.SubprocessError) as error:
+            self.notify(bid,chat_id,f'{app_name} limit reached and AURA couldn’t continue automatically: {str(error)[:120]}')
+
+    def check_task_limits(self):
+        """Native scheduled tasks run inside their app. When one stops at a plan limit, ring the bell once."""
+        try:
+            folders=[workspace_root().resolve(),*(Path(r['path']) for r in self.recent_workspaces())]
+            tasks=workspace_schedules.inventory(workspaces=folders)['items']
+        except (OSError,ValueError):return
+        resolved=resolve_business(None)
+        bid=resolved.get('business_id') if resolved.get('status')=='resolved' else next(iter(self.preferences.get('active_chats',{})),'')
+        if not bid:return
+        seen=self.preferences.setdefault('task_limit_seen',[])
+        for task in tasks:
+            if task.get('last_status') not in {'error','failed','failure'} or setup_error(task.get('last_error') or '')!=SETUP_ERRORS['limit']:continue
+            key=f"{task['id']}:{task.get('last_run','')}"
+            if key in seen:continue
+            self.preferences['task_limit_seen']=seen=[*seen,key][-200:]
+            self.notify(bid,None,f"\u201c{task['name']}\u201d stopped at {task.get('app','its app')}\u2019s plan limit. Open to run it another way.",kind='task_limit')
+            with self.lock:self.preferences['notification_items'][-1]['task_id']=task['id'];self.save_preferences()
+
+    def task_recover(self, bid, task_id, action, target=''):
+        """Run a limited task's instructions as a chat: now on another account or app, or when its limit resets."""
+        folders=[workspace_root().resolve(),*(Path(r['path']) for r in self.recent_workspaces())]
+        task=next((t for t in workspace_schedules.inventory(workspaces=folders)['items'] if t['id']==task_id),None)
+        if not task:raise ValueError('This task is no longer listed. Refresh scheduled tasks.')
+        text=(f"Run the scheduled task \u201c{task['name']}\u201d now:\n\n"+(task.get('description') or '')).strip()
+        app_kind=task.get('owner')
+        if action=='app':
+            return self.continue_elsewhere(bid,None,text,target)
+        if action=='account':
+            known=self.preferences['connected_apps'].get(app_kind) or {}
+            connection={'kind':app_kind,'model':task.get('model') or known.get('model',''),'effort':task.get('effort') or known.get('effort','')}
+            if app_kind=='codex':workspace_accounts.codex_switch(target)
+            with workspace_scope(self.workspace_path):
+                return self.start_chat(bid,text,None,chat_id='',connection=connection,account_id=target if app_kind=='claude' else None)
+        if action=='reset':
+            info=self.limit_options(bid,None,app_kind)
+            if not info.get('resets_at'):raise ValueError('This app has not reported when its limit resets.')
+            return workspace_resume.add(bid,self.workspace_path,'',info['resets_at'],text,app=app_kind)
+        raise ValueError('Choose how to run this task.')
+
+    def continue_elsewhere(self, bid, chat_id, text, app_kind):
+        """A new chat in another app, carrying this chat's latest result and goal over (the existing handoff)."""
+        with self.lock:
+            known=self.preferences['connected_apps'].get(app_kind)
+            if not known:raise ValueError('Connect that AI app first.')
+        try:carried=workspace_context.handoff(self,bid,chat_id) if chat_id else {}
+        except ValueError:carried={'references':[],'goal_id':'','project':''}
+        connection={'kind':app_kind,'model':known.get('model',''),'effort':known.get('effort','')}
+        with workspace_scope(self.workspace_path):
+            return self.start_chat(bid,text,None,chat_id='',connection=connection,references=carried.get('references'),
+                                   goal_id=carried.get('goal_id') or None,project=carried.get('project') or None)
+
+    def accounts_action(self, bid, data):
+        """Several accounts per app through each app's own sign-in. Secrets never leave this computer."""
+        action=data.get('action','list')
+        def base(kind):
+            choice=next((a for a in installed_agents() if a['id']==kind and a['argv']),None)
+            if not choice:raise ValueError('Connect this AI app first.')
+            argv=list(choice['argv'])
+            return argv[:argv.index('exec')] if kind=='codex' and 'exec' in argv else workspace_agents.base_command(argv)
+        def codex_idle():
+            busy={j.get('chat_id') for j in self.running_jobs(None)}
+            if any(c['id'] in busy and c.get('agent')=='codex' for c in self.preferences['chats']):
+                raise ValueError('Wait for Codex to finish its current request before switching accounts.')
+        if action=='claude_add':result=workspace_accounts.add_claude(base('claude'),data.get('token'),data.get('nickname'))
+        elif action=='codex_capture':workspace_accounts.codex_capture(data.get('nickname',''));result=workspace_accounts.public('codex')
+        elif action=='codex_login':
+            codex_idle();process=workspace_accounts.codex_login(base('codex'))
+            def finish():
+                try:
+                    if process.wait(timeout=900)==0:workspace_accounts.codex_capture(data.get('nickname',''))
+                except (subprocess.SubprocessError,OSError,ValueError):pass
+            threading.Thread(target=finish,daemon=True).start()
+            result={**workspace_accounts.public('codex'),'note':'Codex opened its sign-in in your browser. Sign in with the other account; it appears here when done.'}
+        elif action=='codex_switch':codex_idle();result=workspace_accounts.codex_switch(data.get('id'))
+        elif action=='rename':result=workspace_accounts.rename(data.get('id'),data.get('nickname'))
+        elif action=='remove':result=workspace_accounts.remove(data.get('id'))
+        elif action=='policy':result={**workspace_accounts.public(),'policy':workspace_accounts.set_policy(data.get('changes'))}
+        elif action=='use':
+            with self.lock:
+                chat=next((c for c in self.preferences['chats'] if c['id']==data.get('chat_id') and c['business_id']==bid),None)
+                if not chat:raise ValueError('Choose a chat in this workspace.')
+                if chat.get('status')=='working':raise ValueError('Wait for this chat to finish before changing its account.')
+                account=data.get('account_id') or ''
+                if chat['agent']=='claude':
+                    if account and not self.saved_account(account):raise ValueError('That Claude account is no longer saved.')
+                    if account:chat['account_id']=account
+                    else:chat.pop('account_id',None)
+                    self.save_preferences()
+                elif chat['agent']=='codex':
+                    codex_idle();workspace_accounts.codex_switch(account)
+                else:raise ValueError('This app manages its own accounts.')
+            result=workspace_accounts.public(chat['agent'])
+        elif action=='pi_install':
+            # Third-party code: installed only on the user's explicit request, through Pi's own installer.
+            done=subprocess.run([*base('pi'),'install',workspace_accounts.PI_PACKAGE],capture_output=True,text=True,encoding='utf-8',errors='replace',timeout=300,
+                                stdin=subprocess.DEVNULL,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
+            if done.returncode:raise ValueError('Pi could not install the extension. Try `pi install '+workspace_accounts.PI_PACKAGE+'` in a terminal.')
+            result=workspace_accounts.public()
+        elif action=='list':result=workspace_accounts.public()
+        else:raise ValueError('Choose an account action.')
+        supported,reason=workspace_accounts.codex_supported()
+        pi=None
+        if action in {'list','pi_install'} and any(a['id']=='pi' and a['argv'] for a in installed_agents()):
+            try:
+                listed=subprocess.run([*base('pi'),'list'],capture_output=True,text=True,encoding='utf-8',errors='replace',timeout=60,
+                                      stdin=subprocess.DEVNULL,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0)).stdout
+                pi={'installed':'pi-multi-account' in listed}
+            except (OSError,subprocess.SubprocessError):pi=None
+        return {**result,'codex_supported':supported,'codex_reason':reason,'pi':pi}
+
+    def limit_options(self, bid, chat_id=None, app_kind=None):
+        """What the user can do when the chat's app is near or at a plan limit."""
+        info=self.glance(bid,chat_id,app_kind)
+        windows=(info.get('limits') or {}).get('windows') or []
+        used=lambda w:100 if w.get('status')=='rejected' else w.get('used_percent') or 0
+        top=max(windows,key=used,default=None)
+        with self.lock:
+            chat=next((c for c in self.preferences['chats'] if c['id']==chat_id and c['business_id']==bid),None) if chat_id else None
+            kind=app_kind or (chat or {}).get('agent') or self.connection_kind
+            history=list(self.preferences.get('usage_account_history',{}).values())
+            connected=set(self.preferences['connected_apps'])
+        saved=workspace_accounts.load()
+        policy=saved['policy']
+        def room(row_id):
+            row=next((r for r in history if r.get('id')==row_id),None)
+            live=[w for w in (row or {}).get('windows',[]) if not (w.get('resets_at') and w['resets_at']<=time.time())]
+            return max((used(w) for w in live),default=None)
+        others=[]
+        if kind=='claude':
+            current=(chat or {}).get('account_id') or ''
+            if current:others.append({'id':'','nickname':'Claude sign-in','used':None})
+            for a in saved['accounts']:
+                if a['app']=='claude' and a['id']!=current:
+                    others.append({'id':a['id'],'nickname':a['nickname'],'used':room(workspace_usage.account('anthropic','aura:'+a['id'])['id'])})
+        elif kind=='codex':
+            for a in saved['accounts']:
+                if a['app']=='codex' and not a.get('active'):
+                    others.append({'id':a['id'],'nickname':a['nickname'],'used':room(workspace_usage.account('openai',a.get('account'))['id'])})
+        others=[o for o in others if o['used'] is None or o['used']<95]
+        backup=policy.get('backup_app') if policy.get('backup_app') in connected and policy.get('backup_app')!=kind else ''
+        return {'app':kind,'top':top,'near':bool(top and used(top)>=95),'blocked':bool(top and top.get('status')=='rejected'),
+                'accounts':others,'backup_app':backup,'resets_at':(top or {}).get('resets_at'),
+                'mode':workspace_accounts.mode_for('chats'),'resume':policy.get('resume','off')}
 
     def limit_notice(self):
         """The connected app's tightest plan limit, only when it is nearly used up or reached."""
@@ -2212,7 +2428,7 @@ class Workspace:
         threading.Thread(target=work,daemon=True).start()
         return self.schedule_state(bid)
 
-    def start_chat(self, bid, text, history, welcome=False, schedule_id=None, organization_id=None, keep_warm_id=None, chat_id=None, files=None, connection=None, assistant_id=None,references=None,goal_id=None,permission_mode=None,native_goal=None,project=None):
+    def start_chat(self, bid, text, history, welcome=False, schedule_id=None, organization_id=None, keep_warm_id=None, chat_id=None, files=None, connection=None, assistant_id=None,references=None,goal_id=None,permission_mode=None,native_goal=None,project=None,account_id=None):
         with self.lock:
             owner=copy.copy(self)
             owner.agent=dict(self.agent) if self.agent else None
@@ -2220,6 +2436,7 @@ class Workspace:
             owner._request_references=references
             owner._request_goal=goal_id
             owner._request_native_goal=native_goal
+            owner._request_account=account_id if account_id and self.saved_account(account_id) else None
             owner._request_project=workspace_chat_organization.project_name(project,empty=True) if project is not None else ''
             if owner._request_project and not any(p['name']==owner._request_project for p in workspace_chat_organization.projects(self,bid)):raise ValueError('Choose an existing project.')
             existing=self.active_chat(bid) if chat_id is None else next((c for c in self.preferences['chats'] if c['id']==chat_id and c['business_id']==bid),None)
@@ -2393,6 +2610,7 @@ class Workspace:
                         'created': time.time(), 'native_id': None, 'workspace':str(workspace_root())}
                 if getattr(self,'_request_permission_mode',None) is not None:chat['permission_mode']=self._request_permission_mode
                 if getattr(self,'_request_project',''):chat['project']=self._request_project
+                if getattr(self,'_request_account',None) and self.connection_kind=='claude':chat['account_id']=self._request_account
                 if chat.get('project'):
                     project=next((p for p in workspace_chat_organization.projects(self,bid) if p['name']==chat['project']),None)
                     if project and project.get('folder'):
@@ -2490,6 +2708,9 @@ class Workspace:
             command = list(self.agent['argv'])
             kind = protocol_kind
             env = self.agent_environment()
+            if kind=='claude' and chat.get('account_id'):
+                # The chosen Claude account for this chat; its own sign-in otherwise. An API key would take precedence.
+                env.pop('ANTHROPIC_API_KEY',None);env.update(workspace_accounts.claude_env(chat['account_id']))
             try:
                 project=next((p for p in workspace_chat_organization.projects(self,bid) if p['name']==chat.get('project')),None)
                 if project and not workspace_projects.target().is_file():workspace_projects.change(bid,{'action':'edit','id':project['id'],'name':project['name']},self.preferences.get('chat_projects',[]))
@@ -2567,6 +2788,10 @@ def main():
             while not update_stop.wait(2):
                 try:
                     app.native_sessions.expire_idle(app.preferences.get('native_idle_timeout_seconds',600))
+                    if time.time()-getattr(app,'resume_checked',0)>30:
+                        app.resume_checked=time.time();app.resume_due()
+                    if time.time()-getattr(app,'task_limits_checked',0)>600:
+                        app.task_limits_checked=time.time();app.check_task_limits()
                     updater = app.updates
                     with updater.lock:
                         running = updater.operation and updater.operation.is_alive()
