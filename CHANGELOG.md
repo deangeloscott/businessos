@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- **A more polished, consistent interface.** One set of design tokens for text, colour, shape, depth and spacing. Personalization → Text size now scales the whole interface, and a new Compact density option fits more on screen. Dark mode is consistent: leftover colours from an older theme are gone, including a purple focus ring, and maps shade to match. Buttons, inputs, chips, empty states and focus rings now share one look, with gentle motion that respects reduced motion. See [Interface design](docs/design.md).
+- **Saved items open beside your work.** Results, records, goals, tasks, files and library items open in a side panel next to the page or chat, with **Expand** for the whole work area. Archiving and board moves show **Undo** instead of sending you to Archived & deleted.
+- **Find and do things faster.** Ctrl+K searches and also runs actions ("Add goal", "Add scheduled task", any setting). Settings is one page (Ctrl+,) grouped into General, AI & accounts, Workspace and Help, with search. The bell opens **Activity**: work running now, then notifications.
+- **Clearer places and words.** Agents moved into the **Library** as a tab, **Share or import** moved to the workspace menu and Settings, and each place has one name everywhere. Empty places explain themselves and offer a first step your AI can take ("Suggest goals", "Suggest a scheduled task").
+- **Results say where they came from.** Saved results show the same small marker everywhere: your correction, how many sources and when they were checked, or "No source". After a reply, results the AI saved or checked appear as cards in the chat that open the result.
+- Quick setup asks less: after choosing an AI app, **Continue** uses its recommended model, and choosing a model is optional. Open pages refresh themselves when you come back to AURA after a while.
+
 ## v0.4.0 — 2026-11-09
 
 - Boards work as pipelines: a `status` or `stage` field gives a board from the first result, and cards move between columns by drag-and-drop or **Move to…** (including a new stage), saved as your correction with the original kept. The bell reminds you once when a saved result's deadline is within 14 days, skipping seen or finished items. The grant workflows flag slow government registrations early, and donor stewardship includes gift receipts.

@@ -139,7 +139,7 @@ def local_file(bid, ref, locations=None):
         asset = next((r for r in records(bid,include_archived=True)[0] if r['type']=='Asset' and r['ref']==parts[1]),None)
         path = asset_path(bid,asset['data'].get('location_reference')) if asset else None
         if not path or not path.is_dir():
-            raise ValueError('This saved folder is missing. Reconnect it in Saved files & media.')
+            raise ValueError('This saved folder is missing. Reconnect it in Files & media.')
         item = {'id':parts[1],'path':str(path),'kind':'folder'}
         return workspace_locations.resolve('linked/'+parts[1]+'/'+parts[2],[item],private_path)
     if ref.startswith('asset/'):
@@ -149,7 +149,7 @@ def local_file(bid, ref, locations=None):
             raise ValueError('This saved file reference is no longer available.')
         path = asset_path(bid,asset['data'].get('location_reference'))
         if not path or not path.is_file():
-            raise ValueError('This saved file is missing. Reconnect it in Saved files & media.')
+            raise ValueError('This saved file is missing. Reconnect it in Files & media.')
         original=Path(asset['data']['location_reference']).expanduser()
         workspace_sharing.unlinked(original if original.is_absolute() else workspace_root()/original)
         return path
@@ -820,7 +820,7 @@ class Workspace:
         path=self.settings_file.parent/'ui-profile.json'
         try:value=json.loads(path.read_text(encoding='utf-8'))
         except (OSError,ValueError):value={}
-        defaults={'display_name':'','sidebar_collapsed':False,'panel_width':480,'text_size':15,'accent':'forest','avatar':'','activity_view':'highlights','working_preferences':''}
+        defaults={'display_name':'','sidebar_collapsed':False,'panel_width':480,'text_size':15,'density':'comfortable','accent':'forest','avatar':'','activity_view':'highlights','working_preferences':''}
         value={**defaults,**{k:v for k,v in value.items() if k in defaults}} if isinstance(value,dict) else defaults
         if changes is not None:
             if changes.get('reset'):value={**defaults,'display_name':value.get('display_name',''),'avatar':value.get('avatar',''),'working_preferences':value.get('working_preferences','')}
@@ -850,6 +850,9 @@ class Workspace:
                 if 'text_size' in changes:
                     if changes['text_size'] not in (14,15,16,18):raise ValueError('Choose a supported text size.')
                     value['text_size']=changes['text_size']
+                if 'density' in changes:
+                    if changes['density'] not in ('comfortable','compact'):raise ValueError('Choose Comfortable or Compact.')
+                    value['density']=changes['density']
                 if 'accent' in changes:
                     if changes['accent'] not in ('forest','ocean','clay'):raise ValueError('Choose a supported accent.')
                     value['accent']=changes['accent']

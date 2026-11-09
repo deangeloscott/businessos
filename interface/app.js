@@ -74,8 +74,19 @@ function notice(text, error=false) {
     message.textContent=text;
   }
 }
+// A brief confirmation with an optional Undo; it floats above pages, panels and dialogs.
+let toastTimer=0,toastRun=null;
+function toast(text,undo=null){
+  const t=$('#toast'),action=$('#toast-action');clearTimeout(toastTimer);toastRun=undo;
+  $('#toast-text').textContent=text;action.hidden=!undo;action.textContent='Undo';
+  try{t.hidePopover();t.showPopover();}catch{}
+  toastTimer=setTimeout(hideToast,undo?9000:4500);
+}
+function hideToast(){clearTimeout(toastTimer);toastRun=null;try{$('#toast').hidePopover();}catch{}}
+$('#toast-close').addEventListener('click',hideToast);
+$('#toast-action').addEventListener('click',()=>{const run=toastRun;hideToast();if(run)attempt(run);});
 async function attempt(fn) { try { await fn(); } catch(error) { notice(humanError(error),true); } }
-function empty(title, text, prompt) { return `<div class="empty"><strong>${esc(title)}</strong>${esc(text)}${prompt?`<div class="empty-cta"><button class="text-button" data-prompt="${esc(prompt)}">Ask your AI to help ↗</button></div>`:''}</div>`; }
+function empty(title, text, prompt, label='Ask your AI to help') { return `<div class="empty"><strong>${esc(title)}</strong>${text?`<span>${esc(text)}</span>`:''}${prompt?`<div class="empty-cta"><button type="button" class="secondary compact" data-prompt="${esc(prompt)}">${esc(label)}</button></div>`:''}</div>`; }
 function goalInfo(goal){return goal?.extensions?.businessos?.goal||{};}
 function workspaceGoalRecords(includeInactive=false){return rows('Objective').filter(r=>goalInfo(r.data).scope!=='chat'&&!goalInfo(r.data).deleted_at&&(includeInactive||(r.data.status||'active')==='active'));}
 function recordRow(r) { return `<button class="row" data-record="${esc(r.ref)}"><span class="row-icon">${r.type==='Asset'?'▧':r.type==='Objective'?'↗':'◈'}</span><span class="row-text"><span class="row-title">${esc(r.title)}</span><span class="row-meta">${esc(({Business:'Business details',Asset:'Saved file',Objective:goalInfo(r.data).scope==='chat'?'Chat goal':'Workspace goal',SourceRecord:'Saved source',PreferenceProfile:'Preferences',Observation:'Finding',ProofRecord:'Evidence',MetricObservation:'Measurement'})[r.type]||human(r.type))}${r.data.status?' · '+esc(human(r.data.status)):''}${r.data.updated_at?' · '+stamp(r.data.updated_at):''}</span></span><span class="arrow">↗</span></button>`; }
@@ -96,7 +107,7 @@ async function refresh(light=false,preserveDetails=light) {
     window.auraFocus?.paint();
     $('#connection').disabled=!state.business;
     $('#chats').disabled=!state.business;$('#add-native-chat').disabled=!state.business;
-    const workspaceOptions='<option value="" disabled>Choose a workspace</option>'+state.data.businesses.map(b=>`<option value="${esc(b.id)}">${esc(b.name)}</option>`).join('')+'<option value="__add__">＋ Add or open a workspace</option>';
+    const workspaceOptions='<option value="" disabled>Choose a workspace</option>'+state.data.businesses.map(b=>`<option value="${esc(b.id)}">${esc(b.name)}</option>`).join('')+'<option value="__add__">Add or open a workspace…</option><option value="__share__">Share or import…</option>';
     $('#business').innerHTML=workspaceOptions;$('#setup-workspace-select').innerHTML=workspaceOptions;
     $('#business').value=state.business;
     const business=rows('Business')[0];
@@ -343,6 +354,7 @@ function connectionChoice() {
   const choice=state.data.connection.choices.find(c=>c.id===$('#agent-choice').value), route=selectedRoute();
   const native=nativeConnection(choice?.id), models=catalogModels();
   $('#choose-agent').disabled=!choice?.available||state.busy||state.checkingConnections;
+  if($('#quick-connect'))$('#quick-connect').disabled=$('#choose-agent').disabled;
   $('#connect-agent').disabled=state.busy||state.checkingConnections||state.catalogLoading||state.effortsLoading||!!state.modelError||(native?!route:!choice?.available);
   for(const id of ['model-fields','model-picker-controls','model-providers','favorite-model'])$('#'+id).hidden=!models.length;
   $('#favorite-model').hidden=!chosenModel();
@@ -446,8 +458,8 @@ function openConnection(restart=false, step='welcome') {
 function renderConnection() {
   const step=state.setupStep, ready=step==='ready', failed=step==='failed', checking=step==='checking';
   const stages={welcome:[1,'Welcome to AURA'],connect:[2,'Connect your AI'],models:[3,'Models & favorites'],tour:[4,'A quick look around'],checking:[5,'Checking connections'],ready:[5,'You’re ready'],failed:[5,'Connection needs attention']};
-  const [number,title]=stages[step]||stages.welcome;
-  $('#setup-step').textContent=`QUICK SETUP · ${number} OF 5`;
+  const [,title]=stages[step]||stages.welcome;
+  $('#setup-step').textContent='QUICK SETUP';
   $('#connect-title').textContent=title;
   for(const section of ['welcome','connect','models','tour'])$('#setup-'+section).hidden=step!==section;
   $('#setup-result').hidden=!['checking','ready','failed'].includes(step);
@@ -521,6 +533,13 @@ function usageLabel(usage) {
   $('#task-status').title=`Reported token usage. Cost and cache details are in Usage & spend.`;
   return ` · ${(usage.input_tokens+usage.output_tokens).toLocaleString()} tokens`;
 }
+/* Activity: work running now and notifications live together behind the bell. */
+function paintRunning(){
+  const running=state.data?.running_chats||[],host=$('#activity-running');
+  $('#background-work').hidden=true;$('#notification-bell').classList.toggle('working',running.length>0);
+  if(!host)return;host.hidden=!running.length;
+  host.innerHTML=running.length?`<h3>Working now</h3>${running.map(j=>`<button type="button" class="notification-item" data-working-chat="${esc(j.chat_id)}" data-working-workspace="${esc(j.workspace)}" data-working-business="${esc(j.business_id)}"><span class="activity-spinner" aria-hidden="true"></span><span><strong>${esc(j.title||(state.chatList||[]).find(c=>c.id===j.chat_id)?.title||appName(j.agent)+' chat')}</strong><small>${esc(j.progress||'Working')} · ${esc(appName(j.agent))}${j.model?' · '+esc(j.model):''}</small></span><span aria-hidden="true">→</span></button>`).join('')}<h3>Notifications</h3>`:'';
+}
 function renderNotifications() {
   const inbox=state.inbox||{items:[],unread:0}, update=state.updates, count=inbox.unread+(update?.unread?1:0);
   const signature=JSON.stringify([inbox,update?.notice,update?.unread,update?.release?.version,state.busy,window.Notification?.permission]);
@@ -528,7 +547,7 @@ function renderNotifications() {
   state.inboxSignature=signature;
   $('#notification-count').hidden=!count;$('#notification-count').textContent=count>99?'99+':count;
   $('#notification-bell').hidden=!state.business&&!update?.notice;
-  $('#notification-bell').setAttribute('aria-label',count?`Notifications, ${count} unread`:'Notifications');
+  $('#notification-bell').setAttribute('aria-label',count?`Activity, ${count} unread`:'Activity');
   document.title=count?`(${count}) AURA`:'AURA';
   $('#notification-read-all').disabled=!count;
   $('#notification-list').innerHTML=inbox.items.length?[...inbox.items].reverse().map(n=>`<button class="notification-item ${n.read?'':'unread'}" data-notification="${esc(n.id)}" ${state.busy&&n.chat_id!==state.chatMeta?.id?'disabled':''}><span class="notification-dot" aria-hidden="true"></span><span><strong>${n.kind==='usage'?'Usage alert':n.kind==='limit'?'Plan limit':n.kind==='task_limit'?'Scheduled task':n.kind==='goal'?'Goal reached':n.kind==='deadline'?'Deadline coming up':n.status==='error'?'Needs your attention':n.kind==='organization'?'Workspace ready':'Reply ready'}</strong>${n.title?'<span class="notification-subject">'+esc(n.title)+'</span>':''}<small>${esc(n.agent)} · <time datetime="${new Date(n.at*1000).toISOString()}">${esc(new Date(n.at*1000).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}))}</time>${n.read?'':' · Unread'}</small></span><span aria-hidden="true">→</span></button>`).join(''):'<p class="notification-empty">You’re all caught up. New replies will appear here.</p>';
@@ -896,8 +915,8 @@ async function overview() {
   const attention=rows('AttentionItem','WorkRequest','Incident').filter(r=>!['resolved','completed','archived','closed'].includes(r.data.status));
   $('#view').innerHTML=`<div class="workspace-heading"><h2>Your workspace</h2><p>Keep the context. Find the work. Choose what to do next.</p></div><div class="workspace-grid">
     <section class="workspace-card" aria-labelledby="business-card-title"><div class="card-heading"><h3 id="business-card-title">Business & memory</h3><button class="text-button" data-view="business">Open →</button></div><p class="card-description">Your goals, research, preferences, and decisions.</p><input id="quick-memory-search" class="search" type="search" aria-label="Search business and memory" placeholder="Find goals or saved information…" value="${esc(state.memoryQuery||'')}"><div id="quick-memory" class="preview-list" tabindex="0" aria-label="Business and memory results"></div></section>
-    <section class="workspace-card" aria-labelledby="files-card-title"><div class="card-heading"><h3 id="files-card-title">Saved files & media</h3><button class="text-button" data-view="files">Open →</button></div><p class="card-description">Open the notes, images, and work you’ve kept.</p><input id="quick-file-search" class="search" type="search" aria-label="Search saved files and media" placeholder="Find a file…" value="${esc(state.fileQuery||'')}">${fileTypeFilters('home')}<div id="quick-files" class="preview-list" tabindex="0" aria-label="Saved file results"></div><button class="text-button card-link" data-add-location>＋ Add files or folder</button></section>
-    <section class="workspace-card" aria-labelledby="methods-card-title"><div class="card-heading"><h3 id="methods-card-title">Workflows, recipes & more</h3><button class="text-button" data-view="work">Open →</button></div><p class="card-description">Find the guidance and capabilities for your next job.</p><label class="sr-only" for="quick-work-search">Search workflows, recipes, skills, tools and plugins</label><input id="quick-work-search" class="search" type="search" placeholder="Try competitors, content, or a website…"><p><a class="text-link" href="https://viraltrac.com/aura/community/" target="_blank" rel="noopener noreferrer">Explore community setups ↗</a></p><div class="library-choices"><button class="secondary" data-library-kind="Workflow"><strong>Workflows</strong><small>Steps for business work</small></button><button class="secondary" data-library-kind="Recipe"><strong>Recipes</strong><small>Creative & production guidance</small></button><button class="secondary" data-library-kind="Skill"><strong>Skills</strong><small>Reusable instructions for your AI</small></button><button class="secondary" data-library-kind="Tool"><strong>Tools</strong><small>Apps, connections & capabilities</small></button><button class="secondary" data-library-kind="Plugin"><strong>Plugins</strong><small>Bundles & extensions</small></button></div><div id="quick-methods"></div></section>
+    <section class="workspace-card" aria-labelledby="files-card-title"><div class="card-heading"><h3 id="files-card-title">Files & media</h3><button class="text-button" data-view="files">Open →</button></div><p class="card-description">Open the notes, images, and work you’ve kept.</p><input id="quick-file-search" class="search" type="search" aria-label="Search saved files and media" placeholder="Find a file…" value="${esc(state.fileQuery||'')}">${fileTypeFilters('home')}<div id="quick-files" class="preview-list" tabindex="0" aria-label="Saved file results"></div><button class="text-button card-link" data-add-location>＋ Add files or folder</button></section>
+    <section class="workspace-card" aria-labelledby="methods-card-title"><div class="card-heading"><h3 id="methods-card-title">Library</h3><button class="text-button" data-view="work">Open →</button></div><p class="card-description">Find the guidance and capabilities for your next job.</p><label class="sr-only" for="quick-work-search">Search workflows, recipes, skills, tools and plugins</label><input id="quick-work-search" class="search" type="search" placeholder="Try competitors, content, or a website…"><p><a class="text-link" href="https://viraltrac.com/aura/community/" target="_blank" rel="noopener noreferrer">Explore community setups ↗</a></p><div class="library-choices"><button class="secondary" data-library-kind="Workflow"><strong>Workflows</strong><small>Steps for business work</small></button><button class="secondary" data-library-kind="Recipe"><strong>Recipes</strong><small>Creative & production guidance</small></button><button class="secondary" data-library-kind="Skill"><strong>Skills</strong><small>Reusable instructions for your AI</small></button><button class="secondary" data-library-kind="Tool"><strong>Tools</strong><small>Apps, connections & capabilities</small></button><button class="secondary" data-library-kind="Plugin"><strong>Plugins</strong><small>Bundles & extensions</small></button></div><div id="quick-methods"></div></section>
     <section class="workspace-card" aria-labelledby="tasks-card-title"><div class="card-heading"><h3 id="tasks-card-title">Scheduled tasks</h3><button class="text-button" data-view="tools">Open →</button></div><p class="card-description schedule-intro">See scheduled work across your AI apps. <button class="text-button" data-schedules-help>How it works</button></p><input id="quick-schedule-search" class="search" type="search" aria-label="Search scheduled tasks" placeholder="Find a scheduled task…" value="${esc(state.scheduleQuery||'')}">${scheduleFilters('home')}${scheduleOperationMarkup()}<div id="schedule-preview" class="preview-list" tabindex="0" aria-label="Scheduled task results"></div><button class="secondary card-link" data-view="tools" data-add-recurring>＋ Add scheduled task</button>${schedules.notes.length?'<p class="small-note">Some schedules could not be read. Open to check.</p>':''}</section>
   </div>${attention.length?heading('Needs your attention')+`<div class="card">${attention.slice(0,2).map(recordRow).join('')}</div>`:''}`;
   state.overviewAt=state.data.refreshed;
@@ -920,7 +939,7 @@ function fileMarked(ref){return fileFavoriteKeys(ref).some(key=>libraryPrefs().f
 function favoriteControl(attribute,key,label,marked,classes=''){return `<button type="button" class="favorite-star ${classes}" ${attribute}="${esc(key)}" aria-pressed="${marked}" aria-label="${marked?'Remove':'Add'} ${esc(label)} ${marked?'from':'to'} favorites" title="${marked?'Remove from favorites':'Add to favorites'}">${marked?'★':'☆'}</button>`;}
 function fileFavoriteButton(ref,label='file',compact=false){return favoriteControl('data-file-favorite',ref,label,fileMarked(ref),compact?'file-star':'title-star');}
 function setDetailTitleActions(html){$('#detail-title-actions').innerHTML=html;}
-function archiveControl(kind,id){return `<button type="button" class="icon-button" data-archive-item="${esc(id)}" data-archive-type="${kind}" aria-label="Archive" title="Archive"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 8h16v12H4zM3 4h18v4H3zM9 12h6"/></svg></button>`;}
+function archiveControl(kind,id){return `<button type="button" class="icon-button" data-archive-item="${esc(id)}" data-archive-type="${kind}" aria-label="Archive" title="Archive"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.65" aria-hidden="true"><path d="M4 8h16v12H4zM3 4h18v4H3zM9 12h6"/></svg></button>`;}
 document.addEventListener('click',event=>{
   const button=event.target.closest('[data-archive-item]');if(!button)return;
   const business=state.business,workspace=state.data.workspace;
@@ -930,7 +949,7 @@ document.addEventListener('click',event=>{
       const save=$('#file-save');
       if(save&&!save.disabled&&!save.hidden)throw new Error('Save your changes before archiving this file.');
       const search=state.searchReturn?{query:$('#shell-search').value,filter:shellSearchFilter,favorites:shellSearchFavorites,scroll:$('#shell-search-results').scrollTop}:null;
-      await api('/api/archive',{business,kind:button.dataset.archiveType,id:button.dataset.archiveItem,action:'archive'});
+      const kind=button.dataset.archiveType,id=button.dataset.archiveItem;await api('/api/archive',{business,kind,id,action:'archive'});
       if(business!==state.business||workspace!==state.data.workspace)return;
       $('#detail').close();await refresh();
       if(search){
@@ -939,7 +958,12 @@ document.addEventListener('click',event=>{
         $('#shell-search').value=search.query;shellSearchFilter=search.filter;shellSearchFavorites=search.favorites;
         paintShellSearch();$('#shell-search-results').scrollTop=search.scroll;
       }
-      notice('Archived. Restore it from Archived & deleted.');
+      toast('Archived',async()=>{
+        if(business!==state.business||workspace!==state.data.workspace)throw new Error('The workspace changed. Restore it from Archived & deleted.');
+        try{await api('/api/archive',{business,kind,id,action:'restore'});}
+        catch{throw new Error('Couldn’t undo here. Restore it from Archived & deleted.');}
+        await refresh();toast('Restored');
+      });
     }finally{if(button.isConnected)button.disabled=false;}
   });
 });
@@ -984,13 +1008,13 @@ async function openLibrary(key,option='',returning=false){
   const metadata=`<div class="item-summary"><p class="item-type">${esc(identity)}${!inventory&&apps.length?' · '+apps.map(appName).map(esc).join(' · '):''}</p>${statuses}${!inventory&&variants.length>1?`<label class="library-option">Version<select id="library-option">${variants.map((v,i)=>`<option value="${esc(v.key)}" ${v.key===chosen.key?'selected':''}>${esc((v.apps||v.sources?.map(s=>s.app)||[]).map(appName).join(', ')||'Version '+(i+1))}</option>`).join('')}</select></label>`:''}${description?`<p>${esc(description)}</p>`:''}${chosen.requirements?`<p class="small-note">Needs: ${esc(chosen.requirements)}</p>`:''}${actions}</div>`;
   if(inventory){
     const related=[...(item.members||[]),...(item.related||[]).map(key=>state.library.find(r=>r.key===key)).filter(Boolean)].filter((r,i,all)=>all.findIndex(v=>v.key===r.key)===i);
-    details(item.title,locationMarkup+metadata+(related.length?`<h3>Included items</h3><div class="capability-tools">${related.map(m=>`<button type="button" class="row" data-method="${esc(m.key)}"><span class="row-text"><strong>${esc(m.title)}</strong><small>${esc(m.description||m.kind)}</small></span><span>→</span></button>`).join('')}</div>`:''));
+    details(item.title,locationMarkup+metadata+(related.length?`<h3>Included items</h3><div class="capability-tools">${related.map(m=>`<button type="button" class="row" data-method="${esc(m.key)}"><span class="row-text"><strong>${esc(m.title)}</strong><small>${esc(m.description||m.kind)}</small></span><span>→</span></button>`).join('')}</div>`:''),'context');
   }else if(doc.location?.endsWith('.md')||item.kind==='Skill'&&locations.length){
     await openFileWorkspace('library/'+root.key,chosen.key,{title:item.title,summary:metadata,hideTitle:true});
   }else{
     const lines=body.replace(/^# [^\n]+\n+/,'');
     const guidance=(description&&lines.startsWith(description)?lines.slice(description.length).trim():lines).replace(/^Start with workflow [^\n]+ when useful\.$/m,'').trim();
-    details(item.title,locationMarkup+metadata+(guidance?'<div class="guidance-preview">'+chatMarkdown(guidance)+'</div>':'')+(item.entry?`<button type="button" class="text-button" data-method="${esc(item.entry.key)}">Open ${esc(item.entry.title)} workflow →</button>`:''));
+    details(item.title,locationMarkup+metadata+(guidance?'<div class="guidance-preview">'+chatMarkdown(guidance)+'</div>':'')+(item.entry?`<button type="button" class="text-button" data-method="${esc(item.entry.key)}">Open ${esc(item.entry.title)} workflow →</button>`:''),'context');
   }
   if(ticket!==state.libraryDetailTicket||business!==state.business||workspace!==state.data.workspace)return;
   setDetailTitleActions(favoriteControl('data-library-favorite',root.key,item.title,libraryMarked(root),'title-star'));
@@ -1030,9 +1054,9 @@ async function render() {
   if(!current())return;
   if(state.view==='home') { $('#section-dialog').close();$('#view').innerHTML='';return; }
   $('#detail').close();
-  $('#section-description').textContent=({business:'Your goals, useful facts, preferences, and decisions.',files:'Find the work you have saved and the locations you have linked.',work:'Reusable guidance and the capabilities listed by your AI apps.',tools:'Schedules managed by your connected AI apps.',assistants:'Reusable agents, native specialists, and the work you do with them.'})[state.view]||'';
+  $('#section-description').textContent=({business:'Your goals, useful facts, preferences, and decisions.',files:'Find the work you have saved and the locations you have linked.',work:'Workflows, recipes, skills and tools your AI can reuse, plus the agents that do the work.',tools:'Work your connected AI apps repeat for you.',assistants:'Workflows, recipes, skills and tools your AI can reuse, plus the agents that do the work.'})[state.view]||'';
   $('#page-refresh').disabled=state.view==='work'&&!!state.libraryRefreshing;$('#page-refresh').textContent=$('#page-refresh').disabled?'Refreshing…':'Refresh';
-  $('#section-title').textContent=({business:'Business & memory',files:'Saved files & media',work:'Workflows & recipes',tools:'Scheduled tasks',assistants:'Agents'})[state.view];
+  $('#section-title').textContent=({business:'Business & memory',files:'Files & media',work:'Library',tools:'Scheduled tasks',assistants:'Library'})[state.view];
   if(!$('#section-dialog').open) $('#section-dialog').show();
   if(state.view==='business') {
     view.innerHTML=`<div class="section-head business-title"><span>Business · <strong>${esc(rows('Business')[0]?.title)}</strong></span><button class="text-button" data-action="edit-business">Edit name</button></div><section id="focus-panel" class="focus-panel"></section><input class="search" id="record-search" type="search" aria-label="Search goals and saved information" placeholder="Find goals or saved information…" value="${esc(state.memoryQuery||'')}"><div id="full-memory"></div>`;
@@ -1044,13 +1068,14 @@ async function render() {
     renderFiles();
   } else if(state.view==='work') {
     if(!state.library.length){const library=await cachedApi('/api/library');if(!current())return;state.library=library;}
-    view.innerHTML=`<input class="search" id="work-search" type="search" aria-label="Search workflows, recipes, skills, tools and plugins" placeholder="Find guidance, skills, tools, or plugins…"><div class="filters"><button data-workfilter="all">All</button>${Object.entries(libraryKinds).map(([kind,label])=>`<button data-workfilter="${kind}">${label}</button>`).join('')}</div><div class="library-toolbar"><label>Show <select id="library-view"><option value="all" ${libraryView==='all'?'selected':''}>All items</option><option value="favorites" ${libraryView==='favorites'?'selected':''}>Favorites</option><option value="recent" ${libraryView==='recent'?'selected':''}>Recently opened</option></select></label><span><button class="text-button" data-library-help>How it works</button></span></div><p id="library-note" class="small-note"></p><div class="section-head"><h3 id="work-category-title">Browse by topic</h3><button id="work-all-topics" class="text-button" hidden>All topics</button></div><div id="work-categories" class="topic-grid"></div><div id="work-list"></div>`;
+    view.innerHTML=`<input class="search" id="work-search" type="search" aria-label="Search workflows, recipes, skills, tools and plugins" placeholder="Find guidance, skills, tools, or plugins…"><div class="filters"><button data-workfilter="all">All</button>${Object.entries(libraryKinds).map(([kind,label])=>`<button data-workfilter="${kind}">${label}</button>`).join('')}<button data-view="assistants">Agents</button></div><div class="library-toolbar"><label>Show <select id="library-view"><option value="all" ${libraryView==='all'?'selected':''}>All items</option><option value="favorites" ${libraryView==='favorites'?'selected':''}>Favorites</option><option value="recent" ${libraryView==='recent'?'selected':''}>Recently opened</option></select></label><span><button class="text-button" data-library-help>How it works</button></span></div><p id="library-note" class="small-note"></p><div class="section-head"><h3 id="work-category-title">Browse by topic</h3><button id="work-all-topics" class="text-button" hidden>All topics</button></div><div id="work-categories" class="topic-grid"></div><div id="work-list"></div>`;
     renderWork();
     $('#section-content .library-toolbar>span').insertAdjacentHTML('afterbegin','<button class="text-button" id="library-connections">Add connection</button>');
     $('#library-connections').hidden=!['all','Tool'].includes(workFilter);
     if(state.libraryRefreshed!==state.data.workspace)attempt(refreshLibrary);
   } else if(state.view==='assistants') {
     await window.auraWork?.renderAssistants(view);
+    if(current()&&view.isConnected)view.insertAdjacentHTML('afterbegin',`<div class="filters library-tabs" role="group" aria-label="Library"><button data-library-kind="all">All</button>${Object.entries(libraryKinds).map(([kind,label])=>`<button data-library-kind="${kind}">${label}</button>`).join('')}<button class="active" aria-pressed="true" data-view="assistants">Agents</button></div>`);
   } else if(state.view==='tools') {
     const assistants=await window.auraWork?.load();if(!current())return;state.assistantProfiles=assistants?.items||[];
     const watches=rows('SourceProfile').filter(r=>r.data.watch_status||r.data.next_check_at);
@@ -1074,8 +1099,8 @@ function renderMemory() {
   for(const id of ['quick-memory-search','record-search'])if($('#'+id)&&$('#'+id).value!==(state.memoryQuery||''))$('#'+id).value=state.memoryQuery||'';
   const goalRow=r=>`<button type="button" class="row" data-record="${esc(r.ref)}"><span class="row-text"><strong class="row-title">${esc(r.title)}</strong><small class="row-meta">${goalInfo(r.data).scope==='chat'?'Chat goal':'Workspace goal'} · ${goalInfo(r.data).deleted_at?'Deleted':esc(human(r.data.status||'active'))}${r.measure?.latest!=null?' · '+(r.measure.direction==='lower_better'?esc(Number(r.measure.latest).toLocaleString())+' (target '+esc(Number(r.measure.target).toLocaleString())+' or lower)':esc(Number(r.measure.latest).toLocaleString())+' of '+esc(Number(r.measure.target).toLocaleString())+(r.measure.unit&&!['count','USD','rank'].includes(r.measure.unit)?' '+esc(r.measure.unit):'')):''}</small>${r.measure?.reached&&r.data.status!=='completed'?'<span class="goal-reached">Reached</span>':''}${r.data.target?`<small class="goal-list-outcome">${esc(pretty(r.data.target))}</small>`:''}</span><span>→</span></button>`;
   const filters=`<div class="goal-page-filters"><div class="filters" role="group" aria-label="Goal status">${[['current','Current'],['completed','Completed'],['deleted','Deleted']].map(([value,label])=>`<button type="button" data-memory-goals="${value}" aria-pressed="${status===value}" class="${status===value?'active':''}">${label}</button>`).join('')}</div>${all.some(r=>goalInfo(r.data).scope==='chat')?`<label>Type<select id="memory-goal-scope"><option value="all" ${scope==='all'?'selected':''}>All goals</option><option value="workspace" ${scope==='workspace'?'selected':''}>Workspace</option><option value="chat" ${scope==='chat'?'selected':''}>Chat</option></select></label>`:''}</div>`;
-  const goalAdd='<span class="inline-actions"><button type="button" class="text-button" data-goal-help>How goals work</button><button type="button" class="secondary" data-action="add-goal">＋ New goal</button></span>';
-  const full=$('#full-memory');if(full)full.innerHTML=`<section class="memory-group"><div class="mini-heading memory-heading"><h3>Goals</h3>${goalAdd}</div>${filters}<div class="memory-results" aria-label="Goals">${goals.map(goalRow).join('')||empty('No '+status+' goals'+(q?' match your search.':'.'))}</div></section><section class="memory-group"><div class="mini-heading memory-heading"><h3>Saved context</h3><button type="button" class="text-button" data-add-context>＋ Add</button></div><p class="memory-description">Useful facts, preferences, decisions, and reference material.</p><div class="memory-results" aria-label="Saved context">${context.map(recordRow).join('')||empty('No saved context'+(q?' matches your search.':' yet.'))}</div></section>`;
+  const goalAdd='<span class="inline-actions"><button type="button" class="text-button" data-goal-help>How goals work</button><button type="button" class="secondary compact add-button" data-action="add-goal">Add goal</button></span>';
+  const full=$('#full-memory');if(full)full.innerHTML=`<section class="memory-group"><div class="mini-heading memory-heading"><h3>Goals</h3>${goalAdd}</div>${filters}<div class="memory-results" aria-label="Goals">${goals.map(goalRow).join('')||(q||status!=='current'?empty('No '+status+' goals'+(q?' match your search.':'.')):empty('No goals yet','A goal is an outcome you want, like more new patients or a funded program. AURA tracks progress and keeps your AI pointed at it.','Suggest two or three measurable goals for this business. Use our saved context, explain why each matters, and ask before saving any.','Suggest goals'))}</div></section><section class="memory-group"><div class="mini-heading memory-heading"><h3>Saved context</h3><button type="button" class="secondary compact add-button" data-add-context>Add context</button></div><p class="memory-description">Useful facts, preferences, decisions, and reference material.</p><div class="memory-results" aria-label="Saved context">${context.map(recordRow).join('')||(q?empty('No saved context matches your search.'):empty('Nothing saved yet','Facts, preferences and decisions saved here are shared with every AI you use.','Interview me briefly about this business, then save the key facts, preferences and decisions to AURA memory.','Build my business profile'))}</div></section>`;
   const quick=$('#quick-memory');if(quick)quick.innerHTML='<div class="mini-heading"><span>Goals</span>'+goalAdd+'</div>'+goals.slice(0,3).map(goalRow).join('');
 }
 
@@ -1128,8 +1153,8 @@ function renderWork() {
   state.libraryExpanded??={};
   document.querySelectorAll('#work-list details[data-library-group]').forEach(group=>{state.libraryExpanded[group.dataset.libraryGroup]=group.open;});
   const groupKey=name=>JSON.stringify([state.data.workspace,state.business,workFilter,workCategory,libraryView,name]);
-  $('#section-description').textContent=({business:'Your goals, useful facts, preferences, and decisions.',files:'Find the work you have saved and the locations you have linked.',work:'Reusable guidance and the capabilities listed by your AI apps.',tools:'Schedules managed by your connected AI apps.',assistants:'Reusable agents, native specialists, and the work you do with them.'})[state.view]||'';
-  $('#section-title').textContent=libraryKinds[workFilter]||'Workflows, recipes & more';
+  $('#section-description').textContent=({business:'Your goals, useful facts, preferences, and decisions.',files:'Find the work you have saved and the locations you have linked.',work:'Workflows, recipes, skills and tools your AI can reuse, plus the agents that do the work.',tools:'Work your connected AI apps repeat for you.',assistants:'Workflows, recipes, skills and tools your AI can reuse, plus the agents that do the work.'})[state.view]||'';
+  $('#section-title').textContent='Library';
   if($('#library-connections'))$('#library-connections').hidden=!['all','Tool'].includes(workFilter);
   document.querySelectorAll('[data-workfilter]').forEach(b=>{b.setAttribute('aria-pressed',String(b.dataset.workfilter===workFilter));b.classList.toggle('active',b.dataset.workfilter===workFilter);});
   const q=($('#work-search')?.value||'').toLowerCase();
@@ -1221,7 +1246,7 @@ async function syncScheduleOperation() {
 function scheduleForm() {
   const current=state.data.connection,apps=current.choices.filter(c=>c.available&&nativeConnection(c.id));
   const draft=state.scheduleDraft??={name:'',description:'',when:'',app:apps.some(c=>c.id===current.selected)?current.selected:apps[0]?.id||'',model:current.model||'',effort:current.effort||''};
-  return `<details id="schedule-add" class="schedule-add" ${state.scheduleAdding?'open':''}><summary>＋ Add scheduled task</summary><form class="form-grid" id="schedule-form"><div class="schedule-basics"><label>Task name<input name="name" required maxlength="200" value="${esc(draft.name)}" placeholder="Weekly competitor check"></label><label>When?<input name="when" required maxlength="300" value="${esc(draft.when)}" placeholder="Every Monday at 9am"></label></div><label>What should it do?<textarea name="description" required rows="2" maxlength="20000" placeholder="Check competitor pricing and summarize meaningful changes.">${esc(draft.description)}</textarea></label><label>Workspace goal<select name="goal_id"><option value="">No workspace goal</option>${workspaceGoalRecords().map(g=>`<option value="${esc(g.ref)}" ${g.ref===draft.goal_id?'selected':''}>${esc(g.title)}</option>`).join('')}</select></label><label>Assistant<select name="assistant_id" id="schedule-assistant"><option value="">Unassigned</option>${(state.assistantProfiles||[]).map(p=>`<option value="${esc(p.id)}" ${p.id===draft.assistant_id?'selected':''}>${esc(p.name)}</option>`).join('')}</select></label><div class="schedule-run-with"><label>AI app<select name="app" id="schedule-app" required>${apps.map(c=>`<option value="${esc(c.id)}" ${c.id===draft.app?'selected':''}>${esc(c.name)}</option>`).join('')||'<option value="">Connect an AI app first</option>'}</select></label><label>Model<select name="model" id="schedule-model" required disabled><option>Finding models…</option></select></label><label id="schedule-effort-label" hidden>Effort<select name="effort" id="schedule-effort"></select></label></div><p id="schedule-create-status" class="small-note" role="status"></p><div class="inline-actions"><button class="primary" id="create-schedule" disabled>Create task →</button><button type="button" class="text-button" id="schedule-retry-models" hidden>Try again</button></div></form></details>`;
+  return `<details id="schedule-add" class="schedule-add" ${state.scheduleAdding?'open':''}><summary class="secondary compact add-button">Add scheduled task</summary><form class="form-grid" id="schedule-form"><div class="schedule-basics"><label>Task name<input name="name" required maxlength="200" value="${esc(draft.name)}" placeholder="Weekly competitor check"></label><label>When?<input name="when" required maxlength="300" value="${esc(draft.when)}" placeholder="Every Monday at 9am"></label></div><label>What should it do?<textarea name="description" required rows="2" maxlength="20000" placeholder="Check competitor pricing and summarize meaningful changes.">${esc(draft.description)}</textarea></label><label>Workspace goal<select name="goal_id"><option value="">No workspace goal</option>${workspaceGoalRecords().map(g=>`<option value="${esc(g.ref)}" ${g.ref===draft.goal_id?'selected':''}>${esc(g.title)}</option>`).join('')}</select></label><label>Assistant<select name="assistant_id" id="schedule-assistant"><option value="">Unassigned</option>${(state.assistantProfiles||[]).map(p=>`<option value="${esc(p.id)}" ${p.id===draft.assistant_id?'selected':''}>${esc(p.name)}</option>`).join('')}</select></label><div class="schedule-run-with"><label>AI app<select name="app" id="schedule-app" required>${apps.map(c=>`<option value="${esc(c.id)}" ${c.id===draft.app?'selected':''}>${esc(c.name)}</option>`).join('')||'<option value="">Connect an AI app first</option>'}</select></label><label>Model<select name="model" id="schedule-model" required disabled><option>Finding models…</option></select></label><label id="schedule-effort-label" hidden>Effort<select name="effort" id="schedule-effort"></select></label></div><p id="schedule-create-status" class="small-note" role="status"></p><div class="inline-actions"><button class="primary" id="create-schedule" disabled>Create task →</button><button type="button" class="text-button" id="schedule-retry-models" hidden>Try again</button></div></form></details>`;
 }
 async function loadScheduleModels(refresh=false) {
   const app=$('#schedule-app')?.value;if(!app)return;
@@ -1270,7 +1295,7 @@ function scheduleRow(task,preview=false) {
 }
 function scheduleMarkup(items,query,filter,limit=Infinity,preview=false) {
   const visible=items.filter(t=>(preview?state.exampleShowPaused:state.showPaused)||!scheduleInfo(t).paused),ordered=orderedSchedules(visible,query,filter);
-  if(!ordered.length)return '<p class="small-note">'+(items.length?(query||filter!=='all'||(preview?state.exampleShowPaused:state.showPaused)?'No matching scheduled tasks.':'No active scheduled tasks. '):'No scheduled tasks found.')+'</p>';
+  if(!ordered.length)return items.length?'<p class="small-note">'+(query||filter!=='all'||(preview?state.exampleShowPaused:state.showPaused)?'No matching scheduled tasks.':'No active scheduled tasks.')+'</p>':empty('No scheduled tasks yet','Scheduled tasks repeat useful work for you, like a weekly check on your local search results or a monthly report.','Help me set up one useful scheduled task for this business. Suggest a few options based on our goals, then create the one I choose.','Suggest a scheduled task');
   const selected=ordered.slice(0,limit),sections=[];
   const grouped=rows=>{const groups=new Map();for(const row of rows){const name=row.info.kind==='other'?row.info.label:scheduleKinds.find(([kind])=>kind===row.info.kind)[1];if(!groups.has(name))groups.set(name,[]);groups.get(name).push(row);}const rank=name=>({Daily:0,Weekly:1,Monthly:2})[name]??3;return [...groups].map(([name,rows])=>({name,rows})).sort((a,b)=>rank(a.name)-rank(b.name)||a.name.localeCompare(b.name));};
   const groups=grouped(selected.filter(r=>!r.info.paused&&r.info.next));
@@ -1426,7 +1451,7 @@ function updateTaskTiming() {
 async function scheduleDetails(id) {
   const task=state.schedules.items.find(t=>t.id===id);if(!task)return;
   state.editingTask=task;
-  details(task.name,`${taskSummary(task)}${scheduleOperationMarkup()}${task.runtime?`<p class="small-note">${esc(task.runtime)}</p>`:''}<details class="task-options"><summary>Task settings</summary><form id="task-edit-form" class="form-grid"><label>AI app<select name="app">${state.data.connection.choices.filter(c=>c.available||c.id===task.owner).map(c=>`<option value="${esc(c.id)}" ${c.id===task.owner?'selected':''}>${esc(c.name)}</option>`).join('')}</select></label><label>Task name<input name="name" value="${esc(task.name)}" maxlength="200" required></label><label>Instructions<textarea name="description" rows="3" maxlength="20000" ${task.description?'':'placeholder="Describe what this task should do"'}>${esc(task.description||'')}</textarea></label>${taskTiming(task)}<label>Model<select name="model" id="task-model"><option value="">App default</option>${task.model?`<option value="${esc(task.provider?task.provider+':'+task.model:task.model)}" selected>${esc(task.model)}</option>`:''}</select><small class="muted" id="task-model-note"></small></label><div class="inline-actions"><button class="primary">${task.editable?'Save changes':'Ask AI to adjust'}</button>${task.editable?`<button type="button" class="secondary" data-task-status="${task.status==='paused'?'resume':'pause'}">${task.status==='paused'?'Resume':'Pause'}</button>`:''}</div><p class="small-note" id="task-edit-note">${task.editable?'Changes are saved in your AI app.':'Your AI confirms schedule changes in the app.'}</p></form></details>`);
+  details(task.name,`${taskSummary(task)}${scheduleOperationMarkup()}${task.runtime?`<p class="small-note">${esc(task.runtime)}</p>`:''}<details class="task-options"><summary>Task settings</summary><form id="task-edit-form" class="form-grid"><label>AI app<select name="app">${state.data.connection.choices.filter(c=>c.available||c.id===task.owner).map(c=>`<option value="${esc(c.id)}" ${c.id===task.owner?'selected':''}>${esc(c.name)}</option>`).join('')}</select></label><label>Task name<input name="name" value="${esc(task.name)}" maxlength="200" required></label><label>Instructions<textarea name="description" rows="3" maxlength="20000" ${task.description?'':'placeholder="Describe what this task should do"'}>${esc(task.description||'')}</textarea></label>${taskTiming(task)}<label>Model<select name="model" id="task-model"><option value="">App default</option>${task.model?`<option value="${esc(task.provider?task.provider+':'+task.model:task.model)}" selected>${esc(task.model)}</option>`:''}</select><small class="muted" id="task-model-note"></small></label><div class="inline-actions"><button class="primary">${task.editable?'Save changes':'Ask AI to adjust'}</button>${task.editable?`<button type="button" class="secondary" data-task-status="${task.status==='paused'?'resume':'pause'}">${task.status==='paused'?'Resume':'Pause'}</button>`:''}</div><p class="small-note" id="task-edit-note">${task.editable?'Changes are saved in your AI app.':'Your AI confirms schedule changes in the app.'}</p></form></details>`,'context');
   $('#detail-content .task-options').insertAdjacentHTML('beforebegin',`${taskLastRun(task)?`<p class="small-note">${esc(taskLastRun(task))}</p>`:''}<form id="task-request-form" class="form-grid"><label>What would you like to change?<input name="request" required maxlength="2000" placeholder="Move this to Monday mornings"></label><button class="primary">Ask AI →</button></form>`);
   renderScheduleOperation();
   const resultHost=document.createElement('section');resultHost.className='task-results-section';$('#task-request-form').before(resultHost);window.auraWork?.history(task,resultHost);
@@ -1509,13 +1534,69 @@ function details(title,html,mode='panel',anchor=null){
   const page=mode==='page'||(state.view==='sharing'&&mode!=='context'),modal=!anchor&&!page&&mode!=='context';
   if(d.open&&d.matches(':modal')!==modal)d.close();
   state.detailBack=null;$('#detail-search-back').hidden=true;
+  if(state.settingsReturn&&!anchor&&!page)setDetailBack('Settings',openSettings);
   if(state.searchReturn?.scope===JSON.stringify([state.data?.workspace,state.business])&&!anchor)setDetailBack('Results',backToSearchResults);
   d.dataset.mode=page?'page':mode;d.dataset.opened=Date.now();$('#detail-title').textContent=title;
+  if(mode!=='context')delete d.dataset.expanded;$('#detail-expand').hidden=mode!=='context';syncDetailExpand();
   $('#detail-content').innerHTML=(page&&state.view==='sharing'?workspaceLocation():'')+html;
   d.querySelector('[data-close="detail"]').hidden=page;
   $('#detail-footer').innerHTML='';$('#detail-footer').hidden=true;
   const actions=$('#detail-content .share-selection-bar');if(page&&actions){$('#detail-footer').append(actions);$('#detail-footer').hidden=false;}
   d.querySelectorAll('.dialog-error').forEach(el=>el.remove());if($('#notice').classList.contains('error'))notice('');if(anchor)openAnchoredSurface(d,anchor,{width:380});else if(!d.open){if(modal)d.showModal();else d.show();}
+}
+function syncDetailExpand(){const d=$('#detail'),on=d.dataset.expanded==='true',b=$('#detail-expand');b.setAttribute('aria-pressed',String(on));b.setAttribute('aria-label',on?'Show beside':'Expand');b.title=on?'Show beside':'Expand';}
+$('#detail-expand').addEventListener('click',()=>{const d=$('#detail');if(d.dataset.expanded==='true')delete d.dataset.expanded;else d.dataset.expanded='true';syncDetailExpand();window.dispatchEvent(new Event('resize'));});
+$('#detail').addEventListener('close',()=>{delete $('#detail').dataset.expanded;});
+/* Settings: one page, grouped by what people are trying to do, with search. Each row opens the existing panel. */
+const settingsGroups=[
+  ['General',[['account-settings','Profile','Your name, picture and how you like your AI to work','name avatar preferences'],['personalize-menu','Personalization','Appearance, accent colour, text size and density','theme dark light colour color font size compact'],['startup-settings','Startup & updates','Open AURA at sign-in and keep it up to date','update version launch']]],
+  ['AI & accounts',[['connection','AI connections','Which AI apps AURA uses, and their default models','claude codex chatgpt gemini model app connect'],['accounts-settings','Accounts & backups','Several accounts per app, plan limits and switching','limit usage reset backup account'],['harness-permissions','AI permissions','What your AI may do without asking','approve permissions safety'],['api-connections','API connections','Keys for model providers and other services','api key provider llm']]],
+  ['Workspace',[['workspace-manager','Add or open a workspace','Switch between businesses or start a new one','business folder new'],['share-settings','Share or import','Copy information, files or projects between workspaces','export import package share copy'],['workspace-history','Version history','Earlier versions of your files','undo restore previous version'],['workspace-backups','Back up or restore','Keep a copy of your workspace somewhere safe','backup restore copy']]],
+  ['Help',[['review-setup','Quick setup & tour','Connect an AI and see where things are','onboarding tour setup'],['support-report','Feedback & troubleshooting','Suggest a feature or get help with a problem','bug help report feature support']]],
+];
+function openSettings(){
+  closeAnchoredSurface(false);if($('#more-dialog').open)$('#more-dialog').close();state.settingsReturn=false;
+  const update=$('#update-menu-status')?.textContent.trim();
+  details('Settings',`<label class="sr-only" for="settings-find">Search settings</label><input type="search" id="settings-find" class="search" placeholder="Search settings" autocomplete="off">${settingsGroups.map(([group,rows])=>`<section class="settings-group"><h3>${esc(group)}</h3><div class="settings-list">${rows.map(([id,title,text,words])=>`<button type="button" class="settings-row" data-settings-open="${id}" data-settings-words="${esc((title+' '+text+' '+words).toLowerCase())}"><span><strong>${esc(title)}</strong><small>${esc(id==='startup-settings'&&update?update:text)}</small></span><span class="arrow" aria-hidden="true">›</span></button>`).join('')}</div></section>`).join('')}<p class="small-note settings-none" hidden>No settings match. Try another word, or ask your AI.</p>`);
+  const find=$('#settings-find');find.oninput=()=>{const q=find.value.trim().toLowerCase();let any=false;document.querySelectorAll('.settings-row').forEach(r=>{const show=!q||r.dataset.settingsWords.includes(q);r.hidden=!show;any||=show;});document.querySelectorAll('.settings-group').forEach(g=>g.hidden=![...g.querySelectorAll('.settings-row')].some(r=>!r.hidden));$('.settings-none').hidden=any;};
+  find.focus();
+}
+document.addEventListener('click',event=>{
+  const b=event.target.closest('#open-settings,[data-settings-open]');if(!b)return;
+  if(b.id==='open-settings'){openSettings();return;}
+  const target=$('#'+b.dataset.settingsOpen);if(!target)return;
+  state.settingsReturn=!!b.closest('#detail');closeAnchoredSurface(false);if($('#more-dialog').open)$('#more-dialog').close();
+  target.click();
+});
+$('#detail').addEventListener('close',()=>{setTimeout(()=>{if(!$('#detail').open)state.settingsReturn=false;},0);});
+/* Ctrl+K actions: every action stays where it is in the interface; this is the fast route to it.
+   Each action clicks the same control a person would, so there is one code path per action. */
+function shellCommands(){
+  const click=attrs=>()=>{const b=document.createElement('button');b.type='button';b.hidden=true;Object.entries(attrs).forEach(([k,v])=>b.setAttribute(k,v));document.body.append(b);b.click();b.remove();};
+  const settings=settingsGroups.flatMap(([,rows])=>rows.map(([id,title,text,words])=>({label:title,hint:'Settings',words:text+' '+words,run:click({'data-settings-open':id})})));
+  return [
+    {label:'New chat',hint:'Alt N',words:'start conversation',run:()=>attempt(newShellChat)},
+    {label:'Add goal',hint:'Business & memory',words:'new goal outcome target',run:click({'data-action':'add-goal'})},
+    {label:'Add context',hint:'Business & memory',words:'save fact preference decision memory',run:click({'data-add-context':''})},
+    {label:'Add scheduled task',hint:'Scheduled tasks',words:'new schedule recurring repeat automation',run:click({'data-view':'tools','data-add-recurring':''})},
+    {label:'Business & memory',hint:'Go to',words:'goals facts open',run:click({'data-view':'business'})},
+    {label:'Files & media',hint:'Go to',words:'documents images open',run:click({'data-view':'files'})},
+    {label:'Library',hint:'Go to',words:'workflows recipes skills tools plugins playbooks open',run:click({'data-view':'work'})},
+    {label:'Agents',hint:'Library',words:'assistants specialists open',run:click({'data-view':'assistants'})},
+    {label:'Scheduled tasks',hint:'Go to',words:'schedules automations open',run:click({'data-view':'tools'})},
+    {label:'Usage & spend',hint:'Plan limits',words:'cost tokens limits',run:()=>$('#usage-open').click()},
+    {label:'Archived & deleted',hint:'Restore',words:'trash restore undo',run:()=>$('#shell-search-archive').click()},
+    {label:'All settings',hint:'Ctrl ,',words:'preferences options',run:openSettings},
+    ...settings,
+  ];
+}
+function paintShellCommands(q){
+  const list=$('#shell-commands');if(!list)return;
+  const terms=q.split(/\s+/).filter(Boolean);
+  const found=terms.length&&shellSearchFilter==='all'&&!shellSearchFavorites?shellCommands().filter(c=>{const text=(c.label+' '+c.words).toLowerCase();return terms.every(t=>text.includes(t));}).sort((a,b)=>Number(!a.label.toLowerCase().startsWith(q))-Number(!b.label.toLowerCase().startsWith(q))).slice(0,5):[];
+  list.hidden=!found.length;
+  list.innerHTML=found.map((c,i)=>`<li><button type="button" class="command-row" data-command="${i}"><span class="command-icon" aria-hidden="true">›</span><span>${esc(c.label)}</span><kbd>${esc(c.hint)}</kbd></button></li>`).join('');
+  list.onclick=event=>{const b=event.target.closest('[data-command]');if(!b)return;const c=found[Number(b.dataset.command)];$('#search-dialog').close();c?.run();};
 }
 let apiConnections=[];
 async function showApiConnections(origin=state.apiReturn) {
@@ -1546,12 +1627,12 @@ function recordDetails(ref) {
   if(r.type==='SourceRecord') {
     const text=r.data.extensions?.businessos_evidence?.captured_text;
     const shared=r.data.extensions?.aura_sharing;
-    details(r.title,`<p class="item-type">Saved source · Memory</p>${location}${shared?`<p class="small-note">Shared by ${esc(shared.origin.name)} · Copied ${stamp(shared.copied_at)}. Source material; local business facts stay separate.</p><p><button class="text-button" data-file="${esc(r.data.source_reference)}">Open shared material →</button></p>`:''}${text?'<pre>'+esc(text)+'</pre>':'<p>'+esc(r.data.source_reference||'Saved source')+'</p>'}<button type="button" class="primary" data-add-record="${esc(r.ref)}" data-label="${esc(r.title)}">Add to chat</button><p><button class="text-button" data-share-record="${esc(r.ref)}" data-share-scope="${esc(sharingScope())}">Share a copy →</button></p><details><summary>Record data</summary><pre>${esc(JSON.stringify(r.data,null,2))}</pre></details>`);
+    details(r.title,`<p class="item-type">Saved source · Memory</p>${location}${shared?`<p class="small-note">Shared by ${esc(shared.origin.name)} · Copied ${stamp(shared.copied_at)}. Source material; local business facts stay separate.</p><p><button class="text-button" data-file="${esc(r.data.source_reference)}">Open shared material →</button></p>`:''}${text?'<pre>'+esc(text)+'</pre>':'<p>'+esc(r.data.source_reference||'Saved source')+'</p>'}<button type="button" class="primary" data-add-record="${esc(r.ref)}" data-label="${esc(r.title)}">Add to chat</button><p><button class="text-button" data-share-record="${esc(r.ref)}" data-share-scope="${esc(sharingScope())}">Share a copy →</button></p><details><summary>Record data</summary><pre>${esc(JSON.stringify(r.data,null,2))}</pre></details>`,'context');
     setDetailTitleActions(archiveControl('record',ref));return;
   }
   const mechanical=new Set(['id','object_type','schema_version','business_id','lineage','created_at','updated_at','extensions']);
   const fields=Object.entries(r.data).filter(([k,v])=>!mechanical.has(k)&&!['name','title'].includes(k)&&v!==null&&!(Array.isArray(v)&&!v.length));
-  details(r.title,`<p class="item-type">${esc(human(r.type))} · Memory</p>${location}${fields.map(([k,v])=>`<div class="field"><strong>${esc(human(k))}</strong><p>${esc(pretty(v))}</p></div>`).join('')}<div class="inline-actions"><button type="button" class="primary" data-add-record="${esc(r.ref)}" data-label="${esc(r.title)}">Add to chat</button><button type="button" class="text-button" data-copy-record="${esc(r.ref)}">Copy record</button></div><p><button class="text-button" data-share-record="${esc(r.ref)}" data-share-scope="${esc(sharingScope())}">Share a copy →</button></p><details><summary>Record data</summary><pre>${esc(JSON.stringify(r.data,null,2))}</pre></details>`);
+  details(r.title,`<p class="item-type">${esc(human(r.type))} · Memory</p>${location}${fields.map(([k,v])=>`<div class="field"><strong>${esc(human(k))}</strong><p>${esc(pretty(v))}</p></div>`).join('')}<div class="inline-actions"><button type="button" class="primary" data-add-record="${esc(r.ref)}" data-label="${esc(r.title)}">Add to chat</button><button type="button" class="text-button" data-copy-record="${esc(r.ref)}">Copy record</button></div><p><button class="text-button" data-share-record="${esc(r.ref)}" data-share-scope="${esc(sharingScope())}">Share a copy →</button></p><details><summary>Record data</summary><pre>${esc(JSON.stringify(r.data,null,2))}</pre></details>`,'context');
   if(r.type!=='Business')setDetailTitleActions(archiveControl('record',ref));
 }
 async function openFileWorkspace(ref,option='',presentation={}) {
@@ -1930,7 +2011,7 @@ async function previewWorkspace(path) {
     details('Open saved work',`<h3>${esc(w.name)}</h3><p>${w.businesses.length} ${w.businesses.length===1?'business':'businesses'} · ${w.files} files · ${size(w.bytes)}</p><p class="small-note storage-path">${esc(w.path)}</p>${w.aliases.length?'<p class="small-note">This AURA download points to the saved workspace above.</p>':''}<button class="primary" data-open-workspace="${esc(w.path)}">Open workspace →</button>`);
   } else {
     const missing=result.items.find(w=>w.kind==='missing');
-    details(missing?'Find your workspace':'Choose saved work',workspaces.length?`<div class="card">${workspaceRows(workspaces)}</div>`:`<p>${esc(missing?.note||'No saved business workspace was found here. Choose another folder, or link these files from Saved files & media.')}</p><button class="secondary" data-find-workspace="${esc(missing?.path||'')}">Choose folder…</button>`);
+    details(missing?'Find your workspace':'Choose saved work',workspaces.length?`<div class="card">${workspaceRows(workspaces)}</div>`:`<p>${esc(missing?.note||'No saved business workspace was found here. Choose another folder, or link these files from Files & media.')}</p><button class="secondary" data-find-workspace="${esc(missing?.path||'')}">Choose folder…</button>`);
   }
 }
 async function addWorkspace() {
@@ -2011,6 +2092,7 @@ async function auraRecovery() {
 async function changeWorkspace(id) {
   if(id===state.business)return;
   if(id==='__add__'){$('#business').value=state.business;$('#setup-workspace-select').value=state.business;await addWorkspace();return;}
+  if(id==='__share__'){$('#business').value=state.business;$('#setup-workspace-select').value=state.business;closeMobileSidebar();await openSharing();return;}
   rememberChatDraft();detachChatView();
   $('#request').value='';
   state.business=id;state.view='home';state.chat=[];state.chatMeta=null;state.newAssistantId=null;state.newAssistantName='';state.hydrated=false;state.setupStep='welcome';state.welcome=null;state.connectionChecks=null;
@@ -2025,12 +2107,12 @@ async function showChats(archived=false){
   state.chatList=result.items;state.chatArchiveView=archived;
   const projects=[...new Set(result.items.map(c=>c.project).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
   const shown=result.items.filter(c=>!!c.archived===archived&&(!state.chatProjectFilter||c.project===state.chatProjectFilter));
-  details('Your chats',`<p>Pinned chats first, then most recently active.</p><div class="filters"><button data-chat-archive-view="false" class="${archived?'':'active'}" aria-pressed="${!archived}">Recent</button><button data-chat-archive-view="true" class="${archived?'active':''}" aria-pressed="${archived}">Archived</button></div>${projects.length?`<label class="chat-project-filter">Project<select id="chat-project-filter"><option value="">All chats</option>${projects.map(name=>`<option value="${esc(name)}" ${state.chatProjectFilter===name?'selected':''}>${esc(name)}</option>`).join('')}</select></label>`:''}<div class="chat-list bounded-list">${shown.length?shown.map(c=>`<div class="chat-list-row"><button class="row" data-chat="${esc(c.id)}" ><span class="row-text"><span class="row-title">${c.pinned?'<svg class="chat-pin" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="Pinned"><path d="m16 3 5 5-4 1-4 4-1 5-6-6 5-1 4-4 1-4ZM2 22l5-5"/></svg> ':''}${esc(c.title)}</span><span class="chat-description">${esc(chatDescription(c))}</span><span class="row-meta">${c.project?esc(c.project)+' · ':''}${esc(appName(c.agent))} · ${esc(c.model||'App default')} · ${esc(chatDate(c.updated))} · ${esc(({working:'Working',error:'Needs attention',stopped:'Stopped',complete:'Reply ready'})[c.status]||'Saved')}${c.summary_stale?' · Description may need updating':''}</span></span></button><button class="chat-options" data-edit-chat="${esc(c.id)}" aria-label="Chat details for ${esc(c.title)}" aria-haspopup="dialog" title="Chat details">⋯</button></div>`).join(''):empty(archived?'No archived chats.':'No saved chats yet.',archived?'Archived conversations stay available here.':'Start a new conversation. Your original chat history stays in your AI app.')}</div>`);
+  details('Your chats',`<p>Pinned chats first, then most recently active.</p><div class="filters"><button data-chat-archive-view="false" class="${archived?'':'active'}" aria-pressed="${!archived}">Recent</button><button data-chat-archive-view="true" class="${archived?'active':''}" aria-pressed="${archived}">Archived</button></div>${projects.length?`<label class="chat-project-filter">Project<select id="chat-project-filter"><option value="">All chats</option>${projects.map(name=>`<option value="${esc(name)}" ${state.chatProjectFilter===name?'selected':''}>${esc(name)}</option>`).join('')}</select></label>`:''}<div class="chat-list bounded-list">${shown.length?shown.map(c=>`<div class="chat-list-row"><button class="row" data-chat="${esc(c.id)}" ><span class="row-text"><span class="row-title">${c.pinned?'<svg class="chat-pin" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="Pinned"><path d="m16 3 5 5-4 1-4 4-1 5-6-6 5-1 4-4 1-4ZM2 22l5-5"/></svg> ':''}${esc(c.title)}</span><span class="chat-description">${esc(chatDescription(c))}</span><span class="row-meta">${c.project?esc(c.project)+' · ':''}${esc(appName(c.agent))} · ${esc(c.model||'App default')} · ${esc(chatDate(c.updated))} · ${esc(({working:'Working',error:'Needs attention',stopped:'Stopped',complete:'Reply ready'})[c.status]||'Saved')}${c.summary_stale?' · Description may need updating':''}</span></span></button><button class="chat-options" data-edit-chat="${esc(c.id)}" aria-label="Chat details for ${esc(c.title)}" aria-haspopup="dialog" title="Chat details">⋯</button></div>`).join(''):empty(archived?'No archived chats.':'No saved chats yet.',archived?'Archived conversations stay available here.':'Start a new conversation. Your original chat history stays in your AI app.')}</div>`);
 }
-function folderIcon(){return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M3 7V5h7l2 2h9v13H3zM3 10h18"/></svg>';}
-function chevronIcon(){return '<svg class="disclosure-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg>';}
-function pinIcon(){return '<svg class="chat-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 3 5 5-4 1-4 4-1 5-6-6 5-1 4-4 1-4ZM2 22l5-5"/></svg>';}
-function editIcon(){return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M15 4l5 5M4 15L16 3l5 5L9 20l-6 1z"/></svg>';}
+function folderIcon(){return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linejoin="round" aria-hidden="true"><path d="M3 7V5h7l2 2h9v13H3zM3 10h18"/></svg>';}
+function chevronIcon(){return '<svg class="disclosure-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg>';}
+function pinIcon(){return '<svg class="chat-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 3 5 5-4 1-4 4-1 5-6-6 5-1 4-4 1-4ZM2 22l5-5"/></svg>';}
+function editIcon(){return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" aria-hidden="true"><path d="M15 4l5 5M4 15L16 3l5 5L9 20l-6 1z"/></svg>';}
 function renderProjectTrigger(){
   const button=$('#composer-project');if(!button)return;
   const name=state.chatMeta?.project||(!state.chatMeta?state.newChatProject:'')||'';
@@ -2311,6 +2393,7 @@ document.addEventListener('click',event=>attempt(async()=>{
   if(button.dataset.action==='connect'||['connection','review-setup'].includes(button.id)) {state.tour=button.id==='review-setup';openConnection(true,state.tour?'welcome':button.id==='model-settings'?'models':'connect');}
   if(button.id==='setup-start'||button.id==='models-back'){if(button.id==='setup-start'){const p=await api('/api/profile',{display_name:$('#setup-display-name').value});state.data.profile=p;applyProfile(p);const described=$('#setup-business-description').value.trim();if(described!==(rows('Business')[0]?.data?.description||'')){await api('/api/save',{business:state.business,kind:'business',description:described});await refresh();}}state.setupStep='connect';renderConnection();}
   if(button.id==='connect-back'){state.setupStep='welcome';renderConnection();}
+  if(button.id==='quick-connect'){button.disabled=true;try{const kind=$('#agent-choice').value;await api('/api/connect',{kind,model:'',effort:'',workspace_write:true});if(kind!==state.data.connection.selected&&state.business){await api('/api/chats/new',{business:state.business});state.chat=[];state.chatMeta=null;showMessages();}const tour=state.tour||!state.data.onboarding.seen;state.connectionChecks=null;state.welcome=null;await refresh();await checkConnections(false);if(tour){state.setupStep='tour';renderConnection();}else if(state.connectionChecks?.ready)$('#connect-dialog').close();else finishSetup();}finally{if(button.isConnected)button.disabled=false;}}
   if(button.id==='choose-agent'||button.id==='setup-back'){state.setupStep='models';renderConnection();await loadAgentOptions();}
   if(button.id==='welcome-request')finishSetup();
   if(button.id==='setup-result-back'){state.setupStep='tour';renderConnection();}
@@ -2510,6 +2593,13 @@ document.addEventListener('input',event=>{if(event.target.closest('#schedule-for
 document.addEventListener('change',event=>{if(['task-cadence','task-day','task-time','task-every','task-unit','task-custom'].includes(event.target.id))updateTaskTiming();if(event.target.id==='api-provider')apiProviderHelp();if(event.target.name==='app'&&event.target.closest('#task-edit-form')){taskModels(event.target.value).catch(()=>{});const moved=event.target.value!==state.editingTask.owner;$('#task-edit-form button[type=submit],#task-edit-form .primary').textContent=moved?'Ask AI to move':state.editingTask.editable?'Save changes':'Ask AI to adjust';$('#task-edit-note').textContent=moved?'Your AI must confirm the new schedule before pausing the old one.':state.editingTask.editable?'Changes are saved in your AI app.':'Your AI confirms schedule changes in the app.';}});
 $('#detail').addEventListener('close',()=>{if(!$('#detail').open){state.detailBack=null;if(state.searchReturn)shellReturnFocus=$('#search-open');state.searchReturn=null;}state.libraryDetailTicket=(state.libraryDetailTicket||0)+1;const field=$('#api-secret');if(field)field.value='';const changed=state.apiChanged,reload=state.apiReturn==='models'&&changed;state.apiReturn='';state.apiChanged=false;if(reload)loadAgentOptions(true).catch(modelFailure);if(changed)attempt(async()=>{state.library=await cachedApi('/api/library');quickMethods();if(state.view==='work')renderWork();});});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){state.systemAlert?.close();checkNativeChanges();syncNotifications().catch(()=>{});syncUpdates(true);attempt(()=>renderShell());}});
+// Pages keep themselves current: returning to AURA after a while refreshes the open page in place.
+let pageSeenAt=Date.now();
+window.addEventListener('blur',()=>{pageSeenAt=Date.now();});
+window.addEventListener('focus',()=>{
+  const away=Date.now()-pageSeenAt,content=$('#section-content'),typing=document.activeElement?.matches?.('input,textarea,select');
+  if(away>60000&&state.business&&state.view!=='home'&&!state.busy&&!$('#detail').open&&!typing&&content){const top=content.scrollTop;attempt(async()=>{await refresh(true);if(content.isConnected)content.scrollTop=top;});}
+});
 window.addEventListener('focus',()=>{state.systemAlert?.close();checkNativeChanges();syncNotifications().catch(()=>{});if(Date.now()-(state.updatePolledAt||0)>1000)syncUpdates(true);attempt(()=>renderShell(false));});
 const notificationTimer=setInterval(()=>{if(!state.closed)syncNotifications(true).catch(()=>{});},8000);
 const scheduleTimer=setInterval(()=>syncSchedules().catch(()=>{}),30000);
@@ -2608,7 +2698,7 @@ async function handoffChat(){
 
 function applyProfile(profile){
   state.profile={display_name:'',sidebar_collapsed:false,panel_width:480,text_size:15,accent:'forest',...profile};
-  const p=state.profile;document.body.classList.toggle('sidebar-collapsed',p.sidebar_collapsed);document.documentElement.dataset.accent=p.accent;
+  const p=state.profile;document.body.classList.toggle('sidebar-collapsed',p.sidebar_collapsed);document.documentElement.dataset.accent=p.accent;document.documentElement.dataset.density=p.density||'comfortable';
   document.documentElement.style.setProperty('--panel-width',p.panel_width+'px');document.documentElement.style.setProperty('--ui-text-size',p.text_size+'px');
   $('#profile-name').textContent=p.display_name||'Your profile';$('.profile-avatar').innerHTML=avatarMarkup(p);
   $('#welcome-name').textContent=p.display_name?'Welcome, '+p.display_name+'.':'Welcome to AURA';
@@ -2626,10 +2716,9 @@ async function renderShell(force=true){
   state.shellLoading=true;state.shellPolledAt=Date.now();
   try{
   applyProfile(state.data.profile||state.profile||{});renderComposerConnection();$('#active-workspace-label').textContent=rows('Business')[0]?.title||'Choose a workspace';
-  $('#active-chat-label').textContent=state.view==='home'?(state.chatMeta?.title||''):({business:'Business & memory',files:'Files & media',work:'Library',assistants:'Agents',tools:'Scheduled tasks',sharing:'Share or import'})[state.view]||'';
-  $('#sidebar [data-shell-action=sharing]').setAttribute('aria-current',state.view==='sharing'?'page':'false');
-  for(const b of document.querySelectorAll('.sidebar-sections [data-view]'))b.setAttribute('aria-current',b.dataset.view===state.view?'page':'false');
-  const running=state.data.running_chats||[];$('#background-work').hidden=!running.length;$('#background-work').textContent=running.length+' '+(running.length===1?'chat working':'chats working');
+  $('#active-chat-label').textContent=state.view==='home'?(state.chatMeta?.title||''):({business:'Business & memory',files:'Files & media',work:'Library',assistants:'Library · Agents',tools:'Scheduled tasks',sharing:'Share or import'})[state.view]||'';
+  for(const b of document.querySelectorAll('.sidebar-sections [data-view]'))b.setAttribute('aria-current',b.dataset.view===state.view||b.dataset.view==='work'&&state.view==='assistants'?'page':'false');
+  paintRunning();
   if(!state.business){$('#sidebar-chat-list').innerHTML='<p class="sidebar-empty">Choose a workspace to see its chats.</p>';return;}
   const root=state.data.workspace,business=state.business;
   const list=await api('/api/chats?'+new URLSearchParams({business,chat_id:state.chatMeta?.id||''}));if(root!==state.data.workspace||business!==state.business||(list.workspace&&list.workspace!==root))return;
@@ -2637,7 +2726,7 @@ async function renderShell(force=true){
   if(!state.busy&&events&&state.chatMeta&&events.chat_id===state.chatMeta.id&&(!state.liveJob||state.liveJob.id===events.id||events.created>state.liveJob.created)){
     state.liveJob={...(state.liveJob?.id===events.id?state.liveJob:{}),...events};window.auraContinuity?.renderRequests();
   }
-  state.chatList=list.items;state.projects=list.projects||[];renderProjectTrigger();state.runningChats=list.running||[];state.data.running_chats=state.runningChats;$('#background-work').hidden=!state.runningChats.length;$('#background-work').textContent=state.runningChats.length+' '+(state.runningChats.length===1?'chat working':'chats working');
+  state.chatList=list.items;state.projects=list.projects||[];renderProjectTrigger();state.runningChats=list.running||[];state.data.running_chats=state.runningChats;paintRunning();
   const owned=new Set(state.runningChats.filter(j=>j.workspace===root).map(j=>j.chat_id));
   const recent=list.items.filter(c=>!c.archived);
   const limit=state.chatLimit||20,signature=JSON.stringify([recent.map(c=>[c.id,c.title,c.status,c.updated,c.pinned,c.project]),[...owned],state.projects,state.chatMeta?.id,limit,state.inbox?.items?.map(n=>[n.chat_id,n.read])]);
@@ -2707,7 +2796,7 @@ async function accountProfile(){
 }
 async function personalize(){
   $('#more-dialog').close();leavePage();const p=state.profile||{};
-  details('Personalization',`<p class="shell-help">Choose how AURA looks and feels on this computer.</p><form id="profile-form" class="form-grid"><div class="settings-grid"><label>Appearance<select name="appearance">${['system','light','dark'].map(v=>`<option value="${v}" ${state.data.appearance===v?'selected':''}>${human(v)}</option>`).join('')}</select></label><label>Accent<select name="accent">${[['forest','Forest'],['ocean','Ocean'],['clay','Clay']].map(([v,n])=>`<option value="${v}" ${p.accent===v?'selected':''}>${n}</option>`).join('')}</select></label><label>Text size<select name="text_size">${[14,15,16,18].map(n=>`<option value="${n}" ${p.text_size===n?'selected':''}>${n===15?'Standard':n+' px'}</option>`).join('')}</select></label><label>Side panel width<input name="panel_width" type="range" min="360" max="900" step="20" value="${p.panel_width||480}"></label></div><div class="inline-actions"><button class="primary">Save preferences</button><button type="button" class="text-button" id="reset-appearance">Reset appearance</button></div></form><section class="customize-section"><h3>Make the workspace your own</h3><p>Use a dedicated personalization chat to adapt your layout, add a view, or simplify what you see.</p><button class="secondary" id="personalization-chat">Ask my AI to customize it</button><div id="custom-view-recovery"></div></section>`);
+  details('Personalization',`<p class="shell-help">Choose how AURA looks and feels on this computer.</p><form id="profile-form" class="form-grid"><div class="settings-grid"><label>Appearance<select name="appearance">${['system','light','dark'].map(v=>`<option value="${v}" ${state.data.appearance===v?'selected':''}>${human(v)}</option>`).join('')}</select></label><label>Accent<select name="accent">${[['forest','Forest'],['ocean','Ocean'],['clay','Clay']].map(([v,n])=>`<option value="${v}" ${p.accent===v?'selected':''}>${n}</option>`).join('')}</select></label><label>Text size<select name="text_size">${[14,15,16,18].map(n=>`<option value="${n}" ${p.text_size===n?'selected':''}>${n===15?'Standard':n+' px'}</option>`).join('')}</select></label><label>Density<select name="density">${[['comfortable','Comfortable'],['compact','Compact']].map(([v,n])=>`<option value="${v}" ${(p.density||'comfortable')===v?'selected':''}>${n}</option>`).join('')}</select></label><label>Side panel width<input name="panel_width" type="range" min="360" max="900" step="20" value="${p.panel_width||480}"></label></div><div class="inline-actions"><button class="primary">Save preferences</button><button type="button" class="text-button" id="reset-appearance">Reset appearance</button></div></form><section class="customize-section"><h3>Make the workspace your own</h3><p>Use a dedicated personalization chat to adapt your layout, add a view, or simplify what you see.</p><button class="secondary" id="personalization-chat">Ask my AI to customize it</button><div id="custom-view-recovery"></div></section>`);
   const diagnostics=await api('/api/diagnostics');if(diagnostics.interface==='custom'&&$('#custom-view-recovery'))$('#custom-view-recovery').innerHTML='<p class="small-note">You are using a custom layout. Your custom files will be kept if you return to the default.</p><button class="text-button" id="restore-standard-view">Return to default layout</button>';
 }
 function browserPerformance(){
@@ -2848,6 +2937,7 @@ function paintShellSearch(){
   const filtered=matches.filter(i=>shellSearchFilter==='all'||i.type===shellSearchFilter);
   $('#shell-search-filters').innerHTML=Object.entries(shellSearchTypes).map(([type,label])=>`<button type="button" data-search-filter="${type}" aria-pressed="${type===shellSearchFilter}">${label}<span>${type==='all'?matches.length:matches.filter(i=>i.type===type).length}</span></button>`).join('')+`<button type="button" data-search-favorites aria-label="Show favorites only" aria-pressed="${shellSearchFavorites}">★ Favorites</button>`;
   $('#shell-search-results').innerHTML=filtered.slice(0,shellSearchLimit).map(i=>`<li><button class="search-result" ${i.attr}="${esc(i.id)}"><span class="search-result-copy"><strong>${esc(i.title)}</strong>${i.description?`<small>${esc(i.description)}</small>`:''}</span><span class="search-result-meta"><span class="search-result-type">${i.label}</span>${i.at?`<time datetime="${new Date(i.at*1000).toISOString()}" title="${esc(new Date(i.at*1000).toLocaleString())}">${esc(searchDate(i.at))}</time>`:''}</span></button></li>`).join('')||`<li>${empty(q?'No matching '+(shellSearchFilter==='all'?'items':shellSearchTypes[shellSearchFilter].toLowerCase())+'.':'No '+(shellSearchFilter==='all'?'items':shellSearchTypes[shellSearchFilter].toLowerCase())+' here yet.',q?'Try another word or choose a different filter.':'')}</li>`;
+  if(typeof paintShellCommands==='function')paintShellCommands(q);
   const shown=Math.min(filtered.length,shellSearchLimit);
   $('#shell-search-more').hidden=shown===filtered.length;$('#shell-search-more').textContent='Show more results';
   $('#shell-search-status').textContent=`${shown<filtered.length?shown+' of ':''}${filtered.length} result${filtered.length===1?'':'s'}${source.unavailable.length?' · Couldn’t search '+source.unavailable.join(', ')+'. Close and reopen search to try again.':''}`;
@@ -2875,7 +2965,7 @@ document.addEventListener('click',event=>attempt(async()=>{
   if(b.id==='background-work'){
     details('Working conversations',`<p class="shell-help">Switching conversations keeps these requests running. Open a conversation to see its progress or stop that request.</p>${(state.data.running_chats||[]).map(j=>`<button class="search-result" data-working-chat="${esc(j.chat_id)}" data-working-workspace="${esc(j.workspace)}" data-working-business="${esc(j.business_id)}"><span>${esc(j.agent)} · ${esc(j.model||'App default')}</span><small>${esc(j.progress||'Working')}</small></button>`).join('')}`);
   }
-  if(b.dataset.workingChat){if(b.dataset.workingWorkspace!==state.data.workspace)await openStoredWorkspace(b.dataset.workingWorkspace);if(b.dataset.workingBusiness!==state.business)await changeWorkspace(b.dataset.workingBusiness);await openShellChat(b.dataset.workingChat);}
+  if(b.dataset.workingChat){if($('#notification-dialog').open)$('#notification-dialog').close();if(b.dataset.workingWorkspace!==state.data.workspace)await openStoredWorkspace(b.dataset.workingWorkspace);if(b.dataset.workingBusiness!==state.business)await changeWorkspace(b.dataset.workingBusiness);await openShellChat(b.dataset.workingChat);}
   if(b.id==='attach-file')await (window.auraCompose?window.auraCompose.choose():chooseContextFiles());
   if(b.dataset.addContext){state.selectedFiles=[...new Set([...(state.selectedFiles||[]),b.dataset.addContext])];if(state.selectedFiles.length>12)state.selectedFiles.pop();renderComposerFiles();rememberChatDraft();$('#detail').close();$('#request').focus();}
   if(b.dataset.removeContext){state.selectedFiles=state.selectedFiles.filter(p=>p!==b.dataset.removeContext);renderComposerFiles();rememberChatDraft();}
@@ -2894,7 +2984,7 @@ document.addEventListener('click',event=>attempt(async()=>{
   if(b.id==='shell-search-more'){const position=[...document.querySelectorAll('#shell-search-results .search-result')].length;shellSearchLimit+=50;paintShellSearch();[...document.querySelectorAll('#shell-search-results .search-result')][position]?.focus();}
 }));
 document.addEventListener('submit',event=>{
-  if(event.target.id!=='profile-form')return;event.preventDefault();attempt(async()=>{const data=Object.fromEntries(new FormData(event.target));const p=await api('/api/profile',{accent:data.accent,text_size:Number(data.text_size),panel_width:Number(data.panel_width)});await api('/api/preferences',{appearance:data.appearance});state.data.profile=p;state.data.appearance=data.appearance;applyProfile(p);applyAppearance(data.appearance);$('#detail').close();});
+  if(event.target.id!=='profile-form')return;event.preventDefault();attempt(async()=>{const data=Object.fromEntries(new FormData(event.target));const p=await api('/api/profile',{accent:data.accent,text_size:Number(data.text_size),density:data.density,panel_width:Number(data.panel_width)});await api('/api/preferences',{appearance:data.appearance});state.data.profile=p;state.data.appearance=data.appearance;applyProfile(p);applyAppearance(data.appearance);$('#detail').close();});
 });
 $('#shell-search').addEventListener('input',()=>{shellSearchLimit=50;paintShellSearch();});
 $('#search-dialog').addEventListener('click',event=>{if(event.target.closest('[data-chat]'))$('#search-dialog').close();});
@@ -2905,14 +2995,15 @@ $('#detail').addEventListener('close',()=>{if(shellReturnFocus?.isConnected&&!an
 document.addEventListener('keydown',event=>{
   if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='k'){event.preventDefault();attempt(openShellSearch);}
   if(event.altKey&&!event.ctrlKey&&!event.metaKey&&event.key.toLowerCase()==='n'){event.preventDefault();attempt(newShellChat);}
+  if((event.ctrlKey||event.metaKey)&&event.key===','){event.preventDefault();openSettings();}
   if(event.key==='Escape'){
     if(event.defaultPrevented)return;
     if(document.querySelector('dialog:modal')){event.preventDefault();const top=document.activeElement?.closest('dialog:modal')||[...document.querySelectorAll('dialog:modal')].at(-1);top.close();return;}
     if(document.body.classList.contains('sidebar-mobile-open')){event.preventDefault();closeMobileSidebar();return;}
     const open=[...document.querySelectorAll('dialog[open]')].filter(d=>!d.matches(':modal')&&d.id!=='section-dialog'&&d.dataset.mode!=='page').sort((a,b)=>Number(b.dataset.opened||0)-Number(a.dataset.opened||0));if(open[0]){event.preventDefault();open[0].close();recordShellRoute();renderShell();}
   }
-  if(['ArrowDown','ArrowUp','Home','End'].includes(event.key)&&event.target.closest('#shell-search-results')){event.preventDefault();const items=[...document.querySelectorAll('#shell-search-results .search-result')],index=items.indexOf(document.activeElement),next=event.key==='Home'?0:event.key==='End'?items.length-1:index+(event.key==='ArrowDown'?1:-1);if(next<0)$('#shell-search').focus();else items[Math.min(next,items.length-1)]?.focus();}
-  if(event.key==='ArrowDown'&&event.target.id==='shell-search'){event.preventDefault();$('#shell-search-results button')?.focus();}
+  if(['ArrowDown','ArrowUp','Home','End'].includes(event.key)&&event.target.closest('#shell-search-results,#shell-commands')){event.preventDefault();const items=[...document.querySelectorAll('#shell-commands:not([hidden]) .command-row,#shell-search-results .search-result')],index=items.indexOf(document.activeElement),next=event.key==='Home'?0:event.key==='End'?items.length-1:index+(event.key==='ArrowDown'?1:-1);if(next<0)$('#shell-search').focus();else items[Math.min(next,items.length-1)]?.focus();}
+  if(event.key==='ArrowDown'&&event.target.id==='shell-search'){event.preventDefault();($('#shell-commands:not([hidden]) button')||$('#shell-search-results button'))?.focus();}
 });
 const shellTimer=setInterval(()=>{if(!state.closed&&!document.hidden&&state.data)attempt(async()=>{await renderShell(false);});},4000);
 // Keep initialization compatible with native/custom clients; navigation is ordinary history.
@@ -2950,7 +3041,7 @@ function renderComposerConnection(){
 function workspaceLocation(){
   const source=state.view==='sharing'&&sharing?.tab==='share';
   const path=source&&sharing?.scope===sharingScope()?sharing.workspace:state.data.workspace, label=source?'Source workspace':'Current workspace';
-  return `<div class="workspace-location"><span>${label}</span><button type="button" data-copy-workspace="${esc(path)}" title="Copy ${esc(path)}"><span>${esc(path)}</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M8 8h12v13H8zM16 8V3H3v13h5"/></svg></button><small id="workspace-copy-status" role="status"></small></div>`;
+  return `<div class="workspace-location"><span>${label}</span><button type="button" data-copy-workspace="${esc(path)}" title="Copy ${esc(path)}"><span>${esc(path)}</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" aria-hidden="true"><path d="M8 8h12v13H8zM16 8V3H3v13h5"/></svg></button><small id="workspace-copy-status" role="status"></small></div>`;
 }
 function returnToChat(){state.view='home';$('#detail').close();$('#section-dialog').close();recordShellRoute();renderShell();$('#request').focus();}
 async function refreshChat(){
@@ -3062,7 +3153,7 @@ document.addEventListener('submit',event=>{if(event.target.id==='account-form'){
 // Dismiss floating surfaces only after a complete outside click, never a drag.
 let outsideSurface=null;
 document.addEventListener('pointerdown',event=>{
-  outsideSurface=null;if(anchoredSurface){const s=anchoredSurface;if(!s.dialog.contains(event.target)&&!s.anchor.contains(event.target))outsideSurface=s.dialog;return;}const dialogs=[...document.querySelectorAll('dialog[open]')].filter(d=>d.matches(':modal')||d.id==='detail'&&d.dataset.mode!=='page').sort((a,b)=>(a.matches(':modal')?-1:0)-(b.matches(':modal')?-1:0)||Number(b.dataset.opened||0)-Number(a.dataset.opened||0));
+  outsideSurface=null;if(anchoredSurface){const s=anchoredSurface;if(!s.dialog.contains(event.target)&&!s.anchor.contains(event.target))outsideSurface=s.dialog;return;}const dialogs=[...document.querySelectorAll('dialog[open]')].filter(d=>d.matches(':modal')||d.id==='detail'&&d.dataset.mode!=='page'&&d.dataset.mode!=='context').sort((a,b)=>(a.matches(':modal')?-1:0)-(b.matches(':modal')?-1:0)||Number(b.dataset.opened||0)-Number(a.dataset.opened||0));
   const top=dialogs[0];if(!top)return;const r=top.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)outsideSurface=top;
 },true);
 document.addEventListener('pointerup',event=>{const d=outsideSurface;outsideSurface=null;if(!d?.open)return;const r=d.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)d.close();},true);

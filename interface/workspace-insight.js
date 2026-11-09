@@ -44,9 +44,12 @@ window.auraInsight=(()=>{
   async function memory(){
     const key=scope(),job=state.liveJob;if(!$('#memory-feedback')||!job||job.chat_id!==state.chatMeta?.id||job.status==='working'||Date.now()/1000-job.updated>600)return;
     const id=key+'|'+job.id;if(memoryKey===id)return;memoryKey=id;
-    const result=await api('/api/memory-feedback?'+new URLSearchParams({business:state.business,since:job.created}));if(key!==scope())return;
-    const host=$('#memory-feedback');host.hidden=!result.items.length;
-    host.innerHTML=result.items.map(r=>`<div class="memory-feedback-row" data-memory-id="${esc(r.id)}"><span>Saved to workspace: <strong>${esc(r.label)}</strong></span><div class="inline-actions"><button class="text-button" data-memory-action="keep">Keep</button><button class="text-button" data-memory-edit="${esc(r.object_ref)}">Edit</button><button class="text-button" data-memory-action="undo">Undo</button></div></div>`).join('');
+    const [result,collections]=await Promise.all([api('/api/memory-feedback?'+new URLSearchParams({business:state.business,since:job.created})),api('/api/collections?'+new URLSearchParams({business:state.business})).catch(()=>({items:[]}))]);if(key!==scope())return;
+    // Results the AI saved or checked during this reply appear as cards that open the result.
+    const checked=(collections.items||[]).filter(c=>c.latest_check&&Date.parse(c.latest_check.at)/1000>=job.created-5).slice(-3);
+    const host=$('#memory-feedback');host.hidden=!result.items.length&&!checked.length;
+    host.innerHTML=checked.map(c=>{const k=c.latest_check,changes=k.change_count?k.change_count+' change'+(k.change_count===1?'':'s'):k.no_change_verified?'No changes':'Saved';
+      return `<button type="button" class="result-card" data-result-collection="${esc(c.id)}"><span class="result-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16M4 12h16M4 19h10"/></svg></span><span class="result-card-text"><strong>${esc(c.name)}</strong><small>${esc(c.current_count)} result${c.current_count===1?'':'s'} · ${esc(changes)}${k.coverage?.status&&k.coverage.status!=='complete'&&k.coverage.status!=='unknown'?' · '+esc(k.coverage.status==='partial'?'partly checked':'check failed'):''}</small></span><span class="result-card-open">Open</span></button>`;}).join('')+result.items.map(r=>`<div class="memory-feedback-row" data-memory-id="${esc(r.id)}"><span>Saved to workspace: <strong>${esc(r.label)}</strong></span><div class="inline-actions"><button class="text-button" data-memory-action="keep">Keep</button><button class="text-button" data-memory-edit="${esc(r.object_ref)}">Edit</button><button class="text-button" data-memory-action="undo">Undo</button></div></div>`).join('');
   }
   async function editMemory(ref){
     const key=scope();await refresh(true);if(key!==scope())return;
@@ -75,12 +78,13 @@ window.auraInsight=(()=>{
     if(selected.length)api('/api/context/resolve',{business:state.business,references:host._references()}).then(r=>{if(alive()&&!edits){selected=r.references;paint();}}).catch(()=>{});
   }
   document.addEventListener('click',e=>{
-    const b=e.target.closest('[data-activity-more],[data-activity-all],[data-child-activity],[data-memory-action],[data-memory-edit],[data-request-activity]');if(!b)return;
+    const b=e.target.closest('[data-activity-more],[data-activity-all],[data-child-activity],[data-memory-action],[data-memory-edit],[data-request-activity],[data-result-collection]');if(!b)return;
     if(b.dataset.requestActivity){selectedRequest=b.dataset.requestActivity;loaded='';render();$('#native-activity').scrollIntoView({block:'nearest'});}
     if(b.hasAttribute('data-activity-more')){limit+=40;paint();}
     if(b.hasAttribute('data-activity-all')){owner='';paint();}
     if(b.dataset.childActivity){owner=b.dataset.childActivity;paint();$('#native-activity').scrollIntoView({block:'nearest'});}
     if(b.dataset.memoryEdit)attempt(()=>editMemory(b.dataset.memoryEdit));
+    if(b.dataset.resultCollection){attempt(()=>window.auraProjects.openCollection(b.dataset.resultCollection));return;}
     if(b.dataset.memoryAction)attempt(async()=>{b.disabled=true;const row=b.closest('[data-memory-id]');try{await api('/api/memory-feedback',{business:state.business,id:row.dataset.memoryId,action:b.dataset.memoryAction});row.remove();if(!$('#memory-feedback').children.length)$('#memory-feedback').hidden=true;if(b.dataset.memoryAction==='undo')await refresh(true);}finally{if(b.isConnected)b.disabled=false;}});
   });
   return {render,memory,references,view};

@@ -27,7 +27,7 @@ function label(n){let name='';for(n++;n;n=Math.floor((n-1)/26))name=String.fromC
 function nextName(view){const dot=view.info.name.lastIndexOf('.'),stem=dot<0?view.info.name:view.info.name.slice(0,dot),ext=dot<0?'':view.info.name.slice(dot);return view.mode==='copy'?stem+' copy'+ext:stem+' v'+Math.max(2,...(view.info.related||[]).map(r=>Number(r.version)+1).filter(Number.isFinite))+ext;}
 
 export async function openFile(ctx){
-  detach();ctx.details('File',`<div id="file-workspace"><p>Opening file…</p></div>`);
+  detach();ctx.details('File',`<div id="file-workspace"><p>Opening file…</p></div>`,'context');
   const view={ctx,host:$('#file-workspace'),dirty:false,editing:false,edit:{},mode:'save',columns:0};current=view;
   try{
     const info=await api(view,'/api/documents?'+new URLSearchParams({business:ctx.business,workspace:ctx.workspace,path:ctx.ref,option:ctx.option||''}));

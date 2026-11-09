@@ -76,7 +76,7 @@ use **Bring existing work together**. Sharing does not replace those operations.
 Selected business records arrive as attributed source material. They do not overwrite
 the receiving business's identity or silently become its established facts, completed
 work, or measured results. Files receive ordinary local Asset registrations so they
-appear in **Saved files & media**. The original evidence is retained separately from
+appear in **Files & media**. The original evidence is retained separately from
 editable local copies; adapting a local file does not rewrite its source evidence.
 
 Referenced canonical records and files belonging to selected Assets are included as

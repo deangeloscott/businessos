@@ -312,7 +312,8 @@ def show(bid,ident,q='',view='current',offset=0,limit=50,at=None,item_id='',hist
     offset=max(0,int(offset));limit=max(1,min(100,int(limit)))
     def compact(r):
         return {**{k:v for k,v in r.items() if k not in {'fields','reported','summary','source_refs','correction_note','trail'}},'summary':r.get('summary','')[:800],
-                'fields':{k:(v if isinstance(v,(bool,int,float)) or v is None else str(v)[:200]) for k,v in list(r.get('fields',{}).items())[:6]},'excerpt':True}
+                'fields':{k:(v if isinstance(v,(bool,int,float)) or v is None else str(v)[:200]) for k,v in list(r.get('fields',{}).items())[:6]},'excerpt':True,
+                'source_count':len(r.get('source_refs') or []),'checked_at':max((s.get('last_checked_at') or '' for s in r.get('source_refs') or []),default='')}
     return {**{k:d[k] for k in ('id','name','mode','purpose','project_refs','version','producer') if k in d},'revision':revision(d),
             'items':[compact(r) for r in rows[offset:offset+limit]],'total':len(rows),'offset':offset,'limit':limit,'latest_check':check_summary(d['checks'][-1]) if d['checks'] else None,
             'history':[check_summary(c) for c in reversed(d['checks'])] if history else [],'history_count':len(d['checks']),

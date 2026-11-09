@@ -84,11 +84,13 @@ window.auraViews=(()=>{
   }
   /* Moving a card saves the new value as the person's correction, reusing the collection's own feedback. */
   function movable(host,d,field,reload){
-    const save=(id,value)=>attempt(async()=>{
+    const save=(id,value,undoable=true)=>attempt(async()=>{
       value=String(value||'').trim();if(!value||value.length>60)throw new Error('Enter a stage of up to 60 characters.');
+      const before=host.querySelector(`[data-board-item="${CSS.escape(id)}"]`)?.closest('[data-board-group]')?.dataset.boardGroup||'';
       const current=await api(q('/api/collections',{id:d.id,limit:1}));
       await api('/api/collections',{business:state.business,id:d.id,action:'feedback',choice:'correct',item_id:id,revision:current.revision,correction:{fields:{[field]:value}},note:'Moved on the board'});
       if(reload)await reload();
+      if(typeof toast==='function')toast('Moved to '+value,undoable&&before&&before!==value?()=>save(id,before,false):null);
     });
     host.querySelectorAll('[data-board-move]').forEach(sel=>sel.onchange=()=>{
       if(sel.value!=='__new__'){if(sel.value)save(sel.dataset.boardMove,sel.value);return;}
