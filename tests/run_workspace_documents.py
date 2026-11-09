@@ -120,7 +120,7 @@ def main():
                 request('/api/documents/save',auth,payload,expect=409)
                 assert source.read_text()=='HTTP save'
                 request('/vendor/../app.js',auth,expect=400)
-                _,body=request('/api/components',auth);assert len(json.loads(body)['components'])==5
+                _,body=request('/api/components',auth);assert json.loads(body)['components']==json.loads((ROOT/'distribution/ui-components.json').read_text(encoding='utf-8'))['components']
                 # Every file entry point resolves the same selected item and source.
                 asset_ref='asset/'+saved['asset']+'/'+source.name
                 _,body=request('/api/sharing?'+urlencode({'business':'alpha','workspace':str(root),'file':asset_ref}),auth)

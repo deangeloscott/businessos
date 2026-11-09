@@ -70,9 +70,15 @@ Each collection is one JSON file under `attachments/BUSINESS_ID/collections/`, r
 
 A collection can be shown as a **List** (the default), **Map**, **Chart** or **Board**, chosen with **Show as** beside the result filter. Each option appears only when the results suit it, and the choice is remembered per collection in this browser. All views use the same filter, search, details and Changes to review; they only draw the saved data.
 
-- **Map** appears when results are places. Use an `address` field and, when known, numeric `latitude` and `longitude` fields. A `rank` (or `position`) field numbers the pins, and `yours: true` marks the business itself. **Colour by** uses any field with a small set of values.
-- **Chart** compares results by any number field.
+- **Map** appears when results are places or areas. Use an `address` field and, when known, numeric `latitude` and `longitude` fields. A `rank` (or `position`) field numbers the pins, and `yours: true` marks the business itself. For territories, save an `area` field holding a GeoJSON `Polygon` or `MultiPolygon` (longitude, latitude order); for a service area, a `radius_km` or `radius_miles` field draws a circle. Optional `maps_url` and `website` fields link from the popup; otherwise **Open in Maps** searches Google Maps for the name and address.
+  - **Colour by** a category (click a legend entry to hide or show it) or a number (a scale; for rank or position, green is best). **Size by** a number makes larger values bigger pins (for rank, better ranks are bigger).
+  - Pins show what changed: a ring marks results new in the latest check, ▲/▼ shows a rank that moved since the previous check, and results no longer listed are faded when the view includes them.
+  - Popups give the distance from your own business when one result has `yours: true`.
+  - Maps with 40 or more places group nearby pins into counted clusters that separate as you zoom in.
+- **Chart** compares results by any number field, with ▲/▼ for movement since the previous check. **Over time** draws the number across checks for your business and the five leading results.
 - **Board** groups results into columns by any field with 2–12 distinct values, such as a status.
+
+Each result keeps a short trail of its numbers (up to 26 checks; a same-day recheck with unchanged numbers adds nothing). The trail feeds the arrows and trends, and is not part of the result's meaning: it never creates a change to review.
 
 The model that writes results should add these fields itself; it can usually find coordinates while researching. For results with only an address, the map offers **Find them on the map**. That sends the addresses to OpenStreetMap's free lookup service (Nominatim), about one a second; each address is looked up once and remembered on this computer (`place-lookups.json` in AURA's local state folder). Results that can't be placed are listed under the map.
 
@@ -80,7 +86,7 @@ Map imagery comes from OpenStreetMap through AURA, which keeps the areas you hav
 
 ## What's running and goal progress
 
-A project page starts with **What's running**: one plain sentence per linked scheduled task covering when it runs, which app runs it, where its results go and how many wait for review, the goal it serves, and whether it is working (last run, failed with its reason, paused, or not yet run). It is built from saved links and the app's own task records, never written by a model. **Change in chat** starts a message about that task; changes happen through the app as usual. A workspace goal's scheduled tasks use the same sentences.
+A project page starts with **What's running**: one plain sentence per linked scheduled task covering when it runs, which app runs it, where its results go and how many wait for review, the goal it serves, and whether it is working (last run, failed with its reason, paused, or not yet run). It is built from saved links and the app's own task records, never written by a model. Tasks that failed or are no longer listed come first, under a note saying how many need attention. **Change in chat** starts a message about that task; changes happen through the app as usual. A workspace goal's scheduled tasks use the same sentences.
 
 A workspace goal shows **Progress** when measurements are recorded for it: a `MetricDefinition` whose `objective_refs` includes the goal, with `MetricObservation` records holding each value, its period and `source_ref`. Connected apps (through their own connectors or MCP servers) or a scheduled task can record these from the system that actually measures the outcome, such as a booking system for new patients. The latest value shows its source and date; two or more values show a trend line.
 
@@ -93,7 +99,7 @@ python scripts/workspace_views.py place --workspace /path/to/workspace --busines
 python scripts/workspace_views.py progress --workspace /path/to/workspace --business-id example-studio --goal GOAL_ID
 ```
 
-`running` also accepts `--goal`; without `--text` it returns JSON. `rows` returns every result in a view with its simple fields and map position, `place` looks up a few unplaced addresses per call, and `progress` returns a goal's measurements. API: `GET /api/running?business=…&project=…` (or `goal=…`), `GET /api/collection-view?business=…&id=…&view=…&q=…`, `POST /api/collection-view` with `action: "place"`, and `GET /api/goal-progress?business=…&goal=…`. A harness can draw its own map or chart from `rows`.
+`running` also accepts `--goal`; without `--text` it returns JSON. `rows` returns every result in a view with its simple fields, map position, area, service radius and number trail, `place` looks up a few unplaced addresses per call, and `progress` returns a goal's measurements. API: `GET /api/running?business=…&project=…` (or `goal=…`), `GET /api/collection-view?business=…&id=…&view=…&q=…`, `POST /api/collection-view` with `action: "place"`, and `GET /api/goal-progress?business=…&goal=…`. A harness can draw its own map or chart from `rows`.
 
 ## Scheduled work
 

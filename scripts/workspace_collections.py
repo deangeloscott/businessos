@@ -157,7 +157,22 @@ def item_value(raw,before=None):
     if significant:item['change_reason']=string(raw.get('change_reason') or ('New result' if not old else 'Saved details changed'),'change reason',1000)
     item.update(first_seen=old.get('first_seen') or now(),last_seen=now(),updated_at=now() if changed else old.get('updated_at',now()),
                 attention_revision=old.get('attention_revision',0)+int(significant),revision=projects.digest(compare(item)))
+    trail(item)
     return item,changed,significant
+
+
+TRAIL_POINTS=26  # about six months of weekly checks
+
+
+def trail(item):
+    """Keep a short history of a result's numbers (rank, rating, reviews) for trends and rank changes.
+    Not part of its meaning: it never creates a change to review."""
+    values={k:v for k,v in (item.get('fields') or {}).items() if isinstance(v,(int,float)) and not isinstance(v,bool) and k not in {'latitude','longitude','lat','lng','lon'}}
+    if not values:return
+    points=list(item.get('trail',[]))
+    recent=points and points[-1]['values']==values and (datetime.now(timezone.utc)-datetime.fromisoformat(points[-1]['at'].replace('Z','+00:00'))).total_seconds()<20*3600
+    if not recent:points.append({'at':now(),'values':values})
+    item['trail']=points[-TRAIL_POINTS:]
 
 
 def coverage(data,doc):
@@ -296,7 +311,7 @@ def show(bid,ident,q='',view='current',offset=0,limit=50,at=None,item_id='',hist
     rows=select(d,view,q,at)
     offset=max(0,int(offset));limit=max(1,min(100,int(limit)))
     def compact(r):
-        return {**{k:v for k,v in r.items() if k not in {'fields','reported','summary','source_refs','correction_note'}},'summary':r.get('summary','')[:800],
+        return {**{k:v for k,v in r.items() if k not in {'fields','reported','summary','source_refs','correction_note','trail'}},'summary':r.get('summary','')[:800],
                 'fields':{k:(v if isinstance(v,(bool,int,float)) or v is None else str(v)[:200]) for k,v in list(r.get('fields',{}).items())[:6]},'excerpt':True}
     return {**{k:d[k] for k in ('id','name','mode','purpose','project_refs','version','producer') if k in d},'revision':revision(d),
             'items':[compact(r) for r in rows[offset:offset+limit]],'total':len(rows),'offset':offset,'limit':limit,'latest_check':check_summary(d['checks'][-1]) if d['checks'] else None,
@@ -331,7 +346,7 @@ def instructions(bid,ident):
             'and a stable native run identity reused on retries. Report only sources actually checked in coverage; a failed or missing source is not evidence that an opportunity disappeared. '+
             ('Keep dated reports as separate item identities. ' if d['mode']=='series' else 'Update the current entries; preserve user feedback and keep source dates distinct from report time. ')+
             'Save only useful results, explain material changes, and avoid repeating unchanged findings as alerts. '+
-            'When results are places, include an address field and, when known, numeric latitude and longitude fields (plus rank when the order matters, and yours: true for the business itself) so they can be shown on a map. '+
+            'When results are places, include an address field and, when known, numeric latitude and longitude fields (plus rank when the order matters, yours: true for the business itself, an area GeoJSON polygon for a territory, or radius_km for a service area) so they can be shown on a map. '+
             'Use actual native scheduling and tools normally. Full helper examples: '+str(PRODUCT_ROOT/'docs/projects-and-results.md')+'.\n[/Aura results]')
 
 

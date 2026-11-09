@@ -15,6 +15,7 @@ AURA consists of a local browser interface, a Python application/API, CLI helper
 | Cropper.js | Raster image crop, rotation and resize | MIT |
 | PDF.js, its fonts, character maps and WebAssembly helpers | Local PDF viewing and text search | Apache-2.0 and included resource notices |
 | Leaflet | Map view of saved results with places | BSD-2-Clause |
+| Leaflet.markercluster | Groups nearby pins on busy maps | MIT |
 | Browser media controls | Images, audio and video playback | Supplied by the browser |
 
 Exact frontend versions, transitive package identities, registry integrity values and shipped file hashes live in `distribution/ui-components.json`. Included license texts are in `interface/vendor/THIRD-PARTY-NOTICES.md` and PDF resource notices. Python requirements live in `requirements.txt`; installed versions depend on the selected Python environment. Click the version in Settings for the component overview.

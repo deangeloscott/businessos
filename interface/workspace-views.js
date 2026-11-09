@@ -3,78 +3,152 @@
 window.auraViews=(()=>{
   const blank='data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
   const palette=['#6654ce','#d0603a','#2f8f6b','#c99a1a','#3b78c2','#b4478f','#5e6b7a','#8a5a2b','#4aa3a1','#a33b3b','#6d8f2f','#9466c8'];
-  const coords=new Set(['latitude','longitude','lat','lng','lon','yours']);
+  const hiddenFields=new Set(['latitude','longitude','lat','lng','lon','yours','radius_km','radius_miles','maps_url','website','url']);
+  const CLUSTER_FROM=40;
   let ticket=0,map=null;
   const scope=()=>JSON.stringify([state.business,state.data?.workspace]);
   const q=(route,values)=>route+'?'+new URLSearchParams({business:state.business,...values});
   const css=href=>{if(!document.querySelector(`link[href="${href}"]`)){const el=document.createElement('link');el.rel='stylesheet';el.href=href;document.head.append(el);}};
   const value=v=>typeof v==='number'?v.toLocaleString():String(v);
+  const lowerBetter=f=>/^(rank|position)$/i.test(f||'');
+  const day=t=>new Date(t).toLocaleDateString(undefined,{month:'short',day:'numeric'});
+  const link=v=>typeof v==='string'&&/^https?:\/\//i.test(v)?v:'';
+  const miles=/^en-(US|GB|LR)$|^my/i.test(navigator.language||'');
   function choice(id,shape){try{if(shape===undefined)return localStorage.getItem('aura-view:'+id)||'list';localStorage.setItem('aura-view:'+id,shape);}catch{}return shape||'list';}
   function release(){ticket++;if(map){map.remove();map=null;}}
-  function card(r,skip=[]){const shown=Object.entries(r.fields).filter(([k,v])=>!coords.has(k)&&!skip.includes(k)&&v!==null&&v!=='').slice(0,5);return `<strong>${esc(r.title)}</strong>${shown.length?`<dl class="view-fields">${shown.map(([k,v])=>`<div><dt>${esc(human(k))}</dt><dd>${esc(value(v))}</dd></div>`).join('')}</dl>`:''}<button type="button" class="text-button" data-view-find="${esc(r.title)}">Show in list</button>`;}
-  function colours(rows,field){const order=[...new Set(rows.map(r=>r.fields[field]).filter(v=>v!==undefined&&v!==null&&v!==''))];return {order,of:r=>field&&order.includes(r.fields[field])?palette[order.indexOf(r.fields[field])%palette.length]:palette[0]};}
-  function legend(c,field,shown){const present=new Set(shown.map(r=>r.fields[field]));return field&&c.order.length?`<div class="view-legend">${c.order.map((v,i)=>present.has(v)?`<span><i style="background:${palette[i%palette.length]}"></i>${esc(String(v))}</span>`:'').join('')}</div>`:'';}
+  function fields(r,skip=[]){const shown=Object.entries(r.fields).filter(([k,v])=>!hiddenFields.has(k)&&k!=='address'&&!skip.includes(k)&&v!==null&&v!=='').slice(0,5);return shown.length?`<dl class="view-fields">${shown.map(([k,v])=>`<div><dt>${esc(human(k))}</dt><dd>${esc(value(v))}</dd></div>`).join('')}</dl>`:'';}
+  function card(r,skip=[]){return `<strong>${esc(r.title)}</strong>${fields(r,skip)}<button type="button" class="text-button" data-view-find="${esc(r.title)}">Show in list</button>`;}
+
+  /* How a result's numbers moved between its last two checks. */
+  function moved(r,field){const t=(r.trail||[]).filter(p=>typeof p.values[field]==='number');if(t.length<2)return 0;const a=t[t.length-2].values[field],b=t[t.length-1].values[field];return a===b?0:(lowerBetter(field)?b<a:b>a)?1:-1;}
+
+  /* Colour by a category (distinct colours, can be hidden from the legend) or by a number (a scale). */
+  function colouring(rows,field,numbers){
+    if(field&&numbers.includes(field)){
+      const vals=rows.map(r=>r.fields[field]).filter(v=>typeof v==='number'),min=Math.min(...vals),max=Math.max(...vals),span=max-min||1;
+      const good=lowerBetter(field);
+      const of=r=>{const v=r.fields[field];if(typeof v!=='number')return '#9a98a6';const t=(v-min)/span;return good?`hsl(${Math.round(140-130*t)} 55% 42%)`:`hsl(250 ${Math.round(30+35*t)}% ${Math.round(72-40*t)}%)`;};
+      return {numeric:true,min,max,good,of};
+    }
+    const order=[...new Set(rows.map(r=>r.fields[field]).filter(v=>v!==undefined&&v!==null&&v!==''))];
+    return {numeric:false,order,of:r=>field&&order.includes(r.fields[field])?palette[order.indexOf(r.fields[field])%palette.length]:palette[0]};
+  }
+  function sizing(rows,field){
+    if(!field)return ()=>20;
+    const vals=rows.map(r=>r.fields[field]).filter(v=>typeof v==='number'),min=Math.min(...vals),max=Math.max(...vals),span=max-min||1;
+    return r=>{const v=r.fields[field];if(typeof v!=='number')return 16;let t=(v-min)/span;if(lowerBetter(field))t=1-t;return Math.round(16+16*Math.sqrt(t));};
+  }
+  function distance(a,b){const rad=x=>x*Math.PI/180,dLat=rad(b.lat-a.lat),dLng=rad(b.lng-a.lng),h=Math.sin(dLat/2)**2+Math.cos(rad(a.lat))*Math.cos(rad(b.lat))*Math.sin(dLng/2)**2;const km=12742*Math.asin(Math.sqrt(h));return miles?`${(km/1.609344).toFixed(km<16?1:0)} mi`:`${km.toFixed(km<10?1:0)} km`;}
 
   /* Collection views. `find` returns to the list filtered to one result. */
   async function show(host,d,shape,view,search,find){
     release();const mine=ticket,key=scope();host.innerHTML='<p class="small-note">Loading…</p>';
     host.onclick=e=>{const b=e.target.closest('[data-view-find]');if(b){release();find(b.dataset.viewFind);}};
-    const data=await api(q('/api/collection-view',{id:d.id,view,q:search}));if(mine!==ticket||key!==scope()||!host.isConnected)return;
+    let data;
+    try{data=await api(q('/api/collection-view',{id:d.id,view,q:search}));}
+    catch(error){if(mine===ticket&&host.isConnected)host.innerHTML=`<p class="small-note">${esc(humanError(error))}</p>`;return;}
+    if(mine!==ticket||key!==scope()||!host.isConnected)return;
     if(shape==='map')return drawMap(host,d,data,view,search,mine,key,find);
-    const fields=shape==='chart'?d.views.chart:d.views.board,picked=choice(d.id+':'+shape+'-field',undefined);
-    const field=fields.includes(picked)?picked:fields[0];
-    host.innerHTML=`<div class="view-controls"><label>${shape==='chart'?'Compare':'Group by'}<select data-view-field>${fields.map(f=>`<option value="${esc(f)}" ${f===field?'selected':''}>${esc(human(f))}</option>`).join('')}</select></label></div><div data-view-body></div>`;
-    const paint=f=>{host.querySelector('[data-view-body]').innerHTML=shape==='chart'?bars(data.items,f):board(data.items,f);};
-    host.querySelector('[data-view-field]').onchange=e=>{choice(d.id+':'+shape+'-field',e.target.value);paint(e.target.value);};paint(field);
+    const list=shape==='chart'?d.views.chart:d.views.board,picked=choice(d.id+':'+shape+'-field',undefined);
+    const field=list.includes(picked)?picked:list[0];let mode=choice(d.id+':chart-mode',undefined)==='time'?'time':'now';
+    host.innerHTML=`<div class="view-controls"><label>${shape==='chart'?'Compare':'Group by'}<select data-view-field>${list.map(f=>`<option value="${esc(f)}" ${f===field?'selected':''}>${esc(human(f))}</option>`).join('')}</select></label>${shape==='chart'?`<label>Show<select data-view-mode><option value="now">Latest</option><option value="time" ${mode==='time'?'selected':''}>Over time</option></select></label>`:''}</div><div data-view-body></div>`;
+    let current=field;
+    const paint=()=>{host.querySelector('[data-view-body]').innerHTML=shape==='board'?board(data.items,current):mode==='time'?trends(data.items,current):bars(data.items,current);};
+    host.querySelector('[data-view-field]').onchange=e=>{current=e.target.value;choice(d.id+':'+shape+'-field',current);paint();};
+    const modeSelect=host.querySelector('[data-view-mode]');if(modeSelect)modeSelect.onchange=e=>{mode=e.target.value;choice(d.id+':chart-mode',mode);paint();};
+    paint();
   }
   function bars(rows,field){
-    const items=rows.filter(r=>typeof r.fields[field]==='number').sort((a,b)=>b.fields[field]-a.fields[field]),top=items.slice(0,30),peak=Math.max(...top.map(r=>Math.abs(r.fields[field])),0)||1;
+    const good=lowerBetter(field),items=rows.filter(r=>typeof r.fields[field]==='number').sort((a,b)=>good?a.fields[field]-b.fields[field]:b.fields[field]-a.fields[field]),top=items.slice(0,30),peak=Math.max(...top.map(r=>Math.abs(r.fields[field])),0)||1;
     if(!items.length)return '<p class="small-note">No results have this number.</p>';
-    return `<div class="view-bars">${top.map(r=>`<button type="button" class="bar-row" data-view-find="${esc(r.title)}" title="Show in list"><span class="bar-label">${esc(r.title)}</span><span class="bar-track"><span class="bar ${r.fields[field]<0?'negative':''}" style="width:${Math.max(1,Math.abs(r.fields[field])/peak*100)}%"></span></span><span class="bar-value">${esc(value(r.fields[field]))}</span></button>`).join('')}</div>${items.length>top.length?`<p class="small-note">Showing the top ${top.length} of ${items.length}.</p>`:''}${rows.length>items.length?`<p class="small-note">${rows.length-items.length} ${rows.length-items.length===1?'result has':'results have'} no ${esc(human(field).toLowerCase())}.</p>`:''}`;
+    const arrow=r=>({1:'<span class="moved up" title="Better than last check">▲</span>','-1':'<span class="moved down" title="Worse than last check">▼</span>'})[moved(r,field)]||'';
+    return `<div class="view-bars">${top.map(r=>`<button type="button" class="bar-row" data-view-find="${esc(r.title)}" title="Show in list"><span class="bar-label">${esc(r.title)}</span><span class="bar-track"><span class="bar ${r.fields[field]<0?'negative':''}" style="width:${Math.max(1,Math.abs(r.fields[field])/peak*100)}%"></span></span><span class="bar-value">${esc(value(r.fields[field]))}${arrow(r)}</span></button>`).join('')}</div>${items.length>top.length?`<p class="small-note">Showing the top ${top.length} of ${items.length}.</p>`:''}${rows.length>items.length?`<p class="small-note">${rows.length-items.length} ${rows.length-items.length===1?'result has':'results have'} no ${esc(human(field).toLowerCase())}.</p>`:''}`;
+  }
+  /* A number over time for the business itself and the leading results, from each result's saved trail. */
+  function trends(rows,field){
+    const good=lowerBetter(field),latest=r=>r.fields[field];
+    const series=rows.map(r=>({r,points:(r.trail||[]).filter(p=>typeof p.values[field]==='number').map(p=>({t:Date.parse(p.at),v:p.values[field]}))})).filter(s=>s.points.length);
+    if(!series.some(s=>s.points.length>1))return '<p class="small-note">Trends appear once results have been checked at least twice.</p>';
+    const yours=series.filter(s=>s.r.fields.yours===true),rest=series.filter(s=>s.r.fields.yours!==true&&typeof latest(s.r)==='number').sort((a,b)=>good?latest(a.r)-latest(b.r):latest(b.r)-latest(a.r));
+    const shown=[...yours,...rest].slice(0,6),all=shown.flatMap(s=>s.points),t0=Math.min(...all.map(p=>p.t)),t1=Math.max(...all.map(p=>p.t)),v0=Math.min(...all.map(p=>p.v)),v1=Math.max(...all.map(p=>p.v));
+    const w=560,h=190,pad=32,x=t=>pad+(t1===t0?0.5:(t-t0)/(t1-t0))*(w-pad*2),y=v=>{const t=v1===v0?0.5:(v-v0)/(v1-v0);return good?pad+t*(h-pad*2):h-pad-t*(h-pad*2);};
+    const top=good?v0:v1,bottom=good?v1:v0;
+    return `<svg class="metric-line trend-lines" viewBox="0 0 ${w} ${h}" role="img" aria-label="${esc(human(field))} over time"><line x1="${pad}" y1="${h-pad}" x2="${w-pad}" y2="${h-pad}" class="axis"/><text x="${pad}" y="${h-10}" class="tick">${esc(day(t0))}</text><text x="${w-pad}" y="${h-10}" class="tick end">${esc(day(t1))}</text><text x="${pad-6}" y="${pad+4}" class="tick end">${esc(value(top))}</text><text x="${pad-6}" y="${h-pad+4}" class="tick end">${esc(value(bottom))}</text>${shown.map((s,i)=>`<g style="--series:${palette[i%palette.length]}"><polyline points="${s.points.map(p=>x(p.t)+','+y(p.v)).join(' ')}" class="trend series ${s.r.fields.yours===true?'yours':''}"/>${s.points.map(p=>`<circle cx="${x(p.t)}" cy="${y(p.v)}" r="3"><title>${esc(s.r.title)}: ${esc(value(p.v))} · ${esc(day(p.t))}</title></circle>`).join('')}</g>`).join('')}</svg><div class="view-legend">${shown.map((s,i)=>`<span><i style="background:${palette[i%palette.length]}"></i>${esc(s.r.title)}</span>`).join('')}</div>${good?'<p class="small-note">Lower is better, so the best rank is at the top.</p>':''}`;
   }
   function board(rows,field){
     const groups=new Map();rows.forEach(r=>{const g=r.fields[field]===undefined||r.fields[field]===null||r.fields[field]===''?'':String(r.fields[field]);if(!groups.has(g))groups.set(g,[]);groups.get(g).push(r);});
     const order=[...groups.keys()].sort((a,b)=>(a==='')-(b==='')||groups.get(b).length-groups.get(a).length);
     return `<div class="view-board">${order.map(g=>`<section class="board-column"><h4>${esc(g||'No '+human(field).toLowerCase())} <small>${groups.get(g).length}</small></h4>${groups.get(g).slice(0,50).map(r=>`<div class="board-card">${card(r,[field])}</div>`).join('')}${groups.get(g).length>50?`<p class="small-note">${groups.get(g).length-50} more in the list.</p>`:''}</section>`).join('')}</div>`;
   }
+
   async function drawMap(host,d,data,view,search,mine,key,find){
-    css('/vendor/map-view.css');const {L}=await import('/vendor/map-view.js');if(mine!==ticket||key!==scope()||!host.isConnected)return;
-    const groups=d.views.board,picked=choice(d.id+':map-field',undefined),field=groups.includes(picked)?picked:'';
-    host.innerHTML=`${groups.length?`<div class="view-controls"><label>Colour by<select data-view-field><option value="">One colour</option>${groups.map(f=>`<option value="${esc(f)}" ${f===field?'selected':''}>${esc(human(f))}</option>`).join('')}</select></label></div>`:''}<div class="result-map" data-view-map></div><div data-view-legend></div><p class="small-note" data-view-status role="status"></p><p class="small-note" data-view-offline hidden>Some map imagery isn’t available offline. Your saved places still show.</p><details class="map-unplaced" hidden><summary></summary><ul></ul></details>`;
-    map=L.map(host.querySelector('[data-view-map]'),{scrollWheelZoom:false,worldCopyJump:true});
-    L.tileLayer('/api/media/map/{z}/{x}/{y}.png',{maxZoom:19,errorTileUrl:blank,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors'}).on('tileerror',()=>{const n=host.querySelector('[data-view-offline]');if(n)n.hidden=false;}).addTo(map);
+    css('/vendor/map-view.css');let L;
+    try{({L}=await import('/vendor/map-view.js'));}
+    catch{if(mine===ticket&&host.isConnected)host.innerHTML='<p class="small-note">The map couldn’t load. Your results are still in List view; reopen AURA to try again.</p>';return;}
+    if(mine!==ticket||key!==scope()||!host.isConnected)return;
+    const groups=d.views.board,numbers=d.views.chart,options=[...groups,...numbers];
+    const remembered=choice(d.id+':map-field',undefined),sizeRemembered=choice(d.id+':map-size',undefined);
+    let colourField=options.includes(remembered)?remembered:'',sizeField=numbers.includes(sizeRemembered)?sizeRemembered:'',hidden=new Set(),fitted=false;
+    host.innerHTML=`${options.length?`<div class="view-controls"><label>Colour by<select data-view-colour><option value="">One colour</option>${options.map(f=>`<option value="${esc(f)}" ${f===colourField?'selected':''}>${esc(human(f))}</option>`).join('')}</select></label>${numbers.length?`<label>Size by<select data-view-size><option value="">Same size</option>${numbers.map(f=>`<option value="${esc(f)}" ${f===sizeField?'selected':''}>${esc(human(f))}</option>`).join('')}</select></label>`:''}</div>`:''}<div class="result-map" data-view-map></div><div data-view-legend></div><p class="small-note" data-view-status role="status"></p><p class="small-note" data-view-offline hidden>Some map imagery isn’t available offline. Your saved places still show.</p><details class="map-unplaced" hidden><summary></summary><ul></ul></details>`;
+    const m=map=L.map(host.querySelector('[data-view-map]'),{scrollWheelZoom:false,worldCopyJump:true});
+    L.tileLayer('/api/media/map/{z}/{x}/{y}.png',{maxZoom:19,errorTileUrl:blank,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors'}).on('tileerror',()=>{const n=host.querySelector('[data-view-offline]');if(n)n.hidden=false;}).addTo(m);
     // Leaflet keeps popup clicks from reaching the page, so the popup's button gets its own handler.
-    map.on('popupopen',e=>{const b=e.popup.getElement()?.querySelector('[data-view-find]');if(b)b.onclick=()=>{release();find(b.dataset.viewFind);};});
-    const layer=L.layerGroup().addTo(map);let colourField=field,fitted=false;
+    m.on('popupopen',e=>{const b=e.popup.getElement()?.querySelector('[data-view-find]');if(b)b.onclick=()=>{release();find(b.dataset.viewFind);};});
+    const shapes=L.layerGroup().addTo(m);let pins=null;
+    const popup=(r,home)=>{const maps=link(r.fields.maps_url)||'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(r.fields.address?r.title+', '+r.fields.address:r.lat+','+r.lng),site=link(r.fields.website)||link(r.fields.url);
+      return `<div class="map-card"><strong>${esc(r.title)}</strong>${home&&home!==r?`<p class="small-note">${esc(distance(home,r))} from ${esc(home.title)}</p>`:''}${r.fields.address?`<p class="small-note">${esc(r.fields.address)}</p>`:''}${fields(r)}<div class="map-links"><a href="${esc(maps)}" target="_blank" rel="noopener noreferrer">Open in Maps</a>${site?`<a href="${esc(site)}" target="_blank" rel="noopener noreferrer">Website</a>`:''}<button type="button" class="text-button" data-view-find="${esc(r.title)}">Show in list</button></div></div>`;};
     const paint=rows=>{
-      layer.clearLayers();const c=colours(rows,colourField),placed=rows.filter(r=>typeof r.lat==='number');
-      placed.forEach(r=>{const rank=r.fields.rank??r.fields.position,yours=r.fields.yours===true||r.fields.yours==='true';
-        L.marker([r.lat,r.lng],{title:r.title,keyboard:true,zIndexOffset:yours?1000:0,icon:L.divIcon({className:'map-pin'+(yours?' yours':''),html:`<span style="background:${c.of(r)}">${rank!==undefined&&rank!==null&&String(rank).length<=3?esc(String(rank)):''}</span>`,iconSize:[28,28],iconAnchor:[14,14],popupAnchor:[0,-12]})}).bindPopup(`<div class="map-card">${card(r)}</div>`,{maxWidth:260}).addTo(layer);});
-      host.querySelector('[data-view-legend]').innerHTML=legend(c,colourField,placed);
-      if(!fitted&&placed.length){fitted=true;map.fitBounds(L.latLngBounds(placed.map(r=>[r.lat,r.lng])),{padding:[34,34],maxZoom:15});}
-      if(!placed.length&&!fitted)map.setView([39,-96],3);
-      return placed.length;
+      if(map!==m)return;   // a newer view replaced this map
+      shapes.clearLayers();if(pins)m.removeLayer(pins);
+      const all=rows.filter(r=>typeof r.lat==='number'),c=colouring(all,colourField,numbers),size=sizing(all,sizeField);
+      const visible=all.filter(r=>c.numeric||!colourField||!hidden.has(String(r.fields[colourField]??'')));
+      const home=all.find(r=>r.fields.yours===true);
+      const newest=Date.parse(current.updated)||0,isNew=r=>r.disposition!=='acknowledged'&&!r.hidden&&Date.parse(r.first_seen||0)>=newest-120000;
+      const quiet=visible.length&&visible.every(isNew);   // on the first check everything is new; don't ring them all
+      pins=visible.length>=CLUSTER_FROM?L.markerClusterGroup({showCoverageOnHover:false,maxClusterRadius:45,spiderfyOnMaxZoom:true}):L.layerGroup();
+      visible.forEach(r=>{
+        const colour=c.of(r),yours=r.fields.yours===true,rank=r.fields.rank??r.fields.position,size_=size(r),change=moved(r,'rank')||moved(r,'position');
+        if(r.area)L.geoJSON(r.area,{style:{color:colour,weight:1.5,fillColor:colour,fillOpacity:.13}}).bindPopup(popup(r,home),{maxWidth:280}).addTo(shapes);
+        if(r.radius_m)L.circle([r.lat,r.lng],{radius:r.radius_m,color:colour,weight:1,fillColor:colour,fillOpacity:.07,interactive:false}).addTo(shapes);
+        const classes=['map-pin',yours?'yours':'',r.display_state&&r.display_state!=='active'?'gone':'',!quiet&&isNew(r)?'fresh':''].filter(Boolean).join(' ');
+        const badge=change?`<b class="moved ${change>0?'up':'down'}">${change>0?'▲':'▼'}</b>`:'';
+        L.marker([r.lat,r.lng],{title:r.title,keyboard:true,riseOnHover:true,zIndexOffset:yours?1000:0,icon:L.divIcon({className:classes,html:`<span style="background:${colour};width:${size_}px;height:${size_}px">${rank!==undefined&&rank!==null&&String(rank).length<=3&&size_>=16?esc(String(rank)):''}</span>${badge}`,iconSize:[size_,size_],iconAnchor:[size_/2,size_/2],popupAnchor:[0,-size_/2]})}).bindPopup(popup(r,home),{maxWidth:280}).addTo(pins);
+      });
+      pins.addTo(m);
+      const legend=host.querySelector('[data-view-legend]'),marks=[visible.some(r=>!quiet&&isNew(r))?'<span><i class="key fresh"></i>New this check</span>':'',visible.some(r=>moved(r,'rank')||moved(r,'position'))?'<span>▲▼ Rank moved</span>':'',visible.some(r=>r.display_state&&r.display_state!=='active')?'<span><i class="key gone"></i>No longer listed</span>':''].join('');
+      legend.innerHTML=(colourField&&c.numeric?`<div class="view-legend"><span class="scale"><span>${esc(value(c.min))}</span><i class="ramp ${c.good?'good':''}"></i><span>${esc(value(c.max))}</span></span><span>${esc(human(colourField))}${c.good?' (lower is better)':''}</span>${marks}</div>`:colourField?`<div class="view-legend">${c.order.map((v,i)=>all.some(r=>r.fields[colourField]===v)?`<button type="button" class="legend-toggle" data-legend="${esc(String(v))}" aria-pressed="${!hidden.has(String(v))}"><i style="background:${palette[i%palette.length]}"></i>${esc(String(v))}</button>`:'').join('')}${marks}</div>`:marks?`<div class="view-legend">${marks}</div>`:'');
+      legend.querySelectorAll('[data-legend]').forEach(b=>b.onclick=()=>{const v=b.dataset.legend;hidden.has(v)?hidden.delete(v):hidden.add(v);paint(current.items);});
+      if(!fitted){
+        // Bounds come from the data: a circle can't measure itself before the map has a view.
+        const bounds=L.latLngBounds([]);visible.forEach(r=>{bounds.extend(r.radius_m?L.latLng(r.lat,r.lng).toBounds(r.radius_m*2):[r.lat,r.lng]);if(r.area)bounds.extend(L.geoJSON(r.area).getBounds());});
+        if(bounds.isValid()){fitted=true;m.fitBounds(bounds,{padding:[34,34],maxZoom:15});}else m.setView([39,-96],3);
+      }
+      if(colourField&&!c.numeric&&hidden.size)host.querySelector('[data-view-status]').textContent=`${visible.length} of ${all.length} shown · Click a hidden group in the legend to show it again`;
     };
     const status=(rows,text)=>{const placed=rows.items.filter(r=>typeof r.lat==='number').length,s=host.querySelector('[data-view-status]'),u=host.querySelector('.map-unplaced');
-      s.textContent=text||`${placed} of ${rows.items.length} ${rows.items.length===1?'result':'results'} on the map${rows.updated?' · Last updated '+stamp(rows.updated):''}`;
+      s.textContent=text||`${placed} of ${rows.items.length} ${rows.items.length===1?'result':'results'} on the map${rows.updated?' · Last updated '+stamp(rows.updated):''}${placed>=CLUSTER_FROM?' · Nearby places are grouped; zoom in to separate them':''}`;
       u.hidden=!rows.unplaced.length;if(rows.unplaced.length){u.querySelector('summary').textContent=`${rows.unplaced.length} couldn’t be placed`;u.querySelector('ul').innerHTML=rows.unplaced.map(r=>`<li><strong>${esc(r.title)}</strong> · ${esc(r.reason)}</li>`).join('');}};
-    let rows=data;paint(rows.items);status(rows);setTimeout(()=>map&&map.invalidateSize(),0);
-    const select=host.querySelector('[data-view-field]');if(select)select.onchange=e=>{colourField=e.target.value;choice(d.id+':map-field',colourField);paint(rows.items);};
+    let current=data;paint(current.items);status(current);setTimeout(()=>map===m&&m.invalidateSize(),0);
+    const colourSelect=host.querySelector('[data-view-colour]');if(colourSelect)colourSelect.onchange=e=>{colourField=e.target.value;hidden.clear();choice(d.id+':map-field',colourField);paint(current.items);status(current);};
+    const sizeSelect=host.querySelector('[data-view-size]');if(sizeSelect)sizeSelect.onchange=e=>{sizeField=e.target.value;choice(d.id+':map-size',sizeField);paint(current.items);};
     // Addresses without coordinates are looked up a few at a time, only after the person agrees
     // to send them to OpenStreetMap's lookup service; each is remembered afterwards.
     let agreed=false;try{agreed=localStorage.getItem('aura-place-lookups')==='yes';}catch{}
-    if(rows.pending&&!agreed){
-      host.querySelector('[data-view-status]').insertAdjacentHTML('afterend',`<div class="inline-actions" data-view-consent><p class="small-note">${rows.pending} ${rows.pending===1?'result has an address':'results have addresses'} but no map position. Finding them sends the addresses to OpenStreetMap’s free lookup service.</p><button type="button" class="secondary" data-view-agree>Find them on the map</button></div>`);
+    if(current.pending&&!agreed){
+      host.querySelector('[data-view-status]').insertAdjacentHTML('afterend',`<div class="inline-actions" data-view-consent><p class="small-note">${current.pending} ${current.pending===1?'result has an address':'results have addresses'} but no map position. Finding them sends the addresses to OpenStreetMap’s free lookup service.</p><button type="button" class="secondary" data-view-agree>Find them on the map</button></div>`);
       await new Promise(resolve=>{host.querySelector('[data-view-agree]').onclick=()=>{try{localStorage.setItem('aura-place-lookups','yes');}catch{}host.querySelector('[data-view-consent]').remove();resolve();};});
     }
-    while(rows.pending&&mine===ticket&&host.isConnected){
-      status(rows,`Finding ${rows.pending} ${rows.pending===1?'address':'addresses'} on the map…`);
-      const result=await api('/api/collection-view',{business:state.business,action:'place',id:d.id,view,q:search});
+    while(current.pending&&mine===ticket&&host.isConnected){
+      status(current,`Finding ${current.pending} ${current.pending===1?'address':'addresses'} on the map…`);
+      let result;
+      try{result=await api('/api/collection-view',{business:state.business,action:'place',id:d.id,view,q:search});
+        if(mine!==ticket||key!==scope()||!host.isConnected)return;
+        current=await api(q('/api/collection-view',{id:d.id,view,q:search}));}
+      catch(error){if(mine===ticket&&host.isConnected)status(current,humanError(error));return;}
       if(mine!==ticket||key!==scope()||!host.isConnected)return;
-      rows=await api(q('/api/collection-view',{id:d.id,view,q:search}));if(mine!==ticket||key!==scope()||!host.isConnected)return;
-      paint(rows.items);if(result.stopped){status(rows,result.stopped);return;}if(!result.placed&&result.remaining)break;
+      paint(current.items);if(result.stopped){status(current,result.stopped);return;}if(!result.placed&&result.remaining)break;
     }
-    status(rows);
+    status(current);
   }
 
   /* What's running: plain sentences built from saved links. Changes happen in chat. */
@@ -82,9 +156,11 @@ window.auraViews=(()=>{
     const key=scope();let data;
     try{data=await api(q('/api/running',target));}catch(error){if(key===scope()&&host.isConnected)host.innerHTML=`<p class="small-note">${esc(humanError(error))}</p>`;return null;}
     if(key!==scope()||!host.isConnected)return data;
-    host.innerHTML=data.items.length?data.items.map((item,i)=>`<div class="running-item" data-health="${esc(item.health)}"><p>${esc(item.text)}</p>${item.available?`<div class="inline-actions"><button type="button" class="text-button" data-running-open="${i}">Open task</button><button type="button" class="text-button" data-running-chat="${i}">Change in chat</button></div>`:''}</div>`).join('')+(data.goals.length?`<p class="small-note">Working toward: ${esc(data.goals.join('; '))}</p>`:''):`<p class="small-note">Nothing is scheduled here yet. Ask your AI to set up a scheduled task, then link it to this ${target.project?'project':'goal'}.</p>`;
-    host.querySelectorAll('[data-running-open]').forEach(b=>b.onclick=()=>attempt(()=>scheduleDetails(data.items[Number(b.dataset.runningOpen)].id)));
-    host.querySelectorAll('[data-running-chat]').forEach(b=>b.onclick=()=>{const t=data.items[Number(b.dataset.runningChat)];returnToChat();const box=$('#request');box.value=`Change my scheduled task “${t.name}” (${t.app}, ${t.schedule.toLowerCase()}): `;box.dispatchEvent(new Event('input',{bubbles:true}));box.focus();box.setSelectionRange(box.value.length,box.value.length);});
+    const order=['failed','missing','waiting','ok','paused'],items=[...data.items].sort((a,b)=>order.indexOf(a.health)-order.indexOf(b.health));
+    host.innerHTML=(data.attention?`<p class="running-alert" role="status">${data.attention} scheduled ${data.attention===1?'task needs':'tasks need'} attention.</p>`:'')+(items.length?items.map(item=>`<div class="running-item" data-health="${esc(item.health)}"><p>${esc(item.text)}</p>${item.available?`<div class="inline-actions"><button type="button" class="text-button" data-running-open="${esc(item.id)}">Open task</button><button type="button" class="text-button" data-running-chat="${esc(item.id)}">Change in chat</button></div>`:''}</div>`).join('')+(data.goals.length?`<p class="small-note">Working toward: ${esc(data.goals.join('; '))}</p>`:''):`<p class="small-note">Nothing is scheduled here yet. Ask your AI to set up a scheduled task, then link it to this ${target.project?'project':'goal'}.</p>`);
+    const find=id=>items.find(i=>i.id===id);
+    host.querySelectorAll('[data-running-open]').forEach(b=>b.onclick=()=>attempt(()=>scheduleDetails(b.dataset.runningOpen)));
+    host.querySelectorAll('[data-running-chat]').forEach(b=>b.onclick=()=>{const t=find(b.dataset.runningChat);returnToChat();const box=$('#request');box.value=`Change my scheduled task “${t.name}” (${t.app}, ${t.schedule.toLowerCase()}): `;box.dispatchEvent(new Event('input',{bubbles:true}));box.focus();box.setSelectionRange(box.value.length,box.value.length);});
     return data;
   }
 
@@ -99,7 +175,6 @@ window.auraViews=(()=>{
   function line(m){
     const w=560,h=150,pad=28,values=m.points.map(p=>p.value),low=Math.min(...values,0),high=Math.max(...values)||1,span=high-low||1;
     const x=i=>pad+i*(w-pad*2)/(m.points.length-1),y=v=>h-pad-(v-low)/span*(h-pad*2);
-    const day=t=>new Date(t).toLocaleDateString(undefined,{month:'short',day:'numeric'});
     return `<svg class="metric-line" viewBox="0 0 ${w} ${h}" role="img" aria-label="${esc(m.name)} over time"><line x1="${pad}" y1="${h-pad}" x2="${w-pad}" y2="${h-pad}" class="axis"/><text x="${pad}" y="${h-8}" class="tick">${esc(day(m.points[0].at))}</text><text x="${w-pad}" y="${h-8}" class="tick end">${esc(day(m.points[m.points.length-1].at))}</text><text x="${pad-6}" y="${y(high)+4}" class="tick end">${esc(value(high))}</text><text x="${pad-6}" y="${y(low)+4}" class="tick end">${esc(value(low))}</text><polyline points="${m.points.map((p,i)=>x(i)+','+y(p.value)).join(' ')}" class="trend"/>${m.points.map((p,i)=>`<circle cx="${x(i)}" cy="${y(p.value)}" r="3.5"><title>${esc(value(p.value))} · ${esc(day(p.at))}${p.source?' · '+esc(p.source):''}</title></circle>`).join('')}</svg>`;
   }
   return {show,release,choice,running,progress};

@@ -53,6 +53,28 @@ def main():
             stopped=views.place(bid,made['id'])
         assert stopped['remaining']==1 and 'internet' in stopped['stopped']
 
+        # A short number trail feeds trends and rank arrows, without becoming a change to review.
+        d=collections.read(bid,made['id']);us=next(i for i in d['items'] if i['id']=='us')
+        assert us['trail'][-1]['values']=={'rank':2,'rating':4.8},us['trail']
+        before=collections.show(bid,made['id'],view='changes')['total']
+        us['trail'][-1]['at']='2026-01-01T00:00:00+00:00';collections.write_json_atomic(collections.path(bid,made['id']),d)
+        moved={**items[0],'fields':{**items[0]['fields'],'rank':1}}
+        collections.apply(bid,made['id'],{'revision':collections.show(bid,made['id'])['revision'],'run_id':'check-3','items':[moved],'material_change':False})
+        row=next(r for r in views.rows(bid,made['id'])['items'] if r['id']=='us')
+        assert [p['values']['rank'] for p in row['trail']]==[2,1] and len(row['trail'])==2
+        collections.apply(bid,made['id'],{'revision':collections.show(bid,made['id'])['revision'],'run_id':'check-4','items':[moved]})
+        assert len(next(r for r in views.rows(bid,made['id'])['items'] if r['id']=='us')['trail'])==2,'an unchanged recheck added a trend point the same day'
+        assert 'trail' not in collections.show(bid,made['id'])['items'][0],'the list payload carried the trail'
+        # Territories and service areas: a GeoJSON area places a result at its centre; bad shapes are ignored.
+        square={'type':'Polygon','coordinates':[[[-76.62,39.39],[-76.58,39.39],[-76.58,39.42],[-76.62,39.42],[-76.62,39.39]]]}
+        collections.apply(bid,made['id'],{'revision':collections.show(bid,made['id'])['revision'],'run_id':'check-5','items':[
+            {'id':'north','title':'North territory','fields':{'area':square,'status':'Open'}},
+            {'id':'bad','title':'Broken shape','fields':{'area':{'type':'Polygon','coordinates':[[[500,1]]]}}},
+            {'id':'svc','title':'Service area','fields':{'latitude':39.4,'longitude':-76.6,'radius_miles':5}}]})
+        rows=views.rows(bid,made['id']);north=next(r for r in rows['items'] if r['id']=='north')
+        assert north['placed_by']=='area' and abs(north['lat']-39.405)<1e-9 and north['area']['type']=='Polygon'
+        assert 'bad' in {r['id'] for r in rows['unplaced']} and abs(next(r for r in rows['items'] if r['id']=='svc')['radius_m']-8046.72)<0.01
+
         # Map imagery: viewed areas are kept and still served offline; nothing is fetched for a bad area.
         for bad in ((20,0,0),(3,8,0),(3,0,-1)):
             try:views.tile(*bad);raise AssertionError('an invalid map area was requested')
@@ -83,7 +105,10 @@ def main():
             assert set(by)=={'t-map','t-ads','t-gone'},'another project’s task appeared'
             assert by['t-map']['text'].startswith('Every day at 8:00 AM, Claude runs “Check map pack”. Results go to Competitors (') and 'waiting for review' in by['t-map']['text']
             assert 'Working toward: 10 new patients a week.' in by['t-map']['text'] and by['t-map']['health']=='ok'
-            assert by['t-ads']['health']=='failed' and by['t-ads']['text'].endswith('Last run failed: Plan limit reached') and 'Every Monday at 9:00 AM' in by['t-ads']['text']
+            assert by['t-ads']['health']=='failed' and by['t-ads']['text'].endswith('Last run failed. Your AI account has reached a usage limit. Try another model or try again later.') and 'Every Monday at 9:00 AM' in by['t-ads']['text']
+            tasks['items'][1]['last_error']='Traceback (most recent call last): KeyError {"x":1}'
+            raw=views.running(app,bid,project_id=project['id'])['items']
+            assert next(i for i in raw if i['id']=='t-ads')['text'].endswith('Last run failed. Open it in Codex for details.'),'raw app error text reached the summary'
             assert by['t-gone']['health']=='missing' and summary['attention']==2 and summary['goals']==['10 new patients a week']
             assert summary['text'].startswith('What’s running for Local marketing:')
             for_goal=views.running(app,bid,goal_id=goal['id'])

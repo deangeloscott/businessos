@@ -45,6 +45,15 @@
       "integrity": "sha512-nxS1ynzJOmOlHp+iL3FyWqK89GtNL8U8rvlMOsQdTTssxZwCXh8N2NB3GDQOL+YR3XnWyZAxwQixURb+FA74PA==",
       "purpose": "Map view for saved results with places. Map imagery comes from OpenStreetMap when online.",
       "included": true
+    },
+    {
+      "name": "Leaflet.markercluster",
+      "version": "1.5.3",
+      "license": "MIT",
+      "source": "https://www.npmjs.com/package/leaflet.markercluster",
+      "integrity": "sha512-vPTw/Bndq7eQHjLBVlWpnGeLa3t+3zGiuM7fJwCkiMFq+nmRuG3RI3f7f4N4TDX7T4NpbAXpR2+NTRSEGfCSeA==",
+      "purpose": "Groups nearby map pins when a map has many places.",
+      "included": true
     }
   ],
   "packages": [
@@ -217,6 +226,13 @@
       "integrity": "sha512-nxS1ynzJOmOlHp+iL3FyWqK89GtNL8U8rvlMOsQdTTssxZwCXh8N2NB3GDQOL+YR3XnWyZAxwQixURb+FA74PA=="
     },
     {
+      "name": "leaflet.markercluster",
+      "version": "1.5.3",
+      "license": "MIT",
+      "source": "https://www.npmjs.com/package/leaflet.markercluster",
+      "integrity": "sha512-vPTw/Bndq7eQHjLBVlWpnGeLa3t+3zGiuM7fJwCkiMFq+nmRuG3RI3f7f4N4TDX7T4NpbAXpR2+NTRSEGfCSeA=="
+    },
+    {
       "name": "pdfjs-dist",
       "version": "6.5.438",
       "license": "Apache-2.0",
@@ -268,13 +284,13 @@
     },
     {
       "path": "interface/vendor/map-view.css",
-      "bytes": 14806,
-      "sha256": "a7837102824184820dfa198d1ebcd109ff6d0ff9a2672a074b9a1b4d147d04c6"
+      "bytes": 16967,
+      "sha256": "c1c4db159042da560cd786e0fb6ac225da613614d76ebc880c4cca0692d5a6ef"
     },
     {
       "path": "interface/vendor/map-view.js",
-      "bytes": 150329,
-      "sha256": "41e7c524328fc52845db7eb222ed6adeee95031f1aa83c6151ff7222e498c816"
+      "bytes": 184815,
+      "sha256": "39622cde0aa6fa4cc68098722d4b395da70d68c1369463d3aefe71fb059f53c9"
     },
     {
       "path": "interface/vendor/pdf-resources/cmaps/78-EUC-H.bcmap",

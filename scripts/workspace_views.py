@@ -49,13 +49,33 @@ def location(fields):
     return (lat, lng) if lat is not None and lng is not None else None, address.strip() if isinstance(address, str) and address.strip() else ''
 
 
+def area(fields):
+    """A territory or service area saved as a GeoJSON Polygon/MultiPolygon in an `area` field: (geometry, centre)."""
+    g = (fields or {}).get('area')
+    if isinstance(g, dict) and g.get('type') == 'Feature':g = g.get('geometry')
+    if not isinstance(g, dict) or g.get('type') not in {'Polygon', 'MultiPolygon'}:return None, None
+    rings = g.get('coordinates') if g['type'] == 'Polygon' else [r for p in (g.get('coordinates') or []) if isinstance(p, list) for r in p]
+    points = [p for ring in (rings or []) if isinstance(ring, list) for p in ring if isinstance(p, list) and len(p) >= 2]
+    if not points or any(_number(p[0], -180, 180) is None or _number(p[1], -90, 90) is None for p in points):return None, None
+    lngs, lats = [float(p[0]) for p in points], [float(p[1]) for p in points]
+    return {'type': g['type'], 'coordinates': g['coordinates']}, ((min(lats) + max(lats)) / 2, (min(lngs) + max(lngs)) / 2)
+
+
+def radius(fields):
+    """Service radius in metres from `radius_km` or `radius_miles`."""
+    f = fields or {}
+    km = _number(f.get('radius_km'), 0, 20000)
+    miles = _number(f.get('radius_miles'), 0, 12500)
+    return km * 1000 if km else miles * 1609.344 if miles else None
+
+
 def shapes(rows):
     """Which views suit these results: map (places), chart (numbers), board (a small set of statuses)."""
     numbers, groups, places = {}, {}, False
     for r in rows:
-        f = r.get('fields') or {};position, address = location(f);places = places or bool(position or address)
+        f = r.get('fields') or {};position, address = location(f);places = places or bool(position or address or area(f)[0])
         for k, v in f.items():
-            if k in {'latitude', 'longitude', 'lat', 'lng', 'lon'}:continue
+            if k in {'latitude', 'longitude', 'lat', 'lng', 'lon', 'radius_km', 'radius_miles'}:continue
             if isinstance(v, (int, float)) and not isinstance(v, bool):numbers[k] = True
             elif isinstance(v, str) and 0 < len(v) <= 60 and k != 'address':groups.setdefault(k, set()).add(v)
     return {'map': places, 'chart': sorted(numbers), 'board': sorted(k for k, values in groups.items() if 2 <= len(values) <= 12)}
@@ -106,10 +126,14 @@ def rows(bid, ident, view='current', q=''):
     d = collections.read(bid, ident);out = [];unplaced = []
     for r in collections.select(d, view, q):
         fields = {k: (v if isinstance(v, (bool, int, float)) or v is None else str(v)[:500]) for k, v in (r.get('fields') or {}).items() if not isinstance(v, (dict, list))}
-        place, address = location(r.get('fields'))
+        place, address = location(r.get('fields'));shape, centre = area(r.get('fields'))
         row = {k: r.get(k) for k in ('id', 'title', 'display_state', 'hidden', 'saved', 'needs_review', 'changed_since_handled', 'disposition', 'first_seen')}
         row['fields'] = fields
+        if r.get('trail'):row['trail'] = r['trail']
+        if shape:row['area'] = shape
+        if radius(r.get('fields')):row['radius_m'] = radius(r.get('fields'))
         if place:row.update(lat=place[0], lng=place[1], placed_by='result')
+        elif centre:row.update(lat=centre[0], lng=centre[1], placed_by='area')
         elif address:
             known = remembered(address)
             if known:row.update(lat=known[0], lng=known[1], placed_by='address')
@@ -202,8 +226,11 @@ def _health(task):
     status = str(task.get('status') or '').lower();last = moment(task.get('last_run'))
     if status in {'paused', 'disabled', 'stopped', 'cancelled', 'archived'}:return 'paused', 'Paused.'
     if str(task.get('last_status') or '').lower() in {'error', 'failed', 'failure'}:
-        reason = str(task.get('last_error') or '').strip().split('\n')[0][:160]
-        return 'failed', f'Last run failed{" " + last if last else ""}' + (f': {reason}' if reason else '.')
+        # An app's own error text can be machine output; show AURA's plain classification instead.
+        from workspace_ui import setup_error, SETUP_ERRORS
+        raw = str(task.get('last_error') or '').strip();known = setup_error(raw) if raw else ''
+        reason = known if known and known != SETUP_ERRORS['unknown'] else f'Open it in {task.get("app") or "its app"} for details.'
+        return 'failed', f'Last run failed{" " + last if last else ""}. {reason}'
     if last:return 'ok', f'Last ran {last}.'
     following = moment(task.get('next_run'))
     return 'waiting', f'Hasn\'t run yet{"; next run " + following if following else ""}.'
