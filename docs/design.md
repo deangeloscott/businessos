@@ -24,7 +24,7 @@ Use tokens, never raw values, so themes, text size and density keep working.
 
 ## Styles
 
-A style (Personalization → Style, `data-style` on the root) restyles the whole interface without changing layout or behaviour: Modern, plus three retro styles. Each retro style overrides the tokens above with its own palette, type and shape, then adds a few component rules (buttons, inputs, panels, title bars, scrollbars) at the end of `style.css`. New components that use tokens and the shared classes pick up every style automatically; check a new component in at least one retro style. Retro styles evoke an era without copying any company's logos, names or fonts.
+A style (Personalization → Style, `data-style` on the root) restyles the whole interface without changing layout or behaviour: Modern, Classic mono, 90s desktop, 90s console, 2000s desktop and 2000s console. Every style works in light and dark (`data-theme`) and has its own accents (`data-accent`); an accent sets the colour plus one signature detail of that era. The style list lives in `STYLES` in `app.js` and `STYLE_ACCENTS` in `scripts/workspace_ui.py`; keep them in step. In `style.css`, each style's rules follow one order: base (light), base dark, accents (light), accents dark, then component rules that read only tokens and the style's own variables. New components that use tokens and the shared classes pick up every style automatically; check a new component in at least one retro style in both modes. Styles evoke an era without copying any company's logos, names or fonts.
 
 ## Components
 

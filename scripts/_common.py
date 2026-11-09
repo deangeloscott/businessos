@@ -18,6 +18,38 @@ _TRANSACTION_GUARD=threading.Lock()
 _TRANSACTION_LOCAL=threading.local()
 
 
+def new_id(nbytes=12):
+    """A random URL-safe ID that never starts with "-", so it can follow a command-line flag."""
+    import secrets
+    while True:
+        ident=secrets.token_urlsafe(nbytes)
+        if not ident.startswith('-'):return ident
+
+
+def parse_args_with_ids(parser, argv=None, flags=('--chat','--id')):
+    """Parse arguments while accepting IDs that start with "-".
+
+    Chats made before IDs avoided a leading "-" still exist; argparse would read `--chat -Ab3`
+    as two options. Such a value is joined as `--chat=-Ab3` unless it is one of this tool's own
+    options (including subcommand options), so a missing value still reports the usual error.
+    """
+    import argparse
+    known=set();parsers=[parser]
+    while parsers:
+        current=parsers.pop()
+        for action in current._actions:
+            known.update(action.option_strings)
+            if isinstance(action,argparse._SubParsersAction):parsers.extend(action.choices.values())
+    argv=list(sys.argv[1:] if argv is None else argv);joined=[];i=0
+    while i<len(argv):
+        value=argv[i+1] if i+1<len(argv) else ''
+        if argv[i] in flags and value.startswith('-') and value!='-' and value not in known:
+            joined.append(f'{argv[i]}={value}');i+=2
+        else:
+            joined.append(argv[i]);i+=1
+    return parser.parse_args(joined)
+
+
 def read_json_input(value):
     """Read a CLI JSON argument: a file path, `-` for stdin, or inline JSON.
 

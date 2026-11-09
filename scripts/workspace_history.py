@@ -10,7 +10,7 @@ import tempfile
 import threading
 import time
 
-from _common import workspace_root, workspace_scope,organization_transaction
+from _common import workspace_root, workspace_scope,organization_transaction,new_id
 from workspace_startup import state_dir
 
 MAX_FILE=32*1024*1024
@@ -81,7 +81,7 @@ def _prepare(path,bid,reason,content=None):
         observed=after.st_mtime_ns
     if len(content)>MAX_FILE:return {'skipped':'File exceeds 32 MB'}
     digest=hashlib.sha256(content).hexdigest()
-    row={'id':__import__('secrets').token_urlsafe(18),'path':relative,'hash':digest,'bytes':len(content),'at':time.time(),'reason':reason[:160]}
+    row={'id':new_id(18),'path':relative,'hash':digest,'bytes':len(content),'at':time.time(),'reason':reason[:160]}
     if observed is not None:row['mtime_ns']=observed
     return row,content
 

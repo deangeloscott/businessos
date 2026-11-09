@@ -393,7 +393,8 @@ def main():
     parser.add_argument('--token-budget',type=int);parser.add_argument('--chat');parser.add_argument('--asset');parser.add_argument('--mode',choices=['manual','native'],default='manual');parser.add_argument('--until',type=float)
     parser.add_argument('--scope',choices=['workspace','chat','all'],default='workspace');parser.add_argument('--show',choices=['active','current','completed','deleted','all'],default='active')
     parser.add_argument('--url',default='http://127.0.0.1:4187',help='Running local AURA address for chat links, deletion/recovery and continuation choices')
-    args=parser.parse_args()
+    from _common import parse_args_with_ids
+    args=parse_args_with_ids(parser)
     with workspace_scope(args.workspace):
         if args.action=='list' and args.chat:
             from urllib.parse import urlencode

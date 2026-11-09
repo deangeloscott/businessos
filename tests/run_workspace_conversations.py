@@ -124,8 +124,11 @@ print('## Reply '+name+'\\n\\nWorkspace: '+str(root))
             third_chat=app.conversation(bid,third['chat_id'])
             assert 'Reply THIRD' in third_chat['messages'][-1]['text'] and str(b) in third_chat['messages'][-1]['text']
             assert not any(c['id']==second['chat_id'] for c in app.preferences['chats'])
-            app.profile({'display_name':'Taylor','accent':'clay','text_size':16,'style':'retro2'})
-            assert app.profile()['style']=='retro2'
+            app.profile({'display_name':'Taylor','accent':'clay','text_size':16,'style':'classic'})
+            # Each style keeps its own accents: switching style picks that style's default accent.
+            assert app.profile()['style']=='classic' and app.profile()['accent']=='cm-ink'
+            assert app.profile({'style':'console00','accent':'c00-green'})['accent']=='c00-green'
+            assert app.profile({'style':'modern'})['accent']=='forest'
             assert app.profile({'accent':'mono'})['accent']=='mono'
             try:app.profile({'style':'neon'});raise AssertionError('An unknown style was saved')
             except ValueError:pass

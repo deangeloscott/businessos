@@ -1,6 +1,7 @@
 """Optional ACP client filesystem/command services, using the current user account."""
 import os
 import secrets
+from _common import new_id
 import signal
 import subprocess
 import threading
@@ -57,7 +58,7 @@ class ClientTools:
                 if self.closed:raise ValueError('This connection has ended.')
                 process=subprocess.Popen([command,*args],cwd=cwd,env=env,stdin=subprocess.DEVNULL,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,
                     **({'creationflags':subprocess.CREATE_NO_WINDOW} if os.name=='nt' else {'start_new_session':True}))
-                ident=secrets.token_urlsafe(18);row={'process':process,'output':b'','limit':min(limit,16*1024*1024),'truncated':False,'done':threading.Event()}
+                ident=new_id(18);row={'process':process,'output':b'','limit':min(limit,16*1024*1024),'truncated':False,'done':threading.Event()}
                 self.items[ident]=row
             def read():
                 try:

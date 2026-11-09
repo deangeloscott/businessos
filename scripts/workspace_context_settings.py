@@ -258,7 +258,8 @@ def main(section='context'):
     parser.add_argument('--profile',help='Native Hermes profile instead of an active chat')
     parser.add_argument('--set',help='JSON object of native setting keys and values; null removes a setting')
     parser.add_argument('--revision',help='Revision returned when reading settings')
-    args=parser.parse_args()
+    from _common import parse_args_with_ids
+    args=parse_args_with_ids(parser)
     from workspace_goals import live_change
     from urllib.parse import urlencode
     data={'kind':args.app,**({'chat_id':args.chat} if args.chat else {}),**({'profile':args.profile} if args.profile else {})}

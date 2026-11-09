@@ -4,7 +4,7 @@ import json
 import secrets
 import time
 from pathlib import Path
-from _common import organization_transaction, workspace_root, workspace_scope, object_index, write_json_atomic
+from _common import organization_transaction, workspace_root, workspace_scope, object_index, write_json_atomic, new_id
 import workspace_history
 
 
@@ -31,7 +31,7 @@ def record(bid,prepared,snapshots):
     for item in eligible:
         obj=item['object'];before=item.get('existing');path=Path(item['path'])
         label=obj.get('name') or obj.get('title') or obj.get('summary') or obj['object_type']
-        added.append({'id':secrets.token_urlsafe(12),'object_ref':obj['id'],'label':str(label)[:160],
+        added.append({'id':new_id(12),'object_ref':obj['id'],'label':str(label)[:160],
                       'at':time.time(),'status':'pending','revision':revision(path),'operation':'updated' if before else 'created',
                       'version_id':previous.get(path.relative_to(workspace_root()).as_posix(),{}).get('id','')})
     if added:

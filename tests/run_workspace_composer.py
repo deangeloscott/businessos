@@ -296,6 +296,24 @@ def main():
         command=subprocess.run([sys.executable,str(ROOT/'scripts/workspace_goals.py'),'check','--workspace',str(root),'--business-id',bid,'--id',goal['id'],'--json'],capture_output=True,text=True,check=True)
         assert json.loads(command.stdout)['eligible'] is False
         if shutil.which('node'):subprocess.run(['node',str(ROOT/'tests/workspace_compose_ui.cjs'),str(ROOT/'interface/workspace-compose.js')],check=True)
+    # Random IDs can follow a command-line flag: new ones never start with "-", and chats made before
+    # that (about 1 in 64) still work after --chat instead of failing as an unknown option.
+    import argparse,secrets,_common
+    draws=iter(['-Ab3dEf','Zx9_kLm'])
+    with patch.object(secrets,'token_urlsafe',lambda n=None:next(draws)):assert _common.new_id()=='Zx9_kLm'
+    assert not any(_common.new_id().startswith('-') for _ in range(2000))
+    parser=argparse.ArgumentParser();commands=parser.add_subparsers(dest='command',required=True)
+    link=commands.add_parser('link-chat');link.add_argument('--chat');link.add_argument('--id');link.add_argument('--json',action='store_true')
+    parsed=_common.parse_args_with_ids(parser,['link-chat','--chat','-T8jrxB52-cwHyyj','--id','obj_1','--json'])
+    assert parsed.chat=='-T8jrxB52-cwHyyj' and parsed.id=='obj_1' and parsed.json
+    import contextlib,io
+    try:
+        with contextlib.redirect_stderr(io.StringIO()):_common.parse_args_with_ids(parser,['link-chat','--chat','--id','obj_1'])
+        raise AssertionError('a missing --chat value was accepted')
+    except SystemExit:pass
+    with tempfile.TemporaryDirectory() as folder:
+        result=subprocess.run([sys.executable,str(ROOT/'scripts/workspace_goals.py'),'link-chat','--workspace',folder,'--business-id','none','--chat','-T8jrxB52-cwHyyj','--id','obj_none','--json'],capture_output=True,text=True)
+        assert result.returncode!=2 and 'expected one argument' not in result.stderr,result.stderr
     print('Composer and goals passed: scoped references, exact message reuse, pinned results, receipt recovery, persistent goals, native retry boundaries and CLI/API parity.')
 
 

@@ -87,7 +87,8 @@ def main():
     action=parser.add_mutually_exclusive_group();action.add_argument('--current',action='store_true');action.add_argument('--save',action='store_true')
     parser.add_argument('--business-id');parser.add_argument('--chat');parser.add_argument('--url',default='http://127.0.0.1:4187')
     parser.add_argument('--workspace')
-    args=parser.parse_args()
+    from _common import parse_args_with_ids
+    args=parse_args_with_ids(parser)
     if args.current or args.save:
         if not args.business_id:parser.error('--current and --save need --business-id')
         from _common import workspace_root,workspace_scope

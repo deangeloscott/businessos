@@ -28,7 +28,7 @@ import time
 import webbrowser
 from concurrent.futures import ThreadPoolExecutor
 
-from _common import (PRODUCT_ROOT, workspace_root, business_directory, resolve_business,
+from _common import (new_id, PRODUCT_ROOT, workspace_root, business_directory, resolve_business,
                      iter_instance_objects, describe_object, load_registry, os_version, workspace_scope, object_index)
 from remember import remember
 from setup import setup
@@ -816,12 +816,25 @@ class Workspace:
         return {'items': [{**n, 'title': n.get('title') or titles.get(n['chat_id'], 'Your chat')} for n in items], 'unread': sum(not n['read'] for n in items),
                 'enabled': self.preferences.get('notifications') is True}
 
+    # Each style brings its own accents; the first is its default.
+    STYLE_ACCENTS={'modern':('forest','ocean','clay','mono'),'classic':('cm-ink','cm-blue','cm-lavender','cm-green'),
+                   'desktop90':('d90-navy','d90-teal','d90-plum','d90-brick'),'console90':('c90-grey','c90-charcoal','c90-midnight','c90-swirl'),
+                   'desktop00':('d00-blue','d00-olive','d00-silver'),'console00':('c00-blue','c00-green','c00-indigo','c00-silver')}
+    EARLIER_STYLES={'retro1':'desktop90','retro2':'classic','retro3':'console90'}
+
     def profile(self, changes=None):
         path=self.settings_file.parent/'ui-profile.json'
         try:value=json.loads(path.read_text(encoding='utf-8'))
         except (OSError,ValueError):value={}
         defaults={'display_name':'','sidebar_collapsed':False,'panel_width':480,'text_size':15,'density':'comfortable','style':'modern','accent':'forest','avatar':'','activity_view':'highlights','working_preferences':''}
         value={**defaults,**{k:v for k,v in value.items() if k in defaults}} if isinstance(value,dict) else defaults
+        def matched(value):
+            # A style keeps an accent of its own: earlier style names map forward, and an accent from
+            # another style becomes this style's default instead of an error.
+            style=self.EARLIER_STYLES.get(value.get('style'),value.get('style'))
+            style=style if style in self.STYLE_ACCENTS else 'modern'
+            return {**value,'style':style,'accent':value.get('accent') if value.get('accent') in self.STYLE_ACCENTS[style] else self.STYLE_ACCENTS[style][0]}
+        value=matched(value)
         if changes is not None:
             if changes.get('reset'):value={**defaults,'display_name':value.get('display_name',''),'avatar':value.get('avatar',''),'working_preferences':value.get('working_preferences','')}
             else:
@@ -854,11 +867,12 @@ class Workspace:
                     if changes['density'] not in ('comfortable','compact'):raise ValueError('Choose Comfortable or Compact.')
                     value['density']=changes['density']
                 if 'style' in changes:
-                    if changes['style'] not in ('modern','retro1','retro2','retro3'):raise ValueError('Choose a supported style.')
+                    if changes['style'] not in self.STYLE_ACCENTS:raise ValueError('Choose a supported style.')
                     value['style']=changes['style']
                 if 'accent' in changes:
-                    if changes['accent'] not in ('forest','ocean','clay','mono'):raise ValueError('Choose a supported accent.')
+                    if not any(changes['accent'] in accents for accents in self.STYLE_ACCENTS.values()):raise ValueError('Choose a supported accent.')
                     value['accent']=changes['accent']
+            value=matched(value)
             from _common import write_json_atomic
             write_json_atomic(path,value)
         return value
@@ -1426,7 +1440,7 @@ class Workspace:
             if any(not isinstance(effective.get(k,''),str) or len(effective.get(k,''))>300 for k in ('model','effort')):raise ValueError('Choose a valid model and effort.')
             if kind in NATIVE_AGENTS and not effective.get('model'):raise ValueError('Choose a model before opening this chat.')
             if kind=='codex' and not effective.get('effort'):raise ValueError('Choose an effort before opening this chat.')
-            chat={'id':secrets.token_urlsafe(12),'business_id':bid,'workspace':root,'purpose':purpose,
+            chat={'id':new_id(12),'business_id':bid,'workspace':root,'purpose':purpose,
                   'title':title,'title_edited':True,'created':time.time(),'updated':time.time(),
                   'status':'ready','agent':kind,'native_id':None,'model':effective.get('model',''),'effort':effective.get('effort',''),'connection':effective}
             self.preferences['chats'].append(chat);self.save_preferences()
@@ -1461,7 +1475,7 @@ class Workspace:
                 known=self.preferences['connected_apps'].get(kind,{})
                 model=result.get('model') or known.get('model','');effort=result.get('effort') or known.get('effort','')
                 connection={**known,'kind':kind,'model':model,'effort':effort}
-                chat={'id':secrets.token_urlsafe(12),'business_id':bid,'workspace':str(root),'native_workspace':result['native_workspace'],'agent':kind,'native_id':ident,'title':owner.connections.redact(result['title']),'summary':owner.connections.redact(result['description']),'summary_source':'App' if result.get('summary') else 'Latest reply','model':model,'effort':effort,'connection':connection,'created':time.time(),'updated':time.time(),'status':'complete','source_file':result.get('source_file','')}
+                chat={'id':new_id(12),'business_id':bid,'workspace':str(root),'native_workspace':result['native_workspace'],'agent':kind,'native_id':ident,'title':owner.connections.redact(result['title']),'summary':owner.connections.redact(result['description']),'summary_source':'App' if result.get('summary') else 'Latest reply','model':model,'effort':effort,'connection':connection,'created':time.time(),'updated':time.time(),'status':'complete','source_file':result.get('source_file','')}
                 chat['source_marker']=workspace_native_chats.marker(chat['source_file'])
                 self.preferences['chats'].append(chat);self.preferences['connected_apps'].setdefault(kind,connection)
                 workspace_usage.remember(self.preferences,chat['id'],result.get('usage',{}),'session')
@@ -1669,7 +1683,7 @@ class Workspace:
         """A bell notification for something that happened while the user may not be looking."""
         refs={k:v for k,v in {'task_id':task_id,'goal_id':goal_id,'collection_id':collection_id,'item_title':item_title}.items() if v}
         with self.lock:
-            self.preferences['notification_items']=[*self.preferences['notification_items'],{'id':secrets.token_urlsafe(12),'business_id':bid,'chat_id':chat_id,
+            self.preferences['notification_items']=[*self.preferences['notification_items'],{'id':new_id(12),'business_id':bid,'chat_id':chat_id,
                 'kind':kind,'agent':'AURA','title':title,'status':'complete','at':time.time(),'read':False,'delivered':False,**refs}][-50:]
             self.save_preferences()
 
@@ -2483,7 +2497,7 @@ class Workspace:
             payload['request']+=' Remove only the [Aura goal] through [/Aura goal] block from the saved native task instructions. Preserve all other work, timing, model and permission settings.'
         if action=='request' and not payload.get('request','').strip():
             raise ValueError('Describe what you would like to change.')
-        job = dict(id=secrets.token_urlsafe(12),business_id=bid,action=action,status='working',
+        job = dict(id=new_id(12),business_id=bid,action=action,status='working',
                    message='Creating task…' if action=='create' else 'Updating task…',
                    created=time.time(),updated=time.time(),payload=payload)
         self.schedule_job = job
@@ -2799,7 +2813,7 @@ class Workspace:
             if selected_context['text']:prompt=prompt.replace('\nUser request:\n',selected_context['text']+'\nUser request:\n',1)
             if assistant and not reuse_context and not welcome and keep_warm_id is None:
                 prompt=prompt.replace('\nUser request:\n',workspace_assistants.guidance(assistant,child_native=protocol_kind in {'codex','omp','claude'},native_primary=assistant.get('native_primary',False))+'\nUser request:\n',1)
-            job = {'id': secrets.token_urlsafe(12), 'business_id': bid, 'status': 'working', 'reply': '', 'activity': [],
+            job = {'id': new_id(12), 'business_id': bid, 'status': 'working', 'reply': '', 'activity': [],
                    'created': time.time(), 'updated': time.time(), 'progress': 'Starting your AI'}
             job.update(references=selected_context['references'],inherited_references=inherited_context['references'],files=files or [],goal_id=goal_id or '')
             if context_notes:job['context_note']=' '.join(dict.fromkeys(context_notes))
@@ -2807,7 +2821,7 @@ class Workspace:
             if native and not welcome and keep_warm_id is None:prompt=prompt.replace('\nUser request:\n',f'\nAURA message reference: {job["id"]}\nUser request:\n',1)
             if keep_warm_id is not None:job['keep_warm']=True
             if not chat:
-                chat = {'id': secrets.token_urlsafe(12), 'business_id': bid, 'agent': self.connection_kind,
+                chat = {'id': new_id(12), 'business_id': bid, 'agent': self.connection_kind,
                         'title': 'Welcome to AURA' if welcome else text.strip()[:70],
                         'created': time.time(), 'native_id': None, 'workspace':str(workspace_root())}
                 if getattr(self,'_request_permission_mode',None) is not None:chat['permission_mode']=self._request_permission_mode

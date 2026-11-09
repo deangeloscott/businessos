@@ -1,6 +1,7 @@
 """One-use replies to live native requests. Nothing here is a saved permission grant."""
 import copy
 import secrets
+from _common import new_id
 import threading
 import time
 
@@ -23,7 +24,7 @@ class Requests:
             if existing:return existing['id']
             completed=[key for key,row in self.rows.items() if row['status']!='pending']
             for key in completed[:-99]:self.rows.pop(key,None)
-            ident=secrets.token_urlsafe(18)
+            ident=new_id(18)
             self.rows[ident]={'id':ident,'native_id':native_id,'title':str(title)[:300],'detail':str(detail)[:12000],
                 'questions':copy.deepcopy(questions),'status':'pending','created':time.time(),
                 'expires':time.time()+timeout/1000 if isinstance(timeout,(float,int)) and timeout>0 else None,

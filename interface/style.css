@@ -730,94 +730,231 @@ input[type=range],input[type=checkbox],input[type=radio],progress{accent-color:v
 .focus-panel:empty{display:none}
 #shell-search-results{margin-right:-12px;padding-right:6px}
 
-/* Styles: a style changes the whole look (type, shape, edges, depth, scrollbars and colour)
-   while layout and behaviour stay the same. Each retro style brings its own palette, so its
-   token selector includes [data-accent] (always set) to win over the theme and accent tokens. */
-:root:is([data-style=retro1],[data-style=retro2],[data-style=retro3]) :is(h1,h2,h3,.page-heading h2,#detail-title,.dialog-top h2){letter-spacing:0}
-:root:is([data-style=retro1],[data-style=retro2],[data-style=retro3]) ::-webkit-scrollbar-button{display:none}
+/* Styles: a style changes the whole look (type, shape, edges, depth, scrollbars and colour) while
+   layout and behaviour stay the same. Every style works in light and dark, and brings its own
+   accents; an accent sets the colour and one signature detail of that era.
+   Selector order matters: style base ([data-accent], light) < style base dark ([data-theme=dark])
+   < accent light ([data-accent=x]) < accent dark. Accent rules come after the base rules. */
+:root[data-style]:not([data-style=modern]) :is(h1,h2,h3,.page-heading h2,#detail-title,.dialog-top h2){letter-spacing:0}
+:root[data-style]:not([data-style=modern]) :is(*,#conversation){scrollbar-width:auto;scrollbar-color:auto}
+:root[data-style]:not([data-style=modern]) ::-webkit-scrollbar-button{display:none}
+:root[data-style]:not([data-style=modern]) :is(.card,.file-card,.settings-list,.focus-panel,.library-choices>button,.result-card,.community-entry,.assistant-card){background-color:var(--surface)}
 
-/* Retro 1, 90s desktop: grey window faces, raised 3D controls, navy title bars, square corners. */
-:root[data-style=retro1][data-accent]{color-scheme:light;
-  --ink:#000;--muted:#3d3d3d;--faint:#6b6b6b;--line:#808080;--line-strong:#404040;--paper:#c0c0c0;--surface:#c0c0c0;--sidebar:#c0c0c0;--hover:#d4d0c8;
-  --accent:#000080;--accent-soft:#c9cfe6;--accent-strong:#000060;--accent-muted:#3b3b8f;--on-accent:#fff;
-  --success:#006400;--warning:#7a5200;--danger:#a00000;--danger-solid:#c00000;--scrim:rgb(0 0 0/.35);
-  --radius-sm:0px;--radius-md:0px;--radius-lg:0px;--radius-full:0px;
-  --shadow-sm:none;--shadow-md:1px 1px 0 #000;--shadow-lg:2px 2px 0 #000;
-  --r1-raised:inset -1px -1px #000,inset 1px 1px #fff,inset -2px -2px #808080,inset 2px 2px #dfdfdf;
-  --r1-pressed:inset -1px -1px #fff,inset 1px 1px #000,inset -2px -2px #dfdfdf,inset 2px 2px #808080;
-  --r1-sunken:inset 1px 1px #808080,inset -1px -1px #fff,inset 2px 2px #000,inset -2px -2px #dfdfdf;
-  font-family:Tahoma,Verdana,"Segoe UI",sans-serif}
-:root[data-style=retro1] :is(.primary,.secondary,.icon-button,.close-button,.dialog-top>.quiet,#page-refresh,.filters button,.chat-options){background:#c0c0c0;color:#000;border:0;border-radius:0;box-shadow:var(--r1-raised)}
-:root[data-style=retro1] .primary{outline:1px solid #000;outline-offset:0}
-:root[data-style=retro1] :is(.primary,.secondary,.icon-button,.close-button,.dialog-top>.quiet,#page-refresh,.filters button):hover:not(:disabled){background:#c8c8c8;border:0}
-:root[data-style=retro1] :is(.primary,.secondary,.icon-button,.close-button,.dialog-top>.quiet,#page-refresh,.filters button):active:not(:disabled),:root[data-style=retro1] .filters :is([aria-pressed=true],.active,[aria-current=page]){box-shadow:var(--r1-pressed);background:#d4d0c8}
-:root[data-style=retro1] :is(button,a,summary):focus-visible{outline:1px dotted #000;outline-offset:-4px}
-:root[data-style=retro1] :is(input:not([type=range]):not([type=checkbox]):not([type=radio]),select,textarea,#chat-form,.search){background:#fff;border:0;border-radius:0;box-shadow:var(--r1-sunken)}
-:root[data-style=retro1] :is(input,select,textarea):focus-visible{box-shadow:var(--r1-sunken);outline:1px dotted #000;outline-offset:-5px}
-:root[data-style=retro1] :is(dialog,#detail,#detail[data-mode=context]){background:#c0c0c0;border:0;box-shadow:var(--r1-raised),2px 2px 0 rgb(0 0 0/.35)}
-:root[data-style=retro1] :is(#section-dialog,#detail[data-mode=page]){box-shadow:none}
-:root[data-style=retro1] dialog:not(#section-dialog):not([data-mode=page])>.dialog-top h2{flex:1;padding:3px 8px;background:linear-gradient(90deg,#000080,#1084d0);color:#fff;font-size:var(--text-base);font-weight:700}
-:root[data-style=retro1] :is(.card,.file-card,.settings-list,.focus-panel,.library-choices>button,.result-card,.community-entry,.assistant-card){background:#c0c0c0;border:0;border-radius:0;box-shadow:var(--r1-raised)}
-:root[data-style=retro1] #sidebar{box-shadow:inset -1px 0 #808080,inset -2px 0 #fff}
-:root[data-style=retro1] #sidebar :is(.sidebar-action,.sidebar-sections button)[aria-current=page]{background:#000080;color:#fff}
-:root[data-style=retro1] #sidebar :is(.sidebar-action,.sidebar-sections button)[aria-current=page] svg{color:#fff}
-:root[data-style=retro1] .aura-shell .app-header{box-shadow:inset 0 -1px #808080,inset 0 -2px #fff}
-:root[data-style=retro1] ::-webkit-scrollbar{width:16px;height:16px}
-:root[data-style=retro1] ::-webkit-scrollbar-track{background:repeating-conic-gradient(#c0c0c0 0 25%,#fff 0 50%) 0 0/2px 2px}
-:root[data-style=retro1] ::-webkit-scrollbar-thumb{background:#c0c0c0;border:0;border-radius:0;box-shadow:var(--r1-raised)}
-
-/* Retro 2, classic mono: black on white, one-pixel outlines, hard shadows, striped title bars. */
-:root[data-style=retro2][data-accent]{color-scheme:light;
-  --ink:#000;--muted:#333;--faint:#555;--line:#000;--line-strong:#000;--paper:#fff;--surface:#fff;--sidebar:#fff;--hover:#e6e6e6;
-  --accent:#000;--accent-soft:#e6e6e6;--accent-strong:#000;--accent-muted:#333;--on-accent:#fff;
+/* ── Classic mono: one-bit black and white, crisp outlines, hard shadows, striped title bars.
+      Dark is inverted (white on black). Accents colour the selection highlight, as later systems allowed. */
+:root[data-style=classic][data-accent]{color-scheme:light;
+  --ink:#000;--muted:#333;--faint:#555;--line:#000;--line-strong:#000;--paper:#fff;--surface:#fff;--sidebar:#fff;--hover:#e6e6e6;--on-accent:#fff;
   --success:#000;--warning:#000;--danger:#000;--danger-solid:#000;--success-soft:#eee;--warning-soft:#eee;--danger-soft:#eee;--scrim:rgb(0 0 0/.25);
-  --radius-sm:3px;--radius-md:6px;--radius-lg:0px;--radius-full:8px;
-  --shadow-sm:none;--shadow-md:2px 2px 0 #000;--shadow-lg:2px 2px 0 #000;
-  --r2-dither:repeating-conic-gradient(#000 0 25%,#fff 0 50%) 0 0/2px 2px;
+  --radius-sm:3px;--radius-md:6px;--radius-lg:0px;--radius-full:8px;--shadow-sm:none;--shadow-md:2px 2px 0 var(--ink);--shadow-lg:2px 2px 0 var(--ink);
   font-family:Geneva,Verdana,"Segoe UI",sans-serif}
-:root[data-style=retro2] :is(h1,h2,h3,strong,.page-heading h2,#detail-title){font-weight:700}
-:root[data-style=retro2] :is(.primary,.secondary){background:#fff;color:#000;border:1px solid #000;border-radius:var(--radius-md)}
-:root[data-style=retro2] .primary{box-shadow:0 0 0 2px #fff,0 0 0 4px #000}
-:root[data-style=retro2] :is(.primary,.secondary,.filters button,.icon-button,.close-button):active:not(:disabled){background:#000;color:#fff}
-:root[data-style=retro2] :is(.primary,.secondary):hover:not(:disabled){background:#f0f0f0;border-color:#000}
-:root[data-style=retro2] :is(button,a,summary):focus-visible{outline:1px dashed #000;outline-offset:2px}
-:root[data-style=retro2] :is(input,select,textarea):focus-visible{box-shadow:none;outline:2px solid #000;outline-offset:0}
-:root[data-style=retro2] :is(dialog,#detail){border:1px solid #000}
-:root[data-style=retro2] dialog:not(#section-dialog):not([data-mode=page])>.dialog-top{background:repeating-linear-gradient(#000 0 1px,#fff 1px 3px) top/100% 11px no-repeat;padding-top:20px;border-bottom:1px solid #000;margin-bottom:16px}
-:root[data-style=retro2] :is(.card,.file-card,.settings-list,.focus-panel,.library-choices>button,.result-card,.community-entry,.assistant-card){border:1px solid #000;box-shadow:2px 2px 0 #000}
-:root[data-style=retro2] #sidebar{border-right:1px solid #000}
-:root[data-style=retro2] #sidebar :is(.sidebar-action,.sidebar-sections button)[aria-current=page]{background:#000;color:#fff}
-:root[data-style=retro2] #sidebar :is(.sidebar-action,.sidebar-sections button)[aria-current=page] svg{color:#fff}
-:root[data-style=retro2] .aura-shell .app-header{box-shadow:0 1px 0 #000}
-:root[data-style=retro2] #notification-count{background:#000;color:#fff}
-:root[data-style=retro2] ::-webkit-scrollbar{width:16px;height:16px}
-:root[data-style=retro2] ::-webkit-scrollbar-track{background:#fff;border-left:1px solid #000}
-:root[data-style=retro2] ::-webkit-scrollbar-thumb{background:var(--r2-dither);border:1px solid #000;border-radius:0}
+:root[data-style=classic][data-theme=dark][data-accent]{color-scheme:dark;
+  --ink:#fff;--muted:#d0d0d0;--faint:#a8a8a8;--line:#fff;--line-strong:#fff;--paper:#000;--surface:#000;--sidebar:#000;--hover:#262626;--on-accent:#000;
+  --success:#fff;--warning:#fff;--danger:#fff;--danger-solid:#fff;--success-soft:#1a1a1a;--warning-soft:#1a1a1a;--danger-soft:#1a1a1a;--scrim:rgb(0 0 0/.55)}
+:root[data-style=classic][data-accent=cm-ink]{--accent:#000}
+:root[data-style=classic][data-accent=cm-blue]{--accent:#0039b8}
+:root[data-style=classic][data-accent=cm-lavender]{--accent:#5b3fb0}
+:root[data-style=classic][data-accent=cm-green]{--accent:#0d6b30}
+:root[data-style=classic][data-theme=dark][data-accent=cm-ink]{--accent:#fff}
+:root[data-style=classic][data-theme=dark][data-accent=cm-blue]{--accent:#8fb4ff}
+:root[data-style=classic][data-theme=dark][data-accent=cm-lavender]{--accent:#c6b6ff}
+:root[data-style=classic][data-theme=dark][data-accent=cm-green]{--accent:#7fe0a0}
+:root[data-style=classic] :is(h1,h2,h3,strong,.page-heading h2,#detail-title){font-weight:700}
+:root[data-style=classic] #welcome-heading h1{font-family:inherit;font-weight:700}
+:root[data-style=classic] :is(.primary,.secondary){background:var(--surface);color:var(--ink);border:1px solid var(--ink);border-radius:var(--radius-md)}
+:root[data-style=classic] .primary{box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--accent)}
+:root[data-style=classic] :is(.primary,.secondary):hover:not(:disabled){background:var(--hover);border-color:var(--ink)}
+:root[data-style=classic] :is(.primary,.secondary,.filters button,.icon-button,.close-button):active:not(:disabled){background:var(--ink);color:var(--paper)}
+:root[data-style=classic] :is(button,a,summary):focus-visible{outline:1px dashed var(--ink);outline-offset:2px}
+:root[data-style=classic] :is(input,select,textarea):focus-visible{box-shadow:none;outline:2px solid var(--accent);outline-offset:0}
+:root[data-style=classic] :is(dialog,#detail){border:1px solid var(--ink)}
+:root[data-style=classic] dialog:not(#section-dialog):not([data-mode=page])>.dialog-top{background:repeating-linear-gradient(var(--ink) 0 1px,transparent 1px 3px) top/100% 11px no-repeat;padding-top:20px;border-bottom:1px solid var(--ink);margin-bottom:16px}
+:root[data-style=classic] :is(.card,.file-card,.settings-list,.focus-panel,.library-choices>button,.result-card,.community-entry,.assistant-card){border:1px solid var(--ink);box-shadow:2px 2px 0 var(--ink)}
+:root[data-style=classic] #sidebar{border-right:1px solid var(--ink)}
+:root[data-style=classic] #sidebar :is(.sidebar-action,.sidebar-sections button)[aria-current=page],:root[data-style=classic] #sidebar :is(.sidebar-action,.sidebar-sections button)[aria-current=page] svg{background:var(--accent);color:var(--on-accent)}
+:root[data-style=classic] #sidebar :is(.sidebar-action,.sidebar-sections button)[aria-current=page] svg{background:none}
+:root[data-style=classic] .aura-shell .app-header{box-shadow:0 1px 0 var(--ink)}
+:root[data-style=classic] #notification-count{background:var(--ink);color:var(--paper)}
+:root[data-style=classic] ::-webkit-scrollbar{width:16px;height:16px}
+:root[data-style=classic] ::-webkit-scrollbar-track{background:var(--paper);border-left:1px solid var(--ink)}
+:root[data-style=classic] ::-webkit-scrollbar-thumb{background:repeating-conic-gradient(var(--ink) 0 25%,var(--paper) 0 50%) 0 0/2px 2px;border:1px solid var(--ink);border-radius:0}
 
-/* Retro 3, 90s console: charcoal and violet, chunky glossy buttons, glowing focus, blocky headings. */
-:root[data-style=retro3][data-accent]{color-scheme:dark;
-  --ink:#ebe8f5;--muted:#aaa5bf;--faint:#7d7894;--line:#3d3950;--line-strong:#5b5478;--paper:#1b1a22;--surface:#24222e;--sidebar:#131218;--hover:#302d3e;
-  --accent:#9d8cff;--accent-soft:#2f2a4a;--accent-strong:#b8abff;--accent-muted:#8a80c0;--on-accent:#120f1f;
-  --success:#6fdc93;--warning:#f5c451;--danger:#ff7a7a;--danger-solid:#e04848;--scrim:rgb(5 4 10/.7);
+/* ── 90s desktop: grey window faces, raised 3D controls, gradient title bars, square corners.
+      Dark is a charcoal high-contrast scheme. Accents set the title bars and the desktop colour behind
+      the chat home, like the colour schemes of that era. */
+:root[data-style=desktop90][data-accent]{color-scheme:light;
+  --d90-face:#c0c0c0;--d90-hi:#fff;--d90-light:#dfdfdf;--d90-shade:#808080;--d90-dark:#000;--d90-field:#fff;
+  --ink:#000;--muted:#3d3d3d;--faint:#6b6b6b;--line:#808080;--line-strong:#404040;--paper:var(--d90-face);--surface:var(--d90-face);--sidebar:var(--d90-face);--hover:#d4d0c8;--on-accent:#fff;
+  --success:#006400;--warning:#7a5200;--danger:#a00000;--danger-solid:#c00000;--scrim:rgb(0 0 0/.35);
+  --radius-sm:0px;--radius-md:0px;--radius-lg:0px;--radius-full:0px;--shadow-sm:none;--shadow-md:1px 1px 0 var(--d90-dark);--shadow-lg:2px 2px 0 var(--d90-dark);
+  --d90-raised:inset -1px -1px var(--d90-dark),inset 1px 1px var(--d90-hi),inset -2px -2px var(--d90-shade),inset 2px 2px var(--d90-light);
+  --d90-pressed:inset -1px -1px var(--d90-hi),inset 1px 1px var(--d90-dark),inset -2px -2px var(--d90-light),inset 2px 2px var(--d90-shade);
+  --d90-sunken:inset 1px 1px var(--d90-shade),inset -1px -1px var(--d90-hi),inset 2px 2px var(--d90-dark),inset -2px -2px var(--d90-light);
+  font-family:Tahoma,Verdana,"Segoe UI",sans-serif}
+:root[data-style=desktop90][data-theme=dark][data-accent]{color-scheme:dark;
+  --d90-face:#3a3a3a;--d90-hi:#707070;--d90-light:#525252;--d90-shade:#242424;--d90-dark:#0a0a0a;--d90-field:#1c1c1c;
+  --ink:#ececec;--muted:#bcbcbc;--faint:#8c8c8c;--line:#5c5c5c;--line-strong:#8c8c8c;--hover:#474747;--on-accent:#0a0a0a;
+  --success:#7fd18f;--warning:#f0c060;--danger:#ff8a80;--danger-solid:#d04040;--scrim:rgb(0 0 0/.55)}
+:root[data-style=desktop90][data-accent=d90-navy]{--accent:#000080;--d90-title-a:#000080;--d90-title-b:#1084d0;--d90-desktop:#3a6ea5}
+:root[data-style=desktop90][data-accent=d90-teal]{--accent:#004c4c;--d90-title-a:#006060;--d90-title-b:#20a0a0;--d90-desktop:#008080}
+:root[data-style=desktop90][data-accent=d90-plum]{--accent:#5e2d5e;--d90-title-a:#5e2d5e;--d90-title-b:#a05aa0;--d90-desktop:#6b4a6b}
+:root[data-style=desktop90][data-accent=d90-brick]{--accent:#800000;--d90-title-a:#800000;--d90-title-b:#c04040;--d90-desktop:#8a4f3c}
+:root[data-style=desktop90][data-theme=dark][data-accent=d90-navy]{--accent:#9db4ff;--d90-desktop:#1d3557}
+:root[data-style=desktop90][data-theme=dark][data-accent=d90-teal]{--accent:#6fd6d6;--d90-desktop:#0b4545}
+:root[data-style=desktop90][data-theme=dark][data-accent=d90-plum]{--accent:#e0a8e0;--d90-desktop:#3a2a3a}
+:root[data-style=desktop90][data-theme=dark][data-accent=d90-brick]{--accent:#ffa090;--d90-desktop:#4a261c}
+:root[data-style=desktop90] :is(.primary,.secondary,.icon-button,.close-button,.dialog-top>.quiet,#page-refresh,.filters button,.chat-options,.suggestions button){background:var(--d90-face);color:var(--ink);border:0;border-radius:0;box-shadow:var(--d90-raised)}
+:root[data-style=desktop90] .primary{outline:1px solid var(--d90-dark);outline-offset:0}
+:root[data-style=desktop90] :is(.primary,.secondary,.icon-button,.close-button,.dialog-top>.quiet,#page-refresh,.filters button,.suggestions button):hover:not(:disabled){background:var(--hover);border:0}
+:root[data-style=desktop90] :is(.primary,.secondary,.icon-button,.close-button,.dialog-top>.quiet,#page-refresh,.filters button):active:not(:disabled),:root[data-style=desktop90] .filters :is([aria-pressed=true],.active,[aria-current=page]){box-shadow:var(--d90-pressed);background:var(--hover)}
+:root[data-style=desktop90] :is(button,a,summary):focus-visible{outline:1px dotted var(--ink);outline-offset:-4px}
+:root[data-style=desktop90] :is(input:not([type=range]):not([type=checkbox]):not([type=radio]),select,textarea,#chat-form,.search){background:var(--d90-field);border:0;border-radius:0;box-shadow:var(--d90-sunken)}
+:root[data-style=desktop90] :is(input,select,textarea):focus-visible{box-shadow:var(--d90-sunken);outline:1px dotted var(--ink);outline-offset:-5px}
+:root[data-style=desktop90] :is(dialog,#detail,#detail[data-mode=context]){background:var(--d90-face);border:0;box-shadow:var(--d90-raised),2px 2px 0 rgb(0 0 0/.35)}
+:root[data-style=desktop90] :is(#section-dialog,#detail[data-mode=page]){box-shadow:none}
+:root[data-style=desktop90] dialog:not(#section-dialog):not([data-mode=page])>.dialog-top h2{flex:1;padding:3px 8px;background:linear-gradient(90deg,var(--d90-title-a),var(--d90-title-b));color:#fff;font-size:var(--text-base);font-weight:700}
+:root[data-style=desktop90] :is(.card,.file-card,.settings-list,.focus-panel,.library-choices>button,.result-card,.community-entry,.assistant-card){border:0;border-radius:0;box-shadow:var(--d90-raised)}
+:root[data-style=desktop90] #sidebar{box-shadow:inset -1px 0 var(--d90-shade),inset -2px 0 var(--d90-hi)}
+:root[data-style=desktop90] #sidebar :is(.sidebar-action,.sidebar-sections button)[aria-current=page]{background:var(--d90-title-a);color:#fff}
+:root[data-style=desktop90] #sidebar :is(.sidebar-action,.sidebar-sections button)[aria-current=page] svg{color:#fff}
+:root[data-style=desktop90] .aura-shell .app-header{box-shadow:inset 0 -1px var(--d90-shade),inset 0 -2px var(--d90-hi)}
+:root[data-style=desktop90] #welcome-heading h1{font-family:inherit;font-weight:700}
+/* The chat home sits on the desktop colour; the composer and suggestions are the windows on it. */
+:root[data-style=desktop90] .chat-stage:has(>#welcome-heading:not([hidden])){background:var(--d90-desktop)}
+:root[data-style=desktop90] .chat-stage:has(>#welcome-heading:not([hidden])) :is(#welcome-heading,#welcome-heading *,#composer-project,.chat-stage>footer,.chat-stage>footer *){color:#fff}
+:root[data-style=desktop90] ::-webkit-scrollbar{width:16px;height:16px}
+:root[data-style=desktop90] ::-webkit-scrollbar-track{background:repeating-conic-gradient(var(--d90-face) 0 25%,var(--d90-hi) 0 50%) 0 0/2px 2px}
+:root[data-style=desktop90] ::-webkit-scrollbar-thumb{background:var(--d90-face);border:0;border-radius:0;box-shadow:var(--d90-raised)}
+
+/* ── 90s console: a grey case in light, charcoal in dark; chunky glossy buttons, blocky headings.
+      Accents are the era's signature machines: Grey case (four coloured dots on the selected item),
+      Charcoal (a dark case and a four-colour stripe under titles), Midnight (black with deep blue),
+      Swirl (white with orange). */
+:root[data-style=console90][data-accent]{color-scheme:light;
+  --ink:#26242c;--muted:#57545f;--faint:#7a7784;--line:#b7b3ac;--line-strong:#8e8a84;--paper:#d9d7d2;--surface:#e8e6e1;--sidebar:#cbc8c2;--hover:#d2cfc9;--on-accent:#fff;
+  --success:#1d7a43;--warning:#8a5a00;--danger:#b3261e;--danger-solid:#c62828;--scrim:rgb(20 18 26/.45);
   --radius-sm:2px;--radius-md:4px;--radius-lg:6px;--radius-full:4px;
-  --shadow-sm:0 1px 0 rgb(0 0 0/.5);--shadow-md:0 6px 0 rgb(0 0 0/.35),0 10px 30px rgb(0 0 0/.5);--shadow-lg:0 8px 0 rgb(0 0 0/.35),0 18px 60px rgb(0 0 0/.6);
-  --r3-mono:"Lucida Console",Consolas,"Courier New",monospace;
+  --shadow-sm:0 1px 0 rgb(0 0 0/.15);--shadow-md:0 4px 0 rgb(0 0 0/.12),0 10px 24px rgb(0 0 0/.18);--shadow-lg:0 6px 0 rgb(0 0 0/.12),0 18px 50px rgb(0 0 0/.25);
+  --c90-mono:"Lucida Console",Consolas,"Courier New",monospace;--c90-gloss:rgb(255 255 255/.5);--c90-scan:none;
   font-family:Verdana,Tahoma,"Segoe UI",sans-serif}
-:root[data-style=retro3] :is(h1,h2,h3,.page-heading h2,#detail-title,.dialog-top h2,.settings-group>h3,#activity-running h3){font-family:var(--r3-mono);text-transform:uppercase;letter-spacing:.06em;font-weight:700}
-:root[data-style=retro3] :is(.page-heading h2,#detail[data-mode=page] #detail-title){font-size:var(--text-2xl)}
-:root[data-style=retro3] :is(.primary,.secondary){border-width:2px;font-family:var(--r3-mono);text-transform:uppercase;letter-spacing:.05em;font-size:var(--text-sm)}
-:root[data-style=retro3] .primary{background:linear-gradient(#b9adff,#8a77f5 55%,#7462e0);border-color:#5b49c9;color:var(--on-accent);box-shadow:inset 0 1px rgb(255 255 255/.45),0 3px 0 #3d2f8f}
-:root[data-style=retro3] .secondary{background:linear-gradient(#3a3650,#2a2739);border-color:#4d4766;box-shadow:inset 0 1px rgb(255 255 255/.12),0 3px 0 #0e0d14}
-:root[data-style=retro3] :is(.primary,.secondary):hover:not(:disabled){filter:brightness(1.12)}
-:root[data-style=retro3] :is(.primary,.secondary):active:not(:disabled){transform:translateY(2px);box-shadow:inset 0 1px rgb(255 255 255/.2),0 1px 0 #0e0d14}
-:root[data-style=retro3] :is(button,a,summary,input,select,textarea):focus-visible{outline:2px solid var(--accent);outline-offset:2px;box-shadow:0 0 14px color-mix(in srgb,var(--accent) 70%,transparent)}
-:root[data-style=retro3] :is(.card,.file-card,.settings-list,.focus-panel,.library-choices>button,.result-card,.community-entry,.assistant-card){background:linear-gradient(var(--surface),#1f1d28);border:1px solid var(--line);box-shadow:inset 0 1px rgb(255 255 255/.05)}
-:root[data-style=retro3] #sidebar :is(.sidebar-action,.sidebar-sections button)[aria-current=page]{background:var(--accent-soft);box-shadow:inset 3px 0 var(--accent)}
-:root[data-style=retro3] .aura-shell .app-header{box-shadow:0 1px 0 var(--line)}
-:root[data-style=retro3] :is(#section-dialog,.shell-main){background:var(--paper) repeating-linear-gradient(rgb(255 255 255/.018) 0 1px,transparent 1px 3px)}
-:root[data-style=retro3] ::-webkit-scrollbar{width:12px;height:12px}
-:root[data-style=retro3] ::-webkit-scrollbar-track{background:#131218}
-:root[data-style=retro3] ::-webkit-scrollbar-thumb{background:linear-gradient(90deg,#6f60d6,#9d8cff);border:3px solid #131218;border-radius:2px}
-@media(prefers-reduced-motion:reduce){:root[data-style=retro3] :is(.primary,.secondary):active{transform:none}}
-:root:is([data-style=retro1],[data-style=retro2],[data-style=retro3]) :is(*,#conversation){scrollbar-width:auto;scrollbar-color:auto}
-:root:is([data-style=retro1],[data-style=retro2]) #welcome-heading h1{font-family:inherit;font-weight:700;letter-spacing:0}
+:root[data-style=console90][data-theme=dark][data-accent]{color-scheme:dark;
+  --ink:#ebe8f5;--muted:#aaa5bf;--faint:#7d7894;--line:#3d3950;--line-strong:#5b5478;--paper:#1b1a22;--surface:#24222e;--sidebar:#131218;--hover:#302d3e;--on-accent:#120f1f;
+  --success:#6fdc93;--warning:#f5c451;--danger:#ff7a7a;--danger-solid:#e04848;--scrim:rgb(5 4 10/.7);
+  --shadow-sm:0 1px 0 rgb(0 0 0/.5);--shadow-md:0 6px 0 rgb(0 0 0/.35),0 10px 30px rgb(0 0 0/.5);--shadow-lg:0 8px 0 rgb(0 0 0/.35),0 18px 60px rgb(0 0 0/.6);
+  --c90-gloss:rgb(255 255 255/.3);--c90-scan:repeating-linear-gradient(rgb(255 255 255/.018) 0 1px,transparent 1px 3px)}
+:root[data-style=console90][data-accent=c90-grey]{--accent:#5546c2}
+:root[data-style=console90][data-accent=c90-charcoal]{--accent:#1a6930}
+:root[data-style=console90][data-accent=c90-midnight]{--accent:#2a56c8}
+:root[data-style=console90][data-accent=c90-swirl]{--accent:#b8480a;--paper:#efeeeb;--surface:#fbfbfa;--sidebar:#e6e4e0;--hover:#e9e7e3;--line:#d2cfca}
+:root[data-style=console90][data-theme=dark][data-accent=c90-grey]{--accent:#9d8cff}
+:root[data-style=console90][data-theme=dark][data-accent=c90-charcoal]{--accent:#6fdc93;--paper:#1e1e20;--surface:#28282b;--sidebar:#151517;--hover:#323236;--line:#3e3e44;--line-strong:#5a5a62;--ink:#ececee;--muted:#ababb2}
+:root[data-style=console90][data-theme=dark][data-accent=c90-midnight]{--accent:#7d9dff;--paper:#0d1018;--surface:#151a26;--sidebar:#090b11;--hover:#1d2433;--line:#262e40;--line-strong:#3a4660;--ink:#e6eaf5;--muted:#a3abc0}
+:root[data-style=console90][data-theme=dark][data-accent=c90-swirl]{--accent:#ff9a4d;--paper:#1c1b1a;--surface:#262524;--sidebar:#141413;--hover:#302f2d;--line:#3c3a37;--line-strong:#5a5752;--ink:#f2efea;--muted:#b3aea6}
+/* A dark case: Charcoal and Midnight keep a dark sidebar even in light mode. */
+:root[data-style=console90]:not([data-theme=dark]):is([data-accent=c90-charcoal],[data-accent=c90-midnight]) #sidebar{--ink:#ececee;--muted:#b4b4bc;--faint:#8c8c94;--line:#45454c;--hover:#3a3a40;--accent-soft:#3a3a44;--sidebar:#2a2a2e;--accent:#7fd99a;background:var(--sidebar);color:var(--ink)}
+:root[data-style=console90]:not([data-theme=dark])[data-accent=c90-midnight] #sidebar{--hover:#232a3c;--accent-soft:#25304d;--sidebar:#141824;--accent:#8fa8ff}
+:root[data-style=console90] :is(h1,h2,h3,.page-heading h2,#detail-title,.dialog-top h2,.settings-group>h3,#activity-running h3){font-family:var(--c90-mono);text-transform:uppercase;letter-spacing:.06em;font-weight:700}
+:root[data-style=console90] :is(.page-heading h2,#detail[data-mode=page] #detail-title){font-size:var(--text-2xl)}
+:root[data-style=console90] :is(.primary,.secondary){border-width:2px;font-family:var(--c90-mono);text-transform:uppercase;letter-spacing:.05em;font-size:var(--text-sm)}
+:root[data-style=console90] .primary{background:linear-gradient(color-mix(in srgb,var(--accent) 62%,#fff),var(--accent) 55%,color-mix(in srgb,var(--accent) 82%,#000));border-color:color-mix(in srgb,var(--accent) 65%,#000);color:var(--on-accent);box-shadow:inset 0 1px var(--c90-gloss),0 3px 0 color-mix(in srgb,var(--accent) 45%,#000)}
+:root[data-style=console90] .secondary{background:linear-gradient(color-mix(in srgb,var(--surface) 82%,#fff),var(--surface));border-color:var(--line-strong);color:var(--ink);box-shadow:inset 0 1px var(--c90-gloss),0 3px 0 var(--line)}
+:root[data-style=console90] :is(.primary,.secondary):hover:not(:disabled){filter:brightness(1.08)}
+:root[data-style=console90] :is(.primary,.secondary):active:not(:disabled){transform:translateY(2px);box-shadow:inset 0 1px var(--c90-gloss),0 1px 0 var(--line)}
+:root[data-style=console90] :is(button,a,summary,input,select,textarea):focus-visible{outline:2px solid var(--accent);outline-offset:2px;box-shadow:0 0 14px color-mix(in srgb,var(--accent) 60%,transparent)}
+:root[data-style=console90] :is(.card,.file-card,.settings-list,.focus-panel,.library-choices>button,.result-card,.community-entry,.assistant-card){background-image:linear-gradient(var(--surface),color-mix(in srgb,var(--surface) 94%,#000));border:1px solid var(--line);box-shadow:inset 0 1px var(--c90-gloss)}
+:root[data-style=console90] #sidebar :is(.sidebar-action,.sidebar-sections button)[aria-current=page]{background:var(--accent-soft);box-shadow:inset 3px 0 var(--accent)}
+:root[data-style=console90] .aura-shell .app-header{box-shadow:0 1px 0 var(--line)}
+:root[data-style=console90] :is(#section-dialog,.shell-main){background:var(--c90-scan),var(--paper)}
+:root[data-style=console90] ::-webkit-scrollbar{width:12px;height:12px}
+:root[data-style=console90] ::-webkit-scrollbar-track{background:var(--sidebar)}
+:root[data-style=console90] ::-webkit-scrollbar-thumb{background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 75%,#000),var(--accent));border:3px solid var(--sidebar);border-radius:2px}
+:root[data-style=console90]:is([data-accent=c90-grey],[data-accent=c90-swirl]) #sidebar :is(.sidebar-action,.sidebar-sections button)[aria-current=page]{position:relative}
+:root[data-style=console90]:is([data-accent=c90-grey],[data-accent=c90-swirl]) #sidebar :is(.sidebar-action,.sidebar-sections button)[aria-current=page]::after{content:"";position:absolute;right:6px;top:50%;margin-top:-6px}
+/* Grey case: four coloured dots in a diamond, like a controller's face buttons. */
+:root[data-style=console90][data-accent=c90-grey] #sidebar :is(.sidebar-action,.sidebar-sections button)[aria-current=page]::after{width:12px;height:12px;background:radial-gradient(circle at 6px 2px,#3cb371 1.8px,transparent 2.3px),radial-gradient(circle at 10px 6px,#e5484d 1.8px,transparent 2.3px),radial-gradient(circle at 6px 10px,#4c7fe0 1.8px,transparent 2.3px),radial-gradient(circle at 2px 6px,#d65fb0 1.8px,transparent 2.3px)}
+:root[data-style=console90][data-accent=c90-charcoal] .page-heading h2{padding-bottom:10px;background:linear-gradient(90deg,#e5484d 0 25%,#f2c12e 25% 50%,#3cb371 50% 75%,#4c7fe0 75%) left bottom/112px 4px no-repeat}
+:root[data-style=console90][data-accent=c90-swirl] #sidebar :is(.sidebar-action,.sidebar-sections button)[aria-current=page]::after{width:12px;height:12px;border-radius:50%;background:conic-gradient(from 30deg,var(--accent),transparent 35%,var(--accent) 50%,transparent 85%,var(--accent))}
+@media(prefers-reduced-motion:reduce){:root[data-style=console90] :is(.primary,.secondary):active{transform:none}}
+
+/* ── 2000s desktop: cream windows, glossy rounded title bars, a friendly green "go" button and an
+      orange glow on hovered buttons. Dark is the glossy black look the era also had. Accents are the
+      three schemes of that era: Blue, Olive and Silver. */
+:root[data-style=desktop00][data-accent]{color-scheme:light;
+  --d00-face:#ece9d8;--d00-field:#fff;--d00-field-line:#7f9db9;--d00-btn-a:#fff;--d00-btn-b:#ece9d8;--d00-btn-c:#d6d0c0;--d00-btn-line:#003c74;
+  --ink:#000;--muted:#4a4a4a;--faint:#777;--line:#cac6b4;--line-strong:#7f9db9;--paper:#fbfaf6;--surface:#fff;--sidebar:#d6e2f8;--hover:#e3ebf8;--on-accent:#fff;
+  --success:#2b7a2b;--warning:#8f5d12;--danger:#b8321f;--danger-solid:#d03030;--scrim:rgb(0 0 0/.3);
+  --radius-sm:3px;--radius-md:3px;--radius-lg:8px;--radius-full:10px;
+  --shadow-sm:0 1px 2px rgb(0 0 0/.12);--shadow-md:2px 3px 8px rgb(0 0 0/.25);--shadow-lg:3px 5px 18px rgb(0 0 0/.35);
+  font-family:Tahoma,"Segoe UI",Verdana,sans-serif}
+:root[data-style=desktop00][data-theme=dark][data-accent]{color-scheme:dark;
+  --d00-face:#232328;--d00-field:#101012;--d00-field-line:#55555f;--d00-btn-a:#44444c;--d00-btn-b:#2a2a30;--d00-btn-c:#1c1c20;--d00-btn-line:#5a5a64;
+  --ink:#eeeef2;--muted:#adadb8;--faint:#80808c;--line:#34343c;--line-strong:#55555f;--paper:#141416;--surface:#1d1d21;--sidebar:#101012;--hover:#2a2a32;--on-accent:#0c0c10;
+  --success:#7fd18f;--warning:#f0c060;--danger:#ff8a80;--danger-solid:#d04040;--scrim:rgb(0 0 0/.6)}
+:root[data-style=desktop00][data-accent=d00-blue]{--accent:#0a4fc4;--d00-title:linear-gradient(#3a8cff,#0a5ce6 12%,#0050dc 80%,#003fbf);--d00-title-text:#fff;--d00-pane:linear-gradient(#d9e4f9,#b5c9f0)}
+:root[data-style=desktop00][data-accent=d00-olive]{--accent:#4d6b1f;--d00-title:linear-gradient(#c3d39a,#93ab63 12%,#7f9750 80%,#667a3c);--d00-title-text:#fff;--d00-pane:linear-gradient(#e7ecd4,#cfd9ae)}
+:root[data-style=desktop00][data-accent=d00-silver]{--accent:#47557a;--d00-title:linear-gradient(#fff,#e2e2ec 12%,#c8c8d8 80%,#a9a9be);--d00-title-text:#1a1a2a;--d00-pane:linear-gradient(#f1f1f6,#d6d6e2)}
+:root[data-style=desktop00][data-theme=dark][data-accent=d00-blue]{--accent:#7fb0ff;--d00-title:linear-gradient(#5a5a66,#2c2c34 45%,#151519 55%,#0c0c0e);--d00-title-text:#fff;--d00-pane:linear-gradient(#18181c,#0e0e10)}
+:root[data-style=desktop00][data-theme=dark][data-accent=d00-olive]{--accent:#bcd27e;--d00-title:linear-gradient(#5a5a66,#2c2c34 45%,#151519 55%,#0c0c0e);--d00-title-text:#fff;--d00-pane:linear-gradient(#18181c,#0e0e10)}
+:root[data-style=desktop00][data-theme=dark][data-accent=d00-silver]{--accent:#cdd2e0;--d00-title:linear-gradient(#5a5a66,#2c2c34 45%,#151519 55%,#0c0c0e);--d00-title-text:#fff;--d00-pane:linear-gradient(#18181c,#0e0e10)}
+:root[data-style=desktop00] #welcome-heading h1{font-family:inherit;font-weight:700}
+:root[data-style=desktop00] #sidebar{background:var(--d00-pane)}
+:root[data-style=desktop00] #sidebar :is(.sidebar-action,.sidebar-sections button)[aria-current=page]{background:var(--surface);border-radius:var(--radius-lg);box-shadow:0 1px 2px rgb(0 0 0/.18)}
+:root[data-style=desktop00] .aura-shell .app-header{background:linear-gradient(var(--paper),var(--d00-face));box-shadow:0 1px 0 var(--line)}
+:root[data-style=desktop00] .primary{background:linear-gradient(#6ccf6c,#33a133 48%,#2a8f2a 52%,#237a23);border:1px solid #1b6a1b;color:#fff;border-radius:var(--radius-full);box-shadow:inset 0 1px rgb(255 255 255/.5);text-shadow:0 1px 1px rgb(0 0 0/.3)}
+:root[data-style=desktop00] .secondary,:root[data-style=desktop00] :is(.filters button,#page-refresh,.suggestions button){background:linear-gradient(var(--d00-btn-a),var(--d00-btn-b) 85%,var(--d00-btn-c));border:1px solid var(--d00-btn-line);color:var(--ink);border-radius:var(--radius-sm)}
+:root[data-style=desktop00] :is(.primary,.secondary,.filters button,#page-refresh):hover:not(:disabled){box-shadow:inset 0 0 0 2px #f8b33c;filter:none}
+:root[data-style=desktop00] .filters :is([aria-pressed=true],.active,[aria-current=page]){box-shadow:inset 0 0 0 2px var(--accent)}
+:root[data-style=desktop00] :is(.primary,.secondary):active:not(:disabled){filter:brightness(.92)}
+:root[data-style=desktop00] :is(button,a,summary):focus-visible{outline:1px dotted var(--ink);outline-offset:-3px}
+:root[data-style=desktop00] :is(input:not([type=range]):not([type=checkbox]):not([type=radio]),select,textarea,.search){background:var(--d00-field);border:1px solid var(--d00-field-line);border-radius:0}
+:root[data-style=desktop00] #chat-form{background:var(--d00-field);border:1px solid var(--d00-field-line);border-radius:var(--radius-sm)}
+:root[data-style=desktop00] :is(input,select,textarea):focus-visible{box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 40%,transparent);outline:0}
+:root[data-style=desktop00] :is(dialog,#detail){background:var(--d00-face);border:1px solid var(--d00-btn-line)}
+:root[data-style=desktop00] :is(#section-dialog,#detail[data-mode=page]){background:var(--paper);border:0}
+:root[data-style=desktop00] dialog:not(#section-dialog):not([data-mode=page])>.dialog-top h2{flex:1;padding:5px 10px;border-radius:7px 7px 0 0;background:var(--d00-title);color:var(--d00-title-text);font-size:var(--text-base);font-weight:700;text-shadow:0 1px 1px rgb(0 0 0/.25)}
+:root[data-style=desktop00] dialog:not(#section-dialog):not([data-mode=page])>.dialog-top>.close-button{background:linear-gradient(#e8957a,#c8462a 55%,#b03a20);color:#fff;border:1px solid #fff;border-radius:var(--radius-sm)}
+:root[data-style=desktop00] :is(.card,.file-card,.settings-list,.focus-panel,.library-choices>button,.result-card,.community-entry,.assistant-card){border:1px solid var(--line);border-radius:var(--radius-lg);box-shadow:var(--shadow-sm)}
+:root[data-style=desktop00] ::-webkit-scrollbar{width:16px;height:16px}
+:root[data-style=desktop00] ::-webkit-scrollbar-track{background:var(--d00-face)}
+:root[data-style=desktop00] ::-webkit-scrollbar-thumb{background:linear-gradient(90deg,var(--d00-btn-a),var(--d00-btn-b) 60%,var(--d00-btn-c));border:1px solid var(--d00-field-line);border-radius:3px}
+
+/* ── 2000s console: a dashboard, not windows. Rounded glass tiles, pill buttons, a glowing ring
+      around the selection and a soft wave of colour behind. Light is clean white and silver; dark is
+      deep black with glowing edges. Accents are the era's signature machine colours. */
+:root[data-style=console00][data-accent]{color-scheme:light;
+  --c00-tile:linear-gradient(#fff,#f3f6fa);--c00-button:linear-gradient(#fff,#e8edf3);--c00-gloss:rgb(255 255 255/.7);--c00-wave:.12;
+  --ink:#1b2230;--muted:#566173;--faint:#8a93a3;--line:#d4dbe5;--line-strong:#b2bdcc;--paper:#f1f4f8;--surface:#fff;--sidebar:#e8ecf2;--hover:#e1e7ef;--on-accent:#fff;
+  --success:#2c8a3f;--warning:#946200;--danger:#c0352b;--danger-solid:#d9363e;--scrim:rgb(30 40 60/.3);
+  --radius-sm:8px;--radius-md:12px;--radius-lg:18px;--radius-full:999px;
+  --shadow-sm:0 1px 3px rgb(30 50 80/.1);--shadow-md:0 8px 24px rgb(30 50 80/.14);--shadow-lg:0 20px 60px rgb(30 50 80/.22);
+  font-family:"Segoe UI",system-ui,sans-serif}
+:root[data-style=console00][data-theme=dark][data-accent]{color-scheme:dark;
+  --c00-tile:linear-gradient(#141923,#0d1118);--c00-button:linear-gradient(#262d3b,#151a24);--c00-gloss:rgb(255 255 255/.08);--c00-wave:.18;
+  --ink:#e8edf5;--muted:#9ca6b8;--faint:#6f7889;--line:#222a38;--line-strong:#36425c;--paper:#06070a;--surface:#10131a;--sidebar:#040508;--hover:#181d28;--on-accent:#04060a;
+  --success:#7fe08f;--warning:#f5c451;--danger:#ff7a7a;--danger-solid:#e04848;--scrim:rgb(0 0 0/.65);
+  --shadow-sm:0 1px 3px rgb(0 0 0/.5);--shadow-md:0 10px 30px rgb(0 0 0/.55);--shadow-lg:0 22px 70px rgb(0 0 0/.7)}
+:root[data-style=console00][data-accent=c00-blue]{--accent:#1f63d6}
+:root[data-style=console00][data-accent=c00-green]{--accent:#3a7d10}
+:root[data-style=console00][data-accent=c00-indigo]{--accent:#4b3fae}
+:root[data-style=console00][data-accent=c00-silver]{--accent:#4f5d73;--paper:#eceff3;--sidebar:#e2e6ec}
+:root[data-style=console00][data-theme=dark][data-accent=c00-blue]{--accent:#4da3ff}
+:root[data-style=console00][data-theme=dark][data-accent=c00-green]{--accent:#8fe03c}
+:root[data-style=console00][data-theme=dark][data-accent=c00-indigo]{--accent:#9d90ff}
+:root[data-style=console00][data-theme=dark][data-accent=c00-silver]{--accent:#c9d2de;--paper:#0b0c0f;--sidebar:#08090b}
+:root[data-style=console00] :is(h1,h2,h3,.page-heading h2,#detail-title,#welcome-heading h1){font-family:"Trebuchet MS","Segoe UI",sans-serif;font-weight:600}
+:root[data-style=console00] :is(.primary,.secondary){border-radius:var(--radius-full);padding-inline:18px}
+:root[data-style=console00] .primary{background:linear-gradient(color-mix(in srgb,var(--accent) 55%,#fff),var(--accent) 50%,color-mix(in srgb,var(--accent) 85%,#000));border:1px solid color-mix(in srgb,var(--accent) 70%,#000);color:var(--on-accent);box-shadow:inset 0 1px var(--c00-gloss),0 2px 10px color-mix(in srgb,var(--accent) 35%,transparent)}
+:root[data-style=console00] .secondary{background:var(--c00-button);border:1px solid var(--line-strong);color:var(--ink);box-shadow:inset 0 1px var(--c00-gloss)}
+:root[data-style=console00] :is(.primary,.secondary):hover:not(:disabled){box-shadow:inset 0 1px var(--c00-gloss),0 0 0 2px color-mix(in srgb,var(--accent) 45%,transparent),0 0 16px color-mix(in srgb,var(--accent) 35%,transparent)}
+:root[data-style=console00] :is(button,a,summary,input,select,textarea):focus-visible{outline:2px solid var(--accent);outline-offset:2px;box-shadow:0 0 16px color-mix(in srgb,var(--accent) 55%,transparent)}
+:root[data-style=console00] :is(.card,.file-card,.settings-list,.focus-panel,.library-choices>button,.result-card,.community-entry,.assistant-card){background-image:var(--c00-tile);border:1px solid var(--line);border-radius:var(--radius-lg);box-shadow:inset 0 1px var(--c00-gloss),var(--shadow-sm)}
+:root[data-style=console00] :is(dialog,#detail){border:1px solid var(--line);box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 18%,transparent),var(--shadow-lg)}
+:root[data-style=console00] #detail:not([data-mode=page]){border-radius:var(--radius-lg)}
+:root[data-style=console00] #detail[data-mode=context]{border-radius:var(--radius-lg) 0 0 var(--radius-lg)}
+:root[data-style=console00] #chat-form{border-radius:var(--radius-lg)}
+:root[data-style=console00] #sidebar :is(.sidebar-action,.sidebar-sections button)[aria-current=page]{background:var(--accent-soft);border-radius:var(--radius-full);box-shadow:0 0 0 2px var(--accent),0 0 14px color-mix(in srgb,var(--accent) 55%,transparent);animation:c00-glow 2.6s ease-in-out infinite}
+@keyframes c00-glow{50%{box-shadow:0 0 0 2px var(--accent),0 0 4px color-mix(in srgb,var(--accent) 25%,transparent)}}
+:root[data-style=console00] :is(#section-dialog,.shell-main){background:radial-gradient(120% 60% at 0% 115%,color-mix(in srgb,var(--accent) calc(var(--c00-wave)*100%),transparent),transparent 70%),radial-gradient(90% 45% at 100% -10%,color-mix(in srgb,var(--accent) calc(var(--c00-wave)*70%),transparent),transparent 70%),var(--paper)}
+:root[data-style=console00] ::-webkit-scrollbar{width:10px;height:10px}
+:root[data-style=console00] ::-webkit-scrollbar-track{background:transparent}
+:root[data-style=console00] ::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--accent) 55%,var(--line-strong));border:2px solid transparent;background-clip:padding-box;border-radius:999px}
+@media(prefers-reduced-motion:reduce){:root[data-style=console00] #sidebar :is(.sidebar-action,.sidebar-sections button)[aria-current=page]{animation:none}}

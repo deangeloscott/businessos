@@ -320,7 +320,8 @@ def main():
     parser.add_argument('--search',default='');parser.add_argument('--kind',default='');parser.add_argument('--input');parser.add_argument('--goal');parser.add_argument('--chat');parser.add_argument('--index',type=int,default=0);parser.add_argument('--json',action='store_true')
     parser.add_argument('--project',default='');parser.add_argument('--assistant',default='');parser.add_argument('--exclude-chat',default='')
     parser.add_argument('--variant',default='',help='Exact variant from recall results');parser.add_argument('--request-id',default='')
-    args=parser.parse_args()
+    from _common import parse_args_with_ids
+    args=parse_args_with_ids(parser)
     with workspace_scope(args.workspace):
         if resolve_business(args.business_id)['status']!='resolved':raise ValueError('Choose an existing business.')
         from workspace_ui import Workspace

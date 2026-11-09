@@ -5,7 +5,11 @@ const state = {data:null, view:'home', business:new URLSearchParams(location.sea
 const systemTheme=matchMedia('(prefers-color-scheme: dark)');
 const nativeApps=['codex','claude','pi','omp','hermes','antigravity'];
 function nativeConnection(kind){return nativeApps.includes(kind)||!!state.data?.connection?.choices?.some(c=>c.id===kind&&c.native);}
-function applyAppearance(value) { document.documentElement.dataset.theme=value==='system'?(systemTheme.matches?'dark':'light'):value; }
+function applyAppearance(value) {
+  // While Personalization previews a look, its choice wins over background refreshes.
+  const preview=document.documentElement.dataset.previewing&&document.querySelector('#profile-form');if(preview)value=preview.appearance.value;
+  document.documentElement.dataset.theme=value==='system'?(systemTheme.matches?'dark':'light'):value;
+}
 systemTheme.addEventListener('change',()=>applyAppearance(state.data?.appearance||'system'));
 applyAppearance('system');
 const esc = (value) => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -2698,7 +2702,32 @@ async function handoffChat(){
   await openChatModels();
 }
 
+/* Styles change the whole look; each brings its own accents (the first is its default).
+   Keep in step with STYLE_ACCENTS in scripts/workspace_ui.py. */
+const STYLES=[['modern','Modern',[['forest','Forest'],['ocean','Ocean'],['clay','Clay'],['mono','Mono']]],
+  ['classic','Classic mono',[['cm-ink','Ink'],['cm-blue','Blue'],['cm-lavender','Lavender'],['cm-green','Green']]],
+  ['desktop90','90s desktop',[['d90-navy','Navy'],['d90-teal','Teal'],['d90-plum','Plum'],['d90-brick','Brick']]],
+  ['console90','90s console',[['c90-grey','Grey case'],['c90-charcoal','Charcoal'],['c90-midnight','Midnight'],['c90-swirl','Swirl']]],
+  ['desktop00','2000s desktop',[['d00-blue','Blue'],['d00-olive','Olive'],['d00-silver','Silver']]],
+  ['console00','2000s console',[['c00-blue','Black & blue'],['c00-green','White & green'],['c00-indigo','Indigo'],['c00-silver','Silver']]]];
+function accentOptions(style,accent){
+  const accents=(STYLES.find(([v])=>v===style)||STYLES[0])[2];
+  return accents.map(([v,n])=>`<option value="${v}" ${accent===v?'selected':''}>${n}</option>`).join('');
+}
+// Personalization previews while choosing; closing without saving puts the saved look back.
+function previewLook(){
+  const form=$('#profile-form'),root=document.documentElement;if(!form||!root.dataset.previewing)return;
+  root.dataset.style=form.style.value;root.dataset.accent=form.accent.value;root.dataset.density=form.density.value;
+  root.style.setProperty('--ui-text-size',form.text_size.value+'px');applyAppearance(form.appearance.value);
+}
+document.addEventListener('change',event=>{
+  const form=event.target.closest('#profile-form');if(!form)return;
+  if(event.target.name==='style')form.accent.innerHTML=accentOptions(form.style.value,'');
+  document.documentElement.dataset.previewing='1';previewLook();
+});
+$('#detail').addEventListener('close',()=>{if(!document.documentElement.dataset.previewing)return;delete document.documentElement.dataset.previewing;applyProfile(state.profile);applyAppearance(state.data?.appearance||'system');});
 function applyProfile(profile){
+  queueMicrotask(previewLook);
   state.profile={display_name:'',sidebar_collapsed:false,panel_width:480,text_size:15,accent:'forest',...profile};
   const p=state.profile;document.body.classList.toggle('sidebar-collapsed',p.sidebar_collapsed);document.documentElement.dataset.accent=p.accent;document.documentElement.dataset.density=p.density||'comfortable';document.documentElement.dataset.style=p.style||'modern';
   document.documentElement.style.setProperty('--panel-width',p.panel_width+'px');document.documentElement.style.setProperty('--ui-text-size',p.text_size+'px');
@@ -2798,7 +2827,7 @@ async function accountProfile(){
 }
 async function personalize(){
   $('#more-dialog').close();leavePage();const p=state.profile||{};
-  details('Personalization',`<p class="shell-help">Choose how AURA looks and feels on this computer. A style changes the whole look; retro styles bring their own colours.</p><form id="profile-form" class="form-grid"><div class="settings-grid"><label>Appearance<select name="appearance">${['system','light','dark'].map(v=>`<option value="${v}" ${state.data.appearance===v?'selected':''}>${human(v)}</option>`).join('')}</select></label><label>Style<select name="style">${[['modern','Modern'],['retro1','Retro 1 · 90s desktop'],['retro2','Retro 2 · Classic mono'],['retro3','Retro 3 · 90s console']].map(([v,n])=>`<option value="${v}" ${(p.style||'modern')===v?'selected':''}>${n}</option>`).join('')}</select></label><label>Accent<select name="accent">${[['forest','Forest'],['ocean','Ocean'],['clay','Clay'],['mono','Mono']].map(([v,n])=>`<option value="${v}" ${p.accent===v?'selected':''}>${n}</option>`).join('')}</select></label><label>Text size<select name="text_size">${[14,15,16,18].map(n=>`<option value="${n}" ${p.text_size===n?'selected':''}>${n===15?'Standard':n+' px'}</option>`).join('')}</select></label><label>Density<select name="density">${[['comfortable','Comfortable'],['compact','Compact']].map(([v,n])=>`<option value="${v}" ${(p.density||'comfortable')===v?'selected':''}>${n}</option>`).join('')}</select></label><label>Side panel width<input name="panel_width" type="range" min="360" max="900" step="20" value="${p.panel_width||480}"></label></div><div class="inline-actions"><button class="primary">Save preferences</button><button type="button" class="text-button" id="reset-appearance">Reset appearance</button></div></form><section class="customize-section"><h3>Make the workspace your own</h3><p>Use a dedicated personalization chat to adapt your layout, add a view, or simplify what you see.</p><button class="secondary" id="personalization-chat">Ask my AI to customize it</button><div id="custom-view-recovery"></div></section>`);
+  details('Personalization',`<p class="shell-help">Choose how AURA looks and feels on this computer. A style changes the whole look, each with its own accents, in light or dark. Changes preview as you choose; save to keep them.</p><form id="profile-form" class="form-grid"><div class="settings-grid"><label>Style<select name="style">${STYLES.map(([v,n])=>`<option value="${v}" ${p.style===v?'selected':''}>${n}</option>`).join('')}</select></label><label>Accent<select name="accent">${accentOptions(p.style,p.accent)}</select></label><label>Appearance<select name="appearance">${['system','light','dark'].map(v=>`<option value="${v}" ${state.data.appearance===v?'selected':''}>${human(v)}</option>`).join('')}</select></label><label>Text size<select name="text_size">${[14,15,16,18].map(n=>`<option value="${n}" ${p.text_size===n?'selected':''}>${n===15?'Standard':n+' px'}</option>`).join('')}</select></label><label>Density<select name="density">${[['comfortable','Comfortable'],['compact','Compact']].map(([v,n])=>`<option value="${v}" ${(p.density||'comfortable')===v?'selected':''}>${n}</option>`).join('')}</select></label><label>Side panel width<input name="panel_width" type="range" min="360" max="900" step="20" value="${p.panel_width||480}"></label></div><div class="inline-actions"><button class="primary">Save preferences</button><button type="button" class="text-button" id="reset-appearance">Reset appearance</button></div></form><section class="customize-section"><h3>Make the workspace your own</h3><p>Use a dedicated personalization chat to adapt your layout, add a view, or simplify what you see.</p><button class="secondary" id="personalization-chat">Ask my AI to customize it</button><div id="custom-view-recovery"></div></section>`);
   const diagnostics=await api('/api/diagnostics');if(diagnostics.interface==='custom'&&$('#custom-view-recovery'))$('#custom-view-recovery').innerHTML='<p class="small-note">You are using a custom layout. Your custom files will be kept if you return to the default.</p><button class="text-button" id="restore-standard-view">Return to default layout</button>';
 }
 function browserPerformance(){
