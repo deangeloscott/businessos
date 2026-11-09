@@ -225,4 +225,21 @@ HTTPServer(('127.0.0.1',int(sys.argv[sys.argv.index('--port')+1])),Handler).serv
         server.shutdown(); server.server_close()
     u.cancel_pending()
 
+# A running AURA notices when its own code changes underneath it (Git pull, synced or copied folder)
+# and asks for a restart instead of failing in confusing ways; an unchanged checkout never asks.
+with tempfile.TemporaryDirectory() as folder:
+    product = Path(folder); (product / 'scripts').mkdir(); script = product / 'scripts' / 'example.py'
+    script.write_text('A = 1', encoding='utf-8')
+    before = updates.code_fingerprint(product)
+    assert before and updates.code_fingerprint(product) == before
+    script.write_text('A = 22', encoding='utf-8')
+    assert updates.code_fingerprint(product) != before
+assert updates.restart_needed() is False
+saved = updates.STARTED_CODE, dict(updates._code_check)
+try:
+    updates.STARTED_CODE = 'code from an earlier start'; updates._code_check.update(at=None, changed=False)
+    assert updates.restart_needed() is True
+finally:
+    updates.STARTED_CODE = saved[0]; updates._code_check.clear(); updates._code_check.update(saved[1])
+
 print('AURA update checks, staged integrity, customization, archive safety, real handoff/fallback, workspace preservation and HTTP protections passed.')

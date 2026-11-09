@@ -820,7 +820,7 @@ class Workspace:
         path=self.settings_file.parent/'ui-profile.json'
         try:value=json.loads(path.read_text(encoding='utf-8'))
         except (OSError,ValueError):value={}
-        defaults={'display_name':'','sidebar_collapsed':False,'panel_width':480,'text_size':15,'density':'comfortable','accent':'forest','avatar':'','activity_view':'highlights','working_preferences':''}
+        defaults={'display_name':'','sidebar_collapsed':False,'panel_width':480,'text_size':15,'density':'comfortable','style':'modern','accent':'forest','avatar':'','activity_view':'highlights','working_preferences':''}
         value={**defaults,**{k:v for k,v in value.items() if k in defaults}} if isinstance(value,dict) else defaults
         if changes is not None:
             if changes.get('reset'):value={**defaults,'display_name':value.get('display_name',''),'avatar':value.get('avatar',''),'working_preferences':value.get('working_preferences','')}
@@ -853,8 +853,11 @@ class Workspace:
                 if 'density' in changes:
                     if changes['density'] not in ('comfortable','compact'):raise ValueError('Choose Comfortable or Compact.')
                     value['density']=changes['density']
+                if 'style' in changes:
+                    if changes['style'] not in ('modern','retro1','retro2','retro3'):raise ValueError('Choose a supported style.')
+                    value['style']=changes['style']
                 if 'accent' in changes:
-                    if changes['accent'] not in ('forest','ocean','clay'):raise ValueError('Choose a supported accent.')
+                    if changes['accent'] not in ('forest','ocean','clay','mono'):raise ValueError('Choose a supported accent.')
                     value['accent']=changes['accent']
             from _common import write_json_atomic
             write_json_atomic(path,value)

@@ -124,10 +124,14 @@ print('## Reply '+name+'\\n\\nWorkspace: '+str(root))
             third_chat=app.conversation(bid,third['chat_id'])
             assert 'Reply THIRD' in third_chat['messages'][-1]['text'] and str(b) in third_chat['messages'][-1]['text']
             assert not any(c['id']==second['chat_id'] for c in app.preferences['chats'])
-            app.profile({'display_name':'Taylor','accent':'clay','text_size':16})
+            app.profile({'display_name':'Taylor','accent':'clay','text_size':16,'style':'retro2'})
+            assert app.profile()['style']=='retro2'
+            assert app.profile({'accent':'mono'})['accent']=='mono'
+            try:app.profile({'style':'neon'});raise AssertionError('An unknown style was saved')
+            except ValueError:pass
             assert app.profile()['display_name']=='Taylor'
             assert app.profile({'reset':True})['display_name']=='Taylor'
-            assert app.profile()['accent']=='forest'
+            assert app.profile()['accent']=='forest' and app.profile()['style']=='modern'
             diagnostic=json.dumps(app.diagnostics())
             assert str(base) not in diagnostic and 'TURN THIRD' not in diagnostic and 'Taylor' not in diagnostic
             # A persisted working marker is not proof that this new process owns it.

@@ -13,7 +13,7 @@ Use tokens, never raw values, so themes, text size and density keep working.
 | Kind | Tokens | Notes |
 |---|---|---|
 | Text | `--text-xs` 11 · `--text-sm` 12 · `--text-md` 13 · `--text-base` 14 · `--text-body` 15 · `--text-lg` 17 · `--text-xl` 20 · `--text-2xl` 26 · `--text-3xl` 30 | Sizes at the standard text setting. All follow `--ui-text-size`, so Personalization → Text size scales the whole interface. 11px is for badges and keyboard hints only; readable text starts at 12. |
-| Colour | `--ink`, `--muted`, `--faint`, `--line`, `--line-strong`, `--paper`, `--surface`, `--sidebar`, `--hover`, `--accent`, `--accent-soft`, `--accent-strong`, `--on-accent` | Defined for light and dark, and for the three accents. |
+| Colour | `--ink`, `--muted`, `--faint`, `--line`, `--line-strong`, `--paper`, `--surface`, `--sidebar`, `--hover`, `--accent`, `--accent-soft`, `--accent-strong`, `--on-accent` | Neutral greys; the accent is the only hue. Defined for light and dark, and for the four accents (Forest, Ocean, Clay, Mono). |
 | Meaning | `--success`, `--warning`, `--danger` (each with `-soft`), `--danger-solid` for badges | Use for status only. Orange or red is never decoration. |
 | Shape | `--radius-sm` 6 · `--radius-md` 8 · `--radius-lg` 12 · `--radius-full` | Controls use `md`, cards and panels `lg`, chips `full`. |
 | Depth | `--shadow-sm`, `--shadow-md`, `--shadow-lg` | Popovers `md`, dialogs and toasts `lg`. |
@@ -21,6 +21,10 @@ Use tokens, never raw values, so themes, text size and density keep working.
 | Motion | `--fast` (.15s), `--ease` | Motion shows where something came from and is off with reduced motion. |
 | Spacing | 4px grid (2px allowed below 12px) | |
 | Breakpoints | 480 · 600 · 1000 | Phone, small, tablet. |
+
+## Styles
+
+A style (Personalization → Style, `data-style` on the root) restyles the whole interface without changing layout or behaviour: Modern, plus three retro styles. Each retro style overrides the tokens above with its own palette, type and shape, then adds a few component rules (buttons, inputs, panels, title bars, scrollbars) at the end of `style.css`. New components that use tokens and the shared classes pick up every style automatically; check a new component in at least one retro style. Retro styles evoke an era without copying any company's logos, names or fonts.
 
 ## Components
 

@@ -76,11 +76,11 @@ function notice(text, error=false) {
 }
 // A brief confirmation with an optional Undo; it floats above pages, panels and dialogs.
 let toastTimer=0,toastRun=null;
-function toast(text,undo=null){
+function toast(text,undo=null,label='Undo',stay=false){
   const t=$('#toast'),action=$('#toast-action');clearTimeout(toastTimer);toastRun=undo;
-  $('#toast-text').textContent=text;action.hidden=!undo;action.textContent='Undo';
+  $('#toast-text').textContent=text;action.hidden=!undo;action.textContent=label;
   try{t.hidePopover();t.showPopover();}catch{}
-  toastTimer=setTimeout(hideToast,undo?9000:4500);
+  if(!stay)toastTimer=setTimeout(hideToast,undo?9000:4500);
 }
 function hideToast(){clearTimeout(toastTimer);toastRun=null;try{$('#toast').hidePopover();}catch{}}
 $('#toast-close').addEventListener('click',hideToast);
@@ -1356,6 +1356,8 @@ async function syncUpdates(force=false) {
   try {
     state.updates=await api('/api/updates'+(editing?'?editing=1':''));
     $('#update-menu-status').textContent=state.updates.release?'Available':'';
+    // AURA's code changed on disk while it was open: say so once, with the fix one click away.
+    if(state.updates.restart_needed&&!state.restartOffered&&!['downloading','verifying','ready','restarting'].includes(state.updates.status)){state.restartOffered=true;toast('AURA was updated. Restart to finish.',()=>$('#restart-aura').click(),'Restart',true);}
     renderNotifications();
     renderUpdates();
     if(state.updates.status==='restarting')await reconnectUpdate();
@@ -1549,7 +1551,7 @@ $('#detail-expand').addEventListener('click',()=>{const d=$('#detail');if(d.data
 $('#detail').addEventListener('close',()=>{delete $('#detail').dataset.expanded;});
 /* Settings: one page, grouped by what people are trying to do, with search. Each row opens the existing panel. */
 const settingsGroups=[
-  ['General',[['account-settings','Profile','Your name, picture and how you like your AI to work','name avatar preferences'],['personalize-menu','Personalization','Appearance, accent colour, text size and density','theme dark light colour color font size compact'],['startup-settings','Startup & updates','Open AURA at sign-in and keep it up to date','update version launch']]],
+  ['General',[['account-settings','Profile','Your name, picture and how you like your AI to work','name avatar preferences'],['personalize-menu','Personalization','Style, appearance, accent colour, text size and density','theme dark light colour color font size compact retro style look'],['startup-settings','Startup & updates','Open AURA at sign-in and keep it up to date','update version launch']]],
   ['AI & accounts',[['connection','AI connections','Which AI apps AURA uses, and their default models','claude codex chatgpt gemini model app connect'],['accounts-settings','Accounts & backups','Several accounts per app, plan limits and switching','limit usage reset backup account'],['harness-permissions','AI permissions','What your AI may do without asking','approve permissions safety'],['api-connections','API connections','Keys for model providers and other services','api key provider llm']]],
   ['Workspace',[['workspace-manager','Add or open a workspace','Switch between businesses or start a new one','business folder new'],['share-settings','Share or import','Copy information, files or projects between workspaces','export import package share copy'],['workspace-history','Version history','Earlier versions of your files','undo restore previous version'],['workspace-backups','Back up or restore','Keep a copy of your workspace somewhere safe','backup restore copy']]],
   ['Help',[['review-setup','Quick setup & tour','Connect an AI and see where things are','onboarding tour setup'],['support-report','Feedback & troubleshooting','Suggest a feature or get help with a problem','bug help report feature support']]],
@@ -2698,7 +2700,7 @@ async function handoffChat(){
 
 function applyProfile(profile){
   state.profile={display_name:'',sidebar_collapsed:false,panel_width:480,text_size:15,accent:'forest',...profile};
-  const p=state.profile;document.body.classList.toggle('sidebar-collapsed',p.sidebar_collapsed);document.documentElement.dataset.accent=p.accent;document.documentElement.dataset.density=p.density||'comfortable';
+  const p=state.profile;document.body.classList.toggle('sidebar-collapsed',p.sidebar_collapsed);document.documentElement.dataset.accent=p.accent;document.documentElement.dataset.density=p.density||'comfortable';document.documentElement.dataset.style=p.style||'modern';
   document.documentElement.style.setProperty('--panel-width',p.panel_width+'px');document.documentElement.style.setProperty('--ui-text-size',p.text_size+'px');
   $('#profile-name').textContent=p.display_name||'Your profile';$('.profile-avatar').innerHTML=avatarMarkup(p);
   $('#welcome-name').textContent=p.display_name?'Welcome, '+p.display_name+'.':'Welcome to AURA';
@@ -2796,7 +2798,7 @@ async function accountProfile(){
 }
 async function personalize(){
   $('#more-dialog').close();leavePage();const p=state.profile||{};
-  details('Personalization',`<p class="shell-help">Choose how AURA looks and feels on this computer.</p><form id="profile-form" class="form-grid"><div class="settings-grid"><label>Appearance<select name="appearance">${['system','light','dark'].map(v=>`<option value="${v}" ${state.data.appearance===v?'selected':''}>${human(v)}</option>`).join('')}</select></label><label>Accent<select name="accent">${[['forest','Forest'],['ocean','Ocean'],['clay','Clay']].map(([v,n])=>`<option value="${v}" ${p.accent===v?'selected':''}>${n}</option>`).join('')}</select></label><label>Text size<select name="text_size">${[14,15,16,18].map(n=>`<option value="${n}" ${p.text_size===n?'selected':''}>${n===15?'Standard':n+' px'}</option>`).join('')}</select></label><label>Density<select name="density">${[['comfortable','Comfortable'],['compact','Compact']].map(([v,n])=>`<option value="${v}" ${(p.density||'comfortable')===v?'selected':''}>${n}</option>`).join('')}</select></label><label>Side panel width<input name="panel_width" type="range" min="360" max="900" step="20" value="${p.panel_width||480}"></label></div><div class="inline-actions"><button class="primary">Save preferences</button><button type="button" class="text-button" id="reset-appearance">Reset appearance</button></div></form><section class="customize-section"><h3>Make the workspace your own</h3><p>Use a dedicated personalization chat to adapt your layout, add a view, or simplify what you see.</p><button class="secondary" id="personalization-chat">Ask my AI to customize it</button><div id="custom-view-recovery"></div></section>`);
+  details('Personalization',`<p class="shell-help">Choose how AURA looks and feels on this computer. A style changes the whole look; retro styles bring their own colours.</p><form id="profile-form" class="form-grid"><div class="settings-grid"><label>Appearance<select name="appearance">${['system','light','dark'].map(v=>`<option value="${v}" ${state.data.appearance===v?'selected':''}>${human(v)}</option>`).join('')}</select></label><label>Style<select name="style">${[['modern','Modern'],['retro1','Retro 1 · 90s desktop'],['retro2','Retro 2 · Classic mono'],['retro3','Retro 3 · 90s console']].map(([v,n])=>`<option value="${v}" ${(p.style||'modern')===v?'selected':''}>${n}</option>`).join('')}</select></label><label>Accent<select name="accent">${[['forest','Forest'],['ocean','Ocean'],['clay','Clay'],['mono','Mono']].map(([v,n])=>`<option value="${v}" ${p.accent===v?'selected':''}>${n}</option>`).join('')}</select></label><label>Text size<select name="text_size">${[14,15,16,18].map(n=>`<option value="${n}" ${p.text_size===n?'selected':''}>${n===15?'Standard':n+' px'}</option>`).join('')}</select></label><label>Density<select name="density">${[['comfortable','Comfortable'],['compact','Compact']].map(([v,n])=>`<option value="${v}" ${(p.density||'comfortable')===v?'selected':''}>${n}</option>`).join('')}</select></label><label>Side panel width<input name="panel_width" type="range" min="360" max="900" step="20" value="${p.panel_width||480}"></label></div><div class="inline-actions"><button class="primary">Save preferences</button><button type="button" class="text-button" id="reset-appearance">Reset appearance</button></div></form><section class="customize-section"><h3>Make the workspace your own</h3><p>Use a dedicated personalization chat to adapt your layout, add a view, or simplify what you see.</p><button class="secondary" id="personalization-chat">Ask my AI to customize it</button><div id="custom-view-recovery"></div></section>`);
   const diagnostics=await api('/api/diagnostics');if(diagnostics.interface==='custom'&&$('#custom-view-recovery'))$('#custom-view-recovery').innerHTML='<p class="small-note">You are using a custom layout. Your custom files will be kept if you return to the default.</p><button class="text-button" id="restore-standard-view">Return to default layout</button>';
 }
 function browserPerformance(){
@@ -2984,7 +2986,7 @@ document.addEventListener('click',event=>attempt(async()=>{
   if(b.id==='shell-search-more'){const position=[...document.querySelectorAll('#shell-search-results .search-result')].length;shellSearchLimit+=50;paintShellSearch();[...document.querySelectorAll('#shell-search-results .search-result')][position]?.focus();}
 }));
 document.addEventListener('submit',event=>{
-  if(event.target.id!=='profile-form')return;event.preventDefault();attempt(async()=>{const data=Object.fromEntries(new FormData(event.target));const p=await api('/api/profile',{accent:data.accent,text_size:Number(data.text_size),density:data.density,panel_width:Number(data.panel_width)});await api('/api/preferences',{appearance:data.appearance});state.data.profile=p;state.data.appearance=data.appearance;applyProfile(p);applyAppearance(data.appearance);$('#detail').close();});
+  if(event.target.id!=='profile-form')return;event.preventDefault();attempt(async()=>{const data=Object.fromEntries(new FormData(event.target));const p=await api('/api/profile',{style:data.style,accent:data.accent,text_size:Number(data.text_size),density:data.density,panel_width:Number(data.panel_width)});await api('/api/preferences',{appearance:data.appearance});state.data.profile=p;state.data.appearance=data.appearance;applyProfile(p);applyAppearance(data.appearance);$('#detail').close();});
 });
 $('#shell-search').addEventListener('input',()=>{shellSearchLimit=50;paintShellSearch();});
 $('#search-dialog').addEventListener('click',event=>{if(event.target.closest('[data-chat]'))$('#search-dialog').close();});

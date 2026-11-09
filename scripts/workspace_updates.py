@@ -173,6 +173,32 @@ def fetch_json(url):
     return json.loads(raw)
 
 
+def code_fingerprint(product=Path(__file__).resolve().parents[1]):
+    """What AURA's own code looks like on disk (names, sizes and change times of its scripts)."""
+    digest = hashlib.sha256()
+    try:
+        for path in sorted((Path(product) / 'scripts').glob('*.py')):
+            info = path.stat()
+            digest.update(f'{path.name}:{info.st_size}:{info.st_mtime_ns};'.encode())
+    except OSError:
+        return ''
+    return digest.hexdigest()
+
+
+# A running AURA keeps the code it loaded when it started. If its files later change underneath
+# it (a Git pull, a synced or copied folder, an edit), the screens load fresh but the engine does
+# not, so AURA says a restart will finish the update instead of failing in confusing ways.
+STARTED_CODE = code_fingerprint()
+_code_check = {'at': None, 'changed': False}
+
+
+def restart_needed():
+    if not _code_check['changed'] and (_code_check['at'] is None or time.monotonic() - _code_check['at'] > 10):
+        current = code_fingerprint()
+        _code_check.update(at=time.monotonic(), changed=bool(STARTED_CODE and current and current != STARTED_CODE))
+    return _code_check['changed']
+
+
 class Updater:
     def __init__(self, product, store=None):
         self.product = Path(product).resolve()
@@ -208,7 +234,7 @@ class Updater:
                         'Download a bundled AURA app to use one-click updates.' if not runtime else
                         'A verified download for this computer is not available yet.' if available and not release.get('asset') else '',
                     'rollback': Path(previous).name if not source and saved.get('active') == str(self.product) and previous and Path(previous).is_dir() else None,
-                    'releases_url': PAGE}
+                    'releases_url': PAGE, 'restart_needed': restart_needed()}
 
     def save(self, **values):
         with self.lock:
