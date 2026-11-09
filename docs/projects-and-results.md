@@ -66,6 +66,35 @@ Report time, publication time, the period described by the data, and actual last
 
 Each collection is one JSON file under `attachments/BUSINESS_ID/collections/`, referenced by one canonical Asset. Rows do not each become separate permanent business records. Existing bounded local history preserves earlier file versions. Collection check history keeps 50 checks, change receipts keep up to 250 changes, and the UI loads rows in pages with full details and check history on demand (`show --history` for the CLI). The helper permits updates of up to 2,000 rows and a 32 MB collection file. Keep larger datasets in their native tool or split them by purpose; these limits do not constrain native execution. Backups preserve the actual file; local recovery/cache retention is separate. No useful original is automatically purged.
 
+## Seeing results as a map, chart or board
+
+A collection can be shown as a **List** (the default), **Map**, **Chart** or **Board**, chosen with **Show as** beside the result filter. Each option appears only when the results suit it, and the choice is remembered per collection in this browser. All views use the same filter, search, details and Changes to review; they only draw the saved data.
+
+- **Map** appears when results are places. Use an `address` field and, when known, numeric `latitude` and `longitude` fields. A `rank` (or `position`) field numbers the pins, and `yours: true` marks the business itself. **Colour by** uses any field with a small set of values.
+- **Chart** compares results by any number field.
+- **Board** groups results into columns by any field with 2–12 distinct values, such as a status.
+
+The model that writes results should add these fields itself; it can usually find coordinates while researching. For results with only an address, the map offers **Find them on the map**. That sends the addresses to OpenStreetMap's free lookup service (Nominatim), about one a second; each address is looked up once and remembered on this computer (`place-lookups.json` in AURA's local state folder). Results that can't be placed are listed under the map.
+
+Map imagery comes from OpenStreetMap through AURA, which keeps the areas you have viewed (refreshed weekly when online, at most about 20,000 images) so the map still shows offline. It never downloads areas ahead of time. Saved places always show, labelled with when the data was last updated.
+
+## What's running and goal progress
+
+A project page starts with **What's running**: one plain sentence per linked scheduled task covering when it runs, which app runs it, where its results go and how many wait for review, the goal it serves, and whether it is working (last run, failed with its reason, paused, or not yet run). It is built from saved links and the app's own task records, never written by a model. **Change in chat** starts a message about that task; changes happen through the app as usual. A workspace goal's scheduled tasks use the same sentences.
+
+A workspace goal shows **Progress** when measurements are recorded for it: a `MetricDefinition` whose `objective_refs` includes the goal, with `MetricObservation` records holding each value, its period and `source_ref`. Connected apps (through their own connectors or MCP servers) or a scheduled task can record these from the system that actually measures the outcome, such as a booking system for new patients. The latest value shows its source and date; two or more values show a trend line.
+
+The CLI and API return the same data, so harness users get the same facts without AURA's interface:
+
+```sh
+python scripts/workspace_views.py running --workspace /path/to/workspace --business-id example-studio --project PROJECT_ID --text
+python scripts/workspace_views.py rows --workspace /path/to/workspace --business-id example-studio --id COLLECTION_ID
+python scripts/workspace_views.py place --workspace /path/to/workspace --business-id example-studio --id COLLECTION_ID
+python scripts/workspace_views.py progress --workspace /path/to/workspace --business-id example-studio --goal GOAL_ID
+```
+
+`running` also accepts `--goal`; without `--text` it returns JSON. `rows` returns every result in a view with its simple fields and map position, `place` looks up a few unplaced addresses per call, and `progress` returns a goal's measurements. API: `GET /api/running?business=…&project=…` (or `goal=…`), `GET /api/collection-view?business=…&id=…&view=…&q=…`, `POST /api/collection-view` with `action: "place"`, and `GET /api/goal-progress?business=…&goal=…`. A harness can draw its own map or chart from `rows`.
+
 ## Scheduled work
 
 Open a scheduled task and choose **Save results to → Apply to scheduled task**. AURA writes the chosen collection instructions through the existing native scheduling path, then reads back the task to confirm them before saving its association. The scheduler continues to own execution, cadence, model, delivery and retries. A confirmed task definition does not prove its scheduler is running. User-selected native delivery remains unchanged. A task without a collection retains its ordinary native results. Tasks created from a saved agent also carry that agent’s selected context references; collections remain retrieval pointers rather than full dataset copies.

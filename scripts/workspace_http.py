@@ -5,6 +5,7 @@ Workspace behavior lives in workspace_ui.Workspace; this module only routes requ
 """
 import workspace_ui as ui
 import workspace_resume
+import workspace_views
 from workspace_ui import (BaseHTTPRequestHandler, MAX_BODY, MEDIA, NATIVE_AGENTS, PRODUCT_ROOT, Path,
     SETUP_ERRORS, STATIC, business_directory, copy, files, json, local_file, mimetypes, os, parse_qs,
     private_path, quote, re, records, remember, secrets, selected, setup, setup_error, subprocess, sys,
@@ -91,7 +92,7 @@ def handler_for(app):
             if origin and origin != 'http://' + expected:
                 raise PermissionError('Requests must come from the local AURA view.')
             media_authorized=False
-            if urlsplit(self.path).path=='/api/media':
+            if urlsplit(self.path).path=='/api/media' or urlsplit(self.path).path.startswith('/api/media/map/'):
                 from http.cookies import SimpleCookie,CookieError
                 try:
                     cookies=SimpleCookie(self.headers.get('Cookie',''));cookie=cookies.get('aura_media_'+str(self.server.server_port))
@@ -129,12 +130,25 @@ def handler_for(app):
                 elif route in {'/app.js', '/style.css'}:
                     path = app.static / route[1:]
                     self.send(200, path.read_bytes(), 'text/javascript; charset=utf-8' if path.suffix == '.js' else 'text/css; charset=utf-8')
-                elif route in {'/file-editor.js','/file-editor.css','/workspace-work.js','/workspace-continuity.js','/workspace-compose.js','/workspace-insight.js','/workspace-projects.js'} or route.startswith('/vendor/'):
+                elif route in {'/file-editor.js','/file-editor.css','/workspace-work.js','/workspace-continuity.js','/workspace-compose.js','/workspace-insight.js','/workspace-projects.js','/workspace-views.js'} or route.startswith('/vendor/'):
                     relative=Path(route.lstrip('/'))
                     path=(STATIC/relative).resolve()
                     base=(STATIC/'vendor').resolve() if route.startswith('/vendor/') else STATIC.resolve()
                     if not path.is_relative_to(base) or private_path(path.relative_to(base)) or not path.is_file():raise ValueError('This interface component is unavailable.')
                     self.send(200,path.read_bytes(),mimetypes.guess_type(path.name)[0] or 'application/octet-stream')
+                elif route.startswith('/api/media/map/'):
+                    # Viewed map imagery only; images can't send the app header, so the media cookie authorizes them.
+                    match=re.fullmatch(r'/api/media/map/(\d{1,2})/(\d{1,7})/(\d{1,7})\.png',route)
+                    if not match:raise ValueError('This map area is unavailable.')
+                    self.send(200,workspace_views.tile(*match.groups()),'image/png')
+                elif route in {'/api/collection-view','/api/running','/api/goal-progress'}:
+                    with app.lock:root=app.workspace_path;owner=copy.copy(app)
+                    with workspace_scope(root):
+                        bid=selected(query.get('business'))
+                        if route=='/api/collection-view':result=workspace_views.rows(bid,query.get('id'),query.get('view','current'),query.get('q',''))
+                        elif route=='/api/running':result=workspace_views.running(owner,bid,query.get('project',''),query.get('goal',''))
+                        else:result=workspace_views.progress(bid,query.get('goal'))
+                    self.send(200,result)
                 elif route == '/api/components':
                     self.send(200,workspace_catalog.read_json(PRODUCT_ROOT/'distribution/ui-components.json',{'components':[]}))
                 elif route in {'/api/project-resources','/api/project-binding','/api/collections'}:
@@ -427,6 +441,11 @@ def handler_for(app):
                             elif action=='feedback':result=workspace_collections.feedback(bid,data.get('id'),{**data,'action':data.get('choice')})
                             else:raise ValueError('Choose a collection action.')
                     app.read_cache.clear();self.send(200,result);return
+                if route == '/api/collection-view':
+                    if data.get('action')!='place':raise ValueError('Choose a map action.')
+                    with app.lock:root=app.workspace_path
+                    with workspace_scope(root):result=workspace_views.place(selected(data.get('business')),data.get('id'),data.get('view','current'),data.get('q',''))
+                    self.send(200,result);return
                 if route == '/api/memory-feedback':
                     import workspace_memory_feedback
                     self.send(200,workspace_memory_feedback.respond(selected(data.get('business')),data.get('id'),data.get('action')));return

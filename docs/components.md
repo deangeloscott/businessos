@@ -14,6 +14,7 @@ AURA consists of a local browser interface, a Python application/API, CLI helper
 | Tabulator | CSV/TSV cell editing | MIT |
 | Cropper.js | Raster image crop, rotation and resize | MIT |
 | PDF.js, its fonts, character maps and WebAssembly helpers | Local PDF viewing and text search | Apache-2.0 and included resource notices |
+| Leaflet | Map view of saved results with places | BSD-2-Clause |
 | Browser media controls | Images, audio and video playback | Supplied by the browser |
 
 Exact frontend versions, transitive package identities, registry integrity values and shipped file hashes live in `distribution/ui-components.json`. Included license texts are in `interface/vendor/THIRD-PARTY-NOTICES.md` and PDF resource notices. Python requirements live in `requirements.txt`; installed versions depend on the selected Python environment. Click the version in Settings for the component overview.
@@ -21,6 +22,8 @@ Exact frontend versions, transitive package identities, registry integrity value
 ## Optional tools stay separate
 
 LibreOffice is an optional installed app for richer documents, spreadsheets and presentations. FFmpeg and other tools listed in [tools and services](tools-and-services.md) remain optional native tools. AI harnesses, models, account credentials and Google editors are not bundled. Listing a tool is not evidence that it is installed, connected, or working for a particular job. Library discovery marks LibreOffice installed only when its executable is found.
+
+The map view is the one included part that uses an internet service: map imagery from OpenStreetMap's tile servers, and, only after you choose **Find them on the map**, address lookups through OpenStreetMap's Nominatim. AURA keeps viewed imagery and looked-up places on this computer and follows both services' usage policies (identified requests, about one lookup a second, no bulk downloads). See [projects and results](projects-and-results.md#seeing-results-as-a-map-chart-or-board).
 
 ## Files and editors
 

@@ -37,7 +37,7 @@ Use for a bounded local-discovery check when the user requests it, saved monitor
 3. [HYBRID] Segment query/service/location/geographic observations and account for proximity effects where the evidence allows.
 4. [AI] Treat stronger visibility for valuable local queries and realistic customer geographies as a meaningful upstream signal because it can increase the chance of customer discovery and action. Connect that signal to calls, bookings, directions, site actions, visits, leads, revenue, or other outcomes where observable; do not infer those outcomes solely from rank movement.
 5. [AI] Decide whether a material gap warrants a local Opportunity, profile/location correction, Incident, or deeper diagnosis. Monitoring does not route these automatically.
-6. [HYBRID] Preserve useful location-level and rolled-up measurement/state while keeping underperforming locations inspectable.
+6. [HYBRID] Preserve useful location-level and rolled-up measurement/state while keeping underperforming locations inspectable. When saving businesses or locations to a collection, include each one's address, latitude/longitude when known, and rank for the query and place checked, so the results can be shown on a map.
 
 ## Verification
 - Verify location eligibility and established business facts before changing public profile/location data.

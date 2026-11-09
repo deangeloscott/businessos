@@ -36,6 +36,15 @@
       "integrity": "sha512-vg8Pw1x+AFKy4AMDvhuWl5cOYV8d698UoEANoFFhc79hqXDnZQqnOXoxw3HG907WHOg1JYOvLhP756boddFxpA==",
       "purpose": "PDF viewing, page navigation and text search.",
       "included": true
+    },
+    {
+      "name": "Leaflet",
+      "version": "1.9.4",
+      "license": "BSD-2-Clause",
+      "source": "https://www.npmjs.com/package/leaflet",
+      "integrity": "sha512-nxS1ynzJOmOlHp+iL3FyWqK89GtNL8U8rvlMOsQdTTssxZwCXh8N2NB3GDQOL+YR3XnWyZAxwQixURb+FA74PA==",
+      "purpose": "Map view for saved results with places. Map imagery comes from OpenStreetMap when online.",
+      "included": true
     }
   ],
   "packages": [
@@ -201,6 +210,13 @@
       "integrity": "sha512-AkGnZxr7xAJBa63ObXq5ZKLkh9c8wisC+Ym8VzIDn3KZ+6qRTbBnOl2w2dFOTMzLP5IcfOpEK9PICDywNXhncg=="
     },
     {
+      "name": "leaflet",
+      "version": "1.9.4",
+      "license": "BSD-2-Clause",
+      "source": "https://www.npmjs.com/package/leaflet",
+      "integrity": "sha512-nxS1ynzJOmOlHp+iL3FyWqK89GtNL8U8rvlMOsQdTTssxZwCXh8N2NB3GDQOL+YR3XnWyZAxwQixURb+FA74PA=="
+    },
+    {
       "name": "pdfjs-dist",
       "version": "6.5.438",
       "license": "Apache-2.0",
@@ -249,6 +265,16 @@
       "path": "interface/vendor/image-editor.js",
       "bytes": 44140,
       "sha256": "34372643fe3356301a8fa638fcd1f8210d384e529081f229ec32615625688d02"
+    },
+    {
+      "path": "interface/vendor/map-view.css",
+      "bytes": 14806,
+      "sha256": "a7837102824184820dfa198d1ebcd109ff6d0ff9a2672a074b9a1b4d147d04c6"
+    },
+    {
+      "path": "interface/vendor/map-view.js",
+      "bytes": 150329,
+      "sha256": "41e7c524328fc52845db7eb222ed6adeee95031f1aa83c6151ff7222e498c816"
     },
     {
       "path": "interface/vendor/pdf-resources/cmaps/78-EUC-H.bcmap",
@@ -1267,8 +1293,8 @@
     },
     {
       "path": "interface/vendor/THIRD-PARTY-NOTICES.md",
-      "bytes": 39884,
-      "sha256": "09d8f7d88c186082a46c1808c790abee4e3dc4f42c64d64e068614ff3ab1a77f"
+      "bytes": 41299,
+      "sha256": "165380c0c41c090c926027d60733053865943babb4c63f92b77a08e6568f03c0"
     }
   ]
 }

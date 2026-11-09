@@ -272,14 +272,10 @@ def check_summary(c):
                         'failed':cov['failed'][:10],'missing':missing[:10],'scope':cov.get('scope',''),'basis':cov['basis']}}
 
 
-def show(bid,ident,q='',view='current',offset=0,limit=50,at=None,item_id='',history=False):
-    d=read(bid,ident);needle=str(q).casefold()
+def select(d,view='current',q='',at=None):
+    """The results a view shows, with feedback applied. Shared by the list, map, chart and board."""
     if view not in {'current','all','saved','handled','review','changes'}:raise ValueError('Choose Current, Changes, Saved, Review, Handled, or All.')
-    if item_id:
-        selected=next((effective(i,d['feedback'],at) for i in d['items'] if i['id']==item_id),None)
-        if not selected:raise ValueError('This result is unavailable. Refresh the collection.')
-        return {'item':selected,'revision':revision(d),'collection_id':d['id']}
-    rows=[effective(i,d['feedback'],at) for i in d['items']]
+    needle=str(q).casefold();rows=[effective(i,d['feedback'],at) for i in d['items']]
     if view=='current':rows=[r for r in rows if r['display_state']=='active' and not r['hidden']]
     elif view=='saved':rows=[r for r in rows if r['saved']]
     elif view=='handled':rows=[r for r in rows if r['hidden'] or r['disposition']=='acknowledged' or r['display_state']!='active']
@@ -287,6 +283,17 @@ def show(bid,ident,q='',view='current',offset=0,limit=50,at=None,item_id='',hist
     elif view=='changes':
         rows=[r for r in rows if not r['hidden'] and (r['changed_since_handled'] or r['disposition']!='acknowledged')]
     if needle:rows=[r for r in rows if needle in json.dumps({k:r.get(k) for k in ('title','summary','fields','source_refs')},ensure_ascii=False).casefold()]
+    return rows
+
+
+def show(bid,ident,q='',view='current',offset=0,limit=50,at=None,item_id='',history=False):
+    d=read(bid,ident)
+    if item_id:
+        selected=next((effective(i,d['feedback'],at) for i in d['items'] if i['id']==item_id),None)
+        if not selected:raise ValueError('This result is unavailable. Refresh the collection.')
+        return {'item':selected,'revision':revision(d),'collection_id':d['id']}
+    from workspace_views import shapes
+    rows=select(d,view,q,at)
     offset=max(0,int(offset));limit=max(1,min(100,int(limit)))
     def compact(r):
         return {**{k:v for k,v in r.items() if k not in {'fields','reported','summary','source_refs','correction_note'}},'summary':r.get('summary','')[:800],
@@ -294,6 +301,7 @@ def show(bid,ident,q='',view='current',offset=0,limit=50,at=None,item_id='',hist
     return {**{k:d[k] for k in ('id','name','mode','purpose','project_refs','version','producer') if k in d},'revision':revision(d),
             'items':[compact(r) for r in rows[offset:offset+limit]],'total':len(rows),'offset':offset,'limit':limit,'latest_check':check_summary(d['checks'][-1]) if d['checks'] else None,
             'history':[check_summary(c) for c in reversed(d['checks'])] if history else [],'history_count':len(d['checks']),
+            'views':shapes(effective(i,d['feedback'],at) for i in d['items']),
             'asset_id':(asset(bid,ident) or {}).get('id'),'location':str(path(bid,ident)),'search_scope':'Saved collection text and fields; linked file bodies and native-only data are not searched.'}
 
 
@@ -323,6 +331,7 @@ def instructions(bid,ident):
             'and a stable native run identity reused on retries. Report only sources actually checked in coverage; a failed or missing source is not evidence that an opportunity disappeared. '+
             ('Keep dated reports as separate item identities. ' if d['mode']=='series' else 'Update the current entries; preserve user feedback and keep source dates distinct from report time. ')+
             'Save only useful results, explain material changes, and avoid repeating unchanged findings as alerts. '+
+            'When results are places, include an address field and, when known, numeric latitude and longitude fields (plus rank when the order matters, and yours: true for the business itself) so they can be shown on a map. '+
             'Use actual native scheduling and tools normally. Full helper examples: '+str(PRODUCT_ROOT/'docs/projects-and-results.md')+'.\n[/Aura results]')
 
 

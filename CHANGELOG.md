@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Saved results can be shown as a **Map**, **Chart** or **Board** (Show as, beside the result filter), offered only when the results suit them. The map uses Leaflet with OpenStreetMap imagery, keeps viewed areas so it still shows offline, numbers pins by `rank`, marks `yours: true`, and colours by any small-set field; addresses without coordinates are found through OpenStreetMap's lookup only after you agree, once each. Chart compares results by a number; Board groups them by a status-like field.
+- Project pages start with **What's running**: a plain sentence per linked scheduled task (when, which app, where results go and how many wait for review, the goal it serves, and whether it is working), built from saved links rather than a model, with **Change in chat**. Workspace goals use the same sentences and show **Progress** from recorded measurements with their source and date.
+- `scripts/workspace_views.py` (`rows`, `place`, `running`, `progress`) and matching API routes return the same data to the CLI and harnesses. Collection instructions and the local monitoring workflow ask producers to save places with address, coordinates and rank.
+
 - Make the everyday save cheaper for any AI: workspace and per-request guidance point straight at `CONTEXT.md`, which now carries a one-line `remember.py` example; JSON helpers accept a file, `-` for stdin, or inline JSON and tolerate the UTF-8 BOM Windows PowerShell writes. `Business` gains an optional `description` that retrieval shows inline. A Codex "remember this" request fell from 9 tool calls and ~296K tokens to 4 and ~135K.
 - `setup.py` accepts the `--allow-state-switch` flag its own workspace-switch message recommends.
 - Setup asks what the business does (optional) and saves it as the business description; Business & memory can edit it later.
