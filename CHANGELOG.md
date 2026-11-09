@@ -1,19 +1,15 @@
 # Changelog
 
-## Unreleased
+## v0.4.0 — 2026-11-09
 
 - Boards work as pipelines: a `status` or `stage` field gives a board from the first result, and cards move between columns by drag-and-drop or **Move to…** (including a new stage), saved as your correction with the original kept. The bell reminds you once when a saved result's deadline is within 14 days, skipping seen or finished items. The grant workflows flag slow government registrations early, and donor stewardship includes gift receipts.
-
 - New **Funding & Impact** area with four Playbooks: **Grant Funding** (case for support and grant-ready facts saved for reuse, grant prospecting and fit, applications that record each decision and funder feedback, award management and reporting), **Supporter Fundraising** (appeals, donor stewardship and retention, volunteer recruitment and retention), **Impact Measurement and Reporting**, and **Investor Fundraising**. Also **Client Proposal and RFP Response** (Marketing) and **Evidence Synthesis and Literature Review** (Industry Intelligence). The Grants, Nonprofit, Services & B2B, Startup and Research focus areas now point to them.
-
 - **Focus and focus areas.** An organization's focus is its description plus focus areas it chooses (Local business, Multiple locations, E-commerce, Services & B2B, Nonprofit, Grants, Membership & community, Startup, Research, Creative & content), combined freely. Focus changes emphasis, never capability: chats get a short note once per chat, `enter.py` includes it, the home screen offers up to three quick starts (one-time or ongoing watches set up with the app's own scheduler), new goals offer suggestions, the library shows "For your focus", and collections open in a fitting view. Choose or change it in Business & memory, with suggestions from the description; your own or imported areas live in `knowledge/focus-areas/` and never get overwritten by updates. `scripts/workspace_focus.py` and `/api/focus` do the same outside the interface.
 - Workspace goals can track a number with a target. The goal shows the latest value, a **Reached** badge when the target is met, and the bell says so once; completing it or setting a new target stays your choice.
-
 - Saved results can be shown as a **Map**, **Chart** or **Board** (Show as, beside the result filter), offered only when the results suit them. The map uses Leaflet with OpenStreetMap imagery, keeps viewed areas so it still shows offline, numbers pins by `rank`, marks `yours: true`, and colours by any small-set field; addresses without coordinates are found through OpenStreetMap's lookup only after you agree, once each. Chart compares results by a number; Board groups them by a status-like field.
 - Project pages start with **What's running**: a plain sentence per linked scheduled task (when, which app, where results go and how many wait for review, the goal it serves, and whether it is working), built from saved links rather than a model, with **Change in chat**. Workspace goals use the same sentences and show **Progress** from recorded measurements with their source and date.
 - The map shows what changed (a ring on results new in the latest check, ▲/▼ for rank moves, faded pins for results no longer listed), colours or sizes pins by any number, hides groups from the legend, gives each place an **Open in Maps** link and its distance from your business, draws territories (`area` GeoJSON) and service areas (`radius_km`/`radius_miles`), and groups nearby pins once a map has 40 or more (Leaflet.markercluster). Charts show rank movement and, with **Over time**, each result's numbers across checks, from a short per-result trail that never creates a change to review. What's running lists tasks needing attention first.
 - `scripts/workspace_views.py` (`rows`, `place`, `running`, `progress`) and matching API routes return the same data to the CLI and harnesses. Collection instructions and the local monitoring workflow ask producers to save places with address, coordinates and rank.
-
 - Make the everyday save cheaper for any AI: workspace and per-request guidance point straight at `CONTEXT.md`, which now carries a one-line `remember.py` example; JSON helpers accept a file, `-` for stdin, or inline JSON and tolerate the UTF-8 BOM Windows PowerShell writes. `Business` gains an optional `description` that retrieval shows inline. A Codex "remember this" request fell from 9 tool calls and ~296K tokens to 4 and ~135K.
 - `setup.py` accepts the `--allow-state-switch` flag its own workspace-switch message recommends.
 - Setup asks what the business does (optional) and saves it as the business description; Business & memory can edit it later.
@@ -47,7 +43,6 @@
 - Keep native account/profile environments consistent during refresh, discovery, usage and task operations. Preserve the selected Hermes profile for saved goal controls and guard changed native criteria before work starts.
 - Count Hermes cumulative usage once across replies and reconnections, and close client terminals safely when cancellation races with process creation.
 - Apply Hermes provider/model choices through its native model selector, then apply effort, so new chats do not send qualified IDs to the wrong provider or lose their reasoning choice.
-
 - Keep the model picker beside Send at desktop and phone widths. Show the source/current workspace directly under the Share or import title on every tab.
 - Honor custom ACP permission modes named full or yolo, and handle native configuration notifications arriving before session loading completes.
 - Preserve native output images when refreshing history and read inline images reported by ACP history.
