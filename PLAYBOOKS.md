@@ -2,7 +2,7 @@
 
 AURA gives capable AI reusable **Playbooks** and **Workflows** while leaving reasoning, tool choice, orchestration, and execution to the active model/harness. Tell the AI what outcome you want in normal language; you do not need to choose a Playbook or Workflow manually.
 
-This edition currently exposes **42 Playbooks** backed by **466 detailed Workflows**. Playbook count is intentionally much smaller than Workflow count because a Playbook is an end-to-end business job, not every reusable procedure.
+This edition currently exposes **46 Playbooks** backed by **478 detailed Workflows**. Playbook count is intentionally much smaller than Workflow count because a Playbook is an end-to-end business job, not every reusable procedure.
 
 ## The hierarchy
 
@@ -106,6 +106,17 @@ Improve the customer journey from qualification and purchase through value, rete
 
 - **Customer Journey Optimization** — Understand the journey, identify the most important progression problem, diagnose the likely cause, improve it, and evaluate what changed.
 - **Retention and Churn** — Understand why customers leave or fail to realize value, improve the relevant experience, and evaluate durable retention rather than manipulating short-term staying behavior.
+
+### [Funding & Impact](docs/playbooks/funding-impact.md)
+
+Secure grants, donations, volunteers and investment, and show honestly what the work achieves.
+
+**4 Playbooks** in this area.
+
+- **Grant Funding** — Find grants the organization is eligible for and likely to win, write funder-aligned applications from verified facts, manage awards, and learn from each decision.
+- **Supporter Fundraising** — Raise and keep support from individual donors, members and volunteers through honest appeals, prompt thanks, reporting back and relationship building.
+- **Impact Measurement and Reporting** — Decide which outcomes show the difference the work makes, measure them practically, and report results honestly to supporters and funders.
+- **Investor Fundraising** — Decide whether and how much to raise, prepare a defensible story and materials, target fitting investors, and run a focused raise through diligence and close.
 
 ## AURA Core
 

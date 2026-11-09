@@ -117,7 +117,7 @@ Do not build an AURA daemon, MCP server, provider router, tool registry, or host
 ## Rules for the setup agent
 
 1. **Use the setup/doctor entry points first.** Do not manually reconstruct the whole setup sequence unless the supported entry point reports a real problem.
-2. **Ask only for missing truth.** An organization name is enough to initialize AURA. Do not force a large business questionnaire before useful work can begin.
+2. **Ask only for missing truth.** An organization name is enough to initialize AURA. Do not force a large business questionnaire before useful work can begin. If the person says what the organization does, you may save it as the business description and suggest a few focus areas from `scripts/workspace_focus.py suggest` for them to confirm; see [focus](docs/focus.md).
 3. **Never invent organization context.** Unknown remains unknown. Do not guess industry, services, goals, audience, claims, integrations, or other facts merely to make setup look complete.
 4. **Reuse existing state.** Do not duplicate an organization because a chat or harness session is new.
 5. **Keep product and organization state separate when useful.** A separate workspace is often preferable for regular use, but one-folder use remains valid and requires less setup.

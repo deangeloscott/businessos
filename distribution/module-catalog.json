@@ -96,6 +96,18 @@
       "smoke_task": "Improve customer onboarding activation",
       "welcome_summary": "Improve the customer journey from conversion through purchase, onboarding, activation, retention, repeat purchase, expansion, and referral.",
       "example_prompts": ["Why are customers dropping out before buying?", "Improve our onboarding and time-to-value.", "Find the biggest causes of churn and what to change."]
+    },
+    {
+      "id": "funding-impact",
+      "display_name": "Funding & Impact",
+      "kind": "domain",
+      "required_modules": ["core"],
+      "optional_modules": ["customer-intelligence", "industry-intelligence", "content-synthesis", "marketing-synthesis", "customer-optimization"],
+      "standalone": true,
+      "description": "Secure grants, donations, membership support, volunteers and investment, and measure and report impact honestly.",
+      "smoke_task": "Find grants we are eligible for",
+      "welcome_summary": "Find and win grants, keep donors and volunteers, raise investment, and show the impact of your work.",
+      "example_prompts": ["Find grants we qualify for and help us apply.", "Help us keep more first-time donors.", "Help us show our impact with real numbers."]
     }
   ]
 }

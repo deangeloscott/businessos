@@ -12,7 +12,7 @@
     "updated_at": {"type": "string", "format": "date-time"},
     "lineage": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
     "scope": {"enum": ["domain", "business"]},
-    "domain": {"enum": ["core", "customer-intelligence", "competitor-intelligence", "industry-intelligence", "seo-aeo", "content-synthesis", "marketing-synthesis", "customer-optimization"]},
+    "domain": {"enum": ["core", "customer-intelligence", "competitor-intelligence", "industry-intelligence", "seo-aeo", "content-synthesis", "marketing-synthesis", "customer-optimization", "funding-impact"]},
     "statement": {"type": "string", "minLength": 1},
     "maturity": {"enum": ["hypothesis", "experimental", "emerging", "validated", "standard"]},
     "status": {"enum": ["active", "contradicted", "deprecated", "superseded"]},

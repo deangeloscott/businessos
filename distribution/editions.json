@@ -4,7 +4,7 @@
     {
       "id": "full",
       "display_name": "ViralTrac AURA",
-      "modules": ["customer-intelligence", "competitor-intelligence", "industry-intelligence", "seo-aeo", "content-synthesis", "marketing-synthesis", "customer-optimization"],
+      "modules": ["customer-intelligence", "competitor-intelligence", "industry-intelligence", "seo-aeo", "content-synthesis", "marketing-synthesis", "customer-optimization", "funding-impact"],
       "description": "Complete ViralTrac AURA, the Agentic Understanding and Reinforcement Architecture, with all current specialized systems."
     },
     {

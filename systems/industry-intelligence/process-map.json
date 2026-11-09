@@ -17,6 +17,7 @@
     {"id":"impact-analysis","entry_workflow":"industry.analysis.business-impact","result":"Determine scoped business impact."},
     {"id":"trend-validation","entry_workflow":"industry.analysis.trend-validation","result":"Validate sustained trends versus temporary attention."},
     {"id":"scenario-analysis","entry_workflow":"industry.analysis.scenario","result":"Model plausible uncertain futures with indicators."},
-    {"id":"rapid-response","entry_workflow":"industry.analysis.rapid-response","result":"Build a compact evidence-backed understanding of a time-sensitive material development."}
+    {"id":"rapid-response","entry_workflow":"industry.analysis.rapid-response","result":"Build a compact evidence-backed understanding of a time-sensitive material development."},
+    {"id":"evidence-synthesis","entry_workflow":"industry.analysis.evidence-synthesis","result":"Answer a research question from the body of evidence, with sources, strength and gaps."}
   ]
 }

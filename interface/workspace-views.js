@@ -14,6 +14,7 @@ window.auraViews=(()=>{
   const day=t=>new Date(t).toLocaleDateString(undefined,{month:'short',day:'numeric'});
   const link=v=>typeof v==='string'&&/^https?:\/\//i.test(v)?v:'';
   const miles=/^en-(US|GB|LR)$|^my/i.test(navigator.language||'');
+  function saved(id){try{return localStorage.getItem('aura-view:'+id);}catch{return null;}}
   function choice(id,shape){try{if(shape===undefined)return localStorage.getItem('aura-view:'+id)||'list';localStorage.setItem('aura-view:'+id,shape);}catch{}return shape||'list';}
   function release(){ticket++;if(map){map.remove();map=null;}}
   function fields(r,skip=[]){const shown=Object.entries(r.fields).filter(([k,v])=>!hiddenFields.has(k)&&k!=='address'&&!skip.includes(k)&&v!==null&&v!=='').slice(0,5);return shown.length?`<dl class="view-fields">${shown.map(([k,v])=>`<div><dt>${esc(human(k))}</dt><dd>${esc(value(v))}</dd></div>`).join('')}</dl>`:'';}
@@ -41,7 +42,7 @@ window.auraViews=(()=>{
   function distance(a,b){const rad=x=>x*Math.PI/180,dLat=rad(b.lat-a.lat),dLng=rad(b.lng-a.lng),h=Math.sin(dLat/2)**2+Math.cos(rad(a.lat))*Math.cos(rad(b.lat))*Math.sin(dLng/2)**2;const km=12742*Math.asin(Math.sqrt(h));return miles?`${(km/1.609344).toFixed(km<16?1:0)} mi`:`${km.toFixed(km<10?1:0)} km`;}
 
   /* Collection views. `find` returns to the list filtered to one result. */
-  async function show(host,d,shape,view,search,find){
+  async function show(host,d,shape,view,search,find,reload){
     release();const mine=ticket,key=scope();host.innerHTML='<p class="small-note">Loading…</p>';
     host.onclick=e=>{const b=e.target.closest('[data-view-find]');if(b){release();find(b.dataset.viewFind);}};
     let data;
@@ -50,10 +51,10 @@ window.auraViews=(()=>{
     if(mine!==ticket||key!==scope()||!host.isConnected)return;
     if(shape==='map')return drawMap(host,d,data,view,search,mine,key,find);
     const list=shape==='chart'?d.views.chart:d.views.board,picked=choice(d.id+':'+shape+'-field',undefined);
-    const field=list.includes(picked)?picked:list[0];let mode=choice(d.id+':chart-mode',undefined)==='time'?'time':'now';
+    const field=list.includes(picked)?picked:(shape==='board'&&list.find(f=>/^(status|stage|state|pipeline|phase)$/i.test(f)))||list[0];let mode=choice(d.id+':chart-mode',undefined)==='time'?'time':'now';
     host.innerHTML=`<div class="view-controls"><label>${shape==='chart'?'Compare':'Group by'}<select data-view-field>${list.map(f=>`<option value="${esc(f)}" ${f===field?'selected':''}>${esc(human(f))}</option>`).join('')}</select></label>${shape==='chart'?`<label>Show<select data-view-mode><option value="now">Latest</option><option value="time" ${mode==='time'?'selected':''}>Over time</option></select></label>`:''}</div><div data-view-body></div>`;
     let current=field;
-    const paint=()=>{host.querySelector('[data-view-body]').innerHTML=shape==='board'?board(data.items,current):mode==='time'?trends(data.items,current):bars(data.items,current);};
+    const paint=()=>{host.querySelector('[data-view-body]').innerHTML=shape==='board'?board(data.items,current):mode==='time'?trends(data.items,current):bars(data.items,current);if(shape==='board')movable(host,d,current,reload);};
     host.querySelector('[data-view-field]').onchange=e=>{current=e.target.value;choice(d.id+':'+shape+'-field',current);paint();};
     const modeSelect=host.querySelector('[data-view-mode]');if(modeSelect)modeSelect.onchange=e=>{mode=e.target.value;choice(d.id+':chart-mode',mode);paint();};
     paint();
@@ -78,7 +79,30 @@ window.auraViews=(()=>{
   function board(rows,field){
     const groups=new Map();rows.forEach(r=>{const g=r.fields[field]===undefined||r.fields[field]===null||r.fields[field]===''?'':String(r.fields[field]);if(!groups.has(g))groups.set(g,[]);groups.get(g).push(r);});
     const order=[...groups.keys()].sort((a,b)=>(a==='')-(b==='')||groups.get(b).length-groups.get(a).length);
-    return `<div class="view-board">${order.map(g=>`<section class="board-column"><h4>${esc(g||'No '+human(field).toLowerCase())} <small>${groups.get(g).length}</small></h4>${groups.get(g).slice(0,50).map(r=>`<div class="board-card">${card(r,[field])}</div>`).join('')}${groups.get(g).length>50?`<p class="small-note">${groups.get(g).length-50} more in the list.</p>`:''}</section>`).join('')}</div>`;
+    const named=order.filter(Boolean),move=r=>`<label class="board-move"><span class="sr-only">Move ${esc(r.title)} to</span><select data-board-move="${esc(r.id)}"><option value="">Move to…</option>${named.filter(g=>g!==String(r.fields[field]??'')).map(g=>`<option value="${esc(g)}">${esc(g)}</option>`).join('')}<option value="__new__">New ${esc(human(field).toLowerCase())}…</option></select></label>`;
+    return `<div class="view-board" data-board-field="${esc(field)}">${order.map(g=>`<section class="board-column" data-board-group="${esc(g)}"><h4>${esc(g||'No '+human(field).toLowerCase())} <small>${groups.get(g).length}</small></h4>${groups.get(g).slice(0,50).map(r=>`<div class="board-card" draggable="true" data-board-item="${esc(r.id)}">${card(r,[field])}${move(r)}</div>`).join('')}${groups.get(g).length>50?`<p class="small-note">${groups.get(g).length-50} more in the list.</p>`:''}</section>`).join('')}</div><p class="small-note">Drag a card to another column, or use Move to. Your change is saved as your correction; the original value is kept.</p>`;
+  }
+  /* Moving a card saves the new value as the person's correction, reusing the collection's own feedback. */
+  function movable(host,d,field,reload){
+    const save=(id,value)=>attempt(async()=>{
+      value=String(value||'').trim();if(!value||value.length>60)throw new Error('Enter a stage of up to 60 characters.');
+      const current=await api(q('/api/collections',{id:d.id,limit:1}));
+      await api('/api/collections',{business:state.business,id:d.id,action:'feedback',choice:'correct',item_id:id,revision:current.revision,correction:{fields:{[field]:value}},note:'Moved on the board'});
+      if(reload)await reload();
+    });
+    host.querySelectorAll('[data-board-move]').forEach(sel=>sel.onchange=()=>{
+      if(sel.value!=='__new__'){if(sel.value)save(sel.dataset.boardMove,sel.value);return;}
+      sel.closest('.board-move').innerHTML=`<span class="board-new"><input maxlength="60" placeholder="New ${esc(human(field).toLowerCase())}" aria-label="New ${esc(human(field).toLowerCase())}"><button type="button" class="text-button">Move</button></span>`;
+      const box=host.querySelector(`[data-board-item="${CSS.escape(sel.dataset.boardMove)}"] .board-new`),input=box.querySelector('input');input.focus();
+      const go=()=>save(sel.dataset.boardMove,input.value);box.querySelector('button').onclick=go;input.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();go();}};
+    });
+    host.querySelectorAll('[data-board-item]').forEach(c=>c.ondragstart=e=>{e.dataTransfer.setData('text/plain',c.dataset.boardItem);e.dataTransfer.effectAllowed='move';c.classList.add('dragging');});
+    host.querySelectorAll('[data-board-item]').forEach(c=>c.ondragend=()=>c.classList.remove('dragging'));
+    host.querySelectorAll('[data-board-group]').forEach(col=>{
+      col.ondragover=e=>{e.preventDefault();col.classList.add('drop-target');};
+      col.ondragleave=()=>col.classList.remove('drop-target');
+      col.ondrop=e=>{e.preventDefault();col.classList.remove('drop-target');const id=e.dataTransfer.getData('text/plain'),from=host.querySelector(`[data-board-item="${CSS.escape(id)}"]`)?.closest('[data-board-group]');if(id&&col.dataset.boardGroup&&from!==col)save(id,col.dataset.boardGroup);};
+    });
   }
 
   async function drawMap(host,d,data,view,search,mine,key,find){
@@ -169,13 +193,14 @@ window.auraViews=(()=>{
     const key=scope();let data;
     try{data=await api(q('/api/goal-progress',{goal:goalId}));}catch{if(host.isConnected)host.innerHTML='';return;}
     if(key!==scope()||!host.isConnected)return;
-    const metrics=data.metrics.filter(m=>m.points.length);
-    host.innerHTML=`<h3 class="goal-section-title">Progress</h3>${metrics.map(m=>{const last=m.points[m.points.length-1];return `<div class="goal-metric"><p><strong>${esc(m.name)}</strong>: ${esc(value(last.value))}${m.unit?' '+esc(m.unit):''} <span class="small-note">· ${esc(stamp(last.at))}${last.source?' · from '+esc(last.source):''}</span></p>${m.points.length>1?line(m):''}</div>`;}).join('')||'<p class="small-note">No measurements yet. Ask your AI to record one for this goal from a connected source, such as new customers each week.</p>'}`;
+    const metrics=data.metrics.filter(m=>m.points.length),t=data.target;
+    const target=t?`<p class="goal-target">Target: ${esc(value(t.target))}${t.unit&&!['count','USD','rank'].includes(t.unit)?' '+esc(t.unit):''} ${t.direction==='lower_better'?'or lower':'or more'}${t.reached?' <span class="goal-reached">Reached</span>':t.latest!=null?` · <span class="small-note">latest ${esc(value(t.latest))}</span>`:' · <span class="small-note">no measurement yet</span>'}</p>`:'';
+    host.innerHTML=`<h3 class="goal-section-title">Progress</h3>${target}${metrics.map(m=>{const last=m.points[m.points.length-1];return `<div class="goal-metric"><p><strong>${esc(m.name)}</strong>: ${esc(value(last.value))}${m.unit&&!['count','rank'].includes(m.unit)?' '+esc(m.unit):''} <span class="small-note">· ${esc(stamp(last.at))}${last.source?' · from '+esc(last.source):''}</span></p>${m.points.length>1?line(m):''}</div>`;}).join('')||'<p class="small-note">No measurements yet. Ask your AI to record one for this goal from a connected source, such as new customers each week.</p>'}`;
   }
   function line(m){
     const w=560,h=150,pad=28,values=m.points.map(p=>p.value),low=Math.min(...values,0),high=Math.max(...values)||1,span=high-low||1;
     const x=i=>pad+i*(w-pad*2)/(m.points.length-1),y=v=>h-pad-(v-low)/span*(h-pad*2);
     return `<svg class="metric-line" viewBox="0 0 ${w} ${h}" role="img" aria-label="${esc(m.name)} over time"><line x1="${pad}" y1="${h-pad}" x2="${w-pad}" y2="${h-pad}" class="axis"/><text x="${pad}" y="${h-8}" class="tick">${esc(day(m.points[0].at))}</text><text x="${w-pad}" y="${h-8}" class="tick end">${esc(day(m.points[m.points.length-1].at))}</text><text x="${pad-6}" y="${y(high)+4}" class="tick end">${esc(value(high))}</text><text x="${pad-6}" y="${y(low)+4}" class="tick end">${esc(value(low))}</text><polyline points="${m.points.map((p,i)=>x(i)+','+y(p.value)).join(' ')}" class="trend"/>${m.points.map((p,i)=>`<circle cx="${x(i)}" cy="${y(p.value)}" r="3.5"><title>${esc(value(p.value))} · ${esc(day(p.at))}${p.source?' · '+esc(p.source):''}</title></circle>`).join('')}</svg>`;
   }
-  return {show,release,choice,running,progress};
+  return {show,release,choice,saved,running,progress};
 })();

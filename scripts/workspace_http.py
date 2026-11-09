@@ -130,7 +130,7 @@ def handler_for(app):
                 elif route in {'/app.js', '/style.css'}:
                     path = app.static / route[1:]
                     self.send(200, path.read_bytes(), 'text/javascript; charset=utf-8' if path.suffix == '.js' else 'text/css; charset=utf-8')
-                elif route in {'/file-editor.js','/file-editor.css','/workspace-work.js','/workspace-continuity.js','/workspace-compose.js','/workspace-insight.js','/workspace-projects.js','/workspace-views.js'} or route.startswith('/vendor/'):
+                elif route in {'/file-editor.js','/file-editor.css','/workspace-work.js','/workspace-continuity.js','/workspace-compose.js','/workspace-insight.js','/workspace-projects.js','/workspace-views.js','/workspace-focus.js'} or route.startswith('/vendor/'):
                     relative=Path(route.lstrip('/'))
                     path=(STATIC/relative).resolve()
                     base=(STATIC/'vendor').resolve() if route.startswith('/vendor/') else STATIC.resolve()
@@ -141,6 +141,10 @@ def handler_for(app):
                     match=re.fullmatch(r'/api/media/map/(\d{1,2})/(\d{1,7})/(\d{1,7})\.png',route)
                     if not match:raise ValueError('This map area is unavailable.')
                     self.send(200,workspace_views.tile(*match.groups()),'image/png')
+                elif route == '/api/focus':
+                    import workspace_focus
+                    with app.lock:root=app.workspace_path
+                    with workspace_scope(root):self.send(200,workspace_focus.public(workspace_focus.get(selected(query.get('business')))))
                 elif route in {'/api/collection-view','/api/running','/api/goal-progress'}:
                     with app.lock:root=app.workspace_path;owner=copy.copy(app)
                     with workspace_scope(root):
@@ -440,6 +444,14 @@ def handler_for(app):
                             elif action=='configure':result=workspace_collections.configure(bid,data.get('id'),data)
                             elif action=='feedback':result=workspace_collections.feedback(bid,data.get('id'),{**data,'action':data.get('choice')})
                             else:raise ValueError('Choose a collection action.')
+                    app.read_cache.clear();self.send(200,result);return
+                if route == '/api/focus':
+                    import workspace_focus
+                    with app.lock:root=app.workspace_path
+                    with workspace_scope(root):
+                        bid=selected(data.get('business'))
+                        result=workspace_focus.public(workspace_focus.save(bid,data.get('areas')) if 'areas' in data else workspace_focus.get(bid))
+                        if 'text' in data:result['suggested']=workspace_focus.suggest(data['text'])
                     app.read_cache.clear();self.send(200,result);return
                 if route == '/api/collection-view':
                     if data.get('action')!='place':raise ValueError('Choose a map action.')

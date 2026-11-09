@@ -155,6 +155,7 @@ These reusable procedures may support one or more Playbooks or be used independe
 - **[Comparison & Alternative Persuasion](../../systems/marketing-synthesis/workflows/assets/comparison/CONTEXT.md)** — Create an evidence-backed commercial comparison.
 - **[Sales Enablement Asset](../../systems/marketing-synthesis/workflows/assets/sales-enablement/CONTEXT.md)** — Create persuasive materials for active sales use.
 - **[Marketing Experiment Design](../../systems/marketing-synthesis/workflows/experimentation/message-test/CONTEXT.md)** — Test a marketing persuasion hypothesis and learn from response.
+- **[Client Proposal and RFP Response](../../systems/marketing-synthesis/workflows/assets/proposal/CONTEXT.md)** — Write a client proposal or RFP response that is compliant, specific to the buyer and credible.
 
 ## Additional Workflows
 

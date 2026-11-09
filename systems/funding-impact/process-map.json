@@ -1,0 +1,15 @@
+{
+  "system": "funding-impact",
+  "activities": [
+    {"id": "case-for-support", "entry_workflow": "funding.case.case-for-support", "result": "Keep a reusable, evidence-backed case for support and grant-ready facts current."},
+    {"id": "grant-prospecting", "entry_workflow": "funding.grants.prospecting", "result": "Find and prioritize grants the organization is eligible for and likely to win."},
+    {"id": "grant-application", "entry_workflow": "funding.grants.application", "result": "Write a funder-aligned application and learn from the decision."},
+    {"id": "award-management", "entry_workflow": "funding.grants.award-management", "result": "Meet award reporting and compliance obligations and build the funder relationship."},
+    {"id": "appeal", "entry_workflow": "funding.supporters.appeal", "result": "Plan and write a fundraising appeal or giving campaign."},
+    {"id": "stewardship", "entry_workflow": "funding.supporters.stewardship", "result": "Retain donors and deepen their support through thanks, reporting back and cultivation."},
+    {"id": "volunteers", "entry_workflow": "funding.supporters.volunteers", "result": "Recruit, welcome and keep volunteers."},
+    {"id": "impact-measurement", "entry_workflow": "funding.impact.measurement", "result": "Define the outcomes that matter and how to measure them."},
+    {"id": "impact-report", "entry_workflow": "funding.impact.report", "result": "Report impact honestly to supporters and funders."},
+    {"id": "investment", "entry_workflow": "funding.investment.raise", "result": "Run an investment raise from preparation to close."}
+  ]
+}

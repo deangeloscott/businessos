@@ -78,7 +78,9 @@ def shapes(rows):
             if k in {'latitude', 'longitude', 'lat', 'lng', 'lon', 'radius_km', 'radius_miles'}:continue
             if isinstance(v, (int, float)) and not isinstance(v, bool):numbers[k] = True
             elif isinstance(v, str) and 0 < len(v) <= 60 and k != 'address':groups.setdefault(k, set()).add(v)
-    return {'map': places, 'chart': sorted(numbers), 'board': sorted(k for k, values in groups.items() if 2 <= len(values) <= 12)}
+    # A status or stage field is a pipeline from the first result; other fields need at least two groups to be worth a board.
+    stage = lambda k: re.fullmatch(r'(status|stage|state|pipeline|phase)', k.lower()) is not None
+    return {'map': places, 'chart': sorted(numbers), 'board': sorted(k for k, values in groups.items() if (1 if stage(k) else 2) <= len(values) <= 12)}
 
 
 # --- Place lookups: an address becomes coordinates once, then it is remembered ---------------
@@ -282,18 +284,66 @@ def running(app, bid, project_id='', goal_id=''):
     return {'name': title, 'items': items, 'goals': goals, 'attention': sum(i['health'] in {'failed', 'missing'} for i in items), 'text': '\n'.join(lines)}
 
 
+# --- Deadlines: saved results whose deadline (expiry) is close -------------------------------
+
+DONE = {'submitted', 'awarded', 'declined', 'won', 'lost', 'done', 'complete', 'completed', 'closed', 'cancelled', 'canceled', 'withdrawn', 'archived', 'paid'}
+DEADLINE_WINDOW = 14 * 86400
+
+
+def deadlines(bid, now=None, window=DEADLINE_WINDOW):
+    """Current results with a deadline inside the window, soonest first. Handled, dismissed or finished ones are skipped."""
+    from datetime import timezone
+    now = datetime.now(timezone.utc) if now is None else now
+    out = []
+    for summary in collections.inventory(bid)['items']:
+        if summary.get('unavailable') or summary.get('mode') != 'collection':continue
+        try:d = collections.read(bid, summary['id'])
+        except ValueError:continue
+        for r in collections.select(d, 'current', at=now):
+            due = collections.timestamp(r.get('expires_at'))
+            status = next((str(v).strip().lower() for k, v in (r.get('fields') or {}).items() if k.lower() in {'status', 'stage', 'state', 'pipeline', 'phase'} and isinstance(v, str)), '')
+            if not due or r.get('disposition') == 'acknowledged' or status in DONE:continue
+            seconds = (due - now).total_seconds()
+            if 0 < seconds <= window:
+                out.append({'collection_id': d['id'], 'collection': d['name'], 'item_id': r['id'], 'title': r['title'], 'due': r['expires_at'], 'days': max(0, int(seconds // 86400))})
+    return sorted(out, key=lambda x: x['due'])
+
+
 # --- Goal progress: recorded measurements, with their source and date -------------------------
 
+def goal_targets(objects):
+    """For goals with a measure (native metric_refs plus a target number): the latest value and whether it is reached."""
+    by_id = {o.get('id'): o for o in objects}
+    latest = {}
+    for o in objects:
+        if o.get('object_type') == 'MetricObservation' and isinstance(o.get('value'), (int, float)) and not isinstance(o.get('value'), bool):
+            if o.get('metric_ref') not in latest or o.get('window_end', '') > latest[o['metric_ref']].get('window_end', ''):latest[o['metric_ref']] = o
+    out = {}
+    for goal in objects:
+        if goal.get('object_type') != 'Objective' or not goal.get('metric_refs'):continue
+        target = (((goal.get('extensions') or {}).get('businessos') or {}).get('goal') or {}).get('target_value')
+        metric = by_id.get(goal['metric_refs'][0])
+        if not isinstance(target, (int, float)) or not metric:continue
+        seen = latest.get(metric['id']);direction = metric.get('direction')
+        value = seen['value'] if seen else None
+        hit = value is not None and (value >= target if direction == 'higher_better' else value <= target if direction == 'lower_better' else False)
+        out[goal['id']] = {'metric': metric.get('name'), 'unit': metric.get('unit', ''), 'direction': direction, 'target': target,
+                           'latest': value, 'at': seen.get('window_end') if seen else None, 'reached': hit}
+    return out
+
+
 def progress(bid, goal_id, limit=60):
-    """Measurements linked to a goal through MetricDefinition.objective_refs, oldest first."""
+    """Measurements linked to a goal (its metric_refs, or MetricDefinition.objective_refs), oldest first."""
     index = object_index(bid);metrics = []
+    goal = index.get(goal_id, (None,))[0] or {}
+    linked = set(goal.get('metric_refs') or [])
     for obj, _ in index.values():
-        if obj.get('object_type') == 'MetricDefinition' and goal_id in obj.get('objective_refs', []):
+        if obj.get('object_type') == 'MetricDefinition' and (goal_id in obj.get('objective_refs', []) or obj['id'] in linked):
             points = sorted((o for o, _ in index.values() if o.get('object_type') == 'MetricObservation' and o.get('metric_ref') == obj['id']), key=lambda o: o.get('window_end', ''))
             metrics.append({'id': obj['id'], 'name': obj['name'], 'unit': obj.get('unit', ''), 'direction': obj.get('direction'),
                             'points': [{'at': o['window_end'], 'start': o.get('window_start'), 'value': o['value'], 'source': o.get('source_ref', '')}
                                        for o in points[-max(1, int(limit)):] if isinstance(o.get('value'), (int, float)) and not isinstance(o.get('value'), bool)]})
-    return {'goal_id': goal_id, 'metrics': metrics}
+    return {'goal_id': goal_id, 'metrics': metrics, 'target': goal_targets([o for o, _ in index.values()]).get(goal_id)}
 
 
 def main():

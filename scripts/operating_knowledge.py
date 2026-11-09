@@ -10,6 +10,7 @@ OPERATING_AREAS = {
     'content-synthesis': {'title':'Content Synthesis','summary':'Turn useful ideas, evidence, and source material into strong audience-appropriate content.'},
     'marketing-synthesis': {'title':'Marketing Synthesis','summary':'Create and improve persuasive strategy, campaigns, offers, and customer-facing marketing assets.'},
     'customer-optimization': {'title':'Customer Optimization','summary':'Improve the customer journey from qualification and purchase through value, retention, expansion, recovery, and referral.'},
+    'funding-impact': {'title':'Funding & Impact','summary':'Secure grants, donations, volunteers and investment, and show honestly what the work achieves.'},
 }
 
 
@@ -253,6 +254,28 @@ PLAYBOOKS = [
        'Figure out why customers are churning and what we should improve.',
        'customer-optimization.intervention.retention',
        ('retention','churn','renewal','customer success','activation','adoption','time to value')),
+
+    # Funding & Impact
+    _p('grant-funding','funding-impact','Grant Funding',
+       'Find grants the organization is eligible for and likely to win, write funder-aligned applications from verified facts, manage awards, and learn from each decision.',
+       'Find grants we qualify for and help us apply to the best ones.',
+       'funding.grants.prospecting',
+       ('grant','grants','grant writing','grant application','funder','funders','foundation grant','federal grant','letter of inquiry','rfa','nofo','grant report','case for support')),
+    _p('supporter-fundraising','funding-impact','Supporter Fundraising',
+       'Raise and keep support from individual donors, members and volunteers through honest appeals, prompt thanks, reporting back and relationship building.',
+       'Help us keep more of our donors and plan our year-end appeal.',
+       'funding.supporters.stewardship',
+       ('donors','donor retention','donations','fundraising','appeal','year-end giving','giving day','monthly giving','major gifts','volunteers','volunteer recruitment','stewardship')),
+    _p('impact-measurement-and-reporting','funding-impact','Impact Measurement and Reporting',
+       'Decide which outcomes show the difference the work makes, measure them practically, and report results honestly to supporters and funders.',
+       'Help us show the impact of our programs with real numbers.',
+       'funding.impact.measurement',
+       ('impact','impact report','annual report','outcomes','logic model','theory of change','evaluation','program evaluation','social impact')),
+    _p('investor-fundraising','funding-impact','Investor Fundraising',
+       'Decide whether and how much to raise, prepare a defensible story and materials, target fitting investors, and run a focused raise through diligence and close.',
+       'Help us prepare for and run our seed round.',
+       'funding.investment.raise',
+       ('raise investment','investors','venture capital','angel investors','seed round','pre-seed','series a','pitch deck','fundraising round','due diligence')),
 ]
 
 

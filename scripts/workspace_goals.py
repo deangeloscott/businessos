@@ -168,7 +168,25 @@ def save(bid,data):
     if 'target' in data:
         if not isinstance(data['target'],str) or len(data['target'])>5000:raise ValueError('Keep the goal outcome within 5,000 characters.')
         if data['target'].strip():content['target']=data['target'].strip()
-    remove=[k for k in ('target','horizon') if k in data and not str(data[k]).strip() and old and k in old]
+    if 'measure' in data:
+        # An optional number that shows when the goal is reached: the goal's native metric link plus a target.
+        m=data['measure']
+        if m:
+            if not isinstance(m,dict) or not isinstance(m.get('name'),str) or not m['name'].strip() or len(m['name'])>300:raise ValueError('Name what this goal measures.')
+            target=m.get('target')
+            if isinstance(target,str):
+                try:target=float(target.replace(',',''))
+                except ValueError:target=None
+            if not isinstance(target,(int,float)) or isinstance(target,bool) or target!=target or abs(target)==float('inf'):raise ValueError('Enter the target as a number.')
+            direction=m.get('direction','higher_better')
+            if direction not in {'higher_better','lower_better'}:raise ValueError('Choose whether higher or lower is better.')
+            content['metric_refs']=[metric_for(bid,m['name'].strip(),str(m.get('unit') or '').strip()[:60],direction)]
+            info['target_value']=target
+        else:
+            info.pop('target_value',None)
+            if old and old.get('metric_refs'):data.setdefault('metric_refs','')
+        if info!=metadata(old or {}):content['extensions']=extensions(old or {},info)
+    remove=[k for k in ('target','horizon','metric_refs') if k in data and not str(data[k]).strip() and old and k in old]
     content={k:v for k,v in content.items() if k not in remove}
     if not content and not remove:raise ValueError('Choose a goal change to save.')
     if old and not remove and all(old.get(k)==v for k,v in content.items()):return old
@@ -176,6 +194,15 @@ def save(bid,data):
     item={'object_ref':ident} if old else {'object_type':'Objective'}
     result=remember(bid,{'objects':[{**item,'content':content,**({'replace_extensions':True} if old and 'extensions' in content else {}),**({'remove_fields':remove} if remove else {})}]})
     return find(bid,result['objects'][0]['id'])
+
+
+def metric_for(bid,name,unit,direction):
+    """Reuse the organization's metric with this name, or define it once."""
+    from remember import remember
+    from _common import object_index
+    existing=next((o for o,_ in object_index(bid).values() if o.get('object_type')=='MetricDefinition' and str(o.get('name','')).casefold()==name.casefold()),None)
+    if existing:return existing['id']
+    return remember(bid,{'objects':[{'object_type':'MetricDefinition','content':{'name':name,'unit':unit or 'count','direction':direction}}]})['objects'][0]['id']
 
 
 def link_chat(preferences,bid,chat_id,goal_id):

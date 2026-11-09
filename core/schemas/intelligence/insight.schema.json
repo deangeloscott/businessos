@@ -11,7 +11,7 @@
     "created_at": {"type": "string", "format": "date-time"},
     "updated_at": {"type": "string", "format": "date-time"},
     "lineage": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
-    "domain": {"enum": ["core", "customer-intelligence", "competitor-intelligence", "industry-intelligence", "seo-aeo", "content-synthesis", "marketing-synthesis", "customer-optimization"]},
+    "domain": {"enum": ["core", "customer-intelligence", "competitor-intelligence", "industry-intelligence", "seo-aeo", "content-synthesis", "marketing-synthesis", "customer-optimization", "funding-impact"]},
     "insight_type": {"type": "string", "minLength": 1},
     "statement": {"type": "string", "minLength": 1},
     "subject_refs": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},

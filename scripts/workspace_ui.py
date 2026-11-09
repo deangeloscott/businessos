@@ -29,7 +29,7 @@ import webbrowser
 from concurrent.futures import ThreadPoolExecutor
 
 from _common import (PRODUCT_ROOT, workspace_root, business_directory, resolve_business,
-                     iter_instance_objects, describe_object, load_registry, os_version, workspace_scope)
+                     iter_instance_objects, describe_object, load_registry, os_version, workspace_scope, object_index)
 from remember import remember
 from setup import setup
 import workspace_codex
@@ -107,6 +107,11 @@ def records(bid, include_archived=False):
         rows.append({'ref': obj['id'], 'type': obj['object_type'],
                      'title': title,
                      'path': path.relative_to(workspace_root()).as_posix(), 'data': obj})
+    if any(r['type']=='Objective' and r['data'].get('metric_refs') for r in rows):
+        from workspace_views import goal_targets
+        targets=goal_targets([r['data'] for r in rows])
+        for row in rows:
+            if row['ref'] in targets:row['measure']=targets[row['ref']]
     return rows, diagnostics
 
 
@@ -1654,12 +1659,12 @@ class Workspace:
         names={workspace_usage.account('openai',a.get('account'))['id']:a['nickname'] for a in workspace_accounts.load()['accounts'] if a['app']=='codex' and a.get('account')}
         return [{**r,'label':names[r['id']]} if r.get('id') in names else r for r in rows]
 
-    def notify(self, bid, chat_id, title, kind='limit', task_id=None):
+    def notify(self, bid, chat_id, title, kind='limit', task_id=None, goal_id=None, collection_id=None, item_title=None):
         """A bell notification for something that happened while the user may not be looking."""
+        refs={k:v for k,v in {'task_id':task_id,'goal_id':goal_id,'collection_id':collection_id,'item_title':item_title}.items() if v}
         with self.lock:
             self.preferences['notification_items']=[*self.preferences['notification_items'],{'id':secrets.token_urlsafe(12),'business_id':bid,'chat_id':chat_id,
-                'kind':kind,'agent':'AURA','title':title,'status':'complete','at':time.time(),'read':False,'delivered':False,
-                **({'task_id':task_id} if task_id else {})}][-50:]
+                'kind':kind,'agent':'AURA','title':title,'status':'complete','at':time.time(),'read':False,'delivered':False,**refs}][-50:]
             self.save_preferences()
 
     def recovery_workspace(self, root):
@@ -1796,6 +1801,42 @@ class Workspace:
                 if key in seen:continue
                 owner.preferences['task_limit_seen']=[*seen,key][-200:]
                 owner.notify(bid,None,f"\u201c{task['name']}\u201d stopped at {task.get('app','its app')}\u2019s plan limit. Open to run it another way.",kind='task_limit',task_id=task['id'])
+
+    def check_goals_reached(self):
+        """When a goal's recorded measure meets its target, say so once. Completing or raising it stays the user's choice."""
+        from workspace_views import goal_targets
+        base=workspace_root()/'instances'
+        for folder in sorted(base.iterdir()) if base.is_dir() else []:
+            bid=folder.name
+            try:objects=[o for o,_ in object_index(bid).values()]
+            except (OSError,ValueError):continue
+            goals={o['id']:o for o in objects if o.get('object_type')=='Objective' and (o.get('status') or 'active')=='active'}
+            for goal_id,m in goal_targets(objects).items():
+                if not m['reached'] or goal_id not in goals:continue
+                key=f"{bid}:{goal_id}:{m['target']}"
+                with self.lock:
+                    seen=self.preferences.setdefault('goals_reached_seen',[])
+                    if key in seen:continue
+                    self.preferences['goals_reached_seen']=[*seen,key][-200:]
+                unit=f" {m['unit']}" if m['unit'] and m['unit'] not in {'count','USD'} else ''
+                amount=f"${m['latest']:,.0f}" if m['unit']=='USD' else f"{m['latest']:,g}{unit}"
+                self.notify(bid,None,f"You reached “{goals[goal_id]['name']}” ({amount}). Mark it complete, or set a new target.",kind='goal',goal_id=goal_id)
+
+    def check_deadlines(self):
+        """Ring the bell once when a saved result's deadline is within two weeks. Nothing else happens automatically."""
+        from workspace_views import deadlines
+        base=workspace_root()/'instances'
+        for folder in sorted(base.iterdir()) if base.is_dir() else []:
+            try:due=deadlines(folder.name)
+            except (OSError,ValueError):continue
+            for d in due:
+                key=f"{folder.name}:{d['collection_id']}:{d['item_id']}:{d['due']}"
+                with self.lock:
+                    seen=self.preferences.setdefault('deadlines_seen',[])
+                    if key in seen:continue
+                    self.preferences['deadlines_seen']=[*seen,key][-300:]
+                when='today' if d['days']==0 else 'tomorrow' if d['days']==1 else f"in {d['days']} days"
+                self.notify(folder.name,None,f"“{d['title']}” is due {when} ({d['collection']}).",kind='deadline',collection_id=d['collection_id'],item_title=d['title'])
 
     def task_destination(self,task):
         """Native working folders and existing project bindings identify ownership; the visible page does not."""
@@ -2333,7 +2374,10 @@ class Workspace:
         for row in (history or [])[-6:]:
             if isinstance(row, dict) and row.get('role') in {'user', 'assistant'} and isinstance(row.get('text'), str):
                 prior.append(f"{row['role']}: {row['text'][:4000]}")
+        import workspace_focus
+        focus_text=workspace_focus.context(bid)
         return (f"Work for the explicitly selected AURA business ID: {bid}.\n"
+                +(focus_text+'\n' if focus_text else '')+
                 f"AURA product: {PRODUCT_ROOT}\nOrganization workspace: {workspace_root()}\n"
                 f"Read {PRODUCT_ROOT / 'CONTEXT.md'} once unless its current contents are already loaded, and use the existing AURA helpers and workspace.\n"
                 f"For Python helpers, the running interpreter is {Path(sys.executable).as_posix()}. "
@@ -2730,7 +2774,7 @@ class Workspace:
                     name=assistant['native_name'];prior=(chat or {}).get('native_profile') or (native_options.get('session') or {}).get('profile','default')
                     if (chat or {}).get('native_id') and prior!=name:raise ValueError('Start a new chat to use a different Hermes profile. This chat keeps its original profile and history.')
                     native_options['session']={**native_options.get('session',{}),'profile':name}
-            context_key=workspace_context.digest({'business':bid,'workspace':str(workspace_root().resolve()),'assistant':assistant,'working_preferences':self.profile().get('working_preferences',''),
+            context_key=workspace_context.digest({'business':bid,'workspace':str(workspace_root().resolve()),'assistant':assistant,'working_preferences':self.profile().get('working_preferences',''),'focus':__import__('workspace_focus').context(bid),
                 'guidance':[(str(p),p.stat().st_mtime_ns,p.stat().st_size) for p in (PRODUCT_ROOT/'AGENTS.md',PRODUCT_ROOT/'CONTEXT.md')]})
             reuse_context=native and chat and chat.get('native_id') and chat.get('aura_context')==context_key and not any((welcome,keep_warm_id is not None,schedule_id,organization_id)) and not text.lstrip().startswith('/')
             if reuse_context:
@@ -2947,7 +2991,7 @@ def main():
                     if time.time()-getattr(app,'resume_checked',0)>30:
                         app.resume_checked=time.time();app.resume_due()
                     if time.time()-getattr(app,'task_limits_checked',0)>600:
-                        app.task_limits_checked=time.time();app.check_task_limits()
+                        app.task_limits_checked=time.time();app.check_task_limits();app.check_goals_reached();app.check_deadlines()
                     updater = app.updates
                     with updater.lock:
                         running = updater.operation and updater.operation.is_alive()

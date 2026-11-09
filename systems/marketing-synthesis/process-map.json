@@ -25,6 +25,7 @@
     {"id":"advertorial","entry_workflow":"marketing.assets.advertorial","result":"Create a transparent persuasive advertorial."},
     {"id":"comparison","entry_workflow":"marketing.assets.comparison","result":"Create an evidence-backed commercial comparison."},
     {"id":"sales-enablement","entry_workflow":"marketing.assets.sales-enablement","result":"Create persuasive materials for active sales use."},
-    {"id":"message-experiment","entry_workflow":"marketing.experimentation.message-test","result":"Test a marketing persuasion hypothesis and learn from response."}
+    {"id":"message-experiment","entry_workflow":"marketing.experimentation.message-test","result":"Test a marketing persuasion hypothesis and learn from response."},
+    {"id":"proposal","entry_workflow":"marketing.assets.proposal","result":"Write a client proposal or RFP response that is compliant, specific to the buyer and credible."}
   ]
 }

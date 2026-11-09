@@ -116,6 +116,26 @@ def main():
         try:views.running(app,bid);raise AssertionError('running needs a project or goal')
         except ValueError:pass
 
+        # Deadlines: one bell notice per result and deadline, only inside two weeks, never for finished work.
+        from datetime import datetime,timedelta,timezone
+        soon=lambda days:(datetime.now(timezone.utc)+timedelta(days=days)).isoformat()
+        g=collections.create(bid,{'key':'grants','name':'Grants'})
+        collections.apply(bid,g['id'],{'revision':g['revision'],'run_id':'grants-1','items':[
+            {'id':'due','title':'State food grant','expires_at':soon(5),'fields':{'status':'Drafting'}},
+            {'id':'sent','title':'Already submitted','expires_at':soon(3),'fields':{'status':'Submitted'}},
+            {'id':'later','title':'Next year','expires_at':soon(60),'fields':{'status':'Prospect'}}]})
+        assert [d['item_id'] for d in views.deadlines(bid)]==['due']
+        app.check_deadlines();app.check_deadlines()
+        bells=[n for n in app.preferences['notification_items'] if n.get('kind')=='deadline']
+        assert len(bells)==1 and 'State food grant' in bells[0]['title'] and ('in 4 days' in bells[0]['title'] or 'in 5 days' in bells[0]['title']),bells
+        assert bells[0]['collection_id']==g['id'] and bells[0]['item_title']=='State food grant'
+        # Moving a card on the board is the person's correction; the board then groups by the new stage.
+        rev=collections.show(bid,g['id'])['revision']
+        collections.feedback(bid,g['id'],{'action':'correct','item_id':'due','revision':rev,'correction':{'fields':{'status':'Submitted'}},'note':'Moved on the board'})
+        moved=next(r for r in views.rows(bid,g['id'])['items'] if r['id']=='due')
+        assert moved['fields']['status']=='Submitted' and not views.deadlines(bid),'a submitted grant should stop reminding'
+        assert 'status' in collections.show(bid,g['id'])['views']['board']
+
         # Goal progress: only numeric measurements linked to the goal, oldest first, with their source.
         metric=remember(bid,{'objects':[{'object_type':'MetricDefinition','content':{'name':'New patients','unit':'patients','direction':'higher_better','objective_refs':[goal['id']]}}]})['objects'][0]['id']
         unrelated=remember(bid,{'objects':[{'object_type':'MetricDefinition','content':{'name':'Clicks','unit':'clicks','direction':'higher_better'}}]})['objects'][0]['id']

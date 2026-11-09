@@ -43,6 +43,7 @@ These reusable procedures may support one or more Playbooks or be used independe
 - **[Industry Trend Validation](../../systems/industry-intelligence/workflows/analysis/trend-validation/CONTEXT.md)** — Validate sustained trends versus temporary attention.
 - **[Scenario Analysis](../../systems/industry-intelligence/workflows/analysis/scenario/CONTEXT.md)** — Model plausible uncertain futures with indicators.
 - **[Rapid Response Intelligence](../../systems/industry-intelligence/workflows/analysis/rapid-response/CONTEXT.md)** — Build a compact evidence-backed understanding of a time-sensitive material development.
+- **[Evidence Synthesis and Literature Review](../../systems/industry-intelligence/workflows/analysis/evidence-synthesis/CONTEXT.md)** — Answer a research question from the body of evidence, with sources, strength and gaps.
 
 ## Additional Workflows
 

@@ -168,6 +168,32 @@ Improve the customer journey from qualification and purchase through value, rete
 | Cohort Retention | Understand retention patterns across cohorts. | `customer-optimization.measurement.cohort-retention` |
 | Journey Health | Run a bounded journey-health review for material deterioration, improvement, or unresolved evidence; recurrence belongs to the active runtime. | `customer-optimization.monitoring.journey-health` |
 
+## Funding & Impact
+
+Secure grants, donations, volunteers and investment, and show honestly what the work achieves.
+
+### Playbooks
+
+- **Grant Funding** — Find grants the organization is eligible for and likely to win, write funder-aligned applications from verified facts, manage awards, and learn from each decision. — common entry `funding.grants.prospecting`
+- **Supporter Fundraising** — Raise and keep support from individual donors, members and volunteers through honest appeals, prompt thanks, reporting back and relationship building. — common entry `funding.supporters.stewardship`
+- **Impact Measurement and Reporting** — Decide which outcomes show the difference the work makes, measure them practically, and report results honestly to supporters and funders. — common entry `funding.impact.measurement`
+- **Investor Fundraising** — Decide whether and how much to raise, prepare a defensible story and materials, target fitting investors, and run a focused raise through diligence and close. — common entry `funding.investment.raise`
+
+### Common Workflows
+
+| Workflow | Result | Workflow ID |
+|---|---|---|
+| Case For Support | Keep a reusable, evidence-backed case for support and grant-ready facts current. | `funding.case.case-for-support` |
+| Grant Prospecting | Find and prioritize grants the organization is eligible for and likely to win. | `funding.grants.prospecting` |
+| Grant Application | Write a funder-aligned application and learn from the decision. | `funding.grants.application` |
+| Award Management | Meet award reporting and compliance obligations and build the funder relationship. | `funding.grants.award-management` |
+| Appeal | Plan and write a fundraising appeal or giving campaign. | `funding.supporters.appeal` |
+| Stewardship | Retain donors and deepen their support through thanks, reporting back and cultivation. | `funding.supporters.stewardship` |
+| Volunteers | Recruit, welcome and keep volunteers. | `funding.supporters.volunteers` |
+| Impact Measurement | Define the outcomes that matter and how to measure them. | `funding.impact.measurement` |
+| Impact Report | Report impact honestly to supporters and funders. | `funding.impact.report` |
+| Investment | Run an investment raise from preparation to close. | `funding.investment.raise` |
+
 ## Industry Intelligence
 
 Understand material external developments in the market, regulation, research, technology, and industry.
@@ -198,6 +224,7 @@ Understand material external developments in the market, regulation, research, t
 | Trend Validation | Validate sustained trends versus temporary attention. | `industry.analysis.trend-validation` |
 | Scenario Analysis | Model plausible uncertain futures with indicators. | `industry.analysis.scenario` |
 | Rapid Response | Build a compact evidence-backed understanding of a time-sensitive material development. | `industry.analysis.rapid-response` |
+| Evidence Synthesis | Answer a research question from the body of evidence, with sources, strength and gaps. | `industry.analysis.evidence-synthesis` |
 
 ## Marketing Synthesis
 
@@ -250,6 +277,7 @@ Create and improve persuasive strategy, campaigns, offers, and customer-facing m
 | Comparison | Create an evidence-backed commercial comparison. | `marketing.assets.comparison` |
 | Sales Enablement | Create persuasive materials for active sales use. | `marketing.assets.sales-enablement` |
 | Message Experiment | Test a marketing persuasion hypothesis and learn from response. | `marketing.experimentation.message-test` |
+| Proposal | Write a client proposal or RFP response that is compliant, specific to the buyer and credible. | `marketing.assets.proposal` |
 
 ## SEO/AEO
 

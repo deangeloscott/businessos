@@ -76,7 +76,9 @@ A collection can be shown as a **List** (the default), **Map**, **Chart** or **B
   - Popups give the distance from your own business when one result has `yours: true`.
   - Maps with 40 or more places group nearby pins into counted clusters that separate as you zoom in.
 - **Chart** compares results by any number field, with ▲/▼ for movement since the previous check. **Over time** draws the number across checks for your business and the five leading results.
-- **Board** groups results into columns by any field with 2–12 distinct values, such as a status.
+- **Board** groups results into columns by any field with 2–12 distinct values, or by a `status`, `stage` or `phase` field from the first result, so a pipeline is usable from day one. Drag a card to another column, or use **Move to…** (which also creates a new stage). A move is saved as your correction, so the original value is kept and the change is labelled as yours. Ordering within a column follows the collection's own order.
+
+**Deadline reminders.** A result's deadline is its `expires_at`. While AURA is open, the bell says once when a current result's deadline is within 14 days, unless you marked it seen or its status shows it is finished (for example Submitted, Awarded, Declined or Done). Clicking the notice opens the result. Nothing else happens automatically.
 
 Each result keeps a short trail of its numbers (up to 26 checks; a same-day recheck with unchanged numbers adds nothing). The trail feeds the arrows and trends, and is not part of the result's meaning: it never creates a change to review.
 

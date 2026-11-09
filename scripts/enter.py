@@ -123,8 +123,10 @@ def prepare_work(task,business_id=None,workspace=None,focus=None,operator_ref=No
         try:playbook_view=build_process_plan(playbook_id=playbook['id'])
         except ValueError as exc:playbook_view={'error':str(exc)}
     candidates=_saved_work_candidates(task,index,saved_work_limit+1,saved_work_offset)
+    from workspace_focus import context as focus_areas
     return {
         'format_version':'4.2','status':'needs_judgment' if unresolved_focus or read_diagnostics or preferences['conflicts'] else 'ready','workspace':str(workspace_root()),'business_id':bid,'business_resolution':resolved.get('resolution'),'original_request':task,
+        'organization_focus':focus_areas(bid),
         'retrieval':{
             'focus_context':focus_context,'unresolved_focus':unresolved_focus,'saved_work_candidates':candidates[:saved_work_limit],
             'saved_work_search':{'limit':saved_work_limit,'offset':saved_work_offset,'next_offset':saved_work_offset+saved_work_limit if len(candidates)>saved_work_limit else None,'broaden':'Use --saved-work-limit (up to 100), --saved-work-offset, or different title/purpose/filename terms. Linked document contents are not indexed.'},
