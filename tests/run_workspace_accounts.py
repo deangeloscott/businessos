@@ -49,6 +49,20 @@ def main():
         except ValueError:
             pass
 
+        # The usage popover names which account its limits belong to, and offers Switch only when
+        # another saved account for that app exists. Apps AURA cannot switch show their own sign-in.
+        import threading, workspace_usage
+        from workspace_ui import Workspace
+        def summary(kind, row):
+            w = Workspace.__new__(Workspace); w.lock = threading.RLock(); w.connection_kind = kind
+            w.usage_refresh = {'codex_limits_at': time.time()}; w.usage_accounts = {kind: [row]}
+            w.preferences = {'chats': [], 'usage_account_history': {}}
+            return w.glance('fixture')['account']
+        window = {'windows': [{'name': 'Weekly limit', 'used_percent': 97}], 'limits_at': time.time()}
+        assert summary('codex', {**workspace_usage.account('openai', 'acct-2', 'two@example.com', 'plus'), **window}) ==             {'label': 'two…@example.com', 'plan': 'plus', 'nickname': 'Work', 'switchable': True}
+        assert summary('antigravity', {**workspace_usage.account('google', 'g-1', 'person@example.com', 'pro'), **window}) ==             {'label': 'pers…@example.com', 'plan': 'pro', 'switchable': False}
+        assert 'label' not in summary('antigravity', {**workspace_usage.account('google', 'g-2', '', 'pro'), **window})
+
         (home / 'config.toml').write_text('cli_auth_credentials_store = "keyring"\n', encoding='utf-8')
         assert accounts.codex_supported()[0] is False
         (home / 'config.toml').unlink()

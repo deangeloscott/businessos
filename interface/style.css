@@ -560,7 +560,7 @@ input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px soli
 .usage-gauge[data-level=mid] .fill{stroke:var(--warning)}.usage-gauge[data-level=high] .fill{stroke:var(--danger)}
 #chat-form{position:relative}
 .usage-pop{position:absolute;right:8px;bottom:calc(100% + 8px);width:min(340px,calc(100vw - 32px));z-index:30;padding:14px 16px;border:1px solid var(--line);border-radius:var(--radius-lg);background:var(--surface);box-shadow:var(--shadow-md);font-size:var(--text-sm)}
-.glance-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}.glance-head.glance-chat{margin:14px 0 6px;padding-top:10px;border-top:1px solid var(--line)}
+.glance-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}.glance-account{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:-4px 0 12px;font-size:var(--text-sm);color:var(--muted)}.glance-account>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.glance-account .text-button{flex:none;min-height:0;padding:0;font-size:var(--text-sm)}.glance-head.glance-chat{margin:14px 0 6px;padding-top:10px;border-top:1px solid var(--line)}
 .glance-row{display:flex;justify-content:space-between;gap:12px;margin-top:8px}
 .glance-bar{display:block;height:4px;margin-top:4px;border-radius:4px;background:var(--line);overflow:hidden}.glance-bar span{display:block;height:100%;background:var(--success)}
 .glance-bar.mid span{background:var(--warning)}.glance-bar.high span{background:var(--danger)}

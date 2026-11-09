@@ -312,11 +312,15 @@ function paintGlance(){
   button.hidden=!Number.isFinite(pct);if(button.hidden)return;
   button.dataset.level=top&&(top.status==='rejected'||pct>=90)?'high':pct>=75?'mid':'low';
   button.querySelector('.fill').setAttribute('stroke-dasharray',Math.min(100,Math.max(3,pct))+' 100');
-  const lines=windows.map(w=>`${w.name}: ${w.status==='rejected'?'reached':Math.round(w.used_percent)+'% used'}${w.resets_at?' · resets '+glanceTime(w.resets_at):''}`);
+  const lines=glanceAccount(d)?['Account: '+glanceAccount(d)]:[];lines.push(...windows.map(w=>`${w.name}: ${w.status==='rejected'?'reached':Math.round(w.used_percent)+'% used'}${w.resets_at?' · resets '+glanceTime(w.resets_at):''}`));
   if(context)lines.push(`Context: ${usageShort(context.tokens)} of ${usageShort(context.window)}`);
   if(top&&d.limits.observed_at)lines.push('As of '+new Date(d.limits.observed_at*1000).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}));
   button.title=lines.join('\n');button.setAttribute('aria-label',(top?'Plan usage ':'Context used ')+Math.round(pct)+'%. Show details');
   if(!$('#usage-pop').hidden)paintGlancePanel();
+}
+function glanceAccount(d){
+  const a=d.account||{},who=[a.nickname,a.label].filter(Boolean).join(' · ');
+  return who||(a.switchable?appName(d.app)+' sign-in':'');
 }
 function paintGlancePanel(){
   const d=glance.key===limitScope()?glance.data:null;if(!d){$('#usage-pop').hidden=true;return;}const {windows,context,contextPct}=glanceParts(d),c=d.chat||{};
@@ -326,7 +330,9 @@ function paintGlancePanel(){
     :`<p class="small-note">${d.limits_reported?(d.app==='claude'?'Limits appear after this app’s next request.':'Checking limits…'):'This app doesn’t report plan limits.'}</p>`;
   const tokens=[['In',c.input_tokens],['Out',c.output_tokens],['Cached',c.cached_input_tokens]].filter(([,v])=>Number.isFinite(v)).map(([k,v])=>`${k} ${usageShort(v)}`).join(' · ');
   const cost=Number.isFinite(c.cost_usd)?`${money(c.cost_usd)} <span class="row-meta">${c.cost_kind==='reported'||c.billing==='api'?'charged':'estimated API value'}</span>`:'';
-  $('#usage-pop').innerHTML=`<div class="glance-head"><strong>${esc(appName(d.app))} plan${d.account?.plan?' · '+esc(human(d.account.plan)):''}</strong><button type="button" class="text-button" data-glance-all>See all →</button></div>${limits}
+  // Limits belong to an account: say which one, and offer Switch when another saved account exists.
+  const who=glanceAccount(d),account=who?`<div class="glance-account"><span>${esc(who)}</span>${d.account?.switchable?'<button type="button" class="text-button" data-glance-switch>Switch</button>':''}</div>`:'';
+  $('#usage-pop').innerHTML=`<div class="glance-head"><strong>${esc(appName(d.app))} plan${d.account?.plan?' · '+esc(human(d.account.plan)):''}</strong><button type="button" class="text-button" data-glance-all>See all →</button></div>${account}${limits}
     ${d.limits?.observed_at&&windows.length?`<p class="small-note">As of ${esc(new Date(d.limits.observed_at*1000).toLocaleString([],{weekday:'short',hour:'numeric',minute:'2-digit'}))}</p>`:''}
     <div class="glance-head glance-chat"><strong>This chat</strong></div>
     ${context?`<div class="glance-row"><span>Context</span><span class="row-meta">${usageShort(context.tokens)} of ${usageShort(context.window)}</span></div>${bar(contextPct,contextPct>=90?'high':contextPct>=75?'mid':'')}`:''}
@@ -3217,6 +3223,7 @@ async function openContextChat(){
 document.addEventListener('click',event=>{
   if(event.target.closest('#usage-gauge')){event.preventDefault();toggleGlance();return;}
   if(event.target.closest('[data-glance-all]')){toggleGlance(false);$('#usage-open')?.click();return;}
+  if(event.target.closest('[data-glance-switch]')){toggleGlance(false);attempt(showAccounts);return;}
   if(!$('#usage-pop')?.hidden&&!event.target.closest('#usage-pop'))toggleGlance(false);
 });
 document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!$('#usage-pop')?.hidden){toggleGlance(false);$('#usage-gauge')?.focus();}});

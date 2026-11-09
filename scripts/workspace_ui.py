@@ -1647,8 +1647,17 @@ class Workspace:
                 threading.Thread(target=self._refresh_codex_limits,daemon=True).start()
         now=time.time()
         windows=[w for w in (account or {}).get('windows',[]) if not (w.get('resets_at') and w['resets_at']<=now)]
-        return {'app':kind,'account':{k:account[k] for k in ('label','plan') if account and account.get(k)} if account else None,
-                'limits':{'windows':windows,'observed_at':account.get('limits_at') or account.get('checked_at')} if account else None,
+        # Limits belong to an account: name which one (its saved name and shortened email) and whether
+        # another saved account for this app could take over. Other apps report their own sign-in.
+        saved=[a for a in workspace_accounts.load()['accounts'] if a['app']==kind] if kind in ('claude','codex') else []
+        row=account
+        if account:
+            if kind=='claude' and own:account={**account,'nickname':next((a['nickname'] for a in saved if a['id']==own),None)}
+            others=[a for a in saved if a['id']!=own] if kind=='claude' else [a for a in saved if not a.get('active')]
+            shown={k:account[k] for k in ('label','plan','nickname') if account.get(k) and (k!='label' or '@' in account[k])}
+            account={**shown,'switchable':bool(others or (kind=='claude' and own))}
+        return {'app':kind,'account':account,
+                'limits':{'windows':windows,'observed_at':row.get('limits_at') or row.get('checked_at')} if row else None,
                 'limits_reported':kind in {'claude','codex','omp','hermes'},
                 'chat':{k:usage[k] for k in ('input_tokens','output_tokens','cached_input_tokens','context','cost_usd','cost_kind','billing','last') if k in usage}}
 
@@ -1677,7 +1686,7 @@ class Workspace:
     def nicknamed(self, rows):
         """Show saved nicknames on usage rows for the same account."""
         names={workspace_usage.account('openai',a.get('account'))['id']:a['nickname'] for a in workspace_accounts.load()['accounts'] if a['app']=='codex' and a.get('account')}
-        return [{**r,'label':names[r['id']]} if r.get('id') in names else r for r in rows]
+        return [{**r,'nickname':names[r['id']]} if r.get('id') in names else r for r in rows]
 
     def notify(self, bid, chat_id, title, kind='limit', task_id=None, goal_id=None, collection_id=None, item_title=None):
         """A bell notification for something that happened while the user may not be looking."""
