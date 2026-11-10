@@ -15,7 +15,7 @@ quick_starts:
   - title: Watch for new grants
     kind: watch
     cadence: weekly
-    prompt: Set up a weekly scheduled task that looks for new grants we are likely eligible for, updates the "Grants" collection with funder, amount, deadline, eligibility and status, and flags anything closing within 30 days.
+    prompt: Set up a weekly scheduled task that looks for new grants we are likely eligible for and keeps the "Grants" collection current with funder, amount, deadline, eligibility and status, flagging anything closing within 30 days. Keep what we know current by folding new results into our findings instead of piling them up, and tell me only about real changes.
   - title: Map your funders' calendars
     kind: once
     prompt: List the funders most relevant to us and when each typically opens and closes applications, with sources. Save what you confirm to our business memory so future grant work uses it.

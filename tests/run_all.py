@@ -59,6 +59,7 @@ TESTS=[
     'tests/run_workspace_startup_schedules.py',
     'tests/run_workspace_accounts.py',
     'tests/run_workspace_views.py',
+    'tests/run_knowledge_currency.py',
     'tests/run_workspace_focus.py',
     'tests/run_runtime_bundle.py',
     'tests/run_bootstrap_reference_ids.py',

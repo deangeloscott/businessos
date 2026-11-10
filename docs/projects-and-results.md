@@ -10,6 +10,8 @@ Projects are ordinary portable workspace data in `.businessos/projects.json`. Ol
 
 AURA chat processes receive a scoped producer reference. When a native app deliberately creates an Asset through `remember.py`, the existing helper records known project, chat and goal associations. Later edits preserve the saved associations and respect explicit changes or removals. Existing explicit associations win; project membership remains separate from automatic model context. A raw tool file-change event is not proof of a finished deliverable, so AURA does not promote every temporary file into memory.
 
+A watch keeps knowledge current, not just a list: its collection holds the things it tracks, and linked findings hold what they add up to. Each run folds new information into those findings instead of piling up entries; see [keeping knowledge current](../core/policies/keeping-knowledge-current.md).
+
 For repeated research, choose a maintained collection when the user needs current entries. Choose dated reports when each installment is a historical deliverable. Keep native documents, spreadsheets, databases and media in their useful formats; an Asset or project reference can point to them. The local collection helper is optional and requires no running UI, cloud, database service or additional model.
 
 The model determines relevance, source identity, semantic duplication, materiality and what deserves saving. Stable item IDs identify the same grant, job, story or finding across runs. Syndicated copies are not independent corroboration merely because their URLs differ. A hash or newer publication time does not establish a material change or factual correctness.
@@ -27,7 +29,7 @@ python scripts/workspace_collections.py show --workspace /path/to/workspace --bu
 python scripts/workspace_collections.py show --workspace /path/to/workspace --business-id example-studio --id COLLECTION_ID --item ITEM_ID
 ```
 
-Use `configure` with the current `revision` to change a collection’s name, purpose, expected `source_refs`, or `project_refs`. The UI’s **Edit collection** changes its name and purpose. A run cannot silently shrink the configured source coverage; adjust the collection deliberately when its scope changes.
+Use `configure` with the current `revision` to change a collection’s name, purpose, expected `source_refs`, `project_refs` or `source_copies`. The UI’s **Edit collection** changes its name, purpose and how sources are kept: `quotes` (default: a stable link plus the exact short passages that support a finding) or `full` (also a copy of the whole source). Fragile sources are copied either way. A run cannot silently shrink the configured source coverage; adjust the collection deliberately when its scope changes.
 
 The create result returns a stable collection ID and current revision. Repeating the same create key reuses its existing collection. Before writing, read the latest revision. An apply payload looks like:
 
@@ -55,6 +57,14 @@ Send it to `workspace_collections.py apply --id COLLECTION_ID --input -` with th
 Retry the identical payload with the same native run ID. AURA returns its receipt without applying it twice. Reusing that run ID for different data fails clearly. Revisions prevent two producers from overwriting one another: reread and reconcile after a conflict. If a runtime does not expose a run ID, establish and retain one identity for that run before writing; do not generate a different identity for each retry. Old receipts are bounded to 500; an older unrecognized retry still needs the current revision.
 
 Only changed meaning creates a change entry. A new `last_checked_at` alone does not reopen a dismissed result. `material_change: false` can record a producer-judged nonmaterial edit without resurfacing it. Set explicit `state: "closed"` or `"superseded"` only with a basis; `supersedes: "ITEM_ID"` links a replacement to its predecessor. Optional `order: ["ITEM_ID", "..."]` sets a curated order without inventing a universal priority score. Dated report series reject replacement of an existing installment unless `amend: true` and a change reason explicitly identify a correction.
+
+## Findings and what keeps a collection current
+
+`show` returns the collection's linked findings with its rows: current findings ordered by status (challenged first), counts of challenged findings and findings due for review, recently replaced findings, and any source memory (`SourceProfile` records) linked to it. A finding is an `Insight` with `extensions.businessos.collection_refs` naming the collection; `extensions.businessos.supersedes` names the finding it replaces and `extensions.businessos.review_after` says when to look again. The page shows them under **What we know**, and each opens in a readable panel with its evidence and quotes.
+
+An apply payload may include `"upkeep": true` for a run that also rechecked findings; the collection records `last_upkeep_at` and the page shows when findings were last reviewed.
+
+`workspace_collections.py instructions --id COLLECTION_ID` prints the run instructions a scheduled task needs. Bind the task with `workspace_projects.py bind` (`{"kind":"task","ident":"NATIVE_TASK_ID","collection":"COLLECTION_ID"}`) so the collection shows what keeps it current (`workspace_views.py running --collection COLLECTION_ID`) and the task shows where its results go. When a run records material changes, the open AURA interface rings the bell once and marks the collection until it is opened. See [keeping knowledge current](../core/policies/keeping-knowledge-current.md) for the method.
 
 ## Feedback, time and history
 

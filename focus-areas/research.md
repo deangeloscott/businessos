@@ -16,7 +16,7 @@ quick_starts:
   - title: Watch for new work on your topic
     kind: watch
     cadence: weekly
-    prompt: Set up a weekly scheduled task that looks for new papers, reports and datasets on our research topics, updates the "Sources" collection, and flags anything that challenges what we currently believe.
+    prompt: Set up a weekly scheduled task that looks for new papers, reports and datasets on our research topics since the last check, keeps the "Sources" collection current with the ones that matter, and updates our findings when new work supports, challenges or replaces them. Keep what we know current by folding new results into our findings instead of piling them up, and tell me only about real changes.
   - title: Write an evidence review
     kind: once
     prompt: Ask me for the research question, then review the evidence on it - state the search approach, cite every source, show where sources agree and disagree, how strong the evidence is, and what remains unknown.

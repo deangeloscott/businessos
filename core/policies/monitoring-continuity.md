@@ -29,6 +29,10 @@ Supported semantic preferences are:
 
 These values describe what the organization/user wants surfaced. Actual delivery remains a runtime responsibility.
 
+## Keeping what is known current
+
+Each check folds what it finds into the organization's current findings instead of appending another list of results. The method (two layers, triage, supersession, source copies, upkeep and connected records) is in [keeping knowledge current](keeping-knowledge-current.md).
+
 ## Due state
 
 `next_check_at` may be used as a durable cue that another check is useful by/after a point in time. `scripts/list_due_monitoring.py` and `scripts/monitoring_status.py` summarize this semantic state. They do not inspect or certify external scheduler state.

@@ -1,5 +1,7 @@
 # Share selected work between AURA workspaces
 
+Sharing makes a copy. To let your other workspaces use what this one knows without copying it (and see its updates), turn on **Settings → Reading across workspaces** instead; it is read-only and off by default.
+
 Use **Settings → Share or import**, or **Share a copy** inside a saved record or file.
 
 Choose information, files, or a project folder. Search and filters help narrow the list;

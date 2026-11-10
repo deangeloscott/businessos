@@ -117,6 +117,8 @@ A successful tool call is not automatically proof of a business outcome.
 
 AURA may remember what should be monitored, why it matters, material signals, cadence intent, prior state, and findings. The host/OS/automation system owns actual wakeups, recurrence, webhooks, retries, and notification delivery. Storing cadence intent does not mean monitoring has been scheduled.
 
+Repeated checks keep knowledge current rather than piling it up: fold new information into existing findings (support, challenge, extend or replace) and add only what is genuinely new. Read [keeping knowledge current](core/policies/keeping-knowledge-current.md) when setting up or running a watch.
+
 ## Real constraints
 
 Respect the user's actual request and real legal, regulatory, contractual, platform, account, business, and organizational constraints. AURA does not manufacture generic risk tiers, autonomy ceilings, Approval objects, ActionPacket gates, or another permission ceremony.

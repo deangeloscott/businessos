@@ -15,7 +15,7 @@ quick_starts:
   - title: Watch your local search results
     kind: watch
     cadence: weekly
-    prompt: Set up a weekly scheduled task that checks who shows up in Google's map results for our main services in our area, updates the "Local competitors" collection with rank, rating, reviews, address and coordinates, and flags new or disappeared competitors.
+    prompt: Set up a weekly scheduled task that checks who shows up in Google's map results for our main services in our area and keeps the "Local competitors" collection current with rank, rating, reviews, address and coordinates, flagging new or disappeared competitors. Keep what we know current by folding new results into our findings instead of piling them up, and tell me only about real changes.
   - title: Check your Google Business Profile
     kind: once
     prompt: Review our Google Business Profile against the businesses ranking above us. List the most valuable fixes, such as categories, services, photos, reviews and posts, in order of likely impact.

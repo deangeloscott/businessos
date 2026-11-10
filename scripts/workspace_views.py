@@ -238,16 +238,19 @@ def _health(task):
     return 'waiting', f'Hasn\'t run yet{"; next run " + following if following else ""}.'
 
 
-def running(app, bid, project_id='', goal_id=''):
-    """What runs for a project or goal, where its results go and whether it is working."""
+def running(app, bid, project_id='', goal_id='', collection_id=''):
+    """What runs for a project, goal or collection, where its results go and whether it is working."""
     import workspace_schedules, workspace_goals
-    if bool(project_id) == bool(goal_id):raise ValueError('Choose a project or a goal.')
+    if sum(map(bool, (project_id, goal_id, collection_id))) != 1:raise ValueError('Choose a project, a goal or a collection.')
     project = projects.find(bid, project_id) if project_id else None
     goal = workspace_goals.find(bid, goal_id) if goal_id else None
+    watched = collections.read(bid, collection_id) if collection_id else None
     goal_links = app.preferences.get('goal_tasks', {}).get(bid, {}) if app else {}
     bindings = {v['id']: v for v in projects.load().get('bindings', {}).values() if v['business_id'] == bid and v['kind'] == 'task'}
     ids = []
-    if project:
+    if watched:
+        ids = [i for i, v in bindings.items() if v.get('collection_id') == watched['id']]
+    elif project:
         ids = [r['id'] for r in project.get('members', []) if r['kind'] == 'task'] + [i for i, v in bindings.items() if project['id'] in v.get('project_refs', [])]
     else:
         ids = [t for t, g in goal_links.items() if g == goal['id']] + [i for i, v in bindings.items() if v.get('goal_ref') == goal['id']]
@@ -273,12 +276,12 @@ def running(app, bid, project_id='', goal_id=''):
         serves = goal_name(link.get('goal_ref') or goal_links.get(ident) or '') if (link.get('goal_ref') or goal_links.get(ident)) else None
         health, state = _health(task)
         sentence = f'{cadence(task.get("schedule"))}, {task.get("app") or "its app"} runs “{task.get("name")}”.'
-        if collection:sentence += f' Results go to {collection["name"]}' + (f' ({collection["waiting"]} waiting for review).' if collection['waiting'] else '.')
+        if collection and not watched:sentence += f' Results go to {collection["name"]}' + (f' ({collection["waiting"]} waiting for review).' if collection['waiting'] else '.')
         if serves and not goal:sentence += f' Working toward: {serves}.'
         items.append({'id': ident, 'name': task.get('name'), 'app': task.get('app'), 'schedule': cadence(task.get('schedule')), 'available': True,
                       'collection': collection, 'goal': serves, 'health': health, 'status': state, 'text': sentence + ' ' + state})
-    goals = [] if goal else [g for g in (goal_name(r['id']) for r in (project or {}).get('members', []) if r['kind'] == 'goal') if g]
-    title = (project or goal)['name']
+    goals = [] if goal or watched else [g for g in (goal_name(r['id']) for r in (project or {}).get('members', []) if r['kind'] == 'goal') if g]
+    title = (project or goal or watched)['name']
     lines = [f'What’s running for {title}:'] + [f'- {i["text"]}' for i in items] if items else [f'Nothing is scheduled for {title} yet.']
     if goals:lines.append('Working toward: ' + '; '.join(goals) + '.')
     return {'name': title, 'items': items, 'goals': goals, 'attention': sum(i['health'] in {'failed', 'missing'} for i in items), 'text': '\n'.join(lines)}
@@ -350,7 +353,7 @@ def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('action', choices=['rows', 'place', 'running', 'progress'])
     p.add_argument('--business-id', required=True);p.add_argument('--workspace', type=Path, default=workspace_root())
-    p.add_argument('--id', help='Collection ID for rows/place');p.add_argument('--project', default='');p.add_argument('--goal', default='')
+    p.add_argument('--id', help='Collection ID for rows/place');p.add_argument('--project', default='');p.add_argument('--goal', default='');p.add_argument('--collection', default='')
     p.add_argument('--view', default='current');p.add_argument('--search', default='');p.add_argument('--limit', type=int, default=10)
     p.add_argument('--text', action='store_true', help='Print the running summary as plain text')
     a = p.parse_args()
@@ -361,7 +364,7 @@ def main():
         elif a.action == 'progress':result = progress(a.business_id, a.goal)
         else:
             from workspace_ui import Workspace
-            result = running(Workspace(), a.business_id, a.project, a.goal)
+            result = running(Workspace(), a.business_id, a.project, a.goal, a.collection)
             if a.text:print(result['text']);return
     print(json.dumps(result, ensure_ascii=False))
 

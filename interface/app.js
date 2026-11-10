@@ -555,12 +555,13 @@ function renderNotifications() {
   const signature=JSON.stringify([inbox,update?.notice,update?.unread,update?.release?.version,state.busy,window.Notification?.permission]);
   if(state.inboxSignature===signature)return; // Keep keyboard focus when polling finds no change.
   state.inboxSignature=signature;
+  const dots=(inbox.items||[]).filter(n=>n.kind==='changes'&&!n.read).map(n=>n.collection_id).join();if(dots!==state.collectionDots){state.collectionDots=dots;if($('#file-list')&&state.files)renderFiles();}
   $('#notification-count').hidden=!count;$('#notification-count').textContent=count>99?'99+':count;
   $('#notification-bell').hidden=!state.business&&!update?.notice;
   $('#notification-bell').setAttribute('aria-label',count?`Activity, ${count} unread`:'Activity');
   document.title=count?`(${count}) AURA`:'AURA';
   $('#notification-read-all').disabled=!count;
-  $('#notification-list').innerHTML=inbox.items.length?[...inbox.items].reverse().map(n=>`<button class="notification-item ${n.read?'':'unread'}" data-notification="${esc(n.id)}" ${state.busy&&n.chat_id!==state.chatMeta?.id?'disabled':''}><span class="notification-dot" aria-hidden="true"></span><span><strong>${n.kind==='usage'?'Usage alert':n.kind==='limit'?'Plan limit':n.kind==='task_limit'?'Scheduled task':n.kind==='goal'?'Goal reached':n.kind==='deadline'?'Deadline coming up':n.status==='error'?'Needs your attention':n.kind==='organization'?'Workspace ready':'Reply ready'}</strong>${n.title?'<span class="notification-subject">'+esc(n.title)+'</span>':''}<small>${esc(n.agent)} · <time datetime="${new Date(n.at*1000).toISOString()}">${esc(new Date(n.at*1000).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}))}</time>${n.read?'':' · Unread'}</small></span><span aria-hidden="true">→</span></button>`).join(''):'<p class="notification-empty">You’re all caught up. New replies will appear here.</p>';
+  $('#notification-list').innerHTML=inbox.items.length?[...inbox.items].reverse().map(n=>`<button class="notification-item ${n.read?'':'unread'}" data-notification="${esc(n.id)}" ${state.busy&&n.chat_id!==state.chatMeta?.id?'disabled':''}><span class="notification-dot" aria-hidden="true"></span><span><strong>${n.kind==='usage'?'Usage alert':n.kind==='limit'?'Plan limit':n.kind==='task_limit'?'Scheduled task':n.kind==='goal'?'Goal reached':n.kind==='deadline'?'Deadline coming up':n.kind==='changes'?'Watch update':n.status==='error'?'Needs your attention':n.kind==='organization'?'Workspace ready':'Reply ready'}</strong>${n.title?'<span class="notification-subject">'+esc(n.title)+'</span>':''}<small>${esc(n.agent)} · <time datetime="${new Date(n.at*1000).toISOString()}">${esc(new Date(n.at*1000).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}))}</time>${n.read?'':' · Unread'}</small></span><span aria-hidden="true">→</span></button>`).join(''):'<p class="notification-empty">You’re all caught up. New replies will appear here.</p>';
   if(update?.notice){
     if(!inbox.items.length)$('#notification-list').innerHTML='';
     $('#notification-list').insertAdjacentHTML('afterbegin',`<button class="notification-item ${update.unread?'unread':''}" data-update-open><span class="notification-dot" aria-hidden="true"></span><span><strong>AURA update available</strong><small>Version ${esc(update.release.version)}</small></span><span aria-hidden="true">→</span></button>`);
@@ -1090,7 +1091,7 @@ async function render() {
     const assistants=await window.auraWork?.load();if(!current())return;state.assistantProfiles=assistants?.items||[];
     const watches=rows('SourceProfile').filter(r=>r.data.watch_status||r.data.next_check_at);
     const schedules=state.schedules||{items:[],notes:[]};
-    view.innerHTML=`${scheduleForm()}<div class="section-head"><p>Schedules across your AI apps. <button class="text-button" data-schedules-help>How it works</button></p></div>${scheduleOperationMarkup()}<input class="search" id="schedule-search" type="search" aria-label="Search all scheduled tasks" placeholder="Find a scheduled task…" value="${esc(state.scheduleQuery||'')}">${scheduleFilters('full')}<div id="schedule-list" class="bounded-list" tabindex="0" aria-label="Scheduled tasks"></div><p id="schedule-read-notes" class="error" ${schedules.notes.length?'':'hidden'}>${schedules.notes.map(esc).join('<br>')}</p>`+(watches.length?heading('Saved monitoring plans','These are business plans, not proof of an active schedule.')+`<div class="card">${watches.map(recordRow).join('')}</div>`:'');
+    view.innerHTML=`${scheduleForm()}<div class="section-head"><p>Schedules across your AI apps. <button class="text-button" data-schedules-help>How it works</button></p></div>${scheduleOperationMarkup()}<input class="search" id="schedule-search" type="search" aria-label="Search all scheduled tasks" placeholder="Find a scheduled task…" value="${esc(state.scheduleQuery||'')}">${scheduleFilters('full')}<div id="schedule-list" class="bounded-list" tabindex="0" aria-label="Scheduled tasks"></div><p id="schedule-read-notes" class="error" ${schedules.notes.length?'':'hidden'}>${schedules.notes.map(esc).join('<br>')}</p>`+(watches.length?heading('Saved monitoring plans','Sources AURA remembers for its watches. A plan is not proof of an active schedule; one that belongs to a watch links to it.')+`<div class="card">${watches.map(recordRow).join('')}</div>`:'');
     $('#schedule-add').addEventListener('toggle',()=>{state.scheduleAdding=$('#schedule-add').open;if(state.scheduleAdding&&!$('#schedule-add').dataset.loaded)loadScheduleModels();});
     if(state.scheduleAdding)loadScheduleModels();
     renderSchedules();attempt(()=>syncSchedules());
@@ -1141,11 +1142,12 @@ async function mediaBlob(path) {
   cache.set(key,promise);promise.catch(()=>cache.delete(key));return promise;
 }
 
+const collectionUpdated=id=>!!id&&!!state.inbox?.items?.some(n=>n.collection_id===id&&n.kind==='changes'&&!n.read);
 function renderFiles() {
   if(!$('#file-list'))return;
   state.fileObserver?.disconnect();
   const matches=matchingFiles().filter(f=>!fileLocation||f.location===fileLocation);
-  $('#file-list').innerHTML=matches.length?matches.slice(0,state.fileLimit||100).map(f=>`<div class="file-card-wrap"><button class="file-card" data-file="${esc(f.path)}"><span class="file-thumb">${f.media?'◈':'▤'}</span><div class="file-info"><strong>${esc(f.name)}</strong><small>${esc(f.location_name||'Workspace')} · ${size(f.bytes)}</small></div></button>${fileFavoriteButton(f.path,f.name,true)}</div>`).join(''):empty(state.fileFavoritesOnly?'No favorite files match.':'No matching files here yet.','Link a file or folder, or save work in this workspace.');
+  $('#file-list').innerHTML=matches.length?matches.slice(0,state.fileLimit||100).map(f=>`<div class="file-card-wrap"><button class="file-card" data-file="${esc(f.path)}"><span class="file-thumb">${f.media?'◈':'▤'}</span><div class="file-info"><strong>${collectionUpdated(f.collection_id)?'<span class="chat-indicator ready" aria-label="New changes"></span>':''}${esc(f.name)}</strong><small>${esc(f.location_name||'Workspace')} · ${size(f.bytes)}</small></div></button>${fileFavoriteButton(f.path,f.name,true)}</div>`).join(''):empty(state.fileFavoritesOnly?'No favorite files match.':'No matching files here yet.','Link a file or folder, or save work in this workspace.');
   $('#file-more')?.remove();
   if(matches.length>(state.fileLimit||100))$('#file-list').insertAdjacentHTML('afterend',`<button type="button" class="secondary" id="file-more">Load more · showing ${Math.min(state.fileLimit||100,matches.length)} of ${matches.length}</button>`);
   let loaded=0;
@@ -1563,9 +1565,14 @@ $('#detail').addEventListener('close',()=>{delete $('#detail').dataset.expanded;
 const settingsGroups=[
   ['General',[['account-settings','Profile','Your name, picture and how you like your AI to work','name avatar preferences'],['personalize-menu','Personalization','Style, appearance, accent colour, text size and density','theme dark light colour color font size compact retro style look'],['startup-settings','Startup & updates','Open AURA at sign-in and keep it up to date','update version launch']]],
   ['AI & accounts',[['connection','AI connections','Which AI apps AURA uses, and their default models','claude codex chatgpt gemini model app connect'],['accounts-settings','Accounts & backups','Several accounts per app, plan limits and switching','limit usage reset backup account'],['harness-permissions','AI permissions','What your AI may do without asking','approve permissions safety'],['api-connections','API connections','Keys for model providers and other services','api key provider llm']]],
-  ['Workspace',[['workspace-manager','Add or open a workspace','Switch between businesses or start a new one','business folder new'],['share-settings','Share or import','Copy information, files or projects between workspaces','export import package share copy'],['workspace-history','Version history','Earlier versions of your files','undo restore previous version'],['workspace-backups','Back up or restore','Keep a copy of your workspace somewhere safe','backup restore copy']]],
+  ['Workspace',[['workspace-manager','Add or open a workspace','Switch between businesses or start a new one','business folder new'],['share-settings','Share or import','Copy information, files or projects between workspaces','export import package share copy'],['workspace-reading','Reading across workspaces','Let your other workspaces use what this one knows','share read other workspaces research knowledge findings'],['workspace-history','Version history','Earlier versions of your files','undo restore previous version'],['workspace-backups','Back up or restore','Keep a copy of your workspace somewhere safe','backup restore copy']]],
   ['Help',[['review-setup','Quick setup & tour','Connect an AI and see where things are','onboarding tour setup'],['support-report','Feedback & troubleshooting','Suggest a feature or get help with a problem','bug help report feature support']]],
 ];
+async function workspaceReading(){
+  const data=await api('/api/reading'),here=data.readable_here||[];
+  details('Reading across workspaces',`<p>Each workspace keeps its own information. Turn this on to let your other workspaces on this computer use what this one knows, such as research findings, when it’s relevant. They can read it but never change it, and their AI says where it came from.</p><label class="check-label"><input type="checkbox" id="workspace-reading-toggle" ${data.readable_by_other_workspaces?'checked':''}><span>Let my other workspaces read this one</span></label><p class="small-note">Leave it off for work that must stay separate, such as one client’s information. To copy something instead, use Share or import.</p><h3 class="finding-heading">Readable from here</h3>${here.length?`<ul class="small-note">${here.map(w=>`<li>${esc(w.name)}</li>`).join('')}</ul>`:'<p class="small-note">None of your other workspaces allow reading yet.</p>'}`);
+  $('#workspace-reading-toggle').onchange=e=>attempt(async()=>{try{await api('/api/reading',{readable_by_other_workspaces:e.target.checked});notice(e.target.checked?'Your other workspaces can now read this one.':'This workspace is private to itself again.');}catch(error){e.target.checked=!e.target.checked;throw error;}});
+}
 function openSettings(){
   closeAnchoredSurface(false);if($('#more-dialog').open)$('#more-dialog').close();state.settingsReturn=false;
   const update=$('#update-menu-status')?.textContent.trim();
@@ -1635,6 +1642,7 @@ function recordDetails(ref) {
   const r=state.data.records.find(r=>r.ref===ref); if(!r) return;
   if(r.type==='Asset'&&r.data.location_reference&&!/^[a-z][a-z0-9+.-]*:\/\//i.test(r.data.location_reference)){attempt(()=>openFileWorkspace('asset/'+r.ref));return;}
   if(r.type==='Objective'){if(window.auraCompose)attempt(()=>window.auraCompose.openGoal(ref));else notice('Goal controls are still loading. Try again in a moment.',true);return;}
+  if(r.type==='Insight'&&window.auraProjects?.finding){window.auraProjects.finding(ref,null);return;}
   const location=`<button type="button" class="record-location" data-copy-record-location="${esc(r.ref)}" title="Copy file location">${esc(r.path)} <span aria-hidden="true">⧉</span></button>`;
   if(r.type==='SourceRecord') {
     const text=r.data.extensions?.businessos_evidence?.captured_text;
@@ -1644,7 +1652,8 @@ function recordDetails(ref) {
   }
   const mechanical=new Set(['id','object_type','schema_version','business_id','lineage','created_at','updated_at','extensions']);
   const fields=Object.entries(r.data).filter(([k,v])=>!mechanical.has(k)&&!['name','title'].includes(k)&&v!==null&&!(Array.isArray(v)&&!v.length));
-  details(r.title,`<p class="item-type">${esc(human(r.type))} · Memory</p>${location}${fields.map(([k,v])=>`<div class="field"><strong>${esc(human(k))}</strong><p>${esc(pretty(v))}</p></div>`).join('')}<div class="inline-actions"><button type="button" class="primary" data-add-record="${esc(r.ref)}" data-label="${esc(r.title)}">Add to chat</button><button type="button" class="text-button" data-copy-record="${esc(r.ref)}">Copy record</button></div><p><button class="text-button" data-share-record="${esc(r.ref)}" data-share-scope="${esc(sharingScope())}">Share a copy →</button></p><details><summary>Record data</summary><pre>${esc(JSON.stringify(r.data,null,2))}</pre></details>`,'context');
+  const watches=(r.data.extensions?.businessos?.collection_refs||[]).map(id=>state.data.records.find(x=>x.type==='Asset'&&x.data.extensions?.businessos?.collection?.id===id)).filter(Boolean);
+  details(r.title,`<p class="item-type">${esc(human(r.type))} · Memory</p>${location}${watches.length?`<p class="small-note">Part of ${watches.map(w=>`<button type="button" class="text-button" data-collection="${esc(w.data.extensions.businessos.collection.id)}">${esc(w.title)}</button>`).join(', ')}</p>`:''}${fields.map(([k,v])=>`<div class="field"><strong>${esc(human(k))}</strong><p>${esc(pretty(v))}</p></div>`).join('')}<div class="inline-actions"><button type="button" class="primary" data-add-record="${esc(r.ref)}" data-label="${esc(r.title)}">Add to chat</button><button type="button" class="text-button" data-copy-record="${esc(r.ref)}">Copy record</button></div><p><button class="text-button" data-share-record="${esc(r.ref)}" data-share-scope="${esc(sharingScope())}">Share a copy →</button></p><details><summary>Record data</summary><pre>${esc(JSON.stringify(r.data,null,2))}</pre></details>`,'context');
   if(r.type!=='Business')setDetailTitleActions(archiveControl('record',ref));
 }
 async function openFileWorkspace(ref,option='',presentation={}) {
@@ -2424,7 +2433,12 @@ document.addEventListener('click',event=>attempt(async()=>{
     const item=state.inbox.items.find(n=>n.id===button.dataset.notification);if(!item)return;
     if(item.kind==='task_limit'&&item.task_id){await showTaskLimit(item.task_id);}
     if(item.kind==='goal'&&item.goal_id&&window.auraCompose){$('#notification-dialog').close();await window.auraCompose.openGoal(item.goal_id);}
-    if(item.kind==='deadline'&&item.collection_id&&window.auraProjects){$('#notification-dialog').close();window.auraViews?.choice(item.collection_id,'list');await window.auraProjects.openCollection(item.collection_id,'current',item.item_title||'');}
+    if(['deadline','changes'].includes(item.kind)&&item.collection_id&&window.auraProjects){
+      $('#notification-dialog').close();window.auraViews?.choice(item.collection_id,'list');
+      state.inbox=await api('/api/notifications',{business:state.business,action:'read',id:item.id});renderNotifications();
+      await window.auraProjects.openCollection(item.collection_id,item.kind==='changes'?'changes':'current',item.kind==='deadline'?item.item_title||'':'');return;
+    }
+    if(item.kind==='goal'){state.inbox=await api('/api/notifications',{business:state.business,action:'read',id:item.id});renderNotifications();return;}
     if(item.chat_id&&item.chat_id!==state.chatMeta?.id) {
       const result=await api('/api/chats/open',{business:state.business,id:item.chat_id});
       state.chat=result.messages;state.chatMeta=result.chat;await refresh();
@@ -2476,6 +2490,7 @@ document.addEventListener('click',event=>attempt(async()=>{
   }
   if(['workspace-manager','open-existing-start'].includes(button.id))await addWorkspace();
   if(button.id==='workspace-backups')await workspaceStorage();
+  if(button.id==='workspace-reading')await workspaceReading();
   if(button.id==='usage-open')await openUsage();
   if(button.id==='usage-refresh')await loadUsage(true);
   if(button.id==='usage-account-settings')await openUsageLinks();

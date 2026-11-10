@@ -7,7 +7,7 @@ Focus changes emphasis, never capability. Nothing is hidden or locked, and the a
 ## What it does
 
 - **Context for the AI.** Each chat started through AURA receives a short note naming the focus areas and their general guidance, once per chat (again only if the focus changes). `scripts/enter.py` includes the same note for apps used directly. Facts saved about the organization take priority over the general guidance.
-- **Quick starts.** Up to three suggestions under the message box, taken in turn from the chosen areas. A quick start only fills the message box; nothing runs until you send. Some are one-time ("Map your local competition"); others ask your AI to set up an ongoing watch with the app's own scheduler and a collection ("Watch for new grants").
+- **Quick starts.** Up to three suggestions under the message box, taken in turn from the chosen areas. A quick start only fills the message box; nothing runs until you send. Some are one-time ("Map your local competition"); others ask your AI to set up an ongoing watch with the app's own scheduler and a collection ("Watch for new grants"). A watch keeps what is known current: each run folds new results into the collection and its findings instead of piling them up, and only real changes are reported.
 - **Suggested goals.** New workspace goals offer the areas' suggested goals, each with a measure and target you can change.
 - **Library.** The quick library list shows a "For your focus" group first.
 - **Default views.** A collection you have not set a view for opens in the area's preferred view when it fits, such as the map for Local business.

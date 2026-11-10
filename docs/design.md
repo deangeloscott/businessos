@@ -35,6 +35,7 @@ A style (Personalization → Style, `data-style` on the root) restyles the whole
 - **Side panel:** `details(title, html, 'context')` opens a saved item beside the page or chat, with Expand. Use it for anything someone looks at while working. Use the default dialog for settings and short forms, and `'page'` for whole destinations.
 - **Toast:** `toast(text, undo)` confirms an action. Pass `undo` whenever the action can be reversed, instead of asking "Are you sure?".
 - **Provenance:** results show where they came from the same way everywhere: your correction, the number of sources and when they were checked, or "No source".
+- **Findings:** a finding shows its status as one chip, the same everywhere: Supported, Unverified, Challenged, Needs review or Replaced, with its evidence counts. It opens in one finding panel.
 - **Result cards:** what the AI saved or checked during a reply appears as a card in the chat that opens the result.
 - **Settings:** one grouped page with search. Add a setting as a row in `settingsGroups`.
 - **Ctrl+K actions:** add an action to `shellCommands()`. Actions click the same control a person would, so there is one code path.

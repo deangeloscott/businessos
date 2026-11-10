@@ -9,6 +9,9 @@ from _common import workspace_root,workspace_scope,object_index,organization_tra
 import workspace_projects as projects
 
 MAX_BYTES=32*1024*1024
+SOURCE_COPIES={'quotes','full'}
+# Findings: what the watched things add up to. Superseded findings stay as history.
+FINDING_ORDER={'contradicted':0,'supported':1,'active':1,'candidate':2,'stale':3,'superseded':5,'archived':6}
 
 
 def timestamp(value):
@@ -77,6 +80,46 @@ def persist(bid,d,before=None):
     return {'id':d['id'],'revision':revision(d),'version':d['version'],'asset_id':(asset(bid,d['id']) or {})['id']}
 
 
+def copies(value):
+    if value not in SOURCE_COPIES:raise ValueError('Choose links and key quotes, or full copies.')
+    return value
+
+
+def linked(obj,ident):
+    bos=((obj.get('extensions') or {}).get('businessos') or {}) if isinstance(obj.get('extensions'),dict) else {}
+    refs=bos.get('collection_refs') if isinstance(bos,dict) else None
+    return isinstance(refs,list) and ident in refs
+
+
+def findings(bid,ident,limit=30,at=None):
+    """Findings and source memory linked to a watch: what its things add up to, newest evidence first within each status."""
+    from workspace_lifecycle import archived
+    at=at or datetime.now(timezone.utc);rows=[];sources=[];replaced_by={}
+    for obj,_ in object_index(bid).values():
+        if archived(obj) or not linked(obj,ident):continue
+        if obj.get('object_type')=='SourceProfile':
+            sources.append({'id':obj['id'],'name':obj.get('display_name') or obj.get('subject_name') or obj.get('source_reference') or obj['id'],
+                            'watch_status':obj.get('watch_status'),'last_checked_at':obj.get('last_checked_at')});continue
+        if obj.get('object_type')!='Insight':continue
+        bos=(obj.get('extensions') or {}).get('businessos') or {}
+        if bos.get('supersedes'):replaced_by[bos['supersedes']]=obj['id']
+        links=[l for l in obj.get('evidence_links') or [] if isinstance(l,dict)]
+        count=lambda kind:sum(l.get('relationship')==kind for l in links)
+        review=bos.get('review_after')
+        try:due=bool(review) and timestamp(review)<=at
+        except ValueError:due=False
+        rows.append({'id':obj['id'],'statement':str(obj.get('statement',''))[:800],'status':obj.get('status'),'reviewed_at':obj.get('reviewed_at'),
+                     'review_after':review,'needs_review':due,'updated_at':obj.get('updated_at'),'supersedes':bos.get('supersedes'),
+                     'evidence':{'supports':count('supports')+count('derived_from'),'extends':count('extends'),'contradicts':count('contradicts')}})
+    for r in rows:
+        if r['id'] in replaced_by:r['superseded_by']=replaced_by[r['id']]
+    current=[r for r in rows if r['status'] not in {'superseded','archived'}]
+    current.sort(key=lambda r:str(r.get('updated_at') or ''),reverse=True);current.sort(key=lambda r:FINDING_ORDER.get(r['status'],4))
+    replaced=sorted([r for r in rows if r['status']=='superseded'],key=lambda r:r.get('updated_at') or '',reverse=True)
+    return {'findings':current[:limit],'findings_total':len(current),'challenged':sum(r['status']=='contradicted' for r in current),
+            'needs_review':sum(r['needs_review'] for r in current),'replaced':replaced[:10],'replaced_total':len(replaced),'source_memory':sources[:20]}
+
+
 def references(value):
     if not isinstance(value,list) or len(value)>200:raise ValueError('Choose a bounded list of source references.')
     out=[]
@@ -105,7 +148,7 @@ def create(bid,data):
     project_refs=[projects.find(bid,x)['id'] for x in data.get('project_refs',context.get('project_refs',[]))]
     d={'format':1,'id':ident,'business_id':bid,'key':key,'name':string(data.get('name'),'collection name',160),
        'mode':mode,'purpose':string(data.get('purpose',''),'purpose',2000,True),'project_refs':list(dict.fromkeys(project_refs)),
-       'source_refs':references(data.get('source_refs',[])),'created_at':now(),'updated_at':now(),'version':1,
+       'source_refs':references(data.get('source_refs',[])),'source_copies':copies(data.get('source_copies') or 'quotes'),'created_at':now(),'updated_at':now(),'version':1,
        'items':[],'feedback':{},'checks':[],'receipts':{}}
     if data.get('producer') or context:
         v=data.get('producer') or context
@@ -120,6 +163,7 @@ def configure(bid,ident,data):
     if 'name' in data:d['name']=string(data['name'],'collection name',160)
     if 'purpose' in data:d['purpose']=string(data['purpose'],'purpose',2000,True)
     if 'source_refs' in data:d['source_refs']=references(data['source_refs'])
+    if 'source_copies' in data:d['source_copies']=copies(data['source_copies'])
     if 'project_refs' in data:
         values=data['project_refs']
         if not isinstance(values,list) or len(values)>100:raise ValueError('Choose a bounded list of projects.')
@@ -225,8 +269,10 @@ def apply(bid,ident,data):
             if cursor['id'] in seen_chain:raise ValueError('Replacement links cannot form a cycle.')
             seen_chain.add(cursor['id']);cursor=index[cursor['supersedes']]
     cov=coverage(data,d);d['items']=[index[i] for i in order]+[v for k,v in index.items() if k not in set(order)];d['version']+=1;d['updated_at']=now()
+    if 'upkeep' in data and not isinstance(data['upkeep'],bool):raise ValueError('Upkeep must be true or false.')
     check={'run_id':run_id,'at':now(),'coverage':cov,'changes':changes[:250],'change_count':len(changes),
            'no_change_verified':cov['status']=='complete' and not changes,'changes_truncated':len(changes)>250}
+    if data.get('upkeep'):check['upkeep']=True;d['last_upkeep_at']=check['at']
     d['checks']=(d['checks']+[check])[-50:]
     receipt={'run_id':run_id,'payload_hash':payload_hash,'version':d['version'],'coverage':cov,'changes':changes[:250],'change_count':len(changes),'no_change_verified':check['no_change_verified']}
     d['receipts'][run_id]=receipt;d['receipts']=dict(list(d['receipts'].items())[-500:])
@@ -282,7 +328,7 @@ def feedback(bid,ident,data):
 def check_summary(c):
     if not c:return None
     cov=c['coverage'];missing=sorted(set(cov['expected'])-set(cov['checked']))
-    return {**{k:c[k] for k in ('run_id','at','change_count','no_change_verified')},'changes':c.get('changes',[])[:20],
+    return {**{k:c[k] for k in ('run_id','at','change_count','no_change_verified')},'upkeep':bool(c.get('upkeep')),'changes':c.get('changes',[])[:20],
             'coverage':{'status':cov['status'],'checked':len(cov['checked']),'expected':len(cov['expected']),
                         'failed':cov['failed'][:10],'missing':missing[:10],'scope':cov.get('scope',''),'basis':cov['basis']}}
 
@@ -314,7 +360,8 @@ def show(bid,ident,q='',view='current',offset=0,limit=50,at=None,item_id='',hist
         return {**{k:v for k,v in r.items() if k not in {'fields','reported','summary','source_refs','correction_note','trail'}},'summary':r.get('summary','')[:800],
                 'fields':{k:(v if isinstance(v,(bool,int,float)) or v is None else str(v)[:200]) for k,v in list(r.get('fields',{}).items())[:6]},'excerpt':True,
                 'source_count':len(r.get('source_refs') or []),'checked_at':max((s.get('last_checked_at') or '' for s in r.get('source_refs') or []),default='')}
-    return {**{k:d[k] for k in ('id','name','mode','purpose','project_refs','version','producer') if k in d},'revision':revision(d),
+    return {**{k:d[k] for k in ('id','name','mode','purpose','project_refs','version','producer','last_upkeep_at') if k in d},'source_copies':d.get('source_copies','quotes'),'revision':revision(d),
+            **findings(bid,ident,at=at),
             'items':[compact(r) for r in rows[offset:offset+limit]],'total':len(rows),'offset':offset,'limit':limit,'latest_check':check_summary(d['checks'][-1]) if d['checks'] else None,
             'history':[check_summary(c) for c in reversed(d['checks'])] if history else [],'history_count':len(d['checks']),
             'views':shapes(effective(i,d['feedback'],at) for i in d['items']),
@@ -331,7 +378,7 @@ def inventory(bid,project=''):
         if project and (obj['id'] in excluded or info['id'] in excluded or project not in ((obj.get('extensions') or {}).get('businessos',{}).get('work') or {}).get('project_refs',[]) and not linked.intersection({obj['id'],info['id']})):continue
         try:
             d=read(bid,info['id']);rows=[effective(i,d['feedback']) for i in d['items']]
-            out.append({'id':d['id'],'name':d['name'],'mode':d['mode'],'asset_id':obj['id'],'project_refs':d.get('project_refs',[]),
+            out.append({'id':d['id'],'name':d['name'],'mode':d['mode'],'asset_id':obj['id'],'project_refs':d.get('project_refs',[]),'source_copies':d.get('source_copies','quotes'),
                         'current_count':sum(r['display_state']=='active' and not r['hidden'] for r in rows),'latest_check':check_summary(d['checks'][-1]) if d['checks'] else None})
         except (OSError,ValueError):out.append({'id':info['id'],'name':obj.get('business_role','Saved collection'),'unavailable':True})
     return {'items':out}
@@ -341,22 +388,27 @@ def instructions(bid,ident):
     from _common import PRODUCT_ROOT
     d=read(bid,ident)
     argv=[sys.executable,str(PRODUCT_ROOT/'scripts/workspace_collections.py'),'show','--workspace',str(workspace_root()),'--business-id',bid,'--id',ident,'--limit','5']
+    copies_note=('Keep a full copy or snapshot of each source a finding relies on. ' if d.get('source_copies')=='full' else
+                 'Keep each source as a stable link with the exact short quotes that support the finding; keep a full copy only when a source is fragile (likely to change or disappear). ')
     return ('\n\n[Aura results]\nCollection: '+ident+'. '+d['purpose']+'\n'+
-            'Read the current collection by executing this argument list (each string is a separate argument): '+json.dumps(argv)+'. '+
+            'Read the current collection, its findings and its latest check by executing this argument list (each string is a separate argument): '+json.dumps(argv)+'. '+
+            'Keep what is known current instead of piling up results: ask sources only for what is new since the last check, triage cheaply, read only what matters within a sensible budget, '+
+            'then fold it into the linked findings (support, challenge, extend or replace them) and add a finding only when it is genuinely new. Most runs change nothing; that is fine. '+
+            copies_note+'When upkeep is due (about monthly), recheck findings past their review date and mark that run with "upkeep": true. '+
             'Use the helper apply action with JSON on standard input (--input -), the current revision, stable result identities, '+
             'and a stable native run identity reused on retries. Report only sources actually checked in coverage; a failed or missing source is not evidence that an opportunity disappeared. '+
             ('Keep dated reports as separate item identities. ' if d['mode']=='series' else 'Update the current entries; preserve user feedback and keep source dates distinct from report time. ')+
-            'Save only useful results, explain material changes, and avoid repeating unchanged findings as alerts. '+
+            'Explain material changes and avoid repeating unchanged findings as alerts. '+
             'When results are places, include an address field and, when known, numeric latitude and longitude fields (plus rank when the order matters, yours: true for the business itself, an area GeoJSON polygon for a territory, or radius_km for a service area) so they can be shown on a map. '+
-            'Use actual native scheduling and tools normally. Full helper examples: '+str(PRODUCT_ROOT/'docs/projects-and-results.md')+'.\n[/Aura results]')
+            'Use actual native scheduling and tools normally. Method: '+str(PRODUCT_ROOT/'core/policies/keeping-knowledge-current.md')+'. Helper examples: '+str(PRODUCT_ROOT/'docs/projects-and-results.md')+'.\n[/Aura results]')
 
 
 def main():
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('action',choices=['list','create','show','apply','feedback','configure']);p.add_argument('--business-id',required=True);p.add_argument('--workspace',type=Path,default=workspace_root());p.add_argument('--id');p.add_argument('--input',default='{}');p.add_argument('--search',default='');p.add_argument('--view',default='current');p.add_argument('--offset',type=int,default=0);p.add_argument('--limit',type=int,default=50);p.add_argument('--item',default='');p.add_argument('--history',action='store_true')
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('action',choices=['list','create','show','apply','feedback','configure','instructions']);p.add_argument('--business-id',required=True);p.add_argument('--workspace',type=Path,default=workspace_root());p.add_argument('--id');p.add_argument('--input',default='{}');p.add_argument('--search',default='');p.add_argument('--view',default='current');p.add_argument('--offset',type=int,default=0);p.add_argument('--limit',type=int,default=50);p.add_argument('--item',default='');p.add_argument('--history',action='store_true')
     a=p.parse_args()
     with workspace_scope(a.workspace):
         data=json.loads(__import__('sys').stdin.read() if a.input=='-' else a.input)
-        result=inventory(a.business_id) if a.action=='list' else show(a.business_id,a.id,a.search,a.view,a.offset,a.limit,item_id=a.item,history=a.history) if a.action=='show' else create(a.business_id,data) if a.action=='create' else apply(a.business_id,a.id,data) if a.action=='apply' else configure(a.business_id,a.id,data) if a.action=='configure' else feedback(a.business_id,a.id,data)
+        result=inventory(a.business_id) if a.action=='list' else {'instructions':instructions(a.business_id,a.id).strip()} if a.action=='instructions' else show(a.business_id,a.id,a.search,a.view,a.offset,a.limit,item_id=a.item,history=a.history) if a.action=='show' else create(a.business_id,data) if a.action=='create' else apply(a.business_id,a.id,data) if a.action=='apply' else configure(a.business_id,a.id,data) if a.action=='configure' else feedback(a.business_id,a.id,data)
     print(json.dumps(result,ensure_ascii=False))
 
 

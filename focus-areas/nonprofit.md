@@ -20,7 +20,7 @@ quick_starts:
   - title: Watch for partners and sponsors
     kind: watch
     cadence: monthly
-    prompt: Set up a monthly scheduled task that looks for local businesses, events and organizations that might partner with or sponsor us, and saves promising ones to a collection called "Partnerships" with a status field.
+    prompt: Set up a monthly scheduled task that looks for local businesses, events and organizations that might partner with or sponsor us and keeps the "Partnerships" collection current with a status field. Keep what we know current by folding new results into our findings instead of piling them up, and tell me only about real changes.
 goals:
   - name: Grow monthly donors to 100
     measure: Monthly donors

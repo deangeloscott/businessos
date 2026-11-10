@@ -18,7 +18,7 @@ quick_starts:
   - title: Watch for trends and opportunities
     kind: watch
     cadence: weekly
-    prompt: Set up a weekly scheduled task that looks for trends, open calls, collaborations and opportunities in our field, and saves promising ones to a collection called "Creative opportunities" with a status field.
+    prompt: Set up a weekly scheduled task that looks for new trends, open calls, collaborations and opportunities in our field since the last check and keeps the "Creative opportunities" collection current with a status field. Keep what we know current by folding new results into our findings instead of piling them up, and tell me only about real changes.
 goals:
   - name: Grow the audience to 10,000 followers
     measure: Followers

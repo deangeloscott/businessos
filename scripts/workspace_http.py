@@ -141,6 +141,10 @@ def handler_for(app):
                     match=re.fullmatch(r'/api/media/map/(\d{1,2})/(\d{1,7})/(\d{1,7})\.png',route)
                     if not match:raise ValueError('This map area is unavailable.')
                     self.send(200,workspace_views.tile(*match.groups()),'image/png')
+                elif route == '/api/reading':
+                    import workspace_reading
+                    with app.lock:root=app.workspace_path
+                    with workspace_scope(root):self.send(200,{'readable_by_other_workspaces':workspace_reading.allowed(),'readable_here':workspace_reading.readable_workspaces()})
                 elif route == '/api/focus':
                     import workspace_focus
                     with app.lock:root=app.workspace_path
@@ -150,7 +154,7 @@ def handler_for(app):
                     with workspace_scope(root):
                         bid=selected(query.get('business'))
                         if route=='/api/collection-view':result=workspace_views.rows(bid,query.get('id'),query.get('view','current'),query.get('q',''))
-                        elif route=='/api/running':result=workspace_views.running(owner,bid,query.get('project',''),query.get('goal',''))
+                        elif route=='/api/running':result=workspace_views.running(owner,bid,query.get('project',''),query.get('goal',''),query.get('collection',''))
                         else:result=workspace_views.progress(bid,query.get('goal'))
                     self.send(200,result)
                 elif route == '/api/components':
@@ -445,6 +449,11 @@ def handler_for(app):
                             elif action=='feedback':result=workspace_collections.feedback(bid,data.get('id'),{**data,'action':data.get('choice')})
                             else:raise ValueError('Choose a collection action.')
                     app.read_cache.clear();self.send(200,result);return
+                if route == '/api/reading':
+                    import workspace_reading
+                    with app.lock:root=app.workspace_path
+                    with workspace_scope(root):result={**workspace_reading.set_allowed(data.get('readable_by_other_workspaces')),'readable_here':workspace_reading.readable_workspaces()}
+                    self.send(200,result);return
                 if route == '/api/focus':
                     import workspace_focus
                     with app.lock:root=app.workspace_path
@@ -888,7 +897,7 @@ def handler_for(app):
                         claimed = []
                         if action == 'read':
                             for item in items:
-                                if data.get('all') is True or item['id'] == data.get('id'):
+                                if data.get('all') is True or item['id'] == data.get('id') or data.get('collection_id') and item.get('collection_id') == data.get('collection_id'):
                                     item['read'] = True
                         elif action == 'claim':
                             now = time.time()

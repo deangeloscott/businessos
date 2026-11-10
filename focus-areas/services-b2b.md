@@ -19,7 +19,7 @@ quick_starts:
   - title: Watch for new leads and opportunities
     kind: watch
     cadence: weekly
-    prompt: Set up a weekly scheduled task that looks for organizations likely to need our services (new funding, hiring, expansion, public requests) and saves promising ones to a collection called "Opportunities" with a status field.
+    prompt: Set up a weekly scheduled task that looks for organizations likely to need our services (new funding, hiring, expansion, public requests) and keeps the "Opportunities" collection current with a status field. Keep what we know current by folding new results into our findings instead of piling them up, and tell me only about real changes.
 goals:
   - name: Win 4 new clients this quarter
     measure: New clients won

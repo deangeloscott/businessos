@@ -102,7 +102,8 @@ def records(bid, include_archived=False):
             reference = obj.get('source_reference') or obj.get('source_type', 'Saved source')
             ext=obj.get('extensions') if isinstance(obj.get('extensions'),dict) else {}
             bos=ext.get('businessos') if isinstance(ext.get('businessos'),dict) else {}
-            display=bos.get('display_name')
+            evidence=ext.get('businessos_evidence') if isinstance(ext.get('businessos_evidence'),dict) else {}
+            display=bos.get('display_name') or evidence.get('title')
             title = display if isinstance(display,str) and display else (Path(reference).name if '/' in reference and not reference.startswith('http') else reference)
         rows.append({'ref': obj['id'], 'type': obj['object_type'],
                      'title': title,
@@ -1867,6 +1868,31 @@ class Workspace:
                 when='today' if d['days']==0 else 'tomorrow' if d['days']==1 else f"in {d['days']} days"
                 self.notify(folder.name,None,f"“{d['title']}” is due {when} ({d['collection']}).",kind='deadline',collection_id=d['collection_id'],item_title=d['title'])
 
+    def check_collection_changes(self):
+        """Ring the bell once for each watch run that found material changes. Routine checks stay quiet.
+        Only collection files that changed since the last look are read."""
+        instances=workspace_root()/'instances';seen_files=self.__dict__.setdefault('collection_mtimes',{})
+        for folder in sorted(instances.iterdir()) if instances.is_dir() else []:
+            bid=folder.name;target=workspace_root()/'attachments'/bid/'collections'
+            for path in sorted(target.glob('col_*.json')) if target.is_dir() else []:
+                try:stamp=path.stat().st_mtime_ns
+                except OSError:continue
+                if seen_files.get(str(path))==stamp:continue
+                seen_files[str(path)]=stamp
+                try:d=workspace_collections.read(bid,path.stem)
+                except (OSError,ValueError):continue
+                checks=[c for c in d['checks'] if isinstance(c.get('at'),str)];marker=f"{bid}:{d['id']}"
+                with self.lock:
+                    seen=self.preferences.setdefault('collection_changes_seen',{});last=seen.get(marker)
+                    if last is None:
+                        # Earlier history is not news; start from the latest check.
+                        seen[marker]=checks[-1]['at'] if checks else '';self.save_preferences();continue
+                    fresh=[c for c in checks if c['at']>last]
+                    if not fresh:continue
+                    seen[marker]=fresh[-1]['at'];self.save_preferences()
+                count=sum(int(c.get('change_count') or 0) for c in fresh)
+                if count:self.notify(bid,None,f"{count} {'change' if count==1 else 'changes'} in {d['name']}.",kind='changes',collection_id=d['id'])
+
     def task_destination(self,task):
         """Native working folders and existing project bindings identify ownership; the visible page does not."""
         folders=task.get('workspace') or []
@@ -3019,6 +3045,8 @@ def main():
                     app.native_sessions.expire_idle(app.preferences.get('native_idle_timeout_seconds',600))
                     if time.time()-getattr(app,'resume_checked',0)>30:
                         app.resume_checked=time.time();app.resume_due()
+                    if time.time()-getattr(app,'collections_checked',0)>60:
+                        app.collections_checked=time.time();app.check_collection_changes()
                     if time.time()-getattr(app,'task_limits_checked',0)>600:
                         app.task_limits_checked=time.time();app.check_task_limits();app.check_goals_reached();app.check_deadlines()
                     updater = app.updates

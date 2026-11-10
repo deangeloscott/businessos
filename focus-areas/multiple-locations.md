@@ -17,7 +17,7 @@ quick_starts:
   - title: Watch every location's local visibility
     kind: watch
     cadence: weekly
-    prompt: Set up a weekly scheduled task that checks each location's local search visibility and reviews, updates the "Locations" collection, and flags any location that dropped noticeably.
+    prompt: Set up a weekly scheduled task that checks each location's local search visibility and reviews and keeps the "Locations" collection current, flagging any location that dropped noticeably. Keep what we know current by folding new results into our findings instead of piling them up, and tell me only about real changes.
 goals:
   - name: Bring every location above a 4.5 rating
     measure: Lowest location rating

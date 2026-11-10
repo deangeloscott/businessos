@@ -20,7 +20,7 @@ quick_starts:
   - title: Watch for investors and programs that fit
     kind: watch
     cadence: monthly
-    prompt: Set up a monthly scheduled task that looks for investors, accelerators and programs that back companies like ours, and saves promising ones to a collection called "Investors" with stage, focus and a status field.
+    prompt: Set up a monthly scheduled task that looks for investors, accelerators and programs that back companies like ours and keeps the "Investors" collection current with stage, focus and a status field. Keep what we know current by folding new results into our findings instead of piling them up, and tell me only about real changes.
 goals:
   - name: Reach 100 paying customers
     measure: Paying customers

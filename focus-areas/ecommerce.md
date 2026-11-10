@@ -16,7 +16,7 @@ quick_starts:
   - title: Watch competitor prices and offers
     kind: watch
     cadence: weekly
-    prompt: Set up a weekly scheduled task that checks our closest competitors' prices, offers and new products, updates the "Competitor prices" collection, and flags meaningful changes.
+    prompt: Set up a weekly scheduled task that checks our closest competitors' prices, offers and new products and keeps the "Competitor prices" collection current, noting the pattern behind meaningful changes. Keep what we know current by folding new results into our findings instead of piling them up, and tell me only about real changes.
   - title: Find your biggest conversion leaks
     kind: once
     prompt: Review our store's product pages and checkout as a first-time buyer would. List the most likely reasons people leave without buying, in order of likely impact, with specific fixes.

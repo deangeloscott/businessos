@@ -19,7 +19,7 @@ quick_starts:
   - title: Watch for events and community ideas
     kind: watch
     cadence: monthly
-    prompt: Set up a monthly scheduled task that looks for events, partners and topics our members would value, and saves promising ones to a collection called "Community ideas" with a status field.
+    prompt: Set up a monthly scheduled task that looks for new events, partners and topics our members would value and keeps the "Community ideas" collection current with a status field. Keep what we know current by folding new results into our findings instead of piling them up, and tell me only about real changes.
 goals:
   - name: Reach an 85% renewal rate
     measure: Member renewal rate
