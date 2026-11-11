@@ -73,6 +73,8 @@ def handler_for(app):
                 self.send_response(206 if partial else 200)
                 for key,value in {'Content-Type':mime,'Content-Length':str(max(0,end-start+1)),'Accept-Ranges':'bytes','ETag':etag,'Cache-Control':'private, no-cache','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer','Content-Disposition':('attachment' if download or mime=='application/octet-stream' else 'inline')+"; filename*=UTF-8''"+quote(path.name)}.items():self.send_header(key,value)
                 if partial:self.send_header('Content-Range',f'bytes {start}-{end}/{length}')
+                # An SVG can carry scripts. As an image they never run; opened directly, this keeps them sandboxed away from AURA.
+                if path.suffix.lower()=='.svg':self.send_header('Content-Security-Policy',"default-src 'none'; style-src 'unsafe-inline'; img-src data:; sandbox")
                 self.end_headers()
                 if self.command!='HEAD':
                     source.seek(start);remaining=max(0,end-start+1)
@@ -252,7 +254,9 @@ def handler_for(app):
                 elif route == '/api/documents':
                     with app.lock:owner=copy.copy(app)
                     if query.get('workspace') and query['workspace']!=owner.workspace_path:raise ValueError('The workspace changed. Reopen this file.')
-                    with workspace_scope(owner.workspace_path):self.send(200,owner.document_info(selected(query.get('business')),query.get('path',''),query.get('option','')))
+                    with workspace_scope(owner.workspace_path):
+                        bid=selected(query.get('business'))
+                        self.send(200,owner.document_stat(bid,query.get('path',''),query.get('option','')) if query.get('stat')=='1' else owner.document_info(bid,query.get('path',''),query.get('option','')))
                 elif route == '/api/state':
                     current = app.state(query.get('business'),query.get('revision'))
                     app.update_business = current.get('business_id') or ''

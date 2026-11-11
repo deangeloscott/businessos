@@ -73,7 +73,7 @@ from workspace_connections import Connections, PRESETS
 STATIC = PRODUCT_ROOT / 'interface'
 MAX_BODY = 8 * 1024 * 1024
 HIDDEN = {'__pycache__', 'credentials', 'secrets', 'node_modules'}
-MEDIA = {'.png', '.jpg', '.jpeg', '.gif', '.webp', '.avif', '.mp4', '.webm', '.mov', '.m4v', '.mp3', '.wav', '.ogg', '.m4a', '.aac', '.flac', '.opus'}
+MEDIA = {'.png', '.jpg', '.jpeg', '.gif', '.webp', '.avif', '.svg', '.mp4', '.webm', '.mov', '.m4v', '.mp3', '.wav', '.ogg', '.m4a', '.aac', '.flac', '.opus'}
 NATIVE_AGENTS = {'codex', 'claude', 'pi', 'omp', 'hermes', 'antigravity','acp'}
 
 
@@ -450,6 +450,14 @@ def setup_error(message):
     if any(word in text for word in ('permission', 'denied', 'forbidden')):
         return SETUP_ERRORS['permissions']
     return SETUP_ERRORS['unknown']
+
+
+DOCUMENT_PATHS={}  # Open files' resolved locations, so change checks never rescan the workspace's records.
+
+
+def remember_document_path(key,path):
+    DOCUMENT_PATHS.pop(key,None);DOCUMENT_PATHS[key]=path
+    while len(DOCUMENT_PATHS)>200:DOCUMENT_PATHS.pop(next(iter(DOCUMENT_PATHS)))
 
 
 IMPORTERS={'omp':{'codex':'--from-codex','claude':'--from-claude'}}
@@ -2449,8 +2457,20 @@ class Workspace:
         if asset and ((asset.get('extensions') or {}).get('businessos',{}).get('collection')):writable=False;managed=True
         return path,writable,asset,managed and not writable
 
+    def document_stat(self,bid,ref,option=''):
+        """Size and modified time only: a cheap check that lets an open file refresh when something else changes it.
+        Where the file is was worked out when it opened (that needs the workspace's records); each check reuses it."""
+        key=(self.workspace_path,bid,ref,option);path=DOCUMENT_PATHS.get(key)
+        try:stat=path.stat() if path else None
+        except OSError:stat=None
+        if stat is None:
+            path=self.document_source(bid,ref,option)[0];stat=path.stat()
+            remember_document_path(key,path)
+        return {'bytes':stat.st_size,'modified':stat.st_mtime,'workspace':self.workspace_path}
+
     def document_info(self,bid,ref,option=''):
         path,writable,asset,managed=self.document_source(bid,ref,option)
+        remember_document_path((self.workspace_path,bid,ref,option),path)
         result=workspace_documents.inspect(path,writable,asset)
         result.update(ref=ref,option=option,managed=managed,workspace=self.workspace_path,location=str(path))
         assets={r['ref']:r['data'] for r in records(bid,include_archived=True)[0] if r['type']=='Asset'}

@@ -19,10 +19,11 @@ from _common import workspace_root,read_json_input
 from remember import remember
 from workspace_sharing import destination_lock, unlinked, safe
 
-TEXT = {'.md','.markdown','.txt','.csv','.tsv','.rst','.json','.yaml','.yml','.toml','.ini','.css','.js','.py','.html','.xml','.log'}
+TEXT = {'.md','.markdown','.txt','.csv','.tsv','.rst','.json','.yaml','.yml','.toml','.ini','.css','.js','.py','.html','.htm','.xml','.log'}
+WEB = {'.html','.htm','.svg'}  # Opened in the person's own browser; AURA does not render web pages itself.
 RASTER = {'.png','.jpg','.jpeg','.webp'}
 OFFICE = {'.doc','.docx','.odt','.rtf','.xls','.xlsx','.ods','.ppt','.pptx','.odp'}
-OPENABLE = TEXT - {'.js','.py','.html','.xml','.json','.yaml','.yml','.toml','.ini','.css'} | OFFICE | RASTER | {'.pdf','.gif','.avif','.mp3','.wav','.ogg','.mp4','.webm','.mov','.m4a','.flac','.opus'}
+OPENABLE = TEXT - {'.js','.py','.html','.htm','.xml','.json','.yaml','.yml','.toml','.ini','.css'} | OFFICE | RASTER | WEB | {'.pdf','.gif','.avif','.mp3','.wav','.ogg','.mp4','.webm','.mov','.m4a','.flac','.opus'}
 MAX_TEXT = 2*1024*1024
 MAX_FILE = 32*1024*1024
 
@@ -68,7 +69,7 @@ def inspect(path, writable=False, asset=None):
             rows=list(csv.reader(io.StringIO(text,newline=''),delimiter=delimiter))
             if sum(map(len,rows))<=100000 and max(map(len,rows),default=0)<=500:result.update(rows=rows,delimiter=delimiter)
             else:result.update(kind='text')
-    elif suffix in RASTER|{'.gif','.avif'}:result.update(kind='image',editable=suffix in RASTER and size<=MAX_FILE)
+    elif suffix in RASTER|{'.gif','.avif','.svg'}:result.update(kind='image',editable=suffix in RASTER and size<=MAX_FILE)
     elif suffix=='.pdf':result['kind']='pdf'
     elif suffix in OFFICE:result['kind']='office'
     elif (mimetypes.guess_type(path.name)[0] or '').startswith(('video/','audio/')):result['kind']='media'

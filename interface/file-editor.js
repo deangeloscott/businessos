@@ -237,7 +237,8 @@ function openPanel(view){
   const panel=view.host.querySelector('#file-open-panel');panel.hidden=!panel.hidden;
   view.host.querySelector('[data-file-action=open]').setAttribute('aria-expanded',String(!panel.hidden));
   if(panel.hidden)return;
-  panel.innerHTML=`<div class="file-open-row"><label>Open in<select id="file-open-app"><option value="default">Default app</option><option value="google">Google Office</option><option value="libreoffice">LibreOffice</option></select></label><button type="button" class="secondary" id="file-open-go">Open</button></div><div id="file-open-help"></div>`;
+  const web=/\.(html?|svg)$/i.test(view.info.name);
+  panel.innerHTML=`<div class="file-open-row"><label>Open in<select id="file-open-app">${web?'<option value="default">Your browser</option>':'<option value="default">Default app</option><option value="google">Google Office</option><option value="libreoffice">LibreOffice</option>'}</select></label><button type="button" class="secondary" id="file-open-go">Open</button></div><div id="file-open-help"></div>`;
   const select=panel.querySelector('#file-open-app'),go=panel.querySelector('#file-open-go'),help=panel.querySelector('#file-open-help');select.value=view.application||'default';
   const update=()=>{
     view.application=select.value;const missing=select.value==='libreoffice'&&!view.info.libreoffice_installed;go.hidden=missing;
@@ -262,6 +263,19 @@ window.auraFiles={detach,hasUnsaved:()=>[...drafts.values()].some(d=>d.dirty)};
 $('#detail').addEventListener('close',()=>{if(!$('#detail').open)detach();});
 document.addEventListener('keydown',event=>{if(current&&live(current)&&(event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='s'){event.preventDefault();if(current.dirty)save(current);}});
 window.addEventListener('beforeunload',event=>{if(imports.size||[...drafts.values()].some(d=>d.memoryOnly)||(current?.memoryOnly&&current.dirty)){event.preventDefault();event.returnValue='';}});
+// While a file is open and unchanged here, a quick size-and-time check every few seconds picks up changes your AI or
+// another app makes, so the preview stays current without reopening it. Edits in progress are never replaced.
+setInterval(async()=>{
+  const view=current;if(!view||!live(view)||view.dirty||view.editing||view.checking||document.visibilityState!=='visible'||!view.info)return;
+  view.checking=true;
+  try{
+    const stat=await api(view,'/api/documents?'+new URLSearchParams({business:view.ctx.business,workspace:view.ctx.workspace,path:view.ctx.ref,option:view.ctx.option||'',stat:'1'}));
+    if(!live(view)||view.dirty||view.editing||stat.workspace!==view.ctx.workspace||(stat.bytes===view.info.bytes&&stat.modified===view.info.modified))return;
+    const scroller=$('#detail-content'),top=scroller?.scrollTop||0;await openFile(view.ctx);
+    const after=$('#detail-content');if(after)after.scrollTop=top;
+  }catch{/* The current preview stays; the next check tries again. */}
+  finally{view.checking=false;}
+},3000);
 window.addEventListener('focus',async()=>{const view=current;if(!view||!live(view)||view.dirty)return;try{const fresh=await api(view,'/api/documents?'+new URLSearchParams({business:view.ctx.business,workspace:view.ctx.workspace,path:view.ctx.ref,option:view.ctx.option||''}));if(live(view)&&fresh.workspace===view.ctx.workspace&&fresh.revision!==view.info.revision){await openFile(view.ctx);}}catch{/* The current preview remains available. */}});
 
 async function fileHistory(view,button){

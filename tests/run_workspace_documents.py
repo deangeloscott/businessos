@@ -51,6 +51,17 @@ def main():
             assert not app.document_info('alpha','linked/linked-proof/Notes.txt')['writable']
             image=folder/'Picture.gif';image.write_bytes(b'GIF89a')
             assert docs.inspect(image)['kind']=='image' and not docs.inspect(image)['editable']
+            # SVGs preview as images and web pages open in the person's browser; AURA renders neither itself.
+            drawing=folder/'Logo.svg';drawing.write_text('<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>',encoding='utf-8')
+            assert docs.inspect(drawing)['kind']=='image' and not docs.inspect(drawing)['editable']
+            assert {'.html','.htm','.svg'}<=docs.OPENABLE and docs.inspect(folder/'Guide.md')['kind']=='text'
+            page=folder/'Site.htm';page.write_text('<h1>Hi</h1>',encoding='utf-8');assert docs.inspect(page,True)['editable']
+            # A cheap size-and-time check lets an open file refresh when something else changes it.
+            page_ref=page.relative_to(root).as_posix()
+            first=app.document_stat('alpha',page_ref);assert set(first)=={'bytes','modified','workspace'} and first['bytes']==page.stat().st_size
+            page.write_text('<h1>Changed by the AI, longer than before</h1>',encoding='utf-8')
+            assert app.document_stat('alpha',page_ref)['bytes']!=first['bytes']
+            rejected(lambda:app.document_stat('beta',page_ref))
             # A link must never turn a public name into access to a private file.
             secret=folder/'.env';secret.write_text('private',encoding='utf-8')
             alias=folder/'public.txt'
