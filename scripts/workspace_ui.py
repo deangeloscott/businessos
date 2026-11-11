@@ -1756,9 +1756,9 @@ class Workspace:
         names={workspace_usage.account('openai',a.get('account'))['id']:a['nickname'] for a in workspace_accounts.load()['accounts'] if a['app']=='codex' and a.get('account')}
         return [{**r,'nickname':names[r['id']]} if r.get('id') in names else r for r in rows]
 
-    def notify(self, bid, chat_id, title, kind='limit', task_id=None, goal_id=None, collection_id=None, item_title=None):
+    def notify(self, bid, chat_id, title, kind='limit', task_id=None, goal_id=None, collection_id=None, item_title=None, item_id=None):
         """A bell notification for something that happened while the user may not be looking."""
-        refs={k:v for k,v in {'task_id':task_id,'goal_id':goal_id,'collection_id':collection_id,'item_title':item_title}.items() if v}
+        refs={k:v for k,v in {'task_id':task_id,'goal_id':goal_id,'collection_id':collection_id,'item_title':item_title,'item_id':item_id}.items() if v}
         with self.lock:
             self.preferences['notification_items']=[*self.preferences['notification_items'],{'id':new_id(12),'business_id':bid,'chat_id':chat_id,
                 'kind':kind,'agent':'AURA','title':title,'status':'complete','at':time.time(),'read':False,'delivered':False,**refs}][-50:]
@@ -1932,8 +1932,8 @@ class Workspace:
                     seen=self.preferences.setdefault('deadlines_seen',[])
                     if key in seen:continue
                     self.preferences['deadlines_seen']=[*seen,key][-300:]
-                when='today' if d['days']==0 else 'tomorrow' if d['days']==1 else f"in {d['days']} days"
-                self.notify(folder.name,None,f"“{d['title']}” is due {when} ({d['collection']}).",kind='deadline',collection_id=d['collection_id'],item_title=d['title'])
+                due=workspace_collections.timestamp(d['due']).astimezone().strftime('%b %d, %Y')
+                self.notify(folder.name,None,f"“{d['title']}” is due {due} ({d['collection']}).",kind='deadline',collection_id=d['collection_id'],item_title=d['title'],item_id=d['item_id'])
 
     def check_collection_changes(self):
         """Ring the bell once for each watch run that found material changes. Routine checks stay quiet.
@@ -1958,7 +1958,13 @@ class Workspace:
                     if not fresh:continue
                     seen[marker]=fresh[-1]['at'];self.save_preferences()
                 count=sum(int(c.get('change_count') or 0) for c in fresh)
-                if count:self.notify(bid,None,f"{count} {'change' if count==1 else 'changes'} in {d['name']}.",kind='changes',collection_id=d['id'])
+                if count:
+                    change=next((row for check in reversed(fresh) for row in check.get('changes',[]) if row.get('title')),None)
+                    title=f"{count} changes in {d['name']}."
+                    if change:
+                        title=f"{change['title']} — {change.get('reason') or 'Updated'}"
+                        if count>1:title+=f" (+{count-1} more)"
+                    self.notify(bid,None,title,kind='changes',collection_id=d['id'])
 
     def task_destination(self,task):
         """Native working folders and existing project bindings identify ownership; the visible page does not."""
@@ -2178,14 +2184,23 @@ class Workspace:
         if not self.native_choice(target.get('agent')):raise ValueError('Connect that AI app first.')
         if self.chat_busy(bid,source) or self.chat_busy(bid,target):raise ValueError('Let both chats finish their current work before catching one up.')
         with workspace_scope(self.workspace_path):
-            started=self.start_chat(bid,text,None,chat_id=into_id,references=[{'kind':'handoff','id':from_id,'variant':'catch_up'}])
-        with self.lock:
-            source=self.source_chat(bid,from_id);target=self.source_chat(bid,into_id);at=time.time()
-            if (target.get('continued_to') or {}).get('chat_id')==from_id:target.pop('continued_to',None)
-            target['caught_up_from']={'chat_id':from_id,'agent':source.get('agent'),'title':source.get('title',''),'at':at}
-            source['continued_to']={'chat_id':into_id,'agent':target.get('agent'),'title':target.get('title',''),'method':'catch_up','at':at}
-            self.save_preferences()
-        return started
+            return self.start_chat(bid,text,None,chat_id=into_id,catch_up_from=from_id,
+                                   references=[{'kind':'handoff','id':from_id,'variant':'catch_up'}])
+
+    def record_handoff(self,bid,target,job):
+        """Advance only the boundary actually delivered in a successful request."""
+        if job.get('status')!='complete':return
+        for ref in job.get('references',[]):
+            if ref['kind']!='handoff' or not ref.get('handoff_cursor'):continue
+            source_id=ref['id']
+            target.setdefault('handoff_cursors',{})[source_id]=ref['handoff_cursor']
+            if job.get('catch_up_from')!=source_id:continue
+            try:source=self.source_chat(bid,source_id)
+            except ValueError:continue  # The source may have been removed while this request ran.
+            at=time.time()
+            if (target.get('continued_to') or {}).get('chat_id')==source_id:target.pop('continued_to',None)
+            target['caught_up_from']={'chat_id':source_id,'agent':source.get('agent'),'title':source.get('title',''),'at':at}
+            source['continued_to']={'chat_id':target['id'],'agent':target.get('agent'),'title':target.get('title',''),'method':'catch_up','at':at}
 
     def continue_options(self,bid,chat_id):
         """Where this chat can continue, and how much of it each app can carry."""
@@ -2532,6 +2547,8 @@ class Workspace:
 
     def record_snapshot(self,bid):
         base=str(workspace_root()/'instances'/bid)
+        if Path(base).resolve()!=workspace_root().resolve()/'instances'/bid:
+            return 'linked-folder',([], [{'path':base,'reason':'Linked record folder is outside this business.'}])
         signature=[];stack=['']
         while stack:
             folder=stack.pop()
@@ -2545,7 +2562,9 @@ class Workspace:
                         if entry.name!='history' and not entry.is_symlink():stack.append(rel)
                         continue
                     if not entry.name.endswith(('.json','.jsonl')):continue
-                    stat=entry.stat(follow_symlinks=False);signature.append((rel,stat.st_mtime_ns,stat.st_ctime_ns,stat.st_size))
+                    stat=entry.stat(follow_symlinks=False)
+                    if not stat.st_ino:stat=os.stat(entry.path,follow_symlinks=False)
+                    signature.append((rel,stat.st_dev,stat.st_ino,stat.st_mtime_ns,stat.st_ctime_ns,stat.st_size))
                 except OSError:signature.append((rel,'unavailable'))
         signature.sort(key=lambda row:row[0])
         revision=hashlib.sha256(json.dumps(signature).encode()).hexdigest()
@@ -2935,11 +2954,12 @@ class Workspace:
         threading.Thread(target=work,daemon=True).start()
         return self.schedule_state(bid)
 
-    def start_chat(self, bid, text, history, welcome=False, schedule_id=None, organization_id=None, keep_warm_id=None, chat_id=None, files=None, connection=None, assistant_id=None,references=None,goal_id=None,permission_mode=None,native_goal=None,project=None,account_id=None,limit_recovery=False,source_task=None,native_workspace=None):
+    def start_chat(self, bid, text, history, welcome=False, schedule_id=None, organization_id=None, keep_warm_id=None, chat_id=None, files=None, connection=None, assistant_id=None,references=None,goal_id=None,permission_mode=None,native_goal=None,project=None,account_id=None,limit_recovery=False,source_task=None,native_workspace=None,catch_up_from=None):
         with self.lock:
             owner=copy.copy(self)
             owner.agent=dict(self.agent) if self.agent else None
             owner._view_owner=self
+            owner._catch_up_from=catch_up_from
             owner._request_references=references
             owner._limit_recovery=limit_recovery
             owner._source_task=source_task
@@ -3058,7 +3078,7 @@ class Workspace:
             if not isinstance(references,list):raise ValueError('Choose valid context references.')
             if files is not None and (not isinstance(files,list) or any(not isinstance(p,str) for p in files)):raise ValueError('Choose valid workspace file references.')
             if len(files or [])+len(references)>12:raise ValueError('Choose up to 12 context references for this message.')
-            context_sources={}
+            context_sources={'handoff_cursors':dict((chat or {}).get('handoff_cursors',{}))}
             selected_context=workspace_context.resolve(self,bid,[*references,*[{'kind':'file','id':p} for p in files or []]],goal_id,sources=context_sources) if not welcome and keep_warm_id is None else {'references':[],'text':''}
             inherited_context={'references':[],'text':''};context_notes=[]
             if not welcome and keep_warm_id is None:
@@ -3109,6 +3129,7 @@ class Workspace:
                 prompt=prompt.replace('\nUser request:\n',workspace_assistants.guidance(assistant,child_native=protocol_kind in {'codex','omp','claude'},native_primary=assistant.get('native_primary',False))+'\nUser request:\n',1)
             job = {'id': new_id(12), 'business_id': bid, 'status': 'working', 'reply': '', 'activity': [],
                    'created': time.time(), 'updated': time.time(), 'progress': 'Starting your AI'}
+            if getattr(self,'_catch_up_from',None):job['catch_up_from']=self._catch_up_from
             job.update(references=selected_context['references'],inherited_references=inherited_context['references'],files=files or [],goal_id=goal_id or '')
             if context_notes:job['context_note']=' '.join(dict.fromkeys(context_notes))
             if native:job['aura_context']=context_key
@@ -3210,7 +3231,7 @@ class Workspace:
                         effective=current_chat.get('permission_mode') or current.get('harness_permissions',{}).get(kind,'native')
                         if effective!=execution.permission:return 'Permission settings changed. Review before continuing.'
                         original=job.get('references',[])
-                        refreshed=workspace_context.resolve(self,bid,[{k:r[k] for k in ('kind','id','variant','request_id') if k in r} for r in original if not (r['kind']=='goal' and r['id']==goal_id)],goal_id)['references']
+                        refreshed=workspace_context.resolve(self,bid,[r for r in original if not (r['kind']=='goal' and r['id']==goal_id)],goal_id,sources={'handoff_cursors':context_sources['handoff_cursors']})['references']
                         revisions={(r['kind'],r['id'],r.get('variant',''),r.get('request_id','')):r['revision'] for r in refreshed}
                         for ref in original:
                             key=(ref['kind'],ref['id'],ref.get('variant',''),ref.get('request_id',''))

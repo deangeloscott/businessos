@@ -13,9 +13,9 @@ A grants watch is mostly things; a research watch is mostly understanding; a com
 
 ## Each run
 
-1. **Ask for what is new.** Read the collection first (`workspace_collections.py show`): its purpose, current entries, latest check, findings, source setting and dismissed results. Use each source's own filters (category, keyword, date, "posted since", newest first) and the last check date. Do not fetch what was already checked.
+1. **Ask for what is new.** Read the collection first (`workspace_collections.py show`): its purpose, current entries, latest check, findings, source setting and dismissed results. Use each source's own filters (category, keyword, date, "posted since", newest first) and the last check date. Start with unread links in the latest check’s `coverage.deferred`, even when they predate that check.
 2. **Triage on the cheapest useful signal.** Title, abstract, snippet, opening paragraph, publisher, or who cites it. When an item has no summary, read its opening. Keep borderline items; the full read decides. Dismissed results show what the person does not want. An item skipped wrongly can return when later sources cite it.
-3. **Read only what passed, within a budget.** If more items pass than a proportionate run should read, read the most promising and leave the rest for the next run, saying so in the run's coverage. A watch should never exhaust the person's plan or context.
+3. **Read only what passed, within a budget.** If more items pass than a proportionate run should read, read the most promising and leave the rest for the next run, recording their links in `coverage.deferred`. Carry each link forward until it is read or deliberately dismissed. Send an empty deferred list when all are resolved. A watch should never exhaust the person's plan or context.
 4. **Update the things.** Apply the collection with stable identities, real coverage and a reason for each material change. Unchanged checks record coverage only.
 5. **Fold into understanding.** For each item that matters, decide what it does to current findings:
    - **supports** or **extends** a finding: add an evidence link (`supports` or `extends`) and refresh `reviewed_at`;

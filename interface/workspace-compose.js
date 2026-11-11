@@ -15,9 +15,9 @@ window.auraCompose=(()=>{
   }
   const query=extra=>new URLSearchParams({business:state.business,...extra});
   const same=(key,ticket,host)=>key===scope()&&ticket===state.fileDetailTicket&&host.isConnected&&$('#detail').open;
-  const compact=r=>({kind:r.kind,id:r.id,label:r.label,...(r.variant?{variant:r.variant}:{}),...(r.request_id?{request_id:r.request_id}:{})});
+  const compact=r=>({...((r.kind==='terminal'&&typeof r.snapshot==='string')?{snapshot:r.snapshot}:{}),kind:r.kind,id:r.id,label:r.label,...(r.variant?{variant:r.variant}:{}),...(r.request_id?{request_id:r.request_id}:{})});
   const identity=r=>JSON.stringify([r.kind,r.id,r.variant||'',r.request_id||'']);
-  const kinds={collection:'Saved results',file:'File',record:'Saved context',goal:'Goal',library:'Library',assistant:'Assistant',result:'Saved result'};
+  const kinds={terminal:'Terminal output',collection:'Saved results',file:'File',record:'Saved context',goal:'Goal',library:'Library',assistant:'Assistant',result:'Saved result'};
   const shortcuts=[{id:'new',label:'New chat',description:'Keep this draft and open a new chat'},{id:'attach',label:'Attach context',description:'Files, saved work and operating knowledge'},{id:'assistant',label:'Choose agent',description:'Start a chat with a named assistant'},{id:'goal',label:'Chat goal',description:'Set what this chat is working toward'}];
   const nativeCommands=()=>{const rows=state.liveJob?.native_commands||state.chatMeta?.native_commands||[];return rows.filter(c=>typeof c.name==='string'&&c.name&&!c.name.startsWith('aura-')).map(c=>({id:c.name.replace(/^\//,''),native:true,label:c.name.replace(/^\//,''),description:c.description||'AI app command'}));};
   const goalVersion=g=>JSON.stringify([g?.name,g?.status,g?.target,goalInfo(g).revision,goalInfo(g).deleted_at]);
@@ -146,6 +146,7 @@ window.auraCompose=(()=>{
     apply();
   }
   async function inspect(item){
+    if(item.kind==='terminal'&&typeof item.snapshot==='string')return details('Terminal output','<pre class="context-preview">'+esc(item.snapshot)+'</pre>','context');
     if(item.kind==='collection')return window.auraProjects?.openCollection(item.id);
     if(item.kind==='file')return openFileWorkspace(item.id);
     if(item.kind==='record')return recordDetails(item.id);

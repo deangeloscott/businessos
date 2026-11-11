@@ -97,8 +97,17 @@ window.auraProjects=(()=>{
     if(shape!=='list')attempt(()=>window.auraViews.show($('#collection-visual'),d,shape,view,q,title=>{window.auraViews.choice(id,'list');attempt(()=>openCollection(id,view,title));},()=>openCollection(id,view,q)));
     $('#detail-content').querySelectorAll('[data-result-details]').forEach(el=>el.addEventListener('toggle',()=>{if(!el.open||el.dataset.loaded)return;el.dataset.loaded='true';attempt(async()=>{
       const response=await api(url('/api/collections',{id,item:el.dataset.resultDetails}));if(key!==scope()||!el.isConnected)return;const r=response.item;
-      el.querySelector('.result-full').innerHTML=`${r.source_refs?.length?'<dl>'+r.source_refs.map(s=>`<div><dt>${/^https?:\/\//i.test(s.reference)?`<a href="${esc(s.reference)}" target="_blank" rel="noopener noreferrer">${esc(s.reference)}</a>`:esc(s.reference)}</dt><dd>${s.published_at?'Published: '+esc(stamp(s.published_at))+' · ':''}${s.data_as_of?'Data as of: '+esc(stamp(s.data_as_of))+' · ':''}${s.last_checked_at?'Checked: '+esc(stamp(s.last_checked_at)):''}</dd></div>`).join('')+'</dl>':'<p class="small-note">No source reference supplied.</p>'}${r.summary?`<p>${esc(r.summary)}</p>`:''}${r.correction_note?`<p>${esc(r.correction_note)}</p>`:''}<pre>${esc(JSON.stringify(r.fields||{},null,2))}</pre>${r.corrected?`<details><summary>As reported by the source</summary><pre>${esc(JSON.stringify(r.reported,null,2))}</pre></details>`:''}`;
+      el.querySelector('.result-full').innerHTML=resultDetails(r);
     });}));
+  }
+  function resultDetails(r){return `${r.source_refs?.length?'<dl>'+r.source_refs.map(s=>`<div><dt>${/^https?:\/\//i.test(s.reference)?`<a href="${esc(s.reference)}" target="_blank" rel="noopener noreferrer">${esc(s.reference)}</a>`:esc(s.reference)}</dt><dd>${s.published_at?'Published: '+esc(stamp(s.published_at))+' · ':''}${s.data_as_of?'Data as of: '+esc(stamp(s.data_as_of))+' · ':''}${s.last_checked_at?'Checked: '+esc(stamp(s.last_checked_at)):''}</dd></div>`).join('')+'</dl>':'<p class="small-note">No source reference supplied.</p>'}${r.summary?`<p>${esc(r.summary)}</p>`:''}${r.correction_note?`<p>${esc(r.correction_note)}</p>`:''}<pre>${esc(JSON.stringify(r.fields||{},null,2))}</pre>${r.corrected?`<details><summary>As reported by the source</summary><pre>${esc(JSON.stringify(r.reported,null,2))}</pre></details>`:''}`;}
+  async function openDeadline(id,item){
+    const key=scope(),request=++ticket,panel=state.fileDetailTicket;
+    const response=await api(url('/api/collections',{id,item}));
+    if(key!==scope()||request!==ticket||panel!==state.fileDetailTicket)return;
+    const r=response.item;
+    details(r.title,`<p>Deadline: ${esc(r.expires_at?new Date(r.expires_at).toLocaleString():'No current deadline')}</p>${resultDetails(r)}<button type="button" class="text-button" id="deadline-collection">Open collection</button>`,'context');
+    $('#deadline-collection').onclick=()=>attempt(()=>openCollection(id));
   }
   async function feedback(choice,item,extra={}){
     const d=current;if(!d||d.key!==scope())return;
@@ -145,5 +154,5 @@ window.auraProjects=(()=>{
   });
   $('#detail').addEventListener('close',()=>{if(!$('#detail').open){clearTimeout(timer);ticket++;window.auraViews.release();current=null;selection=null;parentProject='';}});
   document.addEventListener('change',event=>{if(event.target.id==='file-project-filter'){state.fileProject=event.target.value;const create=$('[data-create-collection]');if(create)create.dataset.createCollection=event.target.value;state.fileLimit=100;renderFiles();}});
-  return {project,openCollection,newCollection,assignTask,openForFile,finding};
+  return {project,openDeadline,openCollection,newCollection,assignTask,openForFile,finding};
 })();

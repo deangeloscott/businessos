@@ -261,6 +261,7 @@ class ChatRun:
                         threading.Thread(target=app.after_limit,args=(bid,chat['id'],text,'goals' if job.get('goal_id') else 'chats',job['id'],job.get('limit_recovery',False)),daemon=True).start()
                     try:
                         app.save_chat_turn(chat, job, text, final=True, candidate=candidate)
+                        app.record_handoff(bid,chat,job)
                         app.save_preferences()
                     except OSError:
                         job['preference_warning'] = 'Reply received, but its chat reference could not be saved. Use the native app before retrying.'

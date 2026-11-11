@@ -40,6 +40,10 @@ FAKE_IMPORTER=textwrap.dedent('''
 
 
 def main():
+    # A POSIX shell needs a controlling terminal for foreground job control.
+    if os.name!='nt':
+        probe=terminals.Terminals().start([sys.executable,'-c','import os; print(os.tcgetpgrp(0)==os.getpgrp())'],str(ROOT))
+        assert terminals.wait_for(probe,r'^True$',10),probe.screen()
     # A real terminal on this computer: start, type, read, resize, exit.
     assert terminals.available(),'This computer should support built-in terminals'
     pool=terminals.Terminals()
@@ -151,7 +155,10 @@ def main():
             assert terminals.wait_for(shared,r'build failed',20)
             given=workspace_context.resolve(app,bid,[{'kind':'terminal','id':shared.id}])
             assert given['references'][0]['label']=='Terminal output' and 'build failed: missing module' in given['text'] and '' not in given['text'] and str(project) in given['text']
+            attachment={'kind':'terminal','id':shared.id,'snapshot':'selected output'}
             terminals.TERMINALS.remove(shared.id)
+            frozen=workspace_context.resolve(app,bid,[attachment])
+            assert frozen['references'][0]['snapshot']=='selected output' and 'selected output' in frozen['text']
             rejects(lambda:workspace_context.resolve(app,bid,[{'kind':'terminal','id':shared.id}]),'no longer available')
 
             # Catch-up: the linked chat gets what happened since, as an update to a conversation it already has; no new copy.
@@ -164,11 +171,23 @@ def main():
                 display2=app.chat_display_path('chat-omp');display2.write_text(json.dumps([{'role':'user','text':'Move the catalog'},{'role':'assistant','text':'Moved; six projects show.'}]),encoding='utf-8')
                 app.catch_up(bid,'chat-omp',source['id'],'Catch up.')
             assert sent['chat_id']==source['id'] and sent['references']==[{'kind':'handoff','id':'chat-omp','variant':'catch_up'}]
+            assert 'caught_up_from' not in source
+            caught=workspace_context.resolve(app,bid,sent['references'])
+            receipt={'references':caught['references'],'catch_up_from':'chat-omp'}
+            app.record_handoff(bid,source,{**receipt,'status':'error'})
+            assert 'caught_up_from' not in source
+            app.record_handoff(bid,source,{**receipt,'status':'complete'})
+            rejects(lambda:workspace_context.handoff_brief(app,bid,'chat-omp',True,source['handoff_cursors']['chat-omp']),'already has')
+            old=json.loads(display2.read_text(encoding='utf-8'))
+            later=[{'role':'user','text':'New request'},{'role':'assistant','text':'x'*3600+' Verified outcome.'}]
+            display2.write_text(json.dumps(old+later),encoding='utf-8')
+            delta=workspace_context.handoff_brief(app,bid,'chat-omp',True,source['handoff_cursors']['chat-omp'])['text']
+            assert 'New request' in delta and 'Verified outcome.' in delta and 'Move the catalog' not in delta
             assert source['caught_up_from']['chat_id']=='chat-omp' and 'continued_to' not in source
             omp_chat=next(c for c in app.preferences['chats'] if c['id']=='chat-omp')
             assert omp_chat['continued_to']=={**omp_chat['continued_to'],'chat_id':source['id'],'method':'catch_up'}
             caught=workspace_context.resolve(app,bid,[{'kind':'handoff','id':'chat-omp','variant':'catch_up'}])
-            assert caught['references'][0]['label'].startswith('Caught up from') and 'it is new to you' in caught['text'] and 'Moved; six projects show.' in caught['text']
+            assert caught['references'][0]['label'].startswith('Catch-up from') and 'Earlier coverage is unknown' in caught['text'] and 'Moved; six projects show.' in caught['text']
             assert app.terminal_command('claude-login')[0][-2:]==['auth','login'] and app.terminal_command('codex-login')[0][-1]=='login'
 
             # Plain terminals never receive AURA's saved keys; only named app commands run with that app's environment.

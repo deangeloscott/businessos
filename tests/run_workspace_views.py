@@ -127,8 +127,11 @@ def main():
         assert [d['item_id'] for d in views.deadlines(bid)]==['due']
         app.check_deadlines();app.check_deadlines()
         bells=[n for n in app.preferences['notification_items'] if n.get('kind')=='deadline']
-        assert len(bells)==1 and 'State food grant' in bells[0]['title'] and ('in 4 days' in bells[0]['title'] or 'in 5 days' in bells[0]['title']),bells
-        assert bells[0]['collection_id']==g['id'] and bells[0]['item_title']=='State food grant'
+        assert len(bells)==1 and 'State food grant' in bells[0]['title'] and collections.timestamp(views.deadlines(bid)[0]['due']).astimezone().strftime('%b %d, %Y') in bells[0]['title'],bells
+        assert bells[0]['collection_id']==g['id'] and bells[0]['item_id']=='due'
+        assert views.cadence('FREQ=WEEKLY;INTERVAL=2;BYDAY=MO;BYHOUR=9')=='Every other Monday at 9:00 AM'
+        assert views.cadence('FREQ=MONTHLY;BYDAY=-1MO')=='FREQ=MONTHLY;BYDAY=-1MO'
+        assert views.shapes([{'fields':{'stage':str(i),'name':str(i)}} for i in range(13)])['board']==['stage']
         # Moving a card on the board is the person's correction; the board then groups by the new stage.
         rev=collections.show(bid,g['id'])['revision']
         collections.feedback(bid,g['id'],{'action':'correct','item_id':'due','revision':rev,'correction':{'fields':{'status':'Submitted'}},'note':'Moved on the board'})

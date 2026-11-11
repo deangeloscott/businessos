@@ -467,14 +467,16 @@ def is_linked(path):
 
 
 def read_text_cached(path,stat_result=None):
-    """A record file's text, kept until its size or modified time changes. Callers parse it themselves,
+    """A record file's text, cached by file identity and metadata. Callers parse it themselves,
     so no one can change another caller's objects."""
     key=str(path);st=stat_result or os.stat(key)
+    if not st.st_ino:st=os.stat(key)  # Windows directory listings can omit file identity.
+    signature=(st.st_dev,st.st_ino,st.st_mtime_ns,st.st_ctime_ns,st.st_size)
     hit=_TEXT_CACHE.get(key)
-    if hit and hit[0]==st.st_mtime_ns and hit[1]==st.st_size:return hit[2]
+    if hit and hit[0]==signature:return hit[1]
     with open(key,encoding='utf-8') as stream:text=stream.read()
     if len(_TEXT_CACHE)>60000:_TEXT_CACHE.clear()
-    _TEXT_CACHE[key]=(st.st_mtime_ns,st.st_size,text)
+    _TEXT_CACHE[key]=(signature,text)
     return text
 
 
@@ -489,6 +491,9 @@ def iter_instance_objects(business_id,diagnostics=None):
         if line is not None:row['line']=line
         if diagnostics is not None:diagnostics.append(row)
         else:print(f'WARNING unreadable canonical record: {row}',file=sys.stderr)
+    if base.resolve() != workspace_root().resolve() / 'instances' / business_id:
+        report(base, 'Linked record folder is outside this business.')
+        return []
     def consume(data,path,expected,line=None):
         vals=data if isinstance(data,list) else [data]
         for obj in vals:

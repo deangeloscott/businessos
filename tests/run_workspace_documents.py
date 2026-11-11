@@ -27,6 +27,29 @@ def main():
             folder=root/'attachments/alpha/work';folder.mkdir(parents=True)
             source=folder/'Guide.md';original=b'\xef\xbb\xbf# First\r\n\r\nNotes.\r\n';source.write_bytes(original)
             app=Workspace(settings_file=base/'ui.json')
+            # A restore may preserve both the length and timestamp of a replacement.
+            record=root/'instances/alpha/context/business.json'
+            previous_revision,_=app.record_snapshot('alpha')
+            stamp=record.stat()
+            replacement=record.with_suffix('.new')
+            raw=record.read_bytes()
+            assert b'Alpha' in raw
+            replacement.write_bytes(raw.replace(b'Alpha',b'AlphX'))
+            os.utime(replacement,ns=(stamp.st_atime_ns,stamp.st_mtime_ns))
+            replacement.replace(record)
+            revision,(fresh,_)=app.record_snapshot('alpha')
+            assert revision!=previous_revision and any(r['data'].get('name')=='AlphX' for r in fresh)
+            # A selected organization's record root may itself be a directory link.
+            outside=base/'outside';outside.mkdir()
+            redirected=root/'instances/redirected'
+            if os.name=='nt':
+                import _winapi
+                _winapi.CreateJunction(str(outside),str(redirected))
+            else:redirected.symlink_to(outside,target_is_directory=True)
+            rows,notes=records('redirected')
+            assert not rows and notes and 'outside' in notes[0]['reason']
+            if os.name=='nt':redirected.rmdir()
+            else:redirected.unlink()
             ref=source.relative_to(root).as_posix()
             info=app.document_info('alpha',ref);assert info['kind']=='text' and info['writable'] and info['bom']
             saved=app.document_save('alpha',ref,{'expected_revision':info['revision'],'content':'# Changed\nNotes.\n'})

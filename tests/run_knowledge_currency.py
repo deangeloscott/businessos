@@ -94,6 +94,11 @@ def main():
         assert keeping['items'][0]['text'].startswith('Every Monday at 9:00 AM, Codex runs “Agent research watch”.')
         rejects(lambda:views.running(app,bid,project_id='x',collection_id=made['id']))
 
+        pending=collections.coverage({'status':'complete','coverage':{'checked':['arxiv'],'deferred':['paper-B']}},{})
+        assert pending['status']=='partial' and pending['deferred']==['paper-B']
+        prior={'checks':[{'coverage':pending}]}
+        assert collections.coverage({'coverage':{}},prior)['deferred']==['paper-B']
+        assert collections.coverage({'coverage':{'deferred':[]}},prior)['deferred']==[]
         # Change notices: earlier history is not news, a run with changes rings once, routine runs stay quiet.
         app.preferences['notification_items']=[]
         app.check_collection_changes()
@@ -103,7 +108,7 @@ def main():
                                                'items':[{'id':'arxiv:2501.00002','title':'Another paper'},{'id':'arxiv:2501.00003','title':'A third paper'}]})
         app.check_collection_changes();app.check_collection_changes()
         notes=[n for n in app.preferences['notification_items'] if n['kind']=='changes']
-        assert len(notes)==1 and notes[0]['title']=='2 changes in Agent research.' and notes[0]['collection_id']==made['id'],notes
+        assert len(notes)==1 and 'Another paper' in notes[0]['title'] and '+1 more' in notes[0]['title'] and notes[0]['collection_id']==made['id'],notes
         collections.apply(bid,made['id'],{'revision':third['revision'],'run_id':'run-4','status':'complete','coverage':{'scope':'arXiv cs.AI','checked':['arxiv']},'items':[]})
         app.check_collection_changes()
         assert len([n for n in app.preferences['notification_items'] if n['kind']=='changes'])==1,'a run without material changes must stay quiet'

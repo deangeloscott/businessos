@@ -93,7 +93,9 @@ def changes(previous,current):
 def recent_changes(app,bid,since):
     if not since:return []
     from _common import walk_files,instance_dir
-    changed={os.path.normcase(raw):st.st_mtime for raw,st,_ in walk_files(instance_dir(bid)) if st.st_mtime>since}
+    base=instance_dir(bid)
+    if base.resolve()!=workspace_root().resolve()/'instances'/bid:return []
+    changed={os.path.normcase(raw):st.st_mtime for raw,st,_ in walk_files(base) if st.st_mtime>since}
     if not changed:return []
     # Only when something changed are the matching records read, to name them.
     from workspace_ui import records
@@ -162,14 +164,22 @@ def resolve(app,bid,references,goal_id=None,pointers=False,sources=None):
         if (kind,ident,variant,request_id) in seen:continue
         seen.add((kind,ident,variant,request_id));row={'kind':kind,'id':ident,**({'variant':variant} if variant else {}),**({'request_id':request_id} if request_id else {})};text=''
         if kind=='handoff':
-            brief=handoff_brief(app,bid,ident,returning=variant=='catch_up')
-            row.update(label=('Caught up from ' if variant=='catch_up' else 'Continued from ')+brief['title'],source=brief['source'],revision=digest(brief['text']))
+            brief=handoff_brief(app,bid,ident,returning=variant=='catch_up',after=sources.get('handoff_cursors',{}).get(ident))
+            row['handoff_cursor']=brief['cursor']
+            row.update(label=('Catch-up from ' if variant=='catch_up' else 'Continued from ')+brief['title'],source=brief['source'],revision=digest(brief['text']))
             text=brief['text']
         elif kind=='terminal':
             from workspace_terminal import TERMINALS
-            terminal=TERMINALS.get(ident);screen=terminal.screen(6000)
+            if 'snapshot' in ref:
+                screen=ref['snapshot']
+                if not isinstance(screen,str) or len(screen)>6000:raise ValueError('Choose up to 6,000 characters of terminal output.')
+                row['snapshot']=screen
+                location=''
+            else:
+                terminal=TERMINALS.get(ident);screen=terminal.screen(6000)
+                location=f' in {terminal.cwd}'
             row.update(label='Terminal output',source='Terminal',revision=digest(screen))
-            text=f'Recent output from the terminal in {terminal.cwd}, shared by the person (the newest lines are last):\n{screen}'
+            text=f'Terminal output{location}, shared by the person (the newest lines are last):\n{screen}'
         elif kind=='collection':
             import workspace_collections
             d=workspace_collections.read(bid,ident)
@@ -280,34 +290,55 @@ def handoff(app,bid,chat_id):
     raise ValueError('This conversation has no completed reply to continue from yet.')
 
 
-def handoff_brief(app,bid,chat_id,returning=False):
+def handoff_brief(app,bid,chat_id,returning=False,after=None):
     """What a new chat in another app needs to pick up this work: where it stands, the latest exchanges, and to check before acting."""
     chat=next((c for c in app.preferences['chats'] if c['id']==chat_id and c['business_id']==bid and c.get('workspace',app.workspace_path)==app.workspace_path),None)
     if not chat:raise ValueError('Choose a conversation in this business and workspace.')
     path=app.chat_display_path(chat_id)
     messages=json.loads(path.read_text(encoding='utf-8')) if path.is_file() else []
+    def marker(row):
+        return digest([row.get('request_id'),row.get('at'),row.get('role'),row.get('text')])
+    if not messages:raise ValueError('This conversation has nothing to continue from yet.')
+    cursor=marker(messages[-1])
+    matched=False
+    if after:
+        for i in range(len(messages)-1,-1,-1):
+            if marker(messages[i])==after:
+                messages=messages[i+1:]
+                matched=True
+                break
+        if matched and not messages:raise ValueError('This linked chat already has the latest exchanges.')
     exchanges=[];reply=None
     for message in reversed(messages):
         text=str(message.get('text','')).strip()
-        if message.get('role')=='assistant':
+        if message.get('role')=='assistant' and reply is None:
             reply=None if message.get('status') in {'error','stopped','working'} or not text else text
-        elif message.get('role')=='user' and text and not text.startswith('Keep this chat’s cache warm.'):
-            exchanges.append((text,reply));reply=None
-            if len(exchanges)>=HANDOFF_EXCHANGES:break
+        elif message.get('role')=='user':
+            if text and not text.startswith('Keep this chat’s cache warm.'):exchanges.append((text,reply))
+            reply=None
+
     if not exchanges:raise ValueError('This conversation has nothing to continue from yet.')
     source={'codex':'Codex','claude':'Claude Code','omp':'OMP','pi':'Pi','hermes':'Hermes','antigravity':'Antigravity'}.get(chat.get('agent'),str(chat.get('agent') or 'another app'))
     origin=f'the chat “{chat.get("title","Untitled")}” in {source}'+(f' ({chat["model"]})' if chat.get('model') else '')
-    lines=[f'While this chat was paused, the work continued in {origin}. Here is what happened there; it is new to you. Continue from where it now stands.' if returning else
+    lines=[f'While this chat was paused, the work continued in {origin}. Here are the available updates. Continue from where it now stands.' if returning else
            f'This continues work from {origin}. It is a new conversation for you: only what is below was carried over.']
     if chat.get('summary'):lines.append('Where it stands: '+str(chat['summary'])[:1500])
-    lines.append(f'The latest {len(exchanges)} exchange{"s" if len(exchanges)!=1 else ""}, oldest first:')
-    budget=9000
-    for request,answer in reversed(exchanges):
-        block='Request: '+request[:900]+('…' if len(request)>900 else '')+'\nReply: '+((answer[:2600]+('…' if len(answer)>2600 else '')) if answer else '(no finished reply)')
-        lines.append(block[:budget]);budget-=len(block)
-        if budget<=0:break
+    blocks=[];budget=9000
+    for request,answer in exchanges:
+        if not returning and len(blocks)>=HANDOFF_EXCHANGES:break
+        # Keep the conclusion as well as the opening of long replies.
+        answer=answer or '(no finished reply)'
+        if len(answer)>2600:answer=answer[:800]+' … '+answer[-1796:]
+        if len(request)>900:request=request[:300]+' … '+request[-596:]
+        block='Request: '+request+'\nReply: '+answer
+        if len(block)>budget:break
+        blocks.append(block);budget-=len(block)
+    if returning and not matched:lines.append('Earlier coverage is unknown; some exchanges may already be familiar.')
+    if len(blocks)<len(exchanges):lines.append(f'{len(exchanges)-len(blocks)} older exchange(s) omitted for space.')
+    lines.append('Latest exchanges, oldest first:')
+    lines.extend(reversed(blocks))
     lines.append('Before changing anything, check the current state yourself. Earlier replies may be out of date, and work they describe may not have taken effect.')
-    return {'title':chat.get('title','Untitled'),'source':source,'text':'\n\n'.join(lines)}
+    return {'title':chat.get('title','Untitled'),'source':source,'cursor':cursor,'text':'\n\n'.join(lines)}
 
 
 def message_ref(raw):
@@ -352,7 +383,7 @@ def reusable(app,bid,chat_id,index,expected=None):
                 if workspace_goals.available(original) and candidate and workspace_goals.available(workspace_goals.find(bid,candidate)):new_chat_goal=candidate
             except ValueError:pass
         return {'text':row.get('text',''),'role':row.get('role'),'files':row.get('files',[]),
-                'references':[{k:r[k] for k in ('kind','id','label','variant','request_id') if k in r} for r in row.get('references',[]) if not (r['kind']=='file' and r['id'] in row.get('files',[])) and not (r['kind']=='goal' and r['id'] in goal_receipts)],
+                'references':[{k:r[k] for k in ('kind','id','label','variant','request_id','snapshot') if k in r} for r in row.get('references',[]) if not (r['kind']=='file' and r['id'] in row.get('files',[])) and not (r['kind']=='goal' and r['id'] in goal_receipts)],
                 'goal_id':row.get('goal_id') or '', 'new_chat_goal_id':new_chat_goal,'source_chat':chat_id,'source_message':index,
                 'connection':{'kind':chat['agent'],'model':chat.get('model',''),'effort':chat.get('effort','')}}
 

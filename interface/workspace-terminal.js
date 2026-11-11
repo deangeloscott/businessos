@@ -22,7 +22,7 @@ window.auraTerminal=(()=>{
   function folderName(path){return String(path||'').split(/[\\/]/).filter(Boolean).pop()||path||'';}
   function paintTabs(){
     const host=$('#terminal-tabs');if(!host)return;
-    host.innerHTML=[...tabs.values()].map(t=>`<span class="terminal-tab ${t.id===active?'active':''}"><button type="button" class="terminal-tab-name" data-terminal-tab="${esc(t.id)}" aria-pressed="${t.id===active}" title="${esc(t.info.cwd)}">${esc(t.info.title)}${t.ended?' · Ended':''}</button><button type="button" class="terminal-tab-close" data-terminal-close="${esc(t.id)}" aria-label="Close ${esc(t.info.title)}" title="Close">×</button></span>`).join('');
+    host.innerHTML=[...tabs.values()].map(t=>`<span class="terminal-tab ${t.id===active?'active':''}"><button type="button" class="terminal-tab-name" data-terminal-tab="${esc(t.id)}" aria-pressed="${t.id===active}" title="${esc(t.info.cwd)}">${esc(t.info.title)}${t.ended?' · Ended':t.disconnected?' · Reconnecting':''}</button><button type="button" class="terminal-tab-close" data-terminal-close="${esc(t.id)}" aria-label="Close ${esc(t.info.title)}" title="Close">×</button></span>`).join('');
     const t=tabs.get(active);$('#terminal-place').textContent=t?folderName(t.info.cwd):'';
     $('#terminal-share').disabled=!t;
   }
@@ -50,9 +50,12 @@ window.auraTerminal=(()=>{
         try{r=await api('/api/terminal/output?streams='+live.map(t=>encodeURIComponent(t.id)+':'+t.offset).join(',')+'&wait=20',undefined,{signal:controller.signal});failures=0;}
         catch(error){
           if(controller.signal.aborted)continue;
-          if(++failures<3){await new Promise(r=>setTimeout(r,1000*failures));continue;}
-          for(const t of live)if(tabs.has(t.id))ended(t,null,humanError(error));return;
+          for(const t of live)t.disconnected=true;
+          paintTabs();
+          await new Promise(resolve=>setTimeout(resolve,Math.min(5000,1000*++failures)));
+          continue;
         }finally{if(waiting===controller)waiting=null;}
+        if(live.some(t=>t.disconnected)){for(const t of live)t.disconnected=false;paintTabs();}
         for(const item of r.items||[]){
           const t=tabs.get(item.id);if(!t||t.ended)continue;
           if(item.gone){ended(t,null,'This terminal is no longer available');continue;}
@@ -83,7 +86,7 @@ window.auraTerminal=(()=>{
     const {term,fit:fitAddon,host}=ui;host.dataset.terminal=info.id;
     const t={id:info.id,info,term,fit:fitAddon,host,offset:0,ended:!info.alive,cols:started?term.cols:0,rows:started?term.rows:0,pending:'',sending:null};
     term.onData(data=>{
-      if(t.ended)return;t.pending+=data;
+      if(t.ended||t.disconnected)return;t.pending+=data;
       // Typing is batched briefly so a fast typist does not send one request per key.
       clearTimeout(t.sending);t.sending=setTimeout(()=>{const chunk=t.pending;t.pending='';api('/api/terminal',{action:'input',id:t.id,data:chunk}).catch(error=>notice(humanError(error),true));},12);
     });
@@ -120,13 +123,32 @@ window.auraTerminal=(()=>{
   async function close(id){
     const t=tabs.get(id);if(!t)return;
     if(!t.ended&&!confirm(`Close “${t.info.title}”? Anything running in it stops.`))return;
-    tabs.delete(id);t.term.dispose();t.host.remove();restream();
-    api('/api/terminal',{action:'remove',id}).catch(()=>{});
+    if(!t.ended){
+      try{await api('/api/terminal',{action:'remove',id});}
+      catch(error){notice(humanError(error),true);return;}
+    }else{api('/api/terminal',{action:'remove',id}).catch(()=>{});}
+    clearTimeout(t.sending);tabs.delete(id);t.term.dispose();t.host.remove();restream();
     if(active===id){const next=[...tabs.keys()].pop();if(next)select(next);else{active='';paintTabs();hide();}}else paintTabs();
   }
   function share(){
     const t=tabs.get(active);if(!t)return;
-    if(window.auraCompose?.add({kind:'terminal',id:t.id,label:'Terminal output'})){returnToChat();notice('Terminal output added. Your AI sees the latest output when you send.');}
+    const buffer=t.term.buffer.active;
+    const lines=[];
+    let length=0;
+    const last=Math.min(buffer.length,buffer.viewportY+t.term.rows)-1;
+    for(let i=last;i>=0&&length<6000;i--){
+      const line=buffer.getLine(i);
+      if(!line)continue;
+      const text=line.translateToString(true);
+      if(!lines.length&&!text)continue;
+      lines.push({text,wrapped:line.isWrapped});length+=text.length+1;
+    }
+    const snapshot=t.term.getSelection()||lines.reverse().map((line,i)=>(i&&!line.wrapped?'\n':'')+line.text).join('');
+    if(!snapshot.trim()){notice('There is no terminal output to add.');return;}
+    const excerpt=Array.from(snapshot).slice(-6000).join('');
+    if(window.auraCompose?.add({kind:'terminal',id:t.id,request_id:crypto.randomUUID(),label:'Terminal output',snapshot:excerpt})){
+      returnToChat();notice('Terminal output attached. Select the attachment to review it.');
+    }
   }
   document.addEventListener('click',event=>{
     const b=event.target.closest('[data-terminal-tab],[data-terminal-close],#terminal-new,#terminal-hide,#terminal-share,[data-terminal-run]');if(!b)return;

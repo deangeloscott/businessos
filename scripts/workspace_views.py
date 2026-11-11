@@ -80,7 +80,7 @@ def shapes(rows):
             elif isinstance(v, str) and 0 < len(v) <= 60 and k != 'address':groups.setdefault(k, set()).add(v)
     # A status or stage field is a pipeline from the first result; other fields need at least two groups to be worth a board.
     stage = lambda k: re.fullmatch(r'(status|stage|state|pipeline|phase)', k.lower()) is not None
-    return {'map': places, 'chart': sorted(numbers), 'board': sorted(k for k, values in groups.items() if (1 if stage(k) else 2) <= len(values) <= 12)}
+    return {'map': places, 'chart': sorted(numbers), 'board': sorted(k for k, values in groups.items() if stage(k) or 2 <= len(values) <= 12)}
 
 
 # --- Place lookups: an address becomes coordinates once, then it is remembered ---------------
@@ -193,12 +193,19 @@ def cadence(raw):
     raw = str(raw or '').strip();upper = raw.upper();days = {'MO': 'Monday', 'TU': 'Tuesday', 'WE': 'Wednesday', 'TH': 'Thursday', 'FR': 'Friday', 'SA': 'Saturday', 'SU': 'Sunday'}
     freq = re.search(r'(?:^|[;:])FREQ=(\w+)', upper)
     if freq:
+        rule=upper.removeprefix('RRULE:')
+        parts=rule.split(';')
+        if any(not re.fullmatch(r'(FREQ=(HOURLY|DAILY|WEEKLY|MONTHLY|YEARLY)|INTERVAL=[1-9]\d*|BYDAY=(MO|TU|WE|TH|FR|SA|SU)(,(MO|TU|WE|TH|FR|SA|SU))*|BYHOUR=([01]?\d|2[0-3])|BYMINUTE=[0-5]?\d)', part) for part in parts):return raw
+        keys=[part.split('=')[0] for part in parts]
+        if len(set(keys))!=len(keys) or ('BYMINUTE' in keys and 'BYHOUR' not in keys) or ('BYDAY' in keys and freq[1]!='WEEKLY'):return raw
         h, m = re.search(r'BYHOUR=(\d{1,2})', upper), re.search(r'BYMINUTE=(\d{1,2})', upper)
         at = f' at {_clock(int(h[1]), int(m[1]) if m else 0)}' if h and int(h[1]) < 24 else ''
         every = re.search(r'INTERVAL=(\d+)', upper);n = int(every[1]) if every else 1
         unit = {'HOURLY': 'hour', 'DAILY': 'day', 'WEEKLY': 'week', 'MONTHLY': 'month', 'YEARLY': 'year'}.get(freq[1], '')
         byday = re.search(r'BYDAY=([A-Z,]+)', upper)
-        if byday and freq[1] == 'WEEKLY':return 'Every ' + ', '.join(days.get(d, d) for d in byday[1].split(',')) + at
+        if byday and freq[1] == 'WEEKLY':
+            names=', '.join(days.get(d,d) for d in byday[1].split(','))
+            return (('Every ' + names) if n==1 else ('Every other ' + names) if n==2 else f'Every {n} weeks on {names}') + at
         return (f'Every {n} {unit}s' if n > 1 else f'Every {unit}') + at if unit else raw
     parts = raw.split()
     if len(parts) == 6 and parts[0] == '0':parts = parts[1:]

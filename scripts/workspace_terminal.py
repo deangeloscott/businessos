@@ -43,9 +43,18 @@ class _Posix:
         import pty
         master, slave = pty.openpty()
         self._size(slave, cols, rows)
-        self.process = subprocess.Popen(argv, stdin=slave, stdout=slave, stderr=slave, cwd=cwd, env=env,
-                                        start_new_session=True, close_fds=True)
-        os.close(slave)
+        # Acquire the slave in the new session before exec. Running this in a
+        # fresh interpreter keeps preexec_fn out of the threaded server.
+        acquire = 'import os,sys,fcntl,termios;fcntl.ioctl(0,termios.TIOCSCTTY,0);os.execvpe(sys.argv[1],sys.argv[1:],os.environ)'
+        try:
+            self.process = subprocess.Popen([sys.executable, '-c', acquire, *argv], stdin=slave,
+                                            stdout=slave, stderr=slave, cwd=cwd, env=env,
+                                            start_new_session=True, close_fds=True)
+        except OSError:
+            os.close(master)
+            raise
+        finally:
+            os.close(slave)
         self.master = master
 
     @staticmethod

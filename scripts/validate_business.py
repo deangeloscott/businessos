@@ -101,6 +101,7 @@ def validate_business(business_id,require_context=False):
 def _validate_business(business_id,require_context=False):
     errors=[];warnings=[];base=ROOT/'instances'/business_id
     if not base.exists() or not base.is_dir():return [f'Unknown business: {business_id}'],warnings,{}
+    if base.resolve()!=workspace_root().resolve()/'instances'/business_id:return ['Linked record folder is outside this business.'],warnings,{}
     try:inst=json.loads((base/'instance.json').read_text(encoding='utf-8'))
     except Exception as e:return [f'invalid instance.json: {e}'],warnings,{}
     if inst.get('business_id')!=business_id:errors.append('instance.json business_id mismatch')

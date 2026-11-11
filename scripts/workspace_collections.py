@@ -226,13 +226,15 @@ def coverage(data,doc):
     configured=[r.get('source_id') or r['reference'] for r in doc.get('source_refs',[])]
     if expected_sources is None:expected_sources=configured
     checked=v.get('checked',[]);failed=v.get('failed',[])
-    for values in (expected_sources,checked,failed):
+    previous=(doc.get('checks') or [{}])[-1].get('coverage',{})
+    deferred=v.get('deferred',previous.get('deferred',[]))
+    for values in (expected_sources,checked,failed,deferred):
         if not isinstance(values,list) or len(values)>2000 or any(not isinstance(s,str) or not s or len(s)>2000 for s in values):raise ValueError('Coverage needs bounded source identities for expected, checked, and failed sources.')
     expected_sources=list(dict.fromkeys([*configured,*expected_sources]))
-    complete=data.get('status')=='complete' and bool(checked) and bool(expected_sources or v.get('scope')) and not failed and set(expected_sources)<=set(checked)
+    complete=data.get('status')=='complete' and not deferred and bool(checked) and bool(expected_sources or v.get('scope')) and not failed and set(expected_sources)<=set(checked)
     status='complete' if complete else 'failed' if data.get('status')=='failed' else 'partial' if checked else 'unknown'
     return {'status':status,'expected':list(dict.fromkeys(expected_sources)),'checked':list(dict.fromkeys(checked)),
-            'failed':list(dict.fromkeys(failed)),'scope':str(v.get('scope',''))[:1000],'basis':'Producer-reported checks; not independent factual verification.'}
+            'deferred':list(dict.fromkeys(deferred)),'failed':list(dict.fromkeys(failed)),'scope':str(v.get('scope',''))[:1000],'basis':'Producer-reported checks; not independent factual verification.'}
 
 
 @organization_transaction
@@ -330,7 +332,7 @@ def check_summary(c):
     cov=c['coverage'];missing=sorted(set(cov['expected'])-set(cov['checked']))
     return {**{k:c[k] for k in ('run_id','at','change_count','no_change_verified')},'upkeep':bool(c.get('upkeep')),'changes':c.get('changes',[])[:20],
             'coverage':{'status':cov['status'],'checked':len(cov['checked']),'expected':len(cov['expected']),
-                        'failed':cov['failed'][:10],'missing':missing[:10],'scope':cov.get('scope',''),'basis':cov['basis']}}
+                        'deferred':cov.get('deferred',[]),'failed':cov['failed'][:10],'missing':missing[:10],'scope':cov.get('scope',''),'basis':cov['basis']}}
 
 
 def select(d,view='current',q='',at=None):
@@ -404,7 +406,7 @@ def instructions(bid,ident):
                  'Keep each source as a stable link with the exact short quotes that support the finding; keep a full copy only when a source is fragile (likely to change or disappear). ')
     return ('\n\n[Aura results]\nCollection: '+ident+'. '+d['purpose']+'\n'+
             'Read the current collection, its findings and its latest check by executing this argument list (each string is a separate argument): '+json.dumps(argv)+'. '+
-            'Keep what is known current instead of piling up results: ask sources only for what is new since the last check, triage cheaply, read only what matters within a sensible budget, '+
+            'Keep what is known current instead of piling up results: revisit links in latest_check.coverage.deferred first, then ask sources for what is new since the last check. Carry unread links forward in coverage.deferred on each apply, triage cheaply, read only what matters within a sensible budget, '+
             'then fold it into the linked findings (support, challenge, extend or replace them) and add a finding only when it is genuinely new. Most runs change nothing; that is fine. '+
             copies_note+'When upkeep is due (about monthly), recheck findings past their review date and mark that run with "upkeep": true. '+
             'Use the helper apply action with JSON on standard input (--input -), the current revision, stable result identities, '+

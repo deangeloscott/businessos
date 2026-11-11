@@ -2239,14 +2239,14 @@ function continuationNote(c){
   const to=c?.continued_to,from=c?.continued_from,caught=c?.caught_up_from;
   if(to)return `<p>${to.method==='catch_up'?`This work moved back to the ${esc(appLabel(to.agent))} chat, now caught up.`:`You continued this work in ${esc(appLabel(to.agent))}.`} Messages here start a separate version.</p><button type="button" class="text-button" data-chat="${esc(to.chat_id)}">Open the ${esc(appLabel(to.agent))} chat →</button>`;
   if(caught)return `<p>Caught up with what happened in the ${esc(appLabel(caught.agent))} chat.</p><button type="button" class="text-button" data-chat="${esc(caught.chat_id)}">Open it</button>`;
-  if(from)return `<p>Continued from “${esc(from.title)}” in ${esc(appLabel(from.agent))}${from.method==='import'?', with the full conversation':''}.</p><button type="button" class="text-button" data-chat="${esc(from.chat_id)}">Open the original</button><button type="button" class="text-button" data-catch-up="${esc(c.id)}" data-catch-up-into="${esc(from.chat_id)}">Back to ${esc(appLabel(from.agent))}, caught up</button>`;
+  if(from)return `<p>Continued from “${esc(from.title)}” in ${esc(appLabel(from.agent))}${from.method==='import'?', with the full conversation':''}.</p><button type="button" class="text-button" data-chat="${esc(from.chat_id)}">Open the original</button><button type="button" class="text-button" data-catch-up="${esc(c.id)}" data-catch-up-into="${esc(from.chat_id)}">Back to ${esc(appLabel(from.agent))} and catch up</button>`;
   return '';
 }
 async function catchUp(id,into){
   const business=state.business;
   if(!confirm('Send a catch-up into the original chat? It gets what happened here and continues there; this chat stays as it is.'))return;
   await api('/api/chats/continue',{business,id,chat_id:into,method:'catch_up'});
-  if(business===state.business){notice('Caught up. Continuing in the original chat.');await openShellChat(into);}
+  if(business===state.business){notice('Catching up in the original chat.');await openShellChat(into);}
 }
 function paintContinuation(){const host=$('#chat-continuation');if(!host)return;const html=continuationNote(state.chatMeta);host.hidden=!html;host.innerHTML=html;}
 async function openContinue(id,preferred=''){
@@ -2256,8 +2256,8 @@ async function openContinue(id,preferred=''){
   const form=$('#continue-form');if(!form)return;
   form.addEventListener('submit',event=>{event.preventDefault();if(form.dataset.busy)return;form.dataset.busy='1';form.querySelector('button.primary').disabled=true;
     const choice=form.querySelector('input[name=app]:checked'),app=choice.value,method=choice.dataset.method,status=$('#continue-status');
-    if(method==='catch_up'){attempt(async()=>{try{say('Catching up the linked chat…');await api('/api/chats/continue',{business,id,chat_id:choice.dataset.chat,method:'catch_up'});if(business===state.business)await openShellChat(choice.dataset.chat);}finally{delete form.dataset.busy;if(form.isConnected)form.querySelector('button.primary').disabled=false;}});return;}
     const say=text=>{status.hidden=!text;status.textContent=text;};
+    if(method==='catch_up'){attempt(async()=>{try{say('Catching up the linked chat…');await api('/api/chats/continue',{business,id,chat_id:choice.dataset.chat,method:'catch_up'});if(business===state.business)await openShellChat(choice.dataset.chat);}finally{delete form.dataset.busy;if(form.isConnected)form.querySelector('button.primary').disabled=false;}});return;}
     attempt(async()=>{try{
       if(method!=='import'){say('Starting the new chat…');const r=await api('/api/chats/continue',{business,id,app,method:'handoff'});if(business===state.business)await openShellChat(r.chat_id);return;}
       say('Opening the importer in a terminal below…');let job=await api('/api/chats/continue',{business,id,app,method:'import'});
@@ -2482,8 +2482,10 @@ document.addEventListener('click',event=>attempt(async()=>{
     if(item.kind==='task_limit'&&item.task_id){await showTaskLimit(item.task_id);}
     if(item.kind==='goal'&&item.goal_id&&window.auraCompose){$('#notification-dialog').close();await window.auraCompose.openGoal(item.goal_id);}
     if(['deadline','changes'].includes(item.kind)&&item.collection_id&&window.auraProjects){
-      $('#notification-dialog').close();window.auraViews?.choice(item.collection_id,'list');
+      $('#notification-dialog').close();
+      if(item.kind==='changes'||!item.item_id)window.auraViews?.choice(item.collection_id,'list');
       state.inbox=await api('/api/notifications',{business:state.business,action:'read',id:item.id});renderNotifications();
+      if(item.kind==='deadline'&&item.item_id){await window.auraProjects.openDeadline(item.collection_id,item.item_id);return;}
       await window.auraProjects.openCollection(item.collection_id,item.kind==='changes'?'changes':'current',item.kind==='deadline'?item.item_title||'':'');return;
     }
     if(item.kind==='goal'){state.inbox=await api('/api/notifications',{business:state.business,action:'read',id:item.id});renderNotifications();return;}
