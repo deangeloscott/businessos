@@ -269,13 +269,13 @@ async function showAccounts(){
       <label>Goals<select data-policy="goals">${option('','Same as above',p.goals)}${modes(p.goals)}</select></label>
       <label>Backup app<select data-policy="backup_app">${option('','None',p.backup_app)}${apps.map(c=>option(c.id,c.name,p.backup_app)).join('')}</select></label>
       <label>Continue this chat when the limit resets<select data-policy="resume">${option('off','Off',p.resume)}${option('open','While AURA is open',p.resume)}${option('closed','Even when AURA is closed',p.resume)}</select></label>
-      <p class="small-note">A backup app starts a new chat with this chat’s latest result. Scheduled tasks run inside each app and follow that app’s own behavior. You’re responsible for following each provider’s terms.</p>
+      <p class="small-note">A backup app starts a new chat carrying where this chat stands and its latest exchanges. Scheduled tasks run inside each app and follow that app’s own behavior. You’re responsible for following each provider’s terms.</p>
     </section>
     <section class="accounts-section"><h3>Claude Code</h3>${claude.map(row).join('')||'<p class="small-note">Only Claude Code’s own sign-in so far.</p>'}
-      <details><summary>Add a Claude account</summary><ol class="small-note"><li>In a terminal, run <code>claude setup-token</code> and sign in with the other account.</li><li>Paste the token it prints.</li></ol>
+      <details><summary>Add a Claude account</summary><ol class="small-note"><li>Run <code>claude setup-token</code> <button type="button" class="text-button" data-terminal-run="claude-setup-token">Run in terminal</button> and sign in with the other account.</li><li>Paste the token it prints.</li></ol>
       <form id="claude-account-form" class="form-grid"><label>Nickname<input name="nickname" maxlength="40" placeholder="Work"></label><label>Token<input name="token" type="password" autocomplete="off" required></label><button class="primary">Add account</button></form></details></section>
     <section class="accounts-section"><h3>Codex</h3>${data.codex_supported?(codex.map(row).join('')||'<p class="small-note">Save the account Codex uses now, then add another.</p>')+`<div class="inline-actions"><button type="button" class="secondary" data-codex-capture>Save current account</button><button type="button" class="secondary" data-codex-login>Sign in to another account</button></div><p class="small-note">Switching also switches the account in your Codex app. Your chats stay.</p>`:`<p class="small-note">${esc(data.codex_reason)}</p>`}</section>
-    <section class="accounts-section"><h3>Other apps</h3>${Object.entries(data.native).map(([k,v])=>`<p class="small-note"><strong>${esc(limitAppName(k))}:</strong> ${esc(v)}${k==='pi'&&data.pi?(data.pi.installed?' <span class="row-meta">· Installed</span>':' <button type="button" class="text-button" data-pi-install>Set it up</button>'):''}</p>`).join('')}<p class="small-note">See <a href="https://github.com/deangeloscott/businessos/blob/main/docs/tools-and-services.md#several-accounts-or-subscriptions" target="_blank" rel="noopener noreferrer">several accounts ↗</a> for setup.</p></section>`);
+    <section class="accounts-section"><h3>Other apps</h3>${Object.entries(data.native).map(([k,v])=>`<p class="small-note"><strong>${esc(limitAppName(k))}:</strong> ${esc(v)}${k==='pi'&&data.pi?(data.pi.installed?' <span class="row-meta">· Installed</span> <button type="button" class="text-button" data-terminal-run="pi-login">Open Pi to sign in</button>':' <button type="button" class="text-button" data-pi-install>Set it up</button>'):''}${k==='omp'?' <button type="button" class="text-button" data-terminal-run="omp-login">Run omp login</button>':''}</p>`).join('')}<p class="small-note">See <a href="https://github.com/deangeloscott/businessos/blob/main/docs/tools-and-services.md#several-accounts-or-subscriptions" target="_blank" rel="noopener noreferrer">several accounts ↗</a> for setup.</p></section>`);
   const host=$('#detail');
   host.querySelectorAll('[data-policy]').forEach(select=>select.addEventListener('change',()=>attempt(async()=>{await api('/api/accounts',{business:state.business,action:'policy',changes:{[select.dataset.policy]:select.value}});notice('Saved.');await loadLimitOptions();})));
   $('#claude-account-form')?.addEventListener('submit',event=>{event.preventDefault();attempt(async()=>{const f=new FormData(event.target);await api('/api/accounts',{business:state.business,action:'claude_add',token:f.get('token'),nickname:f.get('nickname')});notice('Claude account added.');await showAccounts();});});
@@ -1604,6 +1604,8 @@ function shellCommands(){
     {label:'Agents',hint:'Library',words:'assistants specialists open',run:click({'data-view':'assistants'})},
     {label:'Scheduled tasks',hint:'Go to',words:'schedules automations open',run:click({'data-view':'tools'})},
     {label:'Usage & spend',hint:'Plan limits',words:'cost tokens limits',run:()=>$('#usage-open').click()},
+    {label:'Open terminal',hint:'Ctrl `',words:'shell command line console powershell bash prompt',run:()=>attempt(()=>window.auraTerminal.open({reuse:true}))},
+    {label:'Continue in another app',hint:'This chat',words:'move switch handoff import codex claude omp pi hermes',run:()=>state.chatMeta?.id?attempt(()=>openContinue(state.chatMeta.id)):notice('Open a chat first.')},
     {label:'Archived & deleted',hint:'Restore',words:'trash restore undo',run:()=>$('#shell-search-archive').click()},
     {label:'All settings',hint:'Ctrl ,',words:'preferences options',run:openSettings},
     ...settings,
@@ -2231,6 +2233,37 @@ $('#project-editor-form').addEventListener('submit',event=>{
     }finally{button.disabled=false;}
   });
 });
+const appLabel=kind=>({codex:'Codex',claude:'Claude Code',omp:'OMP',pi:'Pi',hermes:'Hermes',antigravity:'Antigravity'})[kind]||appName(kind);
+/* Continue in another app: the full conversation where the receiving app can import it, otherwise a handoff. Both chats link to each other. */
+function continuationNote(c){
+  const to=c?.continued_to,from=c?.continued_from;
+  if(to)return `<p>You continued this work in ${esc(appLabel(to.agent))}. Messages here start a separate version.</p><button type="button" class="text-button" data-chat="${esc(to.chat_id)}">Open the ${esc(appLabel(to.agent))} chat →</button>`;
+  if(from)return `<p>Continued from “${esc(from.title)}” in ${esc(appLabel(from.agent))}${from.method==='import'?', with the full conversation':''}.</p><button type="button" class="text-button" data-chat="${esc(from.chat_id)}">Open the original</button>`;
+  return '';
+}
+function paintContinuation(){const host=$('#chat-continuation');if(!host)return;const html=continuationNote(state.chatMeta);host.hidden=!html;host.innerHTML=html;}
+async function openContinue(id){
+  const business=state.business,d=await api('/api/chats/continue?business='+encodeURIComponent(business)+'&id='+encodeURIComponent(id));if(business!==state.business)return;
+  const apps=d.apps||[];
+  details('Continue in another app',`<p>Pick up “${esc(d.chat.title)}” in another AI app.${d.continued_to?` It already continued in ${esc(appLabel(d.continued_to.agent))}; continuing again makes another copy.`:''}</p>${d.busy?'<p class="continue-busy" role="status">This chat is still working. Stop it or let it finish first.</p>':''}${apps.length?`<form id="continue-form" class="continue-options">${apps.map((a,i)=>`<label class="continue-option"><input type="radio" name="app" value="${esc(a.id)}" data-method="${esc(a.method)}" ${i===0?'checked':''}><span class="continue-option-text"><strong>${esc(a.name)}</strong><span class="source-chip ${a.method==='import'?'':'unverified'}">${a.method==='import'?'Full conversation':'Handoff'}</span><small>${esc(a.carries)}</small><small>${esc(a.cost)} ${esc(a.permission)}</small></span></label>`).join('')}<p class="small-note">${esc(d.privacy)} Only want a different model? Switch it in this chat instead; that keeps everything.</p><div id="continue-status" class="continue-status" role="status" hidden></div><div class="inline-actions"><button class="primary" ${d.busy?'disabled':''}>Continue</button><button type="button" class="text-button" data-edit-chat="${esc(id)}">Cancel</button></div></form>`:empty('No other AI app connected','Connect another app in Settings → AI connections, then continue this chat there.')}`);
+  const form=$('#continue-form');if(!form)return;
+  form.addEventListener('submit',event=>{event.preventDefault();if(form.dataset.busy)return;form.dataset.busy='1';form.querySelector('button.primary').disabled=true;
+    const choice=form.querySelector('input[name=app]:checked'),app=choice.value,method=choice.dataset.method,status=$('#continue-status');
+    const say=text=>{status.hidden=!text;status.textContent=text;};
+    attempt(async()=>{try{
+      if(method!=='import'){say('Starting the new chat…');const r=await api('/api/chats/continue',{business,id,app,method:'handoff'});if(business===state.business)await openShellChat(r.chat_id);return;}
+      say('Opening the importer in a terminal below…');let job=await api('/api/chats/continue',{business,id,app,method:'import'});
+      await window.auraTerminal?.attachExisting(job.terminal_id);
+      while(job.status==='working'||job.status==='needs_you'){
+        say(job.step);await new Promise(r=>setTimeout(r,1000));if(business!==state.business)return;
+        job=await api('/api/chats/continue?business='+encodeURIComponent(business)+'&job='+encodeURIComponent(job.id));
+      }
+      if(job.status==='done'){notice(job.step);await openShellChat(job.new_chat_id);return;}
+      say(job.step);form.querySelector('.inline-actions').insertAdjacentHTML('afterbegin','<button type="button" class="secondary" id="continue-handoff">Use a handoff instead</button>');
+      $('#continue-handoff').onclick=()=>attempt(async()=>{const r=await api('/api/chats/continue',{business,id,app,method:'handoff'});if(business===state.business)await openShellChat(r.chat_id);});
+    }finally{delete form.dataset.busy;if(form.isConnected)form.querySelector('button.primary').disabled=false;}});
+  });
+}
 async function showChatDetails(id,note=''){
   const chat=state.chatList.find(c=>c.id===id);if(!chat)return;
   const description=chat.summary||chat.latest_request||'No description yet.';
@@ -2238,7 +2271,7 @@ async function showChatDetails(id,note=''){
   const fullRequest=state.chatMeta?.id===id?request(state.chat):'';
   const label=chat.summary?'Where things stand':fullRequest?'Latest request':chat.latest_request?'Latest request (preview)':'About this chat';
   const status=({working:'Working',error:'Needs attention',stopped:'Stopped',complete:'Reply ready'})[chat.status]||'Saved';
-  details(chat.title,`<div class="chat-detail"><div class="chat-detail-meta"><p>${esc(appName(chat.agent))} · ${esc(chat.model||'App default')} · ${esc(chatDate(chat.updated))} · ${esc(status)}</p></div><div class="chat-detail-project"><button type="button" class="project-trigger" data-choose-project="${esc(id)}" aria-haspopup="dialog">${folderIcon()}<span>${esc(chat.project||'Add to project')}</span>${chevronIcon()}</button></div><form id="chat-title-form" class="chat-title-editor" hidden><input type="hidden" name="id" value="${esc(id)}"><label for="chat-title-input">Chat title</label><div class="chat-title-controls"><input id="chat-title-input" name="title" required maxlength="80" value="${esc(chat.title)}"><button class="secondary">Save title</button><button type="button" class="text-button" data-cancel-rename="${esc(id)}">Cancel</button></div></form><section class="chat-description-section" aria-label="${esc(label)}"><h3>${esc(label)}</h3><p class="chat-full-description">${esc(chat.summary||fullRequest||description)}</p>${chat.summary?`<p class="chat-description-date">${esc(chat.summary_source==='App'?'App summary':'Description')} · ${esc(chatDate(chat.summary_updated))}${chat.summary_stale?' · May need updating':''}</p>`:''}</section>${note?`<p class="chat-detail-note" role="status">${esc(note)}</p>`:''}<div class="chat-detail-actions"><button class="text-button" data-archive-chat="${esc(id)}" data-archived="${!chat.archived}" ${!chat.archived&&chat.status==='working'?'disabled':''}>${chat.archived?'Restore chat':'Archive chat'}</button><div class="chat-detail-primary-actions"><button class="secondary" data-refresh-chat="${esc(id)}">Refresh from app</button><button class="primary" data-chat="${esc(id)}">Open chat →</button></div></div></div>`);
+  details(chat.title,`<div class="chat-detail"><div class="chat-detail-meta"><p>${esc(appName(chat.agent))} · ${esc(chat.model||'App default')} · ${esc(chatDate(chat.updated))} · ${esc(status)}</p></div><div class="chat-detail-project"><button type="button" class="project-trigger" data-choose-project="${esc(id)}" aria-haspopup="dialog">${folderIcon()}<span>${esc(chat.project||'Add to project')}</span>${chevronIcon()}</button></div><form id="chat-title-form" class="chat-title-editor" hidden><input type="hidden" name="id" value="${esc(id)}"><label for="chat-title-input">Chat title</label><div class="chat-title-controls"><input id="chat-title-input" name="title" required maxlength="80" value="${esc(chat.title)}"><button class="secondary">Save title</button><button type="button" class="text-button" data-cancel-rename="${esc(id)}">Cancel</button></div></form><section class="chat-description-section" aria-label="${esc(label)}"><h3>${esc(label)}</h3><p class="chat-full-description">${esc(chat.summary||fullRequest||description)}</p>${chat.summary?`<p class="chat-description-date">${esc(chat.summary_source==='App'?'App summary':'Description')} · ${esc(chatDate(chat.summary_updated))}${chat.summary_stale?' · May need updating':''}</p>`:''}</section>${note?`<p class="chat-detail-note" role="status">${esc(note)}</p>`:''}${continuationNote(chat)?`<div class="chat-continuation">${continuationNote(chat)}</div>`:''}<div class="chat-detail-actions"><button class="text-button" data-continue-chat="${esc(id)}" ${chat.status==='working'?'disabled':''}>Continue in another app</button><button class="text-button" data-archive-chat="${esc(id)}" data-archived="${!chat.archived}" ${!chat.archived&&chat.status==='working'?'disabled':''}>${chat.archived?'Restore chat':'Archive chat'}</button><div class="chat-detail-primary-actions"><button class="secondary" data-refresh-chat="${esc(id)}">Refresh from app</button><button class="primary" data-chat="${esc(id)}">Open chat →</button></div></div></div>`);
   $('#detail').dataset.chatDetails=id;
   setDetailTitleActions(`<button type="button" class="icon-button chat-pin-toggle" data-pin-chat="${esc(id)}" aria-pressed="${!!chat.pinned}" aria-label="${chat.pinned?'Unpin chat':'Pin chat'}" title="${chat.pinned?'Unpin chat':'Pin chat'}">${pinIcon()}</button><button class="icon-button" id="chat-rename" aria-label="Rename chat" title="Rename chat" aria-controls="chat-title-form">${editIcon()}</button>`);
   if(chat.summary||fullRequest)return;
@@ -2254,6 +2287,7 @@ function nativeMedia(items){
   return (items||[]).length?`<div class="native-output-media">${items.map(m=>`<button type="button" class="text-button" data-file="${esc(m.path)}" aria-label="Open ${esc(m.name||'image')}"><img class="media-preview" src="${esc(mediaURL(m.path))}" alt="${esc(m.name||'Image from your AI')}" loading="lazy"></button>`).join('')}</div>`:'';
 }
 function showMessages(latest=false) {
+  paintContinuation();
   const failed=!state.busy&&(state.chatMeta?.status==='error'||(!state.chatMeta&&state.liveJob?.status==='error'));
   $('#request-recovery').hidden=!failed||state.needsCheck;$('#retry-request').textContent=state.chatMeta?.goal_id?'Prepare continuation':'Edit & retry';
   const detail=failed?((state.liveJob?.chat_id===state.chatMeta?.id?state.liveJob?.error_detail:'')||[...state.chat].reverse().find(m=>m.role==='assistant')?.error_detail||''):'';
@@ -2360,6 +2394,7 @@ document.addEventListener('click',event=>attempt(async()=>{
   if(button.hasAttribute('data-chat-archive-view'))await showChats(button.dataset.chatArchiveView==='true');
   if(button.dataset.archiveChat){const business=state.business,root=state.data.workspace,id=button.dataset.archiveChat,archived=button.dataset.archived==='true';button.disabled=true;try{await api('/api/chats/archive',{business,id,archived});if(business!==state.business||root!==state.data.workspace)return;if(archived&&state.chatMeta?.id===id)await newShellChat();await renderShell();await showChats(archived);notice(archived?'Chat archived. Find it under All → Archived.':'Chat restored to Recent chats.');}finally{if(button.isConnected)button.disabled=false;}}
   if(button.dataset.editChat)await showChatDetails(button.dataset.editChat);
+  if(button.dataset.continueChat)await openContinue(button.dataset.continueChat);
   if(button.id==='chat-rename'){const form=$('#chat-title-form');form.hidden=false;button.hidden=true;$('#detail-content [data-refresh-chat]').disabled=true;$('#chat-title-input').focus();}
   if(button.dataset.cancelRename)await showChatDetails(button.dataset.cancelRename);
   if(button.dataset.refreshChat){

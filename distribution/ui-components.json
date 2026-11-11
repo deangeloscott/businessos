@@ -54,6 +54,24 @@
       "integrity": "sha512-vPTw/Bndq7eQHjLBVlWpnGeLa3t+3zGiuM7fJwCkiMFq+nmRuG3RI3f7f4N4TDX7T4NpbAXpR2+NTRSEGfCSeA==",
       "purpose": "Groups nearby map pins when a map has many places.",
       "included": true
+    },
+    {
+      "name": "xterm.js",
+      "version": "6.0.0",
+      "license": "MIT",
+      "source": "https://www.npmjs.com/package/@xterm/xterm",
+      "integrity": "sha512-TQwDdQGtwwDt+2cgKDLn0IRaSxYu1tSUjgKarSDkUM0ZNiSRXFpjxEsvc/Zgc5kq5omJ+V0a8/kIM2WD3sMOYg==",
+      "purpose": "The built-in terminal panel: draws the terminal screen and takes keyboard input.",
+      "included": true
+    },
+    {
+      "name": "xterm.js fit addon",
+      "version": "0.11.0",
+      "license": "MIT",
+      "source": "https://www.npmjs.com/package/@xterm/addon-fit",
+      "integrity": "sha512-jYcgT6xtVYhnhgxh3QgYDnnNMYTcf8ElbxxFzX0IZo+vabQqSPAjC3c1wJrKB5E19VwQei89QCiZZP86DCPF7g==",
+      "purpose": "Sizes the terminal to its panel.",
+      "included": true
     }
   ],
   "packages": [
@@ -196,6 +214,20 @@
       "license": "MIT",
       "source": "https://www.npmjs.com/package/@marijn/find-cluster-break",
       "integrity": "sha512-Wy0V7+SGUjnF9/TkiM1hKVDPj7jKXduPNboMVtHTA8dySMURWqfg/JZ9E2Sq8JgSJmkl7k7Qe9FLeMSrSraWmQ=="
+    },
+    {
+      "name": "@xterm/addon-fit",
+      "version": "0.11.0",
+      "license": "MIT",
+      "source": "https://www.npmjs.com/package/@xterm/addon-fit",
+      "integrity": "sha512-jYcgT6xtVYhnhgxh3QgYDnnNMYTcf8ElbxxFzX0IZo+vabQqSPAjC3c1wJrKB5E19VwQei89QCiZZP86DCPF7g=="
+    },
+    {
+      "name": "@xterm/xterm",
+      "version": "6.0.0",
+      "license": "MIT",
+      "source": "https://www.npmjs.com/package/@xterm/xterm",
+      "integrity": "sha512-TQwDdQGtwwDt+2cgKDLn0IRaSxYu1tSUjgKarSDkUM0ZNiSRXFpjxEsvc/Zgc5kq5omJ+V0a8/kIM2WD3sMOYg=="
     },
     {
       "name": "codemirror",
@@ -1303,14 +1335,24 @@
       "sha256": "43710009ea26bfbcb615524946e46e3aaf8ad927514f5e465e8ff6d18044ffe9"
     },
     {
+      "path": "interface/vendor/terminal-view.css",
+      "bytes": 7112,
+      "sha256": "854a7c0fb70e8b1a083c16797ab827299fb18744f5ad34f227b48337e33293c6"
+    },
+    {
+      "path": "interface/vendor/terminal-view.js",
+      "bytes": 345406,
+      "sha256": "d89f7b14ca21edf0d672b597a504657ecda6d6913394c1d11491c815a5ef57c9"
+    },
+    {
       "path": "interface/vendor/text-editor.js",
       "bytes": 613027,
       "sha256": "1bd5ee7a8a2ba117a5b64921522fba2d6a24acec797b4d0f22795b2e1981d30c"
     },
     {
       "path": "interface/vendor/THIRD-PARTY-NOTICES.md",
-      "bytes": 41299,
-      "sha256": "165380c0c41c090c926027d60733053865943babb4c63f92b77a08e6568f03c0"
+      "bytes": 43718,
+      "sha256": "3735532bc8deb5d0f89aaaa7443b37590e3d4220ef9c0d5f62a95e947e4f3f41"
     }
   ]
 }

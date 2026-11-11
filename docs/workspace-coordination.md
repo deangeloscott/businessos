@@ -481,9 +481,11 @@ coverage does not establish authenticated Claude Code access.
 Prefer a supported native backend when it exposes the required operation. The
 Hermes gateway closes a demonstrated ACP goal gap without a terminal emulator.
 Standard ACP file/command callbacks use existing Python process primitives.
-An interactive terminal library, xterm.js or optional tmux integration should be
-added only for a demonstrated workflow that these native interfaces cannot serve;
-none is a prerequisite for the integrations above. Keep native adapters and
+An interactive terminal was added for a demonstrated workflow these interfaces
+cannot serve: app importers such as OMP's `--from-codex` run only in a terminal.
+The built-in terminal (xterm.js over the system's own pseudo-terminal) serves that,
+sign-ins and the person's own commands; it is not a prerequisite for the
+integrations above, and tmux is not used. Keep native adapters and
 machine-local configuration separate so a better supported interface can replace
 one connection without migrating organization memory or redesigning the UI.
 Back navigation retains the list's search, filters, and scroll position. Linked

@@ -30,12 +30,12 @@ When one account reaches its plan limit, you can keep working on another without
 | --- | --- | --- |
 | Claude Code | AURA runs each chat on the account you choose, using Claude Code's own long-lived token. Same chat, model and context. | Settings → Accounts & backups → Add a Claude account. Run `claude setup-token`, sign in with the other account, paste the token. |
 | Codex | AURA swaps Codex's saved sign-in, as signing out and back in does. Your chats stay. It also switches the account in your Codex app. | Settings → Accounts & backups → Save current account, then Sign in to another account. Not available when Codex keeps its sign-in in your system keyring. |
-| OMP | Built in: OMP balances work across every account you sign in to. | Run `omp login` once per account. `omp usage` shows each account's limits. |
+| OMP | Built in: OMP balances work across every account you sign in to. | Run `omp login` once per account (Settings → Accounts & backups → **Run omp login** opens it in AURA's terminal). `omp usage` shows each account's limits. |
 | Hermes | Built in: its [credential pool](https://github.com/NousResearch/hermes-agent) rotates to the next account at a limit, then to a fallback provider. | Add several credentials for the provider in Hermes. |
 | Pi | The third-party [pi-multi-account](https://pi.dev/packages/pi-multi-account) extension switches to the next signed-in account at a limit. | Settings → Accounts & backups → Set it up, or `pi install npm:pi-multi-account`; then `/login` once per account in Pi. Review third-party code before installing. |
 | Antigravity | Not available yet. | — |
 
-**When a limit is reached** (Settings → Accounts & backups): *Ask me* (default), *Automatically*, or *Don't switch*, with separate choices for chats and goals. AURA can also continue in a **backup app** (a new chat carrying this chat's latest result) or **continue the same chat when the limit resets**, while AURA is open or, using your system's scheduler, even when it's closed. Scheduled tasks run inside each app and follow that app's own behavior.
+**When a limit is reached** (Settings → Accounts & backups): *Ask me* (default), *Automatically*, or *Don't switch*, with separate choices for chats and goals. AURA can also continue in a **backup app** (a new chat carrying where this chat stands and its latest exchanges; see **Continue in another app** in the [visual workspace guide](visual-workspace.md)) or **continue the same chat when the limit resets**, while AURA is open or, using your system's scheduler, even when it's closed. Scheduled tasks run inside each app and follow that app's own behavior.
 
 The first message on another account costs more, because the provider's prompt cache belongs to each account. Sign-ins stay in protected storage on this computer, never in business files or exports. You're responsible for following each provider's terms.
 

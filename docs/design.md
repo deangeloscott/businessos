@@ -40,6 +40,8 @@ A style (Personalization → Style, `data-style` on the root) restyles the whole
 - **Settings:** one grouped page with search. Add a setting as a row in `settingsGroups`.
 - **Ctrl+K actions:** add an action to `shellCommands()`. Actions click the same control a person would, so there is one code path.
 - **Activity:** running work and notifications share the bell.
+- **Terminal:** one dock under the work area (Ctrl+`), never a dialog, so it stays while you move around. Its colours come from the current style's tokens.
+- **Continue in another app:** one dialog for every app pair; the option says how the work moves (Full conversation or Handoff), what carries over, the cost and the permission setting.
 
 ## Words
 

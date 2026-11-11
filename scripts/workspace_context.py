@@ -8,7 +8,8 @@ import time
 
 from _common import workspace_root,workspace_scope,resolve_business,PRODUCT_ROOT,read_json_input
 
-KINDS={'file','record','goal','library','assistant','result','collection'}
+KINDS={'file','record','goal','library','assistant','result','collection','handoff','terminal'}
+HANDOFF_EXCHANGES=3
 MAX_REFS=12
 MAX_CONTEXT_CHARS=24000
 
@@ -18,7 +19,7 @@ def references(value):
     if not isinstance(value,list) or len(value)>MAX_REFS:raise ValueError('Choose up to 12 context references.')
     out=[]
     for r in value:
-        if not isinstance(r,dict) or r.get('kind') not in KINDS-{'assistant'} or not isinstance(r.get('id'),str) or not r['id'] or len(r['id'])>2000:
+        if not isinstance(r,dict) or r.get('kind') not in KINDS-{'assistant','terminal'} or not isinstance(r.get('id'),str) or not r['id'] or len(r['id'])>2000:
             raise ValueError('Choose an available context reference.')
         for k in ('variant','request_id'):
             if k in r and (not isinstance(r[k],str) or len(r[k])>1000):raise ValueError('Choose a valid saved source.')
@@ -157,7 +158,16 @@ def resolve(app,bid,references,goal_id=None,pointers=False,sources=None):
         if not isinstance(request_id,str) or len(request_id)>100:raise ValueError('Choose a valid saved result.')
         if (kind,ident,variant,request_id) in seen:continue
         seen.add((kind,ident,variant,request_id));row={'kind':kind,'id':ident,**({'variant':variant} if variant else {}),**({'request_id':request_id} if request_id else {})};text=''
-        if kind=='collection':
+        if kind=='handoff':
+            brief=handoff_brief(app,bid,ident)
+            row.update(label='Continued from '+brief['title'],source=brief['source'],revision=digest(brief['text']))
+            text=brief['text']
+        elif kind=='terminal':
+            from workspace_terminal import TERMINALS
+            terminal=TERMINALS.get(ident);screen=terminal.screen(6000)
+            row.update(label='Terminal output',source='Terminal',revision=digest(screen))
+            text=f'Recent output from the terminal in {terminal.cwd}, shared by the person (the newest lines are last):\n{screen}'
+        elif kind=='collection':
             import workspace_collections
             d=workspace_collections.read(bid,ident)
             basis={k:v for k,v in d.items() if k not in {'checks','receipts','version','updated_at'}}
@@ -265,6 +275,34 @@ def handoff(app,bid,chat_id):
         return {'text':'','files':[],'references':[reference],'goal_id':source['new_chat_goal_id'],'project':chat.get('project',''),
                 'source_chat':chat_id,'source_title':chat.get('title','Saved result'),'workspace':app.workspace_path}
     raise ValueError('This conversation has no completed reply to continue from yet.')
+
+
+def handoff_brief(app,bid,chat_id):
+    """What a new chat in another app needs to pick up this work: where it stands, the latest exchanges, and to check before acting."""
+    chat=next((c for c in app.preferences['chats'] if c['id']==chat_id and c['business_id']==bid and c.get('workspace',app.workspace_path)==app.workspace_path),None)
+    if not chat:raise ValueError('Choose a conversation in this business and workspace.')
+    path=app.chat_display_path(chat_id)
+    messages=json.loads(path.read_text(encoding='utf-8')) if path.is_file() else []
+    exchanges=[];reply=None
+    for message in reversed(messages):
+        text=str(message.get('text','')).strip()
+        if message.get('role')=='assistant':
+            reply=None if message.get('status') in {'error','stopped','working'} or not text else text
+        elif message.get('role')=='user' and text and not text.startswith('Keep this chat’s cache warm.'):
+            exchanges.append((text,reply));reply=None
+            if len(exchanges)>=HANDOFF_EXCHANGES:break
+    if not exchanges:raise ValueError('This conversation has nothing to continue from yet.')
+    source={'codex':'Codex','claude':'Claude Code','omp':'OMP','pi':'Pi','hermes':'Hermes','antigravity':'Antigravity'}.get(chat.get('agent'),str(chat.get('agent') or 'another app'))
+    lines=[f'This continues work from the chat “{chat.get("title","Untitled")}” in {source}'+(f' ({chat["model"]})' if chat.get('model') else '')+'. It is a new conversation for you: only what is below was carried over.']
+    if chat.get('summary'):lines.append('Where it stands: '+str(chat['summary'])[:1500])
+    lines.append(f'The latest {len(exchanges)} exchange{"s" if len(exchanges)!=1 else ""}, oldest first:')
+    budget=9000
+    for request,answer in reversed(exchanges):
+        block='Request: '+request[:900]+('…' if len(request)>900 else '')+'\nReply: '+((answer[:2600]+('…' if len(answer)>2600 else '')) if answer else '(no finished reply)')
+        lines.append(block[:budget]);budget-=len(block)
+        if budget<=0:break
+    lines.append('Before changing anything, check the current state yourself. Earlier replies may be out of date, and work they describe may not have taken effect.')
+    return {'title':chat.get('title','Untitled'),'source':source,'text':'\n\n'.join(lines)}
 
 
 def message_ref(raw):

@@ -452,6 +452,29 @@ def setup_error(message):
     return SETUP_ERRORS['unknown']
 
 
+IMPORTERS={'omp':{'codex':'--from-codex','claude':'--from-claude'}}
+CONTINUE_JOBS={}
+
+
+def imported_session(kind,env,source_id,since):
+    """The receiving app's copy of a chat, identified by the source ID its importer records. None until it exists."""
+    import workspace_native_chats
+    for path in workspace_native_chats.files(kind,env)[:40]:
+        try:
+            if path.stat().st_mtime<since-5:break
+            ident=None;matched=False
+            with path.open(encoding='utf-8',errors='replace') as stream:
+                for line in stream:
+                    if '"session"' not in line and 'foreign_session_import' not in line:continue
+                    try:row=json.loads(line)
+                    except ValueError:continue
+                    if row.get('type')=='session':ident=row.get('id')
+                    elif row.get('customType')=='foreign_session_import' and (row.get('data') or {}).get('sourceId')==source_id:matched=True
+                    if ident and matched:return ident
+        except OSError:continue
+    return None
+
+
 class Workspace:
     def __init__(self, agent=None, interface=None, settings_file=None):
         self.token = secrets.token_urlsafe(32)
@@ -1974,16 +1997,147 @@ class Workspace:
             return {**item,'note':owner.resume_wake()}
         raise ValueError('Choose how to run this task.')
 
+    def source_chat(self,bid,chat_id):
+        chat=next((c for c in self.preferences['chats'] if c['id']==chat_id and c['business_id']==bid and c.get('workspace',self.workspace_path)==self.workspace_path),None)
+        if not chat:raise ValueError('Choose a chat in this business and workspace.')
+        return chat
+
+    def chat_busy(self,bid,chat):
+        if chat.get('status')=='working' or any(j.get('chat_id')==chat['id'] for j in self.running_jobs()):return True
+        session=self.native_sessions.items.get((str(workspace_root().resolve()),bid,chat['id']))
+        return bool(session and session.pending())
+
+    def link_continuation(self,bid,source_id,target_id,method):
+        with self.lock:
+            source=self.source_chat(bid,source_id);target=self.source_chat(bid,target_id);at=time.time()
+            source['continued_to']={'chat_id':target_id,'agent':target.get('agent'),'title':target.get('title',''),'method':method,'at':at}
+            target['continued_from']={'chat_id':source_id,'agent':source.get('agent'),'title':source.get('title',''),'method':method,'at':at}
+            for key in ('goal_id',):
+                if source.get(key) and not target.get(key):target[key]=source[key]
+            if source.get('project') and not target.get('project'):target['project']=source['project']
+            self.save_preferences()
+
     def continue_elsewhere(self, bid, chat_id, text, app_kind,limit_recovery=False):
-        """A new chat in another app, carrying this chat's latest result and goal over (the existing handoff)."""
+        """A new chat in another app that picks up this chat's work: where it stands, the latest exchanges, its goal, project and folder."""
         with self.lock:
             known=self.preferences['connected_apps'].get(app_kind)
             if not known:raise ValueError('Connect that AI app first.')
+            source=self.source_chat(bid,chat_id) if chat_id else None
+        if source and source.get('agent')==app_kind:raise ValueError('This chat is already in that app. Choose another app, or switch the model in this chat.')
+        if source and not limit_recovery and self.chat_busy(bid,source):raise ValueError('This chat is still working. Stop it or let it finish before continuing elsewhere.')
         carried=workspace_context.handoff(self,bid,chat_id) if chat_id else {}
         connection={'kind':app_kind,'model':known.get('model',''),'effort':known.get('effort','')}
+        folder=(source or {}).get('native_workspace') if source and not source.get('project') else None
         with workspace_scope(self.workspace_path):
-            return self.start_chat(bid,text,None,chat_id='',connection=connection,references=carried.get('references'),
-                                   goal_id=carried.get('goal_id') or None,project=carried.get('project') or None,limit_recovery=limit_recovery)
+            started=self.start_chat(bid,text,None,chat_id='',connection=connection,references=[{'kind':'handoff','id':chat_id}] if chat_id else None,
+                                    goal_id=carried.get('goal_id') or None,project=carried.get('project') or None,limit_recovery=limit_recovery,native_workspace=folder)
+            if chat_id and started.get('chat_id'):self.link_continuation(bid,chat_id,started['chat_id'],'handoff')
+            return started
+
+    def import_continue(self,bid,chat_id,app_kind='omp'):
+        """Full conversation: the receiving app's own importer runs in a built-in terminal. AURA types the chat's exact ID,
+        confirms the copy by the source ID the importer records, closes the importer and links the new chat."""
+        import workspace_terminal
+        with self.lock:
+            source=self.source_chat(bid,chat_id);flag=IMPORTERS.get(app_kind,{}).get(source.get('agent'));choice=self.native_choice(app_kind)
+        if not flag or not source.get('native_id'):raise ValueError('That app cannot import this chat. Continue with a handoff instead.')
+        if not choice:raise ValueError('Connect that AI app first.')
+        if self.chat_busy(bid,source):raise ValueError('This chat is still working. Stop it or let it finish before continuing elsewhere.')
+        if not workspace_terminal.available():raise ValueError('This computer cannot open a built-in terminal. Continue with a handoff instead.')
+        root=workspace_root().resolve();folder=Path(source.get('native_workspace') or root);folder=folder if folder.is_dir() else root
+        env=self.agent_environment(choice);started=time.time()
+        terminal=workspace_terminal.TERMINALS.start([*workspace_agents.base_command(choice['argv']),flag],str(folder),env,cols=120,rows=32,
+                                                    title='Import into '+{'omp':'OMP'}.get(app_kind,app_kind),purpose='import:'+chat_id)
+        job={'id':new_id(12),'business_id':bid,'chat_id':chat_id,'app':app_kind,'terminal_id':terminal.id,'status':'working',
+             'step':'Opening the importer…','workspace':str(root),'started':started,'title':source.get('title','')}
+        CONTINUE_JOBS[job['id']]=job
+        threading.Thread(target=self._drive_import,args=(job,terminal,source['native_id'],env),daemon=True,name='aura-import-'+job['id']).start()
+        return dict(job)
+
+    def _drive_import(self,job,terminal,source_id,env):
+        import workspace_terminal
+        bid,chat_id,kind=job['business_id'],job['chat_id'],job['app']
+        def finish(ident):
+            job['step']='Closing the importer…'
+            if terminal.alive:
+                terminal.write('\x04')  # Ctrl+D: the importer's window closes; AURA continues the chat through its usual connection.
+                end=time.monotonic()+10
+                while terminal.alive and time.monotonic()<end:terminal.output(terminal.offset,.5)
+                if terminal.alive:
+                    terminal.stop();end=time.monotonic()+10
+                    while terminal.alive and time.monotonic()<end:terminal.output(terminal.offset,.5)
+            if terminal.alive:
+                # Never continue a chat while its importer could still be writing to it.
+                job.update(status='needs_you',step='Close the importer in the terminal below; AURA links the new chat as soon as it has closed.')
+                while terminal.alive:terminal.output(terminal.offset,2)
+            job['step']='Linking the new chat…'
+            with workspace_scope(job['workspace']):
+                added=self.native_chats(bid,kind,ident,add=True)
+                self.link_continuation(bid,chat_id,added['id'],'import')
+            job.update(status='done',step='Continued with the full conversation.',new_chat_id=added['id'])
+        try:
+            if workspace_terminal.wait_for(terminal,r'select',40):
+                time.sleep(.8)  # Let the list finish drawing before typing.
+                terminal.write(source_id);time.sleep(1.5)
+                terminal.write('\r')
+                job['step']='Copying the conversation…'
+                end=time.monotonic()+45
+                while time.monotonic()<end:
+                    ident=imported_session(kind,env,source_id,job['started'])
+                    if ident:return finish(ident)
+                    time.sleep(1)
+            # Hand over without giving up: a manual pick is linked as soon as its copy appears.
+            job.update(status='needs_you',step=f'AURA could not finish the pick by itself. In the terminal, choose “{job["title"]}” from the list; AURA links it as soon as the copy appears.')
+            end=time.monotonic()+600
+            while time.monotonic()<end:
+                ident=imported_session(kind,env,source_id,job['started'])
+                if ident:return finish(ident)
+                if not terminal.alive and not imported_session(kind,env,source_id,job['started']):break
+                time.sleep(2)
+            job.update(status='failed',step='The import did not happen. Nothing changed in either app. Continue with a handoff instead.')
+        except Exception as error:
+            job.update(status='failed',step='The import did not finish: '+workspace_support.human_error(error))
+
+    TERMINAL_PRESETS={'claude-setup-token':('claude',['setup-token'],'Claude sign-in'),'omp-login':('omp',['login'],'OMP sign-in'),'pi-login':('pi',[],'Pi')}
+
+    def terminal_command(self,name):
+        """A plain shell gets the person's normal environment, never AURA's saved keys. Named app commands run as AURA runs that app."""
+        if name=='shell':return None,None
+        if name not in self.TERMINAL_PRESETS:raise ValueError('Choose a terminal command AURA offers.')
+        app,args,_=self.TERMINAL_PRESETS[name];choice=self.native_choice(app)
+        if not choice:raise ValueError('Install and connect that AI app first.')
+        return [*workspace_agents.base_command(choice['argv']),*args],self.agent_environment(choice)
+
+    def terminal_title(self,name):return self.TERMINAL_PRESETS.get(name,(None,None,'Terminal'))[2]
+
+    def continue_options(self,bid,chat_id):
+        """Where this chat can continue, and how much of it each app can carry."""
+        import workspace_terminal,workspace_native_chats
+        with self.lock:
+            source=self.source_chat(bid,chat_id);connected=dict(self.preferences['connected_apps'])
+        names={'codex':'Codex','claude':'Claude Code','omp':'OMP','pi':'Pi','hermes':'Hermes','antigravity':'Antigravity'}
+        estimate=None
+        if source.get('agent') in IMPORTERS.get('omp',{}) and source.get('native_id'):
+            choice=self.native_choice(source['agent'])
+            hint=workspace_native_chats.source_hint(source['agent'],self.agent_environment(choice) if choice else dict(os.environ),source['native_id'])
+            try:estimate=round(Path(hint).stat().st_size/4/1000)*1000 if hint else None
+            except OSError:estimate=None
+        apps=[]
+        for kind,known in connected.items():
+            if kind==source.get('agent') or not self.native_choice(kind):continue
+            importer=IMPORTERS.get(kind,{}).get(source.get('agent'))
+            full=bool(importer and source.get('native_id') and workspace_terminal.available())
+            mode=self.preferences.get('harness_permissions',{}).get(kind,'native')
+            label=next((r['name'] for r in workspace_permissions.choices(kind) if r['id']==mode),'')
+            permission=f'The new chat follows {names.get(kind,kind)}’s own permission settings.' if mode=='native' or not label else f'The new chat uses {names.get(kind,kind)}’s permission setting in AURA: {label}.'
+            apps.append({'id':kind,'name':names.get(kind,kind.capitalize()),'method':'import' if full else 'handoff','model':known.get('model',''),
+                         'carries':(f'The full conversation. Private reasoning stays with {names.get(source.get("agent"),"the original app")}.' if full else
+                                    'Where it stands, the latest exchanges, its goal, project and folder.'),
+                         'cost':(f'About {estimate:,} tokens are read once when it starts.' if full and estimate else 'Re-reads the whole conversation once when it starts.' if full else 'Nothing extra.'),
+                         'permission':permission})
+        return {'chat':{'id':source['id'],'title':source.get('title',''),'agent':source.get('agent'),'model':source.get('model','')},
+                'busy':self.chat_busy(bid,source),'continued_to':source.get('continued_to'),'apps':sorted(apps,key=lambda a:(a['method']!='import',a['name'])),
+                'privacy':'The carried conversation is copied into the other app’s storage on this computer.'}
 
     def accounts_action(self, bid, data):
         """Several accounts per app through each app's own sign-in. Secrets never leave this computer."""
@@ -2677,7 +2831,7 @@ class Workspace:
         threading.Thread(target=work,daemon=True).start()
         return self.schedule_state(bid)
 
-    def start_chat(self, bid, text, history, welcome=False, schedule_id=None, organization_id=None, keep_warm_id=None, chat_id=None, files=None, connection=None, assistant_id=None,references=None,goal_id=None,permission_mode=None,native_goal=None,project=None,account_id=None,limit_recovery=False,source_task=None):
+    def start_chat(self, bid, text, history, welcome=False, schedule_id=None, organization_id=None, keep_warm_id=None, chat_id=None, files=None, connection=None, assistant_id=None,references=None,goal_id=None,permission_mode=None,native_goal=None,project=None,account_id=None,limit_recovery=False,source_task=None,native_workspace=None):
         with self.lock:
             owner=copy.copy(self)
             owner.agent=dict(self.agent) if self.agent else None
@@ -2689,6 +2843,7 @@ class Workspace:
             owner._request_native_goal=native_goal
             owner._request_account=account_id if account_id and self.saved_account(account_id) else None
             owner._request_project=workspace_chat_organization.project_name(project,empty=True) if project is not None else ''
+            owner._request_folder=str(Path(native_workspace).resolve()) if native_workspace and Path(native_workspace).is_dir() else ''
             if owner._request_project and not any(p['name']==owner._request_project for p in workspace_chat_organization.projects(self,bid)):raise ValueError('Choose an existing project.')
             existing=self.active_chat(bid) if chat_id is None else next((c for c in self.preferences['chats'] if c['id']==chat_id and c['business_id']==bid),None)
             resolved_chat_id=chat_id
@@ -2861,6 +3016,7 @@ class Workspace:
                         'created': time.time(), 'native_id': None, 'workspace':str(workspace_root())}
                 if getattr(self,'_request_permission_mode',None) is not None:chat['permission_mode']=self._request_permission_mode
                 if getattr(self,'_request_project',''):chat['project']=self._request_project
+                elif getattr(self,'_request_folder',''):chat['native_workspace']=self._request_folder
                 if getattr(self,'_request_account',None) and self.connection_kind=='claude':chat['account_id']=self._request_account
                 if chat.get('project'):
                     project=next((p for p in workspace_chat_organization.projects(self,bid) if p['name']==chat['project']),None)
@@ -3088,6 +3244,8 @@ def main():
     finally:
         update_stop.set()
         if 'app' in locals():app.native_sessions.close()
+        import workspace_terminal
+        workspace_terminal.TERMINALS.stop_all()  # Built-in terminals end with AURA.
         if server:
             server.server_close()
             print(time.strftime('%Y-%m-%d %H:%M:%S') + ' AURA stopped: ' +

@@ -130,7 +130,7 @@ def handler_for(app):
                 elif route in {'/app.js', '/style.css'}:
                     path = app.static / route[1:]
                     self.send(200, path.read_bytes(), 'text/javascript; charset=utf-8' if path.suffix == '.js' else 'text/css; charset=utf-8')
-                elif route in {'/file-editor.js','/file-editor.css','/workspace-work.js','/workspace-continuity.js','/workspace-compose.js','/workspace-insight.js','/workspace-projects.js','/workspace-views.js','/workspace-focus.js'} or route.startswith('/vendor/'):
+                elif route in {'/file-editor.js','/file-editor.css','/workspace-work.js','/workspace-continuity.js','/workspace-compose.js','/workspace-insight.js','/workspace-projects.js','/workspace-views.js','/workspace-focus.js','/workspace-terminal.js'} or route.startswith('/vendor/'):
                     relative=Path(route.lstrip('/'))
                     path=(STATIC/relative).resolve()
                     base=(STATIC/'vendor').resolve() if route.startswith('/vendor/') else STATIC.resolve()
@@ -141,6 +141,23 @@ def handler_for(app):
                     match=re.fullmatch(r'/api/media/map/(\d{1,2})/(\d{1,7})/(\d{1,7})\.png',route)
                     if not match:raise ValueError('This map area is unavailable.')
                     self.send(200,workspace_views.tile(*match.groups()),'image/png')
+                elif route == '/api/chats/continue':
+                    with app.lock:root=app.workspace_path
+                    with workspace_scope(root):
+                        bid=selected(query.get('business'))
+                        if query.get('job'):
+                            from workspace_ui import CONTINUE_JOBS
+                            job=CONTINUE_JOBS.get(query['job'])
+                            if not job or job['business_id']!=bid:raise ValueError('This move is no longer available.')
+                            self.send(200,dict(job))
+                        else:self.send(200,app.continue_options(bid,query.get('id')))
+                elif route == '/api/terminals':
+                    import workspace_terminal
+                    self.send(200,{'available':workspace_terminal.available(),'items':workspace_terminal.TERMINALS.list()})
+                elif route == '/api/terminal/output':
+                    import workspace_terminal
+                    terminal=workspace_terminal.TERMINALS.get(query.get('id'))
+                    self.send(200,terminal.output(int(query.get('since') or 0),float(query.get('wait') or 0)))
                 elif route == '/api/reading':
                     import workspace_reading
                     with app.lock:root=app.workspace_path
@@ -449,6 +466,32 @@ def handler_for(app):
                             elif action=='feedback':result=workspace_collections.feedback(bid,data.get('id'),{**data,'action':data.get('choice')})
                             else:raise ValueError('Choose a collection action.')
                     app.read_cache.clear();self.send(200,result);return
+                if route == '/api/chats/continue':
+                    with app.lock:root=app.workspace_path
+                    with workspace_scope(root):
+                        bid=selected(data.get('business'))
+                        if data.get('method')=='import':result=app.import_continue(bid,data.get('id'),data.get('app'))
+                        else:result=app.continue_elsewhere(bid,data.get('id'),str(data.get('text') or 'Continue this work. Start by checking the current state.'),data.get('app'))
+                    self.send(200,result);return
+                if route == '/api/terminal':
+                    import workspace_terminal
+                    terminals=workspace_terminal.TERMINALS;action=data.get('action')
+                    if action=='start':
+                        with app.lock:root=app.workspace_path
+                        with workspace_scope(root):
+                            bid=selected(data.get('business'));folder=Path(root)
+                            if data.get('chat_id'):
+                                chat=app.source_chat(bid,data['chat_id']);folder=Path(chat.get('native_workspace') or root)
+                            argv,env=app.terminal_command(data.get('command') or 'shell')
+                            terminal=terminals.start(argv,str(folder if folder.is_dir() else root),env,int(data.get('cols') or 100),int(data.get('rows') or 30),
+                                                     title=app.terminal_title(data.get('command') or 'shell'))
+                        result=terminal.summary()
+                    elif action=='input':terminals.get(data.get('id')).write(data.get('data'));result={'ok':True}
+                    elif action=='resize':terminals.get(data.get('id')).resize(int(data.get('cols') or 100),int(data.get('rows') or 30));result={'ok':True}
+                    elif action=='stop':terminals.get(data.get('id')).stop();result={'ok':True}
+                    elif action=='remove':terminals.remove(data.get('id'));result={'ok':True}
+                    else:raise ValueError('Choose a terminal action.')
+                    self.send(200,result);return
                 if route == '/api/reading':
                     import workspace_reading
                     with app.lock:root=app.workspace_path

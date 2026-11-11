@@ -548,6 +548,34 @@ input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px soli
 #native-activity{margin:18px 0;color:var(--ink);font-size:var(--text-sm);min-width:0}.activity-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;color:var(--muted);margin-bottom:8px}.activity-heading select{width:auto;font-size:var(--text-sm);padding:4px 8px;min-height:32px}.native-activity-list details{border-top:1px solid var(--line);padding:8px 0}.native-activity-list summary{display:flex;justify-content:space-between;gap:12px;cursor:pointer;overflow-wrap:anywhere}.native-activity-list summary small{flex:none;color:var(--muted)}.native-activity-list pre{font:var(--text-sm)/1.7 ui-monospace,monospace;white-space:pre-wrap;overflow-wrap:anywhere;margin:8px 0;max-width:100%}.memory-feedback-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:12px 0;border-top:1px solid var(--line);font-size:var(--text-sm)}.memory-feedback-row>span{overflow-wrap:anywhere;min-width:0}.memory-feedback-row .inline-actions{flex:none;gap:12px}.saved-context{margin:14px 0}.saved-context>summary{cursor:pointer}.reference-item{display:flex;justify-content:space-between;gap:12px;align-items:center;overflow-wrap:anywhere}.saved-context [data-reference-found]{max-height:240px;overflow-y:auto}.saved-context label{display:grid;gap:6px}.saved-context .row{width:100%;text-align:left}
 
 .project-work-actions,.collection-toolbar,.collection-pagination,.result-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.project-resource-group{margin-top:24px}.project-resource-group h3{font-size:var(--text-md);color:var(--muted);margin-bottom:10px}.collection-toolbar{margin:20px 0}.collection-toolbar input{flex:1;min-width:160px}.collection-toolbar select{width:auto}.collection-item{padding:20px 0;border-bottom:1px solid var(--line);overflow-wrap:anywhere}.collection-item-title{display:flex;align-items:flex-start;gap:14px;justify-content:space-between}.collection-item-title h3{font-size:var(--text-body);margin:0}.collection-item .favorite-star{flex:none;font-size:23px}.result-labels{display:flex;gap:8px;flex-wrap:wrap;font-size:var(--text-xs);color:var(--muted);margin:8px 0}.result-fields{display:flex;flex-wrap:wrap;gap:10px 24px;margin:12px 0}.result-fields>div{min-width:100px;max-width:100%}.result-fields dt{font-size:var(--text-xs);color:var(--muted)}.result-fields dd{margin:0;font-size:var(--text-md);overflow-wrap:anywhere}.result-actions{margin-top:12px;font-size:var(--text-sm)}.collection-check{padding:12px 0;border-bottom:1px solid var(--line)}
+/* Built-in terminal: a dock under the work area that stays while you move around AURA. */
+#terminal-dock{flex:none;height:min(38vh,420px);min-height:180px;display:flex;flex-direction:column;border-top:1px solid var(--line);background:var(--surface);position:relative;z-index:3}
+body.terminal-open #main{overflow-y:auto}
+#terminal-dock[hidden]{display:none}
+.chat-continuation{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;padding:10px 14px;margin:12px 0;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--hover);font-size:var(--text-sm);color:var(--muted)}
+.chat-continuation[hidden]{display:none}.chat-continuation p{margin:0}
+.continue-options{display:grid;gap:10px;margin-top:12px}
+.continue-option{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border:1px solid var(--line);border-radius:var(--radius-md);cursor:pointer}
+.continue-option:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
+.continue-option input{width:auto;min-height:0;height:auto;flex:none;margin:3px 0 0;accent-color:var(--accent)}
+.continue-option-text{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;min-width:0}
+.continue-option-text small{flex-basis:100%;color:var(--muted);font-size:var(--text-sm);line-height:1.5}
+.continue-status{padding:10px 12px;border-radius:var(--radius-md);background:var(--hover);font-size:var(--text-sm)}
+.continue-busy{color:var(--warning)}
+.terminal-bar{display:flex;align-items:center;gap:8px;padding:4px 8px 4px 12px;border-bottom:1px solid var(--line);min-height:38px}
+.terminal-tabs{display:flex;gap:4px;overflow-x:auto;min-width:0;flex:1;scrollbar-width:none}
+.terminal-tab{display:inline-flex;align-items:center;border-radius:var(--radius-sm)}
+.terminal-tab.active{background:var(--hover)}
+.terminal-tab-name,.terminal-tab-close{border:0;background:none;color:var(--muted);font:inherit;font-size:var(--text-sm);cursor:pointer}
+.terminal-tab-name{padding:4px 4px 4px 10px;white-space:nowrap}.terminal-tab-close{padding:2px 8px}
+.terminal-tab.active .terminal-tab-name{color:var(--ink)}
+.terminal-tab-name:focus-visible,.terminal-tab-close:focus-visible{outline:2px solid var(--accent);outline-offset:1px;border-radius:var(--radius-sm)}
+.terminal-place{color:var(--muted);font-size:var(--text-xs);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:30%}
+.terminal-actions{display:flex;align-items:center;gap:4px;flex:none}
+#terminal-screens{flex:1;min-height:0;position:relative}
+.terminal-screen{position:absolute;inset:6px 6px 4px 12px}
+.terminal-screen[hidden]{display:none}
+@media(max-width:600px){#terminal-dock{height:50vh}.terminal-place{display:none}}
 .collection-running:empty{display:none}.collection-running{margin-bottom:8px}.collection-running .running-item{margin-bottom:8px}
 .collection-findings{padding:16px 0 8px;border-bottom:1px solid var(--line)}
 .collection-findings .mini-heading{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:4px}

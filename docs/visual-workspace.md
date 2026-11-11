@@ -248,12 +248,27 @@ Cache reuse is a confirmed hit on a native reply, not a guarantee of another hit
 
 **Alerts & budget** is optional and off initially. It uses the notification bell for near-limit (90%) and monthly budget (80%/100%) notices, once per account window or budget level in the selected business. Refresh occurs after ordinary activity and every five minutes while the page is visible with alerts enabled. Signed-out or unidentified snapshots do not generate quota alerts. The advisory budget counts recorded API costs (including identified API estimates), excluding unknown subscription-equivalent estimates; it never stops tasks or changes models. Compact receipts (latest 10,000), per-chat snapshots, masked/hashed account history and alert settings stay in machine-local preferences, outside portable business memory, credentials and transcripts. This remains a usage view, not a complete provider billing ledger.
 
+### Continue in another app
+
+A chat's details (⋯) and Ctrl+K offer **Continue in another app** for an idle chat. The dialog lists each other connected app with how the work moves, what carries over, the one-time cost, and which permission setting the new chat uses (each app's own setting; permission modes are not translated between apps, because similar names do not mean equal isolation). It notes that the carried conversation is copied into the other app's storage, and that switching the model in the same chat keeps everything.
+
+- **Full conversation** is offered when the receiving app can import the original: today OMP from Codex (`--from-codex`) or Claude Code (`--from-claude`). AURA runs that importer in a built-in terminal in the chat's folder, types the chat's exact ID into the importer's search, selects it, and confirms the copy by the source ID the importer records. It then closes the importer (AURA never continues a chat while the importer could still write to it), adds the new chat as an existing chat, and links both. If any step is not what AURA expects, it hands over in the same terminal and links the copy as soon as it appears; if nothing is imported, nothing changes and a handoff is offered instead.
+- **Handoff** works for every pair: a new chat in the other app with the chat's description, its latest three exchanges (oldest first), its goal, project and folder, and an instruction to check the current state before changing anything, because earlier replies may be out of date.
+
+Both chats link to each other. The original shows "You continued this work in OMP. Messages here start a separate version." with a link; the new chat shows where it came from. The plan-limit **backup app** uses the same handoff.
+
+### Built-in terminal
+
+**Ctrl+`** or **Ctrl+K → Open terminal** opens a real terminal on this computer in a dock under the work area. It stays while you move around AURA and has tabs (+ for another). Windows uses its built-in pseudo console through ctypes; macOS and Linux use Python's standard pty support; nothing is installed, and Windows versions without a pseudo console keep using their own terminal. The screen is xterm.js, bundled with the other interface components and loaded only when a terminal opens. Output streams through the token-protected local API by long polling; a reloaded page reattaches to running terminals.
+
+A plain terminal starts in the workspace folder with your normal environment, never AURA's saved API keys. Named app commands (Accounts & backups: `claude setup-token`, `omp login`, Pi sign-in) run as AURA runs that app. **Add to chat** shares the latest output (plain text, up to 6,000 characters) with your next message; terminal output is never sent otherwise. Up to eight terminals can run at once; all end when AURA stops or restarts. Without the interface, `python scripts/workspace_terminal.py <command>` runs a command in a terminal and prints what it showed.
+
 ### Accounts and continuing after a limit
 
 **Settings → Accounts & backups** keeps the default at **Ask me**. Automatic recovery makes at most one
 attempt on another saved account, a connected backup app, or after a reported reset. A second limit asks
 for your choice. Continuing the same native chat asks it to check its saved progress rather than repeat
-the original actions. Moving to another app requires a completed saved reply to carry over; uncertain
+the original actions. Moving to another app carries a handoff (where the work stands and the latest exchanges); uncertain
 partial work stays available for review in the original app.
 
 Codex account changes also change its shared local sign-in. AURA waits for its Codex work to finish,
