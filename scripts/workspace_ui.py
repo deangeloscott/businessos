@@ -298,7 +298,7 @@ def library():
         title = next((line[2:].strip() for line in page.read_text(encoding='utf-8').splitlines() if line.startswith('# ')), '')
         out.append({'title': title or row['id'].replace('.', ' ').replace('-', ' ').title(),
                     'path': row['path'], 'kind': 'Workflow', 'area': row.get('owner_system', 'core'),
-                    'id': row['id']})
+                    'id': row['id'], 'description': row.get('purpose','')})
     for path in sorted((PRODUCT_ROOT / 'recipes').rglob('*.md')):
         if path.name in {'README.md', 'INDEX.md', 'DIALECTS.md'}:
             continue

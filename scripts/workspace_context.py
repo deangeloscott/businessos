@@ -182,11 +182,22 @@ def resolve(app,bid,references,goal_id=None,pointers=False,sources=None):
             text=f'Terminal output{location}, shared by the person (the newest lines are last):\n{screen}'
         elif kind=='collection':
             import workspace_collections
-            d=workspace_collections.read(bid,ident)
-            basis={k:v for k,v in d.items() if k not in {'checks','receipts','version','updated_at'}}
-            basis['items']=[{k:v for k,v in i.items() if k not in {'last_seen','updated_at'}} for i in d['items']]
-            row.update(label=d['name'],path=str(workspace_collections.path(bid,ident)),revision=digest(basis))
-            text=f'Saved results: {d["name"]}. Purpose: {d["purpose"]}. Retrieve only relevant rows with {PRODUCT_ROOT / "scripts/workspace_collections.py"} show --workspace {json.dumps(str(workspace_root()))} --business-id {bid} --id {ident} --search <specific query> --limit 5. Check reported coverage, source dates and user corrections before relying on a result.'
+            if variant:
+                item=workspace_collections.show(bid,ident,item_id=variant)['item']
+                selected={key:item.get(key) for key in ('id','title','expires_at','display_state','source_refs','corrected','correction_note','correction_conflict','fields','summary')}
+                row.update(label=item['title'],revision=digest(selected))
+                helper=str(PRODUCT_ROOT/'scripts/workspace_collections.py')
+                args=[helper,'show','--workspace',str(workspace_root()),'--business-id',bid,'--id',ident,'--item='+variant]
+                brief=json.dumps(selected,ensure_ascii=False)
+                text='Selected collection item (current values include saved corrections): '+brief[:4000]
+                if len(brief)>4000:text+=' [excerpt shortened]'
+                text+='\nRead the full current item when needed with these arguments: '+json.dumps(args,ensure_ascii=False)
+            else:
+                d=workspace_collections.read(bid,ident)
+                basis={k:v for k,v in d.items() if k not in {'checks','receipts','version','updated_at'}}
+                basis['items']=[{k:v for k,v in i.items() if k not in {'last_seen','updated_at'}} for i in d['items']]
+                row.update(label=d['name'],path=str(workspace_collections.path(bid,ident)),revision=digest(basis))
+                text=f'Saved results: {d["name"]}. Purpose: {d["purpose"]}. Retrieve only relevant rows with {PRODUCT_ROOT / "scripts/workspace_collections.py"} show --workspace {json.dumps(str(workspace_root()))} --business-id {bid} --id {ident} --search <specific query> --limit 5. Check reported coverage, source dates and user corrections before relying on a result.'
         elif kind=='file':
             path=app.document_source(bid,ident,include_asset=False)[0];info=path.stat()
             row.update(label=path.name,path=str(path),revision=f'{info.st_mtime_ns}:{info.st_size}',basis='File metadata at send; the native app reads the file when needed')

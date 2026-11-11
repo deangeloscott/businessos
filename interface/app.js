@@ -106,7 +106,7 @@ async function refresh(light=false,preserveDetails=light) {
     if(data.records_unchanged&&state.data?.workspace===data.workspace&&state.business===data.business_id)data.records=state.data.records;
     if(ticket!==state.refreshTicket)return;state.data=data;
     state.business=state.data.business_id || '';state.scheduleJob=state.data.schedule_operation;
-    const scope=state.data.workspace+'|'+state.business;if(state.searchScope&&state.searchScope!==scope){state.memoryQuery='';state.memoryGoalStatus='current';state.memoryGoalScope='all';state.chatProjectFilter='';state.fileQuery='';state.scheduleQuery='';state.scheduleFilter='all';state.scheduleDraft=null;state.showPaused=false;fileFilter='all';state.fileFavoritesOnly=false;}state.searchScope=scope;
+    const scope=state.data.workspace+'|'+state.business;if(state.searchScope&&state.searchScope!==scope){state.memoryQuery='';state.memoryGoalStatus='current';state.memoryGoalScope='all';state.chatProjectFilter='';state.fileQuery='';state.scheduleQuery='';state.scheduleFilter='all';state.scheduleDraft=null;state.showPaused=false;fileFilter='all';fileLocation='';state.fileProject='';state.fileFavoritesOnly=false;workFilter='all';workCategory='';libraryView='all';libraryQueryText='';libraryLimit=60;}state.searchScope=scope;
     $('.composer').hidden=!state.business;
     window.auraFocus?.paint();
     $('#connection').disabled=!state.business;
@@ -561,7 +561,7 @@ function renderNotifications() {
   $('#notification-bell').setAttribute('aria-label',count?`Activity, ${count} unread`:'Activity');
   document.title=count?`(${count}) AURA`:'AURA';
   $('#notification-read-all').disabled=!count;
-  $('#notification-list').innerHTML=inbox.items.length?[...inbox.items].reverse().map(n=>`<button class="notification-item ${n.read?'':'unread'}" data-notification="${esc(n.id)}" ${state.busy&&n.chat_id!==state.chatMeta?.id?'disabled':''}><span class="notification-dot" aria-hidden="true"></span><span><strong>${n.kind==='usage'?'Usage alert':n.kind==='limit'?'Plan limit':n.kind==='task_limit'?'Scheduled task':n.kind==='goal'?'Goal reached':n.kind==='deadline'?'Deadline coming up':n.kind==='changes'?'Watch update':n.status==='error'?'Needs your attention':n.kind==='organization'?'Workspace ready':'Reply ready'}</strong>${n.title?'<span class="notification-subject">'+esc(n.title)+'</span>':''}<small>${esc(n.agent)} · <time datetime="${new Date(n.at*1000).toISOString()}">${esc(new Date(n.at*1000).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}))}</time>${n.read?'':' · Unread'}</small></span><span aria-hidden="true">→</span></button>`).join(''):'<p class="notification-empty">You’re all caught up. New replies will appear here.</p>';
+  $('#notification-list').innerHTML=inbox.items.length?[...inbox.items].reverse().map(n=>`<button class="notification-item ${n.read?'':'unread'}" data-notification="${esc(n.id)}" ${state.busy&&n.chat_id&&n.chat_id!==state.chatMeta?.id?'disabled':''}><span class="notification-dot" aria-hidden="true"></span><span><strong>${n.kind==='usage'?'Usage alert':n.kind==='limit'?'Plan limit':n.kind==='task_limit'?'Scheduled task':n.kind==='goal'?'Goal reached':n.kind==='deadline'?'Deadline coming up':n.kind==='changes'?'Watch update':n.status==='error'?'Needs your attention':n.kind==='organization'?'Workspace ready':'Reply ready'}</strong>${n.title?'<span class="notification-subject">'+esc(n.title)+'</span>':''}<small>${esc(n.agent)} · <time datetime="${new Date(n.at*1000).toISOString()}">${esc(new Date(n.at*1000).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}))}</time>${n.read?'':' · Unread'}</small></span><span aria-hidden="true">→</span></button>`).join(''):'<p class="notification-empty">You’re all caught up. New replies will appear here.</p>';
   if(update?.notice){
     if(!inbox.items.length)$('#notification-list').innerHTML='';
     $('#notification-list').insertAdjacentHTML('afterbegin',`<button class="notification-item ${update.unread?'unread':''}" data-update-open><span class="notification-dot" aria-hidden="true"></span><span><strong>AURA update available</strong><small>Version ${esc(update.release.version)}</small></span><span aria-hidden="true">→</span></button>`);
@@ -982,7 +982,23 @@ document.addEventListener('click',event=>{
 async function toggleFileFavorite(ref){const keys=fileFavoriteKeys(ref),prefs=libraryPrefs(),marked=fileMarked(ref);await saveLibrary({...prefs,favorites:marked?prefs.favorites.filter(k=>!keys.includes(k)):[...prefs.favorites,keys[0]]});if(state.view==='files')renderFiles();renderQuickFiles();return !marked;}
 function rememberLibraryOpen(item){const prefs=libraryPrefs();if(prefs.recent[0]===item.key)return;attempt(async()=>{await saveLibrary({...prefs,recent:[item.key,...prefs.recent.filter(k=>k!==item.key)].slice(0,24)});if(state.view==='work'&&$('#work-list'))renderWork();});}
 function libraryQuery(text){return human(text).toLowerCase().replace(/[_.-]+/g,' ').replace(/\s+/g,' ').trim();}
-function libraryMatches(item,q){return libraryQuery([item.title,item.description,item.category,item.group,item.id,...(item.discovery_terms||[]),...(item.apps||[]),...(item.sources||[]).map(s=>s.service||s.connection||'')].join(' ')).includes(libraryQuery(q))||(item.members||[]).some(m=>libraryMatches(m,q))||(item.variants||[]).some(v=>libraryMatches(v,q));}
+function searchLibrary(items,query){
+  const phrase=libraryQuery(query);
+  if(!phrase)return items.slice();
+  const words=text=>(text.match(/[\p{L}\p{N}]+/gu)||[]).map(word=>word==='draft'?'write':word);
+  const ignored=new Set(['a','an','the','to','for','of','and','me','how']);
+  const tokens=words(phrase),meaningful=tokens.filter(word=>!ignored.has(word));
+  const required=meaningful.length?meaningful:tokens;
+  function score(item){
+    const title=libraryQuery(item.title),titleWords=new Set(words(title));
+    const searchable=new Set(words(libraryQuery([item.title,item.description,item.category,item.group,item.id,...(item.discovery_terms||[]),...(item.apps||[]),...(item.sources||[]).map(s=>s.service||s.connection||'')].join(' '))));
+    let rank=title===phrase?1000:title.includes(phrase)?100:0;
+    if(required.length&&required.every(word=>searchable.has(word)))rank+=1+required.filter(word=>titleWords.has(word)).length;
+    for(const child of [...(item.members||[]),...(item.variants||[])])rank=Math.max(rank,score(child));
+    return rank;
+  }
+  return items.map(item=>({item,rank:score(item)})).filter(hit=>hit.rank).sort((a,b)=>b.rank-a.rank||a.item.title.localeCompare(b.item.title)).map(hit=>hit.item);
+}
 async function refreshLibrary(){
   if(state.libraryRefreshing)return;state.libraryRefreshing=true;const button=state.view==='work'?$('#page-refresh'):null,workspace=state.data.workspace;
   if(button){button.disabled=true;button.textContent='Refreshing…';if(state.view==='work')renderWork();}
@@ -1042,7 +1058,8 @@ function quickMethods() {
   const focusPaths=window.auraFocus?.cached()?.knowledge||[],fit=r=>Math.max(0,...[r.path,...(r.sources||[]).map(src=>src.path)].map(p=>String(p||'').split(String.fromCharCode(92)).join('/')).flatMap(p=>focusPaths.filter(f=>p.includes(f)).map(f=>f.length)));
   const forFocus=!q&&focusPaths.length?state.library.map(r=>[fit(r),r]).filter(([n])=>n).sort((a,b)=>b[0]-a[0]).slice(0,3).map(([,r])=>r):[];
   if(!q){const favorites=state.library.filter(r=>libraryMarked(r)&&!forFocus.includes(r)).slice(0,3),recent=libraryPrefs().recent.map(k=>state.library.find(r=>r.key===k||r.aliases?.includes(k))).filter(Boolean).filter((r,i,all)=>all.indexOf(r)===i&&!favorites.includes(r)).slice(0,favorites.length?1:3);$('#quick-methods').innerHTML=(forFocus.length?'<h4>For your focus</h4>'+forFocus.map(methodRow).join(''):'')+(favorites.length?'<h4>Favorites</h4>'+favorites.map(methodRow).join(''):'')+(recent.length?'<h4>Recently opened</h4>'+recent.map(methodRow).join(''):'');return;}
-  const groups=Object.keys(libraryKinds).map(kind=>({kind,items:state.library.filter(r=>libraryType(r)===kind&&libraryMatches(r,q))}));
+  const found=searchLibrary(state.library,q);
+  const groups=Object.keys(libraryKinds).map(kind=>({kind,items:found.filter(r=>libraryType(r)===kind)}));
   $('#quick-methods').innerHTML=groups.filter(g=>g.items.length).map(g=>`<h4>${libraryKinds[g.kind]}</h4>${g.items.slice(0,2).map(methodRow).join('')}<button class="text-button card-link" data-library-kind="${g.kind}">Open ${libraryKinds[g.kind].toLowerCase()} →</button>`).join('')||'<p class="muted">No match. You can still describe the job to your AI.</p>';
 }
 async function render() {
@@ -1075,12 +1092,12 @@ async function render() {
     window.auraFocus?.panel($('#focus-panel'));
     renderMemory();
   } else if(state.view==='files') {
-    const result=await cachedApi('/api/files?business='+encodeURIComponent(state.business));if(!current())return; state.files=result.items;state.fileLocations=result.locations||[];state.missingAssets=result.missing_assets||[];state.fileProjects=result.projects||[];if(!state.fileProjects.some(p=>p.id===state.fileProject))state.fileProject='';fileLocation='';
+    const result=await cachedApi('/api/files?business='+encodeURIComponent(state.business));if(!current())return; state.files=result.items;state.fileLocations=result.locations||[];state.missingAssets=result.missing_assets||[];state.fileProjects=result.projects||[];if(!state.fileProjects.some(p=>p.id===state.fileProject))state.fileProject='';if(!state.fileLocations.some(l=>l.id===fileLocation&&!l.missing))fileLocation='';
     view.innerHTML=`<div class="linked-locations">${state.fileLocations.map(l=>`<div class="linked-location"><button ${l.missing?'data-reconnect-location':'data-filelocation'}="${esc(l.id)}"><strong>${esc(l.name)}</strong><small>${l.missing?'Location missing · Reconnect':l.kind==='folder'?'Linked folder':'Linked file'}</small></button><button data-unlink-location="${esc(l.id)}" aria-label="Unlink ${esc(l.name)}">✕</button></div>`).join('')}</div>${state.missingAssets.length?`<details class="missing-files"><summary>${state.missingAssets.length} saved file${state.missingAssets.length===1?' has moved or is':'s have moved or are'} unavailable</summary>${state.missingAssets.map(f=>`<button class="row" data-reconnect-asset="${esc(f.ref)}">${esc(f.name)} · Reconnect →</button>`).join('')}</details>`:''}<div class="files-toolbar"><input class="search" id="file-search" type="search" aria-label="Search saved files" placeholder="Find a file…" value="${esc(state.fileQuery||'')}"><label class="sr-only" for="file-project-filter">Project</label><select id="file-project-filter"><option value="">All projects</option>${(state.fileProjects||[]).map(p=>`<option value="${esc(p.id)}" ${state.fileProject===p.id?'selected':''}>${esc(p.name)}</option>`).join('')}</select><button type="button" class="text-button" data-create-collection="${esc(state.fileProject||'')}">New collection</button><button type="button" class="secondary" data-add-location>＋ Add files or folder</button></div>${fileTypeFilters('full')}<button id="file-all-locations" class="text-button" hidden>All locations</button><div id="file-list" class="file-grid bounded-list" tabindex="0" aria-label="Saved files"></div>`;
     renderFiles();
   } else if(state.view==='work') {
     if(!state.library.length){const library=await cachedApi('/api/library');if(!current())return;state.library=library;}
-    view.innerHTML=`<input class="search" id="work-search" type="search" aria-label="Search the Library" placeholder="Search the Library…"><div class="filters"><button data-workfilter="all">All</button>${Object.entries(libraryKinds).map(([kind,label])=>`<button data-workfilter="${kind}">${label}</button>`).join('')}<button data-view="assistants">Agents</button></div><div class="library-toolbar"><label>Topic <select id="library-topic"><option value="">All topics</option></select></label><label>Show <select id="library-view"><option value="all" ${libraryView==='all'?'selected':''}>All items</option><option value="favorites" ${libraryView==='favorites'?'selected':''}>Favorites</option><option value="recent" ${libraryView==='recent'?'selected':''}>Recently opened</option></select></label><span><button class="text-button" data-library-help>How it works</button></span></div><p id="library-note" class="small-note"></p><div class="section-head"><h3 id="work-category-title">Library items</h3><button id="work-all-topics" class="text-button" hidden>All topics</button></div><div id="work-list"></div>`;
+    view.innerHTML=`<input class="search" id="work-search" value="${esc(libraryQueryText)}" type="search" aria-label="Search the Library" placeholder="Search the Library…"><div class="filters"><button data-workfilter="all">All</button>${Object.entries(libraryKinds).map(([kind,label])=>`<button data-workfilter="${kind}">${label}</button>`).join('')}<button data-view="assistants">Agents</button></div><div class="library-toolbar"><label>Topic <select id="library-topic"><option value="">All topics</option></select></label><label>Show <select id="library-view"><option value="all" ${libraryView==='all'?'selected':''}>All items</option><option value="favorites" ${libraryView==='favorites'?'selected':''}>Favorites</option><option value="recent" ${libraryView==='recent'?'selected':''}>Recently opened</option></select></label><span><button class="text-button" data-library-help>How it works</button></span></div><p id="library-note" class="small-note"></p><div class="section-head"><h3 id="work-category-title">Library items</h3><button id="work-all-topics" class="text-button" hidden>All topics</button></div><div id="work-list"></div>`;
     renderWork();
     $('#section-content .library-toolbar>span').insertAdjacentHTML('afterbegin','<button class="text-button" id="library-connections">Add connection</button>');
     $('#library-connections').hidden=!['all','Tool'].includes(workFilter);
@@ -1099,7 +1116,7 @@ async function render() {
   }
 }
 
-let fileFilter='all', fileLocation='', workFilter='all', workCategory='', libraryView='all', libraryLimit=60;
+let fileFilter='all', fileLocation='', workFilter='all', workCategory='', libraryQueryText='', libraryView='all', libraryLimit=60;
 function recordMatches(record,q) {return !q||(record.title+' '+pretty(record.data)).toLowerCase().includes(q);}
 const addContextPrompt='Help me add useful business context to AURA. Ask only what matters for our current work and preserve my explicit facts and preferences. Do not invent facts.';
 function memoryGroups(q) {
@@ -1112,7 +1129,7 @@ function renderMemory() {
   const goalRow=r=>`<button type="button" class="row" data-record="${esc(r.ref)}"><span class="row-text"><strong class="row-title">${esc(r.title)}</strong><small class="row-meta">${goalInfo(r.data).scope==='chat'?'Chat goal':'Workspace goal'} · ${goalInfo(r.data).deleted_at?'Deleted':esc(human(r.data.status||'active'))}${r.measure?.latest!=null?' · '+(r.measure.direction==='lower_better'?esc(Number(r.measure.latest).toLocaleString())+' (target '+esc(Number(r.measure.target).toLocaleString())+' or lower)':esc(Number(r.measure.latest).toLocaleString())+' of '+esc(Number(r.measure.target).toLocaleString())+(r.measure.unit&&!['count','USD','rank'].includes(r.measure.unit)?' '+esc(r.measure.unit):'')):''}</small>${r.measure?.reached&&r.data.status!=='completed'?'<span class="goal-reached">Reached</span>':''}${r.data.target?`<small class="goal-list-outcome">${esc(pretty(r.data.target))}</small>`:''}</span><span>→</span></button>`;
   const filters=`<div class="goal-page-filters"><div class="filters" role="group" aria-label="Goal status">${[['current','Current'],['completed','Completed'],['deleted','Deleted']].map(([value,label])=>`<button type="button" data-memory-goals="${value}" aria-pressed="${status===value}" class="${status===value?'active':''}">${label}</button>`).join('')}</div>${all.some(r=>goalInfo(r.data).scope==='chat')?`<label>Type<select id="memory-goal-scope"><option value="all" ${scope==='all'?'selected':''}>All goals</option><option value="workspace" ${scope==='workspace'?'selected':''}>Workspace</option><option value="chat" ${scope==='chat'?'selected':''}>Chat</option></select></label>`:''}</div>`;
   const goalAdd='<span class="inline-actions"><button type="button" class="text-button" data-goal-help>How goals work</button><button type="button" class="secondary compact add-button" data-action="add-goal">Add goal</button></span>';
-  const full=$('#full-memory');if(full)full.innerHTML=`<section class="memory-group"><div class="mini-heading memory-heading"><h3>Goals</h3>${goalAdd}</div>${filters}<div class="memory-results" aria-label="Goals">${goals.map(goalRow).join('')||(q||status!=='current'?empty('No '+status+' goals'+(q?' match your search.':'.')):empty('No goals yet','A goal is an outcome you want, like more new patients or a funded program. AURA tracks progress and keeps your AI pointed at it.','Suggest two or three measurable goals for this business. Use our saved context, explain why each matters, and ask before saving any.','Suggest goals'))}</div></section><section class="memory-group"><div class="mini-heading memory-heading"><h3>Saved context</h3><button type="button" class="secondary compact add-button" data-add-context>Add context</button></div><p class="memory-description">Useful facts, preferences, decisions, and reference material.</p><div class="memory-results" aria-label="Saved context">${context.map(recordRow).join('')||(q?empty('No saved context matches your search.'):empty('Nothing saved yet','Facts, preferences and decisions saved here are shared with every AI you use.','Interview me briefly about this business, then save the key facts, preferences and decisions to AURA memory.','Build my business profile'))}</div></section>`;
+  const full=$('#full-memory');if(full)full.innerHTML=`<section class="memory-group"><div class="mini-heading memory-heading"><h3>Goals</h3>${goalAdd}</div>${filters}<div class="memory-results" aria-label="Goals">${goals.map(goalRow).join('')||(q||scope!=='all'||status!=='current'?empty('No '+status+' goals'+(q?' match your search.':'.')):empty('No goals yet','A goal is an outcome you want, like more new patients or a funded program. AURA tracks progress and keeps your AI pointed at it.','Suggest two or three measurable goals for this business. Use our saved context, explain why each matters, and ask before saving any.','Suggest goals'))}</div></section><section class="memory-group"><div class="mini-heading memory-heading"><h3>Saved context</h3><button type="button" class="secondary compact add-button" data-add-context>Add context</button></div><p class="memory-description">Useful facts, preferences, decisions, and reference material.</p><div class="memory-results" aria-label="Saved context">${context.map(recordRow).join('')||(q?empty('No saved context matches your search.'):empty('Nothing saved yet','Facts, preferences and decisions saved here are shared with every AI you use.','Interview me briefly about this business, then save the key facts, preferences and decisions to AURA memory.','Build my business profile'))}</div></section>`;
   const quick=$('#quick-memory');if(quick)quick.innerHTML='<div class="mini-heading"><span>Goals</span>'+goalAdd+'</div>'+goals.slice(0,3).map(goalRow).join('');
 }
 
@@ -1147,6 +1164,11 @@ const collectionUpdated=id=>!!id&&!!state.inbox?.items?.some(n=>n.collection_id=
 function renderFiles() {
   if(!$('#file-list'))return;
   state.fileObserver?.disconnect();
+  $('#file-all-locations').hidden=!fileLocation;
+  document.querySelectorAll('[data-filelocation]').forEach(button=>{
+    const selected=button.dataset.filelocation===fileLocation;
+    button.classList.toggle('active',selected);button.setAttribute('aria-pressed',String(selected));
+  });
   const matches=matchingFiles().filter(f=>!fileLocation||f.location===fileLocation);
   $('#file-list').innerHTML=matches.length?matches.slice(0,state.fileLimit||100).map(f=>`<div class="file-card-wrap"><button class="file-card" data-file="${esc(f.path)}"><span class="file-thumb">${f.media?'◈':'▤'}</span><div class="file-info"><strong>${collectionUpdated(f.collection_id)?'<span class="chat-indicator ready" aria-label="New changes"></span>':''}${esc(f.name)}</strong><small>${esc(f.location_name||'Workspace')} · ${size(f.bytes)}</small></div></button>${fileFavoriteButton(f.path,f.name,true)}</div>`).join(''):empty(state.fileFavoritesOnly?'No favorite files match.':'No matching files here yet.','Link a file or folder, or save work in this workspace.');
   $('#file-more')?.remove();
@@ -1175,11 +1197,11 @@ function renderWork() {
   if(!topics.includes(workCategory))workCategory='';
   topic.value=workCategory;
   topic.parentElement.hidden=topics.length<=1;
-  const matches=typed.filter(item=>(!workCategory||item.category===workCategory)&&libraryMatches(item,q)&&(libraryView==='all'||libraryMarked(item,libraryView==='recent'?'recent':'favorites')));
-  if(libraryView==='recent'){
+  const matches=searchLibrary(typed.filter(item=>(!workCategory||item.category===workCategory)&&(libraryView==='all'||libraryMarked(item,libraryView==='recent'?'recent':'favorites'))),q);
+  if(!q&&libraryView==='recent'){
     const recent=libraryPrefs().recent,rank=item=>recent.findIndex(key=>key===item.key||item.aliases?.includes(key));
     matches.sort((a,b)=>rank(a)-rank(b));
-  }else matches.sort((a,b)=>a.title.localeCompare(b.title));
+  }else if(!q)matches.sort((a,b)=>a.title.localeCompare(b.title));
   const label=libraryView==='recent'?'Recently opened':libraryView==='favorites'?'Favorites':workCategory||libraryKinds[workFilter]||'All items';
   $('#work-category-title').textContent=label+' ('+matches.length+')';
   const clear=$('#work-all-topics');clear.hidden=libraryView!=='recent'||!libraryPrefs().recent.length;clear.textContent='Clear recent';
@@ -1555,7 +1577,7 @@ function details(title,html,mode='panel',anchor=null){
   const page=mode==='page'||(state.view==='sharing'&&mode!=='context'),modal=!anchor&&!page&&mode!=='context';
   if(d.open&&d.matches(':modal')!==modal)d.close();
   state.detailBack=null;$('#detail-search-back').hidden=true;
-  if(state.settingsReturn&&!anchor&&!page)setDetailBack('Settings',openSettings);
+  if(state.settingsReturn&&!anchor&&!page)setDetailBack('Settings',()=>openSettings(state.settingsQuery));
   if(state.searchReturn?.scope===JSON.stringify([state.data?.workspace,state.business])&&!anchor)setDetailBack('Results',backToSearchResults);
   d.dataset.mode=page?'page':mode;d.dataset.opened=Date.now();$('#detail-title').textContent=title;
   if(mode!=='context')delete d.dataset.expanded;$('#detail-expand').hidden=mode!=='context';syncDetailExpand();
@@ -1580,18 +1602,18 @@ async function workspaceReading(){
   details('Reading across workspaces',`<p>Each workspace keeps its own information. Turn this on to let your other workspaces on this computer use what this one knows, such as research findings, when it’s relevant. They can read it but never change it, and their AI says where it came from.</p><label class="check-label"><input type="checkbox" id="workspace-reading-toggle" ${data.readable_by_other_workspaces?'checked':''}><span>Let my other workspaces read this one</span></label><p class="small-note">Leave it off for work that must stay separate, such as one client’s information. To copy something instead, use Share or import.</p><h3 class="finding-heading">Readable from here</h3>${here.length?`<ul class="small-note">${here.map(w=>`<li>${esc(w.name)}</li>`).join('')}</ul>`:'<p class="small-note">None of your other workspaces allow reading yet.</p>'}`);
   $('#workspace-reading-toggle').onchange=e=>attempt(async()=>{try{await api('/api/reading',{readable_by_other_workspaces:e.target.checked});notice(e.target.checked?'Your other workspaces can now read this one.':'This workspace is private to itself again.');}catch(error){e.target.checked=!e.target.checked;throw error;}});
 }
-function openSettings(){
+function openSettings(query=''){
   closeAnchoredSurface(false);if($('#more-dialog').open)$('#more-dialog').close();state.settingsReturn=false;
   const update=$('#update-menu-status')?.textContent.trim();
   details('Settings',`<label class="sr-only" for="settings-find">Search settings</label><input type="search" id="settings-find" class="search" placeholder="Search settings" autocomplete="off">${settingsGroups.map(([group,rows])=>`<section class="settings-group"><h3>${esc(group)}</h3><div class="settings-list">${rows.map(([id,title,text,words])=>`<button type="button" class="settings-row" data-settings-open="${id}" data-settings-words="${esc((title+' '+text+' '+words).toLowerCase())}"><span><strong>${esc(title)}</strong><small>${esc(id==='startup-settings'&&update?update:text)}</small></span><span class="arrow" aria-hidden="true">›</span></button>`).join('')}</div></section>`).join('')}<p class="small-note settings-none" hidden>No settings match. Try another word, or ask your AI.</p>`);
-  const find=$('#settings-find');find.oninput=()=>{const q=find.value.trim().toLowerCase();let any=false;document.querySelectorAll('.settings-row').forEach(r=>{const show=!q||r.dataset.settingsWords.includes(q);r.hidden=!show;any||=show;});document.querySelectorAll('.settings-group').forEach(g=>g.hidden=![...g.querySelectorAll('.settings-row')].some(r=>!r.hidden));$('.settings-none').hidden=any;};
-  find.focus();
+  const find=$('#settings-find');find.oninput=()=>{const q=find.value.trim().toLowerCase();let any=false;document.querySelectorAll('.settings-row').forEach(r=>{const show=q.split(/\s+/).every(word=>r.dataset.settingsWords.includes(word));r.hidden=!show;any||=show;});document.querySelectorAll('.settings-group').forEach(g=>g.hidden=![...g.querySelectorAll('.settings-row')].some(r=>!r.hidden));$('.settings-none').hidden=any;};
+  find.value=query;find.oninput();find.focus();
 }
 document.addEventListener('click',event=>{
   const b=event.target.closest('#open-settings,[data-settings-open]');if(!b)return;
   if(b.id==='open-settings'){openSettings();return;}
   const target=$('#'+b.dataset.settingsOpen);if(!target)return;
-  state.settingsReturn=!!b.closest('#detail');closeAnchoredSurface(false);if($('#more-dialog').open)$('#more-dialog').close();
+  state.settingsQuery=$('#settings-find')?.value||'';state.settingsReturn=!!b.closest('#detail');closeAnchoredSurface(false);if($('#more-dialog').open)$('#more-dialog').close();
   target.click();
 });
 $('#detail').addEventListener('close',()=>{setTimeout(()=>{if(!$('#detail').open)state.settingsReturn=false;},0);});
@@ -2393,7 +2415,7 @@ document.addEventListener('click',event=>attempt(async()=>{
   if(button.id==='file-more'){state.fileLimit=(state.fileLimit||100)+100;renderFiles();}
   if(button.dataset.filelocation){state.fileLimit=100;fileLocation=button.dataset.filelocation;$('#file-all-locations').hidden=false;document.querySelectorAll('[data-filelocation]').forEach(b=>b.classList.toggle('active',b===button));renderFiles();}
   if(button.id==='file-all-locations'){fileLocation='';button.hidden=true;document.querySelectorAll('[data-filelocation]').forEach(b=>b.classList.remove('active'));renderFiles();}
-  if(button.dataset.libraryKind){libraryLimit=60;const query=$('#quick-work-search')?.value||'';workFilter=button.dataset.libraryKind;libraryView='all';workCategory='';state.view='work';await render();$('#work-search').value=query;renderWork();}
+  if(button.dataset.libraryKind){libraryLimit=60;const query=$('#quick-work-search')?.value||'';workFilter=button.dataset.libraryKind;libraryQueryText=query;libraryView='all';workCategory='';state.view='work';await render();$('#work-search').value=query;renderWork();}
   if(button.dataset.workcategory){workCategory=button.dataset.workcategory;if(state.view!=='work'){state.view='work';workFilter='Workflow';await render();}else renderWork();}
   if(button.id==='work-all-topics'){if(libraryView==='recent'){await saveLibrary({...libraryPrefs(),recent:[]});quickMethods();}workCategory='';renderWork();}
   if(button.id==='schedule-retry-models')await loadScheduleModels(true);
@@ -2429,7 +2451,7 @@ document.addEventListener('click',event=>attempt(async()=>{
   }
   if(button.dataset.chat)await openShellChat(button.dataset.chat);
   if(button.dataset.close) $('#'+button.dataset.close).close();
-  if(button.dataset.view) { if(button.dataset.view==='tools')state.scheduleAdding=button.hasAttribute('data-add-recurring');$('#more-dialog').close(); if(!state.data.diagnostics.length)notice(''); state.view=button.dataset.view; workFilter='all';workCategory=''; await render();recordShellRoute();await renderShell(); }
+  if(button.dataset.view) { if(button.dataset.view==='tools')state.scheduleAdding=button.hasAttribute('data-add-recurring');$('#more-dialog').close(); if(!state.data.diagnostics.length)notice(''); state.view=button.dataset.view; await render();recordShellRoute();await renderShell(); }
   if(button.hasAttribute('data-add-context'))await openContextChat();
   if(button.dataset.pinChat){const scope=chatScope();const chat=state.chatList.find(c=>c.id===button.dataset.pinChat);if(chat){await api('/api/chats/organize',{business:state.business,id:chat.id,pinned:!chat.pinned});if(scope!==chatScope())return;chat.pinned=!chat.pinned;if(state.chatMeta?.id===chat.id)state.chatMeta.pinned=chat.pinned;button.setAttribute('aria-pressed',String(chat.pinned));button.setAttribute('aria-label',chat.pinned?'Unpin chat':'Pin chat');button.title=chat.pinned?'Unpin chat':'Pin chat';state.sidebarSignature='';await renderShell();}}
   if(button.dataset.prompt) prompt(button.dataset.prompt);
@@ -2487,13 +2509,13 @@ document.addEventListener('click',event=>attempt(async()=>{
   if(button.id==='notification-read-all') {if(state.business)state.inbox=await api('/api/notifications',{business:state.business,action:'read',all:true});state.updates=await api('/api/updates',{action:'read'});renderNotifications();state.systemAlert?.close();}
   if(button.dataset.notification) {
     const item=state.inbox.items.find(n=>n.id===button.dataset.notification);if(!item)return;
-    if(item.kind==='task_limit'&&item.task_id){await showTaskLimit(item.task_id);}
+    if(item.kind==='task_limit'&&item.task_id){$('#notification-dialog').close();await showTaskLimit(item.task_id);state.inbox=await api('/api/notifications',{business:state.business,action:'read',id:item.id});renderNotifications();return;}
     if(item.kind==='goal'&&item.goal_id&&window.auraCompose){$('#notification-dialog').close();await window.auraCompose.openGoal(item.goal_id);}
     if(['deadline','changes'].includes(item.kind)&&item.collection_id&&window.auraProjects){
       $('#notification-dialog').close();
       if(item.kind==='changes'||!item.item_id)window.auraViews?.choice(item.collection_id,'list');
       state.inbox=await api('/api/notifications',{business:state.business,action:'read',id:item.id});renderNotifications();
-      if(item.kind==='deadline'&&item.item_id){await window.auraProjects.openDeadline(item.collection_id,item.item_id);return;}
+      if(item.kind==='deadline'&&item.item_id){await window.auraProjects.openItem(item.collection_id,item.item_id);return;}
       await window.auraProjects.openCollection(item.collection_id,item.kind==='changes'?'changes':'current',item.kind==='deadline'?item.item_title||'':'');return;
     }
     if(item.kind==='goal'){state.inbox=await api('/api/notifications',{business:state.business,action:'read',id:item.id});renderNotifications();return;}
@@ -2581,7 +2603,7 @@ document.addEventListener('click',event=>attempt(async()=>{
   if(button.id==='refresh') {await refresh();button.textContent='Reloaded';setTimeout(()=>{if(button.isConnected)button.textContent='Reload Workspace';},2000);}
   if(button.id==='location') { await navigator.clipboard.writeText(state.data.workspace); if($('#share-location-status'))$('#share-location-status').textContent='Copied';else notice('Folder location copied.'); }
 }));
-document.addEventListener('input',event=>{ if(event.target.id==='quick-work-search')quickMethods(); if(['quick-memory-search','record-search'].includes(event.target.id)){state.memoryQuery=event.target.value;renderMemory();} if(['quick-file-search','file-search'].includes(event.target.id)){state.fileQuery=event.target.value;state.fileLimit=100;renderQuickFiles();renderFiles();} if(['quick-schedule-search','schedule-search'].includes(event.target.id)){state.scheduleQuery=event.target.value;renderSchedules();} if(event.target.id==='work-search'){libraryLimit=60;renderWork();}if(['task-time','task-every','task-custom'].includes(event.target.id))updateTaskTiming(); });
+document.addEventListener('input',event=>{ if(event.target.id==='quick-work-search')quickMethods(); if(['quick-memory-search','record-search'].includes(event.target.id)){state.memoryQuery=event.target.value;renderMemory();} if(['quick-file-search','file-search'].includes(event.target.id)){state.fileQuery=event.target.value;state.fileLimit=100;renderQuickFiles();renderFiles();} if(['quick-schedule-search','schedule-search'].includes(event.target.id)){state.scheduleQuery=event.target.value;renderSchedules();} if(event.target.id==='work-search'){libraryQueryText=event.target.value;libraryLimit=60;renderWork();}if(['task-time','task-every','task-custom'].includes(event.target.id))updateTaskTiming(); });
 document.addEventListener('submit',event=>{
   event.preventDefault();
   attempt(async()=>{
@@ -3033,17 +3055,18 @@ function indexShellSearch(source){
     ...source.chats.filter(c=>!c.archived&&!c.deleted_at&&!['deleted','trashed'].includes(c.status)).map(c=>({at:c.updated||c.created,type:'chats',label:'Chat',title:c.title,description:(c.summary||c.latest_request||c.description)?chatDescription(c):'',match:c.title+' '+((c.summary||c.latest_request||c.description)?chatDescription(c):''),attr:'data-chat',id:c.id})),
     ...source.files.filter(usefulFile).map(f=>({favoriteKeys:fileFavoriteKeys(f.path),at:f.modified,type:'files',label:'File',title:f.name,description:f.location_name||(!f.path.startsWith('asset/')?f.path:''),match:f.name+' '+f.path,attr:'data-search-file',id:f.path})),
     ...source.records.filter(r=>!searchHidden(r.data)&&(r.type!=='Asset'||!fileRefs.has(r.ref))).map(r=>({at:r.data.updated_at||r.data.created_at,type:'records',label:'Memory',title:r.title,description:shareType(r.type||r.ref.split('/')[0]),match:r.title+' '+JSON.stringify(r.data),attr:'data-search-record',id:r.ref})),
-    ...source.library.filter(libraryGuidance).map(i=>({favoriteKeys:[i.key,...(i.aliases||[])],at:i.updated_at,type:'library',label:'Library',title:i.title||i.name||i.id,description:[i.subtype||i.kind,(i.apps||[]).map(appName).join(', ')].filter(Boolean).join(' · '),match:JSON.stringify(i),attr:'data-search-library',id:i.key||i.id}))
+    ...source.library.filter(libraryGuidance).map(i=>({favoriteKeys:[i.key,...(i.aliases||[])],at:i.updated_at,type:'library',label:'Library',title:i.title||i.name||i.id,description:[i.subtype||i.kind,(i.apps||[]).map(appName).join(', ')].filter(Boolean).join(' · '),attr:'data-search-library',id:i.key||i.id}))
   ];
-  return items.map(i=>({...i,at:searchTimestamp(i.at),match:String(i.match).toLowerCase(),titleLower:String(i.title).toLowerCase()})).sort((a,b)=>b.at-a.at||a.titleLower.localeCompare(b.titleLower));
+  return items.map(i=>({...i,at:searchTimestamp(i.at),match:String(i.match||'').toLowerCase(),titleLower:String(i.title).toLowerCase()})).sort((a,b)=>b.at-a.at||a.titleLower.localeCompare(b.titleLower));
 }
 function paintShellSearch(){
   if(!shellSearchData)return;
   const q=$('#shell-search').value.trim().toLowerCase(),terms=q.split(/\s+/).filter(Boolean),source=shellSearchData,items=source.items;
   const favorites=libraryPrefs().favorites;
-  const matches=items.filter(i=>terms.every(term=>i.match.includes(term))&&(!shellSearchFavorites||i.favoriteKeys?.some(k=>favorites.includes(k))));
+  const libraryHits=q?new Map(searchLibrary(source.library.filter(libraryGuidance),q).map((item,index)=>[item.key||item.id,index])):null;
+  const matches=items.filter(i=>(i.type==='library'?(!q||libraryHits.has(i.id)):terms.every(term=>i.match.includes(term)))&&(!shellSearchFavorites||i.favoriteKeys?.some(k=>favorites.includes(k))));
   const rank=i=>{const title=i.titleLower;return q&&title===q?0:q&&title.startsWith(q)?1:q&&terms.every(t=>title.includes(t))?2:3;};
-  if(q)matches.sort((a,b)=>rank(a)-rank(b)||b.at-a.at||a.titleLower.localeCompare(b.titleLower));
+  if(q)matches.sort((a,b)=>rank(a)-rank(b)||b.at-a.at||a.type.localeCompare(b.type)||(a.type==='library'?libraryHits.get(a.id)-libraryHits.get(b.id):0)||a.titleLower.localeCompare(b.titleLower));
   const filtered=matches.filter(i=>shellSearchFilter==='all'||i.type===shellSearchFilter);
   $('#shell-search-filters').innerHTML=Object.entries(shellSearchTypes).map(([type,label])=>`<button type="button" data-search-filter="${type}" aria-pressed="${type===shellSearchFilter}">${label}<span>${type==='all'?matches.length:matches.filter(i=>i.type===type).length}</span></button>`).join('')+`<button type="button" data-search-favorites aria-label="Show favorites only" aria-pressed="${shellSearchFavorites}">★ Favorites</button>`;
   $('#shell-search-results').innerHTML=filtered.slice(0,shellSearchLimit).map(i=>`<li><button class="search-result" ${i.attr}="${esc(i.id)}"><span class="search-result-copy"><strong>${esc(i.title)}</strong>${i.description?`<small>${esc(i.description)}</small>`:''}</span><span class="search-result-meta"><span class="search-result-type">${i.label}</span>${i.at?`<time datetime="${new Date(i.at*1000).toISOString()}" title="${esc(new Date(i.at*1000).toLocaleString())}">${esc(searchDate(i.at))}</time>`:''}</span></button></li>`).join('')||`<li>${empty(q?'No matching '+(shellSearchFilter==='all'?'items':shellSearchTypes[shellSearchFilter].toLowerCase())+'.':'No '+(shellSearchFilter==='all'?'items':shellSearchTypes[shellSearchFilter].toLowerCase())+' here yet.',q?'Try another word or choose a different filter.':'')}</li>`;

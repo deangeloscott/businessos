@@ -7,7 +7,9 @@ const records=[{title:'Customer guide',type:'Asset',ref:'Asset/guide',data:{topi
 const context={window:{auraFiles:{detach(){}}},libraryPrefs:()=>({favorites:['file:attachments/guide.md','guide-0']}),fileFavoriteKey:ref=>'file:'+ref,libraryGuidance:item=>['Workflow','Recipe','Skill'].includes(item.kind),state:{business:'studio',data:{workspace:'A',records}},shellSearchData:null,shellSearchTicket:0,$:node,
   goalInfo:value=>value?.extensions?.businessos?.goal||{},closeAnchoredSurface(){},esc,empty:(title,detail)=>esc(title+' '+detail),appName:id=>id,shareType:type=>type,
   usefulFile:file=>!file.path.startsWith('instances/'),chatDescription:chat=>chat.description||''};
+context.human=String;
 vm.createContext(context);
+vm.runInContext(source.slice(source.indexOf('function libraryQuery('),source.indexOf('async function refreshLibrary(')),context);
 vm.runInContext(source.slice(source.indexOf('function fileFavoriteKey('),source.indexOf('function favoriteControl(')),context);
 vm.runInContext(source.slice(source.indexOf("let shellSearchFilter='all'"),source.indexOf('// A deliberately small Markdown renderer')),context);
 const chats={items:[{id:'chat',title:'Customer guide',description:'Retention plan',updated:100},{id:'old',title:'Hidden archived chat',archived:true,updated:900}]};

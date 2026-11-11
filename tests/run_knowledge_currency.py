@@ -56,6 +56,11 @@ def main():
         rejects(lambda:collections.apply(bid,made['id'],{'revision':changed['revision'],'run_id':'bad','upkeep':'yes','items':[]}),'Upkeep')
         first=collections.apply(bid,made['id'],{'revision':changed['revision'],'run_id':'run-1','status':'complete','coverage':{'scope':'arXiv cs.AI','checked':['arxiv']},
                                                'items':[{'id':'arxiv:2501.00001','title':'A paper','source_refs':['https://arxiv.org/abs/2501.00001']}]})
+        from workspace_context import resolve
+        attachment={'kind':'collection','id':made['id'],'variant':'arxiv:2501.00001'}
+        selected=resolve(app,bid,[attachment])
+        assert selected['references'][0]['label']=='A paper'
+        assert 'https://arxiv.org/abs/2501.00001' in selected['text'] and '--item=arxiv:2501.00001' in selected['text']
         assert first['change_count']==1 and 'last_upkeep_at' not in collections.read(bid,made['id'])
         second=collections.apply(bid,made['id'],{'revision':first['revision'],'run_id':'run-2','status':'complete','coverage':{'scope':'arXiv cs.AI','checked':['arxiv']},'items':[],'upkeep':True})
         shown=collections.show(bid,made['id'])

@@ -147,7 +147,7 @@ window.auraCompose=(()=>{
   }
   async function inspect(item){
     if(item.kind==='terminal'&&typeof item.snapshot==='string')return details('Terminal output','<pre class="context-preview">'+esc(item.snapshot)+'</pre>','context');
-    if(item.kind==='collection')return window.auraProjects?.openCollection(item.id);
+    if(item.kind==='collection')return item.variant?window.auraProjects?.openItem(item.id,item.variant):window.auraProjects?.openCollection(item.id);
     if(item.kind==='file')return openFileWorkspace(item.id);
     if(item.kind==='record')return recordDetails(item.id);
     if(item.kind==='goal')return openGoal(item.id);
