@@ -178,15 +178,28 @@ window.auraViews=(()=>{
   }
 
   /* What's running: plain sentences built from saved links. Changes happen in chat. */
-  async function running(host,target){
+  async function running(host,target,collection){
     const key=scope();let data;
     try{data=await api(q('/api/running',target));}catch(error){if(key===scope()&&host.isConnected)host.innerHTML=`<p class="small-note">${esc(humanError(error))}</p>`;return null;}
     if(key!==scope()||!host.isConnected)return data;
     const order=['failed','missing','waiting','ok','paused'],items=[...data.items].sort((a,b)=>order.indexOf(a.health)-order.indexOf(b.health));
-    host.innerHTML=(data.attention?`<p class="running-alert" role="status">${data.attention} scheduled ${data.attention===1?'task needs':'tasks need'} attention.</p>`:'')+(items.length?items.map(item=>`<div class="running-item" data-health="${esc(item.health)}"><p>${esc(item.text)}</p>${item.available?`<div class="inline-actions"><button type="button" class="text-button" data-running-open="${esc(item.id)}">Open task</button><button type="button" class="text-button" data-running-chat="${esc(item.id)}">Change in chat</button></div>`:''}</div>`).join('')+(data.goals.length?`<p class="small-note">Working toward: ${esc(data.goals.join('; '))}</p>`:''):`<p class="small-note">${target.collection?'Nothing keeps this current yet.':'Nothing is scheduled here yet. Ask your AI to set up a scheduled task, then link it to this '+(target.project?'project':'goal')+'.'}</p>${target.collection?'<button type="button" class="text-button" data-running-watch>Ask my AI to keep it current</button>':''}`);
+    host.innerHTML=(data.attention?`<p class="running-alert" role="status">${data.attention} scheduled ${data.attention===1?'task needs':'tasks need'} attention.</p>`:'')+(items.length?items.map(item=>`<div class="running-item" data-health="${esc(item.health)}"><p>${esc(item.text)}</p>${item.available?`<div class="inline-actions"><button type="button" class="text-button" data-running-open="${esc(item.id)}">Open task</button><button type="button" class="text-button" data-running-chat="${esc(item.id)}">Change in chat</button></div>`:''}</div>`).join('')+(data.goals.length?`<p class="small-note">Working toward: ${esc(data.goals.join('; '))}</p>`:''):`<p class="small-note">${target.collection?'Nothing keeps this current yet.':'Nothing is scheduled here yet. Ask your AI to set up a scheduled task, then link it to this '+(target.project?'project':'goal')+'.'}</p>${target.collection?'<button type="button" class="text-button" data-running-watch>Keep this up to date</button>':''}`);
     const find=id=>items.find(i=>i.id===id);
-    host.querySelectorAll('[data-running-open]').forEach(b=>b.onclick=()=>attempt(()=>scheduleDetails(b.dataset.runningOpen)));
-    host.querySelectorAll('[data-running-watch]').forEach(b=>b.onclick=()=>{returnToChat();const box=$('#request');box.value=`Set up a weekly scheduled task that keeps my “${data.name}” collection current: check for what is new, fold it into our findings, and tell me only about real changes. Link the task to the collection.`;box.dispatchEvent(new Event('input',{bubbles:true}));box.focus();});
+    host.querySelectorAll('[data-running-open]').forEach(b=>b.onclick=()=>attempt(async()=>{
+      const id=b.dataset.runningOpen;
+      if(!state.schedules?.items.some(t=>t.id===id)){
+        const schedules=await api('/api/schedules');if(key!==scope()||!b.isConnected)return;
+        state.schedules=schedules;
+        if(!schedules.items.some(t=>t.id===id))throw Error('This task is no longer available in its app.');
+      }
+      await scheduleDetails(id);
+    }));
+    host.querySelectorAll('[data-running-watch]').forEach(b=>b.onclick=()=>attempt(async()=>{
+      if(key!==scope()||!collection)return;
+      state.scheduleDraft={name:collection.name,description:collection.purpose||'Review new information and save meaningful changes.',when:'',collection_id:collection.id,collection_name:collection.name,app:state.data.connection.selected};
+      $('#detail').close();state.scheduleAdding=true;state.view='tools';
+      await render();recordShellRoute();await renderShell();$('#schedule-form [name=when]')?.focus();
+    }));
     host.querySelectorAll('[data-running-chat]').forEach(b=>b.onclick=()=>{const t=find(b.dataset.runningChat);returnToChat();const box=$('#request');box.value=`Change my scheduled task “${t.name}” (${t.app}, ${t.schedule.toLowerCase()}): `;box.dispatchEvent(new Event('input',{bubbles:true}));box.focus();box.setSelectionRange(box.value.length,box.value.length);});
     return data;
   }

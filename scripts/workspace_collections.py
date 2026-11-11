@@ -349,6 +349,35 @@ def select(d,view='current',q='',at=None):
     return rows
 
 
+def sharing_preview(bid,ident,item_id='',query=''):
+    """A readable snapshot of current values, independent of UI pagination."""
+    d=read(bid,ident)
+    if item_id:
+        item=next((i for i in d['items'] if i['id']==item_id),None)
+        if not item:raise ValueError('This result is no longer available.')
+        rows=[effective(item,d['feedback'])]
+    else:
+        rows=select(d,'saved',query)
+        if not rows:raise ValueError('No saved results match this selection.')
+    blocks=[]
+    for row in rows:
+        lines=[row['title']]
+        if row.get('summary'):lines.append(row['summary'])
+        for field,value in row.get('fields',{}).items():
+            lines.append(field.replace('_',' ')+': '+(value if isinstance(value,str) else json.dumps(value,ensure_ascii=False)))
+        if row.get('expires_at'):lines.append('Deadline: '+row['expires_at'])
+        if row['display_state']!='active':lines.append('Status: '+row['display_state'])
+        if row['correction_conflict']:lines.append('The source differs from a saved correction.')
+        for source in row.get('source_refs',[]):
+            ref=source['reference']
+            if ref.lower().startswith(('https://','http://')):
+                dates=[label+source[k] for k,label in [('data_as_of','as of '),('last_checked_at','checked ')] if source.get(k)]
+                lines.append(ref+(' ('+', '.join(dates)+')' if dates else ''))
+        blocks.append('\n'.join(lines))
+    header=(d['name']+'\n' if not item_id else '')+'Snapshot as of '+now().split('T')[0]+' (UTC)'
+    return {'text':header+'\n\n'+'\n\n'.join(blocks),'count':len(rows)}
+
+
 def show(bid,ident,q='',view='current',offset=0,limit=50,at=None,item_id='',history=False):
     d=read(bid,ident)
     if item_id:

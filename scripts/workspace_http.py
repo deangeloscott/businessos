@@ -203,6 +203,7 @@ def handler_for(app):
                         bid=selected(query.get('business'))
                         if route=='/api/project-resources':result=workspace_projects.resources(app,bid,query.get('id'))
                         elif route=='/api/project-binding':result=workspace_projects.binding(bid,query.get('kind'),query.get('id'))
+                        elif query.get('preview')=='share':result=workspace_collections.sharing_preview(bid,query.get('id'),query.get('item',''),query.get('q',''))
                         else:result=workspace_collections.show(bid,query['id'],query.get('q',''),query.get('view','current'),query.get('offset',0),query.get('limit',50),item_id=query.get('item',''),history=query.get('history')=='1') if query.get('id') else workspace_collections.inventory(bid,query.get('project',''))
                     self.send(200,result)
                 elif route == '/api/memory-feedback':

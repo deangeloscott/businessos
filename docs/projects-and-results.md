@@ -6,6 +6,10 @@ In a project's menu, **Project work** shows its linked work, saved results and d
 
 Projects are ordinary portable workspace data in `.businessos/projects.json`. Older project settings migrate on a deliberate write. Workspace backups include the manifest. Removing a project archives its relationships and ungroups its chats, retaining files, collections and native tasks. Restore it in Search → Archive & recovery. External folders and native schedulers remain owned by their original app/device; reconnect their locations after moving to another computer.
 
+Use **Copy for sharing** on a result, or choose **Saved** and copy the matching saved results together. Review and edit the text before copying it to a message. The preview uses current values and web source links. You can optionally include the [weekly client reporting example](examples/weekly-client-report.md) when that method would help the recipient.
+
+Choose **Keep this up to date** on a collection to start a scheduled task with its purpose and result destination filled in. Choose the timing and confirm in the task form. When a task is already linked, use **Open task** to review it.
+
 ## Producing useful work
 
 AURA chat processes receive a scoped producer reference. When a native app deliberately creates an Asset through `remember.py`, the existing helper records known project, chat and goal associations. Later edits preserve the saved associations and respect explicit changes or removals. Existing explicit associations win; project membership remains separate from automatic model context. A raw tool file-change event is not proof of a finished deliverable, so AURA does not promote every temporary file into memory.

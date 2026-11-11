@@ -95,6 +95,8 @@ def main():
         assert collections.show(bid,cid)['total']==1 and r['changes'][0]['reason']=='Funding amount increased'
         d=collections.show(bid,cid);collections.feedback(bid,cid,{'revision':d['revision'],'item_id':'grant-1','action':'correct','correction':{'fields':{'amount':6000}},'note':'Confirmed amount with the agency'})
         d=collections.show(bid,cid);assert d['items'][0]['fields']['amount']==6000 and not d['items'][0]['correction_conflict']
+        preview=collections.sharing_preview(bid,cid,'grant-1')['text']
+        assert '6000' in preview and '6500' not in preview and 'Confirmed amount with the agency' not in preview
         other={**changed,'fields':{'amount':6500,'topic':'Architecture'}}
         collections.apply(bid,cid,{'revision':d['revision'],'run_id':'native-5','items':[other]})
         d=collections.show(bid,cid);assert d['items'][0]['fields']=={'amount':6000,'topic':'Architecture'} and not d['items'][0]['correction_conflict']
