@@ -2025,7 +2025,8 @@ class Workspace:
             source=self.source_chat(bid,chat_id) if chat_id else None
         if source and source.get('agent')==app_kind:raise ValueError('This chat is already in that app. Choose another app, or switch the model in this chat.')
         if source and not limit_recovery and self.chat_busy(bid,source):raise ValueError('This chat is still working. Stop it or let it finish before continuing elsewhere.')
-        carried=workspace_context.handoff(self,bid,chat_id) if chat_id else {}
+        try:carried=workspace_context.handoff(self,bid,chat_id) if chat_id else {}
+        except ValueError:carried={'goal_id':(source or {}).get('goal_id',''),'project':(source or {}).get('project','')}
         connection={'kind':app_kind,'model':known.get('model',''),'effort':known.get('effort','')}
         folder=(source or {}).get('native_workspace') if source and not source.get('project') else None
         with workspace_scope(self.workspace_path):
@@ -2073,6 +2074,9 @@ class Workspace:
             job['step']='Linking the new chat…'
             with workspace_scope(job['workspace']):
                 added=self.native_chats(bid,kind,ident,add=True)
+                with self.lock:
+                    imported=self.source_chat(bid,added['id'])
+                    if not imported.get('title_edited'):imported['title']=job['title'] or imported.get('title','')
                 self.link_continuation(bid,chat_id,added['id'],'import')
             job.update(status='done',step='Continued with the full conversation.',new_chat_id=added['id'])
         try:
@@ -2087,7 +2091,7 @@ class Workspace:
                     if ident:return finish(ident)
                     time.sleep(1)
             # Hand over without giving up: a manual pick is linked as soon as its copy appears.
-            job.update(status='needs_you',step=f'AURA could not finish the pick by itself. In the terminal, choose “{job["title"]}” from the list; AURA links it as soon as the copy appears.')
+            job.update(status='needs_you',step=f'AURA could not confirm the import by itself. If the list is still showing in the terminal, choose “{job["title"]}”; AURA links it as soon as the copy appears. If a different chat opened, close it with Ctrl+D and use a handoff instead.')
             end=time.monotonic()+600
             while time.monotonic()<end:
                 ident=imported_session(kind,env,source_id,job['started'])
@@ -2098,7 +2102,9 @@ class Workspace:
         except Exception as error:
             job.update(status='failed',step='The import did not finish: '+workspace_support.human_error(error))
 
-    TERMINAL_PRESETS={'claude-setup-token':('claude',['setup-token'],'Claude sign-in'),'omp-login':('omp',['login'],'OMP sign-in'),'pi-login':('pi',[],'Pi')}
+    TERMINAL_PRESETS={'claude-setup-token':('claude',['setup-token'],'Claude token'),'claude-login':('claude',['auth','login'],'Claude sign-in'),
+                      'codex-login':('codex',['login'],'Codex sign-in'),'omp-login':('omp',['login'],'OMP sign-in'),'pi-login':('pi',[],'Pi'),
+                      'hermes-setup':('hermes',['setup'],'Hermes setup')}
 
     def terminal_command(self,name):
         """A plain shell gets the person's normal environment, never AURA's saved keys. Named app commands run as AURA runs that app."""
@@ -2109,6 +2115,33 @@ class Workspace:
         return [*workspace_agents.base_command(choice['argv']),*args],self.agent_environment(choice)
 
     def terminal_title(self,name):return self.TERMINAL_PRESETS.get(name,(None,None,'Terminal'))[2]
+
+    def linked_chats(self,bid,chat):
+        """Chats this one continued from or into, each shown once."""
+        found=[]
+        for key in ('continued_to','continued_from','caught_up_from'):
+            ident=((chat.get(key) or {}).get('chat_id'))
+            if ident and ident!=chat['id'] and ident not in found:
+                try:self.source_chat(bid,ident);found.append(ident)
+                except ValueError:pass
+        return found
+
+    def catch_up(self,bid,from_id,into_id,text):
+        """Bring an existing linked chat up to date with what happened in this one, instead of making another copy."""
+        with self.lock:
+            source=self.source_chat(bid,from_id);target=self.source_chat(bid,into_id)
+        if into_id not in self.linked_chats(bid,source):raise ValueError('Choose a chat this work continued from or into.')
+        if not self.native_choice(target.get('agent')):raise ValueError('Connect that AI app first.')
+        if self.chat_busy(bid,source) or self.chat_busy(bid,target):raise ValueError('Let both chats finish their current work before catching one up.')
+        with workspace_scope(self.workspace_path):
+            started=self.start_chat(bid,text,None,chat_id=into_id,references=[{'kind':'handoff','id':from_id,'variant':'catch_up'}])
+        with self.lock:
+            source=self.source_chat(bid,from_id);target=self.source_chat(bid,into_id);at=time.time()
+            if (target.get('continued_to') or {}).get('chat_id')==from_id:target.pop('continued_to',None)
+            target['caught_up_from']={'chat_id':from_id,'agent':source.get('agent'),'title':source.get('title',''),'at':at}
+            source['continued_to']={'chat_id':into_id,'agent':target.get('agent'),'title':target.get('title',''),'method':'catch_up','at':at}
+            self.save_preferences()
+        return started
 
     def continue_options(self,bid,chat_id):
         """Where this chat can continue, and how much of it each app can carry."""
@@ -2135,7 +2168,14 @@ class Workspace:
                                     'Where it stands, the latest exchanges, its goal, project and folder.'),
                          'cost':(f'About {estimate:,} tokens are read once when it starts.' if full and estimate else 'Re-reads the whole conversation once when it starts.' if full else 'Nothing extra.'),
                          'permission':permission})
-        return {'chat':{'id':source['id'],'title':source.get('title',''),'agent':source.get('agent'),'model':source.get('model','')},
+        linked=[]
+        for ident in self.linked_chats(bid,source):
+            other=self.source_chat(bid,ident)
+            if other.get('agent')==source.get('agent') or not self.native_choice(other.get('agent')):continue
+            linked.append({'id':other.get('agent'),'chat_id':ident,'name':names.get(other.get('agent'),str(other.get('agent'))),'method':'catch_up','title':other.get('title',''),
+                           'carries':'What happened here since, the latest exchanges, and a check of the current state, sent into the existing chat. No new copy.',
+                           'cost':'Nothing extra.','permission':'The chat keeps its own permission settings.'})
+        return {'chat':{'id':source['id'],'title':source.get('title',''),'agent':source.get('agent'),'model':source.get('model','')},'linked':linked,
                 'busy':self.chat_busy(bid,source),'continued_to':source.get('continued_to'),'apps':sorted(apps,key=lambda a:(a['method']!='import',a['name'])),
                 'privacy':'The carried conversation is copied into the other app’s storage on this computer.'}
 
@@ -2254,6 +2294,7 @@ class Workspace:
         backup=policy.get('backup_app') if policy.get('backup_app') in connected and policy.get('backup_app')!=kind else ''
         return {'app':kind,'top':top,'near':bool(top and used(top)>=95),'blocked':bool(top and top.get('status')=='rejected'),
                 'accounts':others,'backup_app':backup,'resets_at':(top or {}).get('resets_at'),
+                'backup_import':bool(backup and IMPORTERS.get(backup,{}).get(kind) and (chat or {}).get('native_id') and __import__('workspace_terminal').available()),
                 'mode':workspace_accounts.mode_for('chats'),'resume':policy.get('resume','off')}
 
     def limit_notice(self):
@@ -3235,7 +3276,10 @@ def main():
         if instance:
             instance.publish(server.server_port, app.token)
         url = f'http://127.0.0.1:{server.server_port}/' + ('?business=' + quote(args.business_id) if args.business_id else '')
-        print(f'AURA workspace: {url}\nLocal to this computer. Press Ctrl+C to close the view.', flush=True)
+        names=', '.join(b['name'] for b in business_directory())[:80]
+        banner=f'\n  AURA  ·  {os_version()}\n'+(f'  Workspace: {names}\n' if names else '')+f'  Open: {url}\n  Keep this window open while you use AURA. Ctrl+C closes it.\n'
+        try:print(banner,flush=True)
+        except UnicodeEncodeError:print(banner.encode('ascii','replace').decode(),flush=True)
         if not args.no_open:
             webbrowser.open(url)
         server.serve_forever()

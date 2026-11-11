@@ -138,7 +138,8 @@ class _Windows:
         command = ctypes.create_unicode_buffer(subprocess.list2cmdline(argv))
         block = None
         if env is not None:
-            text = ''.join(f'{k_}={v}\0' for k_, v in sorted(env.items()) if '=' not in k_ and '\0' not in str(v)) + '\0'
+            # Windows expects the block sorted by name, ignoring case.
+            text = ''.join(f'{k_}={v}\0' for k_, v in sorted(env.items(), key=lambda kv: kv[0].upper()) if '=' not in k_ and '\0' not in str(v)) + '\0'
             block = ctypes.create_unicode_buffer(text, len(text))
         if not k.CreateProcessW(None, command, None, None, False, 0x00080000 | 0x00000400, block, cwd, ctypes.byref(info), ctypes.byref(self.info)):
             error = ctypes.get_last_error()
@@ -187,8 +188,8 @@ class _Windows:
 
 
 class Terminal:
-    def __init__(self, argv, cwd, env=None, cols=100, rows=30, title='Terminal', purpose=''):
-        self.id = uuid.uuid4().hex[:16];self.title = title;self.purpose = purpose;self.cwd = str(cwd)
+    def __init__(self, argv, cwd, env=None, cols=100, rows=30, title='Terminal', purpose='', on_change=None):
+        self.id = uuid.uuid4().hex[:16];self.title = title;self.purpose = purpose;self.cwd = str(cwd);self.on_change = on_change or (lambda: None)
         self.started = time.time();self.ended = None;self.exit_code = None
         self.cols, self.rows = max(20, min(400, int(cols))), max(5, min(200, int(rows)))
         env = dict(os.environ if env is None else env);env.setdefault('TERM', 'xterm-256color');env['AURA_TERMINAL'] = '1'
@@ -212,6 +213,7 @@ class Terminal:
                 self.chunks.append(text);self.offset += len(text);self.text = (self.text + text)[-TEXT_CHARS * 2:]
                 while self.offset - self.base > KEEP_BYTES and len(self.chunks) > 1:self.base += len(self.chunks.pop(0))
                 self.changed.notify_all()
+            self.on_change()
         code = None
         for _ in range(40):
             code = self.engine.poll()
@@ -219,6 +221,7 @@ class Terminal:
             time.sleep(.05)
         with self.changed:
             self.ended = time.time();self.exit_code = code;self.changed.notify_all()
+        self.on_change()
         self.engine.close()
 
     @property
@@ -259,7 +262,27 @@ class Terminals:
     """The terminals one AURA process owns. They end with that process."""
 
     def __init__(self):
-        self.items = {};self.lock = threading.Lock()
+        self.items = {};self.lock = threading.Lock();self.changed = threading.Condition();self.version = 0
+
+    def _changed(self):
+        with self.changed:
+            self.version += 1;self.changed.notify_all()
+
+    def output_many(self, offsets, wait=0.0):
+        """New output for any of several terminals, waiting on one connection until one has something.
+        A browser keeps only about six connections per address, so one wait serves every open tab."""
+        deadline = time.monotonic() + max(0.0, min(float(wait), 25.0))
+        while True:
+            with self.changed:seen = self.version
+            items = []
+            for ident, offset in offsets.items():
+                with self.lock:terminal = self.items.get(ident)
+                if not terminal:items.append({'id': ident, 'gone': True});continue
+                if terminal.offset != offset or not terminal.alive or offset < terminal.base:items.append(terminal.output(offset, 0))
+            remaining = deadline - time.monotonic()
+            if items or remaining <= 0:return {'items': items}
+            with self.changed:
+                if self.version == seen:self.changed.wait(remaining)
 
     def start(self, argv=None, cwd=None, env=None, cols=100, rows=30, title='Terminal', purpose=''):
         cwd = os.path.abspath(cwd or os.path.expanduser('~'))
@@ -267,7 +290,7 @@ class Terminals:
         with self.lock:
             for ident in [i for i, t in self.items.items() if not t.alive and time.time() - (t.ended or 0) > 600]:self.items.pop(ident)
             if sum(t.alive for t in self.items.values()) >= MAX_TERMINALS:raise ValueError('Close a terminal before opening another one.')
-        terminal = Terminal(argv or default_shell(), cwd, env, cols, rows, title, purpose)
+        terminal = Terminal(argv or default_shell(), cwd, env, cols, rows, title, purpose, self._changed)
         with self.lock:self.items[terminal.id] = terminal
         return terminal
 

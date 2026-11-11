@@ -159,8 +159,8 @@ def resolve(app,bid,references,goal_id=None,pointers=False,sources=None):
         if (kind,ident,variant,request_id) in seen:continue
         seen.add((kind,ident,variant,request_id));row={'kind':kind,'id':ident,**({'variant':variant} if variant else {}),**({'request_id':request_id} if request_id else {})};text=''
         if kind=='handoff':
-            brief=handoff_brief(app,bid,ident)
-            row.update(label='Continued from '+brief['title'],source=brief['source'],revision=digest(brief['text']))
+            brief=handoff_brief(app,bid,ident,returning=variant=='catch_up')
+            row.update(label=('Caught up from ' if variant=='catch_up' else 'Continued from ')+brief['title'],source=brief['source'],revision=digest(brief['text']))
             text=brief['text']
         elif kind=='terminal':
             from workspace_terminal import TERMINALS
@@ -277,7 +277,7 @@ def handoff(app,bid,chat_id):
     raise ValueError('This conversation has no completed reply to continue from yet.')
 
 
-def handoff_brief(app,bid,chat_id):
+def handoff_brief(app,bid,chat_id,returning=False):
     """What a new chat in another app needs to pick up this work: where it stands, the latest exchanges, and to check before acting."""
     chat=next((c for c in app.preferences['chats'] if c['id']==chat_id and c['business_id']==bid and c.get('workspace',app.workspace_path)==app.workspace_path),None)
     if not chat:raise ValueError('Choose a conversation in this business and workspace.')
@@ -293,7 +293,9 @@ def handoff_brief(app,bid,chat_id):
             if len(exchanges)>=HANDOFF_EXCHANGES:break
     if not exchanges:raise ValueError('This conversation has nothing to continue from yet.')
     source={'codex':'Codex','claude':'Claude Code','omp':'OMP','pi':'Pi','hermes':'Hermes','antigravity':'Antigravity'}.get(chat.get('agent'),str(chat.get('agent') or 'another app'))
-    lines=[f'This continues work from the chat “{chat.get("title","Untitled")}” in {source}'+(f' ({chat["model"]})' if chat.get('model') else '')+'. It is a new conversation for you: only what is below was carried over.']
+    origin=f'the chat “{chat.get("title","Untitled")}” in {source}'+(f' ({chat["model"]})' if chat.get('model') else '')
+    lines=[f'While this chat was paused, the work continued in {origin}. Here is what happened there; it is new to you. Continue from where it now stands.' if returning else
+           f'This continues work from {origin}. It is a new conversation for you: only what is below was carried over.']
     if chat.get('summary'):lines.append('Where it stands: '+str(chat['summary'])[:1500])
     lines.append(f'The latest {len(exchanges)} exchange{"s" if len(exchanges)!=1 else ""}, oldest first:')
     budget=9000

@@ -186,7 +186,7 @@ function paintLimitChoices(open=false){
   const show=o&&(o.near||o.blocked||lastLimited)&&(open||o.blocked||lastLimited);
   host.hidden=!show;if(!show)return;
   const buttons=[...o.accounts.slice(0,2).map(a=>`<button type="button" class="secondary" data-limit-action="account" data-account="${esc(a.id)}">Send with ${esc(a.nickname)}</button>`),
-    o.backup_app?`<button type="button" class="secondary" data-limit-action="app" data-app="${esc(o.backup_app)}">Continue in ${esc(limitAppName(o.backup_app))}</button>`:'',
+    o.backup_app?(o.backup_import&&state.chatMeta?.id?`<button type="button" class="secondary" data-continue-chat="${esc(state.chatMeta.id)}" data-continue-app="${esc(o.backup_app)}">Continue in ${esc(limitAppName(o.backup_app))} with the full conversation</button>`:`<button type="button" class="secondary" data-limit-action="app" data-app="${esc(o.backup_app)}">Continue in ${esc(limitAppName(o.backup_app))}</button>`):'',
     o.resets_at?`<button type="button" class="secondary" data-limit-action="resume">Continue at ${esc(glanceTime(o.resets_at))}</button>`:'',
     o.blocked?'':`<button type="button" class="text-button" data-limit-action="anyway">Send anyway</button>`].filter(Boolean);
   host.innerHTML=`<span>${esc(limitSummary(o))}</span><div class="inline-actions">${buttons.join('')||'<span class="small-note">Add another account or a backup app in Accounts &amp; backups.</span>'}</div>`;
@@ -2236,19 +2236,27 @@ $('#project-editor-form').addEventListener('submit',event=>{
 const appLabel=kind=>({codex:'Codex',claude:'Claude Code',omp:'OMP',pi:'Pi',hermes:'Hermes',antigravity:'Antigravity'})[kind]||appName(kind);
 /* Continue in another app: the full conversation where the receiving app can import it, otherwise a handoff. Both chats link to each other. */
 function continuationNote(c){
-  const to=c?.continued_to,from=c?.continued_from;
-  if(to)return `<p>You continued this work in ${esc(appLabel(to.agent))}. Messages here start a separate version.</p><button type="button" class="text-button" data-chat="${esc(to.chat_id)}">Open the ${esc(appLabel(to.agent))} chat →</button>`;
-  if(from)return `<p>Continued from “${esc(from.title)}” in ${esc(appLabel(from.agent))}${from.method==='import'?', with the full conversation':''}.</p><button type="button" class="text-button" data-chat="${esc(from.chat_id)}">Open the original</button>`;
+  const to=c?.continued_to,from=c?.continued_from,caught=c?.caught_up_from;
+  if(to)return `<p>${to.method==='catch_up'?`This work moved back to the ${esc(appLabel(to.agent))} chat, now caught up.`:`You continued this work in ${esc(appLabel(to.agent))}.`} Messages here start a separate version.</p><button type="button" class="text-button" data-chat="${esc(to.chat_id)}">Open the ${esc(appLabel(to.agent))} chat →</button>`;
+  if(caught)return `<p>Caught up with what happened in the ${esc(appLabel(caught.agent))} chat.</p><button type="button" class="text-button" data-chat="${esc(caught.chat_id)}">Open it</button>`;
+  if(from)return `<p>Continued from “${esc(from.title)}” in ${esc(appLabel(from.agent))}${from.method==='import'?', with the full conversation':''}.</p><button type="button" class="text-button" data-chat="${esc(from.chat_id)}">Open the original</button><button type="button" class="text-button" data-catch-up="${esc(c.id)}" data-catch-up-into="${esc(from.chat_id)}">Back to ${esc(appLabel(from.agent))}, caught up</button>`;
   return '';
 }
+async function catchUp(id,into){
+  const business=state.business;
+  if(!confirm('Send a catch-up into the original chat? It gets what happened here and continues there; this chat stays as it is.'))return;
+  await api('/api/chats/continue',{business,id,chat_id:into,method:'catch_up'});
+  if(business===state.business){notice('Caught up. Continuing in the original chat.');await openShellChat(into);}
+}
 function paintContinuation(){const host=$('#chat-continuation');if(!host)return;const html=continuationNote(state.chatMeta);host.hidden=!html;host.innerHTML=html;}
-async function openContinue(id){
+async function openContinue(id,preferred=''){
   const business=state.business,d=await api('/api/chats/continue?business='+encodeURIComponent(business)+'&id='+encodeURIComponent(id));if(business!==state.business)return;
-  const apps=d.apps||[];
-  details('Continue in another app',`<p>Pick up “${esc(d.chat.title)}” in another AI app.${d.continued_to?` It already continued in ${esc(appLabel(d.continued_to.agent))}; continuing again makes another copy.`:''}</p>${d.busy?'<p class="continue-busy" role="status">This chat is still working. Stop it or let it finish first.</p>':''}${apps.length?`<form id="continue-form" class="continue-options">${apps.map((a,i)=>`<label class="continue-option"><input type="radio" name="app" value="${esc(a.id)}" data-method="${esc(a.method)}" ${i===0?'checked':''}><span class="continue-option-text"><strong>${esc(a.name)}</strong><span class="source-chip ${a.method==='import'?'':'unverified'}">${a.method==='import'?'Full conversation':'Handoff'}</span><small>${esc(a.carries)}</small><small>${esc(a.cost)} ${esc(a.permission)}</small></span></label>`).join('')}<p class="small-note">${esc(d.privacy)} Only want a different model? Switch it in this chat instead; that keeps everything.</p><div id="continue-status" class="continue-status" role="status" hidden></div><div class="inline-actions"><button class="primary" ${d.busy?'disabled':''}>Continue</button><button type="button" class="text-button" data-edit-chat="${esc(id)}">Cancel</button></div></form>`:empty('No other AI app connected','Connect another app in Settings → AI connections, then continue this chat there.')}`);
+  const apps=[...(d.linked||[]),...(d.apps||[])],pick=Math.max(0,apps.findIndex(a=>a.id===preferred&&a.method!=='catch_up'));
+  details('Continue in another app',`<p>Pick up “${esc(d.chat.title)}” in another AI app.${d.continued_to?` It already continued in ${esc(appLabel(d.continued_to.agent))}; continuing again makes another copy.`:''}</p>${d.busy?'<p class="continue-busy" role="status">This chat is still working. Stop it or let it finish first.</p>':''}${apps.length?`<form id="continue-form" class="continue-options">${apps.map((a,i)=>`<label class="continue-option"><input type="radio" name="app" value="${esc(a.id)}" data-method="${esc(a.method)}" data-chat="${esc(a.chat_id||'')}" ${i===pick?'checked':''}><span class="continue-option-text"><strong>${esc(a.method==='catch_up'?a.name+' · the linked chat':a.name)}</strong><span class="source-chip ${a.method==='handoff'?'unverified':''}">${a.method==='import'?'Full conversation':a.method==='catch_up'?'Catch up':'Handoff'}</span><small>${esc(a.carries)}</small><small>${esc(a.cost)} ${esc(a.permission)}</small></span></label>`).join('')}<p class="small-note">${esc(d.privacy)} Only want a different model? Switch it in this chat instead; that keeps everything.</p><div id="continue-status" class="continue-status" role="status" hidden></div><div class="inline-actions"><button class="primary" ${d.busy?'disabled':''}>Continue</button><button type="button" class="text-button" data-edit-chat="${esc(id)}">Cancel</button></div></form>`:empty('No other AI app connected','Connect another app in Settings → AI connections, then continue this chat there.')}`);
   const form=$('#continue-form');if(!form)return;
   form.addEventListener('submit',event=>{event.preventDefault();if(form.dataset.busy)return;form.dataset.busy='1';form.querySelector('button.primary').disabled=true;
     const choice=form.querySelector('input[name=app]:checked'),app=choice.value,method=choice.dataset.method,status=$('#continue-status');
+    if(method==='catch_up'){attempt(async()=>{try{say('Catching up the linked chat…');await api('/api/chats/continue',{business,id,chat_id:choice.dataset.chat,method:'catch_up'});if(business===state.business)await openShellChat(choice.dataset.chat);}finally{delete form.dataset.busy;if(form.isConnected)form.querySelector('button.primary').disabled=false;}});return;}
     const say=text=>{status.hidden=!text;status.textContent=text;};
     attempt(async()=>{try{
       if(method!=='import'){say('Starting the new chat…');const r=await api('/api/chats/continue',{business,id,app,method:'handoff'});if(business===state.business)await openShellChat(r.chat_id);return;}
@@ -2258,7 +2266,8 @@ async function openContinue(id){
         say(job.step);await new Promise(r=>setTimeout(r,1000));if(business!==state.business)return;
         job=await api('/api/chats/continue?business='+encodeURIComponent(business)+'&job='+encodeURIComponent(job.id));
       }
-      if(job.status==='done'){notice(job.step);await openShellChat(job.new_chat_id);return;}
+      if(job.status==='done'){notice(job.step);if(form.isConnected)await openShellChat(job.new_chat_id);return;}
+      if(!form.isConnected){notice(job.step,true);return;}
       say(job.step);form.querySelector('.inline-actions').insertAdjacentHTML('afterbegin','<button type="button" class="secondary" id="continue-handoff">Use a handoff instead</button>');
       $('#continue-handoff').onclick=()=>attempt(async()=>{const r=await api('/api/chats/continue',{business,id,app,method:'handoff'});if(business===state.business)await openShellChat(r.chat_id);});
     }finally{delete form.dataset.busy;if(form.isConnected)form.querySelector('button.primary').disabled=false;}});
@@ -2286,10 +2295,13 @@ async function showChatDetails(id,note=''){
 function nativeMedia(items){
   return (items||[]).length?`<div class="native-output-media">${items.map(m=>`<button type="button" class="text-button" data-file="${esc(m.path)}" aria-label="Open ${esc(m.name||'image')}"><img class="media-preview" src="${esc(mediaURL(m.path))}" alt="${esc(m.name||'Image from your AI')}" loading="lazy"></button>`).join('')}</div>`:'';
 }
+const signInCommand={claude:'claude-login',codex:'codex-login',omp:'omp-login',pi:'pi-login',hermes:'hermes-setup'};
 function showMessages(latest=false) {
   paintContinuation();
   const failed=!state.busy&&(state.chatMeta?.status==='error'||(!state.chatMeta&&state.liveJob?.status==='error'));
-  $('#request-recovery').hidden=!failed||state.needsCheck;$('#retry-request').textContent=state.chatMeta?.goal_id?'Prepare continuation':'Edit & retry';
+  $('#request-recovery').hidden=!failed||state.needsCheck;
+  const lastReply=[...(state.chat||[])].reverse().find(m=>m.role==='assistant')?.text||'',signIn=failed&&signInCommand[state.chatMeta?.agent]&&/sign(?:ed)? ?in|log ?in|credential|authenticat/i.test(lastReply);
+  $('#signin-request-connection').hidden=!signIn;$('#signin-request-connection').dataset.terminalRun=signIn?signInCommand[state.chatMeta.agent]:'';$('#retry-request').textContent=state.chatMeta?.goal_id?'Prepare continuation':'Edit & retry';
   const detail=failed?((state.liveJob?.chat_id===state.chatMeta?.id?state.liveJob?.error_detail:'')||[...state.chat].reverse().find(m=>m.role==='assistant')?.error_detail||''):'';
   $('#request-error-details').hidden=!detail;$('#request-error-text').textContent=detail;
   const conversation=$('#conversation'), top=conversation.scrollTop, chat=state.chatMeta?.id||'';
@@ -2394,7 +2406,8 @@ document.addEventListener('click',event=>attempt(async()=>{
   if(button.hasAttribute('data-chat-archive-view'))await showChats(button.dataset.chatArchiveView==='true');
   if(button.dataset.archiveChat){const business=state.business,root=state.data.workspace,id=button.dataset.archiveChat,archived=button.dataset.archived==='true';button.disabled=true;try{await api('/api/chats/archive',{business,id,archived});if(business!==state.business||root!==state.data.workspace)return;if(archived&&state.chatMeta?.id===id)await newShellChat();await renderShell();await showChats(archived);notice(archived?'Chat archived. Find it under All → Archived.':'Chat restored to Recent chats.');}finally{if(button.isConnected)button.disabled=false;}}
   if(button.dataset.editChat)await showChatDetails(button.dataset.editChat);
-  if(button.dataset.continueChat)await openContinue(button.dataset.continueChat);
+  if(button.dataset.continueChat)await openContinue(button.dataset.continueChat,button.dataset.continueApp||'');
+  if(button.dataset.catchUp)await catchUp(button.dataset.catchUp,button.dataset.catchUpInto);
   if(button.id==='chat-rename'){const form=$('#chat-title-form');form.hidden=false;button.hidden=true;$('#detail-content [data-refresh-chat]').disabled=true;$('#chat-title-input').focus();}
   if(button.dataset.cancelRename)await showChatDetails(button.dataset.cancelRename);
   if(button.dataset.refreshChat){

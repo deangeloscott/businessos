@@ -1,7 +1,7 @@
 /* Built-in terminals: a real shell on this computer, shown with xterm.js in a dock under the work area.
    Terminals keep running while you move around AURA and end when AURA stops. Output reaches the AI only when you add it to a chat. */
 window.auraTerminal=(()=>{
-  const tabs=new Map();let active='',lib=null,fitTimer=0;
+  const tabs=new Map();let active='',lib=null,fitTimer=0,streaming=false,waiting=null;
   const dock=()=>$('#terminal-dock');
   const css=href=>{if(!document.querySelector(`link[href="${href}"]`)){const el=document.createElement('link');el.rel='stylesheet';el.href=href;document.head.append(el);}};
   async function library(){
@@ -35,17 +35,34 @@ window.auraTerminal=(()=>{
     try{t.fit.fit();}catch{return;}
     if(t.term.cols!==t.cols||t.term.rows!==t.rows){t.cols=t.term.cols;t.rows=t.term.rows;if(!t.ended)api('/api/terminal',{action:'resize',id:t.id,cols:t.cols,rows:t.rows}).catch(()=>{});}
   }
-  async function pump(t){
-    // Long polling over AURA's token-protected local API; no extra service or socket.
-    while(tabs.has(t.id)){
-      let r;try{r=await api(`/api/terminal/output?id=${encodeURIComponent(t.id)}&since=${t.offset}&wait=20`);}
-      catch(error){if(!tabs.has(t.id))return;t.term.write(`\r\n\x1b[2m[${humanError(error)}]\x1b[0m\r\n`);t.ended=true;paintTabs();return;}
-      if(!tabs.has(t.id))return;
-      if(r.reset)t.term.reset();
-      if(r.data)t.term.write(r.data);
-      t.offset=r.offset;
-      if(!r.alive){t.ended=true;t.term.write(`\r\n\x1b[2m[Ended${r.exit_code!=null?' · exit code '+r.exit_code:''}]\x1b[0m\r\n`);paintTabs();return;}
-    }
+  function ended(t,code,reason=''){
+    t.ended=true;t.term.write(`\r\n\x1b[2m[${reason||('Ended'+(code!=null?' · exit code '+code:''))}]\x1b[0m\r\n`);paintTabs();
+  }
+  function restream(){waiting?.abort();if(!streaming)stream();}
+  async function stream(){
+    // One long-polling connection carries every terminal's output over AURA's token-protected local API.
+    // Browsers allow only about six connections per address, so a connection per tab would stall the page.
+    streaming=true;let failures=0;
+    try{
+      while(true){
+        const live=[...tabs.values()].filter(t=>!t.ended);if(!live.length)return;
+        const controller=new AbortController();waiting=controller;let r;
+        try{r=await api('/api/terminal/output?streams='+live.map(t=>encodeURIComponent(t.id)+':'+t.offset).join(',')+'&wait=20',undefined,{signal:controller.signal});failures=0;}
+        catch(error){
+          if(controller.signal.aborted)continue;
+          if(++failures<3){await new Promise(r=>setTimeout(r,1000*failures));continue;}
+          for(const t of live)if(tabs.has(t.id))ended(t,null,humanError(error));return;
+        }finally{if(waiting===controller)waiting=null;}
+        for(const item of r.items||[]){
+          const t=tabs.get(item.id);if(!t||t.ended)continue;
+          if(item.gone){ended(t,null,'This terminal is no longer available');continue;}
+          if(item.reset)t.term.reset();
+          if(item.data)t.term.write(item.data);
+          t.offset=item.offset;
+          if(!item.alive)ended(t,item.exit_code);
+        }
+      }
+    }finally{streaming=false;}
   }
   async function create(){
     // The screen is drawn and measured first, so the program starts at the size it will be shown at.
@@ -55,6 +72,8 @@ window.auraTerminal=(()=>{
     const term=new Terminal({cursorBlink:true,fontFamily:'ui-monospace, "Cascadia Mono", Consolas, "SF Mono", Menlo, monospace',fontSize:13,lineHeight:1.15,
                              theme:theme(),scrollback:5000,allowProposedApi:false,convertEol:false});
     const fitAddon=new FitAddon();term.loadAddon(fitAddon);withNonce(()=>term.open(host));
+    // Ctrl+` belongs to AURA (show or hide the terminal), so the shell does not also receive it.
+    term.attachCustomKeyEventHandler(event=>!(event.ctrlKey&&event.key==='`'));
     try{fitAddon.fit();}catch{}
     return {term,fit:fitAddon,host,discard(){term.dispose();host.remove();}};
   }
@@ -68,10 +87,18 @@ window.auraTerminal=(()=>{
       // Typing is batched briefly so a fast typist does not send one request per key.
       clearTimeout(t.sending);t.sending=setTimeout(()=>{const chunk=t.pending;t.pending='';api('/api/terminal',{action:'input',id:t.id,data:chunk}).catch(error=>notice(humanError(error),true));},12);
     });
-    tabs.set(t.id,t);select(t.id);pump(t);return t;
+    tabs.set(t.id,t);select(t.id);restream();return t;
   }
+  const HEIGHT_KEY='aura-terminal-height';
+  function setHeight(px,save=false){
+    const d=dock();if(!d)return;const h=Math.round(Math.max(140,Math.min(window.innerHeight*.8,px)));d.style.height=h+'px';
+    if(save)try{localStorage.setItem(HEIGHT_KEY,String(h));}catch{}
+    fit(tabs.get(active));
+  }
+  function savedHeight(){try{return Number(localStorage.getItem(HEIGHT_KEY))||0;}catch{return 0;}}
   function show(){
     const d=dock();if(!d)return;d.hidden=false;document.body.classList.add('terminal-open');
+    const h=savedHeight();if(h)setHeight(h);
     const t=tabs.get(active);if(t)requestAnimationFrame(()=>fit(t));
   }
   function hide(){const d=dock();if(d){d.hidden=true;document.body.classList.remove('terminal-open');}}
@@ -93,7 +120,7 @@ window.auraTerminal=(()=>{
   async function close(id){
     const t=tabs.get(id);if(!t)return;
     if(!t.ended&&!confirm(`Close “${t.info.title}”? Anything running in it stops.`))return;
-    tabs.delete(id);t.term.dispose();t.host.remove();
+    tabs.delete(id);t.term.dispose();t.host.remove();restream();
     api('/api/terminal',{action:'remove',id}).catch(()=>{});
     if(active===id){const next=[...tabs.keys()].pop();if(next)select(next);else{active='';paintTabs();hide();}}else paintTabs();
   }
@@ -112,6 +139,18 @@ window.auraTerminal=(()=>{
   });
   document.addEventListener('keydown',event=>{
     if(event.ctrlKey&&!event.altKey&&!event.metaKey&&event.key==='`'){event.preventDefault();if(dock()?.hidden)attempt(()=>open({reuse:true}));else hide();}
+  });
+  document.addEventListener('pointerdown',event=>{
+    // Drag the dock's top edge; the height is remembered on this computer.
+    if(event.target.id!=='terminal-resize')return;event.preventDefault();
+    const start=event.clientY,height=dock().getBoundingClientRect().height,handle=event.target;try{handle.setPointerCapture(event.pointerId);}catch{}
+    const move=e=>setHeight(height+(start-e.clientY));
+    const up=e=>{handle.removeEventListener('pointermove',move);handle.removeEventListener('pointerup',up);setHeight(height+(start-e.clientY),true);};
+    handle.addEventListener('pointermove',move);handle.addEventListener('pointerup',up);
+  });
+  document.addEventListener('keydown',event=>{
+    if(event.target.id!=='terminal-resize'||!['ArrowUp','ArrowDown'].includes(event.key))return;event.preventDefault();
+    setHeight(dock().getBoundingClientRect().height+(event.key==='ArrowUp'?24:-24),true);
   });
   window.addEventListener('resize',()=>{clearTimeout(fitTimer);fitTimer=setTimeout(()=>fit(tabs.get(active)),80);});
   new MutationObserver(()=>{for(const t of tabs.values())withNonce(()=>{t.term.options.theme=theme();});}).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme','data-style','data-accent']});

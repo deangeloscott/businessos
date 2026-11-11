@@ -37,8 +37,12 @@ def handler_for(app):
             self.send_header('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self' 'nonce-"+app.token+"'; style-src-attr 'unsafe-inline'; worker-src 'self' blob:; font-src 'self' blob: data:; img-src 'self' blob: data:; media-src 'self' blob:; connect-src 'self'; object-src 'none'; frame-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'")
             for key, value in (headers or {}).items():
                 self.send_header(key, value)
-            self.end_headers()
-            self.wfile.write(body)
+            try:
+                self.end_headers()
+                self.wfile.write(body)
+            except (BrokenPipeError,ConnectionAbortedError,ConnectionResetError):
+                # The page stopped waiting (for example, a terminal tab opened and its shared wait restarted). Nothing to report.
+                self.close_connection=True
 
         def failure(self,error,status=400):
             from _process_errors import redact
@@ -156,8 +160,15 @@ def handler_for(app):
                     self.send(200,{'available':workspace_terminal.available(),'items':workspace_terminal.TERMINALS.list()})
                 elif route == '/api/terminal/output':
                     import workspace_terminal
-                    terminal=workspace_terminal.TERMINALS.get(query.get('id'))
-                    self.send(200,terminal.output(int(query.get('since') or 0),float(query.get('wait') or 0)))
+                    if 'streams' in query:
+                        offsets={}
+                        for part in str(query.get('streams') or '').split(',')[:16]:
+                            ident,_,offset=part.partition(':')
+                            if ident:offsets[ident]=int(offset or 0)
+                        self.send(200,workspace_terminal.TERMINALS.output_many(offsets,float(query.get('wait') or 0)))
+                    else:
+                        terminal=workspace_terminal.TERMINALS.get(query.get('id'))
+                        self.send(200,terminal.output(int(query.get('since') or 0),float(query.get('wait') or 0)))
                 elif route == '/api/reading':
                     import workspace_reading
                     with app.lock:root=app.workspace_path
@@ -471,6 +482,7 @@ def handler_for(app):
                     with workspace_scope(root):
                         bid=selected(data.get('business'))
                         if data.get('method')=='import':result=app.import_continue(bid,data.get('id'),data.get('app'))
+                        elif data.get('method')=='catch_up':result=app.catch_up(bid,data.get('id'),data.get('chat_id'),str(data.get('text') or 'Catch up on what happened in the other chat, then continue. Check the current state before changing anything.'))
                         else:result=app.continue_elsewhere(bid,data.get('id'),str(data.get('text') or 'Continue this work. Start by checking the current state.'),data.get('app'))
                     self.send(200,result);return
                 if route == '/api/terminal':

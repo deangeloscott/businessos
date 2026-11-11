@@ -1,5 +1,5 @@
 """Continue in another app and the built-in terminal: real terminals, honest handoffs, verified imports, linked chats."""
-import json,os,sys,tempfile,textwrap,time
+import json,os,sys,tempfile,textwrap,threading,time
 from pathlib import Path
 from unittest.mock import patch
 ROOT=Path(__file__).resolve().parents[1];sys.path.insert(0,str(ROOT/'scripts'))
@@ -59,6 +59,19 @@ def main():
         held=pool.start([sys.executable,'-c','import time;time.sleep(30)'],str(ROOT))
         rejects(lambda:pool.start([sys.executable,'-c','pass'],str(ROOT)),'Close a terminal')
         pool.remove(held.id)
+    # One waiting connection serves every terminal: it returns as soon as any of them has output.
+    first=pool.start([sys.executable,'-c','import sys;print("one",flush=True);sys.stdin.readline();print("later",flush=True)'],str(ROOT))
+    second=pool.start([sys.executable,'-c','import time;time.sleep(30)'],str(ROOT))
+    assert terminals.wait_for(first,r'one',20)
+    quiet=pool.output_many({first.id:first.offset,second.id:second.offset},0)
+    assert quiet['items']==[],quiet
+    threading.Timer(.8,lambda:first.write('go'+chr(13))).start()
+    began=time.monotonic();woke=pool.output_many({first.id:first.offset,second.id:second.offset,'gone-id':0},10)
+    by={i['id']:i for i in woke['items']}
+    assert by['gone-id']=={'id':'gone-id','gone':True},woke
+    woke=pool.output_many({first.id:first.offset,second.id:second.offset},10)
+    assert first.id in {i['id'] for i in woke['items']} and second.id not in {i['id'] for i in woke['items']},woke
+    assert time.monotonic()-began<10,'a change in one terminal must wake the shared wait'
     pool.stop_all()
 
     with tempfile.TemporaryDirectory(prefix='aura-continue-') as t,patch.dict(os.environ):
@@ -140,6 +153,23 @@ def main():
             assert given['references'][0]['label']=='Terminal output' and 'build failed: missing module' in given['text'] and '' not in given['text'] and str(project) in given['text']
             terminals.TERMINALS.remove(shared.id)
             rejects(lambda:workspace_context.resolve(app,bid,[{'kind':'terminal','id':shared.id}]),'no longer available')
+
+            # Catch-up: the linked chat gets what happened since, as an update to a conversation it already has; no new copy.
+            options=app.continue_options(bid,'chat-omp')
+            assert [l['chat_id'] for l in options['linked']]==[source['id']] and options['linked'][0]['method']=='catch_up'
+            sent={}
+            def fake_send(bid_,text,history,**kw):sent.update(kw,text=text);return {'chat_id':kw['chat_id']}
+            with patch.object(app,'start_chat',side_effect=fake_send):
+                rejects(lambda:app.catch_up(bid,'chat-omp','chat-unlinked','x'),'Choose a chat')
+                display2=app.chat_display_path('chat-omp');display2.write_text(json.dumps([{'role':'user','text':'Move the catalog'},{'role':'assistant','text':'Moved; six projects show.'}]),encoding='utf-8')
+                app.catch_up(bid,'chat-omp',source['id'],'Catch up.')
+            assert sent['chat_id']==source['id'] and sent['references']==[{'kind':'handoff','id':'chat-omp','variant':'catch_up'}]
+            assert source['caught_up_from']['chat_id']=='chat-omp' and 'continued_to' not in source
+            omp_chat=next(c for c in app.preferences['chats'] if c['id']=='chat-omp')
+            assert omp_chat['continued_to']=={**omp_chat['continued_to'],'chat_id':source['id'],'method':'catch_up'}
+            caught=workspace_context.resolve(app,bid,[{'kind':'handoff','id':'chat-omp','variant':'catch_up'}])
+            assert caught['references'][0]['label'].startswith('Caught up from') and 'it is new to you' in caught['text'] and 'Moved; six projects show.' in caught['text']
+            assert app.terminal_command('claude-login')[0][-2:]==['auth','login'] and app.terminal_command('codex-login')[0][-1]=='login'
 
             # Plain terminals never receive AURA's saved keys; only named app commands run with that app's environment.
             assert app.terminal_command('shell')==(None,None)

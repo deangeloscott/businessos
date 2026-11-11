@@ -549,7 +549,7 @@ input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px soli
 
 .project-work-actions,.collection-toolbar,.collection-pagination,.result-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.project-resource-group{margin-top:24px}.project-resource-group h3{font-size:var(--text-md);color:var(--muted);margin-bottom:10px}.collection-toolbar{margin:20px 0}.collection-toolbar input{flex:1;min-width:160px}.collection-toolbar select{width:auto}.collection-item{padding:20px 0;border-bottom:1px solid var(--line);overflow-wrap:anywhere}.collection-item-title{display:flex;align-items:flex-start;gap:14px;justify-content:space-between}.collection-item-title h3{font-size:var(--text-body);margin:0}.collection-item .favorite-star{flex:none;font-size:23px}.result-labels{display:flex;gap:8px;flex-wrap:wrap;font-size:var(--text-xs);color:var(--muted);margin:8px 0}.result-fields{display:flex;flex-wrap:wrap;gap:10px 24px;margin:12px 0}.result-fields>div{min-width:100px;max-width:100%}.result-fields dt{font-size:var(--text-xs);color:var(--muted)}.result-fields dd{margin:0;font-size:var(--text-md);overflow-wrap:anywhere}.result-actions{margin-top:12px;font-size:var(--text-sm)}.collection-check{padding:12px 0;border-bottom:1px solid var(--line)}
 /* Built-in terminal: a dock under the work area that stays while you move around AURA. */
-#terminal-dock{flex:none;height:min(38vh,420px);min-height:180px;display:flex;flex-direction:column;border-top:1px solid var(--line);background:var(--surface);position:relative;z-index:3}
+#terminal-dock{flex:none;height:min(38vh,420px);min-height:140px;display:flex;flex-direction:column;border-top:1px solid var(--line);background:var(--surface);position:relative;z-index:3}
 body.terminal-open #main{overflow-y:auto}
 #terminal-dock[hidden]{display:none}
 .chat-continuation{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;padding:10px 14px;margin:12px 0;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--hover);font-size:var(--text-sm);color:var(--muted)}
@@ -563,6 +563,8 @@ body.terminal-open #main{overflow-y:auto}
 .continue-status{padding:10px 12px;border-radius:var(--radius-md);background:var(--hover);font-size:var(--text-sm)}
 .continue-busy{color:var(--warning)}
 .terminal-bar{display:flex;align-items:center;gap:8px;padding:4px 8px 4px 12px;border-bottom:1px solid var(--line);min-height:38px}
+.terminal-resize{position:absolute;top:-4px;left:0;right:0;height:8px;cursor:ns-resize;z-index:4}
+.terminal-resize:hover,.terminal-resize:focus-visible{background:linear-gradient(transparent 3px,var(--accent) 3px,var(--accent) 5px,transparent 5px);outline:none}
 .terminal-tabs{display:flex;gap:4px;overflow-x:auto;min-width:0;flex:1;scrollbar-width:none}
 .terminal-tab{display:inline-flex;align-items:center;border-radius:var(--radius-sm)}
 .terminal-tab.active{background:var(--hover)}
