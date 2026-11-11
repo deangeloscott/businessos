@@ -1220,6 +1220,11 @@ function reconnectLocation(id, asset=false) {
   details('Reconnect '+item.name,`<p>Choose its current location. Your saved reference is kept.</p><form id="reconnect-location-form" class="form-grid"><input type="hidden" name="${asset?'asset':'replace'}" value="${esc(id)}"><label>New location<input name="path" id="location-path" required value="${esc(item.path)}"></label><button type="button" class="secondary" data-browse-location="${kind}">Choose ${kind}…</button>${asset?'<button type="button" class="text-button" data-browse-location="folder">Choose folder…</button>':''}<button class="primary">Reconnect</button></form>`);
 }
 const scheduleKinds=[['all','All'],['daily','Daily'],['weekly','Weekly'],['monthly','Monthly']];
+function scheduleTimestamp(value){
+  if(!value||value==='0')return NaN;
+  const number=typeof value==='number'||/^\d+(?:\.\d+)?$/.test(String(value||''))?Number(value):NaN;
+  return Number.isFinite(number)?(number<1e11?number*1000:number):Date.parse(value);
+}
 function scheduleInfo(task) {
   const raw=String(task.schedule_raw||task.schedule||'').trim(),upper=raw.toUpperCase();
   let kind='other',label='Custom',clock=Infinity,summary=raw||'Managed in app';
@@ -1248,8 +1253,7 @@ function scheduleInfo(task) {
     else if(/weekly|every week/i.test(raw)){kind='weekly';label='Weekly';}
     else if(/monthly|every month/i.test(raw)){kind='monthly';label='Monthly';}
   }
-  const value=task.next_run,number=typeof value==='number'||/^\d+(?:\.\d+)?$/.test(String(value||''))?Number(value):NaN;
-  const parsed=Number.isFinite(number)?(number<1e11?number*1000:number):Date.parse(value);
+  const parsed=scheduleTimestamp(task.next_run);
   const next=Number.isFinite(parsed)&&parsed>Date.now()-60000?parsed:null;
   const paused=/^(paused|disabled|stopped|cancelled|archived)$/i.test(task.status);
   return {kind,label,clock,summary,next,paused};
@@ -1360,9 +1364,16 @@ function scheduleHelp() {
 }
 function taskSummary(task) {
   const info=scheduleInfo(task);
-  return `<div class="task-summary"><span>${esc(task.app)} · ${esc(task.model||'App default')}${task.effort?' · '+esc(human(task.effort)):''}</span><span>${esc(info.label)} · ${esc(info.summary)}</span><span>${info.paused?'Paused':esc(human(task.status||'Status not reported'))}${info.next?' · Next '+esc(new Date(info.next).toLocaleString()):''}</span></div><p class="task-description">${esc(task.description||'Task instructions aren’t reported by this app.')}</p>`;
+  const next=info.paused?'Paused':info.next?'Next run · '+new Date(info.next).toLocaleString():'Next run time not reported';
+  const reason=task.last_error&&/error|fail|block|interrupt|attention|review/i.test(task.last_status||'')?task.last_error:'';
+  return `<div class="task-outcome"><strong>${esc(taskLastRun(task)||'No previous run reported')}</strong>${reason?`<p class="small-note">${esc(reason)}</p>`:''}<p>${esc(next)}</p><div data-task-collection></div><div data-task-history></div></div><div class="task-summary"><span>${esc(task.app)} · ${esc(task.model||'App default')}${task.effort?' · '+esc(human(task.effort)):''}</span><span>${esc(info.label)} · ${esc(info.summary)}</span></div><p class="task-description">${esc(task.description||'Task instructions aren’t reported by this app.')}</p>`;
 }
-function taskLastRun(task){if(!task.last_run)return '';const date=new Date(task.last_run);return Number.isNaN(date.getTime())?'':`Last run · ${date.toLocaleString()}${task.last_status?' · '+(({ok:'Completed',error:'Failed',delivery_failed:'Delivery failed',interrupted:'Interrupted',blocked_config:'Needs setup'})[task.last_status]||human(task.last_status)):''}`;}
+function taskLastRun(task){
+  const when=scheduleTimestamp(task.last_run),status=String(task.last_status||'').toLowerCase();
+  const outcome=({ok:'Completed',error:'Failed',delivery_failed:'Delivery failed',interrupted:'Interrupted',blocked_config:'Needs setup'})[status]|| (status?human(status):'');
+  if(!outcome&&!Number.isFinite(when))return '';
+  return ['Last run',outcome||'Outcome not reported',Number.isFinite(when)?new Date(when).toLocaleString():''].filter(Boolean).join(' · ');
+}
 function showScheduleExample(id) {
   state.exampleFilter='all';
   const nextDaily=hour=>{const date=new Date();date.setHours(hour,0,0,0);if(date<=new Date())date.setDate(date.getDate()+1);return date.toISOString();};
@@ -1495,9 +1506,9 @@ async function scheduleDetails(id) {
   const task=state.schedules.items.find(t=>t.id===id);if(!task)return;
   state.editingTask=task;
   details(task.name,`${taskSummary(task)}${scheduleOperationMarkup()}${task.runtime?`<p class="small-note">${esc(task.runtime)}</p>`:''}<details class="task-options"><summary>Task settings</summary><form id="task-edit-form" class="form-grid"><label>AI app<select name="app">${state.data.connection.choices.filter(c=>c.available||c.id===task.owner).map(c=>`<option value="${esc(c.id)}" ${c.id===task.owner?'selected':''}>${esc(c.name)}</option>`).join('')}</select></label><label>Task name<input name="name" value="${esc(task.name)}" maxlength="200" required></label><label>Instructions<textarea name="description" rows="3" maxlength="20000" ${task.description?'':'placeholder="Describe what this task should do"'}>${esc(task.description||'')}</textarea></label>${taskTiming(task)}<label>Model<select name="model" id="task-model"><option value="">App default</option>${task.model?`<option value="${esc(task.provider?task.provider+':'+task.model:task.model)}" selected>${esc(task.model)}</option>`:''}</select><small class="muted" id="task-model-note"></small></label><div class="inline-actions"><button class="primary">${task.editable?'Save changes':'Ask AI to adjust'}</button>${task.editable?`<button type="button" class="secondary" data-task-status="${task.status==='paused'?'resume':'pause'}">${task.status==='paused'?'Resume':'Pause'}</button>`:''}</div><p class="small-note" id="task-edit-note">${task.editable?'Changes are saved in your AI app.':'Your AI confirms schedule changes in the app.'}</p></form></details>`,'context');
-  $('#detail-content .task-options').insertAdjacentHTML('beforebegin',`${taskLastRun(task)?`<p class="small-note">${esc(taskLastRun(task))}</p>`:''}<form id="task-request-form" class="form-grid"><label>What would you like to change?<input name="request" required maxlength="2000" placeholder="Move this to Monday mornings"></label><button class="primary">Ask AI →</button></form>`);
+  $('#detail-content .task-options').insertAdjacentHTML('beforebegin',`<form id="task-request-form" class="form-grid"><label>What would you like to change?<input name="request" required maxlength="2000" placeholder="Move this to Monday mornings"></label><button class="primary">Ask AI →</button></form>`);
   renderScheduleOperation();
-  const resultHost=document.createElement('section');resultHost.className='task-results-section';$('#task-request-form').before(resultHost);window.auraWork?.history(task,resultHost);
+  window.auraWork?.history(task,$('#detail-content [data-task-history]'));
   const assistantHost=document.createElement('section');assistantHost.className='task-assignment';$('#detail-content .task-options').before(assistantHost);window.auraWork?.assignTask(task,assistantHost);const goalHost=document.createElement('section');goalHost.className='task-assignment';assistantHost.after(goalHost);window.auraCompose?.assignTask(task,goalHost);
   const outputHost=document.createElement('section');outputHost.className='task-assignment';$('#detail-content .task-options').before(outputHost);window.auraProjects?.assignTask(task,outputHost).catch(()=>{if(outputHost.isConnected)outputHost.innerHTML='<p class="small-note">Saved result destinations could not be read.</p>';});
   const options=$('#detail-content .task-options');

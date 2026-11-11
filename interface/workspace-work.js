@@ -199,7 +199,11 @@ window.auraWork = (() => {
   async function history(task,host){
     const key=currentScope();host.textContent='Loading results…';
     try{const result=await api('/api/schedules/history?id='+encodeURIComponent(task.id));if(key!==currentScope()||!host.isConnected)return;
-      host.innerHTML=`<h3>Results</h3>${result.items.length?`<div class="task-results">${result.items.map((r,i)=>`<button type="button" class="row" data-task-run="${esc(r.id)}" data-task-source="${esc(task.id)}"><span class="row-text"><span class="row-title">${i===0?'Latest · ':''}${esc(r.name)}</span><span class="row-meta">${esc(r.status)}${r.at?' · '+esc(chatDate(Number(r.at)>1e12?Number(r.at)/1000:Number(r.at))):''}</span></span></button>`).join('')}</div>`:'<p class="muted">No saved results available here yet.</p>'}${result.note?`<p class="small-note">${esc(result.note)}</p>`:''}${result.items.length===result.limit?'<p class="small-note">Showing the 20 most recent results.</p>':''}`;
+      const [latest,...older]=result.items;
+      const row=(r,label)=>`<button type="button" class="row" data-task-run="${esc(r.id)}" data-task-source="${esc(task.id)}"><span class="row-text"><span class="row-title">${esc(label)}</span><span class="row-meta">${esc(r.status)}${r.at?' · '+esc(chatDate(Number(r.at)>1e12?Number(r.at)/1000:Number(r.at))):''}</span></span></button>`;
+      const label=task.owner==='pi'?'Open task conversation':'Open latest saved result';
+      host.innerHTML=`${latest?row(latest,label+' · '+latest.name):''}${older.length?`<details><summary>Earlier results (${older.length})</summary><div class="task-results">${older.map(r=>row(r,r.name)).join('')}</div></details>`:''}${result.note?`<p class="small-note">${esc(result.note)}</p>`:''}${result.items.length===result.limit?'<p class="small-note">Showing the 20 most recent results.</p>':''}`;
+
     }catch(error){if(key!==currentScope()||!host.isConnected)return;host.innerHTML=`<h3>Results</h3><p class="error" role="status">${esc(humanError(error))}</p><button type="button" class="secondary">Try again</button>`;host.querySelector('button').onclick=()=>history(task,host);}
   }
   async function openResult(taskId,runId){

@@ -78,7 +78,17 @@ context.state.data.harness_permissions={};context.state.chatMeta=originalPermiss
   assert(node('#assistant-chat-list').innerHTML.includes('data-chat="chat-24"'));
   node('#assistant-chat-search').value='Work 24';node('#assistant-chat-search').oninput();
   assert(node('#assistant-chat-list').innerHTML.includes('data-chat="chat-24"')&&!node('#assistant-chat-list').innerHTML.includes('data-chat="chat-0"'));
-  await work.history(tasks.items[0],host);assert(host.innerHTML.includes('Latest · Weekly findings'));
+  vm.runInContext(appSource.slice(appSource.indexOf('function scheduleTimestamp('),appSource.indexOf('async function scheduleOperation(')),context);
+  vm.runInContext(appSource.slice(appSource.indexOf('function taskSummary('),appSource.indexOf('function showScheduleExample(')),context);
+  const due=Date.now()+86400000;
+  const upcoming=context.taskSummary({app:'Hermes',next_run:due});
+  assert(upcoming.includes('No previous run reported')&&upcoming.includes(new Date(due).toLocaleString()));
+  const failed=context.taskSummary({app:'Hermes',last_status:'error',last_run:'1700000000',last_error:'Could not read <file>',status:'paused',next_run:due});
+  assert(failed.includes('Failed')&&failed.includes('Could not read &lt;file&gt;')&&failed.includes('Paused')&&!failed.includes(new Date(due).toLocaleString()));
+  assert.equal(context.taskLastRun({last_run:1700000000}),context.taskLastRun({last_run:1700000000000}));
+  history.items.push({id:'earlier.md',name:'Earlier findings',status:'Saved result'});
+  await work.history(tasks.items[0],host);assert(host.innerHTML.includes('Open latest saved result · Weekly findings'));
+  assert(host.innerHTML.includes('Earlier results (1)')&&host.innerHTML.includes('data-task-run="report.md"'));history.items.pop();
   await work.openResult('weekly','report.md');assert(opened.html.includes('data-result-native="native-run"'));
   const button={dataset:{resultNative:'native-run',resultOwner:'codex'},hasAttribute:()=>false};
   for(const callback of listeners.click)callback({target:{closest:()=>button}});

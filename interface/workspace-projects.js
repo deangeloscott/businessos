@@ -126,7 +126,10 @@ window.auraProjects=(()=>{
   }
   async function assignTask(task,host){
     const key=scope();const [data,binding]=await Promise.all([api(url('/api/collections')),api(url('/api/project-binding',{kind:'task',id:task.id}))]);if(key!==scope()||!host.isConnected)return;
-    host.innerHTML=`<label>Save results to<select id="task-results-destination"><option value="">Native task results</option>${data.items.filter(c=>!c.unavailable).map(c=>`<option value="${esc(c.id)}" ${c.id===binding.collection_id?'selected':''}>${esc(c.name)}</option>`).join('')}</select></label><p class="small-note">A collection keeps useful entries current. Dated reports remain separate installments.</p><button type="button" class="text-button" id="apply-task-destination">Apply to scheduled task</button>${binding.collection_id?`<button type="button" class="text-button" data-collection="${esc(binding.collection_id)}">Open saved results</button>`:''}`;
+    const collection=data.items.find(c=>c.id===binding.collection_id&&!c.unavailable);
+    const link=$('#detail-content [data-task-collection]');
+    if(link&&collection)link.innerHTML=`<button type="button" class="secondary" data-collection="${esc(collection.id)}">Open results collection · ${esc(collection.name)}</button>`;
+    host.innerHTML=`<label>Save results to<select id="task-results-destination"><option value="">Native task results</option>${data.items.filter(c=>!c.unavailable).map(c=>`<option value="${esc(c.id)}" ${c.id===binding.collection_id?'selected':''}>${esc(c.name)}</option>`).join('')}</select></label><p class="small-note">A collection keeps useful entries current. Dated reports remain separate installments.</p><button type="button" class="text-button" id="apply-task-destination">Apply to scheduled task</button>`;
     $('#apply-task-destination').onclick=()=>attempt(()=>scheduleOperation({id:task.id,app:task.owner,action:'edit',collection_id:$('#task-results-destination').value}));
   }
   async function openForFile(ref){
