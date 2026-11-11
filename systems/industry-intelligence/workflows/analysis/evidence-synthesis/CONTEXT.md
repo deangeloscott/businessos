@@ -34,7 +34,7 @@ Use when a question needs a review of many sources rather than one, such as a li
 2. [AI] Plan and record the search: sources (academic databases, preprint servers, government and institutional reports, trusted datasets), search terms, date and language limits, and what will be included or excluded and why. State the shortcuts a faster review takes.
 3. [INTEGRATION] Search, collect candidate sources, and screen them against the inclusion criteria. Keep track of what was found and why each was included or excluded.
 4. [AI] Extract from each included source the key details: design, sample, setting, measures, findings and limitations. Save useful sources with their citation and a one-line finding.
-5. [HYBRID] Assess the strength of evidence for each finding, using Research Quality Assessment where a study is pivotal. Weigh consistency across sources, study quality and relevance.
+5. [HYBRID] Assess the strength of evidence for each finding, using Research Quality Assessment where a study is pivotal. Identify papers, reviews and reports based on the same trial, cohort or dataset. Count that evidence once when judging independent corroboration; retain distinct outcomes or follow-up periods where they add information. Weigh consistency across sources, study quality and relevance.
 6. [AI] Synthesize across sources: where findings agree, where they conflict and possible reasons, how strong the overall evidence is for each conclusion, and the important gaps. Do not smooth disagreement into false consensus.
 7. [AI] Write the review in the form the person needs, with citations for every claim, the method and its limitations stated, and conclusions no stronger than the evidence.
 

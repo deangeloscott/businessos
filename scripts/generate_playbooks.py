@@ -70,7 +70,11 @@ def write_domain(registry,system):
     for row in playbooks:
         lines += [f"### {row['title']}",'',row['summary'],'',f'*Try:* “{row["example"]}”','']
         entry=row.get('entry_workflow');workflow=cmap.get(entry) if entry else None
-        if workflow:
+        if row.get('routes'):
+            for label,wid in row['routes']:
+                if wid in cmap:lines.append(f"- [{label}]({rel_link(outfile,cmap[wid]['path'])})")
+            lines.append('')
+        elif workflow:
             link=rel_link(outfile,workflow['path']);lines += [f"**Common entry Workflow:** [{workflow.get('title',entry)}]({link})",'']
         elif entry:
             lines += [f"**Common entry Workflow:** `{entry}`",'']

@@ -309,15 +309,17 @@ def library():
     workflows_by_id={r['id']:r for r in out if r.get('id')}
     for row in installed_playbooks():
         out.append({'title':row['title'],'id':row['id'],'kind':'Workflow','subtype':'Playbook','area':row['owner_system'],
-                    'description':row['summary'],'guidance':'# '+row['title']+'\n\n'+row['summary']+'\n\nExample request: '+row['example']+
-                    ('\n\nStart with workflow '+row['entry_workflow']+' when useful.' if row.get('entry_workflow') else ''),
+                    'description':row['summary'],'discovery_terms':row['discovery_terms'],'guidance':'# '+row['title']+'\n\n'+row['summary']+'\n\nExample request: '+row['example']+
+                    ('\n\nStart with workflow '+row['entry_workflow']+' when useful.' if row.get('entry_workflow') and not row.get('routes') else ''),
                     'key':'workflow:playbook:'+row['id'],
+                    'routes':[{'title':label,'key':'workflow:'+workflows_by_id[wid]['path']} for label,wid in row.get('routes',[]) if wid in workflows_by_id],
                     'entry':({'key':'workflow:'+workflows_by_id[row['entry_workflow']]['path'],'title':workflows_by_id[row['entry_workflow']]['title']}
                              if row.get('entry_workflow') in workflows_by_id else None)})
     for row in out:
         area, path = row['area'], row.get('path','')
         if row['kind'] == 'Workflow':
             category, group = {
+                'funding-impact': ('Funding & Impact',''),
                 'competitor-intelligence': ('Research', 'Competitors'),
                 'customer-intelligence': ('Research', 'Customers'),
                 'industry-intelligence': ('Research', 'Market & industry'),

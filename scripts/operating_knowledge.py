@@ -14,7 +14,7 @@ OPERATING_AREAS = {
 }
 
 
-def _p(id, owner_system, title, summary, example, entry_workflow=None, discovery_terms=()):
+def _p(id, owner_system, title, summary, example, entry_workflow=None, discovery_terms=(),routes=()):
     return {
         'id': id,
         'owner_system': owner_system,
@@ -23,6 +23,7 @@ def _p(id, owner_system, title, summary, example, entry_workflow=None, discovery
         'example': example,
         'entry_workflow': entry_workflow,
         'discovery_terms': list(discovery_terms),
+        **({'routes':list(routes)} if routes else {}),
     }
 
 
@@ -260,7 +261,9 @@ PLAYBOOKS = [
        'Find grants the organization is eligible for and likely to win, write funder-aligned applications from verified facts, manage awards, and learn from each decision.',
        'Find grants we qualify for and help us apply to the best ones.',
        'funding.grants.prospecting',
-       ('grant','grants','grant writing','grant application','funder','funders','foundation grant','federal grant','letter of inquiry','rfa','nofo','grant report','case for support')),
+       ('grant','grants','grant writing','grant application','funder','funders','foundation grant','federal grant','letter of inquiry','rfa','nofo','grant report','case for support'),
+       routes=(('Find grants','funding.grants.prospecting'),('Prepare a case for support','funding.case.case-for-support'),
+               ('Write an application','funding.grants.application'),('Manage an award','funding.grants.award-management'))),
     _p('supporter-fundraising','funding-impact','Supporter Fundraising',
        'Raise and keep support from individual donors, members and volunteers through honest appeals, prompt thanks, reporting back and relationship building.',
        'Help us keep more of our donors and plan our year-end appeal.',
@@ -271,11 +274,11 @@ PLAYBOOKS = [
        'Help us show the impact of our programs with real numbers.',
        'funding.impact.measurement',
        ('impact','impact report','annual report','outcomes','logic model','theory of change','evaluation','program evaluation','social impact')),
-    _p('investor-fundraising','funding-impact','Investor Fundraising',
-       'Decide whether and how much to raise, prepare a defensible story and materials, target fitting investors, and run a focused raise through diligence and close.',
+    _p('investor-fundraising','funding-impact','Business Financing and Investor Fundraising',
+       'Choose a financing route, prepare the evidence a lender or investor needs, and follow the request through diligence, agreement and funding.',
        'Help us prepare for and run our seed round.',
        'funding.investment.raise',
-       ('raise investment','investors','venture capital','angel investors','seed round','pre-seed','series a','pitch deck','fundraising round','due diligence')),
+       ('raise investment','investors','venture capital','angel investors','seed round','pre-seed','series a','pitch deck','fundraising round','due diligence','friends and family','bank loan','business loan','lender','debt financing','working capital')),
 ]
 
 

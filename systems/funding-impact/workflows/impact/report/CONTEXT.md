@@ -32,7 +32,7 @@ Use for an annual or impact report, a program results summary, or a substantial 
 1. [AI] Define the audience (donors, funders, community, board) and what they most want to know, and the period covered.
 2. [AI] Gather the evidence: recorded outcome measures and their change over time, outputs, finances at the level the organization is comfortable sharing, and stories or quotes with permission.
 3. [AI] Lead with outcomes and what changed for people, supported by the key numbers. Credit supporters for their part. Be specific and concrete rather than broad.
-4. [HYBRID] Report honestly: include what fell short and what the organization learned, distinguish contribution from sole attribution, and mark estimates. Never inflate numbers or reuse stories without permission.
+4. [HYBRID] Report honestly: include what fell short and what the organization learned, distinguish contribution from sole attribution, and mark estimates. For a claim that the program caused a change, use core Evaluate Outcome to examine the baseline, comparison and other plausible explanations. Use language the evidence supports. Never inflate numbers or reuse stories without permission.
 5. [AI] Choose the format that suits the audience (short digital report, printed piece, one-page summary, presentation) and use the Content knowledge area for production and design.
 6. [DETERMINISTIC] Save the report, and update the organization's facts with any newly confirmed results so future applications and appeals use them.
 

@@ -23,30 +23,32 @@ context:
 evidence_inputs:
 - investor portfolios and stated theses, comparable company rounds, the company's own metrics
 ---
-# Investor Fundraising
+# Business Financing and Investor Fundraising
 
 ## Purpose
-Prepare for and run an investment raise, from deciding whether and how much to raise through investor targeting, pitching, diligence and close.
+Choose financing that fits the use of funds and prepare the actual lender request, family funding proposal or investor materials needed for the next decision.
 
 ## Business Outcome
-The right amount raised from well-matched investors on acceptable terms, in a focused process that does not stall the business.
+The business can explain how much it needs, what that money enables, and how the proposed repayment or ownership terms fit its cash position and goals.
 
 ## Run When
-Use when a company is considering or actively raising investment (pre-seed through early growth). For grants, use the grant workflows; for donations, the supporter workflows.
+Use for a bank or other business loan, friends-and-family funding, angel investment or a venture round, including a decision about whether to raise at all. For nonrepayable grants, use Grant Funding.
 
 ## Process
-1. [AI] Decide whether to raise now, how much, and for what milestones. Check alternatives (revenue, grants, loans) and the runway the raise must provide.
-2. [AI] Build the story from evidence: the problem, the solution, why now, market, traction and key metrics, business model, competition, team, and how the money gets to the next milestones. Every number must be one the company can defend.
-3. [AI] Prepare materials: a short deck (use the Content presentation knowledge for production), a one-paragraph summary, and organized documents investors commonly request (company formation, cap table, financials and metrics, key contracts). Investors' requests vary; prepare the basics before opening the process.
-4. [AI] Build a target list of investors whose stage, sector, check size and geography fit, using who invested in comparable companies. Prefer warm introductions and note the best route to each.
-5. [HYBRID] Run the process like a sales pipeline: approach many fitting investors in a compressed window rather than one at a time, track each conversation's stage and next step, and follow up promptly. Many raises take months and dozens of meetings; plan for it.
-6. [AI] Prepare answers to likely diligence questions and handle them consistently. Do not give legal, tax or securities advice; involve qualified counsel for terms and documents.
-7. [DETERMINISTIC] Record investor feedback, decisions and terms, and preserve Learning about what resonated or raised concerns when supported.
+1. [HYBRID] Establish the amount, timing, use of proceeds, cash available, and the milestone or cash inflow the money should enable. Compare plausible routes against those facts. A seasonal cash gap and a multiyear product bet can require very different financing. Keep internally funded growth on the table.
+2. [AI] Prepare the artifact for the actual audience. Use only the branches that fit:
+   - **Friends and family:** clarify whether the proposal is a gift, loan or investment before presenting it. Write a plain-language account of the amount, use, risks, possible loss or delay, what the backer would receive, and how updates will work. Give the person room to decline. Record what each side understands and take proposed terms to an appropriate adviser before commitment.
+   - **Bank or other lender:** start with the lender's requirements. Show the use of funds and source of repayment, current cash flow and existing debt. Reconcile the request to the financial statements and forecast; show whether payments fit a slower-sales scenario. Identify collateral or guarantees only where the lender requests them. Deliver the loan request and a short list of outstanding documents.
+   - **Angels:** match stage, sector, check size and relevant expertise. Prepare a concise introduction and evidence of the customer problem, traction, team, and milestone this check would fund. Make the ask and next conversation concrete.
+   - **Venture funds:** check thesis, stage, check size and whether the potential scale fits the fund. Build a defensible deck and model covering growth, market, economics, runway and the milestones for the next round or sustainability. Distinguish measured traction from forecasts; use consistent definitions in the deck, model and diligence materials.
+3. [HYBRID] Focus outreach on suitable counterparties. For each active conversation, record the next decision, owner, timing and evidence requested. Resolve conflicting numbers before sending documents and share sensitive material only with the intended recipients.
+4. [HYBRID] When comparing actual offers, use the written terms. For debt, surface repayment timing, fees, security and obligations. For equity, surface ownership, dilution, control and conditions. Identify open questions for the organization and qualified advisers. The authorized person makes commitments and signs.
+5. [DETERMINISTIC] Distinguish interest, an indicative offer, signed documents and funds received. When closing is in scope, reconcile amounts expected and received, unresolved conditions and follow-up obligations. Preserve decisions and evidence that will matter for the next payment, investor update or raise.
 
 ## Proportionate Scope
-A small pre-seed round from angels needs a lighter process than an institutional round. Match preparation to the round.
+A loan inquiry may need one cash-flow explanation and the lender's requested documents. A first angel conversation may need only an introduction, evidence and an ask. Expand diligence as the counterparty and decision warrant.
 
 ## Verification
-- Claims and metrics are accurate and defensible.
-- Targeted investors fit stage, sector and size.
-- Legal and securities matters are referred to qualified counsel.
+- The requested artifact answers this counterparty’s decision and uses figures consistent with the organization’s records.
+- Material assumptions, downside exposure and outstanding commitments are visible to the person making the decision.
+- Report the stage supported by evidence. A draft is useful before an offer exists; funding received requires confirmation.

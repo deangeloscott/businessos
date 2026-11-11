@@ -16,9 +16,9 @@ quick_starts:
     kind: watch
     cadence: weekly
     prompt: Set up a weekly scheduled task that looks for new grants we are likely eligible for and keeps the "Grants" collection current with funder, amount, deadline, eligibility and status, flagging anything closing within 30 days. Keep what we know current by folding new results into our findings instead of piling them up, and tell me only about real changes.
-  - title: Map your funders' calendars
+  - title: Write a grant application
     kind: once
-    prompt: List the funders most relevant to us and when each typically opens and closes applications, with sources. Save what you confirm to our business memory so future grant work uses it.
+    prompt: Help me write the application for the opportunity I chose. Use the funder's actual questions and limits, our verified facts and budget, and tell me which answers or attachments still need my input.
 goals:
   - name: Win $50,000 in grants this year
     measure: Grant dollars awarded

@@ -216,11 +216,16 @@ def resolve(app,bid,references,goal_id=None,pointers=False,sources=None):
                 info=path.stat();row.update(path=str(path),revision=digest([item,info.st_mtime_ns,info.st_size]));text=f'Selected {item.get("subtype") or item["kind"]}: {row["label"]}\nRead {path} when useful.'
             else:
                 text=workspace_library.document(item) or item.get('guidance','')
+                if item.get('routes'):
+                    for route in item['routes']:
+                        workflow=workspace_library.find(catalog,route['key'])
+                        if workflow and workflow.get('path'):
+                            text+='\n'+route['title']+' — '+str(PRODUCT_ROOT/workflow['path'])
                 if not text and item.get('variants'):
                     raise ValueError('This library item has multiple versions. Choose its specific version from the library.')
                 if not text:raise ValueError('This library item has no readable guidance here.')
                 row['revision']=digest([item,text])
-                text=f'Selected {item["kind"]}: {row["label"]}\n'+text[:6000]
+                text=f'Selected {item.get("subtype") or item["kind"]}: {row["label"]}\n'+text[:6000]
         elif kind=='assistant':
             # A named assistant is a profile, not an already-running agent endpoint.
             raise ValueError('Choose a saved result from this assistant, or start a chat with it from Assistants.')

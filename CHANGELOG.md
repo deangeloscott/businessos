@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- The Library lists items as soon as you select a type. Playbooks have their own tab, topics are optional filters, and Funding & Impact has its own topic. Grant Funding links directly to application writing as well as prospecting, preparation and award management. Files & media keeps its selected file type in sync with the results.
+- Grant and RFP guidance now covers form-ready answers, consistent budgets and draft handoff. Funding guidance distinguishes family funding, angels, venture funds and lender requirements. Research reviews check for overlapping datasets, and supporter workflows deliver usable outreach materials.
+
 - Catch-up advances after a successful receiving reply. It uses the last delivered exchange when available and identifies gaps in a shortened handoff. Terminal attachments capture the selected text or recent output when clicked. Terminal tabs reconnect after a dropped connection, and Linux and macOS shells acquire a controlling terminal.
 - Deadline notices open the exact saved item and show its calendar date. Watch notices name a change, and checks can carry unread links into the next run. Explicit pipelines keep their board at any stage count, and scheduled work shows multi-week intervals.
 - Business record reads reject redirected business roots and refresh cached text when a file is replaced with its original size and modification time.

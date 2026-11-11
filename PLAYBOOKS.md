@@ -116,7 +116,7 @@ Secure grants, donations, volunteers and investment, and show honestly what the 
 - **Grant Funding** — Find grants the organization is eligible for and likely to win, write funder-aligned applications from verified facts, manage awards, and learn from each decision.
 - **Supporter Fundraising** — Raise and keep support from individual donors, members and volunteers through honest appeals, prompt thanks, reporting back and relationship building.
 - **Impact Measurement and Reporting** — Decide which outcomes show the difference the work makes, measure them practically, and report results honestly to supporters and funders.
-- **Investor Fundraising** — Decide whether and how much to raise, prepare a defensible story and materials, target fitting investors, and run a focused raise through diligence and close.
+- **Business Financing and Investor Fundraising** — Choose a financing route, prepare the evidence a lender or investor needs, and follow the request through diligence, agreement and funding.
 
 ## AURA Core
 

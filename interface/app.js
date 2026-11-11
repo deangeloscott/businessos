@@ -927,13 +927,14 @@ async function overview() {
   $('#view').innerHTML=`<div class="workspace-heading"><h2>Your workspace</h2><p>Keep the context. Find the work. Choose what to do next.</p></div><div class="workspace-grid">
     <section class="workspace-card" aria-labelledby="business-card-title"><div class="card-heading"><h3 id="business-card-title">Business & memory</h3><button class="text-button" data-view="business">Open →</button></div><p class="card-description">Your goals, research, preferences, and decisions.</p><input id="quick-memory-search" class="search" type="search" aria-label="Search business and memory" placeholder="Find goals or saved information…" value="${esc(state.memoryQuery||'')}"><div id="quick-memory" class="preview-list" tabindex="0" aria-label="Business and memory results"></div></section>
     <section class="workspace-card" aria-labelledby="files-card-title"><div class="card-heading"><h3 id="files-card-title">Files & media</h3><button class="text-button" data-view="files">Open →</button></div><p class="card-description">Open the notes, images, and work you’ve kept.</p><input id="quick-file-search" class="search" type="search" aria-label="Search saved files and media" placeholder="Find a file…" value="${esc(state.fileQuery||'')}">${fileTypeFilters('home')}<div id="quick-files" class="preview-list" tabindex="0" aria-label="Saved file results"></div><button class="text-button card-link" data-add-location>＋ Add files or folder</button></section>
-    <section class="workspace-card" aria-labelledby="methods-card-title"><div class="card-heading"><h3 id="methods-card-title">Library</h3><button class="text-button" data-view="work">Open →</button></div><p class="card-description">Find the guidance and capabilities for your next job.</p><label class="sr-only" for="quick-work-search">Search workflows, recipes, skills, tools and plugins</label><input id="quick-work-search" class="search" type="search" placeholder="Try competitors, content, or a website…"><p><a class="text-link" href="https://viraltrac.com/aura/community/" target="_blank" rel="noopener noreferrer">Explore community setups ↗</a></p><div class="library-choices"><button class="secondary" data-library-kind="Workflow"><strong>Workflows</strong><small>Steps for business work</small></button><button class="secondary" data-library-kind="Recipe"><strong>Recipes</strong><small>Creative & production guidance</small></button><button class="secondary" data-library-kind="Skill"><strong>Skills</strong><small>Reusable instructions for your AI</small></button><button class="secondary" data-library-kind="Tool"><strong>Tools</strong><small>Apps, connections & capabilities</small></button><button class="secondary" data-library-kind="Plugin"><strong>Plugins</strong><small>Bundles & extensions</small></button></div><div id="quick-methods"></div></section>
+    <section class="workspace-card" aria-labelledby="methods-card-title"><div class="card-heading"><h3 id="methods-card-title">Library</h3><button class="text-button" data-view="work">Open →</button></div><p class="card-description">Find the guidance and capabilities for your next job.</p><label class="sr-only" for="quick-work-search">Search the Library</label><input id="quick-work-search" class="search" type="search" placeholder="Try competitors, content, or a website…"><p><a class="text-link" href="https://viraltrac.com/aura/community/" target="_blank" rel="noopener noreferrer">Explore community setups ↗</a></p><div class="library-choices"><button class="secondary" data-library-kind="Workflow"><strong>Workflows</strong><small>Steps for business work</small></button><button class="secondary" data-library-kind="Recipe"><strong>Recipes</strong><small>Creative & production guidance</small></button><button class="secondary" data-library-kind="Skill"><strong>Skills</strong><small>Reusable instructions for your AI</small></button><button class="secondary" data-library-kind="Tool"><strong>Tools</strong><small>Apps, connections & capabilities</small></button><button class="secondary" data-library-kind="Plugin"><strong>Plugins</strong><small>Bundles & extensions</small></button></div><div id="quick-methods"></div></section>
     <section class="workspace-card" aria-labelledby="tasks-card-title"><div class="card-heading"><h3 id="tasks-card-title">Scheduled tasks</h3><button class="text-button" data-view="tools">Open →</button></div><p class="card-description schedule-intro">See scheduled work across your AI apps. <button class="text-button" data-schedules-help>How it works</button></p><input id="quick-schedule-search" class="search" type="search" aria-label="Search scheduled tasks" placeholder="Find a scheduled task…" value="${esc(state.scheduleQuery||'')}">${scheduleFilters('home')}${scheduleOperationMarkup()}<div id="schedule-preview" class="preview-list" tabindex="0" aria-label="Scheduled task results"></div><button class="secondary card-link" data-view="tools" data-add-recurring>＋ Add scheduled task</button>${schedules.notes.length?'<p class="small-note">Some schedules could not be read. Open to check.</p>':''}</section>
   </div>${attention.length?heading('Needs your attention')+`<div class="card">${attention.slice(0,2).map(recordRow).join('')}</div>`:''}`;
   state.overviewAt=state.data.refreshed;
   renderMemory();renderQuickFiles();renderSchedules();quickMethods();
 }
-const libraryKinds={Workflow:'Workflows',Recipe:'Recipes',Skill:'Skills',Tool:'Tools',Plugin:'Plugins'};
+const libraryType=item=>item.subtype==='Playbook'?'Playbook':item.kind;
+const libraryKinds={Playbook:'Playbooks',Workflow:'Workflows',Recipe:'Recipes',Skill:'Skills',Tool:'Tools',Plugin:'Plugins'};
 const libraryGuidance=item=>['Workflow','Recipe','Skill'].includes(item.kind);
 function appName(id){return ({configured:state.data?.connection.choices?.find(c=>c.id==='configured')?.name||'Custom AI',codex:'Codex',claude:'Claude Code',pi:'Pi',omp:'OMP',hermes:'Hermes',antigravity:'Google Antigravity'})[id]||id;}
 function libraryPrefs(){return {favorites:[],recent:[],...state.data.library_preferences};}
@@ -981,7 +982,7 @@ document.addEventListener('click',event=>{
 async function toggleFileFavorite(ref){const keys=fileFavoriteKeys(ref),prefs=libraryPrefs(),marked=fileMarked(ref);await saveLibrary({...prefs,favorites:marked?prefs.favorites.filter(k=>!keys.includes(k)):[...prefs.favorites,keys[0]]});if(state.view==='files')renderFiles();renderQuickFiles();return !marked;}
 function rememberLibraryOpen(item){const prefs=libraryPrefs();if(prefs.recent[0]===item.key)return;attempt(async()=>{await saveLibrary({...prefs,recent:[item.key,...prefs.recent.filter(k=>k!==item.key)].slice(0,24)});if(state.view==='work'&&$('#work-list'))renderWork();});}
 function libraryQuery(text){return human(text).toLowerCase().replace(/[_.-]+/g,' ').replace(/\s+/g,' ').trim();}
-function libraryMatches(item,q){return libraryQuery([item.title,item.description,item.category,item.group,item.id,...(item.apps||[]),...(item.sources||[]).map(s=>s.service||s.connection||'')].join(' ')).includes(libraryQuery(q))||(item.members||[]).some(m=>libraryMatches(m,q))||(item.variants||[]).some(v=>libraryMatches(v,q));}
+function libraryMatches(item,q){return libraryQuery([item.title,item.description,item.category,item.group,item.id,...(item.discovery_terms||[]),...(item.apps||[]),...(item.sources||[]).map(s=>s.service||s.connection||'')].join(' ')).includes(libraryQuery(q))||(item.members||[]).some(m=>libraryMatches(m,q))||(item.variants||[]).some(v=>libraryMatches(v,q));}
 async function refreshLibrary(){
   if(state.libraryRefreshing)return;state.libraryRefreshing=true;const button=state.view==='work'?$('#page-refresh'):null,workspace=state.data.workspace;
   if(button){button.disabled=true;button.textContent='Refreshing…';if(state.view==='work')renderWork();}
@@ -1025,7 +1026,7 @@ async function openLibrary(key,option='',returning=false){
   }else{
     const lines=body.replace(/^# [^\n]+\n+/,'');
     const guidance=(description&&lines.startsWith(description)?lines.slice(description.length).trim():lines).replace(/^Start with workflow [^\n]+ when useful\.$/m,'').trim();
-    details(item.title,locationMarkup+metadata+(guidance?'<div class="guidance-preview">'+chatMarkdown(guidance)+'</div>':'')+(item.entry?`<button type="button" class="text-button" data-method="${esc(item.entry.key)}">Open ${esc(item.entry.title)} workflow →</button>`:''),'context');
+    details(item.title,locationMarkup+metadata+(guidance?'<div class="guidance-preview">'+chatMarkdown(guidance)+'</div>':'')+(item.routes?.length?item.routes.map(route=>`<button type="button" class="secondary" data-method="${esc(route.key)}">${esc(route.title)}</button>`).join(''):item.entry?`<button type="button" class="text-button" data-method="${esc(item.entry.key)}">Open ${esc(item.entry.title)} workflow →</button>`:''),'context');
   }
   if(ticket!==state.libraryDetailTicket||business!==state.business||workspace!==state.data.workspace)return;
   setDetailTitleActions(favoriteControl('data-library-favorite',root.key,item.title,libraryMarked(root),'title-star'));
@@ -1041,7 +1042,7 @@ function quickMethods() {
   const focusPaths=window.auraFocus?.cached()?.knowledge||[],fit=r=>Math.max(0,...[r.path,...(r.sources||[]).map(src=>src.path)].map(p=>String(p||'').split(String.fromCharCode(92)).join('/')).flatMap(p=>focusPaths.filter(f=>p.includes(f)).map(f=>f.length)));
   const forFocus=!q&&focusPaths.length?state.library.map(r=>[fit(r),r]).filter(([n])=>n).sort((a,b)=>b[0]-a[0]).slice(0,3).map(([,r])=>r):[];
   if(!q){const favorites=state.library.filter(r=>libraryMarked(r)&&!forFocus.includes(r)).slice(0,3),recent=libraryPrefs().recent.map(k=>state.library.find(r=>r.key===k||r.aliases?.includes(k))).filter(Boolean).filter((r,i,all)=>all.indexOf(r)===i&&!favorites.includes(r)).slice(0,favorites.length?1:3);$('#quick-methods').innerHTML=(forFocus.length?'<h4>For your focus</h4>'+forFocus.map(methodRow).join(''):'')+(favorites.length?'<h4>Favorites</h4>'+favorites.map(methodRow).join(''):'')+(recent.length?'<h4>Recently opened</h4>'+recent.map(methodRow).join(''):'');return;}
-  const groups=Object.keys(libraryKinds).map(kind=>({kind,items:state.library.filter(r=>r.kind===kind&&libraryMatches(r,q))}));
+  const groups=Object.keys(libraryKinds).map(kind=>({kind,items:state.library.filter(r=>libraryType(r)===kind&&libraryMatches(r,q))}));
   $('#quick-methods').innerHTML=groups.filter(g=>g.items.length).map(g=>`<h4>${libraryKinds[g.kind]}</h4>${g.items.slice(0,2).map(methodRow).join('')}<button class="text-button card-link" data-library-kind="${g.kind}">Open ${libraryKinds[g.kind].toLowerCase()} →</button>`).join('')||'<p class="muted">No match. You can still describe the job to your AI.</p>';
 }
 async function render() {
@@ -1079,7 +1080,7 @@ async function render() {
     renderFiles();
   } else if(state.view==='work') {
     if(!state.library.length){const library=await cachedApi('/api/library');if(!current())return;state.library=library;}
-    view.innerHTML=`<input class="search" id="work-search" type="search" aria-label="Search workflows, recipes, skills, tools and plugins" placeholder="Find guidance, skills, tools, or plugins…"><div class="filters"><button data-workfilter="all">All</button>${Object.entries(libraryKinds).map(([kind,label])=>`<button data-workfilter="${kind}">${label}</button>`).join('')}<button data-view="assistants">Agents</button></div><div class="library-toolbar"><label>Show <select id="library-view"><option value="all" ${libraryView==='all'?'selected':''}>All items</option><option value="favorites" ${libraryView==='favorites'?'selected':''}>Favorites</option><option value="recent" ${libraryView==='recent'?'selected':''}>Recently opened</option></select></label><span><button class="text-button" data-library-help>How it works</button></span></div><p id="library-note" class="small-note"></p><div class="section-head"><h3 id="work-category-title">Browse by topic</h3><button id="work-all-topics" class="text-button" hidden>All topics</button></div><div id="work-categories" class="topic-grid"></div><div id="work-list"></div>`;
+    view.innerHTML=`<input class="search" id="work-search" type="search" aria-label="Search the Library" placeholder="Search the Library…"><div class="filters"><button data-workfilter="all">All</button>${Object.entries(libraryKinds).map(([kind,label])=>`<button data-workfilter="${kind}">${label}</button>`).join('')}<button data-view="assistants">Agents</button></div><div class="library-toolbar"><label>Topic <select id="library-topic"><option value="">All topics</option></select></label><label>Show <select id="library-view"><option value="all" ${libraryView==='all'?'selected':''}>All items</option><option value="favorites" ${libraryView==='favorites'?'selected':''}>Favorites</option><option value="recent" ${libraryView==='recent'?'selected':''}>Recently opened</option></select></label><span><button class="text-button" data-library-help>How it works</button></span></div><p id="library-note" class="small-note"></p><div class="section-head"><h3 id="work-category-title">Library items</h3><button id="work-all-topics" class="text-button" hidden>All topics</button></div><div id="work-list"></div>`;
     renderWork();
     $('#section-content .library-toolbar>span').insertAdjacentHTML('afterbegin','<button class="text-button" id="library-connections">Add connection</button>');
     $('#library-connections').hidden=!['all','Tool'].includes(workFilter);
@@ -1098,7 +1099,7 @@ async function render() {
   }
 }
 
-let fileFilter='all', fileLocation='', workFilter='all', workCategory='', libraryView='all';
+let fileFilter='all', fileLocation='', workFilter='all', workCategory='', libraryView='all', libraryLimit=60;
 function recordMatches(record,q) {return !q||(record.title+' '+pretty(record.data)).toLowerCase().includes(q);}
 const addContextPrompt='Help me add useful business context to AURA. Ask only what matters for our current work and preserve my explicit facts and preferences. Do not invent facts.';
 function memoryGroups(q) {
@@ -1126,9 +1127,9 @@ function matchingFiles() {
   return state.files.filter(f=>usefulFile(f)&&(!state.fileFavoritesOnly||fileMarked(f.path))&&(fileFilter==='all'||fileKind(f)===fileFilter)&&(!state.fileProject||f.project_refs?.includes(state.fileProject))&&(f.path+' '+f.name+' '+(f.location_name||'')).toLowerCase().includes(q)).sort((a,b)=>b.modified-a.modified);
 }
 function renderQuickFiles() {
-  const target=$('#quick-files');if(!target)return;
   for(const id of ['quick-file-search','file-search'])if($('#'+id)&&$('#'+id).value!==(state.fileQuery||''))$('#'+id).value=state.fileQuery||'';
   document.querySelectorAll('[data-filetype]').forEach(b=>{b.classList.toggle('active',b.dataset.filetype===fileFilter);b.setAttribute('aria-pressed',String(b.dataset.filetype===fileFilter));});
+  const target=$('#quick-files');if(!target)return;
   const matches=matchingFiles(),shown=matches.slice(0,4);
   target.innerHTML=shown.length?shown.map(f=>`<button class="row file-preview-row" data-file="${esc(f.path)}"><span class="preview-icon" data-thumbnail="${esc(f.path)}">${fileKind(f)==='images'?'◈':fileKind(f)==='videos'?'▷':fileKind(f)==='audio'?'♪':'▤'}</span><span class="row-text"><span class="row-title">${esc(f.name)}</span><span class="row-meta">${size(f.bytes)} · ${stamp(f.modified*1000)}</span></span><span class="arrow">→</span></button>`).join('')+(matches.length>shown.length?`<button class="text-button card-link" data-view="files">Open all ${matches.length} matches →</button>`:''):'<p class="small-note">No matching saved files.</p>';
   for(const file of shown.filter(f=>fileKind(f)==='images'&&f.media&&f.bytes<=8*1048576))mediaBlob(file.path).then(url=>{const el=[...target.querySelectorAll('[data-thumbnail]')].find(e=>e.dataset.thumbnail===file.path);if(el?.isConnected){const img=document.createElement('img');img.alt='';img.src=url;el.replaceChildren(img);}}).catch(()=>{});
@@ -1162,23 +1163,29 @@ function renderFiles() {
   state.fileObserver=observer;$('#file-list').querySelectorAll('.file-card').forEach(e=>observer.observe(e));
 }
 function renderWork() {
-  state.libraryExpanded??={};
-  document.querySelectorAll('#work-list details[data-library-group]').forEach(group=>{state.libraryExpanded[group.dataset.libraryGroup]=group.open;});
-  const groupKey=name=>JSON.stringify([state.data.workspace,state.business,workFilter,workCategory,libraryView,name]);
   $('#section-description').textContent=({business:'Your goals, useful facts, preferences, and decisions.',files:'Find the work you have saved and the locations you have linked.',work:'Workflows, recipes, skills and tools your AI can reuse, plus the agents that do the work.',tools:'Work your connected AI apps repeat for you.',assistants:'Workflows, recipes, skills and tools your AI can reuse, plus the agents that do the work.'})[state.view]||'';
   $('#section-title').textContent='Library';
   if($('#library-connections'))$('#library-connections').hidden=!['all','Tool'].includes(workFilter);
   document.querySelectorAll('[data-workfilter]').forEach(b=>{b.setAttribute('aria-pressed',String(b.dataset.workfilter===workFilter));b.classList.toggle('active',b.dataset.workfilter===workFilter);});
   const q=($('#work-search')?.value||'').toLowerCase();
-  const matches=state.library.filter(r=>Object.hasOwn(libraryKinds,r.kind)&&(workFilter==='all'||r.kind===workFilter)&&libraryMatches(r,q)&&(libraryView==='all'||libraryMarked(r,libraryView==='recent'?'recent':'favorites')));
-  if(libraryView==='recent')matches.sort((a,b)=>libraryPrefs().recent.findIndex(k=>k===a.key||a.aliases?.includes(k))-libraryPrefs().recent.findIndex(k=>k===b.key||b.aliases?.includes(k)));
-  const categories=Object.groupBy(matches,r=>r.category);
-  $('#work-categories').hidden=!!workCategory||libraryView!=='all'||!!q;
-  $('#work-categories').innerHTML=Object.entries(categories).sort(([a],[b])=>a.localeCompare(b)).map(([name,items])=>`<button class="topic-card ${name===workCategory?'active':''}" data-workcategory="${esc(name)}" aria-pressed="${name===workCategory}"><strong>${esc(name)}</strong><small>${items.length} ${items.length===1?(libraryKinds[workFilter]?.toLowerCase()||'items').replace(/s$/,''):(libraryKinds[workFilter]?.toLowerCase()||'items')}</small></button>`).join('');
-  $('#work-category-title').textContent=workCategory||(libraryView==='recent'?'Recently opened':libraryView==='favorites'?'Favorites':q?'Search results':'Browse by topic');$('#work-all-topics').hidden=libraryView==='recent'?!libraryPrefs().recent.length:!workCategory;$('#work-all-topics').textContent=libraryView==='recent'?'Clear recent':'All topics';
-  const shown=matches.filter(r=>!workCategory||r.category===workCategory);
-  const groups=Object.groupBy(shown,r=>['Skill','Tool','Plugin'].includes(r.kind)?(workCategory?libraryKinds[r.kind]:(workFilter==='all'?libraryKinds[r.kind]+' · ':'')+r.category):(workFilter==='all'?libraryKinds[r.kind]+' · ':'')+(workCategory?'':r.category+' · ')+r.group);
-  $('#work-list').innerHTML=(!q&&!workCategory&&libraryView==='all')?'':libraryView==='recent'?shown.map(methodRow).join('')||'<p class="small-note">Items appear here after you open them.</p>':Object.entries(groups).sort(([a],[b])=>a.localeCompare(b)).map(([name,items])=>`<details class="method-group" data-library-group="${esc(groupKey(name))}" ${(state.libraryExpanded[groupKey(name)]??!!(q||libraryView==='favorites'))?'open':''}><summary>${esc(name)}<span>${items.length}</span></summary>${items.sort((a,b)=>a.title.localeCompare(b.title)).map(methodRow).join('')}</details>`).join('')||empty(libraryView==='favorites'?'No favorites yet.':state.libraryRefreshing?'Finding more in your AI apps…':'No matching items.',state.libraryRefreshing?'Local results are available while the catalogs load.':'Try another topic or search.');
+  const typed=state.library.filter(item=>Object.hasOwn(libraryKinds,libraryType(item))&&(workFilter==='all'||libraryType(item)===workFilter));
+  const topics=[...new Set(typed.map(item=>item.category).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+  const topic=$('#library-topic');
+  topic.innerHTML='<option value="">All topics</option>'+topics.map(name=>`<option value="${esc(name)}">${esc(name)}</option>`).join('');
+  if(!topics.includes(workCategory))workCategory='';
+  topic.value=workCategory;
+  topic.parentElement.hidden=topics.length<=1;
+  const matches=typed.filter(item=>(!workCategory||item.category===workCategory)&&libraryMatches(item,q)&&(libraryView==='all'||libraryMarked(item,libraryView==='recent'?'recent':'favorites')));
+  if(libraryView==='recent'){
+    const recent=libraryPrefs().recent,rank=item=>recent.findIndex(key=>key===item.key||item.aliases?.includes(key));
+    matches.sort((a,b)=>rank(a)-rank(b));
+  }else matches.sort((a,b)=>a.title.localeCompare(b.title));
+  const label=libraryView==='recent'?'Recently opened':libraryView==='favorites'?'Favorites':workCategory||libraryKinds[workFilter]||'All items';
+  $('#work-category-title').textContent=label+' ('+matches.length+')';
+  const clear=$('#work-all-topics');clear.hidden=libraryView!=='recent'||!libraryPrefs().recent.length;clear.textContent='Clear recent';
+  $('#work-list').innerHTML=matches.length
+    ?matches.slice(0,libraryLimit).map(methodRow).join('')+(matches.length>libraryLimit?'<button type="button" class="secondary" id="library-more">Show more</button>':'')
+    :empty(libraryView==='favorites'?'No matching favorites':libraryView==='recent'?'No recently opened matches':'No matching items',state.libraryRefreshing?'Checking connected apps…':'Try another topic, type, or search.');
 }
 
 function addLocation() {
@@ -2386,7 +2393,7 @@ document.addEventListener('click',event=>attempt(async()=>{
   if(button.id==='file-more'){state.fileLimit=(state.fileLimit||100)+100;renderFiles();}
   if(button.dataset.filelocation){state.fileLimit=100;fileLocation=button.dataset.filelocation;$('#file-all-locations').hidden=false;document.querySelectorAll('[data-filelocation]').forEach(b=>b.classList.toggle('active',b===button));renderFiles();}
   if(button.id==='file-all-locations'){fileLocation='';button.hidden=true;document.querySelectorAll('[data-filelocation]').forEach(b=>b.classList.remove('active'));renderFiles();}
-  if(button.dataset.libraryKind){const query=$('#quick-work-search')?.value||'';workFilter=button.dataset.libraryKind;libraryView='all';workCategory='';state.view='work';await render();$('#work-search').value=query;renderWork();}
+  if(button.dataset.libraryKind){libraryLimit=60;const query=$('#quick-work-search')?.value||'';workFilter=button.dataset.libraryKind;libraryView='all';workCategory='';state.view='work';await render();$('#work-search').value=query;renderWork();}
   if(button.dataset.workcategory){workCategory=button.dataset.workcategory;if(state.view!=='work'){state.view='work';workFilter='Workflow';await render();}else renderWork();}
   if(button.id==='work-all-topics'){if(libraryView==='recent'){await saveLibrary({...libraryPrefs(),recent:[]});quickMethods();}workCategory='';renderWork();}
   if(button.id==='schedule-retry-models')await loadScheduleModels(true);
@@ -2443,9 +2450,10 @@ document.addEventListener('click',event=>attempt(async()=>{
   if(button.dataset.libraryDocument)await openFileWorkspace('library/'+button.dataset.libraryDocument,button.dataset.option||'');
   if(button.id==='version')await showComponents();
   if(button.dataset.filetype) {state.fileLimit=100;fileFilter=button.dataset.filetype;renderQuickFiles();renderFiles();}
-  if(button.dataset.workfilter) { workFilter=button.dataset.workfilter;workCategory=''; button.parentElement.querySelectorAll('button').forEach(b=>b.classList.toggle('active',b===button)); renderWork(); }
+  if(button.id==='library-more'){libraryLimit+=60;renderWork();}
+  if(button.dataset.workfilter) { libraryLimit=60;workFilter=button.dataset.workfilter;workCategory=''; button.parentElement.querySelectorAll('button').forEach(b=>b.classList.toggle('active',b===button)); renderWork(); }
   if(button.id==='library-connections')await showApiConnections('');
-  if(button.hasAttribute('data-library-help'))details('Your library','<p>Workflows, recipes and skills provide reusable guidance. Tools and plugins show what your AI apps list, including disabled or unconfirmed items. Your AI chooses which capabilities to use.</p><p>Skill names, descriptions and requirements come from their SKILL.md files or the AI app’s catalog. App labels show where each skill was discovered; they do not guarantee every dependency is installed.</p><p>Add to chat attaches the selected guidance to your draft. Describe the outcome you want before sending. Show defaults to All items. Recently opened lists the last items you inspected. Favorites narrows this Library list to your starred items. File favorites use the same workspace collection; workspace search can show favorite files and guidance together.</p>'+((state.libraryNotes||[]).length?'<h3>Catalog status</h3><ul>'+state.libraryNotes.map(note=>'<li>'+esc(note)+'</li>').join('')+'</ul>':''));
+  if(button.hasAttribute('data-library-help'))details('Your library','<p>Playbooks help you choose an approach to a job. Workflows, recipes and skills provide reusable guidance. Tools and plugins show what your AI apps list, including disabled or unconfirmed items. Your AI chooses which capabilities to use.</p><p>Skill names, descriptions and requirements come from their SKILL.md files or the AI app’s catalog. App labels show where each skill was discovered; they do not guarantee every dependency is installed.</p><p>Add to chat attaches the selected guidance to your draft. Describe the outcome you want before sending. Show defaults to All items. Recently opened lists the last items you inspected. Favorites narrows this Library list to your starred items. File favorites use the same workspace collection; workspace search can show favorite files and guidance together.</p>'+((state.libraryNotes||[]).length?'<h3>Catalog status</h3><ul>'+state.libraryNotes.map(note=>'<li>'+esc(note)+'</li>').join('')+'</ul>':''));
   if(button.dataset.libraryFavorite){const wasList=!!button.closest('#work-list'),item=state.library.find(r=>r.key===button.dataset.libraryFavorite);if(!item)return;const prefs=libraryPrefs(),marked=libraryMarked(item),keys=[item.key,...(item.aliases||[])];const favorites=prefs.favorites.filter(k=>!keys.includes(k));if(!marked)favorites.push(item.key);await saveLibrary({...prefs,favorites});quickMethods();if(state.view==='work')renderWork();button.setAttribute('aria-pressed',String(!marked));button.textContent=marked?'☆':'★';button.setAttribute('aria-label',`${marked?'Add':'Remove'} ${item.title} ${marked?'to':'from'} favorites`);button.title=marked?'Add to favorites':'Remove from favorites';if(wasList)($('#work-list [data-library-favorite="'+CSS.escape(item.key)+'"]')||$('#work-search'))?.focus({preventScroll:true});}
   if(button.id==='make-skill')prompt('Help me turn the useful work in this conversation into a reusable skill. First check what was actually completed and which parts are worth reusing. Keep business facts and results in AURA; reference them rather than copying them into the skill. Check for an existing skill before creating another. Use this AI app’s normal skill creation guidance, include only necessary supporting files, and explain any requirements. Ask me one short question if the scope is unclear.');
   if(button.dataset.method)await openLibrary(button.dataset.method);
@@ -2573,7 +2581,7 @@ document.addEventListener('click',event=>attempt(async()=>{
   if(button.id==='refresh') {await refresh();button.textContent='Reloaded';setTimeout(()=>{if(button.isConnected)button.textContent='Reload Workspace';},2000);}
   if(button.id==='location') { await navigator.clipboard.writeText(state.data.workspace); if($('#share-location-status'))$('#share-location-status').textContent='Copied';else notice('Folder location copied.'); }
 }));
-document.addEventListener('input',event=>{ if(event.target.id==='quick-work-search')quickMethods(); if(['quick-memory-search','record-search'].includes(event.target.id)){state.memoryQuery=event.target.value;renderMemory();} if(['quick-file-search','file-search'].includes(event.target.id)){state.fileQuery=event.target.value;state.fileLimit=100;renderQuickFiles();renderFiles();} if(['quick-schedule-search','schedule-search'].includes(event.target.id)){state.scheduleQuery=event.target.value;renderSchedules();} if(event.target.id==='work-search')renderWork();if(['task-time','task-every','task-custom'].includes(event.target.id))updateTaskTiming(); });
+document.addEventListener('input',event=>{ if(event.target.id==='quick-work-search')quickMethods(); if(['quick-memory-search','record-search'].includes(event.target.id)){state.memoryQuery=event.target.value;renderMemory();} if(['quick-file-search','file-search'].includes(event.target.id)){state.fileQuery=event.target.value;state.fileLimit=100;renderQuickFiles();renderFiles();} if(['quick-schedule-search','schedule-search'].includes(event.target.id)){state.scheduleQuery=event.target.value;renderSchedules();} if(event.target.id==='work-search'){libraryLimit=60;renderWork();}if(['task-time','task-every','task-custom'].includes(event.target.id))updateTaskTiming(); });
 document.addEventListener('submit',event=>{
   event.preventDefault();
   attempt(async()=>{
@@ -2700,7 +2708,7 @@ attempt(refresh);
 attempt(syncUpdates);
 const updateTimer=setInterval(()=>{if(!state.closed)syncUpdates();},2000);
 document.addEventListener('input',()=>{state.lastEdit=Date.now();});
-document.addEventListener('change',event=>{if(event.target.id==='chat-project-filter'){state.chatProjectFilter=event.target.value;attempt(()=>showChats(!!state.chatArchiveView));}if(event.target.id==='memory-goal-scope'){state.memoryGoalScope=event.target.value;renderMemory();}if(event.target.id==='library-view'){libraryView=event.target.value;workCategory='';renderWork();}});
+document.addEventListener('change',event=>{if(event.target.id==='chat-project-filter'){state.chatProjectFilter=event.target.value;attempt(()=>showChats(!!state.chatArchiveView));}if(event.target.id==='memory-goal-scope'){state.memoryGoalScope=event.target.value;renderMemory();}if(event.target.id==='library-topic'){workCategory=event.target.value;libraryLimit=60;renderWork();}if(event.target.id==='library-view'){libraryView=event.target.value;libraryLimit=60;renderWork();}});
 window.addEventListener('beforeunload',rememberChatDraft);
 
 const usageAlertTimer=setInterval(()=>{if(!document.hidden)checkUsageAlerts();},300000);
@@ -3274,7 +3282,6 @@ async function openPersonalizationChat(){
 }
 document.addEventListener('click',event=>{if(event.target.closest('#personalization-chat'))attempt(openPersonalizationChat);});
 
-document.addEventListener('toggle',event=>{const group=event.target;if(group.matches?.('#work-list details[data-library-group]')&&group.isConnected){state.libraryExpanded??={};state.libraryExpanded[group.dataset.libraryGroup]=group.open;}},true);
 async function openContextChat(){
   if(!state.data.connection.connected){openConnection(true,'connect');notice('Connect your AI to add business context.');return;}
   const root=state.data.workspace,business=state.business,result=await api('/api/chats/context',{business});

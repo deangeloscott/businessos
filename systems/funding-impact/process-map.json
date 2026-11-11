@@ -10,6 +10,6 @@
     {"id": "volunteers", "entry_workflow": "funding.supporters.volunteers", "result": "Recruit, welcome and keep volunteers."},
     {"id": "impact-measurement", "entry_workflow": "funding.impact.measurement", "result": "Define the outcomes that matter and how to measure them."},
     {"id": "impact-report", "entry_workflow": "funding.impact.report", "result": "Report impact honestly to supporters and funders."},
-    {"id": "investment", "entry_workflow": "funding.investment.raise", "result": "Run an investment raise from preparation to close."}
+    {"id": "investment", "entry_workflow": "funding.investment.raise", "result": "Choose a financing route and prepare the lender or investor request through funding."}
   ]
 }

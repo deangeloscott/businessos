@@ -177,7 +177,7 @@ Secure grants, donations, volunteers and investment, and show honestly what the 
 - **Grant Funding** — Find grants the organization is eligible for and likely to win, write funder-aligned applications from verified facts, manage awards, and learn from each decision. — common entry `funding.grants.prospecting`
 - **Supporter Fundraising** — Raise and keep support from individual donors, members and volunteers through honest appeals, prompt thanks, reporting back and relationship building. — common entry `funding.supporters.stewardship`
 - **Impact Measurement and Reporting** — Decide which outcomes show the difference the work makes, measure them practically, and report results honestly to supporters and funders. — common entry `funding.impact.measurement`
-- **Investor Fundraising** — Decide whether and how much to raise, prepare a defensible story and materials, target fitting investors, and run a focused raise through diligence and close. — common entry `funding.investment.raise`
+- **Business Financing and Investor Fundraising** — Choose a financing route, prepare the evidence a lender or investor needs, and follow the request through diligence, agreement and funding. — common entry `funding.investment.raise`
 
 ### Common Workflows
 
@@ -192,7 +192,7 @@ Secure grants, donations, volunteers and investment, and show honestly what the 
 | Volunteers | Recruit, welcome and keep volunteers. | `funding.supporters.volunteers` |
 | Impact Measurement | Define the outcomes that matter and how to measure them. | `funding.impact.measurement` |
 | Impact Report | Report impact honestly to supporters and funders. | `funding.impact.report` |
-| Investment | Run an investment raise from preparation to close. | `funding.investment.raise` |
+| Investment | Choose a financing route and prepare the lender or investor request through funding. | `funding.investment.raise` |
 
 ## Industry Intelligence
 

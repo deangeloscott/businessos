@@ -35,7 +35,7 @@ Use for a planned appeal or campaign. For thanking and keeping existing donors, 
 3. [AI] Write donor-centered copy: the donor as the one who makes the difference ("you" more than "we"), one true story used with permission, the specific need and what a gift will do, an explicit ask with suggested amounts where appropriate, and an easy way to give. Use the Content and Marketing knowledge areas for craft and channel-specific formats.
 4. [HYBRID] Segment where it matters: first-time versus repeat donors, lapsed donors, monthly donors, volunteers and major donors deserve different wording and asks. Respect communication preferences.
 5. [AI] Plan the sequence across channels and reminders, and the thank-you that follows each gift (hand off to Donor Stewardship).
-6. [HYBRID] Reject invented urgency, fake matching gifts, guilt or exaggerated need. Every claim must be true.
+6. [HYBRID] Hand over the send-ready appeal in the requested channel, including the giving link or a marked place for the person to supply it. Reject invented urgency, fake matching gifts, guilt or exaggerated need. Every claim must be true.
 7. [DETERMINISTIC] After the campaign, record results by segment and channel (response, average gift, new and returning donors) and preserve Learning when supported.
 
 ## Proportionate Scope

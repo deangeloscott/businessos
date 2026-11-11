@@ -15,6 +15,20 @@ import workspace_storage as storage
 
 
 def main():
+    from workspace_ui import library as builtins
+    from operating_knowledge import installed_playbooks
+    rows=library.organize(builtins())
+    keys={r['key'] for r in rows}
+    guides={r['id']:r for r in rows if r.get('subtype')=='Playbook'}
+    assert set(guides)=={p['id'] for p in installed_playbooks()}
+    grant=guides['grant-funding']
+    assert grant['category']=='Funding & Impact' and len(grant['routes'])==4
+    assert all(route['key'] in keys for route in grant['routes'])
+    from workspace_context import resolve
+    carried=resolve(None,'example',[{'kind':'library','id':grant['key']}],sources={'library':rows})
+    assert all(route['title'] in carried['text'] for route in grant['routes'])
+    assert str(ROOT/'systems/funding-impact/workflows/grants/application/CONTEXT.md') in carried['text']
+
     with tempfile.TemporaryDirectory(prefix='aura-library-') as temp:
         base=Path(temp);home=base/'home';workspace=base/'workspace'
         def package(folder,script='first'):

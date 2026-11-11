@@ -12,7 +12,10 @@ Find grants the organization is eligible for and likely to win, write funder-ali
 
 *Try:* “Find grants we qualify for and help us apply to the best ones.”
 
-**Common entry Workflow:** [Grant Prospecting and Fit](../../systems/funding-impact/workflows/grants/prospecting/CONTEXT.md)
+- [Find grants](../../systems/funding-impact/workflows/grants/prospecting/CONTEXT.md)
+- [Prepare a case for support](../../systems/funding-impact/workflows/case/case-for-support/CONTEXT.md)
+- [Write an application](../../systems/funding-impact/workflows/grants/application/CONTEXT.md)
+- [Manage an award](../../systems/funding-impact/workflows/grants/award-management/CONTEXT.md)
 
 ### Supporter Fundraising
 
@@ -30,13 +33,13 @@ Decide which outcomes show the difference the work makes, measure them practical
 
 **Common entry Workflow:** [Impact Measurement](../../systems/funding-impact/workflows/impact/measurement/CONTEXT.md)
 
-### Investor Fundraising
+### Business Financing and Investor Fundraising
 
-Decide whether and how much to raise, prepare a defensible story and materials, target fitting investors, and run a focused raise through diligence and close.
+Choose a financing route, prepare the evidence a lender or investor needs, and follow the request through diligence, agreement and funding.
 
 *Try:* “Help us prepare for and run our seed round.”
 
-**Common entry Workflow:** [Investor Fundraising](../../systems/funding-impact/workflows/investment/raise/CONTEXT.md)
+**Common entry Workflow:** [Business Financing and Investor Fundraising](../../systems/funding-impact/workflows/investment/raise/CONTEXT.md)
 
 ## Common Workflows
 
@@ -51,7 +54,7 @@ These reusable procedures may support one or more Playbooks or be used independe
 - **[Volunteer Recruitment and Retention](../../systems/funding-impact/workflows/supporters/volunteers/CONTEXT.md)** — Recruit, welcome and keep volunteers.
 - **[Impact Measurement](../../systems/funding-impact/workflows/impact/measurement/CONTEXT.md)** — Define the outcomes that matter and how to measure them.
 - **[Impact Report](../../systems/funding-impact/workflows/impact/report/CONTEXT.md)** — Report impact honestly to supporters and funders.
-- **[Investor Fundraising](../../systems/funding-impact/workflows/investment/raise/CONTEXT.md)** — Run an investment raise from preparation to close.
+- **[Business Financing and Investor Fundraising](../../systems/funding-impact/workflows/investment/raise/CONTEXT.md)** — Choose a financing route and prepare the lender or investor request through funding.
 ## Working principle
 
 Use the fewest instructions and Workflows necessary to repeatedly achieve the desired outcome at the required truth and quality standard. Preserve non-obvious expertise, evidence requirements, and real constraints; let the capable model/harness choose implementation details, tools, providers, external Skills, and orchestration unless the implementation itself matters.
