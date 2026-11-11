@@ -31,18 +31,26 @@ def handler_for(app):
             self.send_response(status)
             self.send_header('Content-Type', content_type)
             self.send_header('Content-Length', str(len(body)))
-            self.send_header('Cache-Control', 'no-store')
+            self.send_header('Cache-Control', (headers or {}).get('Cache-Control','no-store'))
             self.send_header('X-Content-Type-Options', 'nosniff')
             self.send_header('Referrer-Policy', 'no-referrer')
             self.send_header('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self' 'nonce-"+app.token+"'; style-src-attr 'unsafe-inline'; worker-src 'self' blob:; font-src 'self' blob: data:; img-src 'self' blob: data:; media-src 'self' blob:; connect-src 'self'; object-src 'none'; frame-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'")
             for key, value in (headers or {}).items():
-                self.send_header(key, value)
+                if key!='Cache-Control':self.send_header(key, value)
             try:
                 self.end_headers()
                 self.wfile.write(body)
             except (BrokenPipeError,ConnectionAbortedError,ConnectionResetError):
                 # The page stopped waiting (for example, a terminal tab opened and its shared wait restarted). Nothing to report.
                 self.close_connection=True
+
+        def send_static(self,path,content_type):
+            """Interface files: the browser keeps a copy and asks whether it changed; unchanged files cost a tiny reply.
+            The page itself is never cached, because it carries this session's token."""
+            stat=Path(path).stat();etag=f'"{stat.st_mtime_ns:x}-{stat.st_size:x}"'
+            if self.headers.get('If-None-Match')==etag:
+                self.send_response(304);self.send_header('ETag',etag);self.send_header('Cache-Control','no-cache');self.end_headers();return
+            self.send(200,Path(path).read_bytes(),content_type,{'ETag':etag,'Cache-Control':'no-cache'})
 
         def failure(self,error,status=400):
             from _process_errors import redact
@@ -135,13 +143,13 @@ def handler_for(app):
                     self.send(200, page.encode(), 'text/html; charset=utf-8',{'Set-Cookie':f'aura_media_{self.server.server_port}={app.media_token}; HttpOnly; SameSite=Strict; Path=/api/media'})
                 elif route in {'/app.js', '/style.css'}:
                     path = app.static / route[1:]
-                    self.send(200, path.read_bytes(), 'text/javascript; charset=utf-8' if path.suffix == '.js' else 'text/css; charset=utf-8')
+                    self.send_static(path, 'text/javascript; charset=utf-8' if path.suffix == '.js' else 'text/css; charset=utf-8')
                 elif route in {'/file-editor.js','/file-editor.css','/workspace-work.js','/workspace-continuity.js','/workspace-compose.js','/workspace-insight.js','/workspace-projects.js','/workspace-views.js','/workspace-focus.js','/workspace-terminal.js'} or route.startswith('/vendor/'):
                     relative=Path(route.lstrip('/'))
                     path=(STATIC/relative).resolve()
                     base=(STATIC/'vendor').resolve() if route.startswith('/vendor/') else STATIC.resolve()
                     if not path.is_relative_to(base) or private_path(path.relative_to(base)) or not path.is_file():raise ValueError('This interface component is unavailable.')
-                    self.send(200,path.read_bytes(),mimetypes.guess_type(path.name)[0] or 'application/octet-stream')
+                    self.send_static(path,mimetypes.guess_type(path.name)[0] or 'application/octet-stream')
                 elif route.startswith('/api/media/map/'):
                     # Viewed map imagery only; images can't send the app header, so the media cookie authorizes them.
                     match=re.fullmatch(r'/api/media/map/(\d{1,2})/(\d{1,7})/(\d{1,7})\.png',route)

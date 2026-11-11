@@ -402,7 +402,7 @@ Open dialogs contain scrolling so their background page stays still. Inner lists
 
 Open a file from Files & media, a chat file link, or a supported Library document to use the same file preview dialog. Preview stays read-only until you choose Edit. Expand gives the file the center area; Reduce returns to the dialog.
 
-- Text, Markdown and skill documents: UTF-8 text editing, undo, find, and Markdown preview. Limit: 2 MB.
+- Text, Markdown and skill documents: UTF-8 text editing, undo, find, and Markdown preview. Limit: 2 MB. Larger text, CSV and log files preview their first 256 KB read-only; open them in another app to see or edit all of them.
 - CSV/TSV: edit cells, add rows/columns, remove selected rows, and sort. All rows, including headers, remain data. The grid is a table editor, without spreadsheet formula evaluation. Limit: 100,000 cells and 500 columns; larger supported text files use text editing. Preview shows up to 200 rows.
 - PNG, JPEG and WebP: crop, rotate and resize. Save as a new version is the image default. Other browser-supported images, including SVG, remain previews. SVGs are served sandboxed, so a script inside one never runs as AURA.
 - Web pages (HTML) edit as text and open in your own browser (Open in → Your browser); AURA does not render web pages itself.

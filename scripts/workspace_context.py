@@ -2,6 +2,7 @@
 from pathlib import Path
 import argparse
 import hashlib
+import os
 import json
 import re
 import time
@@ -91,14 +92,16 @@ def changes(previous,current):
 
 def recent_changes(app,bid,since):
     if not since:return []
+    from _common import walk_files,instance_dir
+    changed={os.path.normcase(raw):st.st_mtime for raw,st,_ in walk_files(instance_dir(bid)) if st.st_mtime>since}
+    if not changed:return []
+    # Only when something changed are the matching records read, to name them.
     from workspace_ui import records
     rows=[]
     for r in records(bid)[0]:
         if r['type'] in {'Asset','Objective','ChangeEvent','Run','AttentionItem','PlatformChange'}:continue
-        path=workspace_root()/r['path']
-        try:modified=path.stat().st_mtime
-        except FileNotFoundError:continue
-        if modified>since:rows.append({'label':r['title'],'path':str(path),'at':modified})
+        path=workspace_root()/r['path'];modified=changed.get(os.path.normcase(str(path)))
+        if modified is not None:rows.append({'label':r['title'],'path':str(path),'at':modified})
     return sorted(rows,key=lambda r:r['at'],reverse=True)[:6]
 
 

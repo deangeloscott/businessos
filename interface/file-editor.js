@@ -121,12 +121,13 @@ async function render(view){
   }else if(view.editing&&info.kind==='table')await editTable(view,area);
   else if(view.editing&&info.kind==='image')await editImage(view,area);
   else if(info.kind==='text')area.innerHTML=/\.m(?:d|arkdown)$/i.test(info.name)?`<article class="file-markdown">${view.ctx.markdown(view.ctx.ref.startsWith('library/')?(view.edit.text||'').replace(/^---\r?\n[\s\S]*?\r?\n---(?:\r?\n|$)/,'').replace(view.ctx.hideTitle?/^# [^\n]+\n+/:/$^/,''):view.edit.text||'')}</article>`:`<pre>${esc(view.edit.text||'')}</pre>`;
-  else if(info.kind==='table')area.innerHTML=`<div class="file-table-preview"><table>${(view.edit.rows||[]).slice(0,200).map(row=>`<tr>${row.map(cell=>`<td>${esc(cell)}</td>`).join('')}</tr>`).join('')}</table></div>${view.edit.rows?.length>200?'<p>Previewing the first 200 rows. Choose Edit to see the full table.</p>':''}`;
+  else if(info.kind==='table')area.innerHTML=`<div class="file-table-preview"><table>${(view.edit.rows||[]).slice(0,200).map(row=>`<tr>${row.map(cell=>`<td>${esc(cell)}</td>`).join('')}</tr>`).join('')}</table></div>${info.partial?'':view.edit.rows?.length>200?'<p>Previewing the first 200 rows. Choose Edit to see the full table.</p>':''}`;
   else if(info.kind==='image')await previewImage(view,area);
   else if(info.kind==='pdf')await previewPdf(view,area);
   else if(info.kind==='media'){
     const audio=/\.(mp3|wav|ogg|m4a|aac|flac|opus)$/i.test(info.name),element=document.createElement(audio?'audio':'video');element.controls=true;element.preload='metadata';element.src=media(view);element.className='media-preview';area.replaceChildren(element);
   }else area.innerHTML=`<div class="empty"><strong>${info.kind==='office'?'Open this file in an editor':'Preview unavailable'}</strong><p>${info.kind==='office'?'Choose an editor with Open in above.':''}</p></div>`;
+  if(info.partial&&!view.editing&&(info.kind==='text'||info.kind==='table'))area.insertAdjacentHTML('beforeend',`<p class="file-partial-note">Showing the start of this ${Math.max(1,Math.round(info.bytes/1048576))} MB file. Open it in another app to see all of it.</p>`);
 }
 async function editTable(view,area){
   css('/vendor/data-grid.css');const {Tabulator}=await import('/vendor/data-grid.js');if(!mounted(view,area))return;

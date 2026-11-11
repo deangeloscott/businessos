@@ -29,6 +29,8 @@ python scripts/workspace_collections.py show --workspace /path/to/workspace --bu
 python scripts/workspace_collections.py show --workspace /path/to/workspace --business-id example-studio --id COLLECTION_ID --item ITEM_ID
 ```
 
+`show` prints a compact view (entries, findings with trimmed statements, latest check). Add `--full` for every field, including interface details.
+
 Use `configure` with the current `revision` to change a collection’s name, purpose, expected `source_refs`, `project_refs` or `source_copies`. The UI’s **Edit collection** changes its name, purpose and how sources are kept: `quotes` (default: a stable link plus the exact short passages that support a finding) or `full` (also a copy of the whole source). Fragile sources are copied either way. A run cannot silently shrink the configured source coverage; adjust the collection deliberately when its scope changes.
 
 The create result returns a stable collection ID and current revision. Repeating the same create key reuses its existing collection. Before writing, read the latest revision. An apply payload looks like:

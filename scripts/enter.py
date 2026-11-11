@@ -10,7 +10,7 @@ tools, Skills, orchestration, and execution environment.
 from pathlib import Path
 import argparse,json,os
 
-from _common import PRODUCT_ROOT,workspace_root,resolve_business,object_index,storage_ref,load_registry,describe_object,resolve_focus
+from _common import PRODUCT_ROOT,workspace_root,resolve_business,object_index,storage_ref,load_registry,describe_object,resolve_focus,index_snapshot
 from find_playbooks import find_candidates as find_playbook_candidates
 from find_workflows import find_candidates as find_workflow_candidates
 from operating_knowledge import get_playbook
@@ -87,7 +87,12 @@ def _workflow_context(business_id,workflow_id,focus,operator_ref,team_ref,role_r
     return build_plan(business_id,workflow_id,focus=focus,operator_ref=operator_ref,team_ref=team_ref,role_ref=role_ref,task_preferences=task_preferences,output_type=output_type,channel=channel),build_process_plan(workflow_id=workflow_id)
 
 
-def prepare_work(task,business_id=None,workspace=None,focus=None,operator_ref=None,team_ref=None,role_ref=None,task_preferences=None,output_type=None,channel=None,selected_playbook_id=None,selected_workflow_id=None,saved_work_limit=6,saved_work_offset=0):
+def prepare_work(*args,**kwargs):
+    """Every lookup inside shares one read of the business's records."""
+    with index_snapshot():return _prepare_work(*args,**kwargs)
+
+
+def _prepare_work(task,business_id=None,workspace=None,focus=None,operator_ref=None,team_ref=None,role_ref=None,task_preferences=None,output_type=None,channel=None,selected_playbook_id=None,selected_workflow_id=None,saved_work_limit=6,saved_work_offset=0):
     task=(task or '').strip()
     if not task:return {'format_version':'4.2','status':'needs_input','missing':['request']}
     if not 1<=saved_work_limit<=100 or saved_work_offset<0:raise ValueError('saved_work_limit must be 1..100 and saved_work_offset nonnegative')

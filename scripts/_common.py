@@ -155,14 +155,28 @@ def workspace_selection_source():
     return 'default_product_root'
 
 
+_LINK_CACHE={}
+
+
 def _read_workspace_link():
     p=workspace_config_path()
-    if not p.exists(): return {}
+    try:stamp=p.stat();key=(str(p),stamp.st_mtime_ns,stamp.st_size)
+    except OSError:return {}
+    if key in _LINK_CACHE:return dict(_LINK_CACHE[key])
     try:
         data=json.loads(p.read_text(encoding='utf-8'))
     except Exception as e:
         raise ValueError(f'Invalid BusinessOS workspace config {p}: {e}')
-    return data if isinstance(data,dict) else {}
+    data=data if isinstance(data,dict) else {}
+    _LINK_CACHE.clear();_LINK_CACHE[key]=data
+    return dict(data)
+
+
+@functools.lru_cache(maxsize=256)
+def _real(path):
+    """A folder's real location, worked out once. Windows makes this a comparatively slow system call;
+    AURA asks it for the same few roots constantly, so the answer is kept for the life of the process."""
+    return Path(path).resolve()
 
 
 def _raw_workspace_root():
@@ -171,7 +185,7 @@ def _raw_workspace_root():
     raw=os.environ.get(_WORKSPACE_ENV) or _read_workspace_link().get('workspace_root')
     if not raw: return PRODUCT_ROOT
     p=Path(os.path.expanduser(os.path.expandvars(str(raw))))
-    return p.resolve() if p.is_absolute() else (PRODUCT_ROOT/p).resolve()
+    return _real(str(p)) if p.is_absolute() else _real(str(PRODUCT_ROOT/p))
 
 
 _BasePath=type(Path())
@@ -185,11 +199,11 @@ class WorkspacePath(_BasePath):
     """
     def relative_to(self, other, *args, **kwargs):
         try:
-            other_resolved=Path(other).resolve()
-            ws=Path(_raw_workspace_root()).resolve()
-            me=Path(self).resolve()
-            if other_resolved==PRODUCT_ROOT.resolve() and ws!=PRODUCT_ROOT.resolve() and me.is_relative_to(ws):
-                return me.relative_to(ws)
+            product=_real(str(PRODUCT_ROOT))
+            if _real(str(other))==product:
+                ws=_real(str(_raw_workspace_root()))
+                me=_location(self)
+                if ws!=product and me.is_relative_to(ws):return me.relative_to(ws)
         except Exception:
             pass
         return super().relative_to(other,*args,**kwargs)
@@ -206,7 +220,7 @@ class BusinessOSRoot(_BasePath):
     def __truediv__(self, key):
         try:
             kp=Path(key)
-            if Path(self).resolve()==PRODUCT_ROOT.resolve() and not kp.is_absolute() and kp.parts:
+            if _real(str(self))==_real(str(PRODUCT_ROOT)) and not kp.is_absolute() and kp.parts:
                 first=kp.parts[0]
                 # The packaged business template is product source, not active workspace state.
                 template_ref=(first=='instances' and len(kp.parts)>1 and kp.parts[1]=='_template')
@@ -221,7 +235,7 @@ ROOT=BusinessOSRoot(PRODUCT_ROOT)
 
 
 def workspace_root(): return WorkspacePath(_raw_workspace_root())
-def workspace_is_external(): return workspace_root().resolve()!=PRODUCT_ROOT.resolve()
+def workspace_is_external(): return _real(str(_raw_workspace_root()))!=_real(str(PRODUCT_ROOT))
 def instances_root(): return workspace_root()/'instances'
 def runtime_root(): return workspace_root()/'runtime'
 def knowledge_root(): return workspace_root()/'knowledge'
@@ -318,8 +332,30 @@ def _write_json_atomic(path,data):
     return p
 
 
+def _under(text,root):
+    """The part of a normalized absolute path below a root, or None. Plain string work; no system call."""
+    t,r=os.path.normcase(text),os.path.normcase(root.rstrip('\\/'))
+    if t==r:return ''
+    return text[len(r)+1:] if t.startswith(r+os.sep) else None
+
+
+def _location(path):
+    """An absolute path inside a known root, without a system call; anything else is resolved properly."""
+    text=os.path.normpath(str(path))
+    if os.path.isabs(text):
+        for root in (_real(str(_raw_workspace_root())),_real(str(PRODUCT_ROOT))):
+            if _under(text,str(root)) is not None:return Path(text)
+    return Path(path).resolve()
+
+
 def storage_ref(path):
-    p=Path(path).resolve(); ws=workspace_root().resolve(); prod=PRODUCT_ROOT.resolve()
+    text=os.path.normpath(str(path))
+    if os.path.isabs(text):
+        rel=_under(text,str(_real(str(_raw_workspace_root()))))
+        if rel is not None:return rel.replace(os.sep,'/') or '.'
+        rel=_under(text,str(_real(str(PRODUCT_ROOT))))
+        if rel is not None:return 'product:'+(rel.replace(os.sep,'/') or '.')
+    p=_location(path); ws=_real(str(_raw_workspace_root())); prod=_real(str(PRODUCT_ROOT))
     if p.is_relative_to(ws): return p.relative_to(ws).as_posix()
     if p.is_relative_to(prod): return 'product:'+p.relative_to(prod).as_posix()
     return str(p)
@@ -344,10 +380,22 @@ def read_frontmatter(path):
     if end<0: raise ValueError(f'Unclosed frontmatter: {path}')
     meta=yaml.safe_load(text[4:end]) or {}
     return meta,text[end+5:]
+@functools.lru_cache(maxsize=1)
+def _workflow_files():
+    return tuple(sorted([p for p in PRODUCT_ROOT.rglob('CONTEXT.md') if '/workflows/' in p.as_posix()]))
+
+
 def workflow_files():
-    return sorted([p for p in PRODUCT_ROOT.rglob('CONTEXT.md') if '/workflows/' in p.as_posix()])
+    """Product workflow files; finding them walks the product folder, so it happens once per process."""
+    return list(_workflow_files())
+@functools.lru_cache(maxsize=1)
+def _schema_files():
+    return tuple(sorted(PRODUCT_ROOT.rglob('*.schema.json')))
+
+
 def schemas():
-    return sorted(PRODUCT_ROOT.rglob('*.schema.json'))
+    """Product schema files. Finding them walks the whole product folder, so it happens once per process."""
+    return list(_schema_files())
 def load_registry():
     p=PRODUCT_ROOT/'generated/workflow-registry.json'
     if not p.exists(): raise SystemExit('Run scripts/generate_registry.py first')
@@ -387,6 +435,49 @@ def selector_type(sel):
 def normalize_selector(sel):
     if isinstance(sel,dict): return sel
     return {'type':sel}
+_TEXT_CACHE={}
+_LINKED=set()
+
+
+def walk_files(base):
+    """Files under a folder with sizes and times from the directory listing itself (no extra system call per file
+    on Windows). Like rglob, symlinked folders are not entered; junctions are. Anything reached through a link is
+    remembered so callers can still check where it really lives."""
+    out=[];stack=[(str(base),False)]
+    while stack:
+        folder,linked=stack.pop()
+        try:
+            with os.scandir(folder) as it:entries=list(it)
+        except OSError:continue
+        for entry in entries:
+            try:
+                link=entry.is_symlink() or (hasattr(entry,'is_junction') and entry.is_junction())
+                if entry.is_dir(follow_symlinks=False):stack.append((entry.path,linked or link))
+                elif entry.is_file():
+                    if linked or link:_LINKED.add(os.path.normcase(entry.path))
+                    out.append((entry.path,entry.stat(),linked or link))
+            except OSError:continue
+    out.sort(key=lambda row:row[0])
+    return out
+
+
+def is_linked(path):
+    """Whether a walked file was reached through a symlink or junction, so its real location needs checking."""
+    return os.path.normcase(str(path)) in _LINKED
+
+
+def read_text_cached(path,stat_result=None):
+    """A record file's text, kept until its size or modified time changes. Callers parse it themselves,
+    so no one can change another caller's objects."""
+    key=str(path);st=stat_result or os.stat(key)
+    hit=_TEXT_CACHE.get(key)
+    if hit and hit[0]==st.st_mtime_ns and hit[1]==st.st_size:return hit[2]
+    with open(key,encoding='utf-8') as stream:text=stream.read()
+    if len(_TEXT_CACHE)>60000:_TEXT_CACHE.clear()
+    _TEXT_CACHE[key]=(st.st_mtime_ns,st.st_size,text)
+    return text
+
+
 def iter_instance_objects(business_id,diagnostics=None):
     """Read usable canonical objects; report unreadable canonical locations."""
     from canonical_store import INSTANCE_PATHS
@@ -406,16 +497,18 @@ def iter_instance_objects(business_id,diagnostics=None):
                 if obj.get('business_id')==business_id:out.append((obj,path))
                 else:report(path,'canonical business_id does not match this organization',line)
             elif expected:report(path,'expected canonical object with id, object_type and business_id',line)
-    for path in sorted(base.rglob('*')):
-        if path.suffix not in {'.json','.jsonl'} or not path.is_file():continue
-        rel=path.relative_to(base)
+    base_text=str(base)
+    for raw,stat_result,_ in walk_files(base):
+        if not raw.endswith(('.json','.jsonl')):continue
+        path=WorkspacePath(raw);suffix='.jsonl' if raw.endswith('.jsonl') else '.json'
+        rel=Path(os.path.relpath(raw,base_text))
         expected=rel.as_posix() in locations or rel.parent.as_posix() in locations
         expected=expected or (len(rel.parts)==3 and rel.parts[0]=='history' and rel.parts[1] in INSTANCE_PATHS)
-        try:text=path.read_text(encoding='utf-8')
+        try:text=read_text_cached(raw,stat_result)
         except (OSError,UnicodeError) as exc:
             if expected:report(path,exc)
             continue
-        if path.suffix=='.jsonl':
+        if suffix=='.jsonl':
             for number,line in enumerate(text.splitlines(),1):
                 if not line.strip():continue
                 try:consume(json.loads(line),path,expected,number)
@@ -426,7 +519,35 @@ def iter_instance_objects(business_id,diagnostics=None):
             except json.JSONDecodeError as exc:
                 if expected:report(path,exc)
     return out
+_INDEX_SNAPSHOT=ContextVar('aura_index_snapshot',default=None)
+
+
+@contextmanager
+def index_snapshot():
+    """Within one read-only pass (such as a save's checks), every object_index call for a business shares one read.
+    Callers inside must not change the objects they receive."""
+    token=_INDEX_SNAPSHOT.set({})
+    try:yield
+    finally:_INDEX_SNAPSHOT.reset(token)
+
+
 def object_index(business_id,diagnostics=None):
+    shared=_INDEX_SNAPSHOT.get()
+    key=(str(_raw_workspace_root()),business_id)
+    if shared is not None and key in shared:
+        index,notes=shared[key]
+        if diagnostics is not None:diagnostics.extend(notes)
+        return index
+    notes=[]
+    index=_object_index(business_id,notes)
+    if diagnostics is not None:diagnostics.extend(notes)
+    elif notes:
+        for row in notes:print(f'WARNING {row}',file=sys.stderr)
+    if shared is not None:shared[key]=(index,notes)
+    return index
+
+
+def _object_index(business_id,diagnostics):
     index={}
     for obj,path in iter_instance_objects(business_id,diagnostics):
         if obj['id'] in index:

@@ -11,7 +11,19 @@ from validate_run_completion import run_completion_errors
 from validate_opportunity_grounding import opportunity_grounding_errors
 from validate_attention_lifecycle import lifecycle_errors
 from preference_semantics import preference_semantic_errors
-import argparse,json,collections,re
+import argparse,json,collections,re,functools
+
+@functools.lru_cache(maxsize=1)
+def _schema_validators():
+    """Schemas by title with one ready validator each. Product schemas are read once per process."""
+    out={}
+    for sp in schemas():
+        try:
+            sd=json.loads(sp.read_text(encoding='utf-8'));title=sd.get('title')
+            if title:out[title]=(sd,sp,Draft202012Validator(sd,format_checker=DATE_FORMATS))
+        except Exception:pass
+    return out
+
 
 ALLOWED_AUTHORITIES={'explicit_user','verified_first_party','external_evidence','derived_inference','candidate_strategy','unknown'}
 EXPLICIT_CONTEXT_TYPES={'Business','Market','ProductService','Objective','BusinessClaim','Brand'}
@@ -82,6 +94,11 @@ def _provenance_errors(objects,sources):
 
 
 def validate_business(business_id,require_context=False):
+    # Every check below reads the same records; they share one read instead of each re-reading the workspace.
+    with index_snapshot():return _validate_business(business_id,require_context)
+
+
+def _validate_business(business_id,require_context=False):
     errors=[];warnings=[];base=ROOT/'instances'/business_id
     if not base.exists() or not base.is_dir():return [f'Unknown business: {business_id}'],warnings,{}
     try:inst=json.loads((base/'instance.json').read_text(encoding='utf-8'))
@@ -89,24 +106,23 @@ def validate_business(business_id,require_context=False):
     if inst.get('business_id')!=business_id:errors.append('instance.json business_id mismatch')
     unknown=set(inst.get('enabled_systems',[]))-(installed_modules()-{'core'})
     if unknown:errors.append('instance enables unavailable modules: '+', '.join(sorted(unknown)))
-    schemas_by_title={}
-    for sp in schemas():
-        try:
-            sd=json.loads(sp.read_text(encoding='utf-8'));title=sd.get('title')
-            if title:schemas_by_title[title]=(sd,sp)
-        except Exception:pass
+    schemas_by_title=_schema_validators()
     ids={};counts=collections.Counter();objects=[];sources={}
-    for p in sorted(base.rglob('*.json')):
-        try:data=json.loads(p.read_text(encoding='utf-8'))
-        except Exception as e:errors.append(f'{p.relative_to(ROOT)} invalid JSON: {e}');continue
+    # Locations are worked out as plain strings: the same results as before, without a path lookup per record.
+    base_text=str(base);root_text=str(workspace_root()) if workspace_is_external() else str(PRODUCT_ROOT)
+    for raw,stat_result,_ in walk_files(base):
+        if not raw.endswith('.json'):continue
+        rel=os.path.relpath(raw,root_text)
+        try:data=json.loads(read_text_cached(raw,stat_result))
+        except Exception as e:errors.append(f'{rel} invalid JSON: {e}');continue
         vals=data if isinstance(data,list) else [data]
-        historical='history' in p.relative_to(base).parts
+        historical='history' in os.path.relpath(raw,base_text).split(os.sep)
         for obj in vals:
             if not isinstance(obj,dict) or not obj.get('object_type'):continue
-            typ=obj.get('object_type');oid=obj.get('id');rel=str(p.relative_to(ROOT))
+            typ=obj.get('object_type');oid=obj.get('id')
             if typ not in schemas_by_title:errors.append(f'{rel} unknown object_type {typ}');continue
-            schema,_=schemas_by_title[typ]
-            for e in Draft202012Validator(schema,format_checker=DATE_FORMATS).iter_errors(obj):errors.append(f'{rel} {list(e.path)}: {e.message}')
+            schema,_,check=schemas_by_title[typ]
+            for e in check.iter_errors(obj):errors.append(f'{rel} {list(e.path)}: {e.message}')
             if obj.get('business_id')!=business_id:errors.append(f'{rel} business_id mismatch')
             if oid:
                 if oid in ids:errors.append(f'duplicate object id {oid}: {ids[oid]} and {rel}')

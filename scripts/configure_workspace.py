@@ -2,7 +2,6 @@
 """Configure the active ViralTrac AURA organization workspace without changing product source."""
 from _common import *
 import argparse,json
-from jsonschema import Draft202012Validator
 
 
 def _profile_id(value):
@@ -47,6 +46,7 @@ def configure(root_value,profile_value='simple',knowledge_enabled=True,write_lin
             if not force:raise ValueError(f'Existing workspace profile is invalid; use --force after inspection: {profile_path}')
     ts=now();data={'format_version':'1.0','profile':profile_id,'created_at':prior.get('created_at',ts),'updated_at':ts,'product_version':os_version(),'external_state':root!=PRODUCT_ROOT.resolve(),'knowledge_enabled':bool(knowledge_enabled),'knowledge_root':'knowledge','git_strategy':profile['git_strategy'],'collaboration':profile['collaboration'],'notes':['Canonical AURA organizational truth remains under instances/.','Human notes under knowledge/<business-id>/notes are noncanonical until deliberately incorporated with provenance.']}
     schema=json.loads((PRODUCT_ROOT/'core/schemas/config/workspace-profile.schema.json').read_text(encoding='utf-8'))
+    from jsonschema import Draft202012Validator  # Loaded only when a workspace is configured.
     errs=list(Draft202012Validator(schema).iter_errors(data))
     if errs:raise ValueError('Invalid workspace profile: '+'; '.join(e.message for e in errs))
     profile_path.write_text(json.dumps(data,indent=2)+'\n', encoding='utf-8')

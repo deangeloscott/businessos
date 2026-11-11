@@ -23,6 +23,35 @@ def validate(value, workspace, businesses, bid, private):
     return path
 
 
+def walk_folder(root, private, skip=lambda relative: False):
+    """Regular files under a real folder, as (relative path, stat), sorted like os.walk.
+
+    Links (symlinks and junctions) are never followed and linked files are left out, so every file found really lives
+    under the folder; that is what the per-file link checks enforced. Private names are skipped. Sizes and times come
+    from the directory listing itself, which on Windows costs no extra system call per file."""
+    stack = ['']
+    while stack:
+        relative = stack.pop()
+        try:
+            with os.scandir(os.path.join(str(root), relative)) as it:
+                entries = sorted(it, key=lambda e: e.name)
+        except OSError:
+            continue
+        folders = []
+        for entry in entries:
+            try:
+                if entry.is_symlink() or (hasattr(entry, 'is_junction') and entry.is_junction()) or private(Path(entry.name)):
+                    continue
+                child = (relative + '/' + entry.name) if relative else entry.name
+                if entry.is_dir(follow_symlinks=False):
+                    if not skip(child):folders.append(child)
+                elif entry.is_file(follow_symlinks=False):
+                    yield child, entry.stat(follow_symlinks=False)
+            except OSError:
+                continue
+        stack.extend(reversed(folders))
+
+
 def resolve(ref, locations, private):
     parts = ref.split('/', 2)
     if len(parts) != 3:
@@ -55,24 +84,27 @@ def entries(locations, private, media, limit=1000):
         if not source.exists():
             continue
         def candidates():
+            # A single file keeps the full checks. A folder is checked once, then walked without following links.
             if item['kind'] == 'file':
-                yield source.name
+                try:
+                    path = resolve('linked/' + item['id'] + '/' + source.name, [item], private)
+                    yield source.name, path, path.stat()
+                except (ValueError, OSError):
+                    pass
                 return
-            for directory, dirs, names in os.walk(source, followlinks=False):
-                dirs[:] = sorted(d for d in dirs if not private(Path(d)) and not (Path(directory) / d).is_symlink())
-                for name in sorted(names):
-                    yield (Path(directory) / name).relative_to(source).as_posix()
-        for relative in candidates():
+            try:
+                from workspace_sharing import unlinked
+                if source.resolve() != source or unlinked(source) != source:return
+            except (ValueError, OSError):
+                return
+            for relative, stat in walk_folder(source, private):
+                yield relative, source / relative, stat
+        for relative, path, stat in candidates():
             count += 1
             if limit is not None and (count > max(2000,limit*2) or len(out) >= limit):
                 limited = True
                 break
             ref = 'linked/' + item['id'] + '/' + relative
-            try:
-                path = resolve(ref, [item], private)
-                stat = path.stat()
-            except (ValueError, OSError):
-                continue
             out.append({'path': ref, 'name': path.name, 'bytes': stat.st_size,
                         'modified': stat.st_mtime, 'media': path.suffix.lower() in media,
                         'location': item['id'], 'location_name': item['name'], 'local_path': str(path)})

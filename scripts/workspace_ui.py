@@ -29,7 +29,7 @@ import webbrowser
 from concurrent.futures import ThreadPoolExecutor
 
 from _common import (new_id, PRODUCT_ROOT, workspace_root, business_directory, resolve_business,
-                     iter_instance_objects, describe_object, load_registry, os_version, workspace_scope, object_index)
+                     iter_instance_objects, describe_object, load_registry, os_version, workspace_scope, object_index, is_linked)
 from remember import remember
 from setup import setup
 import workspace_codex
@@ -88,13 +88,15 @@ def records(bid, include_archived=False):
     # Preserve diagnostics: an unreadable record must not silently look absent.
     diagnostics = []
     rows = []
+    root = str(workspace_root());base = os.path.join(root, 'instances', bid);real_base = workspace_root().resolve() / 'instances' / bid
     for obj, path in iter_instance_objects(bid, diagnostics=diagnostics):
         if not include_archived and workspace_archive.archived(obj):
             continue
-        if not path.resolve().is_relative_to(workspace_root().resolve() / 'instances' / bid):
+        # Only files reached through a link can live elsewhere; only those need the real-location check.
+        if is_linked(path) and not path.resolve().is_relative_to(real_base):
             diagnostics.append({'path': path.name, 'reason': 'Linked record is outside this business.'})
             continue
-        if 'history' in path.relative_to(workspace_root() / 'instances' / bid).parts:
+        if 'history' in Path(os.path.relpath(str(path), base)).parts:
             continue
         desc = describe_object(obj, path)
         title = desc.get('title') or obj['id']
@@ -107,7 +109,7 @@ def records(bid, include_archived=False):
             title = display if isinstance(display,str) and display else (Path(reference).name if '/' in reference and not reference.startswith('http') else reference)
         rows.append({'ref': obj['id'], 'type': obj['object_type'],
                      'title': title,
-                     'path': path.relative_to(workspace_root()).as_posix(), 'data': obj})
+                     'path': Path(os.path.relpath(str(path), root)).as_posix(), 'data': obj})
     if any(r['type']=='Objective' and r['data'].get('metric_refs') for r in rows):
         from workspace_views import goal_targets
         targets=goal_targets([r['data'] for r in rows])
@@ -126,6 +128,17 @@ def file_roots(bid):
             root / 'attachments' / bid, root / 'runtime' / 'runs' / bid]
 
 
+def asset_records(bid):
+    """Saved-file records (archived ones included) by ID, read through the shared record cache."""
+    root=workspace_root();base=os.path.join(str(root),'instances',bid);out={}
+    for obj,path in iter_instance_objects(bid,diagnostics=[]):
+        if obj.get('object_type')!='Asset' or obj['id'] in out:continue
+        if 'history' in Path(os.path.relpath(str(path),base)).parts:continue
+        if is_linked(path) and not path.resolve().is_relative_to(root.resolve()/'instances'/bid):continue
+        out[obj['id']]=obj
+    return out
+
+
 def local_file(bid, ref, locations=None):
     if ref.startswith('project/'):
         parts=ref.split('/',2)
@@ -137,7 +150,8 @@ def local_file(bid, ref, locations=None):
         parts = ref.split('/',2)
         if len(parts) != 3:
             raise ValueError('Choose a saved file.')
-        asset = next((r for r in records(bid,include_archived=True)[0] if r['type']=='Asset' and r['ref']==parts[1]),None)
+        found = asset_records(bid).get(parts[1])
+        asset = {'ref':parts[1],'data':found} if found else None
         path = asset_path(bid,asset['data'].get('location_reference')) if asset else None
         if not path or not path.is_dir():
             raise ValueError('This saved folder is missing. Reconnect it in Files & media.')
@@ -145,7 +159,8 @@ def local_file(bid, ref, locations=None):
         return workspace_locations.resolve('linked/'+parts[1]+'/'+parts[2],[item],private_path)
     if ref.startswith('asset/'):
         ident = ref.split('/',2)[1]
-        asset = next((r for r in records(bid,include_archived=True)[0] if r['type']=='Asset' and r['ref']==ident),None)
+        found = asset_records(bid).get(ident)
+        asset = {'ref':ident,'data':found} if found else None
         if not asset:
             raise ValueError('This saved file reference is no longer available.')
         path = asset_path(bid,asset['data'].get('location_reference'))
@@ -232,19 +247,19 @@ def files(bid, locations=None, limit=None):
             missing.append({'ref':row['ref'],'name':row['title'],'path':str(path)});continue
         ref = 'asset/' + row['ref'] + '/' + path.name
         candidates.append(ref);asset_refs.add(ref)
-    # Bounded directory walking; do not follow directory links into other stores.
+    # Bounded directory walking; do not follow directory links into other stores. Each business folder is checked
+    # once; the walk never enters a link, so the files it finds need no per-file link checks.
+    walked = []
     for base in file_roots(bid):
         if not base.exists() or not base.resolve().is_relative_to(base):
             continue
-        for directory, dirs, names in os.walk(base, followlinks=False):
-            relative = Path(directory).relative_to(root).parts
-            if len(relative)==4 and relative[:3]==('attachments',bid,'shared'):
-                dirs[:] = [d for d in dirs if d not in {'packages','records'}]
-            dirs[:] = [d for d in sorted(dirs) if not private_path(Path(d)) and
-                       not (Path(directory) / d).is_symlink()]
-            for name in sorted(names):
-                candidates.append((Path(directory) / name).relative_to(root).as_posix())
-            if limit is not None and len(candidates) >= limit+200:
+        try:workspace_sharing.unlinked(base)
+        except ValueError:continue
+        prefix = Path(os.path.relpath(str(base), str(root))).as_posix()
+        shared = lambda child: (prefix + '/' + child).split('/')[:3] == ['attachments', bid, 'shared'] and len((prefix + '/' + child).split('/')) == 5 and child.rsplit('/',1)[-1] in {'packages','records'}
+        for child, stat in workspace_locations.walk_folder(base, private_path, shared):
+            walked.append((prefix + '/' + child, base / child, stat))
+            if limit is not None and len(walked) >= limit+200:
                 break
     for ref in candidates:
         if not isinstance(ref, str) or ref in seen:
@@ -262,6 +277,15 @@ def files(bid, locations=None, limit=None):
                     'modified': path.stat().st_mtime, 'media': path.suffix.lower() in MEDIA, 'asset':ref in asset_refs})
         if limit is not None and len(out) >= limit:
             break
+    for ref, path, stat in walked:
+        if limit is not None and len(out) >= limit:
+            break
+        key = os.path.normcase(str(path))
+        if ref in seen or key in seen_paths or not visible(path):
+            continue
+        seen_paths.add(key);seen.add(ref)
+        out.append({'path': ref, 'name': path.name, 'bytes': stat.st_size, 'modified': stat.st_mtime,
+                    'media': path.suffix.lower() in MEDIA, 'asset': False})
     linked = workspace_locations.entries(locations or [], private_path, MEDIA,limit)
     return {'items': out + [f for f in linked['items'] if os.path.normcase(f['local_path']) not in seen_paths and visible(f['local_path'])], 'locations': linked['locations'], 'missing_assets':missing,
             'limited': (limit is not None and len(out) >= limit) or linked['limited']}
@@ -347,7 +371,19 @@ def codex_command():
     return [str(path), 'exec', '--skip-git-repo-check', '-']
 
 
+_AGENTS_CACHE={'at':0.0,'key':None,'value':None}
+
+
 def installed_agents():
+    """Installed AI apps, rechecked at most every few seconds (searching PATH for each app is slow on Windows)."""
+    key=os.environ.get('PATH','')
+    if _AGENTS_CACHE['value'] is not None and _AGENTS_CACHE['key']==key and time.monotonic()-_AGENTS_CACHE['at']<5:
+        return copy.deepcopy(_AGENTS_CACHE['value'])
+    value=_installed_agents();_AGENTS_CACHE.update(at=time.monotonic(),key=key,value=copy.deepcopy(value))
+    return value
+
+
+def _installed_agents():
     """Small command adapters; models, accounts and tools remain host-owned."""
     apps = [('codex', 'Codex', ['exec', '--skip-git-repo-check', '-'], '@openai/codex/bin/codex.js'),
             ('claude', 'Claude Code', ['-p', '--output-format', 'text'], '@anthropic-ai/claude-code/cli.js'),
@@ -2453,7 +2489,7 @@ class Workspace:
         root=Path(self.workspace_path)
         writable=any(path.is_relative_to(root/area/bid) for area in ('attachments','knowledge')) and not private_path(path.relative_to(root))
         if path.is_relative_to(PRODUCT_ROOT) and not root.is_relative_to(PRODUCT_ROOT):writable=False
-        asset=next((r['data'] for r in records(bid,include_archived=True)[0] if r['type']=='Asset' and asset_path(bid,r['data'].get('location_reference'))==path),None) if include_asset else None
+        asset=next((a for a in asset_records(bid).values() if asset_path(bid,a.get('location_reference'))==path),None) if include_asset else None
         if asset and ((asset.get('extensions') or {}).get('businessos',{}).get('collection')):writable=False;managed=True
         return path,writable,asset,managed and not writable
 
@@ -2473,7 +2509,7 @@ class Workspace:
         remember_document_path((self.workspace_path,bid,ref,option),path)
         result=workspace_documents.inspect(path,writable,asset)
         result.update(ref=ref,option=option,managed=managed,workspace=self.workspace_path,location=str(path))
-        assets={r['ref']:r['data'] for r in records(bid,include_archived=True)[0] if r['type']=='Asset'}
+        assets=asset_records(bid)
         family={asset['id']} if asset else set()
         neighbors={key:set() for key in assets}
         for key,value in assets.items():
@@ -2495,16 +2531,23 @@ class Workspace:
         return {**result,'workspace':self.workspace_path}
 
     def record_snapshot(self,bid):
-        base=workspace_root()/'instances'/bid
-        signature=[]
-        for directory,dirs,names in os.walk(base,followlinks=False):
-            dirs[:]=sorted(d for d in dirs if d!='history' and not (Path(directory)/d).is_symlink())
-            for name in sorted(names):
-                path=Path(directory)/name
-                if path.suffix not in {'.json','.jsonl'}:continue
+        base=str(workspace_root()/'instances'/bid)
+        signature=[];stack=['']
+        while stack:
+            folder=stack.pop()
+            try:
+                with os.scandir(os.path.join(base,folder)) as it:entries=sorted(it,key=lambda e:e.name)
+            except OSError:continue
+            for entry in entries:
+                rel=(folder+'/'+entry.name) if folder else entry.name
                 try:
-                    stat=path.lstat();signature.append((path.relative_to(base).as_posix(),stat.st_mtime_ns,stat.st_ctime_ns,stat.st_size))
-                except OSError:signature.append((path.relative_to(base).as_posix(),'unavailable'))
+                    if entry.is_dir(follow_symlinks=False):
+                        if entry.name!='history' and not entry.is_symlink():stack.append(rel)
+                        continue
+                    if not entry.name.endswith(('.json','.jsonl')):continue
+                    stat=entry.stat(follow_symlinks=False);signature.append((rel,stat.st_mtime_ns,stat.st_ctime_ns,stat.st_size))
+                except OSError:signature.append((rel,'unavailable'))
+        signature.sort(key=lambda row:row[0])
         revision=hashlib.sha256(json.dumps(signature).encode()).hexdigest()
         key=('records',bid);prior=self.read_cache.get(key)
         if not prior or prior[0]!=revision:self.read_cache[key]=(revision,records(bid))
@@ -2646,7 +2689,7 @@ class Workspace:
                 prior.append(f"{row['role']}: {row['text'][:4000]}")
         import workspace_focus
         focus_text=workspace_focus.context(bid)
-        return (f"Work for the explicitly selected AURA business ID: {bid}.\n"
+        return (f"Work for the explicitly selected AURA business ID: {bid}. It is already selected, so there is no need to list organizations.\n"
                 +(focus_text+'\n' if focus_text else '')+
                 f"AURA product: {PRODUCT_ROOT}\nOrganization workspace: {workspace_root()}\n"
                 f"Read {PRODUCT_ROOT / 'CONTEXT.md'} once unless its current contents are already loaded, and use the existing AURA helpers and workspace.\n"
@@ -3090,7 +3133,8 @@ class Workspace:
                 if assistant:chat.update(assistant_id=assistant['id'],assistant_name=assistant['name'])
             if native and not welcome and keep_warm_id is None:
                 chat.setdefault('brief_token',secrets.token_hex(8))
-                prompt=prompt.replace('\nUser request:\n',workspace_chats.instructions(chat)+'\nUser request:\n',1)
+                full=workspace_chats.instructions_due(chat) or not reuse_context
+                prompt=prompt.replace('\nUser request:\n',workspace_chats.instructions(chat,brief=not full)+'\nUser request:\n',1)
             chat['context_checked_at']=context_checked_at
             chat['context_revisions']=inherited_context['references']
             chat.update(status='working', archived=False, model=saved_connection.get('model') or self.agent.get('model',''), effort=saved_connection.get('effort',''), connection=dict(saved_connection), updated=time.time())

@@ -34,15 +34,26 @@ def clean(text, streaming=False):
     return text.rstrip()
 
 
-def instructions(chat):
+def instructions(chat,brief=False):
+    if brief:
+        # The app keeps the conversation, so the full request it saw earlier still applies; a reminder keeps descriptions current for ~40 tokens.
+        return ('\nIf this reply changes the goal, progress or next step, end with the chat-list line '+PREFIX+chat['brief_token']+
+                ' {"title":...,"summary":...} as described earlier; otherwise skip it.\n')
     previous=short(chat.get('summary'),360)
-    return ('\nChat-list description only (not business memory): after a substantive reply, if the goal, progress, or next step changed, '
-            'append one plain final line: '+PREFIX+chat['brief_token']+' '+
-            '{"title":"short readable topic","summary":"one or two short sentences: purpose, current progress, next step or open question"}. '
-            'Use only this conversation and observed outcomes. Do not include private reasoning, credentials, internal IDs, '
-            'or claim planned work is complete. Keep the summary under 360 characters. Omit this line for trivial replies '
-            'or if the existing description is still current. This line is interface metadata; do not save files to create it. '
-            +(f'Previous description (context only): {json.dumps(previous)}. ' if previous else '')+'\n')
+    return ('\nChat-list description (interface metadata, not business memory): if this reply changes the goal, progress or next step, '
+            'end with one line: '+PREFIX+chat['brief_token']+' {"title":"short topic","summary":"purpose, progress, next step; under 360 characters"}. '
+            'Skip it for trivial replies or when the current description still fits. Use only this conversation and observed outcomes: '
+            'no private reasoning, credentials or internal IDs, and no planned work described as done. Do not save files for it. '
+            +(f'Current description: {json.dumps(previous)}. ' if previous else '')+'\n')
+
+
+def instructions_due(chat,every=5):
+    """Whether this message carries the full description request: the first time, and every few messages in case the
+    app has compacted its history. Other messages carry the short reminder."""
+    asked=chat.get('brief_asked_ago')
+    if asked is None or asked+1>=every:
+        chat['brief_asked_ago']=0;return True
+    chat['brief_asked_ago']=asked+1;return False
 
 
 def fingerprint(messages):

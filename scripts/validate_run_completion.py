@@ -8,7 +8,9 @@ from operating_knowledge import get_playbook
 RETIRED_RUN_BACKLINK_FIELDS={'run_ref','run_id','run_method_type','run_method_ref','run_workflow_id','run_binding','run_history_refs','contract_chain'}
 
 
-def _workflows():
+@functools.lru_cache(maxsize=1)
+def _workflow_meta():
+    """Workflow front matter is product source; parsing all of it is read once per process."""
     out={}
     for path in workflow_files():
         try:meta,_=read_frontmatter(path)
@@ -18,12 +20,17 @@ def _workflows():
     return out
 
 
+def _workflows():return dict(_workflow_meta())
+
+
 def _method_type(run):return run.get('method_type') or 'ad_hoc'
 
 
-def _run_files_errors(business_id,workflows):
+def _run_files_errors(business_id,workflows=None):
     errors=[];root=runtime_root()/'runs'/business_id
     if not root.exists():return errors
+    # Workflow metadata is needed only when there are receipts to check.
+    workflows=_workflows() if workflows is None else workflows
     schema=json.loads((PRODUCT_ROOT/'core/schemas/runtime/run.schema.json').read_text(encoding='utf-8'));registry=load_registry().get('workflows',[])
     for path in sorted(root.glob('*/run.json')):
         try:run=json.loads(path.read_text(encoding='utf-8'))
@@ -67,4 +74,4 @@ def _canonical_backlink_errors(objects):
 
 
 def run_completion_errors(business_id,objects):
-    workflows=_workflows();return [*_run_files_errors(business_id,workflows),*_canonical_backlink_errors(objects)]
+    return [*_run_files_errors(business_id),*_canonical_backlink_errors(objects)]

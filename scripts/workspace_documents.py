@@ -25,6 +25,7 @@ RASTER = {'.png','.jpg','.jpeg','.webp'}
 OFFICE = {'.doc','.docx','.odt','.rtf','.xls','.xlsx','.ods','.ppt','.pptx','.odp'}
 OPENABLE = TEXT - {'.js','.py','.html','.htm','.xml','.json','.yaml','.yml','.toml','.ini','.css'} | OFFICE | RASTER | WEB | {'.pdf','.gif','.avif','.mp3','.wav','.ogg','.mp4','.webm','.mov','.m4a','.flac','.opus'}
 MAX_TEXT = 2*1024*1024
+PREVIEW_BYTES = 256*1024
 MAX_FILE = 32*1024*1024
 
 
@@ -50,12 +51,16 @@ def inspect(path, writable=False, asset=None):
     result={'name':path.name,'identity':hashlib.sha256(os.path.normcase(str(path.resolve())).encode()).hexdigest(),'bytes':size,'modified':path.stat().st_mtime,'revision':revision(path) if size<=MAX_FILE else '',
             'writable':bool(writable and os.access(path,os.W_OK)), 'editable':False,'kind':'file',
             'asset':asset['id'] if asset else None,'version':asset.get('version') if asset else None}
-    if suffix in TEXT and size<=MAX_TEXT:
-        raw=path.read_bytes()
+    if suffix in TEXT:
+        # A large text file shows its first part, read-only, instead of no preview at all.
+        partial=size>MAX_TEXT
+        with path.open('rb') as stream:raw=stream.read(PREVIEW_BYTES if partial else MAX_TEXT)
+        if partial:raw=raw[:raw.rfind(b'\n')+1] or raw
         try:text=raw.decode('utf-8-sig')
         except UnicodeError:return result
         if '\x00' in text:return result
-        result.update(kind='table' if suffix in {'.csv','.tsv'} else 'text',editable=True,text=text,bom=raw.startswith(b'\xef\xbb\xbf'))
+        result.update(kind='table' if suffix in {'.csv','.tsv'} else 'text',editable=not partial,text=text,bom=raw.startswith(b'\xef\xbb\xbf'))
+        if partial:result['partial']=True
         if result['kind']=='table':
             delimiter='\t' if suffix=='.tsv' else ','
             try:

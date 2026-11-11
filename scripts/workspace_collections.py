@@ -5,7 +5,7 @@ import json
 import sys
 from datetime import datetime,timezone
 from pathlib import Path
-from _common import workspace_root,workspace_scope,object_index,organization_transaction,write_json_atomic,now
+from _common import workspace_root,workspace_scope,object_index,organization_transaction,write_json_atomic,now,storage_ref
 import workspace_projects as projects
 
 MAX_BYTES=32*1024*1024
@@ -95,7 +95,7 @@ def findings(bid,ident,limit=30,at=None):
     """Findings and source memory linked to a watch: what its things add up to, newest evidence first within each status."""
     from workspace_lifecycle import archived
     at=at or datetime.now(timezone.utc);rows=[];sources=[];replaced_by={}
-    for obj,_ in object_index(bid).values():
+    for obj,where in object_index(bid).values():
         if archived(obj) or not linked(obj,ident):continue
         if obj.get('object_type')=='SourceProfile':
             sources.append({'id':obj['id'],'name':obj.get('display_name') or obj.get('subject_name') or obj.get('source_reference') or obj['id'],
@@ -108,7 +108,7 @@ def findings(bid,ident,limit=30,at=None):
         review=bos.get('review_after')
         try:due=bool(review) and timestamp(review)<=at
         except ValueError:due=False
-        rows.append({'id':obj['id'],'statement':str(obj.get('statement',''))[:800],'status':obj.get('status'),'reviewed_at':obj.get('reviewed_at'),
+        rows.append({'id':obj['id'],'statement':str(obj.get('statement',''))[:800],'record':storage_ref(where),'status':obj.get('status'),'reviewed_at':obj.get('reviewed_at'),
                      'review_after':review,'needs_review':due,'updated_at':obj.get('updated_at'),'supersedes':bos.get('supersedes'),
                      'evidence':{'supports':count('supports')+count('derived_from'),'extends':count('extends'),'contradicts':count('contradicts')}})
     for r in rows:
@@ -368,6 +368,18 @@ def show(bid,ident,q='',view='current',offset=0,limit=50,at=None,item_id='',hist
             'asset_id':(asset(bid,ident) or {}).get('id'),'location':str(path(bid,ident)),'search_scope':'Saved collection text and fields; linked file bodies and native-only data are not searched.'}
 
 
+def brief(result,chars=280):
+    """What a scheduled run needs from its collection, in fewer tokens: every current finding (shortened, with the
+    path to its full record), counts instead of replaced findings, and no interface-only details."""
+    cut=lambda text:text if len(text)<=chars else text[:chars].rstrip()+'…'
+    out={k:v for k,v in result.items() if k not in {'views','location','search_scope','history','replaced','asset_id'}}
+    out['items']=[{**{k:item[k] for k in ('id','title','fields','display_state','disposition','source_count','checked_at','updated_at','change_reason') if item.get(k) not in (None,'',{},False)},
+                   'summary':cut(item.get('summary',''))} for item in result.get('items',[])]
+    out['findings']=[{**{k:v for k,v in f.items() if v not in (None,'',False)},'statement':cut(f['statement'])} for f in result.get('findings',[])]
+    out['findings_note']='Statements are shortened; read a finding\'s record file when its full text matters.'
+    return out
+
+
 def inventory(bid,project=''):
     from workspace_lifecycle import archived
     out=[]
@@ -404,11 +416,11 @@ def instructions(bid,ident):
 
 
 def main():
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('action',choices=['list','create','show','apply','feedback','configure','instructions']);p.add_argument('--business-id',required=True);p.add_argument('--workspace',type=Path,default=workspace_root());p.add_argument('--id');p.add_argument('--input',default='{}');p.add_argument('--search',default='');p.add_argument('--view',default='current');p.add_argument('--offset',type=int,default=0);p.add_argument('--limit',type=int,default=50);p.add_argument('--item',default='');p.add_argument('--history',action='store_true')
+    p=argparse.ArgumentParser(description=__doc__,epilog='To read one: list --search <name>, then show --id <id>.');p.add_argument('action',choices=['list','create','show','apply','feedback','configure','instructions']);p.add_argument('--business-id',required=True);p.add_argument('--workspace',type=Path,default=workspace_root());p.add_argument('--id');p.add_argument('--input',default='{}');p.add_argument('--search',default='');p.add_argument('--view',default='current');p.add_argument('--offset',type=int,default=0);p.add_argument('--limit',type=int,default=50);p.add_argument('--item',default='');p.add_argument('--history',action='store_true');p.add_argument('--full',action='store_true',help='Show findings and interface details in full; the default show view is enough to read findings')
     a=p.parse_args()
     with workspace_scope(a.workspace):
         data=json.loads(__import__('sys').stdin.read() if a.input=='-' else a.input)
-        result=inventory(a.business_id) if a.action=='list' else {'instructions':instructions(a.business_id,a.id).strip()} if a.action=='instructions' else show(a.business_id,a.id,a.search,a.view,a.offset,a.limit,item_id=a.item,history=a.history) if a.action=='show' else create(a.business_id,data) if a.action=='create' else apply(a.business_id,a.id,data) if a.action=='apply' else configure(a.business_id,a.id,data) if a.action=='configure' else feedback(a.business_id,a.id,data)
+        result=inventory(a.business_id) if a.action=='list' else {'instructions':instructions(a.business_id,a.id).strip()} if a.action=='instructions' else (lambda r:r if a.full or a.item or a.history else brief(r))(show(a.business_id,a.id,a.search,a.view,a.offset,a.limit,item_id=a.item,history=a.history)) if a.action=='show' else create(a.business_id,data) if a.action=='create' else apply(a.business_id,a.id,data) if a.action=='apply' else configure(a.business_id,a.id,data) if a.action=='configure' else feedback(a.business_id,a.id,data)
     print(json.dumps(result,ensure_ascii=False))
 
 

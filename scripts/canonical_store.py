@@ -1,22 +1,38 @@
 #!/usr/bin/env python3
 """Shared schema/path/write mechanics for canonical organization objects."""
 from _common import *
-from jsonschema import Draft202012Validator,FormatChecker
+import functools
 import json
 
-# jsonschema's optional RFC3339 dependency is absent in some bundled runtimes.
-# Use the standard library so validation is the same on every installation.
-DATE_FORMATS=FormatChecker(formats=[])
+# The schema library takes ~0.1 s to load, and many helpers never validate anything, so it loads on first use.
+_FORMATS=None
 
 
-@DATE_FORMATS.checks('date-time',raises=ValueError)
+def date_formats():
+    """jsonschema's optional RFC3339 dependency is absent in some bundled runtimes.
+    Use the standard library so validation is the same on every installation."""
+    global _FORMATS
+    if _FORMATS is None:
+        from jsonschema import FormatChecker
+        checker=FormatChecker(formats=[])
+        checker.checks('date-time',raises=ValueError)(_date_time)
+        checker.checks('date',raises=ValueError)(_date)
+        _FORMATS=checker
+    return _FORMATS
+
+
+def __getattr__(name):
+    # Keeps `from canonical_store import DATE_FORMATS` working without loading the library at import time.
+    if name=='DATE_FORMATS':return date_formats()
+    raise AttributeError(name)
+
+
 def _date_time(value):
     if not isinstance(value,str):return True
     if not re.fullmatch(r'\d{4}-\d{2}-\d{2}[Tt]\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:[Zz]|[+-]\d{2}:\d{2})',value):return False
     return datetime.datetime.fromisoformat(value.upper().replace('Z','+00:00')).tzinfo is not None
 
 
-@DATE_FORMATS.checks('date',raises=ValueError)
 def _date(value):
     if not isinstance(value,str):return True
     if not re.fullmatch(r'\d{4}-\d{2}-\d{2}',value):return False
@@ -42,16 +58,36 @@ INSTANCE_PATHS={
 }
 
 
-def schema_entry(title):
+_VALIDATORS={}
+
+
+def validator(schema):
+    """One reusable validator per schema; building one is far slower than using it."""
+    key=id(schema)
+    hit=_VALIDATORS.get(key)
+    if not hit or hit[0] is not schema:
+        from jsonschema import Draft202012Validator
+        _VALIDATORS[key]=hit=(schema,Draft202012Validator(schema,format_checker=date_formats()))
+    return hit[1]
+
+
+@functools.lru_cache(maxsize=None)
+def _schema_entry(title):
     registry=json.loads((PRODUCT_ROOT/'generated/schema-registry.json').read_text(encoding='utf-8'))
     row=next((item for item in registry if item.get('title')==title),None)
     if not row:raise ValueError(f'Unknown canonical schema title: {title}')
     return row,json.loads((PRODUCT_ROOT/row['path']).read_text(encoding='utf-8'))
 
 
+def schema_entry(title):
+    """A schema by title. Schemas are product files, read once per process; callers receive their own copy."""
+    row,schema=_schema_entry(title)
+    return dict(row),schema
+
+
 def validate_canonical(title,obj):
     _,schema=schema_entry(title)
-    errors=sorted(Draft202012Validator(schema,format_checker=DATE_FORMATS).iter_errors(obj),key=lambda e:list(e.path))
+    errors=sorted(validator(schema).iter_errors(obj),key=lambda e:list(e.path))
     if errors:raise ValueError(f'{title} invalid: '+'; '.join(f'{list(e.path)} {e.message}' for e in errors))
 
 
