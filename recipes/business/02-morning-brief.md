@@ -4,13 +4,13 @@ Use this when someone wants to start the day knowing what changed, what needs th
 
 ## The idea
 
-A brief is useful when it is short and only reports what is real. Start from the organization's saved state, not from memory of yesterday's chat: `scripts/workspace_summary.py --business-id <id> --text` gives the recent changes, open items, deadlines, goals and watches in one step.
+A brief is useful when it is short and only reports what is real. Start from the organization's saved state, not from memory of yesterday's chat: `scripts/workspace_summary.py --business-id <id> --text` gives the recent changes, open items, deadlines, goals, collection checks and recent deliverables in one step.
 
 ## Borrowable shape
 
 **What changed since last time → what needs you, with the deadline → where the goals stand → one suggested next step.**
 
-Lead with changes that came from a real check, and name the source and when it was checked. Put anything with a deadline before anything without one. Give goals as the latest recorded number against the target. End with one next step the person can approve in a word.
+Lead with changes that came from a real check, and name the source and when it was checked. Put anything with a deadline before anything without one. Give goals as the latest recorded number against the target. Mention a finished deliverable when it answers an open question, and give its saved location. End with one next step the person can approve in a word.
 
 ## Tiny illustrative example
 

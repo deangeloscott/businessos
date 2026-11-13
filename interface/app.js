@@ -1705,15 +1705,28 @@ function recordDetails(ref) {
   const mechanical=new Set(['id','object_type','schema_version','business_id','lineage','created_at','updated_at','extensions']);
   const fields=Object.entries(r.data).filter(([k,v])=>!mechanical.has(k)&&!['name','title'].includes(k)&&v!==null&&!(Array.isArray(v)&&!v.length));
   const watches=(r.data.extensions?.businessos?.collection_refs||[]).map(id=>state.data.records.find(x=>x.type==='Asset'&&x.data.extensions?.businessos?.collection?.id===id)).filter(Boolean);
-  details(r.title,`<p class="item-type">${esc(human(r.type))} · Memory</p>${location}${watches.length?`<p class="small-note">Part of ${watches.map(w=>`<button type="button" class="text-button" data-collection="${esc(w.data.extensions.businessos.collection.id)}">${esc(w.title)}</button>`).join(', ')}</p>`:''}${fields.map(([k,v])=>`<div class="field"><strong>${esc(human(k))}</strong><p>${esc(pretty(v))}</p></div>`).join('')}<div class="inline-actions"><button type="button" class="primary" data-add-record="${esc(r.ref)}" data-label="${esc(r.title)}">Add to chat</button><button type="button" class="text-button" data-copy-record="${esc(r.ref)}">Copy record</button></div><p><button class="text-button" data-share-record="${esc(r.ref)}" data-share-scope="${esc(sharingScope())}">Share a copy →</button></p><details><summary>Record data</summary><pre>${esc(JSON.stringify(r.data,null,2))}</pre></details>`,'context');
+  details(r.title,`<p class="item-type">${esc(human(r.type))} · Memory</p>${location}${watches.length?`<p class="small-note">Part of ${watches.map(w=>`<button type="button" class="text-button" data-collection="${esc(w.data.extensions.businessos.collection.id)}">${esc(w.title)}</button>`).join(', ')}</p>`:''}${fields.map(([k,v])=>`<div class="field"><strong>${esc(human(k))}</strong><p>${esc(pretty(v))}</p></div>`).join('')}${resultOrigin(r)}<div class="inline-actions"><button type="button" class="primary" data-add-record="${esc(r.ref)}" data-label="${esc(r.title)}">Add to chat</button><button type="button" class="text-button" data-copy-record="${esc(r.ref)}">Copy record</button></div><p><button class="text-button" data-share-record="${esc(r.ref)}" data-share-scope="${esc(sharingScope())}">Share a copy →</button></p><details><summary>Record data</summary><pre>${esc(JSON.stringify(r.data,null,2))}</pre></details>`,'context');
   if(r.type!=='Business')setDetailTitleActions(archiveControl('record',ref));
+}
+function resultOrigin(asset){
+  const producer=asset?.data.extensions?.businessos?.work?.producer;
+  if(!producer?.id)return '';
+  if(producer.kind==='chat')return `<button class="text-button" data-chat="${esc(producer.id)}">Open original chat</button>`;
+  if(producer.kind==='task')return `<button class="text-button" data-open-schedule="${esc(producer.id)}">Open scheduled task</button>`;
+  return '';
 }
 async function openFileWorkspace(ref,option='',presentation={}) {
   if(!presentation.raw&&window.auraProjects&&await window.auraProjects.openForFile(ref))return;
   const business=state.business,workspace=state.data.workspace;
   const module=await import('/file-editor.js');
   if(business!==state.business||workspace!==state.data.workspace)return;
-  await module.openFile({...presentation,ref,option,business,workspace,token,api,details,markdown:chatMarkdown,favoriteMarkup:(ref,name)=>fileFavoriteButton(ref,name)+(!ref.startsWith("library/")?archiveControl("file",ref):""),titleActions:setDetailTitleActions,share:ref=>attempt(async()=>{if(state.business!==business||state.data.workspace!==workspace)throw new Error('The workspace changed. Reopen the file before sharing.');await openSharing('file:'+ref);}),current:()=>state.business===business&&state.data.workspace===workspace,
+  function resultActions(info){
+    const asset=info.asset&&state.data.records.find(r=>r.ref===info.asset);
+    const attach=ref.startsWith('library/')?'':`<button class="text-button" data-result-file-context="${esc(ref)}">Add to chat</button>`;
+    const tryExample=asset?.data.location_reference?.endsWith('/outputs/grant-application-draft.md')&&window.auraExample?.origin()?' <button class="text-button" data-example-try>Try this with my work</button>':'';
+    return resultOrigin(asset)+attach+tryExample;
+  }
+  await module.openFile({...presentation,resultActions,ref,option,business,workspace,token,api,details,markdown:chatMarkdown,favoriteMarkup:(ref,name)=>fileFavoriteButton(ref,name)+(!ref.startsWith("library/")?archiveControl("file",ref):""),titleActions:setDetailTitleActions,share:ref=>attempt(async()=>{if(state.business!==business||state.data.workspace!==workspace)throw new Error('The workspace changed. Reopen the file before sharing.');await openSharing('file:'+ref);}),current:()=>state.business===business&&state.data.workspace===workspace,
     saved:async()=>{invalidateReads();const [files,data]=await Promise.all([api('/api/files?business='+encodeURIComponent(business)),api('/api/state?business='+encodeURIComponent(business))]);if(state.business!==business||state.data.workspace!==workspace)return;state.files=files.items;state.data.records=data.records;state.data.records_revision=data.records_revision;if($('#file-list'))renderFiles();if($('#quick-files'))renderQuickFiles();}
   });
 }
@@ -2451,7 +2464,7 @@ document.addEventListener('click',event=>attempt(async()=>{
   if(button.dataset.taskStatus)await scheduleOperation({id:state.editingTask.id,app:state.editingTask.owner,action:button.dataset.taskStatus});
   if(button.hasAttribute('data-stop-schedule')){await api('/api/schedules/stop',{business:state.business,operation_id:state.scheduleJob.id});await syncScheduleOperation();}
   if(button.hasAttribute('data-dismiss-schedule')){state.dismissedScheduleJob=state.scheduleJob.id;renderScheduleOperation();}
-  if(button.dataset.openSchedule){await syncSchedules(true);await scheduleDetails(button.dataset.openSchedule);}
+  if(button.dataset.openSchedule){const key=chatScope();await syncSchedules(true);if(key!==chatScope())return;if(state.schedules?.items.some(t=>t.id===button.dataset.openSchedule))await scheduleDetails(button.dataset.openSchedule);else notice('This task is no longer available in its app.',true);}
   if(button.id==='new-chat')await newShellChat();
   if(button.id==='home-open')await goHome();
   if(button.id==='chats'||button.id==='chat-list-back')await showChats(button.id==='chat-list-back'&&!!state.chatArchiveView);
@@ -2480,6 +2493,9 @@ document.addEventListener('click',event=>attempt(async()=>{
   if(button.dataset.prompt) prompt(button.dataset.prompt);
   if(button.dataset.record) recordDetails(button.dataset.record);
   if(button.dataset.file) await fileDetails(button.dataset.file);
+  if(button.dataset.resultFileContext){
+    if(window.auraCompose?.add({kind:'file',id:button.dataset.resultFileContext,label:$('#detail-title').textContent})){returnToChat();notice('File added to your draft.');}
+  }
   if(button.dataset.addLibrary||button.dataset.addRecord){
     const item=button.dataset.addLibrary?{kind:'library',id:button.dataset.addLibrary,label:button.dataset.label,...(button.dataset.variant?{variant:button.dataset.variant}:{})}:{kind:'record',id:button.dataset.addRecord,label:button.dataset.label};
     if(!window.auraCompose){notice('Chat controls are loading. Try again in a moment.',true);return;}
@@ -2892,6 +2908,7 @@ async function renderShell(force=true){
   state.chatList=list.items;state.projects=list.projects||[];renderProjectTrigger();state.runningChats=list.running||[];state.data.running_chats=state.runningChats;paintRunning();
   const owned=new Set(state.runningChats.filter(j=>j.workspace===root).map(j=>j.chat_id));
   const recent=list.items.filter(c=>!c.archived);
+  state.homeRecent={scope:JSON.stringify([business,root]),chat:recent[0]};if(state.home)window.auraHQ?.sync();
   const limit=state.chatLimit||20,signature=JSON.stringify([recent.map(c=>[c.id,c.title,c.status,c.updated,c.pinned,c.project]),[...owned],state.projects,state.chatMeta?.id,limit,state.inbox?.items?.map(n=>[n.chat_id,n.read])]);
   if(signature===state.sidebarSignature)return;state.sidebarSignature=signature;
   state.sidebarProjectGroups??={};

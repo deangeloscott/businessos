@@ -37,6 +37,9 @@ def main():
         assert [a['name'] for a in first['knowledge']['by_area']][:2]==['Competitors','Customers'] and len(first['knowledge']['by_area'])==9
         assert first['changes']==[] and first['goals']==[] and first['watches']==[] and first['attention']==[]
         assert 'Nothing has been saved yet' in summary.text(first)
+        with patch.object(summary,'_agents',return_value=[{'id':'writer','name':'Writer','tasks':0}]):
+            with_agent=summary.summary(bid)
+            assert not with_agent['empty'] and 'Agents: Writer' in summary.text(with_agent)
 
         # Findings count by the interface's status words and by area; a passed review date means "needs review".
         focus.save(bid,['local-business','grants'])
@@ -83,6 +86,8 @@ def main():
             {'id':'state-fund','title':'State main-street fund','change_reason':'New eligible grant'}]})
         s=summary.summary(bid)
         change=next(c for c in s['changes'] if c.get('collection')=='Grants')
+        assert s['totals']['changes']==len(s['changes'])==2
+        assert change['item_id']=='state-fund'
         assert change['kind']=='new' and change['title']=='State main-street fund' and change['reason']=='New eligible grant'
         assert s['deadlines'] and s['deadlines'][0]['title']=='City small-business grant' and s['deadlines'][0]['days'] in (5,6)
 

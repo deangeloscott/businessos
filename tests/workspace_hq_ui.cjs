@@ -26,7 +26,7 @@ const base={business:{id:'bakery',name:'Harbor <Bakery>',description:''},focus:[
   assert.equal(node('#hq').hidden,false);assert.equal(bodyClasses['has-hq'],true);
   assert.match(html,/Research my business/);assert.match(html,/See an example business/);assert.match(html,/What you can ask for/);
   assert.match(html,/Harbor &lt;Bakery&gt;/,'saved text is escaped');assert.doesNotMatch(html,/<Bakery>/);
-  for(const absent of ['What changed','Needs you','Goals','Kept current','Agents','Recent results'])assert.doesNotMatch(html,new RegExp(absent),absent+' must not show with nothing saved');
+  for(const absent of ['What changed','Needs you','Goals','Saved collections','Agents','Recent results'])assert.doesNotMatch(html,new RegExp(absent),absent+' must not show with nothing saved');
   assert.doesNotMatch(html,/General/,'the general area only appears once it has findings');
   assert.match(html,/data-prompt="Research our main competitors/,'an unlit area prepares a first request');
 
@@ -44,16 +44,17 @@ const base={business:{id:'bakery',name:'Harbor <Bakery>',description:''},focus:[
   summary.knowledge.by_area[0].findings=4;summary.knowledge.reviewed={with_date:4,within_days:30,recent:3};
   summary.totals={findings:5,changes:2,attention:1,goals:2,watches:1,results:1,agents:1};
   context.state.data.records_revision='r2';hq.sync();await flush();html=node('#hq').innerHTML;
-  for(const shown of ['What changed','Needs you','What we know','Goals','Kept current','Agents','Recent results','What we know, by area'])assert.match(html,new RegExp(shown),shown);
+  for(const shown of ['What changed','Needs you','What we know','Goals','Saved collections','Agents','Recent results','What we know, by area'])assert.match(html,new RegExp(shown),shown);
   assert.doesNotMatch(html,/Research my business/);
   assert.match(html,/data-collection="col_1"/);assert.match(html,/data-record="ins_1"/);assert.match(html,/data-record="att_1"/);assert.match(html,/data-record="obj_1"/);assert.match(html,/data-assistant-open="agt_1"/);
+  assert.match(html,/data-hq-item="g1"/);assert.match(html,/data-parent-collection="col_2"/);
   assert.match(html,/87 of 100/);assert.match(html,/Crumb &amp; Co/);assert.match(html,/activity-spinner/,'an agent with a running chat shows it is working');
-  assert.match(html,/hq-area lit[^>]*data-prompt="Summarise what we know about competitors/);
+  assert.match(html,/hq-area lit[^>]*data-hq-area="competitor-intelligence/);
   assert.match(html,/unsettled/,'a challenged finding breaks the aura ring');assert.match(html,/working/);
 
   // The aura explains itself with the same saved counts.
   hq.explain();assert.equal(opened.title,'Your aura');
-  assert.match(opened.html,/3 of 4 findings reviewed in the last 30 days/);assert.match(opened.html,/1 challenged finding/);assert.match(opened.html,/Local business/);
+  assert.match(opened.html,/3 of 5 findings reviewed in the last 30 days/);assert.match(opened.html,/1 challenged finding/);assert.match(opened.html,/Local business/);
 
   // An unchanged business is not fetched again; a chat or a clear new chat hides Home entirely.
   const before=calls;hq.sync();await flush();assert.equal(calls,before,'no second read while nothing changed');

@@ -111,11 +111,15 @@ Home draws one short summary of the selected business. Each section appears once
 - **Needs you:** open attention items and deadlines inside the next two weeks.
 - **What we know:** current findings by status (Supported, Unverified, Challenged, Needs review, Out of date).
 - **Goals:** workspace goals, with the latest recorded number against the target where a goal tracks one.
-- **Kept current:** collections, how many results each holds, and when each was last checked.
+- **Saved collections:** the latest check, its coverage, and any linked scheduled upkeep.
 - **Agents** and **Recent results**, with a working marker on an agent while one of its chats is running in this view.
-- **What we know, by area:** every area AURA has guidance for. A lit area has saved findings. Choosing any area puts a request in the message box; nothing runs until you send it.
+- **What we know, by area:** every area AURA has guidance for. A lit area has saved findings. Open a lit area to inspect its findings and evidence. Empty areas prepare a first request.
 
-A business with nothing saved yet shows the areas and two first steps: **Research my business**, which prepares a request for you to add your web address and send, and **See an example business**. The **aura** beside the business name is drawn only from saved state: its colours come from the chosen focus areas, its brightness from how many findings were reviewed in the last 30 days, a broken ring from challenged findings, and it moves only while a request is working. Select it to see the facts behind each part.
+A business with nothing saved yet shows the areas and two first steps: **Research my business**, which lets you enter a decision and website before preparing a request, and **See an example business**. The **aura** beside the business name is drawn only from saved state: its colours come from the chosen focus areas, its brightness from how many findings were reviewed in the last 30 days, a broken ring from challenged findings, and it moves only while a request is working. Select it to see the facts behind each part.
+
+Home opens deadlines and changes at the exact saved item. The text brief lists recent deliverables and their locations. When a file has a recorded originating chat or task, its preview opens that work directly. Findings show linked decisions, actions and recorded results where available.
+
+In the bakery example, **Is this application ready to submit?** leads to the grant draft. **Try this with my work** returns to the workspace you came from with a document-review request ready to edit. **Return to my workspace** takes you back without preparing a request.
 
 The same summary is available without the interface: `python scripts/workspace_summary.py --business-id <id> --workspace <folder>` prints it as JSON, and `--text` prints plain words for a morning brief or any AI app. `GET /api/summary?business=<id>` returns it to a custom view, adding the requests this running view is working on. It counts saved records only and is bounded on purpose; open a record or collection for more.
 

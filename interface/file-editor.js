@@ -46,7 +46,7 @@ async function render(view){
       <span class="file-location-path">${esc(info.location||view.ctx.ref)}</span>
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V4a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h4"/></svg>
     </button>
-    ${view.ctx.summary||''}
+    ${view.ctx.summary||''}${view.ctx.resultActions?.(info)||''}
     <div class="file-toolbar">
       <div class="filters file-modes">
         <button type="button" data-file-mode="preview" class="${view.editing?'':'active'}" aria-pressed="${!view.editing}">Preview</button>

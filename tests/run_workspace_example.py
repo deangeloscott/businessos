@@ -49,6 +49,7 @@ def main():
         assert any(c['kind']=='challenged' for c in s['changes']) and any(c.get('collection')=='Local competitors' for c in s['changes']),s['changes']
         assert s['deadlines'] and 0<=s['deadlines'][0]['days']<=7
         words=subprocess.run([sys.executable,str(ROOT/'scripts/workspace_summary.py'),'--workspace',str(target),'--business-id',bid,'--text'],env=env,capture_output=True,text=True,check=True).stdout
+        assert 'Recent results:' in words and 'outputs/' in words
         assert "This is AURA's example business. Everything in it is made up." in words
 
         # Its sample results exist as saved files, and its competitors can be drawn on a map.

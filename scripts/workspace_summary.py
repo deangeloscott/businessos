@@ -47,7 +47,7 @@ def _knowledge(objects, at):
         reviewed = _time(o.get('reviewed_at'))
         if reviewed:
             dated += 1
-            if at - reviewed <= timedelta(days=FRESH_DAYS):fresh += 1
+            if timedelta(0) <= at - reviewed <= timedelta(days=FRESH_DAYS):fresh += 1
     return {'findings': total, 'by_status': labels, 'by_area': [{'id': key, 'name': name, 'findings': areas[key]} for key, name in AREAS],
             # How current the findings are, only among those that record when they were last reviewed.
             'reviewed': {'with_date': dated, 'within_days': FRESH_DAYS, 'recent': fresh}}
@@ -79,6 +79,9 @@ def _goals(objects, limit):
 def _watches(bid, at, days, limit, change_limit):
     """Collections kept current, most recently checked first, and what their recent checks changed."""
     since = at - timedelta(days=days);watches = [];changes = []
+    try:bindings=collections.projects.load().get('bindings',{}).values()
+    except (ValueError,OSError):bindings=()
+    linked={v.get('collection_id') for v in bindings if v.get('kind')=='task' and v.get('business_id')==bid}
     for row in collections.inventory(bid)['items']:
         if row.get('unavailable'):continue
         try:d = collections.read(bid, row['id'])
@@ -86,10 +89,11 @@ def _watches(bid, at, days, limit, change_limit):
         checks = [c for c in d['checks'] if isinstance(c.get('at'), str)]
         last = checks[-1] if checks else None
         watches.append({'id': d['id'], 'name': d['name'], 'kind': 'reports' if d['mode'] == 'series' else 'results', 'current': row['current_count'],
+                        'task_linked': d['id'] in linked, 'coverage': (last.get('coverage') or {}).get('status','unknown') if last else None,
                         'last_checked': last['at'] if last else None, 'last_changes': int(last.get('change_count') or 0) if last else 0})
         for position, check in enumerate(checks):
             when = _time(check['at'])
-            if not when or when < since:continue
+            if not when or not since <= when <= at:continue
             # Filling a collection for the first time is not a change; later checks are.
             if position == 0 and len(d['checks']) < 50:continue
             for change in check.get('changes') or []:
@@ -100,21 +104,21 @@ def _watches(bid, at, days, limit, change_limit):
     return watches[:limit], len(watches), changes[:change_limit], len(changes)
 
 
-def _challenged(objects, at, days, limit):
+def _challenged(objects, at, days):
     """Findings that new evidence contradicted recently: the kind of change worth seeing first."""
     since = at - timedelta(days=days);rows = []
     for o in objects:
         when = _time(o.get('updated_at'))
-        if o.get('object_type') == 'Insight' and o.get('status') == 'contradicted' and when and when >= since:
+        if o.get('object_type') == 'Insight' and o.get('status') == 'contradicted' and when and since <= when <= at:
             rows.append({'kind': 'challenged', 'title': str(o.get('statement', ''))[:200], 'reason': 'New evidence challenges this finding.', 'at': o['updated_at'], 'record': o['id']})
-    return sorted(rows, key=lambda r: r['at'], reverse=True)[:limit]
+    return rows
 
 
 def _results(objects, limit):
     rows = [o for o in objects if o.get('object_type') == 'Asset' and not (((o.get('extensions') or {}).get('businessos')) or {}).get('collection')]
     rows.sort(key=lambda o: str(o.get('updated_at') or o.get('created_at') or ''), reverse=True)
     name = lambda o: str(o.get('business_role') or Path(str(o.get('location_reference') or '')).name or o.get('asset_type') or 'Saved result')[:160]
-    return [{'id': o['id'], 'title': name(o), 'type': o.get('asset_type', ''), 'updated_at': o.get('updated_at') or o.get('created_at')} for o in rows[:limit]], len(rows)
+    return [{'id': o['id'], 'title': name(o), 'location': str(o.get('location_reference') or ''), 'type': o.get('asset_type', ''), 'updated_at': o.get('updated_at') or o.get('created_at')} for o in rows[:limit]], len(rows)
 
 
 def _agents(bid):
@@ -123,7 +127,7 @@ def _agents(bid):
         import workspace_storage
         saved = (workspace_storage.view_preferences(workspace_root()).get('assistants') or {}).get(bid) or []
     except (OSError, ValueError, TypeError, KeyError, ImportError):return []
-    return [{'id': a.get('id'), 'name': a.get('name', ''), 'tasks': len(a.get('task_ids') or [])} for a in saved if isinstance(a, dict) and a.get('id') and not a.get('archived_at')][:12]
+    return [{'id': a.get('id'), 'name': a.get('name', ''), 'tasks': len(a.get('task_ids') or [])} for a in saved if isinstance(a, dict) and a.get('id') and not a.get('archived_at')]
 
 
 def summary(bid, at=None, days=7):
@@ -140,7 +144,9 @@ def summary(bid, at=None, days=7):
     attention, attention_total = _attention(objects, 5)
     goals, goals_total = _goals(objects, 6)
     watches, watches_total, changes, changes_total = _watches(bid, at, days, 8, 8)
-    changes = sorted(_challenged(objects, at, days, 4) + changes, key=lambda c: c['at'], reverse=True)[:8]
+    challenged = _challenged(objects, at, days)
+    changes_total += len(challenged)
+    changes = sorted(challenged + changes, key=lambda c: c['at'], reverse=True)[:8]
     results, results_total = _results(objects, 6)
     agents = _agents(bid)
     try:due = [{k: d[k] for k in ('collection_id', 'collection', 'item_id', 'title', 'due', 'days')} for d in deadlines(bid, now=at)][:5]
@@ -151,11 +157,11 @@ def summary(bid, at=None, days=7):
                          **({'example': True, 'example_built': example.get('built_at')} if isinstance(example, dict) else {})},
             'focus': focus, 'as_of': at.isoformat(timespec='seconds').replace('+00:00', 'Z'), 'changes_days': days,
             'knowledge': knowledge, 'changes': changes, 'attention': attention, 'deadlines': due, 'goals': goals,
-            'watches': watches, 'results': results, 'agents': agents,
+            'watches': watches, 'results': results, 'agents': agents[:12],
             'totals': {'findings': knowledge['findings'], 'changes': changes_total, 'attention': attention_total, 'goals': goals_total,
                        'watches': watches_total, 'results': results_total, 'agents': len(agents)},
             # Nothing saved beyond the organization itself: the home page shows first steps instead of empty tiles.
-            'empty': not (knowledge['findings'] or goals_total or watches_total or results_total or attention_total)}
+            'empty': not agents and all(o.get('object_type')=='Business' or (o.get('object_type')=='SourceRecord' and o.get('origin')=='initialization input') for o in objects)}
 
 
 def text(s):
@@ -191,8 +197,11 @@ def text(s):
                 lines.append(f"- {g['name']}: {latest}{joiner}{g['target']:g}" + (' (reached)' if g.get('reached') else ''))
             else:lines.append('- ' + g['name'])
     if s['watches']:
-        lines.append('Kept current:')
-        lines += [f"- {w['name']}: {w['current']} current, last checked {w['last_checked'][:10] if w['last_checked'] else 'never'}" for w in s['watches']]
+        lines.append('Saved collections:')
+        lines += [f"- {w['name']}: {w['current']} current, last checked {w['last_checked'][:10] if w['last_checked'] else 'never'}{', '+w['coverage'] if w.get('coverage') else ''}" for w in s['watches']]
+    if s['results']:
+        lines.append('Recent results:')
+        lines += [f"- {r['title']} — {r['location'] or r['id']}" for r in s['results']]
     if s['agents']:lines.append('Agents: ' + ', '.join(a['name'] for a in s['agents']))
     lines.append('Counts are of saved records only. Open a record or collection for its evidence.')
     return '\n'.join(lines)
