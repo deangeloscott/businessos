@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- **Home shows your business at a glance.** AURA now opens on Home: the message box on top, and under it what changed, what needs you, what you know, your goals, what is kept current, your agents and recent results. Sections appear as real work fills them, every row opens the record behind it, and every number is a count of saved records. **New chat** stays a clear, focused chat. A new business sees first steps, including **Research my business**.
+- **The aura.** A small mark beside the business name, drawn only from saved state: colour from your focus areas, brightness from how recently findings were reviewed, a broken ring when a finding is challenged, and movement only while a request is working. Select it to see the facts behind each part.
+- **What we know, by area.** Home lists every area AURA has guidance for and lights the ones with saved findings. Choosing an area prepares a request; nothing runs until you send it.
+- **An example business.** **See an example business** (Home, or Ctrl+K) opens a made-up bakery in its own workspace, filled in and labelled as an example everywhere, so you can look around or record a demo without showing real information. It is built through the same validated helpers as real work.
+- **A business summary for any AI app.** `scripts/workspace_summary.py` prints one short, read-only picture of a business (JSON, or plain words with `--text`), and `GET /api/summary` returns it to custom views.
+- **New recipes: showing and deciding.** Second opinions from several models, a morning brief, a page of claims and proof, a website check against memory, a portrait of the business, an imagined customer panel, and a what-if before a decision.
+- Fixed: research saved for the Funding & Impact area was rejected as an unknown area.
+
 - The Library lists items as soon as you select a type. Playbooks have their own tab, topics are optional filters, and Funding & Impact has its own topic. Grant Funding links directly to application writing as well as prospecting, preparation and award management. Files & media keeps its selected file type in sync with the results.
 - Grant and RFP guidance now covers form-ready answers, consistent budgets and draft handoff. Funding guidance distinguishes family funding, angels, venture funds and lender requirements. Research reviews check for overlapping datasets, and supporter workflows deliver usable outreach materials.
 

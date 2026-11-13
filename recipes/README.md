@@ -18,6 +18,7 @@ Open the smallest useful reference:
 - [Creative identity and continuity](creative/video/notes/identity-and-continuity.md) — optional guidance for creating, adapting, improving, and reusing people, avatars, voices, characters, and environments.
 - [Information design and presentations](creative/information-design/INDEX.md) — starting points for comparisons, process/maps, data graphics, decision briefs, and proposal decks.
 - [Copy and messaging](creative/copy-messaging/INDEX.md) — starting points for announcements, offers, objections, outreach, education, stories, and openings.
+- [Showing and deciding](business/INDEX.md) — second opinions from several models, a morning brief, a page of claims and proof, a website check against memory, a portrait of the business, an imagined customer panel, and a what-if before a decision.
 
 A menu points to a track, scale, assembly, or note; it does not require loading the linked material. If the task already identifies a specific recipe, open that file directly. Read deeper notes only when they materially improve the decision or prompt.
 

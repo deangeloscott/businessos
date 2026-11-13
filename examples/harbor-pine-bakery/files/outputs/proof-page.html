@@ -1,0 +1,80 @@
+<!doctype html>
+<!-- This page is part of AURA's example business. Harbor & Pine Bakery is made up, and so is everything on it. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>What we say, and the proof (example)</title>
+<style>
+:root{--bg:#f7f4ee;--card:#fffefb;--ink:#26221c;--muted:#645b4e;--line:#e2dacb;--ok:#1f6b4a;--ok-bg:#e0f1e8;--warn:#8a5a00;--warn-bg:#fbefd0;--stop:#8c2f2f;--stop-bg:#f6dede;--none:#4d5560;--none-bg:#e7e9ec;--note:#efe6d6}
+@media (prefers-color-scheme:dark){:root{--bg:#171512;--card:#211e19;--ink:#f0eadf;--muted:#b9ad9a;--line:#37322a;--ok:#7fd1a6;--ok-bg:#1d3a2c;--warn:#f0c46a;--warn-bg:#3b2f12;--stop:#f0a0a0;--stop-bg:#411e1e;--none:#b8c0ca;--none-bg:#2b2f35;--note:#2a251d}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif}
+.note{background:var(--note);color:var(--muted);font-size:14px;padding:10px 16px;text-align:center;border-bottom:1px solid var(--line)}
+.wrap{max-width:760px;margin:0 auto;padding:28px 16px 56px}
+h1{font-size:clamp(28px,6vw,40px);line-height:1.15;margin:0 0 8px}
+.lead{color:var(--muted);margin:0 0 26px}
+.claim{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:14px}
+.claim h2{font-size:19px;margin:0 0 8px;line-height:1.3}
+.tag{display:inline-block;font-size:13px;font-weight:600;padding:3px 10px;border-radius:999px;margin:0 6px 8px 0}
+.ok{background:var(--ok-bg);color:var(--ok)}
+.warn{background:var(--warn-bg);color:var(--warn)}
+.stop{background:var(--stop-bg);color:var(--stop)}
+.none{background:var(--none-bg);color:var(--none)}
+.claim p{margin:4px 0;color:var(--muted);font-size:15px}
+.claim p strong{color:var(--ink)}
+q{font-style:italic}
+.key{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 22px}
+</style>
+</head>
+<body>
+<div class="note">Example page. Harbor &amp; Pine Bakery is a made-up business in the fictional town of Port Hollis.</div>
+<div class="wrap">
+<h1>What we say, and the proof</h1>
+<p class="lead">Every claim we make in public, with what backs it up and whether that proof is still current. If proof has gone out of date, we say so here and stop using the claim until it is checked again.</p>
+<div class="key" aria-label="Key"><span class="tag ok">Proof is current</span><span class="tag warn">Proof is out of date</span><span class="tag none">No proof recorded yet</span><span class="tag stop">Retired</span></div>
+
+<div class="claim">
+<h2>Our sourdough ferments for 36 hours.</h2>
+<span class="tag ok">Proof is current</span><span class="tag none">Approved claim</span>
+<p><strong>Proof:</strong> our production log. <q>Time from mixing to oven: 36 hours.</q></p>
+<p>Evidence is strong and we may use it publicly. Checked recently.</p>
+</div>
+
+<div class="claim">
+<h2>Rated 4.8 on Google from 87 reviews.</h2>
+<span class="tag ok">Proof is current</span><span class="tag none">Approved claim</span>
+<p><strong>Proof:</strong> a copy of our business profile. <q>Average rating: 4.8 from 87 reviews.</q></p>
+<p>Public reviews, quoted as posted. The number changes as reviews arrive, so this is checked again within a month.</p>
+</div>
+
+<div class="claim">
+<h2>Everything is baked the day it is sold.</h2>
+<span class="tag none">No proof record yet</span><span class="tag none">Approved claim</span>
+<p><strong>Backed by:</strong> our production log. <q>Bread and pastries are sold the day they are baked.</q></p>
+<p>The owner states this and the log says it, but we have not saved separate proof, such as a photo of closing-time donations.</p>
+</div>
+
+<div class="claim">
+<h2>Our cafe customers reorder every week.</h2>
+<span class="tag warn">Proof is out of date</span><span class="tag none">Provisional claim</span>
+<p><strong>Proof:</strong> a note from one cafe, about eight weeks old. <q>We reorder every week.</q></p>
+<p>This was due for a check about three weeks ago. We will ask the cafe to confirm before we use it again, and until then we do not use it in marketing.</p>
+</div>
+
+<div class="claim">
+<h2>Our flour comes from a local mill.</h2>
+<span class="tag none">No proof recorded yet</span><span class="tag none">Provisional claim</span>
+<p>Our production log names the mill, Tidewater Mill, but we have not confirmed how far away it is, so we do not say &ldquo;local&rdquo; in public yet.</p>
+</div>
+
+<div class="claim">
+<h2>Our sourdough is the cheapest in Port Hollis.</h2>
+<span class="tag stop">Retired</span>
+<p>This was true last week. A nearby bakery has since cut its price below ours, so we no longer make the claim.</p>
+</div>
+
+<p class="lead">This page is an example of how a business can keep its claims and proof side by side. The claims, the bakery and the cafe are all invented.</p>
+</div>
+</body>
+</html>

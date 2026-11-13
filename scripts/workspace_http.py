@@ -144,7 +144,7 @@ def handler_for(app):
                 elif route in {'/app.js', '/style.css'}:
                     path = app.static / route[1:]
                     self.send_static(path, 'text/javascript; charset=utf-8' if path.suffix == '.js' else 'text/css; charset=utf-8')
-                elif route in {'/file-editor.js','/file-editor.css','/workspace-work.js','/workspace-continuity.js','/workspace-compose.js','/workspace-insight.js','/workspace-projects.js','/workspace-views.js','/workspace-focus.js','/workspace-terminal.js'} or route.startswith('/vendor/'):
+                elif route in {'/file-editor.js','/file-editor.css','/workspace-work.js','/workspace-continuity.js','/workspace-compose.js','/workspace-insight.js','/workspace-projects.js','/workspace-views.js','/workspace-focus.js','/workspace-hq.js','/workspace-terminal.js'} or route.startswith('/vendor/'):
                     relative=Path(route.lstrip('/'))
                     path=(STATIC/relative).resolve()
                     base=(STATIC/'vendor').resolve() if route.startswith('/vendor/') else STATIC.resolve()
@@ -187,6 +187,17 @@ def handler_for(app):
                     import workspace_focus
                     with app.lock:root=app.workspace_path
                     with workspace_scope(root):self.send(200,workspace_focus.public(workspace_focus.get(selected(query.get('business')))))
+                elif route == '/api/summary':
+                    # The home page's picture of the business, plus what this running view is working on right now.
+                    import workspace_summary
+                    with app.lock:root=app.workspace_path;owner=copy.copy(app)
+                    with workspace_scope(root):
+                        bid=selected(query.get('business'));result=workspace_summary.summary(bid,days=query.get('days',7))
+                        chats={c['id']:c for c in owner.preferences.get('chats',[]) if c.get('business_id')==bid}
+                        result['running']=[{'chat_id':j.get('chat_id'),'title':(chats.get(j.get('chat_id')) or {}).get('title',''),'agent':j.get('agent',''),
+                                            'assistant_id':(chats.get(j.get('chat_id')) or {}).get('assistant_id','')}
+                                           for j in owner.running_jobs(workspace_root()) if j.get('business_id')==bid]
+                    self.send(200,result)
                 elif route in {'/api/collection-view','/api/running','/api/goal-progress'}:
                     with app.lock:root=app.workspace_path;owner=copy.copy(app)
                     with workspace_scope(root):
@@ -622,7 +633,7 @@ def handler_for(app):
                         raise ValueError('AURA is restarting. Your workspace will reopen in a moment.')
                     if app.organization_job and app.organization_job['status']=='working' and route not in {'/api/organization/stop','/api/notifications','/api/usage/settings','/api/updates'}:
                         raise ValueError('Workspace organization is running. Wait or stop it before making changes.')
-                    if app.schedule_job and app.schedule_job['status']=='working' and (route in {'/api/lifecycle','/api/workspaces/open','/api/workspaces/create','/api/workspaces/relocate','/api/workspaces/restore'} or route.startswith('/api/organization/')):
+                    if app.schedule_job and app.schedule_job['status']=='working' and (route in {'/api/lifecycle','/api/workspaces/open','/api/workspaces/create','/api/example','/api/workspaces/relocate','/api/workspaces/restore'} or route.startswith('/api/organization/')):
                         raise ValueError('Wait for task setup or stop it before changing workspaces or restarting AURA.')
                     if app.running_jobs(None if route in {'/api/lifecycle','/api/workspaces/relocate','/api/workspaces/restore'} else workspace_root()) and route not in {'/api/goals','/api/chat/answer','/api/archive','/api/permissions','/api/assistants','/api/agents','/api/native-agents','/api/delegation-settings','/api/preferences','/api/profile','/api/interface/reset','/api/chats/recover','/api/chats/archive','/api/chats/reconnect','/api/notifications','/api/chat','/api/chat/stop','/api/chats/new','/api/chats/open','/api/chats/rename','/api/chats/organize','/api/projects','/api/chats/model','/api/chats/personalization','/api/chats/context','/api/connect','/api/workspaces/open','/api/usage/settings','/api/context-settings','/api/updates','/api/schedules/action','/api/schedules/stop'}:
                         raise ValueError('Your agent is working. Wait for its reply before changing this workspace.')
@@ -774,6 +785,27 @@ def handler_for(app):
                         subprocess.run([sys.executable,str(PRODUCT_ROOT / 'scripts/setup.py'),'--organization',name,'--no-link','--json'],
                             env=env,check=True,capture_output=True,timeout=90,**flags)
                         self.send(200,app.open_workspace(str(target)))
+                    elif route == '/api/example':
+                        # Open AURA's made-up example business in its own workspace, building it the first time.
+                        import workspace_example
+                        home = workspace_catalog.default_home()
+                        found = [] if data.get('fresh') is True else workspace_example.existing(home)
+                        target = Path(found[0]['path']) if found else workspace_example.free_folder(home)
+                        if not found:
+                            home.mkdir(parents=True, exist_ok=True)
+                            env = dict(os.environ, BUSINESSOS_WORKSPACE=str(target), BUSINESSOS_WORKSPACE_CONFIG=str(target / '.businessos/workspace.json'), PYTHONUTF8='1')
+                            flags = {'creationflags':subprocess.CREATE_NO_WINDOW} if os.name == 'nt' else {}
+                            built = subprocess.run([sys.executable,str(PRODUCT_ROOT / 'scripts/workspace_example.py'),'build','--destination',str(target)],
+                                env=env,capture_output=True,text=True,encoding='utf-8',errors='replace',timeout=300,**flags)
+                            if built.returncode:raise ValueError('The example business could not be prepared. '+(built.stderr.strip().splitlines() or ['Try again.'])[-1][:300])
+                        opened = app.open_workspace(str(target))
+                        try:
+                            # The example needs no setup questions: it already has a name, a description and its work.
+                            example_bid = json.loads((target / workspace_example.MARKER).read_text(encoding='utf-8'))['business_id']
+                            if example_bid not in app.preferences.setdefault('seen', []):
+                                app.preferences['seen'].append(example_bid);app.save_preferences()
+                        except (OSError, ValueError, KeyError):pass
+                        self.send(200,{**opened,'built':not found})
                     elif route == '/api/workspaces/open':
                         opened = app.open_workspace(str(data.get('path','')),preserve_local=bool(data.get('replace') and Path(data['replace']).resolve()==Path(app.workspace_path).resolve()))
                         if data.get('replace'):

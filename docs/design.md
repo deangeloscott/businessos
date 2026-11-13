@@ -37,6 +37,8 @@ A style (Personalization → Style, `data-style` on the root) restyles the whole
 - **Provenance:** results show where they came from the same way everywhere: your correction, the number of sources and when they were checked, or "No source".
 - **Findings:** a finding shows its status as one chip, the same everywhere: Supported, Unverified, Challenged, Needs review or Replaced, with its evidence counts. It opens in one finding panel.
 - **Result cards:** what the AI saved or checked during a reply appears as a card in the chat that opens the result.
+- **Home:** the message box stays on top and the business at a glance sits under it (`interface/workspace-hq.js`, drawing `/api/summary`). A section appears only when real records fill it, every row opens the record behind it, and every number is a count of saved records. Everything sits on a `hq-card` surface so it reads the same in every style. New chat stays a clear chat with nothing else on the page.
+- **Aura:** the mark beside the business name is drawn only from saved state and opens an explanation of each part. Nothing about it is decorative or estimated.
 - **Settings:** one grouped page with search. Add a setting as a row in `settingsGroups`.
 - **Ctrl+K actions:** add an action to `shellCommands()`. Actions click the same control a person would, so there is one code path.
 - **Activity:** running work and notifications share the bell.
@@ -45,7 +47,7 @@ A style (Personalization → Style, `data-style` on the root) restyles the whole
 
 ## Words
 
-- One name per place, everywhere: **Business & memory**, **Files & media**, **Library** (with Agents as a tab), **Scheduled tasks**, **Activity**, **Settings**.
+- One name per place, everywhere: **Home**, **Business & memory**, **Files & media**, **Library** (with Agents as a tab), **Scheduled tasks**, **Activity**, **Settings**.
 - Sentence case. Buttons say what they do ("Save goal", "Connect Claude"), not "OK" or "Submit".
 - Plain errors that say what happened and what to do next.
 

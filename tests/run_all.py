@@ -62,6 +62,8 @@ TESTS=[
     'tests/run_knowledge_currency.py',
     'tests/run_continue_and_terminal.py',
     'tests/run_workspace_focus.py',
+    'tests/run_workspace_summary.py',
+    'tests/run_workspace_example.py',
     'tests/run_runtime_bundle.py',
     'tests/run_bootstrap_reference_ids.py',
     'tests/run_preferences_multioperator.py',

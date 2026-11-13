@@ -1,0 +1,72 @@
+<!doctype html>
+<!-- This page is part of AURA's example business. Harbor & Pine Bakery is made up, and so is everything on it. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Saturday sourdough pre-order (example)</title>
+<style>
+:root{--bg:#fbf6ee;--card:#fffdf9;--ink:#2b2118;--muted:#6b5b4b;--line:#e6d9c6;--accent:#a4501f;--accent-ink:#fff;--soft:#f3e7d3;--pine:#2f5d50}
+@media (prefers-color-scheme:dark){:root{--bg:#1b1612;--card:#252019;--ink:#f3eadc;--muted:#bfae98;--line:#3a3128;--accent:#e0925a;--accent-ink:#1b1612;--soft:#2e261d;--pine:#7fb7a4}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.6 Georgia,"Times New Roman",serif}
+.wrap{max-width:720px;margin:0 auto;padding:0 16px 48px}
+.note{background:var(--soft);border-bottom:1px solid var(--line);color:var(--muted);font:14px/1.4 system-ui,sans-serif;padding:10px 16px;text-align:center}
+header{padding:40px 0 8px}
+.brand{font:600 14px/1 system-ui,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--pine)}
+h1{font-size:clamp(34px,8vw,54px);line-height:1.08;margin:14px 0 12px}
+.lead{font-size:20px;color:var(--muted);margin:0 0 22px}
+.price{display:inline-block;background:var(--accent);color:var(--accent-ink);font:600 18px/1 system-ui,sans-serif;padding:14px 22px;border-radius:999px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin:30px 0}
+.fact{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}
+.fact b{display:block;font:600 13px/1.2 system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--pine);margin-bottom:6px}
+h2{font-size:26px;margin:38px 0 10px}
+ol{padding-left:0;list-style:none;counter-reset:step;margin:0}
+ol li{counter-increment:step;position:relative;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px 14px 58px;margin-bottom:10px}
+ol li:before{content:counter(step);position:absolute;left:14px;top:12px;width:32px;height:32px;border-radius:50%;background:var(--pine);color:var(--bg);font:600 16px/32px system-ui,sans-serif;text-align:center}
+blockquote{margin:0;padding:16px 18px;border-left:4px solid var(--accent);background:var(--card);border-radius:0 14px 14px 0}
+blockquote footer{font:14px/1.4 system-ui,sans-serif;color:var(--muted);margin-top:6px}
+.small{font:14px/1.5 system-ui,sans-serif;color:var(--muted)}
+.cta{background:var(--soft);border:1px solid var(--line);border-radius:18px;padding:24px;margin-top:34px;text-align:center}
+.cta p{margin:6px 0}
+</style>
+</head>
+<body>
+<div class="note">Example page. Harbor &amp; Pine Bakery is a made-up business in the fictional town of Port Hollis.</div>
+<div class="wrap">
+<header>
+<div class="brand">Harbor &amp; Pine Bakery</div>
+<h1>Saturday sourdough, saved for you.</h1>
+<p class="lead">Reserve a loaf by Thursday evening and collect it warm on Saturday morning. No queue, and no arriving to an empty shelf.</p>
+<span class="price">$9.00 a loaf</span>
+</header>
+
+<section class="facts" aria-label="The details">
+<div class="fact"><b>Order by</b>Thursday evening</div>
+<div class="fact"><b>Collect</b>Saturday, 7:00 to 10:30</div>
+<div class="fact"><b>The loaf</b>850 g, 36-hour ferment</div>
+<div class="fact"><b>Rated</b>4.8 on Google from 87 reviews</div>
+</section>
+
+<h2>Why it takes 36 hours</h2>
+<p>We mix the dough on Thursday at 16:00 and let it rest slowly in the cold until Saturday at 02:00. It is shaped and proofed, then goes into the oven at 04:00. The long rest is what gives the crust its colour and the crumb its flavour.</p>
+<p>Bread is baked the day it is sold. Anything left at closing goes to the harbour food pantry.</p>
+
+<h2>How to pre-order</h2>
+<ol>
+<li><strong>Pick your loaves.</strong> Plain sourdough is $9.00. Ask what the seeded loaf is doing this week.</li>
+<li><strong>Tell us by Thursday evening.</strong> Message the shop or tell us at the counter. This page is an example, so there is no real order button.</li>
+<li><strong>Collect on Saturday.</strong> Come any time from 7:00 to 10:30. Your loaf has your name on it.</li>
+</ol>
+
+<h2>What customers say</h2>
+<blockquote>"The crust on the sourdough is the best I have had in town. Worth the Saturday pre-order."<footer>5-star review, shown with the same wording it was posted with</footer></blockquote>
+<p class="small">Last Saturday our sourdough sold out at 11:20. Pre-ordering is the way to be sure of a loaf.</p>
+
+<div class="cta">
+<p><strong>Open Tuesday to Sunday, 6:30 to 14:00</strong></p>
+<p class="small">Harbor &amp; Pine Bakery, Port Hollis. This is an example, so there is no real street address.</p>
+</div>
+</div>
+</body>
+</html>

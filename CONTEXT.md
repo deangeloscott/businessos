@@ -115,6 +115,7 @@ Explain what the user can use or do next in everyday language, and briefly say w
 - `scripts/list_businesses.py --json` — list managed organizations.
 - `scripts/init_business.py <business-id> --name "<name>"` — establish the smallest truthful organization identity.
 - `scripts/enter.py "<request>" --business-id <id>` — bounded context plus Playbook/Workflow candidates, without semantic routing. Re-run with `--selected-playbook <id>` and/or `--selected-workflow <id>` only when actually chosen.
+- `scripts/workspace_summary.py --business-id <id> --text` — one short read-only picture: what is known, what changed, what needs someone, goals and watches. Counts of saved records only.
 - `scripts/find_playbooks.py "<request>"` / `scripts/find_workflows.py "<request>"` — browse candidate jobs and procedures.
 - `scripts/remember.py <business-id> --input <json>` / `scripts/forget.py <business-id> <object-ref>` — create/update durable meaning; remove a whole unreferenced object.
 - `scripts/create_run.py ...` / `scripts/complete_run.py ...` — optional receipts only when useful.

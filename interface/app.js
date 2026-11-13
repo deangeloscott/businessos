@@ -1066,7 +1066,7 @@ async function render() {
   const ticket=state.renderTicket=(state.renderTicket||0)+1,scope=JSON.stringify([state.data.workspace,state.business]);
   const current=()=>ticket===state.renderTicket&&scope===JSON.stringify([state.data.workspace,state.business]);
   state.urls.forEach(URL.revokeObjectURL); state.urls=[];state.mediaCache=new Map();state.fileObserver?.disconnect();
-  if(!state.business){state.view='home';$('#section-dialog').close();}
+  if(!state.business){state.view='home';$('#section-dialog').close();window.auraHQ?.sync();}
   const view=state.view==='home'?$('#view'):$('#section-content');
   if(!state.business) {
     if(state.data.businesses.length){view.innerHTML='<div class="setup-intro"><h1>Choose your business above</h1><p>This workspace contains more than one business.</p></div>';return;}
@@ -1081,7 +1081,7 @@ async function render() {
   if(state.view==='updates'){await openUpdates();return;}
   if(state.view==='work')state.library=await cachedApi('/api/library');
   if(!current())return;
-  if(state.view==='home') { $('#section-dialog').close();$('#view').innerHTML='';return; }
+  if(state.view==='home') { $('#section-dialog').close();$('#view').innerHTML='';window.auraHQ?.sync();return; }
   $('#detail').close();
   $('#section-description').textContent=({business:'Your goals, useful facts, preferences, and decisions.',files:'Find the work you have saved and the locations you have linked.',work:'Workflows, recipes, skills and tools your AI can reuse, plus the agents that do the work.',tools:'Work your connected AI apps repeat for you.',assistants:'Workflows, recipes, skills and tools your AI can reuse, plus the agents that do the work.'})[state.view]||'';
   $('#page-refresh').disabled=state.view==='work'&&!!state.libraryRefreshing;$('#page-refresh').textContent=$('#page-refresh').disabled?'Refreshing…':'Refresh';
@@ -1642,6 +1642,8 @@ function shellCommands(){
   const click=attrs=>()=>{const b=document.createElement('button');b.type='button';b.hidden=true;Object.entries(attrs).forEach(([k,v])=>b.setAttribute(k,v));document.body.append(b);b.click();b.remove();};
   const settings=settingsGroups.flatMap(([,rows])=>rows.map(([id,title,text,words])=>({label:title,hint:'Settings',words:text+' '+words,run:click({'data-settings-open':id})})));
   return [
+    {label:'Home',hint:'Go to',words:'business at a glance headquarters hq overview dashboard start',run:()=>attempt(goHome)},
+    {label:'See an example business',hint:'Made-up, to look around',words:'demo sample showcase tour bakery example',run:()=>attempt(()=>window.auraExample.open())},
     {label:'New chat',hint:'Alt N',words:'start conversation',run:()=>attempt(newShellChat)},
     {label:'Add goal',hint:'Business & memory',words:'new goal outcome target',run:click({'data-action':'add-goal'})},
     {label:'Add context',hint:'Business & memory',words:'save fact preference decision memory',run:click({'data-add-context':''})},
@@ -2383,6 +2385,7 @@ function showMessages(latest=false) {
   $('#welcome-heading').hidden=!!state.chatMeta||!!state.chat.length||state.busy;
   renderComposerFiles();
   renderChatRecovery();
+  window.auraHQ?.sync();
 }
 async function submitRequest(text, scheduleId=null, organizationId=state.pendingOrganizationId||null) {
   if(!state.business||!state.hydrated||state.navigating||state.organizationWorking||state.starting||state.goalSetting||state.stopping||state.settling||state.needsCheck||state.connectionInterrupted)return;
@@ -2450,6 +2453,7 @@ document.addEventListener('click',event=>attempt(async()=>{
   if(button.hasAttribute('data-dismiss-schedule')){state.dismissedScheduleJob=state.scheduleJob.id;renderScheduleOperation();}
   if(button.dataset.openSchedule){await syncSchedules(true);await scheduleDetails(button.dataset.openSchedule);}
   if(button.id==='new-chat')await newShellChat();
+  if(button.id==='home-open')await goHome();
   if(button.id==='chats'||button.id==='chat-list-back')await showChats(button.id==='chat-list-back'&&!!state.chatArchiveView);
   if(button.hasAttribute('data-chat-archive-view'))await showChats(button.dataset.chatArchiveView==='true');
   if(button.dataset.archiveChat){const business=state.business,root=state.data.workspace,id=button.dataset.archiveChat,archived=button.dataset.archived==='true';button.disabled=true;try{await api('/api/chats/archive',{business,id,archived});if(business!==state.business||root!==state.data.workspace)return;if(archived&&state.chatMeta?.id===id)await newShellChat();await renderShell();await showChats(archived);notice(archived?'Chat archived. Find it under All → Archived.':'Chat restored to Recent chats.');}finally{if(button.isConnected)button.disabled=false;}}
@@ -2794,7 +2798,7 @@ function detachChatView(){
 async function openShellChat(id){
   rememberChatDraft();detachChatView();const root=state.data.workspace,business=state.business,ticket=state.navigationTicket=(state.navigationTicket||0)+1;
   state.navigating=true;chatControls();let result;try{result=await api('/api/chats/open',{business,id});}finally{if(ticket===state.navigationTicket){state.navigating=false;chatControls();}}if(ticket!==state.navigationTicket||root!==state.data.workspace||business!==state.business)return;
-  state.view='home';$('#section-dialog').close();$('#detail').close();state.chat=result.messages;state.chatMeta=result.chat;state.liveJob=result.job;state.busy=result.job?.status==='working';state.activeJob=state.busy?result.job:null;
+  state.view='home';state.home=false;$('#section-dialog').close();$('#detail').close();state.chat=result.messages;state.chatMeta=result.chat;state.liveJob=result.job;state.busy=result.job?.status==='working';state.activeJob=state.busy?result.job:null;
   state.needsCheck=result.chat?.status==='working'&&!state.busy;state.recovery=result.recovery||null;window.auraContinuity?.acceptRecovery(result);state.hydrated=true;restoreChatDraft();showMessages();await refresh();recordShellRoute();closeMobileSidebar();
   notice(result.history_note||'');
   if(!result.job||result.job.status!=='working')checkNativeChanges();
@@ -2802,8 +2806,15 @@ async function openShellChat(id){
   else taskStatus(state.needsCheck?'Check this chat in '+appName(state.chatMeta?.agent)+' before continuing.':result.history_note?'':state.chat.length?'Conversation restored':'Ready when you are');
   chatControls();
 }
-async function newShellChat(draft=null){
-  if(!state.business)return;rememberChatDraft();detachChatView();
+/* Home shows the business at a glance under the message box. New chat stays a clear, focused chat. */
+async function goHome(){
+  if(!state.business)return;
+  // With no chat open there is nothing to leave: show Home in place and keep whatever is typed in the message box.
+  if(!state.chatMeta&&!state.chat.length&&!state.busy){state.view='home';state.home=true;$('#detail').close();await render();showMessages();recordShellRoute();await renderShell();closeMobileSidebar();window.auraHQ?.sync(true);return;}
+  await newShellChat(null,true);
+}
+async function newShellChat(draft=null,home=false){
+  if(!state.business)return;rememberChatDraft();detachChatView();state.home=home===true;
   state.pendingComposerDraft=draft;
   const ticket=state.navigationTicket=(state.navigationTicket||0)+1,root=state.data.workspace,business=state.business;
   state.navigating=true;state.view='home';$('#section-dialog').close();$('#detail').close();state.chat=[];state.chatMeta=null;state.newAssistantId=null;state.newAssistantName='';state.newChatProject='';state.newChatConnection=null;state.newChatPermission=null;state.selectedFiles=[];state.contextReferences=[];state.draftGoalId='';$('#request').value='';state.hydrated=true;
@@ -2869,6 +2880,7 @@ async function renderShell(force=true){
   applyProfile(state.data.profile||state.profile||{});renderComposerConnection();$('#active-workspace-label').textContent=rows('Business')[0]?.title||'Choose a workspace';
   $('#active-chat-label').textContent=state.view==='home'?(state.chatMeta?.title||''):({business:'Business & memory',files:'Files & media',work:'Library',assistants:'Library · Agents',tools:'Scheduled tasks',sharing:'Share or import'})[state.view]||'';
   for(const b of document.querySelectorAll('.sidebar-sections [data-view]'))b.setAttribute('aria-current',b.dataset.view===state.view||b.dataset.view==='work'&&state.view==='assistants'?'page':'false');
+  if($('#home-open')){$('#home-open').setAttribute('aria-current',state.view==='home'&&!!state.home&&!state.chatMeta&&!state.busy?'page':'false');$('#home-open').disabled=!state.business;}
   paintRunning();
   if(!state.business){$('#sidebar-chat-list').innerHTML='<p class="sidebar-empty">Choose a workspace to see its chats.</p>';return;}
   const root=state.data.workspace,business=state.business;
@@ -2905,8 +2917,10 @@ function closeMobileSidebar(){document.body.classList.remove('sidebar-mobile-ope
 function openSidebar(){document.body.classList.add('sidebar-mobile-open');$('#sidebar-scrim').hidden=false;$('#sidebar-open').setAttribute('aria-expanded','true');}
 function recordShellRoute(replace=false){
   if(shellRestoring||!state.data)return;
-  const value={aura:true,workspace:state.data.workspace,business:state.business,chat:state.chatMeta?.id||'',view:state.view};
+  const value={aura:true,workspace:state.data.workspace,business:state.business,chat:state.chatMeta?.id||'',view:state.view,home:!!state.home&&!state.chatMeta};
   const url=new URL(location.href);if(value.business)url.searchParams.set('business',value.business);if(value.chat)url.searchParams.set('chat',value.chat);else url.searchParams.delete('chat');
+  // No chat and not home means a clear new chat; a reload returns to it rather than to the home page.
+  if(!value.chat&&!value.home&&value.business)url.searchParams.set('new','1');else url.searchParams.delete('new');
   if(value.view!=='home')url.searchParams.set('view',value.view);else url.searchParams.delete('view');
   if(JSON.stringify(history.state)===JSON.stringify(value))return;
   history[replace||!history.state?.aura?'replaceState':'pushState'](value,'',url);
@@ -2916,7 +2930,7 @@ window.addEventListener('popstate',event=>attempt(async()=>{
   try{
     if(r.workspace!==state.data.workspace)await openStoredWorkspace(r.workspace);
     if(r.business!==state.business)await changeWorkspace(r.business);
-    if(r.chat&&r.chat!==state.chatMeta?.id)await openShellChat(r.chat);else if(!r.chat&&state.chatMeta)await newShellChat();
+    if(r.chat&&r.chat!==state.chatMeta?.id)await openShellChat(r.chat);else if(!r.chat&&(state.chatMeta||!!r.home!==!!state.home))await newShellChat(null,!!r.home);
     state.view=['business','files','work','tools','assistants','sharing','updates'].includes(r.view)?r.view:'home';$('#detail').close();await render();await renderShell();
   }finally{shellRestoring=false;}
 }));
@@ -3162,7 +3176,8 @@ const shellTimer=setInterval(()=>{if(!state.closed&&!document.hidden&&state.data
 async function restoreInitialRoute(){
   if(!state.data||$('#refresh').disabled||(state.business&&!state.hydrated)){setTimeout(restoreInitialRoute,100);return;}
   const params=new URLSearchParams(location.search),chat=params.get('chat'),view=params.get('view');
-  try{if(chat&&chat!==state.chatMeta?.id)await openShellChat(chat);if(['business','files','work','tools','assistants','sharing','updates'].includes(view)){state.view=view;await render();await renderShell();}}finally{recordShellRoute(true);}
+  // Opening AURA lands on the home page. A link to a chat, a clear new chat, or a request still working is left alone.
+  try{if(chat&&chat!==state.chatMeta?.id)await openShellChat(chat);else if(!chat&&!params.get('new')&&state.business&&!state.busy)await goHome();if(['business','files','work','tools','assistants','sharing','updates'].includes(view)){state.view=view;await render();await renderShell();}}finally{recordShellRoute(true);}
 }
 attempt(restoreInitialRoute);
 

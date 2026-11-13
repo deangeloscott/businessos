@@ -1,0 +1,2252 @@
+{
+ "name": "Harbor & Pine Bakery (example)",
+ "description": "A made-up neighbourhood bakery in the fictional town of Port Hollis, selling sourdough, pastries and coffee, with Saturday pre-orders and wholesale to local cafes. This is AURA's example business.",
+ "focus": [
+  "local-business",
+  "grants"
+ ],
+ "collections": [
+  {
+   "key": "local-competitors",
+   "name": "Local competitors",
+   "purpose": "The four nearby bakeries and us: local search rank, rating, reviews and sourdough price.",
+   "runs": [
+    {
+     "at": "{{now-6d@06:30}}",
+     "items": [
+      {
+       "id": "harbor-pine",
+       "title": "Harbor & Pine Bakery (example)",
+       "summary": "Our bakery. Open Tuesday to Sunday, 6:30 to 14:00.",
+       "fields": {
+        "rank": 5,
+        "rating": 4.7,
+        "reviews": 80,
+        "sourdough_price": 9.0,
+        "latitude": 44.1037,
+        "longitude": -69.1089,
+        "type": "You",
+        "yours": true
+       }
+      },
+      {
+       "id": "crumb-and-co",
+       "title": "Crumb & Co",
+       "summary": "Bakery and cafe, open every day until 17:00.",
+       "fields": {
+        "rank": 1,
+        "rating": 4.5,
+        "reviews": 213,
+        "sourdough_price": 9.5,
+        "latitude": 44.1051,
+        "longitude": -69.1062,
+        "type": "Bakery and cafe"
+       }
+      },
+      {
+       "id": "salt-rye",
+       "title": "Salt Rye Bakehouse",
+       "summary": "Rye and sourdough, takes reservations by message. Open Wednesday to Sunday.",
+       "fields": {
+        "rank": 2,
+        "rating": 4.7,
+        "reviews": 96,
+        "sourdough_price": 11.0,
+        "latitude": 44.1016,
+        "longitude": -69.1121,
+        "type": "Bakery"
+       }
+      },
+      {
+       "id": "little-anchor",
+       "title": "Little Anchor Pastries",
+       "summary": "Pastry shop that sells sourdough on Fridays and Saturdays only.",
+       "fields": {
+        "rank": 4,
+        "rating": 4.4,
+        "reviews": 58,
+        "sourdough_price": 10.5,
+        "latitude": 44.1069,
+        "longitude": -69.113,
+        "type": "Pastry shop"
+       }
+      },
+      {
+       "id": "daily-loaf",
+       "title": "The Daily Loaf",
+       "summary": "Large range, early opening, online pre-orders since this month.",
+       "fields": {
+        "rank": 3,
+        "rating": 4.2,
+        "reviews": 131,
+        "sourdough_price": 10.0,
+        "latitude": 44.1002,
+        "longitude": -69.1047,
+        "type": "Bakery and cafe"
+       }
+      }
+     ]
+    },
+    {
+     "at": "{{now-3d@06:30}}",
+     "items": [
+      {
+       "id": "harbor-pine",
+       "title": "Harbor & Pine Bakery (example)",
+       "summary": "Our bakery. Open Tuesday to Sunday, 6:30 to 14:00.",
+       "fields": {
+        "rank": 5,
+        "rating": 4.7,
+        "reviews": 84,
+        "sourdough_price": 9.0,
+        "latitude": 44.1037,
+        "longitude": -69.1089,
+        "type": "You",
+        "yours": true
+       },
+       "material_change": false
+      },
+      {
+       "id": "crumb-and-co",
+       "title": "Crumb & Co",
+       "summary": "Bakery and cafe, open every day until 17:00.",
+       "fields": {
+        "rank": 1,
+        "rating": 4.5,
+        "reviews": 214,
+        "sourdough_price": 9.5,
+        "latitude": 44.1051,
+        "longitude": -69.1062,
+        "type": "Bakery and cafe"
+       },
+       "material_change": false
+      },
+      {
+       "id": "salt-rye",
+       "title": "Salt Rye Bakehouse",
+       "summary": "Rye and sourdough, takes reservations by message. Open Wednesday to Sunday.",
+       "fields": {
+        "rank": 2,
+        "rating": 4.7,
+        "reviews": 97,
+        "sourdough_price": 11.0,
+        "latitude": 44.1016,
+        "longitude": -69.1121,
+        "type": "Bakery"
+       },
+       "material_change": false
+      },
+      {
+       "id": "little-anchor",
+       "title": "Little Anchor Pastries",
+       "summary": "Pastry shop that sells sourdough on Fridays and Saturdays only.",
+       "fields": {
+        "rank": 4,
+        "rating": 4.4,
+        "reviews": 58,
+        "sourdough_price": 10.5,
+        "latitude": 44.1069,
+        "longitude": -69.113,
+        "type": "Pastry shop"
+       },
+       "material_change": false
+      },
+      {
+       "id": "daily-loaf",
+       "title": "The Daily Loaf",
+       "summary": "Large range, early opening, online pre-orders since this month.",
+       "fields": {
+        "rank": 3,
+        "rating": 4.2,
+        "reviews": 131,
+        "sourdough_price": 10.0,
+        "latitude": 44.1002,
+        "longitude": -69.1047,
+        "type": "Bakery and cafe"
+       },
+       "material_change": false
+      }
+     ]
+    },
+    {
+     "at": "{{now-2h}}",
+     "items": [
+      {
+       "id": "harbor-pine",
+       "title": "Harbor & Pine Bakery (example)",
+       "summary": "Our bakery. Open Tuesday to Sunday, 6:30 to 14:00.",
+       "fields": {
+        "rank": 4,
+        "rating": 4.8,
+        "reviews": 87,
+        "sourdough_price": 9.0,
+        "latitude": 44.1037,
+        "longitude": -69.1089,
+        "type": "You",
+        "yours": true
+       },
+       "change_reason": "Moved up to fourth in local map results"
+      },
+      {
+       "id": "crumb-and-co",
+       "title": "Crumb & Co",
+       "summary": "Bakery and cafe, open every day until 17:00.",
+       "fields": {
+        "rank": 1,
+        "rating": 4.5,
+        "reviews": 216,
+        "sourdough_price": 7.5,
+        "latitude": 44.1051,
+        "longitude": -69.1062,
+        "type": "Bakery and cafe"
+       },
+       "change_reason": "Cut sourdough from $9.50 to $7.50"
+      },
+      {
+       "id": "salt-rye",
+       "title": "Salt Rye Bakehouse",
+       "summary": "Rye and sourdough, takes reservations by message. Open Wednesday to Sunday.",
+       "fields": {
+        "rank": 2,
+        "rating": 4.7,
+        "reviews": 98,
+        "sourdough_price": 11.0,
+        "latitude": 44.1016,
+        "longitude": -69.1121,
+        "type": "Bakery"
+       },
+       "material_change": false
+      },
+      {
+       "id": "little-anchor",
+       "title": "Little Anchor Pastries",
+       "summary": "Pastry shop that sells sourdough on Fridays and Saturdays only.",
+       "fields": {
+        "rank": 5,
+        "rating": 4.4,
+        "reviews": 59,
+        "sourdough_price": 10.5,
+        "latitude": 44.1069,
+        "longitude": -69.113,
+        "type": "Pastry shop"
+       },
+       "material_change": false
+      },
+      {
+       "id": "daily-loaf",
+       "title": "The Daily Loaf",
+       "summary": "Large range, early opening, online pre-orders since this month.",
+       "fields": {
+        "rank": 3,
+        "rating": 4.2,
+        "reviews": 132,
+        "sourdough_price": 10.0,
+        "latitude": 44.1002,
+        "longitude": -69.1047,
+        "type": "Bakery and cafe"
+       },
+       "material_change": false
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "grants",
+   "name": "Grants",
+   "purpose": "Grants the bakery could win, with deadlines",
+   "runs": [
+    {
+     "at": "{{now-6d@06:10}}",
+     "items": [
+      {
+       "id": "state-fund",
+       "title": "State main-street fund",
+       "summary": "Up to $5,000 for signs, awnings, windows and exterior paint. The business pays half. Equipment is not covered.",
+       "fields": {
+        "amount": 5000,
+        "status": "Researching"
+       },
+       "source_refs": [
+        {
+         "reference": "{{work}}/sources/state-fund-notice.md"
+        }
+       ],
+       "expires_at": "{{now+40d@17:00}}"
+      },
+      {
+       "id": "harbour-association",
+       "title": "Harbour Association equipment micro-grant",
+       "summary": "Awarded earlier this year toward a second proofing cabinet.",
+       "fields": {
+        "amount": 5000,
+        "status": "Awarded"
+       }
+      },
+      {
+       "id": "county-fund",
+       "title": "County food-business equipment fund",
+       "summary": "Up to $7,500 toward ovens and mixers. Application in progress.",
+       "fields": {
+        "amount": 7500,
+        "status": "Drafting"
+       }
+      },
+      {
+       "id": "packaging-rebate",
+       "title": "Compostable packaging rebate",
+       "summary": "Up to $3,000 back on compostable bags and boxes. Eligibility not yet read in full.",
+       "fields": {
+        "amount": 3000,
+        "status": "Researching"
+       },
+       "expires_at": "{{now+25d@17:00}}"
+      }
+     ]
+    },
+    {
+     "at": "{{now-1d@06:10}}",
+     "items": [
+      {
+       "id": "state-fund",
+       "title": "State main-street fund",
+       "summary": "Up to $5,000 for signs, awnings, windows and exterior paint. The business pays half. Equipment is not covered.",
+       "fields": {
+        "amount": 5000,
+        "status": "Researching"
+       },
+       "source_refs": [
+        {
+         "reference": "{{work}}/sources/state-fund-notice.md"
+        }
+       ],
+       "expires_at": "{{now+40d@17:00}}"
+      },
+      {
+       "id": "harbour-association",
+       "title": "Harbour Association equipment micro-grant",
+       "summary": "Awarded earlier this year toward a second proofing cabinet.",
+       "fields": {
+        "amount": 5000,
+        "status": "Awarded"
+       }
+      },
+      {
+       "id": "county-fund",
+       "title": "County food-business equipment fund",
+       "summary": "Up to $7,500 toward ovens and mixers. Application sent; waiting for a decision.",
+       "fields": {
+        "amount": 7500,
+        "status": "Submitted"
+       },
+       "change_reason": "Application submitted"
+      },
+      {
+       "id": "packaging-rebate",
+       "title": "Compostable packaging rebate",
+       "summary": "Up to $3,000 back on compostable bags and boxes. Eligibility not yet read in full.",
+       "fields": {
+        "amount": 3000,
+        "status": "Researching"
+       },
+       "expires_at": "{{now+25d@17:00}}"
+      },
+      {
+       "id": "city-grant",
+       "title": "City small-business grant",
+       "summary": "Up to $10,000 for kitchen and delivery equipment. The bakery pays 20% of the project cost. Needs 2025 revenue and two supplier quotes.",
+       "fields": {
+        "amount": 10000,
+        "status": "Drafting"
+       },
+       "source_refs": [
+        {
+         "reference": "{{work}}/sources/city-grant-notice.md"
+        }
+       ],
+       "change_reason": "New eligible grant",
+       "expires_at": "{{now+6d@17:00}}"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "review-themes",
+   "name": "Review themes",
+   "purpose": "What customers mention in our Google reviews, and how they rate us when they do.",
+   "runs": [
+    {
+     "at": "{{now-5d@07:00}}",
+     "items": [
+      {
+       "id": "crust",
+       "title": "Sourdough crust",
+       "summary": "Customers say the crust is the best they have had in town.",
+       "fields": {
+        "mentions": 19,
+        "average_rating": 4.9,
+        "tone": "Positive"
+       }
+      },
+      {
+       "id": "staff",
+       "title": "Friendly staff",
+       "summary": "Reviewers describe the staff as friendly.",
+       "fields": {
+        "mentions": 16,
+        "average_rating": 4.9,
+        "tone": "Positive"
+       }
+      },
+      {
+       "id": "pickup",
+       "title": "Pre-order pickup",
+       "summary": "Pickup of Saturday pre-orders is called quick.",
+       "fields": {
+        "mentions": 10,
+        "average_rating": 4.8,
+        "tone": "Positive"
+       }
+      },
+      {
+       "id": "coffee",
+       "title": "Coffee",
+       "summary": "Coffee is called good.",
+       "fields": {
+        "mentions": 8,
+        "average_rating": 4.6,
+        "tone": "Positive"
+       }
+      },
+      {
+       "id": "price",
+       "title": "Price",
+       "summary": "A few reviewers find coffee with a pastry pricey.",
+       "fields": {
+        "mentions": 6,
+        "average_rating": 4.1,
+        "tone": "Mixed"
+       }
+      }
+     ]
+    },
+    {
+     "at": "{{now-1d@07:00}}",
+     "items": [
+      {
+       "id": "crust",
+       "title": "Sourdough crust",
+       "summary": "Customers say the crust is the best they have had in town.",
+       "fields": {
+        "mentions": 21,
+        "average_rating": 4.9,
+        "tone": "Positive"
+       },
+       "material_change": false
+      },
+      {
+       "id": "staff",
+       "title": "Friendly staff",
+       "summary": "Reviewers describe the staff as friendly.",
+       "fields": {
+        "mentions": 17,
+        "average_rating": 4.9,
+        "tone": "Positive"
+       },
+       "material_change": false
+      },
+      {
+       "id": "pickup",
+       "title": "Pre-order pickup",
+       "summary": "Pickup of Saturday pre-orders is called quick.",
+       "fields": {
+        "mentions": 12,
+        "average_rating": 4.8,
+        "tone": "Positive"
+       },
+       "material_change": false
+      },
+      {
+       "id": "coffee",
+       "title": "Coffee",
+       "summary": "Coffee is called good.",
+       "fields": {
+        "mentions": 9,
+        "average_rating": 4.6,
+        "tone": "Positive"
+       },
+       "material_change": false
+      },
+      {
+       "id": "price",
+       "title": "Price",
+       "summary": "A few reviewers find coffee with a pastry pricey.",
+       "fields": {
+        "mentions": 7,
+        "average_rating": 4.1,
+        "tone": "Mixed"
+       },
+       "material_change": false
+      },
+      {
+       "id": "sells-out",
+       "title": "Sells out early",
+       "summary": "Reviewers who came late found the sourdough gone. Some ask for a Sunday pickup.",
+       "fields": {
+        "mentions": 6,
+        "average_rating": 4.3,
+        "tone": "Mixed"
+       },
+       "change_reason": "New theme in recent reviews"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "content-calendar",
+   "name": "Content calendar",
+   "purpose": "Posts and newsletters planned for the next few weeks.",
+   "runs": [
+    {
+     "at": "{{now-4d@08:00}}",
+     "items": [
+      {
+       "id": "making-of",
+       "title": "Carousel: how the sourdough is made",
+       "summary": "Five frames on the 36-hour method, from mixing to oven.",
+       "fields": {
+        "channel": "Instagram",
+        "status": "Idea"
+       }
+      },
+      {
+       "id": "newsletter",
+       "title": "This week's newsletter",
+       "summary": "Seeded sourdough, the Saturday pre-order and a note on prices.",
+       "fields": {
+        "channel": "Newsletter",
+        "status": "Drafting"
+       },
+       "expires_at": "{{now+2d@07:00}}"
+      },
+      {
+       "id": "reminder",
+       "title": "Pre-order reminder post",
+       "summary": "A Thursday reminder to reserve a Saturday loaf.",
+       "fields": {
+        "channel": "Instagram",
+        "status": "Idea"
+       }
+      },
+      {
+       "id": "photos",
+       "title": "Photo refresh for our business profile",
+       "summary": "Add new photos of the shop, the ovens and the pastry case.",
+       "fields": {
+        "channel": "Google profile",
+        "status": "Idea"
+       }
+      },
+      {
+       "id": "baker",
+       "title": "Meet the baker",
+       "summary": "Short video of Thursday dough mixing.",
+       "fields": {
+        "channel": "Instagram",
+        "status": "Idea"
+       }
+      },
+      {
+       "id": "last-week",
+       "title": "Newsletter: seeded sourdough is back",
+       "summary": "Sent last week.",
+       "fields": {
+        "channel": "Newsletter",
+        "status": "Published"
+       }
+      }
+     ]
+    },
+    {
+     "at": "{{now-1d@08:00}}",
+     "items": [
+      {
+       "id": "making-of",
+       "title": "Carousel: how the sourdough is made",
+       "summary": "Five frames on the 36-hour method, from mixing to oven.",
+       "fields": {
+        "channel": "Instagram",
+        "status": "Drafting"
+       },
+       "change_reason": "Script drafted"
+      },
+      {
+       "id": "newsletter",
+       "title": "This week's newsletter",
+       "summary": "Seeded sourdough, the Saturday pre-order and a note on prices.",
+       "fields": {
+        "channel": "Newsletter",
+        "status": "Scheduled"
+       },
+       "change_reason": "Ready to send",
+       "expires_at": "{{now+2d@07:00}}"
+      },
+      {
+       "id": "reminder",
+       "title": "Pre-order reminder post",
+       "summary": "A Thursday reminder to reserve a Saturday loaf.",
+       "fields": {
+        "channel": "Instagram",
+        "status": "Idea"
+       },
+       "material_change": false
+      },
+      {
+       "id": "photos",
+       "title": "Photo refresh for our business profile",
+       "summary": "Add new photos of the shop, the ovens and the pastry case.",
+       "fields": {
+        "channel": "Google profile",
+        "status": "Idea"
+       },
+       "material_change": false
+      },
+      {
+       "id": "baker",
+       "title": "Meet the baker",
+       "summary": "Short video of Thursday dough mixing.",
+       "fields": {
+        "channel": "Instagram",
+        "status": "Idea"
+       },
+       "material_change": false
+      },
+      {
+       "id": "last-week",
+       "title": "Newsletter: seeded sourdough is back",
+       "summary": "Sent last week.",
+       "fields": {
+        "channel": "Newsletter",
+        "status": "Published"
+       },
+       "material_change": false
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "memory": [
+  {
+   "objects": [
+    {
+     "key": "sourdough",
+     "object_type": "ProductService",
+     "content": {
+      "name": "Sourdough loaves",
+      "kind": "product",
+      "status": "active",
+      "description": "850 g loaves, fermented for 36 hours and baked fresh each morning. $9.00 a loaf."
+     }
+    },
+    {
+     "key": "pastries",
+     "object_type": "ProductService",
+     "content": {
+      "name": "Pastries",
+      "kind": "product",
+      "status": "active",
+      "description": "Almond croissants, cardamom buns, cheese twists and plain croissants, baked each morning."
+     }
+    },
+    {
+     "key": "coffee",
+     "object_type": "ProductService",
+     "content": {
+      "name": "Coffee",
+      "kind": "product",
+      "status": "active",
+      "description": "Flat whites and filter coffee at the counter, often with a pastry."
+     }
+    },
+    {
+     "key": "preorders",
+     "object_type": "ProductService",
+     "content": {
+      "name": "Saturday pre-orders",
+      "kind": "service",
+      "status": "active",
+      "description": "Reserve a sourdough loaf by Thursday evening and collect it on Saturday between 7:00 and 10:30."
+     }
+    },
+    {
+     "key": "wholesale",
+     "object_type": "ProductService",
+     "content": {
+      "name": "Cafe wholesale",
+      "kind": "service",
+      "status": "active",
+      "description": "Weekly bread and pastry delivery to local cafes, delivered between 7:00 and 8:00."
+     }
+    },
+    {
+     "key": "weekend",
+     "object_type": "AudienceSegment",
+     "content": {
+      "name": "Weekend regulars",
+      "priority": 1,
+      "description": "Neighbours who come on Saturday morning for sourdough and pastries, many of them by pre-order.",
+      "attributes": {
+       "visits": "Saturday morning",
+       "buys": "Sourdough and pastries",
+       "how_they_order": "Mostly pre-order"
+      },
+      "extensions": {
+       "businessos": {
+        "authority": "verified_first_party"
+       }
+      }
+     }
+    },
+    {
+     "key": "commuters",
+     "object_type": "AudienceSegment",
+     "content": {
+      "name": "Weekday commuters",
+      "priority": 2,
+      "description": "People who stop in before 9:30 from Tuesday to Friday for a coffee and a pastry.",
+      "attributes": {
+       "visits": "Tuesday to Friday before 9:30",
+       "buys": "Coffee and a pastry"
+      },
+      "extensions": {
+       "businessos": {
+        "authority": "verified_first_party"
+       }
+      }
+     }
+    },
+    {
+     "key": "cafes",
+     "object_type": "AudienceSegment",
+     "content": {
+      "name": "Cafe owners",
+      "priority": 3,
+      "description": "Owners of nearby cafes and diners who want bread or pastries delivered early in the morning.",
+      "attributes": {
+       "wants": "Early delivery and a steady weekly order",
+       "buys": "Pastries, rolls and loaves"
+      },
+      "extensions": {
+       "businessos": {
+        "authority": "verified_first_party"
+       }
+      }
+     }
+    },
+    {
+     "object_type": "Offer",
+     "content": {
+      "name": "Saturday sourdough pre-order",
+      "status": "active",
+      "product_service_refs": [
+       "@sourdough",
+       "@preorders"
+      ],
+      "audience_refs": [
+       "@weekend"
+      ],
+      "pricing": {
+       "loaf": 9.0,
+       "currency": "USD"
+      },
+      "terms": {
+       "order_by": "Thursday evening",
+       "pickup": "Saturday 7:00 to 10:30"
+      },
+      "conversion_action": "Reserve a loaf on the pre-order page",
+      "extensions": {
+       "businessos": {
+        "authority": "verified_first_party"
+       }
+      }
+     }
+    },
+    {
+     "object_type": "Offer",
+     "content": {
+      "name": "Cafe sample box",
+      "status": "active",
+      "product_service_refs": [
+       "@wholesale",
+       "@pastries"
+      ],
+      "audience_refs": [
+       "@cafes"
+      ],
+      "pricing": {
+       "note": "Wholesale prices are quoted to each cafe"
+      },
+      "terms": {
+       "delivery": "Weekdays, 7:00 to 8:00"
+      },
+      "conversion_action": "Ask for a sample box",
+      "extensions": {
+       "businessos": {
+        "authority": "verified_first_party"
+       }
+      }
+     }
+    },
+    {
+     "object_type": "BusinessClaim",
+     "content": {
+      "statement": "Our sourdough ferments for 36 hours.",
+      "claim_kind": "approved_business_claim",
+      "status": "approved",
+      "authority": "verified_first_party",
+      "source_ref": "{{work}}/sources/production-log.md",
+      "support_quote": "Time from mixing to oven: 36 hours."
+     }
+    },
+    {
+     "object_type": "BusinessClaim",
+     "content": {
+      "statement": "Rated 4.8 on Google from 87 reviews.",
+      "claim_kind": "approved_business_claim",
+      "status": "approved",
+      "authority": "verified_first_party",
+      "source_ref": "{{work}}/sources/our-reviews.md",
+      "support_quote": "Average rating: 4.8 from 87 reviews."
+     }
+    },
+    {
+     "object_type": "BusinessClaim",
+     "content": {
+      "statement": "Everything is baked the day it is sold.",
+      "claim_kind": "approved_business_claim",
+      "status": "approved",
+      "authority": "verified_first_party",
+      "source_ref": "{{work}}/sources/production-log.md",
+      "support_quote": "Bread and pastries are sold the day they are baked."
+     }
+    },
+    {
+     "object_type": "BusinessClaim",
+     "content": {
+      "statement": "Our cafe customers reorder every week.",
+      "claim_kind": "candidate",
+      "status": "provisional",
+      "authority": "derived_inference",
+      "source_ref": "{{work}}/sources/wholesale-enquiries.md",
+      "support_quote": "We reorder every week."
+     }
+    },
+    {
+     "object_type": "BusinessClaim",
+     "content": {
+      "statement": "Our flour comes from a local mill.",
+      "claim_kind": "candidate",
+      "status": "provisional",
+      "authority": "candidate_strategy",
+      "source_ref": "{{work}}/sources/production-log.md",
+      "support_quote": "Bread flour comes from Tidewater Mill, delivered weekly.",
+      "extensions": {
+       "businessos": {
+        "note": "The mill is named in the production log, but how far away it is has not been confirmed."
+       }
+      }
+     }
+    },
+    {
+     "object_type": "BusinessClaim",
+     "content": {
+      "statement": "Our sourdough is the cheapest in Port Hollis.",
+      "claim_kind": "candidate",
+      "status": "retired",
+      "authority": "derived_inference",
+      "source_ref": "{{work}}/sources/rival-menu-prices.md",
+      "support_quote": "Crumb & Co's counter sign this week reads: \"Sourdough now $7.50 (was $9.50).\"",
+      "extensions": {
+       "businessos": {
+        "note": "Retired because Crumb & Co now charges less than we do."
+       }
+      }
+     }
+    }
+   ]
+  }
+ ],
+ "research": [
+  {
+   "method_type": "model_created",
+   "domain": "customer-intelligence",
+   "sources": [
+    {
+     "source_reference": "{{work}}/sources/order-log.md",
+     "acquisition_method": "uploaded_document",
+     "captured_text": "| 4 weeks ago | 31 | 18 | 12:10 |\n| 3 weeks ago | 36 | 22 | 11:55 |\n| 2 weeks ago | 41 | 27 | 11:45 |\n| Last week | 47 | 31 | 11:20 |"
+    },
+    {
+     "source_reference": "{{work}}/sources/order-log.md",
+     "acquisition_method": "uploaded_document",
+     "captured_text": "| Tuesday | 58 | 74% |\n| Wednesday | 61 | 73% |\n| Thursday | 66 | 76% |\n| Friday | 79 | 78% |"
+    },
+    {
+     "source_reference": "{{work}}/sources/order-log.md",
+     "acquisition_method": "uploaded_document",
+     "captured_text": "| Almond croissant | 214 |\n| Cardamom bun | 168 |\n| Cheese twist | 131 |\n| Plain croissant | 122 |"
+    },
+    {
+     "source_reference": "{{work}}/sources/our-reviews.md",
+     "acquisition_method": "uploaded_document",
+     "captured_text": "| Sourdough crust | 21 | 4.9 |\n| Friendly staff | 17 | 4.9 |\n| Pre-order pickup | 12 | 4.8 |\n| Coffee | 9 | 4.6 |\n| Price | 7 | 4.1 |\n| Sells out early | 6 | 4.3 |"
+    },
+    {
+     "source_reference": "{{work}}/sources/our-reviews.md",
+     "acquisition_method": "uploaded_document",
+     "captured_text": "- 3 stars, 3 weeks ago: \"Lovely loaf. I wish there was a Sunday pickup slot.\""
+    },
+    {
+     "source_reference": "{{work}}/sources/our-reviews.md",
+     "acquisition_method": "uploaded_document",
+     "captured_text": "- 3 stars, 4 weeks ago: \"Would love a Sunday pickup slot too. The queue at 8:00 is long.\""
+    },
+    {
+     "source_reference": "{{work}}/sources/our-reviews.md",
+     "acquisition_method": "uploaded_document",
+     "captured_text": "Average rating: 4.8 from 87 reviews.",
+     "id": "src_5e1a7c0b93d24f68"
+    }
+   ],
+   "observations": [
+    {
+     "statement": "Sourdough pre-orders on the last four Saturdays were 31, 36, 41 and 47.",
+     "source_indexes": [
+      0
+     ]
+    },
+    {
+     "statement": "Sourdough sold out at 11:55, 11:45 and 11:20 on the last three Saturdays.",
+     "source_indexes": [
+      0
+     ]
+    },
+    {
+     "statement": "Repeat customers placed 31 of last Saturday's 47 pre-orders.",
+     "source_indexes": [
+      0
+     ]
+    },
+    {
+     "statement": "Weekday transactions before 9:30 averaged 79 on Fridays and 58 to 66 from Tuesday to Thursday.",
+     "source_indexes": [
+      1
+     ]
+    },
+    {
+     "statement": "Between 73% and 78% of weekday morning transactions included a coffee.",
+     "source_indexes": [
+      1
+     ]
+    },
+    {
+     "statement": "Almond croissant sold 214 units in four weeks, ahead of the cardamom bun (168), cheese twist (131) and plain croissant (122).",
+     "source_indexes": [
+      2
+     ]
+    },
+    {
+     "statement": "Sourdough crust was the most mentioned theme in reviews (21 of 87), and those reviews averaged 4.9 stars.",
+     "source_indexes": [
+      3
+     ]
+    },
+    {
+     "statement": "Two reviews ask for a Sunday pickup slot.",
+     "source_indexes": [
+      4,
+      5
+     ]
+    },
+    {
+     "statement": "The shop's average rating is 4.8 from 87 reviews.",
+     "source_indexes": [
+      6
+     ]
+    }
+   ],
+   "insights": [
+    {
+     "statement": "Saturday sourdough pre-orders have grown every week for four weeks, from 31 to 47.",
+     "observation_indexes": [
+      0
+     ],
+     "status": "supported",
+     "insight_type": "finding",
+     "reviewed_at": "{{now-2d}}"
+    },
+    {
+     "statement": "Sourdough has sold out before noon on each of the last three Saturdays.",
+     "observation_indexes": [
+      1
+     ],
+     "status": "supported",
+     "insight_type": "finding",
+     "reviewed_at": "{{now-3d}}"
+    },
+    {
+     "statement": "About two in three Saturday pre-orders come from repeat customers: 31 of 47 last Saturday.",
+     "observation_indexes": [
+      2
+     ],
+     "status": "supported",
+     "insight_type": "finding",
+     "reviewed_at": "{{now-4d}}"
+    },
+    {
+     "statement": "Friday is the busiest weekday morning, with about 79 transactions before 9:30 against 58 to 66 on the other days.",
+     "observation_indexes": [
+      3
+     ],
+     "status": "supported",
+     "insight_type": "finding",
+     "reviewed_at": "{{now-5d}}"
+    },
+    {
+     "statement": "Coffee goes with roughly three in four weekday morning sales.",
+     "observation_indexes": [
+      4
+     ],
+     "status": "supported",
+     "insight_type": "finding",
+     "reviewed_at": "{{now-5d}}"
+    },
+    {
+     "statement": "Almond croissant is our top-selling pastry.",
+     "observation_indexes": [
+      5
+     ],
+     "status": "supported",
+     "insight_type": "finding",
+     "reviewed_at": "{{now-38d}}"
+    },
+    {
+     "statement": "Customers praise the sourdough crust more than anything else in our reviews.",
+     "observation_indexes": [
+      6,
+      8
+     ],
+     "status": "supported",
+     "insight_type": "finding",
+     "reviewed_at": "{{now-41d}}",
+     "extensions": {
+      "businessos": {
+       "collection_refs": [
+        "{{collection:review-themes}}"
+       ]
+      }
+     }
+    },
+    {
+     "statement": "A Sunday pickup slot may be worth testing for pre-orders.",
+     "observation_indexes": [
+      7
+     ],
+     "status": "candidate",
+     "insight_type": "finding",
+     "reviewed_at": "{{now-14d}}"
+    }
+   ]
+  },
+  {
+   "method_type": "model_created",
+   "domain": "competitor-intelligence",
+   "sources": [
+    {
+     "source_reference": "{{work}}/sources/rival-menu-prices.md",
+     "acquisition_method": "uploaded_document",
+     "captured_text": "| Harbor & Pine Bakery (us) | $9.00 | $9.00 | $3.75 | $4.25 |\n| Crumb & Co | $9.50 | $7.50 | $3.25 | $4.00 |\n| Salt Rye Bakehouse | $11.00 | $11.00 | $4.00 | $4.50 |\n| Little Anchor Pastries | $10.50 | $10.50 | $3.50 | $4.25 |\n| The Daily Loaf | $10.00 | $10.00 | $3.25 | $3.90 |"
+    },
+    {
+     "source_reference": "{{work}}/sources/rival-menu-prices.md",
+     "acquisition_method": "uploaded_document",
+     "captured_text": "Crumb & Co's counter sign this week reads: \"Sourdough now $7.50 (was $9.50).\""
+    },
+    {
+     "source_reference": "{{work}}/sources/rival-menu-prices.md",
+     "acquisition_method": "uploaded_document",
+     "captured_text": "| Harbor & Pine Bakery (us) | Tuesday to Sunday, 6:30 to 14:00 |\n| Crumb & Co | Every day, 6:30 to 17:00 |"
+    },
+    {
+     "source_reference": "{{work}}/sources/rival-menu-prices.md",
+     "acquisition_method": "uploaded_document",
+     "captured_text": "- Little Anchor Pastries sells sourdough on Fridays and Saturdays only.\n- Salt Rye Bakehouse takes sourdough reservations by message.\n- The Daily Loaf started an online pre-order form this month."
+    },
+    {
+     "source_reference": "{{work}}/sources/local-search-results.md",
+     "acquisition_method": "uploaded_document",
+     "captured_text": "| 1 | Crumb & Co | 4.5 | 216 |\n| 2 | Salt Rye Bakehouse | 4.7 | 98 |\n| 3 | The Daily Loaf | 4.2 | 132 |\n| 4 | Harbor & Pine Bakery (us) | 4.8 | 87 |\n| 5 | Little Anchor Pastries | 4.4 | 59 |"
+    },
+    {
+     "source_reference": "{{work}}/sources/rival-reviews.md",
+     "acquisition_method": "uploaded_document",
+     "captured_text": "- 3 stars, this week: \"Sourdough is cheaper this week but the loaf looks smaller than it used to be.\""
+    },
+    {
+     "source_reference": "{{work}}/sources/rival-reviews.md",
+     "acquisition_method": "uploaded_document",
+     "captured_text": "- 3 stars, this week: \"Waited 25 minutes on Saturday morning.\"\n- 3 stars, last week: \"Line out the door again.\""
+    }
+   ],
+   "observations": [
+    {
+     "statement": "Crumb & Co's sign this week says its sourdough is now $7.50, down from $9.50.",
+     "source_indexes": [
+      1,
+      0
+     ],
+     "id": "obs_crumbpricecut01"
+    },
+    {
+     "statement": "Last week the four nearby bakeries priced a sourdough loaf at $9.50 (Crumb & Co), $10.00 (The Daily Loaf), $10.50 (Little Anchor Pastries) and $11.00 (Salt Rye Bakehouse), against our $9.00.",
+     "source_indexes": [
+      0
+     ],
+     "id": "obs_rivalpriceslast01"
+    },
+    {
+     "statement": "This week the other three bakeries still charge $10.00 to $11.00 for a sourdough loaf, against our $9.00.",
+     "source_indexes": [
+      0
+     ]
+    },
+    {
+     "statement": "Salt Rye Bakehouse charges $11.00 for a loaf and is rated 4.7, the highest rating of the four rivals.",
+     "source_indexes": [
+      0,
+      4
+     ]
+    },
+    {
+     "statement": "Salt Rye Bakehouse takes sourdough reservations by message, and The Daily Loaf started an online pre-order form this month.",
+     "source_indexes": [
+      3
+     ]
+    },
+    {
+     "statement": "Crumb & Co opens 6:30 to 17:00 every day; we open 6:30 to 14:00, Tuesday to Sunday.",
+     "source_indexes": [
+      2
+     ]
+    },
+    {
+     "statement": "Little Anchor Pastries sells sourdough on Fridays and Saturdays only.",
+     "source_indexes": [
+      3
+     ]
+    },
+    {
+     "statement": "One reviewer says Crumb & Co's loaf looks smaller than it used to.",
+     "source_indexes": [
+      5
+     ]
+    },
+    {
+     "statement": "Two recent reviews of The Daily Loaf describe a long wait or a line out the door.",
+     "source_indexes": [
+      6
+     ]
+    }
+   ],
+   "insights": [
+    {
+     "statement": "Crumb & Co cut its sourdough price from $9.50 to $7.50 this week.",
+     "observation_indexes": [
+      0
+     ],
+     "status": "supported",
+     "insight_type": "finding",
+     "id": "ins_crumbpricecut01",
+     "reviewed_at": "{{now-1d}}",
+     "extensions": {
+      "businessos": {
+       "collection_refs": [
+        "{{collection:local-competitors}}"
+       ]
+      }
+     }
+    },
+    {
+     "statement": "Our sourdough is the cheapest in Port Hollis.",
+     "observation_indexes": [
+      1
+     ],
+     "status": "contradicted",
+     "insight_type": "finding",
+     "reviewed_at": "{{now-1d}}",
+     "extensions": {
+      "businessos": {
+       "collection_refs": [
+        "{{collection:local-competitors}}"
+       ]
+      }
+     },
+     "evidence_links": [
+      {
+       "ref": "obs_crumbpricecut01",
+       "relationship": "contradicts",
+       "reason": "Crumb & Co now charges $7.50, below our $9.00."
+      }
+     ]
+    },
+    {
+     "statement": "At $9.00 we still charge less than three of the four nearby bakeries.",
+     "observation_indexes": [
+      2
+     ],
+     "status": "supported",
+     "insight_type": "finding",
+     "id": "ins_stillbelowrivals01",
+     "reviewed_at": "{{now-1d}}",
+     "extensions": {
+      "businessos": {
+       "collection_refs": [
+        "{{collection:local-competitors}}"
+       ]
+      }
+     }
+    },
+    {
+     "statement": "The most expensive loaf nearby, Salt Rye Bakehouse at $11.00, belongs to the best-rated rival (4.7).",
+     "observation_indexes": [
+      3
+     ],
+     "status": "supported",
+     "insight_type": "finding",
+     "reviewed_at": "{{now-6d}}",
+     "extensions": {
+      "businessos": {
+       "collection_refs": [
+        "{{collection:local-competitors}}"
+       ]
+      }
+     }
+    },
+    {
+     "statement": "Two rivals now take sourdough pre-orders: Salt Rye Bakehouse by message and The Daily Loaf through an online form.",
+     "observation_indexes": [
+      4
+     ],
+     "status": "supported",
+     "insight_type": "finding",
+     "reviewed_at": "{{now-4d}}",
+     "extensions": {
+      "businessos": {
+       "collection_refs": [
+        "{{collection:local-competitors}}"
+       ]
+      }
+     }
+    },
+    {
+     "statement": "Crumb & Co is open longer than we are: every day until 17:00, against our 14:00 close.",
+     "observation_indexes": [
+      5
+     ],
+     "status": "supported",
+     "insight_type": "finding",
+     "reviewed_at": "{{now-33d}}",
+     "extensions": {
+      "businessos": {
+       "collection_refs": [
+        "{{collection:local-competitors}}"
+       ]
+      }
+     }
+    },
+    {
+     "statement": "Little Anchor Pastries sells sourdough only on Fridays and Saturdays.",
+     "observation_indexes": [
+      6
+     ],
+     "status": "supported",
+     "insight_type": "finding",
+     "reviewed_at": "{{now-36d}}",
+     "extensions": {
+      "businessos": {
+       "collection_refs": [
+        "{{collection:local-competitors}}"
+       ]
+      }
+     }
+    },
+    {
+     "statement": "Crumb & Co's loaf may be smaller than before the price cut.",
+     "observation_indexes": [
+      7
+     ],
+     "status": "candidate",
+     "insight_type": "finding",
+     "reviewed_at": "{{now-1d}}",
+     "extensions": {
+      "businessos": {
+       "collection_refs": [
+        "{{collection:local-competitors}}"
+       ]
+      }
+     }
+    },
+    {
+     "statement": "Waits at The Daily Loaf may be a recurring complaint.",
+     "observation_indexes": [
+      8
+     ],
+     "status": "candidate",
+     "insight_type": "finding",
+     "reviewed_at": "{{now-3d}}",
+     "extensions": {
+      "businessos": {
+       "collection_refs": [
+        "{{collection:local-competitors}}"
+       ]
+      }
+     }
+    }
+   ]
+  },
+  {
+   "method_type": "model_created",
+   "domain": "seo-aeo",
+   "sources": [
+    {
+     "source_reference": "{{work}}/sources/local-search-results.md",
+     "acquisition_method": "uploaded_document",
+     "captured_text": "| Position | Business | Rating | Reviews |\n|---|---|---|---|\n| 1 | Crumb & Co | 4.5 | 216 |\n| 2 | Salt Rye Bakehouse | 4.7 | 98 |\n| 3 | The Daily Loaf | 4.2 | 132 |\n| 4 | Harbor & Pine Bakery (us) | 4.8 | 87 |"
+    },
+    {
+     "source_reference": "{{work}}/sources/local-search-results.md",
+     "acquisition_method": "uploaded_document",
+     "captured_text": "- \"sourdough Port Hollis\": 1 Salt Rye Bakehouse, 2 Harbor & Pine Bakery, 3 Crumb & Co, 4 The Daily Loaf.\n- \"Saturday sourdough pre-order Port Hollis\": 1 Harbor & Pine Bakery, 2 Salt Rye Bakehouse."
+    },
+    {
+     "source_reference": "{{work}}/sources/local-search-results.md",
+     "acquisition_method": "uploaded_document",
+     "captured_text": "| Harbor & Pine Bakery (us) | Bakery | 14 |\n| Crumb & Co | Bakery, Cafe | 60 |\n| Salt Rye Bakehouse | Bakery | 31 |\n| Little Anchor Pastries | Bakery, Dessert shop | 22 |\n| The Daily Loaf | Bakery, Cafe | 45 |"
+    },
+    {
+     "source_reference": "{{work}}/sources/local-search-results.md",
+     "acquisition_method": "uploaded_document",
+     "captured_text": "Question typed this week: \"Where is the best sourdough in Port Hollis?\" The answer named Salt Rye Bakehouse and Crumb & Co. It did not name Harbor & Pine Bakery."
+    }
+   ],
+   "observations": [
+    {
+     "statement": "We are fourth of five in map results for \"bakery Port Hollis\".",
+     "source_indexes": [
+      0
+     ]
+    },
+    {
+     "statement": "We are second for \"sourdough Port Hollis\" and first for \"Saturday sourdough pre-order Port Hollis\".",
+     "source_indexes": [
+      1
+     ]
+    },
+    {
+     "statement": "Crumb & Co and The Daily Loaf list two categories (Bakery, Cafe) and sit above us in map results; our profile lists one (Bakery).",
+     "source_indexes": [
+      2,
+      0
+     ]
+    },
+    {
+     "statement": "Our profile has 14 photos, the fewest of the five bakeries; Crumb & Co has the most with 60.",
+     "source_indexes": [
+      2
+     ]
+    },
+    {
+     "statement": "An AI assistant asked for the best sourdough in Port Hollis named Salt Rye Bakehouse and Crumb & Co, not us.",
+     "source_indexes": [
+      3
+     ]
+    }
+   ],
+   "insights": [
+    {
+     "statement": "We rank fourth in local map results for \"bakery Port Hollis\".",
+     "observation_indexes": [
+      0
+     ],
+     "status": "supported",
+     "insight_type": "finding",
+     "reviewed_at": "{{now-1d}}",
+     "extensions": {
+      "businessos": {
+       "collection_refs": [
+        "{{collection:local-competitors}}"
+       ]
+      }
+     }
+    },
+    {
+     "statement": "We rank second for \"sourdough Port Hollis\" and first for Saturday sourdough pre-orders.",
+     "observation_indexes": [
+      1
+     ],
+     "status": "supported",
+     "insight_type": "finding",
+     "reviewed_at": "{{now-1d}}"
+    },
+    {
+     "statement": "Both bakeries that list a second category (Cafe) rank above us for \"bakery Port Hollis\".",
+     "observation_indexes": [
+      2
+     ],
+     "status": "supported",
+     "insight_type": "finding",
+     "reviewed_at": "{{now-40d}}"
+    },
+    {
+     "statement": "Our business profile has the fewest photos of the five bakeries.",
+     "observation_indexes": [
+      3
+     ],
+     "status": "supported",
+     "insight_type": "finding",
+     "reviewed_at": "{{now-31d}}"
+    },
+    {
+     "statement": "In one check this week, an AI assistant left us out of its answer on the best sourdough in town.",
+     "observation_indexes": [
+      4
+     ],
+     "status": "supported",
+     "insight_type": "finding",
+     "reviewed_at": "{{now-3d}}"
+    },
+    {
+     "statement": "A second category and more photos might help us move above The Daily Loaf in map results.",
+     "observation_indexes": [
+      2,
+      3
+     ],
+     "status": "candidate",
+     "insight_type": "finding",
+     "reviewed_at": "{{now-6d}}"
+    }
+   ]
+  },
+  {
+   "method_type": "model_created",
+   "domain": "funding-impact",
+   "sources": [
+    {
+     "source_reference": "{{work}}/sources/city-grant-notice.md",
+     "acquisition_method": "uploaded_document",
+     "captured_text": "- Up to $10,000 per business, once a year.\n- Open to food businesses in Port Hollis with 1 to 15 employees that have traded for at least two years.\n- Pays for kitchen equipment and delivery equipment. It does not pay wages or rent."
+    },
+    {
+     "source_reference": "{{work}}/sources/city-grant-notice.md",
+     "acquisition_method": "uploaded_document",
+     "captured_text": "- The applicant pays 20% of the project cost.\n- The application needs last year's revenue (2025), two supplier quotes and a one-page project description.\n- Applications close at 17:00, 6 days after this copy was saved."
+    },
+    {
+     "source_reference": "{{work}}/sources/state-fund-notice.md",
+     "acquisition_method": "uploaded_document",
+     "captured_text": "- Up to $5,000 per storefront.\n- Pays for signs, awnings, windows and exterior paint. Kitchen and delivery equipment are not covered.\n- The business pays half the project cost."
+    },
+    {
+     "source_reference": "{{work}}/sources/state-fund-notice.md",
+     "acquisition_method": "uploaded_document",
+     "captured_text": "- The business needs a street-facing shop.\n- Applications close 40 days after this copy was saved."
+    }
+   ],
+   "observations": [
+    {
+     "statement": "The city grant pays up to $10,000 for kitchen and delivery equipment, not wages or rent.",
+     "source_indexes": [
+      0
+     ]
+    },
+    {
+     "statement": "City applications close at 17:00, 6 days after the notice was saved.",
+     "source_indexes": [
+      1
+     ]
+    },
+    {
+     "statement": "The city application needs 2025 revenue, two supplier quotes and a one-page project description, and the applicant pays 20% of the project cost.",
+     "source_indexes": [
+      1
+     ]
+    },
+    {
+     "statement": "The state fund pays up to $5,000 for signs, awnings, windows and exterior paint, and does not cover kitchen or delivery equipment.",
+     "source_indexes": [
+      2
+     ]
+    },
+    {
+     "statement": "The state fund lists awnings as eligible work and needs a street-facing shop and half the project cost from the business.",
+     "source_indexes": [
+      2,
+      3
+     ]
+    }
+   ],
+   "insights": [
+    {
+     "statement": "The city small-business grant could pay up to $10,000 toward kitchen or delivery equipment.",
+     "observation_indexes": [
+      0
+     ],
+     "status": "supported",
+     "insight_type": "finding",
+     "reviewed_at": "{{now-1d}}",
+     "extensions": {
+      "businessos": {
+       "collection_refs": [
+        "{{collection:grants}}"
+       ]
+      }
+     }
+    },
+    {
+     "statement": "The city grant application closes soon: six days from the day the notice was saved.",
+     "observation_indexes": [
+      1
+     ],
+     "status": "supported",
+     "insight_type": "finding",
+     "reviewed_at": "{{now-1d}}",
+     "extensions": {
+      "businessos": {
+       "collection_refs": [
+        "{{collection:grants}}"
+       ]
+      }
+     }
+    },
+    {
+     "statement": "The city application needs 2025 revenue, two supplier quotes and a project description, and the bakery pays 20% of the project cost.",
+     "observation_indexes": [
+      2
+     ],
+     "status": "supported",
+     "insight_type": "finding",
+     "reviewed_at": "{{now-2d}}",
+     "extensions": {
+      "businessos": {
+       "collection_refs": [
+        "{{collection:grants}}"
+       ]
+      }
+     }
+    },
+    {
+     "statement": "The state main-street fund covers storefront work only, not ovens or delivery equipment.",
+     "observation_indexes": [
+      3
+     ],
+     "status": "supported",
+     "insight_type": "finding",
+     "reviewed_at": "{{now-33d}}",
+     "extensions": {
+      "businessos": {
+       "collection_refs": [
+        "{{collection:grants}}"
+       ],
+       "review_after": "{{now-3d}}"
+      }
+     }
+    },
+    {
+     "statement": "A new awning might qualify for the state main-street fund.",
+     "observation_indexes": [
+      4
+     ],
+     "status": "candidate",
+     "insight_type": "finding",
+     "reviewed_at": "{{now-2d}}",
+     "extensions": {
+      "businessos": {
+       "collection_refs": [
+        "{{collection:grants}}"
+       ]
+      }
+     }
+    }
+   ]
+  },
+  {
+   "method_type": "model_created",
+   "domain": "industry-intelligence",
+   "sources": [
+    {
+     "source_reference": "{{work}}/sources/flour-costs.md",
+     "acquisition_method": "uploaded_document",
+     "captured_text": "| 45 days ago | $21.00 |\n| 3 weeks ago | $21.80 |\n| This month | $22.40 |"
+    },
+    {
+     "source_reference": "{{work}}/sources/flour-costs.md",
+     "acquisition_method": "uploaded_document",
+     "captured_text": "An 850 g sourdough loaf uses about 0.55 kg of flour. At $22.40 a sack, that is about $0.49 of flour per loaf."
+    },
+    {
+     "source_reference": "{{work}}/sources/market-notes.md",
+     "acquisition_method": "uploaded_document",
+     "captured_text": "- Ferry Slip Coffee opens on Water Street next month. The owner says she plans to buy bread from local bakers."
+    },
+    {
+     "source_reference": "{{work}}/sources/flour-costs.md",
+     "acquisition_method": "uploaded_document",
+     "captured_text": "| 45 days ago | $21.00 |"
+    }
+   ],
+   "observations": [
+    {
+     "statement": "A 25 kg sack of bread flour went from $21.00 to $22.40 over about six weeks.",
+     "source_indexes": [
+      0
+     ]
+    },
+    {
+     "statement": "At $22.40 a sack, flour costs about $0.49 of an 850 g loaf.",
+     "source_indexes": [
+      1
+     ],
+     "id": "obs_flourinloaf01"
+    },
+    {
+     "statement": "Ferry Slip Coffee opens on Water Street next month and plans to buy bread from local bakers.",
+     "source_indexes": [
+      2
+     ]
+    },
+    {
+     "statement": "A sack of bread flour cost $21.00 on the invoice from 45 days ago.",
+     "source_indexes": [
+      3
+     ]
+    }
+   ],
+   "insights": [
+    {
+     "statement": "Bread flour has become about 7% more expensive in six weeks, from $21.00 to $22.40 a sack.",
+     "observation_indexes": [
+      0
+     ],
+     "status": "supported",
+     "insight_type": "finding",
+     "reviewed_at": "{{now-4d}}"
+    },
+    {
+     "statement": "Flour is about 49 cents of the cost of an 850 g sourdough loaf.",
+     "observation_indexes": [
+      1
+     ],
+     "status": "supported",
+     "insight_type": "finding",
+     "id": "ins_flourinloaf01",
+     "reviewed_at": "{{now-4d}}"
+    },
+    {
+     "statement": "Bread flour costs $21.00 per 25 kg sack.",
+     "observation_indexes": [
+      3
+     ],
+     "status": "stale",
+     "insight_type": "finding",
+     "reviewed_at": "{{now-45d}}",
+     "evidence_links": [
+      {
+       "ref": "obs_flourinloaf01",
+       "relationship": "contextualizes",
+       "reason": "A newer invoice shows $22.40 a sack."
+      }
+     ]
+    },
+    {
+     "statement": "Ferry Slip Coffee may become a wholesale customer.",
+     "observation_indexes": [
+      2
+     ],
+     "status": "candidate",
+     "insight_type": "finding",
+     "reviewed_at": "{{now-2d}}"
+    }
+   ]
+  },
+  {
+   "method_type": "model_created",
+   "domain": "content-synthesis",
+   "sources": [
+    {
+     "source_reference": "{{work}}/sources/newsletter-results.md",
+     "acquisition_method": "uploaded_document",
+     "captured_text": "| 4 weeks ago | General: \"What's new at Harbor & Pine\" | 288 | 131 | 26 |\n| 3 weeks ago | One loaf: \"Rye and caraway this Saturday\" | 297 | 140 | 42 |\n| 2 weeks ago | General: \"A busy month at the ovens\" | 305 | 149 | 28 |\n| Last week | One loaf: \"Seeded sourdough is back\" | 312 | 151 | 50 |"
+    },
+    {
+     "source_reference": "{{work}}/sources/newsletter-results.md",
+     "acquisition_method": "uploaded_document",
+     "captured_text": "| Making-of video | 4 | 36 |\n| Product photo | 9 | 14 |\n| Price or offer | 3 | 9 |"
+    },
+    {
+     "source_reference": "{{work}}/sources/newsletter-results.md",
+     "acquisition_method": "uploaded_document",
+     "captured_text": "Opened, across the four issues: 571 of 1,202."
+    },
+    {
+     "source_reference": "{{work}}/sources/our-reviews.md",
+     "acquisition_method": "uploaded_document",
+     "captured_text": "| Price | 7 | 4.1 |"
+    },
+    {
+     "source_reference": "{{work}}/sources/production-log.md",
+     "acquisition_method": "uploaded_document",
+     "captured_text": "Time from mixing to oven: 36 hours.",
+     "id": "src_a41c9e6d27b05f13"
+    }
+   ],
+   "observations": [
+    {
+     "statement": "The two newsletters with one loaf in the subject line were clicked at about 14% and 16%; the two general ones at about 9% each.",
+     "source_indexes": [
+      0
+     ]
+    },
+    {
+     "statement": "Making-of videos averaged 36 saves, product photos 14 and price or offer posts 9.",
+     "source_indexes": [
+      1
+     ]
+    },
+    {
+     "statement": "The newsletter was opened 571 times across 1,202 sends in four issues.",
+     "source_indexes": [
+      2
+     ]
+    },
+    {
+     "statement": "Seven reviews mention price, and they average 4.1 stars.",
+     "source_indexes": [
+      3
+     ]
+    },
+    {
+     "statement": "Sourdough goes from mixing to oven in 36 hours.",
+     "source_indexes": [
+      4
+     ]
+    }
+   ],
+   "insights": [
+    {
+     "statement": "Newsletters that name one loaf in the subject line get clicked more than general ones: about 14% to 16% against about 9%.",
+     "observation_indexes": [
+      0
+     ],
+     "status": "supported",
+     "insight_type": "finding",
+     "reviewed_at": "{{now-3d}}",
+     "extensions": {
+      "businessos": {
+       "collection_refs": [
+        "{{collection:content-calendar}}"
+       ]
+      }
+     }
+    },
+    {
+     "statement": "Making-of videos are our best-saved Instagram posts, at 36 saves each on average.",
+     "observation_indexes": [
+      1
+     ],
+     "status": "supported",
+     "insight_type": "finding",
+     "reviewed_at": "{{now-32d}}",
+     "extensions": {
+      "businessos": {
+       "collection_refs": [
+        "{{collection:content-calendar}}"
+       ]
+      }
+     }
+    },
+    {
+     "statement": "Our newsletter is opened a little under half the time: 571 of 1,202 sends over four issues.",
+     "observation_indexes": [
+      2
+     ],
+     "status": "supported",
+     "insight_type": "finding",
+     "reviewed_at": "{{now-3d}}",
+     "extensions": {
+      "businessos": {
+       "collection_refs": [
+        "{{collection:content-calendar}}"
+       ]
+      }
+     }
+    },
+    {
+     "statement": "Posts that explain the 36-hour method might help justify the price.",
+     "observation_indexes": [
+      1,
+      3,
+      4
+     ],
+     "status": "candidate",
+     "insight_type": "finding",
+     "reviewed_at": "{{now-3d}}",
+     "extensions": {
+      "businessos": {
+       "collection_refs": [
+        "{{collection:content-calendar}}"
+       ]
+      }
+     }
+    }
+   ]
+  },
+  {
+   "method_type": "model_created",
+   "domain": "marketing-synthesis",
+   "sources": [
+    {
+     "source_reference": "{{work}}/sources/newsletter-results.md",
+     "acquisition_method": "uploaded_document",
+     "captured_text": "| Newsletter link | 21 |\n| In the shop | 13 |\n| Phone or text | 8 |\n| Instagram message | 5 |"
+    }
+   ],
+   "observations": [
+    {
+     "statement": "Of last Saturday's 47 pre-orders, 21 came through the newsletter link and 5 through Instagram messages.",
+     "source_indexes": [
+      0
+     ],
+     "id": "obs_preorderroutes01"
+    },
+    {
+     "statement": "13 pre-orders were placed in the shop and 8 by phone or text.",
+     "source_indexes": [
+      0
+     ]
+    }
+   ],
+   "insights": [
+    {
+     "statement": "The newsletter is our biggest source of Saturday pre-orders: 21 of last Saturday's 47.",
+     "observation_indexes": [
+      0
+     ],
+     "status": "supported",
+     "insight_type": "finding",
+     "reviewed_at": "{{now-2d}}",
+     "extensions": {
+      "businessos": {
+       "collection_refs": [
+        "{{collection:content-calendar}}"
+       ]
+      }
+     }
+    },
+    {
+     "statement": "Instagram posts drive most of our Saturday pre-orders.",
+     "observation_indexes": [],
+     "status": "contradicted",
+     "insight_type": "finding",
+     "reviewed_at": "{{now-2d}}",
+     "extensions": {
+      "businessos": {
+       "collection_refs": [
+        "{{collection:content-calendar}}"
+       ]
+      }
+     },
+     "evidence_links": [
+      {
+       "ref": "obs_preorderroutes01",
+       "relationship": "contradicts",
+       "reason": "Only 5 of 47 pre-orders came by Instagram message."
+      }
+     ]
+    },
+    {
+     "statement": "Orders placed in the shop or by phone or text together matched the newsletter at 21 each last Saturday.",
+     "observation_indexes": [
+      1
+     ],
+     "status": "supported",
+     "insight_type": "finding",
+     "reviewed_at": "{{now-8d}}"
+    }
+   ]
+  },
+  {
+   "method_type": "model_created",
+   "domain": "customer-optimization",
+   "sources": [
+    {
+     "source_reference": "{{work}}/sources/wholesale-enquiries.md",
+     "acquisition_method": "uploaded_document",
+     "captured_text": "| 3 weeks ago | Pier Cafe (current customer) | 40 almond croissants a week | Wants delivery before 6:30 |\n| 2 weeks ago | Lighthouse Diner | 60 breakfast rolls a week | Wants delivery before 6:30 |\n| 2 days ago | Lantern Coffee Bar | 12 sourdough loaves a week | Asked for a lower wholesale price and mentioned Crumb & Co's new price |\n| Yesterday | Ferry Slip Coffee (opens next month) | Samples of sourdough rolls | No weekly volume given |"
+    },
+    {
+     "source_reference": "{{work}}/sources/wholesale-enquiries.md",
+     "acquisition_method": "uploaded_document",
+     "captured_text": "Our current wholesale delivery window is 7:00 to 8:00."
+    },
+    {
+     "source_reference": "{{work}}/sources/wholesale-enquiries.md",
+     "acquisition_method": "uploaded_document",
+     "captured_text": "| 2 days ago | Lantern Coffee Bar | 12 sourdough loaves a week | Asked for a lower wholesale price and mentioned Crumb & Co's new price |"
+    },
+    {
+     "source_reference": "{{work}}/sources/wholesale-enquiries.md",
+     "acquisition_method": "uploaded_document",
+     "captured_text": "From a note left by Pier Cafe 8 weeks ago: \"The bread arrives warm and on time. We reorder every week.\"",
+     "id": "src_c7d03b8a15e9462f"
+    }
+   ],
+   "observations": [
+    {
+     "statement": "Three of four wholesale enquiries this month asked for croissants or rolls; one asked for sourdough loaves.",
+     "source_indexes": [
+      0
+     ]
+    },
+    {
+     "statement": "Pier Cafe and Lighthouse Diner both want delivery before 6:30; our window is 7:00 to 8:00.",
+     "source_indexes": [
+      0,
+      1
+     ]
+    },
+    {
+     "statement": "Lantern Coffee Bar asked for a lower price on 12 loaves a week and mentioned Crumb & Co's new price.",
+     "source_indexes": [
+      2
+     ]
+    },
+    {
+     "statement": "Pier Cafe left a note 8 weeks ago saying the bread arrives warm and on time and that they reorder every week.",
+     "source_indexes": [
+      3
+     ]
+    }
+   ],
+   "insights": [
+    {
+     "statement": "Most wholesale enquiries this month are for pastries and rolls, not sourdough loaves.",
+     "observation_indexes": [
+      0
+     ],
+     "status": "supported",
+     "insight_type": "finding",
+     "reviewed_at": "{{now-2d}}"
+    },
+    {
+     "statement": "Two cafes want deliveries before 6:30, earlier than our 7:00 window.",
+     "observation_indexes": [
+      1
+     ],
+     "status": "supported",
+     "insight_type": "finding",
+     "reviewed_at": "{{now-35d}}",
+     "extensions": {
+      "businessos": {
+       "review_after": "{{now-3d}}"
+      }
+     }
+    },
+    {
+     "statement": "A cafe asked for a lower wholesale price and referred to Crumb & Co's new price.",
+     "observation_indexes": [
+      2
+     ],
+     "status": "supported",
+     "insight_type": "finding",
+     "reviewed_at": "{{now-2d}}"
+    }
+   ]
+  }
+ ],
+ "memory_after": [
+  {
+   "objects": [
+    {
+     "object_type": "DecisionRecord",
+     "content": {
+      "decision": "Hold the sourdough price at $9.00 instead of matching Crumb & Co's new $7.50.",
+      "made_by": "The owner (example)",
+      "made_at": "{{now-1d@16:00}}",
+      "status": "current",
+      "applies_to": [
+       "Sourdough loaf price"
+      ],
+      "basis_refs": [
+       "ins_crumbpricecut01",
+       "ins_stillbelowrivals01",
+       "ins_flourinloaf01",
+       "obs_preorderroutes01"
+      ],
+      "notes": "We still charge less than the other three bakeries nearby. Flour is about 49 cents of a loaf, so a price cut would be a choice about margin, not flour. Saturday pre-orders have grown every week and sourdough has sold out before noon, so we do not need to cut to fill the oven. Look again after the weekend test."
+     }
+    },
+    {
+     "object_type": "Asset",
+     "content": {
+      "asset_type": "landing_page",
+      "business_role": "Saturday sourdough pre-order page",
+      "location_reference": "{{work}}/outputs/landing-page.html",
+      "version": "1",
+      "status": "active"
+     }
+    },
+    {
+     "object_type": "Asset",
+     "content": {
+      "asset_type": "newsletter",
+      "business_role": "This week's customer newsletter",
+      "location_reference": "{{work}}/outputs/newsletter.md",
+      "version": "1",
+      "status": "active"
+     }
+    },
+    {
+     "object_type": "Asset",
+     "content": {
+      "asset_type": "report",
+      "business_role": "Competitor brief: four nearby bakeries",
+      "location_reference": "{{work}}/outputs/competitor-brief.md",
+      "version": "1",
+      "status": "active"
+     }
+    },
+    {
+     "object_type": "Asset",
+     "content": {
+      "asset_type": "grant_application",
+      "business_role": "City small-business grant: draft answers",
+      "location_reference": "{{work}}/outputs/grant-application-draft.md",
+      "version": "1",
+      "status": "active"
+     }
+    },
+    {
+     "object_type": "Asset",
+     "content": {
+      "asset_type": "proof_page",
+      "business_role": "What we say, and the proof",
+      "location_reference": "{{work}}/outputs/proof-page.html",
+      "version": "1",
+      "status": "active"
+     }
+    },
+    {
+     "object_type": "Asset",
+     "content": {
+      "asset_type": "social_post",
+      "business_role": "Social carousel: how the sourdough is made",
+      "location_reference": "{{work}}/outputs/social-carousel.md",
+      "version": "1",
+      "status": "active"
+     }
+    },
+    {
+     "object_type": "ProofRecord",
+     "content": {
+      "proof_type": "demonstration",
+      "claim_supported": "Our sourdough ferments for 36 hours.",
+      "source_refs": [
+       "src_a41c9e6d27b05f13"
+      ],
+      "verbatim_text": "Time from mixing to oven: 36 hours.",
+      "permission_status": "permission_granted",
+      "evidence_strength": "strong",
+      "evidence_date": "{{now-2d}}",
+      "review_after": "{{now+60d}}",
+      "status": "active"
+     }
+    },
+    {
+     "object_type": "ProofRecord",
+     "content": {
+      "proof_type": "review",
+      "claim_supported": "Rated 4.8 on Google from 87 reviews.",
+      "source_refs": [
+       "src_5e1a7c0b93d24f68"
+      ],
+      "verbatim_text": "Average rating: 4.8 from 87 reviews.",
+      "permission_status": "public_quote_only",
+      "evidence_strength": "strong",
+      "evidence_date": "{{now-1d}}",
+      "review_after": "{{now+30d}}",
+      "status": "active"
+     }
+    },
+    {
+     "object_type": "ProofRecord",
+     "content": {
+      "proof_type": "customer_quote",
+      "claim_supported": "Our cafe customers reorder every week.",
+      "source_refs": [
+       "src_c7d03b8a15e9462f"
+      ],
+      "verbatim_text": "The bread arrives warm and on time. We reorder every week.",
+      "permission_status": "permission_granted",
+      "evidence_strength": "weak",
+      "evidence_date": "{{now-56d}}",
+      "review_after": "{{now-20d}}",
+      "status": "stale",
+      "usage_constraints": [
+       "Ask Pier Cafe to confirm before using this quote again."
+      ]
+     }
+    }
+   ]
+  }
+ ],
+ "goals": [
+  {
+   "name": "Reach 100 Google reviews",
+   "measure": {
+    "name": "Google reviews",
+    "target": "100",
+    "unit": "reviews",
+    "direction": "higher_better"
+   },
+   "measurements": [
+    {
+     "value": 64,
+     "source_ref": "Google Business Profile (example)",
+     "window_start": "{{now-28d}}",
+     "window_end": "{{now-21d}}"
+    },
+    {
+     "value": 71,
+     "source_ref": "Google Business Profile (example)",
+     "window_start": "{{now-21d}}",
+     "window_end": "{{now-14d}}"
+    },
+    {
+     "value": 79,
+     "source_ref": "Google Business Profile (example)",
+     "window_start": "{{now-14d}}",
+     "window_end": "{{now-7d}}"
+    },
+    {
+     "value": 87,
+     "source_ref": "Google Business Profile (example)",
+     "window_start": "{{now-8d}}",
+     "window_end": "{{now-1d}}"
+    }
+   ]
+  },
+  {
+   "name": "Rank in the top 3 for bakery searches in Port Hollis",
+   "measure": {
+    "name": "Map pack rank",
+    "target": "3",
+    "unit": "place",
+    "direction": "lower_better"
+   },
+   "measurements": [
+    {
+     "value": 7,
+     "source_ref": "Local search check (example)",
+     "window_start": "{{now-28d}}",
+     "window_end": "{{now-21d}}"
+    },
+    {
+     "value": 6,
+     "source_ref": "Local search check (example)",
+     "window_start": "{{now-21d}}",
+     "window_end": "{{now-14d}}"
+    },
+    {
+     "value": 5,
+     "source_ref": "Local search check (example)",
+     "window_start": "{{now-14d}}",
+     "window_end": "{{now-7d}}"
+    },
+    {
+     "value": 4,
+     "source_ref": "Local search check (example)",
+     "window_start": "{{now-8d}}",
+     "window_end": "{{now-1d}}"
+    }
+   ]
+  },
+  {
+   "name": "Win $20,000 in grants this year",
+   "measure": {
+    "name": "Grants won",
+    "target": "20000",
+    "unit": "USD",
+    "direction": "higher_better"
+   },
+   "measurements": [
+    {
+     "value": 5000,
+     "source_ref": "Grants collection (example)",
+     "window_start": "{{now-90d}}",
+     "window_end": "{{now-1d}}"
+    }
+   ]
+  }
+ ],
+ "attention": [
+  {
+   "key": "grant-revenue",
+   "type": "missing_fact",
+   "severity": "high",
+   "title": "Confirm 2025 revenue for the grant form",
+   "reason": "The city small-business grant application needs last year's revenue and closes in six days.",
+   "recommended_action": "Reply with the 2025 revenue figure so it can go into the draft."
+  },
+  {
+   "key": "price-test",
+   "type": "approval_needed",
+   "severity": "medium",
+   "title": "Approve the weekend price test",
+   "reason": "Crumb & Co cut its sourdough to $7.50. Rather than match it, the draft test keeps the loaf at $9.00 and adds a $12.00 loaf-and-flat-white pre-order for two Saturdays.",
+   "recommended_action": "Approve, change or decline the two-week test."
+  },
+  {
+   "key": "wholesale-reply",
+   "type": "customer_response",
+   "severity": "medium",
+   "title": "Reply to Lantern Coffee Bar's wholesale enquiry",
+   "reason": "They asked two days ago for 12 loaves a week at a lower price. No reply is recorded.",
+   "recommended_action": "Send a wholesale price and a delivery time."
+  }
+ ],
+ "agents": [
+  {
+   "name": "Competitor analyst",
+   "description": "Keeps the Local competitors list current and says what changed.",
+   "instructions": "Check the four nearby bakeries once a week: price of a sourdough loaf, rating, review count and local search rank. Update the Local competitors collection and only report real changes, with the source file or page you used. If something cannot be checked, say so instead of guessing."
+  },
+  {
+   "name": "Grants researcher",
+   "description": "Finds and tracks grants the bakery could apply for.",
+   "instructions": "Find grants the bakery may be eligible for and keep the Grants collection current with amounts, deadlines and what each one pays for. Read the full notice before calling a grant eligible. Flag any missing fact, such as revenue, to the owner."
+  },
+  {
+   "name": "Content writer",
+   "description": "Drafts newsletters and social posts from approved claims.",
+   "instructions": "Write the weekly newsletter and social posts in plain, friendly language. Use only claims marked approved in AURA, and link each one to its proof. Leave out anything provisional or retired, and keep the Content calendar up to date."
+  },
+  {
+   "name": "Reviews reader",
+   "description": "Reads new Google reviews and tallies what customers mention.",
+   "instructions": "Read new reviews each week and update the Review themes collection with mention counts and average ratings. Quote customers exactly and keep their wording. Tell the owner about any new theme or any review that needs a reply."
+  }
+ ]
+}

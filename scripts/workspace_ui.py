@@ -341,6 +341,8 @@ def library():
                 group = re.sub(r'^\d+-', '', section).replace('-', ' ').title()
         elif area.startswith('web-design'):
             category, group = 'Websites', 'Design guidance' if area.endswith('/notes') else 'Website recipes'
+        elif area.startswith('business'):
+            category, group = 'Business & operations', 'Showing and deciding'
         else:
             category = 'Marketing' if 'copy-messaging' in area else 'Content creation'
             group = {'audio':'Audio', 'video':'Video', 'motion-graphics':'Motion graphics',
