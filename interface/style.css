@@ -1,7 +1,9 @@
 @charset "UTF-8";
 :root{
 --ui-text-size:15px;
---text-xs:calc(var(--ui-text-size) - 4px);--text-sm:calc(var(--ui-text-size) - 3px);--text-md:calc(var(--ui-text-size) - 2px);--text-base:calc(var(--ui-text-size) - 1px);--text-body:var(--ui-text-size);--text-lg:calc(var(--ui-text-size) + 2px);--text-xl:calc(var(--ui-text-size) + 5px);--text-2xl:calc(var(--ui-text-size) + 11px);--text-3xl:calc(var(--ui-text-size) + 15px);
+--text-xs:calc(var(--ui-text-size) - 3px);--text-sm:calc(var(--ui-text-size) - 2px);--text-md:calc(var(--ui-text-size) - 1px);--text-base:var(--ui-text-size);--text-body:var(--ui-text-size);
+--space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-5:24px;--space-6:32px;--space-7:48px;--space-8:64px;
+--topbar:0px;--text-lg:calc(var(--ui-text-size) + 2px);--text-xl:calc(var(--ui-text-size) + 5px);--text-2xl:calc(var(--ui-text-size) + 11px);--text-3xl:calc(var(--ui-text-size) + 15px);
 --radius-sm:6px;--radius-md:8px;--radius-lg:12px;--radius-full:999px;
 --control-height:34px;
 --shadow-sm:0 1px 2px rgb(0 0 0/.06);--shadow-md:0 6px 24px rgb(0 0 0/.09);--shadow-lg:0 16px 60px rgb(0 0 0/.14);
@@ -192,9 +194,6 @@ body.sidebar-collapsed{--sidebar-width:74px}body.sidebar-collapsed #sidebar{padd
 .aura-shell .app-header{width:100%;max-width:none;margin:0;box-sizing:border-box}.sidebar-action kbd{font-family:inherit;font-size:var(--text-xs)}#chat-reconnect{order:2;max-width:var(--chat-width);width:100%;margin:10px auto}#view:not(:has(.setup-intro)){display:none}
 
 /* Shared surfaces follow the selected theme, including secondary tool panels. */
-:root[data-theme=dark] .primary{background:var(--accent);color:var(--on-accent)}
-:root[data-theme=dark] .primary:hover{background:color-mix(in srgb,var(--accent) 85%,#fff)}
-:root[data-theme=dark] :is(input,select,dialog,.secondary,.composer form,.card,.workspace-card,.file-card){background:var(--surface);border-color:var(--line)}
 :root[data-theme=dark] :is(pre,.file-thumb,.preview-icon){background:var(--sidebar)}
 :root[data-theme=dark] :is(.message.user,#notice,nav button[aria-current=page],.filters .active){background:var(--hover);border-color:var(--line);color:var(--ink)}
 :root[data-theme=dark] :is(nav button:hover,.quiet:hover){background:var(--hover)}
@@ -647,10 +646,6 @@ body.terminal-open #main{overflow-y:auto}
    size or spacing, but colour, shape, focus and motion come from here.
    See docs/design.md. */
 .primary,.secondary{min-height:var(--control-height);padding:0 14px;gap:6px;border:1px solid transparent;border-radius:var(--radius-md);font-size:var(--text-md);font-weight:550;line-height:1.2;transition:background-color var(--fast) var(--ease),border-color var(--fast) var(--ease),color var(--fast) var(--ease)}
-.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
-.primary:hover:not(:disabled){background:var(--accent-strong);border-color:var(--accent-strong)}
-.secondary{background:var(--surface);border-color:var(--line);color:var(--ink)}
-.secondary:hover:not(:disabled){background:var(--hover);border-color:var(--line-strong)}
 .secondary.compact,.primary.compact{min-height:30px;padding:0 10px;font-size:var(--text-sm)}
 .add-button::before{content:"+";font-size:1.2em;font-weight:400;line-height:1;margin-right:2px}
 .text-button{transition:color var(--fast) var(--ease)}
@@ -851,6 +846,42 @@ body.has-hq .chat-stage>footer{margin-top:14px;flex:none}
 @media(max-width:760px){.hq-columns{grid-template-columns:minmax(0,1fr)}}
 @media(max-width:600px){.hq-grid{grid-template-columns:minmax(0,1fr)}.hq-tile,.hq-tile.wide{grid-column:1/-1}.hq-head{align-items:flex-start}.hq-areas{grid-template-columns:repeat(2,minmax(0,1fr))}.hq-when{display:none}}
 
+/* ── Roles ─────────────────────────────────────────────────────────
+   Components say what something is; each style decides how it looks by setting these tokens.
+   Modern's values are the defaults. A style sets the same tokens in its base block, so every
+   component that uses a role (including new ones) takes on that style with no extra rules.
+   Edges are drawn with box-shadow rings, so a style can bevel, outline or glow without moving layout. */
+:root{
+  --heading-font:inherit;--heading-weight:600;--heading-case:none;--heading-tracking:-.02em;
+  --control-font:inherit;--control-weight:500;--control-case:none;--control-tracking:0;--control-radius:var(--radius-md);
+  --raised-bg:var(--surface);--raised-ring:0 0 0 1px var(--line);--raised-radius:var(--radius-lg);--raised-hover-ring:0 0 0 1px var(--line-strong);
+  --field-bg:var(--surface);--field-edge:var(--line);--field-ring:none;--field-radius:var(--radius-md);
+  --composer-lift:var(--shadow-md);--composer-radius:var(--radius-lg);
+  --float-bg:var(--surface);--float-ring:0 0 0 1px var(--line),var(--shadow-lg);
+  --primary-bg:var(--accent);--primary-ink:var(--on-accent);--primary-ring:none;--primary-bg-hover:var(--accent-strong);--primary-ring-hover:none;
+  --secondary-bg:var(--surface);--secondary-ink:var(--ink);--secondary-ring:inset 0 0 0 1px var(--line);--secondary-bg-hover:var(--hover);--secondary-ring-hover:inset 0 0 0 1px var(--line-strong);
+  --press-shift:0px;--press-ring:var(--secondary-ring);
+  --selected-bg:var(--hover);--selected-ink:var(--ink);--selected-ring:none;--selected-radius:var(--radius-sm)}
+h1,h2,h3,.page-heading h2,.dialog-top h2,#detail-title{font-family:var(--heading-font);font-weight:var(--heading-weight);text-transform:var(--heading-case);letter-spacing:var(--heading-tracking)}
+.primary,.secondary{min-height:var(--control-height);padding:0 16px;gap:6px;border:0;border-radius:var(--control-radius);font-family:var(--control-font);font-size:var(--text-md);font-weight:var(--control-weight);text-transform:var(--control-case);letter-spacing:var(--control-tracking);line-height:1.2;transition:background-color var(--fast) var(--ease),box-shadow var(--fast) var(--ease),color var(--fast) var(--ease),filter var(--fast) var(--ease)}
+.primary{background:var(--primary-bg);color:var(--primary-ink);box-shadow:var(--primary-ring)}
+.primary:hover:not(:disabled){background:var(--primary-bg-hover);box-shadow:var(--primary-ring-hover)}
+.secondary{background:var(--secondary-bg);color:var(--secondary-ink);box-shadow:var(--secondary-ring)}
+.secondary:hover:not(:disabled){background:var(--secondary-bg-hover);box-shadow:var(--secondary-ring-hover)}
+:is(.primary,.secondary):active:not(:disabled){transform:translateY(var(--press-shift))}
+.secondary:active:not(:disabled){box-shadow:var(--press-ring)}
+:is(input:not([type=checkbox],[type=radio],[type=range],[type=file],[type=color]),select,textarea):not(#request){background:var(--field-bg);color:var(--ink);border:1px solid var(--field-edge);border-radius:var(--field-radius);box-shadow:var(--field-ring)}
+#chat-form{background:var(--field-bg);border:1px solid var(--field-edge);border-radius:var(--composer-radius);box-shadow:var(--field-ring),var(--composer-lift)}
+:is(.hq-card,.card,.workspace-card,.file-card,.settings-list,.focus-panel,.library-choices>button,.result-card,.community-entry,.assistant-card,.hq-area,.hq-agent){background:var(--raised-bg);border-color:transparent;border-radius:var(--raised-radius);box-shadow:var(--raised-ring)}
+:is(.file-card,.library-choices>button,.result-card,.community-entry,.assistant-card,.hq-area,.hq-agent):hover{border-color:transparent;box-shadow:var(--raised-hover-ring)}
+:is(dialog,#detail):not(#section-dialog):not([data-mode=page]){background:var(--float-bg);border-color:transparent;box-shadow:var(--float-ring)}
+#sidebar :is(.sidebar-action,.sidebar-sections button)[aria-current=page]{background:var(--selected-bg);color:var(--selected-ink);box-shadow:var(--selected-ring);border-radius:var(--selected-radius)}
+#sidebar :is(.sidebar-action,.sidebar-sections button)[aria-current=page] svg{color:inherit}
+@media(prefers-reduced-motion:reduce){:is(.primary,.secondary):active{transform:none}}
+/* Containers: components lay out by the space they actually get, which the sidebar and side panel change. */
+#section-content,#detail-content,#hq,#conversation{container-type:inline-size}
+#section-content{container-name:page}#detail-content{container-name:panel}#hq{container-name:home}
+
 /* Styles: a style changes the whole look (type, shape, edges, depth, scrollbars and colour) while
    layout and behaviour stay the same. Every style works in light and dark, and brings its own
    accents; an accent sets the colour and one signature detail of that era.
@@ -859,7 +890,6 @@ body.has-hq .chat-stage>footer{margin-top:14px;flex:none}
 :root[data-style]:not([data-style=modern]) :is(h1,h2,h3,.page-heading h2,#detail-title,.dialog-top h2){letter-spacing:0}
 :root[data-style]:not([data-style=modern]) :is(*,#conversation){scrollbar-width:auto;scrollbar-color:auto}
 :root[data-style]:not([data-style=modern]) ::-webkit-scrollbar-button{display:none}
-:root[data-style]:not([data-style=modern]) :is(.card,.file-card,.settings-list,.focus-panel,.library-choices>button,.result-card,.community-entry,.assistant-card){background-color:var(--surface)}
 
 /* ── Classic mono: one-bit black and white, crisp outlines, hard shadows, striped title bars.
       Dark is inverted (white on black). Accents colour the selection highlight, as later systems allowed. */
@@ -867,7 +897,8 @@ body.has-hq .chat-stage>footer{margin-top:14px;flex:none}
   --ink:#000;--muted:#333;--faint:#555;--line:#000;--line-strong:#000;--paper:#fff;--surface:#fff;--sidebar:#fff;--hover:#e6e6e6;--on-accent:#fff;
   --success:#000;--warning:#000;--danger:#000;--danger-solid:#000;--success-soft:#eee;--warning-soft:#eee;--danger-soft:#eee;--scrim:rgb(0 0 0/.25);
   --radius-sm:3px;--radius-md:6px;--radius-lg:0px;--radius-full:8px;--shadow-sm:none;--shadow-md:2px 2px 0 var(--ink);--shadow-lg:2px 2px 0 var(--ink);
-  font-family:Geneva,Verdana,"Segoe UI",sans-serif}
+  font-family:Geneva,Verdana,"Segoe UI",sans-serif;
+  --heading-weight:700;--heading-tracking:0;--field-edge:var(--ink);--primary-bg:var(--surface);--primary-ink:var(--ink);--primary-ring:inset 0 0 0 1px var(--ink),0 0 0 2px var(--surface),0 0 0 4px var(--accent);--primary-bg-hover:var(--hover);--primary-ring-hover:inset 0 0 0 1px var(--ink),0 0 0 2px var(--surface),0 0 0 4px var(--accent);--secondary-bg:var(--surface);--secondary-ring:inset 0 0 0 1px var(--ink);--secondary-ring-hover:inset 0 0 0 1px var(--ink);--press-ring:inset 0 0 0 1px var(--ink);--raised-ring:0 0 0 1px var(--ink),3px 3px 0 var(--ink);--raised-hover-ring:0 0 0 1px var(--ink),3px 3px 0 var(--accent);--float-ring:0 0 0 1px var(--ink),var(--shadow-lg);--selected-bg:var(--accent);--selected-ink:var(--on-accent)}
 :root[data-style=classic][data-theme=dark][data-accent]{color-scheme:dark;
   --ink:#fff;--muted:#d0d0d0;--faint:#a8a8a8;--line:#fff;--line-strong:#fff;--paper:#000;--surface:#000;--sidebar:#000;--hover:#262626;--on-accent:#000;
   --success:#fff;--warning:#fff;--danger:#fff;--danger-solid:#fff;--success-soft:#1a1a1a;--warning-soft:#1a1a1a;--danger-soft:#1a1a1a;--scrim:rgb(0 0 0/.55)}
@@ -879,20 +910,13 @@ body.has-hq .chat-stage>footer{margin-top:14px;flex:none}
 :root[data-style=classic][data-theme=dark][data-accent=cm-blue]{--accent:#8fb4ff}
 :root[data-style=classic][data-theme=dark][data-accent=cm-lavender]{--accent:#c6b6ff}
 :root[data-style=classic][data-theme=dark][data-accent=cm-green]{--accent:#7fe0a0}
-:root[data-style=classic] :is(h1,h2,h3,strong,.page-heading h2,#detail-title){font-weight:700}
+:root[data-style=classic] strong{font-weight:700}
 :root[data-style=classic] #welcome-heading h1{font-family:inherit;font-weight:700}
-:root[data-style=classic] :is(.primary,.secondary){background:var(--surface);color:var(--ink);border:1px solid var(--ink);border-radius:var(--radius-md)}
-:root[data-style=classic] .primary{box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--accent)}
-:root[data-style=classic] :is(.primary,.secondary):hover:not(:disabled){background:var(--hover);border-color:var(--ink)}
 :root[data-style=classic] :is(.primary,.secondary,.filters button,.icon-button,.close-button):active:not(:disabled){background:var(--ink);color:var(--paper)}
 :root[data-style=classic] :is(button,a,summary):focus-visible{outline:1px dashed var(--ink);outline-offset:2px}
 :root[data-style=classic] :is(input,select,textarea):focus-visible{box-shadow:none;outline:2px solid var(--accent);outline-offset:0}
-:root[data-style=classic] :is(dialog,#detail){border:1px solid var(--ink)}
 :root[data-style=classic] dialog:not(#section-dialog):not([data-mode=page])>.dialog-top{background:repeating-linear-gradient(var(--ink) 0 1px,transparent 1px 3px) top/100% 11px no-repeat;padding-top:20px;border-bottom:1px solid var(--ink);margin-bottom:16px}
-:root[data-style=classic] :is(.card,.file-card,.settings-list,.focus-panel,.library-choices>button,.result-card,.community-entry,.assistant-card){border:1px solid var(--ink);box-shadow:2px 2px 0 var(--ink)}
 :root[data-style=classic] #sidebar{border-right:1px solid var(--ink)}
-:root[data-style=classic] #sidebar :is(.sidebar-action,.sidebar-sections button)[aria-current=page],:root[data-style=classic] #sidebar :is(.sidebar-action,.sidebar-sections button)[aria-current=page] svg{background:var(--accent);color:var(--on-accent)}
-:root[data-style=classic] #sidebar :is(.sidebar-action,.sidebar-sections button)[aria-current=page] svg{background:none}
 :root[data-style=classic] .aura-shell .app-header{box-shadow:0 1px 0 var(--ink)}
 :root[data-style=classic] #notification-count{background:var(--ink);color:var(--paper)}
 :root[data-style=classic] ::-webkit-scrollbar{width:16px;height:16px}
@@ -910,7 +934,8 @@ body.has-hq .chat-stage>footer{margin-top:14px;flex:none}
   --d90-raised:inset -1px -1px var(--d90-dark),inset 1px 1px var(--d90-hi),inset -2px -2px var(--d90-shade),inset 2px 2px var(--d90-light);
   --d90-pressed:inset -1px -1px var(--d90-hi),inset 1px 1px var(--d90-dark),inset -2px -2px var(--d90-light),inset 2px 2px var(--d90-shade);
   --d90-sunken:inset 1px 1px var(--d90-shade),inset -1px -1px var(--d90-hi),inset 2px 2px var(--d90-dark),inset -2px -2px var(--d90-light);
-  font-family:Tahoma,Verdana,"Segoe UI",sans-serif}
+  font-family:Tahoma,Verdana,"Segoe UI",sans-serif;
+  --heading-weight:700;--heading-tracking:0;--control-radius:0;--primary-bg:var(--d90-face);--primary-ink:var(--ink);--primary-ring:0 0 0 1px var(--d90-dark),var(--d90-raised);--primary-bg-hover:var(--hover);--primary-ring-hover:0 0 0 1px var(--d90-dark),var(--d90-raised);--secondary-bg:var(--d90-face);--secondary-ring:var(--d90-raised);--secondary-ring-hover:var(--d90-raised);--press-ring:var(--d90-pressed);--field-bg:var(--d90-field);--field-edge:transparent;--field-ring:var(--d90-sunken);--field-radius:0;--composer-lift:0 0 transparent;--composer-radius:0;--raised-bg:var(--d90-face);--raised-ring:var(--d90-raised);--raised-hover-ring:var(--d90-raised);--raised-radius:0;--float-bg:var(--d90-face);--float-ring:var(--d90-raised),2px 2px 0 rgb(0 0 0/.35);--selected-bg:var(--d90-title-a);--selected-ink:#fff;--selected-radius:0}
 :root[data-style=desktop90][data-theme=dark][data-accent]{color-scheme:dark;
   --d90-face:#3a3a3a;--d90-hi:#707070;--d90-light:#525252;--d90-shade:#242424;--d90-dark:#0a0a0a;--d90-field:#1c1c1c;
   --ink:#ececec;--muted:#bcbcbc;--faint:#8c8c8c;--line:#5c5c5c;--line-strong:#8c8c8c;--hover:#474747;--on-accent:#0a0a0a;
@@ -923,20 +948,15 @@ body.has-hq .chat-stage>footer{margin-top:14px;flex:none}
 :root[data-style=desktop90][data-theme=dark][data-accent=d90-teal]{--accent:#6fd6d6;--d90-desktop:#0b4545}
 :root[data-style=desktop90][data-theme=dark][data-accent=d90-plum]{--accent:#e0a8e0;--d90-desktop:#3a2a3a}
 :root[data-style=desktop90][data-theme=dark][data-accent=d90-brick]{--accent:#ffa090;--d90-desktop:#4a261c}
-:root[data-style=desktop90] :is(.primary,.secondary,.icon-button,.close-button,.dialog-top>.quiet,#page-refresh,.filters button,.chat-options,.suggestions button){background:var(--d90-face);color:var(--ink);border:0;border-radius:0;box-shadow:var(--d90-raised)}
-:root[data-style=desktop90] .primary{outline:1px solid var(--d90-dark);outline-offset:0}
-:root[data-style=desktop90] :is(.primary,.secondary,.icon-button,.close-button,.dialog-top>.quiet,#page-refresh,.filters button,.suggestions button):hover:not(:disabled){background:var(--hover);border:0}
-:root[data-style=desktop90] :is(.primary,.secondary,.icon-button,.close-button,.dialog-top>.quiet,#page-refresh,.filters button):active:not(:disabled),:root[data-style=desktop90] .filters :is([aria-pressed=true],.active,[aria-current=page]){box-shadow:var(--d90-pressed);background:var(--hover)}
+:root[data-style=desktop90] :is(.icon-button,.close-button,.dialog-top>.quiet,#page-refresh,.filters button,.chat-options,.suggestions button){background:var(--d90-face);color:var(--ink);border:0;border-radius:0;box-shadow:var(--d90-raised)}
+:root[data-style=desktop90] .primary:active:not(:disabled){box-shadow:0 0 0 1px var(--d90-dark),var(--d90-pressed)}
+:root[data-style=desktop90] :is(.icon-button,.close-button,.dialog-top>.quiet,#page-refresh,.filters button,.suggestions button):hover:not(:disabled){background:var(--hover);border:0}
+:root[data-style=desktop90] :is(.icon-button,.close-button,.dialog-top>.quiet,#page-refresh,.filters button):active:not(:disabled),:root[data-style=desktop90] .filters :is([aria-pressed=true],.active,[aria-current=page]){box-shadow:var(--d90-pressed);background:var(--hover)}
 :root[data-style=desktop90] :is(button,a,summary):focus-visible{outline:1px dotted var(--ink);outline-offset:-4px}
-:root[data-style=desktop90] :is(input:not([type=range]):not([type=checkbox]):not([type=radio]),select,textarea,#chat-form,.search){background:var(--d90-field);border:0;border-radius:0;box-shadow:var(--d90-sunken)}
 :root[data-style=desktop90] :is(input,select,textarea):focus-visible{box-shadow:var(--d90-sunken);outline:1px dotted var(--ink);outline-offset:-5px}
-:root[data-style=desktop90] :is(dialog,#detail,#detail[data-mode=context]){background:var(--d90-face);border:0;box-shadow:var(--d90-raised),2px 2px 0 rgb(0 0 0/.35)}
 :root[data-style=desktop90] :is(#section-dialog,#detail[data-mode=page]){box-shadow:none}
 :root[data-style=desktop90] dialog:not(#section-dialog):not([data-mode=page])>.dialog-top h2{flex:1;padding:3px 8px;background:linear-gradient(90deg,var(--d90-title-a),var(--d90-title-b));color:#fff;font-size:var(--text-base);font-weight:700}
-:root[data-style=desktop90] :is(.card,.file-card,.settings-list,.focus-panel,.library-choices>button,.result-card,.community-entry,.assistant-card){border:0;border-radius:0;box-shadow:var(--d90-raised)}
 :root[data-style=desktop90] #sidebar{box-shadow:inset -1px 0 var(--d90-shade),inset -2px 0 var(--d90-hi)}
-:root[data-style=desktop90] #sidebar :is(.sidebar-action,.sidebar-sections button)[aria-current=page]{background:var(--d90-title-a);color:#fff}
-:root[data-style=desktop90] #sidebar :is(.sidebar-action,.sidebar-sections button)[aria-current=page] svg{color:#fff}
 :root[data-style=desktop90] .aura-shell .app-header{box-shadow:inset 0 -1px var(--d90-shade),inset 0 -2px var(--d90-hi)}
 :root[data-style=desktop90] #welcome-heading h1{font-family:inherit;font-weight:700}
 /* The chat home sits on the desktop colour; the composer and suggestions are the windows on it. */
@@ -956,7 +976,8 @@ body.has-hq .chat-stage>footer{margin-top:14px;flex:none}
   --radius-sm:2px;--radius-md:4px;--radius-lg:6px;--radius-full:4px;
   --shadow-sm:0 1px 0 rgb(0 0 0/.15);--shadow-md:0 4px 0 rgb(0 0 0/.12),0 10px 24px rgb(0 0 0/.18);--shadow-lg:0 6px 0 rgb(0 0 0/.12),0 18px 50px rgb(0 0 0/.25);
   --c90-mono:"Lucida Console",Consolas,"Courier New",monospace;--c90-gloss:rgb(255 255 255/.5);--c90-scan:none;
-  font-family:Verdana,Tahoma,"Segoe UI",sans-serif}
+  font-family:Verdana,Tahoma,"Segoe UI",sans-serif;
+  --heading-font:var(--c90-mono);--heading-case:uppercase;--heading-tracking:.06em;--heading-weight:700;--control-font:var(--c90-mono);--control-case:uppercase;--control-tracking:.05em;--primary-bg:linear-gradient(color-mix(in srgb,var(--accent) 62%,#fff),var(--accent) 55%,color-mix(in srgb,var(--accent) 82%,#000));--primary-ink:var(--on-accent);--primary-ring:inset 0 0 0 2px color-mix(in srgb,var(--accent) 65%,#000),inset 0 3px var(--c90-gloss),0 3px 0 color-mix(in srgb,var(--accent) 45%,#000);--primary-bg-hover:var(--primary-bg);--primary-ring-hover:var(--primary-ring);--secondary-bg:linear-gradient(color-mix(in srgb,var(--surface) 82%,#fff),var(--surface));--secondary-ring:inset 0 0 0 2px var(--line-strong),inset 0 3px var(--c90-gloss),0 3px 0 var(--line);--secondary-bg-hover:var(--secondary-bg);--secondary-ring-hover:var(--secondary-ring);--press-shift:2px;--press-ring:inset 0 0 0 2px var(--line-strong),0 1px 0 var(--line);--raised-bg:linear-gradient(var(--surface),color-mix(in srgb,var(--surface) 94%,#000));--raised-ring:inset 0 0 0 1px var(--line),inset 0 2px var(--c90-gloss);--raised-hover-ring:inset 0 0 0 1px var(--accent),inset 0 2px var(--c90-gloss);--selected-bg:var(--accent-soft);--selected-ring:inset 3px 0 var(--accent)}
 :root[data-style=console90][data-theme=dark][data-accent]{color-scheme:dark;
   --ink:#ebe8f5;--muted:#aaa5bf;--faint:#7d7894;--line:#3d3950;--line-strong:#5b5478;--paper:#1b1a22;--surface:#24222e;--sidebar:#131218;--hover:#302d3e;--on-accent:#120f1f;
   --success:#6fdc93;--warning:#f5c451;--danger:#ff7a7a;--danger-solid:#e04848;--scrim:rgb(5 4 10/.7);
@@ -971,18 +992,13 @@ body.has-hq .chat-stage>footer{margin-top:14px;flex:none}
 :root[data-style=console90][data-theme=dark][data-accent=c90-midnight]{--accent:#7d9dff;--paper:#0d1018;--surface:#151a26;--sidebar:#090b11;--hover:#1d2433;--line:#262e40;--line-strong:#3a4660;--ink:#e6eaf5;--muted:#a3abc0}
 :root[data-style=console90][data-theme=dark][data-accent=c90-swirl]{--accent:#ff9a4d;--paper:#1c1b1a;--surface:#262524;--sidebar:#141413;--hover:#302f2d;--line:#3c3a37;--line-strong:#5a5752;--ink:#f2efea;--muted:#b3aea6}
 /* A dark case: Charcoal and Midnight keep a dark sidebar even in light mode. */
-:root[data-style=console90]:not([data-theme=dark]):is([data-accent=c90-charcoal],[data-accent=c90-midnight]) #sidebar{--ink:#ececee;--muted:#b4b4bc;--faint:#8c8c94;--line:#45454c;--hover:#3a3a40;--accent-soft:#3a3a44;--sidebar:#2a2a2e;--accent:#7fd99a;background:var(--sidebar);color:var(--ink)}
-:root[data-style=console90]:not([data-theme=dark])[data-accent=c90-midnight] #sidebar{--hover:#232a3c;--accent-soft:#25304d;--sidebar:#141824;--accent:#8fa8ff}
-:root[data-style=console90] :is(h1,h2,h3,.page-heading h2,#detail-title,.dialog-top h2,.settings-group>h3,#activity-running h3){font-family:var(--c90-mono);text-transform:uppercase;letter-spacing:.06em;font-weight:700}
+:root[data-style=console90]:not([data-theme=dark]):is([data-accent=c90-charcoal],[data-accent=c90-midnight]) #sidebar{--ink:#ececee;--muted:#b4b4bc;--faint:#8c8c94;--line:#45454c;--hover:#3a3a40;--accent-soft:#3a3a44;--sidebar:#2a2a2e;--accent:#7fd99a;--selected-bg:var(--accent-soft);--selected-ink:var(--ink);--selected-ring:inset 3px 0 var(--accent);background:var(--sidebar);color:var(--ink)}
+:root[data-style=console90]:not([data-theme=dark])[data-accent=c90-midnight] #sidebar{--hover:#232a3c;--accent-soft:#25304d;--sidebar:#141824;--accent:#8fa8ff;--selected-bg:var(--accent-soft);--selected-ring:inset 3px 0 var(--accent)}
+:root[data-style=console90] :is(.settings-group>h3,#activity-running h3,.hq-tile h3){font-family:var(--c90-mono);text-transform:uppercase;letter-spacing:.06em;font-weight:700}
 :root[data-style=console90] :is(.page-heading h2,#detail[data-mode=page] #detail-title){font-size:var(--text-2xl)}
-:root[data-style=console90] :is(.primary,.secondary){border-width:2px;font-family:var(--c90-mono);text-transform:uppercase;letter-spacing:.05em;font-size:var(--text-sm)}
-:root[data-style=console90] .primary{background:linear-gradient(color-mix(in srgb,var(--accent) 62%,#fff),var(--accent) 55%,color-mix(in srgb,var(--accent) 82%,#000));border-color:color-mix(in srgb,var(--accent) 65%,#000);color:var(--on-accent);box-shadow:inset 0 1px var(--c90-gloss),0 3px 0 color-mix(in srgb,var(--accent) 45%,#000)}
-:root[data-style=console90] .secondary{background:linear-gradient(color-mix(in srgb,var(--surface) 82%,#fff),var(--surface));border-color:var(--line-strong);color:var(--ink);box-shadow:inset 0 1px var(--c90-gloss),0 3px 0 var(--line)}
+:root[data-style=console90] :is(.primary,.secondary){font-size:var(--text-sm)}
 :root[data-style=console90] :is(.primary,.secondary):hover:not(:disabled){filter:brightness(1.08)}
-:root[data-style=console90] :is(.primary,.secondary):active:not(:disabled){transform:translateY(2px);box-shadow:inset 0 1px var(--c90-gloss),0 1px 0 var(--line)}
 :root[data-style=console90] :is(button,a,summary,input,select,textarea):focus-visible{outline:2px solid var(--accent);outline-offset:2px;box-shadow:0 0 14px color-mix(in srgb,var(--accent) 60%,transparent)}
-:root[data-style=console90] :is(.card,.file-card,.settings-list,.focus-panel,.library-choices>button,.result-card,.community-entry,.assistant-card){background-image:linear-gradient(var(--surface),color-mix(in srgb,var(--surface) 94%,#000));border:1px solid var(--line);box-shadow:inset 0 1px var(--c90-gloss)}
-:root[data-style=console90] #sidebar :is(.sidebar-action,.sidebar-sections button)[aria-current=page]{background:var(--accent-soft);box-shadow:inset 3px 0 var(--accent)}
 :root[data-style=console90] .aura-shell .app-header{box-shadow:0 1px 0 var(--line)}
 :root[data-style=console90] :is(#section-dialog,.shell-main){background:var(--c90-scan),var(--paper)}
 :root[data-style=console90] ::-webkit-scrollbar{width:12px;height:12px}
@@ -1005,7 +1021,8 @@ body.has-hq .chat-stage>footer{margin-top:14px;flex:none}
   --success:#2b7a2b;--warning:#8f5d12;--danger:#b8321f;--danger-solid:#d03030;--scrim:rgb(0 0 0/.3);
   --radius-sm:3px;--radius-md:3px;--radius-lg:8px;--radius-full:10px;
   --shadow-sm:0 1px 2px rgb(0 0 0/.12);--shadow-md:2px 3px 8px rgb(0 0 0/.25);--shadow-lg:3px 5px 18px rgb(0 0 0/.35);
-  font-family:Tahoma,"Segoe UI",Verdana,sans-serif}
+  font-family:Tahoma,"Segoe UI",Verdana,sans-serif;
+  --heading-tracking:0;--control-radius:var(--radius-sm);--primary-bg:linear-gradient(#6ccf6c,#33a133 48%,#2a8f2a 52%,#237a23);--primary-ink:#fff;--primary-ring:inset 0 0 0 1px #1b6a1b,inset 0 2px rgb(255 255 255/.5);--primary-bg-hover:var(--primary-bg);--primary-ring-hover:inset 0 0 0 1px #1b6a1b,inset 0 0 0 3px #f8b33c;--secondary-bg:linear-gradient(var(--d00-btn-a),var(--d00-btn-b) 85%,var(--d00-btn-c));--secondary-ring:inset 0 0 0 1px var(--d00-btn-line);--secondary-bg-hover:var(--secondary-bg);--secondary-ring-hover:inset 0 0 0 1px var(--d00-btn-line),inset 0 0 0 3px #f8b33c;--field-bg:var(--d00-field);--field-edge:var(--d00-field-line);--field-radius:0;--composer-radius:var(--radius-sm);--raised-ring:0 0 0 1px var(--line),var(--shadow-sm);--raised-hover-ring:0 0 0 1px var(--line-strong),var(--shadow-sm);--float-bg:var(--d00-face);--float-ring:0 0 0 1px var(--d00-btn-line),var(--shadow-lg);--selected-bg:var(--surface);--selected-radius:var(--radius-lg);--selected-ring:0 1px 2px rgb(0 0 0/.18)}
 :root[data-style=desktop00][data-theme=dark][data-accent]{color-scheme:dark;
   --d00-face:#232328;--d00-field:#101012;--d00-field-line:#55555f;--d00-btn-a:#44444c;--d00-btn-b:#2a2a30;--d00-btn-c:#1c1c20;--d00-btn-line:#5a5a64;
   --ink:#eeeef2;--muted:#adadb8;--faint:#80808c;--line:#34343c;--line-strong:#55555f;--paper:#141416;--surface:#1d1d21;--sidebar:#101012;--hover:#2a2a32;--on-accent:#0c0c10;
@@ -1018,22 +1035,17 @@ body.has-hq .chat-stage>footer{margin-top:14px;flex:none}
 :root[data-style=desktop00][data-theme=dark][data-accent=d00-silver]{--accent:#cdd2e0;--d00-title:linear-gradient(#5a5a66,#2c2c34 45%,#151519 55%,#0c0c0e);--d00-title-text:#fff;--d00-pane:linear-gradient(#18181c,#0e0e10)}
 :root[data-style=desktop00] #welcome-heading h1{font-family:inherit;font-weight:700}
 :root[data-style=desktop00] #sidebar{background:var(--d00-pane)}
-:root[data-style=desktop00] #sidebar :is(.sidebar-action,.sidebar-sections button)[aria-current=page]{background:var(--surface);border-radius:var(--radius-lg);box-shadow:0 1px 2px rgb(0 0 0/.18)}
 :root[data-style=desktop00] .aura-shell .app-header{background:linear-gradient(var(--paper),var(--d00-face));box-shadow:0 1px 0 var(--line)}
-:root[data-style=desktop00] .primary{background:linear-gradient(#6ccf6c,#33a133 48%,#2a8f2a 52%,#237a23);border:1px solid #1b6a1b;color:#fff;border-radius:var(--radius-full);box-shadow:inset 0 1px rgb(255 255 255/.5);text-shadow:0 1px 1px rgb(0 0 0/.3)}
-:root[data-style=desktop00] .secondary,:root[data-style=desktop00] :is(.filters button,#page-refresh,.suggestions button){background:linear-gradient(var(--d00-btn-a),var(--d00-btn-b) 85%,var(--d00-btn-c));border:1px solid var(--d00-btn-line);color:var(--ink);border-radius:var(--radius-sm)}
-:root[data-style=desktop00] :is(.primary,.secondary,.filters button,#page-refresh):hover:not(:disabled){box-shadow:inset 0 0 0 2px #f8b33c;filter:none}
+:root[data-style=desktop00] .primary{border-radius:var(--radius-full);text-shadow:0 1px 1px rgb(0 0 0/.3)}
+:root[data-style=desktop00] :is(.filters button,#page-refresh,.suggestions button){background:linear-gradient(var(--d00-btn-a),var(--d00-btn-b) 85%,var(--d00-btn-c));border:1px solid var(--d00-btn-line);color:var(--ink);border-radius:var(--radius-sm)}
+:root[data-style=desktop00] :is(.filters button,#page-refresh):hover:not(:disabled){box-shadow:inset 0 0 0 2px #f8b33c;filter:none}
 :root[data-style=desktop00] .filters :is([aria-pressed=true],.active,[aria-current=page]){box-shadow:inset 0 0 0 2px var(--accent)}
 :root[data-style=desktop00] :is(.primary,.secondary):active:not(:disabled){filter:brightness(.92)}
 :root[data-style=desktop00] :is(button,a,summary):focus-visible{outline:1px dotted var(--ink);outline-offset:-3px}
-:root[data-style=desktop00] :is(input:not([type=range]):not([type=checkbox]):not([type=radio]),select,textarea,.search){background:var(--d00-field);border:1px solid var(--d00-field-line);border-radius:0}
-:root[data-style=desktop00] #chat-form{background:var(--d00-field);border:1px solid var(--d00-field-line);border-radius:var(--radius-sm)}
 :root[data-style=desktop00] :is(input,select,textarea):focus-visible{box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 40%,transparent);outline:0}
-:root[data-style=desktop00] :is(dialog,#detail){background:var(--d00-face);border:1px solid var(--d00-btn-line)}
 :root[data-style=desktop00] :is(#section-dialog,#detail[data-mode=page]){background:var(--paper);border:0}
 :root[data-style=desktop00] dialog:not(#section-dialog):not([data-mode=page])>.dialog-top h2{flex:1;padding:5px 10px;border-radius:7px 7px 0 0;background:var(--d00-title);color:var(--d00-title-text);font-size:var(--text-base);font-weight:700;text-shadow:0 1px 1px rgb(0 0 0/.25)}
 :root[data-style=desktop00] dialog:not(#section-dialog):not([data-mode=page])>.dialog-top>.close-button{background:linear-gradient(#e8957a,#c8462a 55%,#b03a20);color:#fff;border:1px solid #fff;border-radius:var(--radius-sm)}
-:root[data-style=desktop00] :is(.card,.file-card,.settings-list,.focus-panel,.library-choices>button,.result-card,.community-entry,.assistant-card){border:1px solid var(--line);border-radius:var(--radius-lg);box-shadow:var(--shadow-sm)}
 :root[data-style=desktop00] ::-webkit-scrollbar{width:16px;height:16px}
 :root[data-style=desktop00] ::-webkit-scrollbar-track{background:var(--d00-face)}
 :root[data-style=desktop00] ::-webkit-scrollbar-thumb{background:linear-gradient(90deg,var(--d00-btn-a),var(--d00-btn-b) 60%,var(--d00-btn-c));border:1px solid var(--d00-field-line);border-radius:3px}
@@ -1047,7 +1059,8 @@ body.has-hq .chat-stage>footer{margin-top:14px;flex:none}
   --success:#2c8a3f;--warning:#946200;--danger:#c0352b;--danger-solid:#d9363e;--scrim:rgb(30 40 60/.3);
   --radius-sm:8px;--radius-md:12px;--radius-lg:18px;--radius-full:999px;
   --shadow-sm:0 1px 3px rgb(30 50 80/.1);--shadow-md:0 8px 24px rgb(30 50 80/.14);--shadow-lg:0 20px 60px rgb(30 50 80/.22);
-  font-family:"Segoe UI",system-ui,sans-serif}
+  font-family:"Segoe UI",system-ui,sans-serif;
+  --heading-font:"Trebuchet MS","Segoe UI",sans-serif;--heading-weight:600;--heading-tracking:0;--control-radius:var(--radius-full);--primary-bg:linear-gradient(color-mix(in srgb,var(--accent) 55%,#fff),var(--accent) 50%,color-mix(in srgb,var(--accent) 85%,#000));--primary-ring:inset 0 0 0 1px color-mix(in srgb,var(--accent) 70%,#000),inset 0 2px var(--c00-gloss),0 2px 10px color-mix(in srgb,var(--accent) 35%,transparent);--primary-bg-hover:var(--primary-bg);--primary-ring-hover:inset 0 2px var(--c00-gloss),0 0 0 2px color-mix(in srgb,var(--accent) 45%,transparent),0 0 16px color-mix(in srgb,var(--accent) 35%,transparent);--secondary-bg:var(--c00-button);--secondary-ring:inset 0 0 0 1px var(--line-strong),inset 0 2px var(--c00-gloss);--secondary-bg-hover:var(--c00-button);--secondary-ring-hover:inset 0 0 0 1px var(--line-strong),0 0 0 2px color-mix(in srgb,var(--accent) 45%,transparent),0 0 16px color-mix(in srgb,var(--accent) 35%,transparent);--raised-bg:var(--c00-tile);--raised-ring:inset 0 0 0 1px var(--line),inset 0 2px var(--c00-gloss),var(--shadow-sm);--raised-hover-ring:inset 0 0 0 1px var(--line),0 0 0 2px color-mix(in srgb,var(--accent) 40%,transparent),0 0 14px color-mix(in srgb,var(--accent) 30%,transparent);--float-ring:0 0 0 1px var(--line),0 0 0 2px color-mix(in srgb,var(--accent) 18%,transparent),var(--shadow-lg);--selected-bg:var(--accent-soft);--selected-radius:var(--radius-full);--selected-ring:0 0 0 2px var(--accent),0 0 14px color-mix(in srgb,var(--accent) 55%,transparent)}
 :root[data-style=console00][data-theme=dark][data-accent]{color-scheme:dark;
   --c00-tile:linear-gradient(#141923,#0d1118);--c00-button:linear-gradient(#262d3b,#151a24);--c00-gloss:rgb(255 255 255/.08);--c00-wave:.18;
   --ink:#e8edf5;--muted:#9ca6b8;--faint:#6f7889;--line:#222a38;--line-strong:#36425c;--paper:#06070a;--surface:#10131a;--sidebar:#040508;--hover:#181d28;--on-accent:#04060a;
@@ -1061,18 +1074,12 @@ body.has-hq .chat-stage>footer{margin-top:14px;flex:none}
 :root[data-style=console00][data-theme=dark][data-accent=c00-green]{--accent:#8fe03c}
 :root[data-style=console00][data-theme=dark][data-accent=c00-indigo]{--accent:#9d90ff}
 :root[data-style=console00][data-theme=dark][data-accent=c00-silver]{--accent:#c9d2de;--paper:#0b0c0f;--sidebar:#08090b}
-:root[data-style=console00] :is(h1,h2,h3,.page-heading h2,#detail-title,#welcome-heading h1){font-family:"Trebuchet MS","Segoe UI",sans-serif;font-weight:600}
-:root[data-style=console00] :is(.primary,.secondary){border-radius:var(--radius-full);padding-inline:18px}
-:root[data-style=console00] .primary{background:linear-gradient(color-mix(in srgb,var(--accent) 55%,#fff),var(--accent) 50%,color-mix(in srgb,var(--accent) 85%,#000));border:1px solid color-mix(in srgb,var(--accent) 70%,#000);color:var(--on-accent);box-shadow:inset 0 1px var(--c00-gloss),0 2px 10px color-mix(in srgb,var(--accent) 35%,transparent)}
-:root[data-style=console00] .secondary{background:var(--c00-button);border:1px solid var(--line-strong);color:var(--ink);box-shadow:inset 0 1px var(--c00-gloss)}
-:root[data-style=console00] :is(.primary,.secondary):hover:not(:disabled){box-shadow:inset 0 1px var(--c00-gloss),0 0 0 2px color-mix(in srgb,var(--accent) 45%,transparent),0 0 16px color-mix(in srgb,var(--accent) 35%,transparent)}
+:root[data-style=console00] #welcome-heading h1{font-family:"Trebuchet MS","Segoe UI",sans-serif;font-weight:600}
+:root[data-style=console00] :is(.primary,.secondary){padding-inline:18px}
 :root[data-style=console00] :is(button,a,summary,input,select,textarea):focus-visible{outline:2px solid var(--accent);outline-offset:2px;box-shadow:0 0 16px color-mix(in srgb,var(--accent) 55%,transparent)}
-:root[data-style=console00] :is(.card,.file-card,.settings-list,.focus-panel,.library-choices>button,.result-card,.community-entry,.assistant-card){background-image:var(--c00-tile);border:1px solid var(--line);border-radius:var(--radius-lg);box-shadow:inset 0 1px var(--c00-gloss),var(--shadow-sm)}
-:root[data-style=console00] :is(dialog,#detail){border:1px solid var(--line);box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 18%,transparent),var(--shadow-lg)}
 :root[data-style=console00] #detail:not([data-mode=page]){border-radius:var(--radius-lg)}
 :root[data-style=console00] #detail[data-mode=context]{border-radius:var(--radius-lg) 0 0 var(--radius-lg)}
-:root[data-style=console00] #chat-form{border-radius:var(--radius-lg)}
-:root[data-style=console00] #sidebar :is(.sidebar-action,.sidebar-sections button)[aria-current=page]{background:var(--accent-soft);border-radius:var(--radius-full);box-shadow:0 0 0 2px var(--accent),0 0 14px color-mix(in srgb,var(--accent) 55%,transparent);animation:c00-glow 2.6s ease-in-out infinite}
+:root[data-style=console00] #sidebar :is(.sidebar-action,.sidebar-sections button)[aria-current=page]{animation:c00-glow 2.6s ease-in-out infinite}
 @keyframes c00-glow{50%{box-shadow:0 0 0 2px var(--accent),0 0 4px color-mix(in srgb,var(--accent) 25%,transparent)}}
 :root[data-style=console00] :is(#section-dialog,.shell-main){background:radial-gradient(120% 60% at 0% 115%,color-mix(in srgb,var(--accent) calc(var(--c00-wave)*100%),transparent),transparent 70%),radial-gradient(90% 45% at 100% -10%,color-mix(in srgb,var(--accent) calc(var(--c00-wave)*70%),transparent),transparent 70%),var(--paper)}
 :root[data-style=console00] ::-webkit-scrollbar{width:10px;height:10px}
