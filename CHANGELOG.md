@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- **A calmer, clearer AURA.** Text is a size larger and easier to read, sections sit on the page instead of in boxes inside boxes, and each screen leads with what matters most. The design guide (`docs/design.md`) is now guidance for people and AI agents: the six jobs people use AURA for, three levels of importance, a two-level limit on detail and a character sheet for each style.
+- **The business leads the sidebar.** Its aura and name sit at the top, with one plain status line: what needs you, what is working, what is new, or "Up to date". It opens Activity in place of the bell. **New chat** is a clear button, then Home, **Knowledge**, **Files**, Library and **Schedules** (the new names for Business & memory, Files & media and Scheduled tasks). Chats are one list: pinned, each project, then recent.
+- **Home in order of importance.** The business on top, then Needs you, Running now, Pick up where you left off, This week, Goals beside Collections, and What we know with its areas as chips. Collections say when they were last checked in plain words.
+- **The message box has one clear action.** The AI app and model share one chip with the chat's permissions next to Send; until an AI is connected Send reads Connect AI. "Using <business>" shows what a chat draws on, and an open chat has **Continue in another app** in its header.
+- **Library starts with what fits.** "Suggested for <business>" lists the methods your focus areas point to; topics are chips and type is one choice.
+- **Plain words.** Measurements show under their measure ("Map pack rank · 2 · Nov 9") instead of record IDs, and a broken scheduled task is one sentence with **Set it up again**.
+- **Every style, every component.** Buttons, fields, cards, dialogs, headings and the selected sidebar item take each style's look from shared roles, so Classic mono, the 90s and 2000s styles look right on new screens too. Layouts adapt to the space they actually get, and the side panel slides over the page when both would not fit.
+- `tools/ui-snapshots.mjs` captures the main screens in every style, light and dark, at phone, tablet and desktop widths.
+
 - **Home shows your business at a glance.** AURA now opens on Home: the message box on top, and under it what changed, what needs you, what you know, your goals, what is kept current, your agents and recent results. Sections appear as real work fills them, every row opens the record behind it, and every number is a count of saved records. **New chat** stays a clear, focused chat. A new business sees first steps, including **Research my business**.
 - **The aura.** A small mark beside the business name, drawn only from saved state: colour from your focus areas, brightness from how recently findings were reviewed, a broken ring when a finding is challenged, and movement only while a request is working. Select it to see the facts behind each part.
 - **What we know, by area.** Home lists every area AURA has guidance for and lights the ones with saved findings. Choosing an area prepares a request; nothing runs until you send it.
