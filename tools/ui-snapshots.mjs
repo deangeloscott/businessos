@@ -88,7 +88,7 @@ async function main() {
             if(typeof applyProfile==='function'&&!window.__snapProfile){const orig=applyProfile;window.__snapProfile=1;window.applyProfile=p=>orig({...p,style:look.style,accent:look.accent});}
             if(typeof applyAppearance==='function'&&!window.__snapTheme){const orig=applyAppearance;window.__snapTheme=1;window.applyAppearance=()=>orig(look.theme);}
             const r=document.documentElement;r.dataset.style=look.style;r.dataset.accent=look.accent;r.dataset.theme=look.theme;
-            document.querySelectorAll('dialog[open]').forEach(d=>{if(d.matches(':modal'))d.close();});})()`);
+            document.querySelectorAll('dialog[open]').forEach(d=>{if(d.matches(':modal'))d.close();});if(!document.getElementById('snap-quiet')){const q=document.createElement('style');q.id='snap-quiet';q.textContent='#toast{display:none!important}';document.head.append(q);}})()`);
           if (screen.run) { await evaluate(screen.run); await sleep(screen.wait || 900); } else await sleep(400);
           const { data } = await page('Page.captureScreenshot', { format: 'jpeg', quality: 80 });
           const file = `${key}--${style}-${theme}--${width}.jpg`;

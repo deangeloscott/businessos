@@ -65,17 +65,17 @@ window.auraHQ=(()=>{
       <div class="inline-actions"><button type="button" class="secondary" data-view="business">Open Knowledge</button></div>`,'context');
   }
 
+  /* The business, above the message box: its aura, name and what it does. The aura opens what it shows. */
   function head(s){
     const b=s.business;
-    return `<header class="hq-card hq-head">${aura(s)}<div class="hq-identity">${b.example?`<p class="hq-example"><span class="source-chip review">Example business</span> Everything here is made up, so you can look around freely. ${window.auraExample.origin()?'<button type="button" class="text-button" data-example-return>Return to my workspace</button>':'Choose your own workspace from the list at the top left.'}</p>`:''}<h2>${esc(b.name)}</h2>${b.description?`<p class="hq-description">${esc(b.description)}</p>`:'<p class="hq-description"><button type="button" class="text-button" data-action="edit-business">Say what your business does</button> to get suggestions that fit.</p>'}${s.focus.length?`<div class="focus-chips">${s.focus.map(a=>`<span class="focus-chip">${esc(a.name)}</span>`).join('')}</div>`:''}</div></header>`;
+    const example=b.example?`<p class="hq-example"><span class="source-chip review">Example business</span> Everything here is made up, so you can look around freely. ${window.auraExample.origin()?'<button type="button" class="text-button" data-example-return>Return to my workspace</button>':'Choose your own workspace from the list at the top left.'}</p>`:'';
+    return `<div class="hq-head">${aura(s)}<div class="hq-identity"><h1>${esc(b.name)}</h1>${b.description?`<p class="hq-description">${esc(b.description)}</p>`:'<p class="hq-description"><button type="button" class="text-button" data-action="edit-business">Say what your business does</button> to get suggestions that fit.</p>'}</div></div>${example}`;
   }
-  const tile=(title,body,extra='',cls='')=>`<section class="hq-card hq-tile ${cls}"><div class="hq-tile-head"><h3>${esc(title)}</h3>${extra}</div>${body}</section>`;
+  /* A section is a heading and its rows: no box around it. Needs you is the one tinted section. */
+  const section=(title,body,extra='',cls='')=>`<section class="hq-section ${cls}"><div class="hq-section-head"><h2>${esc(title)}</h2>${extra}</div>${body}</section>`;
   const open=c=>c.collection_id&&c.item_id?`data-hq-item="${esc(c.item_id)}" data-parent-collection="${esc(c.collection_id)}"`:c.collection_id?`data-collection="${esc(c.collection_id)}"`:`data-record="${esc(c.record)}"`;
+  const row=(attrs,title,note='',side='',lead='')=>`<button type="button" class="hq-row" ${attrs}>${lead}<span class="hq-row-text"><strong>${esc(title)}</strong>${note?`<small>${esc(note)}</small>`:''}</span>${side?`<small class="hq-when">${esc(side)}</small>`:''}</button>`;
 
-  function changed(s){
-    if(!s.changes.length)return '';
-    return tile(`What changed · last ${s.changes_days} days`,`<div class="hq-list">${s.changes.map(c=>{const [label,cls]=CHANGE[c.kind]||[human(c.kind),''];return `<button type="button" class="hq-row" ${open(c)}><span class="source-chip ${cls}">${esc(label)}</span><span class="hq-row-text"><strong>${esc(c.title)}</strong><small>${esc(c.reason)}</small></span><small class="hq-when">${esc((c.collection?c.collection+' · ':'')+when(c.at))}</small></button>`;}).join('')}</div>`,s.totals.changes>s.changes.length?`<small>${s.totals.changes} in all</small>`:'','wide');
-  }
   function dueDate(value){
     const due=new Date(value),today=new Date(),tomorrow=new Date();
     tomorrow.setDate(today.getDate()+1);
@@ -84,48 +84,55 @@ window.auraHQ=(()=>{
   }
   function needs(s){
     if(!s.attention.length&&!s.deadlines.length)return '';
-    const due=s.deadlines.map(d=>`<button type="button" class="hq-row" ${open(d)}><span class="source-chip review">Due</span><span class="hq-row-text"><strong>${esc(d.title)}</strong><small>${esc(d.collection)}</small></span><small class="hq-when">${esc(dueDate(d.due))}</small></button>`).join('');
-    const items=s.attention.map(a=>`<button type="button" class="hq-row" data-record="${esc(a.id)}"><span class="hq-row-text"><strong>${esc(a.title)}</strong><small>${esc(a.reason)}</small></span></button>`).join('');
-    return tile('Needs you',`<div class="hq-list">${due}${items}</div>`,s.totals.attention>s.attention.length?`<small>${s.totals.attention} open</small>`:'');
-  }
-  function knows(s){
-    const k=s.knowledge;if(!k.findings)return '';
-    const parts=STATUS.filter(([id])=>k.by_status[id]);
-    return tile('What we know',`<div class="hq-bar" role="img" aria-label="${esc(parts.map(([id,label])=>k.by_status[id]+' '+label.toLowerCase()).join(', '))}">${parts.map(([id])=>`<i class="${id}" style="flex:${k.by_status[id]}"></i>`).join('')}</div>
-      <div class="hq-counts">${parts.map(([id,label,cls])=>`<span><strong>${k.by_status[id]}</strong><span class="source-chip ${cls}">${esc(label)}</span></span>`).join('')}</div>`,
-      '<button type="button" class="text-button" data-view="business">Open</button>');
-  }
-  function goals(s){
-    if(!s.goals.length)return '';
-    return tile('Goals',`<div class="hq-list">${s.goals.map(g=>{
-      const tracked=typeof g.target==='number',has=tracked&&typeof g.latest==='number';
-      const done=has?(g.direction==='lower_better'?(g.latest<=g.target?1:g.target/g.latest):Math.min(1,g.latest/(g.target||1))):0;
-      const meter=tracked?`<span class="hq-meter" role="img" aria-label="${has?esc(measure(g.latest,g.unit)+' of '+measure(g.target,g.unit)):'No measurement yet'}"><i style="width:${Math.round(Math.max(0,Math.min(1,done))*100)}%"></i></span>`:'';
-      const note=tracked?(has?`${measure(g.latest,g.unit)} ${g.direction==='lower_better'?'· target '+measure(g.target,g.unit):'of '+measure(g.target,g.unit)}${g.reached?' · Reached':''}`:'No measurement yet'):'';
-      return `<button type="button" class="hq-row stack" data-record="${esc(g.id)}"><span class="hq-row-text"><strong>${esc(g.name)}</strong>${note?`<small>${esc(note)}</small>`:''}</span>${meter}</button>`;}).join('')}</div>`,
-      s.totals.goals>s.goals.length?`<small>${s.totals.goals} in all</small>`:'');
-  }
-  function watches(s){
-    if(!s.watches.length)return '';
-    return tile('Saved collections',`<div class="hq-list">${s.watches.map(w=>`<button type="button" class="hq-row" data-collection="${esc(w.id)}"><span class="hq-row-text"><strong>${esc(w.name)}</strong><small>${w.current} current ${w.kind==='reports'?'report':'result'}${w.current===1?'':'s'}${w.task_linked?' · Linked scheduled task':''}${w.last_changes?` · ${w.last_changes} change${w.last_changes===1?'':'s'} at last check`:''}</small></span><small class="hq-when">${esc(w.last_checked?(({complete:'Checked',partial:'Partly checked',failed:'Check failed'})[w.coverage]||'Coverage unknown')+' · '+when(w.last_checked):'Never checked')}</small></button>`).join('')}</div>`);
+    const due=s.deadlines.map(d=>row(open(d),d.title,d.collection,'Due '+dueDate(d.due))).join('');
+    const items=s.attention.map(a=>row(`data-record="${esc(a.id)}"`,a.title,a.reason)).join('');
+    return section('Needs you',`<div class="hq-list">${due}${items}</div>`,s.totals.attention>s.attention.length?`<small>${s.totals.attention} open</small>`:'','hq-needs');
   }
   function team(s){
     const busy=new Set(s.running.map(r=>r.assistant_id).filter(Boolean)),loose=s.running.filter(r=>!r.assistant_id||!s.agents.some(a=>a.id===r.assistant_id));
     if(!s.agents.length&&!loose.length)return '';
     const agents=s.agents.map(a=>`<button type="button" class="hq-agent" data-assistant-open="${esc(a.id)}">${busy.has(a.id)?'<span class="activity-spinner" aria-label="Working now"></span>':''}<span>${esc(a.name)}</span>${a.tasks?`<small>${a.tasks} task${a.tasks===1?'':'s'}</small>`:''}</button>`).join('');
-    const chats=loose.map(r=>`<button type="button" class="hq-agent" data-chat="${esc(r.chat_id)}"><span class="activity-spinner" aria-label="Working now"></span><span>${esc(r.title||'A chat')}</span></button>`).join('');
-    return tile(s.agents.length?'Agents':'Working now',`<div class="hq-agents">${agents}${chats}</div>`,'<button type="button" class="text-button" data-view="assistants">Open</button>','wide');
+    const chats=loose.map(r=>`<button type="button" class="hq-agent" data-chat="${esc(r.chat_id)}"><span class="activity-spinner" aria-label="Working now"></span><span>${esc(r.title||'A chat')}</span>${r.progress?`<small>${esc(r.progress)}</small>`:''}</button>`).join('');
+    return section(s.running.length?'Running now':'Agents',`<div class="hq-agents">${chats}${agents}</div>`,'<button type="button" class="text-button" data-view="assistants">All agents</button>');
   }
-  function results(s){
-    if(!s.results.length)return '';
-    return tile('Recent results',`<div class="hq-list">${s.results.map(r=>`<button type="button" class="hq-row" data-record="${esc(r.id)}"><span class="hq-row-text"><strong>${esc(r.title)}</strong></span><small class="hq-when">${esc(r.updated_at?stamp(r.updated_at):'')}</small></button>`).join('')}</div>`,'<button type="button" class="text-button" data-view="files">Open</button>');
+  function resume(s){
+    const recent=state.homeRecent?.scope===scope()?state.homeRecent.chat:null;
+    if(!recent&&!s.results.length)return '';
+    const chat=recent?row(`data-chat="${esc(recent.id)}"`,recent.title||'Recent chat','Chat',recent.updated?when(recent.updated):''):'';
+    const results=s.results.map(r=>row(`data-record="${esc(r.id)}"`,r.title,'Result',r.updated_at?when(r.updated_at):'')).join('');
+    return section('Pick up where you left off',`<div class="hq-list">${chat}${results}</div>`,'<button type="button" class="text-button" data-view="files">All files</button>');
   }
-  /* The capability map: every area AURA has guidance for. Lit means findings are saved there. */
-  function areas(s){
-    const list=s.knowledge.by_area.filter(a=>a.id!=='core'||a.findings);
-    return tile(s.empty?'What you can ask for':'What we know, by area',`<div class="hq-areas">${list.map(a=>{
-      return `<button type="button" class="hq-area ${a.findings?'lit':''}" ${a.findings?`data-hq-area="${esc(a.id)}"`:`data-prompt="${esc(AREA_START[a.id])}"`} title="${a.findings?'View saved findings':'Start here'}"><i aria-hidden="true"></i><span>${esc(a.name)}</span><small>${a.findings?a.findings+' finding'+(a.findings===1?'':'s'):'Start'}</small></button>`;}).join('')}</div>
-      <button class="text-button" data-prompt="Check what AI says about our business against our verified facts. Use the AI visibility and factual accuracy workflows. Identify each service sampled, the question, date, exact discrepancy and supporting source. Disclose any services you could not sample.">What does AI say about my business?</button><p class="small-note">Open an area to read its findings, or choose Start to prepare a request.</p>`,'','full');
+  function changed(s){
+    if(!s.changes.length)return '';
+    const title=s.changes_days===7?'This week':`Last ${s.changes_days} days`;
+    return section(title,`<div class="hq-list">${s.changes.map(c=>{const [label,cls]=CHANGE[c.kind]||[human(c.kind),''];return row(open(c),c.title,c.reason,(c.collection?c.collection+' · ':'')+when(c.at),`<span class="source-chip ${cls}">${esc(label)}</span>`);}).join('')}</div>`,s.totals.changes>s.changes.length?`<small>${s.totals.changes} in all</small>`:'');
+  }
+  function goals(s){
+    if(!s.goals.length)return '';
+    return section('Goals',`<div class="hq-list">${s.goals.map(g=>{
+      const tracked=typeof g.target==='number',has=tracked&&typeof g.latest==='number';
+      const done=has?(g.direction==='lower_better'?(g.latest<=g.target?1:g.target/g.latest):Math.min(1,g.latest/(g.target||1))):0;
+      const meter=tracked?`<span class="hq-meter ${g.reached?'reached':''}" role="img" aria-label="${has?esc(measure(g.latest,g.unit)+' of '+measure(g.target,g.unit)):'No measurement yet'}"><i style="width:${Math.round(Math.max(0,Math.min(1,done))*100)}%"></i></span>`:'';
+      const note=tracked?(has?`${measure(g.latest,g.unit)} ${g.direction==='lower_better'?'· target '+measure(g.target,g.unit):'of '+measure(g.target,g.unit)}${g.reached?' · Reached':''}`:'No measurement yet'):'Not measured';
+      return `<button type="button" class="hq-row stack" data-record="${esc(g.id)}"><span class="hq-row-text"><strong>${esc(g.name)}</strong><small>${esc(note)}</small></span>${meter}</button>`;}).join('')}</div>`,
+      s.totals.goals>s.goals.length?`<small>${s.totals.goals} in all</small>`:'');
+  }
+  /* Collections in plain words: when each was last checked and what the check found. */
+  function watches(s){
+    if(!s.watches.length)return '';
+    const checked=w=>!w.last_checked?'Not checked yet':(({partial:'Partly checked ',failed:'Check failed '})[w.coverage]||'Checked ')+when(w.last_checked).replace(/^(Today|Yesterday)/,m=>m.toLowerCase());
+    return section('Collections',`<div class="hq-collections">${s.watches.map(w=>`<button type="button" class="hq-collection" data-collection="${esc(w.id)}"><strong>${esc(w.name)}</strong><span>${w.current} ${w.kind==='reports'?'report':'result'}${w.current===1?'':'s'}${w.last_changes?` · ${w.last_changes} change${w.last_changes===1?'':'s'}`:''}</span><small>${esc(checked(w))}</small></button>`).join('')}</div>`,'<button type="button" class="text-button" data-view="files">All files</button>');
+  }
+  /* What is known: how well-supported it is, and every area AURA has guidance for. Lit areas open their
+     findings; the others prepare a first request (nothing runs until you send). */
+  function knows(s){
+    const k=s.knowledge,parts=STATUS.filter(([id])=>k.by_status[id]);
+    const bar=k.findings?`<div class="hq-bar" role="img" aria-label="${esc(parts.map(([id,label])=>k.by_status[id]+' '+label.toLowerCase()).join(', '))}">${parts.map(([id])=>`<i class="${id}" style="flex:${k.by_status[id]}"></i>`).join('')}</div>
+      <div class="hq-counts">${parts.map(([id,label,cls])=>`<span><strong>${k.by_status[id]}</strong><span class="source-chip ${cls}">${esc(label)}</span></span>`).join('')}</div>`:'';
+    const list=k.by_area.filter(a=>a.id!=='core'||a.findings);
+    const areas=`<div class="hq-areas">${list.map(a=>`<button type="button" class="hq-area ${a.findings?'lit':''}" ${a.findings?`data-hq-area="${esc(a.id)}"`:`data-prompt="${esc(AREA_START[a.id])}"`} title="${a.findings?'Read saved findings':'Prepare a first request'}"><i aria-hidden="true"></i><span>${esc(a.name)}</span>${a.findings?`<small>${a.findings}</small>`:''}</button>`).join('')}</div>`;
+    const ask='<button class="text-button" data-prompt="Check what AI says about our business against our verified facts. Use the AI visibility and factual accuracy workflows. Identify each service sampled, the question, date, exact discrepancy and supporting source. Disclose any services you could not sample.">What does AI say about my business?</button>';
+    return section(k.findings?'What we know':'What you can ask for',`${bar}${areas}<div class="hq-know-foot"><small class="small-note">${k.findings?'Open an area to read its findings. The others prepare a first request.':'Choose an area to prepare a first request.'}</small>${ask}</div>`,k.findings?'<button type="button" class="text-button" data-view="business">Knowledge</button>':'');
   }
   function openArea(id){
     const area=data?.knowledge.by_area.find(a=>a.id===id);
@@ -137,26 +144,25 @@ window.auraHQ=(()=>{
     details(area.name,findings.map(r=>`<button class="row" data-hq-finding="${esc(r.ref)}" data-area="${esc(id)}"><span class="row-text"><strong>${esc(r.data.statement)}</strong><small class="row-meta">${esc(status(r.data))}</small></span></button>`).join('')+`<button class="secondary" data-prompt="${esc('Review our saved findings about '+area.name+' and recommend a next step.')}">Ask about ${esc(area.name)}</button>`);
   }
   function start(){
-    return `<section class="hq-card hq-tile full hq-start"><div><h3>Your business fills in here as you work</h3><p>Findings, goals, what changed and what needs you will appear below once they exist. Ask for anything in the box above, or begin with one of these.</p></div><div class="inline-actions"><button type="button" class="secondary" data-hq-research>Research my business</button><button type="button" class="text-button" data-hq-example>See an example business</button></div></section>`;
+    return `<section class="hq-section hq-start"><div><h2>Your business fills in here as you work</h2><p>What needs you, what changed, goals and findings appear here once they exist. Ask for anything above, or begin with one of these.</p></div><div class="inline-actions"><button type="button" class="secondary" data-hq-research>Research my business</button><button type="button" class="text-button" data-hq-example>See an example business</button></div></section>`;
   }
 
   function render(s){
     const host=$('#hq');if(!host)return;
-    // Two columns when there is enough to fill both: what happened on the left, where things stand on the right.
-    const main=needs(s)+changed(s)+results(s),side=goals(s)+knows(s)+watches(s)+team(s);
-    const body=main&&side?`<div class="hq-columns"><div class="hq-column">${main}</div><div class="hq-column">${side}</div></div>`:`<div class="hq-grid">${main}${side}</div>`;
+    const top=$('#hq-head'),headHtml=head(s);
+    if(top&&top.dataset.markup!==headHtml){top.innerHTML=headHtml;top.dataset.markup=headHtml;}
     const draft=s.business.example&&state.data.records?.find(r=>r.type==='Asset'&&r.data.location_reference?.endsWith('/outputs/grant-application-draft.md'));
-    const story=draft?`<section class="hq-card hq-tile"><h3>Is this application ready to submit?</h3><p>Review the bakery’s draft and see which answer still needs the owner.</p><div class="inline-actions"><button class="secondary" data-record="${esc(draft.ref)}">Read the grant draft</button>${window.auraExample.origin()?'<button class="text-button" data-example-try>Try this with my work</button>':''}</div></section>`:'';
-    const recent=state.homeRecent?.scope===scope()?state.homeRecent.chat:null;
-    const resume=recent?`<button type="button" class="text-button" data-chat="${esc(recent.id)}">Resume ${esc(recent.title||'recent chat')}</button>`:'';
-    const html=head(s)+resume+story+(s.empty?start():'')+body+`<div class="hq-grid">${areas(s)}</div>`;
+    const story=draft?section('Try this',`<p class="hq-story">Is this grant application ready to submit? Review the bakery’s draft and see which answer still needs the owner.</p><div class="inline-actions"><button class="secondary" data-record="${esc(draft.ref)}">Read the grant draft</button>${window.auraExample.origin()?'<button class="text-button" data-example-try>Try this with my work</button>':''}</div>`):'';
+    // Most important first: what needs you, what is running, where you were, what changed, then where things stand.
+    const pair=goals(s)+watches(s);
+    const html=(s.empty?start():'')+needs(s)+team(s)+story+resume(s)+changed(s)+(pair?`<div class="hq-pair">${pair}</div>`:'')+knows(s);
     if(host.dataset.markup!==html){host.innerHTML=html;host.dataset.markup=html;}
   }
   async function paint(force=false){
     if(!visible())return;
     const host=$('#hq');
     if(data&&key.startsWith(scope()+'|'))render(data);
-    else if(host){host.innerHTML='';host.dataset.markup='';}  // never show one business's summary under another's name
+    else if(host){host.innerHTML='';host.dataset.markup='';const top=$('#hq-head');if(top){top.innerHTML='';top.dataset.markup='';}}  // never show one business's summary under another's name
     try{const s=await load(force);if(s&&visible())render(s);}
     catch(error){const host=$('#hq');if(host&&!host.innerHTML)host.innerHTML=`<div class="hq-card"><p class="small-note">Your business summary could not be read. ${esc(humanError(error))}</p></div>`;}
   }
@@ -164,8 +170,8 @@ window.auraHQ=(()=>{
   function sync(force=false){
     const host=$('#hq');if(!host)return;
     const on=visible();
-    document.body.classList.toggle('has-hq',on);host.hidden=!on;
-    if(!on){if(!state.business||(data&&!key.startsWith(scope()+'|'))){data=null;key='';host.innerHTML='';host.dataset.markup='';}return;}
+    document.body.classList.toggle('has-hq',on);host.hidden=!on;const top=$('#hq-head');if(top)top.hidden=!on;
+    if(!on){if(!state.business||(data&&!key.startsWith(scope()+'|'))){data=null;key='';host.innerHTML='';host.dataset.markup='';if(top){top.innerHTML='';top.dataset.markup='';}}return;}
     paint(force);
   }
 
