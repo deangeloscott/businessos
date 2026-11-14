@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "aura",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["scripts/workspace_ui.py", "--port", "8765", "--no-open"],
+      "port": 8765
+    }
+  ]
+}
