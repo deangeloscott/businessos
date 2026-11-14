@@ -902,6 +902,7 @@ function chatControls() {
   const location=$('#chat-location-note');if(location)location.hidden=!previousFolder;
   $('#stop-request').hidden=!state.busy;$('#stop-request').disabled=state.stopping;$('#stop-request').textContent=state.stopping?'Stopping…':'Stop';
   const handoff=$('#handoff-chat');if(handoff){handoff.hidden=!state.chatMeta;handoff.disabled=state.navigating||state.starting;}
+  const headerHandoff=$('#header-handoff');if(headerHandoff){headerHandoff.hidden=!state.chatMeta;headerHandoff.disabled=state.navigating||state.starting;}
   $('#business').disabled=false;$('#new-chat').disabled=!state.business;$('#chats').disabled=!state.business;renderComposerConnection();
 }
 
@@ -2007,6 +2008,7 @@ document.addEventListener('click',event=>attempt(async()=>{
     const menu=$('#chat-tools-menu');menu.hidden=!menu.hidden;b.setAttribute('aria-expanded',String(!menu.hidden));
     if(!menu.hidden)menu.querySelector('button').focus();
   }
+  if(b.id==='header-handoff')await handoffChat();
   if(b.id==='handoff-chat'){
     $('#chat-tools-menu').hidden=true;$('#composer-tools').setAttribute('aria-expanded','false');await handoffChat();
   }
@@ -3227,6 +3229,8 @@ function renderComposerConnection(){
   $('#model-settings').textContent=native?appName(c.kind)+' · '+(modelDisplay(c.model)||'Choose model')+(c.effort?' · '+human(c.effort):''):(state.data.connection.connected?appName(c.kind)||state.data.connection.name:'Choose AI');
   window.auraWork?.composer();
   renderComposerPermissions();
+  const conn=state.data.connection,chip=$('.ai-chip');if(chip)chip.hidden=!conn.connected&&conn.mode!=='copy';
+  const using=$('#composer-using');if(using){const name=state.business?rows('Business')[0]?.title||'':'';using.textContent=name?'Using '+name:'';using.hidden=!name;}
   $('#model-settings').title=state.chatMeta?'Model for this chat · '+appName(c.kind):'AI app and model for the new chat';
   $('#chat-refresh').hidden=!state.chatMeta||state.view!=='home';$('#chat-refresh').disabled=state.busy||state.navigating||state.refreshingChat;
   const refreshLabel=state.refreshingChat?'Refreshing '+appName(c.kind)+'…':'Refresh from '+appName(c.kind);

@@ -932,6 +932,33 @@ body.sidebar-collapsed .aura-status{justify-content:center;padding:4px}
 #page-refresh:hover{color:var(--ink);background:var(--hover)}
 /* The side panel sits beside the page when there is room for both, and over it when there is not. */
 @media(max-width:1280px){body:has(#detail[open][data-mode=context]) .shell-main{margin-right:0}#section-dialog:has(~ #detail[open][data-mode=context]){right:0}}
+/* Message box: attach on the left; the AI (app, model and permissions together) and Send on the right.
+   Until an AI is connected, Send says Connect AI and the AI choice stays out of the way. */
+.composer-bottom{flex-wrap:nowrap;justify-content:flex-start;gap:8px;padding:8px 10px 10px 12px}
+.ai-chip{display:inline-flex;align-items:center;margin-left:auto;min-width:0;border-radius:var(--radius-full);background:color-mix(in srgb,var(--hover) 70%,transparent)}
+.ai-chip[hidden]{display:none}
+.composer-bottom .ai-chip #model-settings{margin:0;flex:0 1 auto;max-width:260px;min-height:32px;padding:4px 4px 4px 12px;font-size:var(--text-sm);color:var(--muted);text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ai-chip #model-settings:hover{color:var(--ink)}
+.ai-chip #chat-permissions{width:32px;height:32px;padding:7px;border-radius:var(--radius-full)}
+.ai-chip:not(:has(#model-settings:not([hidden]))) {background:none}
+.ai-chip:hover{background:var(--hover)}
+.composer-bottom .ai-chip~#usage-gauge{margin-left:0}
+.composer-send-actions{margin-left:8px}
+.ai-chip[hidden]~.composer-send-actions,.ai-chip[hidden]~#usage-gauge{margin-left:auto}
+#send{min-height:34px;padding:0 14px;border-radius:var(--control-radius)}
+.composer-project-row{gap:6px;margin:0 2px 8px;font-size:var(--text-sm);color:var(--muted)}
+.composer-using{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.composer-using:not([hidden])::after{content:"·";margin-left:6px;color:var(--faint)}
+.composer-project-row .project-trigger{padding:4px 6px;min-height:28px}
+@media(max-width:600px){.composer-bottom .ai-chip #model-settings{max-width:150px}.composer-using{display:none}}
+/* An open chat gets a slim header: its title and Continue in another app. */
+@media(min-width:601px){
+  body.has-conversation{--topbar:52px}
+  body.has-conversation .aura-shell .app-header{display:flex;height:52px;padding:0 24px;border-bottom:1px solid var(--line)}
+  .app-header :is(#shell-brand,.brand-separator,#active-workspace-label){display:none}
+  #active-chat-label{font-size:var(--text-md);font-weight:500;color:var(--ink);max-width:min(520px,60vw)}
+  #active-chat-label:not(:empty):before{content:none}}
+#header-handoff{white-space:nowrap}
 /* Keyboard hints belong to keyboards. */
 @media(pointer:coarse){.sidebar-action kbd,.menu kbd,.command-row kbd{display:none}}
 
