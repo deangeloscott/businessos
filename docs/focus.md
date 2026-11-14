@@ -14,7 +14,7 @@ Focus changes emphasis, never capability. Nothing is hidden or locked, and the a
 
 ## Choosing and changing
 
-**Business & memory → Focus** shows the description and chosen areas; **Change** opens the picker. With no areas chosen yet, AURA pre-ticks areas whose words appear in the description, and offers the picker after you save a description. **Ask my AI to suggest** puts a request in the message box for a more thoughtful suggestion; **Make your own** asks your AI to write a new area.
+**Knowledge → Focus** shows the description and chosen areas; **Change** opens the picker. With no areas chosen yet, AURA pre-ticks areas whose words appear in the description, and offers the picker after you save a description. **Ask my AI to suggest** puts a request in the message box for a more thoughtful suggestion; **Make your own** asks your AI to write a new area.
 
 Without AURA's interface:
 

@@ -20,7 +20,7 @@ window.auraFocus=(()=>{
     box.insertAdjacentHTML('beforeend',starts||'<button type="button" class="quick-start" data-focus-picker>Choose your focus areas</button>');
   }
 
-  /* Business & memory: what this organization focuses on, and a way to change it. */
+  /* Knowledge: what this organization focuses on, and a way to change it. */
   async function panel(host){
     if(!host)return;const d=await load(true);if(!host.isConnected||!d)return;
     host.innerHTML=`<div class="section-head"><h3>Focus</h3><button type="button" class="text-button" data-focus-picker>${d.areas.length?'Change':'Choose focus areas'}</button></div>${d.description?`<p class="focus-description">${esc(d.description)}</p>`:'<p class="small-note">Add what your business does (Edit name) to get suggested focus areas.</p>'}${d.areas.length?`<div class="focus-chips">${d.areas.map(a=>`<span class="focus-chip" title="${esc(a.summary)}">${esc(a.name)}${label(a)?` <small>${esc(label(a))}</small>`:''}</span>`).join('')}</div>`:'<p class="small-note">Focus areas tailor suggestions and give your AI useful context. Nothing is hidden or required.</p>'}${d.missing.length?`<p class="small-note">${d.missing.length===1?'One chosen focus area is':'Some chosen focus areas are'} no longer available. Choose again to tidy up.</p>`:''}`;

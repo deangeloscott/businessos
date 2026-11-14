@@ -2,7 +2,7 @@
 
 Projects connect chats, useful files, goals, guidance and native scheduled work. A project can have a folder, but a folder is not its identity. Project IDs survive renaming; workspace-relative folders survive moving the workspace. Linking work never copies its contents into every chat or changes native permissions.
 
-In a project's menu, **Project work** shows its linked work, saved results and discovered files. **Files & media** has a project filter and **New collection**. Collections keep a current list; dated reports preserve separate installments. Ordinary documents and media keep their existing file/version behavior. Working without a project or an end goal remains supported.
+In a project's menu, **Project work** shows its linked work, saved results and discovered files. **Files** has a project filter and **New collection**. Collections keep a current list; dated reports preserve separate installments. Ordinary documents and media keep their existing file/version behavior. Working without a project or an end goal remains supported.
 
 Projects are ordinary portable workspace data in `.businessos/projects.json`. Older project settings migrate on a deliberate write. Workspace backups include the manifest. Removing a project archives its relationships and ungroups its chats, retaining files, collections and native tasks. Restore it in Search → Archive & recovery. External folders and native schedulers remain owned by their original app/device; reconnect their locations after moving to another computer.
 

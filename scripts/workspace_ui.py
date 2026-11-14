@@ -154,7 +154,7 @@ def local_file(bid, ref, locations=None):
         asset = {'ref':parts[1],'data':found} if found else None
         path = asset_path(bid,asset['data'].get('location_reference')) if asset else None
         if not path or not path.is_dir():
-            raise ValueError('This saved folder is missing. Reconnect it in Files & media.')
+            raise ValueError('This saved folder is missing. Reconnect it in Files.')
         item = {'id':parts[1],'path':str(path),'kind':'folder'}
         return workspace_locations.resolve('linked/'+parts[1]+'/'+parts[2],[item],private_path)
     if ref.startswith('asset/'):
@@ -165,7 +165,7 @@ def local_file(bid, ref, locations=None):
             raise ValueError('This saved file reference is no longer available.')
         path = asset_path(bid,asset['data'].get('location_reference'))
         if not path or not path.is_file():
-            raise ValueError('This saved file is missing. Reconnect it in Files & media.')
+            raise ValueError('This saved file is missing. Reconnect it in Files.')
         original=Path(asset['data']['location_reference']).expanduser()
         workspace_sharing.unlinked(original if original.is_absolute() else workspace_root()/original)
         return path

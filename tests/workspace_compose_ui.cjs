@@ -114,7 +114,7 @@ function input(text){const el=node('#request');el.value=text;el.selectionStart=t
  assert.equal(calls.filter(c=>c.path==='/api/goals'&&c.data.action==='save').at(-1).data.target,undefined,'Editing another field must preserve structured completion criteria');
  slowGoal(goalData);await Promise.all(pending);
  const localGoal=ui.openGoal('obj_effort');await flush();slowGoal({...goalData,goal:{...state.data.records[1].data,extensions:{businessos:{goal:{scope:'chat',chat_id:'background'}}}},chats:[{id:'background',title:'Background chat'}]});await localGoal;
- assert.match(node('#detail-content').innerHTML,/data-chat="background">Open chat/,'A chat goal viewed from Business & memory must offer its owner even when it is the background chat');
+ assert.match(node('#detail-content').innerHTML,/data-chat="background">Open chat/,'A chat goal viewed from Knowledge must offer its owner even when it is the background chat');
  assert.doesNotMatch(node('#detail-content').innerHTML,/data-goal-use=|Remove from this chat/);
  state.view='home';state.chatMeta=null;
  // Exercise refresh completion, failure and navigation against the shipped functions.

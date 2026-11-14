@@ -446,7 +446,7 @@ Only the selected goal and its optional workspace connection are added to goal
 guidance, within the existing context-size limit. A newer user instruction takes
 precedence over goal guidance.
 
-Business & memory and the composer are views of the same Objective records,
+Knowledge and the composer are views of the same Objective records,
 not separate business/workspace goal stores. **All goals** filters by scope and
 current/completed/deleted status. It shows each chat goal's workspace connection.
 Workspace goal details list connected chat goals and their actual saved completion

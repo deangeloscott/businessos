@@ -62,7 +62,7 @@ window.auraHQ=(()=>{
       ${row('Brightness',fresh===null?'Not shown yet':`${k.reviewed.recent} of ${k.findings} findings reviewed in the last ${k.reviewed.within_days} days`,fresh===null?'It brightens once findings record when they were last reviewed.':'Brighter means more of what you know was checked recently.')}
       ${row('Broken ring',by.challenged?`${by.challenged} challenged finding${by.challenged===1?'':'s'}`:'None','The ring breaks when new evidence challenges something you believed.')}
       ${row('Movement',s.running.length?`${s.running.length} request${s.running.length===1?'':'s'} working now`:'Still','It moves only while your AI is working on this business.')}
-      <div class="inline-actions"><button type="button" class="secondary" data-view="business">Open Business &amp; memory</button></div>`,'context');
+      <div class="inline-actions"><button type="button" class="secondary" data-view="business">Open Knowledge</button></div>`,'context');
   }
 
   function head(s){
@@ -187,7 +187,21 @@ window.auraHQ=(()=>{
     if(e.target.closest('[data-hq-aura]'))explain();
     if(e.target.closest('[data-hq-example]'))attempt(()=>window.auraExample?.open());
   });
-  return {sync,paint,visible,explain,research:RESEARCH,cached:()=>data};
+  /* The same aura beside the workspace name in the sidebar, so the business is recognisable wherever you are. */
+  function paintMark(){
+    const host=$('#sidebar-aura');if(!host)return;
+    if(!state.business){host.className='hq-aura mini plain';host.removeAttribute('style');return;}
+    load().then(s=>{
+      if(!s||!host.isConnected)return;
+      const hues=s.focus.map(a=>hue(a.id)).slice(0,3),working=(state.data?.running_chats||[]).length>0;
+      host.className=['hq-aura mini',hues.length?'':'plain',s.knowledge.by_status.challenged?'unsettled':'',working?'working':''].filter(Boolean).join(' ');
+      if(hues.length)host.setAttribute('style',`--hq-h1:${hues[0]};--hq-h2:${hues[1]??(hues[0]+40)%360};--hq-h3:${hues[2]??(hues[0]+320)%360}`);else host.removeAttribute('style');
+      window.paintAuraStatus?.();
+    }).catch(()=>{});
+  }
+  /* Real items waiting on the person: open attention records and upcoming deadlines in saved collections. */
+  const needsCount=()=>data&&key.startsWith(scope()+'|')?(data.totals?.attention||0)+(data.deadlines?.length||0):0;
+  return {sync,paint,visible,explain,paintMark,needsCount,research:RESEARCH,cached:()=>data};
 })();
 
 /* The example business: a made-up organization in its own workspace, built the first time it is opened. */

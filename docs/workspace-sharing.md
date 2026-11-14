@@ -10,7 +10,7 @@ purpose in a few collapsible groups, each with a short description and total cou
 files and folders can be narrowed by file type. Groups start closed, render their first
 20 items when opened, and offer Show more within that group. Search opens matching
 groups and checks beyond the currently displayed rows, using the same loaded saved-record
-search as Business & memory. It searches names, saved information and locations, not
+search as Knowledge. It searches names, saved information and locations, not
 the contents of arbitrary documents or media files. **Selected** shows just the
 chosen items, and a saved-file entry represents its underlying file once.
 Choosing **Start a new selection**, **New selection**, or **Clear selection** resets
@@ -78,7 +78,7 @@ use **Bring existing work together**. Sharing does not replace those operations.
 Selected business records arrive as attributed source material. They do not overwrite
 the receiving business's identity or silently become its established facts, completed
 work, or measured results. Files receive ordinary local Asset registrations so they
-appear in **Files & media**. The original evidence is retained separately from
+appear in **Files**. The original evidence is retained separately from
 editable local copies; adapting a local file does not rewrite its source evidence.
 
 Referenced canonical records and files belonging to selected Assets are included as
