@@ -45,9 +45,9 @@ Turn useful ideas, evidence, and source material into strong audience-appropriat
 ### Playbooks
 
 - **Content Strategy and Synthesis** — Turn audience context, evidence, ideas, performance signals, and communication goals into a strong content approach before or across specific formats. — common entry `content.intake.content-brief`
-- **Animation / Motion Production** — Use motion to explain change, sequence, causality, demonstration, or attention hierarchy. — common entry `content.production.animation`
+- **Animation / Motion Production** — Create or improve animation, motion graphics, or character performance for explanation, storytelling, entertainment, emotion, or atmosphere. — common entry `content.production.animation`
 - **Article Production** — Produce a useful, evidence-backed article with appropriate depth, structure, and reader progression. — common entry `content.production.article`
-- **Audio Asset Production** — Produce voiceover, narration, clip, or other audio asset optimized for its actual use context. — common entry `content.production.audio`
+- **Audio Asset Production** — Produce voiceover, narration, a musical cue, sound design, or another audio asset suited to its actual use context. — common entry `content.production.audio`
 - **Carousel / Slideshow Production** — Turn an idea into a sequential visual argument where each frame earns the next. — common entry `content.production.carousel`
 - **Customer Case Study** — Turn verified customer evidence and ProofRecords into a useful, accurate account of context, intervention, mechanism, and outcome. — common entry `content.production.case-study`
 - **Demonstration Asset Production** — Produce a clear, verifiable demonstration that visibly proves or teaches the intended mechanism, use case, or result. — common entry `content.production.demo`
@@ -59,7 +59,7 @@ Turn useful ideas, evidence, and source material into strong audience-appropriat
 - **Podcast Episode Production** — Create an audio-first episode whose structure and delivery fit listening context. — common entry `content.production.podcast`
 - **Presentation / Slideshow Production** — Build a presentation that supports a live or asynchronous audience journey instead of turning a document into slides. — common entry `content.production.presentation`
 - **Short-Form Video Production** — Express one useful idea quickly through platform-native visual and audio pacing and proof. — common entry `content.production.short-video`
-- **Content Repurposing & Adaptation** — Turn a validated core asset or idea into the smallest useful set of derivative and platform-native assets without unnecessary variants or distorted meaning.
+- **Content Repurposing & Adaptation** — Repurpose or localize a core asset or idea into useful derivative, platform-native, or localized forms, including video and audio, while preserving meaning and avoiding unnecessary variants.
 
 ### Common Workflows
 

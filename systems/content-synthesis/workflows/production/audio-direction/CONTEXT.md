@@ -27,7 +27,7 @@ Plan voice, music, sound, pacing, and silence as communication elements rather t
 Improve clarity, emotion, and professionalism without letting audio obscure the message.
 
 ## Run When
-Run for podcast, video, animation, avatar, or audio-first content needing defined sound treatment.
+Use for podcast, video, animation, avatar, or audio-first content needing voice direction, a musical cue, sound treatment, or a clean ending or loop.
 
 ## Process
 1. [DETERMINISTIC] Resolve audience, brand, script, format/platform, speaker/voice options, and rights constraints.

@@ -36,6 +36,14 @@ Compare the current result with the intended identity, identify the specific dri
 
 Preserve what already works. Rebuilding every component can introduce more variation than the original problem.
 
+## Ground a real place or coherent world
+
+For a real place, use views, plans, measurements, or other suitable sources that establish the features the work must represent. A recognizable facade does not establish the building's unseen layout. Distinguish measured or observed relationships from plausible reconstruction, and preserve that distinction when accuracy matters. Check the important relationships across views: relative size, access paths, landmarks, support surfaces, and where actions can happen. Perspective and lighting may change their appearance without changing their geometry.
+
+For an invented setting, establish only the rules that affect the work: where things are, how people or objects move, and what an action changes. Carry important changes into later shots; a prop already picked up or a door already opened should not reset accidentally. Allow intentional discontinuity, surrealism, or exaggeration when it is part of the chosen style. A brief description or selected reference may be sufficient; a world bible is useful only when the project benefits from one.
+
+For a stylized real subject, identify which features make it recognizable and which qualities the user wants reinterpreted. Express the style through concrete choices in shape, material, color, framing, or movement. A cartoon can faithfully explain a process; a photorealistic image can still misrepresent it. Use the [3D production reference](../../3d-production.md) when the work needs actual spatial assets or scenes.
+
 ## Choose the least complicated production path
 
 An integrated tool may handle appearance, voice, script, and performance together. A modular approach may use separate image, voice, performance, compositing, and editing capabilities when that gives better control. Existing footage or a real voice recording may be the strongest starting point when generating a replacement would reduce authenticity or add unnecessary work.

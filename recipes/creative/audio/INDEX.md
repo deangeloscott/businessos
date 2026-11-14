@@ -16,6 +16,7 @@ If an audio plan already exists, use it. If the visual idea needs a sound direct
 | Give a narrator, presenter, or brand voice a deliberate character | [Give the voice a point of view](06-give-the-voice-a-point-of-view.md) |
 | Establish a believable place, room, or surrounding world | [Put the listener somewhere](07-put-the-listener-somewhere.md) |
 | Keep a presenter, voice, character, or environment recognizable across media | [Creative identity and continuity](../video/notes/identity-and-continuity.md) |
+| Adapt voice, timing, terminology, and supporting media for another language or market | [Creative localization](../creative-localization.md) |
 
 ## Fast use
 

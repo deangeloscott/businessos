@@ -11,6 +11,8 @@
 - [Director ingredients](director-rig.md) — optional shot-brief language.
 - [Continuity and narrative](continuity-and-narrative.md) — seams and multi-shot structure.
 - [Creative identity and continuity](identity-and-continuity.md) — reusable visual, voice, performance, communication, and environment anchors.
+- [3D assets and scenes](../../3d-production.md) — reference fidelity, geometry, materials, movement, and exported-model inspection.
+- [Creative localization](../../creative-localization.md) — meaning, target-language delivery, subtitles, graphics, and timing.
 - [Editorial enhancement](editorial-enhancement.md) — purposeful overlays, cuts, sound, silence, and identity cues for existing footage.
 - [Compositing and matching](compositing-and-matching.md) — optional realism cues and simpler alternatives for inserted elements.
 - [Editorial explainers](editorial-explainers.md) — two borrowable ways to reveal a hidden path or consequence.
@@ -37,6 +39,7 @@ The recipes use these ideas as visual cues: a highlight can reveal curvature, a 
 ### Motion and editing
 
 - Frank Thomas and Ollie Johnston, *The Illusion of Life* — classic animation principles such as anticipation, staging, and easing.
+- [Disney's animation overview](https://www.disneyanimation.com/process/animation/) — staging, timing, weight, and character performance; principles to adapt, not a required production sequence.
 - Walter Murch, *In the Blink of an Eye* — editorial rhythm and the meaning of a cut.
 - A current tool's official image-to-video, reference, camera-control, and duration documentation — model capabilities and syntax change faster than a static recipe can.
 

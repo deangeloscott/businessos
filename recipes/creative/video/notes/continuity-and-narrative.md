@@ -12,6 +12,14 @@ Generative or assembled sequences can lose product identity, reverse the action,
 
 Write these as ordinary scene instructions rather than a fixed scaffold. A source image, real clip, storyboard, 3D model, or edit can be more reliable than asking a model to bridge a difficult cut.
 
+## Make a character's action readable
+
+Choose what the character wants in the moment and what changes because of the action. Stage the important pose, gaze, prop, and reaction so the viewer can follow them; avoid overlapping silhouettes or simultaneous business that hides the point. Timing, a preparatory movement, a shift of weight, or a held reaction can communicate intention without explanatory dialogue. Use exaggeration, restraint, or unusual motion according to the character and style.
+
+For a mascot trying to lift an oversized sandwich, the effort, contact, and response can carry the joke. Extra detail will not repair an unreadable action. A few poses or a rough timed sequence may resolve that problem cheaply before finishing, but another direct production method is equally valid. Carry consequential changes forward across shots and preserve the useful character/environment anchors in the [continuity reference](identity-and-continuity.md).
+
+[Disney's animation overview](https://www.disneyanimation.com/process/animation/) describes staging, timing, anticipation, weight, and performance as craft principles. Borrow what helps the intended experience; these are not a mandatory set of effects or a required studio pipeline.
+
 ## An optional story rhythm
 
 For a 10–30 second commercial, a useful rhythm is:

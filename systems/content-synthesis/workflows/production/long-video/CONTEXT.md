@@ -25,7 +25,7 @@ Create sustained video communication with narrative/educational progression, dem
 Create or improve long-form video so the source idea is communicated effectively for the intended audience, objective, platform, and consumption context.
 
 ## Run When
-Use when long-form video is the useful communication output and existing Assets do not already satisfy the need.
+Use when creating or editing a long-form video from raw footage, interviews, recordings, or generated material, including a sustained customer story, and existing Assets do not satisfy the need.
 
 ## Process
 1. [AI] Define viewer promise, audience knowledge, intended depth, proof/demo needs, and desired post-view action. Draw on content-brief/audience/message operating knowledge when those methods materially improve the work; none is a mandatory stage.
@@ -34,7 +34,7 @@ Use when long-form video is the useful communication output and existing Assets 
 4. [HYBRID] Front-load value and establish why continued attention is worthwhile without artificially delaying the answer.
 5. [AI] Use callbacks, open questions, examples, pacing changes, and visual reinforcement only when they improve retention/comprehension.
 6. [HYBRID] Fact-check consequential claims and ensure source/proof materials are production-accessible. Evidence/proof planning knowledge may help when claims or demonstrations warrant it.
-7. [INTEGRATION] Generate/render with the active harness's available tools, or produce the useful production materials needed for another real actor. Include thumbnail/title concepts, captions, or chapters only when in scope.
+7. [INTEGRATION] Edit supplied footage, generate, assemble, or render with the active harness's available tools, or produce the useful production materials needed for another real actor. Include thumbnail/title concepts, captions, or chapters only when in scope.
 8. [HYBRID] Review the actual final Asset when one exists against audience value, technical quality, brand, factual integrity, and platform requirements. Pre-publish QA knowledge may help, but it is not a machine-required subworkflow.
 
 ## Optional craft references

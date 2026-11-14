@@ -16,6 +16,8 @@ Open the smallest useful reference:
 - [Motion graphics](creative/motion-graphics/INDEX.md) — adaptable starting points for animated type, numbers, comparisons, diagrams, demos, maps, and branded moments.
 - [Shared audio](creative/audio/INDEX.md) — cross-medium starting points for narration, music, tactile sound, sonic identity, and audio-first communication.
 - [Creative identity and continuity](creative/video/notes/identity-and-continuity.md) — optional guidance for creating, adapting, improving, and reusing people, avatars, voices, characters, and environments.
+- [3D assets and scenes](creative/3d-production.md) — optional craft guidance for reference fidelity, geometry, materials, scale, movement, and inspecting delivered models.
+- [Creative localization](creative/creative-localization.md) — adapting meaning, performance, subtitles, graphics, and timing for another language or market.
 - [Information design and presentations](creative/information-design/INDEX.md) — starting points for comparisons, process/maps, data graphics, decision briefs, and proposal decks.
 - [Copy and messaging](creative/copy-messaging/INDEX.md) — starting points for announcements, offers, objections, outreach, education, stories, and openings.
 - [Showing and deciding](business/INDEX.md) — second opinions from several models, a morning brief, a page of claims and proof, a website check against memory, a portrait of the business, an imagined customer panel, and a what-if before a decision.

@@ -6,6 +6,14 @@
 
 Watch for a specific place where the viewer could lose the thread, miss a detail, need a stronger feeling, or benefit from a change of pace. Choose the smallest treatment that solves that problem. A graphic, crop, cutaway, caption, sound cue, color shift, or pause should earn its place by changing what the viewer understands or feels.
 
+## Shape the whole piece
+
+Review the useful source footage for the story, explanation, feeling, or experience the piece should deliver. Select takes for what they contribute, including readable action, clear information, and meaningful performance; the technically cleanest take is not always the best one. A transcript or source map can help locate material when useful, but inspect the selected sound and picture.
+
+Assemble a progression in which the viewer has the context needed for each important action or claim. Identify missing coverage instead of disguising it with decoration. An alternate view, a pickup, a clearly illustrative insert, or a revised structure may solve the problem. For a sandwich-making tutorial, preserve the steps that explain assembly and the important transformations; not every second of preparation needs to remain. For a service story, retain the context and work that make the result understandable rather than cutting directly from a problem to an unsupported success.
+
+Watch the sequence as a whole for repeated information, missing connections, abrupt changes, and a payoff that does not answer the setup. Preserve pauses, reactions, and atmosphere that serve the piece. A rough cut may reveal structural problems before detailed graphics, color, or sound finishing; use it when it saves effort. The [render/package guidance](../../../../systems/content-synthesis/workflows/rendering/package-asset/CONTEXT.md) covers inspecting, correcting, and retaining the useful finished and editable versions.
+
 ## Borrowable treatments
 
 | If the moment needs… | Try… |

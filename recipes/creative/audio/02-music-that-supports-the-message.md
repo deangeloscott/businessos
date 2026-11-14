@@ -10,6 +10,14 @@ Choose a mood and movement that belong to the message. Let the music establish a
 
 Match density, instrumentation, energy, and repetition to the brand, audience, placement, and duration. A product demonstration may need a quiet texture; a launch announcement may benefit from a clearer rise; a serious explanation may need almost no score. Choose music that can be licensed or otherwise used legitimately, and let the actual mix determine whether it supports or competes with the message.
 
+## Fit the cue and its ending
+
+Shape a cue around the moments it needs to support. Leave room for an important line or sound, and let a change in arrangement mark a meaningful change rather than making every cut a musical climax. For a recurring identity, a recognizable motif can survive changes in instrumentation, energy, or duration.
+
+Choose a purposeful ending: a resolution, held texture, clean stop, or another treatment that belongs to the piece. For a loop, listen through the join for rhythmic or harmonic interruption, clicks, and cut-off reverberation; a crossfade may help but cannot fix every mismatched phrase. Check the actual mix for dialogue masking and unwanted level changes in the intended listening context.
+
+When revision or reuse matters, keep useful alternate lengths, an ending, or separate music/voice/effect tracks when available. An editable session or selected stems may help, but a simple finished cue does not require them. Refer to current tool documentation for supported generation, editing, and export methods.
+
 ## Example
 
 Under a short feature reveal, begin with a sparse pulse and one sustained texture, thin it while the explanation is spoken, let the same motif widen briefly at the visible result, and resolve back to quiet. For a podcast intro, use a brief motif that clears before the host begins rather than running beneath every sentence.

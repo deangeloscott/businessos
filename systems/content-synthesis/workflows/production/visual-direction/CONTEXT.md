@@ -21,25 +21,27 @@ context:
 # Content Visual Direction
 
 ## Purpose
-Define a coherent visual language that supports the message, brand, and platform before asset generation.
+Define coherent visual direction for images, video, animation, 3D assets, and scenes, balancing faithful representation, expressive style, audience, and intended use.
 
 ## Business Outcome
 Make visuals purposeful and consistent instead of a series of unrelated generated images.
 
 ## Run When
-Run when an asset needs a visual concept beyond existing brand templates or supplied footage.
+Use when an asset needs visual direction, including an editable 3D product model, a realistic reference-based scene of a real place, or a stylized world. Reuse suitable existing direction rather than creating another brief unnecessarily.
 
 ## Process
 1. [DETERMINISTIC] Resolve Brand visual context, message, audience, platform profile, existing reusable Assets, and production constraints.
-2. [AI] Define visual concept, information hierarchy, subject treatment, composition, typography role, iconography/diagram style, motion approach, and realism/stylization where appropriate.
-3. [AI] Tie each visual choice to communication function rather than aesthetic preference alone.
+2. [AI] Define visual concept, information hierarchy, subject treatment, composition, typography role, iconography/diagram style, motion approach, and realism/stylization where appropriate. Interpret style references into useful choices such as shape, palette, texture, framing, or rhythm; distinguish what must remain faithful from what the user wants reinterpreted.
+3. [AI] Tie visual choices to the intended understanding, emotion, atmosphere, or experience. For real subjects, use references that establish the important forms, proportions, materials, actions, and spatial relationships; keep unseen or unmeasured details distinct from verified information. Add views, measurements, or source research only where they resolve a consequential ambiguity.
 4. [HYBRID] Check brand consistency, accessibility, cultural/context appropriateness, and risk of misleading synthetic representation.
 5. [AI] Specify consistency rules across frames/slides/scenes and what may intentionally vary.
 6. [AI] Identify assets requiring real screenshots/proof versus generated illustration.
-7. [DETERMINISTIC] Produce a visual-direction brief for image/video/presentation generation or human production.
+7. [AI] Apply the useful visual direction to production, or preserve it as a brief when handoff or future work benefits. A separate document is not required to begin creating.
 
 ## Optional craft references
 When a visual identity must persist across images, scenes, or presentations, the optional [creative identity and continuity note](../../../../../recipes/creative/video/notes/identity-and-continuity.md) can help separate recognizable anchors from intentional variation. Use it as a reference, not a required identity dossier.
+
+For a model or environment that needs actual 3D production, the optional [3D assets and scenes reference](../../../../../recipes/creative/3d-production.md) covers geometry, materials, scale, movement, and destination inspection. Visual direction alone is not a completed 3D asset.
 
 When the brief is commerce-oriented, consult the [image menu](../../../../../recipes/creative/ecommerce-image-lookbooks/INDEX.md), optional [image creative principles](../../../../../recipes/creative/ecommerce-image-lookbooks/notes/creative-principles.md), [image dialects](../../../../../recipes/creative/ecommerce-image-lookbooks/DIALECTS.md), and [video concepts and craft menu](../../../../../recipes/creative/video/INDEX.md) with its optional [core motion notes](../../../../../recipes/creative/video/notes/core-motion.md) for adaptable visual choices. Treat a generic ideal-versus-poor contrast as an illustrative communication device unless supplied evidence supports a factual comparison.
 

@@ -60,9 +60,9 @@ Turn useful ideas, evidence, and source material into strong audience-appropriat
 **16 Playbooks** in this area.
 
 - **Content Strategy and Synthesis** — Turn audience context, evidence, ideas, performance signals, and communication goals into a strong content approach before or across specific formats.
-- **Animation / Motion Production** — Use motion to explain change, sequence, causality, demonstration, or attention hierarchy.
+- **Animation / Motion Production** — Create or improve animation, motion graphics, or character performance for explanation, storytelling, entertainment, emotion, or atmosphere.
 - **Article Production** — Produce a useful, evidence-backed article with appropriate depth, structure, and reader progression.
-- **Audio Asset Production** — Produce voiceover, narration, clip, or other audio asset optimized for its actual use context.
+- **Audio Asset Production** — Produce voiceover, narration, a musical cue, sound design, or another audio asset suited to its actual use context.
 - **Carousel / Slideshow Production** — Turn an idea into a sequential visual argument where each frame earns the next.
 - **Customer Case Study** — Turn verified customer evidence and ProofRecords into a useful, accurate account of context, intervention, mechanism, and outcome.
 - **Demonstration Asset Production** — Produce a clear, verifiable demonstration that visibly proves or teaches the intended mechanism, use case, or result.
@@ -74,7 +74,7 @@ Turn useful ideas, evidence, and source material into strong audience-appropriat
 - **Podcast Episode Production** — Create an audio-first episode whose structure and delivery fit listening context.
 - **Presentation / Slideshow Production** — Build a presentation that supports a live or asynchronous audience journey instead of turning a document into slides.
 - **Short-Form Video Production** — Express one useful idea quickly through platform-native visual and audio pacing and proof.
-- **Content Repurposing & Adaptation** — Turn a validated core asset or idea into the smallest useful set of derivative and platform-native assets without unnecessary variants or distorted meaning.
+- **Content Repurposing & Adaptation** — Repurpose or localize a core asset or idea into useful derivative, platform-native, or localized forms, including video and audio, while preserving meaning and avoiding unnecessary variants.
 
 ### [Marketing Synthesis](docs/playbooks/marketing-synthesis.md)
 

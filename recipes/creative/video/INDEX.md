@@ -13,9 +13,11 @@ An optional shelf with two kinds of references: four product-oriented video asse
 | A product demonstration, sensory ritual, habitat, or specimen structure | [Product video jobs](notes/video-jobs.md) |
 | A distinctive system or cause-and-consequence explainer | [Editorial explainer starting points](notes/editorial-explainers.md) |
 | Optional shot-brief ingredients | [Director's rig](notes/director-rig.md) |
-| Match cuts, spatial continuity, and narrative beats | [Continuity and narrative](notes/continuity-and-narrative.md) |
+| Match cuts, readable character actions, and narrative beats | [Continuity and narrative](notes/continuity-and-narrative.md) |
 | Create, adapt, improve, and reuse a person, avatar, voice, character, or environment | [Creative identity and continuity](notes/identity-and-continuity.md) |
-| Improve existing footage with purposeful graphics, cuts, sound, or silence | [Editorial enhancement](notes/editorial-enhancement.md) |
+| Select and edit existing footage into a coherent piece, then improve useful moments | [Editorial enhancement](notes/editorial-enhancement.md) |
+| Produce usable 3D models or scenes for a sequence | [3D assets and scenes](../3d-production.md) |
+| Adapt narration, subtitles, graphics, and performance for another language or market | [Creative localization](../creative-localization.md) |
 | Make a supplied or generated element belong in filmed footage | [Compositing and matching](notes/compositing-and-matching.md) |
 | Hooks, modular variants, and measurement | [Funnel measurement](notes/funnel-measurement.md) |
 | Sound-off comprehension and tactile Foley | [Sensory and audio](notes/sensory-audio.md) |

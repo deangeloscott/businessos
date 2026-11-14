@@ -16,9 +16,9 @@ Turn audience context, evidence, ideas, performance signals, and communication g
 
 ### Animation / Motion Production
 
-Use motion to explain change, sequence, causality, demonstration, or attention hierarchy.
+Create or improve animation, motion graphics, or character performance for explanation, storytelling, entertainment, emotion, or atmosphere.
 
-*Try:* “Create an animation or motion asset that explains this clearly.”
+*Try:* “Create or improve an animation for the experience we want the audience to have.”
 
 **Common entry Workflow:** [Animation / Motion Production](../../systems/content-synthesis/workflows/production/animation/CONTEXT.md)
 
@@ -32,7 +32,7 @@ Produce a useful, evidence-backed article with appropriate depth, structure, and
 
 ### Audio Asset Production
 
-Produce voiceover, narration, clip, or other audio asset optimized for its actual use context.
+Produce voiceover, narration, a musical cue, sound design, or another audio asset suited to its actual use context.
 
 *Try:* “Create the audio asset we need for this communication job.”
 
@@ -128,7 +128,7 @@ Express one useful idea quickly through platform-native visual and audio pacing 
 
 ### Content Repurposing & Adaptation
 
-Turn a validated core asset or idea into the smallest useful set of derivative and platform-native assets without unnecessary variants or distorted meaning.
+Repurpose or localize a core asset or idea into useful derivative, platform-native, or localized forms, including video and audio, while preserving meaning and avoiding unnecessary variants.
 
 *Try:* “Turn this core asset into the useful derivative content we should actually publish.”
 
