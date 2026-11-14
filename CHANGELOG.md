@@ -7,6 +7,8 @@
 - **Home in order of importance.** The business on top, then Needs you, Running now, Pick up where you left off, This week, Goals beside Collections, and What we know with its areas as chips. Collections say when they were last checked in plain words.
 - **The message box has one clear action.** The AI app and model share one chip with the chat's permissions next to Send; until an AI is connected Send reads Connect AI. "Using <business>" shows what a chat draws on, and an open chat has **Continue in another app** in its header.
 - **Library starts with what fits.** "Suggested for <business>" lists the methods your focus areas point to; topics are chips and type is one choice.
+- **A simpler aura.** It is the business's face: colours from its focus areas, and movement only while your AI is working. Brightness and the broken ring are gone; what needs attention is said in words on Home and in the status line.
+- **Usage and spend beside your profile.** A small gauge next to your profile opens Usage & spend from any page, in place of the link in the corner of the chat.
 - **Plain words.** Measurements show under their measure ("Map pack rank · 2 · Nov 9") instead of record IDs, and a broken scheduled task is one sentence with **Set it up again**.
 - **Every style, every component.** Buttons, fields, cards, dialogs, headings and the selected sidebar item take each style's look from shared roles, so Classic mono, the 90s and 2000s styles look right on new screens too. Layouts adapt to the space they actually get, and the side panel slides over the page when both would not fit.
 - `tools/ui-snapshots.mjs` captures the main screens in every style, light and dark, at phone, tablet and desktop widths.

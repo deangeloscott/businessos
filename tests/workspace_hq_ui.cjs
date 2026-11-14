@@ -51,11 +51,11 @@ const base={business:{id:'bakery',name:'Harbor <Bakery>',description:''},focus:[
   assert.match(html,/data-hq-item="g1"/);assert.match(html,/data-parent-collection="col_2"/);
   assert.match(html,/87 of 100/);assert.match(html,/Crumb &amp; Co/);assert.match(html,/activity-spinner/,'an agent with a running chat shows it is working');
   assert.match(html,/hq-area lit[^>]*data-hq-area="competitor-intelligence/);
-  assert.match(head(),/unsettled/,'a challenged finding breaks the aura ring');assert.match(head(),/working/);
+  assert.doesNotMatch(head(),/unsettled/,'the aura encodes only colour and movement');assert.match(head(),/working/,'the aura moves while work is running');
 
   // The aura explains itself with the same saved counts.
   hq.explain();assert.equal(opened.title,'Your aura');
-  assert.match(opened.html,/3 of 5 findings reviewed in the last 30 days/);assert.match(opened.html,/1 challenged finding/);assert.match(opened.html,/Local business/);
+  assert.match(opened.html,/5 findings saved, 1 challenged by new evidence/);assert.match(opened.html,/3 reviewed in the last 30 days/);assert.match(opened.html,/Local business/);assert.match(opened.html,/1 request working now/);
 
   // An unchanged business is not fetched again; a chat or a clear new chat hides Home entirely.
   const before=calls;hq.sync();await flush();assert.equal(calls,before,'no second read while nothing changed');

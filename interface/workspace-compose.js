@@ -124,7 +124,7 @@ window.auraCompose=(()=>{
     details('Choose agent',data.items.map(p=>`<button type="button" class="row" data-compose-assistant="${esc(p.id)}"><strong>${esc(p.name)}</strong></button>`).join('')||empty('Create an agent from Agents first.'));
   }
   function actions(row,index){
-    if(row.role!=='user')return row.trace_id?`<div class="message-actions"><button type="button" class="text-button" data-request-activity="${esc(row.trace_id)}">Activity</button></div>`:'';
+    if(row.role!=='user')return row.trace_id?`<div class="message-actions"><button type="button" class="text-button" data-request-activity="${esc(row.trace_id)}" title="What your AI did for this reply">Show steps</button></div>`:'';
     return `<div class="message-actions"><button type="button" class="icon-button" data-message-copy="${index}" aria-label="Copy prompt" title="Copy prompt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" aria-hidden="true"><path d="M8 8h12v13H8zM16 8V3H3v13h5"/></svg></button>${row.references?.length?`<button type="button" class="text-button" data-message-context="${index}">Context (${row.references.length})</button>`:''}</div>`;
   }
   async function reuse(index,inNew=false){

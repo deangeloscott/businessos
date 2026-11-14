@@ -127,7 +127,7 @@ async function refresh(light=false,preserveDetails=light) {
     $('#connection').disabled=!state.business;
     $('#model-settings').textContent=connection.model_controls?(connection.model?`${connection.model} · ${human(connection.effort||'App default')}${connection.selected==='codex'?(connection.workspace_write?' · Can edit files':' · Read only'):''}`:'Choose model & effort'):(connection.connected?'AI app settings':'Choose AI & model');
     $('#notification-bell').hidden=!state.business&&!state.updates?.notice;
-    $('#usage-open').hidden=!state.business;
+    $('#usage-open').hidden=!state.business;if($('#usage-sidebar'))$('#usage-sidebar').hidden=!state.business;
     $('#composer-context').textContent=connection.connected?'Uses your saved business context.':connection.mode==='copy'?'Requests are copied to your existing AI chat.':'Connect your AI to send requests from here.';
     $('#new-chat').disabled=!state.business;
     $('#send').innerHTML=connection.connected?'Send <span>↑</span>':connection.mode==='copy'?'Copy request <span>↗</span>':'Connect AI <span>→</span>';
@@ -1196,7 +1196,11 @@ function renderFiles() {
     button.classList.toggle('active',selected);button.setAttribute('aria-pressed',String(selected));
   });
   const matches=matchingFiles().filter(f=>!fileLocation||f.location===fileLocation);
-  $('#file-list').innerHTML=matches.length?matches.slice(0,state.fileLimit||100).map(f=>`<div class="file-card-wrap"><button class="file-card" data-file="${esc(f.path)}"><span class="file-thumb ${f.collection_id?'collection':''}">${fileThumb(f)}</span><div class="file-info"><strong>${collectionUpdated(f.collection_id)?'<span class="chat-indicator ready" aria-label="New changes"></span>':''}${esc(f.name)}</strong><small>${esc(fileNote(f))}</small></div></button>${fileFavoriteButton(f.path,f.name,true)}</div>`).join(''):empty(state.fileFavoritesOnly?'No favorite files match.':'No matching files here yet.','Link a file or folder, or save work in this workspace.');
+  const fileCard=f=>`<div class="file-card-wrap"><button class="file-card" data-file="${esc(f.path)}"><span class="file-thumb ${f.collection_id?'collection':''}" ${f.collection_id?`data-collection-preview="${esc(f.collection_id)}"`:''}>${fileThumb(f)}</span><div class="file-info"><strong>${collectionUpdated(f.collection_id)?'<span class="chat-indicator ready" aria-label="New changes"></span>':''}${esc(f.name)}</strong><small>${esc(fileNote(f))}</small></div></button>${fileFavoriteButton(f.path,f.name,true)}</div>`;
+  /* With every project showing, group files under their project so related work sits together. */
+  const shown=matches.slice(0,state.fileLimit||100),projects=(state.fileProjects||[]).filter(p=>shown.some(f=>f.project_refs?.includes(p.id)));
+  const grouped=!state.fileProject&&projects.length?projects.map(p=>{const files=shown.filter(f=>f.project_refs?.[0]===p.id||(f.project_refs?.includes(p.id)&&!projects.some(q=>q.id!==p.id&&f.project_refs[0]===q.id)));return files.length?`<h3 class="file-group">${esc(p.name)}</h3>`+files.map(fileCard).join(''):'';}).join('')+(shown.some(f=>!f.project_refs?.some(id=>projects.some(p=>p.id===id)))?'<h3 class="file-group">Not in a project</h3>'+shown.filter(f=>!f.project_refs?.some(id=>projects.some(p=>p.id===id))).map(fileCard).join(''):''):shown.map(fileCard).join('');
+  $('#file-list').innerHTML=matches.length?grouped:empty(state.fileFavoritesOnly?'No favorite files match.':'No matching files here yet.','Link a file or folder, or save work in this workspace.');window.auraHQ?.fillPreviews($('#file-list'));
   $('#file-more')?.remove();
   if(matches.length>(state.fileLimit||100))$('#file-list').insertAdjacentHTML('afterend',`<button type="button" class="secondary" id="file-more">Load more · showing ${Math.min(state.fileLimit||100,matches.length)} of ${matches.length}</button>`);
   let loaded=0;
@@ -1387,9 +1391,17 @@ function orderedSchedules(items,query='',filter='all') {
     return rank(a.info)-rank(b.info)||(a.info.next??Infinity)-(b.info.next??Infinity)||a.info.clock-b.info.clock||a.task.name.localeCompare(b.task.name);
   });
 }
+/* How a scheduled task is doing, in plain words: the first thing to know about repeating work. */
+function scheduleHealth(task,info){
+  const last=String(task.last_status||'').toLowerCase();
+  if(info.paused)return ['paused','Paused'];
+  if(['error','failed','failure','delivery_failed','interrupted','blocked_config'].includes(last))return ['attention',last==='blocked_config'?'Needs setup':'Needs attention'];
+  if(last==='ok'||Number.isFinite(scheduleTimestamp(task.last_run)))return ['ok','Running fine'];
+  return ['waiting','Waiting for first run'];
+}
 function scheduleRow(task,preview=false) {
-  const info=scheduleInfo(task),next=info.paused?'Paused':info.next?'Next · '+new Date(info.next).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'Next run not reported';
-  return `<button class="row schedule-row" ${preview?'data-example-task':'data-schedule'}="${esc(task.id)}"><span class="row-text"><span class="schedule-name"><span class="row-title">${esc(task.name)}</span><span class="schedule-timing"><span class="frequency-label">${esc(info.label)}</span><span>${esc(info.summary)}</span></span></span><span class="schedule-meta"><span>${esc(task.app)} · ${esc(task.model||'App default')}${task.effort?' · '+esc(human(task.effort)):''}${!info.paused?' · '+esc(human(task.status||'Status not reported')):''}</span><span class="schedule-next">${esc(next)}</span>${taskLastRun(task)?`<span>${esc(taskLastRun(task))}${task.has_result?' · Result saved':''}</span>`:''}</span></span><span class="arrow">→</span></button>`;
+  const info=scheduleInfo(task),[health,healthLabel]=scheduleHealth(task,info),next=info.paused?'Paused':info.next?'Next · '+new Date(info.next).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'Next run not reported';
+  return `<button class="row schedule-row" data-health="${health}" ${preview?'data-example-task':'data-schedule'}="${esc(task.id)}"><span class="row-text"><span class="schedule-name"><span class="row-title">${esc(task.name)}</span><span class="source-chip schedule-health ${health==='attention'?'challenged':health==='ok'?'':'unverified'}">${esc(healthLabel)}</span><span class="schedule-timing"><span class="frequency-label">${esc(info.label)}</span><span>${esc(info.summary)}</span></span></span><span class="schedule-meta"><span>${esc(task.app)} · ${esc(task.model||'App default')}${task.effort?' · '+esc(human(task.effort)):''}${!info.paused&&task.status&&!['active','enabled','scheduled'].includes(String(task.status).toLowerCase())?' · '+esc(human(task.status)):''}</span><span class="schedule-next">${esc(next)}</span>${taskLastRun(task)?`<span>${esc(taskLastRun(task))}${task.has_result?' · Result saved':''}</span>`:''}</span></span><span class="arrow">→</span></button>`;
 }
 function scheduleMarkup(items,query,filter,limit=Infinity,preview=false) {
   const visible=items.filter(t=>(preview?state.exampleShowPaused:state.showPaused)||!scheduleInfo(t).paused),ordered=orderedSchedules(visible,query,filter);
@@ -2450,7 +2462,7 @@ async function submitRequest(text, scheduleId=null, organizationId=state.pending
   if(!state.business||!state.hydrated||state.navigating||state.organizationWorking||state.starting||state.goalSetting||state.stopping||state.settling||state.needsCheck||state.connectionInterrupted)return;
   if(state.chatMeta?.workspace&&!sameWorkspace(state.chatMeta.workspace,state.data?.workspace)){chatControls();$('#chat-location-note')?.scrollIntoView({block:'nearest'});return;}
   if(state.busy){await stopRequest();return;}
-  if(!text.trim()){$('#request').focus();return;}
+  if(!text.trim()){if(!state.data.connection.connected&&state.data.connection.mode!=='copy'){openConnection(true);return;}$('#request').focus();return;}  // Connect AI always connects
   if(!scheduleId&&!organizationId&&await limitGate(text))return;
   const connection=composerConnection();
   if(!state.data.connection.connected&&state.data.connection.mode!=='copy'){$('#request').value=text;openConnection(true);return;}
@@ -2656,7 +2668,7 @@ document.addEventListener('click',event=>attempt(async()=>{
   if(['workspace-manager','open-existing-start'].includes(button.id))await addWorkspace();
   if(button.id==='workspace-backups')await workspaceStorage();
   if(button.id==='workspace-reading')await workspaceReading();
-  if(button.id==='usage-open')await openUsage();
+  if(button.id==='usage-open'||button.id==='usage-sidebar')await openUsage();
   if(button.id==='usage-refresh')await loadUsage(true);
   if(button.id==='usage-account-settings')await openUsageLinks();
   if(button.id==='usage-links-back'){$('#detail').close();openConnection(true,'connect');}
@@ -2940,7 +2952,7 @@ async function renderShell(force=true){
   state.shellLoading=true;state.shellPolledAt=Date.now();
   try{
   applyProfile(state.data.profile||state.profile||{});renderComposerConnection();$('#active-workspace-label').textContent=rows('Business')[0]?.title||'Choose a workspace';
-  $('#active-chat-label').textContent=state.view==='home'?(state.chatMeta?.title||''):({business:'Knowledge',files:'Files',work:'Library',assistants:'Library · Agents',tools:'Schedules',sharing:'Share or import'})[state.view]||'';
+  $('#active-chat-label').textContent=state.view==='home'?(state.chatMeta?(state.chatMeta.title||'New chat'):''):({business:'Knowledge',files:'Files',work:'Library',assistants:'Library · Agents',tools:'Schedules',sharing:'Share or import'})[state.view]||'';
   for(const b of document.querySelectorAll('.sidebar-sections [data-view]'))b.setAttribute('aria-current',b.dataset.view===state.view||b.dataset.view==='work'&&state.view==='assistants'?'page':'false');
   if($('#home-open')){$('#home-open').setAttribute('aria-current',state.view==='home'&&!!state.home&&!state.chatMeta&&!state.busy?'page':'false');$('#home-open').disabled=!state.business;}
   paintRunning();window.auraHQ?.paintMark();

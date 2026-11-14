@@ -47,25 +47,26 @@ window.auraHQ=(()=>{
     return pending;
   }
 
-  /* The aura is drawn only from saved state, and every trait can be explained. */
+  /* The aura is the business's face: its colours come from the chosen focus areas, so it is recognisable
+     wherever the business appears, and it moves only while your AI is working. Nothing else is encoded in it;
+     what needs attention is said in words (Needs you, the status line), not in a picture to decode. */
   function aura(s,size=''){
-    const hues=s.focus.map(a=>hue(a.id)).slice(0,3),fresh=share(s.knowledge),working=s.running.length>0,challenged=s.knowledge.by_status.challenged;
-    const style=[hues.length?`--hq-h1:${hues[0]};--hq-h2:${hues[1]??(hues[0]+40)%360};--hq-h3:${hues[2]??(hues[0]+320)%360}`:'',`--hq-glow:${fresh===null?.5:(.35+.65*fresh).toFixed(2)}`].filter(Boolean).join(';');
-    return `<button type="button" class="hq-aura ${size} ${hues.length?'':'plain'} ${working?'working':''} ${challenged?'unsettled':''}" style="${style}" data-hq-aura aria-label="Your aura. Open what it shows." title="What this shows"><span aria-hidden="true"></span></button>`;
+    const hues=s.focus.map(a=>hue(a.id)).slice(0,3),working=s.running.length>0||(state.data?.running_chats||[]).length>0;
+    const style=hues.length?`--hq-h1:${hues[0]};--hq-h2:${hues[1]??(hues[0]+40)%360};--hq-h3:${hues[2]??(hues[0]+320)%360}`:'';
+    return `<button type="button" class="hq-aura ${size} ${hues.length?'':'plain'} ${working?'working':''}" style="${style}" data-hq-aura aria-label="Your aura. Open what it shows." title="What this shows"><span aria-hidden="true"></span></button>`;
   }
   function explain(){
     if(!data)return;
-    const s=data,k=s.knowledge,fresh=share(k),by=k.by_status;
+    const s=data,k=s.knowledge,by=k.by_status,working=s.running.length||(state.data?.running_chats||[]).length;
     const row=(name,value,why)=>`<div class="field"><strong>${esc(name)}</strong><p>${esc(value)}</p><p class="small-note">${esc(why)}</p></div>`;
-    details('Your aura',`<p class="shell-help">A picture of this business drawn only from what is saved. Its colours and movement reflect the saved facts below.</p>
-      ${row('Colour',s.focus.length?s.focus.map(a=>a.name).join(', '):'No focus areas chosen yet','Each focus area you chose adds its own colour.')}
-      ${row('Brightness',fresh===null?'Not shown yet':`${k.reviewed.recent} of ${k.findings} findings reviewed in the last ${k.reviewed.within_days} days`,fresh===null?'It brightens once findings record when they were last reviewed.':'Brighter means more of what you know was checked recently.')}
-      ${row('Broken ring',by.challenged?`${by.challenged} challenged finding${by.challenged===1?'':'s'}`:'None','The ring breaks when new evidence challenges something you believed.')}
-      ${row('Movement',s.running.length?`${s.running.length} request${s.running.length===1?'':'s'} working now`:'Still','It moves only while your AI is working on this business.')}
+    const facts=[k.findings?`${k.findings} finding${k.findings===1?'':'s'} saved${by.challenged?`, ${by.challenged} challenged by new evidence`:''}`:'',k.reviewed.with_date?`${k.reviewed.recent} reviewed in the last ${k.reviewed.within_days} days`:''].filter(Boolean).join('; ');
+    details('Your aura',`<p class="shell-help">The face of this business in AURA, drawn only from what is saved.</p>
+      ${row('Colour',s.focus.length?s.focus.map(a=>a.name).join(', '):'No focus areas chosen yet','Each focus area you chose adds its own colour, so the business looks the same wherever it appears.')}
+      ${row('Movement',working?`${working} request${working===1?'':'s'} working now`:'Still','It moves only while your AI is working on this business.')}
+      ${facts?row('What you know',facts,'Open Knowledge to read and review findings.'):''}
       <div class="inline-actions"><button type="button" class="secondary" data-view="business">Open Knowledge</button></div>`,'context');
   }
 
-  /* The business, above the message box: its aura, name and what it does. The aura opens what it shows. */
   function head(s){
     const b=s.business;
     const example=b.example?`<p class="hq-example"><span class="source-chip review">Example business</span> Everything here is made up, so you can look around freely. ${window.auraExample.origin()?'<button type="button" class="text-button" data-example-return>Return to my workspace</button>':'Choose your own workspace from the list at the top left.'}</p>`:'';
@@ -98,7 +99,8 @@ window.auraHQ=(()=>{
   function resume(s){
     const recent=state.homeRecent?.scope===scope()?state.homeRecent.chat:null;
     if(!recent&&!s.results.length)return '';
-    const chat=recent?row(`data-chat="${esc(recent.id)}"`,recent.title||'Recent chat','Chat',recent.updated?when(recent.updated):''):'';
+    const at=recent?.updated||recent?.created,stampAt=typeof at==='number'?new Date(at<1e12?at*1000:at).toISOString():at;  // chat times are seconds
+    const chat=recent?row(`data-chat="${esc(recent.id)}"`,recent.title||'Recent chat','Chat',stampAt?when(stampAt):''):'';
     const results=s.results.map(r=>row(`data-record="${esc(r.id)}"`,r.title,'Result',r.updated_at?when(r.updated_at):'')).join('');
     return section('Pick up where you left off',`<div class="hq-list">${chat}${results}</div>`,'<button type="button" class="text-button" data-view="files">All files</button>');
   }
@@ -121,7 +123,7 @@ window.auraHQ=(()=>{
   function watches(s){
     if(!s.watches.length)return '';
     const checked=w=>!w.last_checked?'Not checked yet':(({partial:'Partly checked ',failed:'Check failed '})[w.coverage]||'Checked ')+when(w.last_checked).replace(/^(Today|Yesterday)/,m=>m.toLowerCase());
-    return section('Collections',`<div class="hq-collections">${s.watches.map(w=>`<button type="button" class="hq-collection" data-collection="${esc(w.id)}"><strong>${esc(w.name)}</strong><span>${w.current} ${w.kind==='reports'?'report':'result'}${w.current===1?'':'s'}${w.last_changes?` · ${w.last_changes} change${w.last_changes===1?'':'s'}`:''}</span><small>${esc(checked(w))}</small></button>`).join('')}</div>`,'<button type="button" class="text-button" data-view="files">All files</button>');
+    return section('Collections',`<div class="hq-collections">${s.watches.map(w=>`<button type="button" class="hq-collection" data-collection="${esc(w.id)}"><span class="hq-collection-preview" data-collection-preview="${esc(w.id)}" aria-hidden="true"></span><strong>${esc(w.name)}</strong><span>${w.current} ${w.kind==='reports'?'report':'result'}${w.current===1?'':'s'}${w.last_changes?` · ${w.last_changes} change${w.last_changes===1?'':'s'}`:''}</span><small>${esc(checked(w))}</small></button>`).join('')}</div>`,'<button type="button" class="text-button" data-view="files">All files</button>');
   }
   /* What is known: how well-supported it is, and every area AURA has guidance for. Lit areas open their
      findings; the others prepare a first request (nothing runs until you send). */
@@ -157,6 +159,7 @@ window.auraHQ=(()=>{
     const pair=goals(s)+watches(s);
     const html=(s.empty?start():'')+needs(s)+team(s)+story+resume(s)+changed(s)+(pair?`<div class="hq-pair">${pair}</div>`:'')+knows(s);
     if(host.dataset.markup!==html){host.innerHTML=html;host.dataset.markup=html;}
+    fillPreviews(host);
   }
   async function paint(force=false){
     if(!visible())return;
@@ -203,15 +206,37 @@ window.auraHQ=(()=>{
       const hues=s.focus.map(a=>hue(a.id)).slice(0,3),working=(state.data?.running_chats||[]).length>0;
       for(const host of hosts){
         if(!host.isConnected)continue;
-        host.className=['hq-aura mini',hues.length?'':'plain',s.knowledge.by_status.challenged?'unsettled':'',working?'working':''].filter(Boolean).join(' ');
+        host.className=['hq-aura mini',hues.length?'':'plain',working?'working':''].filter(Boolean).join(' ');
         if(hues.length)host.setAttribute('style',`--hq-h1:${hues[0]};--hq-h2:${hues[1]??(hues[0]+40)%360};--hq-h3:${hues[2]??(hues[0]+320)%360}`);else host.removeAttribute('style');
       }
       window.paintAuraStatus?.();
     }).catch(()=>{});
   }
+  /* A small picture of a collection's real results: a dot map when they have places, otherwise the first few
+     names. Read once a minute at most, and drawn only from the saved results. */
+  const previews=new Map();
+  function preview(id){
+    const hit=previews.get(id);if(hit&&Date.now()-hit.at<60000)return hit.promise;
+    const promise=api('/api/collection-view?'+new URLSearchParams({business:state.business,id,view:'current'})).then(r=>{
+      const items=(r.items||[]).filter(i=>!i.hidden),placed=items.filter(i=>Number.isFinite(i.lat)&&Number.isFinite(i.lng));
+      if(placed.length>=2){
+        const lats=placed.map(i=>i.lat),lngs=placed.map(i=>i.lng),[a,b,c,d]=[Math.min(...lats),Math.max(...lats),Math.min(...lngs),Math.max(...lngs)];
+        const x=v=>8+84*(d===c?.5:(v-c)/(d-c)),y=v=>6+48*(b===a?.5:1-(v-a)/(b-a));
+        return `<svg class="collection-dots" viewBox="0 0 100 60" role="img" aria-label="${placed.length} places on a map">${placed.slice(0,80).map(i=>`<circle cx="${x(i.lng).toFixed(1)}" cy="${y(i.lat).toFixed(1)}" r="${i.fields?.yours?3.2:2}" class="${i.fields?.yours?'yours':''}"/>`).join('')}</svg>`;
+      }
+      return items.length?`<ul class="collection-names">${items.slice(0,3).map(i=>`<li>${esc(i.title||'Untitled')}</li>`).join('')}</ul>`:'';
+    }).catch(()=>'');
+    previews.set(id,{at:Date.now(),promise});return promise;
+  }
+  function fillPreviews(root=document){
+    if(typeof root?.querySelectorAll!=='function')return;
+    for(const host of root.querySelectorAll('[data-collection-preview]:not([data-filled])')){
+      host.dataset.filled='1';preview(host.dataset.collectionPreview).then(html=>{if(html&&host.isConnected){host.innerHTML=html;host.classList.add('has-preview');}});
+    }
+  }
   /* Real items waiting on the person: open attention records and upcoming deadlines in saved collections. */
   const needsCount=()=>data&&key.startsWith(scope()+'|')?(data.totals?.attention||0)+(data.deadlines?.length||0):0;
-  return {sync,paint,visible,explain,paintMark,needsCount,research:RESEARCH,cached:()=>data};
+  return {sync,paint,visible,explain,paintMark,needsCount,fillPreviews,research:RESEARCH,cached:()=>data};
 })();
 
 /* The example business: a made-up organization in its own workspace, built the first time it is opened. */
