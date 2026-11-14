@@ -101,7 +101,7 @@ window.auraHQ=(()=>{
     if(!recent&&!s.results.length)return '';
     const at=recent?.updated||recent?.created,stampAt=typeof at==='number'?new Date(at<1e12?at*1000:at).toISOString():at;  // chat times are seconds
     const chat=recent?row(`data-chat="${esc(recent.id)}"`,recent.title||'Recent chat','Chat',stampAt?when(stampAt):''):'';
-    const results=s.results.map(r=>row(`data-record="${esc(r.id)}"`,r.title,'Result',r.updated_at?when(r.updated_at):'')).join('');
+    const results=s.results.slice(0,recent?2:3).map(r=>row(`data-record="${esc(r.id)}"`,r.title,'Result',r.updated_at?when(r.updated_at):'')).join('');
     return section('Pick up where you left off',`<div class="hq-list">${chat}${results}</div>`,'<button type="button" class="text-button" data-view="files">All files</button>');
   }
   function changed(s){
@@ -268,7 +268,8 @@ window.auraExample={
         window.auraHQ.sync();
       }
       recordShellRoute();
-      notice('This is AURA’s example business. Everything in it is made up. Switch back to your own workspace from the list at the top left.');
+      // Home already labels the example and offers the way back; a short confirmation is enough here.
+      if(typeof toast==='function')toast('Opened the example business. Everything in it is made up.');
     }finally{state.navigating=false;chatControls();}
   }
 };

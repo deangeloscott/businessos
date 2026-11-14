@@ -8,6 +8,9 @@
 - **The message box has one clear action.** The AI app and model share one chip with the chat's permissions next to Send; until an AI is connected Send reads Connect AI. "Using <business>" shows what a chat draws on, and an open chat has **Continue in another app** in its header.
 - **Library starts with what fits.** "Suggested for <business>" lists the methods your focus areas point to; topics are chips and type is one choice.
 - **A simpler aura.** It is the business's face: colours from its focus areas, and movement only while your AI is working. Brightness and the broken ring are gone; what needs attention is said in words on Home and in the status line.
+- **Collections show what is in them.** On Home and in Files, a collection shows a small dot map of its places (yours highlighted) or its first results, drawn from the saved results.
+- **Files grouped by project** when every project is showing, and scheduled tasks say how they are doing: Running fine, Needs attention, Paused or Waiting for first run.
+- **Every style checked.** All 46 style, accent and mode combinations meet WCAG AA contrast, including status text on its tint; nothing overflows or scrolls sideways at phone or desktop widths or at the largest text size. Opening a page or panel puts focus on its title.
 - **Usage and spend beside your profile.** A small gauge next to your profile opens Usage & spend from any page, in place of the link in the corner of the chat.
 - **Plain words.** Measurements show under their measure ("Map pack rank · 2 · Nov 9") instead of record IDs, and a broken scheduled task is one sentence with **Set it up again**.
 - **Every style, every component.** Buttons, fields, cards, dialogs, headings and the selected sidebar item take each style's look from shared roles, so Classic mono, the 90s and 2000s styles look right on new screens too. Layouts adapt to the space they actually get, and the side panel slides over the page when both would not fit.
