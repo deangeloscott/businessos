@@ -149,7 +149,7 @@ async function refresh(light=false,preserveDetails=light) {
     if(ticket!==state.refreshTicket)return;
     await window.auraCompose?.sync();chatControls();
     if(state.data.organization?.status==='working'&&!state.organizationPolling){state.organizationWorking=true;notice(state.data.organization.progress);attempt(pollOrganization);}
-    if(state.business&&!state.suppressSetup&&!state.data.onboarding.seen&&!state.setupPrompted.has(state.business)) {
+    if(state.business&&!state.suppressSetup&&!state.data.onboarding.seen&&!state.setupPrompted.has(state.business)&&!setupDismissed()) {
       state.setupPrompted.add(state.business); openConnection();
     }
     await syncNotifications();
@@ -458,6 +458,12 @@ async function effortOptions(){
     $('#model-change-note').hidden=!$('#model-change-note').textContent;
   } finally {if(selectedRoute()?.key===route.key&&$('#model-choice').value===id){state.effortsLoading=false;$('#effort-choice').disabled=false;connectionChoice();}}
 }
+/* Closing quick setup means "not now": it stays closed on later visits in this browser. Connect AI on the
+   message box (and Settings) opens it again whenever the person is ready. */
+const setupKey=()=>'aura-setup-dismissed:'+(state.data?.workspace||'')+'|'+state.business;
+function setupDismissed(){try{return localStorage.getItem(setupKey())==='1';}catch{return false;}}
+function rememberSetupClosed(){if(state.business&&state.data&&!state.data.onboarding?.seen){try{localStorage.setItem(setupKey(),'1');}catch{}}}
+document.addEventListener('cancel',event=>{if(event.target.id==='connect-dialog')rememberSetupClosed();},true);
 function openConnection(restart=false, step='welcome') {
   if(!state.data)return;
   $('#more-dialog').close();
@@ -2526,7 +2532,7 @@ document.addEventListener('click',event=>attempt(async()=>{
     finally{if(button.isConnected){button.disabled=false;button.textContent='Refresh from app';button.setAttribute('aria-busy','false');}}
   }
   if(button.dataset.chat)await openShellChat(button.dataset.chat);
-  if(button.dataset.close) $('#'+button.dataset.close).close();
+  if(button.dataset.close){if(button.dataset.close==='connect-dialog')rememberSetupClosed();$('#'+button.dataset.close).close();}
   if(button.dataset.view) { if(button.dataset.view==='tools')state.scheduleAdding=button.hasAttribute('data-add-recurring');$('#more-dialog').close(); if(!state.data.diagnostics.length)notice(''); state.view=button.dataset.view; await render();recordShellRoute();await renderShell(); }
   if(button.hasAttribute('data-add-context'))await openContextChat();
   if(button.dataset.pinChat){const scope=chatScope();const chat=state.chatList.find(c=>c.id===button.dataset.pinChat);if(chat){await api('/api/chats/organize',{business:state.business,id:chat.id,pinned:!chat.pinned});if(scope!==chatScope())return;chat.pinned=!chat.pinned;if(state.chatMeta?.id===chat.id)state.chatMeta.pinned=chat.pinned;button.setAttribute('aria-pressed',String(chat.pinned));button.setAttribute('aria-label',chat.pinned?'Unpin chat':'Pin chat');button.title=chat.pinned?'Unpin chat':'Pin chat';state.sidebarSignature='';await renderShell();}}
