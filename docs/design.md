@@ -88,7 +88,7 @@ A new component that uses roles looks right in all six styles with no extra work
 ## Shared pieces
 
 - **Buttons:** `primary` (one per area, the main action), `secondary` (other actions), `text-button` (low-weight actions and links), `icon-button` (with an `aria-label` and `title`). `compact` for inline actions.
-- **Page header:** title, one line of description, the main action on the right, everything else in "⋯". Pages refresh themselves; refreshing by hand lives in "⋯" and Ctrl+K.
+- **Page header:** title, one line of description, and the page's main action. Pages refresh themselves; refreshing by hand is a small icon in the corner (it spins while it works). Gather further actions into a "⋯" menu once a page has several; a menu with one item only adds a click.
 - **Inputs and selects:** one height (`--control-height`) and one focus style.
 - **Chips:** filters and suggestions share one pill shape; the active filter uses `--accent-soft`.
 - **Rows, not cards, for lists.** A card is for something with a picture or a preview.

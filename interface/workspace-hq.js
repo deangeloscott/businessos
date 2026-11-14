@@ -127,14 +127,14 @@ window.auraHQ=(()=>{
   }
   /* What is known: how well-supported it is, and every area AURA has guidance for. Lit areas open their
      findings; the others prepare a first request (nothing runs until you send). */
-  function knows(s){
+  function knows(s,here=false){
     const k=s.knowledge,parts=STATUS.filter(([id])=>k.by_status[id]);
     const bar=k.findings?`<div class="hq-bar" role="img" aria-label="${esc(parts.map(([id,label])=>k.by_status[id]+' '+label.toLowerCase()).join(', '))}">${parts.map(([id])=>`<i class="${id}" style="flex:${k.by_status[id]}"></i>`).join('')}</div>
       <div class="hq-counts">${parts.map(([id,label,cls])=>`<span><strong>${k.by_status[id]}</strong><span class="source-chip ${cls}">${esc(label)}</span></span>`).join('')}</div>`:'';
     const list=k.by_area.filter(a=>a.id!=='core'||a.findings);
     const areas=`<div class="hq-areas">${list.map(a=>`<button type="button" class="hq-area ${a.findings?'lit':''}" ${a.findings?`data-hq-area="${esc(a.id)}"`:`data-prompt="${esc(AREA_START[a.id])}"`} title="${a.findings?'Read saved findings':'Prepare a first request'}"><i aria-hidden="true"></i><span>${esc(a.name)}</span>${a.findings?`<small>${a.findings}</small>`:''}</button>`).join('')}</div>`;
     const ask='<button class="text-button" data-prompt="Check what AI says about our business against our verified facts. Use the AI visibility and factual accuracy workflows. Identify each service sampled, the question, date, exact discrepancy and supporting source. Disclose any services you could not sample.">What does AI say about my business?</button>';
-    return section(k.findings?'What we know':'What you can ask for',`${bar}${areas}<div class="hq-know-foot"><small class="small-note">${k.findings?'Open an area to read its findings. The others prepare a first request.':'Choose an area to prepare a first request.'}</small>${ask}</div>`,k.findings?'<button type="button" class="text-button" data-view="business">Knowledge</button>':'');
+    return section(k.findings?'What we know':'What you can ask for',`${bar}${areas}<div class="hq-know-foot"><small class="small-note">${k.findings?'Open an area to read its findings. The others prepare a first request.':'Choose an area to prepare a first request.'}</small>${ask}</div>`,k.findings&&!here?'<button type="button" class="text-button" data-view="business">Knowledge</button>':'');
   }
   function openArea(id){
     const area=data?.knowledge.by_area.find(a=>a.id===id);
@@ -234,9 +234,14 @@ window.auraHQ=(()=>{
       host.dataset.filled='1';preview(host.dataset.collectionPreview).then(html=>{if(html&&host.isConnected){host.innerHTML=html;host.classList.add('has-preview');}});
     }
   }
+  /* Knowledge shows the same picture of what is known, with every area, as the place to read findings. */
+  function paintKnowledge(){
+    const host=$('#knowledge-know');if(!host||!state.business)return;
+    load().then(s=>{if(s&&host.isConnected){const html=knows(s,true);if(host.dataset.markup!==html){host.innerHTML=html;host.dataset.markup=html;}}}).catch(()=>{});
+  }
   /* Real items waiting on the person: open attention records and upcoming deadlines in saved collections. */
   const needsCount=()=>data&&key.startsWith(scope()+'|')?(data.totals?.attention||0)+(data.deadlines?.length||0):0;
-  return {sync,paint,visible,explain,paintMark,needsCount,fillPreviews,research:RESEARCH,cached:()=>data};
+  return {sync,paint,visible,explain,paintMark,paintKnowledge,needsCount,fillPreviews,research:RESEARCH,cached:()=>data};
 })();
 
 /* The example business: a made-up organization in its own workspace, built the first time it is opened. */

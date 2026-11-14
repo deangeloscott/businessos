@@ -1007,6 +1007,7 @@ body.sidebar-collapsed #usage-sidebar{margin-top:4px}
 .hq-collection-preview .collection-names{padding:10px 12px;gap:7px}.hq-collection-preview .collection-names li{height:5px;padding:0;border:0;border-radius:3px;background:color-mix(in srgb,var(--accent) 35%,transparent);color:transparent;overflow:hidden}.hq-collection-preview .collection-names li:nth-child(2){width:80%}.hq-collection-preview .collection-names li:nth-child(3){width:60%}
 #section-title:focus,#detail-title:focus{outline:0}
 .file-thumb.has-preview .collection-names{padding-right:48px}
+.knowledge-know{margin:28px 0}.knowledge-know:empty{display:none}.knowledge-know .hq-section-head h2{font-size:var(--text-lg)}
 /* Keyboard hints belong to keyboards. */
 @media(pointer:coarse){.sidebar-action kbd,.menu kbd,.command-row kbd{display:none}}
 

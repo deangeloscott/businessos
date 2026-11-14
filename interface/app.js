@@ -1107,7 +1107,7 @@ async function render() {
   $('#section-title').textContent=({business:'Knowledge',files:'Files',work:'Library',tools:'Schedules',assistants:'Library'})[state.view];
   if(!$('#section-dialog').open) $('#section-dialog').show();
   if(state.view==='business') {
-    view.innerHTML=`<div class="section-head business-title"><span class="business-title-name"><span id="knowledge-aura"></span><strong>${esc(rows('Business')[0]?.title)}</strong></span><span class="inline-actions"><button class="text-button" data-hq-aura>What the aura shows</button><button class="text-button" data-action="edit-business">Edit name</button></span></div><section id="focus-panel" class="focus-panel"></section><input class="search" id="record-search" type="search" aria-label="Search goals and saved information" placeholder="Find goals or saved information…" value="${esc(state.memoryQuery||'')}"><div id="full-memory"></div>`;window.auraHQ?.paintMark();
+    view.innerHTML=`<div class="section-head business-title"><span class="business-title-name"><span id="knowledge-aura"></span><strong>${esc(rows('Business')[0]?.title)}</strong></span><span class="inline-actions"><button class="text-button" data-hq-aura>What the aura shows</button><button class="text-button" data-action="edit-business">Edit name</button></span></div><section id="focus-panel" class="focus-panel"></section><div id="knowledge-know" class="knowledge-know"></div><input class="search" id="record-search" type="search" aria-label="Search goals and saved information" placeholder="Find goals or saved information…" value="${esc(state.memoryQuery||'')}"><div id="full-memory"></div>`;window.auraHQ?.paintMark();window.auraHQ?.paintKnowledge();
     window.auraFocus?.panel($('#focus-panel'));
     renderMemory();
   } else if(state.view==='files') {
@@ -2955,7 +2955,7 @@ async function renderShell(force=true){
   $('#active-chat-label').textContent=state.view==='home'?(state.chatMeta?(state.chatMeta.title||'New chat'):''):({business:'Knowledge',files:'Files',work:'Library',assistants:'Library · Agents',tools:'Schedules',sharing:'Share or import'})[state.view]||'';
   for(const b of document.querySelectorAll('.sidebar-sections [data-view]'))b.setAttribute('aria-current',b.dataset.view===state.view||b.dataset.view==='work'&&state.view==='assistants'?'page':'false');
   if($('#home-open')){$('#home-open').setAttribute('aria-current',state.view==='home'&&!!state.home&&!state.chatMeta&&!state.busy?'page':'false');$('#home-open').disabled=!state.business;}
-  paintRunning();window.auraHQ?.paintMark();
+  paintRunning();window.auraHQ?.paintMark();{const pick=$('#business');if(pick)pick.title=pick.selectedOptions?.[0]?.textContent||'';}
   if(!state.business){$('#sidebar-chat-list').innerHTML='<p class="sidebar-empty">Choose a workspace to see its chats.</p>';return;}
   const root=state.data.workspace,business=state.business;
   const list=await api('/api/chats?'+new URLSearchParams({business,chat_id:state.chatMeta?.id||''}));if(root!==state.data.workspace||business!==state.business||(list.workspace&&list.workspace!==root))return;
