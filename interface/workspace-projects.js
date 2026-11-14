@@ -14,7 +14,7 @@ window.auraProjects=(()=>{
   }
   function checked(check){
     if(!check)return '<span class="small-note">No check recorded yet</span>';
-    const c=check.coverage,status=c.status==='complete'?'Checked':c.status==='partial'?'Partly checked':c.status==='failed'?'Check failed':'Coverage unknown';
+    const c=check.coverage,status=c.status==='complete'?'Checked':c.status==='partial'?'Partly checked':c.status==='failed'?'Check failed':'Checked';
     return `<span class="result-coverage ${['partial','failed'].includes(c.status)?'needs-review':''}">${esc(status)}${c.expected?` · ${c.checked} of ${c.expected} sources`:c.checked?` · ${c.checked} source${c.checked===1?'':'s'}`:''} · ${esc(stamp(check.at))}</span>${check.no_change_verified?'<p class="small-note">No material changes reported.</p>':''}${c.failed?.length||c.missing?.length?`<details class="result-source-status"><summary>Sources needing another check</summary><p>${esc([...new Set([...(c.failed||[]),...(c.missing||[])])].join(', '))}</p></details>`:''}`;
   }
   async function project(id){

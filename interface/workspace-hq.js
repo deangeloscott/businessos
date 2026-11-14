@@ -195,13 +195,17 @@ window.auraHQ=(()=>{
   });
   /* The same aura beside the workspace name in the sidebar, so the business is recognisable wherever you are. */
   function paintMark(){
-    const host=$('#sidebar-aura');if(!host)return;
-    if(!state.business){host.className='hq-aura mini plain';host.removeAttribute('style');return;}
+    const hosts=['#sidebar-aura','#knowledge-aura'].map(id=>$(id)).filter(Boolean);if(!hosts.length)return;
+    for(const host of hosts)if(!host.firstElementChild)host.innerHTML='<span></span>';
+    if(!state.business){for(const host of hosts){host.className='hq-aura mini plain';host.removeAttribute('style');}return;}
     load().then(s=>{
-      if(!s||!host.isConnected)return;
+      if(!s)return;
       const hues=s.focus.map(a=>hue(a.id)).slice(0,3),working=(state.data?.running_chats||[]).length>0;
-      host.className=['hq-aura mini',hues.length?'':'plain',s.knowledge.by_status.challenged?'unsettled':'',working?'working':''].filter(Boolean).join(' ');
-      if(hues.length)host.setAttribute('style',`--hq-h1:${hues[0]};--hq-h2:${hues[1]??(hues[0]+40)%360};--hq-h3:${hues[2]??(hues[0]+320)%360}`);else host.removeAttribute('style');
+      for(const host of hosts){
+        if(!host.isConnected)continue;
+        host.className=['hq-aura mini',hues.length?'':'plain',s.knowledge.by_status.challenged?'unsettled':'',working?'working':''].filter(Boolean).join(' ');
+        if(hues.length)host.setAttribute('style',`--hq-h1:${hues[0]};--hq-h2:${hues[1]??(hues[0]+40)%360};--hq-h3:${hues[2]??(hues[0]+320)%360}`);else host.removeAttribute('style');
+      }
       window.paintAuraStatus?.();
     }).catch(()=>{});
   }

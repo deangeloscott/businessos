@@ -272,7 +272,7 @@ def running(app, bid, project_id='', goal_id='', collection_id=''):
     for ident in dict.fromkeys(ids):
         task = tasks.get(ident)
         if not task:
-            items.append({'id': ident, 'name': 'Scheduled task', 'available': False, 'health': 'missing', 'text': 'A linked scheduled task is no longer listed by its app.'})
+            items.append({'id': ident, 'name': 'Scheduled task', 'available': False, 'health': 'missing', 'text': 'The scheduled task that kept this up to date was removed from its app, so it no longer runs.'})
             continue
         link = bindings.get(ident, {});collection = None
         if link.get('collection_id'):
