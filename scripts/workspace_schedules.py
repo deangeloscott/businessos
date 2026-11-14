@@ -111,7 +111,7 @@ def inventory(codex_home=None, hermes_home=None, workspaces=(), antigravity_home
                        description=str(job.get('prompt') or ''),
                        schedule=job.get('schedule_display') or raw, schedule_raw=raw,
                        model=job.get('model') or '', effort=job.get('reasoning_effort') or '',
-                       provider=job.get('model_provider') or '',
+                       provider=job.get('provider') or job.get('model_provider') or '',  # Hermes saves 'provider'
                        last_run=job.get('last_run_at') or '', last_status=job.get('last_status') or '',
                        last_error=str(job.get('last_error') or '')[:500],
                        has_result=bool(result_path(home,job['id'])),

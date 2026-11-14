@@ -1008,6 +1008,9 @@ body.sidebar-collapsed #usage-sidebar{margin-top:4px}
 #section-title:focus,#detail-title:focus{outline:0}
 .file-thumb.has-preview .collection-names{padding-right:48px}
 .knowledge-know{margin:28px 0}.knowledge-know:empty{display:none}.knowledge-know .hq-section-head h2{font-size:var(--text-lg)}
+.history-name{font-weight:500}.history-path{color:var(--faint);overflow-wrap:anywhere}
+.connection-status-icon.unchecked{color:var(--muted);background:transparent;box-shadow:inset 0 0 0 1px var(--line-strong)}
+#detail-content .small-note{overflow-wrap:anywhere;min-width:0}
 /* Keyboard hints belong to keyboards. */
 @media(pointer:coarse){.sidebar-action kbd,.menu kbd,.command-row kbd{display:none}}
 

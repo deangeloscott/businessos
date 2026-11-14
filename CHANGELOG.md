@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- **Checked with every connected AI app.** Short real chats through Claude Code, Codex, Hermes, Google Antigravity and OMP, a real handoff between apps, and real scheduled tasks in Hermes. Fixes from that:
+  - Every "continue elsewhere" control opens the one Continue in another app dialog, which carries the latest exchanges (not just the last reply), and the continued chat keeps the original chat's name.
+  - Choosing a model for a newly connected app shows its models; a provider seen for the first time starts selected.
+  - Hermes tasks with a named provider no longer report that their model settings could not be confirmed (AURA now reads Hermes's `provider` field).
+  - A chat is never named after AURA's own request framing; it uses your first message.
+  - A failed reply is shown once, in the conversation, not again in a banner. The activity log reads "Connected to your AI".
+  - A task's panel opens with how it is doing, and a finished message about a deleted task clears itself.
+- **Every settings page and dialog checked** in all six styles, light and dark, at desktop and phone. Version history names files by what they are (the collection or measure), the "not checked yet" mark is visible in every style, Usage and spend names apps properly, and long notes wrap.
+
 - **A calmer, clearer AURA.** Text is a size larger and easier to read, sections sit on the page instead of in boxes inside boxes, and each screen leads with what matters most. The design guide (`docs/design.md`) is now guidance for people and AI agents: the six jobs people use AURA for, three levels of importance, a two-level limit on detail and a character sheet for each style.
 - **The business leads the sidebar.** Its aura and name sit at the top, with one plain status line: what needs you, what is working, what is new, or "Up to date". It opens Activity in place of the bell. **New chat** is a clear button, then Home, **Knowledge**, **Files**, Library and **Schedules** (the new names for Business & memory, Files & media and Scheduled tasks). Chats are one list: pinned, each project, then recent.
 - **Home in order of importance.** The business on top, then Needs you, Running now, Pick up where you left off, This week, Goals beside Collections, and What we know with its areas as chips. Collections say when they were last checked in plain words.

@@ -8,6 +8,14 @@ import time
 PREFIX = 'AURA_CHAT_BRIEF_'
 
 
+
+# Some apps name a session after the first text they receive, which is AURA's own request framing rather than the
+# person's words. Such a name says nothing about the chat, so the person's first message keeps naming it.
+AURA_FRAMING=('Work for the explicitly selected AURA business','Keep this chat’s cache warm.')
+def useful_title(title):
+    title=str(title or '').strip()
+    return bool(title) and not title.startswith(AURA_FRAMING)
+
 def short(value, limit):
     if not isinstance(value, str):return ''
     value=' '.join(value.split())
@@ -79,8 +87,11 @@ def update(chat, messages, candidate=None, native_summary='', native_title='', n
         text=short(native_summary,360)
         if text and (text!=chat.get('summary') or chat.get('summary_source')!='App' or native_updated and native_updated>(chat.get('summary_updated') or 0)):
             chat.update(summary=text,summary_basis=basis,summary_updated=native_updated,summary_source='App')
-    if native_title and not chat.get('title_edited') and not chat.get('title_generated'):
+    if useful_title(native_title) and not chat.get('title_edited') and not chat.get('title_generated'):
         chat.update(title=short(native_title,80),title_generated=True)
+    if not chat.get('title_edited') and chat.get('title') and not useful_title(chat['title']):
+        first=next((short(m.get('text'),80) for m in messages if m.get('role')=='user' and str(m.get('text','')).strip()),'')
+        if first:chat['title']=first  # an earlier session name that was only AURA's framing
     if messages:
         latest=next((short(m.get('text'),180) for m in reversed(messages) if m.get('role')=='user' and not str(m.get('text','')).startswith('Keep this chat’s cache warm. Reply with OK only.')), '')
         if latest:chat['latest_request']=latest

@@ -409,6 +409,9 @@ function modelPicker(){
   state.data.model_picker??={};const picker=state.data.model_picker.all??={view:'all',favorites:[],providers:[...new Set(catalogModels().map(providerKey))],efforts:{}};
   // Old maker filters become direct-provider filters; favorites and effort keys stay intact.
   if(picker.providers.some(id=>!id.startsWith('connection:')))picker.providers=[...new Set(picker.providers.map(id=>'connection:'+(['openai','anthropic','google','xai','openrouter','local'].includes(id)?id:'other')))];
+  // A provider seen for the first time (another app's models) starts shown; one you unticked stays hidden.
+  picker.known??=[...picker.providers];
+  for(const id of new Set(catalogModels().map(providerKey)))if(!picker.known.includes(id)){picker.known.push(id);if(!picker.providers.includes(id))picker.providers.push(id);}
   return picker;
 }
 function filteredModels(){
@@ -724,7 +727,7 @@ function usageChatCard(view,primary=false) {
   const contextPercent=context?Math.round(100*context.tokens/context.window):null;
   const hasUsage=Object.keys(last).length>0||context||cache||Number.isFinite(u.input_tokens);
   const name=info.title||'Chat',position=primary&&view.position==='Recent'?'Latest':view.position;
-  return `<article role="row" class="usage-cache-chat ${primary?'primary-cache':''}"><div role="cell" class="usage-cache-name"><strong title="${esc(name)}">${esc(name)}</strong><small class="usage-chat-model" title="${esc([human(info.agent),info.model].filter(Boolean).join(' · '))}">${esc(human(info.agent))} · ${esc(position)}</small>${usageKeepWarm(view)}</div>${hasUsage?`<div role="cell" class="usage-cache-metric"><strong>${percent!==null?percent+'% reused':Number.isFinite(cached)?usageShort(cached)+' tokens reused':'Not reported'}</strong>${percent!==null?`<meter min="0" max="100" value="${percent}" aria-label="${esc(name)} cached input reused"></meter>`:''}<small data-cache-clock data-cache-expires="${Number(cache?.expires_at)||0}" data-cache-hit="${Number(u.cache_hit?.at)||0}" data-cache-modeled="${!!cache?.modeled}" data-cache-invalidated="${!!cache?.invalidated}" title="${esc(cache?.basis||(cache?.expires_at?new Date(cache.expires_at*1000).toLocaleString():'Provider did not report cache expiry.'))}"></small></div><div role="cell" class="usage-cache-metric"><strong>${contextPercent!==null?contextPercent+'% used':'Not reported'}</strong>${context?`<meter min="0" max="100" value="${Math.min(100,contextPercent)}" aria-label="${esc(name)} context used"></meter><small>${usageShort(context.tokens)} / ${usageShort(context.window)} · Est.</small>`:''}</div>`:`<div role="cell" aria-colspan="2" class="usage-cache-empty">${esc(view.usage_note||'No usage report yet')}</div>`}</article>`;
+  return `<article role="row" class="usage-cache-chat ${primary?'primary-cache':''}"><div role="cell" class="usage-cache-name"><strong title="${esc(name)}">${esc(name)}</strong><small class="usage-chat-model" title="${esc([appName(info.agent),info.model].filter(Boolean).join(' · '))}">${esc(human(info.agent))} · ${esc(position)}</small>${usageKeepWarm(view)}</div>${hasUsage?`<div role="cell" class="usage-cache-metric"><strong>${percent!==null?percent+'% reused':Number.isFinite(cached)?usageShort(cached)+' tokens reused':'Not reported'}</strong>${percent!==null?`<meter min="0" max="100" value="${percent}" aria-label="${esc(name)} cached input reused"></meter>`:''}<small data-cache-clock data-cache-expires="${Number(cache?.expires_at)||0}" data-cache-hit="${Number(u.cache_hit?.at)||0}" data-cache-modeled="${!!cache?.modeled}" data-cache-invalidated="${!!cache?.invalidated}" title="${esc(cache?.basis||(cache?.expires_at?new Date(cache.expires_at*1000).toLocaleString():'Provider did not report cache expiry.'))}"></small></div><div role="cell" class="usage-cache-metric"><strong>${contextPercent!==null?contextPercent+'% used':'Not reported'}</strong>${context?`<meter min="0" max="100" value="${Math.min(100,contextPercent)}" aria-label="${esc(name)} context used"></meter><small>${usageShort(context.tokens)} / ${usageShort(context.window)} · Est.</small>`:''}</div>`:`<div role="cell" aria-colspan="2" class="usage-cache-empty">${esc(view.usage_note||'No usage report yet')}</div>`}</article>`;
 }
 function usageCacheTable(chats) {
   return chats.length?`<div class="usage-cache-table" role="table" aria-label="Recent chat cache and context"><div class="usage-cache-head" role="row"><span role="columnheader">Chat</span><span role="columnheader">Cache</span><span role="columnheader">Context</span></div>${chats.slice(0,5).map((view,index)=>usageChatCard(view,index===0)).join('')}</div>`:'<p class="usage-no-data">Your chats will appear here when you start working.</p>';
@@ -882,7 +885,8 @@ async function pollJob(job) {
       const conversation=await api('/api/conversation?business='+encodeURIComponent(business)+'&chat_id='+encodeURIComponent(chatId||''));
       if(!current())return;
       state.chat=conversation.messages;state.chatMeta=conversation.chat;state.needsCheck=conversation.chat?.status==='working';state.busy=false;state.recovery=conversation.recovery||null;window.auraContinuity?.acceptRecovery(conversation);state.stopping=false;state.activeJob=null;state.polling=false;
-      if(result.status==='error'&&!job.welcome)notice(result.reply,true);
+      // One message per problem: when the failed reply is already in the conversation, don't repeat it in a banner.
+      if(result.status==='error'&&!job.welcome&&!(conversation.messages||[]).some(m=>m.role==='assistant'&&String(m.text||'').trim()===String(result.reply||'').trim()))notice(result.reply,true);
       if(result.preference_warning)notice(result.preference_warning,true);if(result.permission_warning)notice(result.permission_warning,true);if(result.stop_note)notice(result.stop_note);
       replyAlert(result);showMessages();chatControls();invalidateReads();await refresh(true);renderConnection();loadGlance(true);return;
     }
@@ -1326,7 +1330,9 @@ function scheduleOperationMarkup(){return '<div data-schedule-operation class="s
 function renderScheduleOperation() {
   const job=state.scheduleJob,working=state.scheduleStarting||job?.status==='working';
   document.querySelectorAll('[data-schedule-operation]').forEach(box=>{
-    box.hidden=!job||job.id===state.dismissedScheduleJob;if(box.hidden)return;
+    // A finished message about a task that no longer exists has nothing left to say.
+    const gone=job?.status==='complete'&&job.task_id&&Array.isArray(state.schedules?.items)&&!state.schedules.items.some(t=>t.id===job.task_id);
+    box.hidden=!job||job.id===state.dismissedScheduleJob||gone;if(box.hidden)return;
     const signature=JSON.stringify([job.id,job.status,job.message,job.task_id]);if(box.dataset.signature===signature)return;box.dataset.signature=signature;
     box.innerHTML=`<div class="schedule-feedback"><span class="${job.status==='error'?'error':''}">${job.status==='complete'?'✓ ':''}${esc(job.message)}</span><span class="schedule-feedback-actions">${working?'<button type="button" class="text-button" data-stop-schedule>Stop</button>':`${job.task_id?`<button type="button" class="text-button" data-open-schedule="${esc(job.task_id)}">View task</button>`:''}<button type="button" class="text-button" data-dismiss-schedule aria-label="Dismiss task status">✕</button>`}</span></div>${job.status==='needs_input'?'<form class="schedule-answer"><input name="request" required maxlength="2000" aria-label="Answer the task setup question" placeholder="Your answer…"><button class="secondary">Continue →</button></form>':''}`;
   });
@@ -1391,14 +1397,6 @@ function orderedSchedules(items,query='',filter='all') {
     return rank(a.info)-rank(b.info)||(a.info.next??Infinity)-(b.info.next??Infinity)||a.info.clock-b.info.clock||a.task.name.localeCompare(b.task.name);
   });
 }
-/* How a scheduled task is doing, in plain words: the first thing to know about repeating work. */
-function scheduleHealth(task,info){
-  const last=String(task.last_status||'').toLowerCase();
-  if(info.paused)return ['paused','Paused'];
-  if(['error','failed','failure','delivery_failed','interrupted','blocked_config'].includes(last))return ['attention',last==='blocked_config'?'Needs setup':'Needs attention'];
-  if(last==='ok'||Number.isFinite(scheduleTimestamp(task.last_run)))return ['ok','Running fine'];
-  return ['waiting','Waiting for first run'];
-}
 function scheduleRow(task,preview=false) {
   const info=scheduleInfo(task),[health,healthLabel]=scheduleHealth(task,info),next=info.paused?'Paused':info.next?'Next · '+new Date(info.next).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'Next run not reported';
   return `<button class="row schedule-row" data-health="${health}" ${preview?'data-example-task':'data-schedule'}="${esc(task.id)}"><span class="row-text"><span class="schedule-name"><span class="row-title">${esc(task.name)}</span><span class="source-chip schedule-health ${health==='attention'?'challenged':health==='ok'?'':'unverified'}">${esc(healthLabel)}</span><span class="schedule-timing"><span class="frequency-label">${esc(info.label)}</span><span>${esc(info.summary)}</span></span></span><span class="schedule-meta"><span>${esc(task.app)} · ${esc(task.model||'App default')}${task.effort?' · '+esc(human(task.effort)):''}${!info.paused&&task.status&&!['active','enabled','scheduled'].includes(String(task.status).toLowerCase())?' · '+esc(human(task.status)):''}</span><span class="schedule-next">${esc(next)}</span>${taskLastRun(task)?`<span>${esc(taskLastRun(task))}${task.has_result?' · Result saved':''}</span>`:''}</span></span><span class="arrow">→</span></button>`;
@@ -1431,7 +1429,16 @@ function taskSummary(task) {
   const info=scheduleInfo(task);
   const next=info.paused?'Paused':info.next?'Next run · '+new Date(info.next).toLocaleString():'Next run time not reported';
   const reason=task.last_error&&/error|fail|block|interrupt|attention|review/i.test(task.last_status||'')?task.last_error:'';
-  return `<div class="task-outcome"><strong>${esc(taskLastRun(task)||'No previous run reported')}</strong>${reason?`<p class="small-note">${esc(reason)}</p>`:''}<p>${esc(next)}</p><div data-task-collection></div><div data-task-history></div></div><div class="task-summary"><span>${esc(task.app)} · ${esc(task.model||'App default')}${task.effort?' · '+esc(human(task.effort)):''}</span><span>${esc(info.label)} · ${esc(info.summary)}</span></div><p class="task-description">${esc(task.description||'Task instructions aren’t reported by this app.')}</p>`;
+  const [health,healthLabel]=scheduleHealth(task,info);
+  return `<div class="task-outcome"><p><span class="source-chip schedule-health ${health==='attention'?'challenged':health==='ok'?'':'unverified'}">${esc(healthLabel)}</span></p><strong>${esc(taskLastRun(task)||'No previous run reported')}</strong>${reason?`<p class="small-note">${esc(reason)}</p>`:''}<p>${esc(next)}</p><div data-task-collection></div><div data-task-history></div></div><div class="task-summary"><span>${esc(task.app)} · ${esc(task.model||'App default')}${task.effort?' · '+esc(human(task.effort)):''}</span><span>${esc(info.label)} · ${esc(info.summary)}</span></div><p class="task-description">${esc(task.description||'Task instructions aren’t reported by this app.')}</p>`;
+}
+/* How a scheduled task is doing, in plain words: the first thing to know about repeating work. */
+function scheduleHealth(task,info){
+  const last=String(task.last_status||'').toLowerCase();
+  if(info.paused)return ['paused','Paused'];
+  if(['error','failed','failure','delivery_failed','interrupted','blocked_config'].includes(last))return ['attention',last==='blocked_config'?'Needs setup':'Needs attention'];
+  if(last==='ok'||Number.isFinite(scheduleTimestamp(task.last_run)))return ['ok','Running fine'];
+  return ['waiting','Waiting for first run'];
 }
 function taskLastRun(task){
   const when=scheduleTimestamp(task.last_run),status=String(task.last_status||'').toLowerCase();
@@ -2898,13 +2905,11 @@ async function newShellChat(draft=null,home=false){
   finally{if(ticket===state.navigationTicket){state.navigating=false;chatControls();$('#request').focus();}}
 }
 
+/* Every "continue elsewhere" control opens the one Continue in another app dialog, which moves the full
+   conversation where the receiving app can import it, or a brief with the latest exchanges otherwise. */
 async function handoffChat(){
-  if(!state.chatMeta)return;
-  const scope=chatScope(),text=$('#request').value;
-  const draft=await api('/api/chats/handoff?'+new URLSearchParams({business:state.business,id:state.chatMeta.id}));
-  if(scope!==chatScope())return;
-  await newShellChat({...draft,text,connection:null});
-  await openChatModels();
+  if(!state.chatMeta?.id)return;
+  await openContinue(state.chatMeta.id);
 }
 
 /* Styles change the whole look; each brings its own accents (the first is its default).
@@ -3048,7 +3053,7 @@ function browserPerformance(){
 }
 async function supportReport(){
   $('#more-dialog').close();leavePage();
-  details('Feature Request or Troubleshooting',`<form id="support-form" class="form-grid"><div class="settings-grid"><label>Request type<select name="kind"><option value="troubleshooting">Troubleshooting</option><option value="feature">Feature Request</option></select></label><label>Title<input name="title" maxlength="160" required placeholder="A short summary"></label></div><label id="support-description-label">What happened? What did you expect?<textarea name="description" rows="5" maxlength="12000" required></textarea></label><label>Attachments · optional<input type="file" id="support-attachments" multiple accept="image/png,image/jpeg,image/webp,text/plain"></label><p class="small-note">Up to four images or text files, 1 MB each.</p><div id="support-attachment-list" class="small-note"></div><label class="startup-choice"><input type="checkbox" name="include_environment" checked> Include technical details</label><details class="support-details"><summary>Review technical details</summary><pre id="support-preview" class="diagnostic-summary">Reading local details…</pre></details><p id="support-visibility" class="small-note">Troubleshooting reports are private.</p><div class="inline-actions"><button class="primary" type="submit">Submit</button><span id="support-status" role="status"></span></div></form>`);
+  details('Feedback and troubleshooting',`<form id="support-form" class="form-grid"><div class="settings-grid"><label>Request type<select name="kind"><option value="troubleshooting">Troubleshooting</option><option value="feature">Feature request</option></select></label><label>Title<input name="title" maxlength="160" required placeholder="A short summary"></label></div><label id="support-description-label">What happened? What did you expect?<textarea name="description" rows="5" maxlength="12000" required></textarea></label><label>Attachments · optional<input type="file" id="support-attachments" multiple accept="image/png,image/jpeg,image/webp,text/plain"></label><p class="small-note">Up to four images or text files, 1 MB each.</p><div id="support-attachment-list" class="small-note"></div><label class="startup-choice"><input type="checkbox" name="include_environment" checked> Include technical details</label><details class="support-details"><summary>Review technical details</summary><pre id="support-preview" class="diagnostic-summary">Reading local details…</pre></details><p id="support-visibility" class="small-note">Troubleshooting reports are private.</p><div class="inline-actions"><button class="primary" type="submit">Submit</button><span id="support-status" role="status"></span></div></form>`);
   let ticket=0;
   const preview=async()=>{const mine=++ticket,form=$('#support-form');if(!form)return;const include=form.elements.include_environment.checked;
     if(!include){$('#support-preview').textContent='Technical details excluded.';return;}

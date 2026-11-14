@@ -105,6 +105,12 @@ path.write_text(json.dumps(data))
             native_tasks = workspace_schedules.inventory()['items']
             assert {t['owner'] for t in native_tasks} == {'hermes','codex'}
             task = next(t for t in native_tasks if t['owner']=='hermes')
+            assert task['provider']=='openrouter', 'the older model_provider field is still read'
+            # Current Hermes saves the provider as 'provider'; reading it avoids a false "settings could not be confirmed".
+            saved=json.loads(job_file.read_text(encoding='utf-8'));saved['jobs'].append({'id':'local','name':'Local check','enabled':True,'schedule':{'expr':'0 8 * * 1'},'model':'Qwen','provider':'custom'})
+            job_file.write_text(json.dumps(saved),encoding='utf-8')
+            assert next(t for t in workspace_schedules.inventory()['items'] if t['name']=='Local check')['provider']=='custom'
+            saved['jobs'].pop();job_file.write_text(json.dumps(saved),encoding='utf-8')
             updated = workspace_schedules.update(task['id'],{'action':'edit','schedule':'0 10 * * 2','model':'new-model','provider':'openrouter'},[sys.executable,str(native)],dict(os.environ))
             assert updated['schedule']=='0 10 * * 2' and updated['model']=='new-model'
             assert workspace_schedules.update(task['id'],{'action':'pause'},[sys.executable,str(native)],dict(os.environ))['status']=='paused'

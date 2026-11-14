@@ -63,7 +63,7 @@ class ChatRun:
                     try:app.save_preferences()
                     except OSError:job['recovery_warning']='Work is running, but its recovery reference could not be saved.'
             if values.get('native_id') and not job.get('native_id'):
-                values.setdefault('progress', 'Connected. Waiting for your AI')
+                values.setdefault('progress', 'Connected to your AI')
             if 'native_goal' in values and native_spec:
                 workspace_native_goals.observe(app,bid,chat,native_spec,values['native_goal'])
             session=execution.native_session
@@ -73,7 +73,7 @@ class ChatRun:
                 if 'background_processes' in values:session.background=bool(values['background_processes'])
             if 'reply' in values:
                 values['reply'] = app.connections.redact(workspace_chats.clean(values['reply'],streaming=True))
-            if values.get('native_title') and not chat.get('title_edited'):
+            if workspace_chats.useful_title(values.get('native_title')) and not chat.get('title_edited'):
                 title=app.connections.redact(str(values['native_title'])[:100])
                 if chat.get('title')!=title:chat['title']=title;app.save_preferences()
             for key in ('requests','native_notices','native_editor','native_modes','native_config','native_commands'):

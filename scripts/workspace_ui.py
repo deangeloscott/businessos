@@ -2064,6 +2064,7 @@ class Workspace:
     def link_continuation(self,bid,source_id,target_id,method):
         with self.lock:
             source=self.source_chat(bid,source_id);target=self.source_chat(bid,target_id);at=time.time()
+            if method=='handoff' and source.get('title') and not target.get('title_edited'):target['title']=source['title']  # the continued chat keeps the work's name
             source['continued_to']={'chat_id':target_id,'agent':target.get('agent'),'title':target.get('title',''),'method':method,'at':at}
             target['continued_from']={'chat_id':source_id,'agent':source.get('agent'),'title':source.get('title',''),'method':method,'at':at}
             for key in ('goal_id',):

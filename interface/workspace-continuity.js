@@ -185,6 +185,13 @@ window.auraContinuity=(()=>{
     };$('#work-activity-search').oninput=()=>{limit=20;paint();};list.onclick=event=>{if(event.target.closest('[data-activity-more]')){limit+=20;paint();}};paint();
   }
 
+  /* A saved file's history shows the name people know (the collection, the measure, the record); the path stays beside it. */
+  function historyName(path){
+    const file=String(path).split('/').pop(),stem=file.replace(/\.[^.]+$/,'');
+    const col=(state.files||[]).find(f=>f.collection_id&&(f.path===path||f.collection_id===stem))||(window.auraHQ?.cached()?.watches||[]).find(w=>w.id===stem);if(col)return col.name;
+    const record=(state.data?.records||[]).find(r=>r.ref===stem);if(record)return typeof recordTitle==='function'?recordTitle(record):record.title;
+    return file;
+  }
   async function history(){
     $('#more-dialog').close();const key=scope(),ticket=++viewTicket;details('Version history','<p role="status">Reading local file history…</p>');viewDetailTicket=state.fileDetailTicket;const host=$('#detail-content');
     const data=await api('/api/history?'+params({}));if(!current(key,ticket,host))return;
@@ -193,7 +200,7 @@ window.auraContinuity=(()=>{
     const paint=()=>{
       const query=$('#history-search').value.trim().toLowerCase(),groups=new Map();
       data.items.filter(r=>r.path.toLowerCase().includes(query)).forEach(r=>{if(!groups.has(r.path))groups.set(r.path,[]);groups.get(r.path).push(r);});
-      const rows=[...groups.entries()];$('#history-list').innerHTML=rows.slice(0,limit).map(([path,versions])=>`<details class="history-file"><summary>${esc(path)} <span class="row-meta">${versions.length} versions</span></summary>${versions.map(r=>`<div class="section-head"><span>${esc(new Date(r.at*1000).toLocaleString())}<small class="small-note">${esc(r.reason)} · ${Math.ceil(r.bytes/1024)} KB</small></span><button class="text-button" type="button" data-history-review="${esc(r.id)}">Review</button></div>`).join('')}</details>`).join('')||empty(query?'No matching files.':'Versions appear when you save changes or run work through AURA.');
+      const rows=[...groups.entries()];$('#history-list').innerHTML=rows.slice(0,limit).map(([path,versions])=>`<details class="history-file"><summary><span class="history-name">${esc(historyName(path))}</span> <span class="row-meta">${versions.length} version${versions.length===1?'':'s'} · <span class="history-path">${esc(path)}</span></span></summary>${versions.map(r=>`<div class="section-head"><span>${esc(new Date(r.at*1000).toLocaleString())}<small class="small-note">${esc(r.reason)} · ${Math.ceil(r.bytes/1024)} KB</small></span><button class="text-button" type="button" data-history-review="${esc(r.id)}">Review</button></div>`).join('')}</details>`).join('')||empty(query?'No matching files.':'Versions appear when you save changes or run work through AURA.');
       if(rows.length>limit)$('#history-list').insertAdjacentHTML('beforeend','<button type="button" class="text-button" data-history-more>Show more files</button>');
     };$('#history-search').oninput=()=>{limit=20;paint();};
     $('#history-list').onclick=event=>attempt(async()=>{
