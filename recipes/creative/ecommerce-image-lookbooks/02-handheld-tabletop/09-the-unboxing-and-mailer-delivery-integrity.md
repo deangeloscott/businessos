@@ -1,4 +1,4 @@
-# Scale 02 — Archetype 09: The Unboxing & Mailer Delivery Integrity
+# Tabletop — Archetype 09: The Unboxing & Mailer Delivery Integrity
 
 * **Visual job:** The Specimen
 * **Good for:** setting expectations around a real delivery, protective packaging, gifting, and the first opening moment.

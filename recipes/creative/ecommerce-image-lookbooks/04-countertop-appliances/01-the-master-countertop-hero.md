@@ -1,4 +1,4 @@
-# Scale 04 — Archetype 01: The Master Countertop Hero
+# Countertop — Archetype 01: The Master Countertop Hero
 
 > A quick, adaptable visual starting point. Borrow the idea, change the product or treatment freely, combine it with another approach, or skip it when you already have a better direction.
 >

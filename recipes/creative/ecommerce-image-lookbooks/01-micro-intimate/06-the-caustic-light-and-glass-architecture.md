@@ -1,4 +1,4 @@
-# Scale 01 — Archetype 06: The Caustic Light & Glass Architecture
+# Pocket-size — Archetype 06: The Caustic Light & Glass Architecture
 
 * **Visual job:** The Specimen
 * **Good for:** making glass, liquid, translucency, and bottle construction feel luminous and substantial.

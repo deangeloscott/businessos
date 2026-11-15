@@ -1,4 +1,4 @@
-# Scale 01 — Archetype 12: The Multi-Tone Finish Comparison
+# Pocket-size — Archetype 12: The Multi-Tone Finish Comparison
 
 * **Visual job:** The Proof
 * **Good for:** helping a specific audience see how a tint, sunscreen, balm, or finish reads across represented skin tones.

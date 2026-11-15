@@ -1,4 +1,4 @@
-# Scale 03 — Archetype 14: The Ergonomic Range-of-Motion & Articulation Stress Test
+# Wearables — Archetype 14: The Ergonomic Range-of-Motion & Articulation Stress Test
 
 * **Visual job:** The Proof
 * **Good for:** showing how a garment's seams, gussets, and hem behave during a meaningful movement.

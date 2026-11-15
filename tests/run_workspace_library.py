@@ -3,6 +3,8 @@
 from pathlib import Path
 import json
 import os
+import shutil
+import subprocess
 import sys
 import tempfile
 from unittest.mock import patch
@@ -15,6 +17,8 @@ import workspace_storage as storage
 
 
 def main():
+    if shutil.which('node'):
+        subprocess.run(['node',str(ROOT/'tests/workspace_library_ui.cjs'),str(ROOT/'interface/app.js')],check=True)
     from workspace_ui import library as builtins
     from operating_knowledge import installed_playbooks
     rows=library.organize(builtins())
@@ -134,7 +138,6 @@ def main():
         with patch('workspace_codex.rpc',snapshot_rpc):
             scoped=library.native({'id':'codex','argv':['codex','exec']},workspace,{})
         assert len(scoped)==1 and scoped[0]['title']=='Drive'
-        import subprocess
         with patch('workspace_library.subprocess.run',return_value=subprocess.CompletedProcess([],0,'Built-in toolsets (cli):\n  enabled terminal Terminal\nPlugin toolsets (cli):\n  enabled helper Helper tools\nMCP servers:\n','')):
             hermes_resources=library.organize(library.native({'id':'hermes','argv':['hermes','chat']},workspace,{}))
         helper=next(r for r in hermes_resources if r['kind']=='Plugin')

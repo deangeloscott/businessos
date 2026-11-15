@@ -1,4 +1,4 @@
-# Scale 03 — Archetype 07: Multi-Body Fit Diversity (Sizing Reassurance)
+# Wearables — Archetype 07: Multi-Body Fit Diversity (Sizing Reassurance)
 
 * **Visual job:** The Proof
 * **Good for:** helping shoppers compare drape and proportion across representative bodies before opening the size guide.

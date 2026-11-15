@@ -1,4 +1,4 @@
-# Scale 01 — Archetype 08: Direct-Flash Night-Out Editorial
+# Pocket-size — Archetype 08: Direct-Flash Night-Out Editorial
 
 * **Visual job:** The Ritual
 * **Good for:** giving a small product high-energy social presence when a quiet wellness treatment would disappear.

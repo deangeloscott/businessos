@@ -1,4 +1,4 @@
-# Scale 01 — Archetype 04: The Domestic Vanity Altar (In-Situ Sanctuary)
+# Pocket-size — Archetype 04: The Domestic Vanity Altar (In-Situ Sanctuary)
 
 * **Visual job:** The Habitat
 * **Good for:** helping a viewer picture a small product living naturally inside a daily ritual.

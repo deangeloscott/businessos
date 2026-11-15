@@ -1,4 +1,4 @@
-# Scale 03 — Archetype 12: The Dual-Model Real-World Fit & Layering Comparison
+# Wearables — Archetype 12: The Dual-Model Real-World Fit & Layering Comparison
 
 * **Visual job:** The Proof
 * **Good for:** showing how one garment sits alone and over a layer, or how fit changes across two representative sizes.

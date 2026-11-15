@@ -1,4 +1,4 @@
-# Scale 04 — Archetype 06: The Easy-Clean Disassembly & Modular Wash
+# Countertop — Archetype 06: The Easy-Clean Disassembly & Modular Wash
 
 > A quick, adaptable visual starting point. Borrow the idea, change the product or treatment freely, combine it with another approach, or skip it when you already have a better direction.
 >

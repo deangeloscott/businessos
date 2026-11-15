@@ -1,4 +1,4 @@
-# Scale 05 — Archetype 13: The Biophilic Alpine / Coastal Dawn Sanctuary
+# Furniture-size — Archetype 13: The Biophilic Alpine / Coastal Dawn Sanctuary
 
 > A quick, adaptable visual starting point. Borrow the idea, change the product or treatment freely, combine it with another approach, or skip it when you already have a better direction.
 >

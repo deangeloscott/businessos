@@ -1,4 +1,4 @@
-# Scale 02 — Archetype 07: The Ingredients Knolling (Deconstructed Purity)
+# Tabletop — Archetype 07: The Ingredients Knolling (Deconstructed Purity)
 
 * **Visual job:** The Proof
 * **Good for:** making supplied formulation, sourcing, or preparation information visible at a glance.

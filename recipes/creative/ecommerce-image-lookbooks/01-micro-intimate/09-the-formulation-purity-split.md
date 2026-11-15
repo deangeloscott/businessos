@@ -1,4 +1,4 @@
-# Scale 01 — Archetype 09: The Formulation Purity Split
+# Pocket-size — Archetype 09: The Formulation Purity Split
 
 * **Visual job:** The Proof
 * **Good for:** a forceful generic poor-versus-premium contrast when a material or formulation difference is central to the offer.

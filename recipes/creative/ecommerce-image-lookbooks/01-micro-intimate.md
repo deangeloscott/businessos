@@ -1,4 +1,4 @@
-# Scale 01: Micro & Intimate E-Commerce Lookbook
+# Pocket-size: Micro & Intimate E-Commerce Lookbook
 ### Master Archetypes for Products Under 6 Inches (< 15 cm)
 *Categories: Skincare, Serums, Cosmetics, Fine Jewelry, Fragrance, Supplements, Watches*
 

@@ -1,4 +1,4 @@
-# Scale 01 — Archetype 03: The Viscosity, Slump & Micro-Macro Texture Swatch
+# Pocket-size — Archetype 03: The Viscosity, Slump & Micro-Macro Texture Swatch
 
 * **Visual job:** The Ritual
 * **Good for:** helping a viewer imagine a formula's touch, flow, finish, or material character.

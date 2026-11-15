@@ -1,4 +1,4 @@
-# Scale 02 — Archetype 03: The Kinetic Pour & High-Speed Viscosity
+# Tabletop — Archetype 03: The Kinetic Pour & High-Speed Viscosity
 
 * **Visual job:** The Ritual
 * **Good for:** making taste, flow, temperature, or texture feel present through one satisfying pour.

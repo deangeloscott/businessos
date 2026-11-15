@@ -1,4 +1,4 @@
-# Scale 01 — Archetype 05: The Fingertip Touch & Application
+# Pocket-size — Archetype 05: The Fingertip Touch & Application
 
 * **Visual job:** The Ritual
 * **Good for:** showing human scale, touch, and a product's use in one intimate frame.

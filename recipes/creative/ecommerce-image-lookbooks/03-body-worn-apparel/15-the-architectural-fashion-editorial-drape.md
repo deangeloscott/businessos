@@ -1,4 +1,4 @@
-# Scale 03 — Archetype 15: The Architectural Fashion Editorial Drape
+# Wearables — Archetype 15: The Architectural Fashion Editorial Drape
 
 * **Visual job:** The Habitat
 * **Good for:** giving structured or luxurious outerwear a memorable, restrained editorial world.

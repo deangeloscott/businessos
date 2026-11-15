@@ -1,4 +1,4 @@
-# Scale 01 — Archetype 10: The Regimen Bundle (Routine Trio Staging)
+# Pocket-size — Archetype 10: The Regimen Bundle (Routine Trio Staging)
 
 * **Visual job:** The Specimen
 * **Good for:** making a set feel like a simple routine or complete purchase rather than disconnected products.

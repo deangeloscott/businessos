@@ -1,4 +1,4 @@
-# Scale 03 — Archetype 01: The Ghost Mannequin & Architectural Studio Drape
+# Wearables — Archetype 01: The Ghost Mannequin & Architectural Studio Drape
 
 * **Visual job:** The Specimen
 * **Good for:** showing a garment's silhouette, construction, interior, and drape without a model's styling or pose changing the read.

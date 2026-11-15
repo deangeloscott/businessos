@@ -1,4 +1,4 @@
-# Scale 02 — Archetype 05: The In-Hand Grip & Scale Anchor
+# Tabletop — Archetype 05: The In-Hand Grip & Scale Anchor
 
 * **Visual job:** The Specimen
 * **Good for:** making package size, weight, grip, and everyday handling understandable.

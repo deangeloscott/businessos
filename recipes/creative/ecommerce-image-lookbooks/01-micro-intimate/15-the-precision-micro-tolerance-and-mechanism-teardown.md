@@ -1,4 +1,4 @@
-# Scale 01 — Archetype 15: The Precision Micro-Tolerance & Mechanism Teardown
+# Pocket-size — Archetype 15: The Precision Micro-Tolerance & Mechanism Teardown
 
 * **Visual job:** The Specimen
 * **Good for:** making small construction, sealing, machining, or actuation details inspectable.

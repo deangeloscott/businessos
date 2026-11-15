@@ -11,9 +11,9 @@ A **Brand Dialect** is an optional aesthetic modifier. While the Scale Archetype
 Apply only the parts that improve the communication job. A dialect may shape light, stage, styling, typography, motion, or post-production without overruling product facts, accessibility, platform requirements, or the viewer's need to understand the product. It does not require a particular prompt syntax, fixed contrast ratio, or universal prop list. If a dialect's aesthetic conflicts with label legibility, scale, or a supported claim, keep the communication requirement and adapt the aesthetic.
 
 Any archetype in this library can be viewed through any dialect lens, when the combination serves the brief:
-* *Scale 02 Archetype 03 (Kinetic Pour)* + **Dialect 02: Playful Utility** = Saturated morning sun, olive oil splatters, vibrant yellow linen napkin, candid kitchen energy.
-* *Scale 02 Archetype 12 (Viscosity Flow)* + **Dialect 03: Quiet Luxury** = Muted chiaroscuro, unsealed limestone, raw linen, single ceramic object, silent contemplative tone.
-* *Scale 02 Archetype 12 (Viscosity Flow)* + **Dialect 13: Solar Mediterranean Riviera** = High-noon terracotta patio, golden sun glare, glistening sea-salt crystals, sun-warmed indulgent energy.
+* *Tabletop Archetype 03 (Kinetic Pour)* + **Dialect 02: Playful Utility** = Saturated morning sun, olive oil splatters, vibrant yellow linen napkin, candid kitchen energy.
+* *Tabletop Archetype 12 (Viscosity Flow)* + **Dialect 03: Quiet Luxury** = Muted chiaroscuro, unsealed limestone, raw linen, single ceramic object, silent contemplative tone.
+* *Tabletop Archetype 12 (Viscosity Flow)* + **Dialect 13: Solar Mediterranean Riviera** = High-noon terracotta patio, golden sun glare, glistening sea-salt crystals, sun-warmed indulgent energy.
 
 ---
 

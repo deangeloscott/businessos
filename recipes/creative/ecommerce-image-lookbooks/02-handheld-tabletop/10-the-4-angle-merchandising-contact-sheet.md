@@ -1,4 +1,4 @@
-# Scale 02 — Archetype 10: The 4-Angle Merchandising Contact Sheet
+# Tabletop — Archetype 10: The 4-Angle Merchandising Contact Sheet
 
 * **Visual job:** The Specimen
 * **Good for:** giving an analytical shopper several useful views without making them open four separate assets.

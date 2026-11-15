@@ -1,4 +1,4 @@
-# Scale 01 — Archetype 07: The Palm & Pocket Scale Anchor
+# Pocket-size — Archetype 07: The Palm & Pocket Scale Anchor
 
 * **Visual job:** The Specimen
 * **Good for:** answering “how big is it?” and making portability or everyday handling immediately understandable.

@@ -1,4 +1,4 @@
-# Scale 01 — Archetype 01: The Catalog Hero Packshot
+# Pocket-size — Archetype 01: The Catalog Hero Packshot
 
 * **Visual job:** The Specimen
 * **Good for:** product pages, catalogs, shopping feeds, and any first-glance view where the package, form, and label must be unmistakable.

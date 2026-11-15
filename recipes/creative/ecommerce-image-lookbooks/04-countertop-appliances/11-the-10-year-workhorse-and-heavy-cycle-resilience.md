@@ -1,4 +1,4 @@
-# Scale 04 — Archetype 11: The 10-Year Workhorse & Heavy-Cycle Resilience
+# Countertop — Archetype 11: The 10-Year Workhorse & Heavy-Cycle Resilience
 
 > A quick, adaptable visual starting point. Borrow the idea, change the product or treatment freely, combine it with another approach, or skip it when you already have a better direction.
 >

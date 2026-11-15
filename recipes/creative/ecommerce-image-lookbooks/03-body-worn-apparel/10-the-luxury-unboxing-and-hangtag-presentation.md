@@ -1,4 +1,4 @@
-# Scale 03 — Archetype 10: The Luxury Unboxing & Hangtag Presentation
+# Wearables — Archetype 10: The Luxury Unboxing & Hangtag Presentation
 
 * **Visual job:** The Specimen
 * **Good for:** making a genuine garment delivery or gifting experience feel tactile and considered.

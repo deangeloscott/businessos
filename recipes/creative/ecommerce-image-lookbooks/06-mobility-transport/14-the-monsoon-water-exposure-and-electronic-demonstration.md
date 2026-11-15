@@ -1,4 +1,4 @@
-# Scale 06 — Archetype 14: The Monsoon Water Exposure & Electronic Demonstration
+# Vehicle-size — Archetype 14: The Monsoon Water Exposure & Electronic Demonstration
 
 > A quick, adaptable visual starting point. Borrow the idea, change the product or treatment freely, combine it with another approach, or skip it when you already have a better direction.
 >

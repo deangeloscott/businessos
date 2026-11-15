@@ -1,4 +1,4 @@
-# Scale 06 — Archetype 04: The Trunk-Fold & Compact Spatial Proof
+# Vehicle-size — Archetype 04: The Trunk-Fold & Compact Spatial Proof
 
 > A quick, adaptable visual starting point. Borrow the idea, change the product or treatment freely, combine it with another approach, or skip it when you already have a better direction.
 >

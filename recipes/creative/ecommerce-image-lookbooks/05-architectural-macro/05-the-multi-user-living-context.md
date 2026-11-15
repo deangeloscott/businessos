@@ -1,4 +1,4 @@
-# Scale 05 — Archetype 05: The Multi-User Living Context
+# Furniture-size — Archetype 05: The Multi-User Living Context
 
 > A quick, adaptable visual starting point. Borrow the idea, change the product or treatment freely, combine it with another approach, or skip it when you already have a better direction.
 >

@@ -1,4 +1,4 @@
-# Scale 04: Countertop Appliances & Heavy Gear E-Commerce Lookbook
+# Countertop: Countertop Appliances & Heavy Gear E-Commerce Lookbook
 ### Starting points for products 1.5 to 3 feet (45–90 cm)
 *Categories: Espresso Machines, Pizza Ovens, Smart Grills, Blenders, Portable Power Stations, Professional Audio, Heavy Power Tools*
 

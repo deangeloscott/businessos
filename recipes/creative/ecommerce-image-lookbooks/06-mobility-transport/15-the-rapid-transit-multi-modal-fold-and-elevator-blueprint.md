@@ -1,4 +1,4 @@
-# Scale 06 — Archetype 15: The Rapid Transit Multi-Modal Fold & Elevator Blueprint
+# Vehicle-size — Archetype 15: The Rapid Transit Multi-Modal Fold & Elevator Blueprint
 
 > A quick, adaptable visual starting point. Borrow the idea, change the product or treatment freely, combine it with another approach, or skip it when you already have a better direction.
 >

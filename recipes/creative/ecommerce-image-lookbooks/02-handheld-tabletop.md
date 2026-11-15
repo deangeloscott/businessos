@@ -1,4 +1,4 @@
-# Scale 02: Handheld & Tabletop E-Commerce Lookbook
+# Tabletop: Handheld & Tabletop E-Commerce Lookbook
 ### Master Archetypes for Products 6 to 18 Inches (15–45 cm)
 *Categories: CPG, Food & Beverage, Specialty Coffee/Tea, Everyday Carry (EDC) Tech, Home Fragrance, Pantry Essentials*
 

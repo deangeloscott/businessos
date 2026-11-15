@@ -1,4 +1,4 @@
-# Scale 01 — Archetype 13: The Application & Clear-Finish Comparison
+# Pocket-size — Archetype 13: The Application & Clear-Finish Comparison
 
 * **Visual job:** The Proof
 * **Good for:** making a colored or rich formula's application and resulting finish easier to evaluate.

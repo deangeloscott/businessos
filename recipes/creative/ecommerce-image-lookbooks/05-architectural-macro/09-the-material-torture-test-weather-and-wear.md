@@ -1,4 +1,4 @@
-# Scale 05 — Archetype 09: The Material Torture Test (Weather & Wear)
+# Furniture-size — Archetype 09: The Material Torture Test (Weather & Wear)
 
 > A quick, adaptable visual starting point. Borrow the idea, change the product or treatment freely, combine it with another approach, or skip it when you already have a better direction.
 >

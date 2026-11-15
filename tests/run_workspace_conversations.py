@@ -132,9 +132,15 @@ print('## Reply '+name+'\\n\\nWorkspace: '+str(root))
             assert app.profile({'accent':'mono'})['accent']=='mono'
             try:app.profile({'style':'neon'});raise AssertionError('An unknown style was saved')
             except ValueError:pass
+            assert app.profile({'sidebar_width':315,'panel_width':620})['sidebar_width']==315
+            assert app.profile()['sidebar_width']==315 and app.profile()['panel_width']==620
+            assert app.profile({'sidebar_width':9999})['sidebar_width']==420
+            assert app.profile({'sidebar_width':1})['sidebar_width']==180
+            assert app.profile({'sidebar_width':None})['sidebar_width'] is None
             assert app.profile()['display_name']=='Taylor'
             assert app.profile({'reset':True})['display_name']=='Taylor'
             assert app.profile()['accent']=='forest' and app.profile()['style']=='modern'
+            assert app.profile()['sidebar_width'] is None and app.profile()['panel_width']==480
             diagnostic=json.dumps(app.diagnostics())
             assert str(base) not in diagnostic and 'TURN THIRD' not in diagnostic and 'Taylor' not in diagnostic
             # A persisted working marker is not proof that this new process owns it.

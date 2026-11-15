@@ -1,4 +1,4 @@
-# Scale 04 — Archetype 07: The Honest Rear Utility & Cable Routing
+# Countertop — Archetype 07: The Honest Rear Utility & Cable Routing
 
 > A quick, adaptable visual starting point. Borrow the idea, change the product or treatment freely, combine it with another approach, or skip it when you already have a better direction.
 >

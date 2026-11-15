@@ -1,4 +1,4 @@
-# Scale 03 — Archetype 06: The Gorpcore Weather & Element Torture Test
+# Wearables — Archetype 06: The Gorpcore Weather & Element Torture Test
 
 * **Visual job:** The Proof
 * **Good for:** dramatizing weather exposure and the relief a technical garment is meant to provide.

@@ -1,4 +1,4 @@
-# Scale 05: Architectural Macro & High-Ticket E-Commerce Lookbook
+# Furniture-size: Architectural Macro & High-Ticket E-Commerce Lookbook
 ### Starting points for products 3 to 10+ feet (1 to 3+ meters)
 *Categories: Saunas, Cold Plunges, Modular Sectionals, Dining Tables, Home Gym Systems, Freestanding Bathtubs, Outdoor Living*
 

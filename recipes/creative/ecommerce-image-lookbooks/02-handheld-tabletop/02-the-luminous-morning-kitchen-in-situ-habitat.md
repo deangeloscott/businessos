@@ -1,4 +1,4 @@
-# Scale 02 — Archetype 02: The Luminous Morning Kitchen (In-Situ Habitat)
+# Tabletop — Archetype 02: The Luminous Morning Kitchen (In-Situ Habitat)
 
 * **Visual job:** The Habitat
 * **Good for:** connecting a food, beverage, or kitchen object to a warm daily ritual.

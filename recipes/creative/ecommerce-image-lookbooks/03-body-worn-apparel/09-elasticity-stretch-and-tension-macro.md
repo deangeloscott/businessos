@@ -1,4 +1,4 @@
-# Scale 03 — Archetype 09: Elasticity, Stretch & Tension Macro
+# Wearables — Archetype 09: Elasticity, Stretch & Tension Macro
 
 * **Visual job:** The Proof
 * **Good for:** making stretch, recovery, weave, and opacity easier to inspect.

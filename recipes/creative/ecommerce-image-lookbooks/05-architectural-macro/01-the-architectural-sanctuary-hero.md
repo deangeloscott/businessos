@@ -1,4 +1,4 @@
-# Scale 05 — Archetype 01: The Architectural Sanctuary Hero
+# Furniture-size — Archetype 01: The Architectural Sanctuary Hero
 
 > A quick, adaptable visual starting point. Borrow the idea, change the product or treatment freely, combine it with another approach, or skip it when you already have a better direction.
 >

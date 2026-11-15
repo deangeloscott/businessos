@@ -1,4 +1,4 @@
-# Scale 02 — Archetype 15: The Insulation & Condensation Comparison
+# Tabletop — Archetype 15: The Insulation & Condensation Comparison
 
 * **Visual job:** The Proof
 * **Good for:** making temperature, condensation, and cold-drink use easier to evaluate.

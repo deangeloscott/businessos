@@ -1,4 +1,4 @@
-# Scale 03 — Archetype 03: The Macro Fabric Weave & Seam Stitching
+# Wearables — Archetype 03: The Macro Fabric Weave & Seam Stitching
 
 * **Visual job:** The Proof
 * **Good for:** making textile quality, reinforcement, and construction details visible to a buyer.

@@ -1,4 +1,4 @@
-# Scale 03 — Archetype 08: The Curated Outfit Knolling (Wardrobe Pairing)
+# Wearables — Archetype 08: The Curated Outfit Knolling (Wardrobe Pairing)
 
 * **Visual job:** The Specimen
 * **Good for:** showing how one hero item could work with complementary pieces without prescribing a single wardrobe.

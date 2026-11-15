@@ -1,4 +1,4 @@
-# Scale 02 — Archetype 14: The Multi-Item Merchandising Routine & Bundle Matrix
+# Tabletop — Archetype 14: The Multi-Item Merchandising Routine & Bundle Matrix
 
 * **Visual job:** The Specimen
 * **Good for:** showing a complete kit, daily preparation, or complementary product set as one easy choice.

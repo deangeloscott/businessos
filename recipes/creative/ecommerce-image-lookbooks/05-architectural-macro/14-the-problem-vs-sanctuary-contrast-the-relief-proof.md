@@ -1,4 +1,4 @@
-# Scale 05 — Archetype 14: The Problem vs. Sanctuary Contrast (The Relief Proof)
+# Furniture-size — Archetype 14: The Problem vs. Sanctuary Contrast (The Relief Proof)
 
 > A quick, adaptable visual starting point. Borrow the idea, change the product or treatment freely, combine it with another approach, or skip it when you already have a better direction.
 >

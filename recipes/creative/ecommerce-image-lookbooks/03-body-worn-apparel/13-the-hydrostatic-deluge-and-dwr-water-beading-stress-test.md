@@ -1,4 +1,4 @@
-# Scale 03 — Archetype 13: The Hydrostatic Deluge & DWR Water-Beading Stress Test
+# Wearables — Archetype 13: The Hydrostatic Deluge & DWR Water-Beading Stress Test
 
 * **Visual job:** The Proof
 * **Good for:** making rain, water beading, wetness, and weather protection visually immediate.

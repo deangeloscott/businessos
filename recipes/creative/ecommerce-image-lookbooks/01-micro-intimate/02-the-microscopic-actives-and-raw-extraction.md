@@ -1,4 +1,4 @@
-# Scale 01 — Archetype 02: The Microscopic Actives & Raw Extraction
+# Pocket-size — Archetype 02: The Microscopic Actives & Raw Extraction
 
 * **Visual job:** The Proof
 * **Good for:** making a documented ingredient, source, or formulation story tangible in a still image.

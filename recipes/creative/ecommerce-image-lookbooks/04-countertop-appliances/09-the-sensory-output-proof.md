@@ -1,4 +1,4 @@
-# Scale 04 — Archetype 09: The Sensory Output Proof
+# Countertop — Archetype 09: The Sensory Output Proof
 
 > A quick, adaptable visual starting point. Borrow the idea, change the product or treatment freely, combine it with another approach, or skip it when you already have a better direction.
 >

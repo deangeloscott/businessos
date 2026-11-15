@@ -1,4 +1,4 @@
-# Scale 01 — Archetype 11: The Temporal Stability & Shelf-Life Proof
+# Pocket-size — Archetype 11: The Temporal Stability & Shelf-Life Proof
 
 * **Visual job:** The Proof
 * **Good for:** showing a real documented change over time, or clearly illustrating the question a stability claim must answer.

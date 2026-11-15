@@ -1,4 +1,4 @@
-# Scale 02 — Archetype 04: The Countertop Flex (Lived-In Foodie Pride)
+# Tabletop — Archetype 04: The Countertop Flex (Lived-In Foodie Pride)
 
 * **Visual job:** The Habitat
 * **Good for:** making a useful food or kitchen product feel proud, lived-in, and worth displaying.

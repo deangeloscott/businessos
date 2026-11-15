@@ -1,4 +1,4 @@
-# Scale 03 — Archetype 04: The Pocket & Interior Capacity Test
+# Wearables — Archetype 04: The Pocket & Interior Capacity Test
 
 * **Visual job:** The Proof
 * **Good for:** answering what a bag, pocket, or compartment will actually hold and how it is organized.

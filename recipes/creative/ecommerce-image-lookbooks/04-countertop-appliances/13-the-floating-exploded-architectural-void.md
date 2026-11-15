@@ -1,4 +1,4 @@
-# Scale 04 — Archetype 13: The Floating Exploded Architectural Void
+# Countertop — Archetype 13: The Floating Exploded Architectural Void
 
 > A quick, adaptable visual starting point. Borrow the idea, change the product or treatment freely, combine it with another approach, or skip it when you already have a better direction.
 >

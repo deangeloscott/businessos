@@ -1,4 +1,4 @@
-# Scale 02 — Archetype 01: The Catalog Packshot
+# Tabletop — Archetype 01: The Catalog Packshot
 
 * **Visual job:** The Specimen
 * **Good for:** making a handheld product instantly identifiable in a shopping feed, catalog, or product page.

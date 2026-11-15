@@ -1,4 +1,4 @@
-# Scale 02 — Archetype 06: The Direct-Flash Bodega / Kitchen Candid
+# Tabletop — Archetype 06: The Direct-Flash Bodega / Kitchen Candid
 
 * **Visual job:** The Ritual
 * **Good for:** creating an unvarnished pattern interrupt for a food or beverage product in a social feed.

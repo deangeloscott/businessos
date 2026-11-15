@@ -1,4 +1,4 @@
-# Scale 06: Micro-Mobility, Vehicles & Adventure Transport Lookbook
+# Vehicle-size: Micro-Mobility, Vehicles & Adventure Transport Lookbook
 ### Starting points for micro-mobility, transport, and overland systems
 *Categories: E-Bikes, Electric Scooters, Rooftop Overland Tents, Cargo Trailers, Adventure Rigs, Skateboards, OneWheels*
 

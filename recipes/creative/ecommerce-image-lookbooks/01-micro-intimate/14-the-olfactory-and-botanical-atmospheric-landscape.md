@@ -1,4 +1,4 @@
-# Scale 01 — Archetype 14: The Olfactory & Botanical Atmospheric Landscape
+# Pocket-size — Archetype 14: The Olfactory & Botanical Atmospheric Landscape
 
 * **Visual job:** The Habitat
 * **Good for:** giving an invisible scent, botanical note, or place story a memorable visual atmosphere.

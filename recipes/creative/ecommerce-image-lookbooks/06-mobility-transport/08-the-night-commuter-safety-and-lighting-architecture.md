@@ -1,4 +1,4 @@
-# Scale 06 — Archetype 08: The Night Commuter Safety & Lighting Architecture
+# Vehicle-size — Archetype 08: The Night Commuter Safety & Lighting Architecture
 
 > A quick, adaptable visual starting point. Borrow the idea, change the product or treatment freely, combine it with another approach, or skip it when you already have a better direction.
 >

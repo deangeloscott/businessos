@@ -1,4 +1,4 @@
-# Scale 03 — Archetype 11: The 5-Year Break-In & Patina Evolution
+# Wearables — Archetype 11: The 5-Year Break-In & Patina Evolution
 
 * **Visual job:** The Proof
 * **Good for:** showing how leather, denim, canvas, or another material may mature through use.

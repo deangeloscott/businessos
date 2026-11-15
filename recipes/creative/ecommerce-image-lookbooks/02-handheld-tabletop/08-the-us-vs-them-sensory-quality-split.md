@@ -1,4 +1,4 @@
-# Scale 02 — Archetype 08: The “Us vs. Them” Sensory Quality Split
+# Tabletop — Archetype 08: The “Us vs. Them” Sensory Quality Split
 
 * **Visual job:** The Proof
 * **Good for:** a direct generic poor-versus-premium contrast when a sensory or material difference should be understood immediately.

@@ -6,12 +6,12 @@ A compact menu for 90 standalone visual starting points across six physical prod
 
 | Scale | Open when | Menu |
 |---|---|---|
-| Micro & intimate | Products under 6 inches: skincare, cosmetics, jewelry, fragrance, supplements, watches. | [Scale 01 menu](01-micro-intimate.md) |
-| Handheld & tabletop | Products 6–18 inches: CPG, beverages, food, coffee, everyday carry, small tech. | [Scale 02 menu](02-handheld-tabletop.md) |
-| Body-worn & apparel | Products worn on the body: apparel, footwear, eyewear, bags, activewear, outerwear. | [Scale 03 menu](03-body-worn-apparel.md) |
-| Countertop appliances & heavy gear | Products 1.5–3 feet: espresso machines, ovens, power stations, blenders, tools. | [Scale 04 menu](04-countertop-appliances.md) |
-| Architectural macro & high-ticket | Products 3–10+ feet: saunas, furniture, cold plunges, gyms, fire pits. | [Scale 05 menu](05-architectural-macro.md) |
-| Mobility, vehicles & adventure transport | Products 4–12+ feet: e-bikes, scooters, cargo rigs, trailers, overland systems. | [Scale 06 menu](06-mobility-transport.md) |
+| Micro & intimate | Products under 6 inches: skincare, cosmetics, jewelry, fragrance, supplements, watches. | [Pocket-size menu](01-micro-intimate.md) |
+| Handheld & tabletop | Products 6–18 inches: CPG, beverages, food, coffee, everyday carry, small tech. | [Tabletop menu](02-handheld-tabletop.md) |
+| Body-worn & apparel | Products worn on the body: apparel, footwear, eyewear, bags, activewear, outerwear. | [Wearables menu](03-body-worn-apparel.md) |
+| Countertop appliances & heavy gear | Products 1.5–3 feet: espresso machines, ovens, power stations, blenders, tools. | [Countertop menu](04-countertop-appliances.md) |
+| Architectural macro & high-ticket | Products 3–10+ feet: saunas, furniture, cold plunges, gyms, fire pits. | [Furniture-size menu](05-architectural-macro.md) |
+| Mobility, vehicles & adventure transport | Products 4–12+ feet: e-bikes, scooters, cargo rigs, trailers, overland systems. | [Vehicle-size menu](06-mobility-transport.md) |
 
 ## Choose by viewer job
 

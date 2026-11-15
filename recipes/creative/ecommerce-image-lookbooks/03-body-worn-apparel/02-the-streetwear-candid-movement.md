@@ -1,4 +1,4 @@
-# Scale 03 — Archetype 02: The Streetwear Candid Movement
+# Wearables — Archetype 02: The Streetwear Candid Movement
 
 * **Visual job:** The Ritual
 * **Good for:** showing how clothing moves, folds, and feels in a real urban day.

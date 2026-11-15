@@ -1,4 +1,4 @@
-# Scale 03: Body-Worn & Apparel E-Commerce Lookbook
+# Wearables: Body-Worn & Apparel E-Commerce Lookbook
 ### Master Archetypes for Products Worn on the Human Body
 *Categories: Fashion, Footwear, Eyewear, Bags & Luggage, Outerwear, Activewear, Streetwear*
 

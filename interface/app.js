@@ -107,7 +107,7 @@ async function refresh(light=false,preserveDetails=light) {
     if(data.records_unchanged&&state.data?.workspace===data.workspace&&state.business===data.business_id)data.records=state.data.records;
     if(ticket!==state.refreshTicket)return;state.data=data;
     state.business=state.data.business_id || '';state.scheduleJob=state.data.schedule_operation;
-    const scope=state.data.workspace+'|'+state.business;if(state.searchScope&&state.searchScope!==scope){state.memoryQuery='';state.memoryGoalStatus='current';state.memoryGoalScope='all';state.chatProjectFilter='';state.fileQuery='';state.scheduleQuery='';state.scheduleFilter='all';state.scheduleDraft=null;state.showPaused=false;fileFilter='all';fileLocation='';state.fileProject='';state.fileFavoritesOnly=false;workFilter='all';workCategory='';libraryView='all';libraryQueryText='';libraryLimit=60;}state.searchScope=scope;
+    const scope=state.data.workspace+'|'+state.business;if(state.searchScope&&state.searchScope!==scope){state.memoryQuery='';state.memoryGoalStatus='current';state.memoryGoalScope='all';state.chatProjectFilter='';state.fileQuery='';state.scheduleQuery='';state.scheduleFilter='all';state.scheduleDraft=null;state.showPaused=false;fileFilter='all';fileLocation='';state.fileProject='';state.fileFavoritesOnly=false;workFilter='methods';workCategory='';libraryView='all';libraryQueryText='';libraryLimit=24;}state.searchScope=scope;
     $('.composer').hidden=!state.business;
     window.auraFocus?.paint();
     $('#connection').disabled=!state.business;
@@ -308,23 +308,23 @@ function glanceParts(d){
 }
 function paintGlance(){
   const button=$('#usage-gauge'),d=glance.key===limitScope()?glance.data:null;if(!button)return;
-  if(!d){button.hidden=true;$('#usage-pop').hidden=true;return;}
+  if(!d){button.hidden=true;toggleGlance(false);return;}
   const {windows,top,context,contextPct}=glanceParts(d),pct=top?glanceUsed(top):contextPct;
-  button.hidden=!Number.isFinite(pct);if(button.hidden)return;
+  button.hidden=!Number.isFinite(pct);if(button.hidden){toggleGlance(false);return;}
   button.dataset.level=top&&(top.status==='rejected'||pct>=90)?'high':pct>=75?'mid':'low';
   button.querySelector('.fill').setAttribute('stroke-dasharray',Math.min(100,Math.max(3,pct))+' 100');
   const lines=glanceAccount(d)?['Account: '+glanceAccount(d)]:[];lines.push(...windows.map(w=>`${w.name}: ${w.status==='rejected'?'reached':Math.round(w.used_percent)+'% used'}${w.resets_at?' · resets '+glanceTime(w.resets_at):''}`));
   if(context)lines.push(`Context: ${usageShort(context.tokens)} of ${usageShort(context.window)}`);
   if(top&&d.limits.observed_at)lines.push('As of '+new Date(d.limits.observed_at*1000).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}));
   button.title=lines.join('\n');button.setAttribute('aria-label',(top?'Plan usage ':'Context used ')+Math.round(pct)+'%. Show details');
-  if(!$('#usage-pop').hidden)paintGlancePanel();
+  if($('#usage-pop').open)paintGlancePanel();
 }
 function glanceAccount(d){
   const a=d.account||{},who=[a.nickname,a.label].filter(Boolean).join(' · ');
   return who||(a.switchable?appName(d.app)+' sign-in':'');
 }
 function paintGlancePanel(){
-  const d=glance.key===limitScope()?glance.data:null;if(!d){$('#usage-pop').hidden=true;return;}const {windows,context,contextPct}=glanceParts(d),c=d.chat||{};
+  const d=glance.key===limitScope()?glance.data:null;if(!d){toggleGlance(false);return false;}const {windows,context,contextPct}=glanceParts(d),c=d.chat||{};
   const bar=(pct,cls='')=>`<span class="glance-bar ${cls}"><span style="width:${Math.min(100,Math.max(0,pct))}%"></span></span>`;
   const level=w=>w.status==='rejected'||glanceUsed(w)>=90?'high':glanceUsed(w)>=75?'mid':'';
   const limits=windows.length?windows.map(w=>`<div class="glance-row"><span>${esc(w.name)}</span><span class="row-meta">${w.resets_at?'Resets '+esc(glanceTime(w.resets_at))+' · ':''}${w.status==='rejected'?'Reached':Math.round(w.used_percent)+'%'}</span></div>${bar(glanceUsed(w),level(w))}`).join('')
@@ -340,10 +340,14 @@ function paintGlancePanel(){
     ${tokens?`<div class="glance-row"><span>Tokens</span><span class="row-meta">${tokens}</span></div>`:''}
     ${cost?`<div class="glance-row"><span>Cost</span><span>${cost}</span></div>`:''}
     ${!context&&!tokens&&!cost?'<p class="small-note">Usage appears after this chat’s first reply.</p>':''}`;
+  return true;
 }
 function toggleGlance(open){
-  const pop=$('#usage-pop'),button=$('#usage-gauge');open=open??pop.hidden;pop.hidden=!open;button.setAttribute('aria-expanded',String(open));
-  if(open){paintGlancePanel();loadGlance(true);}
+  const pop=$('#usage-pop'),button=$('#usage-gauge');open=open??!pop.open;
+  if(!open){if(anchoredSurface?.dialog===pop)closeAnchoredSurface(false);else if(pop.open)pop.close();button.setAttribute('aria-expanded','false');return;}
+  if(button.hidden||!paintGlancePanel())return;
+  if(!pop.open)openAnchoredSurface(pop,button,{width:340,align:'end'});
+  loadGlance(true);
 }
 // A plan limit that is nearly used up is worth knowing before sending, not after a refusal.
 function limitNotice(){
@@ -425,7 +429,7 @@ function renderModelChoices(current=$('#model-choice').value){
   const groups=Object.groupBy(visible,groupLabel);
   $('#model-choice').innerHTML=($('#agent-choice').value==='configured'?'<option value="">Use my app’s settings</option>':'')+(retained?`<optgroup label="Current selection"><option value="${esc(retained.id)}">${esc(retained.name)} · ${esc(groupLabel(retained))}</option></optgroup>`:'')+Object.entries(groups).map(([label,items])=>`<optgroup label="${esc(label)}">${items.map(m=>`<option value="${esc(m.id)}">${picker.favorites.includes(m.id)?'★ ':''}${esc(m.name)}</option>`).join('')}</optgroup>`).join('');
   if(!current||models.some(m=>m.id===current))$('#model-choice').value=current;
-  $('#model-list-view').value=picker.view;
+  document.querySelectorAll('[data-model-list-view]').forEach(b=>{const on=b.dataset.modelListView===picker.view;b.classList.toggle('active',on);b.setAttribute('aria-pressed',String(on));});
   $('#model-list-note').textContent=`${visible.length} ${picker.view==='favorites'?'favorite':'matching'} model${visible.length===1?'':'s'}`;
   $('#provider-checkboxes').innerHTML=[...new Set(models.map(providerKey))].sort().map(id=>`<label class="check-label"><input type="checkbox" data-model-provider="${esc(id)}" ${picker.providers.includes(id)?'checked':''}>${esc(providerLabel(id.slice('connection:'.length)))}</label>`).join('');
   favoriteButton();renderFavoriteList();
@@ -958,6 +962,10 @@ async function overview() {
 }
 const libraryType=item=>item.subtype==='Playbook'?'Playbook':item.kind;
 const libraryKinds={Playbook:'Playbooks',Workflow:'Workflows',Recipe:'Recipes',Skill:'Skills',Tool:'Tools',Plugin:'Plugins'};
+const libraryMethods=item=>['Playbook','Workflow','Recipe'].includes(libraryType(item));
+const libraryAppItems=item=>['Skill','Tool','Plugin'].includes(libraryType(item));
+const libraryCategory=item=>item.category||'Other';
+const libraryKindHints={Playbook:'A whole job, start to finish. Start here.',Workflow:'One step of a job, such as research, a check or a draft.',Recipe:'Examples and craft ideas to borrow.',Skill:'Instructions your AI apps can follow.',Tool:'Things your AI apps can use, such as connections.',Plugin:'Bundles that add skills and tools to an AI app.'};
 const libraryGuidance=item=>['Workflow','Recipe','Skill'].includes(item.kind);
 function appName(id){return ({configured:state.data?.connection.choices?.find(c=>c.id==='configured')?.name||'Custom AI',codex:'Codex',claude:'Claude Code',pi:'Pi',omp:'OMP',hermes:'Hermes',antigravity:'Google Antigravity'})[id]||id;}
 function libraryPrefs(){return {favorites:[],recent:[],...state.data.library_preferences};}
@@ -1025,10 +1033,10 @@ function searchLibrary(items,query){
 async function refreshLibrary(){
   if(state.libraryRefreshing)return;state.libraryRefreshing=true;const button=state.view==='work'?$('#page-refresh'):null,workspace=state.data.workspace;
   if(button){button.disabled=true;button.textContent='Refreshing…';if(state.view==='work')renderWork();}
-  try{const result=await api('/api/library?discover=1&details=1');if(state.data.workspace!==workspace)return;state.library=result.items;state.libraryNotes=result.notes;state.libraryRefreshed=workspace;quickMethods();if(state.view==='work'){renderWork();if($('#library-note'))$('#library-note').textContent=result.notes.length?'Some catalogs need attention. See How it works.':'';}}
+  try{const result=await api('/api/library?discover=1&details=1');if(state.data.workspace!==workspace)return;state.library=result.items;state.libraryNotes=result.notes;state.libraryRefreshed=workspace;quickMethods();if(state.view==='work')renderWork();}
   finally{state.libraryRefreshing=false;if(button?.isConnected&&state.view==='work'){button.disabled=false;button.textContent='Refresh';renderWork();}}
 }
-function methodRow(method) {const favorite=libraryMarked(method),apps=method.apps||[],source=apps.length>1?'Shared · '+apps.length+' apps':apps.map(appName).join(', '),sources=method.sources||[],status=!sources.length?'':sources.every(s=>s.status==='Disabled')?'Disabled':sources.some(s=>s.connection_reported)?'Connection listed':sources.every(s=>s.status==='Found locally')?'Found locally':sources.some(s=>s.status==='Installed')?'Installed':sources.every(s=>s.status==='Configured')?'Configured':'',type=method.subtype==='Playbook'?'Playbook':method.kind;return `<div class="library-row"><button class="row compact" data-method="${esc(method.key)}"><span class="row-text"><span class="row-title">${esc(method.title)}</span><span class="row-meta">${esc(type)}${method.members?.length?' · '+method.members.length+' actions':''}${source?' · '+esc(source):''}${status&&status!=='Found locally'?' · '+esc(status):''}${sources.some(s=>s.stale)?' · Needs refresh':''}</span></span><span class="arrow">→</span></button><button class="library-star ${favorite?'active':''}" data-library-favorite="${esc(method.key)}" aria-label="${favorite?'Remove':'Add'} ${esc(method.title)} ${favorite?'from':'to'} favorites" aria-pressed="${favorite}">${favorite?'★':'☆'}</button></div>`;}
+function methodRow(method,{grouped=false}={}) {const favorite=libraryMarked(method),apps=method.apps||[],source=apps.length>1?'Shared · '+apps.length+' apps':apps.map(appName).join(', '),sources=method.sources||[],status=!sources.length?'':sources.every(s=>s.status==='Disabled')?'Disabled':sources.some(s=>s.connection_reported)?'Connection listed':sources.every(s=>s.status==='Found locally')?'Found locally':sources.some(s=>s.status==='Installed')?'Installed':sources.every(s=>s.status==='Configured')?'Configured':'',type=method.subtype==='Playbook'?'Playbook':method.kind;return `<div class="library-row"><button class="row compact" data-method="${esc(method.key)}"><span class="row-text"><span class="row-title">${esc(method.title)}</span>${state.view==='work'&&method.description?`<span class="library-description">${esc(method.description)}</span>`:''}<span class="row-meta">${esc([grouped?'':type,method.subtype==='Playbook'?(method.routes?.length?method.routes.length+' ways in':method.entry?'Starts with '+method.entry.title:''):''].filter(Boolean).join(' · '))}${method.members?.length?' · '+method.members.length+' actions':''}${source?' · '+esc(source):''}${status&&status!=='Found locally'?' · '+esc(status):''}${sources.some(s=>s.stale)?' · Needs refresh':''}</span></span><span class="arrow">→</span></button><button class="library-star ${favorite?'active':''}" data-library-favorite="${esc(method.key)}" aria-label="${favorite?'Remove':'Add'} ${esc(method.title)} ${favorite?'from':'to'} favorites" aria-pressed="${favorite}">${favorite?'★':'☆'}</button></div>`;}
 function librarySourceLabels(sources){
   const rank={'Reported by app':6,'Enabled in app':5,'Installed':4,'Disabled':3,'Configured':2,'Found locally':1};
   return Object.values(Object.groupBy(sources,s=>(s.app||'local')+':'+(s.service||s.connection||''))).map(rows=>{
@@ -1056,16 +1064,23 @@ async function openLibrary(key,option='',returning=false){
   const statuses=inventory?`<div class="item-statuses">${[...new Map(sources.map(s=>[s.app+':'+statusLabel(s),s])).values()].map(s=>`<span class="item-status" title="${esc(statusNote(s))}">${esc(appName(s.app)||'This computer')} · ${esc(statusLabel(s))}${s.stale?' · Last known':''}</span>`).join('')}</div>`:'';
   const description=chosen.description||item.description||'';
   const actions=inventory?'':`<div class="inline-actions"><button type="button" class="primary" data-add-library="${esc(root.key)}" data-variant="${esc(variants.length>1?chosen.key:'')}" data-label="${esc(item.title)}">Add to chat</button></div>`;
-  const metadata=`<div class="item-summary"><p class="item-type">${esc(identity)}${!inventory&&apps.length?' · '+apps.map(appName).map(esc).join(' · '):''}</p>${statuses}${!inventory&&variants.length>1?`<label class="library-option">Version<select id="library-option">${variants.map((v,i)=>`<option value="${esc(v.key)}" ${v.key===chosen.key?'selected':''}>${esc((v.apps||v.sources?.map(s=>s.app)||[]).map(appName).join(', ')||'Version '+(i+1))}</option>`).join('')}</select></label>`:''}${description?`<p>${esc(description)}</p>`:''}${chosen.requirements?`<p class="small-note">Needs: ${esc(chosen.requirements)}</p>`:''}${actions}</div>`;
+  // A playbook is the job; the workflows that start it or that it routes to are its steps.
+  const usedBy=item.subtype==='Playbook'?[]:state.library.filter(r=>r.subtype==='Playbook'&&(r.entry?.key===item.key||r.routes?.some(x=>x.key===item.key)));
+  const partOf=usedBy.length?`<p class="small-note item-part-of">Part of ${usedBy.map(pb=>`<button type="button" class="text-button" data-method="${esc(pb.key)}">${esc(pb.title)}</button>`).join(', ')}</p>`:'';
+  const metadata=`<div class="item-summary"><p class="item-type">${esc(identity)}${!inventory&&apps.length?' · '+apps.map(appName).map(esc).join(' · '):''}</p>${statuses}${!inventory&&variants.length>1?`<label class="library-option">Version<select id="library-option">${variants.map((v,i)=>`<option value="${esc(v.key)}" ${v.key===chosen.key?'selected':''}>${esc((v.apps||v.sources?.map(s=>s.app)||[]).map(appName).join(', ')||'Version '+(i+1))}</option>`).join('')}</select></label>`:''}${description?`<p>${esc(description)}</p>`:''}${chosen.requirements?`<p class="small-note">Needs: ${esc(chosen.requirements)}</p>`:''}${partOf}${actions}</div>`;
   if(inventory){
     const related=[...(item.members||[]),...(item.related||[]).map(key=>state.library.find(r=>r.key===key)).filter(Boolean)].filter((r,i,all)=>all.findIndex(v=>v.key===r.key)===i);
-    details(item.title,locationMarkup+metadata+(related.length?`<h3>Included items</h3><div class="capability-tools">${related.map(m=>`<button type="button" class="row" data-method="${esc(m.key)}"><span class="row-text"><strong>${esc(m.title)}</strong><small>${esc(m.description||m.kind)}</small></span><span>→</span></button>`).join('')}</div>`:''),'context');
+    details(item.title,metadata+(related.length?`<h3>Included items</h3><div class="capability-tools">${related.map(m=>`<button type="button" class="row" data-method="${esc(m.key)}"><span class="row-text"><strong>${esc(m.title)}</strong><small>${esc(m.description||m.kind)}</small></span><span>→</span></button>`).join('')}</div>`:'')+(locationMarkup?'<h3>Where it lives</h3>'+locationMarkup:''),'context');
   }else if(doc.location?.endsWith('.md')||item.kind==='Skill'&&locations.length){
     await openFileWorkspace('library/'+root.key,chosen.key,{title:item.title,summary:metadata,hideTitle:true});
   }else{
     const lines=body.replace(/^# [^\n]+\n+/,'');
     const guidance=(description&&lines.startsWith(description)?lines.slice(description.length).trim():lines).replace(/^Start with workflow [^\n]+ when useful\.$/m,'').trim();
-    details(item.title,locationMarkup+metadata+(guidance?'<div class="guidance-preview">'+chatMarkdown(guidance)+'</div>':'')+(item.routes?.length?item.routes.map(route=>`<button type="button" class="secondary" data-method="${esc(route.key)}">${esc(route.title)}</button>`).join(''):item.entry?`<button type="button" class="text-button" data-method="${esc(item.entry.key)}">Open ${esc(item.entry.title)} workflow →</button>`:''),'context');
+    // A playbook's steps are the workflows it starts with or routes to; its source file is code, not something to open.
+    const steps=item.routes?.length?item.routes:item.entry?[{...item.entry,title:'Starts with '+item.entry.title}]:[];
+    const stepRows=steps.length?`<h3>Workflows</h3><div class="capability-tools">${steps.map(step=>{const w=state.library.find(r=>r.key===step.key);return `<button type="button" class="row" data-method="${esc(step.key)}"><span class="row-text"><strong>${esc(step.title)}</strong>${w?.description?`<small>${esc(w.description)}</small>`:''}</span><span aria-hidden="true">→</span></button>`;}).join('')}</div>`:'';
+    const topicLink=item.category?`<button type="button" class="text-button" data-library-browse="${esc(item.category)}">More ${esc(item.category)} workflows →</button>`:'';
+    details(item.title,metadata+(guidance?'<div class="guidance-preview">'+chatMarkdown(guidance)+'</div>':'')+stepRows+topicLink+(item.subtype==='Playbook'||!locationMarkup?'':'<h3>Where it lives</h3>'+locationMarkup),'context');
   }
   if(ticket!==state.libraryDetailTicket||business!==state.business||workspace!==state.data.workspace)return;
   setDetailTitleActions(favoriteControl('data-library-favorite',root.key,item.title,libraryMarked(root),'title-star'));
@@ -1086,6 +1101,7 @@ function quickMethods() {
   $('#quick-methods').innerHTML=groups.filter(g=>g.items.length).map(g=>`<h4>${libraryKinds[g.kind]}</h4>${g.items.slice(0,2).map(methodRow).join('')}<button class="text-button card-link" data-library-kind="${g.kind}">Open ${libraryKinds[g.kind].toLowerCase()} →</button>`).join('')||'<p class="muted">No match. You can still describe the job to your AI.</p>';
 }
 async function render() {
+  $('#library-help').hidden=!['work','assistants'].includes(state.view);
   const ticket=state.renderTicket=(state.renderTicket||0)+1,scope=JSON.stringify([state.data.workspace,state.business]);
   const current=()=>ticket===state.renderTicket&&scope===JSON.stringify([state.data.workspace,state.business]);
   state.urls.forEach(URL.revokeObjectURL); state.urls=[];state.mediaCache=new Map();state.fileObserver?.disconnect();
@@ -1106,7 +1122,7 @@ async function render() {
   if(!current())return;
   if(state.view==='home') { $('#section-dialog').close();$('#view').innerHTML='';window.auraHQ?.sync();return; }
   $('#detail').close();
-  $('#section-description').textContent=({business:'Your goals, useful facts, preferences, and decisions.',files:'Find the work you have saved and the locations you have linked.',work:'Workflows, recipes, skills and tools your AI can reuse, plus the agents that do the work.',tools:'Work your connected AI apps repeat for you.',assistants:'Workflows, recipes, skills and tools your AI can reuse, plus the agents that do the work.'})[state.view]||'';
+  $('#section-description').textContent=({business:'Your goals, useful facts, preferences, and decisions.',files:'What your AI saved and the files you linked, grouped by project.',work:'Workflows, recipes, skills and tools your AI can reuse, plus the agents that do the work.',tools:'Work your connected AI apps repeat for you.',assistants:'Workflows, recipes, skills and tools your AI can reuse, plus the agents that do the work.'})[state.view]||'';
   $('#page-refresh').disabled=state.view==='work'&&!!state.libraryRefreshing;$('#page-refresh').textContent=$('#page-refresh').disabled?'Refreshing…':'Refresh';
   $('#section-title').textContent=({business:'Knowledge',files:'Files',work:'Library',tools:'Schedules',assistants:'Library'})[state.view];
   if(!$('#section-dialog').open) $('#section-dialog').show();
@@ -1120,9 +1136,8 @@ async function render() {
     renderFiles();
   } else if(state.view==='work') {
     if(!state.library.length){const library=await cachedApi('/api/library');if(!current())return;state.library=library;}
-    view.innerHTML=`<input class="search" id="work-search" value="${esc(libraryQueryText)}" type="search" aria-label="Search the Library" placeholder="Search the Library…"><div id="library-topics" class="filters" role="group" aria-label="Topics"></div><div class="library-toolbar"><label>Type <select id="library-type"><option value="all">Everything</option>${Object.entries(libraryKinds).map(([kind,label])=>`<option value="${kind}" ${workFilter===kind?'selected':''}>${label}</option>`).join('')}<option value="agents">Agents</option></select></label><label hidden>Topic <select id="library-topic"><option value="">All topics</option></select></label><label>Show <select id="library-view"><option value="all" ${libraryView==='all'?'selected':''}>All items</option><option value="favorites" ${libraryView==='favorites'?'selected':''}>Favorites</option><option value="recent" ${libraryView==='recent'?'selected':''}>Recently opened</option></select></label><span><button class="text-button" data-library-help>How it works</button></span></div><p id="library-note" class="small-note"></p><section id="library-suggested" class="library-suggested" hidden></section><div class="section-head"><h3 id="work-category-title">Library items</h3><button id="work-all-topics" class="text-button" hidden>All topics</button></div><div id="work-list"></div>`;
+    view.innerHTML=`<input class="search" id="work-search" value="${esc(libraryQueryText)}" type="search" aria-label="Search the Library" placeholder="Search the Library…"><div id="library-topics" class="filters" role="group" aria-label="Topics"></div><div class="library-toolbar"><div class="page-tabs" role="group" aria-label="Library section"><button type="button" data-library-tab="methods">Playbooks &amp; workflows</button><button type="button" data-library-tab="apps">From your AI apps</button></div><span class="library-show filters" role="group" aria-label="Show"><button type="button" data-library-show="favorites">★ Favorites</button><button type="button" data-library-show="recent">Recent</button></span><label hidden>Topic <select id="library-topic"><option value="">All topics</option></select></label></div><div id="library-app-actions" class="inline-actions" hidden><button type="button" class="text-button" id="library-connections">Add connection</button><button type="button" class="text-button" data-library-agents>See agents →</button></div><p id="library-note" class="small-note"></p><section id="library-suggested" class="library-suggested" hidden></section><div class="section-head"><h3 id="work-category-title" tabindex="-1">Library items</h3><button id="work-all-topics" class="text-button" hidden>All topics</button></div><div id="work-list"></div>`;
     renderWork();
-    $('#section-content .library-toolbar>span').insertAdjacentHTML('afterbegin','<button class="text-button" id="library-connections">Add connection</button>');
     $('#library-connections').hidden=!['all','Tool'].includes(workFilter);
     if(state.libraryRefreshed!==state.data.workspace)attempt(refreshLibrary);
   } else if(state.view==='assistants') {
@@ -1139,7 +1154,7 @@ async function render() {
   }
 }
 
-let fileFilter='all', fileLocation='', workFilter='all', workCategory='', libraryQueryText='', libraryView='all', libraryLimit=60;
+let fileFilter='all', fileLocation='', workFilter='methods', workCategory='', libraryQueryText='', libraryView='all', libraryLimit=24;
 function recordMatches(record,q) {return !q||(record.title+' '+pretty(record.data)).toLowerCase().includes(q);}
 const addContextPrompt='Help me add useful business context to AURA. Ask only what matters for our current work and preserve my explicit facts and preferences. Do not invent facts.';
 function memoryGroups(q) {
@@ -1150,7 +1165,7 @@ function renderMemory() {
   const all=state.data.records.filter(r=>r.type==='Objective'),goals=all.filter(r=>recordMatches(r,q)&&(scope==='all'||(goalInfo(r.data).scope||'workspace')===scope)&&(status==='deleted'?!!goalInfo(r.data).deleted_at:!goalInfo(r.data).deleted_at&&(status==='completed'?r.data.status==='completed':r.data.status!=='completed')));
   for(const id of ['quick-memory-search','record-search'])if($('#'+id)&&$('#'+id).value!==(state.memoryQuery||''))$('#'+id).value=state.memoryQuery||'';
   const goalRow=r=>`<button type="button" class="row" data-record="${esc(r.ref)}"><span class="row-text"><strong class="row-title">${esc(r.title)}</strong><small class="row-meta">${goalInfo(r.data).scope==='chat'?'Chat goal':'Workspace goal'}${goalInfo(r.data).deleted_at?' · Deleted':(r.data.status||'active')==='active'?'':' · '+esc(human(r.data.status))}${r.measure?.latest!=null?' · '+(r.measure.direction==='lower_better'?esc(Number(r.measure.latest).toLocaleString())+' (target '+esc(Number(r.measure.target).toLocaleString())+' or lower)':esc(Number(r.measure.latest).toLocaleString())+' of '+esc(Number(r.measure.target).toLocaleString())+(r.measure.unit&&!['count','USD','rank'].includes(r.measure.unit)?' '+esc(r.measure.unit):'')):''}</small>${r.measure?.reached&&r.data.status!=='completed'?'<span class="goal-reached">Reached</span>':''}${r.data.target?`<small class="goal-list-outcome">${esc(pretty(r.data.target))}</small>`:''}</span><span>→</span></button>`;
-  const filters=`<div class="goal-page-filters"><div class="filters" role="group" aria-label="Goal status">${[['current','Current'],['completed','Completed'],['deleted','Deleted']].map(([value,label])=>`<button type="button" data-memory-goals="${value}" aria-pressed="${status===value}" class="${status===value?'active':''}">${label}</button>`).join('')}</div>${all.some(r=>goalInfo(r.data).scope==='chat')?`<label>Type<select id="memory-goal-scope"><option value="all" ${scope==='all'?'selected':''}>All goals</option><option value="workspace" ${scope==='workspace'?'selected':''}>Workspace</option><option value="chat" ${scope==='chat'?'selected':''}>Chat</option></select></label>`:''}</div>`;
+  const filters=`<div class="goal-page-filters"><div class="filters" role="group" aria-label="Goal status">${[['current','Current'],['completed','Completed'],['deleted','Deleted']].map(([value,label])=>`<button type="button" data-memory-goals="${value}" aria-pressed="${status===value}" class="${status===value?'active':''}">${label}</button>`).join('')}</div>${all.some(r=>goalInfo(r.data).scope==='chat')?`<div class="filters" role="group" aria-label="Where the goal was set">${[['all','All'],['workspace','Business'],['chat','From chats']].map(([value,label])=>`<button type="button" data-memory-goal-scope="${value}" aria-pressed="${scope===value}" class="${scope===value?'active':''}">${label}</button>`).join('')}</div>`:''}</div>`;
   const goalAdd='<span class="inline-actions"><button type="button" class="text-button" data-goal-help>How goals work</button><button type="button" class="secondary compact add-button" data-action="add-goal">Add goal</button></span>';
   const measured={};for(const o of state.data.records.filter(r=>r.type==='MetricObservation')){const at=o.data.window_end||o.data.updated_at||'',k=o.data.metric_ref;if(!measured[k]||at>(measured[k].data.window_end||measured[k].data.updated_at||''))measured[k]=o;}
   const measures=new Set(context.filter(r=>r.type==='MetricDefinition').map(r=>r.ref));
@@ -1230,37 +1245,67 @@ async function librarySuggestions(show){
   const add=item=>{if(item&&!picked.includes(item))picked.push(item);};
   for(const k of paths.filter(k=>k.includes('/workflows/')))add(state.library.find(i=>i.key==='workflow:'+k+'CONTEXT.md'));
   for(const item of state.library)if(item.subtype==='Playbook'&&systems.has(item.area))add(item);
+  picked.sort((a,b)=>(b.subtype==='Playbook')-(a.subtype==='Playbook'));
   const name=rows('Business')[0]?.title||'this business';
   host.hidden=!picked.length;
-  host.innerHTML=picked.length?`<div class="section-head"><h3>Suggested for ${esc(name)}</h3><small class="small-note">From your focus: ${esc((focus.areas||[]).map(a=>a.name).join(', ')||'your business')}</small></div>${picked.slice(0,6).map(methodRow).join('')}`:'';
+  host.innerHTML=picked.length?`<div class="section-head"><h3>Suggested for ${esc(name)}</h3><small class="small-note">From your focus: ${esc((focus.areas||[]).map(a=>a.name).join(', ')||'your business')}</small></div>${picked.slice(0,5).map(item=>methodRow(item)).join('')}`:'';
 }
 function renderWork() {
-  $('#section-description').textContent=({business:'Your goals, useful facts, preferences, and decisions.',files:'Find the work you have saved and the locations you have linked.',work:'Workflows, recipes, skills and tools your AI can reuse, plus the agents that do the work.',tools:'Work your connected AI apps repeat for you.',assistants:'Workflows, recipes, skills and tools your AI can reuse, plus the agents that do the work.'})[state.view]||'';
+  const capabilities=['all','apps','Skill','Tool','Plugin'].includes(workFilter);
+  $('#section-description').textContent=capabilities?'Skills, tools and plugins your AI apps already have. Your AI chooses which to use.':'A playbook covers a whole job, workflows are its steps, and recipes are examples to borrow.';
   $('#section-title').textContent='Library';
-  if($('#library-connections'))$('#library-connections').hidden=!['all','Tool'].includes(workFilter);
+  if($('#library-note'))$('#library-note').textContent=capabilities&&state.libraryNotes?.length?'Some AI app catalogs need attention. See How it works.':'';
+  if($('#library-connections'))$('#library-connections').hidden=!['all','apps','Tool'].includes(workFilter);
+  const family=['apps','Skill','Tool','Plugin'].includes(workFilter)?'apps':'methods';
+  document.querySelectorAll('[data-library-tab]').forEach(b=>{const on=b.dataset.libraryTab===family;b.setAttribute('aria-pressed',String(on));b.classList.toggle('active',on);});
+  document.querySelectorAll('[data-library-show]').forEach(b=>{const on=b.dataset.libraryShow===libraryView;b.setAttribute('aria-pressed',String(on));b.classList.toggle('active',on);});
+  if($('#library-app-actions'))$('#library-app-actions').hidden=family!=='apps';
   document.querySelectorAll('[data-workfilter]').forEach(b=>{b.setAttribute('aria-pressed',String(b.dataset.workfilter===workFilter));b.classList.toggle('active',b.dataset.workfilter===workFilter);});
   const q=($('#work-search')?.value||'').toLowerCase();
-  const typed=state.library.filter(item=>Object.hasOwn(libraryKinds,libraryType(item))&&(workFilter==='all'||libraryType(item)===workFilter));
-  const topics=[...new Set(typed.map(item=>item.category).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+  const typed=state.library.filter(item=>Object.hasOwn(libraryKinds,libraryType(item))&&(workFilter==='all'||workFilter==='methods'&&libraryMethods(item)||workFilter==='apps'&&libraryAppItems(item)||libraryType(item)===workFilter));
+  const topics=[...new Set(typed.map(libraryCategory))].sort((a,b)=>a.localeCompare(b));
   const topic=$('#library-topic');
   topic.innerHTML='<option value="">All topics</option>'+topics.map(name=>`<option value="${esc(name)}">${esc(name)}</option>`).join('');
   if(!topics.includes(workCategory))workCategory='';
   topic.value=workCategory;
   topic.parentElement.hidden=true;
-  const chips=$('#library-topics');if(chips)chips.innerHTML=topics.length>1?`<button type="button" data-workcategory="" aria-pressed="${!workCategory}" class="${workCategory?'':'active'}">All topics</button>`+topics.map(name=>`<button type="button" data-workcategory="${esc(name)}" aria-pressed="${workCategory===name}" class="${workCategory===name?'active':''}">${esc(name)}</button>`).join(''):'';
-  const typeSelect=$('#library-type');if(typeSelect)typeSelect.value=workFilter;
-  librarySuggestions(!q&&workFilter==='all'&&!workCategory&&libraryView==='all');
-  const matches=searchLibrary(typed.filter(item=>(!workCategory||item.category===workCategory)&&(libraryView==='all'||libraryMarked(item,libraryView==='recent'?'recent':'favorites'))),q);
+  const browse=!q&&!workCategory&&libraryView==='all';
+  const chips=$('#library-topics');if(chips){chips.hidden=browse;chips.innerHTML=topics.length>1?`<button type="button" data-workcategory="" aria-pressed="${!workCategory}" class="${workCategory?'':'active'}">All topics</button>`+topics.map(name=>`<button type="button" data-workcategory="${esc(name)}" aria-pressed="${workCategory===name}" class="${workCategory===name?'active':''}">${esc(name)}</button>`).join(''):'';}
+  librarySuggestions(!q&&['methods','all'].includes(workFilter)&&!workCategory&&libraryView==='all');
+  const matches=searchLibrary(typed.filter(item=>(!workCategory||libraryCategory(item)===workCategory)&&(libraryView==='all'||libraryMarked(item,libraryView==='recent'?'recent':'favorites'))),q);
   if(!q&&libraryView==='recent'){
     const recent=libraryPrefs().recent,rank=item=>recent.findIndex(key=>key===item.key||item.aliases?.includes(key));
     matches.sort((a,b)=>rank(a)-rank(b));
   }else if(!q)matches.sort((a,b)=>a.title.localeCompare(b.title));
-  const label=libraryView==='recent'?'Recently opened':libraryView==='favorites'?'Favorites':workCategory||libraryKinds[workFilter]||'All items';
-  $('#work-category-title').textContent=label+' ('+matches.length+')';
-  const clear=$('#work-all-topics');clear.hidden=libraryView!=='recent'||!libraryPrefs().recent.length;clear.textContent='Clear recent';
+  const label=libraryView==='recent'?'Recently opened':libraryView==='favorites'?'Favorites':workCategory||({methods:'Playbooks, workflows & recipes',apps:'Skills, tools & plugins'})[workFilter]||libraryKinds[workFilter]||'All items';
+  $('#work-category-title').textContent=browse&&(workFilter==='methods'||topics.length>1)?'Browse by topic':label+' ('+matches.length+')';
+  const single=Object.hasOwn(libraryKinds,workFilter)&&libraryView==='all';
+  if(single&&!browse)$('#work-category-title').textContent=(workCategory?workCategory+' · ':'')+libraryKinds[workFilter]+' ('+matches.length+')';
+  const clear=$('#work-all-topics');clear.hidden=!(single||libraryView==='recent'&&libraryPrefs().recent.length);clear.textContent=single?'Show all types':'Clear recent';
   $('#work-list').innerHTML=matches.length
-    ?matches.slice(0,libraryLimit).map(methodRow).join('')+(matches.length>libraryLimit?'<button type="button" class="secondary" id="library-more">Show more</button>':'')
+    ?browse&&workFilter==='methods'?libraryTopicCards(matches)+libraryAppsEntry():browse&&topics.length>1?libraryTopicCards(matches):!q&&libraryView==='all'&&['methods','all','apps'].includes(workFilter)?libraryGroupedRows(matches):matches.slice(0,libraryLimit).map(methodRow).join('')+(matches.length>libraryLimit?'<button type="button" class="secondary" id="library-more">Show more</button>':'')
     :empty(libraryView==='favorites'?'No matching favorites':libraryView==='recent'?'No recently opened matches':'No matching items',state.libraryRefreshing?'Checking connected apps…':'Try another topic, type, or search.');
+}
+
+function focusLibraryResults(){const heading=$('#work-category-title');heading?.focus({preventScroll:true});heading?.scrollIntoView({block:'nearest'});}
+function libraryTopicCards(items){
+  const topics=[...new Set(items.map(libraryCategory))].sort((a,b)=>a.localeCompare(b));
+  return '<div class="library-topic-grid">'+topics.map(topic=>{
+    const group=items.filter(item=>libraryCategory(item)===topic),counts=Object.keys(libraryKinds).map(kind=>{const n=group.filter(item=>libraryType(item)===kind).length;return n?n+' '+libraryKinds[kind].toLowerCase():'';}).filter(Boolean).join(' · ');
+    const examples=[...group.filter(item=>libraryType(item)==='Playbook'),...group.filter(item=>libraryType(item)!=='Playbook')].slice(0,2).map(item=>item.title).join(' · ');
+    return `<button type="button" class="library-topic-card" data-workcategory="${esc(topic)}"><strong>${esc(topic)} <span aria-hidden="true">→</span></strong><span class="row-meta">${esc(counts)}</span><small>${esc(examples)}</small></button>`;
+  }).join('')+'</div>';
+}
+function libraryAppsEntry(){
+  const items=state.library.filter(libraryAppItems);if(!items.length)return '';
+  const counts=['Skill','Tool','Plugin'].map(kind=>{const n=items.filter(item=>libraryType(item)===kind).length;return n?n+' '+libraryKinds[kind].toLowerCase():'';}).filter(Boolean).join(' · ');
+  return `<button type="button" class="library-apps-entry" data-library-expand="apps"><span class="row-text"><span class="row-title">From your AI apps</span><span class="row-meta">${esc(counts)}</span></span><span class="arrow" aria-hidden="true">→</span></button>`;
+}
+function libraryGroupedRows(items){
+  return Object.keys(libraryKinds).map(kind=>{
+    const group=items.filter(item=>libraryType(item)===kind);if(!group.length)return '';
+    return `<section class="library-result-group" aria-labelledby="library-group-${kind.toLowerCase()}"><div class="section-head"><div><h4 id="library-group-${kind.toLowerCase()}">${esc(libraryKinds[kind])} <span class="muted">(${group.length})</span></h4><p>${esc(libraryKindHints[kind])}</p></div>${group.length>4?`<button type="button" class="text-button" data-library-expand="${kind}">See all ${esc(libraryKinds[kind].toLowerCase())} →</button>`:''}</div>${group.slice(0,4).map(item=>methodRow(item,{grouped:true})).join('')}</section>`;
+  }).join('');
 }
 
 function addLocation() {
@@ -1602,6 +1647,7 @@ async function taskModels(app) {
 }
 // Small choices stay beside their trigger. Native dialogs remain available for larger tasks.
 let anchoredSurface=null;
+const surfaceScope=()=>JSON.stringify([state.data?.workspace,state.business,state.view,state.chatMeta?.id||'',!!state.home]);
 function closeAnchoredSurface(restoreFocus=true){
   const surface=anchoredSurface;if(!surface)return;
   anchoredSurface=null;surface.observer.disconnect();surface.parentDialog?.removeEventListener('close',surface.parentClosed);
@@ -1616,35 +1662,38 @@ function positionAnchoredSurface(){
   const surface=anchoredSurface;if(!surface)return;
   const {dialog,anchor,width,align,placement}=surface,r=anchor.getBoundingClientRect(),viewport=window.visualViewport;
   const left=viewport?.offsetLeft||0,top=viewport?.offsetTop||0,w=viewport?.width||innerWidth,h=viewport?.height||innerHeight,gutter=12,gap=8;
-  if(!anchor.isConnected||!r.width||!r.height||r.bottom<top||r.top>top+h){closeAnchoredSurface(false);return;}
-  const actualWidth=Math.min(width,w-gutter*2),above=Math.max(0,r.top-top-gap-gutter),below=Math.max(0,top+h-r.bottom-gap-gutter);
+  if(surface.scope!==surfaceScope()||!anchor.isConnected||anchor.closest('[inert]')||!r.width||!r.height||r.bottom<top||r.top>top+h||r.right<left||r.left>left+w){closeAnchoredSurface(false);return;}
+  const actualWidth=Math.max(0,Math.min(width,w-gutter*2)),above=Math.max(0,r.top-top-gap-gutter),below=Math.max(0,top+h-r.bottom-gap-gutter);
   const up=above>=Math.min(380,h*.6)||above>=below,available=up?above:below;
-  dialog.style.width=actualWidth+'px';dialog.style.maxHeight=(placement==='side'?h-gutter*2:available)+'px';
+  // In a short window, use the viewport rather than leaving a tiny scrolling strip beside the trigger.
+  const viewportHeight=Math.max(0,h-gutter*2),maxHeight=placement==='side'||available<Math.min(240,viewportHeight)?viewportHeight:available;
+  dialog.style.width=actualWidth+'px';dialog.style.maxHeight=maxHeight+'px';
   if(placement==='side'){
     const sideX=r.right+gap+actualWidth<=left+w-gutter?r.right+gap:r.left-gap-actualWidth>=left+gutter?r.left-gap-actualWidth:r.left;
     dialog.style.left=Math.max(left+gutter,Math.min(sideX,left+w-gutter-actualWidth))+'px';
     dialog.style.top=Math.max(top+gutter,Math.min(r.top,top+h-gutter-dialog.getBoundingClientRect().height))+'px';return;
   }
   dialog.style.left=Math.max(left+gutter,Math.min(align==='end'?r.right-actualWidth:r.left,left+w-gutter-actualWidth))+'px';
-  dialog.style.top=(up?Math.max(top+gutter,r.top-gap-dialog.getBoundingClientRect().height):r.bottom+gap)+'px';
+  const height=dialog.getBoundingClientRect().height;
+  dialog.style.top=Math.max(top+gutter,Math.min(up?r.top-gap-height:r.bottom+gap,top+h-gutter-height))+'px';
 }
 function openAnchoredSurface(dialog,anchor,{width=360,align='start',placement='vertical'}={}){
   if(anchoredSurface?.dialog===dialog&&dialog.open){closeAnchoredSurface();return false;}
   closeAnchoredSurface(false);
-  $('#chat-tools-menu').hidden=true;$('#composer-tools').setAttribute('aria-expanded','false');
   if(dialog.open)dialog.close();
   const parent=dialog.parentNode,next=dialog.nextSibling,parentDialog=anchor.closest('dialog:modal');
   if(parentDialog&&parentDialog!==dialog)parentDialog.append(dialog);
   const observer=new ResizeObserver(positionAnchoredSurface),parentClosed=()=>{if(!parentDialog.open)closeAnchoredSurface(false);};
-  anchoredSurface={dialog,anchor,parent,next,parentDialog,observer,parentClosed,width,align,placement};
+  anchoredSurface={dialog,anchor,parent,next,parentDialog,observer,parentClosed,width,align,placement,scope:surfaceScope()};
   parentDialog?.addEventListener('close',parentClosed);dialog.dataset.surface='popover';dialog.dataset.opened=Date.now();
-  anchor.setAttribute('aria-haspopup','dialog');anchor.setAttribute('aria-controls',dialog.id);anchor.setAttribute('aria-expanded','true');
-  dialog.show();positionAnchoredSurface();observer.observe(dialog);observer.observe(anchor);
+  anchor.setAttribute('aria-haspopup',dialog.getAttribute('role')==='menu'?'menu':'dialog');anchor.setAttribute('aria-controls',dialog.id);anchor.setAttribute('aria-expanded','true');
+  dialog.show();positionAnchoredSurface();if(anchoredSurface?.dialog!==dialog)return false;observer.observe(dialog);observer.observe(anchor);
   return true;
 }
 document.addEventListener('close',event=>{if(anchoredSurface?.dialog===event.target&&!event.target.open)closeAnchoredSurface();},true);
 window.addEventListener('resize',positionAnchoredSurface);
 window.visualViewport?.addEventListener('resize',positionAnchoredSurface);
+window.visualViewport?.addEventListener('scroll',positionAnchoredSurface);
 document.addEventListener('scroll',event=>{if(anchoredSurface&&!anchoredSurface.dialog.contains(event.target))positionAnchoredSurface();},true);
 document.addEventListener('focusin',event=>{const s=anchoredSurface;if(s&&!s.dialog.contains(event.target)&&!s.anchor.contains(event.target))closeAnchoredSurface(false);});
 document.addEventListener('keydown',event=>{if(event.key==='Escape'&&anchoredSurface){event.preventDefault();event.stopImmediatePropagation();closeAnchoredSurface();}},true);
@@ -1786,9 +1835,10 @@ async function openFileWorkspace(ref,option='',presentation={}) {
   if(business!==state.business||workspace!==state.data.workspace)return;
   function resultActions(info){
     const asset=info.asset&&state.data.records.find(r=>r.ref===info.asset);
-    const attach=ref.startsWith('library/')?'':`<button class="text-button" data-result-file-context="${esc(ref)}">Add to chat</button>`;
-    const tryExample=asset?.data.location_reference?.endsWith('/outputs/grant-application-draft.md')&&window.auraExample?.origin()?' <button class="text-button" data-example-try>Try this with my work</button>':'';
-    return resultOrigin(asset)+attach+tryExample;
+    // Using a file with the AI is the main thing to do with it, so it reads as the panel's one main button.
+    const attach=ref.startsWith('library/')?'':`<button type="button" class="primary compact" data-result-file-context="${esc(ref)}">Add to chat</button>`;
+    const tryExample=asset?.data.location_reference?.endsWith('/outputs/grant-application-draft.md')&&window.auraExample?.origin()?'<button type="button" class="text-button" data-example-try>Try this with my work</button>':'';
+    return resultOrigin(asset)+(attach||tryExample?`<div class="inline-actions file-main-actions">${attach}${tryExample}</div>`:'');
   }
   await module.openFile({...presentation,resultActions,ref,option,business,workspace,token,api,details,markdown:chatMarkdown,favoriteMarkup:(ref,name)=>fileFavoriteButton(ref,name)+(!ref.startsWith("library/")?archiveControl("file",ref):""),titleActions:setDetailTitleActions,share:ref=>attempt(async()=>{if(state.business!==business||state.data.workspace!==workspace)throw new Error('The workspace changed. Reopen the file before sharing.');await openSharing('file:'+ref);}),current:()=>state.business===business&&state.data.workspace===workspace,
     saved:async()=>{invalidateReads();const [files,data]=await Promise.all([api('/api/files?business='+encodeURIComponent(business)),api('/api/state?business='+encodeURIComponent(business))]);if(state.business!==business||state.data.workspace!==workspace)return;state.files=files.items;state.data.records=data.records;state.data.records_revision=data.records_revision;if($('#file-list'))renderFiles();if($('#quick-files'))renderQuickFiles();}
@@ -2056,13 +2106,12 @@ document.addEventListener('change',event=>attempt(async()=>{
 document.addEventListener('click',event=>attempt(async()=>{
   const b=event.target.closest('button');if(!b)return;
   if(b.id==='composer-tools'){
-    closeAnchoredSurface(false);
-    const menu=$('#chat-tools-menu');menu.hidden=!menu.hidden;b.setAttribute('aria-expanded',String(!menu.hidden));
-    if(!menu.hidden)menu.querySelector('button').focus();
+    const menu=$('#chat-tools-menu');
+    if(openAnchoredSurface(menu,b,{width:244}))menu.querySelector('button:not([hidden])')?.focus();
   }
   if(b.id==='header-handoff')await handoffChat();
   if(b.id==='handoff-chat'){
-    $('#chat-tools-menu').hidden=true;$('#composer-tools').setAttribute('aria-expanded','false');await handoffChat();
+    if(anchoredSurface?.dialog.id==='chat-tools-menu')closeAnchoredSurface(false);await handoffChat();
   }
   if(b.dataset.shareScope&&b.dataset.shareScope!==sharingScope())throw new Error('The workspace changed. Reopen the item before sharing.');
   if(b.id==='workspace-sharing'||b.dataset.shareRecord||b.dataset.shareFile)await openSharing(b.dataset.shareRecord?'record:'+b.dataset.shareRecord:b.dataset.shareFile?'file:'+b.dataset.shareFile:'');
@@ -2099,17 +2148,13 @@ document.addEventListener('click',event=>attempt(async()=>{
 
 document.addEventListener('click',event=>{
   if(event.target.closest('#composer-tools'))return;
-  $('#chat-tools-menu').hidden=true;$('#composer-tools').setAttribute('aria-expanded','false');
-});
-document.addEventListener('focusin',event=>{
-  if(event.target.closest('#chat-tools-menu,#composer-tools'))return;
-  $('#chat-tools-menu').hidden=true;$('#composer-tools').setAttribute('aria-expanded','false');
+  if(anchoredSurface?.dialog.id==='chat-tools-menu')closeAnchoredSurface(false);
 });
 document.addEventListener('keydown',event=>{
-  const menu=$('#chat-tools-menu');if(menu.hidden||!event.target.closest('#chat-tools-menu,#composer-tools'))return;
-  if(event.key==='Escape'){event.preventDefault();menu.hidden=true;$('#composer-tools').setAttribute('aria-expanded','false');$('#composer-tools').focus();}
+  const menu=$('#chat-tools-menu');if(!menu.open||!event.target.closest('#chat-tools-menu,#composer-tools'))return;
   if(['ArrowDown','ArrowUp','Home','End'].includes(event.key)){
-    event.preventDefault();const items=[...menu.querySelectorAll('button')],i=items.indexOf(document.activeElement);
+    event.preventDefault();const items=[...menu.querySelectorAll('button:not([hidden]):not(:disabled)')],i=items.indexOf(document.activeElement);
+    if(!items.length)return;
     items[event.key==='Home'?0:event.key==='End'?items.length-1:(i+(event.key==='ArrowDown'?1:-1)+items.length)%items.length].focus();
   }
 });
@@ -2298,14 +2343,15 @@ function editProject(name='',picker=null){
   const old=(state.projects||[]).find(p=>p.name===name),dialog=$('#project-editor'),form=$('#project-editor-form');
   state.projectEditor={name:old?.name||'',picker,scope:projectScope()};closeAnchoredSurface(false);
   $('#project-editor-title').textContent=old?'Edit project':'New project';form.elements.name.value=old?.name||'';form.elements.folder.value=old?.folder||'';
-  let contextHost=form.querySelector('#project-context');if(!contextHost){contextHost=document.createElement('div');contextHost.id='project-context';form.querySelector('[type=submit]').parentElement.before(contextHost);}
-  window.auraInsight?.references(contextHost,old?.context_refs||[]);
+  // Context is a field of the project, so it sits with the other fields, above the buttons.
+  let contextHost=form.querySelector('#project-context');if(!contextHost){contextHost=document.createElement('div');contextHost.id='project-context';form.querySelector('.project-editor-actions').before(contextHost);}
+  window.auraInsight?.references(contextHost,old?.context_refs||[],{open:true,title:'Always include',hint:'Files, goals or notes that every chat in this project starts with. Optional.'});
   form.querySelector('[type=submit]').textContent=old?'Save':'Create project';$('#remove-project').hidden=!old;
   dialog.querySelectorAll('.dialog-error').forEach(el=>el.remove());dialog.dataset.opened=Date.now();dialog.showModal();form.elements.name.focus();
 }
 function projectOptions(name,anchor){
   const p=(state.projects||[]).find(p=>p.name===name);if(!p)return;
-  $('#project-actions').innerHTML=`<button type="button" data-open-project="${esc(p.id)}">Project work</button><button type="button" data-project-new-chat="${esc(name)}">＋ New chat</button>${p.folder?`<button type="button" data-project-open="${esc(name)}">${folderIcon()} Open folder</button>`:''}<button type="button" data-project-edit="${esc(name)}">${editIcon()} Edit project</button>`;
+  $('#project-actions').innerHTML=`<button type="button" data-open-project="${esc(p.id)}">Open project</button><button type="button" data-project-new-chat="${esc(name)}">＋ New chat</button>${p.folder?`<button type="button" data-project-open="${esc(name)}">${folderIcon()} Open folder</button>`:''}<button type="button" data-project-edit="${esc(name)}">${editIcon()} Edit project</button>`;
   openAnchoredSurface($('#project-actions'),anchor,{width:220,placement:'side'});
 }
 function measureChatNames(target=null){
@@ -2515,8 +2561,9 @@ document.addEventListener('click',event=>attempt(async()=>{
   if(button.id==='file-more'){state.fileLimit=(state.fileLimit||100)+100;renderFiles();}
   if(button.dataset.filelocation){state.fileLimit=100;fileLocation=button.dataset.filelocation;$('#file-all-locations').hidden=false;document.querySelectorAll('[data-filelocation]').forEach(b=>b.classList.toggle('active',b===button));renderFiles();}
   if(button.id==='file-all-locations'){fileLocation='';button.hidden=true;document.querySelectorAll('[data-filelocation]').forEach(b=>b.classList.remove('active'));renderFiles();}
-  if(button.dataset.libraryKind){libraryLimit=60;const query=$('#quick-work-search')?.value||'';workFilter=button.dataset.libraryKind;libraryQueryText=query;libraryView='all';workCategory='';state.view='work';await render();$('#work-search').value=query;renderWork();}
-  if(button.hasAttribute('data-workcategory')){workCategory=button.dataset.workcategory;libraryLimit=60;if(state.view!=='work'){state.view='work';workFilter='Workflow';await render();}else renderWork();}
+  if(button.dataset.libraryKind){libraryLimit=24;const query=$('#quick-work-search')?.value||'';workFilter=button.dataset.libraryKind;libraryQueryText=query;libraryView='all';workCategory='';state.view='work';await render();$('#work-search').value=query;renderWork();}
+  if(button.hasAttribute('data-workcategory')){workCategory=button.dataset.workcategory;libraryLimit=24;if(state.view!=='work'){state.view='work';workFilter='Workflow';await render();}else renderWork();focusLibraryResults();}
+  if(button.id==='work-all-topics'&&Object.hasOwn(libraryKinds,workFilter)&&libraryView==='all'){workFilter=['Skill','Tool','Plugin'].includes(workFilter)?'apps':'methods';libraryLimit=24;renderWork();focusLibraryResults();return;}
   if(button.id==='work-all-topics'){if(libraryView==='recent'){await saveLibrary({...libraryPrefs(),recent:[]});quickMethods();}workCategory='';renderWork();}
   if(button.id==='schedule-retry-models')await loadScheduleModels(true);
   if(button.dataset.schedule)await scheduleDetails(button.dataset.schedule);
@@ -2568,6 +2615,7 @@ document.addEventListener('click',event=>attempt(async()=>{
   }
   if(button.dataset.copyRecordLocation){const item=state.data.records.find(r=>r.ref===button.dataset.copyRecordLocation);if(item){await navigator.clipboard.writeText(state.data.workspace.replace(/[\\/]$/,'')+'/'+item.path);button.setAttribute('aria-label','File location copied');notice('File location copied.');}}
   if(button.dataset.copyRecord){const item=state.data.records.find(r=>r.ref===button.dataset.copyRecord);if(item){await navigator.clipboard.writeText(JSON.stringify(item.data,null,2));button.textContent='Copied';}}
+  if(button.dataset.memoryGoalScope){state.memoryGoalScope=button.dataset.memoryGoalScope;renderMemory();$(`[data-memory-goal-scope="${state.memoryGoalScope}"]`)?.focus();}
   if(button.dataset.memoryGoals){state.memoryGoalStatus=button.dataset.memoryGoals;renderMemory();$(`[data-memory-goals="${state.memoryGoalStatus}"]`)?.focus();}
   if(button.hasAttribute('data-goal-help'))details('How goals work','<p>A workspace goal is an outcome you can work toward across chats. A chat goal is an assignment for one conversation; it can contribute to a workspace goal.</p><p>When a goal is linked to a chat, AURA includes it with your next request. For a chat goal, Work toward goal starts the AI app’s native goal mode when the connection supports it. Saving or linking a goal does not start work. Your AI app handles execution and continuation.</p><p>Link useful saved files here, or ask your AI to link them when saving. AURA does not automatically assign every created file to a goal. A native completion report can complete its chat goal. Otherwise, mark completion explicitly. A finished reply alone does not complete a goal, and chat goals never automatically complete their workspace goal.</p>');
   if(button.dataset.copyItemLocation){await navigator.clipboard.writeText(button.dataset.copyItemLocation);notice('File location copied.');}
@@ -2576,10 +2624,15 @@ document.addEventListener('click',event=>attempt(async()=>{
   if(button.dataset.libraryDocument)await openFileWorkspace('library/'+button.dataset.libraryDocument,button.dataset.option||'');
   if(button.id==='version')await showComponents();
   if(button.dataset.filetype) {state.fileLimit=100;fileFilter=button.dataset.filetype;renderQuickFiles();renderFiles();}
-  if(button.id==='library-more'){libraryLimit+=60;renderWork();}
-  if(button.dataset.workfilter) { libraryLimit=60;workFilter=button.dataset.workfilter;workCategory=''; button.parentElement.querySelectorAll('button').forEach(b=>b.classList.toggle('active',b===button)); renderWork(); }
+  if(button.id==='library-more'){const first=libraryLimit;libraryLimit+=24;renderWork();$('#work-list').querySelectorAll('.library-row>.row')[first]?.focus();}
+  if(button.dataset.libraryTab){workFilter=button.dataset.libraryTab;workCategory='';libraryLimit=24;renderWork();}
+  if(button.dataset.libraryShow){libraryView=libraryView===button.dataset.libraryShow?'all':button.dataset.libraryShow;libraryLimit=24;renderWork();}
+  if(button.hasAttribute('data-library-agents')){document.querySelector('[data-view="assistants"]')?.click()||(state.view='assistants',await render());}
+  if(button.dataset.libraryBrowse){workCategory=button.dataset.libraryBrowse;workFilter='Workflow';libraryView='all';libraryQueryText='';libraryLimit=24;if(state.view!=='work'){state.view='work';await render();}else{$('#work-search').value='';renderWork();}focusLibraryResults();}
+  if(button.dataset.libraryExpand){workFilter=button.dataset.libraryExpand;libraryLimit=24;renderWork();focusLibraryResults();}
+  if(button.dataset.workfilter) { libraryLimit=24;workFilter=button.dataset.workfilter;workCategory=''; button.parentElement.querySelectorAll('button').forEach(b=>b.classList.toggle('active',b===button)); renderWork(); }
   if(button.id==='library-connections')await showApiConnections('');
-  if(button.hasAttribute('data-library-help'))details('Your library','<p>Playbooks help you choose an approach to a job. Workflows, recipes and skills provide reusable guidance. Tools and plugins show what your AI apps list, including disabled or unconfirmed items. Your AI chooses which capabilities to use.</p><p>Skill names, descriptions and requirements come from their SKILL.md files or the AI app’s catalog. App labels show where each skill was discovered; they do not guarantee every dependency is installed.</p><p>Add to chat attaches the selected guidance to your draft. Describe the outcome you want before sending. Show defaults to All items. Recently opened lists the last items you inspected. Favorites narrows this Library list to your starred items. File favorites use the same workspace collection; workspace search can show favorite files and guidance together.</p>'+((state.libraryNotes||[]).length?'<h3>Catalog status</h3><ul>'+state.libraryNotes.map(note=>'<li>'+esc(note)+'</li>').join('')+'</ul>':''));
+  if(button.hasAttribute('data-library-help'))details('Your library','<p>Playbooks help you choose an approach to a job. Workflows, recipes and skills provide reusable guidance. Tools and plugins show what your AI apps list, including disabled or unconfirmed items. Your AI chooses which capabilities to use.</p><p>Skill names, descriptions and requirements come from their SKILL.md files or the AI app’s catalog. App labels show where each skill was discovered; they do not guarantee every dependency is installed.</p><p>Add to chat attaches the selected guidance to your draft. Describe the outcome you want before sending. The Library opens with playbooks, workflows, and recipes grouped by topic. Open a topic to see useful previews, or search to find an item directly. Use Type to browse skills, tools, plugins, agents, or Everything. Search, topics, Favorites, and Recently opened apply to the selected type. Show defaults to All items. Recently opened lists the last items you inspected. Favorites narrows this Library list to your starred items. File favorites use the same workspace collection; workspace search can show favorite files and guidance together.</p>'+((state.libraryNotes||[]).length?'<h3>Catalog status</h3><ul>'+state.libraryNotes.map(note=>'<li>'+esc(note)+'</li>').join('')+'</ul>':''));
   if(button.dataset.libraryFavorite){const wasList=!!button.closest('#work-list'),item=state.library.find(r=>r.key===button.dataset.libraryFavorite);if(!item)return;const prefs=libraryPrefs(),marked=libraryMarked(item),keys=[item.key,...(item.aliases||[])];const favorites=prefs.favorites.filter(k=>!keys.includes(k));if(!marked)favorites.push(item.key);await saveLibrary({...prefs,favorites});quickMethods();if(state.view==='work')renderWork();button.setAttribute('aria-pressed',String(!marked));button.textContent=marked?'☆':'★';button.setAttribute('aria-label',`${marked?'Add':'Remove'} ${item.title} ${marked?'to':'from'} favorites`);button.title=marked?'Add to favorites':'Remove from favorites';if(wasList)($('#work-list [data-library-favorite="'+CSS.escape(item.key)+'"]')||$('#work-search'))?.focus({preventScroll:true});}
   if(button.id==='make-skill')prompt('Help me turn the useful work in this conversation into a reusable skill. First check what was actually completed and which parts are worth reusing. Keep business facts and results in AURA; reference them rather than copying them into the skill. Check for an existing skill before creating another. Use this AI app’s normal skill creation guidance, include only necessary supporting files, and explain any requirements. Ask me one short question if the scope is unclear.');
   if(button.dataset.method)await openLibrary(button.dataset.method);
@@ -2707,7 +2760,7 @@ document.addEventListener('click',event=>attempt(async()=>{
   if(button.id==='refresh') {await refresh();button.textContent='Reloaded';setTimeout(()=>{if(button.isConnected)button.textContent='Reload Workspace';},2000);}
   if(button.id==='location') { await navigator.clipboard.writeText(state.data.workspace); if($('#share-location-status'))$('#share-location-status').textContent='Copied';else notice('Folder location copied.'); }
 }));
-document.addEventListener('input',event=>{ if(event.target.id==='quick-work-search')quickMethods(); if(['quick-memory-search','record-search'].includes(event.target.id)){state.memoryQuery=event.target.value;renderMemory();} if(['quick-file-search','file-search'].includes(event.target.id)){state.fileQuery=event.target.value;state.fileLimit=100;renderQuickFiles();renderFiles();} if(['quick-schedule-search','schedule-search'].includes(event.target.id)){state.scheduleQuery=event.target.value;renderSchedules();} if(event.target.id==='work-search'){libraryQueryText=event.target.value;libraryLimit=60;renderWork();}if(['task-time','task-every','task-custom'].includes(event.target.id))updateTaskTiming(); });
+document.addEventListener('input',event=>{ if(event.target.id==='quick-work-search')quickMethods(); if(['quick-memory-search','record-search'].includes(event.target.id)){state.memoryQuery=event.target.value;renderMemory();} if(['quick-file-search','file-search'].includes(event.target.id)){state.fileQuery=event.target.value;state.fileLimit=100;renderQuickFiles();renderFiles();} if(['quick-schedule-search','schedule-search'].includes(event.target.id)){state.scheduleQuery=event.target.value;renderSchedules();} if(event.target.id==='work-search'){libraryQueryText=event.target.value;libraryLimit=24;renderWork();}if(['task-time','task-every','task-custom'].includes(event.target.id))updateTaskTiming(); });
 document.addEventListener('submit',event=>{
   event.preventDefault();
   attempt(async()=>{
@@ -2786,7 +2839,7 @@ $('#request').addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.
 $('#agent-choice').addEventListener('change',()=>{$('#app-check-status').textContent='';connectionChoice();});
 $('#model-choice').addEventListener('change',()=>attempt(async()=>{favoriteButton();renderFavoriteList();try{await selectModel();}catch(error){modelFailure(error);}}));
 $('#effort-choice').addEventListener('change',()=>attempt(async()=>{const picker=modelPicker();picker.efforts??={};picker.efforts[selectedRoute().key]=$('#effort-choice').value;await saveModelPicker();}));
-$('#model-list-view').addEventListener('change',()=>attempt(async()=>{modelPicker().view=$('#model-list-view').value;renderModelChoices();await saveModelPicker();}));
+$('#model-list-view').addEventListener('click',event=>{const b=event.target.closest('[data-model-list-view]');if(!b)return;attempt(async()=>{modelPicker().view=b.dataset.modelListView;renderModelChoices();await saveModelPicker();});});
 $('#provider-checkboxes').addEventListener('change',event=>attempt(async()=>{const id=event.target.dataset.modelProvider;if(!id)return;const picker=modelPicker();picker.providers=event.target.checked?[...new Set([...picker.providers,id])]:picker.providers.filter(v=>v!==id);renderModelChoices();await saveModelPicker();}));
 $('#favorite-search').addEventListener('input',()=>renderModelChoices());
 $('#favorite-search').addEventListener('keydown',event=>{if(event.key==='Enter')event.preventDefault();});
@@ -2834,7 +2887,7 @@ attempt(refresh);
 attempt(syncUpdates);
 const updateTimer=setInterval(()=>{if(!state.closed)syncUpdates();},2000);
 document.addEventListener('input',()=>{state.lastEdit=Date.now();});
-document.addEventListener('change',event=>{if(event.target.id==='chat-project-filter'){state.chatProjectFilter=event.target.value;attempt(()=>showChats(!!state.chatArchiveView));}if(event.target.id==='memory-goal-scope'){state.memoryGoalScope=event.target.value;renderMemory();}if(event.target.id==='library-topic'){workCategory=event.target.value;libraryLimit=60;renderWork();}if(event.target.id==='library-type'){if(event.target.value==='agents'){event.target.value=workFilter;document.querySelector('[data-view="assistants"]')?.click()||attempt(async()=>{state.view='assistants';await render();});}else{workFilter=event.target.value;workCategory='';libraryLimit=60;renderWork();}}if(event.target.id==='library-view'){libraryView=event.target.value;libraryLimit=60;renderWork();}});
+document.addEventListener('change',event=>{if(event.target.id==='chat-project-filter'){state.chatProjectFilter=event.target.value;attempt(()=>showChats(!!state.chatArchiveView));}if(event.target.id==='library-topic'){workCategory=event.target.value;libraryLimit=24;renderWork();}});
 window.addEventListener('beforeunload',rememberChatDraft);
 
 const usageAlertTimer=setInterval(()=>{if(!document.hidden)checkUsageAlerts();},300000);
@@ -2938,9 +2991,9 @@ document.addEventListener('change',event=>{
 $('#detail').addEventListener('close',()=>{if(!document.documentElement.dataset.previewing)return;delete document.documentElement.dataset.previewing;applyProfile(state.profile);applyAppearance(state.data?.appearance||'system');});
 function applyProfile(profile){
   queueMicrotask(previewLook);
-  state.profile={display_name:'',sidebar_collapsed:false,panel_width:480,text_size:15,accent:'forest',...profile};
+  state.profile={display_name:'',sidebar_collapsed:false,sidebar_width:null,panel_width:480,text_size:15,accent:'forest',...profile,...panelWidthOverrides};
   const p=state.profile;document.body.classList.toggle('sidebar-collapsed',p.sidebar_collapsed);document.documentElement.dataset.accent=p.accent;document.documentElement.dataset.density=p.density||'comfortable';document.documentElement.dataset.style=p.style||'modern';
-  document.documentElement.style.setProperty('--panel-width',p.panel_width+'px');document.documentElement.style.setProperty('--ui-text-size',p.text_size+'px');
+  syncPanelSizes();document.documentElement.style.setProperty('--ui-text-size',p.text_size+'px');
   $('#profile-name').textContent=p.display_name||'Your profile';$('.profile-avatar').innerHTML=avatarMarkup(p);
   $('#welcome-name').textContent=p.display_name?'Welcome, '+p.display_name+'.':'Welcome to AURA';
   const collapseLabel=matchMedia('(max-width:600px)').matches?'Close navigation':p.sidebar_collapsed?'Expand sidebar':'Collapse sidebar';$('#sidebar-collapse').setAttribute('aria-label',collapseLabel);$('#sidebar-collapse').title=collapseLabel;
@@ -2948,7 +3001,84 @@ function applyProfile(profile){
   if(!$('#setup-display-name').value)$('#setup-display-name').value=p.display_name;
   if(!$('#setup-business-description').value)$('#setup-business-description').value=rows('Business')[0]?.data?.description||'';
 }
+// Both sidebars belong to the shell, so their sizing works on every page.
+const panelWidthOverrides={};
+let panelWidthSave=Promise.resolve();
+function panelSizeBounds(kind){
+  if(kind==='sidebar')return {min:180,max:Math.min(420,Math.max(180,innerWidth-420))};
+  const sidebar=$('#sidebar').getBoundingClientRect().width;
+  return {min:360,max:Math.min(900,Math.max(360,innerWidth-sidebar-(innerWidth>1000?420:0)))};
+}
+function syncPanelSizes(){
+  const p=state.profile||{},root=document.documentElement;
+  if(p.sidebar_width==null)root.style.removeProperty('--sidebar-width');
+  else {const bounds=panelSizeBounds('sidebar');root.style.setProperty('--sidebar-width',Math.max(bounds.min,Math.min(bounds.max,p.sidebar_width))+'px');}
+  root.style.setProperty('--panel-width',(p.panel_width||480)+'px');
+  for(const [kind,id] of [['sidebar','sidebar-resize'],['panel','detail-resize']]){
+    const handle=$('#'+id),target=kind==='sidebar'?$('#sidebar'):$('#detail'),bounds=panelSizeBounds(kind);
+    handle.hidden=innerWidth<=600||(kind==='sidebar'?!!p.sidebar_collapsed:!target.open||target.dataset.mode!=='context'||target.dataset.expanded==='true'||!!target.dataset.surface);
+    handle.setAttribute('aria-valuemin',bounds.min);handle.setAttribute('aria-valuemax',bounds.max);
+    const width=Math.round(target.getBoundingClientRect().width);
+    handle.setAttribute('aria-valuenow',width);handle.setAttribute('aria-valuetext',width+' pixels');
+  }
+}
+function setPanelSize(kind,value){
+  const field=kind==='sidebar'?'sidebar_width':'panel_width',bounds=panelSizeBounds(kind);
+  const width=value==null?null:Math.round(Math.max(bounds.min,Math.min(bounds.max,value)));
+  panelWidthOverrides[field]=width;state.profile[field]=width;syncPanelSizes();
+  return width;
+}
+function savePanelSize(kind,value){
+  const field=kind==='sidebar'?'sidebar_width':'panel_width';
+  panelWidthSave=panelWidthSave.then(async()=>{
+    try{
+      const saved=await api('/api/profile',{[field]:value});
+      state.data.profile={...state.data.profile,[field]:saved[field]};
+      if(panelWidthOverrides[field]===value){delete panelWidthOverrides[field];state.profile[field]=saved[field];syncPanelSizes();}
+    }catch(error){
+      if(panelWidthOverrides[field]===value){delete panelWidthOverrides[field];state.profile[field]=state.data.profile[field];syncPanelSizes();}
+      notice(humanError(error),true);
+    }
+  });
+}
+function initPanelResizing(){
+  for(const [kind,id] of [['sidebar','sidebar-resize'],['panel','detail-resize']]){
+    const handle=$('#'+id),target=kind==='sidebar'?$('#sidebar'):$('#detail'),field=kind==='sidebar'?'sidebar_width':'panel_width';
+    let drag=null;
+    handle.addEventListener('pointerdown',event=>{
+      if(event.button!==0||handle.hidden)return;
+      event.preventDefault();handle.focus();
+      drag={pointer:event.pointerId,x:event.clientX,width:target.getBoundingClientRect().width,setting:state.profile[field],override:panelWidthOverrides[field],hadOverride:Object.hasOwn(panelWidthOverrides,field)};
+      handle.setPointerCapture(event.pointerId);document.body.classList.add('panel-resizing');
+    });
+    handle.addEventListener('pointermove',event=>{
+      if(!drag||event.pointerId!==drag.pointer)return;
+      setPanelSize(kind,drag.width+(event.clientX-drag.x)*(kind==='sidebar'?1:-1));
+    });
+    const finish=(event,cancel=false)=>{
+      if(!drag||event.pointerId!==drag.pointer)return;
+      const start=drag;drag=null;document.body.classList.remove('panel-resizing');
+      if(handle.hasPointerCapture(event.pointerId))handle.releasePointerCapture(event.pointerId);
+      if(cancel){state.profile[field]=start.setting;if(start.hadOverride)panelWidthOverrides[field]=start.override;else delete panelWidthOverrides[field];syncPanelSizes();}
+      else if(state.profile[field]!==start.setting)savePanelSize(kind,state.profile[field]);
+    };
+    handle.addEventListener('pointerup',event=>finish(event));
+    handle.addEventListener('pointercancel',event=>finish(event,true));
+    handle.addEventListener('lostpointercapture',event=>finish(event,true));
+    handle.addEventListener('dblclick',()=>savePanelSize(kind,setPanelSize(kind,kind==='sidebar'?null:480)));
+    handle.addEventListener('keydown',event=>{
+      if(!['ArrowLeft','ArrowRight','Home','End'].includes(event.key)||handle.hidden)return;
+      event.preventDefault();const bounds=panelSizeBounds(kind),step=event.shiftKey?48:16;
+      const value=event.key==='Home'?bounds.min:event.key==='End'?bounds.max:target.getBoundingClientRect().width+(event.key==='ArrowRight'?1:-1)*(kind==='sidebar'?1:-1)*step;
+      savePanelSize(kind,setPanelSize(kind,value));
+    });
+  }
+  new MutationObserver(syncPanelSizes).observe($('#detail'),{attributes:true,attributeFilter:['open','data-mode','data-expanded','data-surface']});
+  window.addEventListener('resize',syncPanelSizes);
+}
+initPanelResizing();
 async function renderShell(force=true){
+  positionAnchoredSurface();
   if(!state.data||!$('#sidebar'))return;
   $('#main').inert=state.view!=='home';
   $('.skip').setAttribute('href',state.view==='home'?'#main':['sharing','updates'].includes(state.view)?'#detail-content':'#section-content');
@@ -3435,6 +3565,5 @@ document.addEventListener('click',event=>{
   if(event.target.closest('#usage-gauge')){event.preventDefault();toggleGlance();return;}
   if(event.target.closest('[data-glance-all]')){toggleGlance(false);$('#usage-open')?.click();return;}
   if(event.target.closest('[data-glance-switch]')){toggleGlance(false);attempt(showAccounts);return;}
-  if(!$('#usage-pop')?.hidden&&!event.target.closest('#usage-pop'))toggleGlance(false);
+  if($('#usage-pop')?.open&&!event.target.closest('#usage-pop'))toggleGlance(false);
 });
-document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!$('#usage-pop')?.hidden){toggleGlance(false);$('#usage-gauge')?.focus();}});

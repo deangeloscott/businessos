@@ -60,10 +60,12 @@ window.auraInsight=(()=>{
       $('#detail').close();await submitRequest(`Correct the saved workspace memory "${record.title}" (${ref}). Read its current record at ${record.path}. Apply this correction through the existing AURA memory helper, preserve unrelated fields, and verify the save.\n\nUser correction:\n${correction}`);
     });};
   }
-  function references(host,initial=[]){
+  // open: shown as a plain section (a form field) rather than a collapsed toggle.
+  function references(host,initial=[],{open=false,title='Saved context',hint='Reuse files, memory, goals, or guidance when relevant.'}={}){
     if(!host)return;
     let selected=initial.map(r=>({...r})),ticket=0,timer,edits=0;const key=JSON.stringify([state.data?.workspace,state.business]);
-    host.innerHTML='<details class="saved-context"><summary>Saved context <span data-reference-count></span></summary><p class="small-note">Reuse files, memory, goals, or guidance when relevant.</p><div data-reference-selected></div><label>Find context<input type="search" data-reference-search placeholder="Search saved context…"></label><div data-reference-found></div></details>';
+    const inner=`<p class="small-note">${esc(hint)}</p><div data-reference-selected></div><label><span class="sr-only">Find context</span><input type="search" data-reference-search placeholder="Search files, goals, notes…"></label><div data-reference-found></div>`;
+    host.innerHTML=open?`<section class="saved-context open"><p class="saved-context-title">${esc(title)} <span data-reference-count></span></p>${inner}</section>`:`<details class="saved-context"><summary>${esc(title)} <span data-reference-count></span></summary>${inner}</details>`;
     const alive=()=>host.isConnected&&key===JSON.stringify([state.data?.workspace,state.business]);
     const paint=()=>{host.querySelector('[data-reference-count]').textContent=selected.length?`(${selected.length})`:'';host.querySelector('[data-reference-selected]').innerHTML=selected.map((r,i)=>`<div class="reference-item"><span>${esc(r.label||r.id)}</span><button type="button" class="text-button" data-reference-remove="${i}" aria-label="Remove ${esc(r.label||r.id)}">×</button></div>`).join('');};paint();
     host._references=()=>selected.map(r=>Object.fromEntries(Object.entries(r).filter(([k])=>['kind','id','variant','request_id'].includes(k))));

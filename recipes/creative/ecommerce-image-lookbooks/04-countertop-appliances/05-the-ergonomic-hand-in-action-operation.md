@@ -1,4 +1,4 @@
-# Scale 04 — Archetype 05: The Ergonomic Hand-in-Action Operation
+# Countertop — Archetype 05: The Ergonomic Hand-in-Action Operation
 
 > A quick, adaptable visual starting point. Borrow the idea, change the product or treatment freely, combine it with another approach, or skip it when you already have a better direction.
 >

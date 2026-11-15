@@ -64,7 +64,7 @@ context.api=async()=>chats;context.cachedApi=async path=>path.startsWith('/api/f
   await detailContext.openLibrary(parent.key);assert.match(detailContext.html,/Included items/);assert(!detailContext.html.includes('Your AI app chooses'));
   assert.match(detailContext.titleActions,/data-library-favorite/,'Inventory favorites belong beside the title');assert.doesNotMatch(detailContext.html,/Favorited|Favorite/);
   detailNode('#detail-content').scrollTop=85;await detailContext.openLibrary(child.key);assert.equal(detailContext.backLabel,'Execution');await detailContext.back();assert.equal(detailContext.title,'Execution');assert.equal(detailNode('#detail-content').scrollTop,85);
-  detailNode('#detail').open=false;await detailContext.openLibrary(playbook.key);assert.match(detailContext.html,/item-location/);assert.match(detailContext.html,/Playbook/);assert.equal((detailContext.html.match(/Short summary/g)||[]).length,1);assert(!detailContext.html.includes('# Article Production'));
+  detailNode('#detail').open=false;await detailContext.openLibrary(playbook.key);assert.doesNotMatch(detailContext.html,/item-location/,'A playbook is defined in code; its source path means nothing to people');assert.match(detailContext.html,/Playbook/);assert.equal((detailContext.html.match(/Short summary/g)||[]).length,1);assert(!detailContext.html.includes('# Article Production'));
   // Registering a previously unregistered file during archive must keep its favorite.
   const archivedAsset={ref:'ast_guide',type:'Asset',title:'Customer guide',data:{location_reference:'attachments/guide.md'}};
   context.state.data.records=[archivedAsset];

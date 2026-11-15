@@ -1,4 +1,4 @@
-# Scale 03 — Archetype 05: High-Fashion Direct Flash
+# Wearables — Archetype 05: High-Fashion Direct Flash
 
 * **Visual job:** The Habitat
 * **Good for:** giving apparel a sharp editorial identity when conventional catalog polish would feel anonymous.

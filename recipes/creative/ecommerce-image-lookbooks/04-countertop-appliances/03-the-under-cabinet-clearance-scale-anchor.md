@@ -1,4 +1,4 @@
-# Scale 04 — Archetype 03: The Under-Cabinet Clearance Scale Anchor
+# Countertop — Archetype 03: The Under-Cabinet Clearance Scale Anchor
 
 > A quick, adaptable visual starting point. Borrow the idea, change the product or treatment freely, combine it with another approach, or skip it when you already have a better direction.
 >

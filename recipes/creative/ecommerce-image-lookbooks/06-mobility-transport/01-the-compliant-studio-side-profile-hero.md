@@ -1,4 +1,4 @@
-# Scale 06 — Archetype 01: The Studio Side-Profile Hero
+# Vehicle-size — Archetype 01: The Studio Side-Profile Hero
 
 > A quick, adaptable visual starting point. Borrow the idea, change the product or treatment freely, combine it with another approach, or skip it when you already have a better direction.
 >

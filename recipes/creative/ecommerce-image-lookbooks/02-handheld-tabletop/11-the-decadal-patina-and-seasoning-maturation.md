@@ -1,4 +1,4 @@
-# Scale 02 — Archetype 11: The Decadal Patina & Seasoning Maturation
+# Tabletop — Archetype 11: The Decadal Patina & Seasoning Maturation
 
 * **Visual job:** The Proof
 * **Good for:** showing how a material may mature through use and making an heirloom or longevity story emotionally tangible.

@@ -1,4 +1,4 @@
-# Scale 02 — Archetype 12: The Viscosity Flow & Sensory Appetite Cue
+# Tabletop — Archetype 12: The Viscosity Flow & Sensory Appetite Cue
 
 * **Visual job:** The Ritual
 * **Good for:** making a food or beverage's pour, sheen, density, or serving moment feel desirable.

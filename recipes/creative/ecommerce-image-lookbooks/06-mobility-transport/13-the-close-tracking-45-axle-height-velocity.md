@@ -1,4 +1,4 @@
-# Scale 06 — Archetype 13: The Close-Tracking 45° Axle-Height Velocity
+# Vehicle-size — Archetype 13: The Close-Tracking 45° Axle-Height Velocity
 
 > A quick, adaptable visual starting point. Borrow the idea, change the product or treatment freely, combine it with another approach, or skip it when you already have a better direction.
 >

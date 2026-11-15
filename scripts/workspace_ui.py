@@ -338,7 +338,10 @@ def library():
             category, group = 'E-commerce', 'Product images'
             section = area.split('ecommerce-image-lookbooks', 1)[1].strip('/')
             if section and section != 'notes':
-                group = re.sub(r'^\d+-', '', section).replace('-', ' ').title()
+                # Product sizes are named by what they are, the same as in the recipes' own titles.
+                group = {'01-micro-intimate':'Pocket-size','02-handheld-tabletop':'Tabletop','03-body-worn-apparel':'Wearables',
+                         '04-countertop-appliances':'Countertop','05-architectural-macro':'Furniture-size',
+                         '06-mobility-transport':'Vehicle-size'}.get(section.split('/')[0]) or re.sub(r'^\d+-', '', section).replace('-', ' ').title()
         elif area.startswith('web-design'):
             category, group = 'Websites', 'Design guidance' if area.endswith('/notes') else 'Website recipes'
         elif area.startswith('business'):
@@ -898,7 +901,7 @@ class Workspace:
         path=self.settings_file.parent/'ui-profile.json'
         try:value=json.loads(path.read_text(encoding='utf-8'))
         except (OSError,ValueError):value={}
-        defaults={'display_name':'','sidebar_collapsed':False,'panel_width':480,'text_size':15,'density':'comfortable','style':'modern','accent':'forest','avatar':'','activity_view':'highlights','working_preferences':''}
+        defaults={'display_name':'','sidebar_collapsed':False,'sidebar_width':None,'panel_width':480,'text_size':15,'density':'comfortable','style':'modern','accent':'forest','avatar':'','activity_view':'highlights','working_preferences':''}
         value={**defaults,**{k:v for k,v in value.items() if k in defaults}} if isinstance(value,dict) else defaults
         def matched(value):
             # A style keeps an accent of its own: earlier style names map forward, and an accent from
@@ -931,6 +934,7 @@ class Workspace:
                     if not isinstance(changes['working_preferences'],str) or len(changes['working_preferences'])>4000:raise ValueError('Keep working preferences within 4,000 characters.')
                     value['working_preferences']=changes['working_preferences'].strip()
                 if 'sidebar_collapsed' in changes:value['sidebar_collapsed']=changes['sidebar_collapsed'] is True
+                if 'sidebar_width' in changes:value['sidebar_width']=None if changes['sidebar_width'] is None else max(180,min(420,int(changes['sidebar_width'])))
                 if 'panel_width' in changes:value['panel_width']=max(360,min(900,int(changes['panel_width'])))
                 if 'text_size' in changes:
                     if changes['text_size'] not in (14,15,16,18):raise ValueError('Choose a supported text size.')

@@ -1,4 +1,4 @@
-# Scale 02 — Archetype 13: The High-Stakes Seal-Integrity Demonstration
+# Tabletop — Archetype 13: The High-Stakes Seal-Integrity Demonstration
 
 * **Visual job:** The Proof
 * **Good for:** dramatizing the cost of a leak and showing a documented seal or closure test.
