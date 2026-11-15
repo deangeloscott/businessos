@@ -1265,3 +1265,21 @@ body.panel-resizing :is(.shell-main,#sidebar,#detail){transition:none;animation:
 #library-app-actions{margin:4px 0 0;gap:16px}
 .model-list-controls .filters{margin:0}.model-list-controls .filters button{color:var(--muted)}.model-list-controls .filters button.active{color:var(--ink)}
 .collection-toolbar .filters{margin:0}
+/* Changes grouped under the collection they came from. */
+.hq-group{display:flex;align-items:baseline;justify-content:space-between;gap:12px;width:100%;margin:12px 0 2px;padding:0;text-align:left;font-size:var(--text-sm);font-weight:500;color:var(--muted);background:none;border:0}
+.hq-group:first-of-type{margin-top:0}.hq-group:hover span{color:var(--ink);text-decoration:underline}
+/* Knowledge: areas not looked into yet, as quiet links. */
+.hq-gaps{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;margin-top:14px;font-size:var(--text-sm)}
+.hq-gaps-label{color:var(--muted)}
+.hq-gap{padding:2px 0;min-height:0;background:none;border:0;color:var(--ink);font-size:inherit;text-decoration:underline;text-decoration-color:color-mix(in srgb,currentColor 35%,transparent);text-underline-offset:3px}
+.hq-gap:hover{text-decoration-color:currentColor}
+.hq-gaps+.small-note{margin:6px 0 0}
+.memory-column{display:grid;gap:32px;min-width:0;align-content:start}
+.hq-more{margin-top:10px;font-size:var(--text-sm)}.hq-more>summary{cursor:pointer;color:var(--muted);width:max-content}.hq-more>summary:hover{color:var(--ink)}.hq-more .hq-gaps{margin-top:8px}
+/* Files: finding on the left, adding on the right, so the two kinds of control never interleave. */
+.files-actions{display:flex;align-items:center;gap:16px;margin-inline-start:auto;flex:none}
+.files-actions>.secondary{flex:none}
+/* A suggestion about something gone quiet: the usual suggestion pill, with a plain "Not now" beside it. */
+.quick-start.lapsed-start{display:inline-flex;align-items:center;gap:2px}
+.suggestions .lapsed-start>.quick-start-dismiss{border:0;background:none;box-shadow:none;padding:4px 6px;min-height:0;color:var(--muted);font-size:var(--text-md);line-height:1}
+.suggestions .lapsed-start>.quick-start-dismiss:hover{color:var(--ink)}

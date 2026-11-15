@@ -70,9 +70,20 @@ def main():
         g=goals.save(bid,{'name':'Reach 100 Google reviews','scope':'workspace','measure':{'name':'Google reviews','target':'100','unit':'reviews','direction':'higher_better'}})
         s=summary.summary(bid);goal=s['goals'][0]
         assert goal['name']=='Reach 100 Google reviews' and goal['target']==100 and goal['latest'] is None and not goal['reached']
+        # Suggestions only for what was set up to keep going: a goal with a target and no numbers yet, never one without a target.
+        titles=lambda at=None:[x['title'] for x in summary.summary(bid,at=at)['suggestions']]
+        assert titles()==['Start tracking google reviews'],titles()
         remember(bid,{'objects':[{'object_type':'MetricObservation','content':{'metric_ref':g['metric_refs'][0],'value':87,'source_ref':'Google Business Profile','window_start':'2026-11-01T00:00:00Z','window_end':'2026-11-10T00:00:00Z'}}]})
         assert summary.summary(bid)['goals'][0]['latest']==87
         assert '87 of 100' in summary.text(summary.summary(bid))
+        # Numbers arriving on time (however they arrive) mean nothing to suggest; once they stop, one quiet suggestion names the source.
+        day=lambda m,d:datetime(2026,m,d,tzinfo=timezone.utc)
+        assert titles(day(11,15))==[],'a recent reading is not overdue'
+        late=summary.summary(bid,at=day(12,25))['suggestions']
+        assert [x['title'] for x in late]==['Update google reviews'] and 'Google Business Profile' in late[0]['why'] and 'ask me' in late[0]['prompt']
+        remember(bid,{'objects':[{'object_type':'MetricObservation','content':{'metric_ref':g['metric_refs'][0],'value':91,'source_ref':'Google Business Profile','window_start':'2026-12-13T00:00:00Z','window_end':'2026-12-20T00:00:00Z'}}]})
+        assert titles(day(12,25))==[],'a new reading clears it, and its own rhythm (about 40 days here) sets when it is late'
+        assert 'Gone quiet' in summary.text(summary.summary(bid,at=day(12,25)+timedelta(days=200)))
 
         # Watches report their latest check, and a run's material changes appear as recent changes.
         made=collections.create(bid,{'key':'grants','name':'Grants','purpose':'Grants we could win'})
@@ -90,6 +101,9 @@ def main():
         assert change['item_id']=='state-fund'
         assert change['kind']=='new' and change['title']=='State main-street fund' and change['reason']=='New eligible grant'
         assert s['deadlines'] and s['deadlines'][0]['title']=='City small-business grant' and s['deadlines'][0]['days'] in (5,6)
+
+        # A list kept current (checked more than once, with changes) that then goes unchecked is suggested once it is well past its rhythm.
+        assert 'Check Grants again' in titles(now+timedelta(days=20)) and 'Check Grants again' not in titles()
 
         # "What changed" looks back a bounded number of days.
         old=summary.summary(bid,at=now+timedelta(days=30),days=7)

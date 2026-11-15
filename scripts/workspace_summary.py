@@ -7,10 +7,11 @@ datasets. Open the record or collection itself for more.
 """
 import argparse
 import json
+import re
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from _common import workspace_root, workspace_scope, object_index
+from _common import workspace_root, workspace_scope, object_index, object_title
 from workspace_lifecycle import archived
 import workspace_collections as collections
 
@@ -34,7 +35,19 @@ def finding_label(status, due):
     return {'supported': 'supported', 'active': 'supported', 'candidate': 'unverified', 'stale': 'out_of_date'}.get(status, 'unverified')
 
 
-def _knowledge(objects, at):
+def _relevant_areas(chosen):
+    """The operating areas a business's focus points to, read from each focus area's knowledge paths.
+    With no focus chosen there is nothing to go on, so every area counts as relevant (None)."""
+    if not chosen:return None
+    found = set()
+    for area in chosen:
+        for path in area.get('knowledge') or []:
+            m = re.match(r'systems/([^/]+)/', path) or re.match(r'docs/playbooks/([^/.]+)\.md$', path)
+            if m:found.add(m.group(1))
+    return found or None
+
+
+def _knowledge(objects, at, relevant=None):
     labels = dict.fromkeys(('supported', 'unverified', 'challenged', 'needs_review', 'out_of_date'), 0)
     areas = dict.fromkeys((key for key, _ in AREAS), 0)
     dated = fresh = total = 0
@@ -48,7 +61,7 @@ def _knowledge(objects, at):
         if reviewed:
             dated += 1
             if timedelta(0) <= at - reviewed <= timedelta(days=FRESH_DAYS):fresh += 1
-    return {'findings': total, 'by_status': labels, 'by_area': [{'id': key, 'name': name, 'findings': areas[key]} for key, name in AREAS],
+    return {'findings': total, 'by_status': labels, 'by_area': [{'id': key, 'name': name, 'findings': areas[key], 'relevant': relevant is None or key in relevant} for key, name in AREAS],
             # How current the findings are, only among those that record when they were last reviewed.
             'reviewed': {'with_date': dated, 'within_days': FRESH_DAYS, 'recent': fresh}}
 
@@ -90,7 +103,9 @@ def _watches(bid, at, days, limit, change_limit):
         last = checks[-1] if checks else None
         watches.append({'id': d['id'], 'name': d['name'], 'kind': 'reports' if d['mode'] == 'series' else 'results', 'current': row['current_count'],
                         'task_linked': d['id'] in linked, 'coverage': (last.get('coverage') or {}).get('status','unknown') if last else None,
-                        'last_checked': last['at'] if last else None, 'last_changes': int(last.get('change_count') or 0) if last else 0})
+                        'last_checked': last['at'] if last else None, 'last_changes': int(last.get('change_count') or 0) if last else 0,
+                        # Used only to notice a list that was being kept current and has stopped: its own rhythm, not a fixed deadline.
+                        '_rhythm': _rhythm([c['at'] for c in checks]), '_kept_current': len(checks) > 1 and any(int(c.get('change_count') or 0) for c in checks[1:])})
         for position, check in enumerate(checks):
             when = _time(check['at'])
             if not when or not since <= when <= at:continue
@@ -102,6 +117,61 @@ def _watches(bid, at, days, limit, change_limit):
     watches.sort(key=lambda w: w['last_checked'] or '', reverse=True)
     changes.sort(key=lambda c: c['at'], reverse=True)
     return watches[:limit], len(watches), changes[:change_limit], len(changes)
+
+
+def _rhythm(times):
+    """The usual number of days between dated events (median of the last few gaps), or None with fewer than two."""
+    stamps = sorted(t for t in (_time(x) for x in times) if t)[-6:]
+    gaps = sorted((b - a).total_seconds() / 86400 for a, b in zip(stamps, stamps[1:]) if b > a)
+    return gaps[len(gaps) // 2] if gaps else None
+
+
+def _overdue(age, usual, fallback):
+    """Late means well past this thing's own rhythm: twice its usual gap, and never sooner than a week."""
+    return age > max(7, 2 * usual) if usual else age > fallback
+
+
+def _suggestions(objects, watches, at, limit=2):
+    """Things you set up to keep going that have stopped: a goal with a target but no recent numbers, or a list
+    that was being kept current and has not been checked for a while. Each only prepares a request; how to do it
+    (which source, tool or method) stays with your AI. Keys change when the state does, so a dismissal holds
+    until something new happens. Scheduled work that failed is already under Needs you, so it is left out."""
+    from workspace_views import goal_targets
+    targets = goal_targets(objects);by_id = {o.get('id'): o for o in objects};found = []
+    observed = {}
+    for o in objects:
+        if o.get('object_type') == 'MetricObservation' and o.get('window_end'):observed.setdefault(o.get('metric_ref'), []).append(o)
+    for goal in objects:
+        measure = targets.get(goal.get('id'))
+        info = ((goal.get('extensions') or {}).get('businessos') or {}).get('goal') or {}
+        if not measure or (goal.get('status') or 'active') != 'active' or info.get('scope') == 'chat' or info.get('deleted_at'):continue
+        metric, name = measure.get('metric') or 'the measure', goal.get('name', '')
+        points = sorted(observed.get((goal.get('metric_refs') or [None])[0], []), key=lambda o: o['window_end'])
+        if not points:
+            found.append((1.0, {'key': f"goal:{goal['id']}:none", 'kind': 'goal', 'title': f'Start tracking {metric.lower()}',
+                'why': f'"{name}" has a target but no numbers yet.',
+                'prompt': f'Help me start tracking "{metric}" for our goal "{name}". If you can reach a source for it, such as a tool we already use, record the current value with its source and date; otherwise ask me for it. Suggest how it could stay up to date without me, but set nothing up until I agree.'}))
+            continue
+        last = points[-1];when = _time(last['window_end'])
+        if not when:continue
+        age = (at - when).total_seconds() / 86400;usual = _rhythm([o['window_end'] for o in points])
+        if not _overdue(age, usual, 30):continue
+        src = str(last.get('source_ref') or '');src = object_title(by_id[src]) if src in by_id else src
+        src = src if src and not re.fullmatch(r'[a-z]+_[A-Za-z0-9_-]+', src) else ''
+        found.append((age / max(7, 2 * (usual or 15)), {'key': f"goal:{goal['id']}:{last['window_end']}", 'kind': 'goal', 'title': f'Update {metric.lower()}',
+            'why': f'Last recorded {round(age)} days ago' + (f' from {src[:60]}' if src else '') + '.',
+            'prompt': f'Bring "{metric}" up to date for our goal "{name}". Use whatever source you can reach' + (f' (it has come from {src[:80]})' if src else '') + '; if none is available, ask me for the number. Record it with its source and date.'}))
+    for w in watches:
+        if w.get('task_linked') or not w.get('_kept_current') or not w.get('last_checked'):continue
+        when = _time(w['last_checked'])
+        if not when:continue
+        age = (at - when).total_seconds() / 86400
+        if not _overdue(age, w.get('_rhythm'), 30):continue
+        found.append((age / max(7, 2 * (w.get('_rhythm') or 15)), {'key': f"collection:{w['id']}:{w['last_checked']}", 'kind': 'collection', 'title': f"Check {w['name']} again",
+            'why': f'Last checked {round(age)} days ago; earlier checks found changes.',
+            'prompt': f'Check "{w["name"]}" again and update it with what has changed since it was last checked. Keep its existing results, mark what is new, changed or gone, and tell me only what matters.'}))
+    found.sort(key=lambda pair: -pair[0])
+    return [item for _, item in found[:limit]]
 
 
 def _challenged(objects, at, days):
@@ -121,6 +191,19 @@ def _results(objects, limit):
     return [{'id': o['id'], 'title': name(o), 'location': str(o.get('location_reference') or ''), 'type': o.get('asset_type', ''), 'updated_at': o.get('updated_at') or o.get('created_at')} for o in rows[:limit]], len(rows)
 
 
+OPEN_OPPORTUNITY = {'prioritized': 0, 'qualified': 1, 'reopened': 2, 'investigating': 3, 'candidate': 4}
+
+
+def _opportunities(objects, limit):
+    """Saved opportunities still worth doing, most decided-on first, with the goals they serve by name."""
+    goals = {o['id']: o.get('name', '') for o in objects if o.get('object_type') == 'Objective'}
+    rows = [o for o in objects if o.get('object_type') == 'Opportunity' and o.get('status') in OPEN_OPPORTUNITY]
+    rows.sort(key=lambda o: str(o.get('updated_at') or o.get('created_at') or ''), reverse=True)
+    rows.sort(key=lambda o: OPEN_OPPORTUNITY[o['status']])
+    return [{'id': o['id'], 'title': str(o.get('title', ''))[:200], 'why': str(o.get('diagnosis') or o.get('statement') or '')[:300],
+             'status': o['status'], 'goals': [goals[g] for g in o.get('objective_refs') or [] if goals.get(g)][:2]} for o in rows[:limit]], len(rows)
+
+
 def _agents(bid):
     """Named agents saved with the workspace. Reading them never starts one."""
     try:
@@ -138,9 +221,11 @@ def summary(bid, at=None, days=7):
     objects = [o for o, _ in object_index(bid).values() if not archived(o)]
     business = next((o for o in objects if o.get('object_type') == 'Business'), None)
     if not business:raise ValueError('This business is unavailable in the selected workspace.')
-    try:focus = [{'id': a['id'], 'name': a['name']} for a in workspace_focus.get(bid)['areas']]
-    except ValueError:focus = []
-    knowledge = _knowledge(objects, at)
+    try:chosen = workspace_focus.get(bid)['areas']
+    except ValueError:chosen = []
+    focus = [{'id': a['id'], 'name': a['name']} for a in chosen]
+    relevant = _relevant_areas(chosen)
+    knowledge = _knowledge(objects, at, relevant)
     attention, attention_total = _attention(objects, 5)
     goals, goals_total = _goals(objects, 6)
     watches, watches_total, changes, changes_total = _watches(bid, at, days, 8, 8)
@@ -148,6 +233,9 @@ def summary(bid, at=None, days=7):
     changes_total += len(challenged)
     changes = sorted(challenged + changes, key=lambda c: c['at'], reverse=True)[:8]
     results, results_total = _results(objects, 6)
+    opportunities, opportunities_total = _opportunities(objects, 3)
+    suggestions = _suggestions(objects, watches, at)
+    watches = [{k: v for k, v in w.items() if not k.startswith('_')} for w in watches]
     agents = _agents(bid)
     try:due = [{k: d[k] for k in ('collection_id', 'collection', 'item_id', 'title', 'due', 'days')} for d in deadlines(bid, now=at)][:5]
     except (OSError, ValueError):due = []
@@ -157,9 +245,9 @@ def summary(bid, at=None, days=7):
                          **({'example': True, 'example_built': example.get('built_at')} if isinstance(example, dict) else {})},
             'focus': focus, 'as_of': at.isoformat(timespec='seconds').replace('+00:00', 'Z'), 'changes_days': days,
             'knowledge': knowledge, 'changes': changes, 'attention': attention, 'deadlines': due, 'goals': goals,
-            'watches': watches, 'results': results, 'agents': agents[:12],
+            'watches': watches, 'results': results, 'agents': agents[:12], 'opportunities': opportunities, 'suggestions': suggestions,
             'totals': {'findings': knowledge['findings'], 'changes': changes_total, 'attention': attention_total, 'goals': goals_total,
-                       'watches': watches_total, 'results': results_total, 'agents': len(agents)},
+                       'watches': watches_total, 'results': results_total, 'agents': len(agents), 'opportunities': opportunities_total},
             # Nothing saved beyond the organization itself: the home page shows first steps instead of empty tiles.
             'empty': not agents and all(o.get('object_type')=='Business' or (o.get('object_type')=='SourceRecord' and o.get('origin')=='initialization input') for o in objects)}
 
@@ -185,6 +273,12 @@ def text(s):
     if s['attention']:
         lines.append('Needs someone:')
         lines += [f"- {a['title']}: {a['reason']}" for a in s['attention']]
+    if s['opportunities']:
+        lines.append('Worth doing next:')
+        lines += [f"- {o['title']}" + (f" (for {', '.join(o['goals'])})" if o['goals'] else '') + (f": {o['why']}" if o['why'] else '') for o in s['opportunities']]
+    if s.get('suggestions'):
+        lines.append('Gone quiet (set up to keep going, not updated lately):')
+        lines += [f"- {x['title']}: {x['why']}" for x in s['suggestions']]
     if s['deadlines']:
         lines.append('Deadlines coming up:')
         lines += [f"- {d['title']} ({d['collection']}): due {d['due'][:10]}, {d['days']} days" for d in s['deadlines']]

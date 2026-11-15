@@ -12,11 +12,16 @@ window.auraFocus=(()=>{
     return key===k?data:null;
   }
 
-  /* Home: up to three quick starts under the message box. They only fill the box; nothing runs until you send. */
+  /* Home: up to three quick starts under the message box. They only fill the box; nothing runs until you send.
+     First come things this business set up to keep going that have gone quiet (from the summary, at most two,
+     each with "Not now"); the focus area's starters fill the rest, so most days the row looks the same. */
   async function paint(){
     const box=document.querySelector('.suggestions');if(!box)return;
-    const d=await load();box.querySelectorAll('.quick-start').forEach(b=>b.remove());if(!d||!state.business)return;
-    const starts=d.quick_starts.map(s=>`<button type="button" class="quick-start" data-prompt="${esc(s.prompt)}" title="${esc(s.area)}${s.kind==='watch'?' · ongoing':''}">${esc(s.title)}${s.kind==='watch'?`<small> · ${esc(s.cadence||'ongoing')}</small>`:''}</button>`).join('');
+    const [d,s]=await Promise.all([load(),window.auraHQ?.summary?.().catch(()=>null)]);box.querySelectorAll('.quick-start').forEach(b=>b.remove());if(!d||!state.business)return;
+    const dismissed=new Set(state.data?.dismissed_suggestions||[]);
+    const lapsed=(s?.business?.id===state.business?s.suggestions||[]:[]).filter(x=>!dismissed.has(x.key)).slice(0,2);
+    const quiet=lapsed.map(x=>`<span class="quick-start lapsed-start"><button type="button" data-prompt="${esc(x.prompt)}" title="${esc(x.why)}">${esc(x.title)}</button><button type="button" class="quick-start-dismiss" data-dismiss-suggestion="${esc(x.key)}" aria-label="Not now: ${esc(x.title)}" title="Not now">×</button></span>`).join('');
+    const starts=quiet+d.quick_starts.slice(0,3-lapsed.length).map(s=>`<button type="button" class="quick-start" data-prompt="${esc(s.prompt)}" title="${esc(s.area)}${s.kind==='watch'?' · ongoing':''}">${esc(s.title)}${s.kind==='watch'?`<small> · ${esc(s.cadence||'ongoing')}</small>`:''}</button>`).join('');
     box.insertAdjacentHTML('beforeend',starts||'<button type="button" class="quick-start" data-focus-picker>Choose your focus areas</button>');
   }
 
@@ -47,5 +52,12 @@ window.auraFocus=(()=>{
   }
 
   document.addEventListener('click',e=>{if(e.target.closest('[data-focus-picker]'))attempt(picker);});
+  // "Not now" hides one suggestion until its state changes; it is saved with the workspace, and Undo brings it back.
+  document.addEventListener('click',e=>{
+    const b=e.target.closest('[data-dismiss-suggestion]');if(!b||!state.business)return;
+    const key=b.dataset.dismissSuggestion,business=state.business,save=list=>{state.data.dismissed_suggestions=list;paint();return api('/api/preferences',{business,dismissed_suggestions:list});};
+    const before=state.data.dismissed_suggestions||[];
+    attempt(async()=>{await save([...before.filter(k=>k!==key),key]);toast('Hidden until something changes.',()=>attempt(()=>business===state.business&&save(before.filter(k=>k!==key))));});
+  });
   return {load,paint,panel,picker,afterDescription,cached:()=>data&&key===scope()?data:null,goals:async()=>((await load())?.goals||[]),views:async()=>((await load())?.views||[])};
 })();

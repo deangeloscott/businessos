@@ -2,7 +2,7 @@
    same data), so every number is a count of saved records and every row opens the record behind it.
    Sections appear as real work fills them; nothing is shown as a placeholder for work that has not happened. */
 window.auraHQ=(()=>{
-  let data=null,key='',loadedAt=0,pending=null,pendingKey='';
+  let data=null,key='',loadedAt=0,pending=null,pendingKey='',painted=null;
   const FRESH_MS=30000;
   const scope=()=>JSON.stringify([state.business,state.data?.workspace]);
   const visible=()=>!!state.business&&!!state.home&&state.view==='home'&&!state.chatMeta&&!(state.chat||[]).length&&!state.busy&&!document.querySelector('#view .setup-intro');
@@ -96,18 +96,28 @@ window.auraHQ=(()=>{
     const chats=loose.map(r=>`<button type="button" class="hq-agent" data-chat="${esc(r.chat_id)}"><span class="activity-spinner" aria-label="Working now"></span><span>${esc(r.title||'A chat')}</span>${r.progress?`<small>${esc(r.progress)}</small>`:''}</button>`).join('');
     return section(s.running.length?'Running now':'Agents',`<div class="hq-agents">${chats}${agents}</div>`,'<button type="button" class="text-button" data-view="assistants">All agents</button>');
   }
+  /* Opportunities AURA saved, still open, with the goals they serve: the business's own answer to "what next?". */
+  function next(s){
+    if(!s.opportunities?.length)return '';
+    return section('Worth doing next',`<div class="hq-list">${s.opportunities.map(o=>row(`data-record="${esc(o.id)}"`,o.title,o.why,o.goals.length?'For '+o.goals.join(', '):'')).join('')}</div>`,s.totals.opportunities>s.opportunities.length?`<button type="button" class="text-button" data-view="business">All ${s.totals.opportunities}</button>`:'');
+  }
   function resume(s){
-    const recent=state.homeRecent?.scope===scope()?state.homeRecent.chat:null;
-    if(!recent&&!s.results.length)return '';
-    const at=recent?.updated||recent?.created,stampAt=typeof at==='number'?new Date(at<1e12?at*1000:at).toISOString():at;  // chat times are seconds
-    const chat=recent?row(`data-chat="${esc(recent.id)}"`,recent.title||'Recent chat','Chat',stampAt?when(stampAt):''):'';
-    const results=s.results.slice(0,recent?2:3).map(r=>row(`data-record="${esc(r.id)}"`,r.title,'Result',r.updated_at?when(r.updated_at):'')).join('');
-    return section('Pick up where you left off',`<div class="hq-list">${chat}${results}</div>`,'<button type="button" class="text-button" data-view="files">All files</button>');
+    const latest=state.homeRecent?.scope===scope()?state.homeRecent.chat:null;
+    const chats=latest?[latest,...(state.chatList||[]).filter(c=>!c.archived&&c.id!==latest.id)].slice(0,3):[];
+    if(!chats.length&&!s.results.length)return '';
+    const stampOf=c=>{const at=c.updated||c.created;return at?when(typeof at==='number'?new Date(at<1e12?at*1000:at).toISOString():at):'';};  // chat times are seconds
+    const chatRows=chats.map(c=>row(`data-chat="${esc(c.id)}"`,c.title||'Recent chat','Chat'+(c.project?' · '+c.project:''),stampOf(c))).join('');
+    const results=s.results.slice(0,Math.max(1,4-chats.length)).map(r=>row(`data-record="${esc(r.id)}"`,r.title,'Saved result',r.updated_at?when(r.updated_at):'')).join('');
+    return section('Pick up where you left off',`<div class="hq-list">${chatRows}${results}</div>`,chats.length?'<button type="button" class="text-button" data-hq-chats>All chats</button>':'<button type="button" class="text-button" data-view="files">All files</button>');
   }
   function changed(s){
     if(!s.changes.length)return '';
     const title=s.changes_days===7?'This week':`Last ${s.changes_days} days`;
-    return section(title,`<div class="hq-list">${s.changes.map(c=>{const [label,cls]=CHANGE[c.kind]||[human(c.kind),''];return row(open(c),c.title,c.reason,(c.collection?c.collection+' · ':'')+when(c.at),`<span class="source-chip ${cls}">${esc(label)}</span>`);}).join('')}</div>`,s.totals.changes>s.changes.length?`<small>${s.totals.changes} in all</small>`:'');
+    // Changes from one collection sit under its name once, instead of repeating it on every row.
+    const chip=c=>{const [label,cls]=CHANGE[c.kind]||[human(c.kind),''];return `<span class="source-chip ${cls}">${esc(label)}</span>`;};
+    const groups=Object.values(Object.groupBy(s.changes,c=>c.collection_id||''));
+    const body=groups.map(list=>{const c=list[0];return (c.collection_id?`<button type="button" class="hq-group" data-collection="${esc(c.collection_id)}"><span>${esc(c.collection)}</span><small>${esc(when(c.at))}</small></button>`:'')+`<div class="hq-list">${list.map(x=>row(open(x),x.title,x.reason,x.collection_id?'':when(x.at),chip(x))).join('')}</div>`;}).join('');
+    return section(title,body,s.totals.changes>s.changes.length?`<small>${s.totals.changes} in all</small>`:'');
   }
   function goals(s){
     if(!s.goals.length)return '';
@@ -115,7 +125,7 @@ window.auraHQ=(()=>{
       const tracked=typeof g.target==='number',has=tracked&&typeof g.latest==='number';
       const done=has?(g.direction==='lower_better'?(g.latest<=g.target?1:g.target/g.latest):Math.min(1,g.latest/(g.target||1))):0;
       const meter=tracked?`<span class="hq-meter ${g.reached?'reached':''}" role="img" aria-label="${has?esc(measure(g.latest,g.unit)+' of '+measure(g.target,g.unit)):'No measurement yet'}"><i style="width:${Math.round(Math.max(0,Math.min(1,done))*100)}%"></i></span>`:'';
-      const note=tracked?(has?`${measure(g.latest,g.unit)} ${g.direction==='lower_better'?'· target '+measure(g.target,g.unit):'of '+measure(g.target,g.unit)}${g.reached?' · Reached':''}`:'No measurement yet'):'Not measured';
+      const note=tracked?(has?`${measure(g.latest,g.unit)} ${g.direction==='lower_better'?'· target '+measure(g.target,g.unit):'of '+measure(g.target,g.unit)}${g.reached?' · Reached':''}`:'No measurement yet'):'Not measured yet';
       return `<button type="button" class="hq-row stack" data-record="${esc(g.id)}"><span class="hq-row-text"><strong>${esc(g.name)}</strong><small>${esc(note)}</small></span>${meter}</button>`;}).join('')}</div>`,
       s.totals.goals>s.goals.length?`<small>${s.totals.goals} in all</small>`:'');
   }
@@ -125,16 +135,20 @@ window.auraHQ=(()=>{
     const checked=w=>!w.last_checked?'Not checked yet':(({partial:'Partly checked ',failed:'Check failed '})[w.coverage]||'Checked ')+when(w.last_checked).replace(/^(Today|Yesterday)/,m=>m.toLowerCase());
     return section('Collections',`<div class="hq-collections">${s.watches.map(w=>`<button type="button" class="hq-collection" data-collection="${esc(w.id)}"><span class="hq-collection-preview" data-collection-preview="${esc(w.id)}" aria-hidden="true"></span><strong>${esc(w.name)}</strong><span>${w.current} ${w.kind==='reports'?'report':'result'}${w.current===1?'':'s'}${w.last_changes?` · ${w.last_changes} change${w.last_changes===1?'':'s'}`:''}</span><small>${esc(checked(w))}</small></button>`).join('')}</div>`,'<button type="button" class="text-button" data-view="files">All files</button>');
   }
-  /* What is known: how well-supported it is, and every area AURA has guidance for. Lit areas open their
-     findings; the others prepare a first request (nothing runs until you send). */
-  function knows(s,here=false){
+  /* Knowledge: what AURA has found, by area and how well supported, and the areas not looked into yet.
+     Unknowns stay visible as unknowns; choosing one only prepares a request (nothing runs until you send). */
+  function knows(s){
     const k=s.knowledge,parts=STATUS.filter(([id])=>k.by_status[id]);
+    // Only gaps that fit this business's focus are offered; the rest wait one click away, so nothing is pushed for its own sake.
+    const lit=k.by_area.filter(a=>a.findings),open=k.by_area.filter(a=>!a.findings&&a.id!=='core'),gaps=open.filter(a=>a.relevant!==false),other=open.filter(a=>a.relevant===false);
     const bar=k.findings?`<div class="hq-bar" role="img" aria-label="${esc(parts.map(([id,label])=>k.by_status[id]+' '+label.toLowerCase()).join(', '))}">${parts.map(([id])=>`<i class="${id}" style="flex:${k.by_status[id]}"></i>`).join('')}</div>
       <div class="hq-counts">${parts.map(([id,label,cls])=>`<span><strong>${k.by_status[id]}</strong><span class="source-chip ${cls}">${esc(label)}</span></span>`).join('')}</div>`:'';
-    const list=k.by_area.filter(a=>a.id!=='core'||a.findings);
-    const areas=`<div class="hq-areas">${list.map(a=>`<button type="button" class="hq-area ${a.findings?'lit':''}" ${a.findings?`data-hq-area="${esc(a.id)}"`:`data-prompt="${esc(AREA_START[a.id])}"`} title="${a.findings?'Read saved findings':'Prepare a first request'}"><i aria-hidden="true"></i><span>${esc(a.name)}</span>${a.findings?`<small>${a.findings}</small>`:''}</button>`).join('')}</div>`;
-    const ask='<button class="text-button" data-prompt="Check what AI says about our business against our verified facts. Use the AI visibility and factual accuracy workflows. Identify each service sampled, the question, date, exact discrepancy and supporting source. Disclose any services you could not sample.">What does AI say about my business?</button>';
-    return section(k.findings?'What we know':'What you can ask for',`${bar}${areas}<div class="hq-know-foot"><small class="small-note">${k.findings?'Open an area to read its findings. The others prepare a first request.':'Choose an area to prepare a first request.'}</small>${ask}</div>`,k.findings&&!here?'<button type="button" class="text-button" data-view="business">Knowledge</button>':'');
+    const found=lit.length?`${bar}<div class="hq-areas">${lit.map(a=>`<button type="button" class="hq-area lit" data-hq-area="${esc(a.id)}" title="Read these findings"><i aria-hidden="true"></i><span>${esc(a.name)}</span><small>${a.findings}</small></button>`).join('')}</div>`
+      :'<p class="small-note">Nothing researched yet. What your AI finds, with its sources, collects here.</p>';
+    const gap=a=>`<button type="button" class="hq-gap" data-prompt="${esc(AREA_START[a.id])}" title="Prepare a request about ${esc(a.name.toLowerCase())}">${esc(a.name)}</button>`;
+    const more=other.length?`<details class="hq-more"><summary>${gaps.length?'Other areas':'Areas not looked into yet'}</summary><div class="hq-gaps">${other.map(gap).join('')}</div></details>`:'';
+    const unknown=gaps.length||other.length?(gaps.length?`<div class="hq-gaps"><span class="hq-gaps-label">Not looked into yet</span>${gaps.map(gap).join('')}</div>`:'')+more+'<p class="small-note">Choosing one prepares a request. Nothing runs until you send it.</p>':'';
+    return section('What AURA has found',found+unknown);
   }
   function openArea(id){
     const area=data?.knowledge.by_area.find(a=>a.id===id);
@@ -157,9 +171,10 @@ window.auraHQ=(()=>{
     const story=draft?section('Try this',`<p class="hq-story">Is this grant application ready to submit? Review the bakery’s draft and see which answer still needs the owner.</p><div class="inline-actions"><button class="secondary" data-record="${esc(draft.ref)}">Read the grant draft</button>${window.auraExample.origin()?'<button class="text-button" data-example-try>Try this with my work</button>':''}</div>`):'';
     // Most important first: what needs you, what is running, where you were, what changed, then where things stand.
     const pair=goals(s)+watches(s);
-    const html=(s.empty?start():'')+needs(s)+team(s)+story+resume(s)+changed(s)+(pair?`<div class="hq-pair">${pair}</div>`:'')+knows(s);
+    const html=(s.empty?start():'')+needs(s)+team(s)+next(s)+story+resume(s)+changed(s)+(pair?`<div class="hq-pair">${pair}</div>`:'');
     if(host.dataset.markup!==html){host.innerHTML=html;host.dataset.markup=html;}
     fillPreviews(host);
+    if(painted!==s){painted=s;window.auraFocus?.paint();}  // suggestions under the message box follow the same summary
   }
   async function paint(force=false){
     if(!visible())return;
@@ -184,6 +199,7 @@ window.auraHQ=(()=>{
     if(target?.dataset.hqArea)openArea(target.dataset.hqArea);
     const finding=e.target.closest('[data-hq-finding]');
     if(finding){window.auraProjects.finding(finding.dataset.hqFinding,null);setDetailBack('Area findings',()=>openArea(finding.dataset.area));}
+    if(e.target.closest('[data-hq-chats]'))$('#chats')?.click();
     if(e.target.closest('[data-example-return],[data-example-try]'))attempt(()=>window.auraExample.leave(!!e.target.closest('[data-example-try]')));
     if(e.target.closest('[data-hq-research]')){
       details('Research my business','<form id="hq-research" class="form-grid"><label>What are you trying to decide? (optional)<textarea name="decision" rows="2" placeholder="Should we expand wholesale?"></textarea></label><label>Business website (optional)<input name="website" placeholder="Your website"></label><button class="primary">Prepare request</button></form>');
@@ -237,11 +253,11 @@ window.auraHQ=(()=>{
   /* Knowledge shows the same picture of what is known, with every area, as the place to read findings. */
   function paintKnowledge(){
     const host=$('#knowledge-know');if(!host||!state.business)return;
-    load().then(s=>{if(s&&host.isConnected){const html=knows(s,true);if(host.dataset.markup!==html){host.innerHTML=html;host.dataset.markup=html;}}}).catch(()=>{});
+    load().then(s=>{if(s&&host.isConnected){const html=knows(s);if(host.dataset.markup!==html){host.innerHTML=html;host.dataset.markup=html;}}}).catch(()=>{});
   }
   /* Real items waiting on the person: open attention records and upcoming deadlines in saved collections. */
   const needsCount=()=>data&&key.startsWith(scope()+'|')?(data.totals?.attention||0)+(data.deadlines?.length||0):0;
-  return {sync,paint,visible,explain,paintMark,paintKnowledge,needsCount,fillPreviews,research:RESEARCH,cached:()=>data};
+  return {sync,paint,visible,explain,summary:()=>load(),paintMark,paintKnowledge,needsCount,fillPreviews,research:RESEARCH,cached:()=>data};
 })();
 
 /* The example business: a made-up organization in its own workspace, built the first time it is opened. */

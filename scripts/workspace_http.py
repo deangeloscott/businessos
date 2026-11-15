@@ -1051,6 +1051,12 @@ def handler_for(app):
                                     raise ValueError('Choose items from the library.')
                                 clean[field]=list(dict.fromkeys(values))
                             app.preferences['library'][bid]=clean
+                        if 'dismissed_suggestions' in data:
+                            # A suggestion you dismissed stays dismissed until its state changes (its key changes with it).
+                            bid=selected(data.get('business'));keys=data['dismissed_suggestions']
+                            if not isinstance(keys,list) or len(keys)>200 or any(not isinstance(k,str) or len(k)>300 or not re.fullmatch(r'(?:goal|collection):[^\r\n\x00]+',k) for k in keys):
+                                raise ValueError('That suggestion could not be dismissed.')
+                            app.preferences['dismissed_suggestions'][bid]=list(dict.fromkeys(keys))[-200:]
                         if 'preferred_app' in data:
                             if data['preferred_app'] not in NATIVE_AGENTS | {'configured'}:
                                 raise ValueError('Choose a supported AI app.')
@@ -1086,7 +1092,7 @@ def handler_for(app):
                             seen = app.preferences.setdefault('seen', [])
                             if bid not in seen:
                                 seen.append(bid)
-                        app.save_preferences(portable=any(k in data for k in ('appearance','model_picker','library')))
+                        app.save_preferences(portable=any(k in data for k in ('appearance','model_picker','library','dismissed_suggestions')))
                         self.send(200, {'ok': True})
                     elif route == '/api/goals':
                         self.send(200,workspace_goals.mutate(app,selected(data.get('business')),data))

@@ -40,7 +40,7 @@ function input(text){const el=node('#request');el.value=text;el.selectionStart=t
 (async()=>{
  assert.equal(ui.draft().references[0].id,fixture.id,'A composer module loaded after initial hydration must restore selected context');
  ui.restore({references:[{...fixture,label:'<Research>'}],goal_id:'obj_goal'});assert.equal(ui.draft().references.length,1);assert.match(node('#composer-contexts').innerHTML,/&lt;Research&gt;/);
- ui.restore({goal_id:'obj_effort'});assert.match(node('#composer-contexts').innerHTML,/Chat goal: Proposal/);assert.match(node('#composer-contexts').innerHTML,/Workspace goal: Launch/);
+ ui.restore({goal_id:'obj_effort'});assert.match(node('#composer-contexts').innerHTML,/Chat goal: Proposal/);assert.match(node('#composer-contexts').innerHTML,/Business goal: Launch/);
  state.contextReferences=[];ui.restore({});await ui.choose();
  node('#compose-found').onclick({target:{closest:()=>({dataset:{composePick:'0'}})}});await Promise.all(pending);assert.equal(state.contextReferences[0].id,fixture.id);
  input('owner@example.com');await delay();assert.equal(node('#composer-menu').hidden,true,'Email addresses must stay ordinary text');

@@ -563,7 +563,7 @@ def _object_index(business_id,diagnostics):
     return index
 
 def object_title(obj):
-    return next((obj.get(key) for key in ('title','name','subject_name','statement','summary','business_role','purpose','description','conclusion','task','display_name','asset_type') if isinstance(obj.get(key),str) and obj[key].strip()),obj.get('id') or obj.get('object_type','Object'))
+    return next((obj.get(key) for key in ('title','name','subject_name','statement','decision','summary','business_role','purpose','description','conclusion','task','display_name','asset_type') if isinstance(obj.get(key),str) and obj[key].strip()),obj.get('id') or obj.get('object_type','Object'))
 
 def describe_object(obj,path):
     """Small, readable lookup result; the original record remains authoritative."""

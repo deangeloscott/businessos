@@ -69,7 +69,8 @@ def save_view(root, preferences):
     workspace_catalog.write_json(checked_metadata(root), {'format':1, 'file_locations':locations,
         **({'projects':saved_projects} if saved_projects is not None and not (root/'.businessos/projects.json').is_file() else {}),
         'appearance':preferences.get('appearance','system'), 'model_picker':preferences.get('model_picker', {}),
-        'library':preferences.get('library',{}), 'assistants':preferences.get('assistants',{})})
+        'library':preferences.get('library',{}), 'assistants':preferences.get('assistants',{}),
+        'dismissed_suggestions':preferences.get('dismissed_suggestions',{})})
 
 
 def view_preferences(root):
@@ -98,6 +99,9 @@ def view_preferences(root):
                 path = Path(root) / path
             locations[bid].append({**item,'path':str(path)})
     result={**{k:data[k] for k in ('format','appearance','model_picker','library','assistants') if k in data}, 'file_locations':locations}
+    # Dismissed suggestions are a convenience: anything malformed is dropped rather than blocking the workspace.
+    dismissed=data.get('dismissed_suggestions')
+    if isinstance(dismissed,dict):result['dismissed_suggestions']={b:[k for k in v if isinstance(k,str) and len(k)<=300][-200:] for b,v in dismissed.items() if isinstance(b,str) and isinstance(v,list)}
     if 'projects' in data:
         from workspace_context import references
         from workspace_chat_organization import project_name

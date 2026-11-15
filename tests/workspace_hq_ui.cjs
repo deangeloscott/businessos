@@ -24,12 +24,14 @@ const base={business:{id:'bakery',name:'Harbor <Bakery>',description:''},focus:[
   summary=structuredClone(base);hq.sync();await flush();
   let html=node('#hq').innerHTML;
   assert.equal(node('#hq').hidden,false);assert.equal(bodyClasses['has-hq'],true);
-  assert.match(html,/Research my business/);assert.match(html,/See an example business/);assert.match(html,/What you can ask for/);
+  assert.match(html,/Research my business/);assert.match(html,/See an example business/);assert.doesNotMatch(html,/What you can ask for|data-hq-area|Not looked into yet/,'Home does not repeat what Knowledge shows');
   const head=()=>node('#hq-head').innerHTML;
   assert.match(head(),/Harbor &lt;Bakery&gt;/,'saved text is escaped');assert.doesNotMatch(head(),/<Bakery>/);
   for(const absent of ['This week','Needs you','Goals','Collections','Running now','Agents','Pick up where you left off'])assert.doesNotMatch(html,new RegExp(absent),absent+' must not show with nothing saved');
   assert.doesNotMatch(html,/General/,'the general area only appears once it has findings');
-  assert.match(html,/data-prompt="Research our main competitors/,'an unlit area prepares a first request');
+  // Knowledge: areas with nothing found yet are named as not looked into, and choosing one only prepares a request.
+  const know=node('#knowledge-know');know.isConnected=true;hq.paintKnowledge();await flush();
+  assert.match(know.innerHTML,/Not looked into yet/);assert.match(know.innerHTML,/data-prompt="Research our main competitors/);assert.doesNotMatch(know.innerHTML,/General/);
 
   // A filled business: each section shows its saved rows, and each row opens what is behind it.
   summary=structuredClone(base);Object.assign(summary,{empty:false,focus:[{id:'local-business',name:'Local business'}],
@@ -40,17 +42,20 @@ const base={business:{id:'bakery',name:'Harbor <Bakery>',description:''},focus:[
     goals:[{id:'obj_1',name:'Reach 100 reviews',metric:'Reviews',unit:'reviews',direction:'higher_better',target:100,latest:87,reached:false},{id:'obj_2',name:'Tidy shop'}],
     watches:[{id:'col_1',name:'Local competitors',kind:'results',current:5,last_checked:'2026-11-12T05:40:00Z',last_changes:1}],
     results:[{id:'ast_1',title:'Landing page',type:'landing_page',updated_at:'2026-11-11T00:00:00Z'}],
-    agents:[{id:'agt_1',name:'Competitor analyst',tasks:1}],running:[{chat_id:'c1',title:'Price check',agent:'codex',assistant_id:'agt_1'}]});
+    agents:[{id:'agt_1',name:'Competitor analyst',tasks:1}],running:[{chat_id:'c1',title:'Price check',agent:'codex',assistant_id:'agt_1'}],
+    opportunities:[{id:'opp_1',title:'Answer unanswered reviews',why:'Rivals reply within two days.',status:'prioritized',goals:['Reach 100 reviews']}]});
   summary.knowledge.findings=5;summary.knowledge.by_status={supported:3,unverified:1,challenged:1,needs_review:0,out_of_date:0};
   summary.knowledge.by_area[0].findings=4;summary.knowledge.reviewed={with_date:4,within_days:30,recent:3};
-  summary.totals={findings:5,changes:2,attention:1,goals:2,watches:1,results:1,agents:1};
+  summary.totals={findings:5,changes:2,attention:1,goals:2,watches:1,results:1,agents:1,opportunities:1};
   context.state.data.records_revision='r2';hq.sync();await flush();html=node('#hq').innerHTML;
-  for(const shown of ['This week','Needs you','What we know','Goals','Collections','Running now','Pick up where you left off'])assert.match(html,new RegExp(shown),shown);
+  for(const shown of ['This week','Needs you','Worth doing next','Goals','Collections','Running now','Pick up where you left off'])assert.match(html,new RegExp(shown),shown);
   assert.doesNotMatch(html,/Research my business/);
   assert.match(html,/data-collection="col_1"/);assert.match(html,/data-record="ins_1"/);assert.match(html,/data-record="att_1"/);assert.match(html,/data-record="obj_1"/);assert.match(html,/data-assistant-open="agt_1"/);
   assert.match(html,/data-hq-item="g1"/);assert.match(html,/data-parent-collection="col_2"/);
   assert.match(html,/87 of 100/);assert.match(html,/Crumb &amp; Co/);assert.match(html,/activity-spinner/,'an agent with a running chat shows it is working');
-  assert.match(html,/hq-area lit[^>]*data-hq-area="competitor-intelligence/);
+  assert.match(html,/data-record="opp_1"/);assert.match(html,/For Reach 100 reviews/);
+  assert.match(html,/class="hq-group" data-collection="col_1"/,'changes sit under their collection once');
+  hq.paintKnowledge();await flush();assert.match(node('#knowledge-know').innerHTML,/hq-area lit[^>]*data-hq-area="competitor-intelligence/);
   assert.doesNotMatch(head(),/unsettled/,'the aura encodes only colour and movement');assert.match(head(),/working/,'the aura moves while work is running');
 
   // The aura explains itself with the same saved counts.
