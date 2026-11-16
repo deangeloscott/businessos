@@ -144,12 +144,12 @@ def handler_for(app):
                 elif route in {'/app.js', '/style.css'}:
                     path = app.static / route[1:]
                     self.send_static(path, 'text/javascript; charset=utf-8' if path.suffix == '.js' else 'text/css; charset=utf-8')
-                elif route in {'/file-editor.js','/file-editor.css','/workspace-work.js','/workspace-continuity.js','/workspace-compose.js','/workspace-insight.js','/workspace-projects.js','/workspace-views.js','/workspace-focus.js','/workspace-hq.js','/workspace-terminal.js'} or route.startswith('/vendor/'):
+                elif route in {'/file-editor.js','/file-editor.css','/workspace-work.js','/workspace-continuity.js','/workspace-compose.js','/workspace-insight.js','/workspace-projects.js','/workspace-views.js','/workspace-focus.js','/workspace-hq.js','/workspace-aura.js','/workspace-world.js','/workspace-terminal.js'} or route.startswith('/vendor/'):
                     relative=Path(route.lstrip('/'))
                     path=(STATIC/relative).resolve()
                     base=(STATIC/'vendor').resolve() if route.startswith('/vendor/') else STATIC.resolve()
                     if not path.is_relative_to(base) or private_path(path.relative_to(base)) or not path.is_file():raise ValueError('This interface component is unavailable.')
-                    self.send_static(path,mimetypes.guess_type(path.name)[0] or 'application/octet-stream')
+                    self.send_static(path,'text/javascript; charset=utf-8' if path.suffix in {'.js','.mjs'} else mimetypes.guess_type(path.name)[0] or 'application/octet-stream')
                 elif route.startswith('/api/media/map/'):
                     # Viewed map imagery only; images can't send the app header, so the media cookie authorizes them.
                     match=re.fullmatch(r'/api/media/map/(\d{1,2})/(\d{1,7})/(\d{1,7})\.png',route)
@@ -198,11 +198,14 @@ def handler_for(app):
                                             'assistant_id':(chats.get(j.get('chat_id')) or {}).get('assistant_id','')}
                                            for j in owner.running_jobs(workspace_root()) if j.get('business_id')==bid]
                     self.send(200,result)
-                elif route in {'/api/collection-view','/api/running','/api/goal-progress'}:
+                elif route in {'/api/collection-view','/api/running','/api/goal-progress','/api/world'}:
                     with app.lock:root=app.workspace_path;owner=copy.copy(app)
                     with workspace_scope(root):
                         bid=selected(query.get('business'))
                         if route=='/api/collection-view':result=workspace_views.rows(bid,query.get('id'),query.get('view','current'),query.get('q',''))
+                        elif route=='/api/world':
+                            import workspace_world
+                            result=workspace_world.world(bid,app=owner)
                         elif route=='/api/running':result=workspace_views.running(owner,bid,query.get('project',''),query.get('goal',''),query.get('collection',''))
                         else:result=workspace_views.progress(bid,query.get('goal'))
                     self.send(200,result)
@@ -1057,6 +1060,14 @@ def handler_for(app):
                             if not isinstance(keys,list) or len(keys)>200 or any(not isinstance(k,str) or len(k)>300 or not re.fullmatch(r'(?:goal|collection):[^\r\n\x00]+',k) for k in keys):
                                 raise ValueError('That suggestion could not be dismissed.')
                             app.preferences['dismissed_suggestions'][bid]=list(dict.fromkeys(keys))[-200:]
+                        if 'aura' in data:
+                            # The aura's own choices: the goal its ring shows, a colour adjustment, and the last goal celebrated.
+                            bid=selected(data.get('business'));aura=data['aura']
+                            if not isinstance(aura,dict) or set(aura)-{'goal','shift','celebrated','seen','toured'}:raise ValueError('Those aura choices could not be saved.')
+                            for field in ('goal','celebrated','seen','toured'):
+                                if field in aura and not (isinstance(aura[field],str) and re.fullmatch(r'[A-Za-z0-9_.:-]{0,160}',aura[field])):raise ValueError('Choose one of your goals for the aura.')
+                            if 'shift' in aura and (isinstance(aura['shift'],bool) or not isinstance(aura['shift'],int) or not -180<=aura['shift']<=180):raise ValueError('Choose a colour adjustment between -180 and 180.')
+                            app.preferences['aura'][bid]={**app.preferences['aura'].get(bid,{}),**aura}
                         if 'preferred_app' in data:
                             if data['preferred_app'] not in NATIVE_AGENTS | {'configured'}:
                                 raise ValueError('Choose a supported AI app.')
@@ -1092,7 +1103,7 @@ def handler_for(app):
                             seen = app.preferences.setdefault('seen', [])
                             if bid not in seen:
                                 seen.append(bid)
-                        app.save_preferences(portable=any(k in data for k in ('appearance','model_picker','library','dismissed_suggestions')))
+                        app.save_preferences(portable=any(k in data for k in ('appearance','model_picker','library','dismissed_suggestions','aura')))
                         self.send(200, {'ok': True})
                     elif route == '/api/goals':
                         self.send(200,workspace_goals.mutate(app,selected(data.get('business')),data))

@@ -70,7 +70,7 @@ def save_view(root, preferences):
         **({'projects':saved_projects} if saved_projects is not None and not (root/'.businessos/projects.json').is_file() else {}),
         'appearance':preferences.get('appearance','system'), 'model_picker':preferences.get('model_picker', {}),
         'library':preferences.get('library',{}), 'assistants':preferences.get('assistants',{}),
-        'dismissed_suggestions':preferences.get('dismissed_suggestions',{})})
+        'dismissed_suggestions':preferences.get('dismissed_suggestions',{}), 'aura':preferences.get('aura',{})})
 
 
 def view_preferences(root):
@@ -101,6 +101,8 @@ def view_preferences(root):
     result={**{k:data[k] for k in ('format','appearance','model_picker','library','assistants') if k in data}, 'file_locations':locations}
     # Dismissed suggestions are a convenience: anything malformed is dropped rather than blocking the workspace.
     dismissed=data.get('dismissed_suggestions')
+    aura=data.get('aura')
+    if isinstance(aura,dict):result['aura']={b:{k:v for k,v in p.items() if k in ('goal','shift','celebrated','seen','toured') and isinstance(v,(str,int)) and not isinstance(v,bool)} for b,p in aura.items() if isinstance(b,str) and isinstance(p,dict)}
     if isinstance(dismissed,dict):result['dismissed_suggestions']={b:[k for k in v if isinstance(k,str) and len(k)<=300][-200:] for b,v in dismissed.items() if isinstance(b,str) and isinstance(v,list)}
     if 'projects' in data:
         from workspace_context import references

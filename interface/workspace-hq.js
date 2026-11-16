@@ -50,10 +50,31 @@ window.auraHQ=(()=>{
   /* The aura is the business's face: its colours come from the chosen focus areas, so it is recognisable
      wherever the business appears, and it moves only while your AI is working. Nothing else is encoded in it;
      what needs attention is said in words (Needs you, the status line), not in a picture to decode. */
+  /* Colour: the focus areas' hues, turned by an amount unique to the business (or the owner's own choice),
+     so two businesses with the same focus never look alike. With no focus, the business's own hue. */
+  const seed=id=>[...String(id||'')].reduce((h,c)=>(h*31+c.charCodeAt(0))>>>0,7);
+  function palette(s){
+    // The same colours the world gives its places: the first collections, then the areas that hold the most findings.
+    const prefs=state.data?.aura_preferences||{},id=s?.business?.id||state.business,shift=Number.isInteger(prefs.shift)?prefs.shift:0;
+    const fnv=[...String(id||'')].reduce((h,c)=>Math.imul(h^c.charCodeAt(0),16777619)>>>0,2166136261)%360;
+    const areas=(s?.knowledge?.by_area||[]).map((a,i)=>[a.findings,i]).filter(a=>a[0]).sort((a,b)=>b[0]-a[0]).map(a=>a[1]),held=Math.min((s?.watches||[]).length,2);
+    const slots=[...Array.from({length:held},(_,i)=>9+i),...areas].slice(0,3),h=(slots.length?slots:[0]).map(k=>((fnv+k*137.5+shift)%360+360)%360);
+    return [h[0],h[1]??(h[0]+40)%360,h[2]??(h[0]+320)%360];
+  }
+  const paletteStyle=s=>{const [a,b,c]=palette(s);return `--hq-h1:${a};--hq-h2:${b};--hq-h3:${c}`;};
+  /* The ring: progress toward the one goal the owner pinned, from its saved measurements. No pinned goal, no ring. */
+  function pinned(){
+    const id=state.data?.aura_preferences?.goal,r=id&&(state.data?.records||[]).find(x=>x.ref===id&&x.type==='Objective'),m=r?.measure;
+    if(!m||typeof m.target!=='number')return null;
+    const has=typeof m.latest==='number';
+    const done=m.reached?1:has?(m.direction==='lower_better'?Math.min(1,m.target/Math.max(m.latest,1e-9)):Math.min(1,Math.max(0,m.latest)/(m.target||1))):0;
+    return {id,name:r.title,done,reached:!!m.reached,measure:m};
+  }
+  const ring=p=>p?`<svg class="hq-ring ${p.reached?'reached':''}" viewBox="0 0 40 40" aria-hidden="true"><circle class="track" cx="20" cy="20" r="18.5"/><circle class="fill" cx="20" cy="20" r="18.5" pathLength="100" stroke-dasharray="${Math.max(p.done?2:0,Math.round(p.done*100))} 100" transform="rotate(-90 20 20)"/></svg>`:'';
+  const ringLabel=p=>p?(p.reached?` Main goal reached: ${p.name}.`:` Main goal: ${Math.round(p.done*100)}% of the way to ${p.name}.`):'';
   function aura(s,size=''){
-    const hues=s.focus.map(a=>hue(a.id)).slice(0,3),working=s.running.length>0||(state.data?.running_chats||[]).length>0;
-    const style=hues.length?`--hq-h1:${hues[0]};--hq-h2:${hues[1]??(hues[0]+40)%360};--hq-h3:${hues[2]??(hues[0]+320)%360}`:'';
-    return `<button type="button" class="hq-aura ${size} ${hues.length?'':'plain'} ${working?'working':''}" style="${style}" data-hq-aura aria-label="Your aura. Open what it shows." title="What this shows"><span aria-hidden="true"></span></button>`;
+    const working=s.running.length>0||(state.data?.running_chats||[]).length>0,p=pinned(),seen=state.data?.aura_preferences?.seen,fresh=seen?(s.changes||[]).filter(c=>c.at&&c.at>seen).length:0;
+    return `<button type="button" class="hq-aura ${size} ${working?'working':''} ${p?'has-ring':''}" style="${paletteStyle(s)}" data-hq-aura aria-label="${esc('Your aura. Open it.'+ringLabel(p)+(fresh?` ${fresh} new since your last visit.`:''))}" title="${fresh?`Your aura · ${fresh} new since your last visit`:'Your aura'}"><span aria-hidden="true"></span>${ring(p)}${fresh?'<i class="hq-new" aria-hidden="true"></i>':''}</button>`;
   }
   function explain(){
     if(!data)return;
@@ -174,7 +195,17 @@ window.auraHQ=(()=>{
     const html=(s.empty?start():'')+needs(s)+team(s)+next(s)+story+resume(s)+changed(s)+(pair?`<div class="hq-pair">${pair}</div>`:'');
     if(host.dataset.markup!==html){host.innerHTML=html;host.dataset.markup=html;}
     fillPreviews(host);
+    celebrate();
     if(painted!==s){painted=s;window.auraFocus?.paint();}  // suggestions under the message box follow the same summary
+  }
+  /* Reaching the pinned goal is marked once: the ring closes with a brief glow and a short note. */
+  function celebrate(){
+    const p=pinned(),prefs=state.data?.aura_preferences||{};
+    if(!p?.reached||prefs.celebrated===p.id||!state.business)return;
+    state.data.aura_preferences={...prefs,celebrated:p.id};
+    document.querySelectorAll('.hq-aura.has-ring').forEach(a=>{a.classList.remove('celebrate');void a.offsetWidth;a.classList.add('celebrate');});
+    toast('You reached your goal: '+p.name+'.');
+    api('/api/preferences',{business:state.business,aura:{celebrated:p.id}}).catch(()=>{});
   }
   async function paint(force=false){
     if(!visible())return;
@@ -209,7 +240,7 @@ window.auraHQ=(()=>{
         prompt(request+(site?' Start from our website: '+site:''));
       };
     }
-    if(e.target.closest('[data-hq-aura]'))explain();
+    if(e.target.closest('[data-hq-aura]'))window.auraView?attempt(()=>window.auraView.open()):explain();
     if(e.target.closest('[data-hq-example]'))attempt(()=>window.auraExample?.open());
   });
   /* The same aura beside the workspace name in the sidebar, so the business is recognisable wherever you are. */
@@ -219,11 +250,11 @@ window.auraHQ=(()=>{
     if(!state.business){for(const host of hosts){host.className='hq-aura mini plain';host.removeAttribute('style');}return;}
     load().then(s=>{
       if(!s)return;
-      const hues=s.focus.map(a=>hue(a.id)).slice(0,3),working=(state.data?.running_chats||[]).length>0;
+      const working=(state.data?.running_chats||[]).length>0,p=pinned();
       for(const host of hosts){
         if(!host.isConnected)continue;
-        host.className=['hq-aura mini',hues.length?'':'plain',working?'working':''].filter(Boolean).join(' ');
-        if(hues.length)host.setAttribute('style',`--hq-h1:${hues[0]};--hq-h2:${hues[1]??(hues[0]+40)%360};--hq-h3:${hues[2]??(hues[0]+320)%360}`);else host.removeAttribute('style');
+        host.className=['hq-aura mini',working?'working':'',p?'has-ring':''].filter(Boolean).join(' ');
+        host.setAttribute('style',paletteStyle(s));host.innerHTML='<span></span>'+ring(p);
       }
       window.paintAuraStatus?.();
     }).catch(()=>{});
@@ -257,7 +288,7 @@ window.auraHQ=(()=>{
   }
   /* Real items waiting on the person: open attention records and upcoming deadlines in saved collections. */
   const needsCount=()=>data&&key.startsWith(scope()+'|')?(data.totals?.attention||0)+(data.deadlines?.length||0):0;
-  return {sync,paint,visible,explain,summary:()=>load(),paintMark,paintKnowledge,needsCount,fillPreviews,research:RESEARCH,cached:()=>data};
+  return {sync,paint,visible,explain,summary:()=>load(),palette,pinned,ring,paintMark,paintKnowledge,needsCount,fillPreviews,research:RESEARCH,cached:()=>data};
 })();
 
 /* The example business: a made-up organization in its own workspace, built the first time it is opened. */

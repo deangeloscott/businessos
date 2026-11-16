@@ -598,6 +598,8 @@ class Workspace:
             self.preferences['library'] = {}
         if not isinstance(self.preferences.get('dismissed_suggestions'), dict):
             self.preferences['dismissed_suggestions'] = {}
+        if not isinstance(self.preferences.get('aura'), dict):
+            self.preferences['aura'] = {}
         if not isinstance(self.preferences.get('file_locations'), dict):
             self.preferences['file_locations'] = {}
         if not isinstance(self.preferences.get('connected_apps'), dict):
@@ -636,7 +638,7 @@ class Workspace:
     def load_portable(self):
         try:
             portable = workspace_storage.view_preferences(workspace_root())
-            for key in ('file_locations','model_picker','appearance','library','assistants','dismissed_suggestions'):
+            for key in ('file_locations','model_picker','appearance','library','assistants','dismissed_suggestions','aura'):
                 if key in portable:
                     self.preferences[key] = portable[key]
             if 'chat_projects' in portable:
@@ -2632,6 +2634,7 @@ class Workspace:
                 'full_access_modes': list(workspace_permissions.FULL_ACCESS_MODES),
                 'library_preferences': self.preferences['library'].get(bid, {'favorites':[],'recent':[]}),
                 'dismissed_suggestions': self.preferences['dismissed_suggestions'].get(bid, []),
+                'aura_preferences': self.preferences['aura'].get(bid, {}),
                 'preferred_app': self.preferences.get('preferred_app', ''),
                 'running_chats':[{k:j.get(k) for k in ('id','chat_id','business_id','workspace','status','progress','agent','model')} for j in self.running_jobs()],
                 'profile': self.profile(),
