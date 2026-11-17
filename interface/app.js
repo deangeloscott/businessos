@@ -1839,6 +1839,14 @@ function apiProviderHelp() {
   $('#custom-api-fields').hidden=id!=='other';
   $('#api-provider-help').innerHTML=item?`<a href="${esc(item.url)}" target="_blank" rel="noreferrer">Get or manage your ${esc(item.name)} API key ↗</a>${id==='higgsfield'?'<br>Paste the complete key exactly as copied.':''}`:id==='other'?'Use the environment variable documented by your service.':'';
 }
+/* "Where was this made?" on AURA's own screens asks the AI apps' records on this computer (see madeIn below). */
+document.addEventListener('click',e=>{
+  const ask=e.target.closest('[data-made-in-record],[data-made-in-file]');if(!ask)return;const line=ask.closest('.made-in');
+  line.textContent='Looking in the AI apps’ own records on this computer…';
+  api('/api/origin?business='+encodeURIComponent(state.business)+(ask.dataset.madeInRecord?'&record='+encodeURIComponent(ask.dataset.madeInRecord):'&file='+encodeURIComponent(ask.dataset.madeInFile)))
+    .then(r=>{const o=r.origin;line.textContent=o?`Made in ${o.app}${o.title?' · “'+o.title+'”':''} · ${stamp(o.at)}`:'Not found in the AI apps’ own records on this computer, so where this was made is not recorded.';})
+    .catch(()=>{line.textContent='The AI apps’ records could not be read just now.';});
+});
 function recordDetails(ref) {
   const r=state.data.records.find(r=>r.ref===ref); if(!r) return;
   if(r.type==='Asset'&&r.data.location_reference&&!/^[a-z][a-z0-9+.-]*:\/\//i.test(r.data.location_reference)){attempt(()=>openFileWorkspace('asset/'+r.ref));return;}
@@ -1893,13 +1901,6 @@ function madeIn(data,file=''){
   return target?`<p class="small-note made-in"><button type="button" class="text-button" ${target}>Where was this made?</button></p>`:'';
 }
 window.auraMadeIn=madeIn;
-document.addEventListener('click',e=>{
-  const ask=e.target.closest('[data-made-in-record],[data-made-in-file]');if(!ask)return;const line=ask.closest('.made-in');
-  line.textContent='Looking in the AI apps’ own records on this computer…';
-  api('/api/origin?business='+encodeURIComponent(state.business)+(ask.dataset.madeInRecord?'&record='+encodeURIComponent(ask.dataset.madeInRecord):'&file='+encodeURIComponent(ask.dataset.madeInFile)))
-    .then(r=>{const o=r.origin;line.textContent=o?`Made in ${o.app}${o.title?' · “'+o.title+'”':''} · ${stamp(o.at)}`:'Not found in the AI apps’ own records on this computer, so where this was made is not recorded.';})
-    .catch(()=>{line.textContent='The AI apps’ records could not be read just now.';});
-});
 function resultOrigin(asset,ref=''){
   const plain=ref&&!ref.startsWith('library/')&&!ref.startsWith('asset/')?ref:'';
   return asset?madeIn(asset.data):plain?madeIn(null,plain):'';
