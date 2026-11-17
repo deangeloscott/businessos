@@ -1374,3 +1374,110 @@ body.in-aura .world-side{padding:20px 18px 24px;border-left:1px solid var(--line
 .aura-colour input{width:min(280px,100%);vertical-align:middle;margin:8px 12px 0 0}
 .aura-goal-pick select{width:auto;max-width:100%}
 .aura-goal-status{margin:8px 0 0;font-size:var(--text-md)}
+
+/* The ordinary chat stays mounted beside the world, with its own status and controls. */
+#world-chat-back { display:none }
+body.in-aura.world-chat-open { --world-chat-width:clamp(350px,42vw,740px) }
+body.in-aura.world-chat-open #section-dialog { right:var(--world-chat-width) }
+body.in-aura.world-chat-open #main {
+  width:var(--world-chat-width); align-self:flex-end; box-sizing:border-box;
+  padding:12px 16px; overflow-y:auto; border-left:1px solid var(--line);
+}
+body.in-aura.world-chat-open #main :is(#welcome-heading,#hq-head,#hq,.suggestions) { display:none }
+body.in-aura.world-chat-open #world-chat-back { display:block; align-self:start; order:-2 }
+body.in-aura.world-chat-open .world-side { display:none }
+body.in-aura.world-chat-open .aura-view.world-view { grid-template-columns:1fr; grid-template-rows:1fr }
+.world-ask { width:auto }
+body.in-aura .world-expanded { position:relative }
+body.in-aura .world-expanded .world-side {
+  position:absolute; inset:0; z-index:6; overflow:auto; padding:clamp(16px,3vw,48px);
+}
+.world-expanded .world-side .wm { grid-template-columns:none!important; grid-auto-flow:column; grid-auto-columns:minmax(120px,1fr); gap:32px; overflow-x:auto }
+.world-expanded .world-side .wm-lines { display:block }
+.world-expanded .world-side .we-map { height: min(360px,50vh) }
+body.in-aura .world-side { overflow-y:auto; min-height:0 }
+@media (max-width:860px) {
+  body.in-aura.world-chat-open #section-dialog { visibility:hidden; pointer-events:none }
+  body.in-aura.world-chat-open #main { width:100% }
+}
+
+.world-expanded .world-dim { opacity:.42 }
+.world-expanded .wm-lines .world-dim { opacity:.16 }
+.world-expanded .world-side { align-content:start }
+.world-side .we-block:is(button) { color:var(--ink); text-align:start }
+.world-side [data-effort-details] summary { cursor:pointer; padding:.45em 0 }
+
+/* Compact controls scroll as one row instead of covering the world with wrapped buttons. */
+body.in-aura .world-bar { overflow-x:auto; max-width:calc(100% - 24px); scrollbar-width:thin }
+body.in-aura .world-bar button { flex:none; white-space:nowrap }
+body.in-aura .world-bar input { flex:1 0 70px }
+body.in-aura .world-bar [hidden] { display:none }
+@media (max-width:600px) {
+  body.in-aura .world-top { display:flex; flex-direction:column; align-items:stretch; gap:6px }
+  body.in-aura .world-tabs { flex-wrap:nowrap; overflow-x:auto; flex:none }
+  body.in-aura .world-tabs button { flex:none; white-space:nowrap }
+  body.in-aura .world-tools { margin-left:0; width:100% }
+  body.in-aura .world-tools input[type=search] { width:100% }
+  body.in-aura .world-tools>label:has(input) { flex:1 }
+  body.in-aura .world-head { display:none }
+  body.in-aura .world-ask { bottom:96px }
+  body.in-aura .world-bar { left:12px; right:12px; bottom:46px; width:auto; gap:8px }
+  body.in-aura .world-bar button { padding:7px 10px }
+  body.in-aura .world-tools .world-by { max-width:100%; min-width:0 }
+  body.in-aura .world-tools .world-by select { min-width:0; max-width:180px }
+  body.in-aura .world-cap { bottom:142px }
+}
+
+.world-time-modes { display:flex; gap:8px; margin:12px 0 }
+.world-time-modes [aria-pressed=true] { border-color:var(--accent); color:var(--accent) }
+.world-comparison label { display:flex; align-items:center; flex-wrap:wrap; gap:10px }
+.world-comparison input { color:var(--ink); background:var(--paper); border:1px solid var(--line); border-radius:6px; padding:8px }
+.world-evidence { border-left:2px solid var(--line); padding-left:10px; margin-block:12px }
+.world-evidence .world-row + .world-row { margin-left:12px; width:calc(100% - 12px) }
+.world-finding-status { display:flex; align-items:center; gap:8px }
+.world-finding-status>span { font-size:24px; line-height:1 }
+.world-finding-status[data-status=challenged],.world-finding-status[data-status=needs_review] { color:var(--warn,var(--ink)) }
+.world-arrived { border-left:3px solid var(--accent); padding:8px 12px; text-align:start }
+.world-focused .world-head { opacity:0; pointer-events:none }
+.world-focused .world-chips { opacity:.5; transition:opacity .15s }
+.world-focused .world-chips:focus-within,.world-focused .world-chips:hover { opacity:1 }
+:root[data-style=classic] .aura-view :is(.world-tabs button,.world-bar button,.world-chip,.world-ask button) {
+  border-radius:2px; backdrop-filter:none; background:var(--paper); box-shadow:none;
+}
+:root[data-style=console90] .aura-view :is(.world-tabs button,.world-bar button,.world-chip,.world-ask button) {
+  border-radius:0; backdrop-filter:none; border-width:2px; box-shadow:3px 3px 0 color-mix(in srgb,var(--accent) 35%,transparent);
+}
+:root[data-style=desktop90] .aura-view :is(.world-tabs button,.world-bar button,.world-chip,.world-ask button) {
+  border-radius:0; backdrop-filter:none; border:2px outset var(--line); box-shadow:1px 1px 0 var(--ink);
+}
+:root[data-style=desktop90] .aura-view [aria-selected=true] { border-style:inset }
+:root[data-style=console00] .aura-view :is(.world-tabs button,.world-bar button,.world-chip,.world-ask button) {
+  border-radius:5px; box-shadow:inset 0 0 8px color-mix(in srgb,var(--accent) 18%,transparent);
+}
+:root[data-style=desktop00] .aura-view :is(.world-tabs button,.world-bar button,.world-chip,.world-ask button) {
+  border-radius:10px; box-shadow:inset 0 1px 0 #ffffff66,0 2px 4px #0003;
+}
+@media (prefers-reduced-motion:reduce) {
+  .world-focused .world-chips { transition:none }
+}
+
+:root[data-style=classic] .aura-view :is([aria-selected=true],.world-ask button,.world-bar [data-w=play]) {
+  background:var(--accent); color:var(--accent-ink,var(--paper));
+}
+
+.world-focused .world-head { visibility:hidden }
+.world-evidence .world-row b { white-space:normal; overflow:visible; text-overflow:clip }
+.world-time-modes button { min-height:36px }
+
+.world-side .wm-node[aria-pressed="true"] { outline:2px solid var(--accent); outline-offset:2px }
+.world-outcome { border-inline-start:3px solid var(--accent); padding:8px 12px }
+
+.world-expanded .world-side .wm-col { min-width:0 }
+.world-side .wm-node b { overflow-wrap:anywhere }
+.world-side .wm-node:focus-visible { outline:2px solid var(--accent); outline-offset:3px }
+.world-side .world-row:focus-visible { outline:2px solid var(--accent); outline-offset:-2px }
+:root[data-style=classic] .aura-view :is(.wm-node,.we-block) { border-radius:0; border-style:solid; box-shadow:none }
+:root[data-style=console90] .aura-view :is(.wm-node,.we-block) { border-radius:0; border:2px solid currentColor; box-shadow:3px 3px 0 var(--line) }
+:root[data-style=desktop90] .aura-view :is(.wm-node,.we-block) { border-radius:0; border:2px outset var(--line) }
+:root[data-style=console00] .aura-view :is(.wm-node,.we-block) { border-radius:3px 14px 3px 3px; border-width:2px }
+:root[data-style=desktop00] .aura-view :is(.wm-node,.we-block) { border-radius:9px; box-shadow:inset 0 1px 0 #ffffff60,0 2px 3px #0002 }

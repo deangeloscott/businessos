@@ -42,7 +42,11 @@ with workspace_scope(Path(built['path'])):print(json.dumps(workspace_world.world
         assert collections and all(l['items'] and l['more']==0 for l in collections),'each collection brings its current results'
         assert all(not l['items'] and l['id'].startswith('area:') for l in areas),'findings kept outside a collection get an area of their own'
         item=collections[0]['items'][0]
-        assert set(item)=={'id','title','first_seen','updated_at','last_seen','needs_review','sources','fields','trend'} and len(item['fields'])<=3
+        assert set(item)=={'id','title','first_seen','updated_at','last_seen','needs_review','sources','fields','trend','history'} and len(item['fields'])<=3
+        assert any(f['source_details'] for f in w['findings']), 'saved evidence and source records are available to the reader'
+        assert all(detail['record'] == detail['id'] for finding in w['findings'] for detail in finding['source_details']), 'evidence opens by the same canonical ID used by the record viewer'
+        assert all(set(f['lands']) <= lands for f in w['findings'])
+        assert all(len(item['history'])<=24 for land in collections for item in land['items'])
         assert w['findings'] and all(f['land'] in lands for f in w['findings']),'every finding sits in a place that is drawn'
         assert all(f['label'] in {'supported','unverified','challenged','needs_review','out_of_date','replaced'} and f['statement'] for f in w['findings'])
         assert any(f['label']=='challenged' and f['challenges'] for f in w['findings']),'a challenged finding says what challenges it'
@@ -128,12 +132,38 @@ print(json.dumps({'full':full,'tight':tight}))
         def chat_display_path(ident):return views/(ident+'.json')
     given=ww._used('b',Chats,{'col_1','col_2'})
     assert given['records']=={'ins_1':2} and given['collections']=={'col_1':1,'col_9':1} and given['library']==[{'id':'pb_comp','name':'Competitor Research','uses':2,'lands':['col_1']}],given
-    assert ww._used('b',None,set())=={'records':{},'collections':{},'library':[]},'with no chats to read, nothing is claimed'
+    assert ww._used('b',None,set())=={'records':{},'collections':{},'library':[],'references':[]},'with no chats to read, nothing is claimed'
     weeks=ww._work('b',Chats,now);assert len(weeks)==26 and sum(w['requests'] for w in weeks)==5 and weeks[-1]['requests']==4 and ww._work('b',None,now) is None
     split=ww._work_by('b',App,bound,{'col_1','col_2'},now);assert [(g['kind'],g['id'],sum(g['weeks'])) for g in split]==[('land','col_1',3),('project','prj_1',1),('other','',1)] and all(len(g['weeks'])==26 for g in split),split
     App.preferences['usage_receipts'][0]['agent']='Codex';App.preferences['usage_receipts'][2]['agent']='Pi';apps=ww._apps('b',App,bound,{'col_1','col_2'})
     assert apps==[{'name':'Codex','requests':1,'lands':['col_1']},{'name':'Pi','requests':1,'lands':[]}] and ww._apps('b',None,bound,set())==[],apps
     assert abs(effort[0]['cost_usd']-.02)<1e-9 and ww._effort('b',None,bound,set(),now) is None,'last month and other organizations are left out; a missing cost is counted, never guessed'
+    from workspace_world_links import relationships
+    graph_feed = {'business': {'id': 'b'}, 'lands': [{'id': 'col_1', 'name': 'Research', 'items': [{'id': 'i', 'title': 'Result'}]}],
+                  'goals': [{'id': 'g', 'name': 'Goal', 'lands': ['col_1']}], 'findings': [], 'decisions': [], 'tasks': [], 'methods': []}
+    graph = relationships(graph_feed, {'projects': [
+        {'business_id': 'b', 'id': 'p', 'name': 'Project', 'members': [{'kind': 'file', 'id': 'brief.md'}, {'kind': 'goal', 'id': 'g'}]},
+        {'business_id': 'other', 'id': 'secret', 'name': 'Private', 'members': []}]},
+        [{'kind': 'chat', 'id': 'c1', 'collection_id': 'col_1'}, {'kind': 'agent', 'id': 'researcher', 'collection_id': 'col_1'}],
+        [], given['references'])
+    keys = {n['key'] for n in graph['nodes']}
+    links = {(e['source'], e['target'], e['label']) for e in graph['edges']}
+    assert 'project:secret' not in keys and 'record:ins_1' not in keys, 'unknown and cross-business records stay out'
+    assert ('file:x', 'chat:c1', 'Attached to conversation') in links
+    assert ('chat:c1', 'land:col_1', 'Bound to collection') in links
+    assert ('agent:researcher', 'land:col_1', 'Bound to collection') in links
+    assert ('project:p', 'file:brief.md', 'Linked in project') in links
+    assert all(e['source'] in keys and e['target'] in keys for e in graph['edges'])
+    assert len(links) == len(graph['edges']), 'repeated attachments do not duplicate edges'
+    assert not any('produced' in e['label'].lower() for e in graph['edges']), 'attachment never implies authorship'
+    produced = relationships(graph_feed, {'projects': []}, [], [
+        {'id': 'asset', 'object_type': 'Asset', 'business_role': 'Draft',
+         'extensions': {'businessos': {'work': {'producer': {'kind': 'chat', 'id': 'c1'}}}}}
+    ], [{'id': 'c1', 'title': 'Research', 'assistant_id': 'a1', 'references': [],
+          'subagents': [{'id': 'child', 'name': 'Review'}]}], assistants=[{'id': 'a1', 'name': 'Researcher'}])
+    assert any(e['label']=='Produced saved asset' for e in produced['edges'])
+    assert any(e['source']=='agent:a1' and e['target']=='chat:c1' for e in produced['edges'])
+    assert any(e['source']=='chat:c1' and e['target']=='agent:c1|child' for e in produced['edges'])
     import shutil
     if shutil.which('node'):subprocess.run(['node',str(ROOT/'tests/workspace_aura_ui.cjs'),str(ROOT/'interface/workspace-aura.js')],check=True)
     print('workspace world: ok')

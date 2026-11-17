@@ -20,7 +20,7 @@ const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(FOV, 1, .0
 let W = 1, H = 1, HOME = 0, TOP = 10;
 const CENTERS = Array.from({ length: MAXL }, () => new THREE.Vector3(0, 1, 0));
 const U = { uC: { value: CENTERS }, uR: { value: new Array(MAXL).fill(0) }, uCol: { value: CENTERS.map(() => new THREE.Color()) }, uDim: { value: new Array(MAXL).fill(1) }, uPulse: { value: new Array(MAXL).fill(0) },
-  uW: { value: new Array(MAXL).fill(0) }, uKit: { value: 0 }, uTime: { value: 0 }, uZoom: { value: 1 }, uSeed: { value: new THREE.Vector3() }, uPaper: { value: new THREE.Color('#ebe7de') } };
+  uW: { value: new Array(MAXL).fill(0) }, uStyle: {value:0}, uKit: { value: 0 }, uTime: { value: 0 }, uZoom: { value: 1 }, uSeed: { value: new THREE.Vector3() }, uPaper: { value: new THREE.Color('#ebe7de') } };
 const basis = c => { const up = Math.abs(c.y) > .97 ? new THREE.Vector3(1, 0, 0) : new THREE.Vector3(0, 1, 0), e = new THREE.Vector3().crossVectors(up, c).normalize(), n = new THREE.Vector3().crossVectors(c, e); return [e, n]; };
 const offset = (c, r, th) => { const [e, n] = basis(c); return c.clone().multiplyScalar(Math.cos(r)).addScaledVector(e, Math.sin(r) * Math.cos(th)).addScaledVector(n, Math.sin(r) * Math.sin(th)).normalize(); };
 const lonlat = v => [Math.atan2(v.x, v.z), Math.asin(clamp(v.y, -1, 1))];
@@ -32,7 +32,7 @@ float vnoise(vec3 x){vec3 i=floor(x),f=fract(x);f=f*f*(3.-2.*f);
 float fbm(vec3 p){float a=.5,s=0.;for(int i=0;i<5;i++){s+=a*vnoise(p);p*=2.03;a*=.5;}return s;}`;
 const globeMat = new THREE.ShaderMaterial({ uniforms: U, vertexShader: `varying vec3 vP;varying vec3 vNv;void main(){vP=position;vNv=normalize(normalMatrix*normal);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
   fragmentShader: `precision highp float;varying vec3 vP;varying vec3 vNv;
-uniform vec3 uC[${NA}];uniform float uR[${NA}];uniform vec3 uCol[${NA}];uniform float uDim[${NA}];uniform float uPulse[${NA}];uniform float uW[${NA}];uniform int uKit;uniform float uTime,uZoom;uniform vec3 uPaper,uSeed;
+uniform vec3 uC[${NA}];uniform float uR[${NA}];uniform vec3 uCol[${NA}];uniform float uDim[${NA}];uniform float uPulse[${NA}];uniform float uW[${NA}];uniform int uKit,uStyle;uniform float uTime,uZoom;uniform vec3 uPaper,uSeed;
 ${NOISE}
 float grid(float x){float f=abs(fract(x-.5)-.5)/max(fwidth(x),1e-5);return 1.-min(f,1.);}
 void main(){vec3 p=normalize(vP);float n=fbm(p*5.+3.7+uSeed),n2=fbm(p*15.+9.1+uSeed);
@@ -65,6 +65,23 @@ void main(){vec3 p=normalize(vP);float n=fbm(p*5.+3.7+uSeed),n2=fbm(p*15.+9.1+uS
     vec3 landc=col*(.3+.25*ch*step(.5,n2))*mix(.35,1.,dim);
     outc=mix(ocean,landc,step(0.,best));outc=mix(outc,col*mix(.4,1.,dim)*live,step(abs(best),.007)*step(0.,best));
   }
+  if(uStyle==1){
+    float engraving=step(.75,fract((p.x+p.y*.65)*160.))*land;
+    vec3 ink=mix(col,mix(vec3(.85),vec3(.12),step(.5,dot(uPaper,vec3(.299,.587,.114)))),.45);
+    outc=mix(uPaper,ink,land*(.08+engraving*.065)+coast*.7+gr*.06);
+  }else if(uStyle==3){
+    float lightPaper=step(.5,dot(uPaper,vec3(.299,.587,.114)));
+    float checker=mod(floor(gl_FragCoord.x)+floor(gl_FragCoord.y),2.);
+    vec3 base=mix(vec3(.025,.03,.05),uPaper,lightPaper);
+    outc=mix(base,col,mix(.17,.48,checker)*step(0.,best)*dim);
+    outc=mix(outc,col,coast*.8);
+  }else if(uStyle==4){
+    float lines=grid(n*22.+n2*3.);
+    outc=mix(outc,outc*.4+col*(lines*.5*land+coast*.65+gr*.1),.7);
+  }else if(uStyle==5){
+    float shine=pow(max(0.,dot(normalize(vNv),normalize(vec3(-.4,.6,1.)))),28.);
+    outc+=vec3(.8,.9,1.)*shine*.3;
+  }
   gl_FragColor=vec4(outc,1.);}` });
 globe.add(new THREE.Mesh(new THREE.SphereGeometry(1, 160, 112), globeMat));
 const atmo = (scale, pow, gain) => { const k = Math.sqrt(1 - 1 / (scale * scale)); const m = new THREE.ShaderMaterial({ uniforms: { ...U, uK: { value: k }, uPow: { value: pow }, uGain: { value: gain } }, side: THREE.BackSide, transparent: true, depthWrite: false,
@@ -86,6 +103,8 @@ void main(){vec4 mv=modelViewMatrix*vec4(position,1.);gl_Position=projectionMatr
   float px=aSize*uScale/pow(-mv.z,.55)*(1.+vFlash*.9);if(uKit==2)px=max(2.,floor(px*.34));gl_PointSize=clamp(px,1.,260.);}`,
   fragmentShader: `precision highp float;uniform int uKit;varying vec3 vCol;varying float vA,vS,vFlash;
 void main(){vec2 q=gl_PointCoord-.5;float d=length(q)*2.;if(vA<.004)discard;
+  if(vS>2.5 && min(abs(q.x-q.y),abs(q.x+q.y))>.075)discard;
+  if(vS>1.5 && vS<2.5 && q.y<-.12 && abs(q.x)<.055)discard;
   if(uKit==0){if(d>1.)discard;float core=exp(-d*d*48.),halo=exp(-d*d*6.)*.55*(1.-d);
     if(vS>.5&&vS<1.5){core=exp(-pow((d-.2)/.055,2.))*.8;}
     vec3 c=vCol*(halo+core*.9)+vec3(1.)*core*(.9+vFlash)+vCol*vFlash*halo*2.;gl_FragColor=vec4(c,vA);}
@@ -117,7 +136,7 @@ function pick(clientX, clientY) { const r = ui.getBoundingClientRect(); ray.setF
 
 /* ------------------------------ The stage and its controls ------------------------------ */
 const headEl = el('div', 'world-head'), capEl = el('div', 'world-cap'), tipEl = el('div', 'world-tip'), shareEl = el('div', 'world-share'); shareEl.hidden = true;
-const barEl = el('div', 'world-bar', `<button type="button" class="primary compact" data-w="play">▶ Watch it light up</button><input type="range" min="0" max="1000" value="1000" aria-label="Move through time"><span class="world-when"></span><span class="world-gap"></span><button type="button" class="secondary compact" data-w="changed">What changed</button><button type="button" class="secondary compact" data-w="flat" aria-pressed="false">Flat map</button><button type="button" class="secondary compact" data-w="share">Share</button>`);
+const barEl = el('div', 'world-bar', `<button type="button" class="primary compact" data-w="play">▶ Watch it light up</button><input type="range" min="0" max="1000" value="1000" aria-label="Move through time"><span class="world-when"></span><span class="world-gap"></span><button type="button" class="secondary compact" data-w="live" hidden>Return to live</button><button type="button" class="secondary compact" data-w="changed">What changed</button><button type="button" class="secondary compact" data-w="flat" aria-pressed="false">Flat map</button><button type="button" class="secondary compact" data-w="share">Share</button>`);
 const range = barEl.querySelector('input'), whenEl = barEl.querySelector('.world-when'), playEl = barEl.querySelector('[data-w=play]');
 let M = null, S = { day: 0, q: '' }, dday = 0, ramp = null, show = null, sel = null, hov = null, cb = {}, kit = 0, C = {}, rings = [], hits = [], placed = [], pd = null, moved = false, pointer = null, rec = null, raf = 0, last = 0, touched = false, stage = null, capT = 0, capOpen = null, dirty = true, themeKey = '';
 
@@ -138,18 +157,23 @@ function load(feed) { const t = d => d ? Date.parse(d) : NaN, all = [t(feed.busi
     (l.items || []).forEach(it => { const x = { kind: 'item', id: l.id + '|' + it.id, raw: it, land: l, name: it.title, from: day(it.first_seen), seen: day(it.last_seen || it.updated_at), need: !!it.needs_review, changes: 0 }; things.push(x); l.things.push(x); }); });
   feed.findings.forEach(f => { const l = lands[li[f.land]]; if (!l || f.label === 'replaced') return; const x = { kind: 'finding', id: f.id, raw: f, land: l, name: f.statement, label: f.label, from: day(f.at), need: ['challenged', 'needs_review', 'out_of_date'].includes(f.label) }; finds.push(x); l.finds.push(x); });
   const byItem = Object.fromEntries(things.map(x => [x.id, x]));
-  finds.forEach(x => { x.tied = (x.raw.items || []).map(id => byItem[x.land.id + '|' + id]).filter(Boolean); });
+  finds.forEach(x => { x.tied = (x.raw.related_items || (x.raw.items || []).map(id => ({land:x.land.id,id}))).map(ref => byItem[ref.land+'|'+ref.id]).filter(Boolean); });
   feed.changes.forEach((c, k) => { const l = lands[li[c.land]]; if (!l) return; const th = byItem[c.land + '|' + c.item_id]; if (th) th.changes++; sparks.push({ day: day(c.at), land: l, th, raw: c, k }); });
   lands.forEach((l, i) => { const u = (.5 + l.slot * .7548776662) % 1, v = (.5 + l.slot * .569840291 + ph0 / TAU) % 1, y = .8 * (1 - 2 * u), r = Math.sqrt(1 - y * y), ph = v * TAU; CENTERS[i].set(Math.cos(ph) * r, y, Math.sin(ph) * r); l.c = CENTERS[i];
     const order = [...l.things, ...l.finds]; l.rmax = l.unch ? .2 : l.kind === 'group' ? Math.min(.42, .2 + .02 * Math.sqrt(l.more || 1)) : Math.min(n > 10 ? .34 : .5, .2 + .05 * Math.sqrt(order.length));
-    order.forEach((x, k) => { x.p = offset(l.c, l.rmax * .74 * Math.sqrt((k + .5) / order.length), k * 2.39996 + i); }); });
+    order.forEach(x => {
+      const identity=hashS(x.kind+':'+x.id);
+      const radius=.74*l.rmax*Math.sqrt(hash1(identity % 100003));
+      x.p=offset(l.c,radius,TAU*hash1(identity % 65537 + 5));
+    }); });
   /* A finding sits beside the result it rests on, when the same saved source stands behind both. */
-  { const per = {}; finds.forEach(x => { const th = x.tied[0]; if (!th) return; const j = per[th.id] = (per[th.id] || 0) + 1; x.p = offset(th.p, .024 + .007 * ((j - 1) % 3), j * 2.39996 + hash1(j + th.from)); }); }
+  { const per = {}; finds.forEach(x => { const th = x.tied[0]; if (!th) return; const j = per[th.id] = (per[th.id] || 0) + 1; x.p = offset(th.p, .024 + .007 * ((j - 1) % 3), TAU*hash1(hashS(x.id)%65537)); }); }
   sparks.forEach(s => { s.p = offset(s.th ? s.th.p : s.land.c, s.th ? .014 + .06 * Math.sqrt(hash1(s.k + 3)) : s.land.rmax * .6 * Math.sqrt(hash1(s.k + 3)), hash1(s.k + 11) * TAU); });
   const goals = feed.goals.filter(x => typeof x.target === 'number').slice(0, 4).map(x => ({ kind: 'goal', id: x.id, raw: x, name: x.name, unit: x.unit, target: x.target, direction: x.direction, reached: !!x.reached, lands: x.lands || [], points: (x.points || []).map(p => ({ day: day(p.at), value: p.value })) }));
   const real = lands.filter(l => !l.unch && l.kind !== 'group'), fById = Object.fromEntries(finds.map(x => [x.id, x])), decisions = real.length ? feed.decisions.map((d, k) => { const basis = (d.basis || []).map(id => fById[id]).filter(Boolean), l = basis[0]?.land || lands[li['area:' + d.area]] || real[k % real.length]; return { kind: 'decision', lesson: d.kind === 'lesson', id: d.id, raw: d, name: d.title, day: day(d.at), land: l, basis, p: basis[0] ? offset(basis[0].p, .035, 1 + k * 2.1) : offset(l.c, l.rmax * .5, 1 + k * 2.1) }; }) : [];
   const seenTasks = {}, tasks = (feed.tasks || []).filter(k => lands[li[k.land]]).map(k => { const l = lands[li[k.land]], n = seenTasks[l.id] = (seenTasks[l.id] || 0) + 1, foot = offset(l.c, l.rmax * .55, 2.2 + l.i + n * 1.7); return { kind: 'task', id: k.id, raw: k, name: k.name || 'Scheduled task', land: l, foot, p: foot.clone().multiplyScalar(1.2) }; });
-  M = { feed, lands, things, finds, sparks, dets: [], goals, decisions, tasks, T, date: d => new Date(t0 + d * 864e5), name: feed.business.name, days: T };
+  const byKey=new Map([...lands,...things,...finds,...tasks,...goals,...decisions].map(o=>[(o.kindOf || o.kind)+':'+o.id,o]));
+  M = { feed, byKey, lands, things, finds, sparks, dets: [], goals, decisions, tasks, T, date: d => new Date(t0 + d * 864e5), name: feed.business.name, days: T };
   for (let i = lands.length; i < MAXL; i++) { U.uR.value[i] = 0; U.uW.value[i] = 0; }
   const r = k => hash1(seed % 9973 + k * 31.7); U.uSeed.value.set(r(1) * 40, r(2) * 40, r(3) * 40);
   /* Each detail of a result is a small light around it, so a result with more to it looks like more at a glance. */
@@ -170,32 +194,130 @@ function load(feed) { const t = d => d ? Date.parse(d) : NaN, all = [t(feed.busi
   cam.lon = cam.to.lon = HOME; cam.lat = cam.to.lat = .28; cam.alt = cam.to.alt = HOME_ALT; cam.v = [0, 0];
   S.day = T; S.q = ''; dday = T; sel = null; hov = null; show = null; ramp = null; themeKey = ''; dirty = true; range.value = 1000; barEl.classList.toggle('young', T < 2);
   { const span = Math.max(1, T / 140), born = lights.geometry.attributes.aBorn; for (let i = 0; i < born.count; i++) born.array[i] /= span; born.needsUpdate = true; }
-  const by = Object.fromEntries((feed.effort || []).filter(e => e.kind === 'land').map(e => [e.id, e.requests])), top = Math.max(1, ...Object.values(by)); effortShare = {}; lands.forEach(l => { l.requests = by[l.id] || 0; effortShare[l.id] = l.requests / top; }); }
+  setEffortMetric(effortMetric); }
+
+function setEffortMetric(metric='requests') {
+  effortMetric=metric;
+  const groups=new Map((M.feed.effort || []).filter(g=>g.kind==='land').map(g=>[g.id,g]));
+  const top=Math.max(0,...[...groups.values()].map(g=>g[metric] || 0));
+  effortShare={};
+  for(const land of M.lands){
+    const group=groups.get(land.id), amount=group?.[metric] || 0;
+    effortShare[land.id]=top ? amount/top : 0;
+    const count=amount.toLocaleString(undefined,{maximumFractionDigits:2});
+    const missing=metric==='tokens'?group?.missing_tokens:metric==='cost_usd'?group?.missing_costs:0;
+    land.effortLabel=!group?'No attributed requests':missing===group.requests?'Usage unreported':
+      (metric==='requests'?count+' requests':metric==='tokens'?count+' reported tokens':'$'+count+' reported')+(missing?' · partial':'');
+  }
+  dirty=true;
+}
+let effortMetric='requests';
+
 
 let px = false;
-function theme() { const cs = getComputedStyle(stage), style = document.documentElement.dataset.style || '', key = cs.backgroundColor + cs.color + cs.fontFamily + style; if (key === themeKey) return; themeKey = key; px = style === 'console90' || style === 'desktop90'; pxRatio = style === 'desktop90' ? 1 / 2 : 1 / 3;
+function theme() { const cs = getComputedStyle(stage), style = document.documentElement.dataset.style || '', key = cs.backgroundColor + cs.color + cs.fontFamily + style; if (key === themeKey) return; themeKey = key; U.uStyle.value = ({classic:1,console90:2,desktop90:3,console00:4,desktop00:5})[style] || 0; px = style === 'console90' || style === 'desktop90'; pxRatio = style === 'desktop90' ? 1 / 2 : 1 / 3;
   const rgb = (cs.backgroundColor.match(/[\d.]+/g) || [10, 12, 16]).map(Number), lum = (.299 * rgb[0] + .587 * rgb[1] + .114 * rgb[2]) / 255, v = n => cs.getPropertyValue(n).trim();
   kit = lum > .55 ? 1 : 0; C = { stage: `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`, ink: cs.color, muted: v('--muted') || (kit ? '#5d5a52' : '#8d98ab'), accent: v('--accent') || (kit ? '#1d7552' : '#7cf0bd'), warn: kit ? '#a35f0a' : '#f2b45a', font: cs.fontFamily, amber: new THREE.Color(kit ? '#a35f0a' : '#f2b45a') };
   renderer.setClearColor(new THREE.Color(rgb[0] / 255, rgb[1] / 255, rgb[2] / 255), 1); U.uKit.value = px ? 2 : kit; LU.uKit.value = px ? 2 : kit; glc.style.imageRendering = px ? 'pixelated' : ''; atmoIn.material.uniforms.uGain.value = style === 'desktop00' ? 1.7 : 1.15; fit(); U.uPaper.value.setRGB(rgb[0] / 255 * .97, rgb[1] / 255 * .96, rgb[2] / 255 * .94);
-  const add = kit ? THREE.NormalBlending : THREE.AdditiveBlending; lightMat.blending = add; lightMat.needsUpdate = true; for (const m of [atmoIn, atmoOut]) { m.material.blending = add; m.material.needsUpdate = true; m.visible = !px; } atmoOut.visible = !px && style !== 'classic'; stars.visible = !kit && style !== 'classic';
+  const add = kit ? THREE.NormalBlending : THREE.AdditiveBlending; lightMat.blending = add; lightMat.needsUpdate = true; for (const m of [atmoIn, atmoOut]) { m.material.blending = add; m.material.needsUpdate = true; m.visible = !px && style !== 'classic'; } atmoOut.visible = !px && style !== 'classic'; stars.visible = !kit && style !== 'classic';
   rings.forEach(R => { const c = new THREE.Color().setHSL((hashS(R.G.id) % 360) / 360, kit ? .72 : .78, kit ? .4 : .66); R.hue = hashS(R.G.id) % 360; for (const o of [R.track, R.arc, R.glow]) { o.material.color.copy(c); o.material.blending = add; o.material.needsUpdate = true; } R.glow.visible = !kit; }); dirty = true; }
 function fit() { if (!stage) return; const r = stage.getBoundingClientRect(); W = Math.max(1, r.width); H = Math.max(1, r.height); const dpr = Math.min(2, devicePixelRatio || 1); renderer.setPixelRatio(px ? pxRatio : dpr); renderer.setSize(W, H, false); camera.aspect = W / H; camera.updateProjectionMatrix(); ui.width = W * dpr; ui.height = H * dpr; g.setTransform(dpr, 0, 0, dpr, 0, 0); TOP = headEl.offsetHeight ? 10 : 10; }
+let trace = [], related = new Set(), comparison = null;
 let F = { lands: null, needs: false }, running = [], flat = false, sinceT = 0, pxRatio = 1 / 3, lens = '', effortShare = {};
-const dimOf = l => lens === 'effort' ? .22 + .78 * (effortShare[l.id] || 0) : F.lands && !F.lands.includes(l.id) ? .15 : sel && sel.kindOf === 'land' && !sel.unch ? (l === sel ? 1 : .2) : sel && sel.kind === 'goal' && sel.lands.length ? (sel.lands.includes(l.id) ? 1 : .2) : 1;
-function sync() { dirty = false; const geo = lights.geometry, A = n => geo.attributes[n].array, col = A('aColor'), size = A('aSize'), al = A('aAlpha'), st = A('aState'), tmp = new THREE.Color(), q = S.q; let i = 0, wmax = 1;
+function inSelection(record) {
+  return !sel || sel.kindOf==='land' || sel.kind==='goal' || record===sel || related.has(record);
+}
+function dimOf(land) {
+  if (F.lands && !F.lands.includes(land.id)) return .15;
+  if (sel && !sel.unch) {
+    const inFocus = sel === land || sel.land === land || related.has(land) ||
+      [...related].some(record => record.land === land) || sel.lands?.includes(land.id);
+    if (!inFocus) return .16;
+  }
+  return lens === 'effort' ? .22 + .78 * (effortShare[land.id] || 0) : 1;
+}
+
+function selectionTrace() {
+  const graph=M.feed.relationships;
+  if(graph && sel) {
+    const key=(sel.kindOf || sel.kind)+':'+sel.id;
+    const index=window.auraView.relationshipIndex(M.feed);
+    const edges=[], seen=new Set([key]), drawn=new Set();
+    let frontier=[key];
+    for(let depth=0;depth<3 && frontier.length && edges.length<60;depth++){
+      const next=[];
+      for(const current of frontier) for(const edge of index.adjacent.get(current)||[]){
+        const other=edge.source===current?edge.target:edge.source;
+        // Areas can have hundreds of members. Trace individual items from their own selection.
+        if(current.startsWith('land:') && ['Saved in collection','Saved in area'].includes(edge.label))continue;
+        if(!seen.has(other)){seen.add(other);next.push(other);}
+        if(drawn.has(edge))continue;
+        drawn.add(edge);
+        const a=M.byKey.get(edge.source), b=M.byKey.get(edge.target);
+        if(a && b && edges.length<60)edges.push({a,b,label:edge.label});
+      }
+      frontier=next;
+    }
+    return edges;
+  }
+  const edges=[];
+  const add=(a,b,label)=>{if(a && b) edges.push({a,b,label});};
+  if (!sel) return edges;
+  const findings = sel.kind==='finding' ? [sel] : sel.kind==='item' ? M.finds.filter(f=>f.tied.includes(sel)) :
+    sel.kind==='decision' ? sel.basis : [];
+  for (const finding of findings) {
+    for (const item of finding.tied) add(item,finding,'Shared source');
+    for (const decision of M.decisions) if (decision.basis.includes(finding)) add(finding,decision,'Cited by decision');
+  }
+  const areas = new Set([sel.kindOf==='land' ? sel.id : sel.land?.id,...findings.flatMap(f=>f.raw.lands || [f.land.id])]);
+  if (sel.kind==='goal') for (const id of sel.lands) add(M.lands.find(l=>l.id===id),sel,'Linked to goal');
+  else for (const goal of M.goals) for (const id of goal.lands) if (areas.has(id)) add(M.lands.find(l=>l.id===id),goal,'Linked to goal');
+  return edges;
+}
+
+function drawTrace() {
+  const position = record => {
+    if(record.kind==='goal') {
+      const anchor=rings.find(r=>r.G===record)?.anchor;
+      return anchor && {...anchor,vis:true};
+    }
+    return record.p || record.c ? proj(record.p || record.c,1.004) : null;
+  };
+  for (const edge of trace) {
+    const a=position(edge.a),b=position(edge.b);
+    if (!a?.vis || !b?.vis) continue;
+    g.save();g.strokeStyle=C.accent;g.globalAlpha=.8;g.lineWidth=1.5;
+    g.setLineDash(edge.label==='Shared source' ? [3,4] : []);
+    g.beginPath();g.moveTo(a.x,a.y);g.lineTo(b.x,b.y);g.stroke();g.restore();
+    const x=(a.x+b.x)/2,y=(a.y+b.y)/2,width=wOf(edge.label,10.5);
+    if(free(x-width/2,y-8,width,18)){
+      txt(edge.label,x,y,{size:10.5,color:C.accent,align:'center'});
+      take(x-width/2,y-8,width,18);
+    }
+  }
+}
+
+function sync() { trace=selectionTrace(); related=new Set(trace.flatMap(edge=>[edge.a,edge.b])); dirty = false; const geo = lights.geometry, A = n => geo.attributes[n].array, col = A('aColor'), size = A('aSize'), al = A('aAlpha'), st = A('aState'), tmp = new THREE.Color(), q = S.q; let i = 0, wmax = 1;
   M.lands.forEach(l => { const nt = l.things.filter(x => x.from <= S.day).length + l.finds.filter(x => x.from <= S.day).length, tot = l.things.length + l.finds.length; l.rto = l.kind === 'group' ? l.rmax : l.unch || !nt ? 0 : l.rmax * Math.sqrt((nt + 1) / (tot + 1)); l.w = l.kind === 'group' ? 1 : nt; wmax = Math.max(wmax, nt); l.dim = dimOf(l); landColor(l, U.uCol.value[l.i]); });
   M.lands.forEach(l => { U.uW.value[l.i] = l.w / wmax; });
-  const put = c => { col[i * 3] = c.r; col[i * 3 + 1] = c.g; col[i * 3 + 2] = c.b; }, match = x => (!q || x.name.toLowerCase().includes(q)) && (!F.needs || x.need);
-  for (const x of M.things) { const fresh = clamp(1 - (M.T - x.seen) / 120, 0, 1); put(x.need ? C.amber : landColor(x.land, tmp)); size[i] = .078 + .02 * Math.log2(1 + (x.raw.sources || 0) + x.changes); al[i] = (.5 + .5 * fresh) * x.land.dim * (match(x) ? 1 : .14); st[i] = x.need ? 2 : 0; i++; }
-  for (const x of M.finds) { put(x.need ? C.amber : kit ? landColor(x.land, tmp) : landColor(x.land, tmp).lerp(new THREE.Color('#ffffff'), .25)); size[i] = .04 + .012 * Math.log2(1 + (x.raw.given || 0)); al[i] = (x.label === 'unverified' ? .75 : .9) * x.land.dim * (match(x) ? 1 : .14); st[i] = x.need ? 2 : x.label === 'unverified' ? 1 : 0; i++; }
+  const put = c => { col[i * 3] = c.r; col[i * 3 + 1] = c.g; col[i * 3 + 2] = c.b; }, match = x => (!q || x.name.toLowerCase().includes(q)) && (!F.needs || x.need) && (!sel || sel.kindOf==='land' || sel.kind==='goal' || x===sel || related.has(x)) && (!comparison || comparison.has(x.kind+':'+x.id));
+  for (const x of M.things) { const fresh = x.need ? .6 : 1; put(x.need ? C.amber : landColor(x.land, tmp)); size[i] = .078 + .02 * Math.log2(1 + (x.raw.sources || 0) + x.changes); al[i] = (.5 + .5 * fresh) * x.land.dim * (match(x) ? 1 : .14); st[i] = x.need ? 2 : 0; i++; }
+  for (const x of M.finds) { put(x.need ? C.amber : kit ? landColor(x.land, tmp) : landColor(x.land, tmp).lerp(new THREE.Color('#ffffff'), .25)); size[i] = .04 + .012 * Math.log2(1 + (x.raw.given || 0)); al[i] = (x.label === 'unverified' ? .75 : .9) * x.land.dim * (match(x) ? 1 : .14); st[i] = x.label==='challenged' ? 3 : x.need ? 2 : x.label === 'unverified' ? 1 : 0; i++; }
   for (const s of M.sparks) { put(landColor(s.land, tmp)); const h = hash1(s.k + 5); size[i] = .017 + .008 * h; al[i] = (.35 + .4 * h) * s.land.dim * (q || F.needs ? .25 : 1); i++; }
   for (const d of M.dets) { put(landColor(d.land, tmp)); size[i] = .02; al[i] = .8 * d.land.dim * (match(d.th) ? 1 : .14); i++; }
   for (const k of ['aColor', 'aSize', 'aAlpha', 'aState']) geo.attributes[k].needsUpdate = true;
-  whenEl.textContent = `${dateOf(S.day)} · ${M.things.filter(x => x.from <= S.day).length} tracked · ${M.finds.filter(x => x.from <= S.day).length} findings`; headline(); }
+  barEl.querySelector('[data-w=live]').hidden = S.day >= M.T && !show;
+  whenEl.textContent = `${S.day >= M.T ? "Live" : dateOf(S.day)} · ${M.things.filter(x => x.from <= S.day).length} tracked · ${M.finds.filter(x => x.from <= S.day).length} findings`; headline(); }
 
 /* ------------------------------ Words on the picture ------------------------------ */
 function txt(s, x, y, { size = 12, weight = 600, color = C.ink, align = 'left', alpha = 1, track = 0 } = {}) { if (alpha <= .01) return; g.save(); g.font = `${weight} ${size}px ${C.font}`; g.letterSpacing = track + 'px'; g.textAlign = align; g.textBaseline = 'middle'; g.lineJoin = 'round'; g.lineWidth = 3.5; g.strokeStyle = C.stage; g.globalAlpha = alpha * (kit ? .9 : .8); g.strokeText(s, x, y); g.globalAlpha = alpha; g.fillStyle = color; g.fillText(s, x, y); g.restore(); }
 const wOf = (s, size, weight = 600, track = 0) => { g.save(); g.font = `${weight} ${size}px ${C.font}`; g.letterSpacing = track + 'px'; const w = g.measureText(s).width; g.restore(); return w; };
+function fitLabel(text, maxWidth) {
+  if(wOf(text,12)<=maxWidth)return text;
+  let end=text.length;
+  while(end>1 && wOf(text.slice(0,end)+'…',12)>maxWidth)end--;
+  return text.slice(0,end)+'…';
+}
 function wrapText(s, size, max) { const lines = ['']; for (const w of String(s).split(' ')) { const t = lines.at(-1) ? lines.at(-1) + ' ' + w : w; if (wOf(t, size, 500) > max && lines.at(-1)) lines.push(w); else lines[lines.length - 1] = t; } if (lines.length > 3) { lines.length = 3; lines[2] += '…'; } return lines; }
 const free = (x, y, w, h) => { if (y < TOP + 92 || y + h > H - 150 || x < 4 || x + w > W - 4) return false; for (const b of placed) if (x < b[0] + b[2] && x + w > b[0] && y < b[1] + b[3] && y + h > b[1]) return false; return true; };
 const take = (x, y, w, h) => placed.push([x - 3, y - 2, w + 6, h + 4]);
@@ -206,39 +328,40 @@ function overlay(t, dd) { placed = []; hits = []; const alt = cam.alt, playing =
   /* Rings: the goal's name and number where its ring comes nearest. */
   rings.forEach((R, ri) => { const far = sstep(1.2, 2.2, alt); if (far < .02) return; const c = cssHue(R.hue, 72), pv = proj(R.end, 1, false);
     if (pv.vis && R.shown < .995) { g.save(); g.globalAlpha = far; g.fillStyle = c; g.beginPath(); g.arc(pv.x, pv.y, 4.5, 0, TAU); g.fill(); g.fillStyle = C.stage; g.beginPath(); g.arc(pv.x, pv.y, 2, 0, TAU); g.fill(); g.restore(); }
-    let bi = 0, bz = -9; R.around.forEach((v, k) => { V.copy(v).applyMatrix4(globe.matrixWorld); const sc = V.z + V.x * .55; if (sc > bz) { bz = sc; bi = k; } }); const an = proj(R.around[(bi + (ri - 1) * 4 + 60) % 60], 1, false), lbl = `${R.G.name} · ${goalText(R.G)}`, w = wOf(lbl, 12), lx = Math.min(an.x + 12, W - w - 10); let ly = an.y; for (const dy of [0, 19, -19, 38, -38, 57, -57]) { if (free(lx, an.y + dy - 9, w + 4, 18)) { ly = an.y + dy; break; } }
+    let bi = 0, bz = -9; R.around.forEach((v, k) => { V.copy(v).applyMatrix4(globe.matrixWorld); const sc = V.z + V.x * .55; if (sc > bz) { bz = sc; bi = k; } }); const an = proj(R.around[(bi + (ri - 1) * 4 + 60) % 60], 1, false), lbl = fitLabel(`${R.G.name} · ${goalText(R.G)}`,Math.max(80,W-32)), w = wOf(lbl, 12), lx = Math.min(an.x + 12, W - w - 10); let ly = an.y, labelFits=false; for (const dy of [0, 19, -19, 38, -38, 57, -57]) { if (free(lx, an.y + dy - 9, w + 4, 18)) { ly = an.y + dy; labelFits=true; break; } }
     R.anchor = { x: an.x, y: an.y }; g.save(); g.globalAlpha = far; g.fillStyle = c; g.beginPath(); g.arc(an.x, an.y, 3, 0, TAU); g.fill(); g.restore();
-    const words = !playing && W >= 560; if (words) { txt(lbl, lx, ly, { size: 12, color: sel === R.G ? C.accent : c, alpha: far }); take(lx, ly - 9, w, 18); } hit(an.x - 10, ly - 11, words ? w + 26 : 20, 22, R.G, [R.G.name, 'Goal · ' + goalText(R.G) + ' · click to open']); });
+    const words = labelFits && !playing && W >= 560 && (!sel || sel===R.G || related.has(R.G)); if (words) { txt(lbl, lx, ly, { size: 12, color: sel === R.G ? C.accent : c, alpha: far }); take(lx, ly - 9, w, 18); } hit(an.x - 10, ly - 11, words ? w + 26 : 20, 22, R.G, [R.G.name, 'Goal · ' + goalText(R.G) + ' · click to open']); });
   /* Continents, and places still to chart. */
   for (const l of M.lands) { const c = proj(l.c, 1.004); if (!c.vis) continue;
-    if (U.uR.value[l.i] < .02) { if (!l.unch) continue; const al = c.fade * sstep(.6, 1.4, alt) * (playing ? .5 : 1); if (al < .03) continue; g.save(); g.strokeStyle = cssHue(l.hue, 66); g.globalAlpha = al * .6; g.setLineDash([3, 5]); g.beginPath(); let pen = false;
+    if (U.uR.value[l.i] < .02) { if (!l.unch) continue; const al = c.fade * sstep(.6, 1.4, alt) * (playing ? .5 : 1) * (sel && sel!==l ? .15 : 1); if (al < .03) continue; g.save(); g.strokeStyle = cssHue(l.hue, 66); g.globalAlpha = al * .6; g.setLineDash([3, 5]); g.beginPath(); let pen = false;
         for (let k = 0; k <= 48; k++) { const s = proj(offset(l.c, l.rmax * (1 + .13 * Math.sin(k * .8 + l.i * 2)), k / 48 * TAU), 1.004); if (!s.vis) { pen = false; continue; } pen ? g.lineTo(s.x, s.y) : g.moveTo(s.x, s.y); pen = true; } g.stroke(); g.restore(); if (playing) continue;
         const w = Math.max(74, wOf(l.name, 12)); txt('UNCHARTED', c.x, c.y - 8, { size: 9.5, weight: 700, color: C.muted, align: 'center', alpha: al, track: 2 }); txt(l.name, c.x, c.y + 7, { size: 12, color: cssHue(l.hue, 74), align: 'center', alpha: al }); take(c.x - w / 2, c.y - 16, w, 32); hit(c.x - w / 2 - 6, c.y - 18, w + 12, 36, l, [l.name + ' · uncharted', 'Nothing is saved here yet. Click to start charting it.']); continue; }
-    const top = proj(offset(l.c, U.uR.value[l.i] * .92, Math.PI / 2), 1.004), al = c.fade * sstep(.28, .6, alt) * (l.dim > .5 ? 1 : .35), size = clamp(10.5 + (2.2 - alt) * 2.2, 10.5, 15), name = l.name.toUpperCase(), w = wOf(name, size, 700, 2), x = top.x, y = Math.max(TOP + 104, Math.min(top.y, c.y - 14)); if (al < .03) continue;
+    const top = proj(offset(l.c, U.uR.value[l.i] * .92, Math.PI / 2), 1.004), al = c.fade * sstep(.28, .6, alt) * (l.dim > .5 ? 1 : .35), size = clamp(10.5 + (2.2 - alt) * 2.2, 10.5, 15), name = l.name.toUpperCase(), w = wOf(name, size, 700, 2), x = top.x, y = Math.max(TOP + 104, Math.min(top.y, c.y - 14)); if (al < .03 || (sel && l.dim<.5)) continue;
     txt(name, x, y, { size, weight: 700, color: cssHue(l.hue, 74), align: 'center', alpha: al, track: 2 }); take(x - w / 2, y - size * .7, w, size * 1.4);
-    if (alt < 3.6 && alt > .5 && !playing) { const nt = l.things.length + (l.more || 0), sub = lens === 'effort' ? (l.requests ? `${l.requests} AI request${l.requests === 1 ? '' : 's'} this month` : 'No AI requests this month') : [nt ? `${nt} tracked` : '', l.finds.length ? `${l.finds.length} finding${l.finds.length === 1 ? '' : 's'}` : ''].filter(Boolean).join(' · '); txt(sub, x, y + size + 3, { size: 10.5, weight: 500, color: C.muted, align: 'center', alpha: al * .9 }); take(x - 60, y + size - 5, 120, 15); }
+    if (alt < 3.6 && alt > .5 && !playing) { const nt = l.things.length + (l.more || 0), sub = lens === 'effort' ? l.effortLabel : [nt ? `${nt} tracked` : '', l.finds.length ? `${l.finds.length} finding${l.finds.length === 1 ? '' : 's'}` : ''].filter(Boolean).join(' · '); txt(sub, x, y + size + 3, { size: 10.5, weight: 500, color: C.muted, align: 'center', alpha: al * .9 }); take(x - 60, y + size - 5, 120, 15); }
     if (l.quiet) alertDot(x + w / 2 + 12, y);
     if (lens === 'links') for (const R of rings) if (R.anchor && R.G.lands.includes(l.id)) { g.save(); g.strokeStyle = cssHue(R.hue, 72); g.globalAlpha = .75 * c.fade; g.lineWidth = 1.4; g.setLineDash([4, 4]); g.beginPath(); g.moveTo(c.x, c.y); g.quadraticCurveTo((c.x + R.anchor.x) / 2, Math.min(c.y, R.anchor.y) - 40, R.anchor.x, R.anchor.y); g.stroke(); g.restore(); }
     hit(x - w / 2 - 6, y - 10, w + 12, 22, l, [l.name, 'Click to fly there']); }
-  if (alt < 1.25) { const ta = sstep(1.25, .8, alt); g.save(); g.lineWidth = 1; for (const f of M.finds) { if (!f.tied.length || f.from > dd || f.land.dim < .5) continue; const a = proj(f.p, 1.004); if (!a.vis || a.x < -50 || a.x > W + 50 || a.y < -50 || a.y > H + 50) continue;
+  drawTrace();
+  if (!sel && alt < 1.25) { const ta = sstep(1.25, .8, alt); g.save(); g.lineWidth = 1; for (const f of M.finds) { if (!f.tied.length || f.from > dd || f.land.dim < .5) continue; const a = proj(f.p, 1.004); if (!a.vis || a.x < -50 || a.x > W + 50 || a.y < -50 || a.y > H + 50) continue;
       for (const th of f.tied) { const b = proj(th.p, 1.004); if (!b.vis) continue; g.strokeStyle = cssHue(f.land.hue, 70); g.globalAlpha = ta * (f === focus || th === focus ? .9 : .3); g.beginPath(); g.moveTo(a.x, a.y); g.lineTo(b.x, b.y); g.stroke(); } } g.restore(); }
   if (alt > .7) for (const k of M.tasks) { const l = k.land; if (U.uR.value[l.i] < .02) continue; const a = proj(k.p, 1, false), b = proj(k.foot, 1.004); if (!a.vis) continue; const far = sstep(.7, 1.3, alt) * (l.dim > .5 ? 1 : .3), bad = ['failed', 'missing', 'paused'].includes(k.raw.health), col = bad ? C.warn : C.muted, on = sel === k || hov === k; if (far < .02) continue;
     g.save(); g.globalAlpha = far * .6; g.strokeStyle = col; g.lineWidth = 1; g.setLineDash([2, 3]); if (b.vis) { g.beginPath(); g.moveTo(a.x, a.y); g.lineTo(b.x, b.y); g.stroke(); } g.setLineDash([]);
     g.globalAlpha = far; g.fillStyle = C.stage; g.beginPath(); g.arc(a.x, a.y, 8, 0, TAU); g.fill(); g.strokeStyle = on ? C.accent : col; g.lineWidth = 1.5; g.beginPath(); g.arc(a.x, a.y, 6, 0, TAU); g.moveTo(a.x, a.y - 3.5); g.lineTo(a.x, a.y); g.lineTo(a.x + 2.6, a.y + 1.6); g.stroke(); g.restore();
     if (bad) alertDot(a.x + 8, a.y - 8); if (on) txt(k.name, a.x + 14, a.y, { size: 11.5, color: C.accent, alpha: far });
     hit(a.x - 11, a.y - 11, 22, 22, k, [k.name, (k.raw.schedule ? k.raw.schedule + ' · ' : '') + (k.raw.status || '')]); }
-  running.forEach((r, i) => { const y0 = TOP + 62 + i * 22, l = M.lands.find(z => z.id === r.land); txt(r.label, 28, y0, { size: 11.5, color: C.accent }); g.save(); g.fillStyle = C.accent; g.beginPath(); g.arc(15, y0, 3 + Math.sin(t / 220), 0, TAU); g.fill();
-    if (l) { const c = proj(l.c, 1.004); if (c.vis) { g.strokeStyle = C.accent; g.globalAlpha = .4; g.setLineDash([2, 5]); g.lineDashOffset = -t / 40; g.beginPath(); g.moveTo(34 + wOf(r.label, 11.5), y0); g.lineTo(c.x, c.y); g.stroke(); } } g.restore(); });
+  running.forEach((r, i) => { const y0 = TOP + 62 + i * 22, l = M.lands.find(z => z.id === r.land); txt(r.label, 28, y0, { size: 11.5, color: C.accent }); g.save(); g.fillStyle = C.accent; g.beginPath(); g.arc(15, y0, 3 + (reduce ? 0 : Math.sin(t / 220)), 0, TAU); g.fill();
+    if (l) { const c = proj(l.c, 1.004); if (c.vis) { g.strokeStyle = C.accent; g.globalAlpha = .4; g.setLineDash([2, 5]); g.lineDashOffset = reduce ? 0 : -t / 40; g.beginPath(); g.moveTo(34 + wOf(r.label, 11.5), y0); g.lineTo(c.x, c.y); g.stroke(); } } g.restore(); });
   /* Up close, findings as sentences and lights by name. */
   const shown = [];
-  if (alt < 2.6) for (const f of M.finds) { if (f.from > dd || f.land.dim < .5 || (S.q && !f.name.toLowerCase().includes(S.q))) continue; const s = proj(f.p, 1.004); if (!s.vis || s.x < 0 || s.x > W || s.y < TOP || s.y > H) continue; const r = clamp(5 + (1.2 - alt) * 5, 5, 10); hit(s.x - r, s.y - r, r * 2, r * 2, f, [f.name, FLABEL[f.label] + ' · click to open']); shown.push({ f, s }); }
+  if (alt < 2.6) for (const f of M.finds) { if (!inSelection(f) || f.from > dd || f.land.dim < .5 || (S.q && !f.name.toLowerCase().includes(S.q))) continue; const s = proj(f.p, 1.004); if (!s.vis || s.x < 0 || s.x > W || s.y < TOP || s.y > H) continue; const r = clamp(5 + (1.2 - alt) * 5, 5, 10); hit(s.x - r, s.y - r, r * 2, r * 2, f, [f.name, FLABEL[f.label] + ' · click to open']); shown.push({ f, s }); }
   const tl = [];
-  for (const x of M.things) { if (x.from > dd) continue; const s = proj(x.p, 1.004); if (!s.vis || s.x < -40 || s.x > W + 40 || s.y < 0 || s.y > H + 40) continue; const dim = x.land.dim < .5 || (S.q && !x.name.toLowerCase().includes(S.q)), r = clamp(8 + (1.4 - alt) * 5, 7, 15);
+  for (const x of M.things) { if (x.from > dd) continue; const s = proj(x.p, 1.004); if (!s.vis || s.x < -40 || s.x > W + 40 || s.y < 0 || s.y > H + 40) continue; const dim = !inSelection(x) || x.land.dim < .5 || (S.q && !x.name.toLowerCase().includes(S.q)), r = clamp(8 + (1.4 - alt) * 5, 7, 15);
     if (!dim) hit(s.x - r, s.y - r, r * 2, r * 2, x, [x.name, [x.land.name, fieldLine(x), 'click to open'].filter(Boolean).join(' · ')]); tl.push({ x, s, dim, pri: (x === focus ? 1e6 : 0) + (x.need ? 5e4 : 0) + (S.q && !dim ? 1e4 : 0) + x.changes * 10 + (x.raw.sources || 0) + clamp(1 - (M.T - x.seen) / 120, 0, 1) * 5 + hash1(x.from) }); }
   tl.sort((a, b) => b.pri - a.pri); const cap = playing ? 0 : alt > 3.6 ? 9 : alt > 2.2 ? 18 : alt > 1.2 ? 36 : 999; let n = 0;
   const mark = (o, c, r0) => { const s = proj(o.p, 1.004); if (!s.vis) return; g.save(); g.strokeStyle = c; g.lineWidth = 1.4; const r1 = r0 + (o.kind === 'item' ? 6 : 0); g.beginPath(); g.arc(s.x, s.y, r1, 0, TAU); g.stroke(); for (let i = 0; i < 4; i++) { const a = i * Math.PI / 2; g.beginPath(); g.moveTo(s.x + Math.cos(a) * (r1 + 3), s.y + Math.sin(a) * (r1 + 3)); g.lineTo(s.x + Math.cos(a) * (r1 + 8), s.y + Math.sin(a) * (r1 + 8)); g.stroke(); } g.restore(); };
   if (sel && sel.p) mark(sel, C.accent, 9); if (hov && hov.p && hov !== sel) mark(hov, C.ink, 8);
-  for (const { x, s, dim, pri } of tl) { if (dim && pri < 1e4) continue; if (n >= cap && pri < 1e4) break; const size = clamp(11 + (1.4 - alt) * 2.2, 11, 14.5), w = wOf(x.name, size), extra = alt < .62 && alt >= .36 ? Object.entries(x.raw.fields || {}).slice(0, 1).map(([k, v]) => `${k}: ${v}`) : [], line2 = extra.length, bw = Math.max(w, ...extra.map(e => wOf(e, 11, 500))), bh = size + 5 + extra.length * 14, r = clamp(9 + (1.4 - alt) * 5, 8, 18), al = s.fade;
+  for (const { x, s, dim, pri } of tl) { if (dim) continue; if (n >= cap && pri < 1e4) break; const size = clamp(11 + (1.4 - alt) * 2.2, 11, 14.5), w = wOf(x.name, size), extra = alt < .62 && alt >= .36 ? Object.entries(x.raw.fields || {}).slice(0, 1).map(([k, v]) => `${k}: ${v}`) : [], line2 = extra.length, bw = Math.max(w, ...extra.map(e => wOf(e, 11, 500))), bh = size + 5 + extra.length * 14, r = clamp(9 + (1.4 - alt) * 5, 8, 18), al = s.fade;
     let px = s.x + r, py = s.y - bh / 2, ok = free(px, py, bw, bh); if (!ok) { px = s.x - r - bw; ok = free(px, py, bw, bh); } if (!ok) { px = s.x - bw / 2; py = s.y + r; ok = free(px, py, bw, bh); } if (!ok && pri < 1e5) continue;
     txt(x.name, px, py + size * .6, { size, color: x.need ? C.warn : x === focus ? C.accent : C.ink, alpha: al }); extra.forEach((e, i) => txt(e, px, py + size + 9 + i * 14, { size: 11, weight: 500, color: C.muted, alpha: al })); take(px, py, bw, bh); n++; if (x.need) alertDot(s.x - r, s.y - r); }
   if (alt < .95 && !playing) { shown.sort((a, b) => (b.f === focus) - (a.f === focus) || b.f.from - a.f.from); const a0 = sstep(.95, .7, alt);
@@ -247,7 +370,7 @@ function overlay(t, dd) { placed = []; hits = []; const alt = cam.alt, playing =
   if (alt < .36 && !playing) { const da = sstep(.36, .26, alt); for (const d of M.dets) { if (d.from > dd || d.land.dim < .5) continue; const s = proj(d.p, 1.004); if (!s.vis || s.x < 0 || s.x > W || s.y < TOP || s.y > H - 56) continue; const w = wOf(d.label, 10.5, 500); let px = s.x + 7; const py = s.y - 8; if (!free(px, py, w, 16)) { px = s.x - 7 - w; if (!free(px, py, w, 16)) continue; }
       txt(d.label, px, s.y, { size: 10.5, weight: 500, color: d.th === focus ? C.ink : C.muted, alpha: da }); take(px, py, w, 16); hit(px, py, w, 16, d.th, [d.label, d.th.name + ' · click to open']); } }
   /* Landmarks: decisions stay on the map, in the person's own words. */
-  if (alt < 3.8 && !playing) for (const d of M.decisions) { if (d.day > dd || d.land.dim < .5) continue; const s = proj(d.p, 1.004); if (!s.vis || s.x < 0 || s.x > W || s.y < TOP || s.y > H - 56) continue; const r = clamp(4 + (1.6 - alt) * 2, 4, 7), on = sel === d, c = on ? C.accent : C.ink, a0 = sstep(3.8, 2.6, alt) * s.fade;
+  if (alt < 3.8 && !playing) for (const d of M.decisions) { if (!inSelection(d) || d.day > dd || d.land.dim < .5) continue; const s = proj(d.p, 1.004); if (!s.vis || s.x < 0 || s.x > W || s.y < TOP || s.y > H - 56) continue; const r = clamp(4 + (1.6 - alt) * 2, 4, 7), on = sel === d, c = on ? C.accent : C.ink, a0 = sstep(3.8, 2.6, alt) * s.fade;
     g.save(); g.globalAlpha = a0; g.fillStyle = C.stage; g.strokeStyle = c; g.lineWidth = 1.5; g.beginPath(); g.moveTo(s.x, s.y - r); g.lineTo(s.x + r, s.y); g.lineTo(s.x, s.y + r); g.lineTo(s.x - r, s.y); g.closePath(); g.fill(); g.stroke(); g.restore(); hit(s.x - r - 3, s.y - r - 3, r * 2 + 6, r * 2 + 6, d, [d.name, (d.lesson ? 'Lesson · ' : 'Decision · ') + dateOf(d.day) + ' · click to open']); if (on || hov === d) for (const b of d.basis) { const e = proj(b.p, 1.004); if (e.vis) { g.save(); g.strokeStyle = C.accent; g.globalAlpha = .7; g.lineWidth = 1.2; g.beginPath(); g.moveTo(s.x, s.y); g.lineTo(e.x, e.y); g.stroke(); g.restore(); } }
     if (alt < 1.7 || on) { const lines = wrapText(d.name, 11.5, 190), bw = Math.max(...lines.map(l => wOf(l, 11.5))), bh = lines.length * 15 + 2; let px = s.x + r + 6; const py = s.y - bh / 2; if (!free(px, py, bw, bh)) { px = s.x - r - 6 - bw; if (!free(px, py, bw, bh) && !on) continue; } lines.forEach((l, i) => txt(l, px, py + 8 + i * 15, { size: 11.5, color: c, alpha: a0 })); take(px, py, bw, bh); } }
   /* The whole world at a glance, because a globe hides its far side. */
@@ -270,12 +393,12 @@ const FLABEL = { supported: 'Supported finding', unverified: 'Finding, not yet v
 function headline() { const f = M.feed, n = f.totals.attention, open = M.goals.filter(G => !G.reached && gval(G, S.day) != null).sort((a, b) => gdone(b, S.day) - gdone(a, S.day))[0], lit = M.things.filter(x => x.from <= S.day).length + M.finds.filter(x => x.from <= S.day).length, unch = M.lands.filter(l => l.unch).length, nd = n ? `${n} thing${n === 1 ? ' needs' : 's need'} you` : 'Nothing needs you';
   let b, s; if (!lit) { b = 'Your world starts here.'; s = unch ? 'Click an uncharted area to start charting it.' : 'What your AI saves will appear here as lights.'; }
   else if (open) { b = `${open.name}: ${goalText(open)}`; s = nd; } else if (M.goals.length && M.goals.every(G => G.reached)) { b = 'Every goal reached.'; s = nd; }
-  else { b = `${lit} light${lit === 1 ? '' : 's'} on${M.days < 21 ? '. Your world is taking shape.' : '.'}`; s = M.goals.length ? nd : 'Add a goal with a number to give your world a ring · ' + nd; }
+  else { b = M.name; s = nd; }
   const html = `<b>${safe(b)}</b><span>${safe(s)}</span>`; if (headEl._h !== html) { headEl._h = html; headEl.innerHTML = html; } }
 function caption(c, ms) { clearTimeout(capT); if (!c) { capEl.classList.remove('on'); capOpen = null; return; } capEl.innerHTML = `<small>${safe(c.kicker || '')}</small><b>${safe(c.title)}</b>${c.sub ? `<span>${safe(c.sub)}</span>` : ''}`; capOpen = c.open || null; capEl.classList.toggle('go', !!capOpen); capEl.classList.add('on'); if (ms) capT = setTimeout(() => caption(null), ms); }
 function stopShow() { touched = true; if (!show) return; const was = show; show = null; caption(null); if (was.type === 'play') { dirty = true; } playEl.textContent = '▶ Watch it light up'; }
 function select(o, fly = true) { if (sel === o) return; sel = o || null; dirty = true; if (o && fly && !show) { if (o.kind === 'task') flyTo(o.land.c, 1.9); else if (o.p) flyTo(o.p, o.kind === 'decision' ? 1.3 : Math.min(cam.to.alt, o.kind === 'finding' ? .42 : .52)); else if (o.kindOf === 'land') flyTo(o.c, clamp(o.rmax * 3.4, .9, 1.6)); else if (o.kind === 'goal') { const fed = M.lands.filter(l => o.lands.includes(l.id)); if (fed.length) { const mid = new THREE.Vector3(); fed.forEach(l => mid.add(l.c)); flyTo(mid.lengthSq() > .01 ? mid.normalize() : fed[0].c, HOME_ALT); cam.to.lat = clamp(cam.to.lat, -.5, .5); } else home();
-      ramp = { from: 0, to: S.day, t0: performance.now(), dur: 5200, goal: o.id }; caption({ kicker: fed.length ? 'What feeds this goal' : 'How this goal has moved', title: o.name, sub: fed.length ? `${goalText(o)} · fed by ${fed.map(l => l.name).slice(0, 3).join(', ')}` : `${goalText(o)} · nothing is linked to it yet` }, 5600); } } cb.select?.(sel); }
+      ramp = null; caption({ kicker: fed.length ? 'What feeds this goal' : 'How this goal has moved', title: o.name, sub: fed.length ? `${goalText(o)} · fed by ${fed.map(l => l.name).slice(0, 3).join(', ')}` : `${goalText(o)} · nothing is linked to it yet` }, 5600); } } cb.select?.(sel); }
 function tour() { stopShow(); select(null); const top = M.things.slice().sort((a, b) => b.changes - a.changes || b.seen - a.seen)[0], f = M.finds.find(x => !x.need), nd = [...M.things, ...M.finds].find(x => x.need), done = M.goals.filter(G => G.reached).length;
   const steps = [{ kicker: 'Your world', title: `This is ${M.name}.`, sub: 'Everything AURA keeps for you, drawn as one world.' },
     M.goals.length && { kicker: 'Rings', title: 'Each ring is a goal.', sub: `It fills as real progress is recorded. ${done} of ${M.goals.length} ${done === 1 ? 'is' : 'are'} complete.` },
@@ -329,18 +452,18 @@ ui.addEventListener('dblclick', e => { const p = pick(e.clientX, e.clientY); if 
 ui.addEventListener('keydown', e => { const k = { ArrowLeft: [-.12, 0], ArrowRight: [.12, 0], ArrowUp: [0, .1], ArrowDown: [0, -.1] }[e.key]; if (k) { e.preventDefault(); stopShow(); cam.to.lon += k[0]; cam.to.lat = clamp(cam.to.lat + k[1], -1.35, 1.35); } if (e.key === '+' || e.key === '=') cam.to.alt = clamp(cam.to.alt * .75, ALT_MIN, ALT_MAX); if (e.key === '-') cam.to.alt = clamp(cam.to.alt / .75, ALT_MIN, ALT_MAX); if (e.key === 'Home') home(); });
 ui.tabIndex = 0; ui.setAttribute('role', 'img');
 range.addEventListener('input', () => { stopShow(); S.day = M.T * range.value / 1000; dirty = true; });
-barEl.addEventListener('click', e => { const w = e.target.closest('[data-w]')?.dataset.w; if (w === 'play') show?.type === 'play' ? stopShow() : play(); if (w === 'tour') tour(); if (w === 'changed') changed(); if (w === 'flat') { flat = !flat; e.target.closest('[data-w]').setAttribute('aria-pressed', String(flat)); stopShow(); } if (w === 'home') { stopShow(); select(null); home(); } if (w === 'share') share(); });
+barEl.addEventListener('click', e => { const w = e.target.closest('[data-w]')?.dataset.w; if (w === 'play') show?.type === 'play' ? stopShow() : play(); if (w === 'live') { stopShow(); ramp = null; S.day = dday = M.T; range.value = 1000; dirty = true; } if (w === 'tour') tour(); if (w === 'changed') changed(); if (w === 'flat') { flat = !flat; e.target.closest('[data-w]').setAttribute('aria-pressed', String(flat)); stopShow(); } if (w === 'home') { stopShow(); select(null); home(); } if (w === 'share') share(); });
 shareEl.addEventListener('click', e => { const w = e.target.closest('[data-w]')?.dataset.w; if (w === 'close' || e.target === shareEl) shareEl.hidden = true; if (w === 'png') shareEl._c.toBlob(b => save(b, fileName('png')), 'image/png'); if (w === 'clip') clip(); });
 capEl.addEventListener('click', () => { if (capOpen) { const o = capOpen; stopShow(); o(); } });
-function frame(t) { raf = 0; if (!stage || !stage.isConnected) { stage = null; return; } raf = requestAnimationFrame(frame); const dt = Math.min(50, t - (last || t)); last = t; const r = stage.getBoundingClientRect(); if (Math.abs(r.width - W) > .5 || Math.abs(r.height - H) > .5) fit(); theme(); if (dirty) sync();
+function frame(t) { raf = 0; if (!stage || !stage.isConnected) { stage = null; return; } raf = requestAnimationFrame(frame); if (document.hidden || stage.closest('.world-expanded') || (document.body.classList.contains('world-chat-open') && matchMedia('(max-width:860px)').matches)) {last=t;return;} const dt = Math.min(50, t - (last || t)); last = t; const r = stage.getBoundingClientRect(); if (Math.abs(r.width - W) > .5 || Math.abs(r.height - H) > .5) fit(); theme(); if (dirty) sync();
   stepShow(t); const k = reduce ? 1 : 1 - Math.pow(.0025, dt / 1000); if (!pd) { cam.to.lon += cam.v[0]; cam.to.lat = clamp(cam.to.lat + cam.v[1], -1.35, 1.35); cam.v[0] *= .92; cam.v[1] *= .92; }
   cam.lon += (cam.to.lon - cam.lon) * k; cam.lat += (cam.to.lat - cam.lat) * k; cam.alt = Math.exp(Math.log(cam.alt) + (Math.log(cam.to.alt) - Math.log(cam.alt)) * k); applyCam();
   if (ramp) { const u = clamp((performance.now() - ramp.t0) / ramp.dur, 0, 1); dday = ramp.from + (ramp.to - ramp.from) * u * u * (3 - 2 * u); if (u >= 1) ramp = null; } else { dday += (S.day - dday) * (reduce ? 1 : 1 - Math.pow(.03, dt / 1000)); if (Math.abs(S.day - dday) < M.T / 1500) dday = S.day; }
   for (const l of M.lands) { U.uR.value[l.i] += (l.rto - U.uR.value[l.i]) * Math.min(1, dt / 260); U.uDim.value[l.i] += (l.dim - U.uDim.value[l.i]) * Math.min(1, dt / 200); }
   /* The preview measured time in days over two years; a young workspace is scaled so its first lights still fade in. */
-  const span = Math.max(1, M.T / 140); U.uTime.value = t / 1000; U.uZoom.value = clamp(cam.alt, .18, 3); LU.uDay.value = dday / span + 5 * clamp(dday / M.T, 0, 1); LU.uAlt.value = cam.alt; LU.uScale.value = renderer.getDrawingBufferSize(new THREE.Vector2()).y * .75;
+  const span = Math.max(1, M.T / 140); U.uTime.value = reduce ? 0 : t / 1000; U.uZoom.value = clamp(cam.alt, .18, 3); LU.uDay.value = dday / span + 5 * clamp(dday / M.T, 0, 1); LU.uAlt.value = cam.alt; LU.uScale.value = renderer.getDrawingBufferSize(new THREE.Vector2()).y * .75;
   rings.forEach(R => { const to = gdone(R.G, ramp && ramp.goal === R.G.id ? dday : S.day); R.shown += (to - R.shown) * Math.min(1, dt / 300); ringBuild(R, R.shown); const rf = sstep(1.0, 1.9, cam.alt); R.arc.material.opacity = rf; R.glow.material.opacity = .16 * rf; R.track.material.opacity = (kit ? .35 : .22) * rf; R.holder.visible = rf > .01; });
-  running = cb.running?.() || []; { const loose = running.some(r => !r.land); for (const l of M.lands) U.uPulse.value[l.i] = running.some(r => r.land === l.id) ? 1 : loose ? .4 : 0; } glc.style.visibility = flat ? 'hidden' : '';
+  running = cb.running?.() || []; { for (const l of M.lands) U.uPulse.value[l.i] = running.some(r => r.land === l.id) ? 1 : 0; } glc.style.visibility = flat ? 'hidden' : '';
   if (flat) flatMap(t, dday); else { renderer.render(scene, camera); if (rec) { rec.frame(); if (show?.type !== 'play') { rec.mr.stop(); rec = null; } } overlay(t, dday); }
   const h = pointer && !pd ? under(pointer) : null, was = hov; hov = h ? h.s : null; ui.style.cursor = h ? 'pointer' : moved && pd ? 'grabbing' : 'grab'; if (h && h.tip) { tipEl.innerHTML = `${safe(h.tip[0])}<small>${safe(h.tip[1] || '')}</small>`; tipEl.style.opacity = 1; tipEl.style.left = Math.min(pointer.x + 16, W - 290) + 'px'; tipEl.style.top = Math.min(pointer.y + 16, H - 80) + 'px'; } else tipEl.style.opacity = 0; if (was !== hov) dirty = dirty || false;
   headEl.style.opacity = cam.alt > 3.4 && !show && !sel && shareEl.hidden ? 1 : 0; }
@@ -350,14 +473,20 @@ function mount(host, feed, callbacks = {}) { if (!renderer) return false; cb = c
   for (let i = 0; i < M.lands.length; i++) { U.uR.value[i] = M.lands[i].rto; }
   if (!raf) raf = requestAnimationFrame(frame);
   const seen = cb.seen || null, toured = !!cb.toured; sinceT = seen ? Date.parse(seen) : 0; F = { lands: null, needs: false }; flat = false; barEl.querySelector('[data-w=flat]').setAttribute('aria-pressed', 'false'); cb.remember?.({ seen: feed.as_of });
-  touched = false; if (!reduce && (M.things.length || M.finds.length)) setTimeout(() => { if (touched || show || sel || stage !== host) return; if (!toured) { tour(); return; }
-    const since = seen ? Date.parse(seen) : Date.parse(feed.as_of) - 14 * 864e5, recent = feed.changes.filter(c => Date.parse(c.at) > since); if (!recent.length) return; const first = Math.min(...recent.map(c => (Date.parse(c.at) - M.date(0).getTime()) / 864e5));
-    ramp = { from: Math.max(0, first - M.T / 60), to: M.T, t0: performance.now(), dur: 2800 }; caption({ kicker: seen ? 'Since your last visit' : 'In the last two weeks', title: `${recent.length} change${recent.length === 1 ? '' : 's'} noticed`, sub: [...new Set(recent.map(c => c.title))].slice(0, 3).join(' · ') }, 5200); }, 1100);
+  touched = false;
   return true; }
-function find(kind, id) { if (!M) return null; return kind === 'land' ? M.lands.find(l => l.id === id) : kind === 'item' ? M.things.find(x => x.id === id) : kind === 'finding' ? M.finds.find(x => x.id === id) : kind === 'goal' ? M.goals.find(x => x.id === id) : kind === 'decision' ? M.decisions.find(x => x.id === id) : kind === 'task' ? M.tasks.find(x => x.id === id) : null; }
-window.auraWorld = { available: !!renderer, mount, unmount() { stage = null; cb = {}; if (rec) { try { rec.mr.stop(); } catch {} rec = null; } }, focus(kind, id) { stopShow(); select(find(kind, id)); }, clear() { stopShow(); select(null); home(); }, search(q) { S.q = String(q || '').trim().toLowerCase(); dirty = true; }, filter(f) { F = { lands: f?.lands?.length ? f.lands : null, needs: !!f?.needs }; dirty = true; }, changed, lens(name) { lens = name || ''; dirty = true; },
+function find(kind, id) { return M?.byKey.get(kind+':'+id) || null; }
+window.auraWorld = { available: !!renderer,
+  compare(keys) { comparison=keys ? new Set(keys) : null;dirty=true; },
+  cameraState() { return {lon:cam.lon,lat:cam.lat,alt:cam.alt}; },
+  restoreCamera(position) {
+    if (!position || ![position.lon,position.lat,position.alt].every(Number.isFinite)) return;
+    cam.to={lon:position.lon,lat:clamp(position.lat,-1.35,1.35),alt:clamp(position.alt,ALT_MIN,ALT_MAX)};
+    dirty=true;
+  },
+  setEffortMetric, replaying: () => !!M && (!!show || S.day < M.T), mount, unmount() { stage = null; cb = {}; if (rec) { try { rec.mr.stop(); } catch {} rec = null; } }, focus(kind, id, fly = true) { const record = find(kind, id); if (!record) return false; stopShow(); if (sel === record) cb.select?.(record); else select(record, fly); return true; }, clear() { stopShow(); select(null); home(); }, search(q) { S.q = String(q || '').trim().toLowerCase(); dirty = true; }, filter(f) { F = { lands: f?.scoped || f?.lands?.length ? (f.lands || []) : null, needs: !!f?.needs }; dirty = true; }, changed, lens(name) { lens = name || ''; dirty = true; },
   /* New records while the aura is open: redraw from the new feed where the person already is, and let what just arrived glow. */
-  update(feed) { if (!stage || !M) return; const keep = { lon: cam.lon, lat: cam.lat, alt: cam.alt, to: { ...cam.to } }, was = sel ? [sel.kindOf || sel.kind, sel.id] : null, f0 = F, l0 = lens; load(feed); Object.assign(cam, keep, { v: [0, 0] }); F = f0; lens = l0; themeKey = ''; theme(); sync(); for (const l of M.lands) U.uR.value[l.i] = l.rto; if (was) sel = find(was[0], was[1]) || null; ramp = { from: Math.max(0, M.T - Math.max(.02, M.T / 30)), to: M.T, t0: performance.now(), dur: 2600 }; cb.select?.(sel); }, tour, play, share, poster, model: () => M,
+  update(feed) { if (!stage || !M) return; const keep = { lon: cam.lon, lat: cam.lat, alt: cam.alt, to: { ...cam.to } }, was = sel ? [sel.kindOf || sel.kind, sel.id] : null, f0 = F, l0 = lens; load(feed); Object.assign(cam, keep, { v: [0, 0] }); F = f0; lens = l0; themeKey = ''; theme(); sync(); for (const l of M.lands) U.uR.value[l.i] = l.rto; if (was) sel = find(was[0], was[1]) || null; dirty=true; ramp = null; }, tour, play, share, poster, model: () => M,
   /* For checks only: the cost of drawing one frame, in milliseconds, without waiting for the screen. */
   bench(n = 20) { const t0 = performance.now(); for (let i = 0; i < n; i++) { cancelAnimationFrame(raf); frame(performance.now()); } return (performance.now() - t0) / n; },
   /* For checks only: jump straight to where the camera is heading. */

@@ -24,7 +24,7 @@ const feed={business:{id:'bakery',name:'Bakery'},
   attention:[{id:'att1',title:'Confirm revenue',reason:'Needed for the grant form'}],suggestions:[{title:'Update Google reviews',why:'Last recorded 20 days ago.',prompt:'Bring "Google reviews" up to date'}],totals:{}};
 const home=v.home(feed);
 assert.ok(home.includes('data-world-go="goal:G1"')&&home.includes('87 of 100 reviews'),'a goal with a number flies to its ring');
-assert.ok(/class="world-row plain"[^>]*><i><\/i><span><b>Be loved locally/.test(home),'a goal with no number and no record is shown, not linked');
+assert.ok(home.includes('data-world-go="goal:G3"'),'a goal without a ring can still be explored');
 assert.ok(home.includes('data-prompt="Bring &quot;Google reviews&quot; up to date"'),'a next step starts an ordinary chat with its saved prompt');
 assert.ok(home.includes('data-world-go="item:col_1|a"')&&home.includes('data-world-go="land:col_1"')&&home.includes('Gone quiet'));
 assert.ok(home.includes('1 tracked · 1 finding'),'replaced findings are not counted');
@@ -54,7 +54,7 @@ const projects=[{id:'prj_1',name:'Local visibility',members:[{kind:'goal',id:'G1
 const links=v.mapLinks(linked,projects).map(l=>l.join('>'));
 assert.equal([...links].sort().join(),'l:col_1>g:G1,p:prj_1>g:G1,p:prj_1>l:col_1,t:tk1>g:G1,t:tk1>l:col_1','each line is a saved link, drawn once');
 const map=v.mapView(linked,projects);
-assert.ok(map.includes('data-open-project="prj_1"')&&map.includes('data-key="t:tk1"')&&map.includes('Weekly check')&&map.includes('data-world-go="goal:G1"')&&!map.includes('Nothing is linked yet'));
+assert.ok(map.includes('data-world-go="project:prj_1"')&&map.includes('data-key="t:tk1"')&&map.includes('Weekly check')&&map.includes('data-world-go="goal:G1"')&&!map.includes('Nothing is linked yet'));
 assert.ok(v.mapView(feed,[]).includes('Nothing is linked yet'),'with no saved links the map says how they appear');
 const time=v.timelineView(linked);
 assert.ok(time.includes('class="wt-mark item"')&&time.includes('data-world-go="item:col_1|a"')&&time.includes('data-world-go="finding:F1"')&&!time.includes('finding:F0'),'replaced findings are left off the timeline');
@@ -71,7 +71,7 @@ assert.ok(time.includes('Coming up')&&time.includes('Next run: Weekly check'),'w
 assert.equal(v.latest(feed,null),'','with no earlier visit there is nothing to compare against');
 const since=v.latest(linked,'2026-10-10T00:00:00Z');
 assert.ok(since.includes('Since your last visit')&&since.includes('64 → 87 reviews')&&!since.includes('Crumb'),'only what was saved after the last visit is listed, goal numbers first');
-assert.ok(v.latest(linked,'2026-10-19T00:00:00Z').includes('Nothing has changed since'));
+assert.ok(v.latest(linked,'2026-10-19T00:00:00Z').includes('No new findings, tracked changes or goal movement since'));
 const task=v.selected(linked,{kind:'task',name:'Weekly check',land,raw:linked.tasks[0]});
 assert.ok(task.includes('world-callout')&&task.includes('Last run failed yesterday.')&&task.includes('<dt>Works toward</dt><dd>Reach 100 reviews</dd>')&&task.includes('Open schedules'));
 const group=v.selected(feed,{kindOf:'land',kind:'group',name:'3 more collections',members:[{id:'col_9',name:'Suppliers',current:4}]});
@@ -98,3 +98,36 @@ assert.equal(gaps.join(' | '),'Not measured for 49 days | Local competitors has 
 assert.equal(v.goalGaps(gapFeed,{...quietGoal,reached:true}).length,0);assert.equal(v.goalGaps(gapFeed,G3).length,0,'a goal with no number has no gaps to claim');
 assert.ok(v.selected(gapFeed,{kind:'goal',raw:quietGoal}).includes('What would move this')&&v.tools(withApps).includes('id="world-by"')&&v.tools(feed).includes('id="world-q"'));
 console.log('aura ui: ok');
+
+assert.equal(v.relatedFeed(linked,v.recordFor(linked,'goal','G3')).lands.length,0);
+assert.ok(v.relatedFeed(linked,v.recordFor(linked,'goal','G1')).findings.some(f=>f.id==='F1'));
+assert.equal(v.recordFor(linked,'item','col_1|a').raw.title,'Crumb & Co');
+
+const newerFinding={...linked,findings:[{id:'new',land:'col_1',statement:'New evidence',at:'2026-10-20T00:00:00Z',label:'supported'}]};
+assert.ok(v.latest(newerFinding,'2026-10-19T00:00:00Z').includes('New evidence'),'new findings must prevent a false nothing-changed message');
+const missingTokens=v.effortRows({requests:101,groups:[{name:'Reports tokens',requests:1,input_tokens:10000},{name:'No token report',requests:100}]});
+assert.ok(missingTokens.includes('width:99.01%'),'request-sized blocks compare requests even when token reporting differs');
+assert.equal(v.recordFor(linked,'finding','F1').raw.statement,'S','the non-3D reader can select a finding');
+
+const comparison={...linked,lands:[{...linked.lands[0],items:[{id:'a',title:'Crumb & Co',first_seen:'2026-09-01T00:00:00Z',history:[{at:'2026-10-01T00:00:00Z',values:{price:49}},{at:'2026-10-15T00:00:00Z',values:{price:59}}]}]}]};
+const changed=v.changesSince(comparison,'2026-10-10');
+assert.ok(changed.some(c=>c.detail==='price: 49 → 59'),'comparison uses saved measurements');
+assert.ok(!v.changesSince(comparison,'2026-09-01').some(c=>c.detail.includes('price:')),'no invented baseline when no earlier measurement exists');
+assert.equal(v.changesSince(comparison,'2027-01-01').length,0);
+const proof=v.evidenceRows({source_details:[{record:'evidence/path',relationship:'contradicts',statement:'A <different> price',sources:[{record:'source/path',title:'Original source'}]}]});
+assert.ok(proof.includes('Challenges this finding')&&proof.includes('data-record="source/path"')&&proof.includes('&lt;different&gt;'),'readable trace opens saved source records and escapes source text');
+
+const relationshipFeed={...linked,relationships:{nodes:[
+ {key:'file:brief.md',kind:'file',id:'brief.md',name:'Brief',action:{file:'brief.md'},lands:[]},
+ {key:'chat:c',kind:'chat',id:'c',name:'Research chat',lands:[]},
+ {key:'land:col_1',kind:'land',id:'col_1',name:'Research',lands:['col_1']}],edges:[
+ {source:'file:brief.md',target:'chat:c',label:'Attached to conversation'},
+ {source:'chat:c',target:'land:col_1',label:'Bound to collection'}]}};
+const fileSelection=v.recordFor(relationshipFeed,'file','brief.md');
+assert.equal(fileSelection.name,'Brief');
+assert.equal(v.relationshipAreas(relationshipFeed,fileSelection).join(','),'col_1');
+assert.ok(v.relationshipRows(relationshipFeed,fileSelection).includes('Attached to conversation'));
+assert.ok(v.relationshipRows(relationshipFeed,fileSelection).includes('data-world-go="chat:c"'));
+assert.ok(v.selected(relationshipFeed,fileSelection).includes('data-file="brief.md"'));
+assert.equal(v.relatedFeed(relationshipFeed,fileSelection).lands.length,1);
+assert.ok(v.relationshipMap(relationshipFeed).includes('world-map'));

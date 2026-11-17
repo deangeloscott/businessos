@@ -411,16 +411,17 @@ def brief(result,chars=280):
     return out
 
 
-def inventory(bid,project=''):
+def inventory(bid,project='', *, documents=None, index=None):
     from workspace_lifecycle import archived
     out=[]
     p=projects.find(bid,project) if project else {};linked={r['id'] for r in p.get('members',[])};excluded={r['id'] for r in p.get('excluded_members',[])}
-    for obj,p in object_index(bid).values():
+    for obj,p in (index if index is not None else object_index(bid)).values():
         info=((obj.get('extensions') or {}).get('businessos',{}).get('collection') or {})
         if obj['object_type']!='Asset' or not info.get('id') or archived(obj):continue
         if project and (obj['id'] in excluded or info['id'] in excluded or project not in ((obj.get('extensions') or {}).get('businessos',{}).get('work') or {}).get('project_refs',[]) and not linked.intersection({obj['id'],info['id']})):continue
         try:
             d=read(bid,info['id']);rows=[effective(i,d['feedback']) for i in d['items']]
+            if documents is not None:documents[d['id']] = d
             out.append({'id':d['id'],'name':d['name'],'mode':d['mode'],'asset_id':obj['id'],'project_refs':d.get('project_refs',[]),'source_copies':d.get('source_copies','quotes'),
                         'current_count':sum(r['display_state']=='active' and not r['hidden'] for r in rows),'latest_check':check_summary(d['checks'][-1]) if d['checks'] else None})
         except (OSError,ValueError):out.append({'id':info['id'],'name':obj.get('business_role','Saved collection'),'unavailable':True})

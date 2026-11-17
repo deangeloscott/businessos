@@ -300,15 +300,16 @@ DONE = {'submitted', 'awarded', 'declined', 'won', 'lost', 'done', 'complete', '
 DEADLINE_WINDOW = 14 * 86400
 
 
-def deadlines(bid, now=None, window=DEADLINE_WINDOW):
+def deadlines(bid, now=None, window=DEADLINE_WINDOW, *, documents=None):
     """Current results with a deadline inside the window, soonest first. Handled, dismissed or finished ones are skipped."""
     from datetime import timezone
     now = datetime.now(timezone.utc) if now is None else now
     out = []
-    for summary in collections.inventory(bid)['items']:
-        if summary.get('unavailable') or summary.get('mode') != 'collection':continue
-        try:d = collections.read(bid, summary['id'])
-        except ValueError:continue
+    if documents is None:
+        documents = {}
+        collections.inventory(bid, documents=documents)
+    for d in documents.values():
+        if d.get('mode') != 'collection':continue
         for r in collections.select(d, 'current', at=now):
             due = collections.timestamp(r.get('expires_at'))
             status = next((str(v).strip().lower() for k, v in (r.get('fields') or {}).items() if k.lower() in {'status', 'stage', 'state', 'pipeline', 'phase'} and isinstance(v, str)), '')
@@ -342,9 +343,9 @@ def goal_targets(objects):
     return out
 
 
-def progress(bid, goal_id, limit=60):
+def progress(bid, goal_id, limit=60, *, index=None):
     """Measurements linked to a goal (its metric_refs, or MetricDefinition.objective_refs), oldest first."""
-    index = object_index(bid);metrics = []
+    index = index if index is not None else object_index(bid);metrics = []
     goal = index.get(goal_id, (None,))[0] or {}
     linked = set(goal.get('metric_refs') or [])
     for obj, _ in index.values():

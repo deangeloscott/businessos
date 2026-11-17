@@ -10,7 +10,7 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 
-from _common import workspace_root, workspace_scope, object_index, storage_ref
+from _common import workspace_root, workspace_scope, object_index
 from workspace_lifecycle import archived
 import workspace_collections as collections
 import workspace_summary as summary
@@ -41,17 +41,19 @@ def _item(row):
     refs = [r for r in row.get('source_refs') or [] if isinstance(r, dict)]
     return {'_source_ids': {r['source_id'] for r in refs if r.get('source_id')}, '_source_refs': {r['reference'] for r in refs if r.get('reference')},
             'id': row['id'], 'title': str(row.get('title', ''))[:160], 'first_seen': row.get('first_seen'), 'updated_at': row.get('updated_at'),
-            'last_seen': row.get('last_seen'), 'needs_review': bool(row.get('needs_review')), 'sources': len(row.get('source_refs') or []), 'fields': _fields(row), 'trend': _trend(row)}
+            'last_seen': row.get('last_seen'), 'needs_review': bool(row.get('needs_review')), 'sources': len(row.get('source_refs') or []), 'fields': _fields(row), 'trend': _trend(row), 'history': [{'at': p.get('at'), 'values': p['values']} for p in (row.get('trail') or [])[-24:] if isinstance(p, dict) and isinstance(p.get('values'), dict)]}
 
 
 def world(bid, at=None, app=None):
     at = at or datetime.now(timezone.utc)
-    base = summary.summary(bid, at, days=14)
     index = object_index(bid)
+    documents = {}
+    watches_snapshot = summary._watches(bid, at, 14, 1000, 8, documents=documents, index=index)
+    base = summary.summary(bid, at, days=14, index=index, watches_snapshot=watches_snapshot, documents=documents)
     live = [(o, where) for o, where in index.values() if not archived(o)]
     objects = [o for o, _ in live]
     business = next(o for o in objects if o.get('object_type') == 'Business')
-    watches, watches_total, _, _ = summary._watches(bid, at, 14, 1000, 0)
+    watches, watches_total, _, _ = watches_snapshot
     lands = [];changes = []
     # Work that is bound to a collection (a chat, task or agent) is the one saved sign of how much it is used.
     try:registry = collections.projects.load()
@@ -64,8 +66,7 @@ def world(bid, at=None, app=None):
     # next places in the order they were created, so a new one never shifts the others.
     docs = []
     for w in watches:
-        try:d = collections.read(bid, w['id'])
-        except ValueError:continue
+        d = documents[w['id']]
         docs.append((str(d.get('created_at') or ''), d['id'], w, d))
     docs.sort(key=lambda row: row[:2])
     slots = {row[1]: AREA_SLOTS + n for n, row in enumerate(docs)}
@@ -85,10 +86,27 @@ def world(bid, at=None, app=None):
         for position, check in enumerate(checks):
             if position == 0 and len(d['checks']) < 50:continue  # filling a collection for the first time is not a change
             for change in check.get('changes') or []:
-                changes.append({'at': check['at'], 'land': d['id'], 'item_id': change.get('id'), 'kind': change.get('kind', 'changed'), 'title': str(change.get('title', ''))[:160]})
+                changes.append({'at': check['at'], 'land': d['id'], 'item_id': change.get('id'), 'kind': change.get('kind', 'changed'), 'reason': str(change.get('reason') or '')[:1000], 'title': str(change.get('title', ''))[:160]})
     changes.sort(key=lambda c: c['at'], reverse=True)
     names = dict(summary.AREAS);known = {land['id'] for land in lands};areas = {};findings = [];decisions = []
     by_id = {o.get('id'): o for o in objects}
+
+    def evidence_detail(link):
+        evidence = by_id.get(link.get('ref'))
+        if not evidence:
+            return None
+        sources = []
+        for source_id in evidence.get('source_refs') or []:
+            source = by_id.get(source_id)
+            if not source:
+                continue
+            sources.append({'id': source_id, 'record': source_id,
+                            'title': str(source.get('title') or source.get('name') or source.get('source_reference') or 'Saved source')[:240]})
+        return {'id': evidence['id'], 'record': evidence['id'],
+                'relationship': link.get('relationship') or 'related',
+                'statement': str(evidence.get('statement') or evidence.get('title') or 'Saved evidence')[:600],
+                'sources': sources[:8]}
+
     item_sources = {}  # collection -> [(result id, source ids, source references)]
     for land in lands:
         item_sources[land['id']] = [(i['id'], i.pop('_source_ids'), i.pop('_source_refs')) for i in land['items']]
@@ -97,12 +115,12 @@ def world(bid, at=None, app=None):
     for o, where in live:
         kind = o.get('object_type')
         if kind == 'DecisionRecord':
-            decisions.append({'id': o['id'], 'kind': 'decision', 'record': storage_ref(where), 'title': str(o.get('title') or o.get('decision') or o.get('statement') or o.get('name') or '')[:200],
+            decisions.append({'id': o['id'], 'kind': 'decision', 'record': o['id'], 'title': str(o.get('title') or o.get('decision') or o.get('statement') or o.get('name') or '')[:200],
                               'at': o.get('made_at') or o.get('decided_at') or o.get('created_at') or o.get('updated_at'), 'area': o.get('domain') if o.get('domain') in names else 'core',
                               'basis': [r for r in o.get('basis_refs') or [] if isinstance(r, str)][:8]})
             continue
         if kind == 'Learning' and o.get('status') not in {'archived', 'retired', 'superseded'}:
-            decisions.append({'id': o['id'], 'kind': 'lesson', 'record': storage_ref(where), 'title': str(o.get('statement') or '')[:200], 'at': o.get('created_at') or o.get('updated_at'),
+            decisions.append({'id': o['id'], 'kind': 'lesson', 'record': o['id'], 'title': str(o.get('statement') or '')[:200], 'at': o.get('created_at') or o.get('updated_at'),
                               'area': o.get('domain') if o.get('domain') in names else 'core', 'basis': [r for r in o.get('evidence_refs') or [] if isinstance(r, str)][:8]})
             continue
         if kind != 'Insight' or o.get('status') == 'archived':continue
@@ -121,8 +139,12 @@ def world(bid, at=None, app=None):
                 sources.add(ref);text = (by_id.get(ref) or {}).get('source_reference')
                 if text:texts.add(text)
         tied = [ident for ident, ids, refs in item_sources.get(land, []) if ids & sources or refs & texts][:6] if sources else []
+        related_items = [{'land': area, 'id': ident} for area in refs
+                         for ident, ids, references in item_sources.get(area, [])
+                         if ids & sources or references & texts][:24]
+        details = [detail for link in links[:12] if (detail := evidence_detail(link))]
         sides = [{'relationship': l.get('relationship'), 'statement': str((by_id.get(l.get('ref')) or {}).get('statement') or '')[:240]} for l in links if l.get('relationship') in {'supports', 'derived_from', 'contradicts'}][:6] if o.get('status') == 'contradicted' else []
-        findings.append({'id': o['id'], 'evidence': [s for s in sides if s['statement']], 'items': tied, 'given': given_counts['records'].get(o['id'], 0), 'record': storage_ref(where), 'statement': str(o.get('statement', ''))[:300], 'land': land, 'area': domain,
+        findings.append({'id': o['id'], 'evidence': [s for s in sides if s['statement']], 'items': tied, 'related_items': related_items, 'lands': refs or [land], 'source_details': details, 'given': given_counts['records'].get(o['id'], 0), 'record': o['id'], 'statement': str(o.get('statement', ''))[:300], 'land': land, 'area': domain,
                          'label': 'replaced' if replaced else summary.finding_label(o.get('status'), bool(review and review <= at)),
                          'at': o.get('created_at') or o.get('reviewed_at') or o.get('updated_at'), 'updated_at': o.get('updated_at'),
                          'sources': sum(l.get('relationship') in {'supports', 'derived_from', 'extends'} for l in links),
@@ -154,23 +176,27 @@ def world(bid, at=None, app=None):
         for m in members:
             if m.get('kind') == 'goal':feeds.setdefault(m.get('id'), set()).update(held & known)
     goals = []
-    for goal in base['goals']:
+    for goal in summary._goals(objects, len(objects))[0]:
         row = dict(goal);row['lands'] = sorted(feeds.get(goal['id'], ()))
         if 'target' in goal:
-            try:metrics = progress(bid, goal['id'], 60)['metrics']
+            try:metrics = progress(bid, goal['id'], 60, index=index)['metrics']
             except (ValueError, OSError):metrics = []
             row['points'] = [{'at': p['at'], 'value': p['value']} for p in (metrics[0]['points'] if metrics else [])]
         goals.append(row)
     # Areas the organization's focus points to that hold nothing yet: drawn as places still to chart.
     used = {f['area'] for f in findings}
     uncharted = [{'id': a['id'], 'name': a['name'], 'slot': AREA_ORDER[a['id']]} for a in base['knowledge']['by_area'] if a['relevant'] and a['id'] != 'core' and a['id'] not in used][:8]
-    return {'business': {**base['business'], 'since': business.get('created_at')}, 'as_of': base['as_of'], 'focus': base['focus'],
+    feed = {'business': {**base['business'], 'since': business.get('created_at')}, 'as_of': base['as_of'], 'focus': base['focus'],
             'lands': lands, 'findings': findings[:MAX_FINDINGS], 'changes': changes[:MAX_CHANGES], 'goals': goals, 'decisions': decisions[:MAX_DECISIONS],
-            'uncharted': uncharted if len(lands) < 8 else [], 'lands_more': len(grouped), 'findings_hidden': hidden, 'tasks': _tasks(bid, bound, known), 'chat_lands': {b['id']: b['collection_id'] for b in bound if b.get('kind') == 'chat' and b.get('collection_id') in known},
+            'uncharted': uncharted if len(lands) < 8 else [], 'lands_more': len(grouped), 'findings_hidden': hidden + max(0, len(findings) - MAX_FINDINGS), 'tasks': _tasks(bid, bound, known), 'chat_lands': {b['id']: b['collection_id'] for b in bound if b.get('kind') == 'chat' and b.get('collection_id') in known},
             'effort': _effort(bid, app, bound, known, at), 'methods': given_counts['library'], 'work': _work(bid, app, at), 'work_by': _work_by(bid, app, bound, known, at), 'apps': _apps(bid, app, bound, known), 'attention': base['attention'], 'deadlines': base['deadlines'], 'suggestions': base['suggestions'],
-            'totals': {'lands': watches_total + len(areas), 'items': sum(len(l['items']) + l['more'] for l in lands), 'findings': len(findings), 'changes': len(changes),
+            'totals': {'lands': watches_total + len(areas), 'items': sum(len(l['items']) + l['more'] for l in lands), 'findings': len(findings) + hidden, 'changes': len(changes),
                        'goals': base['totals']['goals'], 'attention': base['totals']['attention'], 'decisions': len(decisions)},
             'empty': base['empty']}
+    from workspace_world_links import relationships
+    feed['relationships'] = relationships(feed, registry, bound, objects, given_counts['references'], item_sources,
+        app.preferences.get('assistants', {}).get(bid, []) if app else [])
+    return feed
 
 
 def _tasks(bid, bound, known):
@@ -188,7 +214,7 @@ def _tasks(bid, bound, known):
         if task:
             health, text = _health(task)
             row.update(name=str(task.get('name') or 'Scheduled task')[:120], app=task.get('app'), schedule=cadence(task.get('schedule')), health=health, status=text, next_run=task.get('next_run'), last_run=task.get('last_run'), available=True)
-        else:row.update(name='Scheduled task', app=None, schedule='', health='missing', status='This task was removed from its app, so it no longer runs.', next_run=None, last_run=None, available=False)
+        else:row.update(name='Scheduled task', app=None, schedule='', health='missing', status='Task status is unavailable from the connected apps. Open Schedules to check it.', next_run=None, last_run=None, available=False)
         out.append(row)
     return out[:60]
 
@@ -196,15 +222,18 @@ def _tasks(bid, bound, known):
 def _used(bid, app, known):
     """How often each finding, collection and method was given to a request, counted from what each chat saved about its own requests.
     Results inside a collection are not given one by one, so there is no count for a single result."""
-    out = {'records': {}, 'collections': {}, 'library': []}
+    out = {'records': {}, 'collections': {}, 'library': [], 'references': []}
     if app is None:return out
     methods = {}
-    chats = [c for c in app.preferences.get('chats', []) if isinstance(c, dict) and c.get('business_id') == bid][-400:]
+    chats = [c for c in app.preferences.get('chats', []) if isinstance(c, dict) and c.get('business_id') == bid and not c.get('archived') and not c.get('deleted_at')][-400:]
     for chat in chats:
         try:messages = json.loads(Path(app.chat_display_path(chat['id'])).read_text(encoding='utf-8'))
-        except (OSError, ValueError, KeyError, TypeError):continue
+        except (OSError, ValueError, KeyError, TypeError):messages = []
+        attached = {}
         for message in messages if isinstance(messages, list) else []:
             refs = [r for r in (message.get('references') or []) if isinstance(r, dict) and isinstance(r.get('id'), str)] if isinstance(message, dict) else []
+            for ref in refs:
+                attached[(ref.get('kind'), ref['id'])] = ref
             together = sorted({r['id'] for r in refs if r.get('kind') == 'collection' and r['id'] in known})
             for r in refs:
                 if r.get('kind') == 'record':out['records'][r['id']] = out['records'].get(r['id'], 0) + 1
@@ -212,6 +241,8 @@ def _used(bid, app, known):
                 elif r.get('kind') == 'library':
                     m = methods.setdefault(r['id'], {'id': r['id'], 'name': str(r.get('label') or r['id'])[:120], 'uses': 0, 'lands': set()})
                     m['uses'] += 1;m['lands'].update(together)
+        out['references'].append({'id': chat['id'], 'title': chat.get('title') or 'Saved conversation',
+                                  'agent': chat.get('agent'), 'assistant_id': chat.get('assistant_id'), 'subagents': chat.get('subagents') or [], 'references': list(attached.values())})
     out['library'] = [{**m, 'lands': sorted(m['lands'])} for m in sorted(methods.values(), key=lambda m: -m['uses'])[:40]]
     return out
 
@@ -257,14 +288,39 @@ def _effort(bid, app, bound, known, at):
     start = at.replace(day=1, hour=0, minute=0, second=0, microsecond=0).timestamp()
     chats = {b['id']: b for b in bound if b.get('kind') == 'chat'}
     groups = {}
-    for r in app.preferences.get('usage_receipts', []):
-        if r.get('business_id') != bid or not isinstance(r.get('at'), (int, float)) or r['at'] < start:continue
-        link = chats.get(r.get('chat_id'), {})
-        key = ('land', link['collection_id']) if link.get('collection_id') in known else ('project', link['project_refs'][0]) if link.get('project_refs') else ('other', '')
-        g = groups.setdefault(key, {'kind': key[0], 'id': key[1], 'requests': 0, 'tokens': 0, 'cost_usd': 0.0, 'missing_costs': 0})
-        g['requests'] += 1;g['tokens'] += int(r.get('input_tokens') or 0) + int(r.get('output_tokens') or 0)
-        if isinstance(r.get('cost_usd'), (int, float)):g['cost_usd'] += r['cost_usd']
-        else:g['missing_costs'] += 1
+    titles = {c['id']: c.get('title') or 'Untitled chat' for c in app.preferences.get('chats', [])
+              if c.get('business_id') == bid and c.get('id')}
+    for receipt in app.preferences.get('usage_receipts', []):
+        if receipt.get('business_id') != bid or not isinstance(receipt.get('at'), (int, float)):
+            continue
+        if not start <= receipt['at'] <= at.timestamp():
+            continue
+        chat_id = receipt.get('chat_id') or ''
+        link = chats.get(chat_id, {})
+        if link.get('collection_id') in known:
+            key = ('land', link['collection_id'])
+        elif link.get('project_refs'):
+            key = ('project', link['project_refs'][0])
+        else:
+            key = ('other', '')
+        group = groups.setdefault(key, {'kind': key[0], 'id': key[1], 'chats': {},
+            'requests': 0, 'tokens': 0, 'cost_usd': 0.0, 'missing_costs': 0, 'missing_tokens': 0})
+        agent = receipt.get('agent') or ''
+        model = str(receipt.get('model') or 'Model unreported')
+        chat = group['chats'].setdefault((chat_id,agent,model), {'id': chat_id if chat_id in titles else '',
+            'title': titles.get(chat_id, 'Unlinked request'), 'agent': agent, 'model': model, 'requests': 0,
+            'tokens': 0, 'cost_usd': 0.0, 'missing_costs': 0, 'missing_tokens': 0})
+        for totals in (group, chat):
+            totals['requests'] += 1
+            totals['tokens'] += int(receipt.get('input_tokens') or 0) + int(receipt.get('output_tokens') or 0)
+            if receipt.get('input_tokens') is None or receipt.get('output_tokens') is None:
+                totals['missing_tokens'] += 1
+            if isinstance(receipt.get('cost_usd'), (int, float)):
+                totals['cost_usd'] += receipt['cost_usd']
+            else:
+                totals['missing_costs'] += 1
+    for group in groups.values():
+        group['chats'] = sorted(group['chats'].values(), key=lambda c: -c['requests'])
     return sorted(groups.values(), key=lambda g: (-g['tokens'], -g['requests']))[:40]
 
 

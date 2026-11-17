@@ -1102,7 +1102,7 @@ function quickMethods() {
 }
 async function render() {
   // The aura takes the room: the sidebar tucks away while you are in it and comes back when you leave. Its own button still opens it.
-  { const inAura=state.view==='aura'&&!!state.business;if(!inAura)state.auraSidebarOpen=false;document.body.classList.toggle('in-aura',inAura);document.body.classList.toggle('sidebar-collapsed',inAura?!state.auraSidebarOpen:!!state.profile?.sidebar_collapsed); }
+  { const inAura=state.view==='aura'&&!!state.business;if(!inAura){state.auraSidebarOpen=false;window.auraView?.leave();}document.body.classList.toggle('in-aura',inAura);document.body.classList.toggle('sidebar-collapsed',inAura?!state.auraSidebarOpen:!!state.profile?.sidebar_collapsed); }
   // Every page explains itself in the same place: a quiet link beside its description.
   $('#page-help').hidden=!['business','files','work','assistants','tools'].includes(state.view);
   const ticket=state.renderTicket=(state.renderTicket||0)+1,scope=JSON.stringify([state.data.workspace,state.business]);
@@ -3140,7 +3140,9 @@ initPanelResizing();
 async function renderShell(force=true){
   positionAnchoredSurface();
   if(!state.data||!$('#sidebar'))return;
-  $('#main').inert=state.view!=='home';
+  const worldChat=state.view==='aura' && window.auraView?.chatOpen();
+  document.body.classList.toggle('world-chat-open',!!worldChat);
+  $('#main').inert=state.view!=='home' && !worldChat;
   $('.skip').setAttribute('href',state.view==='home'?'#main':['sharing','updates'].includes(state.view)?'#detail-content':'#section-content');
   if(!force&&Date.now()-(state.shellPolledAt||0)<(state.busy||state.runningChats?.length?4000:15000))return;
   if(state.shellLoading){if(force)state.shellDirty=true;return;}
@@ -3482,7 +3484,11 @@ function workspaceLocation(){
   const path=source&&sharing?.scope===sharingScope()?sharing.workspace:state.data.workspace, label=source?'Source workspace':'Current workspace';
   return `<div class="workspace-location"><span>${label}</span><button type="button" data-copy-workspace="${esc(path)}" title="Copy ${esc(path)}"><span>${esc(path)}</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" aria-hidden="true"><path d="M8 8h12v13H8zM16 8V3H3v13h5"/></svg></button><small id="workspace-copy-status" role="status"></small></div>`;
 }
-function returnToChat(){state.view='home';$('#detail').close();$('#section-dialog').close();recordShellRoute();renderShell();$('#request').focus();}
+function returnToChat(){
+  if(state.view==='aura' && window.auraView?.chatOpen()){
+    $('#detail').close();window.auraView.focusChat();return;
+  }
+  state.view='home';$('#detail').close();$('#section-dialog').close();recordShellRoute();renderShell();$('#request').focus();}
 async function refreshChat(){
   if(!state.chatMeta||state.busy||state.refreshingChat)return;
   const scope=chatScope(),id=state.chatMeta.id,messages=state.chat;state.refreshingChat=true;renderComposerConnection();

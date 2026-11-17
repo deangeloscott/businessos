@@ -89,16 +89,16 @@ def _goals(objects, limit):
     return out[:limit], len(out)
 
 
-def _watches(bid, at, days, limit, change_limit):
+def _watches(bid, at, days, limit, change_limit, *, documents=None, index=None):
     """Collections kept current, most recently checked first, and what their recent checks changed."""
     since = at - timedelta(days=days);watches = [];changes = []
     try:bindings=collections.projects.load().get('bindings',{}).values()
     except (ValueError,OSError):bindings=()
     linked={v.get('collection_id') for v in bindings if v.get('kind')=='task' and v.get('business_id')==bid}
-    for row in collections.inventory(bid)['items']:
+    documents = {} if documents is None else documents
+    for row in collections.inventory(bid, documents=documents, index=index)['items']:
         if row.get('unavailable'):continue
-        try:d = collections.read(bid, row['id'])
-        except ValueError:continue
+        d = documents[row['id']]
         checks = [c for c in d['checks'] if isinstance(c.get('at'), str)]
         last = checks[-1] if checks else None
         watches.append({'id': d['id'], 'name': d['name'], 'kind': 'reports' if d['mode'] == 'series' else 'results', 'current': row['current_count'],
@@ -213,12 +213,12 @@ def _agents(bid):
     return [{'id': a.get('id'), 'name': a.get('name', ''), 'tasks': len(a.get('task_ids') or [])} for a in saved if isinstance(a, dict) and a.get('id') and not a.get('archived_at')]
 
 
-def summary(bid, at=None, days=7):
+def summary(bid, at=None, days=7, *, index=None, watches_snapshot=None, documents=None):
     """One bounded picture of the organization. `days` is how far back "what changed" looks."""
     import workspace_focus
     from workspace_views import deadlines
     at = at or datetime.now(timezone.utc);days = max(1, min(int(days), 90))
-    objects = [o for o, _ in object_index(bid).values() if not archived(o)]
+    objects = [o for o, _ in (index if index is not None else object_index(bid)).values() if not archived(o)]
     business = next((o for o in objects if o.get('object_type') == 'Business'), None)
     if not business:raise ValueError('This business is unavailable in the selected workspace.')
     try:chosen = workspace_focus.get(bid)['areas']
@@ -228,7 +228,8 @@ def summary(bid, at=None, days=7):
     knowledge = _knowledge(objects, at, relevant)
     attention, attention_total = _attention(objects, 5)
     goals, goals_total = _goals(objects, 6)
-    watches, watches_total, changes, changes_total = _watches(bid, at, days, 8, 8)
+    watches, watches_total, changes, changes_total = watches_snapshot or _watches(bid, at, days, 8, 8)
+    watches = watches[:8]
     challenged = _challenged(objects, at, days)
     changes_total += len(challenged)
     changes = sorted(challenged + changes, key=lambda c: c['at'], reverse=True)[:8]
@@ -237,7 +238,7 @@ def summary(bid, at=None, days=7):
     suggestions = _suggestions(objects, watches, at)
     watches = [{k: v for k, v in w.items() if not k.startswith('_')} for w in watches]
     agents = _agents(bid)
-    try:due = [{k: d[k] for k in ('collection_id', 'collection', 'item_id', 'title', 'due', 'days')} for d in deadlines(bid, now=at)][:5]
+    try:due = [{k: d[k] for k in ('collection_id', 'collection', 'item_id', 'title', 'due', 'days')} for d in deadlines(bid, now=at, documents=documents)][:5]
     except (OSError, ValueError):due = []
     example = (((business.get('extensions') or {}).get('businessos')) or {}).get('example')
     return {'business': {'id': bid, 'name': business.get('name', ''), 'description': str(business.get('description') or '')[:600],
