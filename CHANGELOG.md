@@ -1,6 +1,12 @@
 # Changelog
 
-## Unreleased
+## 0.5.0 Alpha — 2026-11-17
+
+- **Your aura is a place to explore and work.** A dedicated section draws the organization's saved collections, findings, changes and measured goals as an interactive world. Explore, move through time, open the underlying saved work beside it, and prepare an image to download or share. The world reflects saved records; it does not invent business progress.
+- **Home and Knowledge lead with useful work.** Home brings attention, running work, recent results and goals together. Knowledge organizes saved information by area. An example business lets new users explore before connecting an AI.
+- **Clearer Library, Files and projects.** Browse guidance by topic, keep skills and tool inventories available deliberately, use favorites and recent items, and resize navigation and reading panels. File views and project filters make larger workspaces easier to browse.
+- **Broader creative expertise.** Animation, audio and music, 3D production, creative localization, accurate references, continuity and finishing guidance extend the reusable content knowledge without tying it to one model or tool.
+
 
 - **Checked with every connected AI app.** Short real chats through Claude Code, Codex, Hermes, Google Antigravity and OMP, a real handoff between apps, and real scheduled tasks in Hermes. Fixes from that:
   - Every "continue elsewhere" control opens the one Continue in another app dialog, which carries the latest exchanges (not just the last reply), and the continued chat keeps the original chat's name.
