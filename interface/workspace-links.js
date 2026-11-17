@@ -2,8 +2,8 @@
    The feed's relationships are {nodes, edges}: each edge is {source, target, type} and the source flows into
    the target (see scripts/workspace_world_links.py for what each type records). Nothing here guesses a link. */
 window.auraLinks = (() => {
-  const KIND = {land:'Area', item:'Tracked result', finding:'Finding', decision:'Decision', goal:'Goal', record:'Evidence',
-    file:'File', method:'Library item', chat:'Conversation', agent:'Agent', task:'Scheduled task', app:'AI app', project:'Project'};
+  const KIND = {land:'Area', item:'Tracked result', finding:'Finding', decision:'Decision', goal:'Goal', record:'Evidence', output:'Saved output',
+    file:'File', method:'Library item', chat:'Conversation', session:'AI app session', agent:'Agent', task:'Scheduled task', app:'AI app', project:'Project'};
   /* How the other end of a link reads from the selected thing: [when the other end is the source, when it is the target]. */
   const WORDS = {
     in:['Kept here', 'Where this is kept'],
@@ -28,8 +28,14 @@ window.auraLinks = (() => {
   const SENTENCE = {in:'is kept in', attached:'was given to', saved:'saved', updated:'changed', into:'saved work into', supports:'supports', challenges:'challenges',
     basis:'is a basis for', extends:'extends', source:'is a source for', shares_source:'rests on the same source as', assigned:'is assigned to',
     feeds:'feeds', member:'holds', used:'ran', delegated:'handed work to', lineage:'is an earlier version of'};
-  const COLUMN = {file:0, record:0, method:0, app:0, chat:1, agent:1, task:1, project:1, land:2, item:2, finding:2, decision:2, goal:3};
+  const COLUMN = {file:0, record:0, method:0, app:0, chat:1, session:1, agent:1, task:1, project:1, land:2, item:2, finding:2, decision:2, output:2, goal:3};
   const COLUMNS = ['Inputs', 'Work', 'Saved work', 'Goals'];
+  /* Groups inside a column, in the order they are drawn. A Library item is grouped by its own type. */
+  const GROUP = {app:'AI apps', file:'Files', record:'Evidence', chat:'Conversations', session:'Conversations', agent:'Agents', task:'Scheduled tasks',
+    project:'Projects', land:'Areas', item:'Tracked results', finding:'Findings', decision:'Decisions', output:'Saved outputs', goal:'Goals'};
+  const PLURAL = {Playbook:'Playbooks', Workflow:'Workflows', Skill:'Skills', Recipe:'Recipes', Tool:'Tools', Plugin:'Plugins'};
+  const group = n => n.kind === 'method' ? PLURAL[n.sub] || 'Library' : GROUP[n.kind] || KIND[n.kind] || n.kind;
+  const ORDER = ['AI apps', 'Playbooks', 'Workflows', 'Skills', 'Recipes', 'Tools', 'Plugins', 'Library', 'Files', 'Evidence', 'Agents', 'Conversations', 'Scheduled tasks', 'Projects', 'Areas', 'Tracked results', 'Findings', 'Decisions', 'Saved outputs', 'Goals'];
 
   const indexes = new WeakMap();
   function index(feed) {
@@ -90,29 +96,68 @@ window.auraLinks = (() => {
     const kept = (ix.into.get(start) || []).filter(e => e.type === 'in').length;
     return {direct, further, kept};
   }
+  /* What a line carries. 'saved' is saved work: the records a piece of work saved or changed. 'requests', 'tokens' and
+     'cost_usd' are AI use, exactly as each app reported it. A line with nothing recorded is drawn thin and dashed. */
+  const WORK = new Set(['chat', 'session', 'task', 'agent']);
+  function measures(feed) {
+    const ix = index(feed), usage = new Map();
+    for (const g of feed.effort || []) for (const c of g.chats || []) if (c.id) {
+      const u = usage.get('chat:' + c.id) || {requests:0, tokens:0, cost_usd:0};
+      for (const f of ['requests', 'tokens', 'cost_usd']) u[f] += c[f] || 0;
+      usage.set('chat:' + c.id, u);
+    }
+    const outputs = k => (ix.from.get(k) || []).filter(e => e.type === 'saved' || e.type === 'updated');
+    const chatsOf = k => ix.nodes.get(k)?.kind === 'agent' ? (ix.from.get(k) || []).filter(e => e.type === 'used').map(e => e.target) : [k];
+    /* How much one piece of work carried, optionally only into one area. */
+    function carried(k, measure, land) {
+      return chatsOf(k).reduce((sum, c) => {
+        if (measure !== 'saved') return sum + (usage.get(c)?.[measure] || 0);
+        return sum + outputs(c).filter(e => !land || (ix.nodes.get(e.target)?.lands || []).includes(land) || e.target === 'land:' + land).length;
+      }, 0);
+    }
+    const held = landKey => { const l = (feed.lands || []).find(x => 'land:' + x.id === landKey); return l ? l.items.length + (l.more || 0) + (feed.findings || []).filter(f => f.land === l.id && f.label !== 'replaced').length : 0; };
+    /* The weight of one recorded link in a traced chain. */
+    function weigh(e, measure) {
+      const a = ix.nodes.get(e.source), b = ix.nodes.get(e.target);
+      if (!a || !b) return 0;
+      if (e.type === 'saved' || e.type === 'updated') return measure === 'saved' ? 1 : carried(e.source, measure);
+      if (e.type === 'into') return carried(e.source, measure, e.target.slice(5));
+      if (WORK.has(a.kind)) return carried(e.source, measure);
+      if (WORK.has(b.kind)) return carried(e.target, measure);
+      if (e.type === 'feeds') return measure === 'saved' ? held(e.source) : 0;
+      return measure === 'saved' ? 1 : 0;
+    }
+    return {carried, weigh, held};
+  }
+  /* What is moving right now: the chains of the conversations that are running. */
+  function live(feed, running) {
+    const out = new Set();
+    for (const id of running || []) { const k = 'chat:' + id; if (!index(feed).nodes.has(k)) continue; for (const x of trace(feed, k).all) out.add(x); out.add(CHATS); }
+    return out;
+  }
   /* The whole flow at a glance. Conversations are many, so they are drawn as one step in the work column:
      what your AI used flows into them, and they flow to where their work went. Agents keep their own lines. */
   const CHATS = 'chats:all';
-  function overview(feed) {
-    const ix = index(feed), extra = new Map(), known = k => ix.nodes.get(k) || extra.get(k);
-    const weights = new Map(), add = (a, b, w = 1) => { if (!a || !b || a === b || !known(a) || !known(b)) return; const k = a + '\n' + b; weights.set(k, (weights.get(k) || 0) + w); };
+  function overview(feed, measure = 'saved') {
+    const ix = index(feed), extra = new Map(), known = k => ix.nodes.get(k) || extra.get(k), m = measures(feed);
+    const weights = new Map(), add = (a, b, w) => { if (!a || !b || a === b || !known(a) || !known(b)) return; const k = a + '\n' + b; weights.set(k, (weights.get(k) || 0) + w); };
     const placeOf = k => { const n = ix.nodes.get(k); if (!n) return []; if (['land', 'goal', 'project'].includes(n.kind)) return [k]; return (n.lands || []).map(id => 'land:' + id); };
     let chats = 0;
     for (const [k, n] of ix.nodes) {
-      if (n.kind !== 'chat') continue;
+      if (n.kind !== 'chat' && n.kind !== 'session') continue;
       const ins = (ix.into.get(k) || []).map(e => e.source), outs = new Set((ix.from.get(k) || []).flatMap(e => placeOf(e.target)));
       for (const e of ix.into.get(k) || []) if (e.type === 'attached' && ix.nodes.get(e.source)?.kind === 'land') outs.add(e.source);
       if (!outs.size) continue;
       chats++; if (!extra.size) extra.set(CHATS, {key:CHATS, kind:'chat', name:'Conversations', virtual:true});
-      for (const i of ins) { const kind = ix.nodes.get(i)?.kind; if (['app', 'method'].includes(kind)) add(i, CHATS); else if (kind === 'agent') for (const o of outs) add(i, o); }
-      for (const o of outs) add(CHATS, o);
+      for (const i of ins) { const kind = ix.nodes.get(i)?.kind; if (['app', 'method'].includes(kind)) add(i, CHATS, m.carried(k, measure)); else if (kind === 'agent') for (const o of outs) add(i, o, o.startsWith('land:') ? m.carried(k, measure, o.slice(5)) : m.carried(k, measure)); }
+      for (const o of outs) add(CHATS, o, o.startsWith('land:') ? m.carried(k, measure, o.slice(5)) : m.carried(k, measure));
     }
     if (chats) extra.get(CHATS).name = chats === 1 ? '1 conversation' : chats + ' conversations';
     for (const e of ix.edges) {
       const a = ix.nodes.get(e.source), b = ix.nodes.get(e.target);
-      if (!a || !b || a.kind === 'chat' || b.kind === 'chat') continue;
-      if (['task', 'agent', 'project', 'land'].includes(a.kind) && ['land', 'goal', 'task'].includes(b.kind)) add(e.source, e.target);
-      else if (['saved', 'updated'].includes(e.type)) for (const o of placeOf(e.target)) add(e.source, o);
+      if (!a || !b || ['chat', 'session'].includes(a.kind) || ['chat', 'session'].includes(b.kind)) continue;
+      if (['task', 'agent', 'project', 'land'].includes(a.kind) && ['land', 'goal', 'task'].includes(b.kind)) add(e.source, e.target, m.weigh(e, measure));
+      else if (['saved', 'updated'].includes(e.type)) for (const o of placeOf(e.target)) add(e.source, o, measure === 'saved' ? 1 : 0);
     }
     const edges = [...weights].map(([k, w]) => { const [source, target] = k.split('\n'); return {source, target, weight:w}; });
     const score = new Map();
@@ -120,5 +165,5 @@ window.auraLinks = (() => {
     for (const [k, n] of ix.nodes) if (['land', 'goal'].includes(n.kind) && !score.has(k)) score.set(k, 0);
     return {edges, score, node:known};
   }
-  return {KIND, COLUMN, COLUMNS, index, key, words, sentence, trace, places, sides, overview};
+  return {KIND, COLUMN, COLUMNS, ORDER, group, index, key, words, sentence, trace, places, sides, overview, measures, live, CHATS};
 })();

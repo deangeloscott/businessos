@@ -167,7 +167,21 @@ print(json.dumps({'full':full,'tight':tight}))
     ], [{'id': 'c1', 'title': 'Research', 'assistant_id': 'a1', 'references': [],
           'subagents': [{'id': 'child', 'name': 'Review'}]}], assistants=[{'id': 'a1', 'name': 'Researcher'}])
     made = {(e['source'], e['target'], e['type']) for e in produced['edges']}
-    assert ('chat:c1', 'record:asset', 'saved') in made, 'an output AURA noted during a chat is linked to that chat'
+    assert ('chat:c1', 'output:asset', 'saved') in made, 'an output AURA noted during a chat is linked to that chat, and named as an output'
+    sessions = relationships(graph_feed, {'projects': []}, [], [
+        {'id': 'found', 'object_type': 'Asset', 'business_role': 'Deck'},
+        {'id': 'direct', 'object_type': 'Insight', 'statement': 'Seen directly',
+         'extensions': {'businessos': {'work': {'producer': {'kind': 'session', 'app': 'Claude Code', 'id': 'cc-1'}}}}},
+        {'id': 'continued', 'object_type': 'Insight', 'statement': 'Seen in an AURA chat',
+         'extensions': {'businessos': {'work': {'producer': {'kind': 'session', 'app': 'Codex', 'id': 'native-9'}}}}}],
+        [{'id': 'c9', 'title': 'Started in AURA', 'native_id': 'native-9', 'references': []}],
+        origins={'found': {'kind': 'session', 'app': 'Codex', 'id': 'cx-2', 'title': 'Make the deck'}},
+        library_types={'pb_comp': 'Playbook'})
+    links3 = {(e['source'], e['target'], e['type']) for e in sessions['edges']}
+    names = {n['key']: n for n in sessions['nodes']}
+    assert ('session:cc-1', 'finding:direct', 'saved') in links3 and names['session:cc-1']['sub'] == 'Claude Code', 'work done directly in an app links to that app session'
+    assert ('chat:c9', 'finding:continued', 'saved') in links3, 'a session AURA itself ran is that AURA conversation, not a second one'
+    assert ('session:cx-2', 'output:found', 'saved') in links3 and names['session:cx-2']['name'] == 'Make the deck', 'an origin found later in an app log is drawn like one noted at save time'
     assert not any(t == 'record:src' for _, t, _ in made), 'raw sources stay behind their findings, not listed as outputs'
     assert ('chat:c1', 'item:col_1|i', 'updated') in made and ('chat:c1', 'land:col_1', 'into') in made, 'a check run during a chat links the result it changed, and the area'
     assert ('agent:a1', 'chat:c1', 'used') in made and ('chat:c1', 'agent:c1|child', 'delegated') in made
@@ -180,9 +194,13 @@ print(json.dumps({'full':full,'tight':tight}))
         from remember import remember
         import workspace_projects
         bid=setup(organization='Noted Bakery')['business_id']
-        os.environ.pop('AURA_PRODUCER',None)
+        os.environ.pop('AURA_PRODUCER',None);os.environ.pop('CLAUDE_CODE_SESSION_ID',None)
         plain=workspace_projects.saved_during(bid,{'id':'x'})
-        assert plain=={'id':'x'},'without a chat AURA started, nothing is added'
+        assert plain=={'id':'x'},'without a chat AURA started or an app session, nothing is added'
+        os.environ['CLAUDE_CODE_SESSION_ID']='cc-test'
+        direct=workspace_projects.saved_during(bid,{'id':'x'})['extensions']['businessos']['work']['producer']
+        assert direct=={'kind':'session','app':'Claude Code','id':'cc-test'},'work done directly in an app that names its session says which'
+        os.environ.pop('CLAUDE_CODE_SESSION_ID')
         os.environ['AURA_PRODUCER']=json.dumps({'kind':'chat','id':'chat-1','business_id':bid,'workspace':str(workspace_root().resolve())})
         saved=remember(bid,{'objects':[{'object_type':'Insight','content':{'domain':'core','insight_type':'research_insight','statement':'Weekend demand is higher.','status':'candidate','evidence_links':[]}}]})
         from _common import object_index
@@ -195,6 +213,29 @@ print(json.dumps({'full':full,'tight':tight}))
         assert wc.read(bid,made['id'])['checks'][-1]['by']=={'kind':'chat','id':'chat-1'},'a check run during a chat AURA started records that chat'
         os.environ['AURA_PRODUCER']=json.dumps({'kind':'chat','id':'other','business_id':'someone-else','workspace':str(workspace_root().resolve())})
         assert workspace_projects.saved_during(bid,{'id':'x'})=={'id':'x'},"another organization's chat is never recorded here"
+    # Where something was made, found afterwards in the apps' own logs: exact matches only, and no answer when unsure.
+    with tempfile.TemporaryDirectory(prefix='aura-origins-') as t,patch.dict(os.environ):
+        base=Path(t);os.environ.update(CLAUDE_CONFIG_DIR=str(base/'claude'),CODEX_HOME=str(base/'codex'),AURA_STATE_DIR=str(base/'state'))
+        import importlib,workspace_origins as wo;importlib.reload(wo)
+        claude=base/'claude/projects/proj';claude.mkdir(parents=True);codex=base/'codex/sessions/2026/11/17';codex.mkdir(parents=True)
+        line=lambda **kw:json.dumps(kw)+chr(10)
+        (claude/'cc-1.jsonl').write_text(line(type='user',timestamp='2026-11-17T10:00:00Z',message={'role':'user','content':'Research our competitors'})
+            +line(type='user',timestamp='2026-11-17T10:05:00Z',message={'role':'user','content':[{'type':'tool_result','content':'{"id": "ins_abc", "operation": "created"}'}]})
+            +line(type='assistant',timestamp='2026-11-17T10:06:00Z',message={'content':[{'type':'tool_use','name':'Write','input':{'file_path':'C:/w/out/deck.md'}}]}),encoding='utf-8')
+        (codex/'rollout-2026-11-17T09-00-00-11111111-2222-3333-4444-555555555555.jsonl').write_text(
+            line(timestamp='2026-11-17T09:00:00Z',type='response_item',payload={'type':'message','role':'user','content':[{'type':'input_text','text':'Build the pricing sheet'}]})
+            +line(timestamp='2026-11-17T11:00:00Z',type='response_item',payload={'type':'custom_tool_call','name':'apply_patch','input':chr(10).join(['*** Begin Patch','*** Add File: out/prices.csv','+a,b','*** End Patch'])}),encoding='utf-8')
+        found=wo.find(record_id='ins_abc',created_at='2026-11-17T10:05:00Z')
+        assert found and found['app']=='Claude Code' and found['id']=='cc-1' and found['title']=='Research our competitors','a record is found by its id in the save that created it'
+        assert wo.known()['ins_abc']['id']=='cc-1','a found origin is kept for the world'
+        from datetime import datetime as dt
+        at=lambda v:dt.fromisoformat(v.replace('Z','+00:00')).timestamp()
+        sheet=wo.find(file_path='C:/w/out/prices.csv',file_time=at('2026-11-17T11:00:30Z'))
+        assert sheet and sheet['app']=='Codex' and sheet['id']=='11111111-2222-3333-4444-555555555555' and sheet['title']=='Build the pricing sheet','a file is found by the app’s own write of it'
+        assert wo.find(record_id='ins_abc',created_at='2026-11-18T10:05:00Z') is None,'outside the time of the save there is no answer'
+        assert wo.find(file_path='C:/w/out/other.csv',file_time=at('2026-11-17T11:00:00Z')) is None,'a file no app wrote is not attributed'
+        (claude/'cc-2.jsonl').write_text(line(type='user',timestamp='2026-11-17T10:07:00Z',message={'role':'user','content':'ins_abc again'}),encoding='utf-8')
+        assert wo.find(record_id='ins_abc',created_at='2026-11-17T10:05:00Z') is None,'two sessions match: not certain, so no answer'
     import shutil
     if shutil.which('node'):subprocess.run(['node',str(ROOT/'tests/workspace_aura_ui.cjs'),str(ROOT/'interface/workspace-aura.js')],check=True)
     print('workspace world: ok')

@@ -158,10 +158,23 @@ def bind(bid,kind,ident,projects=(),collection=None,goal_id=None):
 def binding(bid,kind,ident):return load().get('bindings',{}).get(bid+'\0'+kind+'\0'+ident,{})
 
 
+# Session ids that AI apps already give the commands they run, so work done directly in an app can say where it happened.
+# Add an app here only after confirming the variable in that app; nothing is guessed or asked of the AI.
+HARNESS_SESSIONS=(('CLAUDE_CODE_SESSION_ID','Claude Code'),)
+
+
+def harness_session():
+    for name,app in HARNESS_SESSIONS:
+        value=os.environ.get(name,'').strip()
+        if value and len(value)<=200:return {'kind':'session','app':app,'id':value,'project_refs':[]}
+    return {}
+
+
 def producer_context(bid,producer=None):
     if producer is None:
         try:producer=json.loads(os.environ.get('AURA_PRODUCER','{}'))
         except ValueError:producer={}
+        if not producer:return harness_session()
     if not isinstance(producer,dict) or producer.get('business_id')!=bid or producer.get('workspace')!=str(workspace_root().resolve()):return {}
     current=binding(bid,producer.get('kind',''),producer.get('id',''))
     active={p['id'] for p in list_projects(bid)}
@@ -175,7 +188,7 @@ def asset_context(bid,obj):
     obj=json.loads(json.dumps(obj));bos=obj.setdefault('extensions',{}).setdefault('businessos',{})
     # Existing explicit associations survive; moving a chat does not move earlier work.
     work=bos.setdefault('work',{})
-    work.setdefault('producer',{'kind':context['kind'],'id':context['id']})
+    work.setdefault('producer',{k:context[k] for k in ('kind','id','app') if k in context})
     work.setdefault('project_refs',context.get('project_refs',[]))
     if context.get('goal_ref'):bos.setdefault('goal_ref',context['goal_ref'])
     return obj
@@ -189,7 +202,7 @@ def saved_during(bid,obj):
     context=producer_context(bid)
     if not context:return obj
     obj=json.loads(json.dumps(obj))
-    obj.setdefault('extensions',{}).setdefault('businessos',{}).setdefault('work',{}).setdefault('producer',{'kind':context['kind'],'id':context['id']})
+    obj.setdefault('extensions',{}).setdefault('businessos',{}).setdefault('work',{}).setdefault('producer',{k:context[k] for k in ('kind','id','app') if k in context})
     return obj
 
 

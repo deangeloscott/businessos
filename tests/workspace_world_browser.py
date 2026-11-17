@@ -22,6 +22,7 @@ app.preferences['chats'].append({'id':'browser-chat','business_id':bid,'workspac
 display=Path(app.chat_display_path('browser-chat'));display.parent.mkdir(parents=True,exist_ok=True)
 display.write_text(json.dumps([{'role':'user','text':'Review it.','references':[{'kind':'collection','id':land['id'],'label':land['name']}]}]),encoding='utf-8')
 workspace_collections.projects.bind(bid,'chat','browser-chat',collection=land['id'])
+import time;app.preferences.setdefault('usage_receipts',[]).append({'business_id':bid,'chat_id':'browser-chat','agent':'Sample app','model':'Sample model','at':time.time()-60,'input_tokens':100,'output_tokens':10})
 app.preferences['connection']={'kind':'handoff'};app.preferences['seen']=list(set(app.preferences['seen']+[bid]));app.save_preferences()
 print(json.dumps(built))
 '''

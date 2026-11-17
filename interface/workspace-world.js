@@ -7,7 +7,7 @@
      clock     = a collection a scheduled task keeps current; amber = it has gone quiet, or something needs review
    Nothing moves unless the person moves it or replays time. */
 import * as THREE from '/vendor/three.module.min.js';
-const MAXL = 24, NA = MAXL, TAU = Math.PI * 2, FOV = 35, TANH = Math.tan(FOV * Math.PI / 360), ALT_MIN = .16, ALT_MAX = 6.4, HOME_ALT = 5.2;
+const MAXL = 24, NA = MAXL, NB = 16, TAU = Math.PI * 2, FOV = 35, TANH = Math.tan(FOV * Math.PI / 360), ALT_MIN = .16, ALT_MAX = 6.4, HOME_ALT = 5.2;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v)), sstep = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
 const hash1 = n => { const x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
 const hashS = s => { let h = 2166136261; for (const c of String(s)) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
@@ -20,7 +20,9 @@ const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(FOV, 1, .0
 let W = 1, H = 1, HOME = 0, TOP = 10;
 const CENTERS = Array.from({ length: MAXL }, () => new THREE.Vector3(0, 1, 0));
 const U = { uC: { value: CENTERS }, uR: { value: new Array(MAXL).fill(0) }, uCol: { value: CENTERS.map(() => new THREE.Color()) }, uDim: { value: new Array(MAXL).fill(1) }, uPulse: { value: new Array(MAXL).fill(0) },
-  uW: { value: new Array(MAXL).fill(0) }, uStyle: {value:0}, uKit: { value: 0 }, uTime: { value: 0 }, uZoom: { value: 1 }, uSeed: { value: new THREE.Vector3() }, uPaper: { value: new THREE.Color('#ebe7de') } };
+  uW: { value: new Array(MAXL).fill(0) }, uStyle: {value:0}, uKit: { value: 0 }, uTime: { value: 0 }, uZoom: { value: 1 }, uSeed: { value: new THREE.Vector3() }, uPaper: { value: new THREE.Color('#ebe7de') },
+  /* Land bridges: two related areas joined by a strip of land. Width 0 means no bridge. */
+  uBA: { value: Array.from({ length: NB }, () => new THREE.Vector3(0, 1, 0)) }, uBB: { value: Array.from({ length: NB }, () => new THREE.Vector3(1, 0, 0)) }, uBC1: { value: Array.from({ length: NB }, () => new THREE.Color()) }, uBC2: { value: Array.from({ length: NB }, () => new THREE.Color()) }, uBW: { value: new Array(NB).fill(0) }, uBD: { value: new Array(NB).fill(1) } };
 const basis = c => { const up = Math.abs(c.y) > .97 ? new THREE.Vector3(1, 0, 0) : new THREE.Vector3(0, 1, 0), e = new THREE.Vector3().crossVectors(up, c).normalize(), n = new THREE.Vector3().crossVectors(c, e); return [e, n]; };
 const offset = (c, r, th) => { const [e, n] = basis(c); return c.clone().multiplyScalar(Math.cos(r)).addScaledVector(e, Math.sin(r) * Math.cos(th)).addScaledVector(n, Math.sin(r) * Math.sin(th)).normalize(); };
 const lonlat = v => [Math.atan2(v.x, v.z), Math.asin(clamp(v.y, -1, 1))];
@@ -33,13 +35,20 @@ float fbm(vec3 p){float a=.5,s=0.;for(int i=0;i<5;i++){s+=a*vnoise(p);p*=2.03;a*
 const globeMat = new THREE.ShaderMaterial({ uniforms: U, vertexShader: `varying vec3 vP;varying vec3 vNv;void main(){vP=position;vNv=normalize(normalMatrix*normal);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
   fragmentShader: `precision highp float;varying vec3 vP;varying vec3 vNv;
 uniform vec3 uC[${NA}];uniform float uR[${NA}];uniform vec3 uCol[${NA}];uniform float uDim[${NA}];uniform float uPulse[${NA}];uniform float uW[${NA}];uniform int uKit,uStyle;uniform float uTime,uZoom;uniform vec3 uPaper,uSeed;
+uniform vec3 uBA[${NB}],uBB[${NB}],uBC1[${NB}],uBC2[${NB}];uniform float uBW[${NB}],uBD[${NB}];
 ${NOISE}
 float grid(float x){float f=abs(fract(x-.5)-.5)/max(fwidth(x),1e-5);return 1.-min(f,1.);}
 void main(){vec3 p=normalize(vP);float n=fbm(p*5.+3.7+uSeed),n2=fbm(p*15.+9.1+uSeed);
-  float best=-9.;vec3 col=vec3(0.);float dim=1.,pulse=0.;vec3 aura=vec3(0.);float aw=0.;
+  /* Each area claims the ground nearest it; where areas meet, their colours blend over a narrow band instead of a hard line. */
+  float best=-9.;vec3 cs=vec3(0.);float ws=0.,dims=0.,puls=0.;vec3 aura=vec3(0.);float aw=0.;
   for(int i=0;i<${NA};i++){float d=acos(clamp(dot(p,uC[i]),-1.,1.));float m=uR[i]-d+(n-.5)*.11*min(1.,uR[i]*4.)+(n2-.5)*.018;
-    if(uR[i]>.001&&m>best){best=m;col=uCol[i];dim=uDim[i];pulse=uPulse[i];}
+    if(uR[i]>.001){best=max(best,m);float e=exp(clamp(m,-1.5,.6)*42.);cs+=uCol[i]*e;ws+=e;dims+=uDim[i]*e;puls+=uPulse[i]*e;}
     float w=uW[i]*uDim[i]*pow(max(dot(p,uC[i]),0.),4.);aura+=uCol[i]*w;aw+=w;}
+  /* A bridge joins two areas that share recorded work; it narrows in the middle and takes both colours. */
+  for(int j=0;j<${NB};j++){if(uBW[j]<=0.)continue;vec3 a=uBA[j],b=uBB[j],nr=normalize(cross(a,b));float h=abs(asin(clamp(dot(p,nr),-1.,1.)));
+    vec3 q=normalize(p-nr*dot(p,nr));float ab=acos(clamp(dot(a,b),-1.,1.)),t=acos(clamp(dot(a,q),-1.,1.))/max(ab,1e-3);if(dot(cross(a,q),nr)<0.||t>1.)continue;
+    float m=uBW[j]*(.55+.45*abs(2.*t-1.))-h+(n-.5)*.05+(n2-.5)*.012;best=max(best,m);float e=exp(clamp(m,-1.5,.6)*42.);cs+=mix(uBC1[j],uBC2[j],t)*e;ws+=e;dims+=uBD[j]*e;}
+  vec3 col=ws>0.?cs/ws:vec3(0.);float dim=ws>0.?dims/ws:1.,pulse=ws>0.?puls/ws:0.;
   float land=smoothstep(0.,.005,best),coast=exp(-abs(best)*(50.+110./uZoom)),inner=smoothstep(0.,.22,best);
   float ndv=clamp(vNv.z,0.,1.),rim=pow(1.-ndv,3.);
   float lat=asin(clamp(p.y,-1.,1.)),lon=atan(p.x,p.z);float gr=max(grid(lat*3.8197),grid(lon*3.8197)*step(abs(lat),1.4));
@@ -98,11 +107,13 @@ const lightMat = new THREE.ShaderMaterial({ uniforms: LU, transparent: true, dep
   vertexShader: `attribute vec3 aColor;attribute float aSize,aBorn,aDie,aAlpha,aKind,aState;uniform float uDay,uScale,uAlt;uniform int uKit;varying vec3 vCol;varying float vA,vS,vFlash;
 void main(){vec4 mv=modelViewMatrix*vec4(position,1.);gl_Position=projectionMatrix*mv;float age=uDay-aBorn;
   float on=smoothstep(0.,5.,age)*(1.-smoothstep(0.,5.,uDay-aDie));vFlash=exp(-max(age,0.)/9.)*step(0.,age);
-  float lod=aKind<.5?1.:aKind<1.5?(.45+.55*smoothstep(4.,1.4,uAlt)):aKind<2.5?smoothstep(1.,.38,uAlt):1.;
+  float lod=aKind<.5?1.:aKind<1.5?(.45+.55*smoothstep(4.,1.4,uAlt)):aKind<2.5?smoothstep(1.,.38,uAlt):aKind<3.5?1.:smoothstep(.45,1.3,uAlt);
   vA=on*aAlpha*lod;vCol=aColor;vS=aState;
   float px=aSize*uScale/pow(-mv.z,.55)*(1.+vFlash*.9);if(uKit==2)px=max(2.,floor(px*.34));gl_PointSize=clamp(px,1.,260.);}`,
   fragmentShader: `precision highp float;uniform int uKit;varying vec3 vCol;varying float vA,vS,vFlash;
 void main(){vec2 q=gl_PointCoord-.5;float d=length(q)*2.;if(vA<.004)discard;
+  /* City glow: a soft wash where things cluster, brightest where something changed lately. */
+  if(vS>3.5){if(d>1.||uKit==2)discard;float hl=exp(-d*d*3.)*(1.-d);gl_FragColor=uKit==0?vec4(vCol*hl,vA*hl):vec4(vCol,vA*hl*.5);return;}
   if(vS>2.5 && min(abs(q.x-q.y),abs(q.x+q.y))>.075)discard;
   if(vS>1.5 && vS<2.5 && q.y<-.12 && abs(q.x)<.055)discard;
   if(uKit==0){if(d>1.)discard;float core=exp(-d*d*48.),halo=exp(-d*d*6.)*.55*(1.-d);
@@ -158,30 +169,47 @@ function load(feed) { const t = d => d ? Date.parse(d) : NaN, all = [t(feed.busi
   feed.findings.forEach(f => { const l = lands[li[f.land]]; if (!l || f.label === 'replaced') return; const x = { kind: 'finding', id: f.id, raw: f, land: l, name: f.statement, label: f.label, from: day(f.at), need: ['challenged', 'needs_review', 'out_of_date'].includes(f.label) }; finds.push(x); l.finds.push(x); });
   const byItem = Object.fromEntries(things.map(x => [x.id, x]));
   finds.forEach(x => { x.tied = (x.raw.related_items || (x.raw.items || []).map(id => ({land:x.land.id,id}))).map(ref => byItem[ref.land+'|'+ref.id]).filter(Boolean); });
-  feed.changes.forEach((c, k) => { const l = lands[li[c.land]]; if (!l) return; const th = byItem[c.land + '|' + c.item_id]; if (th) th.changes++; sparks.push({ day: day(c.at), land: l, th, raw: c, k }); });
-  lands.forEach((l, i) => { const u = (.5 + l.slot * .7548776662) % 1, v = (.5 + l.slot * .569840291 + ph0 / TAU) % 1, y = .8 * (1 - 2 * u), r = Math.sqrt(1 - y * y), ph = v * TAU; CENTERS[i].set(Math.cos(ph) * r, y, Math.sin(ph) * r); l.c = CENTERS[i];
+  feed.changes.forEach((c, k) => { const l = lands[li[c.land]]; if (!l) return; const th = byItem[c.land + '|' + c.item_id]; if (th) { th.changes++; th.lastDay = Math.max(th.lastDay ?? -1e9, day(c.at)); } sparks.push({ day: day(c.at), land: l, th, raw: c, k }); });
+  /* Every area has a home from its slot, so it is always in the same place. Areas that share recorded work are pulled a
+     little toward each other (never more than about 12 degrees), so related knowledge sits together and can be joined. */
+  lands.forEach((l, i) => { const u = (.5 + l.slot * .7548776662) % 1, v = (.5 + l.slot * .569840291 + ph0 / TAU) % 1, y = .8 * (1 - 2 * u), r = Math.sqrt(1 - y * y), ph = v * TAU; CENTERS[i].set(Math.cos(ph) * r, y, Math.sin(ph) * r); l.c = CENTERS[i]; });
+  const related = relatedLands(feed, lands, li), home = lands.map(l => l.c.clone());
+  lands.forEach((l, i) => { if (l.unch || l.kind === 'group') return; const pull = new THREE.Vector3(); let total = 0;
+    for (const [pair, w] of related) { const [a, b] = pair.split('|').map(Number); const j = a === i ? b : b === i ? a : -1; if (j < 0) continue; pull.addScaledVector(home[j].clone().sub(home[i]), w); total += w; }
+    if (total) { const moved = home[i].clone().addScaledVector(pull, .22 / total).normalize(), ang = home[i].angleTo(moved); l.c.copy(ang > .21 ? home[i].clone().lerp(moved, .21 / ang).normalize() : moved); } });
+  lands.forEach(l => {
     const order = [...l.things, ...l.finds]; l.rmax = l.unch ? .2 : l.kind === 'group' ? Math.min(.42, .2 + .02 * Math.sqrt(l.more || 1)) : Math.min(n > 10 ? .34 : .5, .2 + .05 * Math.sqrt(order.length));
     order.forEach(x => {
       const identity=hashS(x.kind+':'+x.id);
       const radius=.74*l.rmax*Math.sqrt(hash1(identity % 100003));
       x.p=offset(l.c,radius,TAU*hash1(identity % 65537 + 5));
     }); });
+  /* Bridges: the most strongly related nearby pairs, joined by land whose width follows how much they share. */
+  const pairs = [...related].map(([pair, w]) => { const [a, b] = pair.split('|').map(Number); return { a: lands[a], b: lands[b], w }; })
+    .filter(x => !x.a.unch && !x.b.unch && x.a.kind !== 'group' && x.b.kind !== 'group' && x.a.c.angleTo(x.b.c) < 1.5).sort((x, y) => y.w - x.w).slice(0, NB), strongest = Math.max(1, ...pairs.map(x => x.w));
+  const bridges = pairs.map((x, j) => { U.uBA.value[j].copy(x.a.c); U.uBB.value[j].copy(x.b.c); return { ...x, width: .022 + .045 * Math.sqrt(x.w / strongest) }; });
+  for (let j = bridges.length; j < NB; j++) U.uBW.value[j] = 0;
   /* A finding sits beside the result it rests on, when the same saved source stands behind both. */
   { const per = {}; finds.forEach(x => { const th = x.tied[0]; if (!th) return; const j = per[th.id] = (per[th.id] || 0) + 1; x.p = offset(th.p, .024 + .007 * ((j - 1) % 3), TAU*hash1(hashS(x.id)%65537)); }); }
+  /* A finding kept in more than one area sits on the border between them, not inside one. */
+  finds.forEach(x => { if (x.tied.length) return; const places = (x.raw.lands || []).map(id => lands[li[id]]).filter(l => l && !l.unch); if (places.length < 2) return;
+    const mid = new THREE.Vector3(); places.forEach(l => mid.add(l.c)); if (mid.lengthSq() < .01 || places[0].c.angleTo(places[1].c) > 1.5) return; x.p = offset(mid.normalize(), .03 * hash1(hashS(x.id) % 9973), TAU * hash1(hashS(x.id) % 65537)); x.border = true; });
   sparks.forEach(s => { s.p = offset(s.th ? s.th.p : s.land.c, s.th ? .014 + .06 * Math.sqrt(hash1(s.k + 3)) : s.land.rmax * .6 * Math.sqrt(hash1(s.k + 3)), hash1(s.k + 11) * TAU); });
   const goals = feed.goals.filter(x => typeof x.target === 'number').slice(0, 4).map(x => ({ kind: 'goal', id: x.id, raw: x, name: x.name, unit: x.unit, target: x.target, direction: x.direction, reached: !!x.reached, lands: x.lands || [], points: (x.points || []).map(p => ({ day: day(p.at), value: p.value })) }));
   const real = lands.filter(l => !l.unch && l.kind !== 'group'), fById = Object.fromEntries(finds.map(x => [x.id, x])), decisions = real.length ? feed.decisions.map((d, k) => { const basis = (d.basis || []).map(id => fById[id]).filter(Boolean), l = basis[0]?.land || lands[li['area:' + d.area]] || real[k % real.length]; return { kind: 'decision', lesson: d.kind === 'lesson', id: d.id, raw: d, name: d.title, day: day(d.at), land: l, basis, p: basis[0] ? offset(basis[0].p, .035, 1 + k * 2.1) : offset(l.c, l.rmax * .5, 1 + k * 2.1) }; }) : [];
   const seenTasks = {}, tasks = (feed.tasks || []).filter(k => lands[li[k.land]]).map(k => { const l = lands[li[k.land]], n = seenTasks[l.id] = (seenTasks[l.id] || 0) + 1, foot = offset(l.c, l.rmax * .55, 2.2 + l.i + n * 1.7); return { kind: 'task', id: k.id, raw: k, name: k.name || 'Scheduled task', land: l, foot, p: foot.clone().multiplyScalar(1.2) }; });
   const byKey=new Map([...lands,...things,...finds,...tasks,...goals,...decisions].map(o=>[(o.kindOf || o.kind)+':'+o.id,o]));
-  M = { feed, byKey, lands, things, finds, sparks, dets: [], goals, decisions, tasks, T, date: d => new Date(t0 + d * 864e5), name: feed.business.name, days: T };
+  M = { feed, byKey, lands, things, finds, sparks, dets: [], goals, decisions, tasks, bridges, actors: actorsOf(feed), T, date: d => new Date(t0 + d * 864e5), name: feed.business.name, days: T };
   for (let i = lands.length; i < MAXL; i++) { U.uR.value[i] = 0; U.uW.value[i] = 0; }
   const r = k => hash1(seed % 9973 + k * 31.7); U.uSeed.value.set(r(1) * 40, r(2) * 40, r(3) * 40);
   /* Each detail of a result is a small light around it, so a result with more to it looks like more at a glance. */
   const dets = []; things.forEach(x => { const e = Object.entries(x.raw.fields || {}).slice(0, 3); e.forEach(([k, v], i) => dets.push({ kind: 'detail', th: x, land: x.land, label: `${k}: ${v}`, from: x.from, p: offset(x.p, .0105, i / e.length * TAU + .6) })); });
   M.dets = dets;
   /* Lights. */
-  const N = things.length + finds.length + sparks.length + dets.length, A = { position: new Float32Array(N * 3), aColor: new Float32Array(N * 3), aSize: new Float32Array(N), aBorn: new Float32Array(N), aDie: new Float32Array(N).fill(1e9), aAlpha: new Float32Array(N), aKind: new Float32Array(N), aState: new Float32Array(N) };
+  const N = things.length + finds.length + sparks.length + dets.length + things.length, A = { position: new Float32Array(N * 3), aColor: new Float32Array(N * 3), aSize: new Float32Array(N), aBorn: new Float32Array(N), aDie: new Float32Array(N).fill(1e9), aAlpha: new Float32Array(N), aKind: new Float32Array(N), aState: new Float32Array(N) };
   [...things, ...finds, ...sparks, ...dets].forEach((x, i) => { A.position.set([x.p.x * 1.004, x.p.y * 1.004, x.p.z * 1.004], i * 3); A.aBorn[i] = x.kind ? x.from : x.day; A.aKind[i] = x.kind === 'item' ? 0 : x.kind === 'finding' ? 1 : x.kind === 'detail' ? 2 : 3; });
+  { const at = things.length + finds.length + sparks.length + dets.length, near = new Map(); finds.forEach(f => f.tied.forEach(th => near.set(th, (near.get(th) || 0) + 1)));
+    things.forEach((x, k) => { const i = at + k; x.neighbours = (near.get(x) || 0) + Object.keys(x.raw.fields || {}).length + x.changes; A.position.set([x.p.x * 1.002, x.p.y * 1.002, x.p.z * 1.002], i * 3); A.aBorn[i] = x.from; A.aKind[i] = 4; A.aState[i] = 4; }); }
   const geo = new THREE.BufferGeometry(); for (const k in A) geo.setAttribute(k, new THREE.BufferAttribute(A[k], k === 'position' || k === 'aColor' ? 3 : 1)); lights.geometry.dispose(); lights.geometry = geo;
   /* Goal rings: concentric, tilted by an amount that belongs to this organization. */
   rings.forEach(R => { globe.remove(R.holder); for (const o of [R.track, R.arc, R.glow]) { o.geometry.dispose(); o.material.dispose(); } });
@@ -196,6 +224,24 @@ function load(feed) { const t = d => d ? Date.parse(d) : NaN, all = [t(feed.busi
   { const span = Math.max(1, T / 140), born = lights.geometry.attributes.aBorn; for (let i = 0; i < born.count; i++) born.array[i] /= span; born.needsUpdate = true; }
   setEffortMetric(effortMetric); }
 
+/* How strongly each pair of areas is related, from recorded links only: a finding kept in both, work tied to both, a project
+   holding both, or a goal both feed (counted half). */
+function relatedLands(feed, lands, li) {
+  const out = new Map(), L = window.auraLinks; if (!L) return out; const ix = L.index(feed);
+  for (const [key, node] of ix.nodes) { if (node.kind === 'land') continue; const set = new Set(node.lands || []);
+    for (const e of ix.from.get(key) || []) if (e.target.startsWith('land:') && e.type !== 'in') set.add(e.target.slice(5));
+    for (const e of ix.into.get(key) || []) if (e.source.startsWith('land:')) set.add(e.source.slice(5));
+    const ids = [...set].filter(id => li[id] != null); if (ids.length < 2) continue;
+    for (let a = 0; a < ids.length; a++) for (let b = a + 1; b < ids.length; b++) { const i = Math.min(li[ids[a]], li[ids[b]]), j = Math.max(li[ids[a]], li[ids[b]]), k = i + '|' + j; out.set(k, (out.get(k) || 0) + (node.kind === 'goal' ? .5 : 1)); } }
+  return out;
+}
+/* Who does the work: AI apps and agents, in the sky beside the world. Busiest first. */
+function actorsOf(feed) {
+  const L = window.auraLinks, out = (feed.apps || []).map(a => ({ key: 'app:' + a.name, kind: 'app', name: a.name, use: a.requests || 0, unit: 'request' }));
+  if (L) for (const [key, node] of L.index(feed).nodes) if (node.kind === 'agent' && !key.includes('|')) out.push({ key, kind: 'agent', name: node.name, id: key.slice(6), use: (L.index(feed).from.get(key) || []).filter(e => e.type === 'used').length, unit: 'conversation' });
+  return out.sort((a, b) => b.use - a.use);
+}
+let arrivals = null;
 function setEffortMetric(metric='requests') {
   effortMetric=metric;
   const groups=new Map((M.feed.effort || []).filter(g=>g.kind==='land').map(g=>[g.id,g]));
@@ -286,6 +332,8 @@ function sync() { syncs++; trace=selectionTrace(); related=new Set(trace.flatMap
   for (const x of M.finds) { put(x.need ? C.amber : kit ? landColor(x.land, tmp) : landColor(x.land, tmp).lerp(new THREE.Color('#ffffff'), .25)); size[i] = .04 + .012 * Math.log2(1 + (x.raw.given || 0)); al[i] = (x.label === 'unverified' ? .75 : .9) * x.land.dim * (match(x) ? 1 : .14); st[i] = x.label==='challenged' ? 3 : x.need ? 2 : x.label === 'unverified' ? 1 : 0; i++; }
   for (const s of M.sparks) { put(landColor(s.land, tmp)); const h = hash1(s.k + 5); size[i] = .017 + .008 * h; al[i] = (.35 + .4 * h) * s.land.dim * (q || F.needs ? .25 : 1); i++; }
   for (const d of M.dets) { put(landColor(d.land, tmp)); size[i] = .02; al[i] = .8 * d.land.dim * (match(d.th) ? 1 : .14); i++; }
+  for (const x of M.things) { put(landColor(x.land, tmp)); const lately = Math.max(x.from, x.lastDay ?? -1e9) > S.day - 30 && x.from <= S.day; size[i] = .14 + .045 * Math.log2(1 + x.neighbours); al[i] = (kit ? .06 : .05 + (lately ? .15 : .02)) * clamp(5 / Math.sqrt(x.land.things.length + 1), .15, 1) * x.land.dim * (match(x) ? 1 : .2); i++; }
+  M.bridges.forEach((b, j) => { landColor(b.a, U.uBC1.value[j]); landColor(b.b, U.uBC2.value[j]); });
   for (const k of ['aColor', 'aSize', 'aAlpha', 'aState']) geo.attributes[k].needsUpdate = true;
   barEl.querySelector('[data-w=live]').hidden = S.day >= M.T && !show;
   whenEl.textContent = `${S.day >= M.T ? "Live" : dateOf(S.day)} · ${M.things.filter(x => x.from <= S.day).length} tracked · ${M.finds.filter(x => x.from <= S.day).length} findings`; headline(); }
@@ -324,22 +372,23 @@ function overlay(t, dd) { placed = []; hits = []; const alt = cam.alt, playing =
     if (lens === 'links') for (const R of rings) if (R.anchor && R.G.lands.includes(l.id)) { g.save(); g.strokeStyle = cssHue(R.hue, 72); g.globalAlpha = .75 * c.fade; g.lineWidth = 1.4; g.setLineDash([4, 4]); g.beginPath(); g.moveTo(c.x, c.y); g.quadraticCurveTo((c.x + R.anchor.x) / 2, Math.min(c.y, R.anchor.y) - 40, R.anchor.x, R.anchor.y); g.stroke(); g.restore(); }
     hit(x - w / 2 - 6, y - 10, w + 12, 22, l, [l.name, 'Click to fly there']); }
   drawTrace();
-  if (!sel && alt < 1.25) { const ta = sstep(1.25, .8, alt); g.save(); g.lineWidth = 1; for (const f of M.finds) { if (!f.tied.length || f.from > dd || f.land.dim < .5) continue; const a = proj(f.p, 1.004); if (!a.vis || a.x < -50 || a.x > W + 50 || a.y < -50 || a.y > H + 50) continue;
+  if (!sel && alt < 2.2) { const ta = sstep(2.2, 1.0, alt) * (alt < 1.25 ? 1 : .45); g.save(); g.lineWidth = 1; for (const f of M.finds) { if (!f.tied.length || f.from > dd || f.land.dim < .5) continue; const a = proj(f.p, 1.004); if (!a.vis || a.x < -50 || a.x > W + 50 || a.y < -50 || a.y > H + 50) continue;
       for (const th of f.tied) { const b = proj(th.p, 1.004); if (!b.vis) continue; g.strokeStyle = cssHue(f.land.hue, 70); g.globalAlpha = ta * (f === focus || th === focus ? .9 : .3); g.beginPath(); g.moveTo(a.x, a.y); g.lineTo(b.x, b.y); g.stroke(); } } g.restore(); }
-  if (alt > .7) for (const k of M.tasks) { const l = k.land; if (U.uR.value[l.i] < .02) continue; const a = proj(k.p, 1, false), b = proj(k.foot, 1.004); if (!a.vis) continue; const far = sstep(.7, 1.3, alt) * (l.dim > .5 ? 1 : .3), bad = ['failed', 'missing', 'paused'].includes(k.raw.health), col = bad ? C.warn : C.muted, on = sel === k || hov === k; if (far < .02) continue;
+  if (alt > .7) for (const k of M.tasks) { const l = k.land; if (U.uR.value[l.i] < .02) continue; const a = proj(k.p, 1, false), b = proj(k.foot, 1.004); if (!a.vis) continue; const far = sstep(.7, 1.3, alt) * (l.dim > .5 ? 1 : .3), bad = ['failed', 'missing', 'paused'].includes(k.raw.health), just = !bad && k.raw.last_run && Date.parse(M.feed.as_of) - Date.parse(k.raw.last_run) < 15 * 60e3, col = bad ? C.warn : just ? C.accent : C.muted, on = sel === k || hov === k; if (far < .02) continue;
     g.save(); g.globalAlpha = far * .6; g.strokeStyle = col; g.lineWidth = 1; g.setLineDash([2, 3]); if (b.vis) { g.beginPath(); g.moveTo(a.x, a.y); g.lineTo(b.x, b.y); g.stroke(); } g.setLineDash([]);
     g.globalAlpha = far; g.fillStyle = C.stage; g.beginPath(); g.arc(a.x, a.y, 8, 0, TAU); g.fill(); g.strokeStyle = on ? C.accent : col; g.lineWidth = 1.5; g.beginPath(); g.arc(a.x, a.y, 6, 0, TAU); g.moveTo(a.x, a.y - 3.5); g.lineTo(a.x, a.y); g.lineTo(a.x + 2.6, a.y + 1.6); g.stroke(); g.restore();
     if (bad) alertDot(a.x + 8, a.y - 8); if (on) txt(k.name, a.x + 14, a.y, { size: 11.5, color: C.accent, alpha: far });
-    hit(a.x - 11, a.y - 11, 22, 22, k, [k.name, (k.raw.schedule ? k.raw.schedule + ' · ' : '') + (k.raw.status || '')]); }
-  running.forEach((r, i) => { const y0 = TOP + 62 + i * 22, l = M.lands.find(z => z.id === r.land); txt(r.label, 28, y0, { size: 11.5, color: C.accent }); g.save(); g.fillStyle = C.accent; g.beginPath(); g.arc(15, y0, 3 + (reduce ? 0 : Math.sin(t / 220)), 0, TAU); g.fill();
-    if (l) { const c = proj(l.c, 1.004); if (c.vis) { g.strokeStyle = C.accent; g.globalAlpha = .4; g.setLineDash([2, 5]); g.lineDashOffset = reduce ? 0 : -t / 40; g.beginPath(); g.moveTo(34 + wOf(r.label, 11.5), y0); g.lineTo(c.x, c.y); g.stroke(); } } g.restore(); });
+    hit(a.x - 11, a.y - 11, 22, 22, k, [k.name, (just ? 'Ran just now · ' : '') + (k.raw.schedule ? k.raw.schedule + ' · ' : '') + (k.raw.status || '')]); }
+  dock(t, playing);
+  /* What just arrived: a brief ring where each new light switched on. */
+  if (arrivals) { const u = (performance.now() - arrivals.t0) / 2600; if (u >= 1) arrivals = null; else for (const key of arrivals.keys) { const o = M.byKey.get(key), s = o?.p && proj(o.p, 1.004); if (!s?.vis) continue; g.save(); g.strokeStyle = C.accent; g.lineWidth = 1.6; g.globalAlpha = reduce ? .8 : 1 - u; g.beginPath(); g.arc(s.x, s.y, reduce ? 11 : 6 + u * 24, 0, TAU); g.stroke(); g.restore(); } }
   /* Up close, findings as sentences and lights by name. */
   const shown = [];
   if (alt < 2.6) for (const f of M.finds) { if (!inSelection(f) || f.from > dd || f.land.dim < .5 || (S.q && !f.name.toLowerCase().includes(S.q))) continue; const s = proj(f.p, 1.004); if (!s.vis || s.x < 0 || s.x > W || s.y < TOP || s.y > H) continue; const r = clamp(5 + (1.2 - alt) * 5, 5, 10); hit(s.x - r, s.y - r, r * 2, r * 2, f, [f.name, FLABEL[f.label] + ' · click to open']); shown.push({ f, s }); }
   const tl = [];
   for (const x of M.things) { if (x.from > dd) continue; const s = proj(x.p, 1.004); if (!s.vis || s.x < -40 || s.x > W + 40 || s.y < 0 || s.y > H + 40) continue; const dim = !inSelection(x) || x.land.dim < .5 || (S.q && !x.name.toLowerCase().includes(S.q)), r = clamp(8 + (1.4 - alt) * 5, 7, 15);
     if (!dim) hit(s.x - r, s.y - r, r * 2, r * 2, x, [x.name, [x.land.name, fieldLine(x), 'click to open'].filter(Boolean).join(' · ')]); tl.push({ x, s, dim, pri: (x === focus ? 1e6 : 0) + (x.need ? 5e4 : 0) + (S.q && !dim ? 1e4 : 0) + x.changes * 10 + (x.raw.sources || 0) + clamp(1 - (M.T - x.seen) / 120, 0, 1) * 5 + hash1(x.from) }); }
-  tl.sort((a, b) => b.pri - a.pri); const cap = playing ? 0 : alt > 3.6 ? 9 : alt > 2.2 ? 18 : alt > 1.2 ? 36 : 999; let n = 0;
+  tl.sort((a, b) => b.pri - a.pri); const crowd = M.things.length > 1500 ? .6 : 1, cap = playing ? 0 : Math.round((alt > 3.6 ? 9 : alt > 2.2 ? 18 : alt > 1.2 ? 36 : alt > .7 ? 60 : 999) * crowd); let n = 0;
   const mark = (o, c, r0) => { const s = proj(o.p, 1.004); if (!s.vis) return; g.save(); g.strokeStyle = c; g.lineWidth = 1.4; const r1 = r0 + (o.kind === 'item' ? 6 : 0); g.beginPath(); g.arc(s.x, s.y, r1, 0, TAU); g.stroke(); for (let i = 0; i < 4; i++) { const a = i * Math.PI / 2; g.beginPath(); g.moveTo(s.x + Math.cos(a) * (r1 + 3), s.y + Math.sin(a) * (r1 + 3)); g.lineTo(s.x + Math.cos(a) * (r1 + 8), s.y + Math.sin(a) * (r1 + 8)); g.stroke(); } g.restore(); };
   if (sel && sel.p) mark(sel, C.accent, 9); if (hov && hov.p && hov !== sel) mark(hov, C.ink, 8);
   for (const { x, s, dim, pri } of tl) { if (dim) continue; if (n >= cap && pri < 1e4) break; const size = clamp(11 + (1.4 - alt) * 2.2, 11, 14.5), w = wOf(x.name, size), extra = alt < .62 && alt >= .36 ? Object.entries(x.raw.fields || {}).slice(0, 1).map(([k, v]) => `${k}: ${v}`) : [], line2 = extra.length, bw = Math.max(w, ...extra.map(e => wOf(e, 11, 500))), bh = size + 5 + extra.length * 14, r = clamp(9 + (1.4 - alt) * 5, 8, 18), al = s.fade;
@@ -361,6 +410,30 @@ function overlay(t, dd) { placed = []; hits = []; const alt = cam.alt, playing =
       if (l.quiet || l.things.some(x => x.need) || l.finds.some(x => x.need)) { g.globalAlpha = 1; g.fillStyle = C.warn; g.beginPath(); g.arc(cx + r * .7, cy - r * .7, 2.8, 0, TAU); g.fill(); } hit(cx - r, cy - r, r * 2, r * 2, l, [l.name, l.unch ? 'Uncharted · click to start charting it' : 'Click to fly there']); }
     g.globalAlpha = 1; g.strokeStyle = C.ink; g.lineWidth = 1.2; g.beginPath(); g.arc(clamp(X(cam.lon), x0 + 4, x0 + w - 4), clamp(Y(cam.lat), y0 + 4, y0 + h - 4), clamp(cam.alt * 5, 4, 22), 0, TAU); g.stroke(); g.restore(); }
   if (show?.type === 'steps' && show.pos) { const s = proj(show.pos, 1.004); if (s.vis) { const u = ((t - show.stepAt) / 1400) % 1; g.save(); g.strokeStyle = C.accent; g.lineWidth = 1.6; g.globalAlpha = 1 - u; g.beginPath(); g.arc(s.x, s.y, 10 + u * 34, 0, TAU); g.stroke(); g.restore(); } } }
+/* The sky: AI apps and agents beside the world, busiest first. Idle ones are quiet marks; one that is working lights up,
+   says what it is working on, and sends a current to every area its conversation's chain reaches. */
+function dock(t, playing) {
+  if (W < 560 || playing || !M.actors.length) return;
+  const x0 = 22; let y = TOP + 118;
+  for (const a of M.actors.slice(0, 7)) {
+    const work = running.filter(r => a.kind === 'app' ? r.app === a.name : r.agent === a.id), on = work.length > 0, over = hov?.dock === a.key;
+    g.save(); g.globalAlpha = on || over ? 1 : .55; g.strokeStyle = on ? C.accent : C.muted; g.fillStyle = C.stage; g.lineWidth = 1.5; g.beginPath();
+    if (a.kind === 'app') g.roundRect(x0 - 7, y - 7, 14, 14, 3); else g.arc(x0, y, 7, 0, TAU); g.fill(); g.stroke();
+    if (a.kind === 'agent') { g.beginPath(); g.arc(x0, y - 1.5, 2.2, 0, TAU); g.moveTo(x0 - 3.5, y + 4); g.quadraticCurveTo(x0, y, x0 + 3.5, y + 4); g.stroke(); } else { g.beginPath(); g.moveTo(x0 - 3, y - 1); g.lineTo(x0 + 3, y - 1); g.moveTo(x0 - 3, y + 2); g.lineTo(x0 + 1, y + 2); g.stroke(); }
+    if (on && !reduce) { g.globalAlpha = .5 + .5 * Math.sin(t / 260); g.beginPath(); g.arc(x0, y, 11, 0, TAU); g.stroke(); }
+    g.restore();
+    const label = on ? `${a.name} · working${work[0].title ? ' on ' + work[0].title : ''}` : over ? a.name : '';
+    if (label) txt(fitLabel(label, Math.min(320, W / 2)), x0 + 16, y, { size: 11.5, color: on ? C.accent : C.ink });
+    if (on) for (const r of work) { const ids = window.auraLinks ? window.auraLinks.places(M.feed, 'chat:' + r.id) : [r.land]; if (!ids.length && r.land) ids.push(r.land);
+      for (const id of ids) { const l = M.lands.find(z => z.id === id); if (!l) continue; let c = proj(l.c, 1.004);
+        // On the far side: aim at its place on the whole-world map in the corner instead.
+        if (!c.vis) { if (W <= 560 || M.lands.length < 2) continue; const [lo, la] = lonlat(l.c); c = { x: W - 162 + 8 + ((wrap(lo - HOME) + Math.PI) / TAU) * 134, y: 104 + 37 - la / 1.1 * 29 }; } g.save(); g.strokeStyle = C.accent; g.globalAlpha = .45; g.setLineDash([3, 6]); g.lineDashOffset = reduce ? 0 : -t / 30; g.beginPath(); g.moveTo(x0 + 9, y); g.quadraticCurveTo((x0 + c.x) / 2, Math.min(y, c.y) - 30, c.x, c.y); g.stroke(); g.restore(); } }
+    const w = label ? wOf(label, 11.5) + 18 : 0; take(x0 - 10, y - 11, 22 + w, 22);
+    hit(x0 - 10, y - 11, 22 + w, 22, { dock: a.key }, [a.name, (a.kind === 'app' ? 'AI app' : 'Agent') + (a.use ? ` · ${a.use} ${a.unit}${a.use === 1 ? '' : 's'}${a.kind === 'app' ? ' this month' : ''}` : '') + ' · click to follow its connections']);
+    y += 28;
+  }
+  if (M.actors.length > 7) txt(`+${M.actors.length - 7} more in Connections`, x0 - 7, y, { size: 10.5, color: C.muted });
+}
 function flatMap(t, dd) { placed = []; hits = []; g.clearRect(0, 0, W, H); const top = TOP + 56, bot = H - 64, k = Math.min((W - 40) / TAU, (bot - top) / 2.2), cx = W / 2, cy = (top + bot) / 2, at = p => { const [lo, la] = lonlat(p); return [cx + wrap(lo - HOME) * k, cy - la * k]; };
   g.save(); g.strokeStyle = C.muted; g.globalAlpha = .25; g.strokeRect(cx - Math.PI * k, cy - 1.1 * k, TAU * k, 2.2 * k); g.restore();
   for (const l of M.lands) { const [x, y] = at(l.c), r = Math.max(10, (l.rto || l.rmax * .6) * k); g.save(); g.beginPath(); g.arc(x, y, r, 0, TAU); if (l.rto) { g.fillStyle = cssHue(l.hue, kit ? 60 : 32, kit ? .2 : .55); g.globalAlpha = l.dim > .5 ? 1 : .3; g.fill(); g.strokeStyle = cssHue(l.hue, 66); g.lineWidth = sel === l ? 2.5 : 1.5; g.stroke(); } else { g.setLineDash([3, 5]); g.strokeStyle = cssHue(l.hue, 66); g.globalAlpha = .7; g.stroke(); } g.restore();
@@ -428,7 +501,7 @@ const under = p => p ? hits.filter(z => p.x >= z.x && p.x <= z.x + z.w && p.y >=
 ui.addEventListener('pointerdown', e => { stopShow(); pd = { x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY }; moved = false; cam.v = [0, 0]; ui.setPointerCapture(e.pointerId); });
 ui.addEventListener('pointermove', e => { pointer = at(e); if (!pd) return; const dx = e.clientX - pd.x, dy = e.clientY - pd.y; pd.x = e.clientX; pd.y = e.clientY; if (!moved && Math.hypot(e.clientX - pd.x0, e.clientY - pd.y0) > 5) moved = true; if (!moved) return;
   const k = Math.min(.0062, 2 * TANH * cam.alt / H), dl = -dx * k / Math.max(.35, Math.cos(cam.lat)), da = dy * k; cam.to.lon += dl; cam.lon += dl; cam.to.lat = cam.lat = clamp(cam.lat + da, -1.35, 1.35); cam.v = [clamp(dl, -.02, .02), clamp(da, -.02, .02)]; });
-ui.addEventListener('pointerup', e => { if (pd && !moved) { pointer = at(e); const h = under(pointer); select(h ? h.s : null); } pd = null; });
+ui.addEventListener('pointerup', e => { if (pd && !moved) { pointer = at(e); const h = under(pointer); if (h?.s?.dock) cb.go?.(h.s.dock); else select(h ? h.s : null); } pd = null; });
 ui.addEventListener('pointerleave', () => { pointer = null; });
 ui.addEventListener('wheel', e => { e.preventDefault(); stopShow(); const before = cam.to.alt; cam.to.alt = clamp(cam.to.alt * Math.exp(e.deltaY * .0017), ALT_MIN, ALT_MAX); if (cam.to.alt < before) { const p = pick(e.clientX, e.clientY); if (p) { const [lo, la] = lonlat(p); cam.to.lon += wrap(lo - cam.to.lon) * .2; cam.to.lat = clamp(cam.to.lat + (la - cam.to.lat) * .2, -1.35, 1.35); } } }, { passive: false });
 ui.addEventListener('dblclick', e => { const p = pick(e.clientX, e.clientY); if (p && cam.alt > 1) flyTo(p, Math.max(.5, cam.alt * .38)); else home(); });
@@ -442,6 +515,7 @@ function frame(t) { raf = 0; if (!stage || !stage.isConnected) { stage = null; r
   stepShow(t); const k = reduce ? 1 : 1 - Math.pow(.0025, dt / 1000); if (!pd) { cam.to.lon += cam.v[0]; cam.to.lat = clamp(cam.to.lat + cam.v[1], -1.35, 1.35); cam.v[0] *= .92; cam.v[1] *= .92; }
   cam.lon += (cam.to.lon - cam.lon) * k; cam.lat += (cam.to.lat - cam.lat) * k; cam.alt = Math.exp(Math.log(cam.alt) + (Math.log(cam.to.alt) - Math.log(cam.alt)) * k); if (Math.abs(cam.to.lon - cam.lon) + Math.abs(cam.to.lat - cam.lat) + Math.abs(Math.log(cam.to.alt / cam.alt)) < 2e-5) { cam.lon = cam.to.lon; cam.lat = cam.to.lat; cam.alt = cam.to.alt; } applyCam();
   if (ramp) { const u = clamp((performance.now() - ramp.t0) / ramp.dur, 0, 1); dday = ramp.from + (ramp.to - ramp.from) * u * u * (3 - 2 * u); if (u >= 1) ramp = null; } else { dday += (S.day - dday) * (reduce ? 1 : 1 - Math.pow(.03, dt / 1000)); if (Math.abs(S.day - dday) < M.T / 1500) dday = S.day; }
+  M.bridges.forEach((b, j) => { U.uBW.value[j] = b.width * Math.min(sstep(0, .06, U.uR.value[b.a.i]), sstep(0, .06, U.uR.value[b.b.i])); U.uBD.value[j] = Math.min(U.uDim.value[b.a.i], U.uDim.value[b.b.i]); });
   for (const l of M.lands) { U.uR.value[l.i] += (l.rto - U.uR.value[l.i]) * Math.min(1, dt / 260); U.uDim.value[l.i] += (l.dim - U.uDim.value[l.i]) * Math.min(1, dt / 200); if (Math.abs(l.rto - U.uR.value[l.i]) < 1e-4) U.uR.value[l.i] = l.rto; if (Math.abs(l.dim - U.uDim.value[l.i]) < 1e-3) U.uDim.value[l.i] = l.dim; }
   /* The preview measured time in days over two years; a young workspace is scaled so its first lights still fade in. */
   const span = Math.max(1, M.T / 140); U.uTime.value = reduce ? 0 : t / 1000; U.uZoom.value = clamp(cam.alt, .18, 3); LU.uDay.value = dday / span + 5 * clamp(dday / M.T, 0, 1); LU.uAlt.value = cam.alt; LU.uScale.value = renderer.getDrawingBufferSize(new THREE.Vector2()).y * .75;
@@ -449,8 +523,8 @@ function frame(t) { raf = 0; if (!stage || !stage.isConnected) { stage = null; r
   running = cb.running?.() || []; { for (const l of M.lands) U.uPulse.value[l.i] = running.some(r => r.land === l.id) ? 1 : 0; } glc.style.visibility = flat ? 'hidden' : '';
   /* Draw only when something on screen can have changed: the camera, time, a transition, running work, hover or new data. */
   const settling = M.lands.some(l => Math.abs(l.rto - U.uR.value[l.i]) > 1e-4 || Math.abs(l.dim - U.uDim.value[l.i]) > 1e-3) || rings.some(R => Math.abs(gdone(R.G, S.day) - R.shown) > 1e-3);
-  const view = [cam.lon.toFixed(5), cam.lat.toFixed(5), cam.alt.toFixed(5), W, H, dday.toFixed(4), flat, syncs, themeKey, hov ? (hov.kindOf || hov.kind) + hov.id : '', shareEl.hidden].join('|');
-  if (show || ramp || rec || pd || settling || (running.length && !reduce) || view !== drawn) {
+  const view = [cam.lon.toFixed(5), cam.lat.toFixed(5), cam.alt.toFixed(5), W, H, dday.toFixed(4), flat, syncs, themeKey, hov ? hov.dock || (hov.kindOf || hov.kind) + hov.id : '', shareEl.hidden].join('|');
+  if (show || ramp || rec || pd || settling || arrivals || (running.length && !reduce) || view !== drawn) {
     drawn = view; draws++;
     if (flat) flatMap(t, dday); else { renderer.render(scene, camera); if (rec) { rec.frame(); if (show?.type !== 'play') { rec.mr.stop(); rec = null; } } overlay(t, dday); }
   }
@@ -479,7 +553,7 @@ window.auraWorld = { available: !!renderer,
   /* Bring the given areas into view, unless they already are. */
   reveal(ids) { if (!M || !ids?.length) return; const v = new THREE.Vector3(); let n = 0; for (const l of M.lands) if (ids.includes(l.id)) { v.add(l.c); n++; } if (!n || v.lengthSq() < 1e-4) return; v.normalize(); const [lo, la] = lonlat(v); if (Math.abs(wrap(lo - cam.to.lon)) < .5 && Math.abs(la - cam.to.lat) < .4) return; flyTo(v, Math.max(cam.to.alt, 1.8)); }, search(q) { S.q = String(q || '').trim().toLowerCase(); dirty = true; }, filter(f) { F = { lands: f?.scoped || f?.lands?.length ? (f.lands || []) : null, needs: !!f?.needs }; dirty = true; }, visit, lens(name) { lens = name || ''; dirty = true; },
   /* New records while the aura is open: redraw from the new feed where the person already is, and let what just arrived glow. */
-  update(feed) { if (!stage || !M) return; const keep = { lon: cam.lon, lat: cam.lat, alt: cam.alt, to: { ...cam.to } }, was = sel ? [sel.kindOf || sel.kind, sel.id] : null, f0 = F, l0 = lens; load(feed); Object.assign(cam, keep, { v: [0, 0] }); F = f0; lens = l0; themeKey = ''; theme(); sync(); for (const l of M.lands) U.uR.value[l.i] = l.rto; if (was) sel = find(was[0], was[1]) || null; dirty=true; ramp = null; }, tour, play, share, card: poster, model: () => M,
+  update(feed) { if (!stage || !M) return; const before = new Set(M.byKey.keys()), keep = { lon: cam.lon, lat: cam.lat, alt: cam.alt, to: { ...cam.to } }, was = sel ? [sel.kindOf || sel.kind, sel.id] : null, f0 = F, l0 = lens; load(feed); Object.assign(cam, keep, { v: [0, 0] }); F = f0; lens = l0; themeKey = ''; theme(); sync(); for (const l of M.lands) U.uR.value[l.i] = l.rto; if (was) sel = find(was[0], was[1]) || null; dirty=true; ramp = null; const fresh = [...M.byKey.keys()].filter(k => !before.has(k) && /^(item|finding|decision):/.test(k)).slice(0, 30); if (fresh.length) arrivals = { keys: fresh, t0: performance.now() }; }, tour, play, share, card: poster, model: () => M,
   /* For checks only: the cost of drawing one frame, in milliseconds, without waiting for the screen. idle() is the cost of a frame with nothing to redraw. */
   bench(n = 20) { const t0 = performance.now(); for (let i = 0; i < n; i++) { cancelAnimationFrame(raf); drawn = ''; frame(performance.now()); } return (performance.now() - t0) / n; },
   idle(n = 20) { const t0 = performance.now(); for (let i = 0; i < n; i++) { cancelAnimationFrame(raf); frame(performance.now()); } return (performance.now() - t0) / n; },

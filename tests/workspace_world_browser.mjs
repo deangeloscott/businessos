@@ -45,8 +45,18 @@ try {
   check(map && map.nodes > 1, 'the expanded diagram has its nodes: ' + JSON.stringify(map));
   check(map.height > 40, 'the expanded diagram is visible even when the list beside it is long: ' + JSON.stringify(map));
   check(map.lines > 0, 'the expanded diagram draws its lines: ' + JSON.stringify(map));
+  // Pointing at a box traces its chain in the diagram, as the prototype's Map did.
+  const traced = await evaluate(`(()=>{const n=document.querySelector('#world-map .wm-node[data-world-go^="task:"]')||document.querySelector('#world-map .wm-node[data-world-go^="app:"]');n.dispatchEvent(new PointerEvent('pointerover',{bubbles:true}));const d=document.querySelectorAll('#world-map .world-dim').length;n.dispatchEvent(new PointerEvent('pointerout',{bubbles:true,relatedTarget:document.body}));return {dimmed:d,after:document.querySelectorAll('#world-map .world-dim').length};})()`);
+  check(traced.dimmed > 0 && traced.after === 0, 'pointing at a box traces its chain and lets go after: ' + JSON.stringify(traced));
   await evaluate(`document.querySelector('[data-world-expand]').click()`);
   if (has3d) {
+    // An AI app in the sky beside the world opens its connections when clicked.
+    await evaluate(`document.querySelector('[data-world-tab="world"]').click()`); await sleep(300);
+    const spot = await evaluate(`(()=>{const r=document.querySelector('#world-stage canvas.world-ui').getBoundingClientRect();return {x:r.left+22,y:r.top+128};})()`);
+    for (const type of ['mouseMoved', 'mousePressed', 'mouseReleased']) await page('Input.dispatchMouseEvent', { type, x: spot.x, y: spot.y, button: 'left', clickCount: 1 });
+    await sleep(500);
+    const opened = await evaluate(`document.querySelector('#world-side .kind')?.textContent+' · '+document.querySelector('#world-side h2')?.textContent`);
+    check(/AI app · Sample app/.test(opened), 'an AI app in the sky opens its connections: ' + opened);
     // Zoom into the collection, then follow a link to a conversation, which the world does not draw.
     await evaluate(`document.querySelector('[data-world-tab="world"]').click()`);
     await evaluate(`window.auraWorld.settle()`);

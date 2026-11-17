@@ -29,7 +29,12 @@ EVIDENCE = {'supports': 'supports', 'contradicts': 'challenges', 'derived_from':
 OUTPUTS = {'Insight', 'DecisionRecord', 'Learning', 'Asset'}
 
 
-def relationships(feed, registry, bound, objects, references, item_sources=None, assistants=()):
+# A saved record that is not drawn on the world is named by what it is.
+RECORD_KIND = {'Asset': 'output', 'Insight': 'finding', 'DecisionRecord': 'decision', 'Learning': 'decision'}
+
+
+def relationships(feed, registry, bound, objects, references, item_sources=None, assistants=(), origins=None, library_types=None):
+    """origins: {record id: producer} found later in a harness's own log (workspace_origins); library_types: {key: type}."""
     nodes, edges = {}, {}
     bid = feed['business']['id']
     titles = {}  # 'land|item' -> title, so a result can become a node when something is recorded about it
@@ -37,12 +42,13 @@ def relationships(feed, registry, bound, objects, references, item_sources=None,
         for item in land['items']:
             titles[land['id'] + '|' + item['id']] = item['title']
 
-    def node(kind, ident, name, action=None, lands=()):
+    def node(kind, ident, name, action=None, lands=(), sub=None):
         key = f'{kind}:{ident}'
         if key not in nodes:
             row = {'key': key, 'kind': kind, 'name': str(name or ident)[:240]}
             if action:row['action'] = action
             if lands:row['lands'] = list(lands)
+            if sub:row['sub'] = sub
             nodes[key] = row
         return key
 
@@ -80,8 +86,9 @@ def relationships(feed, registry, bound, objects, references, item_sources=None,
             obj = records.get(ident)
             if not obj:
                 return None  # Never expose an unrelated organization's record.
-            key = node('record', ident, obj.get('title') or obj.get('name') or obj.get('statement') or obj.get('business_role') or obj.get('object_type'),
-                       {'record': ident})
+            key = node(RECORD_KIND.get(obj.get('object_type'), 'record'), ident,
+                       obj.get('title') or obj.get('name') or obj.get('statement') or obj.get('business_role') or obj.get('object_type'),
+                       {'record': ident}, sub=obj.get('asset_type') if obj.get('object_type') == 'Asset' else None)
             aliases[ident] = key
             return key
         if kind == 'collection':
@@ -89,7 +96,7 @@ def relationships(feed, registry, bound, objects, references, item_sources=None,
         if kind == 'file':
             return node('file', ident, ref.get('label') or ident.replace('\\', '/').rsplit('/', 1)[-1], {'file': ident})
         if kind == 'library':
-            return node('method', ident, ref.get('label') or ident, {'method': ident})
+            return node('method', ident, ref.get('label') or ident, {'method': ident}, sub=(library_types or {}).get(ident))
         if kind == 'task':
             return 'task:' + ident
         return None
@@ -130,15 +137,17 @@ def relationships(feed, registry, bound, objects, references, item_sources=None,
             if project['id'] in land.get('project_refs', []):
                 edge(key, 'land:' + land['id'], 'member')
     for method in feed['methods']:
-        node('method', method['id'], method['name'], {'method': method['id']}, method.get('lands', []))
+        node('method', method['id'], method['name'], {'method': method['id']}, method.get('lands', []), (library_types or {}).get(method['id']))
     for assistant in assistants:
         if assistant.get('archived_at'):
             continue
         key = node('agent', assistant['id'], assistant['name'], {'assistant-open': assistant['id']})
         for task in assistant.get('task_ids') or []:
             edge(key, 'task:' + task, 'assigned')
+    native = {}  # a harness's own session id -> the AURA chat that ran it, so one session is one conversation
     for chat in references:
         key = node('chat', chat['id'], chat['title'], {'chat': chat['id']})
+        if chat.get('native_id'):native[str(chat['native_id'])] = key
         if chat.get('assistant_id'):
             edge('agent:' + chat['assistant_id'], key, 'used')
         if chat.get('agent'):
@@ -169,15 +178,20 @@ def relationships(feed, registry, bound, objects, references, item_sources=None,
             edge(key, 'project:' + project, 'assigned')
 
     def producer(by):
-        """The chat, task or agent AURA started when this was saved. It establishes where, not why."""
+        """Where a save happened: a chat, task or agent AURA started, or a harness session. It establishes where, not why."""
         kind, ident = (by or {}).get('kind'), (by or {}).get('id')
-        if kind not in {'task', 'agent', 'chat'} or not isinstance(ident, str) or not ident:
+        if kind not in {'task', 'agent', 'chat', 'session'} or not isinstance(ident, str) or not ident:
             return None
+        if kind == 'session':
+            if ident in native:
+                return native[ident]
+            app = str(by.get('app') or 'An AI app')[:80]
+            return node('session', ident, by.get('title') or app + ' session', {'session': {'app': app, 'id': ident}}, sub=app)
         return node(kind, ident, {'chat': 'A saved conversation', 'task': 'A scheduled task', 'agent': 'An agent'}[kind],
                     {'chat': ident} if kind == 'chat' else None)
 
     for obj in objects:
-        by = (((obj.get('extensions') or {}).get('businessos') or {}).get('work') or {}).get('producer')
+        by = (((obj.get('extensions') or {}).get('businessos') or {}).get('work') or {}).get('producer') or (origins or {}).get(obj['id'])
         if obj.get('object_type') not in OUTPUTS or not by:
             continue
         output = reference({'kind': 'record', 'id': obj['id']})

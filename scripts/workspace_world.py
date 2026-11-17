@@ -197,8 +197,13 @@ def world(bid, at=None, app=None):
                        'goals': base['totals']['goals'], 'attention': base['totals']['attention'], 'decisions': len(decisions)},
             'empty': base['empty']}
     from workspace_world_links import relationships
+    import workspace_origins
+    catalog = [r for r in (getattr(app, 'catalog', None) or []) if isinstance(r, dict) and r.get('key')]
+    types = {r['key']: r.get('kind') for r in catalog if r.get('kind')}
+    feed['library_totals'] = {}
+    for kind in types.values():feed['library_totals'][kind] = feed['library_totals'].get(kind, 0) + 1
     feed['relationships'] = relationships(feed, registry, bound, objects, given_counts['references'], item_sources,
-        app.preferences.get('assistants', {}).get(bid, []) if app else [])
+        app.preferences.get('assistants', {}).get(bid, []) if app else [], origins=workspace_origins.known(), library_types=types)
     feed['revision'] = revision(feed)
     return feed
 
@@ -267,7 +272,7 @@ def _used(bid, app, known):
                     m = methods.setdefault(r['id'], {'id': r['id'], 'name': str(r.get('label') or r['id'])[:120], 'uses': 0, 'lands': set()})
                     m['uses'] += 1;m['lands'].update(together)
         out['references'].append({'id': chat['id'], 'title': chat.get('title') or 'Saved conversation',
-                                  'agent': chat.get('agent'), 'assistant_id': chat.get('assistant_id'), 'subagents': chat.get('subagents') or [], 'references': list(attached.values())})
+                                  'agent': chat.get('agent'), 'assistant_id': chat.get('assistant_id'), 'native_id': chat.get('native_id'), 'subagents': chat.get('subagents') or [], 'references': list(attached.values())})
     out['library'] = [{**m, 'lands': sorted(m['lands'])} for m in sorted(methods.values(), key=lambda m: -m['uses'])[:40]]
     return out
 

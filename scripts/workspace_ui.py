@@ -3296,6 +3296,9 @@ def handler_for(app):
 
 
 def main():
+    # The interface is not working inside the AI session that may have started it, so its own saves never claim that session.
+    import workspace_projects
+    for name, _ in workspace_projects.HARNESS_SESSIONS: os.environ.pop(name, None)
     parser = argparse.ArgumentParser(description='Open an optional local view of your AURA files. No cloud account or background daemon.')
     parser.add_argument('--workspace', help='Reuse this existing organization workspace.')
     parser.add_argument('--business-id', help='Business to open; a single business is selected automatically.')

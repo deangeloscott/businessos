@@ -198,6 +198,18 @@ def handler_for(app):
                                             'assistant_id':(chats.get(j.get('chat_id')) or {}).get('assistant_id','')}
                                            for j in owner.running_jobs(workspace_root()) if j.get('business_id')==bid]
                     self.send(200,result)
+                elif route=='/api/origin':
+                    # Where one record or file was made, from the AI apps' own local logs. Only on request; see workspace_origins.
+                    with app.lock:root=app.workspace_path
+                    with workspace_scope(root):
+                        bid=selected(query.get('business'));import workspace_origins;from _common import object_index
+                        if query.get('record'):
+                            obj=next((o for o,_ in object_index(bid).values() if o.get('id')==query['record']),None)
+                            result={'origin':workspace_origins.find(record_id=obj['id'],created_at=obj.get('created_at')) if obj else None}
+                        else:
+                            path=local_file(bid,query.get('file',''),app.preferences.get('file_locations',{}).get(bid,[]))
+                            stat=path.stat();result={'origin':workspace_origins.find(file_path=str(path),file_time=getattr(stat,'st_birthtime',None) or (stat.st_ctime if os.name=='nt' else stat.st_mtime))}
+                    self.send(200,result)
                 elif route in {'/api/collection-view','/api/running','/api/goal-progress','/api/world'}:
                     with app.lock:root=app.workspace_path;owner=copy.copy(app)
                     with workspace_scope(root):

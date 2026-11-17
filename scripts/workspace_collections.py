@@ -152,8 +152,8 @@ def create(bid,data):
        'items':[],'feedback':{},'checks':[],'receipts':{}}
     if data.get('producer') or context:
         v=data.get('producer') or context
-        if not isinstance(v,dict) or v.get('kind') not in {'chat','task','agent'}:raise ValueError('Choose a chat, task, or agent producer.')
-        d['producer']={'kind':v['kind'],'id':string(v.get('id'),'producer identity',1000)}
+        if not isinstance(v,dict) or v.get('kind') not in {'chat','task','agent','session'}:raise ValueError('Choose a chat, task, or agent producer.')
+        d['producer']={'kind':v['kind'],'id':string(v.get('id'),'producer identity',1000),**({'app':str(v['app'])[:80]} if v.get('app') else {})}
     return persist(bid,d)
 
 
@@ -277,7 +277,7 @@ def apply(bid,ident,data):
     if data.get('upkeep'):check['upkeep']=True;d['last_upkeep_at']=check['at']
     # The chat, task or agent AURA started this work in, when AURA started it. Nothing is asked of the AI for this.
     by=projects.producer_context(bid)
-    if by:check['by']={'kind':by['kind'],'id':by['id']}
+    if by:check['by']={k:by[k] for k in ('kind','id','app') if k in by}
     d['checks']=(d['checks']+[check])[-50:]
     receipt={'run_id':run_id,'payload_hash':payload_hash,'version':d['version'],'coverage':cov,'changes':changes[:250],'change_count':len(changes),'no_change_verified':check['no_change_verified']}
     d['receipts'][run_id]=receipt;d['receipts']=dict(list(d['receipts'].items())[-500:])

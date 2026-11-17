@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- **Connections reads like a map again.** Columns hold groups (AI apps, each Library type with how many more are in the Library, files, agents, conversations, scheduled tasks, areas, findings, outputs, goals), each thing has its own small mark, and pointing at anything traces its whole chain. Lines say what they carry: saved work by default, or requests, tokens or cost. A thicker line carried more; a dashed one is a recorded link with nothing along it yet.
+- **Work you can see happening.** AI apps and agents sit in the sky beside the world. One that is working lights up, says what it is on, and sends a current to the areas its conversation reaches; the same chain moves in the diagram. What it saves is picked up within seconds and rings briefly where it lands. A scheduled task's clock shows when it has just run.
+- **One continuous world.** Area borders blend instead of meeting in hard lines, areas that share recorded work are pulled a little closer and joined by land bridges, and a finding kept in two areas sits on the border between them. Busy, recently changed places glow like cities; crowded worlds show fewer names.
+- **Made in an AI app, not only in AURA.** Work saved directly in Claude Code notes its session. For anything else, "Where was this made?" reads the AI apps' own session records on this computer for an exact match: the record's id in the save that created it, or the app's own write of a file. More than one match, or none, gives no answer rather than a guess. Found answers are kept and drawn as links.
+- **Find anything.** The world's search also finds conversations, files, agents and Library items, and opens their chains.
+- **Saved outputs are named as outputs**, not as evidence.
+
 - **See what each piece of work produced.** When the AI saves a finding, decision, lesson or result through AURA during a chat AURA started, AURA notes that chat on it. The AI is asked for nothing extra, and work done elsewhere honestly shows as "not recorded". When a chat finishes while your aura is open, one line says what it saved and changed, with a way to see it.
 - **Connections follows the whole chain.** Select anything to see everything recorded as flowing into it and everything it led to, in the panel and as a full-screen diagram. With nothing selected, the diagram shows how your work flows: what your AI used, the conversations, what they saved and the goals they serve. Each link says what it records, and a collection's contents are counted rather than drawn as hundreds of lines.
 - **One place for what changed.** Time opens on what changed since your last visit, lit on the world, with a way to fly through it; the timeline is beside it. Home says it once.
