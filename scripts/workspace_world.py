@@ -158,6 +158,14 @@ def world(bid, at=None, app=None):
                       'project_refs': [], 'items': [], 'more': sum(g['current'] for g in grouped), 'members': grouped[:200]})
     for key, name in sorted(areas.items())[:max(0, MAX_LANDS - len(lands))]:
         lands.append({'id': key, 'slot': AREA_ORDER[key[5:]], 'name': name, 'kind': 'area', 'purpose': '', 'task_linked': False, 'last_checked': None, 'quiet': False, 'uses': 0, 'project_refs': [], 'items': [], 'more': 0})
+    # Colour families: each place takes the operating area most of its findings belong to, so related collections share a
+    # colour family (competitors with competitors). A collection with no findings yet has no family until it earns one.
+    for land in lands:
+        if land['id'].startswith('area:'):land['family'] = AREA_ORDER.get(land['id'][5:], -1);continue
+        seen = {}
+        for f in findings:
+            if land['id'] in (f.get('lands') or [f['land']]):seen[f['area']] = seen.get(f['area'], 0) + 1
+        land['family'] = AREA_ORDER.get(max(seen, key=seen.get), -1) if seen else -1
     # Findings whose place could not be drawn are counted, never shown somewhere they do not belong.
     shown = {land['id'] for land in lands};hidden = sum(f['land'] not in shown for f in findings);findings = [f for f in findings if f['land'] in shown]
     # A very large world keeps every light but carries less about each one; its own screen has the rest.

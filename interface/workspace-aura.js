@@ -43,7 +43,7 @@ window.auraView=(()=>{
     const from=since||fallbackSince(f),list=changesSince(f,from).sort((a,b)=>(b.key.startsWith('goal:')-a.key.startsWith('goal:'))||Date.parse(b.at)-Date.parse(a.at));
     const title=since?'Since your last visit':'In the last two weeks';
     if(!list.length)return `<section><h3>${title}</h3><p class="small-note">No new findings, tracked changes or goal movement since ${esc(when(from))}.</p></section>`;
-    return `<section><h3>${title}</h3>${list.slice(0,6).map(c=>row(go(c.key),c.title,c.detail,when(c.at),c.land?hueOf(c.land):null)).join('')}${list.length>6?`<p class="small-note">and ${list.length-6} more</p>`:''}<button type="button" class="text-button" data-world-since="${esc(from.slice(0,10))}">See it over time</button></section>`;
+    return `<section><h3>${title}</h3>${list.slice(0,6).map(c=>row(go(c.key),c.title,c.detail,when(c.at),c.land?hueOf(c.land):null,c.key.split(':')[0])).join('')}${list.length>6?`<p class="small-note">and ${list.length-6} more</p>`:''}<button type="button" class="text-button" data-world-since="${esc(from.slice(0,10))}">See it over time</button></section>`;
   }
   const spark=tr=>{const pts=(tr?.points||[]).filter(p=>typeof p.value==='number');if(pts.length<2)return '';const vs=pts.map(p=>p.value),mn=Math.min(...vs),mx=Math.max(...vs);return `<div><svg class="world-spark" viewBox="0 0 140 30" role="img" aria-label="${esc(tr.field)} over time"><polyline points="${vs.map((v,i)=>`${(4+132*i/(vs.length-1)).toFixed(1)},${(25-20*(v-mn)/((mx-mn)||1)).toFixed(1)}`).join(' ')}"/></svg><p class="small-note">${esc(tr.field)}: ${esc(vs[0])} → ${esc(vs.at(-1))} over ${pts.length} checks</p></div>`;};
   /* Work that is running right now, and the area its chat is tied to. */
@@ -280,8 +280,9 @@ window.auraView=(()=>{
     const sum=field=>chats.reduce((s,c)=>s+(c[field]||0),0),requests=sum('requests'),tokens=sum('tokens'),cost=sum('cost_usd'),noCost=sum('missing_costs');
     const sub=g=>[count(g.requests,'request'),g.tokens?compact(g.tokens)+' tokens':'',g.missing_costs!==g.requests&&g.cost_usd?money(g.cost_usd):'',g.missing_costs?'cost not reported for '+g.missing_costs:''].filter(Boolean).join(' · ');
     const list=[...groups.values()].map(g=>({...g,sub:sub(g),value:g[metric]||0,hue:g.key.startsWith('land:')?(hueOf(g.key.slice(5))??hash(g.key)%360):hash(g.key)%360}));
+    if(ctx)ctx.effortGroups=new Map(list.map(g=>[g.key,{chats:g.chats.filter(c=>c.id).map(c=>c.id),apps:[...new Set(g.chats.map(c=>c.agent).filter(Boolean))].map(n=>'app:'+n),node:by==='app'?'app:'+g.key:by==='work'&&g.key!=='other'?g.key:null}]));
     const chart=list.some(g=>g.value>0)?blocks(list):'<p class="small-note">Nothing reported for this measure. Try another.</p>';
-    const open=list.find(g=>g.key===ctx?.effortOpen),detail=open?`<section><h3>${esc(open.name)}</h3>${open.chats.sort((a,b)=>b[metric]-a[metric]).map(c=>row(c.id?`data-edit-chat="${esc(c.id)}"`:'',c.title,[by!=='app'?c.agent:'',by!=='model'?c.model:'',count(c.requests,'request'),c.tokens?compact(c.tokens)+' tokens':'',c.missing_costs!==c.requests&&c.cost_usd?money(c.cost_usd):'',c.id?produced(f,c.id):''].filter(Boolean).join(' · '))).join('')}</section>`:'<p class="small-note">Select a block to see the conversations behind it and what they saved.</p>';
+    const open=list.find(g=>g.key===ctx?.effortOpen),follow=open&&ctx.effortGroups.get(open.key)?.node,detail=open?`<section><h3>${esc(open.name)}</h3>${follow?`<button type="button" class="text-button" data-effort-follow="${esc(follow)}">Follow in Connections</button>`:''}${open.chats.sort((a,b)=>b[metric]-a[metric]).map(c=>row(c.id?`data-edit-chat="${esc(c.id)}"`:'',c.title,[by!=='app'?c.agent:'',by!=='model'?c.model:'',count(c.requests,'request'),c.tokens?compact(c.tokens)+' tokens':'',c.missing_costs!==c.requests&&c.cost_usd?money(c.cost_usd):'',c.id?produced(f,c.id):''].filter(Boolean).join(' · '))).join('')}</section>`:'<p class="small-note">Select a block to see the conversations behind it and what they saved.</p>';
     const select=(id,label,options,current)=>`<label>${label} <select id="${id}">${options.map(([k,t])=>`<option value="${k}" ${k===current?'selected':''}>${t}</option>`).join('')}</select></label>`;
     return `<div class="world-acts">${select('world-effort-by','Group by',[['app','AI app'],['work','What it was for'],['model','Model']],by)}${select('world-effort-metric','Size by',[['requests','Requests'],['tokens','Reported tokens'],['cost_usd','Reported cost']],metric)}</div>
       <p class="small-note">${count(requests,'request')} this month${tokens?' · '+compact(tokens)+' reported tokens':''}${cost?' · '+money(cost)+' reported':''}${noCost?' · cost not reported for '+noCost:''}. Only what each app reported is counted.${note?' '+note:''}</p>`+chart+detail;
@@ -424,7 +425,7 @@ window.auraView=(()=>{
   const sinceDate=f=>ctx?.compare||(ctx?.since||fallbackSince(f)).slice(0,10);
   function comparisonView(feed){
     const date=sinceDate(feed),changes=changesSince(comparisonFeed(feed,ctx.sel),date),visible=changes.slice(0,ctx.compareLimit||60);
-    const entries=visible.map(c=>{const [kind,...id]=c.key.split(':');return row(recordFor(ctx.feed,kind,id.join(':'))?go(c.key):c.land?`data-collection="${esc(c.land)}"`:'',c.title,c.detail,when(c.at),c.land?hueOf(c.land):null);}).join('');
+    const entries=visible.map(c=>{const [kind,...id]=c.key.split(':');return row(recordFor(ctx.feed,kind,id.join(':'))?go(c.key):c.land?`data-collection="${esc(c.land)}"`:'',c.title,c.detail,when(c.at),c.land?hueOf(c.land):null,kind);}).join('');
     return `<section class="world-comparison"><label>Changes since <input id="world-compare-date" type="date" value="${esc(date)}" max="${esc(feed.as_of.slice(0,10))}"></label>
       <p class="small-note">Lit on the world. Earlier values appear where a dated measurement was kept.</p>
       ${changes.length?`<button type="button" class="text-button" data-world-fly>Fly through them</button>`:''}
@@ -471,7 +472,7 @@ window.auraView=(()=>{
     else if(tab==='timeline'){
       const mode=ctx.timeMode||'since';
       body='<h2>Time</h2>'+scope+`<div class="world-time-modes"><button type="button" data-world-time="since" aria-pressed="${mode==='since'}">What changed</button><button type="button" data-world-time="timeline" aria-pressed="${mode==='timeline'}">Timeline</button></div>`+(mode==='since'?comparisonView(scoped):timelineView(scoped));
-      if(ctx.week&&mode==='timeline'){const list=weekRecords(scoped,ctx.week);body+=`<section id="world-week" tabindex="-1"><h3>Week of ${esc(when(ctx.week))}</h3><button class="text-button" data-world-end-week>Show all dates</button>${list.map(r=>row(go(r.key),r.title,r.kind,when(r.at))).join('')||'<p>No saved records in this selection that week.</p>'}</section>`;}
+      if(ctx.week&&mode==='timeline'){const list=weekRecords(scoped,ctx.week);body+=`<section id="world-week" tabindex="-1"><h3>Week of ${esc(when(ctx.week))}</h3><button class="text-button" data-world-end-week>Show all dates</button>${list.map(r=>row(go(r.key),r.title,r.kind,when(r.at),null,r.key.split(':')[0])).join('')||'<p>No saved records in this selection that week.</p>'}</section>`;}
     }
     else if(tab==='effort')body='<h2>AI effort this month</h2>'+scope+effortView(f,ctx.sel);
     else body=ctx.sel?selected(f,ctx.sel)+`<div class="world-acts"><button type="button" class="text-button" data-world-tab="map">Follow its connections</button><button type="button" class="text-button" data-world-compare>Changes over time</button></div>`+(ctx.sel.kind==='finding'&&ctx.sel.raw.source_details?.length?'<section><h3>Evidence and sources</h3>'+evidenceRows(ctx.sel.raw)+'</section>':''):home(f);
@@ -497,7 +498,9 @@ window.auraView=(()=>{
     for(const c of feed.changes)if(c.by&&c.at>previous.as_of)add(c.by.kind+':'+c.by.id,'item:'+c.land+'|'+c.item_id,'changed');
     const words={finding:['finding','saved'],decision:['decision','saved'],collection:['collection','saved'],record:['record','saved'],item:['result','saved'],changed:['tracked result','changed']};
     return [...by].map(([source,r])=>{const saved=[],changed=[];for(const [k,n] of Object.entries(r.kinds)){const [noun,verb]=words[k]||['record','saved'];(verb==='changed'?changed:saved).push(count(n,noun));}
-      const name=ix.nodes.get(source)?.name||'Your AI';return {source,items:[...r.items],text:`${name} ${[saved.length?'saved '+saved.join(', '):'',changed.length?'changed '+changed.join(', '):''].filter(Boolean).join(' and ')}.`};});
+      const node=ix.nodes.get(source),app=(ix.into.get(source)||[]).map(e=>ix.nodes.get(e.source)).find(n=>n?.kind==='app')?.name,title=node?.kind==='chat'&&node.name?` · “${node.name.length>48?node.name.slice(0,47)+'…':node.name}”`:'';
+      const who=app||(node?.kind==='session'?node.sub:node?.kind==='chat'?'Your AI':node?.name)||'Your AI';
+      return {source,items:[...r.items],text:`${who} ${[saved.length?'saved '+saved.join(', '):'',changed.length?'changed '+changed.join(', '):''].filter(Boolean).join(' and ')}${title}.`};});
   }
   function updateWorld(feed,quiet=false){
     const previous=ctx.feed,selection=ctx.sel,outcomes=[];
@@ -606,6 +609,12 @@ window.auraView=(()=>{
   const saveShift=shift=>{state.data.aura_preferences={...(state.data.aura_preferences||{}),shift};clearTimeout(shiftTimer);shiftTimer=setTimeout(()=>attempt(async()=>{await api('/api/preferences',{business:state.business,aura:{shift}});hq().paintMark();hq().paint(true);}),400);};
   document.addEventListener('input',e=>{if(!ctx)return;if(e.target.id==='aura-shift')saveShift(Number(e.target.value));if(e.target.id==='world-q'){world()?.search(e.target.value);ctx.q=e.target.value;clearTimeout(ctx.searchTimer);ctx.searchTimer=setTimeout(paintSide,150);}});
   document.addEventListener('pointerover',e=>{const box=e.target.closest?.('#world-map [data-key]');if(box&&ctx)highlight(box.dataset.key);});
+  /* Pointing at a row, a timeline mark or an effort block shows where it is on the world, in every lens. */
+  const peekFor=key=>{const L=links(),graph=L.index(ctx.feed).nodes.has(key);return {key,lands:graph?L.places(ctx.feed,key):[],docks:graph?[...L.trace(ctx.feed,key).up].filter(k=>k.startsWith('app:')||(k.startsWith('agent:')&&!k.includes('|'))):[]};};
+  const blockPeek=key=>{const g=ctx.effortGroups?.get(key);if(!g)return null;const L=links(),lands=new Set();for(const id of g.chats)for(const l of L.places(ctx.feed,'chat:'+id))lands.add(l);return {lands:[...lands],docks:g.apps};};
+  document.addEventListener('pointerover',e=>{if(!ctx||state.view!=='aura')return;const item=e.target.closest?.('#world-side [data-world-go], #world-side [data-effort-key]');if(!item)return;
+    world()?.peek?.(item.dataset.worldGo?peekFor(item.dataset.worldGo):blockPeek(item.dataset.effortKey));});
+  document.addEventListener('pointerout',e=>{if(ctx&&e.target.closest?.('#world-side [data-world-go], #world-side [data-effort-key]')&&!e.relatedTarget?.closest?.('#world-side [data-world-go], #world-side [data-effort-key]'))world()?.peek?.(null);});
   document.addEventListener('pointerout',e=>{if(ctx&&e.target.closest?.('#world-map [data-key]')&&!e.relatedTarget?.closest?.('#world-map [data-key]'))highlight(null);});
   document.addEventListener('click',e=>{
     if(!ctx||ctx.business!==state.business||state.view!=='aura')return;
@@ -629,7 +638,9 @@ window.auraView=(()=>{
     if(on('[data-world-more-changes]')){ctx.compareLimit=(ctx.compareLimit||60)+60;paintSide();}
     if(on('[data-world-end-week]')){ctx.week=null;paintSide();}
     const week=on('[data-world-week]');if(week){if(week.dataset.weekLand)selectRecord('land',week.dataset.weekLand);ctx.week=week.dataset.worldWeek;paintSide();$('#world-week')?.focus();}
-    const block=on('[data-effort-key]');if(block){ctx.effortOpen=ctx.effortOpen===block.dataset.effortKey?null:block.dataset.effortKey;paintSide();}
+    const block=on('[data-effort-key]');if(block){ctx.effortOpen=ctx.effortOpen===block.dataset.effortKey?null:block.dataset.effortKey;const shown=ctx.effortOpen&&blockPeek(ctx.effortOpen);
+      if(shown?.lands.length){world()?.filter?.({lands:shown.lands,scoped:true});world()?.reveal?.(shown.lands);}else world()?.filter?.(ctx.filter);paintSide();}
+    const follow=on('[data-effort-follow]');if(follow){const flow={requests:'requests',tokens:'tokens',cost_usd:'cost_usd'}[ctx.metric||'requests'];ctx.flow=flow;ctx.effortOpen=null;world()?.filter?.(ctx.filter);showTab('map');const [kind,...rest]=follow.dataset.effortFollow.split(':');selectRecord(kind,rest.join(':'));}
     const more=on('[data-map-more]');if(more){ctx.mapOpen={...(ctx.mapOpen||{}),[more.dataset.mapMore]:true};paintSide();}
     if(on('[data-world-arrived]')){ctx.compare=ctx.arrivedSince.slice(0,10);ctx.arrivedSince=null;ctx.timeMode='since';showTab('timeline');}
     const since=on('[data-world-since]');if(since){ctx.compare=since.dataset.worldSince;ctx.timeMode='since';showTab('timeline');}
@@ -642,7 +653,7 @@ window.auraView=(()=>{
     const chip=on('.aura-view [data-world-chip]'),needs=on('.aura-view [data-world-needs]');
     if(chip||needs){if(chip){ctx.filter.by='';const id=chip.dataset.worldChip,active=ctx.filter.lands.includes(id);ctx.filter.lands=active?ctx.filter.lands.filter(x=>x!==id):[...ctx.filter.lands,id];}else ctx.filter.needs=!ctx.filter.needs;world()?.filter(ctx.filter);paintSide();}
     if(on('.aura-view [data-world-tour]'))world()?.tour?.();
-    const tab=on('.aura-view [data-world-tab]');if(tab)showTab(tab.dataset.worldTab);
+    const tab=on('.aura-view [data-world-tab]');if(tab){if(ctx.effortOpen){ctx.effortOpen=null;world()?.filter?.(ctx.filter);}world()?.peek?.(null);showTab(tab.dataset.worldTab);}
   });
   window.addEventListener?.('pagehide',savePlace);
   return {focusChat:()=>setChat(true),leave(){savePlace();if(ctx){ctx.chat=false;ctx.mapObserver?.disconnect();}world()?.unmount?.();},chatOpen:()=>!!ctx?.chat,open,render:draw,

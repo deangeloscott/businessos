@@ -102,13 +102,13 @@ void main(){vec3 p=normalize(vP);float f=pow(clamp(-vNv.z/uK,0.,1.),uPow);vec3 a
   if(uKit==0)gl_FragColor=vec4(mix(vec3(.45,.6,.9),c,.85)*f*s*uGain,1.);
   else gl_FragColor=vec4(c,f*s*uGain*.55);}` }); const mesh = new THREE.Mesh(new THREE.SphereGeometry(1, 96, 64), m); mesh.scale.setScalar(scale); globe.add(mesh); return mesh; };
 const atmoIn = atmo(1.2, 2.6, 1.15), atmoOut = atmo(1.75, 5.5, .5);
-const LU = { uDay: { value: 730 }, uScale: { value: 600 }, uAlt: { value: HOME_ALT }, uKit: { value: 0 } };
+const LU = { uDay: { value: 730 }, uScale: { value: 600 }, uAlt: { value: HOME_ALT }, uKit: { value: 0 }, uBudget: { value: 1 } };
 const lightMat = new THREE.ShaderMaterial({ uniforms: LU, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
-  vertexShader: `attribute vec3 aColor;attribute float aSize,aBorn,aDie,aAlpha,aKind,aState;uniform float uDay,uScale,uAlt;uniform int uKit;varying vec3 vCol;varying float vA,vS,vFlash;
+  vertexShader: `attribute vec3 aColor;attribute float aSize,aBorn,aDie,aAlpha,aKind,aState;uniform float uDay,uScale,uAlt,uBudget;uniform int uKit;varying vec3 vCol;varying float vA,vS,vFlash;
 void main(){vec4 mv=modelViewMatrix*vec4(position,1.);gl_Position=projectionMatrix*mv;float age=uDay-aBorn;
   float on=smoothstep(0.,5.,age)*(1.-smoothstep(0.,5.,uDay-aDie));vFlash=exp(-max(age,0.)/9.)*step(0.,age);
   float lod=aKind<.5?1.:aKind<1.5?(.45+.55*smoothstep(4.,1.4,uAlt)):aKind<2.5?smoothstep(1.,.38,uAlt):aKind<3.5?1.:smoothstep(.45,1.3,uAlt);
-  vA=on*aAlpha*lod;vCol=aColor;vS=aState;
+  vA=on*aAlpha*lod*mix(uBudget,1.,smoothstep(1.2,.5,uAlt));vCol=aColor;vS=aState;
   float px=aSize*uScale/pow(-mv.z,.55)*(1.+vFlash*.9);if(uKit==2)px=max(2.,floor(px*.34));gl_PointSize=clamp(px,1.,260.);}`,
   fragmentShader: `precision highp float;uniform int uKit;varying vec3 vCol;varying float vA,vS,vFlash;
 void main(){vec2 q=gl_PointCoord-.5;float d=length(q)*2.;if(vA<.004)discard;
@@ -152,7 +152,7 @@ const range = barEl.querySelector('input'), whenEl = barEl.querySelector('.world
 let M = null, S = { day: 0, q: '' }, dday = 0, ramp = null, show = null, sel = null, hov = null, cb = {}, kit = 0, C = {}, rings = [], hits = [], placed = [], pd = null, moved = false, pointer = null, rec = null, raf = 0, last = 0, touched = false, stage = null, capT = 0, capOpen = null, dirty = true, themeKey = '';
 
 /* ------------------------------ The model, from the feed ------------------------------ */
-const landColor = (l, out = new THREE.Color()) => out.setHSL(l.hue / 360, kit ? .72 : .78, kit ? .4 : .62);
+const landColor = (l, out = new THREE.Color()) => out.setHSL(l.hue / 360, (kit ? .72 : .78) * (l.sat ?? 1), (kit ? .4 : .62) + (l.shade ? (kit ? -.06 : .06) : 0));
 const cssHue = (h, l = 68, a = 1) => `hsla(${h},${kit ? 70 : 78}%,${kit ? Math.min(l, 36) : l}%,${a})`;
 const gval = (G, d) => { let v = null; for (const p of G.points) if (p.day <= d + .01) v = p.value; return v; };
 const gdone = (G, d) => { const v = gval(G, d); if (v == null) return 0; return G.direction === 'lower_better' ? clamp(G.target / Math.max(v, 1e-9), 0, 1) : clamp(v / (G.target || 1), 0, 1); };
@@ -163,8 +163,16 @@ function load(feed) { const t = d => d ? Date.parse(d) : NaN, all = [t(feed.busi
   feed.lands.forEach(l => l.items.forEach(i => all.push(t(i.first_seen)))); feed.findings.forEach(f => all.push(t(f.at))); feed.changes.forEach(c => all.push(t(c.at))); feed.goals.forEach(x => (x.points || []).forEach(p => all.push(t(p.at))));
   const now = t(feed.as_of) || Date.now(), t0 = Math.min(now, ...all.filter(Number.isFinite)), day = d => { const v = t(d); return Number.isFinite(v) ? (v - t0) / 864e5 : 0; }, T = Math.max(.01, (now - t0) / 864e5);
   const lands = [...feed.lands.map(l => ({ ...l, unch: false })), ...(feed.uncharted || []).map(a => ({ id: 'new:' + a.id, name: a.name, kind: 'uncharted', items: [], unch: true, area: a.id, slot: a.slot }))].slice(0, MAXL);
+  /* Colour families: places in the same operating area (competitors, customers, search…) share a hue family, each in its own
+     shade, so related places read as related and a big world has at most a handful of colours. A place with no findings yet
+     has no family: it keeps its own quieter colour until its findings give it one. */
+  { const family = l => l.unch ? (l.slot ?? -1) : (l.family ?? -1), groups = new Map();
+    lands.forEach(l => { const f = family(l); if (f < 0) return; if (!groups.has(f)) groups.set(f, []); groups.get(f).push(l); });
+    const s0 = hashS(feed.business.id) % 360;
+    lands.forEach((l, i) => { const f = family(l), slot = l.slot ?? i; if (f < 0) { l.hue = (s0 + slot * 137.5) % 360; l.sat = .45; return; }
+      const list = groups.get(f), j = list.indexOf(l); l.hue = (s0 + f * 45 + (j - (list.length - 1) / 2) * Math.min(14, 42 / list.length) + 720) % 360; l.shade = j % 2; }); }
   const li = Object.fromEntries(lands.map((l, i) => [l.id, i])), things = [], finds = [], sparks = [], seed = hashS(feed.business.id), n = Math.max(1, lands.length), ph0 = hash1(seed % 9973) * TAU;
-  lands.forEach((l, i) => { l.i = i; l.kindOf = 'land'; l.slot = l.slot ?? i; l.hue = (seed % 360 + l.slot * 137.5) % 360; l.things = []; l.finds = [];
+  lands.forEach((l, i) => { l.i = i; l.kindOf = 'land'; l.slot = l.slot ?? i; l.things = []; l.finds = [];
     (l.items || []).forEach(it => { const x = { kind: 'item', id: l.id + '|' + it.id, raw: it, land: l, name: it.title, from: day(it.first_seen), seen: day(it.last_seen || it.updated_at), need: !!it.needs_review, changes: 0 }; things.push(x); l.things.push(x); }); });
   feed.findings.forEach(f => { const l = lands[li[f.land]]; if (!l || f.label === 'replaced') return; const x = { kind: 'finding', id: f.id, raw: f, land: l, name: f.statement, label: f.label, from: day(f.at), need: ['challenged', 'needs_review', 'out_of_date'].includes(f.label) }; finds.push(x); l.finds.push(x); });
   const byItem = Object.fromEntries(things.map(x => [x.id, x]));
@@ -177,17 +185,28 @@ function load(feed) { const t = d => d ? Date.parse(d) : NaN, all = [t(feed.busi
   lands.forEach((l, i) => { if (l.unch || l.kind === 'group') return; const pull = new THREE.Vector3(); let total = 0;
     for (const [pair, w] of related) { const [a, b] = pair.split('|').map(Number); const j = a === i ? b : b === i ? a : -1; if (j < 0) continue; pull.addScaledVector(home[j].clone().sub(home[i]), w); total += w; }
     if (total) { const moved = home[i].clone().addScaledVector(pull, .22 / total).normalize(), ang = home[i].angleTo(moved); l.c.copy(ang > .21 ? home[i].clone().lerp(moved, .21 / ang).normalize() : moved); } });
+  /* Land follows knowledge: how much of the world is land grows with everything known, from a few islands on day one to
+     one landmass with soft regions in a mature workspace. Ocean is what is not charted yet. Each place's share follows its
+     own size, so places grow together and neighbours meet and blend. */
+  { const real = lands.filter(l => !l.unch), size = l => l.kind === 'group' ? (l.more || 1) : l.things.length + l.finds.length, total = real.reduce((t, l) => t + size(l), 0);
+    const cover = clamp(.12 + .2 * Math.log10(1 + total / 20), .12, .75), radius = (l, k) => clamp(k * Math.sqrt(size(l) + 6), .16, .95);
+    let lo = .001, hi = 1; for (let it = 0; it < 30; it++) { const k = (lo + hi) / 2, area = real.reduce((t, l) => t + (1 - Math.cos(radius(l, k))) / 2, 0); if (area > cover) hi = k; else lo = k; }
+    real.forEach(l => { l.rmax = radius(l, lo); }); lands.forEach(l => { if (l.unch) l.rmax = .2; }); }
   lands.forEach(l => {
-    const order = [...l.things, ...l.finds]; l.rmax = l.unch ? .2 : l.kind === 'group' ? Math.min(.42, .2 + .02 * Math.sqrt(l.more || 1)) : Math.min(n > 10 ? .34 : .5, .2 + .05 * Math.sqrt(order.length));
+    const order = [...l.things, ...l.finds];
     order.forEach(x => {
       const identity=hashS(x.kind+':'+x.id);
       const radius=.74*l.rmax*Math.sqrt(hash1(identity % 100003));
       x.p=offset(l.c,radius,TAU*hash1(identity % 65537 + 5));
     }); });
-  /* Bridges: the most strongly related nearby pairs, joined by land whose width follows how much they share. */
-  const pairs = [...related].map(([pair, w]) => { const [a, b] = pair.split('|').map(Number); return { a: lands[a], b: lands[b], w }; })
-    .filter(x => !x.a.unch && !x.b.unch && x.a.kind !== 'group' && x.b.kind !== 'group' && x.a.c.angleTo(x.b.c) < 1.5).sort((x, y) => y.w - x.w).slice(0, NB), strongest = Math.max(1, ...pairs.map(x => x.w));
-  const bridges = pairs.map((x, j) => { U.uBA.value[j].copy(x.a.c); U.uBB.value[j].copy(x.b.c); return { ...x, width: .022 + .045 * Math.sqrt(x.w / strongest) }; });
+  /* Bridges: only for pairs that are unusually connected for this world (what they share, against how connected each is
+     overall), and only where they do not already touch. As everything connects, bridges stay rare, so one still means
+     something; places that grow into each other show their link by blending instead. */
+  const degree = new Map(); for (const [pair, w] of related) for (const i of pair.split('|')) degree.set(+i, (degree.get(+i) || 0) + w);
+  const candidates = [...related].map(([pair, w]) => { const [a, b] = pair.split('|').map(Number); return { a: lands[a], b: lands[b], w, unusual: w / Math.sqrt(degree.get(a) * degree.get(b)) }; })
+    .filter(x => !x.a.unch && !x.b.unch && x.a.kind !== 'group' && x.b.kind !== 'group' && x.a.c.angleTo(x.b.c) < 1.5 && x.a.c.angleTo(x.b.c) > (x.a.rmax + x.b.rmax) * .95);
+  const top = Math.max(1e-9, ...candidates.map(x => x.unusual)), pairs = candidates.filter(x => x.unusual >= top * .5).sort((x, y) => y.unusual - x.unusual).slice(0, NB);
+  const bridges = pairs.map((x, j) => { U.uBA.value[j].copy(x.a.c); U.uBB.value[j].copy(x.b.c); return { ...x, width: .022 + .04 * Math.sqrt(x.unusual / top) }; });
   for (let j = bridges.length; j < NB; j++) U.uBW.value[j] = 0;
   /* A finding sits beside the result it rests on, when the same saved source stands behind both. */
   { const per = {}; finds.forEach(x => { const th = x.tied[0]; if (!th) return; const j = per[th.id] = (per[th.id] || 0) + 1; x.p = offset(th.p, .024 + .007 * ((j - 1) % 3), TAU*hash1(hashS(x.id)%65537)); }); }
@@ -241,7 +260,7 @@ function actorsOf(feed) {
   if (L) for (const [key, node] of L.index(feed).nodes) if (node.kind === 'agent' && !key.includes('|')) out.push({ key, kind: 'agent', name: node.name, id: key.slice(6), use: (L.index(feed).from.get(key) || []).filter(e => e.type === 'used').length, unit: 'conversation' });
   return out.sort((a, b) => b.use - a.use);
 }
-let arrivals = null;
+let arrivals = null, dockSpots = [], peek = null;
 function setEffortMetric(metric='requests') {
   effortMetric=metric;
   const groups=new Map((M.feed.effort || []).filter(g=>g.kind==='land').map(g=>[g.id,g]));
@@ -335,6 +354,7 @@ function sync() { syncs++; trace=selectionTrace(); related=new Set(trace.flatMap
   for (const x of M.things) { put(landColor(x.land, tmp)); const lately = Math.max(x.from, x.lastDay ?? -1e9) > S.day - 30 && x.from <= S.day; size[i] = .14 + .045 * Math.log2(1 + x.neighbours); al[i] = (kit ? .06 : .05 + (lately ? .15 : .02)) * clamp(5 / Math.sqrt(x.land.things.length + 1), .15, 1) * x.land.dim * (match(x) ? 1 : .2); i++; }
   M.bridges.forEach((b, j) => { landColor(b.a, U.uBC1.value[j]); landColor(b.b, U.uBC2.value[j]); });
   for (const k of ['aColor', 'aSize', 'aAlpha', 'aState']) geo.attributes[k].needsUpdate = true;
+  { const lit = M.things.filter(x => x.from <= S.day).length * 4 + M.finds.filter(x => x.from <= S.day).length; LU.uBudget.value = clamp(Math.sqrt(900 / Math.max(1, lit)), .3, 1); }
   barEl.querySelector('[data-w=live]').hidden = S.day >= M.T && !show;
   whenEl.textContent = `${S.day >= M.T ? "Live" : dateOf(S.day)} · ${M.things.filter(x => x.from <= S.day).length} tracked · ${M.finds.filter(x => x.from <= S.day).length} findings`; headline(); }
 
@@ -380,18 +400,24 @@ function overlay(t, dd) { placed = []; hits = []; const alt = cam.alt, playing =
     if (bad) alertDot(a.x + 8, a.y - 8); if (on) txt(k.name, a.x + 14, a.y, { size: 11.5, color: C.accent, alpha: far });
     hit(a.x - 11, a.y - 11, 22, 22, k, [k.name, (just ? 'Ran just now · ' : '') + (k.raw.schedule ? k.raw.schedule + ' · ' : '') + (k.raw.status || '')]); }
   dock(t, playing);
+  /* What the panel is pointing at: a ring where it is, or around each place it touches, with its name. */
+  if (peek) { const at = (o, name) => { const q = proj(o.p || o.c, 1.004); if (!q.vis) return; g.save(); g.strokeStyle = C.ink; g.lineWidth = 1.6; g.globalAlpha = .9; g.beginPath(); g.arc(q.x, q.y, o.p ? 11 : 20, 0, TAU); g.stroke(); g.restore(); const w = wOf(name, 12); txt(name, Math.min(q.x + (o.p ? 15 : 24), W - w - 8), q.y, { size: 12, color: C.ink }); };
+    const o = peek.key && M.byKey.get(peek.key); if (o && (o.p || o.c)) at(o, o.name);
+    for (const id of peek.lands || []) { const l = M.lands.find(z => z.id === id); if (l && l !== o) at(l, l.name); } }
   /* What just arrived: a brief ring where each new light switched on. */
   if (arrivals) { const u = (performance.now() - arrivals.t0) / 2600; if (u >= 1) arrivals = null; else for (const key of arrivals.keys) { const o = M.byKey.get(key), s = o?.p && proj(o.p, 1.004); if (!s?.vis) continue; g.save(); g.strokeStyle = C.accent; g.lineWidth = 1.6; g.globalAlpha = reduce ? .8 : 1 - u; g.beginPath(); g.arc(s.x, s.y, reduce ? 11 : 6 + u * 24, 0, TAU); g.stroke(); g.restore(); } }
   /* Up close, findings as sentences and lights by name. */
   const shown = [];
-  if (alt < 2.6) for (const f of M.finds) { if (!inSelection(f) || f.from > dd || f.land.dim < .5 || (S.q && !f.name.toLowerCase().includes(S.q))) continue; const s = proj(f.p, 1.004); if (!s.vis || s.x < 0 || s.x > W || s.y < TOP || s.y > H) continue; const r = clamp(5 + (1.2 - alt) * 5, 5, 10); hit(s.x - r, s.y - r, r * 2, r * 2, f, [f.name, FLABEL[f.label] + ' · click to open']); shown.push({ f, s }); }
+  if (alt < 2.6) for (const f of M.finds) { if (!inSelection(f) || f.from > dd || f.land.dim < .5 || (S.q && !f.name.toLowerCase().includes(S.q))) continue; const s = proj(f.p, 1.004); if (!s.vis || s.x < 0 || s.x > W || s.y < TOP || s.y > H) continue; const r = clamp(5 + (1.2 - alt) * 5, 5, 10); if (alt < 1.25 || f === focus) hit(s.x - r, s.y - r, r * 2, r * 2, f, [f.name, FLABEL[f.label] + ' · click to open']); shown.push({ f, s }); }
   const tl = [];
   for (const x of M.things) { if (x.from > dd) continue; const s = proj(x.p, 1.004); if (!s.vis || s.x < -40 || s.x > W + 40 || s.y < 0 || s.y > H + 40) continue; const dim = !inSelection(x) || x.land.dim < .5 || (S.q && !x.name.toLowerCase().includes(S.q)), r = clamp(8 + (1.4 - alt) * 5, 7, 15);
-    if (!dim) hit(s.x - r, s.y - r, r * 2, r * 2, x, [x.name, [x.land.name, fieldLine(x), 'click to open'].filter(Boolean).join(' · ')]); tl.push({ x, s, dim, pri: (x === focus ? 1e6 : 0) + (x.need ? 5e4 : 0) + (S.q && !dim ? 1e4 : 0) + x.changes * 10 + (x.raw.sources || 0) + clamp(1 - (M.T - x.seen) / 120, 0, 1) * 5 + hash1(x.from) }); }
-  tl.sort((a, b) => b.pri - a.pri); const crowd = M.things.length > 1500 ? .6 : 1, cap = playing ? 0 : Math.round((alt > 3.6 ? 9 : alt > 2.2 ? 18 : alt > 1.2 ? 36 : alt > .7 ? 60 : 999) * crowd); let n = 0;
+    const pri = (x === focus ? 1e6 : 0) + (sel && related.has(x) ? 2e5 : 0) + (x.need ? 5e4 : 0) + (S.q && !dim ? 1e4 : 0) + x.changes * 10 + (x.raw.sources || 0) + clamp(1 - (M.T - x.seen) / 120, 0, 1) * 5 + hash1(x.from);
+    if (!dim && (alt < 1.25 || pri >= 1e4)) hit(s.x - r, s.y - r, r * 2, r * 2, x, [x.name, [x.land.name, fieldLine(x), 'click to open'].filter(Boolean).join(' · ')]); tl.push({ x, s, dim, pri }); }
+  tl.sort((a, b) => b.pri - a.pri); const crowd = M.things.length > 1500 ? .6 : 1, cap = playing ? 0 : Math.round((alt > 1.25 ? 0 : alt > .7 ? 30 : alt > .45 ? 60 : 999) * crowd), extraCap = alt > 2.6 ? 4 : 8; let n = 0;
+  if (!playing && alt > 1.15 && alt < 2.8) cities(alt);
   const mark = (o, c, r0) => { const s = proj(o.p, 1.004); if (!s.vis) return; g.save(); g.strokeStyle = c; g.lineWidth = 1.4; const r1 = r0 + (o.kind === 'item' ? 6 : 0); g.beginPath(); g.arc(s.x, s.y, r1, 0, TAU); g.stroke(); for (let i = 0; i < 4; i++) { const a = i * Math.PI / 2; g.beginPath(); g.moveTo(s.x + Math.cos(a) * (r1 + 3), s.y + Math.sin(a) * (r1 + 3)); g.lineTo(s.x + Math.cos(a) * (r1 + 8), s.y + Math.sin(a) * (r1 + 8)); g.stroke(); } g.restore(); };
   if (sel && sel.p) mark(sel, C.accent, 9); if (hov && hov.p && hov !== sel) mark(hov, C.ink, 8);
-  for (const { x, s, dim, pri } of tl) { if (dim) continue; if (n >= cap && pri < 1e4) break; const size = clamp(11 + (1.4 - alt) * 2.2, 11, 14.5), w = wOf(x.name, size), extra = alt < .62 && alt >= .36 ? Object.entries(x.raw.fields || {}).slice(0, 1).map(([k, v]) => `${k}: ${v}`) : [], line2 = extra.length, bw = Math.max(w, ...extra.map(e => wOf(e, 11, 500))), bh = size + 5 + extra.length * 14, r = clamp(9 + (1.4 - alt) * 5, 8, 18), al = s.fade;
+  for (const { x, s, dim, pri } of tl) { if (dim) continue; if (n >= cap && (pri < 1e4 || n >= cap + extraCap)) break; const size = clamp(11 + (1.4 - alt) * 2.2, 11, 14.5), w = wOf(x.name, size), extra = alt < .62 && alt >= .36 ? Object.entries(x.raw.fields || {}).slice(0, 1).map(([k, v]) => `${k}: ${v}`) : [], line2 = extra.length, bw = Math.max(w, ...extra.map(e => wOf(e, 11, 500))), bh = size + 5 + extra.length * 14, r = clamp(9 + (1.4 - alt) * 5, 8, 18), al = s.fade;
     let px = s.x + r, py = s.y - bh / 2, ok = free(px, py, bw, bh); if (!ok) { px = s.x - r - bw; ok = free(px, py, bw, bh); } if (!ok) { px = s.x - bw / 2; py = s.y + r; ok = free(px, py, bw, bh); } if (!ok && pri < 1e5) continue;
     txt(x.name, px, py + size * .6, { size, color: x.need ? C.warn : x === focus ? C.accent : C.ink, alpha: al }); extra.forEach((e, i) => txt(e, px, py + size + 9 + i * 14, { size: 11, weight: 500, color: C.muted, alpha: al })); take(px, py, bw, bh); n++; if (x.need) alertDot(s.x - r, s.y - r); }
   if (alt < .95 && !playing) { shown.sort((a, b) => (b.f === focus) - (a.f === focus) || b.f.from - a.f.from); const a0 = sstep(.95, .7, alt);
@@ -410,29 +436,60 @@ function overlay(t, dd) { placed = []; hits = []; const alt = cam.alt, playing =
       if (l.quiet || l.things.some(x => x.need) || l.finds.some(x => x.need)) { g.globalAlpha = 1; g.fillStyle = C.warn; g.beginPath(); g.arc(cx + r * .7, cy - r * .7, 2.8, 0, TAU); g.fill(); } hit(cx - r, cy - r, r * 2, r * 2, l, [l.name, l.unch ? 'Uncharted · click to start charting it' : 'Click to fly there']); }
     g.globalAlpha = 1; g.strokeStyle = C.ink; g.lineWidth = 1.2; g.beginPath(); g.arc(clamp(X(cam.lon), x0 + 4, x0 + w - 4), clamp(Y(cam.lat), y0 + 4, y0 + h - 4), clamp(cam.alt * 5, 4, 22), 0, TAU); g.stroke(); g.restore(); }
   if (show?.type === 'steps' && show.pos) { const s = proj(show.pos, 1.004); if (s.vis) { const u = ((t - show.stepAt) / 1400) % 1; g.save(); g.strokeStyle = C.accent; g.lineWidth = 1.6; g.globalAlpha = 1 - u; g.beginPath(); g.arc(s.x, s.y, 10 + u * 34, 0, TAU); g.stroke(); g.restore(); } } }
-/* The sky: AI apps and agents beside the world, busiest first. Idle ones are quiet marks; one that is working lights up,
-   says what it is working on, and sends a current to every area its conversation's chain reaches. */
+/* The sky: AI apps and agents around the world, busiest first. Each app keeps its own colour and initials; an agent is a
+   person mark. At rest they are quiet but readable; one that is working lights up, says what it is on, and sends a current
+   to every area its conversation's chain reaches. In the effort lens each is sized by its share of AI use this month. */
+const initials = name => { const words = String(name).split(/\s+/).filter(w => /^[A-Za-z0-9]/.test(w)); return ((words[0]?.[0] || '?') + (words[1]?.[0] || words[0]?.[1] || '')).toUpperCase(); };
+function shareOf(a) {
+  if (lens !== 'effort') return null; const chats = (M.feed.effort || []).flatMap(g => g.chats || []), total = chats.reduce((t, c) => t + (c[effortMetric] || 0), 0); if (!total) return null;
+  const mine = a.kind === 'app' ? chats.filter(c => c.agent === a.name) : chats.filter(c => c.id && (window.auraLinks?.index(M.feed).from.get(a.key) || []).some(e => e.target === 'chat:' + c.id));
+  return mine.reduce((t, c) => t + (c[effortMetric] || 0), 0) / total;
+}
 function dock(t, playing) {
-  if (W < 560 || playing || !M.actors.length) return;
-  const x0 = 22; let y = TOP + 118;
-  for (const a of M.actors.slice(0, 7)) {
-    const work = running.filter(r => a.kind === 'app' ? r.app === a.name : r.agent === a.id), on = work.length > 0, over = hov?.dock === a.key;
-    g.save(); g.globalAlpha = on || over ? 1 : .55; g.strokeStyle = on ? C.accent : C.muted; g.fillStyle = C.stage; g.lineWidth = 1.5; g.beginPath();
-    if (a.kind === 'app') g.roundRect(x0 - 7, y - 7, 14, 14, 3); else g.arc(x0, y, 7, 0, TAU); g.fill(); g.stroke();
-    if (a.kind === 'agent') { g.beginPath(); g.arc(x0, y - 1.5, 2.2, 0, TAU); g.moveTo(x0 - 3.5, y + 4); g.quadraticCurveTo(x0, y, x0 + 3.5, y + 4); g.stroke(); } else { g.beginPath(); g.moveTo(x0 - 3, y - 1); g.lineTo(x0 + 3, y - 1); g.moveTo(x0 - 3, y + 2); g.lineTo(x0 + 1, y + 2); g.stroke(); }
-    if (on && !reduce) { g.globalAlpha = .5 + .5 * Math.sin(t / 260); g.beginPath(); g.arc(x0, y, 11, 0, TAU); g.stroke(); }
+  // An app that is working shows even before it has any recorded use.
+  const actors = [...running.filter(r => r.app && !M.actors.some(a => a.kind === 'app' && a.name === r.app)).map(r => ({ key: 'app:' + r.app, kind: 'app', name: r.app, use: 0, unit: 'request' })).filter((a, i, all) => all.findIndex(b => b.key === a.key) === i), ...M.actors];
+  if (W < 560 || playing || !actors.length) return;
+  const list = actors.slice(0, 8), D = 1 + cam.alt, rs = (H / 2) * Math.tan(Math.asin(Math.min(1, 1 / D))) / TANH, cx = W / 2, cy = H / 2, R = rs + 46;
+  // On an arc above the world while it fits; in a column at the left once the world fills the view.
+  const arc = rs > 60 && cy - R > TOP + 120 && R < cx - 60;
+  const spots = list.map((a, k) => { if (!arc) return { x: 22, y: TOP + 118 + k * 34, column: true };
+    const span = Math.min(110, 22 * (list.length - 1)) * Math.PI / 180, ang = -Math.PI / 2 + (list.length === 1 ? 0 : -span / 2 + span * k / (list.length - 1)); return { x: cx + Math.cos(ang) * R, y: cy + Math.sin(ang) * R }; });
+  dockSpots = list.map((a, k) => ({ key: a.key, x: spots[k].x, y: spots[k].y }));
+  list.forEach((a, k) => {
+    const { x, y, column } = spots[k], work = running.filter(r => a.kind === 'app' ? r.app === a.name : r.agent === a.id), on = work.length > 0, over = hov?.dock === a.key || (peek?.docks || []).includes(a.key), share = shareOf(a);
+    const hue = hashS(a.name) % 360, size = 9 * (share == null ? 1 : .8 + share * .9);
+    g.save(); g.globalAlpha = on || over ? 1 : .85; g.lineWidth = 1.5; g.strokeStyle = on ? C.accent : C.muted; g.fillStyle = kit ? `hsl(${hue},45%,88%)` : `hsl(${hue},38%,${on ? 34 : 22}%)`; g.beginPath();
+    if (a.kind === 'app') g.roundRect(x - size, y - size, size * 2, size * 2, 4); else g.arc(x, y, size, 0, TAU); g.fill(); g.stroke();
+    if (a.kind === 'app') { g.fillStyle = on ? C.accent : C.ink; g.font = `700 ${Math.round(size * .95)}px ${C.font}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(initials(a.name), x, y + .5); }
+    else { g.beginPath(); g.arc(x, y - size * .25, size * .3, 0, TAU); g.moveTo(x - size * .55, y + size * .6); g.quadraticCurveTo(x, y, x + size * .55, y + size * .6); g.stroke(); }
+    if (on && !reduce) { g.globalAlpha = .5 + .5 * Math.sin(t / 260); g.strokeStyle = C.accent; g.beginPath(); g.arc(x, y, size + 5, 0, TAU); g.stroke(); }
     g.restore();
-    const label = on ? `${a.name} · working${work[0].title ? ' on ' + work[0].title : ''}` : over ? a.name : '';
-    if (label) txt(fitLabel(label, Math.min(320, W / 2)), x0 + 16, y, { size: 11.5, color: on ? C.accent : C.ink });
+    const name = on ? `${a.name} · working${work[0].title ? ' on ' + work[0].title : ''}` : share != null ? `${a.name} · ${Math.round(share * 100)}%` : a.name, showName = on || over || share != null || W >= 900;
+    const label = showName ? fitLabel(name, on ? 240 : column ? 200 : 120) : '', lw = label ? wOf(label, 10.5, 500) : 0;
+    const lx = column ? x + size + 8 : x, ly = column ? y : y + size + 10;
+    if (label) txt(label, lx, ly, { size: 10.5, weight: 500, align: column ? 'left' : 'center', color: on ? C.accent : C.muted });
     if (on) for (const r of work) { const ids = window.auraLinks ? window.auraLinks.places(M.feed, 'chat:' + r.id) : [r.land]; if (!ids.length && r.land) ids.push(r.land);
       for (const id of ids) { const l = M.lands.find(z => z.id === id); if (!l) continue; let c = proj(l.c, 1.004);
         // On the far side: aim at its place on the whole-world map in the corner instead.
-        if (!c.vis) { if (W <= 560 || M.lands.length < 2) continue; const [lo, la] = lonlat(l.c); c = { x: W - 162 + 8 + ((wrap(lo - HOME) + Math.PI) / TAU) * 134, y: 104 + 37 - la / 1.1 * 29 }; } g.save(); g.strokeStyle = C.accent; g.globalAlpha = .45; g.setLineDash([3, 6]); g.lineDashOffset = reduce ? 0 : -t / 30; g.beginPath(); g.moveTo(x0 + 9, y); g.quadraticCurveTo((x0 + c.x) / 2, Math.min(y, c.y) - 30, c.x, c.y); g.stroke(); g.restore(); } }
-    const w = label ? wOf(label, 11.5) + 18 : 0; take(x0 - 10, y - 11, 22 + w, 22);
-    hit(x0 - 10, y - 11, 22 + w, 22, { dock: a.key }, [a.name, (a.kind === 'app' ? 'AI app' : 'Agent') + (a.use ? ` · ${a.use} ${a.unit}${a.use === 1 ? '' : 's'}${a.kind === 'app' ? ' this month' : ''}` : '') + ' · click to follow its connections']);
-    y += 28;
-  }
-  if (M.actors.length > 7) txt(`+${M.actors.length - 7} more in Connections`, x0 - 7, y, { size: 10.5, color: C.muted });
+        if (!c.vis) { if (M.lands.length < 2) continue; const [lo, la] = lonlat(l.c); c = { x: W - 162 + 8 + ((wrap(lo - HOME) + Math.PI) / TAU) * 134, y: 104 + 37 - la / 1.1 * 29 }; }
+        g.save(); g.strokeStyle = C.accent; g.globalAlpha = .5; g.lineWidth = 1.4; g.setLineDash([3, 6]); g.lineDashOffset = reduce ? 0 : -t / 30; g.beginPath(); g.moveTo(x, y); g.quadraticCurveTo((x + c.x) / 2, Math.min(y, c.y) - 30, c.x, c.y); g.stroke(); g.restore(); } }
+    const bx = column ? x - size - 2 : x - Math.max(size + 2, lw / 2), bw = column ? size * 2 + 12 + lw : Math.max(size * 2 + 4, lw), bh = column ? size * 2 + 4 : size * 2 + (label ? 22 : 4);
+    take(bx, y - size - 2, bw, bh);
+    hit(bx, y - size - 2, bw, bh, { dock: a.key }, [a.name, (a.kind === 'app' ? 'AI app' : 'Agent') + (a.use ? ` · ${a.use} ${a.unit}${a.use === 1 ? '' : 's'}${a.kind === 'app' ? ' this month' : ''}` : '') + ' · click to follow its connections']);
+  });
+  if (actors.length > list.length) { const last = spots.at(-1); txt(`+${actors.length - list.length} more in Connections`, last.column ? 14 : last.x + 26, last.column ? last.y + 34 : last.y, { size: 10.5, color: C.muted }); }
+}
+/* Cities: in the middle distance, the busiest tracked things are named as places, each with how much is recorded about it.
+   At most two per area and a dozen in all, so the picture stays readable however large the world is. */
+function cities(alt) {
+  const a0 = sstep(2.8, 2.3, alt) * sstep(1.15, 1.35, alt); if (a0 < .03) return; const per = new Map(); let shown = 0;
+  const lately = x => Math.max(x.from, x.lastDay ?? -1e9) > S.day - 30 && x.from <= S.day;
+  const list = M.things.filter(x => x.from <= S.day && x.land.dim > .5 && inSelection(x) && x.neighbours > 1).sort((a, b) => (b.neighbours + (lately(b) ? 4 : 0)) - (a.neighbours + (lately(a) ? 4 : 0)));
+  for (const x of list) { if (shown >= 12) break; if ((per.get(x.land) || 0) >= 2) continue; const s = proj(x.p, 1.004); if (!s.vis || s.fade < .5) continue;
+    const finds = M.finds.filter(f => f.tied.includes(x)).length, sub = [finds ? `${finds} finding${finds === 1 ? '' : 's'}` : '', x.changes ? `${x.changes} change${x.changes === 1 ? '' : 's'}` : ''].filter(Boolean).join(' · ');
+    const w = Math.max(wOf(x.name, 12), sub ? wOf(sub, 10.5, 500) : 0), h = sub ? 30 : 16, px = s.x - w / 2, py = s.y - h - 10; if (!free(px, py, w, h)) continue;
+    txt(x.name, s.x, py + 8, { size: 12, align: 'center', color: lately(x) ? C.ink : C.muted, alpha: a0 }); if (sub) txt(sub, s.x, py + 22, { size: 10.5, weight: 500, align: 'center', color: C.muted, alpha: a0 * .9 });
+    take(px, py, w, h); hit(px - 4, py - 2, w + 8, h + 14, x, [x.name, `${x.land.name}${sub ? ' · ' + sub : ''} · click to open`]); per.set(x.land, (per.get(x.land) || 0) + 1); shown++; }
 }
 function flatMap(t, dd) { placed = []; hits = []; g.clearRect(0, 0, W, H); const top = TOP + 56, bot = H - 64, k = Math.min((W - 40) / TAU, (bot - top) / 2.2), cx = W / 2, cy = (top + bot) / 2, at = p => { const [lo, la] = lonlat(p); return [cx + wrap(lo - HOME) * k, cy - la * k]; };
   g.save(); g.strokeStyle = C.muted; g.globalAlpha = .25; g.strokeRect(cx - Math.PI * k, cy - 1.1 * k, TAU * k, 2.2 * k); g.restore();
@@ -523,7 +580,7 @@ function frame(t) { raf = 0; if (!stage || !stage.isConnected) { stage = null; r
   running = cb.running?.() || []; { for (const l of M.lands) U.uPulse.value[l.i] = running.some(r => r.land === l.id) ? 1 : 0; } glc.style.visibility = flat ? 'hidden' : '';
   /* Draw only when something on screen can have changed: the camera, time, a transition, running work, hover or new data. */
   const settling = M.lands.some(l => Math.abs(l.rto - U.uR.value[l.i]) > 1e-4 || Math.abs(l.dim - U.uDim.value[l.i]) > 1e-3) || rings.some(R => Math.abs(gdone(R.G, S.day) - R.shown) > 1e-3);
-  const view = [cam.lon.toFixed(5), cam.lat.toFixed(5), cam.alt.toFixed(5), W, H, dday.toFixed(4), flat, syncs, themeKey, hov ? hov.dock || (hov.kindOf || hov.kind) + hov.id : '', shareEl.hidden].join('|');
+  const view = [cam.lon.toFixed(5), cam.lat.toFixed(5), cam.alt.toFixed(5), W, H, dday.toFixed(4), flat, syncs, themeKey, hov ? hov.dock || (hov.kindOf || hov.kind) + hov.id : '', peek ? JSON.stringify(peek) : '', shareEl.hidden].join('|');
   if (show || ramp || rec || pd || settling || arrivals || (running.length && !reduce) || view !== drawn) {
     drawn = view; draws++;
     if (flat) flatMap(t, dday); else { renderer.render(scene, camera); if (rec) { rec.frame(); if (show?.type !== 'play') { rec.mr.stop(); rec = null; } } overlay(t, dday); }
@@ -541,6 +598,8 @@ function mount(host, feed, callbacks = {}) { if (!renderer) return false; cb = c
 function find(kind, id) { return M?.byKey.get(kind+':'+id) || null; }
 window.auraWorld = { available: !!renderer,
   compare(keys) { comparison=keys ? new Set(keys) : null;dirty=true; },
+  /* Show where something the panel points at is: a thing, the places a chain touches, and the AI apps involved. */
+  peek(value) { peek = value && (value.key || value.lands?.length || value.docks?.length) ? value : null; },
   cameraState() { return {lon:cam.lon,lat:cam.lat,alt:cam.alt}; },
   restoreCamera(position) {
     if (!position || ![position.lon,position.lat,position.alt].every(Number.isFinite)) return;
@@ -558,5 +617,5 @@ window.auraWorld = { available: !!renderer,
   bench(n = 20) { const t0 = performance.now(); for (let i = 0; i < n; i++) { cancelAnimationFrame(raf); drawn = ''; frame(performance.now()); } return (performance.now() - t0) / n; },
   idle(n = 20) { const t0 = performance.now(); for (let i = 0; i < n; i++) { cancelAnimationFrame(raf); frame(performance.now()); } return (performance.now() - t0) / n; },
   /* For checks only: jump straight to where the camera is heading. */
-  settle() { cam.lon = cam.to.lon; cam.lat = cam.to.lat; cam.alt = cam.to.alt; cam.v = [0, 0]; dday = S.day; ramp = null; if (M) for (const l of M.lands) { U.uR.value[l.i] = l.rto; U.uDim.value[l.i] = l.dim; } for (const R of rings) R.shown = gdone(R.G, S.day); }, state: () => ({ alt: cam.alt, day: S.day, sel: sel ? { kind: sel.kind || sel.kindOf, id: sel.id } : null, show: show?.type || null, kit, hits: hits.length, draws }) };
+  settle() { cam.lon = cam.to.lon; cam.lat = cam.to.lat; cam.alt = cam.to.alt; cam.v = [0, 0]; dday = S.day; ramp = null; if (M) for (const l of M.lands) { U.uR.value[l.i] = l.rto; U.uDim.value[l.i] = l.dim; } for (const R of rings) R.shown = gdone(R.G, S.day); }, state: () => ({ alt: cam.alt, day: S.day, sel: sel ? { kind: sel.kind || sel.kindOf, id: sel.id } : null, show: show?.type || null, kit, hits: hits.length, draws, dock: dockSpots }) };
 document.dispatchEvent(new Event('aura-world-ready'));

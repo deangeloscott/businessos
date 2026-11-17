@@ -1848,14 +1848,14 @@ function recordDetails(ref) {
   if(r.type==='SourceRecord') {
     const text=r.data.extensions?.businessos_evidence?.captured_text;
     const shared=r.data.extensions?.aura_sharing;
-    details(r.title,`<p class="item-type">Saved source · Memory</p>${location}${shared?`<p class="small-note">Shared by ${esc(shared.origin.name)} · Copied ${stamp(shared.copied_at)}. Source material; local business facts stay separate.</p><p><button class="text-button" data-file="${esc(r.data.source_reference)}">Open shared material →</button></p>`:''}${text?'<pre>'+esc(text)+'</pre>':'<p>'+esc(r.data.source_reference||'Saved source')+'</p>'}<button type="button" class="primary" data-add-record="${esc(r.ref)}" data-label="${esc(r.title)}">Add to chat</button><p><button class="text-button" data-share-record="${esc(r.ref)}" data-share-scope="${esc(sharingScope())}">Share a copy →</button></p><details><summary>Record data</summary><pre>${esc(JSON.stringify(r.data,null,2))}</pre></details>`,'context');
+    details(r.title,`<p class="item-type">Saved source · Memory</p>${location}${madeIn(r.data)}${shared?`<p class="small-note">Shared by ${esc(shared.origin.name)} · Copied ${stamp(shared.copied_at)}. Source material; local business facts stay separate.</p><p><button class="text-button" data-file="${esc(r.data.source_reference)}">Open shared material →</button></p>`:''}${text?'<pre>'+esc(text)+'</pre>':'<p>'+esc(r.data.source_reference||'Saved source')+'</p>'}<button type="button" class="primary" data-add-record="${esc(r.ref)}" data-label="${esc(r.title)}">Add to chat</button><p><button class="text-button" data-share-record="${esc(r.ref)}" data-share-scope="${esc(sharingScope())}">Share a copy →</button></p><details><summary>Record data</summary><pre>${esc(JSON.stringify(r.data,null,2))}</pre></details>`,'context');
     setDetailTitleActions(archiveControl('record',ref));return;
   }
   if(['Opportunity','DecisionRecord','Learning'].includes(r.type)){workedOutDetails(r,location);return;}
   const mechanical=new Set(['id','object_type','schema_version','business_id','lineage','created_at','updated_at','extensions']);
   const fields=Object.entries(r.data).filter(([k,v])=>!mechanical.has(k)&&!['name','title'].includes(k)&&v!==null&&!(Array.isArray(v)&&!v.length));
   const watches=(r.data.extensions?.businessos?.collection_refs||[]).map(id=>state.data.records.find(x=>x.type==='Asset'&&x.data.extensions?.businessos?.collection?.id===id)).filter(Boolean);
-  details(r.title,`<p class="item-type">${esc(human(r.type))} · Memory</p>${location}${watches.length?`<p class="small-note">Part of ${watches.map(w=>`<button type="button" class="text-button" data-collection="${esc(w.data.extensions.businessos.collection.id)}">${esc(w.title)}</button>`).join(', ')}</p>`:''}${fields.map(([k,v])=>`<div class="field"><strong>${esc(human(k))}</strong><p>${esc(pretty(v))}</p></div>`).join('')}${resultOrigin(r)}<div class="inline-actions"><button type="button" class="primary" data-add-record="${esc(r.ref)}" data-label="${esc(r.title)}">Add to chat</button><button type="button" class="text-button" data-copy-record="${esc(r.ref)}">Copy record</button></div><p><button class="text-button" data-share-record="${esc(r.ref)}" data-share-scope="${esc(sharingScope())}">Share a copy →</button></p><details><summary>Record data</summary><pre>${esc(JSON.stringify(r.data,null,2))}</pre></details>`,'context');
+  details(r.title,`<p class="item-type">${esc(human(r.type))} · Memory</p>${location}${r.type==='Business'?'':madeIn(r.data)}${watches.length?`<p class="small-note">Part of ${watches.map(w=>`<button type="button" class="text-button" data-collection="${esc(w.data.extensions.businessos.collection.id)}">${esc(w.title)}</button>`).join(', ')}</p>`:''}${fields.map(([k,v])=>`<div class="field"><strong>${esc(human(k))}</strong><p>${esc(pretty(v))}</p></div>`).join('')}${resultOrigin(r)}<div class="inline-actions"><button type="button" class="primary" data-add-record="${esc(r.ref)}" data-label="${esc(r.title)}">Add to chat</button><button type="button" class="text-button" data-copy-record="${esc(r.ref)}">Copy record</button></div><p><button class="text-button" data-share-record="${esc(r.ref)}" data-share-scope="${esc(sharingScope())}">Share a copy →</button></p><details><summary>Record data</summary><pre>${esc(JSON.stringify(r.data,null,2))}</pre></details>`,'context');
   if(r.type!=='Business')setDetailTitleActions(archiveControl('record',ref));
 }
 /* Opportunities, decisions and lessons read as plain sentences with one next step; the raw record stays one click away. */
@@ -1877,15 +1877,32 @@ function workedOutDetails(r,location){
     kind='Lesson learned · '+(({hypothesis:'An idea to test',experimental:'Being tested',emerging:'Looks right so far',validated:'Proven',standard:'Standard practice'})[d.maturity]||human(d.maturity||''));
     body=(d.statement&&d.statement!==title?`<p>${esc(d.statement)}</p>`:'')+field('Works when',d.applies_when)+field('Not when',d.does_not_apply_when)+basis(d.evidence_refs);
   }
-  details(title,`<p class="item-type">${esc(kind)}</p>${body}<div class="inline-actions">${act}<button type="button" class="${act?'secondary':'primary'}" data-add-record="${esc(r.ref)}" data-label="${esc(title)}">Add to chat</button></div><details class="record-raw"><summary>Saved record</summary>${location}<pre>${esc(JSON.stringify(d,null,2))}</pre></details>`,'context');
+  details(title,`<p class="item-type">${esc(kind)}</p>${body}${madeIn(d)}<div class="inline-actions">${act}<button type="button" class="${act?'secondary':'primary'}" data-add-record="${esc(r.ref)}" data-label="${esc(title)}">Add to chat</button></div><details class="record-raw"><summary>Saved record</summary>${location}<pre>${esc(JSON.stringify(d,null,2))}</pre></details>`,'context');
   setDetailTitleActions(archiveControl('record',r.ref));
 }
-function resultOrigin(asset){
-  const producer=asset?.data.extensions?.businessos?.work?.producer;
-  if(!producer?.id)return '';
-  if(producer.kind==='chat')return `<button class="text-button" data-chat="${esc(producer.id)}">Open original chat</button>`;
-  if(producer.kind==='task')return `<button class="text-button" data-open-schedule="${esc(producer.id)}">Open scheduled task</button>`;
-  return '';
+/* Where something was made: the chat, task or AI app session AURA noted when it was saved. When nothing was noted, the
+   person can ask, and AURA looks for an exact match in the AI apps' own records on this computer (workspace_origins). */
+function madeIn(data,file=''){
+  const p=data?.extensions?.businessos?.work?.producer;
+  if(p?.kind==='chat'){const chat=(state.chatList||[]).find(c=>c.id===p.id)||(state.preferences?.chats||[]).find(c=>c.id===p.id)||{},title=chat.title?` · “${chat.title.length>60?chat.title.slice(0,59)+'…':chat.title}”`:'';
+    return `<p class="small-note made-in">Made in ${esc(chat.agent?chat.agent+', in AURA':'a conversation in AURA')}${esc(title)} · <button class="text-button" data-chat="${esc(p.id)}">Open it</button></p>`;}
+  if(p?.kind==='task')return `<p class="small-note made-in">Made by a scheduled task · <button class="text-button" data-open-schedule="${esc(p.id)}">Open it</button></p>`;
+  if(p?.kind==='agent')return '<p class="small-note made-in">Made by an agent</p>';
+  if(p?.kind==='session')return `<p class="small-note made-in">Made directly in ${esc(p.app||'an AI app')}</p>`;
+  const target=data?.id?`data-made-in-record="${esc(data.id)}"`:file?`data-made-in-file="${esc(file)}"`:'';
+  return target?`<p class="small-note made-in"><button type="button" class="text-button" ${target}>Where was this made?</button></p>`:'';
+}
+window.auraMadeIn=madeIn;
+document.addEventListener('click',e=>{
+  const ask=e.target.closest('[data-made-in-record],[data-made-in-file]');if(!ask)return;const line=ask.closest('.made-in');
+  line.textContent='Looking in the AI apps’ own records on this computer…';
+  api('/api/origin?business='+encodeURIComponent(state.business)+(ask.dataset.madeInRecord?'&record='+encodeURIComponent(ask.dataset.madeInRecord):'&file='+encodeURIComponent(ask.dataset.madeInFile)))
+    .then(r=>{const o=r.origin;line.textContent=o?`Made in ${o.app}${o.title?' · “'+o.title+'”':''} · ${stamp(o.at)}`:'Not found in the AI apps’ own records on this computer, so where this was made is not recorded.';})
+    .catch(()=>{line.textContent='The AI apps’ records could not be read just now.';});
+});
+function resultOrigin(asset,ref=''){
+  const plain=ref&&!ref.startsWith('library/')&&!ref.startsWith('asset/')?ref:'';
+  return asset?madeIn(asset.data):plain?madeIn(null,plain):'';
 }
 async function openFileWorkspace(ref,option='',presentation={}) {
   if(!presentation.raw&&window.auraProjects&&await window.auraProjects.openForFile(ref))return;
@@ -1897,7 +1914,7 @@ async function openFileWorkspace(ref,option='',presentation={}) {
     // Using a file with the AI is the main thing to do with it, so it reads as the panel's one main button.
     const attach=ref.startsWith('library/')?'':`<button type="button" class="primary compact" data-result-file-context="${esc(ref)}">Add to chat</button>`;
     const tryExample=asset?.data.location_reference?.endsWith('/outputs/grant-application-draft.md')&&window.auraExample?.origin()?'<button type="button" class="text-button" data-example-try>Try this with my work</button>':'';
-    return resultOrigin(asset)+(attach||tryExample?`<div class="inline-actions file-main-actions">${attach}${tryExample}</div>`:'');
+    return resultOrigin(asset,ref)+(attach||tryExample?`<div class="inline-actions file-main-actions">${attach}${tryExample}</div>`:'');
   }
   await module.openFile({...presentation,resultActions,ref,option,business,workspace,token,api,details,markdown:chatMarkdown,favoriteMarkup:(ref,name)=>fileFavoriteButton(ref,name)+(!ref.startsWith("library/")?archiveControl("file",ref):""),titleActions:setDetailTitleActions,share:ref=>attempt(async()=>{if(state.business!==business||state.data.workspace!==workspace)throw new Error('The workspace changed. Reopen the file before sharing.');await openSharing('file:'+ref);}),current:()=>state.business===business&&state.data.workspace===workspace,
     saved:async()=>{invalidateReads();const [files,data]=await Promise.all([api('/api/files?business='+encodeURIComponent(business)),api('/api/state?business='+encodeURIComponent(business))]);if(state.business!==business||state.data.workspace!==workspace)return;state.files=files.items;state.data.records=data.records;state.data.records_revision=data.records_revision;if($('#file-list'))renderFiles();if($('#quick-files'))renderQuickFiles();}

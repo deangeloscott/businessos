@@ -149,7 +149,7 @@ assert.ok(v.effortView({...feed,effort:[]},null).includes('No AI requests have b
 const before={...feed,as_of:'2026-10-09T00:00:00Z',relationships:{...feed.relationships,edges:feed.relationships.edges.filter(e=>e.type!=='saved')}};
 const after={...feed,changes:[{...feed.changes[0],by:{kind:'chat',id:'c1'}}]};
 const [receipt]=v.receipts(before,after);
-assert.equal(receipt.text,'Research chat saved 1 finding and changed 1 tracked result.');
+assert.equal(receipt.text,'Codex saved 1 finding and changed 1 tracked result · “Research chat”.');
 assert.equal([...receipt.items].sort().join(),'finding:F1,item:col_1|a');
 assert.equal(v.receipts(feed,feed).length,0,'nothing new, nothing to report');
 
