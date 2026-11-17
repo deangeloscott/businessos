@@ -6,6 +6,7 @@ faint one, and each goal with a number a ring. This returns exactly those saved 
 no scores, no guesses. It writes nothing. Bounded on purpose, with counts of what was left out.
 """
 import argparse
+import hashlib
 import json
 from datetime import datetime, timezone
 from pathlib import Path
@@ -86,7 +87,9 @@ def world(bid, at=None, app=None):
         for position, check in enumerate(checks):
             if position == 0 and len(d['checks']) < 50:continue  # filling a collection for the first time is not a change
             for change in check.get('changes') or []:
-                changes.append({'at': check['at'], 'land': d['id'], 'item_id': change.get('id'), 'kind': change.get('kind', 'changed'), 'reason': str(change.get('reason') or '')[:1000], 'title': str(change.get('title', ''))[:160]})
+                row = {'at': check['at'], 'land': d['id'], 'item_id': change.get('id'), 'kind': change.get('kind', 'changed'), 'reason': str(change.get('reason') or '')[:1000], 'title': str(change.get('title', ''))[:160]}
+                if check.get('by'):row['by'] = check['by']
+                changes.append(row)
     changes.sort(key=lambda c: c['at'], reverse=True)
     names = dict(summary.AREAS);known = {land['id'] for land in lands};areas = {};findings = [];decisions = []
     by_id = {o.get('id'): o for o in objects}
@@ -196,6 +199,7 @@ def world(bid, at=None, app=None):
     from workspace_world_links import relationships
     feed['relationships'] = relationships(feed, registry, bound, objects, given_counts['references'], item_sources,
         app.preferences.get('assistants', {}).get(bid, []) if app else [])
+    feed['revision'] = revision(feed)
     return feed
 
 
@@ -219,6 +223,28 @@ def _tasks(bid, bound, known):
     return out[:60]
 
 
+_REFERENCES = {}  # chat file -> ((mtime, size), references per message); a chat is reread only when it changes
+
+
+def _message_references(path):
+    try:stat = path.stat()
+    except OSError:return []
+    key = (stat.st_mtime_ns, stat.st_size);hit = _REFERENCES.get(path)
+    if hit and hit[0] == key:return hit[1]
+    try:messages = json.loads(path.read_text(encoding='utf-8'))
+    except (OSError, ValueError):messages = []
+    out = [[r for r in (m.get('references') or []) if isinstance(r, dict) and isinstance(r.get('id'), str)]
+           for m in (messages if isinstance(messages, list) else []) if isinstance(m, dict)]
+    if len(_REFERENCES) > 4000:_REFERENCES.clear()
+    _REFERENCES[path] = (key, out)
+    return out
+
+
+def revision(feed):
+    """A fingerprint of everything drawn except the clock, so an unchanged world is not sent again."""
+    return hashlib.sha1(json.dumps({k: v for k, v in feed.items() if k not in {'as_of', 'revision'}}, sort_keys=True, default=str).encode()).hexdigest()[:20]
+
+
 def _used(bid, app, known):
     """How often each finding, collection and method was given to a request, counted from what each chat saved about its own requests.
     Results inside a collection are not given one by one, so there is no count for a single result."""
@@ -227,11 +253,10 @@ def _used(bid, app, known):
     methods = {}
     chats = [c for c in app.preferences.get('chats', []) if isinstance(c, dict) and c.get('business_id') == bid and not c.get('archived') and not c.get('deleted_at')][-400:]
     for chat in chats:
-        try:messages = json.loads(Path(app.chat_display_path(chat['id'])).read_text(encoding='utf-8'))
-        except (OSError, ValueError, KeyError, TypeError):messages = []
+        try:messages = _message_references(Path(app.chat_display_path(chat['id'])))
+        except (KeyError, TypeError):messages = []
         attached = {}
-        for message in messages if isinstance(messages, list) else []:
-            refs = [r for r in (message.get('references') or []) if isinstance(r, dict) and isinstance(r.get('id'), str)] if isinstance(message, dict) else []
+        for refs in messages:
             for ref in refs:
                 attached[(ref.get('kind'), ref['id'])] = ref
             together = sorted({r['id'] for r in refs if r.get('kind') == 'collection' and r['id'] in known})
@@ -247,10 +272,15 @@ def _used(bid, app, known):
     return out
 
 
+def _day_end(at):
+    """Weeks end at the close of today (UTC), so the same records give the same weeks all day."""
+    return datetime(at.year, at.month, at.day, tzinfo=timezone.utc).timestamp() + 86400
+
+
 def _work(bid, app, at, weeks=26):
     """AI requests per week for the last half year, from the usage each AI app reported."""
     if app is None:return None
-    end = at.timestamp();start = end - weeks * 7 * 86400;rows = [0] * weeks;tokens = [0] * weeks
+    end = _day_end(at);start = end - weeks * 7 * 86400;rows = [0] * weeks;tokens = [0] * weeks
     for r in app.preferences.get('usage_receipts', []):
         if r.get('business_id') != bid or not isinstance(r.get('at'), (int, float)) or not start <= r['at'] <= end:continue
         slot = min(weeks - 1, int((r['at'] - start) // (7 * 86400)));rows[slot] += 1;tokens[slot] += int(r.get('input_tokens') or 0) + int(r.get('output_tokens') or 0)
@@ -273,7 +303,7 @@ def _apps(bid, app, bound, known):
 def _work_by(bid, app, bound, known, at, weeks=26):
     """The same weekly requests, split by the project or collection each chat is tied to."""
     if app is None:return None
-    end = at.timestamp();start = end - weeks * 7 * 86400;chats = {b['id']: b for b in bound if b.get('kind') == 'chat'};rows = {}
+    end = _day_end(at);start = end - weeks * 7 * 86400;chats = {b['id']: b for b in bound if b.get('kind') == 'chat'};rows = {}
     for r in app.preferences.get('usage_receipts', []):
         if r.get('business_id') != bid or not isinstance(r.get('at'), (int, float)) or not start <= r['at'] <= end:continue
         link = chats.get(r.get('chat_id'), {})

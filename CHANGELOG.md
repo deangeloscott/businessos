@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+- **See what each piece of work produced.** When the AI saves a finding, decision, lesson or result through AURA during a chat AURA started, AURA notes that chat on it. The AI is asked for nothing extra, and work done elsewhere honestly shows as "not recorded". When a chat finishes while your aura is open, one line says what it saved and changed, with a way to see it.
+- **Connections follows the whole chain.** Select anything to see everything recorded as flowing into it and everything it led to, in the panel and as a full-screen diagram. With nothing selected, the diagram shows how your work flows: what your AI used, the conversations, what they saved and the goals they serve. Each link says what it records, and a collection's contents are counted rather than drawn as hundreds of lines.
+- **One place for what changed.** Time opens on what changed since your last visit, lit on the world, with a way to fly through it; the timeline is beside it. Home says it once.
+- **AI effort is one chart.** Group it by AI app, by what the work was for, or by model; areas keep their world colours, and a block opens the conversations behind it and what they saved. A selection counts only the conversations in its chain.
+- **The year poster is part of Share**, previewed exactly as it downloads.
+- **A calmer, lighter world.** An area's glow follows what changed there recently, not how much it holds. A still world is no longer redrawn, an unchanged world is not sent again, and the very large sample loads about 40% less data.
+- **Fixes.** The full-screen Connections diagram no longer disappears beside a long list, and following a link to a conversation or file keeps the camera where it was.
+
 ## 0.5.0 Alpha — 2026-11-17
 
 - **Your aura is a place to explore and work.** A dedicated section draws the organization's saved collections, findings, changes and measured goals as an interactive world. Explore, move through time, open the underlying saved work beside it, and prepare an image to download or share. The world reflects saved records; it does not invent business progress.

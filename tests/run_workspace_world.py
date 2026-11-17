@@ -133,6 +133,8 @@ print(json.dumps({'full':full,'tight':tight}))
     given=ww._used('b',Chats,{'col_1','col_2'})
     assert given['records']=={'ins_1':2} and given['collections']=={'col_1':1,'col_9':1} and given['library']==[{'id':'pb_comp','name':'Competitor Research','uses':2,'lands':['col_1']}],given
     assert ww._used('b',None,set())=={'records':{},'collections':{},'library':[],'references':[]},'with no chats to read, nothing is claimed'
+    from datetime import timedelta
+    assert ww._work('b',Chats,now)==ww._work('b',Chats,now+timedelta(minutes=5)),'the same records give the same weeks all day, so an unchanged world is not sent again'
     weeks=ww._work('b',Chats,now);assert len(weeks)==26 and sum(w['requests'] for w in weeks)==5 and weeks[-1]['requests']==4 and ww._work('b',None,now) is None
     split=ww._work_by('b',App,bound,{'col_1','col_2'},now);assert [(g['kind'],g['id'],sum(g['weeks'])) for g in split]==[('land','col_1',3),('project','prj_1',1),('other','',1)] and all(len(g['weeks'])==26 for g in split),split
     App.preferences['usage_receipts'][0]['agent']='Codex';App.preferences['usage_receipts'][2]['agent']='Pi';apps=ww._apps('b',App,bound,{'col_1','col_2'})
@@ -147,23 +149,52 @@ print(json.dumps({'full':full,'tight':tight}))
         [{'kind': 'chat', 'id': 'c1', 'collection_id': 'col_1'}, {'kind': 'agent', 'id': 'researcher', 'collection_id': 'col_1'}],
         [], given['references'])
     keys = {n['key'] for n in graph['nodes']}
-    links = {(e['source'], e['target'], e['label']) for e in graph['edges']}
+    links = {(e['source'], e['target'], e['type']) for e in graph['edges']}
     assert 'project:secret' not in keys and 'record:ins_1' not in keys, 'unknown and cross-business records stay out'
-    assert ('file:x', 'chat:c1', 'Attached to conversation') in links
-    assert ('chat:c1', 'land:col_1', 'Bound to collection') in links
-    assert ('agent:researcher', 'land:col_1', 'Bound to collection') in links
-    assert ('project:p', 'file:brief.md', 'Linked in project') in links
+    assert ('file:x', 'chat:c1', 'attached') in links
+    assert ('chat:c1', 'land:col_1', 'assigned') in links
+    assert ('agent:researcher', 'land:col_1', 'assigned') in links
+    assert ('project:p', 'file:brief.md', 'member') in links and ('land:col_1', 'goal:g', 'feeds') in links
     assert all(e['source'] in keys and e['target'] in keys for e in graph['edges'])
     assert len(links) == len(graph['edges']), 'repeated attachments do not duplicate edges'
-    assert not any('produced' in e['label'].lower() for e in graph['edges']), 'attachment never implies authorship'
-    produced = relationships(graph_feed, {'projects': []}, [], [
+    assert not any(e['type'] in {'saved', 'updated', 'into'} for e in graph['edges']), 'attachment never implies authorship'
+    assert 'item:col_1|i' not in keys, 'a tracked result is in its collection by its key; it becomes a node only when something is recorded about it'
+    produced = relationships({**graph_feed, 'changes': [{'land': 'col_1', 'item_id': 'i', 'by': {'kind': 'chat', 'id': 'c1'}}]}, {'projects': []}, [], [
         {'id': 'asset', 'object_type': 'Asset', 'business_role': 'Draft',
+         'extensions': {'businessos': {'work': {'producer': {'kind': 'chat', 'id': 'c1'}}}}},
+        {'id': 'src', 'object_type': 'SourceRecord', 'title': 'A source',
          'extensions': {'businessos': {'work': {'producer': {'kind': 'chat', 'id': 'c1'}}}}}
     ], [{'id': 'c1', 'title': 'Research', 'assistant_id': 'a1', 'references': [],
           'subagents': [{'id': 'child', 'name': 'Review'}]}], assistants=[{'id': 'a1', 'name': 'Researcher'}])
-    assert any(e['label']=='Produced saved asset' for e in produced['edges'])
-    assert any(e['source']=='agent:a1' and e['target']=='chat:c1' for e in produced['edges'])
-    assert any(e['source']=='chat:c1' and e['target']=='agent:c1|child' for e in produced['edges'])
+    made = {(e['source'], e['target'], e['type']) for e in produced['edges']}
+    assert ('chat:c1', 'record:asset', 'saved') in made, 'an output AURA noted during a chat is linked to that chat'
+    assert not any(t == 'record:src' for _, t, _ in made), 'raw sources stay behind their findings, not listed as outputs'
+    assert ('chat:c1', 'item:col_1|i', 'updated') in made and ('chat:c1', 'land:col_1', 'into') in made, 'a check run during a chat links the result it changed, and the area'
+    assert ('agent:a1', 'chat:c1', 'used') in made and ('chat:c1', 'agent:c1|child', 'delegated') in made
+    # AURA notes where it started the work on its own saves; the AI is asked for nothing, and a replay keeps the first note.
+    with tempfile.TemporaryDirectory(prefix='aura-producer-') as t,patch.dict(os.environ):
+        base=Path(t);root=base/'workspace'
+        os.environ.update(BUSINESSOS_WORKSPACE=str(root),BUSINESSOS_WORKSPACE_CONFIG=str(base/'pointer.json'),AURA_STATE_DIR=str(base/'state'))
+        from setup import setup
+        from _common import workspace_root
+        from remember import remember
+        import workspace_projects
+        bid=setup(organization='Noted Bakery')['business_id']
+        os.environ.pop('AURA_PRODUCER',None)
+        plain=workspace_projects.saved_during(bid,{'id':'x'})
+        assert plain=={'id':'x'},'without a chat AURA started, nothing is added'
+        os.environ['AURA_PRODUCER']=json.dumps({'kind':'chat','id':'chat-1','business_id':bid,'workspace':str(workspace_root().resolve())})
+        saved=remember(bid,{'objects':[{'object_type':'Insight','content':{'domain':'core','insight_type':'research_insight','statement':'Weekend demand is higher.','status':'candidate','evidence_links':[]}}]})
+        from _common import object_index
+        insight=next(o for o,_ in object_index(bid).values() if o.get('object_type')=='Insight' and o.get('statement')=='Weekend demand is higher.')
+        assert insight['extensions']['businessos']['work']['producer']=={'kind':'chat','id':'chat-1'},'a finding saved during a chat AURA started says so'
+        assert set(insight['extensions']['businessos']['work'])=={'producer'},'it records where the save happened and claims no project or goal'
+        import workspace_collections as wc
+        made=wc.create(bid,{'key':'prices','name':'Prices'})
+        wc.apply(bid,made['id'],{'revision':made['revision'],'run_id':'run-1','status':'complete','coverage':{'scope':'menus','checked':['menus']},'items':[{'id':'crumb','title':'Crumb & Co'}]})
+        assert wc.read(bid,made['id'])['checks'][-1]['by']=={'kind':'chat','id':'chat-1'},'a check run during a chat AURA started records that chat'
+        os.environ['AURA_PRODUCER']=json.dumps({'kind':'chat','id':'other','business_id':'someone-else','workspace':str(workspace_root().resolve())})
+        assert workspace_projects.saved_during(bid,{'id':'x'})=={'id':'x'},"another organization's chat is never recorded here"
     import shutil
     if shutil.which('node'):subprocess.run(['node',str(ROOT/'tests/workspace_aura_ui.cjs'),str(ROOT/'interface/workspace-aura.js')],check=True)
     print('workspace world: ok')

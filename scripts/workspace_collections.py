@@ -275,6 +275,9 @@ def apply(bid,ident,data):
     check={'run_id':run_id,'at':now(),'coverage':cov,'changes':changes[:250],'change_count':len(changes),
            'no_change_verified':cov['status']=='complete' and not changes,'changes_truncated':len(changes)>250}
     if data.get('upkeep'):check['upkeep']=True;d['last_upkeep_at']=check['at']
+    # The chat, task or agent AURA started this work in, when AURA started it. Nothing is asked of the AI for this.
+    by=projects.producer_context(bid)
+    if by:check['by']={'kind':by['kind'],'id':by['id']}
     d['checks']=(d['checks']+[check])[-50:]
     receipt={'run_id':run_id,'payload_hash':payload_hash,'version':d['version'],'coverage':cov,'changes':changes[:250],'change_count':len(changes),'no_change_verified':check['no_change_verified']}
     d['receipts'][run_id]=receipt;d['receipts']=dict(list(d['receipts'].items())[-500:])

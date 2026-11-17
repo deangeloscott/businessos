@@ -97,8 +97,15 @@ def _observation_confidence(item,extensions):
 
 def _write(obj,created_paths):
     p=canonical_path(obj['business_id'],obj)
-    if p.exists():
-        old=json.loads(p.read_text(encoding='utf-8'))
+    old=json.loads(p.read_text(encoding='utf-8')) if p.exists() else None
+    if old is None:
+        # Where AURA started this work, noted by AURA itself (see workspace_projects.saved_during).
+        from workspace_projects import saved_during
+        obj.update(saved_during(obj['business_id'],obj))
+    else:
+        # Saving the same bundle again keeps the original note, so a replay stays identical.
+        producer=((old.get('extensions') or {}).get('businessos') or {}).get('work',{}).get('producer')
+        if producer:obj.setdefault('extensions',{}).setdefault('businessos',{}).setdefault('work',{}).setdefault('producer',producer)
         if old==obj:return p
     written=write_canonical(obj,p)
     created_paths.append(written)

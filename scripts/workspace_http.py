@@ -144,7 +144,7 @@ def handler_for(app):
                 elif route in {'/app.js', '/style.css'}:
                     path = app.static / route[1:]
                     self.send_static(path, 'text/javascript; charset=utf-8' if path.suffix == '.js' else 'text/css; charset=utf-8')
-                elif route in {'/file-editor.js','/file-editor.css','/workspace-work.js','/workspace-continuity.js','/workspace-compose.js','/workspace-insight.js','/workspace-projects.js','/workspace-views.js','/workspace-focus.js','/workspace-hq.js','/workspace-aura.js','/workspace-world.js','/workspace-terminal.js'} or route.startswith('/vendor/'):
+                elif route in {'/file-editor.js','/file-editor.css','/workspace-work.js','/workspace-continuity.js','/workspace-compose.js','/workspace-insight.js','/workspace-projects.js','/workspace-views.js','/workspace-focus.js','/workspace-hq.js','/workspace-links.js','/workspace-aura.js','/workspace-world.js','/workspace-terminal.js'} or route.startswith('/vendor/'):
                     relative=Path(route.lstrip('/'))
                     path=(STATIC/relative).resolve()
                     base=(STATIC/'vendor').resolve() if route.startswith('/vendor/') else STATIC.resolve()
@@ -206,6 +206,8 @@ def handler_for(app):
                         elif route=='/api/world':
                             import workspace_world
                             result=workspace_world.world(bid,app=owner)
+                            # The page already has this world: say so instead of sending it again.
+                            if query.get('known')==result['revision']:result={'unchanged':True,'revision':result['revision']}
                         elif route=='/api/running':result=workspace_views.running(owner,bid,query.get('project',''),query.get('goal',''),query.get('collection',''))
                         else:result=workspace_views.progress(bid,query.get('goal'))
                     self.send(200,result)

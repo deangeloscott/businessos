@@ -181,6 +181,18 @@ def asset_context(bid,obj):
     return obj
 
 
+def saved_during(bid,obj):
+    """Note the chat, task or agent AURA started when this record was first saved, and nothing more.
+
+    It is mechanical: AURA set that context itself when it started the work, so the AI does nothing extra.
+    It records where the save happened, not what caused it, and makes no project or goal claim."""
+    context=producer_context(bid)
+    if not context:return obj
+    obj=json.loads(json.dumps(obj))
+    obj.setdefault('extensions',{}).setdefault('businessos',{}).setdefault('work',{}).setdefault('producer',{'kind':context['kind'],'id':context['id']})
+    return obj
+
+
 def resources(app,bid,ident):
     from workspace_ui import records,archived_paths,file_visible
     from workspace_lifecycle import archived

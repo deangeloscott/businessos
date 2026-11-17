@@ -136,7 +136,7 @@ function pick(clientX, clientY) { const r = ui.getBoundingClientRect(); ray.setF
 
 /* ------------------------------ The stage and its controls ------------------------------ */
 const headEl = el('div', 'world-head'), capEl = el('div', 'world-cap'), tipEl = el('div', 'world-tip'), shareEl = el('div', 'world-share'); shareEl.hidden = true;
-const barEl = el('div', 'world-bar', `<button type="button" class="primary compact" data-w="play">▶ Watch it light up</button><input type="range" min="0" max="1000" value="1000" aria-label="Move through time"><span class="world-when"></span><span class="world-gap"></span><button type="button" class="secondary compact" data-w="live" hidden>Return to live</button><button type="button" class="secondary compact" data-w="changed">What changed</button><button type="button" class="secondary compact" data-w="flat" aria-pressed="false">Flat map</button><button type="button" class="secondary compact" data-w="share">Share</button>`);
+const barEl = el('div', 'world-bar', `<button type="button" class="primary compact" data-w="play">▶ Watch it light up</button><input type="range" min="0" max="1000" value="1000" aria-label="Move through time"><span class="world-when"></span><span class="world-gap"></span><button type="button" class="secondary compact" data-w="live" hidden>Return to live</button><button type="button" class="secondary compact" data-w="flat" aria-pressed="false">Flat map</button><button type="button" class="secondary compact" data-w="share">Share</button>`);
 const range = barEl.querySelector('input'), whenEl = barEl.querySelector('.world-when'), playEl = barEl.querySelector('[data-w=play]');
 let M = null, S = { day: 0, q: '' }, dday = 0, ramp = null, show = null, sel = null, hov = null, cb = {}, kit = 0, C = {}, rings = [], hits = [], placed = [], pd = null, moved = false, pointer = null, rec = null, raf = 0, last = 0, touched = false, stage = null, capT = 0, capOpen = null, dirty = true, themeKey = '';
 
@@ -222,8 +222,8 @@ function theme() { const cs = getComputedStyle(stage), style = document.document
   const add = kit ? THREE.NormalBlending : THREE.AdditiveBlending; lightMat.blending = add; lightMat.needsUpdate = true; for (const m of [atmoIn, atmoOut]) { m.material.blending = add; m.material.needsUpdate = true; m.visible = !px && style !== 'classic'; } atmoOut.visible = !px && style !== 'classic'; stars.visible = !kit && style !== 'classic';
   rings.forEach(R => { const c = new THREE.Color().setHSL((hashS(R.G.id) % 360) / 360, kit ? .72 : .78, kit ? .4 : .66); R.hue = hashS(R.G.id) % 360; for (const o of [R.track, R.arc, R.glow]) { o.material.color.copy(c); o.material.blending = add; o.material.needsUpdate = true; } R.glow.visible = !kit; }); dirty = true; }
 function fit() { if (!stage) return; const r = stage.getBoundingClientRect(); W = Math.max(1, r.width); H = Math.max(1, r.height); const dpr = Math.min(2, devicePixelRatio || 1); renderer.setPixelRatio(px ? pxRatio : dpr); renderer.setSize(W, H, false); camera.aspect = W / H; camera.updateProjectionMatrix(); ui.width = W * dpr; ui.height = H * dpr; g.setTransform(dpr, 0, 0, dpr, 0, 0); TOP = headEl.offsetHeight ? 10 : 10; }
-let trace = [], related = new Set(), comparison = null;
-let F = { lands: null, needs: false }, running = [], flat = false, sinceT = 0, pxRatio = 1 / 3, lens = '', effortShare = {};
+let trace = [], related = new Set(), comparison = null, syncs = 0, drawn = '', draws = 0;
+let F = { lands: null, needs: false }, running = [], flat = false, pxRatio = 1 / 3, lens = '', effortShare = {};
 function inSelection(record) {
   return !sel || sel.kindOf==='land' || sel.kind==='goal' || record===sel || related.has(record);
 }
@@ -237,41 +237,16 @@ function dimOf(land) {
   return lens === 'effort' ? .22 + .78 * (effortShare[land.id] || 0) : 1;
 }
 
+/* The selected thing's recorded chain, as lines between the parts of it the world draws (see workspace-links.js). */
+const TRACE_WORD = { feeds: 'feeds', saved: 'saved', updated: 'changed', into: 'saved into', supports: 'supports', challenges: 'challenges', basis: 'basis for', extends: 'extends', source: 'source', shares_source: 'same source', assigned: 'keeps current', in: 'kept in' };
 function selectionTrace() {
-  const graph=M.feed.relationships;
-  if(graph && sel) {
-    const key=(sel.kindOf || sel.kind)+':'+sel.id;
-    const index=window.auraView.relationshipIndex(M.feed);
-    const edges=[], seen=new Set([key]), drawn=new Set();
-    let frontier=[key];
-    for(let depth=0;depth<3 && frontier.length && edges.length<60;depth++){
-      const next=[];
-      for(const current of frontier) for(const edge of index.adjacent.get(current)||[]){
-        const other=edge.source===current?edge.target:edge.source;
-        // Areas can have hundreds of members. Trace individual items from their own selection.
-        if(current.startsWith('land:') && ['Saved in collection','Saved in area'].includes(edge.label))continue;
-        if(!seen.has(other)){seen.add(other);next.push(other);}
-        if(drawn.has(edge))continue;
-        drawn.add(edge);
-        const a=M.byKey.get(edge.source), b=M.byKey.get(edge.target);
-        if(a && b && edges.length<60)edges.push({a,b,label:edge.label});
-      }
-      frontier=next;
-    }
-    return edges;
+  if (!sel || !window.auraLinks) return [];
+  const chain = window.auraLinks.trace(M.feed, (sel.kindOf || sel.kind) + ':' + sel.id), edges = [];
+  for (const edge of chain.edges) {
+    if (edge.type === 'in' && edge.target !== (sel.kindOf || sel.kind) + ':' + sel.id) continue;
+    const a = M.byKey.get(edge.source), b = M.byKey.get(edge.target);
+    if (a && b && edges.length < 60) edges.push({ a, b, type: edge.type, label: TRACE_WORD[edge.type] || '' });
   }
-  const edges=[];
-  const add=(a,b,label)=>{if(a && b) edges.push({a,b,label});};
-  if (!sel) return edges;
-  const findings = sel.kind==='finding' ? [sel] : sel.kind==='item' ? M.finds.filter(f=>f.tied.includes(sel)) :
-    sel.kind==='decision' ? sel.basis : [];
-  for (const finding of findings) {
-    for (const item of finding.tied) add(item,finding,'Shared source');
-    for (const decision of M.decisions) if (decision.basis.includes(finding)) add(finding,decision,'Cited by decision');
-  }
-  const areas = new Set([sel.kindOf==='land' ? sel.id : sel.land?.id,...findings.flatMap(f=>f.raw.lands || [f.land.id])]);
-  if (sel.kind==='goal') for (const id of sel.lands) add(M.lands.find(l=>l.id===id),sel,'Linked to goal');
-  else for (const goal of M.goals) for (const id of goal.lands) if (areas.has(id)) add(M.lands.find(l=>l.id===id),goal,'Linked to goal');
   return edges;
 }
 
@@ -287,19 +262,25 @@ function drawTrace() {
     const a=position(edge.a),b=position(edge.b);
     if (!a?.vis || !b?.vis) continue;
     g.save();g.strokeStyle=C.accent;g.globalAlpha=.8;g.lineWidth=1.5;
-    g.setLineDash(edge.label==='Shared source' ? [3,4] : []);
+    g.setLineDash(edge.type==='shares_source' ? [3,4] : []);
     g.beginPath();g.moveTo(a.x,a.y);g.lineTo(b.x,b.y);g.stroke();g.restore();
     const x=(a.x+b.x)/2,y=(a.y+b.y)/2,width=wOf(edge.label,10.5);
-    if(free(x-width/2,y-8,width,18)){
+    if(edge.label && free(x-width/2,y-8,width,18)){
       txt(edge.label,x,y,{size:10.5,color:C.accent,align:'center'});
       take(x-width/2,y-8,width,18);
     }
   }
 }
 
-function sync() { trace=selectionTrace(); related=new Set(trace.flatMap(edge=>[edge.a,edge.b])); dirty = false; const geo = lights.geometry, A = n => geo.attributes[n].array, col = A('aColor'), size = A('aSize'), al = A('aAlpha'), st = A('aState'), tmp = new THREE.Color(), q = S.q; let i = 0, wmax = 1;
-  M.lands.forEach(l => { const nt = l.things.filter(x => x.from <= S.day).length + l.finds.filter(x => x.from <= S.day).length, tot = l.things.length + l.finds.length; l.rto = l.kind === 'group' ? l.rmax : l.unch || !nt ? 0 : l.rmax * Math.sqrt((nt + 1) / (tot + 1)); l.w = l.kind === 'group' ? 1 : nt; wmax = Math.max(wmax, nt); l.dim = dimOf(l); landColor(l, U.uCol.value[l.i]); });
-  M.lands.forEach(l => { U.uW.value[l.i] = l.w / wmax; });
+function sync() { syncs++; trace=selectionTrace(); related=new Set(trace.flatMap(edge=>[edge.a,edge.b])); dirty = false; const geo = lights.geometry, A = n => geo.attributes[n].array, col = A('aColor'), size = A('aSize'), al = A('aAlpha'), st = A('aState'), tmp = new THREE.Color(), q = S.q; let i = 0, wmax = 1;
+  /* The glow follows movement, not size: what arrived, changed or moved a goal in the last 30 days. A settled area keeps a calm glow. */
+  const from = S.day - 30, moved = new Map(), bump = (land, n = 1) => moved.set(land, (moved.get(land) || 0) + n), recentDay = d => d > from && d <= S.day;
+  for (const s of M.sparks) if (recentDay(s.day)) bump(s.land);
+  for (const G of M.goals) if (G.points.some(p => recentDay(p.day))) for (const id of G.lands) { const l = M.lands.find(z => z.id === id); if (l) bump(l, 3); }
+  M.lands.forEach(l => { const nt = l.things.filter(x => x.from <= S.day).length + l.finds.filter(x => x.from <= S.day).length, tot = l.things.length + l.finds.length; l.rto = l.kind === 'group' ? l.rmax : l.unch || !nt ? 0 : l.rmax * Math.sqrt((nt + 1) / (tot + 1));
+    for (const x of l.things) if (recentDay(x.from)) bump(l); for (const x of l.finds) if (recentDay(x.from)) bump(l);
+    l.recent = moved.get(l) || 0; l.has = nt > 0; wmax = Math.max(wmax, l.recent); l.dim = dimOf(l); landColor(l, U.uCol.value[l.i]); });
+  M.lands.forEach(l => { U.uW.value[l.i] = l.kind === 'group' ? .4 : l.has ? .25 + .75 * l.recent / wmax : 0; });
   const put = c => { col[i * 3] = c.r; col[i * 3 + 1] = c.g; col[i * 3 + 2] = c.b; }, match = x => (!q || x.name.toLowerCase().includes(q)) && (!F.needs || x.need) && (!sel || sel.kindOf==='land' || sel.kind==='goal' || x===sel || related.has(x)) && (!comparison || comparison.has(x.kind+':'+x.id));
   for (const x of M.things) { const fresh = x.need ? .6 : 1; put(x.need ? C.amber : landColor(x.land, tmp)); size[i] = .078 + .02 * Math.log2(1 + (x.raw.sources || 0) + x.changes); al[i] = (.5 + .5 * fresh) * x.land.dim * (match(x) ? 1 : .14); st[i] = x.need ? 2 : 0; i++; }
   for (const x of M.finds) { put(x.need ? C.amber : kit ? landColor(x.land, tmp) : landColor(x.land, tmp).lerp(new THREE.Color('#ffffff'), .25)); size[i] = .04 + .012 * Math.log2(1 + (x.raw.given || 0)); al[i] = (x.label === 'unverified' ? .75 : .9) * x.land.dim * (match(x) ? 1 : .14); st[i] = x.label==='challenged' ? 3 : x.need ? 2 : x.label === 'unverified' ? 1 : 0; i++; }
@@ -407,11 +388,11 @@ function tour() { stopShow(); select(null); const top = M.things.slice().sort((a
     nd && { pos: nd.p, alt: .8, kicker: 'Amber', title: 'Amber means it needs a look.', sub: nd.name },
     { kicker: 'Yours to explore', title: 'Drag to turn it. Scroll to fly down.', sub: 'Click anything to open it.' }].filter(Boolean);
   show = { type: 'steps', steps, i: -1, stepAt: -1e9, pos: null }; cb.remember?.({ toured: '1' }); }
-/* What changed: fly to each thing a check changed since the last visit (or in the last two weeks), newest first. */
-function changed() { stopShow(); select(null); flat = false; barEl.querySelector('[data-w=flat]').setAttribute('aria-pressed', 'false'); const f = M.feed, from = sinceT || Date.parse(f.as_of) - 14 * 864e5, seen = new Set(), steps = [];
-  for (const c of f.changes) { if (Date.parse(c.at) <= from || steps.length >= 5) continue; const key = c.land + '|' + c.item_id; if (seen.has(key)) continue; seen.add(key); const th = M.things.find(x => x.id === key), l = M.lands.find(z => z.id === c.land); if (!th && !l) continue;
-    steps.push({ pos: th ? th.p : l.c, alt: th ? .6 : 1.4, kicker: 'Changed ' + new Date(c.at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }), title: c.title || (l && l.name) || 'A saved result', sub: l ? l.name : '', open: th ? () => select(th) : null }); }
-  if (!steps.length) { caption({ kicker: sinceT ? 'Since your last visit' : 'In the last two weeks', title: 'Nothing has changed.' }, 2800); return; } show = { type: 'steps', steps, i: -1, stepAt: -1e9, pos: null }; }
+/* Fly to each of the given things in turn (the Time lens hands over what changed), newest first, at most six. */
+function visit(keys) { stopShow(); select(null); flat = false; barEl.querySelector('[data-w=flat]').setAttribute('aria-pressed', 'false'); const steps = [], seen = new Set();
+  for (const key of keys || []) { if (steps.length >= 6 || seen.has(key)) continue; seen.add(key); const o = M.byKey.get(key); const pos = o?.p || o?.c; if (!pos) continue;
+    steps.push({ pos, alt: o.kindOf === 'land' ? 1.4 : .6, kicker: o.kindOf === 'land' ? 'Area' : o.kind === 'finding' ? 'Finding' : o.kind === 'goal' ? 'Goal' : 'Changed', title: o.name, sub: o.land ? o.land.name : '', open: () => select(o) }); }
+  if (!steps.length) { caption({ kicker: 'What changed', title: 'Nothing here to fly to.' }, 2800); return; } show = { type: 'steps', steps, i: -1, stepAt: -1e9, pos: null }; }
 function play() { stopShow(); select(null); S.day = 0; dday = 0; home(); dirty = true; show = { type: 'play', t0: performance.now(), dur: 16000, lon0: cam.to.lon, seen: new Set(), last: 0 }; playEl.textContent = '■ Stop'; caption({ kicker: dateOf(0), title: 'Day one.' }, 2200); }
 function stepShow(t) { if (!show) return;
   if (show.type === 'steps') { if (t - show.stepAt > 4400) { show.i++; if (show.i >= show.steps.length) { show = null; caption(null); home(); return; } const s = show.steps[show.i]; show.stepAt = t; show.pos = s.pos || null; s.pos ? flyTo(s.pos, s.alt || .62) : home(); caption({ ...s, kicker: `${s.kicker} · ${show.i + 1} of ${show.steps.length}` }); } return; }
@@ -430,8 +411,10 @@ function card() { const c = document.createElement('canvas'), w = c.width = 1080
   let size = 68; x.font = `800 ${size}px ${C.font}`; while (x.measureText(M.name).width > w - 120 && size > 34) { size -= 4; x.font = `800 ${size}px ${C.font}`; } x.fillStyle = C.ink; x.fillText(M.name, w / 2, 1084); x.fillStyle = C.muted; x.font = `500 27px ${C.font}`; x.fillText(`${ageWord()} with AURA`, w / 2, 1140);
   const stats = [[M.things.filter(q => q.from <= S.day).length, 'tracked'], [M.finds.filter(q => q.from <= S.day && q.label === 'supported').length, 'findings supported'], M.goals.length ? [`${M.goals.filter(G => G.reached).length} of ${M.goals.length}`, 'goals reached'] : [M.lands.filter(l => !l.unch).length, 'areas charted']];
   stats.forEach(([v, l], i) => { const cx = w / 2 + (i - 1) * 300; x.fillStyle = C.accent; x.font = `800 54px ${C.font}`; x.fillText(String(v), cx, 1232); x.fillStyle = C.muted; x.font = `500 21px ${C.font}`; x.fillText(l, cx, 1280); }); return c; }
-function share() { const was = show?.type === 'play'; stopShow(); if (was) { S.day = M.T; dday = M.T; range.value = 1000; } sync(); const c = card(); shareEl.innerHTML = `<div class="world-sharecard"><div class="world-shareimg"></div><div class="world-shareside"><h3>Made to show, safe to post</h3><p>The picture is the real shape of what ${safe(M.name)} knows: every light is something tracked, every ring a goal.</p><p class="small-note">It shows the name, how long it has been built and three numbers. No results, findings or sources are named. Nothing is shared unless you download it and share it yourself.</p><div class="world-shareacts"><button type="button" class="primary" data-w="png">Download image</button><button type="button" class="secondary" data-w="clip">Record replay clip</button><button type="button" class="secondary" data-w="close">Close</button></div></div></div>`;
-  shareEl.querySelector('.world-shareimg').appendChild(c); shareEl._c = c; shareEl.hidden = false; }
+/* Share: the world card or the year poster, previewed exactly as it downloads. */
+function share(kind = 'card') { const was = show?.type === 'play'; stopShow(); if (was) { S.day = M.T; dday = M.T; range.value = 1000; } sync(); const year = kind === 'year' && cb.poster, c = year ? cb.poster() : card();
+  shareEl.innerHTML = `<div class="world-sharecard"><div class="world-shareimg"></div><div class="world-shareside">${cb.poster ? `<div class="world-time-modes"><button type="button" data-w="card" aria-pressed="${!year}">World card</button><button type="button" data-w="year" aria-pressed="${!!year}">Year poster</button></div>` : ''}<h3>Made to show, safe to post</h3><p>${year ? `${safe(M.name)}'s year: its outcomes and each day something was saved.` : `The picture is the real shape of what ${safe(M.name)} knows: every light is something tracked, every ring a goal.`}</p><p class="small-note">It shows the name and a few totals. No results, findings or sources are named. Nothing is shared unless you download it and share it yourself.</p><div class="world-shareacts"><button type="button" class="primary" data-w="png">Download image</button>${year ? '' : '<button type="button" class="secondary" data-w="clip">Record replay clip</button>'}<button type="button" class="secondary" data-w="close">Close</button></div></div></div>`;
+  shareEl.querySelector('.world-shareimg').appendChild(c); shareEl._c = c; shareEl._kind = year ? 'year' : 'world'; shareEl.hidden = false; }
 function poster() { const keep = S.day; S.day = M.T; sync(); const c = card(); S.day = keep; dirty = true; return c; }
 const fileName = ext => (M.name || 'aura').replace(/[^\w -]+/g, '').trim() + ' world.' + ext;
 function save(blob, name) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); }
@@ -452,27 +435,33 @@ ui.addEventListener('dblclick', e => { const p = pick(e.clientX, e.clientY); if 
 ui.addEventListener('keydown', e => { const k = { ArrowLeft: [-.12, 0], ArrowRight: [.12, 0], ArrowUp: [0, .1], ArrowDown: [0, -.1] }[e.key]; if (k) { e.preventDefault(); stopShow(); cam.to.lon += k[0]; cam.to.lat = clamp(cam.to.lat + k[1], -1.35, 1.35); } if (e.key === '+' || e.key === '=') cam.to.alt = clamp(cam.to.alt * .75, ALT_MIN, ALT_MAX); if (e.key === '-') cam.to.alt = clamp(cam.to.alt / .75, ALT_MIN, ALT_MAX); if (e.key === 'Home') home(); });
 ui.tabIndex = 0; ui.setAttribute('role', 'img');
 range.addEventListener('input', () => { stopShow(); S.day = M.T * range.value / 1000; dirty = true; });
-barEl.addEventListener('click', e => { const w = e.target.closest('[data-w]')?.dataset.w; if (w === 'play') show?.type === 'play' ? stopShow() : play(); if (w === 'live') { stopShow(); ramp = null; S.day = dday = M.T; range.value = 1000; dirty = true; } if (w === 'tour') tour(); if (w === 'changed') changed(); if (w === 'flat') { flat = !flat; e.target.closest('[data-w]').setAttribute('aria-pressed', String(flat)); stopShow(); } if (w === 'home') { stopShow(); select(null); home(); } if (w === 'share') share(); });
-shareEl.addEventListener('click', e => { const w = e.target.closest('[data-w]')?.dataset.w; if (w === 'close' || e.target === shareEl) shareEl.hidden = true; if (w === 'png') shareEl._c.toBlob(b => save(b, fileName('png')), 'image/png'); if (w === 'clip') clip(); });
+barEl.addEventListener('click', e => { const w = e.target.closest('[data-w]')?.dataset.w; if (w === 'play') show?.type === 'play' ? stopShow() : play(); if (w === 'live') { stopShow(); ramp = null; S.day = dday = M.T; range.value = 1000; dirty = true; } if (w === 'tour') tour(); if (w === 'flat') { flat = !flat; e.target.closest('[data-w]').setAttribute('aria-pressed', String(flat)); stopShow(); } if (w === 'home') { stopShow(); select(null); home(); } if (w === 'share') share(); });
+shareEl.addEventListener('click', e => { const w = e.target.closest('[data-w]')?.dataset.w; if (w === 'close' || e.target === shareEl) shareEl.hidden = true; if (w === 'png') shareEl._c.toBlob(b => save(b, (M.name || 'aura').replace(/[^\w -]+/g, '').trim() + ' ' + shareEl._kind + '.png'), 'image/png'); if (w === 'card' || w === 'year') share(w); if (w === 'clip') clip(); });
 capEl.addEventListener('click', () => { if (capOpen) { const o = capOpen; stopShow(); o(); } });
 function frame(t) { raf = 0; if (!stage || !stage.isConnected) { stage = null; return; } raf = requestAnimationFrame(frame); if (document.hidden || stage.closest('.world-expanded') || (document.body.classList.contains('world-chat-open') && matchMedia('(max-width:860px)').matches)) {last=t;return;} const dt = Math.min(50, t - (last || t)); last = t; const r = stage.getBoundingClientRect(); if (Math.abs(r.width - W) > .5 || Math.abs(r.height - H) > .5) fit(); theme(); if (dirty) sync();
   stepShow(t); const k = reduce ? 1 : 1 - Math.pow(.0025, dt / 1000); if (!pd) { cam.to.lon += cam.v[0]; cam.to.lat = clamp(cam.to.lat + cam.v[1], -1.35, 1.35); cam.v[0] *= .92; cam.v[1] *= .92; }
-  cam.lon += (cam.to.lon - cam.lon) * k; cam.lat += (cam.to.lat - cam.lat) * k; cam.alt = Math.exp(Math.log(cam.alt) + (Math.log(cam.to.alt) - Math.log(cam.alt)) * k); applyCam();
+  cam.lon += (cam.to.lon - cam.lon) * k; cam.lat += (cam.to.lat - cam.lat) * k; cam.alt = Math.exp(Math.log(cam.alt) + (Math.log(cam.to.alt) - Math.log(cam.alt)) * k); if (Math.abs(cam.to.lon - cam.lon) + Math.abs(cam.to.lat - cam.lat) + Math.abs(Math.log(cam.to.alt / cam.alt)) < 2e-5) { cam.lon = cam.to.lon; cam.lat = cam.to.lat; cam.alt = cam.to.alt; } applyCam();
   if (ramp) { const u = clamp((performance.now() - ramp.t0) / ramp.dur, 0, 1); dday = ramp.from + (ramp.to - ramp.from) * u * u * (3 - 2 * u); if (u >= 1) ramp = null; } else { dday += (S.day - dday) * (reduce ? 1 : 1 - Math.pow(.03, dt / 1000)); if (Math.abs(S.day - dday) < M.T / 1500) dday = S.day; }
-  for (const l of M.lands) { U.uR.value[l.i] += (l.rto - U.uR.value[l.i]) * Math.min(1, dt / 260); U.uDim.value[l.i] += (l.dim - U.uDim.value[l.i]) * Math.min(1, dt / 200); }
+  for (const l of M.lands) { U.uR.value[l.i] += (l.rto - U.uR.value[l.i]) * Math.min(1, dt / 260); U.uDim.value[l.i] += (l.dim - U.uDim.value[l.i]) * Math.min(1, dt / 200); if (Math.abs(l.rto - U.uR.value[l.i]) < 1e-4) U.uR.value[l.i] = l.rto; if (Math.abs(l.dim - U.uDim.value[l.i]) < 1e-3) U.uDim.value[l.i] = l.dim; }
   /* The preview measured time in days over two years; a young workspace is scaled so its first lights still fade in. */
   const span = Math.max(1, M.T / 140); U.uTime.value = reduce ? 0 : t / 1000; U.uZoom.value = clamp(cam.alt, .18, 3); LU.uDay.value = dday / span + 5 * clamp(dday / M.T, 0, 1); LU.uAlt.value = cam.alt; LU.uScale.value = renderer.getDrawingBufferSize(new THREE.Vector2()).y * .75;
-  rings.forEach(R => { const to = gdone(R.G, ramp && ramp.goal === R.G.id ? dday : S.day); R.shown += (to - R.shown) * Math.min(1, dt / 300); ringBuild(R, R.shown); const rf = sstep(1.0, 1.9, cam.alt); R.arc.material.opacity = rf; R.glow.material.opacity = .16 * rf; R.track.material.opacity = (kit ? .35 : .22) * rf; R.holder.visible = rf > .01; });
+  rings.forEach(R => { const to = gdone(R.G, ramp && ramp.goal === R.G.id ? dday : S.day); R.shown += (to - R.shown) * Math.min(1, dt / 300); if (Math.abs(to - R.shown) < 1e-3) R.shown = to; ringBuild(R, R.shown); const rf = sstep(1.0, 1.9, cam.alt); R.arc.material.opacity = rf; R.glow.material.opacity = .16 * rf; R.track.material.opacity = (kit ? .35 : .22) * rf; R.holder.visible = rf > .01; });
   running = cb.running?.() || []; { for (const l of M.lands) U.uPulse.value[l.i] = running.some(r => r.land === l.id) ? 1 : 0; } glc.style.visibility = flat ? 'hidden' : '';
-  if (flat) flatMap(t, dday); else { renderer.render(scene, camera); if (rec) { rec.frame(); if (show?.type !== 'play') { rec.mr.stop(); rec = null; } } overlay(t, dday); }
-  const h = pointer && !pd ? under(pointer) : null, was = hov; hov = h ? h.s : null; ui.style.cursor = h ? 'pointer' : moved && pd ? 'grabbing' : 'grab'; if (h && h.tip) { tipEl.innerHTML = `${safe(h.tip[0])}<small>${safe(h.tip[1] || '')}</small>`; tipEl.style.opacity = 1; tipEl.style.left = Math.min(pointer.x + 16, W - 290) + 'px'; tipEl.style.top = Math.min(pointer.y + 16, H - 80) + 'px'; } else tipEl.style.opacity = 0; if (was !== hov) dirty = dirty || false;
+  /* Draw only when something on screen can have changed: the camera, time, a transition, running work, hover or new data. */
+  const settling = M.lands.some(l => Math.abs(l.rto - U.uR.value[l.i]) > 1e-4 || Math.abs(l.dim - U.uDim.value[l.i]) > 1e-3) || rings.some(R => Math.abs(gdone(R.G, S.day) - R.shown) > 1e-3);
+  const view = [cam.lon.toFixed(5), cam.lat.toFixed(5), cam.alt.toFixed(5), W, H, dday.toFixed(4), flat, syncs, themeKey, hov ? (hov.kindOf || hov.kind) + hov.id : '', shareEl.hidden].join('|');
+  if (show || ramp || rec || pd || settling || (running.length && !reduce) || view !== drawn) {
+    drawn = view; draws++;
+    if (flat) flatMap(t, dday); else { renderer.render(scene, camera); if (rec) { rec.frame(); if (show?.type !== 'play') { rec.mr.stop(); rec = null; } } overlay(t, dday); }
+  }
+  const h = pointer && !pd ? under(pointer) : null, was = hov; hov = h ? h.s : null; ui.style.cursor = h ? 'pointer' : moved && pd ? 'grabbing' : 'grab'; if (h && h.tip) { tipEl.innerHTML = `${safe(h.tip[0])}<small>${safe(h.tip[1] || '')}</small>`; tipEl.style.opacity = 1; tipEl.style.left = Math.min(pointer.x + 16, W - 290) + 'px'; tipEl.style.top = Math.min(pointer.y + 16, H - 80) + 'px'; } else tipEl.style.opacity = 0; 
   headEl.style.opacity = cam.alt > 3.4 && !show && !sel && shareEl.hidden ? 1 : 0; }
 
 /* ------------------------------ What the rest of AURA calls ------------------------------ */
 function mount(host, feed, callbacks = {}) { if (!renderer) return false; cb = callbacks; stage = host; host.replaceChildren(glc, ui, headEl, capEl, tipEl, barEl, shareEl); shareEl.hidden = true; load(feed); fit(); theme(); sync(); applyCam(); ui.setAttribute('aria-label', `${feed.business.name} drawn as a world: ${M.things.length} tracked results and ${M.finds.length} findings across ${M.lands.filter(l => !l.unch).length} areas. The same things are listed beside it.`);
   for (let i = 0; i < M.lands.length; i++) { U.uR.value[i] = M.lands[i].rto; }
   if (!raf) raf = requestAnimationFrame(frame);
-  const seen = cb.seen || null, toured = !!cb.toured; sinceT = seen ? Date.parse(seen) : 0; F = { lands: null, needs: false }; flat = false; barEl.querySelector('[data-w=flat]').setAttribute('aria-pressed', 'false'); cb.remember?.({ seen: feed.as_of });
+  F = { lands: null, needs: false }; flat = false; barEl.querySelector('[data-w=flat]').setAttribute('aria-pressed', 'false'); cb.remember?.({ seen: feed.as_of });
   touched = false;
   return true; }
 function find(kind, id) { return M?.byKey.get(kind+':'+id) || null; }
@@ -484,11 +473,16 @@ window.auraWorld = { available: !!renderer,
     cam.to={lon:position.lon,lat:clamp(position.lat,-1.35,1.35),alt:clamp(position.alt,ALT_MIN,ALT_MAX)};
     dirty=true;
   },
-  setEffortMetric, replaying: () => !!M && (!!show || S.day < M.T), mount, unmount() { stage = null; cb = {}; if (rec) { try { rec.mr.stop(); } catch {} rec = null; } }, focus(kind, id, fly = true) { const record = find(kind, id); if (!record) return false; stopShow(); if (sel === record) cb.select?.(record); else select(record, fly); return true; }, clear() { stopShow(); select(null); home(); }, search(q) { S.q = String(q || '').trim().toLowerCase(); dirty = true; }, filter(f) { F = { lands: f?.scoped || f?.lands?.length ? (f.lands || []) : null, needs: !!f?.needs }; dirty = true; }, changed, lens(name) { lens = name || ''; dirty = true; },
+  setEffortMetric, replaying: () => !!M && (!!show || S.day < M.T), mount, unmount() { stage = null; cb = {}; if (rec) { try { rec.mr.stop(); } catch {} rec = null; } }, focus(kind, id, fly = true) { const record = find(kind, id); if (!record) return false; stopShow(); if (sel === record) cb.select?.(record); else select(record, fly); return true; }, clear() { stopShow(); select(null); home(); },
+  /* Let go of the world's own selection without moving the camera, for something the world does not draw. */
+  release() { stopShow(); sel = null; hov = null; dirty = true; },
+  /* Bring the given areas into view, unless they already are. */
+  reveal(ids) { if (!M || !ids?.length) return; const v = new THREE.Vector3(); let n = 0; for (const l of M.lands) if (ids.includes(l.id)) { v.add(l.c); n++; } if (!n || v.lengthSq() < 1e-4) return; v.normalize(); const [lo, la] = lonlat(v); if (Math.abs(wrap(lo - cam.to.lon)) < .5 && Math.abs(la - cam.to.lat) < .4) return; flyTo(v, Math.max(cam.to.alt, 1.8)); }, search(q) { S.q = String(q || '').trim().toLowerCase(); dirty = true; }, filter(f) { F = { lands: f?.scoped || f?.lands?.length ? (f.lands || []) : null, needs: !!f?.needs }; dirty = true; }, visit, lens(name) { lens = name || ''; dirty = true; },
   /* New records while the aura is open: redraw from the new feed where the person already is, and let what just arrived glow. */
-  update(feed) { if (!stage || !M) return; const keep = { lon: cam.lon, lat: cam.lat, alt: cam.alt, to: { ...cam.to } }, was = sel ? [sel.kindOf || sel.kind, sel.id] : null, f0 = F, l0 = lens; load(feed); Object.assign(cam, keep, { v: [0, 0] }); F = f0; lens = l0; themeKey = ''; theme(); sync(); for (const l of M.lands) U.uR.value[l.i] = l.rto; if (was) sel = find(was[0], was[1]) || null; dirty=true; ramp = null; }, tour, play, share, poster, model: () => M,
-  /* For checks only: the cost of drawing one frame, in milliseconds, without waiting for the screen. */
-  bench(n = 20) { const t0 = performance.now(); for (let i = 0; i < n; i++) { cancelAnimationFrame(raf); frame(performance.now()); } return (performance.now() - t0) / n; },
+  update(feed) { if (!stage || !M) return; const keep = { lon: cam.lon, lat: cam.lat, alt: cam.alt, to: { ...cam.to } }, was = sel ? [sel.kindOf || sel.kind, sel.id] : null, f0 = F, l0 = lens; load(feed); Object.assign(cam, keep, { v: [0, 0] }); F = f0; lens = l0; themeKey = ''; theme(); sync(); for (const l of M.lands) U.uR.value[l.i] = l.rto; if (was) sel = find(was[0], was[1]) || null; dirty=true; ramp = null; }, tour, play, share, card: poster, model: () => M,
+  /* For checks only: the cost of drawing one frame, in milliseconds, without waiting for the screen. idle() is the cost of a frame with nothing to redraw. */
+  bench(n = 20) { const t0 = performance.now(); for (let i = 0; i < n; i++) { cancelAnimationFrame(raf); drawn = ''; frame(performance.now()); } return (performance.now() - t0) / n; },
+  idle(n = 20) { const t0 = performance.now(); for (let i = 0; i < n; i++) { cancelAnimationFrame(raf); frame(performance.now()); } return (performance.now() - t0) / n; },
   /* For checks only: jump straight to where the camera is heading. */
-  settle() { cam.lon = cam.to.lon; cam.lat = cam.to.lat; cam.alt = cam.to.alt; cam.v = [0, 0]; dday = S.day; ramp = null; if (M) for (const l of M.lands) { U.uR.value[l.i] = l.rto; U.uDim.value[l.i] = l.dim; } }, state: () => ({ alt: cam.alt, day: S.day, sel: sel ? { kind: sel.kind || sel.kindOf, id: sel.id } : null, show: show?.type || null, kit, hits: hits.length }) };
+  settle() { cam.lon = cam.to.lon; cam.lat = cam.to.lat; cam.alt = cam.to.alt; cam.v = [0, 0]; dday = S.day; ramp = null; if (M) for (const l of M.lands) { U.uR.value[l.i] = l.rto; U.uDim.value[l.i] = l.dim; } for (const R of rings) R.shown = gdone(R.G, S.day); }, state: () => ({ alt: cam.alt, day: S.day, sel: sel ? { kind: sel.kind || sel.kindOf, id: sel.id } : null, show: show?.type || null, kit, hits: hits.length, draws }) };
 document.dispatchEvent(new Event('aura-world-ready'));

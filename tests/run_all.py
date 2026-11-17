@@ -64,6 +64,7 @@ TESTS=[
     'tests/run_workspace_focus.py',
     'tests/run_workspace_summary.py',
     'tests/run_workspace_world.py',
+    'tests/workspace_world_browser.py',
     'tests/run_workspace_example.py',
     'tests/run_runtime_bundle.py',
     'tests/run_bootstrap_reference_ids.py',
