@@ -38,12 +38,22 @@ window.auraView=(()=>{
   const spark=tr=>{const pts=(tr?.points||[]).filter(p=>typeof p.value==='number');if(pts.length<2)return '';const vs=pts.map(p=>p.value),mn=Math.min(...vs),mx=Math.max(...vs);return `<div><svg class="world-spark" viewBox="0 0 140 30" role="img" aria-label="${esc(tr.field)} over time"><polyline points="${vs.map((v,i)=>`${(4+132*i/(vs.length-1)).toFixed(1)},${(25-20*(v-mn)/((mx-mn)||1)).toFixed(1)}`).join(' ')}"/></svg><p class="small-note">${esc(tr.field)}: ${esc(vs[0])} → ${esc(vs.at(-1))} over ${pts.length} checks</p></div>`;};
   /* Work that is running right now, and the area its chat is tied to. */
   const runningNow=()=>{if(!ctx)return [];const seen=new Set(),out=[];for(const r of [...(hq().cached?.()?.running||[]),...(state.data?.running_chats||[]).filter(j=>j.status!=='done'&&(!j.business_id||j.business_id===ctx.business))]){if(seen.has(r.chat_id))continue;seen.add(r.chat_id);out.push({land:ctx.feed.chat_lands?.[r.chat_id]||null,label:`${r.agent||'Your AI'} · working${r.title?' on '+r.title:''}`});}return out;};
+  /* The places that belong to a goal, project, scheduled task or AI app, from saved links only. */
+  function landsFor(f,by,projects=state.projects||[]){
+    const [kind,...rest]=String(by||'').split(':'),id=rest.join(':');
+    if(kind==='goal')return f.goals.find(g=>g.id===id)?.lands||[];
+    if(kind==='task')return (f.tasks||[]).filter(k=>k.id===id&&k.land).map(k=>k.land);
+    if(kind==='app')return (f.apps||[]).find(a=>a.name===id)?.lands||[];
+    if(kind==='project'){const p=projects.find(x=>x.id===id),held=new Set((p?.members||[]).filter(m=>m.kind==='collection').map(m=>m.id));return f.lands.filter(l=>held.has(l.id)||(l.project_refs||[]).includes(id)).map(l=>l.id);}
+    return [];
+  }
   function home(f){
-    const flt=ctx?.filter||{lands:[],needs:false};
+    const flt=ctx?.filter||{lands:[],needs:false,by:''};
     const names=Object.fromEntries(f.lands.map(l=>[l.id,l.name])),shift=Number.isInteger(state.data?.aura_preferences?.shift)?state.data.aura_preferences.shift:0;
     return `<div><div class="kind">Your world</div><h2>${esc(f.business.name)}</h2>${f.business.example?'<p class="small-note">AURA\'s made-up example business.</p>':''}</div>
       <label><span class="sr-only">Find in your world</span><input type="search" id="world-q" placeholder="Find anything…" autocomplete="off"></label>
       ${f.lands.length>1?`<div class="world-chips" role="group" aria-label="Show only these areas">${f.lands.filter(l=>l.kind!=='group').map(l=>`<button type="button" class="world-chip" data-world-chip="${esc(l.id)}" aria-pressed="${flt.lands.includes(l.id)}"><i${hueOf(l.id)!=null?` style="background:hsl(${Math.round(hueOf(l.id))},70%,55%)"`:''}></i>${esc(l.name)}</button>`).join('')}<button type="button" class="world-chip" data-world-needs aria-pressed="${!!flt.needs}">Needs a look</button></div>`:''}
+      ${f.goals.some(g=>(g.lands||[]).length)||(state.projects||[]).length||(f.tasks||[]).length||(f.apps||[]).length?`<label class="world-by"><span>Show what belongs to</span><select id="world-by"><option value="">Everything</option>${[['Goals',f.goals.filter(g=>(g.lands||[]).length).map(g=>['goal:'+g.id,g.name])],['Projects',(state.projects||[]).map(p=>['project:'+p.id,p.name])],['Scheduled tasks',(f.tasks||[]).filter(k=>k.land).map(k=>['task:'+k.id,k.name||'Scheduled task'])],['AI apps',(f.apps||[]).map(a=>['app:'+a.name,a.name])]].filter(g=>g[1].length).map(([label,list])=>`<optgroup label="${label}">${list.map(([v,n])=>`<option value="${esc(v)}" ${flt.by===v?'selected':''}>${esc(n)}</option>`).join('')}</optgroup>`).join('')}</select></label>${flt.by&&!flt.lands.length?'<p class="small-note">Nothing on the world is tied to this yet.</p>':''}`:''}
       ${latest(f,ctx?.since)}
       <section><h3>Goals</h3>${f.goals.length?f.goals.map(g=>row(typeof g.target==='number'?`data-world-go="goal:${esc(g.id)}"`:refOf(g.id)?`data-record="${esc(refOf(g.id))}"`:'',g.name,goalLine(g))).join(''):'<p class="small-note">Add a goal with a number, such as "$50,000 in grants this year", and it becomes a ring around your world.</p>'}<button type="button" class="text-button" data-action="add-goal">Add goal</button></section>
       ${f.attention.length?`<section><h3>Needs you</h3>${f.attention.map(a=>row(refOf(a.id)?`data-record="${esc(refOf(a.id))}"`:'',a.title,a.reason)).join('')}</section>`:''}
@@ -90,12 +100,13 @@ window.auraView=(()=>{
     for(const p of projects)for(const m of p.members||[]){if(m.kind==='collection')links.push(['p:'+p.id,'l:'+m.id]);if(m.kind==='goal')links.push(['p:'+p.id,'g:'+m.id]);}
     for(const g of f.goals)for(const id of g.lands||[])links.push(['l:'+id,'g:'+g.id]);
     for(const m of f.methods||[])for(const id of m.lands||[])links.push(['m:'+m.id,'l:'+id]);
+    for(const a of f.apps||[])for(const id of a.lands||[])links.push(['a:'+a.name,'l:'+id]);
     return [...new Set(links.map(x=>x.join('\n')))].map(x=>x.split('\n'));
   }
   function mapView(f,projects=state.projects||[]){
     const node=(key,attrs,title,sub)=>`<button type="button" class="wm-node${attrs?'':' plain'}" data-key="${esc(key)}" ${attrs||'tabindex="-1"'}><b>${esc(title)}</b>${sub?`<small>${esc(sub)}</small>`:''}</button>`,col=(title,items)=>`<div class="wm-col"><h3>${title}</h3>${items||'<p class="small-note">Nothing yet.</p>'}</div>`;
     const work=[...projects.map(p=>node('p:'+p.id,`data-open-project="${esc(p.id)}"`,p.name,'Project')),...(f.tasks||[]).map(k=>node('t:'+k.id,k.land?`data-world-go="task:${esc(k.id)}"`:'',k.name||'Scheduled task',k.schedule||'Scheduled task'))].join('');
-    return `<p class="small-note">How your work, what you know and your goals connect. A line is a saved link: a project that holds a collection or goal, a task that keeps a collection current, or a collection tied to a goal.</p><div class="wm${(f.methods||[]).length?' wm4':''}" id="world-map"><svg class="wm-lines" aria-hidden="true"></svg>${(f.methods||[]).length?col('Methods',f.methods.slice(0,12).map(m=>node('m:'+m.id,'',m.name,'Given to '+count(m.uses,'request'))).join('')):''}${col('Work',work)}${col('What you know',f.lands.map(l=>node('l:'+l.id,`data-world-go="land:${esc(l.id)}"`,l.name,landCounts(f,l)||'Nothing yet')).join(''))}${col('Goals',f.goals.map(g=>node('g:'+g.id,typeof g.target==='number'?`data-world-go="goal:${esc(g.id)}"`:'',g.name,goalLine(g))).join(''))}</div>${mapLinks(f,projects).length?'':'<p class="small-note">Nothing is linked yet. Put a collection and a goal in the same project, or give a scheduled task a collection to keep current, and the lines appear.</p>'}`;
+    return `<p class="small-note">How your work, what you know and your goals connect. A line is a saved link: a project that holds a collection or goal, a task that keeps a collection current, or a collection tied to a goal.</p><div class="wm" style="grid-template-columns:repeat(${3+((f.methods||[]).length?1:0)+((f.apps||[]).length?1:0)},minmax(0,1fr))" id="world-map"><svg class="wm-lines" aria-hidden="true"></svg>${(f.apps||[]).length?col('AI apps',f.apps.map(a=>node('a:'+a.name,'',a.name,count(a.requests,'request'))).join('')):''}${(f.methods||[]).length?col('Methods',f.methods.slice(0,12).map(m=>node('m:'+m.id,'',m.name,'Given to '+count(m.uses,'request'))).join('')):''}${col('Work',work)}${col('What you know',f.lands.map(l=>node('l:'+l.id,`data-world-go="land:${esc(l.id)}"`,l.name,landCounts(f,l)||'Nothing yet')).join(''))}${col('Goals',f.goals.map(g=>node('g:'+g.id,typeof g.target==='number'?`data-world-go="goal:${esc(g.id)}"`:'',g.name,goalLine(g))).join(''))}</div>${mapLinks(f,projects).length?'':'<p class="small-note">Nothing is linked yet. Put a collection and a goal in the same project, or give a scheduled task a collection to keep current, and the lines appear.</p>'}`;
   }
   function drawLinks(){
     const host=$('#world-map');if(!host||!ctx)return;const box=host.getBoundingClientRect(),svg=host.querySelector('svg'),pos={};
@@ -168,25 +179,27 @@ window.auraView=(()=>{
   const remember=patch=>{state.data.aura_preferences={...(state.data.aura_preferences||{}),...patch};api('/api/preferences',{business:state.business,aura:patch}).then(()=>{hq().paintMark?.();hq().paint?.(true);}).catch(()=>{});};
   function mountWorld(){
     const host=$('#world-stage');if(!host||!ctx)return;
-    const ok=!!world()?.available&&world().mount(host,ctx.feed,{select:o=>{if(ctx){ctx.sel=o;paintSide();}},seen:ctx.seen,toured:ctx.toured,remember,running:runningNow});if(ok)world().filter(ctx.filter);
+    let ok=false;try{ok=!!world()?.available&&world().mount(host,ctx.feed,{select:o=>{if(ctx){ctx.sel=o;paintSide();}},seen:ctx.seen,toured:ctx.toured,remember,running:runningNow});if(ok)world().filter(ctx.filter);}catch(error){console.error(error);ok=false;}
     if(!ok)host.innerHTML='<p class="world-fallback">This computer cannot draw the 3D world. Everything in it is listed beside this, and in the other views.</p>';
     ctx.seen=ctx.feed.as_of;ctx.toured=true;paintSide();
   }
   function paintSide(){const host=$('#world-side');if(!host||!ctx)return;const q=$('#world-q')?.value||'';host.innerHTML=ctx.sel?selected(ctx.feed,ctx.sel):home(ctx.feed);if(!ctx.sel&&q&&$('#world-q'))$('#world-q').value=q;if(ctx.sel)host.scrollTop=0;}
 
-  async function open(){
-    const business=state.business,[s,feed]=await Promise.all([hq().summary(),api('/api/world?business='+encodeURIComponent(business))]);
-    if(!s||!feed||business!==state.business)return;
-    const prefs=state.data?.aura_preferences||{};ctx={business,s,feed,sel:null,tab:'world',seen:prefs.seen||null,since:prefs.seen||null,toured:!!prefs.toured,filter:{lands:[],needs:false}};
-    details('Your aura',`<div class="aura-view world-view"><div class="world-main"><div class="world-tabs" role="tablist" aria-label="Views of your world">${TABS.map(([k,l])=>`<button type="button" class="secondary compact" role="tab" data-world-tab="${k}" aria-selected="${k==='world'}">${l}</button>`).join('')}</div><div class="world-stage" id="world-stage"><p class="world-fallback">Drawing your world…</p></div><div class="world-alt" id="world-alt" hidden></div></div><aside class="world-side" id="world-side" aria-label="What is in your world"></aside></div>`,'context');
-    $('#detail').dataset.expanded='true';syncDetailExpand();
+  /* Opening the aura goes to its own section, like Knowledge or Files. */
+  async function open(){state.view='aura';await render();if(typeof recordShellRoute==='function')recordShellRoute();if(typeof renderShell==='function')await renderShell();}
+  async function draw(view,current=()=>true){
+    const business=state.business;view.innerHTML='<div class="aura-view world-view"><p class="world-fallback">Drawing your world…</p></div>';
+    const [s,feed]=await Promise.all([hq().summary(),api('/api/world?business='+encodeURIComponent(business))]);
+    if(!s||!feed||business!==state.business||!current()||state.view!=='aura')return;
+    const prefs=state.data?.aura_preferences||{};ctx={business,s,feed,sel:null,tab:'world',seen:prefs.seen||null,since:prefs.seen||null,toured:!!prefs.toured,filter:{lands:[],needs:false,by:''}};
+    view.innerHTML=`<div class="aura-view world-view"><div class="world-main"><div class="world-tabs" role="tablist" aria-label="Views of your world">${TABS.map(([k,l])=>`<button type="button" class="secondary compact" role="tab" data-world-tab="${k}" aria-selected="${k==='world'}">${l}</button>`).join('')}</div><div class="world-stage" id="world-stage"><p class="world-fallback">Drawing your world…</p></div><div class="world-alt" id="world-alt" hidden></div></div><aside class="world-side" id="world-side" aria-label="What is in your world"></aside></div>`;
     const start=()=>{if(ctx?.business===business&&ctx.tab==='world')mountWorld();};
     if(world())start();else{paintSide();document.addEventListener('aura-world-ready',start,{once:true});setTimeout(()=>{if(!world())start();},4000);}
   }
 
-  $('#detail')?.addEventListener('close',()=>{world()?.unmount();});
   document.addEventListener('change',e=>{
     if(!ctx||ctx.business!==state.business)return;
+    if(e.target.id==='world-by'){ctx.filter.by=e.target.value;ctx.filter.lands=landsFor(ctx.feed,e.target.value);world()?.filter(ctx.filter);paintSide();}
     if(e.target.id==='aura-goal'){const goal=e.target.value;state.data.aura_preferences={...(state.data.aura_preferences||{}),goal};attempt(async()=>{await api('/api/preferences',{business:state.business,aura:{goal}});hq().paintMark();hq().paint(true);paintSide();});}
   });
   const saveShift=shift=>{state.data.aura_preferences={...(state.data.aura_preferences||{}),shift};clearTimeout(shiftTimer);shiftTimer=setTimeout(()=>attempt(async()=>{await api('/api/preferences',{business:state.business,aura:{shift}});hq().paintMark();hq().paint(true);}),400);};
@@ -198,16 +211,11 @@ window.auraView=(()=>{
     if(go){const [kind,...rest]=go.dataset.worldGo.split(':');if(ctx.tab!=='world')showTab('world');if(world()?.available)world().focus(kind,rest.join(':'));else if(kind==='land'&&!rest[0].startsWith('new'))toast('Open it from Files to see what it holds.');}
     if(e.target.closest('.aura-view [data-world-clear]'))world()?.clear();
     const chip=e.target.closest('.aura-view [data-world-chip]'),needs=e.target.closest('.aura-view [data-world-needs]');
-    if(chip||needs){if(chip){const id=chip.dataset.worldChip,on=ctx.filter.lands.includes(id);ctx.filter.lands=on?ctx.filter.lands.filter(x=>x!==id):[...ctx.filter.lands,id];}else ctx.filter.needs=!ctx.filter.needs;world()?.filter(ctx.filter);paintSide();}
+    if(chip||needs){if(chip){ctx.filter.by='';const id=chip.dataset.worldChip,on=ctx.filter.lands.includes(id);ctx.filter.lands=on?ctx.filter.lands.filter(x=>x!==id):[...ctx.filter.lands,id];}else ctx.filter.needs=!ctx.filter.needs;world()?.filter(ctx.filter);paintSide();}
     if(e.target.closest('.aura-view [data-world-changed]')){if(ctx.tab!=='world')showTab('world');world()?.changed?.();}
     const tab=e.target.closest('.aura-view [data-world-tab]');if(tab)showTab(tab.dataset.worldTab);
     if(e.target.closest('#world-poster-dl')&&ctx.poster)ctx.poster.toBlob(blob=>{const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=(ctx.feed.business.name||'aura').replace(/[^\w -]+/g,'').trim()+' year.png';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000);},'image/png');
-    // A next step is an ordinary chat: the world steps aside so the message box is right there.
-    if(e.target.closest('.aura-view [data-prompt],.aura-view [data-view]'))setTimeout(()=>{if($('#detail').open)$('#detail').close();},0);
-    // Opening something from the world shows it beside the page, with a way back to the aura.
-    const node=e.target.closest('.aura-view [data-record],.aura-view [data-collection],.aura-view [data-hq-area],.aura-view [data-open-project]');
-    if(node){world()?.unmount();delete $('#detail').dataset.expanded;syncDetailExpand();const title=$('#detail-title').textContent,started=Date.now();const wait=()=>{if($('#detail-title').textContent!==title&&$('#detail').open)setDetailBack('Your aura',()=>attempt(open));else if(Date.now()-started<4000)setTimeout(wait,80);};setTimeout(wait,80);}
   });
   new ResizeObserver(()=>{if(ctx?.tab==='map')drawLinks();}).observe($('#detail')||document.body);
-  return {open,goalLine,goalDone,home,selected,latest,mapView,mapLinks,timelineView,effortRows,posterView};
+  return {open,render:draw,goalLine,goalDone,home,selected,latest,landsFor,mapView,mapLinks,timelineView,effortRows,posterView};
 })();

@@ -167,7 +167,7 @@ def world(bid, at=None, app=None):
     return {'business': {**base['business'], 'since': business.get('created_at')}, 'as_of': base['as_of'], 'focus': base['focus'],
             'lands': lands, 'findings': findings[:MAX_FINDINGS], 'changes': changes[:MAX_CHANGES], 'goals': goals, 'decisions': decisions[:MAX_DECISIONS],
             'uncharted': uncharted if len(lands) < 8 else [], 'lands_more': len(grouped), 'findings_hidden': hidden, 'tasks': _tasks(bid, bound, known), 'chat_lands': {b['id']: b['collection_id'] for b in bound if b.get('kind') == 'chat' and b.get('collection_id') in known},
-            'effort': _effort(bid, app, bound, known, at), 'methods': given_counts['library'], 'work': _work(bid, app, at), 'work_by': _work_by(bid, app, bound, known, at), 'attention': base['attention'], 'deadlines': base['deadlines'], 'suggestions': base['suggestions'],
+            'effort': _effort(bid, app, bound, known, at), 'methods': given_counts['library'], 'work': _work(bid, app, at), 'work_by': _work_by(bid, app, bound, known, at), 'apps': _apps(bid, app, bound, known), 'attention': base['attention'], 'deadlines': base['deadlines'], 'suggestions': base['suggestions'],
             'totals': {'lands': watches_total + len(areas), 'items': sum(len(l['items']) + l['more'] for l in lands), 'findings': len(findings), 'changes': len(changes),
                        'goals': base['totals']['goals'], 'attention': base['totals']['attention'], 'decisions': len(decisions)},
             'empty': base['empty']}
@@ -224,6 +224,19 @@ def _work(bid, app, at, weeks=26):
         if r.get('business_id') != bid or not isinstance(r.get('at'), (int, float)) or not start <= r['at'] <= end:continue
         slot = min(weeks - 1, int((r['at'] - start) // (7 * 86400)));rows[slot] += 1;tokens[slot] += int(r.get('input_tokens') or 0) + int(r.get('output_tokens') or 0)
     return [{'start': datetime.fromtimestamp(start + n * 7 * 86400, timezone.utc).isoformat(timespec='seconds').replace('+00:00', 'Z'), 'requests': rows[n], 'tokens': tokens[n]} for n in range(weeks)] if any(rows) else []
+
+
+def _apps(bid, app, bound, known):
+    """Each AI app that reported requests here, and the collections its chats were tied to."""
+    if app is None:return []
+    chats = {b['id']: b for b in bound if b.get('kind') == 'chat'};out = {}
+    for r in app.preferences.get('usage_receipts', []):
+        name = str(r.get('agent') or '')[:80]
+        if r.get('business_id') != bid or not name:continue
+        row = out.setdefault(name, {'name': name, 'requests': 0, 'lands': set()});row['requests'] += 1
+        land = chats.get(r.get('chat_id'), {}).get('collection_id')
+        if land in known:row['lands'].add(land)
+    return [{**a, 'lands': sorted(a['lands'])} for a in sorted(out.values(), key=lambda a: -a['requests'])][:12]
 
 
 def _work_by(bid, app, bound, known, at, weeks=26):

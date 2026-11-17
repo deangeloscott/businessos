@@ -131,6 +131,8 @@ print(json.dumps({'full':full,'tight':tight}))
     assert ww._used('b',None,set())=={'records':{},'collections':{},'library':[]},'with no chats to read, nothing is claimed'
     weeks=ww._work('b',Chats,now);assert len(weeks)==26 and sum(w['requests'] for w in weeks)==5 and weeks[-1]['requests']==4 and ww._work('b',None,now) is None
     split=ww._work_by('b',App,bound,{'col_1','col_2'},now);assert [(g['kind'],g['id'],sum(g['weeks'])) for g in split]==[('land','col_1',3),('project','prj_1',1),('other','',1)] and all(len(g['weeks'])==26 for g in split),split
+    App.preferences['usage_receipts'][0]['agent']='Codex';App.preferences['usage_receipts'][2]['agent']='Pi';apps=ww._apps('b',App,bound,{'col_1','col_2'})
+    assert apps==[{'name':'Codex','requests':1,'lands':['col_1']},{'name':'Pi','requests':1,'lands':[]}] and ww._apps('b',None,bound,set())==[],apps
     assert abs(effort[0]['cost_usd']-.02)<1e-9 and ww._effort('b',None,bound,set(),now) is None,'last month and other organizations are left out; a missing cost is counted, never guessed'
     import shutil
     if shutil.which('node'):subprocess.run(['node',str(ROOT/'tests/workspace_aura_ui.cjs'),str(ROOT/'interface/workspace-aura.js')],check=True)

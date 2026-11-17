@@ -88,4 +88,8 @@ const sides=v.selected(feed,{kind:'finding',label:'challenged',need:true,land,ti
 assert.ok(sides.includes('Both sides')&&sides.includes('The listing says 3pm.')&&sides.includes('Challenges it')&&sides.includes('Settle it'),'a challenged finding shows both sides and one way to settle it');
 const split=v.timelineView({...linked,work:[{start:'2026-10-05T00:00:00Z',requests:3,tokens:0}],work_by:[{kind:'land',id:'col_1',weeks:[3]}]});
 assert.ok(split.includes('Work: Local competitors')&&split.includes('wt-bar')&&!split.includes('>AI requests<'),'work is drawn per project or collection when AURA can tell which it was for');
+const withApps={...linked,apps:[{name:'Codex',requests:4,lands:['col_1']}]};
+assert.equal(v.landsFor(withApps,'goal:G1').join(),'col_1');assert.equal(v.landsFor(withApps,'task:tk1').join(),'col_1');assert.equal(v.landsFor(withApps,'app:Codex').join(),'col_1');
+assert.equal(v.landsFor(withApps,'project:prj_1',projects).join(),'col_1');assert.equal(v.landsFor(withApps,'goal:G3').length,0,'a filter shows only what saved links tie to it');
+const appsMap=v.mapView(withApps,projects);assert.ok(appsMap.includes('AI apps')&&appsMap.includes('data-key="a:Codex"')&&v.mapLinks(withApps,projects).some(l=>l.join('>')==='a:Codex>l:col_1'),'the Map shows each AI app and the collections its chats were tied to');
 console.log('aura ui: ok');

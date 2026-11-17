@@ -1127,6 +1127,7 @@ async function render() {
   $('#page-refresh').disabled=state.view==='work'&&!!state.libraryRefreshing;$('#page-refresh').textContent=$('#page-refresh').disabled?'Refreshing…':'Refresh';
   $('#section-title').textContent=({business:'Knowledge',files:'Files',work:'Library',tools:'Schedules',assistants:'Library'})[state.view];
   if(!$('#section-dialog').open) $('#section-dialog').show();
+  if(state.view==='aura'){$('#section-title').textContent='Your aura';$('#section-description').textContent='Everything AURA keeps for you, drawn as one world. Click anything to open it.';await window.auraView?.render(view,current);return;}
   if(state.view==='business') {
     view.innerHTML=`<div class="section-head business-title"><span class="business-title-name"><span id="knowledge-aura"></span><strong>${esc(rows('Business')[0]?.title)}</strong></span><span class="inline-actions"><button class="text-button" data-hq-aura>What the aura shows</button><button class="text-button" data-action="edit-business">Edit name</button></span></div><section id="focus-panel" class="focus-panel"></section><div id="knowledge-know" class="knowledge-know"></div><input class="search" id="record-search" type="search" aria-label="Search goals and saved information" placeholder="Find goals or saved information…" value="${esc(state.memoryQuery||'')}"><div id="full-memory"></div>`;window.auraHQ?.paintMark();window.auraHQ?.paintKnowledge();
     window.auraFocus?.panel($('#focus-panel'));
@@ -3198,7 +3199,7 @@ window.addEventListener('popstate',event=>attempt(async()=>{
     if(r.workspace!==state.data.workspace)await openStoredWorkspace(r.workspace);
     if(r.business!==state.business)await changeWorkspace(r.business);
     if(r.chat&&r.chat!==state.chatMeta?.id)await openShellChat(r.chat);else if(!r.chat&&(state.chatMeta||!!r.home!==!!state.home))await newShellChat(null,!!r.home);
-    state.view=['business','files','work','tools','assistants','sharing','updates'].includes(r.view)?r.view:'home';$('#detail').close();await render();await renderShell();
+    state.view=['aura','business','files','work','tools','assistants','sharing','updates'].includes(r.view)?r.view:'home';$('#detail').close();await render();await renderShell();
   }finally{shellRestoring=false;}
 }));
 function renderComposerFiles(){
@@ -3444,7 +3445,7 @@ async function restoreInitialRoute(){
   if(!state.data||$('#refresh').disabled||(state.business&&!state.hydrated)){setTimeout(restoreInitialRoute,100);return;}
   const params=new URLSearchParams(location.search),chat=params.get('chat'),view=params.get('view');
   // Opening AURA lands on the home page. A link to a chat, a clear new chat, or a request still working is left alone.
-  try{if(chat&&chat!==state.chatMeta?.id)await openShellChat(chat);else if(!chat&&!params.get('new')&&state.business&&!state.busy)await goHome();if(['business','files','work','tools','assistants','sharing','updates'].includes(view)){state.view=view;await render();await renderShell();}}finally{recordShellRoute(true);}
+  try{if(chat&&chat!==state.chatMeta?.id)await openShellChat(chat);else if(!chat&&!params.get('new')&&state.business&&!state.busy)await goHome();if(['aura','business','files','work','tools','assistants','sharing','updates'].includes(view)){state.view=view;await render();await renderShell();}}finally{recordShellRoute(true);}
 }
 attempt(restoreInitialRoute);
 
