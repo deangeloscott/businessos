@@ -5,7 +5,7 @@ const records=[
   {ref:'g1',type:'Objective',title:'Reach 100 reviews',data:{id:'G1',metric_refs:['m1'],extensions:{businessos:{goal:{scope:'workspace'}}}},measure:{metric:'Google reviews',unit:'reviews',direction:'higher_better',target:100,latest:87,reached:false}},
   {ref:'f1',type:'Insight',title:'S',data:{id:'F1'}}];
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const context={state:{business:'bakery',projects:[],data:{records,aura_preferences:{}}},esc,$:()=>null,document:{addEventListener(){},body:{}},setTimeout,clearTimeout,ResizeObserver:class{observe(){}},
+const context={state:{business:'bakery',projects:[],data:{records,aura_preferences:{}}},esc,$:()=>null,document:{addEventListener(){},body:{}},setTimeout,clearTimeout,setInterval:()=>0,ResizeObserver:class{observe(){}},
   window:{auraHQ:{pinned:()=>null}}};
 context.window.window=context.window;vm.createContext(context);
 vm.runInContext(fs.readFileSync(process.argv[2],'utf8')+';this.view=window.auraView;',context);
@@ -80,7 +80,7 @@ const trend=v.selected(feed,{...thing,raw:{...thing.raw,trend:{field:'rank',poin
 assert.ok(trend.includes('world-spark')&&trend.includes('rank: 3 → 1 over 3 checks'));
 const tied=v.effortRows({requests:3,totals:{},groups:[{name:'Pi',requests:3}]},{...feed,effort:[{kind:'land',id:'col_1',requests:3,tokens:1000,cost_usd:0,missing_costs:3}]});
 assert.ok(tied.includes('By what the work was for')&&tied.includes('Local competitors')&&tied.includes('cost not reported for 3'));
-assert.ok(home.includes('data-world-chip')===false&&v.home({...feed,lands:[feed.lands[0],{...feed.lands[0],id:'col_2',name:'Grants'}]}).includes('data-world-chip="col_2"'),'area chips appear once there is more than one area');
+assert.ok(home.includes('data-world-chip')===false&&v.tools({...feed,lands:[feed.lands[0],{...feed.lands[0],id:'col_2',name:'Grants'}]}).includes('data-world-chip="col_2"'),'area chips appear once there is more than one area');
 assert.ok(effort.includes('class="we-block"')&&effort.includes('By AI app')&&tied.includes('class="we-map"'),'AI effort is drawn as blocks sized by share');
 const lesson=v.selected(feed,{kind:'decision',raw:{id:'L1',kind:'lesson',title:'Posts at 7am do better',at:'2026-10-01T00:00:00Z'},basis:[]});
 assert.ok(lesson.includes('>Lesson<')&&lesson.includes('Open the lesson')&&lesson.includes('<dt>Learned</dt>'));
@@ -92,4 +92,9 @@ const withApps={...linked,apps:[{name:'Codex',requests:4,lands:['col_1']}]};
 assert.equal(v.landsFor(withApps,'goal:G1').join(),'col_1');assert.equal(v.landsFor(withApps,'task:tk1').join(),'col_1');assert.equal(v.landsFor(withApps,'app:Codex').join(),'col_1');
 assert.equal(v.landsFor(withApps,'project:prj_1',projects).join(),'col_1');assert.equal(v.landsFor(withApps,'goal:G3').length,0,'a filter shows only what saved links tie to it');
 const appsMap=v.mapView(withApps,projects);assert.ok(appsMap.includes('AI apps')&&appsMap.includes('data-key="a:Codex"')&&v.mapLinks(withApps,projects).some(l=>l.join('>')==='a:Codex>l:col_1'),'the Map shows each AI app and the collections its chats were tied to');
+const quietGoal={...G1,lands:['col_1'],points:[{at:'2026-09-01T00:00:00Z',value:64}]},gapFeed={...linked,findings:[{id:'F9',land:'col_1',label:'unverified',statement:'U'}],tasks:[{...linked.tasks[0]}]};
+const gaps=v.goalGaps(gapFeed,quietGoal).map(g=>g[0]);
+assert.equal(gaps.join(' | '),'Not measured for 49 days | Local competitors has gone quiet | 1 finding in Local competitors needs checking | Weekly check is not running','what stands between a goal and its number comes only from saved facts');
+assert.equal(v.goalGaps(gapFeed,{...quietGoal,reached:true}).length,0);assert.equal(v.goalGaps(gapFeed,G3).length,0,'a goal with no number has no gaps to claim');
+assert.ok(v.selected(gapFeed,{kind:'goal',raw:quietGoal}).includes('What would move this')&&v.tools(withApps).includes('id="world-by"')&&v.tools(feed).includes('id="world-q"'));
 console.log('aura ui: ok');

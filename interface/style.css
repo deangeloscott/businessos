@@ -1349,6 +1349,23 @@ body.panel-resizing :is(.shell-main,#sidebar,#detail){transition:none;animation:
 :root[data-theme=dark]{--world-bg:#05070b}:root[data-theme=dark][data-style=console90]{--world-bg:#000}.world-by{display:grid;gap:4px;font-size:var(--text-xs);color:var(--muted)}.world-by select{width:100%}
 /* When something is opened beside the aura, the world keeps the room and its own list steps aside. */
 body:has(#detail[open][data-mode=context]) .aura-view.world-view{grid-template-columns:minmax(0,1fr)}body:has(#detail[open][data-mode=context]) .world-side{display:none}
+/* In the aura, the world owns everything to the right of the sidebar: no page margins, no heading, controls on the picture. */
+body.in-aura #section-dialog{padding:0;overflow:hidden}body.in-aura #section-dialog>.dialog-top{display:none}body.in-aura #section-content{height:100%;max-width:none;margin:0;padding:0;overflow:hidden}
+body.in-aura .aura-view.world-view{height:100%;min-height:0;grid-template-columns:minmax(0,1fr) 380px}
+body.in-aura .world-main{display:block;position:relative;height:100%}body.in-aura .world-stage{position:absolute;inset:0;border-radius:0;min-height:0}
+.world-top{position:absolute;left:14px;right:14px;top:12px;z-index:4;display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;pointer-events:none}.world-top>*{pointer-events:auto}
+.world-tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-left:auto}.world-tools input[type=search]{width:190px}.world-tools select{max-width:210px}.world-tools .world-by{display:flex;align-items:center;gap:6px}.world-tools .world-by span{white-space:nowrap}
+.world-keys{position:absolute;left:14px;right:14px;bottom:10px;z-index:3;pointer-events:none}.world-keys .world-chips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding:2px}.world-keys .world-chip{flex:none}.world-keys>*{pointer-events:auto}
+.world-ask{position:absolute;left:50%;bottom:98px;transform:translateX(-50%);z-index:4;display:flex;gap:6px;width:min(460px,calc(100% - 40px))}.world-ask input{flex:1;min-width:0}
+.aura-view :is(.world-tabs button,.world-bar button,.world-chip,.world-ask button,.world-tools input,.world-tools select,.world-ask input){font:inherit;font-size:var(--text-xs);color:var(--ink);background:color-mix(in srgb,var(--world-bg,var(--paper)) 72%,transparent);backdrop-filter:blur(10px);border:1px solid color-mix(in srgb,var(--ink) 18%,transparent);border-radius:999px;box-shadow:none;padding:6px 13px;min-height:0;cursor:pointer}
+.aura-view :is(.world-tools input,.world-ask input){cursor:text}.aura-view .world-ask input{font-size:var(--text-sm);padding:9px 16px}.aura-view .world-ask button,.aura-view .world-bar [data-w=play]{background:var(--accent);color:var(--accent-ink,var(--paper));border-color:var(--accent);font-weight:600}
+.aura-view :is(.world-tabs button,.world-bar button,.world-chip):hover{border-color:var(--ink)}.aura-view .world-tabs [aria-selected=true],.aura-view .world-bar [aria-pressed=true]{background:var(--accent);color:var(--accent-ink,var(--paper));border-color:var(--accent);font-weight:600}
+.aura-view .world-chip[aria-pressed=true]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);font-weight:600}
+body.in-aura .world-head{top:100px}body.in-aura .world-cap{bottom:152px}body.in-aura .world-main{container-type:inline-size}body.in-aura .world-bar{bottom:50px;flex-wrap:nowrap}body.in-aura .world-bar input[type=range]{min-width:70px}
+body.in-aura .world-side{padding:20px 18px 24px;border-left:1px solid var(--line);background:var(--raised-bg,var(--paper))}
+.world-side .wm{grid-template-columns:1fr!important;gap:16px}.world-side .wm-lines{display:none}.world-side .wp{grid-template-columns:1fr}.world-side .wp-card canvas{width:100%;height:auto}.world-side .wt-row{grid-template-columns:84px minmax(0,1fr);gap:8px}.world-side .we-map{height:150px}
+@media (max-width:860px){body.in-aura .aura-view.world-view{grid-template-columns:1fr;grid-template-rows:minmax(0,62%) minmax(0,38%)}body.in-aura .world-main{min-height:0}.world-tools input[type=search]{width:130px}.world-keys{right:14px}.world-ask{bottom:108px}}
+@container (max-width:980px){.world-when{display:none}}
 .world-fallback{display:grid;place-items:center;height:100%;margin:0;padding:24px;text-align:center;color:var(--muted)}
 @media (max-width:860px){.aura-view.world-view{grid-template-columns:1fr;grid-template-rows:minmax(340px,56vh) auto;height:auto}.world-side{padding:16px 2px;overflow:visible}.world-sharecard{flex-direction:column}.world-stage .world-shareimg canvas{height:min(38vh,360px)}.world-gap{display:none}.world-head b{font-size:var(--text-lg)}}
 @media (max-width:560px){.world-when{display:none}.world-bar input[type=range]{min-width:60px}.world-bar{gap:6px}}

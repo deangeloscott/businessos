@@ -1101,6 +1101,8 @@ function quickMethods() {
   $('#quick-methods').innerHTML=groups.filter(g=>g.items.length).map(g=>`<h4>${libraryKinds[g.kind]}</h4>${g.items.slice(0,2).map(methodRow).join('')}<button class="text-button card-link" data-library-kind="${g.kind}">Open ${libraryKinds[g.kind].toLowerCase()} →</button>`).join('')||'<p class="muted">No match. You can still describe the job to your AI.</p>';
 }
 async function render() {
+  // The aura takes the room: the sidebar tucks away while you are in it and comes back when you leave. Its own button still opens it.
+  { const inAura=state.view==='aura'&&!!state.business;if(!inAura)state.auraSidebarOpen=false;document.body.classList.toggle('in-aura',inAura);document.body.classList.toggle('sidebar-collapsed',inAura?!state.auraSidebarOpen:!!state.profile?.sidebar_collapsed); }
   // Every page explains itself in the same place: a quiet link beside its description.
   $('#page-help').hidden=!['business','files','work','assistants','tools'].includes(state.view);
   const ticket=state.renderTicket=(state.renderTicket||0)+1,scope=JSON.stringify([state.data.workspace,state.business]);
@@ -3050,7 +3052,7 @@ $('#detail').addEventListener('close',()=>{if(!document.documentElement.dataset.
 function applyProfile(profile){
   queueMicrotask(previewLook);
   state.profile={display_name:'',sidebar_collapsed:false,sidebar_width:null,panel_width:480,text_size:15,accent:'forest',...profile,...panelWidthOverrides};
-  const p=state.profile;document.body.classList.toggle('sidebar-collapsed',p.sidebar_collapsed);document.documentElement.dataset.accent=p.accent;document.documentElement.dataset.density=p.density||'comfortable';document.documentElement.dataset.style=p.style||'modern';
+  const p=state.profile;document.body.classList.toggle('sidebar-collapsed',document.body.classList.contains('in-aura')?!state.auraSidebarOpen:p.sidebar_collapsed);document.documentElement.dataset.accent=p.accent;document.documentElement.dataset.density=p.density||'comfortable';document.documentElement.dataset.style=p.style||'modern';
   syncPanelSizes();document.documentElement.style.setProperty('--ui-text-size',p.text_size+'px');
   $('#profile-name').textContent=p.display_name||'Your profile';$('.profile-avatar').innerHTML=avatarMarkup(p);
   $('#welcome-name').textContent=p.display_name?'Welcome, '+p.display_name+'.':'Welcome to AURA';
