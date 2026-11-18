@@ -66,7 +66,7 @@ window.auraView=(()=>{
     const p=period(f),key=p.from+'|'+p.to+'|'+f.revision;if(ctx.usage?.key===key||ctx.usageLoading===key)return;
     if(p.key==='month'&&!ctx.usage){ctx.usage={key:'',current:f.effort||[],previous:[]};}
     ctx.usageLoading=key;const owner=ctx;
-    api(`/api/effort?business=${encodeURIComponent(state.business)}&from=${p.from/1000}&to=${p.to/1000}`).then(r=>{if(ctx!==owner)return;ctx.usage={key,current:r.current||[],previous:r.previous||[]};ctx.usageLoading=null;ctx.lensHTML=null;paintSide();})
+    api(`/api/effort?business=${encodeURIComponent(state.business)}&from=${p.from/1000}&to=${p.to/1000}`).then(r=>{if(ctx!==owner)return;ctx.usage={key,current:r.current||[],previous:r.previous||[],plans:r.plans||[],planByChat:r.plan_by_chat||{}};ctx.usageLoading=null;ctx.lensHTML=null;paintSide();})
       .catch(()=>{if(ctx===owner)ctx.usageLoading=null;});
   }
   const usageFeed=f=>({...f,effort:ctx?.usage?.current||f.effort});
@@ -401,13 +401,14 @@ window.auraView=(()=>{
       const idle=d.list.find(g=>g.cost_usd>0&&!g.saved);if(idle)say(`${idle.name} cost ${money(idle.cost_usd)} and has saved nothing yet.`,node(idle.key));
       const best=d.list.filter(g=>g.saved&&g.cost_usd&&!g.missing_costs).sort((a,b)=>a.cost_usd/a.saved-b.cost_usd/b.saved)[0];if(best&&d.list.length>1)say(`${best.name} saved work most cheaply: ${money(best.cost_usd/best.saved)} per saved record.`,node(best.key));
       if(d.earlier.requests)say(`${count(d.totals.requests,'request')} ${p.words}, ${d.totals.requests>=d.earlier.requests?'up':'down'} from ${d.earlier.requests} in the ${count(p.days,'day')} before.`);
+      for(const x of d.plans.filter(x=>x.used_percent>=75))say(`${typeof window.appName==='function'?window.appName(x.app):x.app} has used ${Math.round(x.used_percent)}% of its ${String(x.window).toLowerCase()}${x.resets_at?`; it resets ${when(new Date(x.resets_at*1000).toISOString())}`:''}.`);
       if(!out.length)say(`No AI use was reported ${p.words}.`);
     }
     return out.length?`<section class="world-takeaways" aria-label="At a glance">${out.slice(0,4).join('')}</section>`:'';
   }
   /* AI effort's numbers, once: this month's reported use grouped one way, what it saved, and last month for comparing. */
   function effortData(f,sel){
-    const L=links(),metric=ctx?.metric||'requests',by=ctx?.effortBy||'app',flat=list=>(list||[]).flatMap(g=>(g.chats||[]).map(c=>({...c,group:g})));
+    const L=links(),plans=ctx?.usage?.plans||[],metric=ctx?.metric==='plan'&&!plans.length?'requests':ctx?.metric||'requests',by=metric==='plan'?'app':ctx?.effortBy||'app',flat=list=>(list||[]).flatMap(g=>(g.chats||[]).map(c=>({...c,group:g})));
     // Outside a live view (a test, a print) there is no period to read, so the feed's own month and the one before it are used.
     const p=period(f);let chats=flat(ctx?.usage?.current||(!ctx||p.key==='month'?f.effort:[])),before=flat(ctx?.usage?.previous||(!ctx?f.effort_last:[])),note='';
     if(sel){const t=L.trace(f,L.key(sel)),mine=c=>c.id&&t.all.has('chat:'+c.id);chats=chats.filter(mine);before=before.filter(mine);if(sel.kind==='method')note='Tokens and cost are reported for the whole requests this was given to.';}
@@ -417,18 +418,22 @@ window.auraView=(()=>{
     const q=String(ctx?.q||'').trim().toLowerCase(),hit=c=>(c.title+' '+(c.agent||'')+' '+(c.model||'')+' '+nameOf(keyOf(c))).toLowerCase().includes(q);
     if(q.length>=2){chats=chats.filter(hit);before=before.filter(hit);note=(note?note+' ':'')+`Showing what matches “${ctx.q}”.`;}
     // What the spending produced: the records each conversation saved or changed, as AURA noted at the time.
-    const M=L.measures(f,{from:p.from,to:p.to});for(const c of chats)c.saved=c.id?M.carried('chat:'+c.id,'saved'):0;
+    const M=L.measures(f,{from:p.from,to:p.to}),shares=ctx?.usage?.planByChat||{};
+    for(const c of chats){c.saved=c.id?M.carried('chat:'+c.id,'saved'):0;const s=shares[c.id||''];c.plan=s?.used||0;c.planApprox=!!s?.approx;}
     const groups=new Map(),last=new Map();
-    for(const c of chats){const k=keyOf(c);if(!groups.has(k))groups.set(k,{key:k,name:nameOf(k),requests:0,tokens:0,cost_usd:0,missing_costs:0,missing_tokens:0,saved:0,chats:[]});const g=groups.get(k);for(const field of ['requests','tokens','cost_usd','missing_costs','missing_tokens','saved'])g[field]+=c[field]||0;g.chats.push(c);}
+    for(const c of chats){const k=keyOf(c);if(!groups.has(k))groups.set(k,{key:k,name:nameOf(k),requests:0,tokens:0,cost_usd:0,missing_costs:0,missing_tokens:0,saved:0,app_estimates:0,api_usd:0,api_count:0,plan:0,planApprox:false,chats:[]});const g=groups.get(k);for(const field of ['requests','tokens','cost_usd','missing_costs','missing_tokens','saved','app_estimates','api_usd','api_count','plan'])g[field]+=c[field]||0;g.planApprox=g.planApprox||c.planApprox;g.chats.push(c);}
     for(const c of before){const k=keyOf(c),g=last.get(k)||{requests:0,tokens:0,cost_usd:0};for(const field of ['requests','tokens','cost_usd'])g[field]+=c[field]||0;last.set(k,g);}
     const sum=(list,field)=>list.reduce((s,c)=>s+(c[field]||0),0);
-    const totals={requests:sum(chats,'requests'),tokens:sum(chats,'tokens'),cost_usd:sum(chats,'cost_usd'),noCost:sum(chats,'missing_costs'),saved:sum(chats,'saved')},earlier={requests:sum(before,'requests'),tokens:sum(before,'tokens'),cost_usd:sum(before,'cost_usd')};
+    const totals={requests:sum(chats,'requests'),tokens:sum(chats,'tokens'),cost_usd:sum(chats,'cost_usd'),noCost:sum(chats,'missing_costs'),saved:sum(chats,'saved'),appEstimates:sum(chats,'app_estimates'),api_usd:sum(chats,'api_usd'),apiCount:sum(chats,'api_count')},earlier={requests:sum(before,'requests'),tokens:sum(before,'tokens'),cost_usd:sum(before,'cost_usd')};
     const colour=k=>k.startsWith('land:')?(world()?.tint?.(k.slice(5),58)||`hsl(${hash(k)%360} 45% 46%)`):`hsl(${hash(k)%360} 45% 46%)`;
-    const list=[...groups.values()].map(g=>({...g,value:g[metric]||0,last:last.get(g.key)?.[metric]??null,colour:colour(g.key)})).sort((a,b)=>b.value-a.value);
+    // Cost counts what apps reported plus, when turned on, the estimate at API prices for the rest; labels keep them apart.
+    const list=[...groups.values()].map(g=>({...g,value:metric==='cost_usd'?g.cost_usd+g.api_usd:g[metric]||0,last:last.get(g.key)?.[metric]??null,colour:colour(g.key),plan_of:plans.find(x=>x.app===g.key)})).sort((a,b)=>b.value-a.value);
     if(ctx)ctx.effortGroups=new Map(list.map(g=>[g.key,{chats:g.chats.filter(c=>c.id).map(c=>c.id),apps:[...new Set(g.chats.map(c=>c.agent).filter(Boolean))].map(n=>'app:'+n),node:by==='app'?'app:'+g.key:by==='work'&&g.key!=='other'?g.key:null}]));
-    return {metric,by,list,totals,earlier,note,chats,p};
+    return {metric,by,list,totals,earlier,note,chats,p,plans};
   }
-  const effortAmount=(v,metric)=>metric==='cost_usd'?money(v):metric==='tokens'?compact(v)+' tokens':metric==='saved'?count(v,'saved record'):count(v,'request');
+  const costLabel=g=>[g.cost_usd?(g.app_estimates?'≈ ':'')+money(g.cost_usd):'',g.api_count?`≈ ${money(g.api_usd)} at API prices`:''].filter(Boolean).join(' · ');
+  const planLabel=(v,approx,window)=>`${approx?'≈ ':''}${v<10?v.toFixed(1):Math.round(v)}% of ${String(window||'plan').toLowerCase()}`;
+  const effortAmount=(v,metric,g)=>metric==='plan'?planLabel(v,g?.planApprox,g?.plan_of?.window):metric==='cost_usd'&&g?costLabel(g)||money(v):metric==='tokens'?compact(v)+' tokens':metric==='saved'?count(v,'saved record'):count(v,'request');
   const perSaved=g=>g.saved&&g.cost_usd&&!g.missing_costs?money(g.cost_usd/g.saved)+' per saved record':'';
   // Compared with the period of the same length just before it, so a few days are never set against a whole month.
   const versus=(now,before,metric)=>before==null||metric==='saved'?'':before===0?(now?'new in this period':''):`${now>=before?'▲':'▼'} ${Math.round(Math.abs(now-before)/before*100)}% on the period before`;
@@ -438,20 +443,21 @@ window.auraView=(()=>{
     if(!d.chats.length)return ctx?.usageLoading&&!ctx.usage?.current?'<p class="tl-empty">Reading your AI use for this period…</p>':sel?`<p class="tl-empty">No AI use ${esc(p.words)} is recorded for anything in this chain.</p>`:`<p class="tl-empty">No AI requests have been recorded ${esc(p.words)}. When your AI apps report their use, it appears here.</p>`;
     const chip=(attr,value,label,current)=>`<button type="button" class="we-chip" ${attr}="${value}" aria-pressed="${value===current}">${label}</button>`;
     const total=list.reduce((s,g)=>s+g.value,0)||1;
-    const chart=list.some(g=>g.value>0)?blocks(list.map(g=>({...g,label:effortAmount(g.value,metric),share:Math.round(g.value/total*100),sub:[g.saved?count(g.saved,'saved record'):'nothing saved yet',perSaved(g),versus(g.value,g.last,metric)].filter(Boolean).join(' · ')}))):'<p class="small-note">Nothing reported for this measure. Try another.</p>';
+    const chart=list.some(g=>g.value>0)?blocks(list.map(g=>({...g,label:effortAmount(g.value,metric,g),share:Math.round(g.value/total*100),sub:[g.saved?count(g.saved,'saved record'):'nothing saved yet',perSaved(g),versus(g.value,g.last,metric)].filter(Boolean).join(' · ')}))):'<p class="small-note">Nothing reported for this measure. Try another.</p>';
     const compare=earlier.requests?` The ${p.days===1?'day':count(p.days,'day')} before: ${count(earlier.requests,'request')}${earlier.cost_usd?' · '+money(earlier.cost_usd):''}.`:'';
     return `<div class="we-stage"><div class="we-head"><div class="we-chips" role="group" aria-label="Group by" id="world-effort-by">${chip('data-effort-by','app','By AI app',by)}${chip('data-effort-by','work','By what it was for',by)}${chip('data-effort-by','model','By model',by)}</div>
-      <div class="we-chips" role="group" aria-label="Size by">${chip('data-effort-metric','requests','Requests',metric)}${chip('data-effort-metric','tokens','Tokens',metric)}${chip('data-effort-metric','cost_usd','Cost',metric)}${chip('data-effort-metric','saved','Saved work',metric)}</div></div>
-      <p class="we-total"><b>${count(totals.requests,'request')} ${esc(p.words)}</b>${totals.tokens?' · '+compact(totals.tokens)+' reported tokens':''}${totals.cost_usd?' · '+money(totals.cost_usd)+' reported':''}${totals.noCost?' · cost not reported for '+totals.noCost:''} · ${totals.saved?count(totals.saved,'record')+' saved or changed':'nothing saved yet'}.${compare}</p>
-      ${chart}<p class="small-note">Select a block to see the conversations behind it and what they saved. Only what each app reported is counted; saved work counts what AURA noted at the time it was saved.${d.note?' '+d.note:''}</p></div>`;
+      <div class="we-chips" role="group" aria-label="Size by">${chip('data-effort-metric','requests','Requests',metric)}${chip('data-effort-metric','tokens','Tokens',metric)}${chip('data-effort-metric','cost_usd','Cost',metric)}${chip('data-effort-metric','saved','Saved work',metric)}${d.plans.length?chip('data-effort-metric','plan','Plan use',metric):''}</div></div>
+      ${d.plans.length?`<p class="we-plans">${d.plans.map(x=>`<span class="we-plan${x.used_percent>=90?' high':''}"><b>${esc(typeof window.appName==='function'?window.appName(x.app):x.app)}</b> ${esc(String(x.window).toLowerCase())} ${Math.round(x.used_percent)}% used${x.resets_at?' · resets '+esc(when(new Date(x.resets_at*1000).toISOString())):''}</span>`).join('')}</p>`:''}
+      <p class="we-total"><b>${count(totals.requests,'request')} ${esc(p.words)}</b>${totals.tokens?' · '+compact(totals.tokens)+' reported tokens':''}${totals.cost_usd?' · '+(totals.appEstimates?'≈ ':'')+money(totals.cost_usd):''}${totals.apiCount?` · ≈ ${money(totals.api_usd)} more at API prices`:''}${totals.noCost>totals.apiCount?' · cost not reported for '+(totals.noCost-totals.apiCount):''} · ${totals.saved?count(totals.saved,'record')+' saved or changed':'nothing saved yet'}.${compare}</p>
+      ${chart}<p class="small-note">Select a block to see the conversations behind it.${totals.appEstimates||totals.apiCount||list.some(g=>g.planApprox)?' ≈ means estimated.':''}${metric==='plan'?' Plan use is for each app\'s current limit.':''}${d.note?' '+d.note:''}</p></div>`;
   }
   /* Beside it: the same groups as ranked bars, easy to compare, and the conversations behind the one you open. */
   function effortSide(f,sel){
     const d=effortData(f,sel),{metric,by,list}=d;if(!d.chats.length)return '<p class="small-note">Nothing to compare yet.</p>';
     const top=Math.max(1e-9,...list.map(g=>g.value));
-    const bars=`<div class="we-bars">${list.slice(0,12).map(g=>`<button type="button" class="we-bar" data-effort-key="${esc(g.key)}" aria-pressed="${ctx?.effortOpen===g.key}" style="--tint:${g.colour}"><span class="we-bar-name">${esc(g.name)}</span><span class="we-bar-track"><i style="width:${(100*g.value/top).toFixed(1)}%"></i></span><span class="we-bar-value">${esc(effortAmount(g.value,metric))}</span><small>${esc([perSaved(g),versus(g.value,g.last,metric)].filter(Boolean).join(' · '))}</small></button>`).join('')}</div>`;
+    const bars=`<div class="we-bars">${list.slice(0,12).map(g=>`<button type="button" class="we-bar" data-effort-key="${esc(g.key)}" aria-pressed="${ctx?.effortOpen===g.key}" style="--tint:${g.colour}"><span class="we-bar-name">${esc(g.name)}</span><span class="we-bar-track"><i style="width:${(100*g.value/top).toFixed(1)}%"></i></span><span class="we-bar-value">${esc(effortAmount(g.value,metric,g))}</span><small>${esc([perSaved(g),versus(g.value,g.last,metric)].filter(Boolean).join(' · '))}</small></button>`).join('')}</div>`;
     const open=list.find(g=>g.key===ctx?.effortOpen),follow=open&&ctx.effortGroups.get(open.key)?.node;
-    const detail=open?`<section><h3>${esc(open.name)}</h3>${follow?`<button type="button" class="text-button" data-effort-follow="${esc(follow)}">Follow in Connections</button>`:''}${open.chats.sort((a,b)=>(b[metric]||0)-(a[metric]||0)).map(c=>row(c.id?`data-edit-chat="${esc(c.id)}"`:'',c.title,[by!=='app'&&c.agent?(typeof window.appName==='function'?window.appName(c.agent):c.agent):'',by!=='model'?c.model:'',count(c.requests,'request'),c.tokens?compact(c.tokens)+' tokens':'',c.missing_costs!==c.requests&&c.cost_usd?money(c.cost_usd):'',c.id?produced(f,c.id):''].filter(Boolean).join(' · '))).join('')}</section>`:'';
+    const detail=open?`<section><h3>${esc(open.name)}</h3>${follow?`<button type="button" class="text-button" data-effort-follow="${esc(follow)}">Follow in Connections</button>`:''}${open.chats.sort((a,b)=>(b[metric]||0)-(a[metric]||0)).map(c=>row(c.id?`data-edit-chat="${esc(c.id)}"`:'',c.title,[by!=='app'&&c.agent?(typeof window.appName==='function'?window.appName(c.agent):c.agent):'',by!=='model'?c.model:'',count(c.requests,'request'),c.tokens?compact(c.tokens)+' tokens':'',costLabel(c),c.plan?planLabel(c.plan,c.planApprox,(d.plans.find(x=>x.app===c.agent)||{}).window):'',c.id?produced(f,c.id):''].filter(Boolean).join(' · '))).join('')}</section>`:'';
     return bars+detail;
   }
 

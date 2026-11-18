@@ -2560,6 +2560,10 @@ class Workspace:
 
     def library_items(self, discover=False):
         root=workspace_root().resolve()
+        if discover and self.preferences.get('api_estimates') is True:
+            # The Library's Refresh also reads the public price list, when estimates are turned on.
+            import workspace_prices
+            threading.Thread(target=workspace_prices.refresh_quietly,daemon=True).start()
         choices=[c for c in installed_agents() if c['argv']]
         notes=[]
         refresh_lock=self.library_refresh_lock
@@ -2778,6 +2782,7 @@ class Workspace:
                 'appearance': self.preferences.get('appearance', 'system'),
                 'notifications': self.preferences.get('notifications') is True,
                 'read_app_records': self.reads_app_records(),
+                'api_estimates': self.preferences.get('api_estimates') is True,
                 'usage_alerts': self.preferences.get('usage_settings',{}).get(bid,{}).get('alerts') is True,
                 'model_picker': self.preferences['model_picker'],
                 'harness_permissions': self.preferences.get('harness_permissions',{}),
@@ -3501,6 +3506,10 @@ def main():
                         app.collections_checked=time.time();app.check_collection_changes();app.check_saved_work()
                     if time.time()-getattr(app,'task_limits_checked',0)>600:
                         app.task_limits_checked=time.time();app.check_task_limits();app.check_goals_reached();app.check_deadlines();app.check_service_problems()
+                        if app.preferences.get('api_estimates') is True:
+                            import workspace_prices
+                            try:workspace_prices.refresh()  # at most weekly; the Library's Refresh reads it straight away
+                            except (OSError,ValueError):pass
                     updater = app.updates
                     with updater.lock:
                         running = updater.operation and updater.operation.is_alive()

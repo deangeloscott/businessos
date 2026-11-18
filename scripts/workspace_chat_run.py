@@ -113,6 +113,11 @@ class ChatRun:
                 kind=self.kind;provider={'claude':'anthropic','codex':'openai'}.get(kind,kind)
                 windows=values.pop('limit_windows',None) or values['quota_windows']
                 saved=app.saved_account(chat.get('account_id')) if kind=='claude' and chat and chat.get('account_id') else None
+                # This request's share of the plan, from reports the app already sends: the level before it (the last
+                # report, if recent and in the same window) and the last level it reported. Nothing extra is asked of the app.
+                key=kind+'-events-'+saved['id'] if saved else kind+'-events'
+                workspace_usage.plan_mark(job,(app.usage_accounts.get(key) or [{}])[0],windows,
+                                          shared=any(j is not job and next((c.get('agent') for c in app.preferences['chats'] if c['id']==j.get('chat_id')),None)==kind for j in app.running_jobs()))
                 if saved:
                     # A chat on a saved Claude account: its limits belong to that account, kept as last known.
                     row=workspace_usage.account(provider,'aura:'+saved['id'],saved.get('email') or '',saved.get('plan') or '',app.agent['name'])

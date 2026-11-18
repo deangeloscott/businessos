@@ -166,11 +166,37 @@ def record(preferences, job, chat, agent):
             usage['cost_usd'] = usage['session_cost_usd'] - old
     remember(preferences, chat['id'], usage)
     row = {k:usage[k] for k in (*FIELDS, 'cost_usd', 'cost_kind', 'billing') if k in usage}
+    plan, measured = plan_share(job)
+    if plan:row.update(plan=plan, plan_measured=measured)
     rows.append(dict(row, id=job['id'], chat_id=chat['id'], business_id=job['business_id'],
                      at=job['updated'], agent=agent, model=job.get('model',chat.get('model', ''))))
     if len(rows) > 10000:
         preferences['usage_receipts'] = rows[-10000:]
         preferences['usage_history_limited'] = True
+
+
+def plan_mark(job, previous, windows, shared=False):
+    """Note the plan level around one request. The first report keeps what was known just before (when it is recent
+    and in the same window); every report updates the last level. Another request on the same app at the same time
+    makes the share approximate, because the plan is shared."""
+    key = lambda w: f"{w.get('bucket', '')}|{w.get('name', '')}"
+    if 'plan_before' not in job:
+        fresh = number(previous.get('checked_at')) and previous['checked_at'] >= job.get('created', 0) - 900
+        job['plan_before'] = {key(w): [w.get('used_percent'), w.get('resets_at')] for w in previous.get('windows') or []} if fresh else {}
+    job['plan_last'] = {key(w): [w.get('used_percent'), w.get('resets_at'), w.get('name')] for w in windows or [] if isinstance(w, dict)}
+    job['plan_shared'] = job.get('plan_shared') or shared
+
+
+def plan_share(job):
+    """[{window, used}] in percentage points of each plan window this request used, and whether that was measured."""
+    before, last = job.get('plan_before') or {}, job.get('plan_last') or {}
+    rows = []
+    for k, (used, resets, name) in last.items():
+        prior = before.get(k)
+        if number(used) is None or not prior or number(prior[0]) is None or prior[1] != resets:
+            continue
+        rows.append({'window': name or 'Plan', 'used': round(max(0.0, used - prior[0]), 2)})
+    return rows, bool(rows) and not job.get('plan_shared')
 
 
 def maintenance(preferences,business,chat,event):

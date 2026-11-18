@@ -8,6 +8,7 @@ no scores, no guesses. It writes nothing. Bounded on purpose, with counts of wha
 import argparse
 import hashlib
 import json
+import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -345,6 +346,8 @@ def _effort(bid, app, bound, known, at, previous=False, span=None):
     start, end = span or (((month - timedelta(days=1)).replace(day=1).timestamp(), month.timestamp() - 1e-6) if previous else (month.timestamp(), at.timestamp()))
     chats = {b['id']: b for b in bound if b.get('kind') == 'chat'}
     groups = {}
+    import workspace_prices
+    prices = workspace_prices.load() if app.preferences.get('api_estimates') is True else None
     titles = {c['id']: c.get('title') or 'Untitled chat' for c in app.preferences.get('chats', [])
               if c.get('business_id') == bid and c.get('id')}
     for receipt in app.preferences.get('usage_receipts', []):
@@ -361,12 +364,15 @@ def _effort(bid, app, bound, known, at, previous=False, span=None):
         else:
             key = ('other', '')
         group = groups.setdefault(key, {'kind': key[0], 'id': key[1], 'chats': {},
-            'requests': 0, 'tokens': 0, 'cost_usd': 0.0, 'missing_costs': 0, 'missing_tokens': 0})
+            'requests': 0, 'tokens': 0, 'cost_usd': 0.0, 'missing_costs': 0, 'missing_tokens': 0, 'app_estimates': 0, 'api_usd': 0.0, 'api_count': 0})
         agent = receipt.get('agent') or ''
         model = str(receipt.get('model') or 'Model unreported')
         chat = group['chats'].setdefault((chat_id,agent,model), {'id': chat_id if chat_id in titles else '',
             'title': titles.get(chat_id, 'Unlinked request'), 'agent': agent, 'model': model, 'requests': 0,
-            'tokens': 0, 'cost_usd': 0.0, 'missing_costs': 0, 'missing_tokens': 0})
+            'tokens': 0, 'cost_usd': 0.0, 'missing_costs': 0, 'missing_tokens': 0, 'app_estimates': 0, 'api_usd': 0.0, 'api_count': 0})
+        guess = None
+        if prices is not None and not isinstance(receipt.get('cost_usd'), (int, float)):
+            guess = workspace_prices.estimate(model, receipt.get('input_tokens'), receipt.get('output_tokens'), receipt['at'], prices)
         for totals in (group, chat):
             totals['requests'] += 1
             totals['tokens'] += int(receipt.get('input_tokens') or 0) + int(receipt.get('output_tokens') or 0)
@@ -374,11 +380,52 @@ def _effort(bid, app, bound, known, at, previous=False, span=None):
                 totals['missing_tokens'] += 1
             if isinstance(receipt.get('cost_usd'), (int, float)):
                 totals['cost_usd'] += receipt['cost_usd']
+                if receipt.get('cost_kind') == 'est':totals['app_estimates'] += 1  # the app's own estimate at API prices
             else:
                 totals['missing_costs'] += 1
+                if guess is not None:totals['api_usd'] += guess;totals['api_count'] += 1
     for group in groups.values():
         group['chats'] = sorted(group['chats'].values(), key=lambda c: -c['requests'])
     return sorted(groups.values(), key=lambda g: (-g['tokens'], -g['requests']))[:40]
+
+
+def _window_seconds(name):
+    import re
+    name = str(name or '')
+    if name.startswith('Weekly'):return 7 * 86400
+    match = re.match(r'([\d.]+)-(hour|day)', name)
+    return float(match.group(1)) * (3600 if match.group(2) == 'hour' else 86400) if match else None
+
+
+def _plans(bid, app):
+    """Each app's plan windows as it last reported them (no new requests are made), and each conversation's share of
+    the longest one: measured where AURA saw the plan level around the request, otherwise split by tokens and marked."""
+    from workspace_library import APPS
+    from workspace_usage import number
+    best = {}
+    for key, rows in (getattr(app, 'usage_accounts', None) or {}).items():
+        kind = key.split('-')[0]
+        for row in rows or []:
+            for w in row.get('windows') or []:
+                seconds = _window_seconds(w.get('name')) if isinstance(w, dict) else None
+                if not seconds or number(w.get('used_percent')) is None or not number(w.get('resets_at')):continue
+                old = best.get(kind)
+                if not old or seconds > old[0] or seconds == old[0] and (row.get('checked_at') or 0) > old[2]:
+                    best[kind] = (seconds, w, row.get('checked_at') or 0)
+    plans, by_chat, now = [], {}, time.time()
+    for kind, (seconds, w, _) in best.items():
+        name = APPS.get(kind, kind)
+        plans.append({'app': name, 'window': w['name'], 'used_percent': w['used_percent'], 'resets_at': w['resets_at']})
+        start = w['resets_at'] - seconds
+        rows = [r for r in app.preferences.get('usage_receipts', []) if r.get('business_id') == bid and r.get('agent') == name
+                and isinstance(r.get('at'), (int, float)) and start <= r['at'] <= now]
+        total = sum((r.get('input_tokens') or 0) + (r.get('output_tokens') or 0) for r in rows)
+        for r in rows:
+            measured = next((p['used'] for p in r.get('plan') or [] if p.get('window') == w['name']), None) if r.get('plan_measured') else None
+            share = measured if measured is not None else (w['used_percent'] * ((r.get('input_tokens') or 0) + (r.get('output_tokens') or 0)) / total if total else 0)
+            row = by_chat.setdefault(r.get('chat_id') or '', {'used': 0.0, 'approx': False, 'window': w['name'], 'app': name})
+            row['used'] += share;row['approx'] = row['approx'] or measured is None
+    return plans, {k: {**v, 'used': round(v['used'], 2)} for k, v in by_chat.items()}
 
 
 def effort_between(bid, app, start, end):
@@ -391,8 +438,10 @@ def effort_between(bid, app, start, end):
     bound = [b for b in (registry.get('bindings') or {}).values() if isinstance(b, dict) and b.get('business_id') == bid]
     known = {b.get('collection_id') for b in bound if b.get('collection_id')}
     length = max(1.0, end - start)
+    plans, plan_by_chat = _plans(bid, app)
     return {'from': start, 'to': end, 'current': _effort(bid, app, bound, known, at, span=(start, end)) or [],
-            'previous': _effort(bid, app, bound, known, at, span=(start - length, start - 1e-6)) or []}
+            'previous': _effort(bid, app, bound, known, at, span=(start - length, start - 1e-6)) or [],
+            'plans': plans, 'plan_by_chat': plan_by_chat, 'estimates': app.preferences.get('api_estimates') is True}
 
 
 def main():

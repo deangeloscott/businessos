@@ -1775,11 +1775,13 @@ async function workspaceReading(){
 /* One small switch: AURA reads the AI apps' own records on this computer only to say where work was made and which
    connected services it used. Nothing leaves the computer either way. */
 function appRecordsToggle(){
-  return `<label class="check-label settings-check"><input type="checkbox" id="read-app-records" ${state.data?.read_app_records===false?'':'checked'}><span>Read my AI apps’ records on this computer to show where work was made and which services it used</span></label>`;
+  return `<label class="check-label settings-check"><input type="checkbox" id="read-app-records" ${state.data?.read_app_records===false?'':'checked'}><span>Read my AI apps’ records on this computer to show where work was made and which services it used</span></label>
+    <label class="check-label settings-check"><input type="checkbox" id="api-estimates" ${state.data?.api_estimates?'checked':''}><span>Estimate cost at API prices when an app reports only tokens (downloads OpenRouter’s public price list)</span></label>`;
 }
 document.addEventListener('change',event=>{
-  if(event.target.id!=='read-app-records')return;
-  const on=event.target.checked;attempt(async()=>{try{await api('/api/preferences',{read_app_records:on});state.data.read_app_records=on;}catch(error){event.target.checked=!on;throw error;}});
+  if(!['read-app-records','api-estimates'].includes(event.target.id))return;
+  const on=event.target.checked,field=event.target.id==='read-app-records'?'read_app_records':'api_estimates';
+  attempt(async()=>{try{await api('/api/preferences',{[field]:on});state.data[field]=on;}catch(error){event.target.checked=!on;throw error;}});
 });
 function openSettings(query=''){
   closeAnchoredSurface(false);if($('#more-dialog').open)$('#more-dialog').close();state.settingsReturn=false;

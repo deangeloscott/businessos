@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- **Plan use in AI effort.** Each app's current plan limits show as they last reported them ("Codex weekly limit 62% used · resets Friday"), and "Plan use" sizes the chart by how much of each limit the work used. Each request's share is measured from the plan level just before it and the last level it reported, which the apps already send; where that isn't clean (an older level, or two requests at once) the share is split by tokens and marked ≈. A nearly used-up plan gets a takeaway.
+- **Cost says whose number it is.** A cost the app estimated itself shows with ≈. Settings has an opt-in, off by default, to estimate cost at API prices where an app reports only tokens: AURA downloads OpenRouter's public price list (nothing about you is sent) on the Library's Refresh and at most weekly, keeps only price changes with their dates, estimates each request at its day's price, and leaves unknown models as tokens. Estimates show as "≈ $X at API prices", apart from reported cost.
+
 - The browser's Back also steps back between views (Time back to Connections), as it does through selections. On a phone the view gets the screen: the small world and the area chips step aside and row names take a third of the width. Time works out a period's changes once per repaint.
 
 - **One period for every view.** Connections, Time and AI effort share a choice in the top bar: since your last visit, this month, the last 3 months (the default), this year, all time, or custom dates. Connections' lines count the period's saved work or AI use, Time shows the period's changes and timeline, and AI effort the period's use. Each period is compared with the period of the same length just before it, so a few days are never set against a whole month. Saved links now record when they were saved, and `/api/effort` returns AI use for any period.

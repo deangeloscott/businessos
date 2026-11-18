@@ -1130,6 +1130,11 @@ def handler_for(app):
                             app.preferences['model_picker'][picker['kind']] = self_picker
                         if 'read_app_records' in data:
                             app.preferences['read_app_records'] = data['read_app_records'] is True
+                        if 'api_estimates' in data:
+                            app.preferences['api_estimates'] = data['api_estimates'] is True
+                            if app.preferences['api_estimates']:
+                                import workspace_prices
+                                threading.Thread(target=workspace_prices.refresh_quietly,daemon=True).start()
                         if 'notifications' in data:
                             app.preferences['notifications'] = data['notifications'] is True
                             # Enabling alerts must not announce old activity.
