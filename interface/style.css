@@ -1321,12 +1321,12 @@ body.panel-resizing :is(.shell-main,#sidebar,#detail){transition:none;animation:
 .world-facts{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;margin:0;font-size:var(--text-sm)}.world-facts dt{color:var(--muted)}.world-facts dd{margin:0;text-align:right}
 .world-callout{padding:8px 12px;border-radius:8px;font-size:var(--text-sm);background:color-mix(in srgb,var(--warning,#e0a43a) 18%,transparent)}
 .world-acts{display:flex;flex-wrap:wrap;gap:8px}.world-meter{height:6px;border-radius:6px;background:var(--line);overflow:hidden}.world-meter>span{display:block;height:100%;background:var(--accent)}
-.world-back{justify-self:start;padding:0}.world-side input[type=search]{width:100%;box-sizing:border-box}
+.world-side input[type=search]{width:100%;box-sizing:border-box}
 .world-main{display:grid;grid-template-rows:auto minmax(0,1fr);gap:10px;min-height:0;min-width:0}
 .world-tabs{display:flex;flex-wrap:wrap;gap:6px}.world-tabs [aria-selected=true]{background:var(--accent);color:var(--accent-ink,var(--paper));border-color:var(--accent)}
 .world-stage[hidden],.world-alt[hidden]{display:none}
 .world-alt{overflow:auto;padding:16px 18px;display:grid;gap:14px;align-content:start;border-radius:var(--surface-radius,12px);box-shadow:inset 0 0 0 1px var(--line)}.world-alt p{margin:0}
-.wm{position:relative;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:56px;align-items:start}.wm-lines{position:absolute;left:0;top:0;pointer-events:none}.wm-lines path{fill:none;stroke:color-mix(in srgb,var(--accent) 60%,transparent);stroke-width:1.4}
+.wm{position:relative;display:grid;grid-template-columns:repeat(var(--wm-cols,3),minmax(160px,1fr));gap:56px;align-items:start}.wm-lines{position:absolute;left:0;top:0;pointer-events:none}.wm-lines path{fill:none;stroke:color-mix(in srgb,var(--accent) 60%,transparent);stroke-width:1.4}
 .wm-col{display:grid;gap:8px;align-content:start;position:relative}.wm-col h3{margin:0 0 2px;font-size:var(--text-xs);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
 .wm-node{display:grid;gap:1px;width:100%;padding:8px 12px;text-align:left;font:inherit;color:var(--ink);background:var(--raised-bg,var(--paper));border:0;border-radius:8px;box-shadow:0 0 0 1px var(--line);cursor:pointer}.wm-node:hover{box-shadow:0 0 0 1px var(--accent)}.wm-node.plain{cursor:default}.wm-node.plain:hover{box-shadow:0 0 0 1px var(--line)}
 .wm-node b{font-size:var(--text-sm);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.wm-node small{font-size:var(--text-xs);color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -1344,7 +1344,7 @@ body.panel-resizing :is(.shell-main,#sidebar,#detail){transition:none;animation:
 .wt-now{position:absolute;top:0;bottom:0;width:0;border-left:1px dashed var(--muted)}.world-alt h3{margin:8px 0 0;font-size:var(--text-xs);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
 .wm.wm4{grid-template-columns:repeat(4,minmax(0,1fr));gap:36px}.wt-bar{position:absolute;bottom:0;width:6px;margin-left:-3px;background:var(--accent);opacity:.65;border-radius:2px 2px 0 0}
 .we-map{position:relative;height:190px;border-radius:8px;overflow:hidden}.we-block{position:absolute;box-sizing:border-box;padding:8px 10px;overflow:hidden;display:grid;align-content:start;gap:2px;background:hsl(var(--we-h) 45% 42%);color:#fff;box-shadow:inset 0 0 0 1px var(--paper)}.we-block b{font-size:var(--text-sm);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.we-block small{font-size:var(--text-xs);opacity:.9}.world-row.plain small{white-space:normal}
-:root[data-theme=dark]{--world-bg:#05070b}:root[data-theme=dark][data-style=console90]{--world-bg:#000}.world-by{display:grid;gap:4px;font-size:var(--text-xs);color:var(--muted)}.world-by select{width:100%}
+:root[data-theme=dark]{--world-bg:#05070b}:root[data-theme=dark][data-style=console90]{--world-bg:#000}
 /* When something is opened beside the aura, the world keeps the room and its own list steps aside. */
 body:has(#detail[open][data-mode=context]) .aura-view.world-view{grid-template-columns:minmax(0,1fr)}body:has(#detail[open][data-mode=context]) .world-side{display:none}
 /* In the aura, the world owns everything to the right of the sidebar: no page margins, no heading, controls on the picture. */
@@ -1352,7 +1352,7 @@ body.in-aura #section-dialog{padding:0;overflow:hidden}body.in-aura #section-dia
 body.in-aura .aura-view.world-view{height:100%;min-height:0;grid-template-columns:minmax(0,1fr) 380px}
 body.in-aura .world-main{display:block;position:relative;height:100%}body.in-aura .world-stage{position:absolute;inset:0;border-radius:0;min-height:0}
 .world-top{position:absolute;left:14px;right:14px;top:12px;z-index:4;display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;pointer-events:none}.world-top>*{pointer-events:auto}
-.world-tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-left:auto}.world-tools input[type=search]{width:190px}.world-tools select{max-width:210px}.world-tools .world-by{display:flex;align-items:center;gap:6px}.world-tools .world-by span{white-space:nowrap}
+.world-tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-left:auto}.world-tools input[type=search]{width:190px}.world-tools select{max-width:210px}
 .world-keys{position:absolute;left:14px;right:14px;bottom:10px;z-index:3;pointer-events:none}.world-keys .world-chips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding:2px}.world-keys .world-chip{flex:none}.world-keys>*{pointer-events:auto}
 .world-ask{position:absolute;left:50%;bottom:98px;transform:translateX(-50%);z-index:4;display:flex;gap:6px;width:min(460px,calc(100% - 40px))}.world-ask input{flex:1;min-width:0}
 .aura-view :is(.world-tabs button,.world-bar button,.world-chip,.world-ask button,.world-tools input,.world-tools select,.world-ask input){font:inherit;font-size:var(--text-xs);color:var(--ink);background:color-mix(in srgb,var(--world-bg,var(--paper)) 72%,transparent);backdrop-filter:blur(10px);border:1px solid color-mix(in srgb,var(--ink) 18%,transparent);border-radius:999px;box-shadow:none;padding:6px 13px;min-height:0;cursor:pointer}
@@ -1361,7 +1361,7 @@ body.in-aura .world-main{display:block;position:relative;height:100%}body.in-aur
 .aura-view .world-chip[aria-pressed=true]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);font-weight:600}
 body.in-aura .world-head{top:100px}body.in-aura .world-cap{bottom:152px}body.in-aura .world-main{container-type:inline-size}body.in-aura .world-bar{bottom:50px;flex-wrap:nowrap}body.in-aura .world-bar input[type=range]{min-width:70px}
 body.in-aura .world-side{padding:20px 18px 24px;border-left:1px solid var(--line);background:var(--raised-bg,var(--paper))}
-.world-side .wm{grid-template-columns:1fr!important;gap:16px}.world-side .wm-lines{display:none}.world-side .wt-row{grid-template-columns:84px minmax(0,1fr);gap:8px}.world-side .we-map{height:150px}
+.world-side .wm{grid-template-columns:1fr;gap:16px}.world-side .wm-lines{display:none}.world-side .wt-row{grid-template-columns:84px minmax(0,1fr);gap:8px}.world-side .we-map{height:150px}
 @media (max-width:860px){body.in-aura .aura-view.world-view{grid-template-columns:1fr;grid-template-rows:minmax(0,62%) minmax(0,38%)}body.in-aura .world-main{min-height:0}.world-tools input[type=search]{width:130px}.world-keys{right:14px}.world-ask{bottom:108px}}
 @container (max-width:980px){.world-when{display:none}}
 .world-fallback{display:grid;place-items:center;height:100%;margin:0;padding:24px;text-align:center;color:var(--muted)}
@@ -1390,7 +1390,7 @@ body.in-aura .world-expanded { position:relative }
 body.in-aura .world-expanded .world-side {
   position:absolute; inset:0; z-index:6; overflow:auto; padding:clamp(16px,3vw,48px);
 }
-.world-expanded .world-side .wm { grid-template-columns:none!important; grid-auto-flow:column; grid-auto-columns:minmax(150px,1fr); gap:56px;
+.world-expanded .world-side .wm { grid-template-columns:none; grid-auto-flow:column; grid-auto-columns:minmax(150px,1fr); gap:56px;
   /* Not a scroll box of its own: inside the panel's grid a scroll box can shrink to nothing. The panel scrolls instead. */ overflow:visible }
 .world-expanded .world-side .wm-lines { display:block }
 .world-expanded .world-side .we-map { height: min(360px,50vh) }
@@ -1426,8 +1426,6 @@ body.in-aura .world-bar [hidden] { display:none }
   body.in-aura .world-ask { bottom:96px }
   body.in-aura .world-bar { left:12px; right:12px; bottom:46px; width:auto; gap:8px }
   body.in-aura .world-bar button { padding:7px 10px }
-  body.in-aura .world-tools .world-by { max-width:100%; min-width:0 }
-  body.in-aura .world-tools .world-by select { min-width:0; max-width:180px }
   body.in-aura .world-cap { bottom:142px }
 }
 
@@ -1503,3 +1501,17 @@ body.in-aura .world-bar [hidden] { display:none }
 .world-found { border-bottom:1px solid var(--line); padding-bottom:8px }
 .world-group { border-bottom:1px solid var(--line); padding:4px 0 }
 .world-group>summary { cursor:pointer; display:flex; align-items:baseline; gap:8px; padding:6px 2px; list-style-position:inside }
+
+/* One row of ways to move around beside the world. */
+.world-moves{display:flex;flex-wrap:wrap;align-items:center;gap:4px 16px;margin:0 0 10px}.world-moves .text-button{padding:0}
+.world-chip-more{color:var(--muted)}
+/* The full-screen diagram: zoom controls, panning, and each style's own way of drawing boxes and connectors. */
+.wm-zoom{display:inline-flex;gap:4px;align-items:center}.wm-zoom button{min-width:36px}
+.world-expanded .world-side{cursor:grab}.world-expanded .world-side.wm-panning{cursor:grabbing;user-select:none}
+.world-expanded .world-side :is(button,a,select,input,label){cursor:pointer}
+:root[data-style=desktop90] .wm-node{border-radius:0;box-shadow:inset -1px -1px 0 rgba(0,0,0,.45),inset 1px 1px 0 rgba(255,255,255,.7),0 0 0 1px var(--line)}
+:root[data-style=desktop90] .wm-lines path,:root[data-style=classic] .wm-lines path{stroke-linejoin:miter;shape-rendering:crispEdges}
+:root[data-style=classic] .wm-node{border-radius:2px;box-shadow:0 0 0 1px var(--ink)}
+:root:is([data-style=console90],[data-style=console00]) .wm-node{border-radius:0;font-family:var(--c90-mono,ui-monospace,monospace);box-shadow:0 0 0 1px var(--accent)}
+:root:is([data-style=console90],[data-style=console00]) .wm-lines path{stroke-dasharray:3 3;stroke-linejoin:miter;shape-rendering:crispEdges}
+:root[data-style=desktop00] .wm-node{border-radius:10px;background:linear-gradient(var(--raised-bg,var(--paper)),color-mix(in srgb,var(--raised-bg,var(--paper)) 88%,var(--accent)))}

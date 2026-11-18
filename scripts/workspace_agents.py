@@ -224,7 +224,7 @@ def display_text(value):
 
 def resume_command(kind, native_id):
     return {'pi':['pi','--session',native_id], 'omp':['omp','--resume',native_id],
-            'claude':['claude','--resume',native_id], 'hermes':['hermes','--resume',native_id], 'codex':['codex','resume',native_id],
+            'claude':['claude','--resume',native_id], 'hermes':['hermes','--resume',native_id], 'codex':['codex','resume',native_id], 'codex':['codex','resume',native_id],
             'antigravity':['agy','--conversation',native_id]}.get(kind,[])
 
 

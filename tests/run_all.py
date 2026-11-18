@@ -10,7 +10,7 @@ import os,subprocess,sys
 ROOT=Path(__file__).resolve().parents[1]
 env=dict(os.environ);env['PYTHONDONTWRITEBYTECODE']='1';env['PYTHONUTF8']='1'
 # Tests are the same from inside an AI app as outside one: drop session ids the app gives its commands.
-for name in ('CLAUDE_CODE_SESSION_ID','AURA_PRODUCER'):env.pop(name,None)
+for name in ('CLAUDE_CODE_SESSION_ID','PI_SESSION_ID','PI_SESSION_FILE','HERMES_SESSION_ID','ANTIGRAVITY_CONVERSATION_ID','AURA_PRODUCER'):env.pop(name,None)
 # Legacy fixtures use repository-relative paths. Never follow a user's selected
 # workspace; individual external-workspace suites set their own isolated roots.
 env['BUSINESSOS_WORKSPACE']=str(ROOT)
@@ -63,6 +63,7 @@ TESTS=[
     'tests/run_workspace_views.py',
     'tests/run_knowledge_currency.py',
     'tests/run_continue_and_terminal.py',
+    'tests/run_workspace_signals.py',
     'tests/run_workspace_focus.py',
     'tests/run_workspace_summary.py',
     'tests/run_workspace_world.py',

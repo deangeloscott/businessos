@@ -189,6 +189,8 @@ def main():
             caught=workspace_context.resolve(app,bid,[{'kind':'handoff','id':'chat-omp','variant':'catch_up'}])
             assert caught['references'][0]['label'].startswith('Catch-up from') and 'Earlier coverage is unknown' in caught['text'] and 'Moved; six projects show.' in caught['text']
             assert app.terminal_command('claude-login')[0][-2:]==['auth','login'] and app.terminal_command('codex-login')[0][-1]=='login'
+            with patch('workspace_ui.installed_agents',return_value=[{'id':'codex','argv':['node','codex.js','exec','--skip-git-repo-check','-']}]):
+                assert app.terminal_command('codex-login')[0]==['node','codex.js','login'],'Codex signs in with its own command, not its noninteractive one'
 
             # Continue in terminal: the same chat in its app's own screen, resumed by its exact session in its folder. While it is
             # open AURA does not send to that chat, so two never write to one session; closing it gives the chat back.

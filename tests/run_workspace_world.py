@@ -194,13 +194,20 @@ print(json.dumps({'full':full,'tight':tight}))
         from remember import remember
         import workspace_projects
         bid=setup(organization='Noted Bakery')['business_id']
-        os.environ.pop('AURA_PRODUCER',None);os.environ.pop('CLAUDE_CODE_SESSION_ID',None)
+        os.environ.pop('AURA_PRODUCER',None)
+        for name,_ in workspace_projects.HARNESS_SESSIONS:os.environ.pop(name,None)
         plain=workspace_projects.saved_during(bid,{'id':'x'})
         assert plain=={'id':'x'},'without a chat AURA started or an app session, nothing is added'
         os.environ['CLAUDE_CODE_SESSION_ID']='cc-test'
         direct=workspace_projects.saved_during(bid,{'id':'x'})['extensions']['businessos']['work']['producer']
         assert direct=={'kind':'session','app':'Claude Code','id':'cc-test'},'work done directly in an app that names its session says which'
         os.environ.pop('CLAUDE_CODE_SESSION_ID')
+        session_file=base/'omp-home'/'.omp'/'agent'/'sessions'/'here'/'2026-11-18T10-00-00-000Z_omp-1.jsonl';session_file.parent.mkdir(parents=True)
+        session_file.write_text(json.dumps({'type':'title','title':''})+chr(10)+json.dumps({'type':'session','id':'omp-1'})+chr(10),encoding='utf-8');os.environ['PI_SESSION_FILE']=str(session_file)
+        assert workspace_projects.saved_during(bid,{'id':'x'})['extensions']['businessos']['work']['producer']=={'kind':'session','app':'OMP','id':'omp-1'},'OMP names its session by the file it writes'
+        os.environ.pop('PI_SESSION_FILE');os.environ['HERMES_SESSION_ID']='20261118_100000_ab12'
+        assert workspace_projects.saved_during(bid,{'id':'x'})['extensions']['businessos']['work']['producer']['app']=='Hermes'
+        os.environ.pop('HERMES_SESSION_ID')
         os.environ['AURA_PRODUCER']=json.dumps({'kind':'chat','id':'chat-1','business_id':bid,'workspace':str(workspace_root().resolve())})
         saved=remember(bid,{'objects':[{'object_type':'Insight','content':{'domain':'core','insight_type':'research_insight','statement':'Weekend demand is higher.','status':'candidate','evidence_links':[]}}]})
         from _common import object_index
@@ -216,6 +223,7 @@ print(json.dumps({'full':full,'tight':tight}))
     # Where something was made, found afterwards in the apps' own logs: exact matches only, and no answer when unsure.
     with tempfile.TemporaryDirectory(prefix='aura-origins-') as t,patch.dict(os.environ):
         base=Path(t);os.environ.update(CLAUDE_CONFIG_DIR=str(base/'claude'),CODEX_HOME=str(base/'codex'),AURA_STATE_DIR=str(base/'state'))
+        for name in ('HERMES_HOME','PI_CODING_AGENT_DIR'):os.environ.pop(name,None)
         import importlib,workspace_origins as wo;importlib.reload(wo)
         claude=base/'claude/projects/proj';claude.mkdir(parents=True);codex=base/'codex/sessions/2026/11/17';codex.mkdir(parents=True)
         line=lambda **kw:json.dumps(kw)+chr(10)
@@ -253,6 +261,20 @@ print(json.dumps({'full':full,'tight':tight}))
         assert got=={'cc-3':{'Stripe':3,'Google Calendar':1},cx:{'Gmail':2}},('services the person connected are counted, delegated agents included; app built-ins are not',got)
         with (claude/'cc-3.jsonl').open('a',encoding='utf-8') as log:log.write(call('mcp__stripe__void')+'{"type":"assistant","message":{"content":[{"type":"tool_use","name":"mcp__stripe__x"')
         assert ws.used({'cc-3':'claude'},space,home=base)['cc-3']['Stripe']==4,'only what was added is read, and a line still being written waits'
+        # Claude Code's default ("local") connections are kept per folder; Pi, OMP and Hermes name a service's tools after it.
+        (base/'.claude.json').write_text(json.dumps({'projects':{str(space):{'mcpServers':{'linear':{}}}}}),encoding='utf-8')
+        with (claude/'cc-3.jsonl').open('a',encoding='utf-8') as log:log.write(chr(10)+call('mcp__linear__create_issue'))
+        assert ws.used({'cc-3':'claude'},space,home=base)['cc-3']['Linear']==1,'a connection added the default way in Claude Code counts'
+        (base/'.pi/agent/sessions/here').mkdir(parents=True);(base/'.pi/agent/mcp.json').write_text(json.dumps({'mcpServers':{'exa':{}}}),encoding='utf-8')
+        pi_call=lambda name:json.dumps({'type':'message','message':{'role':'assistant','content':[{'type':'toolCall','name':name,'arguments':{}}]}})+chr(10)
+        (base/'.pi/agent/sessions/here/2026-11-18T10-00-00-000Z_pi-1.jsonl').write_text(pi_call('exa_web_search')*2+pi_call('bash'),encoding='utf-8')
+        import sqlite3
+        (base/'.hermes').mkdir();(base/'.hermes/config.yaml').write_text('mcp_servers:'+chr(10)+'  stripe:'+chr(10)+'    command: x'+chr(10),encoding='utf-8')
+        db=sqlite3.connect(base/'.hermes/state.db');db.execute('create table messages (id integer primary key, session_id text, role text, tool_calls text)')
+        db.executemany('insert into messages (session_id, role, tool_calls) values (?,?,?)',[('h-1','assistant',json.dumps([{'function':{'name':'mcp_stripe_list_invoices'}},{'function':{'name':'terminal'}}])),
+                                                                                           ('h-2','assistant',json.dumps([{'function':{'name':'mcp_stripe_refund'}}]))]);db.commit();db.close()
+        other=ws.used({'pi-1':'pi','h-1':'Hermes'},space,home=base)
+        assert other=={'pi-1':{'Exa':2},'h-1':{'Stripe':1}},('Pi and Hermes calls to connected services count; their own tools do not',other)
         called=relationships(graph_feed,{'projects':[]},[],[],[{'id':'c3','title':'Billing','agent':'claude','native_id':'cc-3','references':[]}],
                              services=lambda sessions:ws.used(sessions,space,home=base))
         edges3={(e['source'],e['target'],e['type']):e for e in called['edges']}

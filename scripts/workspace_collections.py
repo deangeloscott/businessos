@@ -8,6 +8,8 @@ from pathlib import Path
 from _common import workspace_root,workspace_scope,object_index,organization_transaction,write_json_atomic,now,storage_ref
 import workspace_projects as projects
 
+KEPT_CHECKS=50  # the most recent checks kept per collection; older ones fall off the front
+
 MAX_BYTES=32*1024*1024
 SOURCE_COPIES={'quotes','full'}
 # Findings: what the watched things add up to. Superseded findings stay as history.
@@ -278,7 +280,7 @@ def apply(bid,ident,data):
     # The chat, task or agent AURA started this work in, when AURA started it. Nothing is asked of the AI for this.
     by=projects.producer_context(bid)
     if by:check['by']={k:by[k] for k in ('kind','id','app') if k in by}
-    d['checks']=(d['checks']+[check])[-50:]
+    d['checks']=(d['checks']+[check])[-KEPT_CHECKS:]
     receipt={'run_id':run_id,'payload_hash':payload_hash,'version':d['version'],'coverage':cov,'changes':changes[:250],'change_count':len(changes),'no_change_verified':check['no_change_verified']}
     d['receipts'][run_id]=receipt;d['receipts']=dict(list(d['receipts'].items())[-500:])
     saved=persist(bid,d)
@@ -286,7 +288,8 @@ def apply(bid,ident,data):
 
 
 def effective(item,feedback,at=None):
-    at=at or datetime.now(timezone.utc);row=copy.deepcopy(item);f=feedback.get(item['id'],{});overrides=f.get('correction',{})
+    # A shallow copy: every change below replaces a value rather than editing one in place, so the stored item is untouched.
+    at=at or datetime.now(timezone.utc);row=dict(item);f=feedback.get(item['id'],{});overrides=f.get('correction',{})
     row['reported']={k:item.get(k) for k in overrides}
     for k,v in overrides.items():row[k]={**row.get(k,{}),**v} if k=='fields' else v
     baseline=f.get('correction_reported',{})

@@ -53,9 +53,11 @@ window.auraView=(()=>{
   /* On the picture: find and filter at the top; the areas as a colour key along the bottom. */
   function tools(f){
     const flt=ctx?.filter||{lands:[],needs:false,by:''};
-    const options=[['Goals',f.goals.map(g=>['goal:'+g.id,g.name])],['Projects',(state.projects||[]).map(p=>['project:'+p.id,p.name])],['Scheduled tasks',(f.tasks||[]).map(k=>['task:'+k.id,k.name||'Scheduled task'])],['AI apps',(f.apps||[]).map(a=>['app:'+a.name,a.name])]].filter(g=>g[1].length);
-    const top=`<label><span class="sr-only">Find in your world</span><input type="search" id="world-q" placeholder="Find anything…" autocomplete="off"></label>${options.length?`<label class="world-by"><span>Show what belongs to</span><select id="world-by"><option value="">Everything</option>${options.map(([label,list])=>`<optgroup label="${label}">${list.map(([v,n])=>`<option value="${esc(v)}" ${flt.by===v?'selected':''}>${esc(n)}</option>`).join('')}</optgroup>`).join('')}</select></label>${flt.by&&!flt.lands.length?'<p class="small-note">Nothing on the world is tied to this yet.</p>':''}`:''}`;
-    const keys=f.lands.length>1?`<div class="world-chips" role="group" aria-label="Show only these areas">${f.lands.filter(l=>l.kind!=='group').map(l=>`<button type="button" class="world-chip" data-world-chip="${esc(l.id)}" aria-pressed="${flt.lands.includes(l.id)}"><i${hueOf(l.id)!=null?` style="background:hsl(${Math.round(hueOf(l.id))},70%,55%)"`:''}></i>${esc(l.name)}</button>`).join('')}<button type="button" class="world-chip" data-world-needs aria-pressed="${!!flt.needs}">Needs a look</button></div>`:'';
+    const top=`<label><span class="sr-only">Find in your world</span><input type="search" id="world-q" placeholder="Find anything…" autocomplete="off"></label>`;
+    const lands=f.lands.filter(l=>l.kind!=='group'),size=l=>l.items.length+(l.more||0)+f.findings.filter(x=>x.land===l.id).length;
+    const shown=ctx?.allChips||lands.length<=7?lands:[...lands].sort((a,b)=>flt.lands.includes(b.id)-flt.lands.includes(a.id)||size(b)-size(a)).slice(0,6);
+    const more=lands.length-shown.length;
+    const keys=f.lands.length>1?`<div class="world-chips" role="group" aria-label="Show only these areas">${shown.map(l=>`<button type="button" class="world-chip" data-world-chip="${esc(l.id)}" aria-pressed="${flt.lands.includes(l.id)}"><i${hueOf(l.id)!=null?` style="background:hsl(${Math.round(hueOf(l.id))},70%,55%)"`:''}></i>${esc(l.name)}</button>`).join('')}${more>0?`<button type="button" class="world-chip world-chip-more" data-world-more-chips>+${more} more</button>`:ctx?.allChips&&lands.length>7?'<button type="button" class="world-chip world-chip-more" data-world-more-chips>Fewer</button>':''}<button type="button" class="world-chip" data-world-needs aria-pressed="${!!flt.needs}">Needs a look</button></div>`:'';
     return {top,keys};
   }
   function home(f){
@@ -94,9 +96,17 @@ window.auraView=(()=>{
     if(found)return `<p class="small-note">Made in ${esc(found.app)}${found.title?` · “${esc(found.title)}”`:''} · ${esc(when(found.at))}</p>`;
     return `<button type="button" class="text-button" data-world-origin="${esc(key)}" ${ref.file?`data-origin-file="${esc(ref.file)}"`:`data-origin-record="${esc(ref.record)}"`}>Where was this made?</button>`;
   }
+  /* A connected service this place's work relied on that its app now shows as off or gone, and the scheduled tasks here
+     that run in that app and may fail because of it. */
+  function serviceWarnings(f,landId){
+    const names=new Set(links().services(f,'land:'+landId).map(s=>s.name)),appName=a=>typeof window.appName==='function'?window.appName(a):a;
+    return (f.service_problems||[]).filter(p=>names.has(p.service)).map(p=>{
+      const tasks=(f.tasks||[]).filter(t=>t.land===landId&&String(t.app||'').toLowerCase().includes(String(p.app).toLowerCase())).map(t=>t.name);
+      return `<p class="world-callout">${esc(p.service)} is ${p.problem==='off'?'turned off':'no longer connected'} in ${esc(appName(p.app))}, and work here relied on it.${tasks.length?` ${esc(tasks.slice(0,2).join(' and '))}${tasks.length>2?' and others':''} run${tasks.length===1?'s':''} there and may not finish.`:''} Reconnect it in ${esc(appName(p.app))}.</p>`;}).join('');
+  }
   /* Beside the world with something selected: what it is, whether it needs a look, and the way into its own screen. */
   function selected(f,o){
-    const back='<button type="button" class="text-button world-back" data-world-clear>Show everything</button>',head=(kind,title)=>`<div><div class="kind">${esc(kind)}</div><h2>${esc(title)}</h2></div>`,facts=list=>`<dl class="world-facts">${list.filter(x=>x[1]!==''&&x[1]!=null).map(([k,v])=>`<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl>`;
+    const back='',head=(kind,title)=>`<div><div class="kind">${esc(kind)}</div><h2>${esc(title)}</h2></div>`,facts=list=>`<dl class="world-facts">${list.filter(x=>x[1]!==''&&x[1]!=null).map(([k,v])=>`<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl>`;
     const ask=text=>`<button type="button" class="secondary" data-prompt="${esc(text)}">Ask about it</button>`;
     if(o.relationship){
       const allowed=['record','file','method','chat','view','open-project','assistant-open'];
@@ -114,7 +124,7 @@ window.auraView=(()=>{
     if(o.kindOf==='land'&&o.kind==='group')return back+head('More collections',o.name)+'<p>These are kept in AURA and open as usual. They are drawn as one place so the world stays readable.</p>'+`<section><h3>Collections</h3>${(o.members||[]).map(m=>row(`data-collection="${esc(m.id)}"`,m.name,count(m.current,'result'))).join('')}</section>`;
     if(o.kindOf==='land'){const things=o.things.slice().sort((a,b)=>b.seen-a.seen),isCollection=o.kind==='collection';
       return back+head(isCollection?'Collection':'Findings',o.name)+(o.purpose?`<p>${esc(o.purpose)}</p>`:'')+(o.quiet?'<p class="world-callout">This was being kept current and has gone quiet.</p>':'')
-        +facts([['Tracked',things.length+(o.more||0)||''],['Findings',o.finds.length||''],['Last checked',when(o.last_checked)],['Kept current by',o.task_linked?'A scheduled task':''],['Given to your AI',o.given?count(o.given,'time'):''],['Used by',o.uses?count(o.uses,'chat or task').replace('chat or tasks','chats and tasks'):''],['Relies on',links().services(f,'land:'+o.id).slice(0,4).map(s=>s.name).join(', ')]])
+        +facts([['Tracked',things.length+(o.more||0)||''],['Findings',o.finds.length||''],['Last checked',when(o.last_checked)],['Kept current by',o.task_linked?'A scheduled task':''],['Given to your AI',o.given?count(o.given,'time'):''],['Used by',o.uses?count(o.uses,'chat or task').replace('chat or tasks','chats and tasks'):''],['Relies on',links().services(f,'land:'+o.id).slice(0,4).map(s=>s.name).join(', ')]])+serviceWarnings(f,o.id)
         +`<div class="world-acts">${isCollection?`<button type="button" class="primary" data-collection="${esc(o.id)}">Open the collection</button>`:`<button type="button" class="primary" data-hq-area="${esc(o.id.replace(/^area:/,''))}">Open these findings</button>`}${ask(`Tell me where we stand on ${o.name}: what we know, what changed most recently, and what is worth doing next.`)}</div>`
         +(things.length?`<section><h3>Tracked</h3>${things.slice(0,8).map(x=>row(go('item:'+x.id),x.name,Object.entries(x.raw.fields||{}).slice(0,2).map(([k,v])=>`${k}: ${v}`).join(' · '),x.need?'Review':'',o.hue)).join('')}${things.length>8?`<p class="small-note">and ${things.length-8+(o.more||0)} more in the collection</p>`:''}</section>`:'')
         +(o.finds.length?`<section><h3>Findings</h3>${o.finds.slice(0,8).map(x=>row(go('finding:'+x.id),x.name,FLABEL[x.label]||'','',o.hue)).join('')}</section>`:'');}
@@ -180,19 +190,37 @@ window.auraView=(()=>{
     if(ctx){ctx.mapLines=lines.filter(e=>shown.has(e.source)&&shown.has(e.target));ctx.mapNode=node;}
     if(!html.length)return '<p>Nothing is linked yet.</p>';
     const what=FLOWS.find(x=>x[0]===flow)[1].toLowerCase();
-    return `<div class="world-acts"><label class="world-flow">Lines show <select id="world-flow">${FLOWS.map(([v,t])=>`<option value="${v}" ${v===flow?'selected':''}>${t}</option>`).join('')}</select></label></div>
-      <p class="small-note">${traced?'Everything recorded as flowing into this, and everything it flowed into.':'How your work flows.'} Thicker lines carried more ${esc(what)}${flow==='saved'?' (records saved or changed along them)':' this month'}; dashed lines are recorded links with none along them yet. Point at anything to trace it; point at a line to read it.</p>
-      <div class="wm" id="world-map" style="grid-template-columns:repeat(${html.length},minmax(160px,1fr))"><svg class="wm-lines" aria-hidden="true"></svg>${html.join('')}</div>`;
+    const zoom=ctx?.mapZoom||1,zoomer=ctx?.expanded?`<span class="wm-zoom" role="group" aria-label="Zoom the diagram"><button type="button" class="secondary compact" data-map-zoom="-1" aria-label="Zoom out">−</button><button type="button" class="secondary compact" data-map-zoom="0" title="Back to 100%">${Math.round(zoom*100)}%</button><button type="button" class="secondary compact" data-map-zoom="1" aria-label="Zoom in">+</button></span>`:'';
+    return `<div class="world-acts"><label class="world-flow">Lines show <select id="world-flow">${FLOWS.map(([v,t])=>`<option value="${v}" ${v===flow?'selected':''}>${t}</option>`).join('')}</select></label>${zoomer}</div>
+      <p class="small-note">${traced?'Everything recorded as flowing into this, and everything it flowed into.':'How your work flows.'} Thicker lines carried more ${esc(what)}${flow==='saved'?' (records saved or changed along them)':' this month'}; dashed lines are recorded links with none along them yet. Point at anything to trace it; point at a line to read it.${ctx?.expanded?' Drag the background to move around; Ctrl and scroll to zoom.':''}</p>
+      <div class="wm" id="world-map" style="--wm-cols:${html.length};zoom:${zoom}"><svg class="wm-lines" aria-hidden="true"></svg>${html.join('')}</div>`;
   }
+  /* The full-screen diagram zooms between half and one and a half times; lines are redrawn to match. */
+  function setMapZoom(value){
+    if(!ctx)return;ctx.mapZoom=Math.round(Math.min(1.5,Math.max(.5,value))*10)/10;const host=$('#world-map');if(!host)return;
+    host.style.zoom=ctx.mapZoom;const label=$('[data-map-zoom="0"]');if(label)label.textContent=Math.round(ctx.mapZoom*100)+'%';requestAnimationFrame(drawLinks);
+  }
+  document.addEventListener('wheel',e=>{if(!ctx?.expanded||!(e.ctrlKey||e.metaKey)||!e.target.closest?.('#world-map'))return;e.preventDefault();setMapZoom((ctx.mapZoom||1)-Math.sign(e.deltaY)*.1);},{passive:false});
+  document.addEventListener('pointerdown',e=>{
+    const side=e.target.closest?.('.world-expanded .world-side');if(!ctx?.expanded||!side||e.button!==0||e.target.closest('button,a,select,input,label,summary,.wm-lines path'))return;
+    const scroller=[side,...(function*(){let p=side.parentElement;while(p){yield p;p=p.parentElement;}})()].find(el=>el.scrollHeight>el.clientHeight+2||el.scrollWidth>el.clientWidth+2)||side;
+    const start={x:e.clientX,y:e.clientY,left:scroller.scrollLeft,top:scroller.scrollTop};let moved=false;
+    const move=m=>{const dx=m.clientX-start.x,dy=m.clientY-start.y;if(!moved&&Math.hypot(dx,dy)<4)return;moved=true;side.classList.add('wm-panning');scroller.scrollLeft=start.left-dx;scroller.scrollTop=start.top-dy;};
+    const up=()=>{side.classList.remove('wm-panning');removeEventListener('pointermove',move);removeEventListener('pointerup',up);};
+    addEventListener('pointermove',move);addEventListener('pointerup',up);
+  });
   function drawLinks(){
     const host=$('#world-map');if(!host||!ctx)return;const box=host.getBoundingClientRect(),svg=host.querySelector('svg'),pos={},ix=links().index(ctx.feed),flow=ctx.flow||'saved',live=ctx.liveSet||new Set();
-    host.querySelectorAll('[data-key]').forEach(el=>{const r=el.getBoundingClientRect();pos[el.dataset.key]={l:r.left-box.left+host.scrollLeft,r:r.right-box.left+host.scrollLeft,y:(r.top+r.bottom)/2-box.top+host.scrollTop};});
+    // A zoomed diagram measures in zoomed pixels; its lines are drawn in its own, so measurements are scaled back.
+    const z=parseFloat(host.style.zoom)||1,square=['desktop90','console90','console00','classic'].includes(document.documentElement.dataset.style);
+    host.querySelectorAll('[data-key]').forEach(el=>{const r=el.getBoundingClientRect();pos[el.dataset.key]={l:(r.left-box.left)/z+host.scrollLeft,r:(r.right-box.left)/z+host.scrollLeft,y:((r.top+r.bottom)/2-box.top)/z+host.scrollTop};});
     const lines=ctx.mapLines||[],most=Math.max(1e-9,...lines.map(e=>e.weight||0));
     svg.setAttribute('width',Math.max(host.scrollWidth,box.width));svg.setAttribute('height',Math.max(host.scrollHeight,box.height));
     svg.innerHTML=lines.filter(e=>pos[e.source]&&pos[e.target]).map(e=>{const a=pos[e.source],b=pos[e.target];let d;
       // Same column: a loop out to the right. Otherwise from the facing sides.
-      if(Math.abs(a.l-b.l)<4){const x=a.r+28+Math.min(60,Math.abs(a.y-b.y)/6);d=`M${a.r},${a.y} C${x},${a.y} ${x},${b.y} ${b.r},${b.y}`;}
-      else{const forward=a.l<b.l,x1=forward?a.r:a.l,x2=forward?b.l:b.r,m=(x1+x2)/2;d=`M${x1},${a.y} C${m},${a.y} ${m},${b.y} ${x2},${b.y}`;}
+      // The older styles draw right-angled connectors, as their own diagrams did; the others draw curves.
+      if(Math.abs(a.l-b.l)<4){const x=a.r+28+Math.min(60,Math.abs(a.y-b.y)/6);d=square?`M${a.r},${a.y} H${x} V${b.y} H${b.r}`:`M${a.r},${a.y} C${x},${a.y} ${x},${b.y} ${b.r},${b.y}`;}
+      else{const forward=a.l<b.l,x1=forward?a.r:a.l,x2=forward?b.l:b.r,m=(x1+x2)/2;d=square?`M${x1},${a.y} H${m} V${b.y} H${x2}`:`M${x1},${a.y} C${m},${a.y} ${m},${b.y} ${x2},${b.y}`;}
       const look=ctx.mapNode||(key=>ix.nodes.get(key)),A=look(e.source),B=look(e.target),w=e.weight||0;
       const tip=(e.type?links().sentence(A,e,B):`${A.name} → ${B.name}`)+' · '+(w?amount(w,flow):'nothing recorded along this yet');
       const cls=[w?'':'idle',live.has(e.source)&&live.has(e.target)?'live':''].filter(Boolean).join(' ');
@@ -277,17 +305,20 @@ window.auraView=(()=>{
     const landName=id=>f.lands.find(l=>l.id===id)?.name,projectName=id=>(state.projects||[]).find(p=>p.id===id)?.name;
     const keyOf=c=>by==='model'?c.model||'Model unreported':by==='work'?(c.group.kind==='land'?'land:'+c.group.id:c.group.kind==='project'?'project:'+c.group.id:'other'):c.agent||'Unnamed app';
     const nameOf=k=>by==='app'&&typeof window.appName==='function'?window.appName(k):by!=='work'?k:k==='other'?'Not tied to anything':k.startsWith('land:')?landName(k.slice(5))||'A collection':projectName(k.slice(8))||'A project';
+    // What the spending produced: the records each conversation saved or changed, as AURA noted at the time.
+    const M=L.measures(f);for(const c of chats)c.saved=c.id?M.carried('chat:'+c.id,'saved'):0;
     const groups=new Map();
-    for(const c of chats){const k=keyOf(c);if(!groups.has(k))groups.set(k,{key:k,name:nameOf(k),requests:0,tokens:0,cost_usd:0,missing_costs:0,missing_tokens:0,chats:[]});const g=groups.get(k);for(const field of ['requests','tokens','cost_usd','missing_costs','missing_tokens'])g[field]+=c[field]||0;g.chats.push(c);}
-    const sum=field=>chats.reduce((s,c)=>s+(c[field]||0),0),requests=sum('requests'),tokens=sum('tokens'),cost=sum('cost_usd'),noCost=sum('missing_costs');
-    const sub=g=>[count(g.requests,'request'),g.tokens?compact(g.tokens)+' tokens':'',g.missing_costs!==g.requests&&g.cost_usd?money(g.cost_usd):'',g.missing_costs?'cost not reported for '+g.missing_costs:''].filter(Boolean).join(' · ');
+    for(const c of chats){const k=keyOf(c);if(!groups.has(k))groups.set(k,{key:k,name:nameOf(k),requests:0,tokens:0,cost_usd:0,missing_costs:0,missing_tokens:0,saved:0,chats:[]});const g=groups.get(k);for(const field of ['requests','tokens','cost_usd','missing_costs','missing_tokens','saved'])g[field]+=c[field]||0;g.chats.push(c);}
+    const sum=field=>chats.reduce((s,c)=>s+(c[field]||0),0),requests=sum('requests'),tokens=sum('tokens'),cost=sum('cost_usd'),noCost=sum('missing_costs'),saved=sum('saved');
+    const per=g=>g.saved&&g.cost_usd&&!g.missing_costs?money(g.cost_usd/g.saved)+' per saved record':'';
+    const sub=g=>[count(g.requests,'request'),g.tokens?compact(g.tokens)+' tokens':'',g.missing_costs!==g.requests&&g.cost_usd?money(g.cost_usd):'',g.saved?count(g.saved,'saved record'):'nothing saved yet',per(g),g.missing_costs?'cost not reported for '+g.missing_costs:''].filter(Boolean).join(' · ');
     const list=[...groups.values()].map(g=>({...g,sub:sub(g),value:g[metric]||0,hue:g.key.startsWith('land:')?(hueOf(g.key.slice(5))??hash(g.key)%360):hash(g.key)%360}));
     if(ctx)ctx.effortGroups=new Map(list.map(g=>[g.key,{chats:g.chats.filter(c=>c.id).map(c=>c.id),apps:[...new Set(g.chats.map(c=>c.agent).filter(Boolean))].map(n=>'app:'+n),node:by==='app'?'app:'+g.key:by==='work'&&g.key!=='other'?g.key:null}]));
     const chart=list.some(g=>g.value>0)?blocks(list):'<p class="small-note">Nothing reported for this measure. Try another.</p>';
     const open=list.find(g=>g.key===ctx?.effortOpen),follow=open&&ctx.effortGroups.get(open.key)?.node,detail=open?`<section><h3>${esc(open.name)}</h3>${follow?`<button type="button" class="text-button" data-effort-follow="${esc(follow)}">Follow in Connections</button>`:''}${open.chats.sort((a,b)=>b[metric]-a[metric]).map(c=>row(c.id?`data-edit-chat="${esc(c.id)}"`:'',c.title,[by!=='app'&&c.agent?(typeof window.appName==='function'?window.appName(c.agent):c.agent):'',by!=='model'?c.model:'',count(c.requests,'request'),c.tokens?compact(c.tokens)+' tokens':'',c.missing_costs!==c.requests&&c.cost_usd?money(c.cost_usd):'',c.id?produced(f,c.id):''].filter(Boolean).join(' · '))).join('')}</section>`:'<p class="small-note">Select a block to see the conversations behind it and what they saved.</p>';
     const select=(id,label,options,current)=>`<label>${label} <select id="${id}">${options.map(([k,t])=>`<option value="${k}" ${k===current?'selected':''}>${t}</option>`).join('')}</select></label>`;
-    return `<div class="world-acts">${select('world-effort-by','Group by',[['app','AI app'],['work','What it was for'],['model','Model']],by)}${select('world-effort-metric','Size by',[['requests','Requests'],['tokens','Reported tokens'],['cost_usd','Reported cost']],metric)}</div>
-      <p class="small-note">${count(requests,'request')} this month${tokens?' · '+compact(tokens)+' reported tokens':''}${cost?' · '+money(cost)+' reported':''}${noCost?' · cost not reported for '+noCost:''}. Only what each app reported is counted.${note?' '+note:''}</p>`+chart+detail;
+    return `<div class="world-acts">${select('world-effort-by','Group by',[['app','AI app'],['work','What it was for'],['model','Model']],by)}${select('world-effort-metric','Size by',[['requests','Requests'],['tokens','Reported tokens'],['cost_usd','Reported cost'],['saved','Saved work']],metric)}</div>
+      <p class="small-note">${count(requests,'request')} this month${tokens?' · '+compact(tokens)+' reported tokens':''}${cost?' · '+money(cost)+' reported':''}${noCost?' · cost not reported for '+noCost:''} · ${saved?count(saved,'record')+' saved or changed':'nothing saved yet'}. Only what each app reported is counted; saved work counts what AURA noted at the time it was saved.${note?' '+note:''}</p>`+chart+detail;
   }
 
   /* The year poster: the world, the year's outcomes, and each day something was saved. It is made from Share. */
@@ -351,13 +382,20 @@ window.auraView=(()=>{
     catch{/* Browsers may disable session storage. Navigation still works. */}
   }
   function selectionChanged(selection,remember=true){
-    if(remember&&ctx.sel&&selection&&(ctx.sel.id!==selection.id||ctx.sel.kind!==selection.kind)){
-      ctx.history=[...(ctx.history||[]),{kind:ctx.sel.kindOf||ctx.sel.kind,id:ctx.sel.id,camera:world()?.cameraState?.(),tab:ctx.tab}].slice(-20);
+    if(remember&&selection&&(ctx.sel?.id!==selection.id||ctx.sel?.kind!==selection.kind)){
+      if(ctx.sel)ctx.history=[...(ctx.history||[]),{kind:ctx.sel.kindOf||ctx.sel.kind,id:ctx.sel.id,camera:world()?.cameraState?.(),tab:ctx.tab}].slice(-20);
+      // The browser's Back steps back through what you looked at, as the Back link does.
+      try{history.pushState({...(history.state||{}),worldStep:(history.state?.worldStep||0)+1},'',location.href);ctx.pushed=(ctx.pushed||0)+1;}catch{}
     }
     ctx.sel=selection;paintSide();
   }
+  /* One step back: the previous selection with its camera, or nothing selected. */
+  function stepBack(){
+    if(ctx.history?.length){const previous=ctx.history.pop();if(previous.tab)ctx.tab=previous.tab;selectRecord(previous.kind,previous.id,false);world()?.restoreCamera?.(previous.camera);}
+    else if(ctx.sel){ctx.sel=null;world()?.region?.(null);world()?.clear();world()?.filter?.(ctx.filter);paintSide();}
+  }
   function selectRecord(kind,id,fly=true){
-    const selection=recordFor(ctx.feed,kind,id);
+    const selection=recordFor(ctx.feed,kind,id);world()?.region?.(null);
     if(!selection){ctx.sel=null;world()?.release?.();paintSide();return;}
     const camera=world()?.cameraState?.();
     ctx.restoring=!fly;
@@ -369,6 +407,7 @@ window.auraView=(()=>{
     if(fly&&ctx.history?.length)ctx.history.at(-1).camera=camera;
     const lands=relatedFeed(ctx.feed,selection).lands.map(l=>l.id);
     world()?.filter?.({lands,scoped:true});
+    if(kind==='project')world()?.region?.({lands,name:selection.name});
     if(fly)world()?.reveal?.(lands);
     ctx.restoring=false;
   }
@@ -449,7 +488,7 @@ window.auraView=(()=>{
   const remember=patch=>{state.data.aura_preferences={...(state.data.aura_preferences||{}),...patch};api('/api/preferences',{business:state.business,aura:patch}).then(()=>{hq().paintMark?.();hq().paint?.(true);}).catch(()=>{});};
   function mountWorld(){
     const host=$('#world-stage');if(!host||!ctx)return;
-    let ok=false;try{ok=!!world()?.available&&world().mount(host,ctx.feed,{select:o=>{if(ctx){world()?.filter?.(ctx.filter);selectionChanged(o,!ctx.restoring);}},seen:ctx.seen,toured:ctx.toured,remember,running:runningNow,poster:()=>drawPoster(ctx.feed,host),go:key=>{const [kind,...rest]=String(key).split(':');selectRecord(kind,rest.join(':'));},links:()=>ctx?.feed});if(ok)world().filter(ctx.filter);}catch(error){console.error(error);ok=false;}
+    let ok=false;try{ok=!!world()?.available&&world().mount(host,ctx.feed,{select:o=>{if(ctx){world()?.filter?.(ctx.filter);selectionChanged(o,!ctx.restoring);}},seen:ctx.seen,toured:ctx.toured,remember,running:runningNow,poster:()=>drawPoster(ctx.feed,host),go:key=>{const [kind,...rest]=String(key).split(':');if(kind==='tab'){showTab(rest.join(':'));return;}selectRecord(kind,rest.join(':'));},links:()=>ctx?.feed});if(ok)world().filter(ctx.filter);}catch(error){console.error(error);ok=false;}
     if(!ok)host.innerHTML='<p class="world-fallback">This computer cannot draw the 3D world. Everything in it is listed beside this, and in the other views.</p>';
     ctx.seen=ctx.feed.as_of;ctx.toured=true;world()?.lens?.(ctx.tab==='map'?'links':ctx.tab==='effort'?'effort':ctx.tab==='timeline'?'time':'');paintSide();
   }
@@ -470,9 +509,10 @@ window.auraView=(()=>{
   /* The list beside the world follows the lens: the world's own list, or the same records as connections, time or effort. */
   function paintSide(){
     const host=$('#world-side');if(!host||!ctx)return;const f=ctx.feed,tab=ctx.tab,scoped=relatedFeed(f,ctx.sel);
-    const scope=ctx.sel&&tab!=='world'?`<p><b>${esc(ctx.sel.name)}</b> <button class="text-button" data-world-details>Details</button> <button class="text-button" data-world-clear>Show everything</button></p>`:'';
-    const expand=tab!=='world'?`<button type="button" class="text-button" data-world-expand>${ctx.expanded?'Back to the world':'Give it the whole screen'}</button>`:'';
-    const back=ctx.history?.length&&ctx.sel?'<button class="text-button" data-world-previous>‹ Back</button>':'';
+    const scope=ctx.sel&&tab!=='world'?`<p><b>${esc(ctx.sel.name)}</b> <button class="text-button" data-world-details>Details</button></p>`:'';
+    const moves=[ctx.history?.length&&ctx.sel?'<button class="text-button" data-world-previous>‹ Back</button>':'',ctx.sel?'<button type="button" class="text-button" data-world-clear>Show everything</button>':'',
+      tab!=='world'?`<button type="button" class="text-button" data-world-expand>${ctx.expanded?'Back to the world':'Give it the whole screen'}</button>`:''].filter(Boolean);
+    const back=moves.length?`<div class="world-moves">${moves.join('')}</div>`:'',expand='';
     host.parentElement.classList.toggle('world-expanded',!!ctx.expanded);host.parentElement.classList.toggle('world-focused',!!ctx.sel);
     let body;
     if(tab==='map')body='<h2>Connections</h2>'+scope+(ctx.expanded?mapView(f)+(ctx.sel?connections(f,ctx.sel):''):connections(f,ctx.sel));
@@ -610,7 +650,6 @@ window.auraView=(()=>{
     if(e.target.id==='world-effort-metric'){ctx.metric=e.target.value;world()?.setEffortMetric?.(ctx.metric);paintSide();}
     if(e.target.id==='world-flow'){ctx.flow=e.target.value;paintSide();}
     if(e.target.id==='world-effort-by'){ctx.effortBy=e.target.value;ctx.effortOpen=null;paintSide();}
-    if(e.target.id==='world-by'){ctx.filter.by=e.target.value;ctx.filter.lands=landsFor(ctx.feed,e.target.value);world()?.filter(ctx.filter);paintSide();}
     if(e.target.id==='aura-goal'){const goal=e.target.value;state.data.aura_preferences={...(state.data.aura_preferences||{}),goal};attempt(async()=>{await api('/api/preferences',{business:state.business,aura:{goal}});hq().paintMark();hq().paint(true);paintSide();});}
   });
   const saveShift=shift=>{state.data.aura_preferences={...(state.data.aura_preferences||{}),shift};clearTimeout(shiftTimer);shiftTimer=setTimeout(()=>attempt(async()=>{await api('/api/preferences',{business:state.business,aura:{shift}});hq().paintMark();hq().paint(true);}),400);};
@@ -653,9 +692,11 @@ window.auraView=(()=>{
     if(on('[data-world-compare]')){ctx.timeMode='since';showTab('timeline');}
     if(on('[data-world-fly]'))world()?.visit?.(changesSince(comparisonFeed(relatedFeed(ctx.feed,ctx.sel),ctx.sel),sinceDate(ctx.feed)).map(c=>c.key));
     if(on('[data-world-details]'))showTab('world');
-    if(on('[data-world-previous]')&&ctx.history?.length){const previous=ctx.history.pop();if(previous.tab)ctx.tab=previous.tab;selectRecord(previous.kind,previous.id,false);world()?.restoreCamera?.(previous.camera);}
+    if(on('[data-world-previous]')&&ctx.history?.length){if(ctx.pushed)history.back();else stepBack();}
+    if(on('[data-world-more-chips]')){ctx.allChips=!ctx.allChips;paintChrome();}
+    const zoomBy=on('[data-map-zoom]');if(zoomBy)setMapZoom(+zoomBy.dataset.mapZoom===0?1:(ctx.mapZoom||1)+.1*Math.sign(+zoomBy.dataset.mapZoom));
     if(on('[data-world-expand]')){ctx.expanded=!ctx.expanded;paintSide();$('#world-side [data-world-expand]')?.focus();}
-    if(on('.aura-view [data-world-clear]')){ctx.sel=null;ctx.history=[];world()?.clear();world()?.filter?.(ctx.filter);paintSide();}
+    if(on('.aura-view [data-world-clear]')){ctx.sel=null;ctx.history=[];world()?.region?.(null);world()?.clear();world()?.filter?.(ctx.filter);paintSide();}
     const chip=on('.aura-view [data-world-chip]'),needs=on('.aura-view [data-world-needs]');
     if(chip||needs){if(chip){ctx.filter.by='';const id=chip.dataset.worldChip,active=ctx.filter.lands.includes(id);ctx.filter.lands=active?ctx.filter.lands.filter(x=>x!==id):[...ctx.filter.lands,id];}else ctx.filter.needs=!ctx.filter.needs;world()?.filter(ctx.filter);paintSide();}
     if(on('.aura-view [data-world-tour]'))world()?.tour?.();
@@ -664,5 +705,7 @@ window.auraView=(()=>{
   window.addEventListener?.('pagehide',savePlace);
   return {focusChat:()=>setChat(true),leave(){savePlace();if(ctx){ctx.chat=false;ctx.mapObserver?.disconnect();}world()?.unmount?.();},chatOpen:()=>!!ctx?.chat,open,render:draw,
     relatedFeed,recordFor,changesSince,comparisonFeed,evidenceRows,goalLine,goalDone,home,tools,goalGaps,selected,whatChanged,landsFor,connections,mapView,timelineView,effortView,posterData,receipts,found,
-    go:key=>{if(!ctx)return;const [kind,...rest]=String(key).split(':');selectRecord(kind,rest.join(':'));}};
+    go:key=>{if(!ctx)return;const [kind,...rest]=String(key).split(':');if(kind==='tab'){showTab(rest.join(':'));return;}selectRecord(kind,rest.join(':'));},
+    /* The browser's Back while looking around the world: one step back. False when the world has no step to undo. */
+    popped(){if(!ctx?.pushed)return false;ctx.pushed--;stepBack();return true;}};
 })();

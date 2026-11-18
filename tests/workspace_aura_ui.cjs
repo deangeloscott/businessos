@@ -125,7 +125,9 @@ const gapFeed={...feed,findings:[{id:'F9',land:'col_1',label:'unverified',statem
 assert.equal(v.goalGaps(gapFeed,quiet).map(g=>g[0]).join(' | '),'Not measured for 49 days | Local competitors has gone quiet | 1 finding in Local competitors needs checking | Weekly check is not running','what stands between a goal and its number comes only from saved facts');
 assert.equal(v.goalGaps(gapFeed,{...quiet,reached:true}).length,0);assert.equal(v.goalGaps(gapFeed,G3).length,0,'a goal with no number has no gaps to claim');
 const tools=v.tools({...feed,lands:[feed.lands[0],{...feed.lands[0],id:'col_2',name:'Grants'}]});
-assert.ok(tools.keys.includes('data-world-chip="col_2"')&&tools.top.includes('id="world-q"')&&tools.top.includes('optgroup label="AI apps"'),'the key along the bottom, find and filter at the top');
+assert.ok(tools.keys.includes('data-world-chip="col_2"')&&tools.top.includes('id="world-q"')&&!tools.top.includes('<select'),'the key along the bottom, find at the top; selecting something shows what belongs to it');
+const many=v.tools({...feed,lands:Array.from({length:12},(_,i)=>({...feed.lands[0],id:'col_'+i,name:'Area '+i,items:Array(i).fill(feed.lands[0].items[0])}))});
+assert.ok(many.keys.includes('+6 more')&&many.keys.includes('data-world-chip="col_11"')&&!many.keys.includes('data-world-chip="col_0"'),'many areas show the busiest few and fold the rest into one chip');
 assert.equal(v.tools(feed).keys,'','area chips appear once there is more than one area');
 
 /* Time. */

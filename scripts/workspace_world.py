@@ -46,6 +46,13 @@ def _item(row):
 
 
 def world(bid, at=None, app=None):
+    """One read-only pass: every part of the world reads the business's saved records once."""
+    from _common import index_snapshot
+    with index_snapshot():
+        return _world(bid, at, app)
+
+
+def _world(bid, at=None, app=None):
     at = at or datetime.now(timezone.utc)
     index = object_index(bid)
     documents = {}
@@ -85,7 +92,8 @@ def world(bid, at=None, app=None):
                       'items': [_item(r) for r in current[:MAX_ITEMS]], 'more': max(0, len(current) - MAX_ITEMS)})
         checks = [c for c in d['checks'] if isinstance(c.get('at'), str)]
         for position, check in enumerate(checks):
-            if position == 0 and len(d['checks']) < 50:continue  # filling a collection for the first time is not a change
+            # Filling a collection for the first time is not a change; once older checks have fallen off, the first kept one is.
+            if position == 0 and len(d["checks"]) < collections.KEPT_CHECKS:continue
             for change in check.get('changes') or []:
                 row = {'at': check['at'], 'land': d['id'], 'item_id': change.get('id'), 'kind': change.get('kind', 'changed'), 'reason': str(change.get('reason') or '')[:1000], 'title': str(change.get('title', ''))[:160]}
                 if check.get('by'):row['by'] = check['by']
@@ -213,7 +221,9 @@ def world(bid, at=None, app=None):
     for kind in types.values():feed['library_totals'][kind] = feed['library_totals'].get(kind, 0) + 1
     feed['relationships'] = relationships(feed, registry, bound, objects, given_counts['references'], item_sources,
         app.preferences.get('assistants', {}).get(bid, []) if app else [], origins=workspace_origins.known(), library_types=types,
-        services=lambda sessions: workspace_services.used(sessions, workspace_root()))
+        services=(lambda sessions: workspace_services.used(sessions, workspace_root())) if not app or app.reads_app_records() else None)
+    try:feed['service_problems'] = app.service_problems(bid) if app and app.reads_app_records() else []
+    except (OSError, ValueError):feed['service_problems'] = []
     feed['revision'] = revision(feed)
     return feed
 

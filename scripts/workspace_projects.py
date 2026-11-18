@@ -160,12 +160,27 @@ def binding(bid,kind,ident):return load().get('bindings',{}).get(bid+'\0'+kind+'
 
 # Session ids that AI apps already give the commands they run, so work done directly in an app can say where it happened.
 # Add an app here only after confirming the variable in that app; nothing is guessed or asked of the AI.
-HARNESS_SESSIONS=(('CLAUDE_CODE_SESSION_ID','Claude Code'),)
+# The session each AI app names in the environment of the commands it runs. Pi and OMP name the session's file;
+# its first line holds the session's ID.
+HARNESS_SESSIONS=(('CLAUDE_CODE_SESSION_ID','Claude Code'),('PI_SESSION_ID','Pi'),('PI_SESSION_FILE',None),
+                  ('HERMES_SESSION_ID','Hermes'),('ANTIGRAVITY_CONVERSATION_ID','Google Antigravity'))
 
 
 def harness_session():
     for name,app in HARNESS_SESSIONS:
         value=os.environ.get(name,'').strip()
+        if not value or len(value)>4096:continue
+        if name=='PI_SESSION_FILE':
+            path=Path(value)
+            head={}
+            try:
+                with path.open(encoding='utf-8') as session:
+                    for _ in range(5):  # OMP writes a title line before the session line
+                        row=json.loads(session.readline() or '{}')
+                        if isinstance(row,dict) and row.get('type')=='session':head=row;break
+            except (OSError,ValueError):continue
+            value=str(head.get('id') or '')
+            app='OMP' if '.omp' in {part.lower() for part in path.parts} else 'Pi'
         if value and len(value)<=200:return {'kind':'session','app':app,'id':value,'project_refs':[]}
     return {}
 

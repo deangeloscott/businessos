@@ -264,19 +264,20 @@ function actorsOf(feed) {
   if (L) for (const [key, node] of L.index(feed).nodes) if (node.kind === 'agent' && !key.includes('|')) out.push({ key, kind: 'agent', name: node.name, id: key.slice(6), use: (L.index(feed).from.get(key) || []).filter(e => e.type === 'used').length, unit: 'conversation' });
   return out.sort((a, b) => b.use - a.use);
 }
-let arrivals = null, dockSpots = [], peek = null, changedBy = new Map(), lastTouch = 0, lastDrawT = 0;
+let region = null, arrivals = null, dockSpots = [], peek = null, changedBy = new Map(), lastTouch = 0, lastDrawT = 0;
 function setEffortMetric(metric='requests') {
   effortMetric=metric;
   const groups=new Map((M.feed.effort || []).filter(g=>g.kind==='land').map(g=>[g.id,g]));
-  const top=Math.max(0,...[...groups.values()].map(g=>g[metric] || 0));
+  const value=g=>metric==='saved'?(g?.chats||[]).reduce((t,c)=>t+effortOf(c),0):g?.[metric] || 0;
+  const top=Math.max(0,...[...groups.values()].map(value));
   effortShare={};
   for(const land of M.lands){
-    const group=groups.get(land.id), amount=group?.[metric] || 0;
+    const group=groups.get(land.id), amount=value(group);
     effortShare[land.id]=top ? amount/top : 0;
     const count=amount.toLocaleString(undefined,{maximumFractionDigits:2});
     const missing=metric==='tokens'?group?.missing_tokens:metric==='cost_usd'?group?.missing_costs:0;
     land.effortLabel=!group?'No attributed requests':missing===group.requests?'Usage unreported':
-      (metric==='requests'?count+' requests':metric==='tokens'?count+' reported tokens':'$'+count+' reported')+(missing?' · partial':'');
+      (metric==='requests'?count+' requests':metric==='tokens'?count+' reported tokens':metric==='saved'?count+' saved':'$'+count+' reported')+(missing?' · partial':'');
   }
   dirty=true;
 }
@@ -395,10 +396,19 @@ function overlay(t, dd) { placed = []; hits = []; const alt = cam.alt, playing =
     if (l.quiet) alertDot(x + w / 2 + 12, y);
     if (lens === 'links') for (const R of rings) if (R.anchor && R.G.lands.includes(l.id)) { g.save(); g.strokeStyle = R.hue == null ? C.muted : cssHue(R.hue, 72); g.globalAlpha = .75 * c.fade; g.lineWidth = 1.4; g.setLineDash([4, 4]); g.beginPath(); g.moveTo(c.x, c.y); g.quadraticCurveTo((c.x + R.anchor.x) / 2, Math.min(c.y, R.anchor.y) - 40, R.anchor.x, R.anchor.y); g.stroke(); g.restore(); }
     hit(x - w / 2 - 6, y - 10, w + 12, 22, l, [l.name, 'Click to fly there']); }
+  if (region && !playing) drawRegion(region);
   drawTrace();
   if (!sel && alt < 2.2) { const ta = sstep(2.2, 1.0, alt) * (alt < 1.25 ? 1 : .45); g.save(); g.lineWidth = 1; for (const f of M.finds) { if (!f.tied.length || f.from > dd || f.land.dim < .5) continue; const a = proj(f.p, 1.004); if (!a.vis || a.x < -50 || a.x > W + 50 || a.y < -50 || a.y > H + 50) continue;
       for (const th of f.tied) { const b = proj(th.p, 1.004); if (!b.vis) continue; g.strokeStyle = cssHue(f.land.hue, 70); g.globalAlpha = ta * (f === focus || th === focus ? .9 : .3); g.beginPath(); g.moveTo(a.x, a.y); g.lineTo(b.x, b.y); g.stroke(); } } g.restore(); }
-  if (alt > .7) for (const k of M.tasks) { const l = k.land; if (U.uR.value[l.i] < .02) continue; const a = proj(k.p, 1, false), b = proj(k.foot, 1.004); if (!a.vis) continue; const far = sstep(.7, 1.3, alt) * (l.dim > .5 ? 1 : .3), bad = ['failed', 'missing', 'paused'].includes(k.raw.health), just = !bad && k.raw.last_run && Date.parse(M.feed.as_of) - Date.parse(k.raw.last_run) < 15 * 60e3, col = bad ? C.warn : just ? C.accent : C.muted, on = sel === k || hov === k; if (far < .02) continue;
+  // Three or more tasks keeping one area current gather into one clock with their count.
+  const crowded = new Map(); for (const k of M.tasks) crowded.set(k.land, [...(crowded.get(k.land) || []), k]);
+  if (alt > .7) for (const [l, list] of crowded) { if (list.length < 3 || U.uR.value[l.i] < .02) continue; const p = list.reduce((v, k) => v.add(k.p), new THREE.Vector3()).divideScalar(list.length), a = proj(p, 1, false); if (!a.vis) continue;
+    const far = sstep(.7, 1.3, alt) * (l.dim > .5 ? 1 : .3), bad = list.filter(k => ['failed', 'missing', 'paused'].includes(k.raw.health)), col = bad.length ? C.warn : C.muted, over = list.includes(hov) || list.includes(sel);
+    g.save(); g.globalAlpha = far; g.fillStyle = C.stage; g.beginPath(); g.arc(a.x, a.y, 10, 0, TAU); g.fill(); g.strokeStyle = over ? C.accent : col; g.lineWidth = 1.5; g.beginPath(); g.arc(a.x, a.y, 8, 0, TAU); g.moveTo(a.x, a.y - 4.5); g.lineTo(a.x, a.y); g.lineTo(a.x + 3.2, a.y + 2); g.stroke(); g.restore();
+    const badge = String(list.length), bw = wOf(badge, 10, 700) + 8; g.save(); g.globalAlpha = far; g.fillStyle = col; g.beginPath(); g.roundRect(a.x + 6, a.y - 15, bw, 13, 6.5); g.fill(); g.restore(); txt(badge, a.x + 6 + bw / 2, a.y - 8.5, { size: 10, weight: 700, align: 'center', color: C.stage, alpha: far });
+    if (bad.length) alertDot(a.x - 9, a.y - 9);
+    hit(a.x - 12, a.y - 15, 26 + bw, 27, l, [`${list.length} scheduled tasks keep ${l.name} current`, list.slice(0, 5).map(k => k.name).join(', ') + (list.length > 5 ? '…' : '') + (bad.length ? ` · ${bad.length} need${bad.length === 1 ? 's' : ''} a look` : '') + ' · click to see them']); }
+  if (alt > .7) for (const k of M.tasks) { const l = k.land; if ((crowded.get(l) || []).length >= 3) continue; if (U.uR.value[l.i] < .02) continue; const a = proj(k.p, 1, false), b = proj(k.foot, 1.004); if (!a.vis) continue; const far = sstep(.7, 1.3, alt) * (l.dim > .5 ? 1 : .3), bad = ['failed', 'missing', 'paused'].includes(k.raw.health), just = !bad && k.raw.last_run && Date.parse(M.feed.as_of) - Date.parse(k.raw.last_run) < 15 * 60e3, col = bad ? C.warn : just ? C.accent : C.muted, on = sel === k || hov === k; if (far < .02) continue;
     g.save(); g.globalAlpha = far * .6; g.strokeStyle = col; g.lineWidth = 1; g.setLineDash([2, 3]); if (b.vis) { g.beginPath(); g.moveTo(a.x, a.y); g.lineTo(b.x, b.y); g.stroke(); } g.setLineDash([]);
     g.globalAlpha = far; g.fillStyle = C.stage; g.beginPath(); g.arc(a.x, a.y, 8, 0, TAU); g.fill(); g.strokeStyle = on ? C.accent : col; g.lineWidth = 1.5; g.beginPath(); g.arc(a.x, a.y, 6, 0, TAU); g.moveTo(a.x, a.y - 3.5); g.lineTo(a.x, a.y); g.lineTo(a.x + 2.6, a.y + 1.6); g.stroke(); g.restore();
     if (bad) alertDot(a.x + 8, a.y - 8); if (on) txt(k.name, a.x + 14, a.y, { size: 11.5, color: C.accent, alpha: far });
@@ -440,14 +450,35 @@ function overlay(t, dd) { placed = []; hits = []; const alt = cam.alt, playing =
       if (l.quiet || l.things.some(x => x.need) || l.finds.some(x => x.need)) { g.globalAlpha = 1; g.fillStyle = C.warn; g.beginPath(); g.arc(cx + r * .7, cy - r * .7, 2.8, 0, TAU); g.fill(); } hit(cx - r, cy - r, r * 2, r * 2, l, [l.name, l.unch ? 'Uncharted · click to start charting it' : 'Click to fly there']); }
     g.globalAlpha = 1; g.strokeStyle = C.ink; g.lineWidth = 1.2; g.beginPath(); g.arc(clamp(X(cam.lon), x0 + 4, x0 + w - 4), clamp(Y(cam.lat), y0 + 4, y0 + h - 4), clamp(cam.alt * 5, 4, 22), 0, TAU); g.stroke(); g.restore(); }
   if (show?.type === 'steps' && show.pos) { const s = proj(show.pos, 1.004); if (s.vis) { const u = ((t - show.stepAt) / 1400) % 1; g.save(); g.strokeStyle = C.accent; g.lineWidth = 1.6; g.globalAlpha = 1 - u; g.beginPath(); g.arc(s.x, s.y, 10 + u * 34, 0, TAU); g.stroke(); g.restore(); } } }
+/* A project is a label across places, not a place: selected, each area it spans gets a dashed outline, and the project's
+   name sits above them. Areas outside the project are never enclosed. */
+function drawRegion(r) {
+  let top = null;
+  g.save(); g.lineJoin = 'round';
+  for (const id of r.lands) { const l = M.lands.find(z => z.id === id); if (!l || l.hidden) continue; const rad = Math.max(U.uR.value[l.i], .08) * 1.08 + .04, path = [];
+    for (let k = 0; k <= 40; k++) { const s = proj(offset(l.c, rad, k / 40 * TAU), 1.004); path.push(s.vis ? s : null); if (s.vis && (!top || s.y < top.y)) top = s; }
+    const trace = () => { g.beginPath(); let pen = false; for (const s of path) { if (!s) { pen = false; continue; } pen ? g.lineTo(s.x, s.y) : g.moveTo(s.x, s.y); pen = true; } };
+    // A dark halo under the line keeps it readable over bright land, in every style.
+    trace(); g.setLineDash([]); g.globalAlpha = .7; g.strokeStyle = C.stage; g.lineWidth = 5; g.stroke();
+    trace(); g.setLineDash([7, 5]); g.globalAlpha = 1; g.strokeStyle = C.accent; g.lineWidth = 2; g.stroke(); }
+  g.restore();
+  if (!top) return; const label = fitLabel(r.name, 260), w = wOf(label, 12.5), x = clamp(top.x - w / 2, 10, W - w - 10), y = Math.max(TOP + 96, top.y - 14);
+  txt(label, x, y, { size: 12.5, color: C.accent }); take(x, y - 9, w, 18);
+}
 /* The sky: AI apps and agents around the world, busiest first. Each app keeps its own colour and initials; an agent is a
    person mark. At rest they are quiet but readable; one that is working lights up, says what it is on, and sends a current
    to every area its conversation's chain reaches. In the effort lens each is sized by its share of AI use this month. */
 const initials = name => { const words = String(name).split(/\s+/).filter(w => /^[A-Za-z0-9]/.test(w)); return ((words[0]?.[0] || '?') + (words[1]?.[0] || words[0]?.[1] || '')).toUpperCase(); };
+/* One conversation's effort in the measure shown: what its app reported, or the records it saved. */
+function effortOf(c) {
+  if (effortMetric !== 'saved') return c[effortMetric] || 0;
+  if (effortOf.feed !== M.feed) { effortOf.feed = M.feed; effortOf.m = window.auraLinks?.measures(M.feed); }
+  return c.id && effortOf.m ? effortOf.m.carried('chat:' + c.id, 'saved') : 0;
+}
 function shareOf(a) {
-  if (lens !== 'effort') return null; const chats = (M.feed.effort || []).flatMap(g => g.chats || []), total = chats.reduce((t, c) => t + (c[effortMetric] || 0), 0); if (!total) return null;
+  if (lens !== 'effort') return null; const chats = (M.feed.effort || []).flatMap(g => g.chats || []), total = chats.reduce((t, c) => t + effortOf(c), 0); if (!total) return null;
   const mine = a.kind === 'app' ? chats.filter(c => c.agent === a.raw) : chats.filter(c => c.id && (window.auraLinks?.index(M.feed).from.get(a.key) || []).some(e => e.target === 'chat:' + c.id));
-  return mine.reduce((t, c) => t + (c[effortMetric] || 0), 0) / total;
+  return mine.reduce((t, c) => t + effortOf(c), 0) / total;
 }
 /* Where a satellite orbits: above the places its conversations' work reached, nudged apart so two never sit on each other.
    With nothing recorded yet it waits high in the north, where the sky is. */
@@ -463,7 +494,7 @@ function effortWires(a) {
     effortWires.feed = M.feed; effortWires.metric = effortMetric; effortWires.cache = new Map(); effortWires.most = 1e-9;
     const L = window.auraLinks, chats = (M.feed.effort || []).flatMap(g => g.chats || []).filter(c => c.id);
     for (const actor of M.actors) { const mine = actor.kind === 'app' ? chats.filter(c => c.agent === actor.raw) : chats.filter(c => (L?.index(M.feed).from.get(actor.key) || []).some(e => e.target === 'chat:' + c.id)), by = new Map();
-      for (const c of mine) for (const id of L ? L.places(M.feed, 'chat:' + c.id) : []) by.set(id, (by.get(id) || 0) + (c[effortMetric] || 0));
+      for (const c of mine) for (const id of L ? L.places(M.feed, 'chat:' + c.id) : []) by.set(id, (by.get(id) || 0) + effortOf(c));
       effortWires.cache.set(actor.key, by); for (const w of by.values()) effortWires.most = Math.max(effortWires.most, w); }
   }
   return effortWires.cache.get(a.key) || new Map();
@@ -475,7 +506,8 @@ function dock(t, playing) {
   // Satellites ride a ring just outside the world's edge, at the angle where their work lies, so they turn with the world
   // without ever covering it. One whose places are round the back dims. None sits under the headline or the controls,
   // and they spread so no two touch.
-  const list = actors.slice(0, 12), D = 1 + cam.alt, rs = (H / 2) * Math.tan(Math.asin(Math.min(1, 1 / D))) / TANH, cx = W / 2, cy = H / 2;
+  // The busiest dozen fly; the rest fold into one "+N" mark that lists them and opens them all in Connections.
+  const rest = actors.length > 12 ? actors.slice(11) : [], list = [...actors.slice(0, rest.length ? 11 : 12), ...(rest.length ? [{ key: 'tab:map', kind: 'more', name: '+' + rest.length, rest, dir: new THREE.Vector3(0, .94, .34).normalize() }] : [])], D = 1 + cam.alt, rs = (H / 2) * Math.tan(Math.asin(Math.min(1, 1 / D))) / TANH, cx = W / 2, cy = H / 2;
   // With room around the world they ride a ring outside its edge; zoomed in, where the world fills the view, they ride the
   // edge of the view instead, at the same angle, so they never sit on the planet.
   const room = rs * 1.38 + 26 <= Math.min(cx, cy) - 30, R = room ? rs * 1.38 + 26 : Math.min(cx, cy) - 30, headline = cam.alt > 3.4 && !show && !sel && shareEl.hidden, deg = Math.PI / 180, gap = Math.max(.2, 44 / R);
@@ -500,6 +532,12 @@ function dock(t, playing) {
   const spots = list.map(a => { const p = at.find(x => x.a === a); a.ang = p.ang; const [x, y] = room ? [cx + Math.cos(p.ang) * R, cy + Math.sin(p.ang) * R] : edge(p.ang); return { x, y, front: p.front, ang: p.ang }; });
   dockSpots = list.map((a, k) => spots[k] && { key: a.key, x: spots[k].x, y: spots[k].y }).filter(Boolean);
   list.forEach((a, k) => {
+    if (a.kind === 'more') { const { x, y } = spots[k], w = wOf(a.name, 11) + 14, over = hov?.dock === a.key;
+      g.save(); g.globalAlpha = over ? 1 : .85; g.lineWidth = 1.2; g.strokeStyle = C.muted; g.fillStyle = kit ? 'rgba(255,255,255,.85)' : 'rgba(10,14,20,.7)';
+      g.beginPath(); g.roundRect(x - w / 2, y - 10, w, 20, 10); g.fill(); g.stroke(); g.restore();
+      txt(a.name, x, y + .5, { size: 11, align: 'center', color: over ? C.accent : C.ink });
+      const tip = [`${a.rest.length} more AI apps and agents`, a.rest.slice(0, 6).map(r => r.name).join(', ') + (a.rest.length > 6 ? '…' : '') + ' · click to see them all in Connections'];
+      take(x - w / 2, y - 10, w, 20); hit(x - w / 2, y - 10, w, 20, { dock: a.key }, tip); return; }
     const { x, y, front, ang } = spots[k], work = running.filter(r => a.kind === 'app' ? r.app === a.raw : r.agent === a.id), on = work.length > 0, over = hov?.dock === a.key || (peek?.docks || []).includes(a.key), share = shareOf(a);
     const hue = hashS(a.name) % 360, size = 9 * (share == null ? 1 : .8 + share * .9);
     g.save(); g.globalAlpha = on || over ? 1 : front ? .9 : .4; g.lineWidth = 1.5; g.strokeStyle = on ? C.accent : C.muted; g.fillStyle = kit ? `hsl(${hue},45%,88%)` : `hsl(${hue},38%,${on ? 34 : 22}%)`; g.beginPath();
@@ -538,11 +576,18 @@ function cities(alt) {
   const a0 = sstep(2.8, 2.3, alt) * sstep(1.15, 1.35, alt); if (a0 < .03) return; const per = new Map(); let shown = 0;
   const lately = x => Math.max(x.from, x.lastDay ?? -1e9) > S.day - 30 && x.from <= S.day;
   const list = M.things.filter(x => x.from <= S.day && x.land.dim > .5 && inSelection(x) && x.neighbours > 1).sort((a, b) => (b.neighbours + (lately(b) ? 4 : 0)) - (a.neighbours + (lately(a) ? 4 : 0)));
+  const named = [];
   for (const x of list) { if (shown >= 12) break; if ((per.get(x.land) || 0) >= 2) continue; const s = proj(x.p, 1.004); if (!s.vis || s.fade < .5) continue;
     const finds = M.finds.filter(f => f.tied.includes(x)).length, sub = [finds ? `${finds} finding${finds === 1 ? '' : 's'}` : '', x.changes ? `${x.changes} change${x.changes === 1 ? '' : 's'}` : ''].filter(Boolean).join(' · ');
     const w = Math.max(wOf(x.name, 12), sub ? wOf(sub, 10.5, 500) : 0), h = sub ? 30 : 16, px = s.x - w / 2, py = s.y - h - 10; if (!free(px, py, w, h)) continue;
     txt(x.name, s.x, py + 8, { size: 12, align: 'center', color: lately(x) ? C.ink : C.muted, alpha: a0 }); if (sub) txt(sub, s.x, py + 22, { size: 10.5, weight: 500, align: 'center', color: C.muted, alpha: a0 * .9 });
-    take(px, py, w, h); hit(px - 4, py - 2, w + 8, h + 14, x, [x.name, `${x.land.name}${sub ? ' · ' + sub : ''} · click to open`]); per.set(x.land, (per.get(x.land) || 0) + 1); shown++; }
+    take(px, py, w, h); hit(px - 4, py - 2, w + 8, h + 14, x, [x.name, `${x.land.name}${sub ? ' · ' + sub : ''} · click to open`]); per.set(x.land, (per.get(x.land) || 0) + 1); shown++; named.push({ x, s }); }
+  /* Roads: a recorded link between two named places, a finding that ties both, drawn faintly so the map shows how they connect. */
+  g.save(); g.lineWidth = 1.2; g.setLineDash([1, 4]); g.lineCap = 'round';
+  for (let i = 0; i < named.length; i++) for (let j = i + 1; j < named.length; j++) { const a = named[i], b = named[j];
+    if (!M.finds.some(f => f.tied.includes(a.x) && f.tied.includes(b.x))) continue;
+    g.strokeStyle = C.ink; g.globalAlpha = a0 * .35; g.beginPath(); g.moveTo(a.s.x, a.s.y); g.quadraticCurveTo((a.s.x + b.s.x) / 2, (a.s.y + b.s.y) / 2 - Math.hypot(a.s.x - b.s.x, a.s.y - b.s.y) * .12, b.s.x, b.s.y); g.stroke(); }
+  g.restore();
 }
 function flatMap(t, dd) { placed = []; hits = []; g.clearRect(0, 0, W, H); const top = TOP + 56, bot = H - 64, k = Math.min((W - 40) / TAU, (bot - top) / 2.2), cx = W / 2, cy = (top + bot) / 2, at = p => { const [lo, la] = lonlat(p); return [cx + wrap(lo - HOME) * k, cy - la * k]; };
   g.save(); g.strokeStyle = C.muted; g.globalAlpha = .25; g.strokeRect(cx - Math.PI * k, cy - 1.1 * k, TAU * k, 2.2 * k); g.restore();
@@ -676,5 +721,6 @@ window.auraWorld = { available: !!renderer,
   bench(n = 20) { const t0 = performance.now(); for (let i = 0; i < n; i++) { cancelAnimationFrame(raf); drawn = ''; frame(performance.now()); } return (performance.now() - t0) / n; },
   idle(n = 20) { const t0 = performance.now(); for (let i = 0; i < n; i++) { cancelAnimationFrame(raf); frame(performance.now()); } return (performance.now() - t0) / n; },
   /* For checks only: jump straight to where the camera is heading. */
+  region(r) { region = r && r.lands?.length ? { lands: r.lands, name: r.name || 'Project' } : null; dirty = true; },
   settle() { lastTouch = performance.now(); cam.lon = cam.to.lon; cam.lat = cam.to.lat; cam.alt = cam.to.alt; cam.v = [0, 0]; dday = S.day; ramp = null; if (M) for (const l of M.lands) { U.uR.value[l.i] = l.rto; U.uDim.value[l.i] = l.dim; } for (const R of rings) R.shown = gdone(R.G, S.day); }, state: () => ({ alt: cam.alt, day: S.day, sel: sel ? { kind: sel.kind || sel.kindOf, id: sel.id } : null, show: show?.type || null, kit, hits: hits.length, draws, dock: dockSpots }) };
 document.dispatchEvent(new Event('aura-world-ready'));

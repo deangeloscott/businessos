@@ -612,7 +612,7 @@ async function syncNotifications(deliver=false) {
       const batch=await api('/api/notifications',{business,action:'claim'});
       if(batch.claimed.length) {
         try {
-          const n=new Notification('AURA',{body:batch.claimed.length===1?(batch.claimed[0].kind==='usage'?'A usage limit needs your attention.':batch.claimed[0].status==='error'?'A request needs your attention.':batch.claimed[0].kind==='organization'?'Your organized workspace is ready.':'Your reply is ready.'):`${batch.claimed.length} updates are ready.`,tag:'aura-'+state.data.workspace+'-'+business,silent:true,renotify:false});
+          const n=new Notification('AURA',{body:batch.claimed.length===1?(batch.claimed[0].kind==='usage'?'A usage limit needs your attention.':batch.claimed[0].status==='error'?'A request needs your attention.':batch.claimed[0].kind==='organization'?'Your organized workspace is ready.':batch.claimed[0].agent==='AURA'&&batch.claimed[0].title?batch.claimed[0].title:'Your reply is ready.'):`${batch.claimed.length} updates are ready.`,tag:'aura-'+state.data.workspace+'-'+business,silent:true,renotify:false});
           state.systemAlert?.close();state.systemAlert=n;
           n.onclick=()=>{window.focus();n.close();if(!$('#notification-dialog').open)openAnchoredSurface($('#notification-dialog'),$('#notification-bell'),{width:400,align:'end'});};
         } catch { /* The inbox remains available when system delivery is unsupported. */ }
@@ -909,7 +909,7 @@ function chatControls() {
   const previousFolder=state.chatMeta?.workspace&&!sameWorkspace(state.chatMeta.workspace,state.data?.workspace);
   $('#request').disabled=!state.business||state.navigating;
   $('#request').placeholder=state.busy?'Write your next message while this runs…':'Ask a question or describe what you need…';
-  const blocked=previousFolder?'Reconnect this saved conversation to the current workspace before sending.':state.needsCheck?'Check the latest work before sending.':state.connectionInterrupted?'Reconnect to this chat before sending.':state.organizationWorking?'Wait for workspace organization to finish before sending.':'';
+  const blocked=previousFolder?'Reconnect this saved conversation to the current workspace before sending.':window.auraTerminal?.resuming?.(state.chatMeta?.id)?'This chat is open in the terminal. Close it there to continue here.':state.needsCheck?'Check the latest work before sending.':state.connectionInterrupted?'Reconnect to this chat before sending.':state.organizationWorking?'Wait for workspace organization to finish before sending.':'';
   $('#send').disabled=!state.business||!state.hydrated||state.navigating||state.stopping||state.starting||state.settling||!!blocked;
   $('#send').title=blocked;
   $('#send').textContent=state.navigating?'Loading chat…':state.stopping?'Stopping…':state.starting?'Starting…':state.settling?'Finishing…':state.busy?'Stop ■':state.data?.connection.connected?'Send ↑':state.data?.connection.mode==='copy'?'Copy request ↗':'Connect AI →';
@@ -1772,10 +1772,19 @@ async function workspaceReading(){
   details('Reading across workspaces',`<p>Each workspace keeps its own information. Turn this on to let your other workspaces on this computer use what this one knows, such as research findings, when it’s relevant. They can read it but never change it, and their AI says where it came from.</p><label class="check-label"><input type="checkbox" id="workspace-reading-toggle" ${data.readable_by_other_workspaces?'checked':''}><span>Let my other workspaces read this one</span></label><p class="small-note">Leave it off for work that must stay separate, such as one client’s information. To copy something instead, use Share or import.</p><h3 class="finding-heading">Readable from here</h3>${here.length?`<ul class="small-note">${here.map(w=>`<li>${esc(w.name)}</li>`).join('')}</ul>`:'<p class="small-note">None of your other workspaces allow reading yet.</p>'}`);
   $('#workspace-reading-toggle').onchange=e=>attempt(async()=>{try{await api('/api/reading',{readable_by_other_workspaces:e.target.checked});notice(e.target.checked?'Your other workspaces can now read this one.':'This workspace is private to itself again.');}catch(error){e.target.checked=!e.target.checked;throw error;}});
 }
+/* One small switch: AURA reads the AI apps' own records on this computer only to say where work was made and which
+   connected services it used. Nothing leaves the computer either way. */
+function appRecordsToggle(){
+  return `<label class="check-label settings-check"><input type="checkbox" id="read-app-records" ${state.data?.read_app_records===false?'':'checked'}><span>Read my AI apps’ records on this computer to show where work was made and which services it used</span></label>`;
+}
+document.addEventListener('change',event=>{
+  if(event.target.id!=='read-app-records')return;
+  const on=event.target.checked;attempt(async()=>{try{await api('/api/preferences',{read_app_records:on});state.data.read_app_records=on;}catch(error){event.target.checked=!on;throw error;}});
+});
 function openSettings(query=''){
   closeAnchoredSurface(false);if($('#more-dialog').open)$('#more-dialog').close();state.settingsReturn=false;
   const update=$('#update-menu-status')?.textContent.trim();
-  details('Settings',`<label class="sr-only" for="settings-find">Search settings</label><input type="search" id="settings-find" class="search" placeholder="Search settings" autocomplete="off">${settingsGroups.map(([group,rows])=>`<section class="settings-group"><h3>${esc(group)}</h3><div class="settings-list">${rows.map(([id,title,text,words])=>`<button type="button" class="settings-row" data-settings-open="${id}" data-settings-words="${esc((title+' '+text+' '+words).toLowerCase())}"><span><strong>${esc(title)}</strong><small>${esc(id==='startup-settings'&&update?update:text)}</small></span><span class="arrow" aria-hidden="true">›</span></button>`).join('')}</div></section>`).join('')}<p class="small-note settings-none" hidden>No settings match. Try another word, or ask your AI.</p>`);
+  details('Settings',`<label class="sr-only" for="settings-find">Search settings</label><input type="search" id="settings-find" class="search" placeholder="Search settings" autocomplete="off">${settingsGroups.map(([group,rows])=>`<section class="settings-group"><h3>${esc(group)}</h3><div class="settings-list">${rows.map(([id,title,text,words])=>`<button type="button" class="settings-row" data-settings-open="${id}" data-settings-words="${esc((title+' '+text+' '+words).toLowerCase())}"><span><strong>${esc(title)}</strong><small>${esc(id==='startup-settings'&&update?update:text)}</small></span><span class="arrow" aria-hidden="true">›</span></button>`).join('')}</div></section>`).join('')}<p class="small-note settings-none" hidden>No settings match. Try another word, or ask your AI.</p>${appRecordsToggle()}`);
   const find=$('#settings-find');find.oninput=()=>{const q=find.value.trim().toLowerCase();let any=false;document.querySelectorAll('.settings-row').forEach(r=>{const show=q.split(/\s+/).every(word=>r.dataset.settingsWords.includes(word));r.hidden=!show;any||=show;});document.querySelectorAll('.settings-group').forEach(g=>g.hidden=![...g.querySelectorAll('.settings-row')].some(r=>!r.hidden));$('.settings-none').hidden=any;};
   find.value=query;find.oninput();find.focus();
 }
@@ -1901,7 +1910,7 @@ function madeIn(data,file=''){
   if(p?.kind==='task')return `<p class="small-note made-in">Made by a scheduled task · <button class="text-button" data-open-schedule="${esc(p.id)}">Open it</button></p>`;
   if(p?.kind==='agent')return '<p class="small-note made-in">Made by an agent</p>';
   if(p?.kind==='session'){setTimeout(fillServices,0);return `<p class="small-note made-in">Made directly in ${esc(p.app||'an AI app')}<span data-made-services="session=${esc(encodeURIComponent(p.id))}&amp;app=${esc(encodeURIComponent(p.app||''))}"></span></p>`;}
-  const target=data?.id?`data-made-in-record="${esc(data.id)}"`:file?`data-made-in-file="${esc(file)}"`:'';
+  const target=state.data?.read_app_records===false?'':data?.id?`data-made-in-record="${esc(data.id)}"`:file?`data-made-in-file="${esc(file)}"`:'';
   return target?`<p class="small-note made-in"><button type="button" class="text-button" ${target}>Where was this made?</button></p>`:'';
 }
 window.auraMadeIn=madeIn;
@@ -1919,7 +1928,8 @@ async function fillServices(){
   let all=[];try{all=(await get('')).services;}catch{return;}
   for(const el of uses){
     el.dataset.filled='1';const s=all.find(x=>x.key===el.dataset.serviceUse);if(!el.isConnected)continue;
-    el.textContent=s?`Your AI called it ${s.calls===1?'once':s.calls+' times'} in ${s.conversations===1?'1 conversation':s.conversations+' conversations'} for this business.`:'No calls to it found in this business’s Claude Code or Codex conversations.';
+    const saved=s?Object.entries(s.saved||{}).map(([kind,n])=>n+' '+kind+(n===1?'':'s')):[];
+    el.textContent=s?`Your AI called it ${s.calls===1?'once':s.calls+' times'} in ${s.conversations===1?'1 conversation':s.conversations+' conversations'} for this business${saved.length?', which saved '+saved.join(' and ').replace(/ and (?=.* and )/g,', '):''}.`:'No calls to it found in this business’s conversations.';
   }
 }
 function resultOrigin(asset,ref=''){
@@ -2779,6 +2789,8 @@ document.addEventListener('click',event=>attempt(async()=>{
       await window.auraProjects.openCollection(item.collection_id,item.kind==='changes'?'changes':'current',item.kind==='deadline'?item.item_title||'':'');return;
     }
     if(item.kind==='goal'){state.inbox=await api('/api/notifications',{business:state.business,action:'read',id:item.id});renderNotifications();return;}
+    if(item.kind==='saved'&&item.item_id){$('#notification-dialog').close();state.inbox=await api('/api/notifications',{business:state.business,action:'read',id:item.id});renderNotifications();
+      const ref=(state.data?.records||[]).find(r=>r.data?.id===item.item_id)?.ref;if(ref){recordDetails(ref);return;}state.view='aura';await render();recordShellRoute();await renderShell();return;}
     if(item.chat_id&&item.chat_id!==state.chatMeta?.id) {
       const result=await api('/api/chats/open',{business:state.business,id:item.chat_id});
       state.chat=result.messages;state.chatMeta=result.chat;await refresh();
@@ -3067,9 +3079,10 @@ function terminalApp(chat){return !!chat?.native_id&&['claude','codex','pi','omp
 async function continueInTerminal(id){
   if(!window.auraTerminal)throw new Error('The built-in terminal is not available here.');
   await window.auraTerminal.open({resume:id});
+  chatControls();
 }
 window.addEventListener('aura-chat-terminal-closed',event=>{
-  if(event.detail?.chat_id&&event.detail.chat_id===state.chatMeta?.id)attempt(()=>refreshChat());
+  if(event.detail?.chat_id&&event.detail.chat_id===state.chatMeta?.id){chatControls();attempt(()=>refreshChat());}
 });
 
 /* Every "continue elsewhere" control opens the one Continue in another app dialog, which moves the full
@@ -3252,6 +3265,7 @@ function recordShellRoute(replace=false){
   history[replace||!history.state?.aura?'replaceState':'pushState'](value,'',url);
 }
 window.addEventListener('popstate',event=>attempt(async()=>{
+  if(state.view==='aura'&&window.auraView?.popped?.())return;  // a step back inside the world, not a page change
   const r=event.state;if(!r?.aura)return;shellRestoring=true;
   try{
     if(r.workspace!==state.data.workspace)await openStoredWorkspace(r.workspace);

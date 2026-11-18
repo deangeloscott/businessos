@@ -136,6 +136,7 @@ window.auraTerminal=(()=>{
       catch(error){notice(humanError(error),true);return;}
     }else{api('/api/terminal',{action:'remove',id}).catch(()=>{});}
     clearTimeout(t.sending);tabs.delete(id);t.term.dispose();t.host.remove();restream();
+    if(!t.ended&&String(t.info.purpose||'').startsWith('resume:'))window.dispatchEvent(new CustomEvent('aura-chat-terminal-closed',{detail:{chat_id:t.info.purpose.slice(7)}}));
     if(active===id){const next=[...tabs.keys()].pop();if(next)select(next);else{active='';paintTabs();hide();}}else paintTabs();
   }
   function share(){
@@ -185,5 +186,7 @@ window.auraTerminal=(()=>{
   window.addEventListener('resize',()=>{clearTimeout(fitTimer);fitTimer=setTimeout(()=>fit(tabs.get(active)),80);});
   new MutationObserver(()=>{for(const t of tabs.values())withNonce(()=>{t.term.options.theme=theme();});}).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme','data-style','data-accent']});
   if(window.ResizeObserver)new ResizeObserver(()=>fit(tabs.get(active))).observe(document.getElementById('terminal-screens')||document.body);
-  return {open,attachExisting,hide,show,share};
+  // A chat continued in its app's own screen, still open here.
+  const resuming=id=>!!id&&[...tabs.values()].some(t=>!t.ended&&t.info.purpose==='resume:'+id);
+  return {open,attachExisting,hide,show,share,resuming};
 })();

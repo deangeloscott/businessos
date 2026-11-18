@@ -315,9 +315,10 @@ def app_homes(home):
             'antigravity':home/'.gemini'}
 
 
-def connections(workspace, apps, home=None, notes=None):
+def connections(workspace, apps, home=None, notes=None, every_folder=False):
     """The services each app has been connected to in its own settings: (app, name, disabled). Only names and the
-    on/off switch are read. Commands, headers and credentials stay private."""
+    on/off switch are read. Commands, headers and credentials stay private. Claude Code keeps a connection added the
+    default way under the folder it was added in; every_folder includes those from all folders."""
     home=Path(home or Path.home());workspace=Path(workspace);bases=app_homes(home);found=[]
     for app,path,field in [('codex',bases['codex']/'config.toml','mcp_servers'),
                            ('claude',workspace/'.mcp.json','mcpServers'),
@@ -331,11 +332,24 @@ def connections(workspace, apps, home=None, notes=None):
                 import tomllib
                 data=tomllib.loads(path.read_text(encoding='utf-8'))
             else:data=json.loads(path.read_text(encoding='utf-8'))
-            for name,config in (data.get(field) or {}).items():
-                if isinstance(config,dict):found.append((app,str(name),config.get('disabled') is True or config.get('enabled') is False))
+            lists=[data.get(field) or {}]
+            if path.name=='.claude.json' and isinstance(data.get('projects'),dict):
+                here=os.path.normcase(str(workspace.resolve()))
+                lists+=[(entry or {}).get('mcpServers') or {} for folder,entry in data['projects'].items()
+                        if isinstance(entry,dict) and (every_folder or os.path.normcase(str(Path(folder)))==here)]
+            for servers in lists:
+                for name,config in servers.items():
+                    if isinstance(config,dict):found.append((app,str(name),config.get('disabled') is True or config.get('enabled') is False))
         except (OSError,ValueError,AttributeError,ImportError):
             if notes is not None:notes.append(APPS[app]+': connection details could not be read.')
-    return found
+    hermes=Path(os.environ.get('HERMES_HOME') or home/'.hermes')/'config.yaml'
+    if 'hermes' in apps and hermes.is_file() and not hermes.is_symlink() and hermes.stat().st_size<=2*1024*1024:
+        try:
+            for name,config in ((yaml.safe_load(hermes.read_text(encoding='utf-8')) or {}).get('mcp_servers') or {}).items():
+                if isinstance(config,dict):found.append(('hermes',str(name),config.get('enabled') is False))
+        except (OSError,ValueError,AttributeError,yaml.YAMLError):
+            if notes is not None:notes.append(APPS['hermes']+': connection details could not be read.')
+    return list(dict.fromkeys(found))
 
 
 def local(workspace, apps, home=None):

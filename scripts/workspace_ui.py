@@ -504,6 +504,11 @@ def remember_document_path(key,path):
 
 
 IMPORTERS={'omp':{'codex':'--from-codex','claude':'--from-claude'}}
+
+
+def workspace_library_app_name(app):
+    import workspace_library
+    return workspace_library.APPS.get(app,app or 'its app')
 CONTINUE_JOBS={}
 
 
@@ -2175,27 +2180,124 @@ class Workspace:
         if name not in self.TERMINAL_PRESETS:raise ValueError('Choose a terminal command AURA offers.')
         app,args,_=self.TERMINAL_PRESETS[name];choice=self.native_choice(app)
         if not choice:raise ValueError('Install and connect that AI app first.')
-        return [*workspace_agents.base_command(choice['argv']),*args],self.agent_environment(choice)
+        return [*self.interactive_command(app,choice),*args],self.agent_environment(choice)
+
+    @staticmethod
+    def interactive_command(kind,choice):
+        """The app itself, without the noninteractive part AURA adds for its own requests (Codex's exec, others' print flag)."""
+        import workspace_codex
+        return workspace_codex.base_command(choice['argv']) if kind=='codex' else workspace_agents.base_command(choice['argv'])
 
     def terminal_title(self,name):return self.TERMINAL_PRESETS.get(name,(None,None,'Terminal'))[2]
 
     TERMINAL_APPS=('claude','codex','pi','omp','hermes')
 
+    def reads_app_records(self):
+        """Whether AURA may read the AI apps' own session records on this computer (Where was this made?, services used)."""
+        return self.preferences.get('read_app_records') is not False
+
     def services_used(self,bid,chat_id='',session='',app_kind=''):
         """The connected services this business's conversations called, busiest first, as their apps recorded them.
         One chat or one direct app session when asked; see workspace_services."""
         import workspace_services,workspace_library
+        if not self.reads_app_records():return {'services':[],'off':True}
         if session:sessions={session:app_kind}
         else:
             with self.lock:
                 chats=[c for c in self.preferences['chats'] if c['business_id']==bid and c.get('workspace',self.workspace_path)==self.workspace_path and c.get('native_id')]
             sessions={str(c['native_id']):c.get('agent') for c in chats if not chat_id or c['id']==chat_id}
+        # What those conversations saved, by the producer AURA noted on each save (an AURA chat, or an app session).
+        owner={str(c['native_id']):c['id'] for c in chats} if not session else {}
+        saved={}
+        try:
+            for obj,_ in object_index(bid).values():
+                kind={'Insight':'finding','DecisionRecord':'decision','Learning':'decision','Asset':'output'}.get(obj.get('object_type'))
+                by_=(((obj.get('extensions') or {}).get('businessos') or {}).get('work') or {}).get('producer') or {}
+                if kind and by_.get('kind') in {'chat','session'}:saved.setdefault((by_['kind'],str(by_.get('id'))),[]).append(kind)
+        except (OSError,ValueError):pass
         by={}
-        for called in workspace_services.used(sessions,workspace_root()).values():
+        for ident,called in workspace_services.used(sessions,workspace_root()).items():
+            made=saved.get(('chat',owner[ident]),[]) if ident in owner else []
+            made=made+saved.get(('session',ident),[])
             for name,calls in called.items():
-                row=by.setdefault(name,{'name':name,'key':workspace_library.service_key(name),'calls':0,'conversations':0})
+                row=by.setdefault(name,{'name':name,'key':workspace_library.service_key(name),'calls':0,'conversations':0,'saved':{}})
                 row['calls']+=calls;row['conversations']+=1
+                for kind in made:row['saved'][kind]=row['saved'].get(kind,0)+1
         return {'services':sorted(by.values(),key=lambda r:(-r['calls'],r['name']))}
+
+    def service_problems(self,bid):
+        """Connected services this business's work relied on that its app's settings now show as turned off, or that were
+        connected there before and are gone. Connections an app keeps elsewhere (claude.ai connectors) are never flagged."""
+        import workspace_services,workspace_library
+        if not self.reads_app_records():return []
+        with self.lock:
+            chats=[c for c in self.preferences['chats'] if c['business_id']==bid and c.get('workspace',self.workspace_path)==self.workspace_path and c.get('native_id')]
+        apps={str(c['native_id']):c.get('agent') for c in chats}
+        relied={}
+        for ident,called in workspace_services.used(apps,workspace_root()).items():
+            for name in called:relied.setdefault(name,set()).add(apps[ident])
+        if not relied:return []
+        now={}
+        for app,name,disabled in workspace_library.connections(workspace_root(),workspace_library.APPS,every_folder=True):
+            key=app+':'+workspace_library.normalized(workspace_library.service_title(name));now[key]=now.get(key,True) and disabled
+        before={app+':'+workspace_library.normalized(workspace_library.service_title(name)) for app,names in workspace_services.known().items() for name in names}
+        problems=[]
+        for name,owners in sorted(relied.items()):
+            for app in sorted(a for a in owners if a):
+                key=app+':'+workspace_library.normalized(name)
+                if now.get(key) is True:problems.append({'service':name,'app':app,'problem':'off'})
+                elif key not in now and key in before:problems.append({'service':name,'app':app,'problem':'gone'})
+        return problems
+
+    def check_saved_work(self):
+        """The after part of working anywhere: when findings, decisions or outputs are saved outside a chat AURA is showing
+        (directly in an AI app, or by a scheduled task), ring the bell once per app with what was saved. Work saved in an
+        AURA chat already says so in that chat. Only records that changed since the last look are read."""
+        words={'Insight':'finding','DecisionRecord':'decision','Learning':'lesson','Asset':'output'}
+        base=workspace_root()/'instances'
+        for folder in sorted(base.iterdir()) if base.is_dir() else []:
+            bid=folder.name
+            try:objects=[o for o,_ in object_index(bid).values() if o.get('object_type') in words]
+            except (OSError,ValueError):continue
+            marker=f"{workspace_root().resolve()}:{bid}"
+            with self.lock:
+                seen=self.preferences.setdefault('saved_work_seen',{});last=seen.get(marker)
+                newest=max((str(o.get('created_at') or '') for o in objects),default='')
+                if last is None or newest<=last:
+                    # The first look starts from now: earlier work is not news.
+                    if last is None or newest>(last or ''):seen[marker]=newest;self.save_preferences()
+                    continue
+                seen[marker]=newest;self.save_preferences()
+            fresh=[o for o in objects if str(o.get('created_at') or '')>last]
+            groups={}
+            for o in fresh:
+                by=(((o.get('extensions') or {}).get('businessos') or {}).get('work') or {}).get('producer') or {}
+                if by.get('kind')=='chat':continue
+                who=by.get('app') if by.get('kind')=='session' else 'A scheduled task' if by.get('kind')=='task' else 'An agent' if by.get('kind')=='agent' else 'Your AI'
+                groups.setdefault(who or 'Your AI',[]).append(o)
+            for who,rows in groups.items():
+                counts={}
+                for o in rows:counts[words[o['object_type']]]=counts.get(words[o['object_type']],0)+1
+                parts=[f"{n} {w}{'' if n==1 else 's'}" for w,n in counts.items()]
+                what=parts[0] if len(parts)==1 else ', '.join(parts[:-1])+' and '+parts[-1]
+                title=next((str(o.get('statement') or o.get('title') or o.get('business_role') or '') for o in rows if o.get('statement') or o.get('title')),'')
+                self.notify(bid,None,f"{who} saved {what}"+(f": “{title[:80]}”" if len(rows)==1 and title else '.'),kind='saved',item_id=rows[0]['id'])
+
+    def check_service_problems(self):
+        """Ring the bell once when a connected service that work relied on is turned off or gone from its app."""
+        base=workspace_root()/'instances'
+        for folder in sorted(base.iterdir()) if base.is_dir() else []:
+            bid=folder.name
+            try:problems=self.service_problems(bid)
+            except (OSError,ValueError):continue
+            for p in problems:
+                key=f"{bid}:{p['app']}:{p['service']}:{p['problem']}"
+                with self.lock:
+                    seen=self.preferences.setdefault('service_problems_seen',[])
+                    if key in seen:continue
+                    self.preferences['service_problems_seen']=[*seen,key][-200:]
+                app_name=workspace_library_app_name(p['app'])
+                self.notify(bid,None,f"{p['service']} is {'turned off' if p['problem']=='off' else 'no longer connected'} in {app_name}. Work in this business relied on it.",kind='service')
 
     def resumed_in_terminal(self,chat_id):
         """The open terminal that has this chat in its app's own screen, if any."""
@@ -2222,7 +2324,7 @@ class Workspace:
         args=workspace_agents.resume_command(kind,workspace_agents.session_reference(kind,native_id,env) if kind=='pi' else native_id)[1:]
         # AURA's own idle connection to this session closes first, so only the terminal holds it.
         self.native_sessions.release_idle((str(root),bid,chat_id))
-        terminal=workspace_terminal.TERMINALS.start([*workspace_agents.base_command(choice['argv']),*args],str(folder),env,cols=120,rows=32,
+        terminal=workspace_terminal.TERMINALS.start([*self.interactive_command(kind,choice),*args],str(folder),env,cols=120,rows=32,
                                                     title=(chat.get('title') or 'Chat')[:40],purpose='resume:'+chat_id)
         return terminal.summary()
 
@@ -2675,6 +2777,7 @@ class Workspace:
                 'connection': self.connection(bid),
                 'appearance': self.preferences.get('appearance', 'system'),
                 'notifications': self.preferences.get('notifications') is True,
+                'read_app_records': self.reads_app_records(),
                 'usage_alerts': self.preferences.get('usage_settings',{}).get(bid,{}).get('alerts') is True,
                 'model_picker': self.preferences['model_picker'],
                 'harness_permissions': self.preferences.get('harness_permissions',{}),
@@ -3395,9 +3498,9 @@ def main():
                     if time.time()-getattr(app,'resume_checked',0)>30:
                         app.resume_checked=time.time();app.resume_due()
                     if time.time()-getattr(app,'collections_checked',0)>60:
-                        app.collections_checked=time.time();app.check_collection_changes()
+                        app.collections_checked=time.time();app.check_collection_changes();app.check_saved_work()
                     if time.time()-getattr(app,'task_limits_checked',0)>600:
-                        app.task_limits_checked=time.time();app.check_task_limits();app.check_goals_reached();app.check_deadlines()
+                        app.task_limits_checked=time.time();app.check_task_limits();app.check_goals_reached();app.check_deadlines();app.check_service_problems()
                     updater = app.updates
                     with updater.lock:
                         running = updater.operation and updater.operation.is_alive()

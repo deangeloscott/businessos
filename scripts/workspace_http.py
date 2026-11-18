@@ -26,10 +26,16 @@ def handler_for(app):
 
         def send(self, status, data, content_type='application/json; charset=utf-8', headers=None):
             body = json.dumps(data, ensure_ascii=False).encode() if content_type.startswith('application/json') else data
+            # Large JSON answers (the world is megabytes of mostly repeated keys) travel compressed when the browser accepts it.
+            packed = content_type.startswith('application/json') and len(body) > 16384 and 'gzip' in (self.headers.get('Accept-Encoding') or '')
+            if packed:
+                import gzip
+                body = gzip.compress(body, compresslevel=5)
             if urlsplit(self.path).path.startswith('/api/'):
                 app.performance.record(self.command,urlsplit(self.path).path,status,1000*(time.monotonic()-getattr(self,'request_started',time.monotonic())),len(body))
             self.send_response(status)
             self.send_header('Content-Type', content_type)
+            if packed:self.send_header('Content-Encoding', 'gzip');self.send_header('Vary', 'Accept-Encoding')
             self.send_header('Content-Length', str(len(body)))
             self.send_header('Cache-Control', (headers or {}).get('Cache-Control','no-store'))
             self.send_header('X-Content-Type-Options', 'nosniff')
@@ -207,6 +213,7 @@ def handler_for(app):
                     with app.lock:root=app.workspace_path
                     with workspace_scope(root):
                         bid=selected(query.get('business'));import workspace_origins;from _common import object_index
+                        if not app.reads_app_records():raise ValueError('Reading your AI apps’ records is turned off in Settings.')
                         if query.get('record'):
                             obj=next((o for o,_ in object_index(bid).values() if o.get('id')==query['record']),None)
                             result={'origin':workspace_origins.find(record_id=obj['id'],created_at=obj.get('created_at')) if obj else None}
@@ -1110,6 +1117,8 @@ def handler_for(app):
                                 raise ValueError('Choose an effort level for each model from its available settings.')
                             self_picker['efforts'] = efforts
                             app.preferences['model_picker'][picker['kind']] = self_picker
+                        if 'read_app_records' in data:
+                            app.preferences['read_app_records'] = data['read_app_records'] is True
                         if 'notifications' in data:
                             app.preferences['notifications'] = data['notifications'] is True
                             # Enabling alerts must not announce old activity.
