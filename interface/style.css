@@ -1573,3 +1573,22 @@ body.in-aura .world-main.lens-on .world-stage{inset:auto;right:18px;bottom:58px;
 :root:is([data-style=desktop90],[data-style=console90],[data-style=console00],[data-style=classic]) :is(.we-chip,.we-block,.we-bar,.we-bar-track,.we-bar-track i,.tl-bar,.world-lens .wm-count){border-radius:0}
 :root:is([data-style=console90],[data-style=console00]) :is(.tl-label,.tl-group,.tl-axis span,.we-block b,.we-block strong,.we-chip,.we-bar-name,.we-bar-value){font-family:var(--c90-mono,ui-monospace,monospace)}
 :root[data-style=desktop90] .we-chip{border:2px outset var(--line)}:root[data-style=desktop90] .we-chip[aria-pressed=true]{border-style:inset}
+
+/* At a glance: a few plain sentences that say what the view shows. */
+.world-takeaways{display:grid;gap:6px;margin:4px 0 6px;padding:12px 14px;border-radius:10px;background:color-mix(in srgb,var(--accent) 7%,transparent);border:1px solid color-mix(in srgb,var(--accent) 22%,transparent)}
+.world-take{all:unset;display:block;font-size:var(--text-sm);line-height:1.45;color:var(--ink)}button.world-take{cursor:pointer}button.world-take:hover,button.world-take:focus-visible{text-decoration:underline;text-underline-offset:3px;color:var(--accent)}
+.world-take::before{content:"•";color:var(--accent);margin-right:8px}
+.world-chain h3{margin-bottom:4px}
+
+/* Connections: one slim toolbar, a one-line lede, and room before the columns. */
+.wm-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px}.wm-label{font-size:var(--text-xs);color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:650}
+.wm-zoom .we-chip{min-width:34px;text-align:center}.wm-zoom .wm-pct{font-variant-numeric:tabular-nums}
+.wm-help{font-size:var(--text-xs);color:var(--muted)}.wm-help summary{cursor:pointer;width:max-content}.wm-help[open] p{position:absolute;z-index:6;max-width:min(520px,80vw);margin:8px 0 0;padding:12px 14px;border-radius:10px;background:var(--raised-bg,var(--paper));border:1px solid var(--line);box-shadow:0 12px 30px rgba(0,0,0,.3);color:var(--ink);font-size:var(--text-sm);line-height:1.5}
+.wm-lede{margin:14px 0 26px;color:var(--muted);font-size:var(--text-sm)}
+.world-lens .wm-col h3{margin-bottom:8px}
+.world-period select,.world-dates input{font:inherit;font-size:var(--text-xs)}
+.aura-view :is(.world-period select,.world-dates input){color:var(--ink);background:color-mix(in srgb,var(--world-bg,var(--paper)) 72%,transparent);backdrop-filter:blur(10px);border:1px solid color-mix(in srgb,var(--ink) 18%,transparent);border-radius:999px;padding:6px 12px}
+.world-dates{display:inline-flex;align-items:center;gap:6px;color:var(--muted)}
+
+/* Open chat sits in one place in every view: bottom right, above the controls or beside the small world. */
+body.in-aura .world-main:not(.lens-on) .world-ask{left:auto;right:14px;transform:none;width:auto}

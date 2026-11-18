@@ -5,7 +5,8 @@ never an inferred cause or a completion. The interface words each type for the d
 
   in             a finding kept in an area; followed only from the finding to its place
   attached       something given to a conversation
-  saved          first saved while that chat, task or agent was working (AURA notes this on its own saves)
+  saved          first saved while that chat, task or agent was working (AURA notes this on its own saves);
+                 it carries `at`, when it was saved (updated carries the latest change)
   updated        a check run by that chat, task or agent changed this tracked result
   into           the area that work saved into (derived from saved and updated, so an area's chain reaches its work)
   supports, challenges, basis, extends
@@ -57,6 +58,12 @@ def relationships(feed, registry, bound, objects, references, item_sources=None,
     def item(land, ident):
         ref = f'{land}|{ident}'
         return node('item', ref, titles[ref], lands=[land]) if ref in titles else None
+
+    def stamp(a, b, kind, at):
+        """When the work was saved or last changed along a link, so a view can count one period."""
+        row = edges.get((a, b, kind))
+        if row and isinstance(at, str) and at > row.get('at', ''):
+            row['at'] = at[:32]
 
     def edge(a, b, kind):
         if a and b and a in nodes and b in nodes and a != b:
@@ -198,12 +205,15 @@ def relationships(feed, registry, bound, objects, references, item_sources=None,
             continue
         output = reference({'kind': 'record', 'id': obj['id']})
         edge(producer(by), output, 'saved')
+        stamp(producer(by), output, 'saved', obj.get('created_at'))
         if obj.get('object_type') == 'Asset':
             for ancestor in obj.get('lineage') or []:
                 edge(reference({'kind': 'record', 'id': ancestor}), output, 'lineage')
     for change in feed.get('changes', []):
         if change.get('by') and change.get('item_id'):
-            edge(producer(change['by']), item(change['land'], change['item_id']) or 'land:' + change['land'], 'updated')
+            target = item(change['land'], change['item_id']) or 'land:' + change['land']
+            edge(producer(change['by']), target, 'updated')
+            stamp(producer(change['by']), target, 'updated', change.get('at'))
     # The area a piece of work saved into, so an area's chain reaches the work behind it without listing everything kept there.
     for (a, b, kind) in list(edges):
         if kind in {'saved', 'updated'} and nodes[b]['kind'] != 'land':

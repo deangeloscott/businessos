@@ -337,12 +337,12 @@ def _work_by(bid, app, bound, known, at, weeks=26):
     return [{'kind': k[0], 'id': k[1], 'weeks': v} for k, v in sorted(rows.items(), key=lambda kv: -sum(kv[1]))][:12]
 
 
-def _effort(bid, app, bound, known, at, previous=False):
-    """This month's AI requests (or last month's, for comparing) by the collection or project their chat is tied to,
-    exactly as each app reported them."""
+def _effort(bid, app, bound, known, at, previous=False, span=None):
+    """AI requests by the collection or project their chat is tied to, exactly as each app reported them: this month,
+    last month (previous=True), or any span of (start, end) timestamps."""
     if app is None:return None
     month = at.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-    start, end = ((month - timedelta(days=1)).replace(day=1).timestamp(), month.timestamp() - 1e-6) if previous else (month.timestamp(), at.timestamp())
+    start, end = span or (((month - timedelta(days=1)).replace(day=1).timestamp(), month.timestamp() - 1e-6) if previous else (month.timestamp(), at.timestamp()))
     chats = {b['id']: b for b in bound if b.get('kind') == 'chat'}
     groups = {}
     titles = {c['id']: c.get('title') or 'Untitled chat' for c in app.preferences.get('chats', [])
@@ -379,6 +379,20 @@ def _effort(bid, app, bound, known, at, previous=False):
     for group in groups.values():
         group['chats'] = sorted(group['chats'].values(), key=lambda c: -c['requests'])
     return sorted(groups.values(), key=lambda g: (-g['tokens'], -g['requests']))[:40]
+
+
+def effort_between(bid, app, start, end):
+    """AI use in one period and in the period of the same length just before it, so a view can compare like with like."""
+    at = datetime.now(timezone.utc)
+    end = min(end, at.timestamp()) if end else at.timestamp()
+    start = max(0.0, start or 0.0)
+    try:registry = collections.projects.load()
+    except (ValueError, OSError):registry = {}
+    bound = [b for b in (registry.get('bindings') or {}).values() if isinstance(b, dict) and b.get('business_id') == bid]
+    known = {b.get('collection_id') for b in bound if b.get('collection_id')}
+    length = max(1.0, end - start)
+    return {'from': start, 'to': end, 'current': _effort(bid, app, bound, known, at, span=(start, end)) or [],
+            'previous': _effort(bid, app, bound, known, at, span=(start - length, start - 1e-6)) or []}
 
 
 def main():

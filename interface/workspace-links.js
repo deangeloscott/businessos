@@ -103,14 +103,16 @@ window.auraLinks = (() => {
   /* What a line carries. 'saved' is saved work: the records a piece of work saved or changed. 'requests', 'tokens' and
      'cost_usd' are AI use, exactly as each app reported it. A line with nothing recorded is drawn thin and dashed. */
   const WORK = new Set(['chat', 'session', 'task', 'agent']);
-  function measures(feed) {
-    const ix = index(feed), usage = new Map();
+  /* win = {from, to} in milliseconds limits saved work to what was saved in that period; AI use comes from feed.effort,
+     which the caller fills for the same period. A link with no recorded time counts only when there is no period. */
+  function measures(feed, win = null) {
+    const ix = index(feed), usage = new Map(), inWin = e => !win || (e.at ? (t => t >= win.from && t <= win.to)(Date.parse(e.at)) : !Number.isFinite(win.from) || win.from <= 0);
     for (const g of feed.effort || []) for (const c of g.chats || []) if (c.id) {
       const u = usage.get('chat:' + c.id) || {requests:0, tokens:0, cost_usd:0};
       for (const f of ['requests', 'tokens', 'cost_usd']) u[f] += c[f] || 0;
       usage.set('chat:' + c.id, u);
     }
-    const outputs = k => (ix.from.get(k) || []).filter(e => e.type === 'saved' || e.type === 'updated');
+    const outputs = k => (ix.from.get(k) || []).filter(e => (e.type === 'saved' || e.type === 'updated') && inWin(e));
     const chatsOf = k => ix.nodes.get(k)?.kind === 'agent' ? (ix.from.get(k) || []).filter(e => e.type === 'used').map(e => e.target) : [k];
     /* How much one piece of work carried, optionally only into one area. */
     function carried(k, measure, land) {
@@ -124,14 +126,22 @@ window.auraLinks = (() => {
     function weigh(e, measure) {
       const a = ix.nodes.get(e.source), b = ix.nodes.get(e.target);
       if (!a || !b) return 0;
-      if (e.type === 'saved' || e.type === 'updated') return measure === 'saved' ? 1 : carried(e.source, measure);
+      if (e.type === 'saved' || e.type === 'updated') return measure === 'saved' ? (inWin(e) ? 1 : 0) : carried(e.source, measure);
       if (e.type === 'into') return carried(e.source, measure, e.target.slice(5));
       if (WORK.has(a.kind)) return carried(e.source, measure);
       if (WORK.has(b.kind)) return carried(e.target, measure);
       if (e.type === 'feeds') return measure === 'saved' ? held(e.source) : 0;
       return measure === 'saved' ? 1 : 0;
     }
-    return {carried, weigh, held};
+    /* What a piece of work (or everything into one place) saved, by kind: findings, decisions, outputs, results changed. */
+    const NOUN = {finding:'finding', decision:'decision', output:'output', record:'record', item:'result changed', land:'collection updated'};
+    function kinds(k) {
+      const n = ix.nodes.get(k), out = {}, add = e => { const kind = ix.nodes.get(e.target)?.kind; const w = e.type === 'updated' ? (kind === 'land' ? 'collection updated' : 'result changed') : NOUN[kind] || 'record'; out[w] = (out[w] || 0) + 1; };
+      if (n?.kind === 'land') { for (const e of ix.edges) if ((e.type === 'saved' || e.type === 'updated') && inWin(e) && ((ix.nodes.get(e.target)?.lands || []).includes(k.slice(5)) || e.target === k)) add(e); }
+      else for (const c of chatsOf(k)) for (const e of outputs(c)) add(e);
+      return out;
+    }
+    return {carried, weigh, held, kinds};
   }
   /* The connected services behind something, busiest first: the ones its own conversations called, or the conversations
      whose work reached it. Counted from the apps' own logs; a service only shows once something called it. */
@@ -149,8 +159,8 @@ window.auraLinks = (() => {
   /* The whole flow at a glance. Conversations are many, so they are drawn as one step in the work column:
      what your AI used flows into them, and they flow to where their work went. Agents keep their own lines. */
   const CHATS = 'chats:all';
-  function overview(feed, measure = 'saved') {
-    const ix = index(feed), extra = new Map(), known = k => ix.nodes.get(k) || extra.get(k), m = measures(feed);
+  function overview(feed, measure = 'saved', win = null) {
+    const ix = index(feed), extra = new Map(), known = k => ix.nodes.get(k) || extra.get(k), m = measures(feed, win);
     const weights = new Map(), add = (a, b, w) => { if (!a || !b || a === b || !known(a) || !known(b)) return; const k = a + '\n' + b; weights.set(k, (weights.get(k) || 0) + w); };
     const placeOf = k => { const n = ix.nodes.get(k); if (!n) return []; if (['land', 'goal', 'project'].includes(n.kind)) return [k]; return (n.lands || []).map(id => 'land:' + id); };
     let chats = 0;

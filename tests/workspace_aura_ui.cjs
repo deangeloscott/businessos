@@ -72,6 +72,12 @@ const overview=L.overview(feed);
 assert.ok(overview.edges.some(e=>e.source==='app:Codex'&&e.target==='chats:all')&&overview.edges.some(e=>e.source==='chats:all'&&e.target==='land:col_1'),'with nothing selected, apps flow into the conversations and they flow to where their work went');
 assert.equal(overview.node('chats:all').name,'1 conversation','conversations are one step in the flow, counted, not drawn one by one');
 assert.ok(!overview.edges.some(e=>e.source==='chat:c2'||e.target==='chat:c2'),'a conversation whose work went nowhere recorded is not drawn');
+/* Saved work within a period, and by kind. */
+const dated={...feed,relationships:{...feed.relationships,edges:feed.relationships.edges.map(e=>e.type==='saved'?{...e,at:'2026-10-01T00:00:00Z'}:e)}};
+assert.equal(L.measures(dated,{from:Date.parse('2026-10-15'),to:Date.parse('2026-10-20')}).carried('chat:c1','saved'),0,'saved work outside the period is not counted');
+assert.equal(L.measures(dated,{from:Date.parse('2026-09-15'),to:Date.parse('2026-10-20')}).carried('chat:c1','saved'),1);
+assert.deepEqual({...L.measures(dated).kinds('chat:c1')},{finding:1},'saved work is named by kind');
+assert.ok(v.takeaways(feed,'timeline').includes('class="world-takeaways"'),'each view opens with plain takeaways');
 /* A connected service a conversation called is one of what fed that work, and of the places it reached. */
 const called={...feed,relationships:{nodes:[...feed.relationships.nodes,{key:'service:stripe',kind:'service',name:'Stripe'},{key:'service:gmail',kind:'service',name:'Gmail'}],
   edges:[...feed.relationships.edges,{source:'service:stripe',target:'chat:c1',type:'called',calls:5},{source:'service:gmail',target:'chat:c1',type:'called',calls:2},{source:'service:gmail',target:'chat:c2',type:'called',calls:9}]}};
@@ -148,14 +154,14 @@ assert.ok(proof.includes('Challenges this finding')&&proof.includes('data-record
 
 /* AI effort: one chart, grouped one way at a time, only what apps reported. */
 const effort=v.effortView(feed,null);
-assert.ok(effort.includes('5 requests this month')&&effort.includes('cost not reported for 3')&&effort.includes('class="we-block"')&&effort.includes('Codex')&&effort.includes('Pi'),'by AI app by default, a missing cost is said, not estimated');
+assert.ok(effort.includes('5 requests ')&&effort.includes('cost not reported for 3')&&effort.includes('class="we-block"')&&effort.includes('Codex')&&effort.includes('Pi'),'by AI app by default, a missing cost is said, not estimated');
 assert.ok(effort.includes('id="world-effort-by"')&&effort.includes('data-effort-metric="saved"')&&effort.includes('Select a block'),'one grouping at a time, with the conversations behind a block on request');
 const lastMonth={...feed,effort_last:[{kind:'land',id:'col_1',chats:[{id:'c1',title:'Research chat',agent:'Codex',model:'m-1',requests:1,tokens:100,cost_usd:.01,missing_costs:0,missing_tokens:0}]}]};
-assert.ok(v.effortView(lastMonth,null).includes('Last month: 1 request'),'this month is compared with last month');
-assert.ok(v.effortSide(lastMonth,null).includes('class="we-bar"')&&v.effortSide(lastMonth,null).includes('vs last month'),'beside the chart, ranked bars say how each changed');
-assert.ok(v.effortView(feed,v.recordFor(feed,'goal','G1')).includes('3 requests this month'),'a selection counts only the conversations in its chain');
-assert.ok(v.effortView(feed,v.recordFor(feed,'goal','G3')).includes('No AI use this month is recorded for anything in this chain'));
-assert.ok(v.effortView({...feed,effort:[]},null).includes('No AI requests have been recorded this month'));
+assert.ok(v.effortView(lastMonth,null).includes('before: 1 request'),'the period is compared with the one before it');
+assert.ok(v.effortSide(lastMonth,null).includes('class="we-bar"')&&v.effortSide(lastMonth,null).includes('on the period before'),'beside the chart, ranked bars say how each changed');
+assert.ok(v.effortView(feed,v.recordFor(feed,'goal','G1')).includes('3 requests '),'a selection counts only the conversations in its chain');
+assert.ok(v.effortView(feed,v.recordFor(feed,'goal','G3')).includes('No AI use')&&v.effortView(feed,v.recordFor(feed,'goal','G3')).includes('is recorded for anything in this chain'));
+assert.ok(v.effortView({...feed,effort:[]},null).includes('No AI requests have been recorded'));
 
 /* A receipt: what a piece of work saved since the world was last read, in its own words. */
 const before={...feed,as_of:'2026-10-09T00:00:00Z',relationships:{...feed.relationships,edges:feed.relationships.edges.filter(e=>e.type!=='saved')}};

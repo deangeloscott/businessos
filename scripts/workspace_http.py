@@ -221,6 +221,17 @@ def handler_for(app):
                             path=local_file(bid,query.get('file',''),app.preferences.get('file_locations',{}).get(bid,[]))
                             stat=path.stat();result={'origin':workspace_origins.find(file_path=str(path),file_time=getattr(stat,'st_birthtime',None) or (stat.st_ctime if os.name=='nt' else stat.st_mtime))}
                     self.send(200,result)
+                elif route=='/api/effort':
+                    # AI use in a chosen period and the equal period before it, as each app reported it.
+                    with app.lock:root=app.workspace_path;owner=copy.copy(app)
+                    with workspace_scope(root):
+                        import workspace_world
+                        from datetime import datetime as _dt
+                        def moment(value):
+                            if not value:return None
+                            try:return float(value)
+                            except ValueError:return _dt.fromisoformat(str(value).replace('Z','+00:00')).timestamp()
+                        self.send(200,workspace_world.effort_between(selected(query.get('business')),owner,moment(query.get('from')),moment(query.get('to'))))
                 elif route in {'/api/collection-view','/api/running','/api/goal-progress','/api/world'}:
                     with app.lock:root=app.workspace_path;owner=copy.copy(app)
                     with workspace_scope(root):

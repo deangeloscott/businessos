@@ -278,6 +278,9 @@ print(json.dumps({'full':full,'tight':tight}))
         called=relationships(graph_feed,{'projects':[]},[],[],[{'id':'c3','title':'Billing','agent':'claude','native_id':'cc-3','references':[]}],
                              services=lambda sessions:ws.used(sessions,space,home=base))
         edges3={(e['source'],e['target'],e['type']):e for e in called['edges']}
+        stamped=relationships(graph_feed,{'projects':[]},[],[{'id':'out1','object_type':'Insight','statement':'S','created_at':'2026-11-01T00:00:00Z','extensions':{'businessos':{'work':{'producer':{'kind':'chat','id':'c3'}}}}}],
+                              [{'id':'c3','title':'Billing','agent':'claude','native_id':'cc-3','references':[]}])
+        assert next(e for e in stamped['edges'] if e['type']=='saved')['at']=='2026-11-01T00:00:00Z','a saved link says when it was saved, so views can count a period'
         assert edges3[('service:stripe','chat:c3','called')]['calls']==4 and ('service:googlecalendar','chat:c3','called') in edges3,'a conversation links to each service it called, once per service'
     import shutil
     if shutil.which('node'):subprocess.run(['node',str(ROOT/'tests/workspace_aura_ui.cjs'),str(ROOT/'interface/workspace-aura.js')],check=True)

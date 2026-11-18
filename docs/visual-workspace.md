@@ -281,7 +281,9 @@ Both chats link to each other. The original shows "You continued this work in OM
 
 ### Your aura: the world and its views
 
-**Your aura** draws the business's saved work as one world, with four views over the same read-only feed (`/api/world`): **Your world**, **Connections**, **Time** and **AI effort**. Your world is the globe; the other three take the whole picture, with the world still turning small in the corner (click it to go back) and lighting what the view points at. The panel beside them holds the context and the details: the list for Connections, what changed for Time, ranked bars for AI effort. Drag the panel's edge, or use the arrow keys on it, to make it wider or narrower; the width is remembered in this browser.
+**Your aura** draws the business's saved work as one world, with four views over the same read-only feed (`/api/world`): **Your world**, **Connections**, **Time** and **AI effort**. Your world is the globe; the other three take the whole picture, with the world still turning small in the corner (click it to go back) and lighting what the view points at. Those three share one **period** in the top bar (since your last visit, this month, the last 3 months, this year, all time, or custom dates); each period is compared with the one of the same length before it, and `/api/effort?from=&to=` returns AI use for any period. Search reaches every view.
+
+The panel beside them works the same way in every view: click anything and it shows that thing's card, with the view's part of its story under it; with nothing selected it opens with a few plain takeaways from the records, then the view's list. Drag the panel's edge, or use the arrow keys on it, to make it wider or narrower; the width is remembered in this browser.
 
 One visual language runs through every view, and the tour teaches it:
 

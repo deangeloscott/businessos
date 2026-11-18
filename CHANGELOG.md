@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- **One period for every view.** Connections, Time and AI effort share a choice in the top bar: since your last visit, this month, the last 3 months (the default), this year, all time, or custom dates. Connections' lines count the period's saved work or AI use, Time shows the period's changes and timeline, and AI effort the period's use. Each period is compared with the period of the same length just before it, so a few days are never set against a whole month. Saved links now record when they were saved, and `/api/effort` returns AI use for any period.
+- **The side panel works like the prototype's in every view.** Clicking anything shows its own card (what it is, its facts and actions), with the view's part under it: its connections, its changes in the period, or its AI use. With nothing selected, each view opens with a few plain takeaways worked out from the records ("Most saved work in the last 3 months went into Wholesale prospects"), each opening what it is about.
+- **Connections has room to breathe.** One slim toolbar (what the lines show, as chips, and zoom with a Fit button), a one-line lede, and the full explanation behind "How to read this". The diagram fits the screen when it opens and as it grows, until you zoom yourself. Saved work is named by kind where it adds up ("8 findings, 3 results changed, 1 output").
+- **Search reaches every view.** In Connections matches stay bright and the rest steps back; Time keeps the rows and marks that match; AI effort keeps the conversations that match.
+- Open chat sits bottom right in every view.
+
 - **One visual language for the aura.** Colour means the area in every view, and one line is drawn everywhere: a fine bright core in a soft glow, coloured from where it starts to the area it reaches, with end dots; a pulse travels along it while work runs; a dashed hairline means linked with nothing along it yet. It replaces five different line styles. The tour now teaches these rules.
 - **Connections, Time and AI effort take the stage**, as the prototype's views did, with the world turning small in the corner and lighting what the view points at; the panel beside holds context and details and can be resized from its edge. "Give it the whole screen" is no longer needed.
 - **Connections** boxes carry their area's colour and how much went through them, and the diagram's lines take their areas' colours.
