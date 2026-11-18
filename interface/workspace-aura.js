@@ -525,6 +525,7 @@ window.auraView=(()=>{
   }
   /* One step back: the previous selection with its camera, or nothing selected. */
   function stepBack(){
+    if(ctx.history?.at(-1)?.tabOnly){showTab(ctx.history.pop().tab,false);return;}
     if(ctx.history?.length){const previous=ctx.history.pop();if(previous.tab)ctx.tab=previous.tab;selectRecord(previous.kind,previous.id,false);world()?.restoreCamera?.(previous.camera);}
     else if(ctx.sel){ctx.sel=null;world()?.region?.(null);world()?.clear();world()?.filter?.(ctx.filter);paintSide();}
   }
@@ -564,7 +565,12 @@ window.auraView=(()=>{
       +(e.sources||[]).map(source=>row(source.record?`data-record="${esc(source.record)}"`:'',source.title,'Source cited by this evidence')).join('')+'</div>').join('');
   }
   /* Everything saved or measured after a date, from the saved records and their kept history only. */
+  const changeMemo=new WeakMap();
   function changesSince(feed,date,until){
+    const key=date+'|'+(until||''),memo=changeMemo.get(feed)||new Map();if(memo.has(key))return memo.get(key);
+    const result=changesBetween(feed,date,until);memo.set(key,result);changeMemo.set(feed,memo);return result;
+  }
+  function changesBetween(feed,date,until){
     const since=Date.parse(date),end=Math.min(Date.parse(feed.as_of),Number.isFinite(Date.parse(until))?Date.parse(until):Infinity);
     if(!Number.isFinite(since)||since>end)return [];
     const changes=[];
@@ -589,8 +595,14 @@ window.auraView=(()=>{
     for(const d of feed.decisions)if(Date.parse(d.at)>since&&Date.parse(d.at)<=end)changes.push({key:'decision:'+d.id,title:d.title,detail:d.kind==='lesson'?'Lesson saved':'Decision recorded',at:d.at});
     return changes.sort((a,b)=>Date.parse(b.at)-Date.parse(a.at));
   }
+  const narrowed=new WeakMap();
   function comparisonFeed(feed,selection){
     if(!selection)return feed;
+    // The same selection on the same world narrows to the same object, so its changes are worked out once too.
+    const key=(selection.kindOf||selection.kind)+':'+selection.id,memo=narrowed.get(feed)||new Map();if(memo.has(key))return memo.get(key);
+    const result=narrowFeed(feed,selection);memo.set(key,result);narrowed.set(feed,memo);return result;
+  }
+  function narrowFeed(feed,selection){
     if(selection.kind==='goal')return {...feed,goals:feed.goals.filter(g=>g.id===selection.id)};
     if(!['item','finding'].includes(selection.kind))return feed;
     const itemKeys=new Set(selection.kind==='item'?[selection.id]:(selection.raw.related_items||(selection.raw.items||[]).map(id=>({id,land:selection.land.id}))).map(ref=>ref.land+'|'+ref.id));
@@ -636,8 +648,11 @@ window.auraView=(()=>{
     if(e.target.id!=='world-grip'||!['ArrowLeft','ArrowRight'].includes(e.key))return;e.preventDefault();
     const now=$('#world-side').getBoundingClientRect().width;applySideWidth(now+(e.key==='ArrowLeft'?24:-24));
   });
-  function showTab(tab){
-    if(!ctx||!$('#world-stage'))return;ctx.tab=tab;
+  function showTab(tab,remember=true){
+    if(!ctx||!$('#world-stage'))return;
+    // Changing view is a step the browser's Back (and the Back link) can undo, like choosing something.
+    if(remember&&ctx.tab!==tab){ctx.history=[...(ctx.history||[]),{tabOnly:true,tab:ctx.tab}].slice(-20);try{history.pushState({...(history.state||{}),worldStep:(history.state?.worldStep||0)+1},'',location.href);ctx.pushed=(ctx.pushed||0)+1;}catch{}}
+    ctx.tab=tab;
     document.querySelectorAll('[data-world-tab]').forEach(button=>{const on=button.dataset.worldTab===tab;button.setAttribute('aria-selected',String(on));button.tabIndex=on?0:-1;});
     world()?.lens?.(tab==='map'?'links':tab==='effort'?'effort':tab==='timeline'?'time':'');paintSide();
   }
@@ -669,7 +684,7 @@ window.auraView=(()=>{
   function paintSide(){
     const host=$('#world-side');if(!host||!ctx)return;const f=ctx.feed,tab=ctx.tab,scoped=relatedFeed(f,ctx.sel);
     const scope=ctx.sel&&tab!=='world'?`<p><b>${esc(ctx.sel.name)}</b> <button class="text-button" data-world-details>Details</button></p>`:'';
-    const moves=[ctx.history?.length&&ctx.sel?'<button class="text-button" data-world-previous>‹ Back</button>':'',ctx.sel?'<button type="button" class="text-button" data-world-clear>Show everything</button>':''].filter(Boolean);
+    const moves=[ctx.history?.length&&(ctx.sel||ctx.history.at(-1)?.tabOnly)?'<button class="text-button" data-world-previous>‹ Back</button>':'',ctx.sel?'<button type="button" class="text-button" data-world-clear>Show everything</button>':''].filter(Boolean);
     const back=moves.length?`<div class="world-moves">${moves.join('')}</div>`:'',expand='';
     host.parentElement.classList.toggle('world-focused',!!ctx.sel);
     // Connections, Time and AI effort draw on the stage, as the prototype did; the world keeps going as a small globe in

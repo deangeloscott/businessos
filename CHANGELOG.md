@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- The browser's Back also steps back between views (Time back to Connections), as it does through selections. On a phone the view gets the screen: the small world and the area chips step aside and row names take a third of the width. Time works out a period's changes once per repaint.
+
 - **One period for every view.** Connections, Time and AI effort share a choice in the top bar: since your last visit, this month, the last 3 months (the default), this year, all time, or custom dates. Connections' lines count the period's saved work or AI use, Time shows the period's changes and timeline, and AI effort the period's use. Each period is compared with the period of the same length just before it, so a few days are never set against a whole month. Saved links now record when they were saved, and `/api/effort` returns AI use for any period.
 - **The side panel works like the prototype's in every view.** Clicking anything shows its own card (what it is, its facts and actions), with the view's part under it: its connections, its changes in the period, or its AI use. With nothing selected, each view opens with a few plain takeaways worked out from the records ("Most saved work in the last 3 months went into Wholesale prospects"), each opening what it is about.
 - **Connections has room to breathe.** One slim toolbar (what the lines show, as chips, and zoom with a Fit button), a one-line lede, and the full explanation behind "How to read this". The diagram fits the screen when it opens and as it grows, until you zoom yourself. Saved work is named by kind where it adds up ("8 findings, 3 results changed, 1 output").

@@ -1523,7 +1523,12 @@ body.in-aura .world-main.lens-on .world-stage{inset:auto;right:18px;bottom:58px;
 /* The side panel's edge: drag it, or use the arrow keys, to make the panel wider or narrower. */
 .world-grip{position:absolute;top:0;bottom:0;right:calc(var(--world-side-w,380px) - 5px);width:10px;cursor:col-resize;z-index:8;touch-action:none}
 .world-grip:hover,.world-grip:focus-visible{background:linear-gradient(90deg,transparent 4px,var(--accent) 4px,var(--accent) 6px,transparent 6px);outline:none}
-@media (max-width:860px){.world-grip{display:none}body.in-aura .world-main.lens-on .world-stage,.world-mini-back{width:110px;bottom:58px;right:10px}}
+@media (max-width:860px){.world-grip{display:none}
+  /* On a phone the view gets the screen: the small world and the area chips step aside (Your world is one tap away),
+     Open chat sits in the corner, and row names take a third of the width. */
+  body.in-aura .world-main.lens-on .world-stage{visibility:hidden;width:1px;bottom:0;right:0}.world-main.lens-on .world-mini-back,.world-main.lens-on .world-keys{display:none}
+  .world-main.lens-on .world-ask{right:12px;bottom:14px}
+}
 
 /* Time on the stage: a label column, and lanes you can drag sideways. Marks take their place's colour. */
 .tl{display:grid;gap:10px;min-height:100%;align-content:start}.tl-intro,.tl-key{margin:0;color:var(--muted);font-size:var(--text-sm)}
@@ -1592,3 +1597,10 @@ body.in-aura .world-main.lens-on .world-stage{inset:auto;right:18px;bottom:58px;
 
 /* Open chat sits in one place in every view: bottom right, above the controls or beside the small world. */
 body.in-aura .world-main:not(.lens-on) .world-ask{left:auto;right:14px;transform:none;width:auto}
+
+/* Phone width for the views on the stage (after their own rules, so these win). */
+@media (max-width:860px){
+  .world-lens{padding-left:12px;padding-right:12px;padding-bottom:84px}
+  .tl-grid{grid-template-columns:minmax(92px,34%) minmax(0,1fr);gap:0 8px}.tl-label{font-size:var(--text-xs);gap:6px}.tl-intro{font-size:var(--text-xs)}
+  .we-stage .we-map{min-height:220px}.we-head{gap:6px 10px}
+}
