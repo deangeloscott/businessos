@@ -909,7 +909,10 @@ function chatControls() {
   const previousFolder=state.chatMeta?.workspace&&!sameWorkspace(state.chatMeta.workspace,state.data?.workspace);
   $('#request').disabled=!state.business||state.navigating;
   $('#request').placeholder=state.busy?'Write your next message while this runs…':'Ask a question or describe what you need…';
-  const blocked=previousFolder?'Reconnect this saved conversation to the current workspace before sending.':window.auraTerminal?.resuming?.(state.chatMeta?.id)?'This chat is open in the terminal. Close it there to continue here.':state.needsCheck?'Check the latest work before sending.':state.connectionInterrupted?'Reconnect to this chat before sending.':state.organizationWorking?'Wait for workspace organization to finish before sending.':'';
+  const chatApp=state.chatMeta?.agent,choices=state.data?.connection?.choices||[];
+  const appGone=chatApp&&!['configured','handoff'].includes(chatApp)&&choices.length&&!choices.some(c=>c.id===chatApp&&c.available)?`${appName(chatApp)} isn't installed on this computer anymore. Reinstall it, or continue this chat in another app.`:'';
+  const blocked=appGone?appGone:previousFolder?'Reconnect this saved conversation to the current workspace before sending.':window.auraTerminal?.resuming?.(state.chatMeta?.id)?'This chat is open in the terminal. Close it there to continue here.':state.needsCheck?'Check the latest work before sending.':state.connectionInterrupted?'Reconnect to this chat before sending.':state.organizationWorking?'Wait for workspace organization to finish before sending.':'';
+  if(appGone)$('#request').placeholder=appGone;
   $('#send').disabled=!state.business||!state.hydrated||state.navigating||state.stopping||state.starting||state.settling||!!blocked;
   $('#send').title=blocked;
   $('#send').textContent=state.navigating?'Loading chat…':state.stopping?'Stopping…':state.starting?'Starting…':state.settling?'Finishing…':state.busy?'Stop ■':state.data?.connection.connected?'Send ↑':state.data?.connection.mode==='copy'?'Copy request ↗':'Connect AI →';
@@ -1763,7 +1766,7 @@ $('#detail').addEventListener('close',()=>{delete $('#detail').dataset.expanded;
 /* Settings: one page, grouped by what people are trying to do, with search. Each row opens the existing panel. */
 const settingsGroups=[
   ['General',[['account-settings','Profile','Your name, picture and how you like your AI to work','name avatar preferences'],['personalize-menu','Personalization','Style, appearance, accent colour, text size and density','theme dark light colour color font size compact retro style look'],['startup-settings','Startup & updates','Open AURA at sign-in and keep it up to date','update version launch']]],
-  ['AI & accounts',[['connection','AI connections','Which AI apps AURA uses, and their default models','claude codex chatgpt gemini model app connect'],['accounts-settings','Accounts & backups','Several accounts per app, plan limits and switching','limit usage reset backup account'],['harness-permissions','AI permissions','What your AI may do without asking','approve permissions safety'],['api-connections','API connections','Keys for model providers and other services','api key provider llm']]],
+  ['AI & accounts',[['connection','AI connections','Which AI apps AURA uses, and their default models','claude codex chatgpt gemini model app connect'],['accounts-settings','Accounts & backups','Several accounts per app, plan limits and switching','limit usage reset backup account'],['harness-permissions','AI permissions','What your AI may do without asking','approve permissions safety'],['api-connections','API connections','Keys for model providers and other services','api key provider llm'],['app-versions','AI app versions','Versions, updates, and anything that changed','update version upgrade new models commands']]],
   ['Workspace',[['workspace-manager','Add or open a workspace','Switch between businesses or start a new one','business folder new'],['share-settings','Share or import','Copy information, files or projects between workspaces','export import package share copy'],['workspace-reading','Reading across workspaces','Let your other workspaces use what this one knows','share read other workspaces research knowledge findings'],['workspace-history','Version history','Earlier versions of your files','undo restore previous version'],['workspace-backups','Back up or restore','Keep a copy of your workspace somewhere safe','backup restore copy']]],
   ['Help',[['review-setup','Quick setup & tour','Connect an AI and see where things are','onboarding tour setup'],['support-report','Feedback & troubleshooting','Suggest a feature or get help with a problem','bug help report feature support']]],
 ];
@@ -1783,6 +1786,18 @@ document.addEventListener('change',event=>{
   const on=event.target.checked,field=event.target.id==='read-app-records'?'read_app_records':'api_estimates';
   attempt(async()=>{try{await api('/api/preferences',{[field]:on});state.data[field]=on;}catch(error){event.target.checked=!on;throw error;}});
 });
+/* The AI apps AURA works with: each one's version and its own update (the app updates itself; AURA only opens its
+   update in the built-in terminal), what the last check after an update found, and saved choices whose model is gone. */
+async function openAppVersions(check=false){
+  const data=await api('/api/app-status'+(check?'?check=1':'')),when=t=>t?chatDate(t):'';
+  const rows=data.apps.filter(a=>a.installed).map(a=>`<div class="app-version"><div><b>${esc(a.name)}</b><small>${a.version?esc(a.version):'Version not read yet'}${a.latest?` · <span class="app-new">${esc(a.latest)} available</span>`:''}${a.problems?.length?` · <span class="app-problem">after its update, AURA can't ${esc(a.problems.join(' or '))}</span>`:''}</small></div><button type="button" class="secondary compact" data-terminal-run="${esc(a.update)}">Update</button></div>`).join('');
+  const gone=(data.retired||[]).map(r=>`<div class="app-version"><div><b>${esc(r.name)}</b><small>${esc(r.model)} is no longer offered by ${esc(r.app)}</small></div>${r.where==='agent'?`<button type="button" class="secondary compact" data-assistant-open="${esc(r.id)}">Choose a model</button>`:r.where==='chat'?`<button type="button" class="secondary compact" data-chat="${esc(r.id)}">Open chat</button>`:`<button type="button" class="secondary compact" data-settings-open="connection">Choose a model</button>`}</div>`).join('');
+  const checked=Math.max(0,...data.apps.map(a=>a.checked_at||0));
+  details('AI app versions',`<p class="small-note">Each app updates itself as usual. AURA notices new versions and checks they still work with it.</p>${rows||'<p>No connected AI apps yet.</p>'}${gone?`<h3>Models no longer offered</h3>${gone}`:''}<p class="small-note">${checked?'Checked '+esc(when(checked))+'. ':''}<button type="button" class="text-button" data-app-check>Check now</button></p>`);
+}
+document.addEventListener('click',event=>{if(event.target.closest?.('[data-app-check]')){attempt(async()=>{await openAppVersions(true);notice('Checking your AI apps. This takes a moment.');setTimeout(()=>attempt(()=>openAppVersions()),15000);});}});
+// An app's update finished in the terminal: check it now rather than in a few hours.
+window.addEventListener('aura-terminal-ended',event=>{if(String(event.detail?.purpose||'').startsWith('app-update:'))api('/api/app-status?check=1').catch(()=>{});});
 function openSettings(query=''){
   closeAnchoredSurface(false);if($('#more-dialog').open)$('#more-dialog').close();state.settingsReturn=false;
   const update=$('#update-menu-status')?.textContent.trim();
@@ -1793,6 +1808,7 @@ function openSettings(query=''){
 document.addEventListener('click',event=>{
   const b=event.target.closest('#open-settings,[data-settings-open]');if(!b)return;
   if(b.id==='open-settings'){openSettings();return;}
+  if(b.dataset.settingsOpen==='app-versions'){attempt(()=>openAppVersions());return;}
   const target=$('#'+b.dataset.settingsOpen);if(!target)return;
   state.settingsQuery=$('#settings-find')?.value||'';state.settingsReturn=!!b.closest('#detail');closeAnchoredSurface(false);if($('#more-dialog').open)$('#more-dialog').close();
   target.click();
@@ -2791,6 +2807,10 @@ document.addEventListener('click',event=>attempt(async()=>{
       await window.auraProjects.openCollection(item.collection_id,item.kind==='changes'?'changes':'current',item.kind==='deadline'?item.item_title||'':'');return;
     }
     if(item.kind==='goal'){state.inbox=await api('/api/notifications',{business:state.business,action:'read',id:item.id});renderNotifications();return;}
+    if(['app_update','app_problem','app_new','retired'].includes(item.kind)&&!(item.kind==='retired'&&item.chat_id)){
+      $('#notification-dialog').close();state.inbox=await api('/api/notifications',{business:state.business,action:'read',id:item.id});renderNotifications();
+      if(item.kind==='app_update'&&item.item_id&&window.auraTerminal){await window.auraTerminal.open({command:item.item_id+'-update'});return;}
+      await openAppVersions();return;}
     if(item.kind==='saved'&&item.item_id){$('#notification-dialog').close();state.inbox=await api('/api/notifications',{business:state.business,action:'read',id:item.id});renderNotifications();
       const ref=(state.data?.records||[]).find(r=>r.data?.id===item.item_id)?.ref;if(ref){recordDetails(ref);return;}state.view='aura';await render();recordShellRoute();await renderShell();return;}
     if(item.chat_id&&item.chat_id!==state.chatMeta?.id) {

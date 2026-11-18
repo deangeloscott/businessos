@@ -559,6 +559,7 @@ class Workspace:
         self.catalog = library()
         self.library_native = {}
         self.library_refresh_lock = threading.Lock()
+        self.app_check_lock = threading.Lock()
         self.library_checked = 0
         self.verified_business = None
         self.read_cache = {}
@@ -2170,7 +2171,10 @@ class Workspace:
         except Exception as error:
             job.update(status='failed',step='The import did not finish: '+workspace_support.human_error(error))
 
-    TERMINAL_PRESETS={'claude-setup-token':('claude',['setup-token'],'Claude token'),'claude-login':('claude',['auth','login'],'Claude sign-in'),
+    TERMINAL_PRESETS={'claude-update':('claude',['update'],'Claude Code update'),'codex-update':('codex',['update'],'Codex update'),
+                      'omp-update':('omp',['update'],'OMP update'),'pi-update':('pi',['update','--self'],'Pi update'),
+                      'hermes-update':('hermes',['update'],'Hermes update'),'antigravity-update':('antigravity',['update'],'Antigravity update'),
+                      'claude-setup-token':('claude',['setup-token'],'Claude token'),'claude-login':('claude',['auth','login'],'Claude sign-in'),
                       'codex-login':('codex',['login'],'Codex sign-in'),'omp-login':('omp',['login'],'OMP sign-in'),'pi-login':('pi',[],'Pi'),
                       'hermes-setup':('hermes',['setup'],'Hermes setup')}
 
@@ -2224,6 +2228,164 @@ class Workspace:
                 row['calls']+=calls;row['conversations']+=1
                 for kind in made:row['saved'][kind]=row['saved'].get(kind,0)+1
         return {'services':sorted(by.values(),key=lambda r:(-r['calls'],r['name']))}
+
+    def missing_app(self,kind):
+        """What to say when a chat's app is no longer installed here: plainly, with the way forward."""
+        known={a['id']:a['name'] for a in installed_agents()}
+        installed=any(a['id']==kind and a.get('argv') for a in installed_agents())
+        name=known.get(kind) or {'configured':'Your custom AI app'}.get(kind,kind or 'This app')
+        return f"{name} isn't working from AURA right now. Open it once to check it, then try again." if installed else f"{name} isn't installed on this computer anymore. Reinstall it, or continue this chat in another app."
+
+    APP_CHECK_EVERY=6*3600
+
+    def apps_in_use(self):
+        """The AI apps AURA works with here (connected and installed), each once."""
+        import workspace_app_updates
+        kinds=set(self.preferences.get('connected_apps',{}))|{self.connection_kind}
+        return [a for a in installed_agents() if a['id'] in workspace_app_updates.APPS and a['id'] in kinds and a.get('argv')]
+
+    def app_note(self,title,kind,**refs):
+        """One line in every business's bell here: app updates belong to the computer, not to one business."""
+        base=workspace_root()/'instances'
+        for folder in sorted(base.iterdir()) if base.is_dir() else []:
+            self.notify(folder.name,None,title,kind=kind,**refs)
+
+    def observe_app(self,kind,name,items):
+        """Keep the latest list an app reports (its models, commands, skills). After the app's version changed, what
+        appeared since is new in that version, said once in one line."""
+        import workspace_app_updates as ups
+        items=[str(x) for x in items or [] if x][:3000]
+        if not items:return
+        with self.lock:
+            state=self.preferences.setdefault('app_versions',{}).setdefault(kind,{})
+            lists=state.setdefault('lists',{});before=lists.get(name);current=state.get('version')
+            lists[name]=items
+            if before is None or not current or state.get('lists_version',current)==current:
+                state.setdefault('lists_version',current);self.save_preferences();return
+            found=ups.added(before,items)
+            news=state.setdefault('news',{}).setdefault(current,{})
+            if found:news[name]=list(dict.fromkeys([*news.get(name,[]),*found]))
+            done=state.setdefault('news_seen',{}).setdefault(current,[])
+            if name not in done:done.append(name)
+            # Every list is compared once after an update; then this version is the new baseline.
+            if set(done)>=set(lists):state['lists_version']=current
+            text=ups.news(ups.APPS[kind]['name'],current,news)
+            self.save_preferences()
+        if text and found:
+            ident='app-new-'+kind+'-'+current
+            with self.lock:
+                existing=[n for n in self.preferences['notification_items'] if n.get('app_note')==ident]
+                for n in existing:n.update(title=text,read=False,delivered=False)
+                if existing:self.save_preferences();return
+            base=workspace_root()/'instances'
+            for folder in sorted(base.iterdir()) if base.is_dir() else []:
+                with self.lock:
+                    self.preferences['notification_items']=[*self.preferences['notification_items'],{'id':new_id(12),'business_id':folder.name,'chat_id':None,
+                        'kind':'app_new','agent':'AURA','title':text,'status':'complete','at':time.time(),'read':False,'delivered':False,'app_note':ident}][-50:]
+            with self.lock:self.save_preferences()
+
+    def check_apps(self,force=False):
+        """Read each app's version; after an update, check what AURA relies on and note what is new; say when the app
+        reports a newer version. No AI request is made, and nothing runs while another check is going."""
+        import workspace_app_updates as ups
+        if not self.app_check_lock.acquire(blocking=False):return
+        try:
+            now=time.time()
+            for choice in self.apps_in_use():
+                kind=choice['id'];spec=ups.APPS[kind]
+                with self.lock:state=dict(self.preferences.setdefault('app_versions',{}).setdefault(kind,{}))
+                if not force and now-state.get('checked_at',0)<self.APP_CHECK_EVERY:continue
+                argv=self.interactive_command(kind,choice);env=self.agent_environment(choice)
+                found=ups.version(argv,env)
+                with self.lock:
+                    saved=self.preferences['app_versions'][kind];previous=saved.get('version')
+                    saved['checked_at']=now
+                    if found:saved['version']=found
+                    self.save_preferences()
+                if found and previous and found!=previous:self.after_app_update(kind,choice,previous,found)
+                elif found and not previous:
+                    try:self.observe_app(kind,'models',[m['id'] for m in self.agent_options(kind)['models']])
+                    except (OSError,ValueError,subprocess.SubprocessError):pass
+                if spec.get('check') and (force or now-state.get('latest_at',0)>86400):
+                    newer=ups.latest(kind,argv,env)
+                    with self.lock:
+                        saved=self.preferences['app_versions'][kind];saved.update(latest=newer,latest_at=now)
+                        tell=newer and newer!=saved.get('version') and saved.get('latest_told')!=newer
+                        if tell:saved['latest_told']=newer
+                        self.save_preferences()
+                    if tell:self.app_note(f"{spec['name']} {newer} is available.",'app_update',item_id=kind)
+            self.check_retired()
+        finally:self.app_check_lock.release()
+
+    def after_app_update(self,kind,choice,old,new):
+        """An app updated itself: check, without any AI request, that AURA can still list its models, reach it and
+        read its scheduled tasks. A problem is one short line; what is new is noted as it is seen."""
+        import workspace_app_updates as ups,workspace_schedules
+        name=ups.APPS[kind]['name'];problems=[]
+        try:
+            models=[m['id'] for m in self.agent_options(kind,refresh=True)['models']]
+            if not models and kind!='hermes':problems.append('list its models')
+            self.observe_app(kind,'models',models)
+        except (OSError,ValueError,subprocess.SubprocessError):problems.append('list its models')
+        model=(self.preferences.get('connected_apps',{}).get(kind) or {}).get('model','')
+        try:
+            if kind=='hermes':workspace_agents.check_transport(choice['argv'],kind,workspace_root(),self.agent_environment(choice))
+            elif model:workspace_agents.check_signin(choice['argv'],kind,model,workspace_root(),self.agent_environment(choice))
+        except (OSError,ValueError,subprocess.SubprocessError):problems.append('reach it')
+        label=ups.SCHEDULE_NAMES.get(kind)
+        if label:
+            try:notes=workspace_schedules.inventory(workspaces=[workspace_root().resolve()])['notes']
+            except (OSError,ValueError):notes=[label]
+            if any(str(n).startswith(label) for n in notes):problems.append('read its scheduled tasks')
+        with self.lock:self.preferences['app_versions'][kind].update(updated_from=old,problems=problems)
+        if problems:self.app_note(f"{name} updated to {new}, and AURA can't {' or '.join(problems)} yet.",'app_problem',item_id=kind)
+
+    def retired_choices(self):
+        """Saved choices naming a model its app no longer offers: a chat, an agent, or an app's default. Only checked
+        against a model list the app actually returned, so a failed listing never looks like a retirement."""
+        out=[]
+        for kind,options in list(self.option_cache.items()):
+            if not isinstance(kind,str) or not isinstance(options,dict):continue
+            ids={m.get('id') for m in options.get('models') or [] if isinstance(m,dict)}
+            if not ids:continue
+            app=next((a['name'] for a in installed_agents() if a['id']==kind),kind)
+            gone=lambda model:bool(model) and model not in ids and model.lower() not in {'default','app default'}
+            default=(self.preferences.get('connected_apps',{}).get(kind) or {}).get('model','')
+            if gone(default):out.append({'where':'default','id':kind,'name':app+' default','model':default,'app':app})
+            for chat in self.preferences.get('chats',[]):
+                if chat.get('agent')==kind and not chat.get('archived') and gone(chat.get('model','')):
+                    out.append({'where':'chat','id':chat['id'],'name':chat.get('title') or 'A chat','model':chat['model'],'app':app,'business_id':chat.get('business_id')})
+            for bid,profiles in (self.preferences.get('assistants') or {}).items():
+                for p in profiles or []:
+                    if p.get('archived_at') or (p.get('native_agent') or {}).get('app')=='hermes':continue
+                    if (p.get('app') or self.connection_kind)==kind and gone(p.get('model','')):
+                        out.append({'where':'agent','id':p['id'],'name':p.get('name') or 'An agent','model':p['model'],'app':app,'business_id':bid})
+        return out
+
+    def check_retired(self):
+        """Say once when a saved choice names a model its app no longer offers, with where to choose another."""
+        for r in self.retired_choices():
+            key=f"{r['where']}:{r['id']}:{r['model']}"
+            with self.lock:
+                seen=self.preferences.setdefault('retired_seen',[])
+                if key in seen:continue
+                self.preferences['retired_seen']=[*seen,key][-300:]
+            title=f"{r['name']} uses {r['model']}, which {r['app']} no longer offers. Choose another model."
+            refs={'item_id':r['id'],'item_title':r['where']}
+            if r.get('business_id'):self.notify(r['business_id'],r['id'] if r['where']=='chat' else None,title,kind='retired',**refs)
+            else:self.app_note(title,'retired',**refs)
+
+    def app_status(self):
+        """Each app AURA works with here: its version, a newer one when the app reports it, what the last check found,
+        the command to update it, and saved choices whose model is gone."""
+        import workspace_app_updates as ups
+        with self.lock:versions=copy.deepcopy(self.preferences.get('app_versions',{}))
+        apps=[]
+        for a in self.apps_in_use():
+            v=versions.get(a['id'],{})
+            apps.append({'kind':a['id'],'name':a['name'],'installed':bool(a.get('argv')),'version':v.get('version'),'latest':v.get('latest') if v.get('latest')!=v.get('version') else None,
+                         'checked_at':v.get('checked_at'),'problems':v.get('problems',[]),'updated_from':v.get('updated_from'),'update':a['id']+'-update'})
+        return {'apps':apps,'retired':self.retired_choices()}
 
     def service_problems(self,bid):
         """Connected services this business's work relied on that its app's settings now show as turned off, or that were
@@ -2318,7 +2480,7 @@ class Workspace:
         if self.chat_busy(bid,chat):raise ValueError('This chat is still working. Stop it or let it finish before opening it in the terminal.')
         if not workspace_terminal.available():raise ValueError('This computer cannot open a built-in terminal.')
         choice=self.native_choice(kind)
-        if not choice:raise ValueError('Reconnect the app that owns this chat.')
+        if not choice:raise ValueError(self.missing_app(kind))
         root=workspace_root().resolve();folder=Path(chat.get('native_workspace') or root);folder=folder if folder.is_dir() else root
         env=self.agent_environment(choice)
         args=workspace_agents.resume_command(kind,workspace_agents.session_reference(kind,native_id,env) if kind=='pi' else native_id)[1:]
@@ -2597,7 +2759,15 @@ class Workspace:
             if connection['status']!='Not added':
                 rows.append(workspace_library.entry('Tool',connection['name'],'A provider API connection. Its AI app checks access when used.',
                     '', 'api:'+connection['id'],'Key available · Not verified',type='API connection',service=connection['name']))
-        return {'items':workspace_library.organize(self.catalog+workspace_library.merge(rows)),'notes':list(dict.fromkeys(notes)),
+        organized=workspace_library.organize(self.catalog+workspace_library.merge(rows))
+        # Each app's skills and tools, compared after the app updates (see observe_app). Only on a fresh discovery.
+        if discover:
+            import workspace_app_updates
+            for kind in workspace_app_updates.APPS:
+                for label,wanted in (('skills','Skill'),('tools','Tool')):
+                    names=[r['title'] for r in organized if r.get('kind')==wanted and kind in (r.get('apps') or [])]
+                    if names:self.observe_app(kind,label,names)
+        return {'items':organized,'notes':list(dict.fromkeys(notes)),
                 'checked':self.library_checked,'refreshing':self.library_refresh_lock.locked()}
 
     def cached_read(self,key,read,seconds=5,force=False):
@@ -3169,7 +3339,7 @@ class Workspace:
                 known=self.preferences['connected_apps'].get(kind)
                 if not known and kind!=self.connection_kind:raise ValueError('Connect this AI app before sending.')
                 choice=({'id':'configured',**(self.agent if self.connection_kind=='configured' and self.agent else self.configured_agent)} if kind=='configured' and self.configured_agent else next((a for a in installed_agents() if a['id']==kind and a['argv']),None))
-                if not choice:raise ValueError('Reconnect the app that owns this chat.')
+                if not choice:raise ValueError(self.missing_app(kind))
                 effective={**(known or self.preferences['connection']),**{k:desired[k] for k in ('kind','model','effort') if k in desired}}
                 if any(not isinstance(effective.get(k,''),str) or len(effective.get(k,''))>300 for k in ('model','effort')):raise ValueError('Choose a valid model and effort.')
                 owner.select_agent(choice,effective.get('workspace_write') is True)
@@ -3504,6 +3674,8 @@ def main():
                         app.resume_checked=time.time();app.resume_due()
                     if time.time()-getattr(app,'collections_checked',0)>60:
                         app.collections_checked=time.time();app.check_collection_changes();app.check_saved_work()
+                    if time.time()-getattr(app,'apps_checked',0)>900:
+                        app.apps_checked=time.time();threading.Thread(target=app.check_apps,daemon=True,name='aura-app-check').start()
                     if time.time()-getattr(app,'task_limits_checked',0)>600:
                         app.task_limits_checked=time.time();app.check_task_limits();app.check_goals_reached();app.check_deadlines();app.check_service_problems()
                         if app.preferences.get('api_estimates') is True:

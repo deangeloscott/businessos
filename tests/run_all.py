@@ -65,6 +65,7 @@ TESTS=[
     'tests/run_continue_and_terminal.py',
     'tests/run_workspace_signals.py',
     'tests/run_workspace_costs.py',
+    'tests/run_workspace_app_updates.py',
     'tests/run_workspace_focus.py',
     'tests/run_workspace_summary.py',
     'tests/run_workspace_world.py',

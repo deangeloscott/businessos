@@ -37,6 +37,7 @@ window.auraTerminal=(()=>{
   }
   function ended(t,code,reason=''){
     t.ended=true;t.term.write(`\r\n\x1b[2m[${reason||('Ended'+(code!=null?' · exit code '+code:''))}]\x1b[0m\r\n`);paintTabs();
+    window.dispatchEvent(new CustomEvent('aura-terminal-ended',{detail:{purpose:t.info.purpose||''}}));
     // A chat continued in its app's own screen: AURA reads what happened there once it closes.
     if(String(t.info.purpose||'').startsWith('resume:'))window.dispatchEvent(new CustomEvent('aura-chat-terminal-closed',{detail:{chat_id:t.info.purpose.slice(7)}}));
   }

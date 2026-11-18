@@ -127,6 +127,8 @@ class ChatRun:
                     row=workspace_usage.account(provider,via=app.agent['name'])
                     row.update(windows=windows,checked_at=time.time())
                     app.usage_accounts[kind+'-events']=[row]
+            if values.get('native_commands'):
+                app.observe_app(kind,'commands',['/'+str(c.get('name','')).lstrip('/') for c in values['native_commands'] if isinstance(c,dict) and c.get('name')])
             if chat and values.get('native_id'):
                 chat['native_id'] = values['native_id']
                 try:

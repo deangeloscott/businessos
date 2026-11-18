@@ -204,6 +204,11 @@ def handler_for(app):
                                             'assistant_id':(chats.get(j.get('chat_id')) or {}).get('assistant_id','')}
                                            for j in owner.running_jobs(workspace_root()) if j.get('business_id')==bid]
                     self.send(200,result)
+                elif route=='/api/app-status':
+                    with app.lock:root=app.workspace_path
+                    with workspace_scope(root):
+                        if query.get('check')=='1':threading.Thread(target=app.check_apps,kwargs={'force':True},daemon=True,name='aura-app-check').start()
+                        self.send(200,app.app_status())
                 elif route=='/api/services':
                     with app.lock:root=app.workspace_path
                     with workspace_scope(root):
@@ -561,8 +566,9 @@ def handler_for(app):
                             if data.get('chat_id'):
                                 chat=app.source_chat(bid,data['chat_id']);folder=Path(chat.get('native_workspace') or root)
                             argv,env=app.terminal_command(data.get('command') or 'shell')
+                            name=data.get('command') or 'shell'
                             terminal=terminals.start(argv,str(folder if folder.is_dir() else root),env,int(data.get('cols') or 100),int(data.get('rows') or 30),
-                                                     title=app.terminal_title(data.get('command') or 'shell'))
+                                                     title=app.terminal_title(name),purpose='app-update:'+name[:-7] if name.endswith('-update') else '')
                         result=terminal.summary()
                     elif action=='input':terminals.get(data.get('id')).write(data.get('data'));result={'ok':True}
                     elif action=='resize':terminals.get(data.get('id')).resize(int(data.get('cols') or 100),int(data.get('rows') or 30));result={'ok':True}
